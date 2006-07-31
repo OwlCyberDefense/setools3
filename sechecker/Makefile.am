@@ -46,7 +46,6 @@ sechecker_SOURCES = \
 	modules/roles_wo_allow.c modules/roles_wo_allow.h \
 	modules/roles_wo_types.c modules/roles_wo_types.h \
 	modules/roles_wo_users.c modules/roles_wo_users.h \
-	modules/rules_exp_nothing.c modules/rules_exp_nothing.h \
 	modules/spurious_audit.c modules/spurious_audit.h \
 	modules/types_wo_allow.c modules/types_wo_allow.h \
 	modules/unreachable_doms.c modules/unreachable_doms.h \

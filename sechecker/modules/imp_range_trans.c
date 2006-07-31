@@ -6,12 +6,11 @@
  *
  */
 
-#include "sechecker.h"
-
 #include "imp_range_trans.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #define SECHK_NO_ROLES          0x000002
 #define SECHK_BAD_USER_MLS_LOW  0x000040
@@ -23,22 +22,20 @@ static const char *const mod_name = "imp_range_trans";
 
 int imp_range_trans_register(sechk_lib_t *lib)
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+		fprintf(stderr, "Error: No library\n");
 		return -1;
 	}
-
-	library = lib;
 
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+		fprintf(stderr, "Error: Module unknown");
 		return -1;
 	}
+	mod->parent_lib = lib;
 	
 	/* assign the descriptions */
 	mod->brief_description = "finds impossible range transitions";
@@ -67,75 +64,84 @@ int imp_range_trans_register(sechk_lib_t *lib)
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &imp_range_trans_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory");
+                return - 1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &imp_range_trans_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory");
+                return - 1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &imp_range_trans_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &imp_range_trans_data_free;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory");
+                return - 1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &imp_range_trans_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory");
+                return - 1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &imp_range_trans_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory");
+                return - 1;
+        }
 
-#endif
 	return 0;
 }
 
@@ -144,32 +150,24 @@ int imp_range_trans_register(sechk_lib_t *lib)
  * file. */
 int imp_range_trans_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
-	sechk_name_value_t *opt = NULL;
 	imp_range_trans_data_t *datum = NULL;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = imp_range_trans_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		return -1;
 	}
 	mod->data = datum;
 
-	opt = mod->options;
-	while (opt) {
-		opt = opt->next;
-	}
-
-#endif
 	return 0;
 }
 
@@ -183,26 +181,21 @@ int imp_range_trans_init(sechk_module_t *mod, apol_policy_t *policy)
  *   1 The module "failed" 		- some negative results found */
 int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	imp_range_trans_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	ap_rangetrans_t *r_trans = NULL;
-	ta_item_t *src_types = NULL;
-	int i, num_roles = 0, num_users = 0;
-	int *valid_roles = NULL, valid_roles_sz = 0;
-	int *valid_users = NULL, valid_users_sz = 0;
-	bool_t found_role = FALSE, found_user = FALSE, found_valid_user_mls = FALSE;
-	int file_idx, exec_idx;
+	int i, error;
+	apol_vector_t *range_trans_vector;
+	qpol_type_t *entry_point;
+	qpol_class_t *class;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -213,284 +206,244 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (imp_range_trans_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		goto imp_range_trans_run_fail;
 	}
-	res->item_type = POL_LIST_TYPE;
-	
-	if (!avh_hash_table_present(policy->avh)) {
-                if (avh_build_hashtab(policy) != 0) {
-                        fprintf(stderr, "Error: could not build hash table\n");
-                        goto imp_range_trans_run_fail;
-                }
+	res->item_type = SECHK_ITEM_TYPE;
+        if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, "%s", strerror(error));
+                goto imp_range_trans_run_fail;
         }
 	
 	/* resolve "file" object class to idx */
-	file_idx = get_obj_class_idx("file", policy);
-	if (file_idx < 0) {
-		fprintf(stderr, "Error: getting file object class index\n");
+	if ( qpol_policy_get_class_by_name(policy->qh, policy->p, "file", &class) < 0 ) {
+		ERR(policy, "Error: getting file type\n");
 		goto imp_range_trans_run_fail;
 	}
 
-	/* resolve "execute" permission to idx */
-	exec_idx = get_perm_idx("execute", policy);
-	if (exec_idx < 0) {
-		fprintf(stderr, "Error: getting exec permissions index\n");
+	if ( apol_get_range_trans_by_query(policy, NULL, &range_trans_vector) < 0  ) {
+		ERR(policy, "No range transitions");
 		goto imp_range_trans_run_fail;
 	}
 
-	for (i = 0; i < policy->num_rangetrans; i++) {
-		found_role = FALSE;
-		found_user = FALSE;
-		found_valid_user_mls = FALSE;
+	for (i = 0; i < apol_vector_get_size(range_trans_vector); i++) {
+		qpol_range_trans_t *rule;
+		qpol_type_t *source;
+		qpol_type_t *target;
+		char *source_name;
+		char *target_name;
+		apol_vector_t *role_vector;
+		apol_vector_t *rbac_vector;
+		apol_vector_t *user_vector;
+		apol_role_query_t *role_query;
+		apol_user_query_t *user_query;
+		apol_mls_range_t *range;
+		qpol_mls_range_t *qpol_range;
+		int info, j;
 
-		r_trans = &(policy->rangetrans[i]);
-		if (!r_trans) {
-			fprintf(stderr, "Error: invalid rangetrans\n");
+		rule = apol_vector_get_element(range_trans_vector, i);
+		qpol_range_trans_get_source_type(policy->qh, policy->p, rule, &source);
+		qpol_range_trans_get_target_type(policy->qh, policy->p, rule, &target);
+		qpol_type_get_name(policy->qh, policy->p, source, &source_name);
+		qpol_type_get_name(policy->qh, policy->p, target, &target_name);
+		qpol_range_trans_get_range(policy->qh, policy->p, rule, &qpol_range);
+		range = apol_mls_range_create_from_qpol_mls_range(policy, qpol_range);
+	
+		/* Check TE rules */
+		info = apol_domain_trans_table_verify_trans(policy, source, entry_point, target);
+		if ( info ) {
+			/* Add item */
+			proof = sechk_proof_new(NULL);
+			if (!proof) {
+				ERR(policy, "Error: out of memory");
+				goto imp_range_trans_run_fail;
+			}
+			proof->type = SECHK_ITEM_TYPE;
+			proof->text = strdup(apol_range_trans_render(policy, rule));
+			if (!proof->text) {
+				ERR(policy, "Error: unable to build proof element");
+				goto imp_range_trans_run_fail;
+			}
+
+			for (j = 0; j < apol_vector_get_size(res->items); j++) {
+				sechk_item_t *res_item = NULL;
+				qpol_type_t *res_type;
+				char *res_type_name;
+
+				res_item = apol_vector_get_element(res->items, j);
+				res_type = res_item->item;
+				qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+				if (!strcmp(res_type_name, source_name)) item = res_item;
+			}
+			if ( !item ) {
+				item = sechk_item_new(NULL);
+				if (!item) {
+					ERR(policy, "Out of memory");
+					goto imp_range_trans_run_fail;
+				}
+				item->item = source;
+				if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+					ERR(policy, "Out of memory");
+					goto imp_range_trans_run_fail;
+				}
+			}
+			item->test_result = 1;
+			
+			if ( !item->proof ) {
+				if ( !(item->proof = apol_vector_create()) ) {
+					ERR(policy, "Out of memory");
+					goto imp_range_trans_run_fail;
+				}
+			}
+			if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+				ERR(policy, "Out of memory");
+				goto imp_range_trans_run_fail;
+			}
+			item = NULL;
+		}
+
+		/* Check RBAC rules */
+		role_query = apol_role_query_create();		
+		apol_role_query_set_type(policy, role_query, source_name);
+		apol_get_role_by_query(policy, role_query, &role_vector);
+		for (j = 0; j < apol_vector_get_size(role_vector); j++) {
+			qpol_role_t *role;
+			apol_role_trans_query_t *rbac_query;
+			char *role_name;
+
+			rbac_query = apol_role_trans_query_create();
+			role = apol_vector_get_element(role_vector, j);
+			qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+			apol_role_trans_query_set_source(policy, rbac_query, role_name);
+			apol_role_trans_query_set_target(policy, rbac_query, target_name, 1);
+			apol_get_role_trans_by_query(policy, rbac_query, &rbac_vector);
+			if ( apol_vector_get_size(rbac_vector) <= 0 ) {
+				proof = sechk_proof_new(NULL);
+				if (!proof) {
+					ERR(policy, "Error: out of memory");
+					goto imp_range_trans_run_fail;
+				}
+				proof->type = SECHK_ITEM_TYPE;
+				proof->text = strdup("No role\n");
+				if (!proof->text) {
+					ERR(policy, "Error: unable to build proof element");
+					goto imp_range_trans_run_fail;
+				}
+
+				for (j = 0; j < apol_vector_get_size(res->items); j++) {
+					sechk_item_t *res_item = NULL;
+					qpol_type_t *res_type;
+					char *res_type_name;
+
+					res_item = apol_vector_get_element(res->items, j);
+					res_type = res_item->item;
+					qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+					if (!strcmp(res_type_name, source_name)) item = res_item;
+				}
+				if ( !item ) {
+					item = sechk_item_new(NULL);
+					if (!item) {
+						ERR(policy, "Out of memory");
+						goto imp_range_trans_run_fail;
+					}	
+					item->item = source;
+	                                if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+        	                                ERR(policy, "Out of memory");
+                	                        goto imp_range_trans_run_fail;
+                        	        }
+
+				}
+				item->test_result = 1;
+			
+				if ( !item->proof ) {
+					if ( !(item->proof = apol_vector_create()) ) {
+						ERR(policy, "Out of memory");
+						goto imp_range_trans_run_fail;
+					}
+				}
+				if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					ERR(policy, "Out of memory");
+					goto imp_range_trans_run_fail;
+				}
+				item = NULL;
+			}
+		}
+
+		/* Check users allowed for this range */
+		user_query = apol_user_query_create();
+		apol_user_query_set_range(policy, user_query, range, APOL_QUERY_SUPER);
+		apol_get_user_by_query(policy, user_query, &user_vector);
+		if ( apol_vector_get_size(user_vector) > 0 ) continue;
+		
+		proof = sechk_proof_new(NULL);
+		if (!proof) {
+			ERR(policy, "Error: out of memory");
 			goto imp_range_trans_run_fail;
 		}
-	
-		/* Examine each source type */
-		for (src_types = r_trans->src_types; src_types; src_types = src_types->next) {
-			num_roles = 0;
-			num_users = 0;
+		proof->type = SECHK_ITEM_TYPE;
+		proof->text = strdup("No user\n");
+		if (!proof->text) {
+			ERR(policy, "Error: unable to build proof element");
+			goto imp_range_trans_run_fail;
+		}
 
-			/* Verify that source domain has file execute permissions in target domain */
-			if (!has_exec_perms(r_trans->tgt_types, src_types->idx, file_idx, exec_idx, policy)) {
-				proof = sechk_proof_new();
-				if (!proof) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto imp_range_trans_run_fail;
-				}
-				proof->idx = -1;
-				proof->type = POL_LIST_TYPE;
-				proof->text = build_no_exec_proof_str(r_trans, policy);
-				if (!proof->text) {
-					fprintf(stderr, "Error: unable to build proof element\n");
-					goto imp_range_trans_run_fail;
-				}
+		for (j = 0; j < apol_vector_get_size(res->items); j++) {
+			sechk_item_t *res_item = NULL;
+			qpol_type_t *res_type;
+			char *res_type_name;
 
-				if (res->num_items > 0) {
-					item = sechk_result_get_item(i, POL_LIST_TYPE, res);
-					if (!item) {
-						item = sechk_item_new();
-						if (!item) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto imp_range_trans_run_fail;
-						}
-						item->item_id = i;
-					}
-				} else {
-					item = sechk_item_new();
-					if (!item) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto imp_range_trans_run_fail;
-					}
-					item->item_id = i;
-				}
-				item->test_result |= SECHK_NO_EXEC_PERMS;
-				
-				proof->next = item->proof;
-				item->proof = proof;
-
-				if (res->num_items > 0) {
-					if (!sechk_result_get_item(i, POL_LIST_TYPE, res)) {
-						item->next = res->items;
-						res->items = item;
-						(res->num_items)++;
-					}
-				} else {
-					item->next = res->items;
-					res->items = item;
-					(res->num_items)++;
-				}
-
-				continue;
-			}			
-
-			/* Find roles associated with src_types->idx */
-			num_roles = get_valid_roles(&valid_roles, &valid_roles_sz, src_types->idx, policy);
-			if (num_roles == -1) {
-				fprintf(stderr, "Error: unable to get roles\n");
+			res_item = apol_vector_get_element(res->items, j);
+			res_type = res_item->item;
+			qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+			if (!strcmp(res_type_name, source_name)) item = res_item;
+		}
+		if ( !item ) {
+			item = sechk_item_new(NULL);
+			if (!item) {
+				ERR(policy, "Out of memory");
 				goto imp_range_trans_run_fail;
-			}
+			}	
+			item->item = source;
+                        if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+      	                        ERR(policy, "Out of memory");
+              	                goto imp_range_trans_run_fail;
+                      	}
+		}
+		item->test_result = 1;
 			
-			/* No valid roles were found */
-			if (num_roles == 0) {
-				proof = sechk_proof_new();
-                                if (!proof) {
-                                        fprintf(stderr, "Error: out of memory\n");
-                                        goto imp_range_trans_run_fail;
-                                }
-                                proof->idx = -1;
-                                proof->type = POL_LIST_TYPE;
-                                proof->text = build_no_roles_proof_str(r_trans, src_types->idx, policy);
-                                if (!proof->text) {
-                                        fprintf(stderr, "Error: unable to build proof element\n");
-                                        goto imp_range_trans_run_fail;
-                                }
-
-				if (res->num_items > 0) {
-					item = sechk_result_get_item(i, POL_LIST_TYPE, res);
-					if (!item) {
-						/* Result doesn't include this item; create new */
-						item = sechk_item_new();
-						if (!item) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto imp_range_trans_run_fail;
-						}
-						item->item_id = i;
-					}
-				} else {
-					item = sechk_item_new();
-					if (!item) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto imp_range_trans_run_fail;
-					}
-					item->item_id = i;
-				}
-				item->test_result |= SECHK_NO_ROLES;
-				
-				proof->next = item->proof;
-				item->proof = proof;
-				
-				if (res->num_items > 0) {
-					if (!sechk_result_get_item(i, POL_LIST_TYPE, res)) {
-						item->next = res->items;
-						res->items = item;
-						(res->num_items)++;
-					}
-				} else {
-					item->next = res->items;
-					res->items = item;
-					(res->num_items)++;
-				}
-
-				continue;  /* Process next src_type within this range trans */
-			}
-			
-			/* Find users allowed with roles in valid_roles */
-			num_users = get_valid_users(&valid_users, &valid_users_sz, valid_roles, valid_roles_sz, &found_user, r_trans->range, policy);
-			if (num_users == -1) {
-				fprintf(stderr, "Error: getting users\n");
+		if ( !item->proof ) {
+			if ( !(item->proof = apol_vector_create()) ) {
+				ERR(policy, "Out of memory");
 				goto imp_range_trans_run_fail;
-			}
-			found_valid_user_mls = (num_users > 0) ? TRUE : FALSE;
-
-			/* No user was found with a role in valid_roles */
-			if (!found_user) {
-		      		proof = sechk_proof_new();
-		       		if (!proof) {
-		       			fprintf(stderr, "Error: out of memory\n");
-		       			goto imp_range_trans_run_fail;
-		       		}
-			       	proof->idx = -1;
-			       	proof->type = POL_LIST_TYPE;
-			       	proof->text = build_no_user_proof_str(valid_roles, valid_roles_sz, policy);
-				if (!proof->text)
-					goto imp_range_trans_run_fail;
-
-       				if (res->num_items > 0) {
-				       	item = sechk_result_get_item(i, POL_LIST_TYPE, res);
-				       	if (!item) {
-				       		item = sechk_item_new();
-				       		if (!item) {
-				       			fprintf(stderr, "Error: out of memory\n");
-				       			goto imp_range_trans_run_fail;
-       						}
-       						item->item_id = i;
-       					}
-       				}
-
-			       	item->test_result |= SECHK_NO_USERS;
-			       	proof->next = item->proof;
-			      	item->proof = proof;
-				if (res->num_items > 0) {
-					if (!sechk_result_get_item(i, POL_LIST_TYPE, res)) {
-						item->next = res->items;
-						res->items = item;
-						(res->num_items)++;
-					}
-					
-				} else {
-					item->next = res->items;
-					res->items = item;
-					(res->num_items)++;
-				}
-			} else if (!found_valid_user_mls) {
-				/* A user was found with role in valid_roles, but MLS range insufficient for trans */
-				verify_user_range(valid_roles, valid_roles_sz, i, r_trans, res, policy); 
-			}
-
-			if (valid_roles_sz > 0) {
-				free(valid_roles);
-				valid_roles_sz = 0;
-			}
-			if (valid_users_sz > 0) {
-				free(valid_users);
-				valid_users_sz = 0;
 			}
 		}
+		if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+			ERR(policy, "Out of memory");
+			goto imp_range_trans_run_fail;
+		}
+		proof = NULL;
+		item = NULL;
 	}
 	mod->result = res;
 
-	if (valid_roles_sz > 0) {
-		free(valid_roles);
-		valid_roles_sz = 0;
-	}
-	if (valid_users_sz > 0) {
-		free(valid_users);
-		valid_users_sz = 0;
-	}
-
-	/* If module finds something that would be considered a fail 
-	 * on the policy return 1 here */
-	if (res->num_items > 0)
-		return 1;
-
-#endif
 	return 0;
 
-#if 0
 imp_range_trans_run_fail:
-	if (valid_roles_sz > 0)
-		free(valid_roles);
-	if (valid_users_sz > 0)
-		free(valid_users);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
 	return -1;
-#endif
 }
 
 /* The free function frees the private data of a module */
 void imp_range_trans_data_free(void *data)
 {
-#if 0
-	imp_range_trans_data_t *datum;
-
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	datum = (imp_range_trans_data_t*)mod->data;
-	if (datum) {
-	}
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
 /* The print output function generates the text and prints the
@@ -502,27 +455,29 @@ void imp_range_trans_data_free(void *data)
  * tested in this function (stats, list, proof, detailed, and brief) */
 int imp_range_trans_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	imp_range_trans_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
+	qpol_type_t *type;
+	char *type_name;
+	int i = 0, j=0, k=0, l=0, num_items;
 
 	if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 	
 	datum = (imp_range_trans_data_t*)mod->data;
 	outformat = mod->outputformat;
+	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+		ERR(policy, "Module has not been run");
 		return -1;
 	}
 	
@@ -530,29 +485,40 @@ int imp_range_trans_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i impossible range transitions.\n", mod->result->num_items);
+		printf("Found %i impossible range transitions.\n", num_items);
 	}
 
-	if (outformat & SECHK_OUT_LIST) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			printf("%s\n", re_render_rangetrans(FALSE, item->item_id, policy));			
-		}
-		printf("\n");
-	}
-	
-	if (outformat & SECHK_OUT_PROOF) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			printf("%s\n", re_render_rangetrans(FALSE, item->item_id, policy));
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
-			}
-			printf("\n");
-		}
-	}
+        if (outformat & SECHK_OUT_LIST) {
+                printf("\n");
+                for (i = 0; i < num_items; i++) {
+                        j++;
+                        item  = apol_vector_get_element(mod->result->items, i);
+                        type = item->item;
+                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                        j %= 4;
+                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+                }
+                printf("\n");
+        }
 
-#endif
+        if (outformat & SECHK_OUT_PROOF) {
+                printf("\n");
+                for (k=0;k< num_items;k++) {
+                        item = apol_vector_get_element(mod->result->items, k);
+                        if ( item ) {
+                                type = item->item;
+                                qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                                printf("%s\n", (char*)type_name);
+                                for (l=0; l<apol_vector_get_size(item->proof);l++) {
+                                        proof = apol_vector_get_element(item->proof,l);
+                                        if ( proof )
+                                                printf("\t%s\n", proof->text);
+                                }
+                        }
+                }
+                printf("\n");
+        }
+
 	return 0;
 }
 
@@ -560,19 +526,16 @@ int imp_range_trans_print_output(sechk_module_t *mod, apol_policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *imp_range_trans_get_result(sechk_module_t *mod) 
 {
-#if 0
 	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		fprintf(stderr, "Error: Invalid parameters\n");
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		fprintf(stderr, "Erro: Wrong module (%s)\n", mod->name);
 		return NULL;
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 /* The imp_range_trans_data_new function allocates and returns an
@@ -586,404 +549,9 @@ sechk_result_t *imp_range_trans_get_result(sechk_module_t *mod)
  * any other data should be initialized as needed by the check logic */
 imp_range_trans_data_t *imp_range_trans_data_new(void)
 {
-#if 0
 	imp_range_trans_data_t *datum = NULL;
 
 	datum = (imp_range_trans_data_t*)calloc(1,sizeof(imp_range_trans_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
-
-#if 0
-/*
- * Returns a string indicating that no roles were
- * found to be valid for a particular type.  
- * This function allocates the returned string; caller must free
- */
-static char *build_no_roles_proof_str(ap_rangetrans_t *r_trans, const int type_idx, apol_policy_t *policy)
-{
-	char *str = NULL;
-	int str_sz = APOL_STR_SZ + 128;
-
-	if (!r_trans || !policy)
-		return NULL;
-	if (!is_valid_type_idx(type_idx, policy))
-		return NULL;
-
-	str = malloc(str_sz);
-	if (!str) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	memset(str, 0x0, str_sz);
-	
-	snprintf(str, str_sz, "No valid roles exist for domain %s.\n\tRule needed: role <<role_r>> types %s", 
-		 is_valid_type_idx(type_idx, policy) ? policy->types[type_idx].name : "",
-		 is_valid_type_idx(type_idx, policy) ? policy->types[type_idx].name : "");
-
-	return str;
-	return NULL;
-}
-
-/*
- * Returns a string indicating that there is 
- * no user that can transition to a particular MLS
- * level.
- * This function allocates the returned string; caller must free.  
- */
-static char *build_bad_user_mls_proof_str(ap_user_t *user, const int *valid_roles, const int valid_roles_sz, ap_rangetrans_t *r_trans, apol_policy_t *policy)
-{
-	char *str = NULL;
-	int str_sz = APOL_STR_SZ + 128;
-	int i, user_idx, role_idx;
-	int *valid_users = NULL, valid_users_sz = 0;
-
-	if (!user || !r_trans || !policy)
-		return NULL;
-
-	str = malloc(str_sz);
-	if (!str) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	memset(str, 0x0, str_sz);
-
-	/* Find users which are in valid_roles */
-	for (role_idx = 0; role_idx < valid_roles_sz; role_idx++) {
-		for (user_idx = 0; user_idx < policy->num_users; user_idx++) {
-			if (does_user_have_role(user_idx, valid_roles[role_idx], policy)) {
-				/* Valid user */
-				if (find_int_in_array(user_idx, valid_users, valid_users_sz) == -1)
-					add_i_to_a(user_idx, &valid_users_sz, &valid_users);								
-			}
-		}
-	}
-	
-	snprintf(str, str_sz, "No users can transition to range %s.\n\tPossible users: ",
-		 re_render_mls_range(r_trans->range, policy));
-	
-	for (i = 0; i < valid_users_sz; i++) {
-		user_idx = valid_users[i];
-		if (is_valid_user_idx(user_idx, policy)) {
-			if (i > 0)
-				append_str(&str, &str_sz, ", ");
-			append_str(&str, &str_sz, policy->users[user_idx].name);
-		}
-	}
-
-	if (valid_users_sz > 0)
-		free(valid_users);
-
-	return str;
-	return NULL;
-}
-
-/* 
- * Returns a string indicating that execute permissions
- * for file objects in a particular domain were not found.
- * This function allocates the returned string; caller must free.
- */
-static char *build_no_exec_proof_str(ap_rangetrans_t *r_trans, apol_policy_t *policy)
-{
-	char *str = NULL;
-	int str_sz = APOL_STR_SZ + 128;
-
-	if (!r_trans || !policy)
-		return NULL;
-
-	if (!r_trans->src_types || !r_trans->tgt_types)
-		return NULL;
-	
-	str = malloc(str_sz);
-	if (!str) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	memset(str, 0x0, str_sz);
-	
-	snprintf(str, str_sz, "No execute permissions found on file objects in domain %s.\n\tRule needed: allow %s %s:file { execute }",
-		 is_valid_type_idx(r_trans->tgt_types->idx, policy) ? policy->types[r_trans->tgt_types->idx].name : "", 
-		 is_valid_type_idx(r_trans->src_types->idx, policy) ? policy->types[r_trans->src_types->idx].name : "",
-		 is_valid_type_idx(r_trans->tgt_types->idx, policy) ? policy->types[r_trans->tgt_types->idx].name : "");
-	return str;	
-	return NULL;
-}
-
-/*
- * Returns a string indicating that a user with a valid
- * role could not be found in the policy.
- * This function allocates the returned string; caller must free.
- */
-static char *build_no_user_proof_str(const int *valid_roles, const int valid_roles_sz, apol_policy_t *policy)
-{
-	char *str = NULL;
-	int i, role_idx, str_sz = 0;
-	
-	append_str(&str, &str_sz, "A user with a valid role could not be found.\n\tValid roles: ");
-	for (i = 0; i < valid_roles_sz; i++) {
-		role_idx = valid_roles[i];
-		if (is_valid_role_idx(role_idx, policy)) {
-			if (i > 0)
-				append_str(&str, &str_sz, ", ");
-			append_str(&str, &str_sz, policy->roles[role_idx].name);
-		}		
-	}	
-
-	return str;
-	return NULL;
-}
-
-/*
- * Verifies that a user's MLS range is sufficient to
- * transition into another MLS range.
- * Returns TRUE if the user's MLS range is sufficient
- * Returns FALSE otherwise
- */
-static bool_t verify_user_range(const int *valid_roles, const int valid_roles_sz, const int rtrans_idx, ap_rangetrans_t *r_trans, sechk_result_t *res, apol_policy_t *policy) 
-{
-	sechk_item_t *item = NULL;
-	sechk_proof_t *proof = NULL;
-	ap_user_t *user = NULL;
-	int user_no, i, role_idx, mls_comp = 0;
-
-	if (!r_trans || !res || !policy)
-		return FALSE;
-
-	for (i = 0; i < valid_roles_sz; i++) {
-		role_idx = valid_roles[i];
-		if (!is_valid_role_idx(role_idx, policy))
-			return FALSE;
-
-		/* Find the first valid user for this role */
-		for (user_no = 0; user_no < policy->num_users; user_no++) {
-			if (does_user_have_role(user_no, role_idx, policy)) {
-				user = (ap_user_t *) &(policy->users[user_no]);
-				if (!user) {
-					fprintf(stderr, "Error: invalid user\n");
-					return FALSE;
-				}
-				break;
-			}
-		}	
-	}
-
-	mls_comp = ap_mls_level_compare(user->range->low, r_trans->range->low, policy);
-	if (mls_comp != AP_MLS_DOMBY && mls_comp != AP_MLS_EQ) {
-		proof = sechk_proof_new();
-		if (!proof) {
-			fprintf(stderr, "Error: out of memory\n");
-			return FALSE;
-		}
-		proof->idx = -1;
-		proof->type = POL_LIST_TYPE;
-		proof->text = build_bad_user_mls_proof_str(user, valid_roles, valid_roles_sz, r_trans, policy);
-		if (!proof->text) {
-			fprintf(stderr, "Error: unable to build proof element\n");
-			return FALSE;
-		}
-
-		if (res->num_items > 0) {
-			item = sechk_result_get_item(rtrans_idx, POL_LIST_TYPE, res);
-			if (!item) {
-				/* Result doesn't include this item; create new */
-				item = sechk_item_new();
-				if (!item) {
-					fprintf(stderr, "Error: out of memory\n");
-					return FALSE;
-				}
-				item->item_id = rtrans_idx;
-			}
-		} else {
-			item = sechk_item_new();
-			if (!item) {
-				fprintf(stderr, "Error: out of memory\n");
-				return FALSE;
-			}
-			item->item_id = rtrans_idx;
-		}
-		item->test_result |= SECHK_BAD_USER_MLS_LOW;
-
-		proof->next = item->proof;
-		item->proof = proof;
-		
-		if (res->num_items == 0) {
-			item->next = res->items;
-			res->items = item;
-			(res->num_items)++;
-		} else {
-			/* We don't have results for this rtrans_idx yet */
-			if (!sechk_result_get_item(rtrans_idx, POL_LIST_TYPE, res)) {
-				item->next = res->items;
-				res->items = item;
-				(res->num_items)++;
-			}
-		}
-	}
-
-	mls_comp = ap_mls_level_compare(user->range->high, r_trans->range->high, policy);
-	if (mls_comp != AP_MLS_DOM && mls_comp != AP_MLS_EQ) {
-		proof = sechk_proof_new();
-		if (!proof) {
-			fprintf(stderr, "Error: out of memory\n");
-			return FALSE;
-		}
-		proof->idx = -1;
-		proof->type = POL_LIST_TYPE;
-		proof->text = build_bad_user_mls_proof_str(user, valid_roles, valid_roles_sz, r_trans, policy);
-		if (!proof->text) {
-			fprintf(stderr, "Error: unable to build proof element\n");
-			return FALSE;
-		}
-
-		if (res->num_items > 0) {
-			item = sechk_result_get_item(rtrans_idx, POL_LIST_TYPE, res);
-			if (!item) {
-				/* Result doesn't include this item; create new */
-				item = sechk_item_new();
-				if (!item) {
-					fprintf(stderr, "Error: out of memory\n");
-					return FALSE;
-				}
-				item->item_id = rtrans_idx;
-			}
-		} else {
-			item = sechk_item_new();
-			if (!item) {
-				fprintf(stderr, "Error: out of memory\n");
-				return FALSE;
-			}
-			item->item_id = rtrans_idx;
-		}
-		item->test_result |= SECHK_BAD_USER_MLS_HIGH;
-
-		proof->next = item->proof;
-		item->proof = proof;
-
-		if (res->num_items > 0) {
-			if (!sechk_result_get_item(rtrans_idx, POL_LIST_TYPE, res)) {
-				item->next = res->items;
-				res->items = item;
-				(res->num_items++);
-			}
-		} else {
-			item->next = res->items;
-			res->items = item;
-			(res->num_items)++;
-		}
-	}
-
-	return TRUE;
-}
-
-/*
- * Populates valid_roles with roles valid for type with index type_idx
- * Returns number of valid roles added on success 
- * Returns -1 on failure
- */
-static int get_valid_roles(int **valid_roles, int *valid_roles_sz, const int type_idx, apol_policy_t *policy)
-{
-	int role_no;
-	int *tmp_roles = NULL, tmp_roles_sz = 0;
-	bool_t found_role;
-
-	for (role_no = 0; role_no < policy->num_roles; role_no++) {
-		if (does_role_use_type(role_no, type_idx, policy)) {
-			found_role = TRUE;
-			if (add_i_to_a(role_no, &tmp_roles_sz, &tmp_roles) < 0) {
-				fprintf(stderr, "Error: out of memory\n");
-				return -1;
-			}
-		}
-	}	
-	
-	*valid_roles = tmp_roles;
-	*valid_roles_sz = tmp_roles_sz;
-	return *valid_roles_sz;
-	return 0;
-}
-
-/*
- * Finds users with roles in valid_roles.
- * Returns number of users if at least 1 user can be found
- * Returns -1 on error
- */
-static int get_valid_users(int **valid_users, int *valid_users_sz, const int *valid_roles, const int valid_roles_sz, bool_t *found_user, ap_mls_range_t *range, apol_policy_t *policy)
-{
-	int i, user_no, low_lvl_cmp, high_lvl_cmp;
-	int *tmp_users = NULL, tmp_users_sz = 0;
-	ap_user_t *user = NULL;
-
-	if (!range || !policy)
-		return -1;
-
-	/* Process each valid role */
-	for (i = 0; i < valid_roles_sz; i++) {
-		for (user_no = 0; user_no < policy->num_users; user_no++) {
-			if (does_user_have_role(user_no, valid_roles[i], policy)) {
-				*found_user = TRUE;
-					
-				/* Verify that used_user->range->low domby r_trans->range->low */
-				if (is_valid_user_idx(user_no, policy)) {
-					user = &(policy->users[user_no]);
-					if (!user) {
-						fprintf(stderr, "Error: invalid user\n");
-						return -1;
-					}
-					
-					/* Compare user range with original range transition */
-					low_lvl_cmp = ap_mls_level_compare(user->range->low, range->low, policy);
-					high_lvl_cmp = ap_mls_level_compare(user->range->high, range->high, policy);
-					
-					if ((low_lvl_cmp == AP_MLS_DOMBY || low_lvl_cmp == AP_MLS_EQ) &&
-					    (high_lvl_cmp == AP_MLS_DOM  || high_lvl_cmp == AP_MLS_EQ)) {
-						if (add_i_to_a(user_no, &tmp_users_sz, &tmp_users) < 0) {
-							fprintf(stderr, "Error: out of memory\n");
-							return -1;
-						}
-						*valid_users_sz = tmp_users_sz;
-					}
-				}
-			}
-		} /* end for - users */
-	} /* end for - roles */
-
-	*valid_users = tmp_users;
-	*valid_users_sz = tmp_users_sz;
-
-	return *valid_users_sz;
-	return 0;
-}
-
-/*
- * Verifies that a domain has execute perms
- * on a file object of a domain. 
- * Returns TRUE if domain src_idx has execute permissions
- *     on file objects in domain tgt_types
- * Returns FALSE otherwise
- */
-static bool_t has_exec_perms(ta_item_t *tgt_types, const int src_idx, const int file_idx, const int exec_idx, apol_policy_t *policy)
-{
-	ta_item_t *tgt = NULL;
-	avh_node_t *tmp_node = NULL;
-	avh_key_t key;
-	int retv;
-
-	for (tgt = tgt_types; tgt; tgt= tgt->next) {
-		key.src = src_idx;
-		key.tgt = tgt->idx;
-		key.cls = file_idx;
-		key.rule_type = RULE_TE_ALLOW;
-
-		for (tmp_node = avh_find_first_node(&(policy->avh), &key); tmp_node; tmp_node = tmp_node->next) {
-			retv = find_int_in_array(exec_idx, tmp_node->data, tmp_node->num_data);
-			if (retv > -1)
-				return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-#endif
-

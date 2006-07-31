@@ -14,6 +14,7 @@
 #include <apol/role-query.h>
 #include <apol/avrule-query.h>
 #include <apol/terule-query.h>
+#include <apol/type-query.h>
 
 /* The attribs_wo_rules_data structure is used to hold the check specific
  *  private data of a module. */

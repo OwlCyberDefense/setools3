@@ -6,10 +6,7 @@
  *
  */
 
-#include "sechecker.h"
-
 #include "inc_dom_trans.h"
-//#include "dta.h" FIXME
 
 #include <stdio.h>
 #include <string.h>
@@ -24,7 +21,6 @@ static const char *const mod_name = "inc_dom_trans";
  * with the library. */
 int inc_dom_trans_register(sechk_lib_t *lib)
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -32,8 +28,6 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: no library\n");
 		return -1;
 	}
-
-	library = lib;
 
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
@@ -43,6 +37,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
+	mod->parent_lib = lib;
 	
 	/* assign the descriptions */
 	mod->brief_description = "domains with partial transition permissions";
@@ -63,6 +58,9 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 "Module options:\n"
 "   none\n";
 	mod->severity = SECHK_SEV_MED;
+	/* Dependencies */
+	apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains"));
+
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -75,8 +73,10 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &inc_dom_trans_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -89,8 +89,10 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &inc_dom_trans_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -102,9 +104,11 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &inc_dom_trans_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &inc_dom_trans_data_free;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -117,8 +121,10 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &inc_dom_trans_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -131,20 +137,19 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &inc_dom_trans_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
-#endif
 	return 0;
 }
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int inc_dom_trans_init(sechk_module_t *mod, policy_t *policy)
+int inc_dom_trans_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
-	sechk_name_value_t *opt = NULL;
 	inc_dom_trans_data_t *datum = NULL;
 
 	if (!mod || !policy) {
@@ -152,45 +157,46 @@ int inc_dom_trans_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = inc_dom_trans_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		return -1;
 	}
 	mod->data = datum;
 
-	opt = mod->options;
-	while (opt) {
-		opt = opt->next;
-	}
-
-#endif
 	return 0;
 }
 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. */
-int inc_dom_trans_run(sechk_module_t *mod, policy_t *policy)
+int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	inc_dom_trans_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
-	int i, retv;
-	dta_table_t *table = NULL;
-	dta_trans_t *cur = NULL;
+	sechk_proof_t *proof = NULL;
+	size_t i, j, k, retv, error;
+        sechk_module_t *mod_ptr = NULL;
+        sechk_run_fn_t run_fn = NULL;
+        sechk_result_t *(*get_result_fn)(sechk_module_t *mod) = NULL;
+	sechk_result_t *find_domains_res = NULL;
+	apol_domain_trans_analysis_t *domain_trans;
+	apol_vector_t *domain_vector = NULL, *role_vector = NULL, *user_vector = NULL, *rbac_vector = NULL;
+	apol_user_query_t *user_query;
+	apol_role_trans_query_t *role_trans_query;
+	char *buff = NULL;
+	int buff_sz;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -201,155 +207,323 @@ int inc_dom_trans_run(sechk_module_t *mod, policy_t *policy)
 	datum = (inc_dom_trans_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		goto inc_dom_trans_run_fail;
 	}
-	res->item_type = SECHK_TYPE_DATUM;
+	res->item_type = SECHK_ITEM_TYPE;
+        if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, "%s\n", strerror(error));
+                goto inc_dom_trans_run_fail;
+        }
 
-	if (!avh_hash_table_present(policy->avh)) {
-		retv = avh_build_hashtab(policy);
-		if (retv) {
-			fprintf(stderr, "Error: could not build hash table\n");
-			goto inc_dom_trans_run_fail;
-		}
-	}
-
-	table = dta_table_new(policy);
-	if (!table) {
-		perror("creating transition table");
-		goto inc_dom_trans_run_fail;
-	}
-	retv = dta_table_build(table, policy);
-	if (retv) {
-		perror("building transition table");
+	if ( apol_policy_domain_trans_table_build(policy) < 0 ) {
+		ERR(policy, "Unable to build domain transition table");
 		goto inc_dom_trans_run_fail;
 	}
 
-	/* skip self (type 0) */
-	for (i = policy->num_types - 1; i; i--) {
-		retv = dta_table_get_all_trans(table, &(datum->trans_list), i);
-		if (retv) {
-			perror("finding transitions");
-			goto inc_dom_trans_run_fail;
-		}
-	}/* end foreach type */
-
-	/* filter out all valid transitions */
-	retv = dta_trans_filter_valid(&(datum->trans_list), 0);
-	if (retv) {
-		perror("filtering transitions");
+	if ( !(domain_trans = apol_domain_trans_analysis_create()) ) {
+		ERR(policy, "Out of memory");
 		goto inc_dom_trans_run_fail;
 	}
 
-	for (cur = datum->trans_list; cur; cur = cur->next) {
-		item = sechk_item_new();
-		if (!item) {
-			fprintf(stderr, "out of memory\n");
-			goto inc_dom_trans_run_fail;
-		}
-		item->item_ptr = cur;
-		if (cur->type_trans_rule != -1)
-			item->test_result |= SECHK_INC_DOM_TRANS_HAS_TT;
-		if (cur->ep_rules)
-			item->test_result |= SECHK_INC_DOM_TRANS_HAS_EP;
-		if (cur->exec_rules)
-			item->test_result |= SECHK_INC_DOM_TRANS_HAS_EXEC;
-		if (cur->proc_trans_rules)
-			item->test_result |= SECHK_INC_DOM_TRANS_HAS_TRANS;
-		item->proof = sechk_proof_new();
-		if (!item->proof) {
-			fprintf(stderr, "out of memory\n");
-			goto inc_dom_trans_run_fail;
-		}
-		item->proof->idx = -1;
-		item->proof->type = SECHK_TYPE_NONE;
-		/* other proof fields are not used and will be NULL */
-		item->next = res->items;
-		res->items = item;
-		res->num_items++;
+	if ( !(user_query = apol_user_query_create()) ) { 
+		ERR(policy, "Out of memory");
+		goto inc_dom_trans_run_fail;
+	}
+	
+	if ( !(role_trans_query = apol_role_trans_query_create()) ) { 
+		ERR(policy, "Out of memory");
+		goto inc_dom_trans_run_fail;
 	}
 
+        run_fn = sechk_lib_get_module_function("find_domains", SECHK_MOD_FN_RUN, mod->parent_lib);
+        if (!run_fn)
+                goto inc_dom_trans_run_fail;
+
+        retv = run_fn((mod_ptr = sechk_lib_get_module("find_domains", mod->parent_lib)), policy);
+        if (retv) {
+                fprintf(stderr, "Error: dependency failed\n");
+                goto inc_dom_trans_run_fail;
+        }
+
+        get_result_fn = sechk_lib_get_module_function("find_domains", "get_result", mod->parent_lib);
+        if ( !(find_domains_res = get_result_fn(mod_ptr)) ) {
+                fprintf(stderr, "Error: unable to get list\n");
+                goto inc_dom_trans_run_fail;
+        }
+
+	domain_vector = (apol_vector_t *)find_domains_res->items;
+
+	for (i=0;i<apol_vector_get_size(domain_vector);i++) {
+		sechk_item_t *item;
+		qpol_type_t *domain = NULL;
+		char *domain_name = NULL;
+		apol_vector_t *domain_trans_vector;
+
+		item = apol_vector_get_element(domain_vector, i);
+		domain = item->item;
+		qpol_type_get_name(policy->qh, policy->p, domain, &domain_name);
+		apol_domain_trans_analysis_set_start_type(policy, domain_trans, domain_name);
+		apol_domain_trans_analysis_set_direction(policy, domain_trans, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
+		apol_domain_trans_analysis_set_valid(policy, domain_trans, APOL_DOMAIN_TRANS_SEARCH_BOTH);
+		apol_domain_trans_analysis_do(policy, domain_trans, &domain_trans_vector);
+		
+		for (j=0;j<apol_vector_get_size(domain_trans_vector);j++) {
+			apol_domain_trans_result_t *dtr;
+			qpol_type_t *start;
+			qpol_type_t *ep;
+			qpol_type_t *end;
+			char *start_name;
+			char *end_name;
+			char *ep_name;
+			int result;
+			bool_t ok;
+
+			ok = FALSE;
+			dtr = apol_vector_get_element(domain_trans_vector, j);
+			start = apol_domain_trans_result_get_start_type(dtr);
+			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
+			end = apol_domain_trans_result_get_end_type(dtr);
+			qpol_type_get_name(policy->qh, policy->p, start, &start_name);
+			qpol_type_get_name(policy->qh, policy->p, end, &end_name);
+			qpol_type_get_name(policy->qh, policy->p, ep, &ep_name);
+
+			result = apol_domain_trans_table_verify_trans(policy, start, ep, end);
+			if ( !result ) {
+				apol_get_role_by_query(policy, NULL, &role_vector);
+				for (k=0; (k<apol_vector_get_size(role_vector)) && !ok; k++) {
+					qpol_role_t *role;
+					char *role_name;
+					
+					role = apol_vector_get_element(role_vector, k);
+					qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+					if ( apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end) ) {
+						apol_user_query_set_role(policy, user_query, role_name);
+						apol_get_user_by_query(policy, user_query, &user_vector);
+						if ( apol_vector_get_size(user_vector) > 0 ) {
+						 	ok = TRUE;
+						}
+					}
+				}
+				if (!ok) {	
+					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
+					apol_get_role_trans_by_query(policy, role_trans_query, &rbac_vector);
+					for ( k = 0; ( k < apol_vector_get_size(rbac_vector)) && !ok ; k++ ) {
+						qpol_role_trans_t *role_trans;
+						qpol_role_t *source_role;	
+						qpol_role_t *default_role;
+						char *source_role_name;
+						char *default_role_name;
+						
+						role_trans = apol_vector_get_element(rbac_vector, k);
+						qpol_role_trans_get_source_role(policy->qh, policy->p, role_trans, &source_role);
+						qpol_role_trans_get_default_role(policy->qh, policy->p, role_trans, &default_role);
+						qpol_role_get_name(policy->qh, policy->p, source_role, &source_role_name);
+						qpol_role_get_name(policy->qh, policy->p, default_role, &default_role_name);
+
+						if ( apol_role_has_type(policy, source_role, start) && 
+						     apol_role_has_type(policy, default_role, end) ) {
+							apol_user_query_set_role(policy, user_query, source_role_name);
+							apol_get_user_by_query(policy, user_query, &user_vector);
+							if ( apol_vector_get_size(user_vector) > 0 ) {
+								apol_user_query_set_role(policy, user_query, default_role_name);
+								apol_get_user_by_query(policy, user_query, &user_vector);
+								if ( apol_vector_get_size(user_vector) > 0 ) {
+									ok = TRUE;
+								}	
+							}
+						}
+					}
+				}
+				if ( !ok ) {
+	                                item = sechk_item_new(NULL);
+        	                        if ( !item ) {
+                	                        ERR(policy, "Out of memory");
+                	                        goto inc_dom_trans_run_fail;
+                	                }
+                	                item->test_result = 1;
+                	                item->item = (void *)dtr;
+                	                if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+                	                        ERR(policy, "Out of memory");
+                	                        goto inc_dom_trans_run_fail;
+                	                }
+				}
+			}
+			else  {
+				item = sechk_item_new(NULL);
+				if ( !item ) {
+					ERR(policy, "Out of memory");
+					goto inc_dom_trans_run_fail;
+				}
+				item->test_result = 1;
+				item->item = (void *)dtr;
+				if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+					ERR(policy, "Out of memory");
+					goto inc_dom_trans_run_fail;
+				}
+				if ( !(item->proof = apol_vector_create()) ) {
+					ERR(policy, "Out of memory");
+					goto inc_dom_trans_run_fail;
+				}
+
+				if ( result & APOL_DOMAIN_TRANS_RULE_PROC_TRANS ) {
+					proof = sechk_proof_new(NULL);
+					proof->type = SECHK_ITEM_OTHER;
+					buff = NULL;	
+					buff_sz = 10 + strlen("allow  : process transition;") + strlen(start_name) + strlen(end_name);
+					buff = (char *)calloc(buff_sz, sizeof(char));
+					if ( !buff ) {
+						ERR(policy, "Out of memory");
+						goto inc_dom_trans_run_fail;
+					}
+					snprintf(buff, buff_sz, "allow %s %s : process transition;", start_name, end_name);
+					proof->text = strdup(buff);
+					if ( !proof->text) {
+						ERR(policy, "Out of memory");
+						goto inc_dom_trans_run_fail;
+					}
+					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+						ERR(policy, "Out of memory");
+						goto inc_dom_trans_run_fail;
+					}
+				}
+
+                                if ( result & APOL_DOMAIN_TRANS_RULE_EXEC ) {
+                                        proof = sechk_proof_new(NULL);
+                                        proof->type = SECHK_ITEM_OTHER;
+                                        buff = NULL;
+                                        buff_sz = 10 + strlen("allow  : file execute;") + strlen(start_name) + strlen(ep_name);
+                                        buff = (char *)calloc(buff_sz, sizeof(char));
+                                        if ( !buff ) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                        snprintf(buff, buff_sz, "allow %s %s : file execute;", start_name, ep_name);
+                                        proof->text = strdup(buff);
+                                        if ( !proof->text) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                        if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                }
+
+                                if ( result & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT ) {
+                                        proof = sechk_proof_new(NULL);
+                                        proof->type = SECHK_ITEM_OTHER;
+                                        buff = NULL;
+                                        buff_sz = 10 + strlen("allow  : file entrypoint;") + strlen(end_name) + strlen(ep_name);
+                                        buff = (char *)calloc(buff_sz, sizeof(char));
+                                        if ( !buff ) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                        snprintf(buff, buff_sz, "allow %s %s : file entrypoint;", end_name, ep_name);
+                                        proof->text = strdup(buff);
+                                        if ( !proof->text) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                        if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                }
+
+                                if ( result & APOL_DOMAIN_TRANS_RULE_TYPE_TRANS ) {
+                                        proof = sechk_proof_new(NULL);
+                                        proof->type = SECHK_ITEM_OTHER;
+                                        buff = NULL;
+                                        buff_sz = 10 + strlen("type_transition  :process ;") + strlen(start_name) + strlen(end_name) + strlen(ep_name);
+                                        buff = (char *)calloc(buff_sz, sizeof(char));
+                                        if ( !buff ) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                        snprintf(buff, buff_sz, "type_transition %s %s : process %s;", start_name, ep_name, end_name);
+                                        proof->text = strdup(buff);
+                                        if ( !proof->text) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                        if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                }
+
+                                if ( result & APOL_DOMAIN_TRANS_RULE_SETEXEC ) {
+                                        proof = sechk_proof_new(NULL);
+                                        proof->type = SECHK_ITEM_OTHER;
+                                        buff = NULL;
+                                        buff_sz = 10 + strlen("allow  self : process setexec;") + strlen(start_name);
+                                        buff = (char *)calloc(buff_sz, sizeof(char));
+                                        if ( !buff ) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                        snprintf(buff, buff_sz, "allow %s self : process setexec;", start_name);
+                                        proof->text = strdup(buff);
+                                        if ( !proof->text) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                        if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+                                                ERR(policy, "Out of memory");
+                                                goto inc_dom_trans_run_fail;
+                                        }
+                                }
+			}
+		}
+	}
+			
 	mod->result = res;
 
-	/* If module finds something that would be considered a fail
-	 * on the policy return 1 here */
-	if (res->num_items > 0) {
-		dta_table_free(table);
-		free(table);
-		return 1;
-	}
-
-	dta_table_free(table);
-	free(table);
-#endif
 	return 0;
 
-#if 0
 inc_dom_trans_run_fail:
-	dta_table_free(table);
-	free(table);
 	sechk_item_free(item);
-	sechk_result_free(res);
 	return -1;
-#endif
 }
+
 /* The free function frees the private data of a module */
 void inc_dom_trans_data_free(void *data)
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
-	inc_dom_trans_data_t *datum;
-
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	datum = (inc_dom_trans_data_t*)mod->data;
-
-	if (datum) {
-		dta_trans_destroy(&(datum->trans_list));
-	}
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy) 
+int inc_dom_trans_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
 	inc_dom_trans_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	dta_trans_t *trans = NULL;
-	int i = 0;
+	int i = 0, j = 0, num_items;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = (inc_dom_trans_data_t*)mod->data;
 	outformat = mod->outputformat;
+	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+		ERR(policy, "Module has not been run");
 		return -1;
 	}
 
@@ -357,33 +531,32 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i incomplete transitions.\n", mod->result->num_items);
+		printf("Found %i incomplete transitions.\n", num_items);
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
 	if (outformat & SECHK_OUT_LIST) {
-		printf("\nStart Type\tEntrypoint\tEnd Type\tMissing Rules\n");
-		printf("----------\t----------\t--------\t-------------\n");
-		for (item = mod->result->items; item; item = item->next) {
-			i = 0;
-			trans = (dta_trans_t*)(item->item_ptr);
-			printf("%-15s %-15s %-15s ",
-				trans->start_type != -1? policy->types[trans->start_type].name:"none",
-				trans->ep_type != -1? policy->types[trans->ep_type].name:"none",
-				trans->end_type != -1? policy->types[trans->end_type].name:"none");
-			if (!(item->test_result & SECHK_INC_DOM_TRANS_HAS_TRANS)) {
-				printf("transition");
-				i++;
-			}
-			if (!(item->test_result & SECHK_INC_DOM_TRANS_HAS_EP)) {
-				printf("%sentrypoint", i?", ":"");
-				i++;
-			}
-			if (!(item->test_result & SECHK_INC_DOM_TRANS_HAS_EXEC)) {
-				printf("%sexecute", i?", ":"");
-				i++;
-			}
-			printf("\n");
+/*
+		printf("\nStart Type\t\tEntrypoint\t\tEnd Type\t\tMissing Rules\n");
+		printf("----------\t\t----------\t\t--------\t\t-------------\n");
+*/
+		printf("\n");
+		for (i=0;i<num_items;i++) {
+			qpol_type_t *start;
+			qpol_type_t *end;
+			qpol_type_t *ep;
+			char *start_name, *end_name, *ep_name;
+			apol_domain_trans_result_t *dtr;
+
+			item = apol_vector_get_element(mod->result->items, i);
+                        dtr = item->item;
+                        start = apol_domain_trans_result_get_start_type(dtr);
+                        ep = apol_domain_trans_result_get_entrypoint_type(dtr);
+                        end = apol_domain_trans_result_get_end_type(dtr);
+                        qpol_type_get_name(policy->qh, policy->p, start, &start_name);
+                        qpol_type_get_name(policy->qh, policy->p, end, &end_name);
+                        qpol_type_get_name(policy->qh, policy->p, ep, &ep_name);
+			printf("%s -> %s\tentrypoint: %s\n", start_name, end_name, ep_name);
 		}
 		printf("\n");
 	}
@@ -392,69 +565,33 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
 	 * of the check for that item (e.g. rules with a given type) */
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			trans = (dta_trans_t*)(item->item_ptr);
-			printf("From %s to %s via %s\n",
-				policy->types[trans->start_type].name,
-				trans->end_type != -1? policy->types[trans->end_type].name:"<<end_type>>",
-				trans->ep_type != -1? policy->types[trans->ep_type].name:"<<entrypoint_type>>");
-			printf("\t%s: allow %s %s : process transition; ",
-				(item->test_result & SECHK_INC_DOM_TRANS_HAS_TRANS)?"has":"missing",
-				policy->types[trans->start_type].name,
-				trans->end_type != -1? policy->types[trans->end_type].name:"<<end_type>>");
-			if (!is_binary_policy(policy)) {
-				if (trans->proc_trans_rules)
-					printf("[");
-				for (i = 0; i < trans->num_proc_trans_rules; i++) {
-					printf("%s%ld", i>0?", ":"", policy->av_access[trans->proc_trans_rules[i]].lineno);
-				}
-				if (trans->proc_trans_rules)
-					printf("]");
+		for (i=0;i<num_items;i++) {
+                        qpol_type_t *start;
+                        qpol_type_t *end;
+                        qpol_type_t *ep;
+                        char *start_name, *end_name, *ep_name;
+                        apol_domain_trans_result_t *dtr;
+
+			item = apol_vector_get_element(mod->result->items, i);
+			dtr = item->item;
+                        start = apol_domain_trans_result_get_start_type(dtr);
+                        ep = apol_domain_trans_result_get_entrypoint_type(dtr);
+                        end = apol_domain_trans_result_get_end_type(dtr);
+                        qpol_type_get_name(policy->qh, policy->p, start, &start_name);
+                        qpol_type_get_name(policy->qh, policy->p, end, &end_name);
+                        qpol_type_get_name(policy->qh, policy->p, ep, &ep_name);
+                        printf("%s -> %s\tentrypoint: %s\n\tMissing:\n", start_name, end_name, ep_name);
+			for (j=0;j<apol_vector_get_size(item->proof);j++) {
+				sechk_proof_t *proof;
+				
+				proof = apol_vector_get_element(item->proof, j);
+				if ( proof ) {
+					printf("\t%s\n", proof->text);
+				}		
 			}
-			printf("\n");
-			printf("\t%s: allow %s %s : file entrypoint; ",
-				(item->test_result & SECHK_INC_DOM_TRANS_HAS_EP)?"has":"missing",
-				trans->end_type != -1? policy->types[trans->end_type].name:"<<end_type>>",
-				trans->ep_type != -1? policy->types[trans->ep_type].name:"<<entrypoint_type>>");
-			if (!is_binary_policy(policy)) {
-				if (trans->ep_rules)
-					printf("[");
-				for (i = 0; i < trans->num_ep_rules; i++) {
-					printf("%s%ld", i>0?", ":"", policy->av_access[trans->ep_rules[i]].lineno);
-				}
-				if (trans->ep_rules)
-					printf("]");
-			}
-			printf("\n");
-			printf("\t%s: allow %s %s : file execute; ",
-				(item->test_result & SECHK_INC_DOM_TRANS_HAS_EXEC)?"has":"missing",
-				policy->types[trans->start_type].name,
-				trans->ep_type != -1? policy->types[trans->ep_type].name:"<<entrypoint_type>>");
-			if (!is_binary_policy(policy)) {
-				if (trans->exec_rules)
-					printf("[");
-				for (i = 0; i < trans->num_exec_rules; i++) {
-					printf("%s%ld", i>0?", ":"", policy->av_access[trans->exec_rules[i]].lineno);
-				}
-				if (trans->exec_rules)
-					printf("]");
-			}
-			printf("\n");
-			if (item->test_result & SECHK_INC_DOM_TRANS_HAS_TT) {
-				printf("\thas: type_transition %s %s : process %s; ",
-					policy->types[trans->start_type].name,
-					policy->types[trans->ep_type].name,
-					policy->types[trans->end_type].name);
-				if (!is_binary_policy(policy))
-					printf("[%ld]", policy->te_trans[trans->type_trans_rule].lineno);
-				printf("\n");
-			}
-			printf("\n");
 		}
-		printf("\n");
 	}
 
-#endif
 	return 0;
 }
 
@@ -462,7 +599,6 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *inc_dom_trans_get_result(sechk_module_t *mod) 
 {
-#if 0
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -474,8 +610,6 @@ sechk_result_t *inc_dom_trans_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 /* The inc_dom_trans_data_new function allocates and returns an
@@ -483,13 +617,9 @@ sechk_result_t *inc_dom_trans_get_result(sechk_module_t *mod)
  * module.  */
 inc_dom_trans_data_t *inc_dom_trans_data_new(void)
 {
-#if 0
 	inc_dom_trans_data_t *datum = NULL;
 
 	datum = (inc_dom_trans_data_t*)calloc(1,sizeof(inc_dom_trans_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
-

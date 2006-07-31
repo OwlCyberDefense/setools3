@@ -7,7 +7,13 @@
  */
 
 #include "sechecker.h"
-
+#include <apol/policy.h>
+#include <apol/role-query.h>
+#include <apol/user-query.h>
+#include <apol/rangetrans-query.h>
+#include <apol/rbacrule-query.h>
+#include <apol/domain-trans-analysis.h>
+#include <apol/policy-query.h>
 
 /* The imp_range_trans_data structure is used to hold the check specific
  *  private data of a module. */

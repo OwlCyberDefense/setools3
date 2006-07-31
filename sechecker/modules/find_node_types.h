@@ -12,6 +12,7 @@
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/context-query.h>
+#include <apol/netcon-query.h>
 
 /* The find_node_types_data structure is used to hold the check specific
  *  private data of a module. */
