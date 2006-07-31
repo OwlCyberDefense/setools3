@@ -63,5 +63,6 @@
 #include "domain-trans-analysis.h"
 #include "infoflow-analysis.h"
 #include "relabel-analysis.h"
+#include "types-relation-analysis.h"
 
 #endif
