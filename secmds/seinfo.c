@@ -37,6 +37,7 @@
 #include <qpol/policy_query.h>
 
 /* other */
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -758,7 +759,7 @@ static int print_sens(FILE *fp, const char *name, int expand, apol_policy_t *pol
 
 	query = apol_level_query_create();
 	if (!query) {
-		ERR(policydb, "Out of memory");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_level_query_set_sens(policydb, query, name))
@@ -822,7 +823,7 @@ static int print_cats(FILE *fp, const char *name, int expand, apol_policy_t *pol
 
 	query = apol_cat_query_create();
 	if (!query) {
-		ERR(policydb, "Out of memory");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_cat_query_set_cat(policydb, query, name))
@@ -879,7 +880,7 @@ static int print_fsuse(FILE *fp, const char *type, apol_policy_t *policydb)
 
 	query = apol_fs_use_query_create();
 	if (!query) {
-		ERR(policydb, "Out of memory");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_fs_use_query_set_filesystem(policydb, query, type))
@@ -933,7 +934,7 @@ static int print_genfscon(FILE *fp, const char *type, apol_policy_t *policydb)
 
 	query = apol_genfscon_query_create();
 	if (!query) {
-		ERR(policydb, "Out of memory");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -1046,7 +1047,7 @@ static int print_nodecon(FILE *fp, const char *addr, apol_policy_t *policydb)
 
 	query = apol_nodecon_query_create();
 	if (!query) {
-		ERR(policydb, "Out of memory");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -1054,7 +1055,7 @@ static int print_nodecon(FILE *fp, const char *addr, apol_policy_t *policydb)
 	if (addr) {
 		protocol = apol_str_to_internal_ip(addr, address);
 		if (protocol < 0) {
-			ERR(policydb, "Unable to parse IP address");
+			ERR(policydb, "%s", "Unable to parse IP address");
 			goto cleanup;
 		}
 		if (apol_nodecon_query_set_addr(policydb, query, address, protocol))
@@ -1198,7 +1199,7 @@ static int print_isids(FILE *fp, const char *name, int expand, apol_policy_t *po
 
 	query = apol_isid_query_create();
 	if (!query) {
-		ERR(policydb, "Out of memory");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_isid_query_set_name(policydb, query, name))
@@ -1747,7 +1748,7 @@ static void print_cat_sens(FILE *fp, qpol_cat_t *cat_datum, apol_policy_t *polic
 
 	query = apol_level_query_create();
 	if (!query) {
-		ERR(policydb, "Out of memory");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_level_query_set_cat(policydb, query, cat_name))

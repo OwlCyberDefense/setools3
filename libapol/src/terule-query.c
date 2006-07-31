@@ -90,7 +90,7 @@ int apol_get_terule_by_query(apol_policy_t *p,
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -192,7 +192,7 @@ int apol_get_terule_by_query(apol_policy_t *p,
 		}
 
 		if (apol_vector_append(*v, rule)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -285,7 +285,7 @@ int apol_terule_query_append_class(apol_policy_t *p,
 	else if ((s = strdup(obj_class)) == NULL ||
 	    (t->classes == NULL && (t->classes = apol_vector_create()) == NULL) ||
 	    apol_vector_append(t->classes, s) < 0) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	return 0;
@@ -340,12 +340,12 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		return NULL;
 	}
 	if (!(rule_type &= (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER))) {
-		ERR(policy, "Invalid type rule type");
+		ERR(policy, "%s", "Invalid type rule type");
 		errno = EINVAL;
 		return NULL;
 	}
 	if (!(tmp_name = (char*)apol_rule_type_to_str(rule_type))) {
-		ERR(policy, "Type rule has multiple rule types?");
+		ERR(policy, "%s", "Type rule has multiple rule types?");
 		errno = EINVAL;
 		return NULL;
 	}

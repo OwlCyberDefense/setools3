@@ -30,6 +30,8 @@
 
 #include "policy-query-internal.h"
 
+#include <errno.h>
+
 struct apol_bool_query {
 	char *bool_name;
 	unsigned int flags;
@@ -49,7 +51,7 @@ int apol_get_bool_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -73,7 +75,7 @@ int apol_get_bool_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, bool)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}

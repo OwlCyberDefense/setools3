@@ -30,6 +30,8 @@
 
 #include "policy-query-internal.h"
 
+#include <errno.h>
+
 struct apol_role_query {
 	char *role_name, *type_name;
 	unsigned int flags;
@@ -49,7 +51,7 @@ int apol_get_role_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -99,7 +101,7 @@ int apol_get_role_by_query(apol_policy_t *p,
 		}
 	end_of_query:
 		if (append_role && apol_vector_append(*v, role)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}

@@ -25,10 +25,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <apol/policy.h>
-#include <apol/util.h>
 #include "apol_tcl_other.h"
 
+#include <apol/policy.h>
+#include <apol/util.h>
+
+#include <errno.h>
 #include <tcl.h>
 
 int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj **obj) {
@@ -187,11 +189,11 @@ static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a level to render.");
+		ERR(policydb, "%s", "Need a level to render.");
 		goto cleanup;
 	}
 	if ((level = apol_mls_level_create()) == NULL) {
-		ERR(policydb, "Out of memory.");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	retval2 = apol_tcl_string_to_level(interp, argv[1], level);
@@ -245,11 +247,11 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int arg
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a context.");
+		ERR(policydb, "%s", "Need a context.");
 		goto cleanup;
 	}
 	if ((context = apol_context_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_tcl_string_to_context(interp, argv[1], context) < 0) {
@@ -303,7 +305,7 @@ static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need an avrule identifier.");
+		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
 	o = Tcl_NewStringObj(argv[1], -1);
@@ -348,7 +350,7 @@ static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, in
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need an avrule identifier.");
+		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
 	o = Tcl_NewStringObj(argv[1], -1);
@@ -394,7 +396,7 @@ static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, in
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need an avrule identifier.");
+		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
 	o = Tcl_NewStringObj(argv[1], -1);
@@ -440,7 +442,7 @@ static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need an avrule identifier.");
+		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
 	o = Tcl_NewStringObj(argv[1], -1);
@@ -485,7 +487,7 @@ static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need an avrule identifier.");
+		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
 	o = Tcl_NewStringObj(argv[1], -1);
@@ -544,7 +546,7 @@ static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int argc
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need an avrule identifier.");
+		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
 	o = Tcl_NewStringObj(argv[1], -1);

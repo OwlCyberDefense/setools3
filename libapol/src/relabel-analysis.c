@@ -149,7 +149,7 @@ static apol_relabel_result_t *relabel_result_get_node(apol_policy_t *p,
 	    (result->both = apol_vector_create()) == NULL ||
 	    apol_vector_append(v, result) < 0) {
 		apol_relabel_result_free(result);
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	result->type = type;
@@ -193,19 +193,19 @@ static int append_avrule_to_result(apol_policy_t *p,
 	switch (dir) {
 	case APOL_RELABEL_DIR_TO:
 		if ((apol_vector_append(result->to, avrule)) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		break;
 	case APOL_RELABEL_DIR_FROM:
 		if ((apol_vector_append(result->from, avrule)) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		break;
 	case APOL_RELABEL_DIR_BOTH:
 		if ((apol_vector_append(result->both, avrule)) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		break;
@@ -237,7 +237,7 @@ static apol_vector_t *relabel_analysis_get_type_vector(apol_policy_t *p,
 	int retval = -1;
 
 	if ((types = apol_vector_create_with_capacity(apol_vector_get_size(v))) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -385,7 +385,7 @@ static int relabel_analysis_matchup(apol_policy_t *p,
 			}
 			if (apol_vector_append(result->to, a_avrule) < 0 ||
 			    apol_vector_append(result->from, b_avrule) < 0) {
-				ERR(p, "Out of memory");
+				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 		}
@@ -432,7 +432,7 @@ static int relabel_analysis_object(apol_policy_t *p,
 	}
 
 	if ((a = apol_avrule_query_create()) == NULL) {
-	    ERR(p, "Out of memory!");
+	    ERR(p, "%s", strerror(ENOMEM));
 	    goto cleanup;
 	}
 	if (apol_avrule_query_set_rules(p, a, QPOL_RULE_ALLOW) < 0 ||
@@ -450,7 +450,7 @@ static int relabel_analysis_object(apol_policy_t *p,
 	}
 
 	if ((b = apol_avrule_query_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_avrule_query_set_rules(p, b, QPOL_RULE_ALLOW) < 0 ||
@@ -503,7 +503,7 @@ static int relabel_analysis_subject(apol_policy_t *p,
 	int retval = -1;
 
 	if ((a = apol_avrule_query_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_avrule_query_set_rules(p, a, QPOL_RULE_ALLOW) < 0 ||
@@ -550,7 +550,7 @@ int apol_relabel_analysis_do(apol_policy_t *p,
 	*v = NULL;
 
 	if (r->mode == 0 || r->type == NULL) {
-		ERR(p, strerror(EINVAL));
+		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
 	if (apol_query_get_type(p, r->type, &start_type) < 0) {
@@ -558,7 +558,7 @@ int apol_relabel_analysis_do(apol_policy_t *p,
 	}
 
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -627,7 +627,7 @@ int apol_relabel_analysis_set_dir(apol_policy_t *p,
 		break;
 	}
 	default: {
-		ERR(p, strerror(EINVAL));
+		ERR(p, "%s", strerror(EINVAL));
 		return -1;
 	}
 	}
@@ -639,7 +639,7 @@ int apol_relabel_analysis_set_type(apol_policy_t *p,
 				   const char *name)
 {
 	if (name == NULL) {
-		ERR(p, strerror(EINVAL));
+		ERR(p, "%s", strerror(EINVAL));
 		return -1;
 	}
 	return apol_query_set(p, &r->type, NULL, name);
@@ -656,7 +656,7 @@ int apol_relabel_analysis_append_class(apol_policy_t *p,
 	else if ((s = strdup(obj_class)) == NULL ||
 	    (r->classes == NULL && (r->classes = apol_vector_create()) == NULL) ||
 	    apol_vector_append(r->classes, s) < 0) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	return 0;
@@ -673,7 +673,7 @@ int apol_relabel_analysis_append_subject(apol_policy_t *p,
 	else if ((s = strdup(subject)) == NULL ||
 	    (r->subjects == NULL && (r->subjects = apol_vector_create()) == NULL) ||
 	    apol_vector_append(r->subjects, s) < 0) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	return 0;

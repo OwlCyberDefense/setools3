@@ -23,11 +23,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "policy-query-internal.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "policy-query-internal.h"
 #include <apol/render.h>
 #include <apol/util.h>
 
@@ -43,7 +44,7 @@ static char *apol_strdup(apol_policy_t *p, const char *s)
 {
 	char *t;
 	if ((t = malloc(strlen(s) + 1)) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	return strcpy(t, s);
@@ -64,7 +65,7 @@ apol_context_t *apol_context_create_from_qpol_context(apol_policy_t *p, qpol_con
 	char *user_name, *role_name, *type_name;
 	apol_mls_range_t *apol_range = NULL;
 	if ((c = apol_context_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto err;
 	}
 	if (qpol_context_get_user(p->qh, p->p, context, &user) < 0 ||
@@ -162,7 +163,7 @@ int apol_context_compare(apol_policy_t *p,
 {
 	uint32_t value0, value1;
 	if (p == NULL || target == NULL || search == NULL) {
-		ERR(p, "Invalid argument.");
+		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -228,7 +229,7 @@ int apol_context_validate(apol_policy_t *p,
 	    context->role == NULL ||
 	    context->type == NULL ||
 	    (apol_policy_is_mls(p) && context->range == NULL)) {
-		ERR(p, "Invalid argument.");
+		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -252,7 +253,7 @@ int apol_context_validate_partial(apol_policy_t *p,
 	}
 	if (context->user != NULL) {
 		if ((user_query = apol_user_query_create()) == NULL) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 		}
 		if (apol_user_query_set_user(p, user_query, context->user) < 0 ||
 		    (context->role != NULL && apol_user_query_set_role(p, user_query, context->role) < 0) ||
@@ -266,7 +267,7 @@ int apol_context_validate_partial(apol_policy_t *p,
 	}
 	if (context->role != NULL) {
 		if ((role_query = apol_role_query_create()) == NULL) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 		}
 		if (apol_role_query_set_role(p, role_query, context->role) < 0 ||
 		    (context->type != NULL && apol_role_query_set_type(p, role_query, context->type) < 0) ||
@@ -298,7 +299,7 @@ int apol_context_validate_partial(apol_policy_t *p,
 			}
 			user_apol_range = apol_mls_range_create_from_qpol_mls_range(p, user_range);
 			if (user_apol_range == NULL) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			retval2 = apol_mls_range_compare(p, user_apol_range, context->range, APOL_QUERY_SUB);
@@ -326,16 +327,16 @@ char *apol_context_render(apol_policy_t *p, apol_context_t *context)
 	/* render context */
 	if (apol_str_append(&buf, &buf_sz, context->user) != 0 ||
             apol_str_append(&buf, &buf_sz, ":") != 0) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto err_return;
 	}
 	if (apol_str_append(&buf, &buf_sz, context->role) != 0 ||
 	    apol_str_append(&buf, &buf_sz, ":") != 0) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto err_return;
 	}
 	if(apol_str_append(&buf, &buf_sz, context->type) != 0) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto err_return;
 	}
 	/* render range */
@@ -345,7 +346,7 @@ char *apol_context_render(apol_policy_t *p, apol_context_t *context)
                 }
                 if (apol_str_append(&buf, &buf_sz, ":") ||
                     apol_str_append(&buf, &buf_sz, range_str) != 0) {
-                        ERR(p, "Out of memory!");
+                        ERR(p, "%s", strerror(ENOMEM));
                         goto err_return;
                 }
 	}

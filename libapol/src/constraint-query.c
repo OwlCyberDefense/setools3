@@ -30,6 +30,7 @@
  */
 
 #include "policy-query-internal.h"
+#include <errno.h>
 #include <string.h>
 
 struct apol_constraint_query {
@@ -57,7 +58,7 @@ int apol_get_constraint_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -98,7 +99,7 @@ int apol_get_constraint_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, constraint)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -158,7 +159,7 @@ int apol_get_validatetrans_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -185,7 +186,7 @@ int apol_get_validatetrans_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, validatetrans)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}

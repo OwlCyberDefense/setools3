@@ -30,6 +30,8 @@
 
 #include "policy-query-internal.h"
 
+#include <errno.h>
+
 struct apol_isid_query {
         char *name;
         apol_context_t *context;
@@ -50,7 +52,7 @@ int apol_get_isid_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -80,7 +82,7 @@ int apol_get_isid_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, isid)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}

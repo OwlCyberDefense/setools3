@@ -23,10 +23,11 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <tcl.h>
-
 #include "apol_tcl_other.h"
 #include "apol_tcl_render.h"
+
+#include <tcl.h>
+#include <errno.h>
 
 /**
  * Takes a Tcl typeset list (e.g., "{foo 1}") and splits in into its
@@ -67,7 +68,7 @@ static int apol_tcl_string_to_typeset(Tcl_Interp *interp,
 	else {
 		*sym_name = strdup(s);
 		if (*sym_name == NULL) {
-			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+			Tcl_SetResult(interp, strerror(ENOMEM), TCL_STATIC);
 			return -1;
 		}
 	}
@@ -197,13 +198,13 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 		goto cleanup;
 	}
 	if (argc != 8) {
-		ERR(policydb, "Need a rule selection, other options, source type, target type, default type, classes, and permissions");
+		ERR(policydb, "%s", "Need a rule selection, other options, source type, target type, default type, classes, and permissions");
 		goto cleanup;
 	}
 
 	if ((avquery = apol_avrule_query_create()) == NULL ||
 	    (tequery = apol_terule_query_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -565,12 +566,12 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
 		goto cleanup;
 	}
 	if (argc != 4) {
-		ERR(policydb, "Need a rule selection, other options, and boolean name.");
+		ERR(policydb, "%s", "Need a rule selection, other options, and boolean name.");
 		goto cleanup;
 	}
 
 	if ((query = apol_cond_query_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -784,7 +785,7 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int a
 		goto cleanup;
 	}
 	if (argc != 6) {
-		ERR(policydb, "Need a rule selection, other options, source role, target role/type, and default role.");
+		ERR(policydb, "%s", "Need a rule selection, other options, source role, target role/type, and default role.");
 		goto cleanup;
 	}
 
@@ -795,13 +796,13 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int a
 		CONST char *s = rule_strings[num_opts];
 		if (strcmp(s, "allow") == 0) {
 			if ((raquery = apol_role_allow_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 		}
 		else if (strcmp(s, "role_transition") == 0) {
 			if ((rtquery = apol_role_trans_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 		}
@@ -965,12 +966,12 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
                 goto cleanup;
         }
         if (argc != 5) {
-                ERR(policydb, "Need a source type, target type, range, and range type.");
+                ERR(policydb, "%s", "Need a source type, target type, range, and range type.");
                 goto cleanup;
         }
 
 	if ((query = apol_range_trans_query_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -985,7 +986,7 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
 			goto cleanup;
 		}
 		if ((range = apol_mls_range_create()) == NULL) {
-			ERR(policydb, "Out of memory!");
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if (apol_tcl_string_to_range(interp, argv[3], range) != 0 ||

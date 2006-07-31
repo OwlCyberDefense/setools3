@@ -90,7 +90,7 @@ int sechk_lib_set_minsev(const char *minsev, sechk_lib_t *lib)
 	else if (strcmp(minsev, SECHK_SEV_HIGH) == 0)
 		lib->minsev = SECHK_SEV_HIGH;
 	else {
-		ERR(lib->policy, "Error: invalid severity\n");
+		ERR(lib->policy, "%s", "Invalid severity.");
 		errno = EINVAL;
 		return -1;
 	}
@@ -809,7 +809,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 
 		unsigned int ver; 
 		if (qpol_policy_get_policy_version(lib->policy->qh, lib->policy->p, &ver) < 0) {
-			ERR(lib->policy, "Error: unable to get policy version\n");
+			ERR(lib->policy, "%s", "Unable to get policy version.");
 			return FALSE;
 		}
 		if (ver < pol_ver) {
