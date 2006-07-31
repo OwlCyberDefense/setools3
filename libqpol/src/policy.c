@@ -878,36 +878,29 @@ err:
 
 }
 
-int qpol_close_policy(qpol_policy_t **policy)
+void qpol_policy_destroy(qpol_policy_t **policy)
 {
 	if (policy == NULL) {
 		errno = EINVAL;
-		return STATUS_ERR;
 	}
-
-	if (*policy == NULL)
-		return STATUS_SUCCESS;
-
-	sepol_policydb_free((*policy)->p);
-	qpol_extended_image_destroy(&((*policy)->ext));
-	free(*policy);
-	*policy = NULL;
-	return STATUS_SUCCESS;
-
+	else if (*policy != NULL) {
+		sepol_policydb_free((*policy)->p);
+		qpol_extended_image_destroy(&((*policy)->ext));
+		free(*policy);
+		*policy = NULL;
+	}
 }
 
-int qpol_handle_destroy(qpol_handle_t **handle)
+void qpol_handle_destroy(qpol_handle_t **handle)
 {
 	if (handle == NULL) {
 		errno = EINVAL;
-		return STATUS_ERR;
 	}
-
-	sepol_handle_destroy((*handle)->sh);
-	free(*handle);
-	*handle = NULL;
-
-	return STATUS_SUCCESS;
+	else if (*handle != NULL) {
+		sepol_handle_destroy((*handle)->sh);
+		free(*handle);
+		*handle = NULL;
+	}
 }
 
 int qpol_policy_reevaluate_conds(qpol_handle_t *handle, qpol_policy_t *policy)
@@ -956,4 +949,3 @@ int qpol_policy_reevaluate_conds(qpol_handle_t *handle, qpol_policy_t *policy)
 
 	return STATUS_SUCCESS;
 }
-
