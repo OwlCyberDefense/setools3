@@ -104,20 +104,19 @@ extern int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *file
 					qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg);
 
 /**
- *  Close a policy.
- *  @param policy The policy to close.
- *  @return Returns 0 on success and < 0 on failure; if the call fails,
- *  errno will be set.
+ *  Close a policy and deallocate its memory.  Does nothing if it is
+ *  already NULL.
+ *  @param policy Reference to the policy to close.  The pointer will
+ *  be set to NULL afterwards.
  */
-extern int qpol_close_policy(qpol_policy_t **policy);
+extern void qpol_policy_destroy(qpol_policy_t **policy);
 
 /**
- *  Destroy the handle.
- *  @param handle The handle to destroy.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set.
+ *  Destroy the handle.  Does nothing if it is already NULL.
+ *  @param handle Reference to the handle to destroy.  The pointer
+ *  will be set to NULL afterwards.
  */
-extern int qpol_handle_destroy(qpol_handle_t **handle);
+extern void qpol_handle_destroy(qpol_handle_t **handle);
 
 /**
  *  Find the default policy file given a policy type. 
