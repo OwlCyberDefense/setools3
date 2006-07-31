@@ -95,7 +95,7 @@ int apol_policy_open(const char *path, apol_policy_t **policy)
 void apol_policy_destroy(apol_policy_t **policy)
 {
 	if (policy != NULL && *policy != NULL) {
-		qpol_close_policy(&((*policy)->p));
+		qpol_policy_destroy(&((*policy)->p));
 		qpol_handle_destroy(&((*policy)->qh));
 		apol_permmap_destroy(&(*policy)->pmap);
 		free(*policy);
