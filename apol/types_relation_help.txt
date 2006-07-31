@@ -27,7 +27,7 @@ Common Roles: the roles to which both types are assigned.
 Common Users: the users allowed associate with roles to which both
 types are assigned.
 
-Common Access to Resources: object types to which both types have
+Similar Access to Resources: object types to which both types have
 some access.
 
 Dissimilar Access to Resources: object types to which one type has

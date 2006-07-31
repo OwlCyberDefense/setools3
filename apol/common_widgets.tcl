@@ -81,16 +81,17 @@ proc Apol_Widget::makeTypeCombobox {path args} {
     set vars($path:attrib) ""
 
     set f [frame $path]
-    set type_box [eval ComboBox $f.tb $args -helptext {{Type or select a type}} \
+    set type_box [eval ComboBox $f.tb -helptext {{Type or select a type}} \
                       -textvariable Apol_Widget::vars($path:type) \
-                      -entrybg white -width 20 -autopost 1]
+                      -entrybg white -width 20 -autopost 1 $args]
     pack $type_box -side top -expand 1 -fill x
 
+    set attrib_width [expr {[$type_box cget -width] - 4}]
     set attrib_enable [checkbutton $f.ae \
                            -anchor w -text "Filter by attribute"\
                            -variable Apol_Widget::vars($path:attribenable) \
                            -command [list Apol_Widget::_attrib_enabled $path]]
-    set attrib_box [ComboBox $f.ab -autopost 1 -entrybg white -width 16 \
+    set attrib_box [ComboBox $f.ab -autopost 1 -entrybg white -width $attrib_width \
                         -textvariable Apol_Widget::vars($path:attrib)]
     trace add variable Apol_Widget::vars($path:attrib) write [list Apol_Widget::_attrib_changed $path]
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2

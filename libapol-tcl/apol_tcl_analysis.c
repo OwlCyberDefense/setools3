@@ -94,7 +94,7 @@ static int apol_infoflow_graph_to_tcl_obj(Tcl_Interp *interp, apol_infoflow_grap
 /**
  * Given a Tcl object, retrieve the infoflow_tcl_t stored within.  If
  * the object is not already an infoflow_tcl_obj_type or if its cache
- * has been marked as invalid, shimmer it an infoflow_tcl_obj_type,
+ * has been marked as invalid, shimmer it to an infoflow_tcl_obj_type,
  * fetch the graph from the hash table, and then update the object's
  * cache.
  *
@@ -1204,7 +1204,6 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
  *   <li>list of subject types to include
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
- *
  */
 static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
                                 int argc, CONST char *argv[])
@@ -1303,6 +1302,76 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 	return retval;
 }
 
+/**
+ * Return a sorted results list for a two types relationship analysis.
+ * Each element corresponds to a sublist of results after running each
+ * individual sub-analysis.  If the sub-analysis was not selected
+ * within the list at argv[3] then its entry in the results list will
+ * be an empty list.  The results list consists of sublists:
+ * <ol>
+ *   <li>list of attribute strings
+ *   <li>list of role strings
+ *   <li>list of user strings
+ *   <li>list of similar accesses
+ *   <li>two lists of dissimilar accesses
+ *   <li>list of allow rules
+ *   <li>list of type transition/change rules
+ * </ol>
+ *
+ * A similar/dissimilar access result is a tuple of:
+ * <ul>
+ *   <li>type name
+ *   <li>list of allow rules
+ * </ul>
+ * For the similar sub-list there will be an equal number of access
+ * results for the two types.
+ *
+ * Rules are unique identifiers (relative to currently loaded policy).
+ * Call [apol_RenderAVRule] or [apol_RenderTERule] to display them.
+ *
+ * @param argv This fuction takes three parameters:
+ * <ol>
+ *   <li>first type to compare
+ *   <li>other type to compare
+ *   <li>list of analyzes to run, from the list "attribs", "roles",
+ *       "users", "similars", "dissimilars", "allows", "trans",
+ *       "direct", "transAB", "transBA", "domainAB", and "domainBA"
+ * </ol>
+ */
+static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp,
+					  int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	CONST char **analyses_strings = NULL;
+	int num_opts;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 4) {
+		ERR(policydb, "Need a type, another type, and list of analyzes.");
+		goto cleanup;
+	}
+	if (Tcl_SplitList(interp, argv[3], &num_opts, &analyses_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = analyses_strings[num_opts];
+	}
+	retval = TCL_OK;
+ cleanup:
+	if (analyses_strings != NULL) {
+		Tcl_Free((char *) analyses_strings);
+	}
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
 int apol_tcl_analysis_init(Tcl_Interp *interp)
 {
 	Tcl_InitHashTable(&infoflow_htable, TCL_STRING_KEYS);
@@ -1317,799 +1386,6 @@ int apol_tcl_analysis_init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_TransInformationFurtherNext", Apol_TransInformationFurtherNext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_InformationFlowDestroy", Apol_InformationFlowDestroy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
-        /*
-	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsStart", Apol_TransitiveFindPathsStart, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsNext", Apol_TransitiveFindPathsNext, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsGetResults", Apol_TransitiveFindPathsGetResults, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsAbort", Apol_TransitiveFindPathsAbort, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TypesRelationshipAnalysis", Apol_TypesRelationshipAnalysis, NULL, NULL);
-        */
         return TCL_OK;
 }
-#if 0
-
-/******************** types relationship analysis ********************/
-
-/* argv[18] - flag (boolean value) for indicating that a list of object classes are being provided to the DTA query.
- * argv[19] - number of object classes that are to be included in the DTA query.
- * argv[20] - list of object classes/permissions for the DTA query.
- * argv[21] - flag (boolean value) for selecting object type(s) in the DTA query.
- * argv[22] - list of object types for the DTA query.
- */
-static int types_relation_get_dta_options(dta_query_t *dta_query, Tcl_Interp *interp, CONST char *argv[], policy_t *policy)
-{
-	int rt, num_objs, num_objs_options, num_end_types, i, j;
-	int cur, type;
-	int num_obj_perms, obj, perm;
-	CONST char **obj_class_perms, **end_types;
-	bool_t filter_obj_classes, filter_end_types;
-
-	assert(dta_query != NULL);
-	filter_obj_classes = getbool(argv[18]);
-	filter_end_types = getbool(argv[21]);
-	rt = Tcl_GetInt(interp, argv[19], &num_objs);
-	if (rt == TCL_ERROR) {
-		Tcl_AppendResult(interp, "argv[19] apparently not an integer", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	if(filter_obj_classes) {
-		/* Second, disassemble list of object class permissions, returning an array of pointers to the elements. */
-		rt = Tcl_SplitList(interp, argv[20], &num_objs_options, &obj_class_perms);
-		if (rt != TCL_OK) {
-			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			return TCL_ERROR;
-		}
-
-		if (num_objs_options < 1) {
-			Tcl_AppendResult(interp, "Must provide object class permissions.", (char *) NULL);
-			Tcl_Free((char *) obj_class_perms);
-			return TCL_ERROR;
-		}
-	}
-
-	if (filter_end_types) {
-		/* First, disassemble TCL intermediate types list, returning an array of pointers to the elements. */
-		rt = Tcl_SplitList(interp, argv[22], &num_end_types, &end_types);
-		if (rt != TCL_OK) {
-			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			return TCL_ERROR;
-		}
-
-		if (num_end_types < 1) {
-			Tcl_AppendResult(interp, "Must provide at least one end type.", (char *) NULL);
-			Tcl_Free((char *) end_types);
-			return TCL_ERROR;
-		}
-	}
-
-	if(filter_obj_classes && obj_class_perms != NULL) {
-		assert(num_objs > 0);
-		cur = 0;
-		/* Set the object classes permission info */
-		/* Keep in mind that this is an encoded TCL list in the form
-		 * "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
-		for (i = 0; i < num_objs; i++) {
-			obj = get_obj_class_idx(obj_class_perms[cur], policy);
-			if (obj < 0) {
-				Tcl_AppendResult(interp, "Invalid object class:\n", obj_class_perms[cur], (char *) NULL);
-				Tcl_Free((char *) obj_class_perms);
-				return TCL_ERROR;
-			}
-			/* Increment to next element, which should be the number of specified permissions for the class */
-			cur++;
-			rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
-			if (rt == TCL_ERROR) {
-				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-			if (num_obj_perms == 0) {
-				fprintf(stderr, "No permissions for object: %s. Skipping...\n", obj_class_perms[cur - 1]);
-				continue;
-			}
-
-			for (j = 0; j < num_obj_perms; j++) {
-				cur++;
-				perm = get_perm_idx(obj_class_perms[cur], policy);
-				if (perm < 0 || !is_valid_perm_for_obj_class(policy, obj, perm)) {
-					fprintf(stderr, "Invalid object class permission\n");
-					continue;
-				}
-				if (dta_query_add_obj_class_perm(dta_query, obj, perm) == -1) {
-					Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
-					return TCL_ERROR;
-				}
-			}
-			cur++;
-		}
-		Tcl_Free((char *) obj_class_perms);
-	}
-
-	if (filter_end_types) {
-		/* Set intermediate type info */
-		for (i = 0; i < num_end_types; i++) {
-			type = get_type_idx(end_types[i], policy);
-			if (type < 0) {
-				/* This is an invalid ending type, so ignore */
-				continue;
-			}
-			if (dta_query_add_end_type(dta_query, type) != 0) {
-				Tcl_AppendResult(interp, "Memory error!\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-		}
-		Tcl_Free((char *) end_types);
-	}
-
-	return TCL_OK;
-}
-
-/* argv[13] - (boolean value) for indicating that a list of transitive flow object classes are being provided to the TIF query.
- * argv[14] - number of object classes that are to be included in the transitive flow query.
- * argv[15] - encoded list of object class/permissions to include in the the transitive flow query.
- * argv[16] - flag (boolean value) for indicating whether or not to include intermediate types in the
- *	      the transitive flow query.
- * argv[17] - TCL list of intermediate types for the transitive flow analysis
- * NOTE: IF SEARCHING TRANSITIVE FLOWS, THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!!
- *	 If, not it will throw an error.
- */
-static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query, Tcl_Interp *interp, CONST char *argv[], policy_t *policy)
-{
-	int num_objs, num_obj_perms, num_objs_options, obj, perm;
-	int num_inter_types, type;
-	int i, j, rt, cur;
-	CONST char **obj_class_perms = NULL, **inter_types = NULL;
-	bool_t filter_obj_classes, filter_inter_types;
-
-	assert(trans_flow_query != NULL);
-	if(policy->pmap == NULL) {
-		Tcl_AppendResult(interp,"No permission map loaded for Transitive Flow Analysis!", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	filter_obj_classes = getbool(argv[13]);
-	filter_inter_types = getbool(argv[16]);
-	rt = Tcl_GetInt(interp, argv[14], &num_objs);
-	if (rt == TCL_ERROR) {
-		Tcl_AppendResult(interp,"argv[14] apparently not an integer", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	if (filter_obj_classes) {
-		/* Second, disassemble list of object class permissions, returning an array of pointers to the elements. */
-		rt = Tcl_SplitList(interp, argv[15], &num_objs_options, &obj_class_perms);
-		if (rt != TCL_OK) {
-			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			return TCL_ERROR;
-		}
-
-		if (num_objs_options < 1) {
-			Tcl_AppendResult(interp, "Must provide object class permissions.", (char *) NULL);
-			Tcl_Free((char *) obj_class_perms);
-			return TCL_ERROR;
-		}
-	}
-
-	if (filter_inter_types) {
-		/* First, disassemble TCL intermediate types list, returning an array of pointers to the elements. */
-		rt = Tcl_SplitList(interp, argv[17], &num_inter_types, &inter_types);
-		if (rt != TCL_OK) {
-			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			return TCL_ERROR;
-		}
-
-		if (num_inter_types < 1) {
-			Tcl_AppendResult(interp, "Must provide at least one intermediate type.", (char *) NULL);
-			Tcl_Free((char *) inter_types);
-			return TCL_ERROR;
-		}
-	}
-
-	if (filter_obj_classes && obj_class_perms != NULL) {
-		assert(num_objs > 0);
-		cur = 0;
-		/* Set the object classes permission info */
-		/* Keep in mind that this is an encoded TCL list in the form "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
-		for (i = 0; i < num_objs; i++) {
-			obj = get_obj_class_idx(obj_class_perms[cur], policy);
-			if (obj < 0) {
-				Tcl_AppendResult(interp, "Invalid object class:\n", obj_class_perms[cur], (char *) NULL);
-				Tcl_Free((char *) obj_class_perms);
-				return TCL_ERROR;
-			}
-			/* Increment to next element, which should be the number of permissions for the class */
-			cur++;
-			rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
-			if (rt == TCL_ERROR) {
-				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-
-			/* If this there are no permissions given then exclude the entire object class. */
-			if (num_obj_perms == 0) {
-				if (iflow_query_add_obj_class(trans_flow_query, obj) == -1) {
-					Tcl_AppendResult(interp, "error adding obj\n", (char *) NULL);
-					return TCL_ERROR;
-				}
-			} else {
-				for (j = 0; j < num_obj_perms; j++) {
-					cur++;
-					perm = get_perm_idx(obj_class_perms[cur], policy);
-					if (perm < 0 || !is_valid_perm_for_obj_class(policy, obj, perm)) {
-						fprintf(stderr, "Invalid object class permission\n");
-						continue;
-					}
-					if (iflow_query_add_obj_class_perm(trans_flow_query, obj, perm) == -1) {
-						Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
-						return TCL_ERROR;
-					}
-				}
-			}
-			cur++;
-		}
-		Tcl_Free((char *) obj_class_perms);
-	}
-	if (filter_inter_types && inter_types != NULL) {
-		/* Set intermediate type info */
-		for (i = 0; i < num_inter_types; i++) {
-			type = get_type_idx(inter_types[i], policy);
-			if (type < 0) {
-				/* This is an invalid ending type, so ignore */
-				continue;
-			}
-			if (iflow_query_add_type(trans_flow_query, type) != 0) {
-				Tcl_AppendResult(interp, "Memory error!\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-		}
-		Tcl_Free((char *) inter_types);
-	}
-
-	return TCL_OK;
-}
-
-
-/* argv[23] - flag (boolean value) for indicating that a list of object classes are being provided to the DIF query.
- * argv[24] - object classes for DIF query (a TCL list string). At least one object class must be given or
- *	     an error is thrown.
- * NOTE: IF SEARCHING DIRECT FLOWS, THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!!
- *	 If, not it will throw an error.
- */
-static int types_relation_get_dirflow_options(iflow_query_t *direct_flow_query, Tcl_Interp *interp, CONST char *argv[], policy_t *policy)
-{
-	int num_objs, obj;
-	int i, rt;
-	CONST char **obj_classes;
-	bool_t filter_obj_classes;
-
-	assert(direct_flow_query != NULL);
-	if (policy->pmap == NULL) {
-		Tcl_AppendResult(interp,"No permission map loaded for Direct Flow Analysis!", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	filter_obj_classes = getbool(argv[23]);
-	if (filter_obj_classes) {
-		/* First, disassemble TCL object classes list, returning an array of pointers to the elements. */
-		rt = Tcl_SplitList(interp, argv[24], &num_objs, &obj_classes);
-		if (rt != TCL_OK) {
-			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			return TCL_ERROR;
-		}
-
-		if (num_objs < 1) {
-			Tcl_AppendResult(interp, "Must provide at least one object class to Direct Flow query.", (char *) NULL);
-			Tcl_Free((char *) obj_classes);
-			return TCL_ERROR;
-		}
-	}
-
-	if (filter_obj_classes && obj_classes != NULL) {
-		/* Set the object classes info */
-		for (i = 0; i < num_objs; i++) {
-			obj = get_obj_class_idx(obj_classes[i], policy);
-			if (obj < 0) {
-				Tcl_AppendResult(interp, "Invalid object class provided to Direct Flow query:\n", obj_classes[i], (char *) NULL);
-				Tcl_Free((char *) obj_classes);
-				return TCL_ERROR;
-			}
-			if (iflow_query_add_obj_class(direct_flow_query, obj) == -1) {
-				Tcl_AppendResult(interp, "Error adding object class to direct flow query!\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-		}
-		Tcl_Free((char *) obj_classes);
-	}
-
-	return TCL_OK;
-}
-
-static int types_relation_append_results(types_relation_query_t *tr_query,
-							types_relation_results_t *tr_results,
-							Tcl_Interp *interp,
-							policy_t *policy)
-{
-	char tbuf[BUF_SZ], *name = NULL, *rule = NULL;
-	int i, j, rt;
-	int rule_idx, type_idx;
-
-	assert(tr_query != NULL && tr_results != NULL);
-	/* Append typeA string */
-	snprintf(tbuf, sizeof(tbuf)-1, "%s", tr_query->type_name_A);
-	Tcl_AppendElement(interp, tbuf);
-	/* Append the number of common attributes */
-	snprintf(tbuf, sizeof(tbuf)-1, "%s", tr_query->type_name_B);
-	Tcl_AppendElement(interp, tbuf);
-
-	/* Append the number of common attributes */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_common_attribs);
-	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < tr_results->num_common_attribs; i++) {
-		if (get_attrib_name(tr_results->common_attribs[i], &name, policy) != 0) {
-			Tcl_AppendResult(interp, "Error getting attribute name.", (char *) NULL);
-			free(name);
-			return TCL_ERROR;
-		}
-		/* Append the attribute string */
-		snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
-		Tcl_AppendElement(interp, tbuf);
-		free(name);
-	}
-	/* Append the number of common roles */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_common_roles);
-	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < tr_results->num_common_roles; i++) {
-		if (get_role_name(tr_results->common_roles[i], &name, policy) != 0) {
-			Tcl_AppendResult(interp, "Error getting role name.", (char *) NULL);
-			free(name);
-			return TCL_ERROR;
-		}
-		/* Append the role string */
-		snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
-		Tcl_AppendElement(interp, tbuf);
-		free(name);
-	}
-	/* Append the number of common users */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_common_users);
-	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < tr_results->num_common_users; i++) {
-		if (get_user_name2(tr_results->common_users[i], &name, policy) != 0) {
-			Tcl_AppendResult(interp, "Error getting user name.", (char *) NULL);
-			free(name);
-			return TCL_ERROR;
-		}
-		/* Append the user string */
-		snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
-		Tcl_AppendElement(interp, tbuf);
-		free(name);
-	}
-	/* Append the number of type transition/change rules */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_tt_rules);
-	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < tr_results->num_tt_rules; i++) {
-		rule = re_render_tt_rule(1, tr_results->tt_rules_results[i], policy);
-		if (rule == NULL)
-			return TCL_ERROR;
-		Tcl_AppendElement(interp, rule);
-		free(rule);
-	}
-	/* Append the number of allow rules */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_allow_rules);
-	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < tr_results->num_allow_rules; i++) {
-		rule = re_render_av_rule(1, tr_results->allow_rules_results[i], 0, policy);
-		if (rule == NULL)
-			return TCL_ERROR;
-		Tcl_AppendElement(interp, rule);
-		free(rule);
-	}
-
-	/* Append common object type access information for type A and B */
-	if (tr_results->common_obj_types_results != NULL) {
-		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->common_obj_types_results->num_objs_A);
-		Tcl_AppendElement(interp, tbuf);
-		for (i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
-			type_idx = tr_results->common_obj_types_results->objs_A[i];
-			if (get_type_name(type_idx, &name, policy) != 0) {
-				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
-				return TCL_ERROR;
-			}
-			snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
-			Tcl_AppendElement(interp, tbuf);
-			free(name);
-
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeA_access_pool->type_rules[type_idx]->num_rules);
-			Tcl_AppendElement(interp, tbuf);
-			for (j = 0; j < tr_results->typeA_access_pool->type_rules[type_idx]->num_rules; j++) {
-				rule_idx = tr_results->typeA_access_pool->type_rules[type_idx]->rules[j];
-				rule = re_render_av_rule(1, rule_idx, 0, policy);
-				if (rule == NULL)
-					return TCL_ERROR;
-				Tcl_AppendElement(interp, rule);
-				free(rule);
-			}
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeB_access_pool->type_rules[type_idx]->num_rules);
-			Tcl_AppendElement(interp, tbuf);
-			for (j = 0; j < tr_results->typeB_access_pool->type_rules[type_idx]->num_rules; j++) {
-				rule_idx = tr_results->typeB_access_pool->type_rules[type_idx]->rules[j];
-				rule = re_render_av_rule(1, rule_idx, 0, policy);
-				if (rule == NULL)
-					return TCL_ERROR;
-				Tcl_AppendElement(interp, rule);
-				free(rule);
-			}
-		}
-	} else {
-		Tcl_AppendElement(interp, "0");
-	}
-
-	/* Append unique object type access information for type A */
-	if (tr_results->unique_obj_types_results != NULL) {
-		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->unique_obj_types_results->num_objs_A);
-		Tcl_AppendElement(interp, tbuf);
-		for (i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
-			type_idx = tr_results->unique_obj_types_results->objs_A[i];
-			if (get_type_name(type_idx, &name, policy) != 0) {
-				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
-				return TCL_ERROR;
-			}
-			snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
-			Tcl_AppendElement(interp, tbuf);
-			free(name);
-
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeA_access_pool->type_rules[type_idx]->num_rules);
-			Tcl_AppendElement(interp, tbuf);
-			for (j = 0; j < tr_results->typeA_access_pool->type_rules[type_idx]->num_rules; j++) {
-				rule_idx = tr_results->typeA_access_pool->type_rules[type_idx]->rules[j];
-				rule = re_render_av_rule(1, rule_idx, 0, policy);
-				if (rule == NULL)
-					return TCL_ERROR;
-				Tcl_AppendElement(interp, rule);
-				free(rule);
-			}
-		}
-		/* Append unique object type access information for type B */
-		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->unique_obj_types_results->num_objs_B);
-		Tcl_AppendElement(interp, tbuf);
-		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_B; i++) {
-			type_idx = tr_results->unique_obj_types_results->objs_B[i];
-			if (get_type_name(type_idx, &name, policy) != 0) {
-				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
-				return TCL_ERROR;
-			}
-			snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
-			Tcl_AppendElement(interp, tbuf);
-			free(name);
-
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeB_access_pool->type_rules[type_idx]->num_rules);
-			Tcl_AppendElement(interp, tbuf);
-			for (j = 0; j < tr_results->typeB_access_pool->type_rules[type_idx]->num_rules; j++) {
-				rule_idx = tr_results->typeB_access_pool->type_rules[type_idx]->rules[j];
-				rule = re_render_av_rule(1, rule_idx, 0, policy);
-				if (rule == NULL)
-					return TCL_ERROR;
-				Tcl_AppendElement(interp, rule);
-				free(rule);
-			}
-		}
-	} else {
-		Tcl_AppendElement(interp, "0");
-		Tcl_AppendElement(interp, "0");
-	}
-
-	/* Append direct information flow information */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_dirflows);
-	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < tr_results->num_dirflows; i++) {
-		/* Append the ending type name to the TCL list */
-		snprintf(tbuf, sizeof(tbuf)-1, "%s", policy->types[tr_results->direct_flow_results[i].end_type].name);
-		Tcl_AppendElement(interp, tbuf);
-		/* Append the direction of the information flow for each ending type to the TCL list */
-		if (tr_results->direct_flow_results[i].direction == IFLOW_BOTH)
-			Tcl_AppendElement(interp, "both");
-		else if (tr_results->direct_flow_results[i].direction == IFLOW_OUT)
-			Tcl_AppendElement(interp, "out");
-		else
-			Tcl_AppendElement(interp, "in");
-
-		rt = append_direct_edge_to_results(policy, tr_query->direct_flow_query, &tr_results->direct_flow_results[i], interp);
-		if (rt != 0) {
-			Tcl_AppendResult(interp, "Error appending direct flow edge information!\n", (char *) NULL);
-			return TCL_ERROR;
-		}
-	}
-
-	/* Append transitive information flow information for typeA->typeB */
-	if (tr_results->trans_flow_results_A_to_B != NULL) {
-		rt = append_transitive_iflow_results(policy, tr_results->trans_flow_results_A_to_B, interp);
-		if (rt != 0) {
-			Tcl_AppendResult(interp, "Error appending transitive flow results!\n", (char *) NULL);
-			return TCL_ERROR;
-		}
-	} else {
-		Tcl_AppendElement(interp, "0");
-	}
-	/* Append transitive information flow information for typeB->typeA */
-	if (tr_results->trans_flow_results_B_to_A != NULL) {
-		rt = append_transitive_iflow_results(policy, tr_results->trans_flow_results_B_to_A, interp);
-		if (rt != 0) {
-			Tcl_AppendResult(interp, "Error appending transitive flow results!\n", (char *) NULL);
-			return TCL_ERROR;
-		}
-	} else {
-		Tcl_AppendElement(interp, "0");
-	}
-
-	/* Append DTA information for typeA->typeB */
-	if (tr_results->dta_results_A_to_B != NULL) {
-		if (append_dta_results(policy, tr_results->dta_results_A_to_B, interp) != TCL_OK) {
-			Tcl_AppendResult(interp, "Error appending domain transition analysis results!", (char *) NULL);
-			return TCL_ERROR;
-		}
-	} else {
-		Tcl_AppendElement(interp, "0");
-	}
-	/* Append DTA information for typeB->typeA */
-	if (tr_results->dta_results_B_to_A != NULL) {
-		if (append_dta_results(policy, tr_results->dta_results_B_to_A, interp) != TCL_OK) {
-			Tcl_AppendResult(interp, "Error appending domain transition analysis results!", (char *) NULL);
-			return TCL_ERROR;
-		}
-	} else {
-		Tcl_AppendElement(interp, "0");
-	}
-
-	return 0;
-}
-
-/*
- * Types Relationship Analysis (QUERY ARGUMENTS):
- * argv[1]  - typeA (string)
- * argv[2]  - typeB (string)
- * argv[3]  - comm_attribs_sel (boolean value)
- * argv[4]  - comm_roles_sel (boolean value)
- * argv[5]  - comm_users_sel (boolean value)
- * argv[6]  - comm_access_sel (boolean value)
- * argv[7]  - unique_access_sel (boolean value)
- * argv[8]  - dta_sel (boolean value)
- * argv[9]  - trans_flow_sel (boolean value)
- * argv[10] - dir_flow_sel (boolean value)
- * argv[11] - tt_rule_sel  (boolean value)
- * argv[12] - te_rules_sel (boolean value)
- *
- * argv[13] - (boolean value) for indicating that a list of transitive flow object classes are being provided to the TIF query.
- * argv[14] - number of object classes that are to be included in the transitive flow query.
- * argv[15] - encoded list of object class/permissions to include in the the transitive flow query.
- * argv[16] - flag (boolean value) for indicating whether or not to include intermediate types in the
- *	      the transitive flow query.
- * argv[17] - TCL list of intermediate types for the transitive flow analysis
- * NOTE: IF SEARCHING TRANSITIVE FLOWS, THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!!
- *	 If, not it will throw an error.
- *
- * argv[18] - flag (boolean value) for indicating that a list of object classes are being provided to the DTA query.
- * argv[19] - number of object classes that are to be included in the DTA query.
- * argv[20] - list of object classes/permissions for the DTA query.
- * argv[21] - flag (boolean value) for selecting object type(s) in the DTA query.
- * argv[22] - list of object types for the DTA query.
- *
- * argv[23] - flag (boolean value) for indicating that a list of object classes are being provided to the DIF query.
- * argv[24] - object classes for DIF query (a TCL list string). At least one object class must be given or
- *	     an error is thrown.
- * NOTE: IF SEARCHING DIRECT FLOWS, THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!!
- *	 If, not it will throw an error.
- *
- *
- * Types Relationship Analysis (RESULTS FORMAT):
- *	Returns a list organized to represent the tree structure that results from a types relationship
- *	analysis.  The TCL list looks like the following:
- *
- *	INDEX			CONTENTS
- *	0			typeA string
- *	1			typeB string
- *	2			Number of common attributes (Na)
- *		3		attribute 1
- *		....
- *		Na		attribute Na
- *	next			Number of common roles (Nr)
- *		next		role 1
- *		...
- *		Nr		role Nr
- *	next			Number of common users (Nu)
- *		next		user 1
- *		...
- *		Nu		user Nu
- *	next			Number of type transition rules
- *		next
- *		...
- *		N		tt rule N
- *	next			Number of other allow rules
- *		next
- *		...
- *		Np		allow rule Np
- *	next			Number of common objects for typeA
- *		next		object 1
- *		...
- *		N		typeA common object N
- *				Number of common object rules for typeA
- *				Number of common objects for typeB
- *				Number of common object rules for typeB
- *	next			Number of unique objects for typeA
- *				Number of unique object rules for typeA
- *				Number of unique objects for typeB
- *				Number of unique object rules for typeB
- *	next			Number of Direct Information flows
- *			Follows the format for the Apol_DirectInformationFlowAnalysis()
- *	next			Number of Transitive Information flows from typeA->typeB
- *			Follows the format for the Apol_TransitiveFlowAnalysis()
- *	next			Number of Transitive Information flows from typeB->typeA
- *			Follows the format for the Apol_TransitiveFlowAnalysis()
- *	next			Number of Forward Domain Transitions from typeA->typeB
- *	next		N, # of target domain types (if none, then no other results returned)
- *	  next		name first target type (if any)
- *	  next		X, # of allow transition rules
- *	  next X*2	pt rule1, lineno1, ....
- *	  next		Y, # of entry point file types for first target type
- *	    next	first file type
- *	    next	A, # of file entrypoint rules
- *	    next A*2	ep rule 1, lineno1,....
- *	    next	B, # of file execute rules
- *	    next B*2	ex rule1, lineno1, ...
- *
- *	    next	(repeat next file type record as above Y times)
- *
- *	next		(repeat target type record N times)
- *				Number of Forward Domain Transitions from typeB->typeA
- *		Follows the preceding format.
- *
- */
-static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-        /* FIX ME */
-	types_relation_query_t *tr_query = NULL;
-	types_relation_results_t *tr_results = NULL;
-	int rt, i;
-	bool_t option_selected;
-
-	if(argc != 25) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if (policydb == NULL) {
-		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "TypeA string is too large.", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(!is_valid_str_sz(argv[2])) {
-		Tcl_AppendResult(interp, "TypeB string is too large.", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	tr_query = types_relation_query_create();
-	if (tr_query == NULL) {
-		Tcl_AppendResult(interp, "Error creating query.", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	tr_query->type_name_A = (char *)malloc((strlen(argv[1]) + 1) * sizeof(char));
-	if (tr_query->type_name_A == NULL) {
-		types_relation_query_destroy(tr_query);
-		Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-		return TCL_ERROR;
-	}
-	strcpy(tr_query->type_name_A, argv[1]);
-
-	tr_query->type_name_B = (char *)malloc((strlen(argv[2]) + 1) * sizeof(char));
-	if (tr_query->type_name_B == NULL) {
-		types_relation_query_destroy(tr_query);
-		Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-		return TCL_ERROR;
-	}
-	strcpy(tr_query->type_name_B, argv[2]);
-
-	for (i = 3; i < 13; i++) {
-		option_selected = getbool(argv[i]);
-		if (option_selected) {
-			switch(i) {
-			case 3:
-				tr_query->options |= TYPES_REL_COMMON_ATTRIBS;
-				break;
-			case 4:
-				tr_query->options |= TYPES_REL_COMMON_ROLES;
-				break;
-			case 5:
-				tr_query->options |= TYPES_REL_COMMON_USERS;
-				break;
-			case 6:
-				tr_query->options |= TYPES_REL_COMMON_ACCESS;
-				break;
-			case 7:
-				tr_query->options |= TYPES_REL_UNIQUE_ACCESS;
-				break;
-			case 8:
-				tr_query->options |= TYPES_REL_DOMAINTRANS;
-				/* Create the query structure */
-				if (!tr_query->dta_query) {
-					tr_query->dta_query = dta_query_create();
-					if (tr_query->dta_query == NULL) {
-						Tcl_AppendResult(interp, "Memory error allocating dta query.\n",
-							(char *) NULL);
-						types_relation_query_destroy(tr_query);
-						return TCL_ERROR;
-					}
-				}
-				/* Gather DTA options */
-				if (types_relation_get_dta_options(tr_query->dta_query, interp, argv, policy) != 0) {
-					types_relation_query_destroy(tr_query);
-					return TCL_ERROR;
-				}
-				break;
-			case 9:
-				tr_query->options |= TYPES_REL_TRANSFLOWS;
-				/* Create the query structure */
-				if (!tr_query->trans_flow_query) {
-					tr_query->trans_flow_query = iflow_query_create();
-					if (tr_query->trans_flow_query == NULL) {
-						Tcl_AppendResult(interp, "Memory error allocating transitive iflow query.\n",
-							(char *) NULL);
-						types_relation_query_destroy(tr_query);
-						return TCL_ERROR;
-					}
-				}
-				/* Gather TRANSFLOW options*/
-				if (types_relation_get_transflow_options(tr_query->trans_flow_query, interp, argv, policy) != 0) {
-					types_relation_query_destroy(tr_query);
-					return TCL_ERROR;
-				}
-				break;
-			case 10:
-				tr_query->options |= TYPES_REL_DIRFLOWS;
-				/* Create the query structure */
-				if (!tr_query->direct_flow_query) {
-					tr_query->direct_flow_query = iflow_query_create();
-					if (tr_query->direct_flow_query == NULL) {
-						Tcl_AppendResult(interp, "Memory error allocating direct iflow query.\n",
-							(char *) NULL);
-						types_relation_query_destroy(tr_query);
-						return TCL_ERROR;
-					}
-				}
-				/* Gather DIRFLOW options*/
-				if (types_relation_get_dirflow_options(tr_query->direct_flow_query, interp, argv, policy) != 0) {
-					types_relation_query_destroy(tr_query);
-					return TCL_ERROR;
-				}
-				break;
-			case 11:
-				tr_query->options |= TYPES_REL_TTRULES;
-				break;
-			case 12:
-				tr_query->options |= TYPES_REL_ALLOW_RULES;
-				break;
-			default:
-				fprintf(stderr, "Invalid option index: %d\n", i);
-			}
-		}
-	}
-	/* Perform the analysis */
-	rt = types_relation_determine_relationship(tr_query, &tr_results, policy);
-	if (rt != 0) {
-		types_relation_query_destroy(tr_query);
-		Tcl_AppendResult(interp, "Analysis error!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if (types_relation_append_results(tr_query, tr_results, interp, policy) != TCL_OK) {
-		types_relation_query_destroy(tr_query);
-		if (tr_results) types_relation_destroy_results(tr_results);
-		return TCL_ERROR;
-	}
-
-	types_relation_query_destroy(tr_query);
-	if (tr_results) types_relation_destroy_results(tr_results);
-	return TCL_OK;
-}
-
-#endif

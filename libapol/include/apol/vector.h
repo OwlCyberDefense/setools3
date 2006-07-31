@@ -89,6 +89,26 @@ extern apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t *iter);
 extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v);
 
 /**
+ *  Allocate and return a vector that has been initialized with the
+ *  contents common to two other vectors.  <b>This function merely
+ *  makes a shallow copy of the vectors' contents</b>; any memory
+ *  ownership restrictions imposed by the original vectors apply to
+ *  this new vector as well.  Note that if a source vector contains
+ *  duplicate elements the returned vector may (or may not) have
+ *  duplicates as well.  If the caller does not want duplicate entries
+ *  then apol_vector_sort_uniquify() should be called afterwards.
+ *
+ *  @param v1 First vector from which to compute the intersection.
+ *  @param v2 Other vector to compute intersection.
+ *
+ *  @return A pointer to a newly created vector on success and NULL on
+ *  failure.  If the call fails, errno will be set.  The caller is
+ *  responsible for calling apol_vector_destroy() to free memory used.
+ */
+extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1,
+							   const apol_vector_t *v2);
+
+/**
  *  Free a vector and any memory used by it.
  *
  *  @param v Pointer to the vector to free.  The pointer will be set
