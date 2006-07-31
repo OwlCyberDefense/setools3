@@ -404,7 +404,7 @@ int find_net_domains_print_output(sechk_module_t *mod, apol_policy_t *policy)
                         type = item->item;
                         qpol_type_get_name(policy->qh, policy->p, type, &type_name);
                         j %= 4;
-                        printf("%s%s", (char *)type_name, (char *)( (j) ? ", " : "\n" ));
+                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
                 }
                 printf("\n");
 	}

@@ -355,7 +355,7 @@ int roles_wo_users_print_output(sechk_module_t *mod, apol_policy_t *policy)
                         item = apol_vector_get_element(mod->result->items, i);
 			role = (qpol_role_t*)item->item;
 			qpol_role_get_name(policy->qh, policy->p, role, &role_name);
-                        printf("%s%s", role_name, (char *)( (j) ? ", " : "\n"));
+                        printf("%s%s", role_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
                 }
                 printf("\n");
         }

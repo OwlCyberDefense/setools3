@@ -11,6 +11,7 @@
 
 #include "sechecker.h"
 #include <apol/policy.h>
+#include <apol/avrule-query.h>
 
 #define inc_net_access_ERR -1
 #define inc_net_access_SUCCESS 0

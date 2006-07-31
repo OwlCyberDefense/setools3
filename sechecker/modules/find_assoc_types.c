@@ -349,7 +349,7 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j = 0, k = 0;
+	int i = 0, j = 0, k = 0, num_items;
 	qpol_type_t *type;
 	char *type_name;
 
@@ -364,6 +364,7 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	
 	datum = (find_assoc_types_data_t*)mod->data;
 	outformat = mod->outputformat;
+	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
 		ERR(policy, "Error: module has not been run\n");
@@ -374,7 +375,7 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i assoc type(s).\n", apol_vector_get_size(mod->result->items));
+		printf("Found %i assoc type(s).\n", num_items);
 	}
 	/* The list reassoc component is a display of all items
 	 * found without any supassocing proof. The default method
@@ -382,14 +383,14 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	 * this may need to be changed for longer items. */
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-		for (j=0;j<sizeof(apol_vector_get_size(mod->result->items));j++) {
+		for (j=0;j<num_items;j++) {
 			i++;
 			i %= 4;
 			item = apol_vector_get_element(mod->result->items, j);
 			type = item->item;
 			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 			if ( item )
-                        printf("%s%s", type_name, (char *)( (j) ? ", " : "\n" ));
+                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
