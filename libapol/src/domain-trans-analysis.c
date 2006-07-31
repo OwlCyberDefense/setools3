@@ -1890,7 +1890,7 @@ int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *sta
 	retv = apol_domain_trans_find_rule_for_type(policy, table->exec_list[ep_val - 1].exec_rules, start_dom);
 	if (retv < 0)
 		missing_rules |= APOL_DOMAIN_TRANS_RULE_EXEC;
-	retv = apol_domain_trans_find_rule_for_type(policy, table->dom_list[end_val - 1].ep_rules, start_dom);
+	retv = apol_domain_trans_find_rule_for_type(policy, table->dom_list[end_val - 1].ep_rules, ep_type);
 	if (retv < 0)
 		missing_rules |= APOL_DOMAIN_TRANS_RULE_ENTRYPOINT;
 
@@ -1903,10 +1903,12 @@ int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *sta
 		}
 		if (retv < 0 || dflt_val != end_val) { /* no type_transition or different default */
 			retv = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules, start_dom);
-			if (retv < 0)
-				missing_rules |= APOL_DOMAIN_TRANS_RULE_SETEXEC;
 			if (!dflt_val)
 				missing_rules |= APOL_DOMAIN_TRANS_RULE_TYPE_TRANS; /* only missing if none was found, not if different default */
+			if (retv < 0)
+				missing_rules |= APOL_DOMAIN_TRANS_RULE_SETEXEC;
+			else
+				missing_rules = 0;
 		}
 	}
 
