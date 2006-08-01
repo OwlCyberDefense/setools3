@@ -24,7 +24,7 @@ int inc_net_access_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+		ERR(NULL, "%s", "No library");
 		return -1;
 	}
 
@@ -33,7 +33,7 @@ int inc_net_access_register(sechk_lib_t *lib)
 	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+		ERR(NULL, "%s", "Module unknown");
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -69,104 +69,104 @@ int inc_net_access_register(sechk_lib_t *lib)
 	mod->severity = SECHK_SEV_MED;
 	/* assign dependencies */      
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_net_domains")) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_netif_types")) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_port_types")) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_node_types")) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_assoc_types")) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_net_access_init;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_net_access_run;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_net_access_data_free;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_net_access_print_output;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_net_access_get_result;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
@@ -182,17 +182,17 @@ int inc_net_access_init(sechk_module_t *mod, apol_policy_t *policy)
 	inc_net_access_data_t *datum = NULL;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: Invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: Wrong module (%s)\n", mod->name);
+                ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = inc_net_access_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 
@@ -219,7 +219,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
         sechk_get_result_fn_t get_res = NULL;
 	sechk_name_value_t *dep = NULL;
 	sechk_run_fn_t run_fn = NULL;
-	size_t i = 0, j = 0, k = 0, error;
+	size_t i = 0, j = 0, k = 0;
 	int buff_sz;
 	char *buff = NULL;
 	apol_vector_t *net_domain_vector;
@@ -231,11 +231,11 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_vector_t *avrule_vector;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: Invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: Wrong module (%s)\n", mod->name);
+                ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -246,18 +246,17 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (inc_net_access_data_t *)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_net_access_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
         if ( !(res->items = apol_vector_create()) ) {
-                error = errno;
-                ERR(policy, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 goto inc_net_access_run_fail;
         }
 
@@ -272,12 +271,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* Net Domains */
 	get_res = sechk_lib_get_module_function("find_net_domains", SECHK_MOD_FN_GET_RES, mod->parent_lib);
 	if (!get_res) {
-                fprintf(stderr, "Error: Unable to get net domains result function\n");
+                ERR(policy, "%s", "Unable to find result function for module find_net_domains");
                 goto inc_net_access_run_fail;
         }
 	net_domain_res = get_res(sechk_lib_get_module("find_net_domains", mod->parent_lib));
 	if (!net_domain_res) {
-                fprintf(stderr, "Error: Unable to get net domains list\n");
+                ERR(policy, "%s", "Unable to get results for module find_net_domains");
                 goto inc_net_access_run_fail;
         }
 	net_domain_vector = (apol_vector_t *)net_domain_res->items;
@@ -285,12 +284,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* Netif Types */
 	get_res = sechk_lib_get_module_function("find_netif_types", SECHK_MOD_FN_GET_RES, mod->parent_lib);
         if (!get_res) {
-                fprintf(stderr, "Error: Unable to get netif types result function\n");
+                ERR(policy, "%s", "Unable to find result function for module find_netif_types");
                 goto inc_net_access_run_fail;
         }
 	netif_res = get_res(sechk_lib_get_module("find_netif_types", mod->parent_lib));
 	if (!netif_res) {
-                fprintf(stderr, "Error: Unable to get netif types list\n");
+                ERR(policy, "%s", "Unable to get results for module find_netif_types");
                 goto inc_net_access_run_fail;
         }
 	netif_vector = (apol_vector_t *)netif_res->items;
@@ -298,12 +297,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* Port Types */
         get_res = sechk_lib_get_module_function("find_port_types", SECHK_MOD_FN_GET_RES, mod->parent_lib);
 	if (!get_res) {
-                fprintf(stderr, "Error: Unable to get port types result function\n");
+                ERR(policy, "%s", "Unable to find result function for module find_port_types");
                 goto inc_net_access_run_fail;
         }
         port_res = get_res(sechk_lib_get_module("find_port_types", mod->parent_lib));
         if (!port_res) {
-                fprintf(stderr, "Error: Unable to get port types list\n");
+                ERR(policy, "%s", "Unable to get results for module find_port_types");
                 goto inc_net_access_run_fail;
         }
 	port_vector = (apol_vector_t *)port_res->items;
@@ -311,12 +310,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* Node Type */
 	get_res = sechk_lib_get_module_function("find_node_types", SECHK_MOD_FN_GET_RES, mod->parent_lib);
 	if (!get_res) {
-                fprintf(stderr, "Error: Unable to get node types result function\n");
+                ERR(policy, "%s", "Unable to find result function for module find_node_types");
                 goto inc_net_access_run_fail;
         }
         node_res = get_res(sechk_lib_get_module("find_node_types", mod->parent_lib));
         if (!node_res) {
-                fprintf(stderr, "Error: unable to get node types list\n");
+                ERR(policy, "%s", "Unable to get results for module find_node_types");
                 goto inc_net_access_run_fail;
         }
 	node_vector = (apol_vector_t *)node_res->items;
@@ -324,12 +323,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* Assoc Types */
 	get_res = sechk_lib_get_module_function("find_assoc_types", SECHK_MOD_FN_GET_RES, mod->parent_lib);
 	if (!get_res) {
-                fprintf(stderr, "Error: Unable to get association types result function\n");
+                ERR(policy, "%s", "Unable to find result function for module find_assoc_types");
                 goto inc_net_access_run_fail;
         }
         assoc_type_res = get_res(sechk_lib_get_module("find_assoc_types", mod->parent_lib));
         if (!assoc_type_res) {
-                fprintf(stderr, "Error: unable to get association types list\n");
+                ERR(policy, "%s", "Unable to get results for module find_assoc_types");
                 goto inc_net_access_run_fail;
         }
 	assoc_type_vector = (apol_vector_t *)assoc_type_res->items;
@@ -373,15 +372,14 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 				buff_sz = 1+strlen(netif_name)+strlen("Domain has no send or receive permissions for netif ");
 				buff = (char *)calloc(buff_sz, sizeof(char));
 				if (!buff) {
-					error = errno;
-					ERR(policy, strerror(error));
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
 				snprintf(buff, buff_sz, "Domain has no send or receive permissions for netif %s\n", netif_name);
 				proof->text = strdup(buff);
 				if (!proof->text) {
-					error = errno;
-					ERR(policy, strerror(error));	
+			                ERR(policy, "%s", strerror(ENOMEM));
+					goto inc_net_access_run_fail;
 				}
 				for (k=0;k<apol_vector_get_size(res->items);k++) {
 					sechk_item_t *res_item = NULL;
@@ -396,24 +394,24 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
                                 if ( !item) {
                                         item = sechk_item_new(NULL);
                                         if (!item) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                         item->test_result = 1;
                                         item->item = (void *)net_domain;
                                         if ( apol_vector_append(res->items, (void *)item) < 0 ) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                 }
                                 if ( !item->proof ) {
                                         if ( !(item->proof = apol_vector_create()) ) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                 }
                                 if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-                                        ERR(policy, "Out of memory");
+			                ERR(policy, "%s", strerror(ENOMEM));
                                         goto inc_net_access_run_fail;
                                 }
                                 item = NULL;
@@ -449,15 +447,14 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 				buff_sz = 1+strlen(port_name)+strlen("Domain has no send or receive permissions for port ");
 				buff = (char *)calloc(buff_sz, sizeof(char));
 				if (!buff) {
-					error = errno;
-					ERR(policy, strerror(error));
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
 				snprintf(buff, buff_sz, "Domain has no send or receive permissions for port %s\n", port_name);
 				proof->text = strdup(buff);
 				if (!proof->text) {
-					error = errno;
-					ERR(policy, strerror(error));	
+			                ERR(policy, "%s", strerror(ENOMEM));
+					goto inc_net_access_run_fail;
 				}
 				for (k=0;k<apol_vector_get_size(res->items);k++) {
 					sechk_item_t *res_item = NULL;
@@ -472,24 +469,24 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
                                 if ( !item) {
                                         item = sechk_item_new(NULL);
                                         if (!item) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                         item->test_result = 1;
                                         item->item = (void *)net_domain;
                                         if ( apol_vector_append(res->items, (void *)item) < 0 ) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                 }
                                 if ( !item->proof ) {
                                         if ( !(item->proof = apol_vector_create()) ) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                 }
                                 if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-                                        ERR(policy, "Out of memory");
+			                ERR(policy, "%s", strerror(ENOMEM));
                                         goto inc_net_access_run_fail;
                                 }
                                 item = NULL;
@@ -523,15 +520,14 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 				buff_sz = 1+strlen(node_name)+strlen("Domain has no send or receive permissions for node ");
 				buff = (char *)calloc(buff_sz, sizeof(char));
 				if (!buff) {
-					error = errno;
-					ERR(policy, strerror(error));
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
 				snprintf(buff, buff_sz, "Domain has no send or receive permissions for node %s\n", node_name);
 				proof->text = strdup(buff);
 				if (!proof->text) {
-					error = errno;
-					ERR(policy, strerror(error));	
+			                ERR(policy, "%s", strerror(ENOMEM));
+					goto inc_net_access_run_fail;
 				}
 				for (k=0;k<apol_vector_get_size(res->items);k++) {
 					sechk_item_t *res_item = NULL;
@@ -546,24 +542,24 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
                                 if ( !item) {
                                         item = sechk_item_new(NULL);
                                         if (!item) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                         item->test_result = 1;
                                         item->item = (void *)net_domain;
                                         if ( apol_vector_append(res->items, (void *)item) < 0 ) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                 }
                                 if ( !item->proof ) {
                                         if ( !(item->proof = apol_vector_create()) ) {
-                                                ERR(policy, "Out of memory");
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto inc_net_access_run_fail;
                                         }
                                 }
                                 if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-                                        ERR(policy, "Out of memory");
+			                ERR(policy, "%s", strerror(ENOMEM));
                                         goto inc_net_access_run_fail;
                                 }
                                 item = NULL;
@@ -606,11 +602,11 @@ int inc_net_access_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
 	if (!mod || !policy){
-		ERR(policy, "Invalid parameters");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Wrong module (%s)", mod->name);
+                ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 	
@@ -619,7 +615,7 @@ int inc_net_access_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		ERR(policy, "Module has not been run");
+                ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
 	
@@ -672,11 +668,11 @@ int inc_net_access_print_output(sechk_module_t *mod, apol_policy_t *policy)
 sechk_result_t *inc_net_access_get_result(sechk_module_t *mod) 
 {
 	if (!mod) {
-		fprintf(stderr, "Error: Invalid parameters\n");
+		ERR(NULL, "%s", "Invalid parameters");
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: Wrong module (%s)\n", mod->name);
+		ERR(NULL, "Wrong module (%s)", mod->name);
 		return NULL;
 	}
 
@@ -692,119 +688,3 @@ inc_net_access_data_t *inc_net_access_data_new(void)
 
 	return datum;
 }
-
-#if 0
-static char *build_proof_str(char *src_type, char *dst_type, char *obj_class, char *perms)
-{
-	char *proof_str = NULL;
-	int proof_str_sz = 0;
-
-	if (append_str(&proof_str, &proof_str_sz, "\t") != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	if (append_str(&proof_str, &proof_str_sz, src_type) != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	if (append_str(&proof_str, &proof_str_sz, " ") != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	if (append_str(&proof_str, &proof_str_sz, dst_type) != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	if (append_str(&proof_str, &proof_str_sz, ": ") != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	if (append_str(&proof_str, &proof_str_sz, obj_class) != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	if (append_str(&proof_str, &proof_str_sz, " ") != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	if (append_str(&proof_str, &proof_str_sz, perms) != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	
-	if (append_str(&proof_str, &proof_str_sz, "\n") != 0) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	
-	return proof_str;
-	return NULL;
-}
-
-static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, apol_policy_t *policy, idx_cache_t *idx_cache) 
-{
-	int i, num_nodes, proof_str_sz = 0, tmp_proof_str_sz = 0, used_rules_sz = 0;
-	char *proof_str = NULL, *tmp_proof_str = NULL;
-	avh_idx_t *hash_idx = NULL;
-	avh_rule_t *hash_rule = NULL;
-	sechk_proof_t *tmp_proof = NULL;
-	int net_objs[5] = {idx_cache->TCP_SOCKET_OBJ,
-			   idx_cache->UDP_SOCKET_OBJ,
-			   idx_cache->NETIF_OBJ,
-			   idx_cache->NODE_OBJ,
-	                   idx_cache->ASSOC_OBJ};
-	int *used_rules = NULL;
-
-	/* find all rules with net_dom as subject */
-	hash_idx = avh_src_type_idx_find(&(policy->avh), type_idx);
-	if (!hash_idx)
-		num_nodes = 0;
-	else
-		num_nodes = hash_idx->num_nodes;
-
-	tmp_proof = sechk_proof_new();
-	if (!tmp_proof) {
-		fprintf(stderr, "Error: out of memory\n");
-		return inc_net_access_ERR;
-	}
-
-	/* include only those rules with object in net_objs */
-	for (i = 0; i < num_nodes; i++) {
-		for (hash_rule = hash_idx->nodes[i]->rules; hash_rule; hash_rule = hash_rule->next) {
-			if (find_int_in_array(hash_rule->rule, used_rules, used_rules_sz) == -1) {
-				tmp_proof_str = NULL;
-				tmp_proof_str_sz = 0;
-				switch (hash_idx->nodes[i]->key.rule_type) {
-				case RULE_TE_ALLOW:
-					if (find_int_in_array(hash_idx->nodes[i]->key.cls, net_objs, 5) != -1) {				 
-						tmp_proof->idx = type_idx;
-						tmp_proof->type = inc_net_access_HAVE_PERMS;
-						append_str(&tmp_proof_str, &tmp_proof_str_sz, "\t");
-						append_str(&tmp_proof_str, &tmp_proof_str_sz, re_render_av_rule(0, hash_rule->rule, 0, policy));
-						append_str(&tmp_proof_str, &tmp_proof_str_sz, "\n");
-						append_str(&proof_str, &proof_str_sz, tmp_proof_str);
-					}
-					if (add_i_to_a(hash_rule->rule, &used_rules_sz, &used_rules) != 0) {
-						fprintf(stderr, "Error: out of memory\n");
-						return inc_net_access_ERR;
-					}
-					
-					break;
-				
-				default:
-					break;
-				}
-			}
-		}
-	}
-
-	if (tmp_proof) {
-		tmp_proof->text = proof_str;
-		tmp_proof->next = (*proof);
-		(*proof) = tmp_proof;
-	}
-
-	return inc_net_access_SUCCESS;
-	return 0;
-}
-#endif
