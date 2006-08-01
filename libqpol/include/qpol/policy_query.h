@@ -50,6 +50,7 @@
 #include <qpol/terule_query.h>
 #include <qpol/rbacrule_query.h>
 #include <qpol/mlsrule_query.h>
+#include <qpol/syn_rule_query.h>
 
 /* generic information about policydb*/
 /**

@@ -24,6 +24,7 @@ qpol_HEADERS = \
 	queue.h \
 	rbacrule_query.h \
 	role_query.h \
+	syn_rule_query.h \
 	terule_query.h \
 	type_query.h \
 	user_query.h
