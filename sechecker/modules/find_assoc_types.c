@@ -19,10 +19,9 @@ int find_assoc_types_register(sechk_lib_t *lib)
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 	sechk_name_value_t *nv = NULL;
-	int error;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+                ERR(NULL, "%s", "No library");
 		return -1;
 	}
 
@@ -31,7 +30,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
 	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+                ERR(NULL, "%s", "Module unknown");
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -52,123 +51,104 @@ int find_assoc_types_register(sechk_lib_t *lib)
 	/* assign requirements */
 	nv = sechk_name_value_new("policy_type", "source");
 	if ( apol_vector_append(mod->requirements, (void *)nv) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->fn = &find_assoc_types_init;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->fn = &find_assoc_types_run;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->fn = &find_assoc_types_data_free;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->fn = &find_assoc_types_print_output;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	fn_struct->fn = &find_assoc_types_get_result;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 
 	fn_struct = sechk_fn_new();
         if (!fn_struct) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
         fn_struct->name = strdup("get_list");
         if (!fn_struct->name) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
         fn_struct->fn = &find_assoc_types_get_list;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 
@@ -181,21 +161,19 @@ int find_assoc_types_register(sechk_lib_t *lib)
 int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy)
 {
 	find_assoc_types_data_t *datum = NULL;
-	int error;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
 	datum = find_assoc_types_data_new();
 	if (!datum) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	mod->data = datum;
@@ -223,14 +201,13 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name = NULL;
 	qpol_type_t *type;
 	qpol_context_t *context;
-	int error;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Error: wrong module (%s)\n", mod->name);
+                ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -241,13 +218,12 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (find_assoc_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
@@ -261,8 +237,7 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	}
 
 	if (apol_str_append(&buff, &buff_sz, "sid unlabeled ") != 0) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
 	}
 
@@ -271,24 +246,21 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 	
 	if (apol_str_append(&buff, &buff_sz, type_name) !=  0) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
 	}
 
 	if (!item) {
 		item = sechk_item_new(NULL);
 		if (!item) {
-	                error = errno;
-        	        fprintf(stderr, "Error: %s\n", strerror(error));
+	                ERR(policy, "%s", strerror(ENOMEM));
 			goto find_assoc_types_run_fail;
 		}
 	}
 
 	proof = sechk_proof_new(NULL);
 	if (!proof) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
 	}
 
@@ -297,23 +269,19 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	proof->type = SECHK_ITEM_TYPE;
 	proof->text = buff;
 	if ( !(res->items = apol_vector_create()) ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                	goto find_assoc_types_run_fail; 
 	}
 	if ( !(item->proof = apol_vector_create()) ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
 	}
 	if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 goto find_assoc_types_run_fail;
         }
 	if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-                error = errno;
-                fprintf(stderr, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 goto find_assoc_types_run_fail;
         }
 
@@ -354,7 +322,7 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
 	if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
@@ -367,7 +335,7 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		ERR(policy, "Error: module has not been run\n");
+                ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
 	
@@ -430,11 +398,11 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 sechk_result_t *find_assoc_types_get_result(sechk_module_t *mod) 
 {
 	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(NULL, "%s", "Invalid parameters");
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                ERR(NULL, "Wrong module (%s)", mod->name);
 		return NULL;
 	}
 
@@ -444,15 +412,15 @@ sechk_result_t *find_assoc_types_get_result(sechk_module_t *mod)
 int find_assoc_types_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
 	if (!mod || !v) {
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(NULL, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                ERR(NULL, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+                ERR(NULL, "%s", "Module has not been run");
 		return -1;
 	}
 	
