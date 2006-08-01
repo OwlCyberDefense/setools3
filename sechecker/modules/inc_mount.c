@@ -25,7 +25,7 @@ int inc_mount_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+		ERR(NULL, "%s", "no library");
 		return -1;
 	}
 
@@ -34,7 +34,7 @@ int inc_mount_register(sechk_lib_t *lib)
 	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+		ERR(NULL, "%s", "Module unknown");
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -61,81 +61,81 @@ int inc_mount_register(sechk_lib_t *lib)
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_mount_init;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_mount_run;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_mount_data_free;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_mount_print_output;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &inc_mount_get_result;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
@@ -150,17 +150,17 @@ int inc_mount_init(sechk_module_t *mod, apol_policy_t *policy)
 	inc_mount_data_t *datum = NULL;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = inc_mount_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	mod->data = datum;
@@ -178,7 +178,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i, j, error;
+	size_t i, j;
 	bool_t both = FALSE;
 	int buff_sz;
 	char *buff = NULL;
@@ -188,11 +188,11 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_avrule_query_t *mounton_avrule_query;
 
 	if (!mod || !policy) {
-		ERR(policy, "Invalid parameters");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Wrong module (%s)", mod->name);
+                ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -203,30 +203,27 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (inc_mount_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_mount_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
         if ( !(res->items = apol_vector_create()) ) {
-                error = errno;
-                ERR(policy, "%s", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 goto inc_mount_run_fail;
         }
 	
 	if (!(mount_avrule_query = apol_avrule_query_create()) ) {
-                error = errno;
-                ERR(policy, "%s", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 goto inc_mount_run_fail;
 	}
 
 	if (!(mounton_avrule_query = apol_avrule_query_create()) ) {
-                error = errno;
-                ERR(policy, "%s", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 goto inc_mount_run_fail;
 	}
 
@@ -274,7 +271,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 		if ( !both ) {
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-				ERR(policy, "Out of memory.");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
 			proof->type = SECHK_ITEM_TYPE;
@@ -283,37 +280,35 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 					strlen(mount_source_name)+strlen(mount_target_name)+strlen(" : dir mounton;\n");
 			buff = (char *)calloc(buff_sz, sizeof(char));
 			if ( !buff ) {
-                                ERR(policy, "Out of memory.");
+		                ERR(policy, "%s", strerror(ENOMEM));
                                 goto inc_mount_run_fail;
                         }
 			snprintf(buff, buff_sz, "%s\n\tMissing:\n\tallow %s %s : dir mounton;\n",apol_avrule_render(policy, mount_rule),
 					mount_source_name, mount_target_name);	
 			proof->text = strdup(buff);
 			if ( !proof->text ) {
-                                ERR(policy, "Out of memory.");
+		                ERR(policy, "%s", strerror(ENOMEM));
                                 goto inc_mount_run_fail;
 			}
 			buff = NULL;
 	                item = sechk_item_new(NULL);
 	                if (!item) {
-	                        fprintf(stderr, "Error: out of memory\n");
+		                ERR(NULL, "%s", strerror(ENOMEM));
                        		goto inc_mount_run_fail;
                 	}
 	                item->item = (void *)mount_source;
 	                if ( !item->proof ) {
         	                if ( !(item->proof = apol_vector_create()) ) {
-                	                ERR(policy, "Out of memory.");
+			                ERR(policy, "%s", strerror(ENOMEM));
                         	        goto inc_mount_run_fail;
                         	}
                 	}
 	                if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-        	                error = errno;
-                	        ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(policy, "%s", strerror(ENOMEM));
                         	goto inc_mount_run_fail;
 	                }
         	        if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-                	        error = errno;
-                        	ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(policy, "%s", strerror(ENOMEM));
 	                        goto inc_mount_run_fail;
         	        }
                 	item = NULL;
@@ -353,7 +348,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 		if ( !both ) {
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-				ERR(policy, "Out of memory.");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
 			proof->type = SECHK_ITEM_TYPE;
@@ -362,36 +357,34 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 					strlen(mounton_target_name)+strlen(" : filesystem mount;\n");
                         buff = (char *)calloc(buff_sz, sizeof(char));
                         if ( !buff ) {
-                                ERR(policy, "Out of memory.");
+		                ERR(policy, "%s", strerror(ENOMEM));
                                 goto inc_mount_run_fail;
                         }
                         snprintf(buff, buff_sz, "%s\n\tMissing:\n\t\tallow %s %s : filesystem mount;\n",apol_avrule_render(policy,mounton_rule),
 					mounton_source_name, mounton_target_name);
                         proof->text = strdup(buff);
 			if ( !proof->text ) {
-                                ERR(policy, "Out of memory.");
+		                ERR(policy, "%s", strerror(ENOMEM));
                                 goto inc_mount_run_fail;
 			}
 	                item = sechk_item_new(NULL);
 	                if (!item) {
-	                        fprintf(stderr, "Error: out of memory\n");
+		                ERR(policy, "%s", strerror(ENOMEM));
                        		goto inc_mount_run_fail;
                 	}
 	                item->item = (void *)mounton_source;
 	                if ( !item->proof ) {
         	                if ( !(item->proof = apol_vector_create()) ) {
-                	                ERR(policy, "Out of memory.");
+			                ERR(policy, "%s", strerror(ENOMEM));
                         	        goto inc_mount_run_fail;
                         	}
                 	}
 	                if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-        	                error = errno;
-                	        ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(policy, "%s", strerror(ENOMEM));
                         	goto inc_mount_run_fail;
 	                }
         	        if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-                	        error = errno;
-                        	ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(policy, "%s", strerror(ENOMEM));
 	                        goto inc_mount_run_fail;
         	        }
                 	item = NULL;
@@ -428,11 +421,11 @@ int inc_mount_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -441,7 +434,7 @@ int inc_mount_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+		ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
 

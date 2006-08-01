@@ -23,7 +23,7 @@ int find_netif_types_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+                ERR(NULL, "%s", "No library");
 		return -1;
 	}
 
@@ -32,7 +32,7 @@ int find_netif_types_register(sechk_lib_t *lib)
 	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+                ERR(NULL, "%s", "Module unknown");
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -55,12 +55,12 @@ int find_netif_types_register(sechk_lib_t *lib)
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_netif_types_init;
@@ -68,12 +68,12 @@ int find_netif_types_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_netif_types_run;
@@ -81,12 +81,12 @@ int find_netif_types_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_netif_types_data_free;
@@ -94,12 +94,12 @@ int find_netif_types_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_netif_types_print_output;
@@ -107,12 +107,12 @@ int find_netif_types_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_netif_types_get_result;
@@ -120,12 +120,12 @@ int find_netif_types_register(sechk_lib_t *lib)
 
         fn_struct = sechk_fn_new();
         if (!fn_struct) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
         fn_struct->name = strdup("get_list");
         if (!fn_struct->name) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
         fn_struct->fn = &find_netif_types_get_list;
@@ -139,22 +139,20 @@ int find_netif_types_register(sechk_lib_t *lib)
  * file. */
 int find_netif_types_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-	int error = 0;
 	find_netif_types_data_t *datum = NULL;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = find_netif_types_data_new();
 	if (!datum) {
-                error = errno;
-                ERR(policy, "Error: %s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	mod->data = datum;
@@ -177,16 +175,15 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	char *buff = NULL;
-	int i = 0, error = 0;
-	size_t buff_sz = 0;
+	size_t i, buff_sz = 0;
 	apol_vector_t *netifcon_vector;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -197,19 +194,16 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (find_netif_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		error = errno;
-		ERR(policy, "Error: %s\n", strerror(error));
 		goto find_netif_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_NETIFCON;
 	if ( !(res->items = apol_vector_create()) ) {
-	        error = errno;
-                ERR(policy, "Error: %s\n", strerror(error));
+                ERR(NULL, "%s", strerror(ENOMEM));
 		goto find_netif_types_run_fail;	
 	}
 
@@ -237,8 +231,7 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy)
 		
                 proof = sechk_proof_new(NULL);
                 if ( !proof ) {
-	                error = errno;
-                        ERR(policy, "Error: %s\n", strerror(error));
+	                ERR(NULL, "%s", strerror(ENOMEM));
                         goto find_netif_types_run_fail;
                 }
                 proof->type = SECHK_ITEM_NETIFCON;
@@ -259,28 +252,24 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy)
 		if ( !item) {
                 	item = sechk_item_new(NULL);
                         if (!item) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
                         }
                         item->test_result = 1;
                         item->item = (void *)if_type;
                         if ( apol_vector_append(res->items, (void *)item) < 0 ) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
 			}
                 }
                 if ( !item->proof ) {
 			if ( !(item->proof = apol_vector_create()) ) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
 			}
 		}
                 if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-                        error = errno;
-                        ERR(policy, "Error: %s\n", strerror(error));
+	                ERR(NULL, "%s", strerror(ENOMEM));
                         goto find_netif_types_run_fail;
 		}
 		item = NULL;
@@ -306,29 +295,25 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy)
 			a_context = apol_context_create_from_qpol_context(policy, context);
 
                         if (apol_str_append(&buff, &buff_sz, "sid netif ") != 0) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
                         }
 
 			if (apol_str_append(&buff, &buff_sz, apol_context_render(policy, a_context)) != 0 ) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
 			}
 
 			item = sechk_item_new(NULL);
 			if (!item) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
 			}
 			item->test_result = 1;
 
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
 			}
 
@@ -338,19 +323,16 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy)
                         item->item = (void *)context_type;
                         if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
-                                	error = errno;
-                                	ERR(policy, "Error: %s\n", strerror(error));
+			                ERR(NULL, "%s", strerror(ENOMEM));
                                 	goto find_netif_types_run_fail;
 				}
 			}
                         if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
 			}
                         if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-                                error = errno;
-                                ERR(policy, "Error: %s\n", strerror(error));
+		                ERR(NULL, "%s", strerror(ENOMEM));
                                 goto find_netif_types_run_fail;
 			}
 		}
@@ -391,11 +373,11 @@ int find_netif_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
 	if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 	
@@ -405,7 +387,7 @@ int find_netif_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+		ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
 	
@@ -467,11 +449,11 @@ int find_netif_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 sechk_result_t *find_netif_types_get_result(sechk_module_t *mod) 
 {
 	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(NULL, "%s", "Invalid parameters");
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(NULL, "Wrong module (%s)", mod->name);
 		return NULL;
 	}
 
@@ -481,15 +463,15 @@ sechk_result_t *find_netif_types_get_result(sechk_module_t *mod)
 int find_netif_types_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
         if (!mod || !v) {
-                fprintf(stderr, "Error: invalid parameters\n");
+                ERR(NULL, "%s", "Invalid parameters");
                 return -1;
         }
         if (strcmp(mod_name, mod->name)) {
-                fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                ERR(NULL, "Wrong module (%s)", mod->name);
                 return -1;
         }
         if (!mod->result) {
-                fprintf(stderr, "Error: module has not been run\n");
+                ERR(NULL, "%s", "Module has not been run");
                 return -1;
         }
 

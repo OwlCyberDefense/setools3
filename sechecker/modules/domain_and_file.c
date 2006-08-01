@@ -20,13 +20,13 @@ int domain_and_file_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+                ERR(NULL, "%s", "No library");
 		return -1;
 	}
 
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+                ERR(NULL, "%s", "Module unknown");
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -59,81 +59,81 @@ int domain_and_file_register(sechk_lib_t *lib)
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &domain_and_file_init;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &domain_and_file_run;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &domain_and_file_data_free;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &domain_and_file_print_output;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &domain_and_file_get_result;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
@@ -145,7 +145,7 @@ int domain_and_file_init(sechk_module_t *mod, apol_policy_t *policy)
 	domain_and_file_data_t *datum = NULL;
 
 	if (!mod || !policy) {
-		ERR(policy, "Invalid parameters");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
@@ -155,7 +155,7 @@ int domain_and_file_init(sechk_module_t *mod, apol_policy_t *policy)
 
 	datum = domain_and_file_data_new();
 	if (!datum) {
-		ERR(policy, "Out of memory");
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	mod->data = datum;
@@ -170,7 +170,7 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	sechk_result_t *domain_res = NULL, *file_type_res = NULL;
-	int i, j, k,  error;
+	size_t i, j, k;
 	sechk_run_fn_t run_fn = NULL;
 	sechk_get_result_fn_t get_res = NULL;
 	sechk_name_value_t *dep = NULL;
@@ -178,7 +178,7 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_vector_t *type_vector;
 
 	if (!mod || !policy) {
-		ERR(policy, "Invalid parameters");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
@@ -193,18 +193,17 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (domain_and_file_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		ERR(policy, "Out of memory");
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		ERR(policy, "Out of memory");
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto domain_and_file_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
         if ( !(res->items = apol_vector_create()) ) {
-                error = errno;
-                ERR(policy, "%s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 goto domain_and_file_run_fail;
         }
 
@@ -218,22 +217,22 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* get results */
 	get_res = sechk_lib_get_module_function("find_domains", SECHK_MOD_FN_GET_RES, mod->parent_lib);
 	if (!get_res) {
-		fprintf(stderr, "Error: unable to find get_result function\n");
+                ERR(policy, "%s", "Unable to find get_result function for module find_domains");
 		goto domain_and_file_run_fail;
 	}
 	domain_res = get_res(sechk_lib_get_module("find_domains", mod->parent_lib));
 	if (!domain_res) {
-		fprintf(stderr, "Error: unable to get results\n");
+                ERR(policy, "%s", "Unable to get results for module find_domains");
 		goto domain_and_file_run_fail;
 	}
 	get_res = sechk_lib_get_module_function("find_file_types", SECHK_MOD_FN_GET_RES, mod->parent_lib);
 	if (!get_res) {
-		fprintf(stderr, "Error: unable to find get_result function\n");
+                ERR(policy, "%s", "Unable to find get_result function for module find_file_types");
 		goto domain_and_file_run_fail;
 	}
 	file_type_res = get_res(sechk_lib_get_module("find_file_types", mod->parent_lib));
 	if (!file_type_res) {
-		fprintf(stderr, "Error: unable to get results\n");
+                ERR(policy, "%s", "Unable to get results for module find_file_types");
 		goto domain_and_file_run_fail;
 	}
 	
@@ -261,13 +260,12 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy)
 			if (!strcmp(domain_name, type_name)) {
 		                item = sechk_item_new(NULL);
                 		if (!item) {
-        		                ERR(policy, "Out of memory");
+			                ERR(policy, "%s", strerror(ENOMEM));
                         		goto domain_and_file_run_fail;
                 		}
                 		item->item = (void *)domain;
                         	if ( !(item->proof = apol_vector_create()) ) {
-                                	error = errno;
-                                	ERR(policy, "%s", strerror(error));
+			                ERR(policy, "%s", strerror(ENOMEM));
                                 	goto domain_and_file_run_fail;
                         	}
 				for ( k = 0; k < apol_vector_get_size(domain_item->proof); k++ ) {
@@ -276,20 +274,17 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy)
 					domain_proof = apol_vector_get_element(domain_item->proof, k);
 					proof = sechk_proof_new(NULL);
 					if (!proof) {
-                                        	error = errno;
-                                        	ERR(policy, "%s", strerror(error));
+				                ERR(policy, "%s", strerror(ENOMEM));
                                         	goto domain_and_file_run_fail;
 					}
 					proof->type = SECHK_ITEM_TYPE;
 					proof->text = strdup(domain_proof->text);
 					if ( !proof->text) {
-	                                        error = errno;
-        	                                ERR(policy, "%s", strerror(error));
+				                ERR(policy, "%s", strerror(ENOMEM));
                 	                        goto domain_and_file_run_fail;
 					}
 					if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-                                        	error = errno;
- 	                                       ERR(policy, "%s", strerror(error));
+				               ERR(policy, "%s", strerror(ENOMEM));
  	                                       goto domain_and_file_run_fail;
 					}
 				}
@@ -299,29 +294,24 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy)
                                         type_proof = apol_vector_get_element(type_item->proof, k);
                                         proof = sechk_proof_new(NULL);
                                         if (!proof) {
-                                                error = errno;
-                                                ERR(policy, "%s", strerror(error));
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto domain_and_file_run_fail;
                                         }
                                         proof->type = SECHK_ITEM_TYPE;
                                         proof->text = strdup(type_proof->text);
                                         if ( !proof->text) {
-                                                error = errno;
-                                                ERR(policy, "%s", strerror(error));
+				                ERR(policy, "%s", strerror(ENOMEM));
                                                 goto domain_and_file_run_fail;
                                         }
                                         if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-                                                error = errno;
-                                               ERR(policy, "%s", strerror(error));
+				               ERR(policy, "%s", strerror(ENOMEM));
                                                goto domain_and_file_run_fail;
                                         }
                                 }
 	                        if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-        	                        error = errno;
-                	                ERR(policy, "Error: %s\n", strerror(error));
+			                ERR(policy, "%s", strerror(ENOMEM));
                         	        goto domain_and_file_run_fail;
 	                        }
-
 			}
 		}
 	}
@@ -352,11 +342,11 @@ int domain_and_file_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
         if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -365,7 +355,7 @@ int domain_and_file_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+                ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
 
@@ -412,11 +402,11 @@ int domain_and_file_print_output(sechk_module_t *mod, apol_policy_t *policy)
 sechk_result_t *domain_and_file_get_result(sechk_module_t *mod) 
 {
 	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(NULL, "%s", "Invalid parameters");
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                ERR(NULL, "Wrong module (%s)", mod->name);
 		return NULL;
 	}
 

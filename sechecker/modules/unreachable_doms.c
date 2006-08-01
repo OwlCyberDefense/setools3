@@ -33,7 +33,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+		ERR(NULL, "%s", "No library");
 		return -1;
 	}
 
@@ -42,7 +42,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+		ERR(NULL, "%s", "Module unknown");
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -71,105 +71,95 @@ int unreachable_doms_register(sechk_lib_t *lib)
 
 	/* assign requirements */
 	/* find_domains requires source policy.. */
-/*
-	if ( apol_vector_append(mod->requirements, sechk_name_value_new("apol_policy_type", "source")) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
-		return -1;
-	}
-	if ( apol_vector_append(mod->requirements, sechk_name_value_new("default_ctx", NULL)) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
-			return -1;
-	}
-*/
 	
 	/* assign dependencies */
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains")) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "inc_dom_trans")) < 0 ) {
-		fprintf(stderr, "Error: Out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &unreachable_doms_init;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &unreachable_doms_run;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &unreachable_doms_data_free;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &unreachable_doms_print_output;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &unreachable_doms_get_result;
         if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                fprintf(stderr, "Error: out of memory\n");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
 
@@ -186,17 +176,17 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy)
 	const char *ctx_file_path = NULL;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Wrong module (%s)", mod->name);
+                ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = unreachable_doms_data_new();
 	if (!datum) {
-		ERR(policy, "Out of memory");
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	mod->data = datum;
@@ -204,16 +194,16 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy)
 	/* Parse default contexts file */
 	ctx_file_path = selinux_default_context_path();
 	if ( !(datum->ctx_vector = apol_vector_create()) ) {
-		ERR(policy, "Out of memory");
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	if (!ctx_file_path) {
-		ERR(policy, "Could not get default contexts path");
+                ERR(policy, "%s", "Unable to find default contexts file");
 		return -1;
 	} else {
 		retv = parse_default_contexts(ctx_file_path, &datum->ctx_vector, policy);
 		if (!retv) {
-			ERR(policy, "Could not parse default contexts file");
+	                ERR(policy, "%s", "Unable to parse default contexts file");
 			return -1;
 		}
 	}
@@ -236,7 +226,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int retv, i, j, k, error;
+	size_t retv, i, j, k;
 	bool_t found_valid_trans, found_invalid_trans;
 	sechk_run_fn_t run_fn = NULL;
 	sechk_get_result_fn_t get_res = NULL;
@@ -247,11 +237,11 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_domain_trans_analysis_t *dta;
 	
        	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Wrong module (%s)", mod->name);
+                ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -262,32 +252,31 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (unreachable_doms_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
         if ( !(res->items = apol_vector_create()) ) {
-                error = errno;
-                ERR(policy, "%s\n", strerror(error));
+                ERR(policy, "%s", strerror(ENOMEM));
                 goto unreachable_doms_run_fail;
         }
 		
 	if ( !(dta = apol_domain_trans_analysis_create()) ) {
-		ERR(policy, "Out of memory");
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 
 	if ( !(user_query = apol_user_query_create()) ) {
-		ERR(policy, "Out of memory");	
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 	if ( !(role_trans_query = apol_role_trans_query_create()) ) {
-		ERR(policy, "Out of memory");	
+                ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 
@@ -300,24 +289,24 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 
         get_res = sechk_lib_get_module_function("find_domains", SECHK_MOD_FN_GET_RES, mod->parent_lib);
         if (!get_res) {
-                ERR(policy, "Unable to get find_domains result function");
+                ERR(policy, "%s", "Unable to find result function for module find_domains");
                 goto unreachable_doms_run_fail;
         }
         find_domains_res = get_res(sechk_lib_get_module("find_domains", mod->parent_lib));
         if (!find_domains_res) {
-                ERR(policy, "Unable to get find_domains results");
+                ERR(policy, "%s", "Unable to get results for module find_domains");
                 goto unreachable_doms_run_fail;
         }
         dom_vector = (apol_vector_t *)find_domains_res->items;
 
         get_res = sechk_lib_get_module_function("inc_dom_trans", SECHK_MOD_FN_GET_RES, mod->parent_lib);
         if (!get_res) {
-                ERR(policy, "Unable to get inc_dom_trans result function\n");
+                ERR(policy, "%s", "Unable to find results function for module inc_dom_trans");
                 goto unreachable_doms_run_fail;
         }
         inc_dom_trans_res = get_res(sechk_lib_get_module("inc_dom_trans", mod->parent_lib));
         if (!inc_dom_trans_res) {
-                fprintf(stderr, "Error: Unable to get inc_dom_trans results\n");
+                ERR(policy, "%s", "Unable to get results for module inc_dom_trans");
                 goto unreachable_doms_run_fail;
         }
         idt_vector = (apol_vector_t *)inc_dom_trans_res->items;
@@ -341,7 +330,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 		apol_domain_trans_analysis_set_direction(policy, dta, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
 		retv = apol_domain_trans_analysis_do(policy, dta, &rev_dtr_vector);
 		if (retv < 0) {
-			ERR(policy, "Problem finding domain transitions");
+	                ERR(policy, "%s", strerror(ENOMEM));
 			goto unreachable_doms_run_fail;
 		}
 		
@@ -367,39 +356,36 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
-					ERR(policy, "Out of memory");
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 
 				item->item = (void *)end_type;
 				item->test_result = 1;
                         	if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-					error = errno;
-					ERR(policy, "Out of memory");
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
                 	        }
 			}
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-				ERR(policy, "Out of memory");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			proof->type = SECHK_ITEM_TYPE;
 			proof->text = strdup("There is insufficient TE policy for a transition to this domain to occur");
 			if (!proof->text) {
-				ERR(policy, "Out of memory");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
-					error = errno;
-					ERR(policy, strerror(error));
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-				error = errno;
-				ERR(policy, "Out of memory");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 		}
@@ -422,7 +408,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
                 apol_domain_trans_analysis_set_direction(policy, dta, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
                 retv = apol_domain_trans_analysis_do(policy, dta, &rev_dtr_vector);
 		if (retv) {
-                       	ERR(policy, "Unable to find domain transitions"); 
+	                ERR(policy, "%s", strerror(ENOMEM));
                         goto unreachable_doms_run_fail;
                 }
 
@@ -514,39 +500,36 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
-					ERR(policy, "Out of memory");
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 
 				item->item = (void *)dom;
 				item->test_result = 1;
                         	if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-					error = errno;
-					ERR(policy, "Out of memory");
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
                 	        }
 			}
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-				ERR(policy, "Out of memory");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			proof->type = SECHK_ITEM_TYPE;
 			proof->text = strdup("There is insufficient TE policy for a transition to this domain to occur");
 			if (!proof->text) {
-				ERR(policy, "Out of memory");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
-					error = errno;
-					ERR(policy, "%s", strerror(error));
+			                ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-				error = errno;
-				ERR(policy, "Out of memory");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 		}
@@ -588,11 +571,11 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
 	if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+                ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 	
@@ -601,7 +584,7 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		ERR(policy, "Module has not been run");
+                ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
 	
@@ -662,11 +645,11 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 sechk_result_t *unreachable_doms_get_result(sechk_module_t *mod) 
 {
 	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(NULL, "%s", "Invalid parameters");
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(NULL, "Wrong module (%s)\n", mod->name);
 		return NULL;
 	}
 
@@ -691,44 +674,6 @@ unreachable_doms_data_t *unreachable_doms_data_new(void)
 	return datum;
 }
 
-#if 0
-/* Returns a string representing a proof of no valid transitions to a domain */
-static char *build_no_trans_proof_str(void)
-{
-	char *str;
-
-	str = malloc(APOL_STR_SZ + 32);
-	if (!str) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-
-	sprintf(str, "There is insufficient TE policy for a transition to this domain to occur\n");
-	return str;
-} 
-
-/* Returns a string representing a proof of no common roles existing between domains */
-static char *build_common_role_proof_str(const int src_idx, const int dst_idx, apol_policy_t *policy)
-{
-	char *str;
-
-	str = malloc(APOL_STR_SZ + 32);
-	if (!str) {
-		fprintf(stderr, "Error: out of memory\n");
-		return NULL;
-	}
-	memset(str, 0x0, APOL_STR_SZ + 32);
-		
-	if (is_valid_type_idx(src_idx, policy) && is_valid_type_idx(dst_idx, policy)) {
-		snprintf(str, APOL_STR_SZ + 32, "No role was found having types %s and %s:\n\trole <<role_r>> types { %s %s }\n", 
-			 policy->types[src_idx].name, policy->types[dst_idx].name,
-			 policy->types[src_idx].name, policy->types[dst_idx].name);
-	}
-
-	return str;
-}
-#endif
-
 /* Parses default_contexts and adds source domains to datum->ctx_list */
 bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vector, apol_policy_t *policy)
 {
@@ -741,7 +686,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 	printf("Using default contexts: %s\n", ctx_file_path);
 	ctx_file = fopen(ctx_file_path, "r");
 	if (!ctx_file) {
-		fprintf(stderr, "Error: opening default contexts file %s\n", ctx_file_path);
+		ERR(policy, "Opening default contexts file %s", ctx_file_path);
 		goto parse_default_contexts_fail;
 	}
 	
@@ -751,7 +696,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 			if (feof(ctx_file)) {
 				break;
 			} else {
-				fprintf(stderr, "Error: reading default contexts file\n");
+				ERR(policy, "%s", "Reading default contexts file");
 				goto parse_default_contexts_fail;
 			}
 		}
@@ -763,7 +708,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* source role */
 		src_role = malloc(str_sz);
 		if (!src_role) {
-			fprintf(stderr, "Error: out of memory\n");
+	                ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
 
@@ -781,7 +726,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* source type */
 		src_dom = malloc(str_sz);
 		if (!src_dom) {
-			fprintf(stderr, "Error: out of memory\n");
+	                ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
 		memset(src_dom, 0x0, str_sz);
@@ -807,7 +752,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* dest role */
 		dst_role = malloc(str_sz);
 		if (!dst_role) {
-			fprintf(stderr, "Error: out of memory\n");
+	                ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
 		memset(dst_role, 0x0, str_sz);
@@ -825,7 +770,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* dest type */
 		dst_dom = malloc(str_sz);
 		if (!dst_dom) {
-			fprintf(stderr, "Error: out of memory\n");
+	                ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
 		memset(dst_dom, 0x0, str_sz);
@@ -846,7 +791,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		if ( qpol_policy_get_type_by_name(policy->qh, policy->p, src_dom, &type) ) {
 */
 			if ( apol_vector_append(*ctx_vector, (void *)strdup(src_dom)) < 0 ) {
-				ERR(policy, "Adding domain index");
+		                ERR(policy, "%s", strerror(ENOMEM));
 				goto parse_default_contexts_fail;
 			}
 /*
