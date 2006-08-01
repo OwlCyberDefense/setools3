@@ -702,7 +702,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 		return -1;
 	}
 
-	sepol_handle_set_callback((*handle)->sh, sepol_handle_route_to_callback, varg);
+	sepol_msg_set_callback((*handle)->sh, sepol_handle_route_to_callback, varg);
 	if (fn) {
 		(*handle)->fn = fn;
 		(*handle)->varg = varg;
@@ -828,7 +828,7 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 		return -1;
 	}
 
-	sepol_handle_set_callback((*handle)->sh, sepol_handle_route_to_callback, varg);
+	sepol_msg_set_callback((*handle)->sh, sepol_handle_route_to_callback, varg);
 	if (fn) {
 		(*handle)->fn = fn;
 		(*handle)->varg = varg;
