@@ -44,15 +44,14 @@ typedef struct qpol_extended_image qpol_extended_image_t;
  */
 extern int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy);
 
-extern int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t *polciy);
 extern void qpol_extended_image_destroy(qpol_extended_image_t **ext);
 
 /* forward declarations: see avrule_query.h and terule_query.h */
 struct qpol_avrule;
 struct qpol_terule;
 
-extern int qpol_avrule_get_syn_rule_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter);
-extern int qpol_terule_get_syn_rule_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter);
+extern int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter);
+extern int qpol_terule_get_syn_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter);
 
 #endif /* QPOL_POLICY_EXTEND_H */
 
