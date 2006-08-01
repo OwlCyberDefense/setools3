@@ -37,6 +37,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "debug.h"
+#include "syn_rule_internal.h"
+
+#define QPOL_SYN_RULE_TABLE_BITS 15
+#define QPOL_SYN_RULE_TABLE_SIZE (1 << QPOL_SYN_RULE_TABLE_BITS)
+#define QPOL_SYN_RULE_TABLE_MASK (QPOL_SYN_RULE_TABLE_SIZE - 1)
+
+#define QPOL_SYN_RULE_TABLE_HASH(rule_key) \
+((rule_key->class_val + \
+ (rule_key->target_val << 2) +\
+ (rule_key->source_val << 9)) & \
+ QPOL_SYN_RULE_TABLE_MASK)
+
+typedef struct qpol_syn_rule_key {
+	uint32_t rule_type;
+	uint32_t source_val;
+	uint32_t target_val;
+	uint32_t class_val;
+	cond_node_t *cond;
+} qpol_syn_rule_key_t;
+
+typedef struct qpol_syn_rule_list {
+	struct qpol_syn_rule *rule;
+	struct qpol_syn_rule_list *next;
+} qpol_syn_rule_list_t;
+
+typedef struct qpol_syn_rule_node {
+	qpol_syn_rule_key_t *key;
+	qpol_syn_rule_list_t *rules;
+	struct qpol_syn_rule_node *next;
+} qpol_syn_rule_node_t;
+
+typedef struct qpol_syn_rule_table {
+	qpol_syn_rule_node_t **buckets;
+} qpol_syn_rule_table_t;
+
+struct qpol_extended_image {
+	qpol_syn_rule_table_t *syn_rule_table;
+};
 
 /**
  *  Builds data for the attributes and inserts them into the policydb. 
@@ -384,6 +422,111 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 	return 0;
 }
 
+static void qpol_syn_rule_free(struct qpol_syn_rule *r) {
+	if (!r)
+		return;
+
+	/* eventually will do more when module linking is done */
+	free(r);
+}
+
+static void qpol_syn_rule_list_destroy(qpol_syn_rule_list_t **list)
+{
+	qpol_syn_rule_list_t *cur = NULL, *next = NULL;
+
+	if (!list || !(*list))
+		return;
+
+	for (cur = *list; cur; cur = next) {
+		next = cur->next;
+		qpol_syn_rule_free(cur->rule);
+		free(cur);
+	}
+}
+
+static void qpol_syn_rule_node_destroy(qpol_syn_rule_node_t **node)
+{
+	qpol_syn_rule_node_t *cur = NULL, *next = NULL;
+
+	if (!node || !(*node))
+		return;
+
+	for (cur = *node; cur; cur = next) {
+		next = cur->next;
+		qpol_syn_rule_list_destroy(&cur->rules);
+		free(cur->key);
+		free(cur);
+	}
+}
+
+static void qpol_syn_rule_table_destroy(qpol_syn_rule_table_t **t)
+{
+	size_t i = 0;
+
+	if (!t || !(*t))
+		return;
+
+	for (i = 0; i < QPOL_SYN_RULE_TABLE_SIZE; i++)
+		qpol_syn_rule_node_destroy(&((*t)->buckets[i]));
+
+	free((*t)->buckets);
+	free(*t);
+	*t = NULL;
+}
+
+/**
+ *  Build the table of syntactic rules for a policy.
+ *  @param handle Error handler for the policy.
+ *  @param policy The policy for which to build the table.
+ *  This policy will be modified by this call.
+ *  @return 0 on success and < 0 on error; if the call fails,
+ *  errno will be set.
+ */
+static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t *policy)
+{
+	int error = 0;
+
+	if (!handle || !policy) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (!policy->ext) {
+		policy->ext = calloc(1, sizeof(qpol_extended_image_t));
+		if (!policy->ext) {
+			error = errno;
+			ERR(handle, "%s", strerror(error));
+			goto err;
+		}
+	}
+
+	if (policy->ext->syn_rule_table)
+		return 0; /* already built */
+
+	policy->ext->syn_rule_table = calloc(1, sizeof(qpol_syn_rule_table_t));
+	if (!policy->ext->syn_rule_table) {
+		error = errno;
+		ERR(handle, "%s", strerror(error));
+		goto err;
+	}
+	policy->ext->syn_rule_table->buckets = calloc(QPOL_SYN_RULE_TABLE_SIZE, sizeof(qpol_syn_rule_node_t*));
+	if (!policy->ext->syn_rule_table->buckets) {
+		error = errno;
+		ERR(handle, "%s", strerror(error));
+		goto err;
+	}
+
+
+	return 0;
+
+err:
+	if (policy->ext)
+		qpol_syn_rule_table_destroy(&policy->ext->syn_rule_table);
+	errno = error;
+	return -1;
+}
+
 int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy)
 {
 	int retv, error;
@@ -421,11 +564,17 @@ int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy)
 		goto err;
 	}
 
+	retv = qpol_policy_build_syn_rule_table(handle, policy);
+	if (retv) {
+		error = errno;
+		goto err;
+	}
+
 	return STATUS_SUCCESS;
 
 err:
-	//TODO cleanup code here
 	/* no need to call ERR here as it will already have been called */
+	qpol_extended_image_destroy(&policy->ext);
 	errno = error;
 	return STATUS_ERR;
 }
@@ -435,6 +584,8 @@ void qpol_extended_image_destroy(qpol_extended_image_t **ext)
 	if (!ext || !(*ext))
 		return;
 
-	//TODO free stuff
+	qpol_syn_rule_table_destroy(&((*ext)->syn_rule_table));
+	free(*ext);
+	*ext = NULL;
 }
 

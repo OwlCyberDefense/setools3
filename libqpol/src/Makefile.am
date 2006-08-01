@@ -35,6 +35,8 @@ libqpol_a_SOURCES = \
 	queue.c \
 	rbacrule_query.c \
 	role_query.c \
+	syn_rule_internal.h \
+	syn_rule_query.c \
 	terule_query.c \
 	type_query.c \
 	user_query.c \
