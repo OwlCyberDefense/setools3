@@ -2,8 +2,8 @@
  * @file policy-query-internal.h
  *
  * Header for routines shared among libapol's queries and analyses.
- * These routines are declared hidden within the function by way of
- * the linking map.
+ * These routines are declared hidden within the library by way of the
+ * linking map.
  *
  * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
@@ -294,7 +294,7 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t *p,
  * qpol_class_t that match.  If a string does not match an object
  * class within the policy then it is ignored.
  *
- * @param p Policy in which to look up types.
+ * @param p Policy in which to look up classes.
  * @param classes Vector of class strings to convert.
  *
  * @return Vector of unique qpol_class_t pointers (relative to policy
@@ -305,7 +305,23 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p,
 						      apol_vector_t *classes);
 
 /**
- *  Object class and permission set
+ * Given a type, return a vector of qpol_type_t pointers to which the
+ * type expands.  If the type is just a type or an alias, the vector
+ * will have one element, pointing to the type's primary.  If it was
+ * an attribute, the vector will have that attribute's types (but not
+ * the attribute itself).
+ *
+ * @param p Policy in which to look up types.
+ * @param t Type to expand.
+ *
+ * @return Vector of qpol_type_t pointers, or NULL upon error.  Caller
+ * is responsible for calling apol_vector_destroy() afterwards.
+ */
+apol_vector_t *apol_query_expand_type(apol_policy_t *p,
+				      qpol_type_t *t);
+
+/**
+ *  Object class and permission set.
  *  Contains the name of a class and a list of permissions
  *  used by analyses and complex searches to allow permissions
  *  to be specified on a per class basis.

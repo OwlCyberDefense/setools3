@@ -40,6 +40,20 @@ struct apol_types_relation_result {
 	apol_vector_t *roles;
 	/** vector of qpol_user_t pointers */
 	apol_vector_t *users;
+	/** vector af apol_types_relation_access, rules that A has */
+	apol_vector_t *simA;
+	/** vector af apol_types_relation_access, rules that B has */
+	apol_vector_t *simB;
+	/** vector af apol_types_relation_access, types that A has that B does not */
+	apol_vector_t *disA;
+	/** vector af apol_types_relation_access, types that B has that A does not */
+	apol_vector_t *disB;
+};
+
+struct apol_types_relation_access {
+	qpol_type_t *type;
+	/** vector of qpol_avrule_t pointers */
+	apol_vector_t *rules;
 };
 
 /******************** actual analysis rountines ********************/
@@ -47,8 +61,7 @@ struct apol_types_relation_result {
 /**
  * Find the attributes that both typeA and typeB have.  Create a
  * vector of those attributes (as represented as qpol_type_t pointers
- * relative to the provided policy) and set r->attribs with that
- * vector.
+ * relative to the provided policy) and set r->attribs to that vector.
  *
  * @param p Policy containing types' information.
  * @param typeA First type to check.
@@ -75,7 +88,7 @@ static int apol_types_relation_common_attribs(apol_policy_t *p,
 	    (r->attribs = apol_vector_create_from_intersection(vA, vB)) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 	}
-	    
+
 	retval = 0;
  cleanup:
 	qpol_iterator_destroy(&iA);
@@ -85,6 +98,441 @@ static int apol_types_relation_common_attribs(apol_policy_t *p,
 	return retval;
 }
 
+/**
+ * Find the roles whose allowed types include both typeA and typeB.
+ * Create a vector of those roles (as represented as qpol_role_t
+ * pointers relative to the provided policy) and set r->roles to that
+ * vector.
+ *
+ * @param p Policy containing types' information.
+ * @param typeA First type to check.
+ * @param typeB Other type to check.
+ * @param r Result structure to fill.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_common_roles(apol_policy_t *p,
+					    qpol_type_t *typeA,
+					    qpol_type_t *typeB,
+					    apol_types_relation_result_t *r)
+{
+	char *nameA, *nameB;
+	apol_role_query_t *rq = NULL;
+	apol_vector_t *vA = NULL, *vB = NULL;
+	int retval = -1;
+
+	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+		goto cleanup;
+	}
+	if ((rq = apol_role_query_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_role_query_set_type(p, rq, nameA) < 0 ||
+	    apol_get_role_by_query(p, rq, &vA) < 0 ||
+	    apol_role_query_set_type(p, rq, nameB) < 0 ||
+	    apol_get_role_by_query(p, rq, &vB) < 0) {
+		goto cleanup;
+	}
+	if ((r->roles = apol_vector_create_from_intersection(vA, vB)) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+	}
+
+	retval = 0;
+ cleanup:
+	apol_role_query_destroy(&rq);
+	apol_vector_destroy(&vA, NULL);
+	apol_vector_destroy(&vB, NULL);
+	return retval;
+}
+
+/**
+ * Find the users whose roles have as their allowed types both typeA
+ * and typeB.  Create a vector of those users (as represented as
+ * qpol_user_t pointers relative to the provided policy) and set
+ * r->users to that vector.
+ *
+ * @param p Policy containing types' information.
+ * @param typeA First type to check.
+ * @param typeB Other type to check.
+ * @param r Result structure to fill.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_common_users(apol_policy_t *p,
+					    qpol_type_t *typeA,
+					    qpol_type_t *typeB,
+					    apol_types_relation_result_t *r)
+{
+	char *nameA, *nameB;
+	apol_role_query_t *rq = NULL;
+	apol_vector_t *vA = NULL, *vB = NULL;
+	qpol_iterator_t *iter = NULL, *riter = NULL;
+	int retval = -1;
+
+	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+		goto cleanup;
+	}
+	if ((rq = apol_role_query_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_role_query_set_type(p, rq, nameA) < 0 ||
+	    apol_get_role_by_query(p, rq, &vA) < 0 ||
+	    apol_role_query_set_type(p, rq, nameB) < 0 ||
+	    apol_get_role_by_query(p, rq, &vB) < 0) {
+		goto cleanup;
+	}
+
+	if ((r->users = apol_vector_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (qpol_policy_get_user_iter(p->qh, p->p, &iter) < 0) {
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_user_t *user;
+		size_t i;
+		int inA = 0, inB = 0;
+		if (qpol_iterator_get_item(iter, (void **) &user) < 0) {
+			goto cleanup;
+		}
+		if (qpol_user_get_role_iter(p->qh, p->p, user, &riter) < 0) {
+			goto cleanup;
+		}
+		for ( ; (!inA || !inB) && !qpol_iterator_end(riter); qpol_iterator_next(riter)) {
+			qpol_role_t *role;
+			if (qpol_iterator_get_item(riter, (void **) &role) < 0) {
+				goto cleanup;
+			}
+			if (!inA && apol_vector_get_index(vA, role, NULL, NULL, &i) == 0) {
+				inA = 1;
+			}
+			if (!inB && apol_vector_get_index(vB, role, NULL, NULL, &i) == 0) {
+				inB = 1;
+			}
+		}
+		qpol_iterator_destroy(&riter);
+		if (inA && inB && apol_vector_append(r->users, user) < 0) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	apol_role_query_destroy(&rq);
+	apol_vector_destroy(&vA, NULL);
+	apol_vector_destroy(&vB, NULL);
+	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&riter);
+	return retval;
+}
+
+/**
+ * Comparison function for a vector of apol_types_relation_access_t
+ * pointers.  Returns 0 if the access type at a matches the type b.
+ *
+ * @param a Pointer to an existing apol_types_relation_access_t.
+ * @param b Pointer to a qpol_type_t.
+ * @param data Unused.
+ *
+ * @return 0 if a's type matchs b, non-zero if not.
+ */
+static int apol_types_relation_access_compfunc(const void *a, const void *b, void *data __attribute__ ((unused)))
+{
+	apol_types_relation_access_t *access = (apol_types_relation_access_t *) a;
+        qpol_type_t *t = (qpol_type_t *) b;
+        return (int) ((char *) access->type - (char *) t);
+}
+
+/**
+ * Comparison function for a vector of apol_types_relation_access_t
+ * pointers.  Returns 0 if the access type a matches the accest type b.
+ *
+ * @param a Pointer to an existing apol_types_relation_access_t.
+ * @param b Pointer to another existing apol_types_relation_access_t.
+ * @param data Unused.
+ *
+ * @return 0 if a's type matchs b, non-zero if not.
+ */
+static int apol_types_relation_access_compfunc2(const void *a, const void *b, void *data __attribute__ ((unused)))
+{
+	apol_types_relation_access_t *accessA = (apol_types_relation_access_t *) a;
+	apol_types_relation_access_t *accessB = (apol_types_relation_access_t *) b;
+        return (int) ((char *) accessA->type - (char *) accessB->type);
+}
+
+/**
+ * Deallocate all space associated with a types relation access node,
+ * including the pointer itself.  Does nothing if the pointer is
+ * alread NULL.
+ *
+ * @param data Pointer to an access node to free.
+ */
+static void apol_types_relation_access_free(void *data)
+{
+	apol_types_relation_access_t *a = (apol_types_relation_access_t *) data;
+	if (a != NULL) {
+		apol_vector_destroy(&a->rules, NULL);
+		free(a);
+	}
+}
+
+/**
+ * Adds a rule to a vector of apol_types_relation_access_t pointers.
+ * Expands the rule's target type, appending new entries as necessary.
+ *
+ * @param p Policy from which rule originated.
+ * @param r Rule to expand and append.
+ * @param access Vector of apol_types_relation_access_t.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_access_append_rule(apol_policy_t *p,
+						  qpol_avrule_t *r,
+						  apol_vector_t *access)
+{
+	qpol_type_t *t;
+	apol_vector_t *expanded = NULL;
+	size_t i, j;
+	apol_types_relation_access_t *a;
+	int retval = -1;
+	if (qpol_avrule_get_target_type(p->qh, p->p, r, &t) < 0 ||
+	    (expanded = apol_query_expand_type(p, t)) == NULL) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(expanded); i++) {
+		t = apol_vector_get_element(expanded, i);
+		if (apol_vector_get_index(access, t, apol_types_relation_access_compfunc, NULL, &j) == 0) {
+			a = (apol_types_relation_access_t *) apol_vector_get_element(access, j);
+		}
+		else {
+			if ((a = calloc(1, sizeof(*a))) == NULL ||
+			    (a->rules = apol_vector_create()) == NULL ||
+			    apol_vector_append(access, a) < 0) {
+				apol_types_relation_access_free(a);
+				ERR(p, "%s", strerror(ENOMEM));
+				goto cleanup;
+			}
+			a->type = t;
+		}
+		if (apol_vector_append(a->rules, r) < 0) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+	}
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&expanded, NULL);
+	return retval;
+}
+
+/**
+ * The following builds separate databases to hold rules for typeA and
+ * typeB respectively.  The database holds a vector of pointers to
+ * apol_types_relation_access_t objects.  We can then compare access
+ * lists for typeA and typeB, determine common and unique access and
+ * have easy access to the relevant rules.
+ *
+ * @param p Policy to look up av rules.
+ * @param typeA First type to build access list.
+ * @param typeB Other type to build access list.
+ * @param accessesA Vector of apol_types_relation_access_t for typeA.
+ * @param accessesB Vector of apol_types_relation_access_t for typeB.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_create_access_pools(apol_policy_t *p,
+						   qpol_type_t *typeA,
+						   qpol_type_t *typeB,
+						   apol_vector_t *accessesA,
+						   apol_vector_t *accessesB)
+{
+	char *nameA, *nameB;
+	apol_avrule_query_t *aq = NULL;
+	apol_vector_t *vA = NULL, *vB = NULL;
+	size_t i;
+	int retval = -1;
+
+	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+		goto cleanup;
+	}
+	if ((aq = apol_avrule_query_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_avrule_query_set_rules(p, aq, QPOL_RULE_ALLOW) < 0 ||
+	    apol_avrule_query_set_source(p, aq, nameA, 1) < 0 ||
+	    apol_get_avrule_by_query(p, aq, &vA) < 0 ||
+	    apol_avrule_query_set_source(p, aq, nameB, 1) < 0 ||
+	    apol_get_avrule_by_query(p, aq, &vB) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(vA); i++) {
+		qpol_avrule_t *r = (qpol_avrule_t *) apol_vector_get_element(vA, i);
+		if (apol_types_relation_access_append_rule(p, r, accessesA) < 0) {
+			goto cleanup;
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(vB); i++) {
+		qpol_avrule_t *r = (qpol_avrule_t *) apol_vector_get_element(vB, i);
+		if (apol_types_relation_access_append_rule(p, r, accessesB) < 0) {
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	apol_avrule_query_destroy(&aq);
+	apol_vector_destroy(&vA, NULL);
+	apol_vector_destroy(&vB, NULL);
+	return retval;
+}
+
+/**
+ * Allocate a new apol_types_relation_access_t and append it to a
+ * vector.  The new access node's type will be set to a's type.  The
+ * rules will be a clone of a's rules.
+ *
+ * @param p Policy from which rule originated.
+ * @param a Access node to duplicate.
+ * @param access Vector of apol_types_relation_access_t to append.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_access_append(apol_policy_t *p,
+					     apol_types_relation_access_t *a,
+					     apol_vector_t *access)
+{
+	apol_types_relation_access_t *new_a;
+	int retval = -1;
+	if ((new_a = calloc(1, sizeof(*new_a))) == NULL ||
+	    (new_a->rules = apol_vector_create_from_vector(a->rules)) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	new_a->type = a->type;
+	if (apol_vector_append(access, new_a) < 0) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	retval = 0;
+ cleanup:
+	if (retval != 0) {
+		apol_types_relation_access_free(new_a);
+	}
+	return retval;
+}
+
+/**
+ * Find accesses, both similar and dissimilar, between both typeA and
+ * typeB.
+ *
+ * @param p Policy containing types' information.
+ * @param typeA First type to check.
+ * @param typeB Other type to check.
+ * @param do_similar 1 if to calculate similar accesses, 0 to skip.
+ * @param do_dissimilar 1 if to calculate dissimilar accesses, 0 to skip.
+ * @param r Result structure to fill.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_accesses(apol_policy_t *p,
+					qpol_type_t *typeA,
+					qpol_type_t *typeB,
+					int do_similar,
+					int do_dissimilar,
+					apol_types_relation_result_t *r)
+{
+	apol_vector_t *accessesA = NULL, *accessesB = NULL;
+	apol_types_relation_access_t *a, *b;
+	size_t i, j;
+	int retval = -1;
+
+	if ((accessesA = apol_vector_create()) == NULL ||
+	    (accessesB = apol_vector_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_types_relation_create_access_pools(p, typeA, typeB, accessesA, accessesB) < 0) {
+		goto cleanup;
+	}
+	apol_vector_sort(accessesA, apol_types_relation_access_compfunc2, NULL);
+	apol_vector_sort(accessesB, apol_types_relation_access_compfunc2, NULL);
+
+	if (do_similar) {
+		if ((r->simA = apol_vector_create()) == NULL ||
+		    (r->simB = apol_vector_create()) == NULL) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+	}
+	if (do_dissimilar) {
+		if ((r->disA = apol_vector_create()) == NULL ||
+		    (r->disB = apol_vector_create()) == NULL) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+	}
+
+	/* Step through each element for each access sorted list.  If
+	 * their types match and if do_similiar, then append the union
+	 * of the access rules to the results.	If their types do not
+	 * match and if do_similar then add to results.
+	 */
+	for (i = j = 0; i < apol_vector_get_size(accessesA) && j < apol_vector_get_size(accessesB); ) {
+		a = (apol_types_relation_access_t *) apol_vector_get_element(accessesA, i);
+		b = (apol_types_relation_access_t *) apol_vector_get_element(accessesB, j);
+		if (a->type == b->type) {
+			if (do_similar &&
+			    (apol_types_relation_access_append(p, a, r->simA) < 0 ||
+			     apol_types_relation_access_append(p, b, r->simB) < 0)) {
+				goto cleanup;
+			}
+			i++;
+			j++;
+		}
+		else {
+			if (a->type < b->type) {
+				if (do_dissimilar &&
+				    apol_types_relation_access_append(p, a, r->disA) < 0) {
+					goto cleanup;
+				}
+				i++;
+			}
+			else {
+				if (do_dissimilar &&
+				    apol_types_relation_access_append(p, b, r->disB) < 0) {
+					goto cleanup;
+				}
+				j++;
+			}
+		}
+	}
+	for ( ; do_dissimilar && i < apol_vector_get_size(accessesA); i++) {
+		a = (apol_types_relation_access_t *) apol_vector_get_element(accessesA, i);
+		if (apol_types_relation_access_append(p, a, r->disA) < 0) {
+			goto cleanup;
+		}
+	}
+	for ( ; do_dissimilar && j < apol_vector_get_size(accessesB); j++) {
+		b = (apol_types_relation_access_t *) apol_vector_get_element(accessesB, j);
+		if (apol_types_relation_access_append(p, b, r->disB) < 0) {
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&accessesA, apol_types_relation_access_free);
+	apol_vector_destroy(&accessesB, apol_types_relation_access_free);
+	return retval;
+}
 
 /******************** public functions below ********************/
 
@@ -94,10 +542,11 @@ int apol_types_relation_analysis_do(apol_policy_t *p,
 {
 	qpol_type_t *typeA, *typeB;
 	unsigned char isattrA, isattrB;
+	unsigned int do_similar_access, do_dissimilar_access;
 	int retval = -1;
 	*r = NULL;
 
-	if (tr->typeA == NULL || tr->typeB) {
+	if (tr->typeA == NULL || tr->typeB == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
@@ -121,6 +570,20 @@ int apol_types_relation_analysis_do(apol_policy_t *p,
 	}
 	if ((tr->analyses & APOL_TYPES_RELATION_COMMON_ATTRIBS) &&
 	    apol_types_relation_common_attribs(p, typeA, typeB, *r) < 0) {
+		goto cleanup;
+	}
+	if ((tr->analyses & APOL_TYPES_RELATION_COMMON_ROLES) &&
+	    apol_types_relation_common_roles(p, typeA, typeB, *r) < 0) {
+		goto cleanup;
+	}
+	if ((tr->analyses & APOL_TYPES_RELATION_COMMON_USERS) &&
+	    apol_types_relation_common_users(p, typeA, typeB, *r) < 0) {
+		goto cleanup;
+	}
+	do_similar_access = tr->analyses & APOL_TYPES_RELATION_SIMILAR_ACCESS;
+	do_dissimilar_access = tr->analyses & APOL_TYPES_RELATION_DISSIMILAR_ACCESS;
+	if ((do_similar_access || do_dissimilar_access) &&
+	    apol_types_relation_accesses(p, typeA, typeB, do_similar_access, do_dissimilar_access, *r) < 0) {
 		goto cleanup;
 	}
 
@@ -190,6 +653,10 @@ void apol_types_relation_result_destroy(apol_types_relation_result_t **result)
 		apol_vector_destroy(&(*result)->attribs, NULL);
 		apol_vector_destroy(&(*result)->roles, NULL);
 		apol_vector_destroy(&(*result)->users, NULL);
+		apol_vector_destroy(&(*result)->simA, apol_types_relation_access_free);
+		apol_vector_destroy(&(*result)->simB, apol_types_relation_access_free);
+		apol_vector_destroy(&(*result)->disA, apol_types_relation_access_free);
+		apol_vector_destroy(&(*result)->disB, apol_types_relation_access_free);
 		free(*result);
 		*result = NULL;
 	}
@@ -208,4 +675,34 @@ apol_vector_t *apol_types_relation_result_get_roles(apol_types_relation_result_t
 apol_vector_t *apol_types_relation_result_get_users(apol_types_relation_result_t *result)
 {
 	return result->users;
+}
+
+apol_vector_t *apol_types_relation_result_get_similar_first(apol_types_relation_result_t *result)
+{
+	return result->simA;
+}
+
+apol_vector_t *apol_types_relation_result_get_similar_other(apol_types_relation_result_t *result)
+{
+	return result->simB;
+}
+
+apol_vector_t *apol_types_relation_result_get_dissimilar_first(apol_types_relation_result_t *result)
+{
+	return result->disA;
+}
+
+apol_vector_t *apol_types_relation_result_get_dissimilar_other(apol_types_relation_result_t *result)
+{
+	return result->disB;
+}
+
+qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *access)
+{
+	return access->type;
+}
+
+apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t *access)
+{
+	return access->rules;
 }

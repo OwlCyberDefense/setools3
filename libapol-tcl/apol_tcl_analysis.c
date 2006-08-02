@@ -1304,6 +1304,174 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 }
 
 /**
+ * Given a result object from a two types relationship analysis,
+ * create a new Tcl list containing the names of common attributes.
+ */
+static int apol_types_relation_attribs_to_tcl_list(Tcl_Interp *interp,
+						   apol_types_relation_result_t *r,
+						   Tcl_Obj **o)
+{
+	apol_vector_t *v = apol_types_relation_result_get_attributes(r);
+	*o = Tcl_NewListObj(0, NULL);
+	size_t i;
+	int retval = TCL_ERROR;
+	for (i = 0; v != NULL && i < apol_vector_get_size(v); i++) {
+		qpol_type_t *t = (qpol_type_t *) apol_vector_get_element(v, i);
+		char *name;
+		Tcl_Obj *type_obj;
+		if (qpol_type_get_name(policydb->qh, policydb->p, t, &name) < 0) {
+			goto cleanup;
+		}
+		type_obj = Tcl_NewStringObj(name, -1);
+		if (Tcl_ListObjAppendElement(interp, *o, type_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Given a result object from a two types relationship analysis,
+ * create a new Tcl list containing the names of common roles.
+ */
+static int apol_types_relation_roles_to_tcl_list(Tcl_Interp *interp,
+						 apol_types_relation_result_t *r,
+						 Tcl_Obj **o)
+{
+	apol_vector_t *v = apol_types_relation_result_get_roles(r);
+	*o = Tcl_NewListObj(0, NULL);
+	size_t i;
+	int retval = TCL_ERROR;
+	for (i = 0; v != NULL && i < apol_vector_get_size(v); i++) {
+		qpol_role_t *role = (qpol_role_t *) apol_vector_get_element(v, i);
+		char *name;
+		Tcl_Obj *role_obj;
+		if (qpol_role_get_name(policydb->qh, policydb->p, role, &name) < 0) {
+			goto cleanup;
+		}
+		role_obj = Tcl_NewStringObj(name, -1);
+		if (Tcl_ListObjAppendElement(interp, *o, role_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Given a result object from a two types relationship analysis,
+ * create a new Tcl list containing the names of common users.
+ */
+static int apol_types_relation_users_to_tcl_list(Tcl_Interp *interp,
+						 apol_types_relation_result_t *r,
+						 Tcl_Obj **o)
+{
+	apol_vector_t *v = apol_types_relation_result_get_users(r);
+	*o = Tcl_NewListObj(0, NULL);
+	size_t i;
+	int retval = TCL_ERROR;
+	for (i = 0; v != NULL && i < apol_vector_get_size(v); i++) {
+		qpol_user_t *u = (qpol_user_t *) apol_vector_get_element(v, i);
+		char *name;
+		Tcl_Obj *user_obj;
+		if (qpol_user_get_name(policydb->qh, policydb->p, u, &name) < 0) {
+			goto cleanup;
+		}
+		user_obj = Tcl_NewStringObj(name, -1);
+		if (Tcl_ListObjAppendElement(interp, *o, user_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Given a vector of apol_types_relation_access_t pointers, create a
+ * new Tcl list containing those accesses.
+ */
+static int apol_types_relation_access_to_tcl_list(Tcl_Interp *interp,
+						  apol_vector_t *v,
+						  Tcl_Obj **o)
+{
+	*o = Tcl_NewListObj(0, NULL);
+	size_t i;
+	int retval = TCL_ERROR;
+	for (i = 0; v != NULL && i < apol_vector_get_size(v); i++) {
+		apol_types_relation_access_t *a;
+		Tcl_Obj *access_elem[2], *access_list;
+		qpol_type_t *type;
+		apol_vector_t *rules;
+		char *name;
+		a = (apol_types_relation_access_t *) apol_vector_get_element(v, i);
+		type = apol_types_relation_access_get_type(a);
+		rules = apol_types_relation_access_get_rules(a);
+		if (qpol_type_get_name(policydb->qh, policydb->p, type, &name) < 0) {
+			goto cleanup;
+		}
+		access_elem[0] = Tcl_NewStringObj(name, -1);
+		if (apol_vector_to_tcl_list(interp, rules, access_elem + 1) < 0) {
+			goto cleanup;
+		}
+		access_list = Tcl_NewListObj(2, access_elem);
+		if (Tcl_ListObjAppendElement(interp, *o, access_list) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Given a result object from a two types relationship analysis,
+ * create a new Tcl list containing lists of similar accesses.
+ */
+static int apol_types_relation_similar_to_tcl_list(Tcl_Interp *interp,
+						   apol_types_relation_result_t *r,
+						   Tcl_Obj **o)
+{
+	Tcl_Obj *sim[2];
+	apol_vector_t *v;
+	v = apol_types_relation_result_get_similar_first(r);
+	if (apol_types_relation_access_to_tcl_list(interp, v, sim + 0) == TCL_ERROR) {
+		return TCL_ERROR;
+	}
+	v = apol_types_relation_result_get_similar_other(r);
+	if (apol_types_relation_access_to_tcl_list(interp, v, sim + 1) == TCL_ERROR) {
+		return TCL_ERROR;
+	}
+	*o = Tcl_NewListObj(2, sim);
+	return TCL_OK;
+}
+
+/**
+ * Given a result object from a two types relationship analysis,
+ * create a new Tcl list containing lists of dissimilar accesses.
+ */
+static int apol_types_relation_dissimilar_to_tcl_list(Tcl_Interp *interp,
+						      apol_types_relation_result_t *r,
+						      Tcl_Obj **o)
+{
+	Tcl_Obj *dis[2];
+	apol_vector_t *v;
+	v = apol_types_relation_result_get_dissimilar_first(r);
+	if (apol_types_relation_access_to_tcl_list(interp, v, dis + 0) == TCL_ERROR) {
+		return TCL_ERROR;
+	}
+	v = apol_types_relation_result_get_dissimilar_other(r);
+	if (apol_types_relation_access_to_tcl_list(interp, v, dis + 1) == TCL_ERROR) {
+		return TCL_ERROR;
+	}
+	*o = Tcl_NewListObj(2, dis);
+	return TCL_OK;
+}
+
+/**
  * Return a sorted results list for a two types relationship analysis.
  * Each element corresponds to a sublist of results after running each
  * individual sub-analysis.  If the sub-analysis was not selected
@@ -1313,7 +1481,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
  *   <li>list of attribute strings
  *   <li>list of role strings
  *   <li>list of user strings
- *   <li>list of similar accesses
+ *   <li>two lists of similar accesses
  *   <li>two lists of dissimilar accesses
  *   <li>list of allow rules
  *   <li>list of type transition/change rules
@@ -1342,7 +1510,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp,
 					  int argc, CONST char *argv[])
 {
-	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	Tcl_Obj *result_elem[5], *result_obj;
 	apol_types_relation_analysis_t *analysis = NULL;
 	apol_types_relation_result_t *result = NULL;
 	CONST char **analyses_strings = NULL;
@@ -1367,6 +1535,28 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 		if (strcmp(s, "attribs") == 0) {
 			analyses |= APOL_TYPES_RELATION_COMMON_ATTRIBS;
 		}
+		else if (strcmp(s, "roles") == 0) {
+			analyses |= APOL_TYPES_RELATION_COMMON_ROLES;
+		}
+		else if (strcmp(s, "users") == 0) {
+			analyses |= APOL_TYPES_RELATION_COMMON_USERS;
+		}
+		else if (strcmp(s, "similars") == 0) {
+			analyses |= APOL_TYPES_RELATION_SIMILAR_ACCESS;
+		}
+		else if (strcmp(s, "dissimilars") == 0) {
+			analyses |= APOL_TYPES_RELATION_DISSIMILAR_ACCESS;
+		}
+		else if (strcmp(s, "allow") == 0) {
+			analyses |= APOL_TYPES_RELATION_ALLOW_RULES;
+		}
+		else if (strcmp(s, "trans") == 0) {
+			analyses |= APOL_TYPES_RELATION_TYPE_RULES;
+		}
+		else {
+			ERR(policydb, "Invalid analysis type %s.", s);
+			goto cleanup;
+		}
 	}
 	if ((analysis = apol_types_relation_analysis_create()) == NULL) {
 		ERR(policydb, "%s", strerror(ENOMEM));
@@ -1380,7 +1570,14 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 	if (apol_types_relation_analysis_do(policydb, analysis, &result) < 0) {
 		goto cleanup;
 	}
-
+	if (apol_types_relation_attribs_to_tcl_list(interp, result, result_elem + 0) == TCL_ERROR ||
+	    apol_types_relation_roles_to_tcl_list(interp, result, result_elem + 1) == TCL_ERROR ||
+	    apol_types_relation_users_to_tcl_list(interp, result, result_elem + 2) == TCL_ERROR ||
+	    apol_types_relation_similar_to_tcl_list(interp, result, result_elem + 3) == TCL_ERROR ||
+	    apol_types_relation_dissimilar_to_tcl_list(interp, result, result_elem + 4) == TCL_ERROR) {
+		goto cleanup;
+	}
+	result_obj = Tcl_NewListObj(5, result_elem);
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
