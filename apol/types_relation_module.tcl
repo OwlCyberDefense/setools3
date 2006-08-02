@@ -1,8 +1,8 @@
 #############################################################
-#  types_relation_module.tcl  
+#  types_relation_module.tcl
 # -----------------------------------------------------------
 #  Copyright (C) 2004-2006 Tresys Technology, LLC
-#  see file 'COPYING' for use and warranty information 
+#  see file 'COPYING' for use and warranty information
 #
 #  Requires tcl and tk 8.4+, with BWidget
 #  Author: <don.patterson@tresys.com> 8-11-2004
@@ -288,8 +288,9 @@ proc Apol_Analysis_tra::createResultsDisplay {} {
     $res.tb tag configure num -foreground blue -font {Helvetica 10 bold}
     pack $res -expand 1 -fill both
 
+    update
+    grid propagate $sw 0
     $tree configure -selectcommand [list Apol_Analysis_tra::treeSelect $res]
-    bind $tree <Destroy> [list Apol_Analysis_tra::treeDestroy $tree]
     return $f
 }
 
@@ -298,30 +299,175 @@ proc Apol_Analysis_tra::treeSelect {res tree node} {
         $res.tb configure -state normal
         $res.tb delete 0.0 end
         set data [$tree itemcget $node -data]
-        if {[string index $node 0] == "x"} {
-            renderResultsTransFlow $res $tree $node [lindex $data 1]
-        } else {
-            # an informational node, whose data has already been rendered
-            eval $res.tb insert end [lindex $data 1]
+        set name [$tree itemcget $node -text]
+        if {[set parent [$tree parent $node]] != "root"} {
+            set parent_name [$tree itemcget $parent -text]
+            set parent_data [$tree itemcget $parent -data]
+        }
+        switch -glob -- $node {
+            pre:* {
+                # an informational node, whose data has already been rendered
+                eval $res.tb insert end $data
+            }
+            simtitle {
+                showSimilarTitle $res $data
+            }
+            sim:* {
+                showSimilar $res $name $parent_data $data
+            }
+            distitle {
+                showDissimilarTitle $res $data
+            }
+            dissubtitle* {
+                showDissimilarSubtitle $res $data
+            }
+            dis:* {
+                showDissimilar $res $name $parent_name $data
+            }
         }
         $res.tb configure -state disabled
     }
 }
 
-proc Apol_Analysis_tra::treeDestroy {tree} {
-    set graph_handler [lindex [$tree itemcget top -data] 0]
-    apol_InformationFlowDestroy $graph_handler
-}
-
 proc Apol_Analysis_tra::clearResultsDisplay {f} {
-    variable vals
-
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
-    set graph_handler [lindex [$tree itemcget top -data] 0]
-    apol_InformationFlowDestroy $graph_handler
     $tree delete [$tree nodes root]
     Apol_Widget::clearSearchResults $res
     Apol_Analysis::setResultTabCriteria [array get vals]
 }
 
+proc Apol_Analysis_tra::renderResults {f results} {
+    variable vals
+
+    set tree [[$f.left getframe].sw getframe].tree
+    set res [$f.right getframe].res
+    foreach {attribs roles users similars dissimilars} $results {break}
+    if {$vals(run:attribs)} {
+        renderCommon Attributes $tree $attribs
+    }
+    if {$vals(run:roles)} {
+        renderCommon Roles $tree $roles
+    }
+    if {$vals(run:users)} {
+        renderCommon Users $tree $users
+    }
+    if {$vals(run:similars)} {
+        renderSimilars $tree $similars
+    }
+    if {$vals(run:dissimilars)} {
+        renderDissimilars $tree $dissimilars
+    }
+    set first_node [$tree nodes root 0]
+    $tree selection set $first_node
+    update idletasks
+    $tree see $first_node
+}
+
+proc Apol_Analysis_tra::renderCommon {title tree names} {
+    set text [list "Common $title ([llength $names]):\n\n" title]
+    foreach n [lsort $names] {
+        lappend text "$n\n" {}
+    }
+    $tree insert end root pre:$title -text "Common $title" -data $text
+}
+
+proc Apol_Analysis_tra::renderSimilars {tree results} {
+    variable vals
+    foreach {simA simB} $results {break}
+    set data [list $vals(typeA) $vals(typeB) [llength $simA]]
+    $tree insert end root simtitle -text "Similar access to resources" -data $data
+    foreach accessA [lsort -index 0 $simA] accessB [lsort -index 0 $simB] {
+        set type [lindex $accessA 0]
+        set rulesA [lindex $accessA 1]
+        set rulesB [lindex $accessB 1]
+        $tree insert end simtitle sim:$type -text $type -data [list $rulesA $rulesB]
+    }
+}
+
+proc Apol_Analysis_tra::showSimilarTitle {res data} {
+    foreach {typeA typeB numTypes} $data {break}
+    $res.tb insert end $typeA title_type \
+        " and " title \
+        $typeB title_type \
+        " access $numTypes common type(s).\n\n" title \
+        "Open the subtree for this item to see the list of common types that
+can be accessed.  You may then select a type from the subtree to see
+the allow rules which provide the access." {}
+}
+
+proc Apol_Analysis_tra::showSimilar {res name parent_data data} {
+    foreach {typeA typeB} $parent_data {rulesA rulesB} $data {break}
+    $res.tb insert end $typeA title_type \
+        " accesses " title \
+        $name title_type \
+        ":\n\n" title
+    foreach r $rulesA {
+         Apol_Widget::appendSearchResultAVRule $res 2 $r
+    }
+    $res.tb insert end "\n" title \
+        $typeB title_type \
+        " accesses " title \
+        $name title_type \
+        ":\n\n" title
+    foreach r $rulesB {
+         Apol_Widget::appendSearchResultAVRule $res 2 $r
+    }
+}
+
+proc Apol_Analysis_tra::renderDissimilars {tree results} {
+    variable vals
+    foreach {disA disB} $results {break}
+    puts "disA = $disA\ndisB = $disB"
+    set data [list $vals(typeA) $vals(typeB)]
+    $tree insert end root distitle -text "Dissimilar access to resources" -data $data
+
+    set data [list $vals(typeA) $vals(typeB) [llength $disA]]
+    $tree insert end distitle dissubtitleA -text $vals(typeA) -data $data
+    foreach access [lsort -index 0 $disA] {
+        set type [lindex $access 0]
+        set rules [lindex $access 1]
+        $tree insert end dissubtitleA dis:$type -text $type -data $rules
+    }
+    set data [list $vals(typeB) $vals(typeA) [llength $disB]]
+    $tree insert end distitle dissubtitleB -text $vals(typeB) -data $data
+    foreach access [lsort -index 0 $disB] {
+        set type [lindex $access 0]
+        set rules [lindex $access 1]
+        $tree insert end dissubtitleB dis:$type -text $type -data $rules
+    }
+}
+
+proc Apol_Analysis_tra::showDissimilarTitle {res data} {
+    foreach {typeA typeB} $data {break}
+    $res.tb insert end "Dissimilar access between " title \
+        $typeA title_type \
+        " and " title \
+        $typeB title_type \
+        ".\n\n" title \
+        "Open the subtree for this item to access individual subtrees of types
+which can be accessed by one type but not the other.  You may then
+select a type from a subtree to see the allow rules which provide the
+access." {}
+}
+
+proc Apol_Analysis_tra::showDissimilarSubtitle {res data} {
+    foreach {one_type other_type numTypes} $data {break}
+    $res.tb insert end $one_type title_type \
+        " accesss $numTypes type(s) to which " title \
+        $other_type title_type \
+        " does not have access.\n\n" title \
+        "Open the subtree for this item to see the list of types.  You may then
+select a type from the subtree to see the allow rules which provide
+the access." {}
+}
+
+proc Apol_Analysis_tra::showDissimilar {res name parent_name data} {
+    $res.tb insert end $parent_name title_type \
+        " accesses " title \
+        $name title_type \
+        ":\n\n" title
+    foreach r $data {
+         Apol_Widget::appendSearchResultAVRule $res 2 $r
+    }
+}

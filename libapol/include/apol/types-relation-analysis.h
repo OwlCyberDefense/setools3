@@ -48,6 +48,7 @@
 
 typedef struct apol_types_relation_analysis apol_types_relation_analysis_t;
 typedef struct apol_types_relation_result apol_types_relation_result_t;
+typedef struct apol_types_relation_access apol_types_relation_access_t;
 
 /********** functions to do types relation analysis **********/
 
@@ -184,5 +185,89 @@ extern apol_vector_t *apol_types_relation_result_get_roles(apol_types_relation_r
  * @return Vector of common users, or NULL if analysis was not run.
  */
 extern apol_vector_t *apol_types_relation_result_get_users(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of accesses similar to the two types.  This is a
+ * vector of apol_types_relation_access_t pointers.  The vector will
+ * contain only the rules that the first type had.  Call
+ * apol_types_relation_result_get_similar_other() to get the
+ * complementary vector (i.e., both vectors will have the same types).
+ * The caller <b>should not</b> call apol_vector_destroy() upon the
+ * returned vector.  If the user did not request this analysis then
+ * the return value will be NULL.
+ *
+ * @param result Types relation result from which to get similar accesses.
+ *
+ * @return Vector of similar accesses, or NULL if analysis was not run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_similar_first(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of accesses similar to the two types.  This is a
+ * vector of apol_types_relation_access_t pointers.  The vector will
+ * contain only the rules that the other type had.  Call
+ * apol_types_relation_result_get_similar_first() to get the
+ * complementary vector (i.e., both vectors will have the same types).
+ * The caller <b>should not</b> call apol_vector_destroy() upon the
+ * returned vector.  If the user did not request this analysis then
+ * the return value will be NULL.
+ *
+ * @param result Types relation result from which to get similar accesses.
+ *
+ * @return Vector of similar accesses, or NULL if analysis was not run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_similar_other(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of accesses dissimilar for the first type (i.e.,
+ * types that the first type reaches that the other type does not).
+ * This is a vector of apol_types_relation_access_t pointers.  The
+ * caller <b>should not</b> call apol_vector_destroy() upon the
+ * returned vector.  If the user did not request this analysis then
+ * the return value will be NULL.
+ *
+ * @param result Types relation result from which to get dissimilar
+ * accesses.
+ *
+ * @return Vector of dissimilar accesses, or NULL if analysis was not
+ * run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_dissimilar_first(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of accesses dissimilar for the other type (i.e.,
+ * types that the other type reaches that the first type does not).
+ * This is a vector of apol_types_relation_access_t pointers.  The
+ * caller <b>should not</b> call apol_vector_destroy() upon the
+ * returned vector.  If the user did not request this analysis then
+ * the return value will be NULL.
+ *
+ * @param result Types relation result from which to get dissimilar
+ * accesses.
+ *
+ * @return Vector of dissimilar accesses, or NULL if analysis was not
+ * run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_dissimilar_other(apol_types_relation_result_t *result);
+
+/**
+ * Given a types relation access node, return the type stored within.
+ *
+ * @param access Types relation access node.
+ *
+ * @return Pointer to the type stored within.
+ */
+extern qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *access);
+
+/**
+ * Given a types relation access node, return the vector of
+ * qpol_avrule_t pointers stored within.
+ *
+ * @param access Types relation access node.
+ *
+ * @return Pointer to the vector of rules.  The caller <b>must not</b>
+ * destroy this vector.
+ */
+extern apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t *access);
 
 #endif

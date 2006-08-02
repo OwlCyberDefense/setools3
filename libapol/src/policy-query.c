@@ -341,7 +341,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,
 		goto cleanup;
 	}
 
-	if (!do_regex && qpol_policy_get_type_by_name(p->qh, p->p, symbol, &type) == 0) {
+	if (!do_regex && apol_query_get_type(p, symbol, &type) == 0) {
 		if (apol_query_append_type(p, list, type) < 0) {
 			goto cleanup;
 		}
@@ -504,7 +504,53 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p, apol_vec
 	return list;
 }
 
-/* apol_obj_perm - set of an object with a list of permissions */
+apol_vector_t *apol_query_expand_type(apol_policy_t *p, qpol_type_t *t)
+{
+	apol_vector_t *v = NULL;
+	int retval = -1;
+	unsigned char isattr;
+	qpol_iterator_t *iter = NULL;
+
+	if ((v = apol_vector_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (qpol_type_get_isattr(p->qh, p->p, t, &isattr) < 0) {
+		goto cleanup;
+	}
+	if (!isattr) {
+		if (apol_vector_append(v, t) < 0) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+	}
+	else {
+		if (qpol_type_get_type_iter(p->qh, p->p, t, &iter) < 0) {
+			goto cleanup;
+		}
+		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+			qpol_type_t *type;
+			if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
+				goto cleanup;
+			}
+			if (apol_vector_append(v, type) < 0) {
+				ERR(p, "%s", strerror(ENOMEM));
+				goto cleanup;
+			}
+		}
+	}
+	retval = 0;
+ cleanup:
+	qpol_iterator_destroy(&iter);
+	if (retval != 0) {
+		apol_vector_destroy(&v, NULL);
+		return NULL;
+	}
+	return v;
+}
+
+/******** apol_obj_perm - set of an object with a list of permissions ********/
+
 struct apol_obj_perm {
 	char		*obj_class;	/* name of object class */
 	apol_vector_t	*perms;	/* vector of permission names */
