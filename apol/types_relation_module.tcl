@@ -71,7 +71,7 @@ proc Apol_Analysis_tra::create {options_frame} {
                        "Similar access to resources" similars \
                        "Dissimilar access to resources" dissimilars
                        "TE allow rules" allows \
-                       "Type transition/change rules" trans} {
+                       "Type transition/change rules" typerules} {
         set cb [checkbutton [$basic_tf getframe].$v -text $t \
                     -variable Apol_Analysis_tra::vals(run:$v)]
         pack $cb -anchor w
@@ -187,7 +187,7 @@ proc Apol_Analysis_tra::reinitializeVals {} {
         run:similars 0
         run:dissimilars 0
         run:allows 0
-        run:trans 0
+        run:typerules 0
 
         run:direct 0
         run:transAB 0
@@ -327,11 +327,17 @@ proc Apol_Analysis_tra::treeSelect {res tree node} {
             allow {
                 showAllows $res $data
             }
-            trans {
-                showTrans $res $data
+            typerules {
+                showTypeRules $res $data
             }
             x* {
                 showDirectFlow $res $data
+            }
+            y* {
+                showTransFlow $res $data
+            }
+            f:* {
+                showDTA $res $data
             }
         }
         $res.tb configure -state disabled
@@ -351,8 +357,8 @@ proc Apol_Analysis_tra::renderResults {f results} {
 
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
-    foreach {attribs roles users similars dissimilars allows trans \
-        dirflow} $results {break}
+    foreach {attribs roles users similars dissimilars allows typerules \
+        dirflow transAB transBA domsAB domsBA} $results {break}
     if {$vals(run:attribs)} {
         renderCommon Attributes $tree $attribs
     }
@@ -371,11 +377,23 @@ proc Apol_Analysis_tra::renderResults {f results} {
     if {$vals(run:allows)} {
         renderAllows $tree $allows
     }
-    if {$vals(run:trans)} {
-        renderTrans $tree $trans
+    if {$vals(run:typerules)} {
+        renderTypeRules $tree $typerules
     }
     if {$vals(run:direct)} {
         renderDirectFlow $tree $dirflow
+    }
+    if {$vals(run:transAB)} {
+        renderTransFlow 0 $tree $transAB
+    }
+    if {$vals(run:transBA)} {
+        renderTransFlow 1 $tree $transBA
+    }
+    if {$vals(run:domainAB)} {
+        renderDTA 0 $tree $domsAB
+    }
+    if {$vals(run:domainBA)} {
+        renderDTA 1 $tree $domsBA
     }
     set first_node [$tree nodes root 0]
     $tree selection set $first_node
@@ -498,55 +516,41 @@ proc Apol_Analysis_tra::showAllows {res data} {
     $res.tb insert end "TE Allow Rules ([llength $data]):\n\n" title
     foreach r $data {
          Apol_Widget::appendSearchResultAVRule $res 2 $r
-    }    
+    }
 }
 
-proc Apol_Analysis_tra::renderTrans {tree rules} {
-    $tree insert end root trans -text "Type Transition/Change Rules" -data $rules
+proc Apol_Analysis_tra::renderTypeRules {tree rules} {
+    $tree insert end root typerules -text "Type Transition/Change Rules" -data $rules
 }
 
-proc Apol_Analysis_tra::showTrans {res data} {
+proc Apol_Analysis_tra::showTypeRules {res data} {
     $res.tb insert end "Type transition/change rules ([llength $data]):\n\n" title
     foreach r $data {
          Apol_Widget::appendSearchResultTERule $res 2 $r
-    }    
+    }
 }
 
 proc Apol_Analysis_tra::renderDirectFlow {tree dirflows} {
     if {$dirflows == {}} {
-        $tree insert end root x\#auto -text "Direct Flows Between A and B" -data {}
+        $tree insert end root pre:direct
+        set node [$tree nodes root end]
+        set data [list "No direct information flows found." title]
     } else {
         variable vals
-        Apol_Analysis_directflow::createResultsNodes $tree root $dirflows
+        Apol_Analysis_directflow::createResultsNodes $tree root $dirflows 0
         set node [$tree nodes root end]
         set data [list $vals(typeA) $vals(typeB) [$tree itemcget $node -data]]
-        $tree itemconfigure $node -text "Direct Flows Between A and B" -data $data -drawcross auto
     }
+    $tree itemconfigure $node -text "Direct Flows Between A and B" -data $data -drawcross auto
 }
 
 proc Apol_Analysis_tra::showDirectFlow {res data} {
     foreach {parent_name name data} $data {break}
     foreach {flow_dir classes} [lindex $data 1] {break}
-    switch -- $flow_dir {
-        both {
-            $res.tb insert end "Information flows both into and out of " title \
-                $parent_name title_type \
-                " from/to " title \
-                $name title_type
-        }
-        in {
-            $res.tb insert end "Information flows into " title \
-                $parent_name title_type \
-                " from " title \
-                $name title_type
-        }
-        out {
-            $res.tb insert end "Information flows out of " title \
-                $parent_name title_type \
-                " to " title \
-                $name title_type
-        }
-    }
+    $res.tb insert end "Information flows both into and out of " title \
+        $parent_name title_type \
+        " from/to " title \
+        $name title_type
     $res.tb insert end "\n\n" title_type \
         "Objects classes for " subtitle \
         [string toupper $flow_dir] subtitle_dir \
@@ -557,6 +561,134 @@ proc Apol_Analysis_tra::showDirectFlow {res data} {
             $class_name\n subtitle
         foreach r $rules {
             Apol_Widget::appendSearchResultAVRule $res 12 $r
+        }
+    }
+}
+
+proc Apol_Analysis_tra::renderTransFlow {dir tree transflows} {
+    variable vals
+    if {$dir == 0} {
+        set title2 "A->B"
+        set data [list $vals(typeB) $vals(typeA)]
+    } else {
+        set title2 "B->A"
+        set data [list $vals(typeA) $vals(typeB)]
+    }
+    if {$transflows == {}} {
+        $tree insert end root pre:trans$dir
+        set node [$tree nodes root end]
+        set data [list "No transitive information flows found." title]
+    } else {
+        Apol_Analysis_transflow::createResultsNodes $tree root $transflows 0
+        set node [$tree nodes root end]
+        lappend data [$tree itemcget $node -data]
+    }
+    $tree itemconfigure $node -text "Transitive Flows $title2" -data $data -drawcross auto
+}
+
+proc Apol_Analysis_tra::showTransFlow {res data} {
+    foreach {parent_name name data} $data {break}
+    foreach {flow_dir paths} [lindex $data 1] {break}
+    $res.tb insert end "Information flows from " title \
+        $name title_type \
+        " to " title \
+        $parent_name title_type
+    $res.tb insert end "\n\n" title \
+        "Apol found the following number of information flows: " subtitle \
+        [llength $paths] num \
+        "\n" subtitle
+    set path_num 1
+    foreach path $paths {
+        $res.tb insert end "\n" {}
+        Apol_Analysis_transflow::renderPath $res $path_num $path
+        incr path_num
+    }
+}
+
+proc Apol_Analysis_tra::renderDTA {dir tree dta} {
+    variable vals
+    if {$dir == 0} {
+        set title2 "A->B"
+        set data [list $vals(typeA) $vals(typeB)]
+    } else {
+        set title2 "B->A"
+        set data [list $vals(typeB) $vals(typeA)]
+    }
+    if {$dta == {}} {
+        $tree insert end root pre:dta$dir
+        set node [$tree nodes root end]
+        set data [list "No domain transitions found." title]
+    } else {
+        Apol_Analysis_domaintrans::createResultsNodes $tree root $dta forward
+        set node [$tree nodes root end]
+        lappend data [$tree itemcget $node -data]
+    }
+    $tree itemconfigure $node -text "Domain Transitions $title2" -data $data -drawcross auto
+}
+
+proc Apol_Analysis_tra::showDTA {res data} {
+    foreach {parent_name name data} $data {break}
+    foreach {proctrans setexec ep access_list} [lindex $data 1] {break}
+    set header [list "Domain transition from " title \
+                    $parent_name title_type \
+                    " to " title \
+                    $name title_type]
+    eval $res.tb insert end $header
+    $res.tb insert end "\n\n" title_type
+
+    $res.tb insert end "Process Transition Rules: " subtitle \
+        [llength $proctrans] num \
+        "\n" subtitle
+    foreach p $proctrans {
+        Apol_Widget::appendSearchResultAVRule $res 6 $p
+    }
+    if {[llength $setexec] > 0} {
+        $res.tb insert end "\n" {} \
+            "Setexec Rules: " subtitle \
+            [llength $setexec] num \
+            "\n" subtitle
+        foreach s $setexec {
+            Apol_Widget::appendSearchResultAVRule $res 6 $s
+        }
+    }
+    $res.tb insert end "\nEntry Point File Types: " subtitle \
+        [llength $ep] num
+    foreach e [lsort -index 0 $ep] {
+        foreach {intermed entrypoint execute type_trans} $e {break}
+        $res.tb insert end "\n      $intermed\n" {} \
+            "            " {} \
+            "File Entrypoint Rules: " subtitle \
+            [llength $entrypoint] num \
+            "\n" subtitle
+        foreach e $entrypoint {
+            Apol_Widget::appendSearchResultAVRule $res 12 $e
+        }
+        $res.tb insert end "\n" {} \
+            "            " {} \
+            "File Execute Rules: " subtitle \
+            [llength $execute] num \
+            "\n" subtitle
+        foreach e $execute {
+            Apol_Widget::appendSearchResultAVRule $res 12 $e
+        }
+        if {[llength $type_trans] > 0} {
+            $res.tb insert end "\n" {} \
+                "            " {} \
+                "Type_transition Rules: " subtitle \
+                [llength $type_trans] num \
+                "\n" subtitle
+            foreach t $type_trans {
+                Apol_Widget::appendSearchResultTERule $res 12 $t
+            }
+        }
+    }
+    if {[llength $access_list] > 0} {
+        $res.tb insert end "\n" {} \
+            "The access filters you specified returned the following rules: " subtitle \
+            [llength $access_list] num \
+            "\n" subtitle
+        foreach a $access_list {
+            Apol_Widget::appendSearchResultAVRule $res 6 $a
         }
     }
 }

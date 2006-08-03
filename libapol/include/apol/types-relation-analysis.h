@@ -293,6 +293,66 @@ extern apol_vector_t *apol_types_relation_result_get_typerules(apol_types_relati
 extern apol_vector_t *apol_types_relation_result_get_directflows(apol_types_relation_result_t *result);
 
 /**
+ * Return the vector of apol_infoflow_result_t pointers corresponding
+ * to a transitive information flow analysis between the first type to
+ * the other.  The caller <b>should not</b> call apol_vector_destroy()
+ * upon the returned vector.  If the user did not request this
+ * analysis then the return value will be NULL.
+ *
+ * @param result Types relation result from which to get information
+ * flows.
+ *
+ * @return Vector of infoflow results, or NULL if analysis was not
+ * run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_transflowsAB(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of apol_infoflow_result_t pointers corresponding
+ * to a transitive information flow analysis between the other type to
+ * the first.  The caller <b>should not</b> call apol_vector_destroy()
+ * upon the returned vector.  If the user did not request this
+ * analysis then the return value will be NULL.
+ *
+ * @param result Types relation result from which to get information
+ * flows.
+ *
+ * @return Vector of infoflow results, or NULL if analysis was not
+ * run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_transflowsBA(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of apol_domain_trans_result_t pointers
+ * corresponding to a domain transition analysis between the first
+ * type to the other.  The caller <b>should not</b> call
+ * apol_vector_destroy() upon the returned vector.  If the user did
+ * not request this analysis then the return value will be NULL.
+ *
+ * @param result Types relation result from which to get domain
+ * transitions.
+ *
+ * @return Vector of domain transition results, or NULL if analysis
+ * was not run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_domainsAB(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of apol_domain_trans_result_t pointers
+ * corresponding to a domain transition analysis between the other
+ * type to the first.  The caller <b>should not</b> call
+ * apol_vector_destroy() upon the returned vector.  If the user did
+ * not request this analysis then the return value will be NULL.
+ *
+ * @param result Types relation result from which to get domain
+ * transitions.
+ *
+ * @return Vector of domain transition results, or NULL if analysis
+ * was not run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_domainsBA(apol_types_relation_result_t *result);
+
+/**
  * Given a types relation access node, return the type stored within.
  *
  * @param access Types relation access node.
