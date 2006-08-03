@@ -54,6 +54,14 @@ struct apol_types_relation_result {
 	apol_vector_t *types;
 	/** vector of apol_infoflow_result_t */
 	apol_vector_t *dirflows;
+	/** vector of apol_infoflow_result_t from type A to B */
+	apol_vector_t *transAB;
+	/** vector of apol_infoflow_result_t from type B to A */
+	apol_vector_t *transBA;
+	/** vector of apol_domain_trans_result_t from type A to B */
+	apol_vector_t *domsAB;
+	/** vector of apol_domain_trans_result_t from type B to A */
+	apol_vector_t *domsBA;
 };
 
 struct apol_types_relation_access {
@@ -677,6 +685,49 @@ static int apol_types_relation_types(apol_policy_t *p,
 }
 
 /**
+ * Given a vector of apol_infoflow_result_t objects, deep copy to the
+ * results vector those infoflow results whose target type matches
+ * target_name (or any of target_name's attributes or aliases).
+ *
+ * @param p Policy within which to lookup types.
+ * @param v Vector of existing apol_infoflow_result_t.
+ * @param target_name Target type name.
+ * @param results Vector to which clone matching infoflow results.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_clone_infoflow(apol_policy_t *p,
+					      apol_vector_t *v,
+					      char *target_name,
+					      apol_vector_t *results)
+{
+	apol_vector_t *candidate_types = NULL;
+	qpol_type_t *target;
+	apol_infoflow_result_t *res, *new_res;
+	size_t i, j;
+	int retval = -1;
+	if ((candidate_types = apol_query_create_candidate_type_list(p, target_name, 0, 1)) == NULL) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		res = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
+		target = apol_infoflow_result_get_end_type(res);
+		if (apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0) {
+			if ((new_res = apol_infoflow_result_create_from_result(res)) == NULL ||
+			    apol_vector_append(results, new_res) < 0) {
+				apol_infoflow_result_free(new_res);
+				ERR(p, "%s", strerror(ENOMEM));
+				goto cleanup;
+			}
+		}
+	}
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&candidate_types, NULL);
+	return retval;
+}
+
+/**
  * Find all direct information flows between the two types.  Create a
  * vector of apol_infoflow_result_t and set r->dirflows to that vector.
  *
@@ -694,11 +745,8 @@ static int apol_types_relation_directflow(apol_policy_t *p,
 {
 	char *nameA, *nameB;
 	apol_infoflow_analysis_t *ia = NULL;
-	apol_vector_t *v = NULL, *candidate_types = NULL;
+	apol_vector_t *v = NULL;
 	apol_infoflow_graph_t *g = NULL;
-	apol_infoflow_result_t *res, *new_res;
-	qpol_type_t *target;
-	size_t i, j;
 	int retval = -1;
 
 	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
@@ -713,29 +761,211 @@ static int apol_types_relation_directflow(apol_policy_t *p,
 	if (apol_infoflow_analysis_set_mode(p, ia, APOL_INFOFLOW_MODE_DIRECT) < 0 ||
 	    apol_infoflow_analysis_set_dir(p, ia, APOL_INFOFLOW_EITHER) < 0 ||
 	    apol_infoflow_analysis_set_type(p, ia, nameA) < 0 ||
-	    apol_infoflow_analysis_do(p, ia, &v, &g) < 0 ||
-	    (candidate_types = apol_query_create_candidate_type_list(p, nameB, 0, 1)) == NULL) {
+	    apol_infoflow_analysis_do(p, ia, &v, &g) < 0) {
 		goto cleanup;
 	}
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		res = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
-		target = apol_infoflow_result_get_end_type(res);
-		if (apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0) {
-			if ((new_res = apol_infoflow_result_create_from_result(res)) == NULL ||
-			    apol_vector_append(r->dirflows, new_res) < 0) {
-				apol_infoflow_result_free(new_res);
-				ERR(p, "%s", strerror(ENOMEM));
-				goto cleanup;
-			}
-		}
+	if (apol_types_relation_clone_infoflow(p, v, nameB, r->dirflows) < 0) {
+		goto cleanup;
 	}
 
 	retval = 0;
  cleanup:
 	apol_vector_destroy(&v, apol_infoflow_result_free);
-	apol_vector_destroy(&candidate_types, NULL);
 	apol_infoflow_analysis_destroy(&ia);
 	apol_infoflow_graph_destroy(&g);
+	return retval;
+}
+
+/**
+ * Find (some) transitive information flows between the two types.
+ *
+ * @param p Policy containing types' information.
+ * @param typeA First type to check.
+ * @param typeB Other type to check.
+ * @param do_transAB 1 if to find paths from type A to B, 0 to skip.
+ * @param do_transBA 1 if to find paths from type B to A, 0 to skip.
+ * @param r Result structure to fill.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_transflow(apol_policy_t *p,
+					 qpol_type_t *typeA,
+					 qpol_type_t *typeB,
+					 unsigned int do_transAB,
+					 unsigned int do_transBA,
+					 apol_types_relation_result_t *r)
+{
+	char *nameA, *nameB;
+	apol_infoflow_analysis_t *ia = NULL;
+	apol_vector_t *v = NULL;
+	apol_infoflow_graph_t *g = NULL;
+	int retval = -1;
+
+	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+		goto cleanup;
+	}
+	if ((ia = apol_infoflow_analysis_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_infoflow_analysis_set_mode(p, ia, APOL_INFOFLOW_MODE_TRANS) < 0 ||
+	    apol_infoflow_analysis_set_dir(p, ia, APOL_INFOFLOW_OUT) < 0) {
+		goto cleanup;
+	}
+	if (do_transAB) {
+		if (apol_infoflow_analysis_set_type(p, ia, nameA) < 0 ||
+		    apol_infoflow_analysis_do(p, ia, &v, &g) < 0) {
+			goto cleanup;
+		}
+		if ((r->transAB = apol_vector_create()) == NULL) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		if (apol_types_relation_clone_infoflow(p, v, nameB, r->transAB) < 0) {
+			goto cleanup;
+		}
+	}
+	if (do_transBA) {
+		apol_vector_destroy(&v, apol_infoflow_result_free);
+		if ((do_transAB &&
+		     apol_infoflow_analysis_do_more(p, g, nameB, &v) < 0) ||
+		    (!do_transAB &&
+		     (apol_infoflow_analysis_set_type(p, ia, nameB) < 0 ||
+		      apol_infoflow_analysis_do(p, ia, &v, &g) < 0))) {
+			goto cleanup;
+		}
+		if ((r->transBA = apol_vector_create()) == NULL) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		if (apol_types_relation_clone_infoflow(p, v, nameA, r->transBA) < 0) {
+			goto cleanup;
+		}
+	}
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_infoflow_analysis_destroy(&ia);
+	apol_infoflow_graph_destroy(&g);
+	return retval;
+}
+
+/**
+ * Given a vector of apol_domain_trans_result_t objects, deep copy to
+ * the results vector those domain transition results whose target
+ * type matches target_name (or any of target_name's attributes or
+ * aliases).
+ *
+ * @param p Policy within which to lookup types.
+ * @param v Vector of existing apol_domain_trans_result_t.
+ * @param target_name Target type name.
+ * @param results Vector to which clone matching domain transition
+ * results.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_clone_domaintrans(apol_policy_t *p,
+						 apol_vector_t *v,
+						 char *target_name,
+						 apol_vector_t *results)
+{
+	apol_vector_t *candidate_types = NULL;
+	qpol_type_t *target;
+	apol_domain_trans_result_t *res, *new_res;
+	size_t i, j;
+	int retval = -1;
+	if ((candidate_types = apol_query_create_candidate_type_list(p, target_name, 0, 1)) == NULL) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		res = (apol_domain_trans_result_t *) apol_vector_get_element(v, i);
+		target = apol_domain_trans_result_get_end_type(res);
+		if (apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0) {
+			if ((new_res = apol_domain_trans_result_create_from_result(res)) == NULL ||
+			    apol_vector_append(results, new_res) < 0) {
+				apol_domain_trans_result_free(new_res);
+				ERR(p, "%s", strerror(ENOMEM));
+				goto cleanup;
+			}
+		}
+	}
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&candidate_types, NULL);
+	return retval;
+}
+
+/**
+ * Find domain transitions between the two types.
+ *
+ * @param p Policy containing types' information.
+ * @param typeA First type to check.
+ * @param typeB Other type to check.
+ * @param do_domainAB 1 if to find transitions from type A to B, 0 to skip.
+ * @param do_domainBA 1 if to find transitions from type B to A, 0 to skip.
+ * @param r Result structure to fill.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_domain(apol_policy_t *p,
+				      qpol_type_t *typeA,
+				      qpol_type_t *typeB,
+				      unsigned int do_domainsAB,
+				      unsigned int do_domainsBA,
+				      apol_types_relation_result_t *r)
+{
+	char *nameA, *nameB;
+	apol_domain_trans_analysis_t *dta = NULL;
+	apol_vector_t *v = NULL;
+	int retval = -1;
+
+	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+		goto cleanup;
+	}
+	if ((dta = apol_domain_trans_analysis_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_policy_domain_trans_table_build(p) < 0 ||
+	    apol_domain_trans_analysis_set_direction(p, dta, APOL_DOMAIN_TRANS_DIRECTION_FORWARD) < 0) {
+		goto cleanup;
+	}
+	if (do_domainsAB) {
+		if (apol_domain_trans_analysis_set_start_type(p, dta, nameA) < 0 ||
+		    apol_domain_trans_analysis_do(p, dta, &v) < 0) {
+			goto cleanup;
+		}
+		if ((r->domsAB = apol_vector_create()) == NULL) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		if (apol_types_relation_clone_domaintrans(p, v, nameB, r->domsAB) < 0) {
+			goto cleanup;
+		}
+	}
+	if (do_domainsBA) {
+		apol_vector_destroy(&v, apol_domain_trans_result_free);
+		if (do_domainsAB) {
+			apol_domain_trans_table_reset(p);
+		}
+		if (apol_domain_trans_analysis_set_start_type(p, dta, nameB) < 0 ||
+		    apol_domain_trans_analysis_do(p, dta, &v) < 0) {
+			goto cleanup;
+		}
+		if ((r->domsBA = apol_vector_create()) == NULL) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		if (apol_types_relation_clone_domaintrans(p, v, nameA, r->domsBA) < 0) {
+			goto cleanup;
+		}
+	}
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&v, apol_domain_trans_result_free);
+	apol_domain_trans_analysis_destroy(&dta);
 	return retval;
 }
 
@@ -748,6 +978,8 @@ int apol_types_relation_analysis_do(apol_policy_t *p,
 	qpol_type_t *typeA, *typeB;
 	unsigned char isattrA, isattrB;
 	unsigned int do_similar_access, do_dissimilar_access;
+	unsigned int do_transAB, do_transBA;
+	unsigned int do_domainAB, do_domainBA;
 	int retval = -1;
 	*r = NULL;
 
@@ -801,6 +1033,18 @@ int apol_types_relation_analysis_do(apol_policy_t *p,
 	}
 	if ((tr->analyses & APOL_TYPES_RELATION_DIRECT_FLOW) &&
 	    apol_types_relation_directflow(p, typeA, typeB, *r) < 0) {
+		goto cleanup;
+	}
+	do_transAB = tr->analyses & APOL_TYPES_RELATION_TRANS_FLOW_AB;
+	do_transBA = tr->analyses & APOL_TYPES_RELATION_TRANS_FLOW_BA;
+	if ((do_transAB || do_transBA) &&
+	    apol_types_relation_transflow(p, typeA, typeB, do_transAB, do_transBA, *r) < 0) {
+		goto cleanup;
+	}
+	do_domainAB = tr->analyses & APOL_TYPES_RELATION_DOMAIN_TRANS_AB;
+	do_domainBA = tr->analyses & APOL_TYPES_RELATION_DOMAIN_TRANS_BA;
+	if ((do_domainAB || do_domainBA) &&
+	    apol_types_relation_domain(p, typeA, typeB, do_domainAB, do_domainBA, *r) < 0) {
 		goto cleanup;
 	}
 
@@ -877,6 +1121,10 @@ void apol_types_relation_result_destroy(apol_types_relation_result_t **result)
 		apol_vector_destroy(&(*result)->allows, NULL);
 		apol_vector_destroy(&(*result)->types, NULL);
 		apol_vector_destroy(&(*result)->dirflows, apol_infoflow_result_free);
+		apol_vector_destroy(&(*result)->transAB, apol_infoflow_result_free);
+		apol_vector_destroy(&(*result)->transBA, apol_infoflow_result_free);
+		apol_vector_destroy(&(*result)->domsAB, apol_domain_trans_result_free);
+		apol_vector_destroy(&(*result)->domsBA, apol_domain_trans_result_free);
 		free(*result);
 		*result = NULL;
 	}
@@ -930,6 +1178,26 @@ apol_vector_t *apol_types_relation_result_get_typerules(apol_types_relation_resu
 apol_vector_t *apol_types_relation_result_get_directflows(apol_types_relation_result_t *result)
 {
 	return result->dirflows;
+}
+
+apol_vector_t *apol_types_relation_result_get_transflowsAB(apol_types_relation_result_t *result)
+{
+	return result->transAB;
+}
+
+apol_vector_t *apol_types_relation_result_get_transflowsBA(apol_types_relation_result_t *result)
+{
+	return result->transBA;
+}
+
+apol_vector_t *apol_types_relation_result_get_domainsAB(apol_types_relation_result_t *result)
+{
+	return result->domsAB;
+}
+
+apol_vector_t *apol_types_relation_result_get_domainsBA(apol_types_relation_result_t *result)
+{
+	return result->domsBA;
 }
 
 qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *access)

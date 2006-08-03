@@ -725,7 +725,7 @@ proc Apol_Analysis_transflow::treeSelect {res tree node} {
 
 proc Apol_Analysis_transflow::treeOpen {tree node} {
     foreach {is_expanded results} [$tree itemcget $node -data] {break}
-    if {[string index $node 0] == "x" && !$is_expanded} {
+    if {[string index $node 0] == "y" && !$is_expanded} {
         ApolTop::setBusyCursor
         update idletasks
         set retval [catch {analyzeMore $tree $node} new_results]
@@ -735,7 +735,7 @@ proc Apol_Analysis_transflow::treeOpen {tree node} {
         } else {
             # mark this node as having been expanded
             $tree itemconfigure $node -data [list 1 $results]
-            createResultsNodes $tree $node $new_results
+            createResultsNodes $tree $node $new_results 1
         }
     }
 }
@@ -771,7 +771,7 @@ proc Apol_Analysis_transflow::renderResults {f results} {
     set top_text [renderTopText]
     $tree itemconfigure top -data [list $graph_handler $top_text]
 
-    createResultsNodes $tree top $results_list
+    createResultsNodes $tree top $results_list 1
     $tree selection set top
     $tree opentree top 0
     update idletasks
@@ -797,19 +797,21 @@ on your selection above) its parent node.
 same, you cannot open the child.  This avoids cyclic analyses." {}
 }
 
-proc Apol_Analysis_transflow::createResultsNodes {tree parent_node results} {
-    variable vals
+proc Apol_Analysis_transflow::createResultsNodes {tree parent_node results do_expand} {
     set all_targets {}
     foreach r $results {
         foreach {flow_dir source target length steps} $r {break}
-        foreach t [apol_ExpandType $target] {
+        if {!$do_expand} {
+            set expanded_list [lindex $results 0 2]
+        } else {
+            set expanded_list [apol_ExpandType $target]
+        }
+        foreach t $expanded_list {
             lappend all_targets $t
             lappend paths($t) [list $length $steps]
         }
     }
-    set i 0
     foreach t [lsort -uniq $all_targets] {
-        set flow_dir $vals(dir)
         set sorted_paths {}
         foreach path [lsort -uniq [lsort -index 0 -integer $paths($t)]] {
             if {$flow_dir == "to"} {

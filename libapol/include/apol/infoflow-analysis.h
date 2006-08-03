@@ -296,7 +296,7 @@ extern int apol_infoflow_analysis_set_result_regex(apol_policy_t *p,
  * The caller is responsible for calling apol_infoflow_result_free()
  * upon the returned value.
  *
- * @param result Pointer to a infoflow result structure to destroy.
+ * @param result Pointer to an infoflow result structure to destroy.
  *
  * @return A clone of the passed in result node, or NULL upon error.
  */
@@ -307,7 +307,7 @@ extern apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_info
  * result, including the pointer itself.  This function does nothing
  * if the result is already NULL.
  *
- * @param result Pointer to a infoflow result structure to destroy.
+ * @param result Pointer to an infoflow result structure to destroy.
  */
 extern void apol_infoflow_result_free(void *result);
 

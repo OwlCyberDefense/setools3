@@ -407,7 +407,7 @@ proc Apol_Analysis_directflow::treeOpen {tree node} {
         } else {
             # mark this node as having been expanded
             $tree itemconfigure $node -data [list 1 $results]
-            createResultsNodes $tree $node $new_results
+            createResultsNodes $tree $node $new_results 1
         }
     }
 }
@@ -442,7 +442,7 @@ proc Apol_Analysis_directflow::renderResults {f results} {
     set top_text [renderTopText]
     $tree itemconfigure top -data [list $graph_handler $top_text]
 
-    createResultsNodes $tree top $results_list
+    createResultsNodes $tree top $results_list 1
     $tree selection set top
     $tree opentree top 0
     update idletasks
@@ -468,11 +468,16 @@ your selection above) its parent node.
 same, you cannot open the child.  This avoids cyclic analyses."
 }
 
-proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results} {
+proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results do_expand} {
     set all_targets {}
     foreach r $results {
         foreach {flow_dir source target rules} $r {break}
-        foreach t [apol_ExpandType $target] {
+        if {!$do_expand} {
+            set expanded_list [lindex $results 0 2]
+        } else {
+            set expanded_list [apol_ExpandType $target]
+        }
+        foreach t $expanded_list {
             lappend all_targets $t
             foreach r $rules {
                 set class [apol_RenderAVRuleClass $r]
