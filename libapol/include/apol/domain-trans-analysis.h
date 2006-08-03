@@ -54,12 +54,15 @@ typedef struct apol_domain_trans_table apol_domain_trans_table_t;
 extern int apol_policy_domain_trans_table_build(apol_policy_t *policy);
 
 /**
- *  Reset the state of the domain transition table in a policy. This is needed
- *  because by default subsequent calls to apol_domian_trans_analysis_do() will
- *  not produce results generated in a previous call. If calls are to be
- *  considered independent or calls in a different direction are desired,
- *  call this function prior to apol_domian_trans_analysis_do().
- *  @param polciy The policy containing the table for which the state
+ *  Reset the state of the domain transition table in a policy.  This
+ *  is needed because by default subsequent calls to
+ *  apol_domain_trans_analysis_do() will not produce results generated
+ *  in a previous call.  If calls are to be considered independent or
+ *  calls in a different direction are desired, call this function
+ *  prior to apol_domain_trans_analysis_do().  If the table was not
+ *  built yet then this function does nothing.
+ *
+ *  @param polciy Policy containing the table for which the state
  *  should be reset.
  */
 extern void apol_domain_trans_table_reset(apol_policy_t *policy);
@@ -77,7 +80,7 @@ extern void apol_domain_trans_table_destroy(apol_domain_trans_table_t **table);
  *  fields are cleared; one must fill in the details of the analysis
  *  before running it. The caller must call apol_domain_trans_analysis_destroy()
  *  upon the return value afterwards.
- *  @return An initialized domian transition analysis structure, or NULL
+ *  @return An initialized domain transition analysis structure, or NULL
  *  upon error; if an error occurs errno will be set.
  */
 extern apol_domain_trans_analysis_t *apol_domain_trans_analysis_create(void);
@@ -195,6 +198,18 @@ extern int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, a
 extern int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, apol_vector_t **results);
 
 /***************** functions for accessing results ************************/
+
+/**
+ * Do a deep copy (i.e., a clone) of an apol_domain_trans_result_t
+ * object.  The caller is responsible for calling
+ * apol_domain_trans_result_free() upon the returned value.
+ *
+ * @param result Pointer to a domain trans result structure to
+ * destroy.
+ *
+ * @return A clone of the passed in result node, or NULL upon error.
+ */
+extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_domain_trans_result_t *result);
 
 /**
  *  Free all memory associated with a domain transition result, including
@@ -333,7 +348,7 @@ extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_tran
  *
  *  @param policy The policy containing the domain transition table to
  *  consult.
- *  @param start_dom The starting domian of the transition.
+ *  @param start_dom The starting domain of the transition.
  *  @param ep_type The entrypoint of the transition.
  *  @param end_dom The ending domain of the transition.
  *

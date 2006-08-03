@@ -1356,8 +1356,6 @@ void apol_domain_trans_table_reset(apol_policy_t *policy)
 
 	table = policy->domain_trans_table;
 	if (!table) {
-		ERR(policy, "%s", strerror(EINVAL));
-		errno = EINVAL;
 		return;
 	}
 
@@ -1738,6 +1736,50 @@ err:
 	apol_vector_destroy(results, apol_domain_trans_result_free);
 	errno = error;
 	return -1;
+}
+
+apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_domain_trans_result_t *result)
+{
+	apol_domain_trans_result_t *new_r = NULL;
+	int retval = -1;
+	if ((new_r = calloc(1, sizeof(*new_r))) == NULL) {
+		goto cleanup;
+	}
+	if (result->proc_trans_rules != NULL &&
+	    (new_r->proc_trans_rules = apol_vector_create_from_vector(result->proc_trans_rules)) == NULL) {
+		goto cleanup;
+	}
+	if (result->ep_rules != NULL &&
+	    (new_r->ep_rules = apol_vector_create_from_vector(result->ep_rules)) == NULL) {
+		goto cleanup;
+	}
+	if (result->exec_rules != NULL &&
+	    (new_r->exec_rules = apol_vector_create_from_vector(result->exec_rules)) == NULL) {
+		goto cleanup;
+	}
+	if (result->setexec_rules != NULL &&
+	    (new_r->setexec_rules = apol_vector_create_from_vector(result->setexec_rules)) == NULL) {
+		goto cleanup;
+	}
+	if (result->type_trans_rules != NULL &&
+	    (new_r->type_trans_rules = apol_vector_create_from_vector(result->type_trans_rules)) == NULL) {
+		goto cleanup;
+	}
+	if (result->access_rules != NULL &&
+	    (new_r->access_rules = apol_vector_create_from_vector(result->access_rules)) == NULL) {
+		goto cleanup;
+	}
+	new_r->start_type = result->start_type;
+	new_r->ep_type = result->ep_type;
+	new_r->end_type = result->end_type;
+	new_r->valid = result->valid;
+	retval = 0;
+ cleanup:
+	if (retval != 0) {
+		apol_domain_trans_result_free(new_r);
+		return NULL;
+	}
+	return new_r;
 }
 
 void apol_domain_trans_result_free(void *dtr)
