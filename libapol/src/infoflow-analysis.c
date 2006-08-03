@@ -1993,6 +1993,42 @@ int apol_infoflow_analysis_set_result_regex(apol_policy_t *p,
 
 /*************** functions to access infoflow results ***************/
 
+apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_infoflow_result_t *result)
+{
+	apol_infoflow_result_t *new_r = NULL;
+	apol_infoflow_step_t *step, *new_step;
+	size_t i;
+	int retval = -1;
+
+	if ((new_r = calloc(1, sizeof(*new_r))) == NULL ||
+	    (new_r->steps = apol_vector_create_with_capacity(apol_vector_get_size(result->steps))) == NULL) {
+		goto cleanup;
+	}
+	new_r->start_type = result->start_type;
+	new_r->end_type = result->end_type;
+	new_r->direction = result->direction;
+	new_r->length = result->length;
+	for (i = 0; i < apol_vector_get_size(result->steps); i++) {
+		step = (apol_infoflow_step_t *) apol_vector_get_element(result->steps, i);
+		if ((new_step = calloc(1, sizeof(*new_step))) == NULL ||
+		    (new_step->rules = apol_vector_create_from_vector(step->rules)) == NULL ||
+		    apol_vector_append(new_r->steps, new_step) < 0) {
+			apol_infoflow_step_free(new_step);
+			goto cleanup;
+		}
+		new_step->start_type = step->start_type;
+		new_step->end_type = step->end_type;
+		new_step->weight = step->weight;
+	}
+	retval = 0;
+ cleanup:
+	if (retval != 0) {
+		apol_infoflow_result_free(new_r);
+		return NULL;
+	}
+	return new_r;
+}
+
 void apol_infoflow_result_free(void *result)
 {
 	if (result != NULL) {

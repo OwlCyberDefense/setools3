@@ -314,7 +314,7 @@ proc Apol_Analysis_transflow::createAdvancedDialog {} {
             return "This analysis requires that a permission map is loaded."
 	}
     }
-    
+
     set d [Dialog .transflow_adv -modal local -separator 1 -title "Transitive Information Flow Advanced Filters" -parent .]
     $d add -text "Close"
 
@@ -713,7 +713,7 @@ proc Apol_Analysis_transflow::treeSelect {res tree node} {
         $res.tb configure -state normal
         $res.tb delete 0.0 end
         set data [$tree itemcget $node -data]
-        if {[string index $node 0] == "x"} {
+        if {[string index $node 0] == "y"} {
             renderResultsTransFlow $res $tree $node [lindex $data 1]
         } else {
             # an informational node, whose data has already been rendered
@@ -824,7 +824,7 @@ proc Apol_Analysis_transflow::createResultsNodes {tree parent_node results} {
             }
         }
         set data [list $flow_dir $sorted_paths]
-        $tree insert end $parent_node x\#auto -text $t -drawcross allways \
+        $tree insert end $parent_node y\#auto -text $t -drawcross allways \
             -data [list 0 $data]
     }
 }

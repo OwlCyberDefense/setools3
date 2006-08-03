@@ -1472,6 +1472,64 @@ static int apol_types_relation_dissimilar_to_tcl_list(Tcl_Interp *interp,
 }
 
 /**
+ * Given a result object from a two types relationship analysis,
+ * create a new Tcl list containing the pointers to allow rules.
+ */
+static int apol_types_relation_allows_to_tcl_list(Tcl_Interp *interp,
+						 apol_types_relation_result_t *r,
+						 Tcl_Obj **o)
+{
+	apol_vector_t *v = apol_types_relation_result_get_allowrules(r);
+	if (v == NULL) {
+		*o = Tcl_NewListObj(0, NULL);
+	}
+	else if (apol_vector_to_tcl_list(interp, v, o) < 0) {
+		return TCL_ERROR;
+	}
+	return TCL_OK;
+}
+
+/**
+ * Given a result object from a two types relationship analysis,
+ * create a new Tcl list containing the pointers to type rules.
+ */
+static int apol_types_relation_terules_to_tcl_list(Tcl_Interp *interp,
+						   apol_types_relation_result_t *r,
+						   Tcl_Obj **o)
+{
+	apol_vector_t *v = apol_types_relation_result_get_typerules(r);
+	if (v == NULL) {
+		*o = Tcl_NewListObj(0, NULL);
+	}
+	else if (apol_vector_to_tcl_list(interp, v, o) < 0) {
+		return TCL_ERROR;
+	}
+	return TCL_OK;
+}
+
+/**
+ * Given a result object from a two types relationship analysis,
+ * create a new Tcl list containing direct flows between the types.
+ * See Apol_DirectInformationFlowAnalysis() for format.
+ */
+static int apol_types_relation_directflows_to_tcl_list(Tcl_Interp *interp,
+						       apol_types_relation_result_t *r,
+						       Tcl_Obj **o)
+{
+	apol_vector_t *v = apol_types_relation_result_get_directflows(r);
+	size_t i;
+	*o = Tcl_NewListObj(0, NULL);
+	for (i = 0; v != NULL && i < apol_vector_get_size(v); i++) {
+		apol_infoflow_result_t *r;
+		r = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
+		if (append_direct_infoflow_result_to_list(interp, r, *o) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+	}
+	return TCL_OK;
+}
+
+/**
  * Return a sorted results list for a two types relationship analysis.
  * Each element corresponds to a sublist of results after running each
  * individual sub-analysis.  If the sub-analysis was not selected
@@ -1510,7 +1568,7 @@ static int apol_types_relation_dissimilar_to_tcl_list(Tcl_Interp *interp,
 static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp,
 					  int argc, CONST char *argv[])
 {
-	Tcl_Obj *result_elem[5], *result_obj;
+	Tcl_Obj *result_elem[8], *result_obj;
 	apol_types_relation_analysis_t *analysis = NULL;
 	apol_types_relation_result_t *result = NULL;
 	CONST char **analyses_strings = NULL;
@@ -1547,11 +1605,20 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 		else if (strcmp(s, "dissimilars") == 0) {
 			analyses |= APOL_TYPES_RELATION_DISSIMILAR_ACCESS;
 		}
-		else if (strcmp(s, "allow") == 0) {
+		else if (strcmp(s, "allows") == 0) {
 			analyses |= APOL_TYPES_RELATION_ALLOW_RULES;
 		}
 		else if (strcmp(s, "trans") == 0) {
 			analyses |= APOL_TYPES_RELATION_TYPE_RULES;
+		}
+		else if (strcmp(s, "direct") == 0) {
+			analyses |= APOL_TYPES_RELATION_DIRECT_FLOW;
+		}
+		else if (strcmp(s, "transAB") == 0) {
+			analyses |= APOL_TYPES_RELATION_TRANS_FLOW_AB;
+		}
+		else if (strcmp(s, "transBA") == 0) {
+			analyses |= APOL_TYPES_RELATION_TRANS_FLOW_BA;
 		}
 		else {
 			ERR(policydb, "Invalid analysis type %s.", s);
@@ -1574,10 +1641,13 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 	    apol_types_relation_roles_to_tcl_list(interp, result, result_elem + 1) == TCL_ERROR ||
 	    apol_types_relation_users_to_tcl_list(interp, result, result_elem + 2) == TCL_ERROR ||
 	    apol_types_relation_similar_to_tcl_list(interp, result, result_elem + 3) == TCL_ERROR ||
-	    apol_types_relation_dissimilar_to_tcl_list(interp, result, result_elem + 4) == TCL_ERROR) {
+	    apol_types_relation_dissimilar_to_tcl_list(interp, result, result_elem + 4) == TCL_ERROR ||
+	    apol_types_relation_allows_to_tcl_list(interp, result, result_elem + 5) == TCL_ERROR ||
+	    apol_types_relation_terules_to_tcl_list(interp, result, result_elem + 6) == TCL_ERROR ||
+	    apol_types_relation_directflows_to_tcl_list(interp, result, result_elem + 7) == TCL_ERROR) {
 		goto cleanup;
 	}
-	result_obj = Tcl_NewListObj(5, result_elem);
+	result_obj = Tcl_NewListObj(8, result_elem);
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
