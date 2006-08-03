@@ -40,14 +40,20 @@ struct apol_types_relation_result {
 	apol_vector_t *roles;
 	/** vector of qpol_user_t pointers */
 	apol_vector_t *users;
-	/** vector af apol_types_relation_access, rules that A has */
+	/** vector af apol_types_relation_access, rules that A has in common with B */
 	apol_vector_t *simA;
-	/** vector af apol_types_relation_access, rules that B has */
+	/** vector af apol_types_relation_access, rules that B has in common with A */
 	apol_vector_t *simB;
 	/** vector af apol_types_relation_access, types that A has that B does not */
 	apol_vector_t *disA;
 	/** vector af apol_types_relation_access, types that B has that A does not */
 	apol_vector_t *disB;
+	/** vector of qpol_avrule_t pointers */
+	apol_vector_t *allows;
+	/** vector of qpol_terule_t pointers */
+	apol_vector_t *types;
+	/** vector of apol_infoflow_result_t */
+	apol_vector_t *dirflows;
 };
 
 struct apol_types_relation_access {
@@ -534,6 +540,205 @@ static int apol_types_relation_accesses(apol_policy_t *p,
 	return retval;
 }
 
+/**
+ * Find all allow rules that involve both types.  Create a vector of
+ * those rules (as represented as qpol_avrule_t pointers relative to
+ * the provided policy) and set r->allows to that vector.
+ *
+ * @param p Policy containing types' information.
+ * @param typeA First type to check.
+ * @param typeB Other type to check.
+ * @param r Result structure to fill.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_allows(apol_policy_t *p,
+				      qpol_type_t *typeA,
+				      qpol_type_t *typeB,
+				      apol_types_relation_result_t *r)
+{
+	char *nameA, *nameB;
+	apol_avrule_query_t *aq = NULL;
+	apol_vector_t *v = NULL;
+	int retval = -1;
+
+	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+		goto cleanup;
+	}
+	if ((aq = apol_avrule_query_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_avrule_query_set_rules(p, aq, QPOL_RULE_ALLOW) < 0 ||
+	    apol_avrule_query_set_source(p, aq, nameA, 1) < 0 ||
+	    apol_avrule_query_set_target(p, aq, nameB, 1) < 0 ||
+	    apol_get_avrule_by_query(p, aq, &r->allows) < 0) {
+		goto cleanup;
+	}
+	if (apol_avrule_query_set_source(p, aq, nameB, 1) < 0 ||
+	    apol_avrule_query_set_target(p, aq, nameA, 1) < 0 ||
+	    apol_get_avrule_by_query(p, aq, &v) < 0) {
+		goto cleanup;
+	}
+	if (apol_vector_cat(r->allows, v) < 0) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	retval = 0;
+ cleanup:
+	apol_avrule_query_destroy(&aq);
+	apol_vector_destroy(&v, NULL);
+	return retval;
+}
+
+/**
+ * Find all type transition / type change rules that involve both
+ * types.  Create a vector of those rules (as represented as
+ * qpol_terule_t pointers relative to the provided policy) and set
+ * r->types to that vector.
+ *
+ * @param p Policy containing types' information.
+ * @param typeA First type to check.
+ * @param typeB Other type to check.
+ * @param r Result structure to fill.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_types(apol_policy_t *p,
+				     qpol_type_t *typeA,
+				     qpol_type_t *typeB,
+				     apol_types_relation_result_t *r)
+{
+	char *nameA, *nameB;
+	apol_terule_query_t *tq = NULL;
+	apol_vector_t *v = NULL, *candidate_types = NULL;
+	qpol_terule_t *rule;
+	qpol_type_t *target, *default_type;
+	size_t i, j;
+	int retval = -1;
+
+	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+		goto cleanup;
+	}
+	if ((r->types = apol_vector_create()) == NULL ||
+	    (tq = apol_terule_query_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_terule_query_set_rules(p, tq, QPOL_RULE_TYPE_TRANS | QPOL_RULE_TYPE_CHANGE) < 0 ||
+	    apol_terule_query_set_source(p, tq, nameA, 1) < 0 ||
+	    apol_get_terule_by_query(p, tq, &v) < 0 ||
+	    (candidate_types = apol_query_create_candidate_type_list(p, nameB, 0, 1)) == NULL) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		rule = (qpol_terule_t *) apol_vector_get_element(v, i);
+		if (qpol_terule_get_target_type(p->qh, p->p, rule, &target) < 0 ||
+		    qpol_terule_get_default_type(p->qh, p->p, rule, &default_type) < 0 ) {
+			goto cleanup;
+		}
+		if ((apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0 ||
+		     apol_vector_get_index(candidate_types, default_type, NULL, NULL, &j) == 0) &&
+		    apol_vector_append(r->types, rule) < 0) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+	}
+
+	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&candidate_types, NULL);
+	if (apol_terule_query_set_source(p, tq, nameB, 1) < 0 ||
+	    apol_get_terule_by_query(p, tq, &v) < 0 ||
+	    (candidate_types = apol_query_create_candidate_type_list(p, nameA, 0, 1)) == NULL) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		rule = (qpol_terule_t *) apol_vector_get_element(v, i);
+		if (qpol_terule_get_target_type(p->qh, p->p, rule, &target) < 0 ||
+		    qpol_terule_get_default_type(p->qh, p->p, rule, &default_type) < 0 ) {
+			goto cleanup;
+		}
+		if ((apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0 ||
+		     apol_vector_get_index(candidate_types, default_type, NULL, NULL, &j) == 0) &&
+		    apol_vector_append(r->types, rule) < 0) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	apol_terule_query_destroy(&tq);
+	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&candidate_types, NULL);
+	return retval;
+}
+
+/**
+ * Find all direct information flows between the two types.  Create a
+ * vector of apol_infoflow_result_t and set r->dirflows to that vector.
+ *
+ * @param p Policy containing types' information.
+ * @param typeA First type to check.
+ * @param typeB Other type to check.
+ * @param r Result structure to fill.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_types_relation_directflow(apol_policy_t *p,
+					  qpol_type_t *typeA,
+					  qpol_type_t *typeB,
+					  apol_types_relation_result_t *r)
+{
+	char *nameA, *nameB;
+	apol_infoflow_analysis_t *ia = NULL;
+	apol_vector_t *v = NULL, *candidate_types = NULL;
+	apol_infoflow_graph_t *g = NULL;
+	apol_infoflow_result_t *res, *new_res;
+	qpol_type_t *target;
+	size_t i, j;
+	int retval = -1;
+
+	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+		goto cleanup;
+	}
+	if ((r->dirflows = apol_vector_create()) == NULL ||
+	    (ia = apol_infoflow_analysis_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_infoflow_analysis_set_mode(p, ia, APOL_INFOFLOW_MODE_DIRECT) < 0 ||
+	    apol_infoflow_analysis_set_dir(p, ia, APOL_INFOFLOW_EITHER) < 0 ||
+	    apol_infoflow_analysis_set_type(p, ia, nameA) < 0 ||
+	    apol_infoflow_analysis_do(p, ia, &v, &g) < 0 ||
+	    (candidate_types = apol_query_create_candidate_type_list(p, nameB, 0, 1)) == NULL) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		res = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
+		target = apol_infoflow_result_get_end_type(res);
+		if (apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0) {
+			if ((new_res = apol_infoflow_result_create_from_result(res)) == NULL ||
+			    apol_vector_append(r->dirflows, new_res) < 0) {
+				apol_infoflow_result_free(new_res);
+				ERR(p, "%s", strerror(ENOMEM));
+				goto cleanup;
+			}
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_vector_destroy(&candidate_types, NULL);
+	apol_infoflow_analysis_destroy(&ia);
+	apol_infoflow_graph_destroy(&g);
+	return retval;
+}
+
 /******************** public functions below ********************/
 
 int apol_types_relation_analysis_do(apol_policy_t *p,
@@ -584,6 +789,18 @@ int apol_types_relation_analysis_do(apol_policy_t *p,
 	do_dissimilar_access = tr->analyses & APOL_TYPES_RELATION_DISSIMILAR_ACCESS;
 	if ((do_similar_access || do_dissimilar_access) &&
 	    apol_types_relation_accesses(p, typeA, typeB, do_similar_access, do_dissimilar_access, *r) < 0) {
+		goto cleanup;
+	}
+	if ((tr->analyses & APOL_TYPES_RELATION_ALLOW_RULES) &&
+	    apol_types_relation_allows(p, typeA, typeB, *r) < 0) {
+		goto cleanup;
+	}
+	if ((tr->analyses & APOL_TYPES_RELATION_TYPE_RULES) &&
+	    apol_types_relation_types(p, typeA, typeB, *r) < 0) {
+		goto cleanup;
+	}
+	if ((tr->analyses & APOL_TYPES_RELATION_DIRECT_FLOW) &&
+	    apol_types_relation_directflow(p, typeA, typeB, *r) < 0) {
 		goto cleanup;
 	}
 
@@ -657,6 +874,9 @@ void apol_types_relation_result_destroy(apol_types_relation_result_t **result)
 		apol_vector_destroy(&(*result)->simB, apol_types_relation_access_free);
 		apol_vector_destroy(&(*result)->disA, apol_types_relation_access_free);
 		apol_vector_destroy(&(*result)->disB, apol_types_relation_access_free);
+		apol_vector_destroy(&(*result)->allows, NULL);
+		apol_vector_destroy(&(*result)->types, NULL);
+		apol_vector_destroy(&(*result)->dirflows, apol_infoflow_result_free);
 		free(*result);
 		*result = NULL;
 	}
@@ -695,6 +915,21 @@ apol_vector_t *apol_types_relation_result_get_dissimilar_first(apol_types_relati
 apol_vector_t *apol_types_relation_result_get_dissimilar_other(apol_types_relation_result_t *result)
 {
 	return result->disB;
+}
+
+apol_vector_t *apol_types_relation_result_get_allowrules(apol_types_relation_result_t *result)
+{
+	return result->allows;
+}
+
+apol_vector_t *apol_types_relation_result_get_typerules(apol_types_relation_result_t *result)
+{
+	return result->types;
+}
+
+apol_vector_t *apol_types_relation_result_get_directflows(apol_types_relation_result_t *result)
+{
+	return result->dirflows;
 }
 
 qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *access)

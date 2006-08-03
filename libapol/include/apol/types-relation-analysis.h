@@ -251,6 +251,48 @@ extern apol_vector_t *apol_types_relation_result_get_dissimilar_first(apol_types
 extern apol_vector_t *apol_types_relation_result_get_dissimilar_other(apol_types_relation_result_t *result);
 
 /**
+ * Return the vector of allow rules involving both types (allow one
+ * type to the other).  This is a vector of qpol_avrule_t pointers.
+ * The caller <b>should not</b> call apol_vector_destroy() upon the
+ * returned vector.  If the user did not request this analysis then
+ * the return value will be NULL.
+ *
+ * @param result Types relation result from which to get rules.
+ *
+ * @return Vector of allow rules, or NULL if analysis was not run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_allowrules(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of type transition / type change rules involving
+ * both types.  This is a vector of qpol_terule_t pointers.  The
+ * caller <b>should not</b> call apol_vector_destroy() upon the
+ * returned vector.  If the user did not request this analysis then
+ * the return value will be NULL.
+ *
+ * @param result Types relation result from which to get rules.
+ *
+ * @return Vector of type enforcement rules, or NULL if analysis was
+ * not run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_typerules(apol_types_relation_result_t *result);
+
+/**
+ * Return the vector of apol_infoflow_result_t pointers corresponding
+ * to a direct information flow analysis between both types.  The
+ * caller <b>should not</b> call apol_vector_destroy() upon the
+ * returned vector.  If the user did not request this analysis then
+ * the return value will be NULL.
+ *
+ * @param result Types relation result from which to get information
+ * flows.
+ *
+ * @return Vector of infoflow results, or NULL if analysis was not
+ * run.
+ */
+extern apol_vector_t *apol_types_relation_result_get_directflows(apol_types_relation_result_t *result);
+
+/**
  * Given a types relation access node, return the type stored within.
  *
  * @param access Types relation access node.

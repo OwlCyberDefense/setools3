@@ -244,7 +244,6 @@ proc Apol_Analysis_tra::checkParams {} {
                 }
             }
             set analysis_selected 1
-            break
         }
     }
     if {!$analysis_selected} {
@@ -285,6 +284,7 @@ proc Apol_Analysis_tra::createResultsDisplay {} {
     $res.tb tag configure title -font {Helvetica 14 bold}
     $res.tb tag configure title_type -foreground blue -font {Helvetica 14 bold}
     $res.tb tag configure subtitle -font {Helvetica 10 bold}
+    $res.tb tag configure subtitle_dir -foreground blue -font {Helvetica 10 bold}
     $res.tb tag configure num -foreground blue -font {Helvetica 10 bold}
     pack $res -expand 1 -fill both
 
@@ -324,6 +324,15 @@ proc Apol_Analysis_tra::treeSelect {res tree node} {
             dis:* {
                 showDissimilar $res $name $parent_name $data
             }
+            allow {
+                showAllows $res $data
+            }
+            trans {
+                showTrans $res $data
+            }
+            x* {
+                showDirectFlow $res $data
+            }
         }
         $res.tb configure -state disabled
     }
@@ -342,7 +351,8 @@ proc Apol_Analysis_tra::renderResults {f results} {
 
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
-    foreach {attribs roles users similars dissimilars} $results {break}
+    foreach {attribs roles users similars dissimilars allows trans \
+        dirflow} $results {break}
     if {$vals(run:attribs)} {
         renderCommon Attributes $tree $attribs
     }
@@ -357,6 +367,15 @@ proc Apol_Analysis_tra::renderResults {f results} {
     }
     if {$vals(run:dissimilars)} {
         renderDissimilars $tree $dissimilars
+    }
+    if {$vals(run:allows)} {
+        renderAllows $tree $allows
+    }
+    if {$vals(run:trans)} {
+        renderTrans $tree $trans
+    }
+    if {$vals(run:direct)} {
+        renderDirectFlow $tree $dirflow
     }
     set first_node [$tree nodes root 0]
     $tree selection set $first_node
@@ -376,7 +395,7 @@ proc Apol_Analysis_tra::renderSimilars {tree results} {
     variable vals
     foreach {simA simB} $results {break}
     set data [list $vals(typeA) $vals(typeB) [llength $simA]]
-    $tree insert end root simtitle -text "Similar access to resources" -data $data
+    $tree insert end root simtitle -text "Similar access to resources" -data $data -drawcross allways
     foreach accessA [lsort -index 0 $simA] accessB [lsort -index 0 $simB] {
         set type [lindex $accessA 0]
         set rulesA [lindex $accessA 1]
@@ -418,19 +437,18 @@ proc Apol_Analysis_tra::showSimilar {res name parent_data data} {
 proc Apol_Analysis_tra::renderDissimilars {tree results} {
     variable vals
     foreach {disA disB} $results {break}
-    puts "disA = $disA\ndisB = $disB"
     set data [list $vals(typeA) $vals(typeB)]
     $tree insert end root distitle -text "Dissimilar access to resources" -data $data
 
     set data [list $vals(typeA) $vals(typeB) [llength $disA]]
-    $tree insert end distitle dissubtitleA -text $vals(typeA) -data $data
+    $tree insert end distitle dissubtitleA -text $vals(typeA) -data $data -drawcross allways
     foreach access [lsort -index 0 $disA] {
         set type [lindex $access 0]
         set rules [lindex $access 1]
         $tree insert end dissubtitleA dis:$type -text $type -data $rules
     }
     set data [list $vals(typeB) $vals(typeA) [llength $disB]]
-    $tree insert end distitle dissubtitleB -text $vals(typeB) -data $data
+    $tree insert end distitle dissubtitleB -text $vals(typeB) -data $data -drawcross allways
     foreach access [lsort -index 0 $disB] {
         set type [lindex $access 0]
         set rules [lindex $access 1]
@@ -469,5 +487,76 @@ proc Apol_Analysis_tra::showDissimilar {res name parent_name data} {
         ":\n\n" title
     foreach r $data {
          Apol_Widget::appendSearchResultAVRule $res 2 $r
+    }
+}
+
+proc Apol_Analysis_tra::renderAllows {tree rules} {
+    $tree insert end root allow -text "TE Allow Rules" -data $rules
+}
+
+proc Apol_Analysis_tra::showAllows {res data} {
+    $res.tb insert end "TE Allow Rules ([llength $data]):\n\n" title
+    foreach r $data {
+         Apol_Widget::appendSearchResultAVRule $res 2 $r
+    }    
+}
+
+proc Apol_Analysis_tra::renderTrans {tree rules} {
+    $tree insert end root trans -text "Type Transition/Change Rules" -data $rules
+}
+
+proc Apol_Analysis_tra::showTrans {res data} {
+    $res.tb insert end "Type transition/change rules ([llength $data]):\n\n" title
+    foreach r $data {
+         Apol_Widget::appendSearchResultTERule $res 2 $r
+    }    
+}
+
+proc Apol_Analysis_tra::renderDirectFlow {tree dirflows} {
+    if {$dirflows == {}} {
+        $tree insert end root x\#auto -text "Direct Flows Between A and B" -data {}
+    } else {
+        variable vals
+        Apol_Analysis_directflow::createResultsNodes $tree root $dirflows
+        set node [$tree nodes root end]
+        set data [list $vals(typeA) $vals(typeB) [$tree itemcget $node -data]]
+        $tree itemconfigure $node -text "Direct Flows Between A and B" -data $data -drawcross auto
+    }
+}
+
+proc Apol_Analysis_tra::showDirectFlow {res data} {
+    foreach {parent_name name data} $data {break}
+    foreach {flow_dir classes} [lindex $data 1] {break}
+    switch -- $flow_dir {
+        both {
+            $res.tb insert end "Information flows both into and out of " title \
+                $parent_name title_type \
+                " from/to " title \
+                $name title_type
+        }
+        in {
+            $res.tb insert end "Information flows into " title \
+                $parent_name title_type \
+                " from " title \
+                $name title_type
+        }
+        out {
+            $res.tb insert end "Information flows out of " title \
+                $parent_name title_type \
+                " to " title \
+                $name title_type
+        }
+    }
+    $res.tb insert end "\n\n" title_type \
+        "Objects classes for " subtitle \
+        [string toupper $flow_dir] subtitle_dir \
+        " flows:\n" subtitle
+    foreach c $classes {
+        foreach {class_name rules} $c {break}
+        $res.tb insert end "      " {} \
+            $class_name\n subtitle
+        foreach r $rules {
+            Apol_Widget::appendSearchResultAVRule $res 12 $r
+        }
     }
 }
