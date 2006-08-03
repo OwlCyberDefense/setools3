@@ -31,6 +31,7 @@
 
 #include <apol/policy.h>
 #include <apol/policy-query.h>
+#include <apol/util.h>
 #include <apol/vector.h>
 
 #include <regex.h>

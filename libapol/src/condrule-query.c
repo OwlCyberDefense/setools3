@@ -30,7 +30,6 @@
  */
 
 #include "policy-query-internal.h"
-#include <apol/util.h>
 #include <errno.h>
 
 struct apol_cond_query {

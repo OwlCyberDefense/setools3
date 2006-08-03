@@ -26,9 +26,10 @@
  */
 
 #include <config.h>
-#include <tcl.h>
 
 #include "apol_tcl_other.h"
+#include <apol/util.h>
+#include <tcl.h>
 
 #ifdef LIBSEFS
 	#include "../libsefs/fsdata.h"

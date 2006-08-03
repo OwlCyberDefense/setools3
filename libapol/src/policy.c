@@ -26,6 +26,7 @@
 
 #include <apol/policy.h>
 #include <apol/perm-map.h>
+#include <apol/domain-trans-analysis.h>
 
 #include <qpol/policy_extend.h>
 #include <qpol/policy_query.h>
@@ -98,6 +99,7 @@ void apol_policy_destroy(apol_policy_t **policy)
 		qpol_policy_destroy(&((*policy)->p));
 		qpol_handle_destroy(&((*policy)->qh));
 		apol_permmap_destroy(&(*policy)->pmap);
+		apol_domain_trans_table_destroy(&(*policy)->domain_trans_table);
 		free(*policy);
 		*policy = NULL;
 	}

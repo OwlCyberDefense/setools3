@@ -28,7 +28,8 @@
 #define APOL_DOMAIN_TRANS_ANALYSIS_H
 
 #include "policy.h"
-#include "util.h"
+#include "vector.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_domain_trans_analysis apol_domain_trans_analysis_t;
 typedef struct apol_domain_trans_result apol_domain_trans_result_t;
