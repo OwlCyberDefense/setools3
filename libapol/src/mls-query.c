@@ -33,7 +33,6 @@
 #include <qpol/iterator.h>
 
 #include "policy-query-internal.h"
-#include <apol/util.h>
 #include <apol/vector.h>
 
 struct apol_level_query {
