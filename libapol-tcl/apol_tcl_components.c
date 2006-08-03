@@ -29,6 +29,7 @@
 
 #include <apol/policy-query.h>
 #include <apol/render.h>
+#include <apol/util.h>
 
 #include <tcl.h>
 #include <assert.h>

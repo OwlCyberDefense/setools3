@@ -31,7 +31,6 @@
 
 #include "policy-query-internal.h"
 #include <apol/render.h>
-#include <apol/util.h>
 
 #include <errno.h>
 #include <string.h>

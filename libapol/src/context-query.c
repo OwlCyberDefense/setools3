@@ -30,7 +30,6 @@
 #include <string.h>
 
 #include <apol/render.h>
-#include <apol/util.h>
 
 /********************* miscellaneous routines *********************/
 
