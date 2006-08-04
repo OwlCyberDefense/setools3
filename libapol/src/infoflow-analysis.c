@@ -484,6 +484,7 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
 		if (apol_permmap_get(p, obj_class_name, perm_name, &perm_map, &perm_weight) < 0) {
 			goto cleanup;
 		}
+		free(perm_name);
 		if (perm_map == APOL_PERMMAP_UNMAPPED) {
 			perm_error = 1;
 			continue;
@@ -655,9 +656,11 @@ static int apol_infoflow_graph_check_class_perms(apol_policy_t *p,
 			goto cleanup;
 		}
 		if (apol_vector_get_index(obj_perm_v, perm, apol_str_strcmp, NULL, &i) == 0) {
+			free(perm);
 			retval = 1;
 			goto cleanup;
 		}
+		free(perm);
 	}
 	retval = 0;  /* no matching perm */
  cleanup:
