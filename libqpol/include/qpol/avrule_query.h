@@ -99,7 +99,8 @@ extern int qpol_avrule_get_object_class(qpol_handle_t *handle, qpol_policy_t *po
  *  @param rule The rule from which to get the permissions.
  *  @param perms Iterator over items of type char* returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
- *  to free memory used by this iterator.
+ *  to free memory used by this iterator. The caller <b>should call</b>
+ *  <b>free() on the strings returned by qpol_iterator_get_item().</b>
  *  It is important to note that this iterator is only valid as long as
  *  the policy is unmodifed.
  *  @returm 0 on success and < 0 on failure; if the call fails,

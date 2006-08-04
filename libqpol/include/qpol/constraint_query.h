@@ -69,8 +69,8 @@ extern int qpol_constraint_get_class(qpol_handle_t *handle, qpol_policy_t *polic
  *  @param constr The constraint from which to get the permissions.
  *  @param iter Iterator over items of type char*.
  *  The caller is responsible for calling qpol_iterator_destroy()
- *  to free memory used by this iterator. The caller should not
- *  free the strings returned by qpol_iterator_get_item().
+ *  to free memory used by this iterator. The caller <b>should call</b>
+ *  <b>free() on the strings returned by qpol_iterator_get_item().</b>
  *  It is important to note that this iterator is only valid as long 
  *  as the policy is unmodified.
  *  @return 0 on success and < 0 on failure; if the call fails,
