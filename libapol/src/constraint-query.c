@@ -88,7 +88,7 @@ int apol_get_constraint_by_query(apol_policy_t *p,
 				goto cleanup;
 			}
 			compval = apol_compare_iter(p, perm_iter, c->perm_name,
-						    c->flags, &(c->perm_regex));
+						    c->flags, &(c->perm_regex), 1);
 			qpol_iterator_destroy(&perm_iter);
 			if (compval < 0) {
 				goto cleanup;

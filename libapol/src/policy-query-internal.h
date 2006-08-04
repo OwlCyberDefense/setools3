@@ -132,11 +132,12 @@ int apol_compare(apol_policy_t *p, const char *target, const char *name,
  * expression to use; the pointer will be allocated space if regexp is
  * legal.  If NULL, then compile the regexp pattern given by name and
  * cache it here.
+ * @param do_free If non-zero free the strings returned by the iterator.
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
 int apol_compare_iter(apol_policy_t *p, qpol_iterator_t *iter, const char *name,
-		      unsigned int flags, regex_t **regex);
+		      unsigned int flags, regex_t **regex, int do_free);
 
 /**
  * Determines if a (partial) type query matches a qpol_type_t,
