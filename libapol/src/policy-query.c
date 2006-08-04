@@ -128,7 +128,7 @@ int apol_compare(apol_policy_t *p, const char *target, const char *name,
 
 int apol_compare_iter(apol_policy_t *p, qpol_iterator_t *iter,
 		      const char *name,
-		      unsigned int flags, regex_t **regex)
+		      unsigned int flags, regex_t **regex, int do_free)
 {
 	int compval;
 	if (name == NULL || *name == '\0') {
@@ -140,6 +140,8 @@ int apol_compare_iter(apol_policy_t *p, qpol_iterator_t *iter,
 			return -1;
 		}
 		compval = apol_compare(p, iter_name, name, flags, regex);
+		if (do_free)
+			free(iter_name);
 		if (compval != 0) {
 			/* matched at least one name, or error */
 			return compval;
@@ -168,7 +170,7 @@ int apol_compare_type(apol_policy_t *p,
 	if (qpol_type_get_alias_iter(p->qh, p->p, type, &alias_iter) < 0) {
 		return -1;
 	}
-	compval = apol_compare_iter(p, alias_iter, name, flags, type_regex);
+	compval = apol_compare_iter(p, alias_iter, name, flags, type_regex, 0);
 	qpol_iterator_destroy(&alias_iter);
 	return compval;
 }
@@ -231,7 +233,7 @@ int apol_compare_level(apol_policy_t *p,
 	if (qpol_level_get_alias_iter(p->qh, p->p, level, &alias_iter) < 0) {
 		return -1;
 	}
-	compval = apol_compare_iter(p, alias_iter, name, flags, level_regex);
+	compval = apol_compare_iter(p, alias_iter, name, flags, level_regex, 0);
 	qpol_iterator_destroy(&alias_iter);
 	return compval;
 }
@@ -255,7 +257,7 @@ int apol_compare_cat(apol_policy_t *p,
 	if (qpol_cat_get_alias_iter(p->qh, p->p, cat, &alias_iter) < 0) {
 		return -1;
 	}
-	compval = apol_compare_iter(p, alias_iter, name, flags, cat_regex);
+	compval = apol_compare_iter(p, alias_iter, name, flags, cat_regex, 0);
 	qpol_iterator_destroy(&alias_iter);
 	return compval;
 }

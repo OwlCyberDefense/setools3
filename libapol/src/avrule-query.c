@@ -179,7 +179,7 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 				if (qpol_avrule_get_perm_iter(p->qh, p->p, rule, &perm_iter) < 0) {
 					goto cleanup;
 				}
-				match_perm = apol_compare_iter(p, perm_iter, perm, 0, NULL);
+				match_perm = apol_compare_iter(p, perm_iter, perm, 0, NULL, 1);
 				if (match_perm < 0) {
 					goto cleanup;
 				}
