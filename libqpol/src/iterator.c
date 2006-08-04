@@ -662,7 +662,7 @@ void *perm_state_get_cur(qpol_iterator_t *iter)
 	tmp = sepol_av_to_string(db, ps->obj_class_val, (sepol_access_vector_t) 1<<(ps->cur));
 	if (tmp) {
 		tmp++; /*sepol_av_to_string prepends a ' ' to the name */
-		return tmp;
+		return strdup(tmp);
 	} else {
 		errno = EINVAL;
 		return NULL;
