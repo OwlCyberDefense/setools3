@@ -159,7 +159,7 @@ proc Apol_Range::searchRanges {} {
 
 proc Apol_Range::renderRangeTrans {rule} {
     variable widgets
-    foreach {source_set target_set range line_num} $rule {
+    foreach {source_set target_set range} $rule {
         if {[llength $source_set] > 1} {
             set source_set "\{ $source_set \}"
         }
@@ -174,7 +174,7 @@ proc Apol_Range::renderRangeTrans {rule} {
         } else {
             append text "$low - $high"
         }
-        Apol_Widget::appendSearchResultLine $widgets(results) 0 $line_num {} range_transition $text
+        Apol_Widget::appendSearchResultLine $widgets(results) 0 {} range_transition $text
     }
 }
 

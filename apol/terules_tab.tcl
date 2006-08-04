@@ -518,6 +518,8 @@ proc Apol_TE::createClassesPermsTab {} {
                                  -bg $ApolTop::default_bg_color \
                                  -listvar Apol_TE::vals(cp:classes)]
     $sw setwidget $widgets(cp:classes)
+    update
+    grid propagate $sw 0
     bind $widgets(cp:classes) <<ListboxSelect>> \
         [list Apol_TE::toggle_cp_select classes]
     pack $sw -expand 1 -fill both
@@ -534,6 +536,8 @@ proc Apol_TE::createClassesPermsTab {} {
                                -exportselection 0 -bg white \
                                -listvar Apol_TE::vals(cp:perms)]
     $sw setwidget $widgets(cp:perms)
+    update
+    grid propagate $sw 0
     bind $widgets(cp:perms) <<ListboxSelect>> \
         [list Apol_TE::toggle_cp_select perms]
     set clear [button $f.clear -text "Clear" \
@@ -912,7 +916,7 @@ proc Apol_TE::search_terules {whichButton} {
     }
 
     set tabs(searches_done) -1
-    set tabs(searches_text) "Searching for TE Rules..."
+    set tabs(searches_text) "Searching for TE Rules."
     set last_focus [focus -lastfor .]
     ProgressDlg .terules_busy -title "TE Rules Search" \
         -type normal -stop {} -separator 1 -parent . -maximum 2 \
@@ -925,13 +929,16 @@ proc Apol_TE::search_terules {whichButton} {
     set retval [catch {apol_SearchTERules $rule_selection $other_opts \
                            $source $target $default $classes $perms} results]
 
-    ApolTop::resetBusyCursor
-    destroy .terules_busy
-    focus $last_focus
-
     if {$retval} {
+        ApolTop::resetBusyCursor
+        destroy .terules_busy
+        focus $last_focus
         tk_messageBox -icon error -type ok -title Error -message "Error searching TE rules:\n$results"
     } else {
+        set tabs(searches_text) "Rendering results."
+        update idletasks
+        foreach {avresults teresults} $results {break}
+        set num_rules [expr {[llength $avresults] + [llength $teresults]}]
         if {$whichButton == "new"} {
             set sr [create_new_results_tab]
         } else {
@@ -940,21 +947,18 @@ proc Apol_TE::search_terules {whichButton} {
             set sr $tabs($id)
             Apol_Widget::clearSearchResults $sr
         }
-        set header "[llength $results] rule"
-        if {[llength $results] != 1} {
+        set header "$num_rules rule"
+        if {$num_rules != 1} {
             append header s
         }
         append header " match the search criteria.\n\n"
         Apol_Widget::appendSearchResultText $sr $header
-        if {[ApolTop::is_binary_policy]} {
-            foreach rule [lsort $results] {
-                renderRule $sr $rule
-            }
-        } else {
-            foreach rule $results {
-                renderRule $sr $rule
-            }
-        }
+        apol_GetSynAVRules [lindex $avresults 0]
+        Apol_Widget::appendSearchResultAVRules $sr 0 $avresults
+        Apol_Widget::appendSearchResultTERules $sr 0 $teresults
+        ApolTop::resetBusyCursor
+        destroy .terules_busy
+        focus $last_focus
     }
 
     foreach x {new reset} {
@@ -963,12 +967,6 @@ proc Apol_TE::search_terules {whichButton} {
     if {[$widgets(results) pages] != {} || $retval == 0} {
         $widgets(update) configure -state normal
     }
-}
-
-
-proc Apol_TE::renderRule {sr rule} {
-    foreach {rule_type source_set target_set class perm_default line_num cond_info} $rule {break}
-    Apol_Widget::appendSearchResultLine $sr 0 $line_num $cond_info $rule_type "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
 }
 
 # -----------------------------------------------------------------------------

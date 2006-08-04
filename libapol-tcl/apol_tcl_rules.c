@@ -27,8 +27,301 @@
 #include "apol_tcl_render.h"
 
 #include <apol/util.h>
+#include <qpol/policy_extend.h>
 #include <tcl.h>
 #include <errno.h>
+
+/********* routines to manipulate a qpol rule as a Tcl object *********/
+
+/**
+ * Create and return a new Tcl_Obj whose value is set to prefix-rule.
+ */
+static Tcl_Obj *rule_to_tcl_obj(const char *prefix, void *rule)
+{
+	Tcl_Obj *o;
+	char s[1], *name;
+	int num_bytes;
+
+	num_bytes = snprintf(s, 1, "%s-%p", prefix, rule) + 1;
+	name = ckalloc(num_bytes);
+	snprintf(name, num_bytes, "%s-%p", prefix, rule);
+	o = Tcl_NewStringObj(name, -1);
+	o->internalRep.otherValuePtr = rule;
+	ckfree(name);
+	return o;
+}
+
+static struct Tcl_ObjType qpol_avrule_tcl_obj_type = {
+	"avrule",
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
+/**
+ * Given a qpol_avrule_t object, create a new Tcl_Obj with that
+ * represents it.  The Tcl_Obj will have a unique string identifier
+ * for the rule.
+ *
+ * @param interp Tcl interpreter object.
+ * @param rule Rule to store.
+ * @param o Reference to where to create the new Tcl_Obj.
+ *
+ * @return TCL_OK on success, TCL_ERROR on error.
+ */
+static int qpol_avrule_to_tcl_obj(Tcl_Interp *interp, qpol_avrule_t *rule, Tcl_Obj **o)
+{
+	*o = rule_to_tcl_obj("avrule", rule);
+	(*o)->typePtr = &qpol_avrule_tcl_obj_type;
+	return TCL_OK;
+}
+
+static struct Tcl_ObjType qpol_terule_tcl_obj_type = {
+	"terule",
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
+/**
+ * Given a qpol_terule_t object, create a new Tcl_Obj with that
+ * represents it.  The Tcl_Obj will have a unique string identifier
+ * for the rule.
+ *
+ * @param interp Tcl interpreter object.
+ * @param rule Rule to store.
+ * @param o Reference to where to create the new Tcl_Obj.
+ *
+ * @return TCL_OK on success, TCL_ERROR on error.
+ */
+static int qpol_terule_to_tcl_obj(Tcl_Interp *interp, qpol_terule_t *rule, Tcl_Obj **o)
+{
+	*o = rule_to_tcl_obj("terule", rule);
+	(*o)->typePtr = &qpol_terule_tcl_obj_type;
+	return TCL_OK;
+}
+
+/**
+ * Convert an iterator of qpol_avrule_t pointers to a Tcl
+ * representation.  Note that the iterator will be incremented to its
+ * end when this function returns.
+ *
+ * @param interp Tcl interpreter object.
+ * @param iter Iterator to convert.
+ * @param obj Destination to create Tcl list.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int qpol_iter_avrule_to_tcl_list(Tcl_Interp *interp,
+					qpol_iterator_t *iter,
+					Tcl_Obj **obj)
+{
+	qpol_avrule_t *avrule;
+	Tcl_Obj *o;
+	*obj = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &avrule) < 0 ||
+		    qpol_avrule_to_tcl_obj(interp, avrule, &o) < 0 ||
+		    Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/**
+ * Convert an iterator of qpol_terule_t pointers to a Tcl
+ * representation.  Note that the iterator will be incremented to its
+ * end when this function returns.
+ *
+ * @param interp Tcl interpreter object.
+ * @param iter Iterator to convert.
+ * @param obj Destination to create Tcl list.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int qpol_iter_terule_to_tcl_list(Tcl_Interp *interp,
+					qpol_iterator_t *iter,
+					Tcl_Obj **obj)
+{
+	qpol_terule_t *terule;
+	Tcl_Obj *o;
+	*obj = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &terule) < 0 ||
+		    qpol_terule_to_tcl_obj(interp, terule, &o) < 0 ||
+		    Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int apol_vector_avrule_to_tcl_list(Tcl_Interp *interp,
+				   apol_vector_t *v,
+				   Tcl_Obj **obj)
+{
+	size_t i;
+	*obj = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		qpol_avrule_t *rule = (qpol_avrule_t *) apol_vector_get_element(v, i);
+		Tcl_Obj *o;
+		if (qpol_avrule_to_tcl_obj(interp, rule, &o) == TCL_ERROR ||
+		    Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int apol_vector_terule_to_tcl_list(Tcl_Interp *interp,
+				   apol_vector_t *v,
+				   Tcl_Obj **obj)
+{
+	size_t i;
+	*obj = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		qpol_terule_t *rule = (qpol_terule_t *) apol_vector_get_element(v, i);
+		Tcl_Obj *o;
+		if (qpol_terule_to_tcl_obj(interp, rule, &o) == TCL_ERROR ||
+		    Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int tcl_obj_to_qpol_avrule(Tcl_Interp *interp, Tcl_Obj *o, qpol_avrule_t **rule)
+{
+	if (o->typePtr != &qpol_avrule_tcl_obj_type) {
+		CONST char *name;
+		name = Tcl_GetString(o);
+		if (sscanf(name, "avrule-%p", (void **) rule) != 1) {
+			Tcl_SetResult(interp, "Invalid qpol_avrule_tcl object.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		/* shimmer the object back to a qpol_avrule_tcl */
+		o->typePtr = &qpol_avrule_tcl_obj_type;
+		o->internalRep.otherValuePtr = *rule;
+	}
+	else {
+		*rule = (qpol_avrule_t *) o->internalRep.otherValuePtr;
+	}
+	return TCL_OK;
+}
+
+int tcl_obj_to_qpol_terule(Tcl_Interp *interp, Tcl_Obj *o, qpol_terule_t **rule)
+{
+	if (o->typePtr != &qpol_terule_tcl_obj_type) {
+		CONST char *name;
+		name = Tcl_GetString(o);
+		if (sscanf(name, "terule-%p", (void **) rule) != 1) {
+			Tcl_SetResult(interp, "Invalid qpol_terule_tcl object.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		/* shimmer the object back to a qpol_terule_tcl */
+		o->typePtr = &qpol_terule_tcl_obj_type;
+		o->internalRep.otherValuePtr = *rule;
+	}
+	else {
+		*rule = (qpol_terule_t *) o->internalRep.otherValuePtr;
+	}
+	return TCL_OK;
+}
+
+static struct Tcl_ObjType qpol_syn_avrule_tcl_obj_type = {
+	"syn_avrule",
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
+/**
+ * Given a qpol_syn_avrule_t object, create a new Tcl_Obj which
+ * represents it.  The Tcl_Obj will have a unique string identifier
+ * for the rule.
+ *
+ * @param interp Tcl interpreter object.
+ * @param rule Rule to store.
+ * @param o Reference to where to create the new Tcl_Obj.
+ *
+ * @return TCL_OK on success, TCL_ERROR on error.
+ */
+static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp, qpol_syn_avrule_t *rule, Tcl_Obj **o)
+{
+	*o = rule_to_tcl_obj("syn_avrule", rule);
+	(*o)->typePtr = &qpol_syn_avrule_tcl_obj_type;
+	return TCL_OK;
+}
+
+int tcl_obj_to_qpol_syn_avrule(Tcl_Interp *interp, Tcl_Obj *o, qpol_syn_avrule_t **rule)
+{
+	if (o->typePtr != &qpol_syn_avrule_tcl_obj_type) {
+		CONST char *name;
+		name = Tcl_GetString(o);
+		if (sscanf(name, "syn_avrule-%p", (void **) rule) != 1) {
+			Tcl_SetResult(interp, "Invalid qpol_syn_avrule_tcl object.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		/* shimmer the object back to a qpol_syn_avrule_tcl */
+		o->typePtr = &qpol_syn_avrule_tcl_obj_type;
+		o->internalRep.otherValuePtr = *rule;
+	}
+	else {
+		*rule = (qpol_syn_avrule_t *) o->internalRep.otherValuePtr;
+	}
+	return TCL_OK;
+}
+
+static struct Tcl_ObjType qpol_syn_terule_tcl_obj_type = {
+	"syn_terule",
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
+/**
+ * Given a qpol_syn_terule_t object, create a new Tcl_Obj which
+ * represents it.  The Tcl_Obj will have a unique string identifier
+ * for the rule.
+ *
+ * @param interp Tcl interpreter object.
+ * @param rule Rule to store.
+ * @param o Reference to where to create the new Tcl_Obj.
+ *
+ * @return TCL_OK on success, TCL_ERROR on error.
+ */
+static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp, qpol_syn_terule_t *rule, Tcl_Obj **o)
+{
+	*o = rule_to_tcl_obj("syn_terule", rule);
+	(*o)->typePtr = &qpol_syn_terule_tcl_obj_type;
+	return TCL_OK;
+}
+
+int tcl_obj_to_qpol_syn_terule(Tcl_Interp *interp, Tcl_Obj *o, qpol_syn_terule_t **rule)
+{
+	if (o->typePtr != &qpol_syn_terule_tcl_obj_type) {
+		CONST char *name;
+		name = Tcl_GetString(o);
+		if (sscanf(name, "syn_terule-%p", (void **) rule) != 1) {
+			Tcl_SetResult(interp, "Invalid qpol_syn_terule_tcl object.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		/* shimmer the object back to a qpol_syn_terule_tcl */
+		o->typePtr = &qpol_syn_terule_tcl_obj_type;
+		o->internalRep.otherValuePtr = *rule;
+	}
+	else {
+		*rule = (qpol_syn_terule_t *) o->internalRep.otherValuePtr;
+	}
+	return TCL_OK;
+}
+
+/******************** analysis code below ********************/
 
 /**
  * Takes a Tcl typeset list (e.g., "{foo 1}") and splits in into its
@@ -77,68 +370,9 @@ static int apol_tcl_string_to_typeset(Tcl_Interp *interp,
 }
 
 /**
- * Takes a qpol_avrule_t and appends a tuple of it to result_list.
- * The tuple consists of:
- * <code>
- *    { rule_type source_type_set target_type_set object_class perm_set
- *      line_number cond_info }
- * </code>
- * The type sets and perm sets are Tcl lists.  If cond_info is an
- * empty list then this rule is unconditional.  Otherwise cond_info is
- * a 2-uple list, where the first element is either "enabled" or
- * "disabled", and the second element is the line number for its
- * conditional expression.
- */
-static int append_avrule_to_list(Tcl_Interp *interp,
-				 qpol_avrule_t *avrule,
-				 Tcl_Obj *result_list)
-{
-	Tcl_Obj *avrule_list;
-	if (apol_avrule_to_tcl_obj(interp, avrule, &avrule_list) == TCL_ERROR ||
-	    Tcl_ListObjAppendElement(interp, result_list, avrule_list) == TCL_ERROR) {
-		return TCL_ERROR;
-	}
-	return TCL_OK;
-}
-
-/**
- * Takes a qpol_terule_t and appends a tuple of it to result_list.
- * The tuple consists of:
- * <code>
- *    { rule_type source_type_set target_type_set object_class default_type
- *      line_number cond_info }
- * </code>
- * The type sets and perm sets are Tcl lists.  If cond_info is an
- * empty list then this rule is unconditional.  Otherwise cond_info is
- * a 2-uple list, where the first element is either "enabled" or
- * "disabled", and the second element is the line number for its
- * conditional expression.
- */
-static int append_terule_to_list(Tcl_Interp *interp,
-				 qpol_terule_t *terule,
-				 Tcl_Obj *result_list)
-{
-	Tcl_Obj *terule_list;
-	if (apol_terule_to_tcl_obj(interp, terule, &terule_list) == TCL_ERROR ||
-	    Tcl_ListObjAppendElement(interp, result_list, terule_list) == TCL_ERROR) {
-		return TCL_ERROR;
-	}
-	return TCL_OK;
-}
-
-/**
- * Return an unsorted list of TE rules (av rules and type rules)
- * tuples within the policy.  Each tuple consists of:
- * <ul>
- *   <li>rule type ("allow", "type_transition", etc.)
- *   <li>source type set
- *   <li>target type set
- *   <li>object class
- *   <li>for av rules: permission set; for type rules: default type
- *   <li>line number, or -1 unknown
- *   <li>conditional info (empty list, or 2-uple list of
- *   enabled/disabled + conditional's line number)
- * </ul>
+ * Perform a rule search upon the currently loaded policy, returning
+ * two unsorted lists of rules.  The first list is a list of av rules,
+ * the second for te rules.
  *
  * @param argv This function takes seven parameters:
  * <ol>
@@ -179,9 +413,7 @@ static int append_terule_to_list(Tcl_Interp *interp,
  */
 static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	qpol_avrule_t *avrule;
-	qpol_terule_t *terule;
+	Tcl_Obj *rules_elem[2], *result_obj;
 	unsigned int avrules = 0, terules = 0;
 	CONST char **rule_strings = NULL, **other_opt_strings = NULL,
 		**class_strings = NULL, **perm_strings = NULL;
@@ -190,7 +422,6 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	apol_avrule_query_t *avquery = NULL;
 	apol_terule_query_t *tequery = NULL;
 	apol_vector_t *av = NULL, *te = NULL;
-	size_t i;
 	int retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
@@ -311,29 +542,26 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	}
 
 	if (avrules != 0) {
-		if (apol_get_avrule_by_query(policydb, avquery, &av) < 0) {
-		    goto cleanup;
+		if (apol_get_avrule_by_query(policydb, avquery, &av) < 0 ||
+		    apol_vector_avrule_to_tcl_list(interp, av, rules_elem + 0) < 0) {
+			goto cleanup;
 		}
-		for (i = 0; i < apol_vector_get_size(av); i++) {
-			avrule = (qpol_avrule_t *) apol_vector_get_element(av, i);
-			if (append_avrule_to_list(interp, avrule, result_obj) == TCL_ERROR) {
-				goto cleanup;
-			}
-		}
+	}
+	else {
+		rules_elem[0] = Tcl_NewListObj(0, NULL);
 	}
 
 	if (terules != 0) {
-		if (apol_get_terule_by_query(policydb, tequery, &te) < 0) {
+		if (apol_get_terule_by_query(policydb, tequery, &te) < 0 ||
+		    apol_vector_terule_to_tcl_list(interp, te, rules_elem + 1) < 0) {
 			goto cleanup;
 		}
-		for (i = 0; i < apol_vector_get_size(te); i++) {
-			terule = (qpol_terule_t *) apol_vector_get_element(te, i);
-			if (append_terule_to_list(interp, terule, result_obj) == TCL_ERROR) {
-				goto cleanup;
-			}
-		}
+	}
+	else {
+		rules_elem[1] = Tcl_NewListObj(0, NULL);
 	}
 
+	result_obj = Tcl_NewListObj(2, rules_elem);
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
@@ -424,8 +652,8 @@ static int cond_expr_iter_to_tcl_obj(Tcl_Interp *interp,
  * <code>
  *   { expression_list true_list false_list }
  * </code>
- * Rules lists are formatted as per append_avrule_to_list() and
- * append_terule_to_list().
+ * Rules lists are each two sub-lists, one for av rules the other for
+ * te rules.
  *
  * @param avrules A bitmask of which av rules to add to rules lists.
  * @param terules A bitmask of which te rules to add to rules lists.
@@ -436,68 +664,40 @@ static int append_cond_result_to_list(Tcl_Interp *interp,
 				      unsigned int terules,
 				      Tcl_Obj *result_list)
 {
-	Tcl_Obj *cond_elem[3], *cond_list;
-	qpol_iterator_t *iter = NULL;
-	qpol_avrule_t *avrule;
-	qpol_terule_t *terule;
+	Tcl_Obj *cond_elem[3], *cond_list, *rules_elem[2];
+	qpol_iterator_t *conditer, *aviter = NULL, *teiter = NULL;
 	int retval = TCL_ERROR;
 
-	if (qpol_cond_get_expr_node_iter(policydb->qh, policydb->p, result, &iter) < 0 ||
-	    cond_expr_iter_to_tcl_obj(interp, iter, cond_elem + 0) == TCL_ERROR) {
+	if (qpol_cond_get_expr_node_iter(policydb->qh, policydb->p, result, &conditer) < 0 ||
+	    cond_expr_iter_to_tcl_obj(interp, conditer, cond_elem + 0) == TCL_ERROR) {
 		goto cleanup;
 	}
-	qpol_iterator_destroy(&iter);
-
-	cond_elem[1] = Tcl_NewListObj(0, NULL);
 
 	if (qpol_cond_get_av_true_iter(policydb->qh, policydb->p,
-				       result, avrules, &iter) < 0) {
+				       result, avrules, &aviter) < 0 ||
+	    qpol_cond_get_te_true_iter(policydb->qh, policydb->p,
+				       result, terules, &teiter)) {
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &avrule) < 0 ||
-		    append_avrule_to_list(interp, avrule, cond_elem[1]) == TCL_ERROR) {
-			goto cleanup;
-		}
-	}
-	qpol_iterator_destroy(&iter);
-
-	if (qpol_cond_get_te_true_iter(policydb->qh, policydb->p,
-				       result, terules, &iter) < 0) {
+	if (qpol_iter_avrule_to_tcl_list(interp, aviter, rules_elem + 0) < 0 ||
+	    qpol_iter_terule_to_tcl_list(interp, teiter, rules_elem + 1) < 0) {
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &terule) < 0 ||
-		    append_terule_to_list(interp, terule, cond_elem[1]) == TCL_ERROR) {
-			goto cleanup;
-		}
-	}
-	qpol_iterator_destroy(&iter);
-
-        cond_elem[2] = Tcl_NewListObj(0, NULL);
+	cond_elem[1] = Tcl_NewListObj(2, rules_elem);
+	qpol_iterator_destroy(&aviter);
+	qpol_iterator_destroy(&teiter);
 
 	if (qpol_cond_get_av_false_iter(policydb->qh, policydb->p,
-				       result, avrules, &iter) < 0) {
+					result, avrules, &aviter) < 0 ||
+	    qpol_cond_get_te_false_iter(policydb->qh, policydb->p,
+					result, terules, &teiter)) {
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &avrule) < 0 ||
-		    append_avrule_to_list(interp, avrule, cond_elem[2]) == TCL_ERROR) {
-			goto cleanup;
-		}
-	}
-	qpol_iterator_destroy(&iter);
-
-	if (qpol_cond_get_te_false_iter(policydb->qh, policydb->p,
-				       result, terules, &iter) < 0) {
+	if (qpol_iter_avrule_to_tcl_list(interp, aviter, rules_elem + 0) < 0 ||
+	    qpol_iter_terule_to_tcl_list(interp, teiter, rules_elem + 1) < 0) {
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &terule) < 0 ||
-		    append_terule_to_list(interp, terule, cond_elem[2]) == TCL_ERROR) {
-			goto cleanup;
-		}
-	}
+	cond_elem[2] = Tcl_NewListObj(2, rules_elem);
 
 	cond_list = Tcl_NewListObj(3, cond_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, cond_list) == TCL_ERROR) {
@@ -505,7 +705,9 @@ static int append_cond_result_to_list(Tcl_Interp *interp,
 	}
 	retval = TCL_OK;
  cleanup:
-	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&conditer);
+	qpol_iterator_destroy(&aviter);
+	qpol_iterator_destroy(&teiter);
 	return retval;
 }
 
@@ -655,7 +857,7 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
  * Takes a qpol_role_allow_t and appends a tuple of it to result_list.
  * The tuple consists of:
  * <code>
- *    { "allow" source_role target_role "" line_number }
+ *    { "allow" source_role target_role "" }
  * </code>
  */
 static int append_role_allow_to_list(Tcl_Interp *interp,
@@ -664,7 +866,7 @@ static int append_role_allow_to_list(Tcl_Interp *interp,
 {
 	qpol_role_t *source, *target;
 	char *source_name, *target_name;
-	Tcl_Obj *allow_elem[5], *allow_list;
+	Tcl_Obj *allow_elem[4], *allow_list;
 	int retval = TCL_ERROR;
 
 	if (qpol_role_allow_get_source_role(policydb->qh, policydb->p, rule, &source) < 0 ||
@@ -680,8 +882,7 @@ static int append_role_allow_to_list(Tcl_Interp *interp,
 	allow_elem[1] = Tcl_NewStringObj(source_name, -1);
 	allow_elem[2] = Tcl_NewStringObj(target_name, -1);
 	allow_elem[3] = Tcl_NewStringObj("", -1);
-	allow_elem[4] = Tcl_NewStringObj("", -1);  /* FIX ME! */
-	allow_list = Tcl_NewListObj(5, allow_elem);
+	allow_list = Tcl_NewListObj(4, allow_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, allow_list) == TCL_ERROR) {
 		goto cleanup;
 	}
@@ -694,7 +895,7 @@ static int append_role_allow_to_list(Tcl_Interp *interp,
  * Takes a qpol_role_trans_t and appends a tuple of it to result_list.
  * The tuple consists of:
  * <code>
- *    { "role_transition" source_role target_type default_role line_number }
+ *    { "role_transition" source_role target_type default_role }
  * </code>
  */
 static int append_role_trans_to_list(Tcl_Interp *interp,
@@ -704,7 +905,7 @@ static int append_role_trans_to_list(Tcl_Interp *interp,
 	qpol_role_t *source, *default_role;
 	qpol_type_t *target;
 	char *source_name, *target_name, *default_name;
-	Tcl_Obj *role_trans_elem[5], *role_trans_list;
+	Tcl_Obj *role_trans_elem[4], *role_trans_list;
 	int retval = TCL_ERROR;
 
 	if (qpol_role_trans_get_source_role(policydb->qh, policydb->p, rule, &source) < 0 ||
@@ -722,8 +923,7 @@ static int append_role_trans_to_list(Tcl_Interp *interp,
 	role_trans_elem[1] = Tcl_NewStringObj(source_name, -1);
 	role_trans_elem[2] = Tcl_NewStringObj(target_name, -1);
 	role_trans_elem[3] = Tcl_NewStringObj(default_name, -1);
-	role_trans_elem[4] = Tcl_NewStringObj("", -1);  /* FIX ME! */
-	role_trans_list = Tcl_NewListObj(5, role_trans_elem);
+	role_trans_list = Tcl_NewListObj(4, role_trans_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, role_trans_list) == TCL_ERROR) {
 		goto cleanup;
 	}
@@ -739,11 +939,10 @@ static int append_role_trans_to_list(Tcl_Interp *interp,
  * <ul>
  *   <li>rule type ("allow" or "role_transition")
  *   <li>source role
- *   <li>for allow rules: target role; for role_transition:  target
- *   type
- *   <li>for allow rules: an empty list; for role_transition: default
- *   role
- *   <li>line number, or -1 if unknown
+ *   <li>for allow rules: target role;
+ *       for role_transition:  target type
+ *   <li>for allow rules: an empty list;
+ *       for role_transition: default role
  * </ul>
  *
  * @param argv This function takes five parameters:
@@ -888,7 +1087,7 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int a
  * Takes a qpol_range_trans_t and appends a tuple of it to
  * result_list.  The tuple consists of:
  * <code>
- *    { source_type_set target_type_set range line_number }
+ *    { source_type_set target_type_set range }
  * </code>
  * The type sets are Tcl lists.
  */
@@ -900,7 +1099,7 @@ static int append_range_trans_to_list(Tcl_Interp *interp,
 	qpol_mls_range_t *range;
 	apol_mls_range_t *apol_range = NULL;
 	char *source_name, *target_name;
-	Tcl_Obj *range_elem[2], *rule_elem[4], *rule_list;
+	Tcl_Obj *range_elem[2], *rule_elem[3], *rule_list;
 	int retval = TCL_ERROR;
 
 	if (qpol_range_trans_get_source_type(policydb->qh, policydb->p, rule, &source) < 0 ||
@@ -923,8 +1122,7 @@ static int append_range_trans_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	rule_elem[2] = Tcl_NewListObj(2, range_elem);
-	rule_elem[3] = Tcl_NewStringObj("", -1);  /* FIX ME! */
-	rule_list = Tcl_NewListObj(4, rule_elem);
+	rule_list = Tcl_NewListObj(3, rule_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, rule_list) == TCL_ERROR) {
 		goto cleanup;
 	}
@@ -941,7 +1139,6 @@ static int append_range_trans_to_list(Tcl_Interp *interp,
  *   <li>source type set
  *   <li>target type set
  *   <li>new range (range = 2-uple of levels)
- *   <li>line number, or -1 if unknown
  * </ul>
  *
  * @param argv This function takes four parameters:
@@ -1018,11 +1215,113 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
         return retval;
 }
 
+/**
+ * Take a Tcl object representing an av rule identifier (relative to
+ * the currently loaded policy) and return a list of syn_av tcl
+ * objects from which this rule derived.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing an av rule identifier.
+ * </ol>
+ */
+static int Apol_GetSynAVRules(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_avrule_t *avrule;
+	qpol_syn_avrule_t *syn_avrule;
+	qpol_iterator_t *iter = NULL;
+	Tcl_Obj *o, *result_list;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need an avrule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR) {
+                goto cleanup;
+        }
+        if ( 
+	    qpol_avrule_get_syn_avrule_iter(policydb->qh, policydb->p, avrule, &iter) < 0) {
+		goto cleanup;
+	}
+	result_list = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &syn_avrule) < 0 ||
+		    qpol_syn_avrule_to_tcl_obj(interp, syn_avrule, &o) == TCL_ERROR ||
+		    Tcl_ListObjAppendElement(interp, result_list, o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	Tcl_SetObjResult(interp, result_list);
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&iter);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a te rule identifier (relative to
+ * the currently loaded policy) and return a list of syn_te tcl
+ * objects from which this rule derived.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing a te rule identifier.
+ * </ol>
+ */
+static int Apol_GetSynTERules(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_terule_t *terule;
+	qpol_syn_terule_t *syn_terule;
+	qpol_iterator_t *iter = NULL;
+	Tcl_Obj *o, *result_list;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a terule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_terule_get_syn_terule_iter(policydb->qh, policydb->p, terule, &iter) < 0) {
+		goto cleanup;
+	}
+	result_list = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &syn_terule) < 0 ||
+		    qpol_syn_terule_to_tcl_obj(interp, syn_terule, &o) == TCL_ERROR ||
+		    Tcl_ListObjAppendElement(interp, result_list, o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	Tcl_SetObjResult(interp, result_list);
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&iter);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
 
 int apol_tcl_rules_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_SearchTERules", Apol_SearchTERules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", Apol_SearchConditionalRules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchRBACRules", Apol_SearchRBACRules, NULL, NULL);
         Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", Apol_SearchRangeTransRules, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_GetSynAVRules", Apol_GetSynAVRules, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_GetSynTERules", Apol_GetSynTERules, NULL, NULL);
         return TCL_OK;
 }

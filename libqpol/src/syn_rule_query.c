@@ -119,7 +119,7 @@ static int syn_rule_perm_state_end(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	return (srps->perm_list_sz >= srps->cur? 1: 0);
+	return (srps->cur >= srps->perm_list_sz ? 1: 0);
 }
 
 static void *syn_rule_perm_state_get_cur(qpol_iterator_t *iter)
@@ -501,6 +501,9 @@ int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 		ERR(handle, "%s", strerror(error));
 		goto err;
 	}
+	srps->perm_list = perm_list;
+	srps->perm_list_sz = perm_list_sz;
+	srps->cur = 0;
 
 	if (qpol_iterator_create(handle, db, (void*)srps,
 		syn_rule_perm_state_get_cur, syn_rule_perm_state_next,

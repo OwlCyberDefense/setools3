@@ -349,12 +349,9 @@ proc Apol_Widget::appendSearchResultText {path text} {
 # number of spaces preceeding the line.  If $linenum is non-empty,
 # create a hyperlink from it to the policy.  If $cond_info is
 # non-empty, then mark this line as enabled or disabled.
-proc Apol_Widget::appendSearchResultLine {path indent linenum cond_info line_type args} {
+proc Apol_Widget::appendSearchResultLine {path indent cond_info line_type args} {
     $path.tb configure -state normal
     $path.tb insert end [string repeat " " $indent]
-    if {$linenum != {}} {
-        $path.tb insert end \[ {} $linenum linenum "\] "
-    }
     set text [join [concat $line_type $args]]
     $path.tb insert end "[string trim $text];"
     if {$cond_info != {}} {
@@ -368,64 +365,114 @@ proc Apol_Widget::appendSearchResultLine {path indent linenum cond_info line_typ
     $path.tb configure -state disabled
 }
 
-# Append an avrule, as specified by its unique id, to a search results
-# box.
-proc Apol_Widget::appendSearchResultAVRule {path indent rule_id} {
-    foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderAVRule $rule_id] {break}
+# Append a list of avrules, as specified by their unique ids, to a
+# search results box.  If the loaded policy is a source policy,
+# instead show all matching syntactic rules, sorted by line number.
+# Otherwise sort by string representation.
+proc Apol_Widget::appendSearchResultAVRules {path indent rule_list} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    $path.tb insert end [string repeat " " $indent]
-    if {$line_num != {}} {
-        $path.tb insert end \[ {} $line_num linenum "\] "
-    }
-    if {[llength $source_set] > 1} {
-        set source_set "\{ $source_set \}"
-    }
-    if {[llength $target_set] > 1} {
-        set target_set "\{ $target_set \}"
-    }
-    if {[llength $perms] > 1} {
-        set perms "\{ $perms \}"
-    }
-    set text "$rule_type $source_set $target_set : $class $perms;"
-    $path.tb insert end $text
-    if {$cond_info != {}} {
-        if {[lindex $cond_info 0] == "enabled"} {
-            $path.tb insert end "  \[" {} "Enabled" enabled "\]"
-        } else {
-            $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+    set is_binary [ApolTop::is_binary_policy]
+    set rules {}
+    if {$is_binary} {
+        set rules [lsort -command _sort_avrule_bin $rule_list]
+    } else {
+        foreach r $rule_list {
+            set rules [concat $rules [apol_GetSynAVRules $r]]
         }
+        set rules [lsort -unique -command _sort_avrule_source $rules]
     }
-    $path.tb insert end "\n"
+
+    foreach r $rules {
+        $path.tb insert end [string repeat " " $indent]
+        if {$is_binary} {
+            foreach {rule_type source_set target_set class perms cond_info} [apol_RenderAVRule $r] {break}
+            set text [list "$rule_type $source_set $target_set" {}]
+        } else {
+            foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderSynAVRule $r] {break}
+            set text [list \[ {} \
+                          $line_num linenum \
+                          "\] " {} \
+                          $rule_type {}]
+            if {[llength $source_set] > 1} {
+                set source_set "\{$source_set\}"
+            }
+            if {[llength $target_set] > 1} {
+                set target_set "\{$target_set\}"
+            }
+            if {[llength $class] > 1} {
+                set class "\{$class\}"
+            }
+            lappend text " $source_set $target_set" {}
+        }
+        if {[llength $perms] > 1} {
+            set perms "\{$perms\}"
+        }
+        lappend text " : $class $perms;" {}
+        eval $path.tb insert end $text
+        if {$cond_info != {}} {
+            if {[lindex $cond_info 0] == "enabled"} {
+                $path.tb insert end "  \[" {} "Enabled" enabled "\]"
+            } else {
+                $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+            }
+        }
+        $path.tb insert end "\n"
+    }
     $path.tb configure -state $curstate
 }
 
-# Append a terule, as specified by its unique id, to a search results
-# box.
-proc Apol_Widget::appendSearchResultTERule {path indent rule_id} {
-    foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderTERule $rule_id] {break}
+# Append a list of terules, as specified by their unique ids, to a
+# search results box.  If the loaded policy is a source policy,
+# instead show all matching syntactic rules, sorted by line number.
+# Otherwise sort by string representation.
+proc Apol_Widget::appendSearchResultTERules {path indent rule_list} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    $path.tb insert end [string repeat " " $indent]
-    if {$line_num != {}} {
-        $path.tb insert end \[ {} $line_num linenum "\] "
-    }
-    if {[llength $source_set] > 1} {
-        set source_set "\{ $source_set \}"
-    }
-    if {[llength $target_set] > 1} {
-        set target_set "\{ $target_set \}"
-    }
-    set text "$rule_type $source_set $target_set : $class $default_type;"
-    $path.tb insert end $text
-    if {$cond_info != {}} {
-        if {[lindex $cond_info 0] == "enabled"} {
-            $path.tb insert end "  \[" {} "Enabled" enabled "\]"
-        } else {
-            $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+    set is_binary [ApolTop::is_binary_policy]
+    set rules {}
+    if {$is_binary} {
+        set rules [lsort -command _sort_terule_bin $rule_list]
+    } else {
+        foreach r $rule_list {
+            set rules [concat $rules [apol_GetSynTERules $r]]
         }
+        set rules [lsort -unique -command _sort_terule_source $rules]
     }
-    $path.tb insert end "\n"
+
+    foreach r $rules {
+        $path.tb insert end [string repeat " " $indent]
+        if {$is_binary} {
+            foreach {rule_type source_set target_set class default_type cond_info} [apol_RenderTERule $r] {break}
+            set text [list "$rule_type $source_set $target_set" {}]
+        } else {
+            foreach {rule_type source_set target_set class default_type line_nume cond_info} [apol_RenderSynTERule $r] {break}
+            set text [list \[ {} \
+                      $line_num linenum \
+                      "\] " {}
+                      $rule_type {}]
+            if {[llength $source_set] > 1} {
+                set source_set "\{$source_set\}"
+            }
+            if {[llength $target_set] > 1} {
+                set target_set "\{$target_set\}"
+            }
+            if {[llength $class] > 1} {
+                set target_set "\{$class\}"
+            }
+            lappend text " $source_set $target_set" {}
+        }
+        lappend text " : $class $default_type;" {}
+        eval $path.tb insert end $text
+        if {$cond_info != {}} {
+            if {[lindex $cond_info 0] == "enabled"} {
+                $path.tb insert end "  \[" {} "Enabled" enabled "\]"
+            } else {
+                $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+            }
+        }
+        $path.tb insert end "\n"
+    }
     $path.tb configure -state $curstate
 }
 
@@ -598,4 +645,58 @@ proc Apol_Widget::_hyperlink {path x y} {
     set line_num [$tb get [lindex $range 0] [lindex $range 1]]
     $ApolTop::notebook raise $ApolTop::policy_conf_tab
     Apol_PolicyConf::goto_line $line_num
+}
+
+proc Apol_Widget::_sort_avrule_bin {a b} {
+    set sa [apol_RenderAVRuleType $a]
+    set sb [apol_RenderAVRuleType $b]
+    if {[set i [string compare $sa $sb]] != 0} {
+        return $i;
+    }
+    set sa [apol_RenderAVRuleSource $a]
+    set sb [apol_RenderAVRuleSource $b]
+    if {[set i [string compare $sa $sb]] != 0} {
+        return $i;
+    }
+    set sa [apol_RenderAVRuleTarget $a]
+    set sb [apol_RenderAVRuleTarget $b]
+    if {[set i [string compare $sa $sb]] != 0} {
+        return $i;
+    }
+    set sa [apol_RenderAVRuleClass $a]
+    set sb [apol_RenderAVRuleClass $b]
+    string compare $sa $sb
+}
+
+proc Apol_Widget::_sort_terule_bin {a b} {
+    set sa [apol_RenderTERuleType $a]
+    set sb [apol_RenderTERuleType $b]
+    if {[set i [string compare $sa $sb]] != 0} {
+        return $i;
+    }
+    set sa [apol_RenderTERuleSource $a]
+    set sb [apol_RenderTERuleSource $b]
+    if {[set i [string compare $sa $sb]] != 0} {
+        return $i;
+    }
+    set sa [apol_RenderTERuleTarget $a]
+    set sb [apol_RenderTERuleTarget $b]
+    if {[set i [string compare $sa $sb]] != 0} {
+        return $i;
+    }
+    set sa [apol_RenderTERuleClass $a]
+    set sb [apol_RenderTERuleClass $b]
+    string compare $sa $sb
+}
+
+proc Apol_Widget::_sort_avrule_source {a b} {
+    set i [apol_RenderSynAVRuleLine $a]
+    set j [apol_RenderSynAVRuleLine $b]
+    expr {$i - $j}
+}
+
+proc Apol_Widget::_sort_terule_source {a b} {
+    set i [apol_RenderSynTERuleLine $a]
+    set j [apol_RenderSynTERuleLine $b]
+    expr {$i - $j}
 }

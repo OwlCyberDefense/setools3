@@ -788,6 +788,10 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 			error = errno;
 			goto err;
 		}
+		if (qpol_policy_extend(*handle, *policy)) {
+			error = errno;
+			goto err;
+		}
 	}
 
 	fclose(infile);
