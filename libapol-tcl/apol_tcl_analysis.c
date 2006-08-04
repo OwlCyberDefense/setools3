@@ -24,6 +24,7 @@
  */
 
 #include "apol_tcl_other.h"
+#include "apol_tcl_rules.h"
 
 #include <tcl.h>
 #include <errno.h>
@@ -281,31 +282,6 @@ static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
 }
 
 /**
- * Convert an apol vector of pointers to a Tcl representation.
- *
- * @param interp Tcl interpreter object.
- * @param v Apol vector to convert.
- * @param obj Destination to create Tcl list.
- *
- * @return 0 on success, < 0 on error.
- */
-static int apol_vector_to_tcl_list(Tcl_Interp *interp,
-				   apol_vector_t *v,
-				   Tcl_Obj **obj)
-{
-	size_t i;
-	*obj = Tcl_NewListObj(0, NULL);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		void *p = apol_vector_get_element(v, i);
-		Tcl_Obj *o = Tcl_NewLongObj((long) p);
-		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
-			return -1;
-		}
-	}
-	return 0;
-}
-
-/**
  * Take a result node from a domain transition analysis and append a
  * tuple of it to result_list.  The tuple consists of:
  * <code>
@@ -339,27 +315,27 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
 	dta_elem[0] = Tcl_NewStringObj(source_name, -1);
 	dta_elem[1] = Tcl_NewStringObj(target_name, -1);
 	dta_elem[2] = Tcl_NewStringObj(entry_name, -1);
-	if (apol_vector_to_tcl_list(interp, proctrans, dta_elem + 3) == TCL_ERROR ||
-	    apol_vector_to_tcl_list(interp, entrypoint, dta_elem + 4) == TCL_ERROR ||
-	    apol_vector_to_tcl_list(interp, execute, dta_elem + 5) == TCL_ERROR) {
+	if (apol_vector_avrule_to_tcl_list(interp, proctrans, dta_elem + 3) == TCL_ERROR ||
+	    apol_vector_avrule_to_tcl_list(interp, entrypoint, dta_elem + 4) == TCL_ERROR ||
+	    apol_vector_avrule_to_tcl_list(interp, execute, dta_elem + 5) == TCL_ERROR) {
 		goto cleanup;
 	}
 	if ((setexec = apol_domain_trans_result_get_setexec_rules(result)) == NULL) {
 		dta_elem[6] = Tcl_NewListObj(0, NULL);
 	}
-	else if (apol_vector_to_tcl_list(interp, setexec, dta_elem + 6) == TCL_ERROR) {
+	else if (apol_vector_avrule_to_tcl_list(interp, setexec, dta_elem + 6) == TCL_ERROR) {
 		goto cleanup;
 	}
 	if ((type_trans = apol_domain_trans_result_get_type_trans_rules(result)) == NULL) {
 		dta_elem[7] = Tcl_NewListObj(0, NULL);
 	}
-	else if (apol_vector_to_tcl_list(interp, type_trans, dta_elem + 7) == TCL_ERROR) {
+	else if (apol_vector_terule_to_tcl_list(interp, type_trans, dta_elem + 7) == TCL_ERROR) {
 		goto cleanup;
 	}
 	if ((access_rules = apol_domain_trans_result_get_access_rules(result)) == NULL) {
 		dta_elem[8] = Tcl_NewListObj(0, NULL);
 	}
-	else if (apol_vector_to_tcl_list(interp, access_rules, dta_elem + 8) == TCL_ERROR) {
+	else if (apol_vector_avrule_to_tcl_list(interp, access_rules, dta_elem + 8) == TCL_ERROR) {
 		goto cleanup;
 	}
 	dta_list = Tcl_NewListObj(9, dta_elem);
@@ -384,8 +360,8 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
  *       entrypoint type
  *   <li>list of AV rule that allows the source to execute the
  *       entrypoint type
- *   <li>list of setexec that permit the domain to transition (could
- *       be empty list)
+ *   <li>list of setexec rules that permit the domain to transition
+ *       (could be empty list)
  *   <li>list of type transition rules that perform the transition
  *       (could be empty list)
  *   <li>list of AV rules that satisfy the access filters (could be
@@ -393,7 +369,7 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
  * </ul>
  *
  * Rules are unique identifiers (relative to currently loaded policy).
- * Call [apol_RenderAVRule] to display them.
+ * Call [apol_RenderAVRule] and [apol_RenderTERule] to display them.
  *
  * @param argv This fuction takes five parameters:
  * <ol>
@@ -549,7 +525,7 @@ static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
 	direct_elem[0] = Tcl_NewStringObj(dir_str, -1);
 	direct_elem[1] = Tcl_NewStringObj(source_name, -1);
 	direct_elem[2] = Tcl_NewStringObj(target_name, -1);
-	if (apol_vector_to_tcl_list(interp, rules, direct_elem + 3) == TCL_ERROR) {
+	if (apol_vector_avrule_to_tcl_list(interp, rules, direct_elem + 3) == TCL_ERROR) {
 		goto cleanup;
 	}
 	direct_list = Tcl_NewListObj(4, direct_elem);
@@ -799,7 +775,7 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
 		step_elem[0] = Tcl_NewStringObj(source_name, -1);
 		step_elem[1] = Tcl_NewStringObj(target_name, -1);
 		step_elem[2] = Tcl_NewIntObj(weight);
-		if (apol_vector_to_tcl_list(interp, rules, step_elem + 3) == TCL_ERROR) {
+		if (apol_vector_avrule_to_tcl_list(interp, rules, step_elem + 3) == TCL_ERROR) {
 			goto cleanup;
 		}
 		step_list = Tcl_NewListObj(4, step_elem);
@@ -1169,9 +1145,9 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
 	Tcl_Obj *relabel_elem[3], *relabel_list;
 	int retval = TCL_ERROR;
 
-	if (apol_vector_to_tcl_list(interp, apol_relabel_result_get_to(result), relabel_elem + 0) < 0 ||
-	    apol_vector_to_tcl_list(interp, apol_relabel_result_get_from(result), relabel_elem + 1) < 0 ||
-	    apol_vector_to_tcl_list(interp, apol_relabel_result_get_both(result), relabel_elem + 2) < 0) {
+	if (apol_vector_avrule_to_tcl_list(interp, apol_relabel_result_get_to(result), relabel_elem + 0) < 0 ||
+	    apol_vector_avrule_to_tcl_list(interp, apol_relabel_result_get_from(result), relabel_elem + 1) < 0 ||
+	    apol_vector_avrule_to_tcl_list(interp, apol_relabel_result_get_both(result), relabel_elem + 2) < 0) {
 		goto cleanup;
 	}
 	relabel_list = Tcl_NewListObj(3, relabel_elem);
@@ -1414,7 +1390,7 @@ static int apol_types_relation_access_to_tcl_list(Tcl_Interp *interp,
 			goto cleanup;
 		}
 		access_elem[0] = Tcl_NewStringObj(name, -1);
-		if (apol_vector_to_tcl_list(interp, rules, access_elem + 1) < 0) {
+		if (apol_vector_avrule_to_tcl_list(interp, rules, access_elem + 1) < 0) {
 			goto cleanup;
 		}
 		access_list = Tcl_NewListObj(2, access_elem);
@@ -1477,13 +1453,21 @@ static int apol_types_relation_dissimilar_to_tcl_list(Tcl_Interp *interp,
  */
 static int apol_types_relation_rules_to_tcl_list(Tcl_Interp *interp,
 						 apol_vector_t *v,
+						 int is_terule,
 						 Tcl_Obj **o)
 {
 	if (v == NULL) {
 		*o = Tcl_NewListObj(0, NULL);
 	}
-	else if (apol_vector_to_tcl_list(interp, v, o) < 0) {
-		return TCL_ERROR;
+	else if (!is_terule) {
+		if (apol_vector_avrule_to_tcl_list(interp, v, o) < 0) {
+			return TCL_ERROR;
+		}
+	}
+	else {
+	    if (apol_vector_terule_to_tcl_list(interp, v, o) < 0) {
+		    return TCL_ERROR;
+	    }
 	}
 	return TCL_OK;
 }
@@ -1683,8 +1667,8 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 	    apol_types_relation_users_to_tcl_list(interp, result, result_elem + 2) == TCL_ERROR ||
 	    apol_types_relation_similar_to_tcl_list(interp, result, result_elem + 3) == TCL_ERROR ||
 	    apol_types_relation_dissimilar_to_tcl_list(interp, result, result_elem + 4) == TCL_ERROR ||
-	    apol_types_relation_rules_to_tcl_list(interp, apol_types_relation_result_get_allowrules(result), result_elem + 5) == TCL_ERROR ||
-	    apol_types_relation_rules_to_tcl_list(interp, apol_types_relation_result_get_typerules(result), result_elem + 6) == TCL_ERROR ||
+	    apol_types_relation_rules_to_tcl_list(interp, apol_types_relation_result_get_allowrules(result), 0, result_elem + 5) == TCL_ERROR ||
+	    apol_types_relation_rules_to_tcl_list(interp, apol_types_relation_result_get_typerules(result), 1, result_elem + 6) == TCL_ERROR ||
 	    apol_types_relation_directflows_to_tcl_list(interp, result, result_elem + 7) == TCL_ERROR ||
 	    apol_types_relation_transflows_to_tcl_list(interp, apol_types_relation_result_get_transflowsAB(result), result_elem + 8) == TCL_ERROR ||
 	    apol_types_relation_transflows_to_tcl_list(interp, apol_types_relation_result_get_transflowsBA(result), result_elem + 9) == TCL_ERROR ||

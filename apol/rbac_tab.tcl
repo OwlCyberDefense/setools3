@@ -98,7 +98,7 @@ proc Apol_RBAC::searchRBACs {} {
 
 proc Apol_RBAC::renderRBAC {rule} {
     variable widgets
-    foreach {rule_type source_set target_set default line_num} $rule {
+    foreach {rule_type source_set target_set default } $rule {
         if {[llength $source_set] > 1} {
             set source_set "\{ $source_set \}"
         }
@@ -106,10 +106,10 @@ proc Apol_RBAC::renderRBAC {rule} {
             set target_set "\{ $target_set \}"
         }
         if {$default != {}} {
-            Apol_Widget::appendSearchResultLine $widgets(results) 0 $line_num \
+            Apol_Widget::appendSearchResultLine $widgets(results) 0 \
                 {} $rule_type $source_set $target_set $default
         } else {
-            Apol_Widget::appendSearchResultLine $widgets(results) 0 $line_num \
+            Apol_Widget::appendSearchResultLine $widgets(results) 0 \
                 {} $rule_type $source_set $target_set
         }
     }
