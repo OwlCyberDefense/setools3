@@ -26,6 +26,7 @@
  */
 
 #include "apol_tcl_other.h"
+#include "apol_tcl_rules.h"
 
 #include <apol/policy.h>
 #include <apol/util.h>
@@ -48,9 +49,22 @@ int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj *
 	return 0;
 }
 
-int apol_avrule_to_tcl_obj(Tcl_Interp *interp,
-			   qpol_avrule_t *avrule,
-			   Tcl_Obj **obj)
+/**
+ * Converts a qpol_avrule_t to a Tcl representation:
+ * The tuple consists of:
+ * <code>
+ *    { rule_type source_type target_type object_class perm_set
+ *      cond_info }
+ * </code>
+ * The perm sets is a Tcl lists.  If cond_info is an empty list then
+ * this rule is unconditional.  Otherwise cond_info is a 2-uple list,
+ * where the first element is either "enabled" or "disabled", and the
+ * second element is a unique identifier to the conditional
+ * expression.
+ */
+static int qpol_avrule_to_tcl_obj(Tcl_Interp *interp,
+				  qpol_avrule_t *avrule,
+				  Tcl_Obj **obj)
 {
         uint32_t rule_type, is_enabled;
 	const char *rule_string;
@@ -59,7 +73,7 @@ int apol_avrule_to_tcl_obj(Tcl_Interp *interp,
 	qpol_iterator_t *perm_iter = NULL;
 	char *source_name, *target_name, *obj_class_name;
 	qpol_cond_t *cond;
-	Tcl_Obj *avrule_elem[7], *cond_elem[2];
+	Tcl_Obj *avrule_elem[6], *cond_elem[2];
 	int retval = TCL_ERROR;
 
 	if (qpol_avrule_get_rule_type(policydb->qh, policydb->p, avrule, &rule_type) < 0 ||
@@ -95,29 +109,41 @@ int apol_avrule_to_tcl_obj(Tcl_Interp *interp,
 			goto cleanup;
 		}
 	}
-	avrule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
 	if (qpol_avrule_get_cond(policydb->qh, policydb->p, avrule, &cond) < 0 ||
 	    qpol_avrule_get_is_enabled(policydb->qh, policydb->p, avrule, &is_enabled) < 0) {
 		goto cleanup;
 	}
 	if (cond == NULL) {
-		avrule_elem[6] = Tcl_NewListObj(0, NULL);
+		avrule_elem[5] = Tcl_NewListObj(0, NULL);
 	}
 	else {
 		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
 		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
-		avrule_elem[6] = Tcl_NewListObj(2, cond_elem);
+		avrule_elem[5] = Tcl_NewListObj(2, cond_elem);
 	}
-	*obj = Tcl_NewListObj(7, avrule_elem);
+	*obj = Tcl_NewListObj(6, avrule_elem);
         retval = TCL_OK;
  cleanup:
 	qpol_iterator_destroy(&perm_iter);
 	return retval;
 }
 
-int apol_terule_to_tcl_obj(Tcl_Interp *interp,
-			   qpol_terule_t *terule,
-			   Tcl_Obj **obj)
+/**
+ * Converts a qpol_terule_t to a Tcl representation:
+ * The tuple consists of:
+ * <code>
+ *    { rule_type source_type target_type object_class default_type
+ *      cond_info }
+ * </code>
+ * The perm sets is a Tcl lists.  If cond_info is an empty list then
+ * this rule is unconditional.  Otherwise cond_info is a 2-uple list,
+ * where the first element is either "enabled" or "disabled", and the
+ * second element is a unique identifier to the conditional
+ * expression.
+ */
+static int qpol_terule_to_tcl_obj(Tcl_Interp *interp,
+				  qpol_terule_t *terule,
+				  Tcl_Obj **obj)
 {
 	uint32_t rule_type, is_enabled;
 	const char *rule_string;
@@ -125,7 +151,7 @@ int apol_terule_to_tcl_obj(Tcl_Interp *interp,
 	qpol_class_t *obj_class;
 	char *source_name, *target_name, *obj_class_name, *default_name;
 	qpol_cond_t *cond;
-	Tcl_Obj *terule_elem[7], *cond_elem[2];
+	Tcl_Obj *terule_elem[6], *cond_elem[2];
 	int retval = TCL_ERROR;
 
 	if (qpol_terule_get_rule_type(policydb->qh, policydb->p, terule, &rule_type) < 0 ||
@@ -150,24 +176,247 @@ int apol_terule_to_tcl_obj(Tcl_Interp *interp,
 	terule_elem[2] = Tcl_NewStringObj(target_name, -1);
 	terule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
 	terule_elem[4] = Tcl_NewStringObj(default_name, -1);
-	terule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
 	if (qpol_terule_get_cond(policydb->qh, policydb->p, terule, &cond) < 0 ||
 	    qpol_terule_get_is_enabled(policydb->qh, policydb->p, terule, &is_enabled) < 0) {
 		goto cleanup;
 	}
 	if (cond == NULL) {
-		terule_elem[6] = Tcl_NewListObj(0, NULL);
+		terule_elem[5] = Tcl_NewListObj(0, NULL);
 	}
 	else {
 		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
 		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
-		terule_elem[6] = Tcl_NewListObj(2, cond_elem);
+		terule_elem[5] = Tcl_NewListObj(2, cond_elem);
 	}
-	*obj = Tcl_NewListObj(7, terule_elem);
+	*obj = Tcl_NewListObj(6, terule_elem);
 	retval = TCL_OK;
  cleanup:
 	return retval;
 }
+
+/**
+ * Given a type set, create and return a Tcl list containing the type
+ * set's elements.  If the set is complemented then the list will
+ * begin with a "~".  Next, if the set is starred then the list will
+ * have a "*".  Following that are all included types.  Excluded types
+ * follow; those types will be prepended by a "-".
+ *
+ * @param interp Tcl interpreter object.
+ * @param ts Type set to convert.
+ * @param obj Reference to where to build Tcl list.
+ *
+ * @return TCL_OK on success, TCL_ERROR on error.
+ */
+static int qpol_type_set_to_tcl_list(Tcl_Interp *interp,
+				     qpol_type_set_t *ts,
+				     Tcl_Obj **obj)
+{
+	uint32_t is_star, is_comp;
+	qpol_iterator_t *inc_iter = NULL, *sub_iter = NULL;
+	qpol_type_t *type;
+	char *type_name;
+	Tcl_Obj *o;
+	int retval = TCL_ERROR;
+	if (qpol_type_set_get_is_comp(policydb->qh, policydb->p, ts, &is_comp) < 0 ||
+	    qpol_type_set_get_is_star(policydb->qh, policydb->p, ts, &is_star) < 0 ||
+	    qpol_type_set_get_included_types_iter(policydb->qh, policydb->p, ts, &inc_iter) < 0 ||
+	    qpol_type_set_get_subtracted_types_iter(policydb->qh, policydb->p, ts, &sub_iter) < 0) {
+		goto cleanup;
+	}
+	*obj = Tcl_NewListObj(0, NULL);
+	if (is_comp) {
+		o = Tcl_NewStringObj("~", -1);
+		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	if (is_star) {
+		o = Tcl_NewStringObj("*", -1);
+		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	for ( ; !qpol_iterator_end(inc_iter); qpol_iterator_next(inc_iter)) {
+		if (qpol_iterator_get_item(inc_iter, (void **) &type) < 0 ||
+		    qpol_type_get_name(policydb->qh, policydb->p, type, &type_name) < 0) {
+			goto cleanup;
+		}
+		o = Tcl_NewStringObj(type_name, -1);
+		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	for ( ; !qpol_iterator_end(sub_iter); qpol_iterator_next(sub_iter)) {
+		if (qpol_iterator_get_item(sub_iter, (void **) &type) < 0 ||
+		    qpol_type_get_name(policydb->qh, policydb->p, type, &type_name) < 0) {
+			goto cleanup;
+		}
+		o = Tcl_NewStringObj("-", -1);
+		Tcl_AppendStringsToObj(o, type_name, (char *) NULL);
+		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&inc_iter);
+	qpol_iterator_destroy(&sub_iter);
+	return retval;
+}
+
+/**
+ * Converts a qpol_syn_avrule_t to a Tcl representation:
+ * The tuple consists of:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class perm_set
+ *      line_number cond_info }
+ * </code>
+ * The type sets and perm sets are Tcl lists.  If cond_info is an
+ * empty list then this rule is unconditional.  Otherwise cond_info is
+ * a 2-uple list, where the first element is either "enabled" or
+ * "disabled", and the second element is a unique identifier to the
+ * conditional expression.
+ */
+static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
+				      qpol_syn_avrule_t *avrule,
+				      Tcl_Obj **obj)
+{
+	uint32_t rule_type, is_self;
+	qpol_type_set_t *source_set, *target_set;
+	qpol_iterator_t *class_iter = NULL, *perm_iter = NULL;
+	const char *rule_string;
+	unsigned long lineno;
+	qpol_class_t *obj_class;
+	char *obj_class_name, *perm_name;
+	Tcl_Obj *avrule_elem[7], *o;
+	int retval = TCL_ERROR;
+
+	if (qpol_syn_avrule_get_rule_type(policydb->qh, policydb->p, avrule, &rule_type) < 0 ||
+	    qpol_syn_avrule_get_source_type_set(policydb->qh, policydb->p, avrule, &source_set) < 0 ||
+	    qpol_syn_avrule_get_is_target_self(policydb->qh, policydb->p, avrule, &is_self) < 0 ||
+	    qpol_syn_avrule_get_class_iter(policydb->qh, policydb->p, avrule, &class_iter) < 0 ||
+	    qpol_syn_avrule_get_perm_iter(policydb->qh, policydb->p, avrule, &perm_iter) < 0 ||
+	    qpol_syn_avrule_get_lineno(policydb->qh, policydb->p, avrule, &lineno) < 0) {
+		goto cleanup;
+	}
+	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		ERR(policydb, "Invalid avrule type %d.", rule_type);
+		goto cleanup;
+	}
+	avrule_elem[0] = Tcl_NewStringObj(rule_string, -1);
+	if (qpol_type_set_to_tcl_list(interp, source_set, avrule_elem + 1) == TCL_ERROR) {
+		goto cleanup;
+	}
+	if (is_self) {
+		avrule_elem[2] = Tcl_NewStringObj("self", -1);
+	}
+	else {
+		if (qpol_syn_avrule_get_target_type_set(policydb->qh, policydb->p, avrule, &target_set) < 0 ||
+		    qpol_type_set_to_tcl_list(interp, target_set, avrule_elem + 2) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	avrule_elem[3] = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+		if (qpol_iterator_get_item(class_iter, (void **) &obj_class) < 0 ||
+		    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_name) < 0) {
+			goto cleanup;
+		}
+		o = Tcl_NewStringObj(obj_class_name, -1);
+		if (Tcl_ListObjAppendElement(interp, avrule_elem[3], o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	avrule_elem[4] = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+			goto cleanup;
+		}
+		o = Tcl_NewStringObj(perm_name, -1);
+		if (Tcl_ListObjAppendElement(interp, avrule_elem[4], o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	avrule_elem[5] = Tcl_NewLongObj((long) lineno);
+		avrule_elem[6] = Tcl_NewListObj(0, NULL);
+	*obj = Tcl_NewListObj(7, avrule_elem);
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&class_iter);
+	qpol_iterator_destroy(&perm_iter);
+	return retval;
+}
+
+/**
+ * Converts a qpol_syn_terule_t to a Tcl representation:
+ * The tuple consists of:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class default_type
+ *      line_number cond_info }
+ * </code>
+ * The type sets and perm sets are Tcl lists.  If cond_info is an
+ * empty list then this rule is unconditional.  Otherwise cond_info is
+ * a 2-uple list, where the first element is either "enabled" or
+ * "disabled", and the second element is a unique identifier to the
+ * conditional expression.
+ */
+static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
+				      qpol_syn_terule_t *terule,
+				      Tcl_Obj **obj)
+{
+	uint32_t rule_type;
+	qpol_type_set_t *source_set, *target_set;
+	qpol_type_t *default_type;
+	qpol_iterator_t *class_iter = NULL;
+	const char *rule_string;
+	unsigned long lineno;
+	qpol_class_t *obj_class;
+	char *obj_class_name, *default_type_name;
+	Tcl_Obj *terule_elem[7], *o;
+	int retval = TCL_ERROR;
+
+	if (qpol_syn_terule_get_rule_type(policydb->qh, policydb->p, terule, &rule_type) < 0 ||
+	    qpol_syn_terule_get_source_type_set(policydb->qh, policydb->p, terule, &source_set) < 0 ||
+	    qpol_syn_terule_get_target_type_set(policydb->qh, policydb->p, terule, &target_set) < 0 ||
+	    qpol_syn_terule_get_class_iter(policydb->qh, policydb->p, terule, &class_iter) < 0 ||
+	    qpol_syn_terule_get_default_type(policydb->qh, policydb->p, terule, &default_type) < 0 ||
+	    qpol_syn_terule_get_lineno(policydb->qh, policydb->p, terule, &lineno) < 0) {
+		goto cleanup;
+	}
+	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		ERR(policydb, "Invalid terule type %d.", rule_type);
+		goto cleanup;
+	}
+	terule_elem[0] = Tcl_NewStringObj(rule_string, -1);
+	if (qpol_type_set_to_tcl_list(interp, source_set, terule_elem + 1) == TCL_ERROR ||
+	    qpol_type_set_to_tcl_list(interp, target_set, terule_elem + 2) == TCL_ERROR) {
+		goto cleanup;
+	}
+	terule_elem[3] = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+		if (qpol_iterator_get_item(class_iter, (void **) &obj_class) < 0 ||
+		    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_name) < 0) {
+			goto cleanup;
+		}
+		o = Tcl_NewStringObj(obj_class_name, -1);
+		if (Tcl_ListObjAppendElement(interp, terule_elem[3], o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	if (qpol_type_get_name(policydb->qh, policydb->p, default_type, &default_type_name) < 0) {
+		goto cleanup;
+	}
+	terule_elem[4] = Tcl_NewStringObj(default_type_name, -1);
+	terule_elem[5] = Tcl_NewLongObj((long) lineno);
+		terule_elem[6] = Tcl_NewListObj(0, NULL);
+	*obj = Tcl_NewListObj(7, terule_elem);
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&class_iter);
+	return retval;
+}
+
+/******************** functions callable by apol below ********************/
 
 /**
  * Take a Tcl string representing a level (level = sensitivity + list
@@ -281,23 +530,21 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int arg
 }
 
 /**
- * Take a Tcl string representing an AV rule identifier (relative to
+ * Take a Tcl object representing an AV rule identifier (relative to
  * the currently loaded policy) and return a Tcl list representation
  * of it:
  * <code>
- *    { rule_type source_type_set target_type_set object_class perm_set
- *      line_number cond_info }
+ *    { rule_type source_type target_type object_class perm_set cond_info }
  * </code>
  *
  * @param argv This function takes one parameter:
  * <ol>
- *   <li>Tcl string representing an av rule identifier
+ *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *o, *result_obj;
-	long rule_num;
+	Tcl_Obj *result_obj;
 	qpol_avrule_t *avrule;
 	int retval = TCL_ERROR;
 	apol_tcl_clear_error();
@@ -305,16 +552,12 @@ static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 2) {
+	if (objc != 2) {
 		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
-	o = Tcl_NewStringObj(argv[1], -1);
-	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
-		goto cleanup;
-	}
-	avrule = (qpol_avrule_t *) rule_num;
-	if (apol_avrule_to_tcl_obj(interp, avrule, &result_obj) == TCL_ERROR) {
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
+	    qpol_avrule_to_tcl_obj(interp, avrule, &result_obj) == TCL_ERROR) {
 		goto cleanup;
 	}
 	Tcl_SetObjResult(interp, result_obj);
@@ -327,19 +570,62 @@ static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc
 }
 
 /**
- * Take a Tcl string representing an AV rule identifier (relative to
+ * Take a Tcl object representing an AV rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's rule type ("allow", "neverallow", etc.)
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing an av rule identifier.
+ * </ol>
+ */
+static int Apol_RenderAVRuleType(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_avrule_t *avrule;
+	uint32_t rule_type;
+	const char *rule_string;
+	Tcl_Obj *o;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need an avrule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
+	    qpol_avrule_get_rule_type(policydb->qh, policydb->p, avrule, &rule_type) < 0) {
+		goto cleanup;
+	}
+	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		ERR(policydb, "Invalid avrule type %d.", rule_type);
+		goto cleanup;
+	}
+	o = Tcl_NewStringObj(rule_string, -1);
+	Tcl_SetObjResult(interp, o);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing an AV rule identifier (relative to
  * the currently loaded policy) and return the string representation
  * of that rule's source type.
  *
  * @param argv This function takes one parameter:
  * <ol>
- *   <li>Tcl string representing an av rule identifier
+ *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *o;
-	long rule_num;
 	qpol_avrule_t *avrule;
 	qpol_type_t *source;
 	char *source_string;
@@ -350,16 +636,12 @@ static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, in
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 2) {
+	if (objc != 2) {
 		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
-	o = Tcl_NewStringObj(argv[1], -1);
-	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
-		goto cleanup;
-	}
-	avrule = (qpol_avrule_t *) rule_num;
-	if (qpol_avrule_get_source_type(policydb->qh, policydb->p, avrule, &source) < 0 ||
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
+	    qpol_avrule_get_source_type(policydb->qh, policydb->p, avrule, &source) < 0 ||
 	    qpol_type_get_name(policydb->qh, policydb->p, source, &source_string) < 0) {
 		goto cleanup;
 	}
@@ -373,19 +655,17 @@ static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, in
 }
 
 /**
- * Take a Tcl string representing an AV rule identifier (relative to
+ * Take a Tcl object representing an AV rule identifier (relative to
  * the currently loaded policy) and return the string representation
  * of that rule's target type.
  *
  * @param argv This function takes one parameter:
  * <ol>
- *   <li>Tcl string representing an av rule identifier
+ *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *o;
-	long rule_num;
 	qpol_avrule_t *avrule;
 	qpol_type_t *target;
 	char *target_string;
@@ -396,16 +676,12 @@ static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, in
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 2) {
+	if (objc != 2) {
 		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
-	o = Tcl_NewStringObj(argv[1], -1);
-	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
-		goto cleanup;
-	}
-	avrule = (qpol_avrule_t *) rule_num;
-	if (qpol_avrule_get_target_type(policydb->qh, policydb->p, avrule, &target) < 0 ||
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
+	    qpol_avrule_get_target_type(policydb->qh, policydb->p, avrule, &target) < 0 ||
 	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_string) < 0) {
 		goto cleanup;
 	}
@@ -419,19 +695,17 @@ static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, in
 }
 
 /**
- * Take a Tcl string representing an AV rule identifier (relative to
+ * Take a Tcl object representing an AV rule identifier (relative to
  * the currently loaded policy) and return the string representation
  * of that rule's object class.
  *
  * @param argv This function takes one parameter:
  * <ol>
- *   <li>Tcl string representing an av rule identifier
+ *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *o;
-	long rule_num;
 	qpol_avrule_t *avrule;
 	qpol_class_t *obj_class;
 	char *obj_class_string;
@@ -442,16 +716,12 @@ static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 2) {
+	if (objc != 2) {
 		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
-	o = Tcl_NewStringObj(argv[1], -1);
-	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
-		goto cleanup;
-	}
-	avrule = (qpol_avrule_t *) rule_num;
-	if (qpol_avrule_get_object_class(policydb->qh, policydb->p, avrule, &obj_class) < 0 ||
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
+	    qpol_avrule_get_object_class(policydb->qh, policydb->p, avrule, &obj_class) < 0 ||
 	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_string) < 0) {
 		goto cleanup;
 	}
@@ -465,19 +735,18 @@ static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int
 }
 
 /**
- * Take a Tcl string representing an AV rule identifier (relative to
+ * Take a Tcl object representing an AV rule identifier (relative to
  * the currently loaded policy) and return a list of that rule's
  * permissions.
  *
  * @param argv This function takes one parameter:
  * <ol>
- *   <li>Tcl string representing an av rule identifier
+ *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *o, *result_obj, *perm_obj;
-	long rule_num;
+	Tcl_Obj *result_obj, *perm_obj;
 	qpol_avrule_t *avrule;
 	qpol_iterator_t *perm_iter = NULL;
 	int retval = TCL_ERROR;
@@ -487,16 +756,12 @@ static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 2) {
+	if (objc != 2) {
 		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
-	o = Tcl_NewStringObj(argv[1], -1);
-	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
-		goto cleanup;
-	}
-	avrule = (qpol_avrule_t *) rule_num;
-	if (qpol_avrule_get_perm_iter(policydb->qh, policydb->p, avrule, &perm_iter) < 0) {
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
+	    qpol_avrule_get_perm_iter(policydb->qh, policydb->p, avrule, &perm_iter) < 0) {
 		goto cleanup;
 	}
 	result_obj = Tcl_NewListObj(0, NULL);
@@ -523,23 +788,22 @@ static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int
 }
 
 /**
- * Take a Tcl string representing a TE rule identifier (relative to
+ * Take a Tcl object representing a TE rule identifier (relative to
  * the currently loaded policy) and return a Tcl list representation
  * of it:
  * <code>
- *    { rule_type source_type_set target_type_set object_class default_type
- *      line_number cond_info }
+ *    { rule_type source_type target_type object_class default_type
+ *      cond_info }
  * </code>
  *
  * @param argv This function takes one parameter:
  * <ol>
- *   <li>Tcl string representing an te rule identifier
+ *   <li>Tcl object representing an te rule identifier.
  * </ol>
  */
-static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *o, *result_obj;
-	long rule_num;
+	Tcl_Obj *result_obj;
 	qpol_terule_t *terule;
 	int retval = TCL_ERROR;
 	apol_tcl_clear_error();
@@ -547,16 +811,12 @@ static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int argc
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 2) {
-		ERR(policydb, "%s", "Need an avrule identifier.");
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a terule identifier.");
 		goto cleanup;
 	}
-	o = Tcl_NewStringObj(argv[1], -1);
-	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
-		goto cleanup;
-	}
-	terule = (qpol_terule_t *) rule_num;
-	if (apol_terule_to_tcl_obj(interp, terule, &result_obj) == TCL_ERROR) {
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_terule_to_tcl_obj(interp, terule, &result_obj) == TCL_ERROR) {
 		goto cleanup;
 	}
 	Tcl_SetObjResult(interp, result_obj);
@@ -568,14 +828,391 @@ static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int argc
 	return retval;
 }
 
+/**
+ * Take a Tcl object representing a TE rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's rule type ("type_transition", "type_change", etc.)
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing a te rule identifier.
+ * </ol>
+ */
+static int Apol_RenderTERuleType(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_terule_t *terule;
+	uint32_t rule_type;
+	const char *rule_string;
+	Tcl_Obj *o;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a terule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_terule_get_rule_type(policydb->qh, policydb->p, terule, &rule_type) < 0) {
+		goto cleanup;
+	}
+	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		ERR(policydb, "Invalid terule type %d.", rule_type);
+		goto cleanup;
+	}
+	o = Tcl_NewStringObj(rule_string, -1);
+	Tcl_SetObjResult(interp, o);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a TE rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's source type.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing a te rule identifier.
+ * </ol>
+ */
+static int Apol_RenderTERuleSource(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_terule_t *terule;
+	qpol_type_t *source;
+	char *source_string;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a terule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_terule_get_source_type(policydb->qh, policydb->p, terule, &source) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, source, &source_string) < 0) {
+		goto cleanup;
+	}
+	Tcl_SetResult(interp, source_string, TCL_VOLATILE);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a te rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's target type.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing a te rule identifier.
+ * </ol>
+ */
+static int Apol_RenderTERuleTarget(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_terule_t *terule;
+	qpol_type_t *target;
+	char *target_string;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a terule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_terule_get_target_type(policydb->qh, policydb->p, terule, &target) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_string) < 0) {
+		goto cleanup;
+	}
+	Tcl_SetResult(interp, target_string, TCL_VOLATILE);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a te rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's object class.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing a te rule identifier.
+ * </ol>
+ */
+static int Apol_RenderTERuleClass(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_terule_t *terule;
+	qpol_class_t *obj_class;
+	char *obj_class_string;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a terule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_terule_get_object_class(policydb->qh, policydb->p, terule, &obj_class) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_string) < 0) {
+		goto cleanup;
+	}
+	Tcl_SetResult(interp, obj_class_string, TCL_VOLATILE);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a te rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's default type.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing a te rule identifier.
+ * </ol>
+ */
+static int Apol_RenderTERuleDefault(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_terule_t *terule;
+	qpol_type_t *default_type;
+	char *default_string;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a terule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_terule_get_default_type(policydb->qh, policydb->p, terule, &default_type) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, default_type, &default_string) < 0) {
+		goto cleanup;
+	}
+	Tcl_SetResult(interp, default_string, TCL_VOLATILE);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a syntactic AV rule identifier
+ * (relative to the currently loaded policy) and return a Tcl list
+ * representation of it:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class perm_set
+ *      line_number cond_info }
+ * </code>
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing an av rule identifier.
+ * </ol>
+ */
+static int Apol_RenderSynAVRule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	Tcl_Obj *result_obj;
+	qpol_syn_avrule_t *avrule;
+	int retval = TCL_ERROR;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a syn avrule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_syn_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
+	    qpol_syn_avrule_to_tcl_obj(interp, avrule, &result_obj) == TCL_ERROR) {
+		goto cleanup;
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a syntactic AV rule identifier
+ * (relative to the currently loaded policy) and return the line
+ * number on which the rule resides.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing a syntactic av rule identifier.
+ * </ol>
+ */
+static int Apol_RenderSynAVRuleLine(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_syn_avrule_t *avrule;
+	unsigned long lineno;
+	Tcl_Obj *o;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a syn avrule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_syn_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
+	    qpol_syn_avrule_get_lineno(policydb->qh, policydb->p, avrule, &lineno) < 0) {
+		goto cleanup;
+	}
+	o = Tcl_NewLongObj((long) lineno);
+	Tcl_SetObjResult(interp, o);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a syntactic TE rule identifier
+ * (relative to the currently loaded policy) and return a Tcl list
+ * representation of it:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class default_type
+ *      line_number cond_info }
+ * </code>
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing an av rule identifier.
+ * </ol>
+ */
+static int Apol_RenderSynTERule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	Tcl_Obj *result_obj;
+	qpol_syn_terule_t *terule;
+	int retval = TCL_ERROR;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a syn terule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_syn_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_syn_terule_to_tcl_obj(interp, terule, &result_obj) == TCL_ERROR) {
+		goto cleanup;
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl object representing a syntactic TE rule identifier
+ * (relative to the currently loaded policy) and return the line
+ * number on which the rule resides.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl object representing a syntactic te rule identifier.
+ * </ol>
+ */
+static int Apol_RenderSynTERuleLine(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_syn_terule_t *terule;
+	unsigned long lineno;
+	Tcl_Obj *o;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 2) {
+		ERR(policydb, "%s", "Need a syn terule identifier.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_syn_terule(interp, objv[1], &terule) == TCL_ERROR ||
+	    qpol_syn_terule_get_lineno(policydb->qh, policydb->p, terule, &lineno) < 0) {
+		goto cleanup;
+	}
+	o = Tcl_NewLongObj((long) lineno);
+	Tcl_SetObjResult(interp, o);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
 int apol_tcl_render_init(Tcl_Interp *interp) {
         Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderContext", Apol_RenderContext, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_RenderAVRule", Apol_RenderAVRule, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_RenderAVRuleSource", Apol_RenderAVRuleSource, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_RenderAVRuleTarget", Apol_RenderAVRuleTarget, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_RenderAVRuleClass", Apol_RenderAVRuleClass, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_RenderAVRulePerms", Apol_RenderAVRulePerms, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_RenderTERule", Apol_RenderTERule, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderAVRule", Apol_RenderAVRule, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderAVRuleType", Apol_RenderAVRuleType, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderAVRuleSource", Apol_RenderAVRuleSource, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderAVRuleTarget", Apol_RenderAVRuleTarget, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderAVRuleClass", Apol_RenderAVRuleClass, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderAVRulePerms", Apol_RenderAVRulePerms, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderTERule", Apol_RenderTERule, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderTERuleType", Apol_RenderTERuleType, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderTERuleSource", Apol_RenderTERuleSource, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderTERuleTarget", Apol_RenderTERuleTarget, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderTERuleClass", Apol_RenderTERuleClass, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderTERuleDefault", Apol_RenderTERuleDefault, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderSynAVRule", Apol_RenderSynAVRule, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderSynAVRuleLine", Apol_RenderSynAVRuleLine, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderSynTERule", Apol_RenderSynTERule, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderSynTERuleLine", Apol_RenderSynTERuleLine, NULL, NULL);
 	return TCL_OK;
 }

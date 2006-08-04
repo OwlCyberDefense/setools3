@@ -81,7 +81,7 @@ int apol_policy_open(const char *path, apol_policy_t **policy)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1; /* errno set by calloc */
 	}
-	(*policy)->msg_callback_arg = apol_handle_default_callback;
+	(*policy)->msg_callback = apol_handle_default_callback;
 
         policy_type = qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy));
         if (policy_type < 0) {

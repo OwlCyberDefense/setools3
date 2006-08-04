@@ -560,6 +560,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 		ERR(handle, "%s", strerror(error));
 		goto err;
 	}
+	new_rule->rule = rule;
 
 	policy->ext->syn_rule_master_list[policy->ext->master_list_sz] = new_rule;
 	policy->ext->master_list_sz++;
@@ -785,17 +786,18 @@ int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy)
 	}
 
 	db = &policy->p->p;
-
-	retv = qpol_policy_build_attrs_from_map(handle, policy);
-	if (retv) {
-		error = errno;
-		goto err;
-	}
-	if (db->policy_type == POLICY_KERN) {
-		retv = qpol_policy_fill_attr_holes(handle, policy);
+	if (db->attr_type_map) {
+		retv = qpol_policy_build_attrs_from_map(handle, policy);
 		if (retv) {
 			error = errno;
 			goto err;
+		}
+		if (db->policy_type == POLICY_KERN) {
+			retv = qpol_policy_fill_attr_holes(handle, policy);
+			if (retv) {
+				error = errno;
+				goto err;
+			}
 		}
 	}
 	retv = qpol_policy_add_isid_names(handle, policy);
