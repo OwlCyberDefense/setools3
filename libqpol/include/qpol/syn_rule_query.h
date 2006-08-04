@@ -78,12 +78,12 @@ extern int qpol_type_set_get_subtracted_types_iter(qpol_handle_t *handle, qpol_p
 extern int qpol_type_set_get_is_star(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_star);
 
 /**
- *  Determine if a type set is complimented (contains '~').
+ *  Determine if a type set is complemented (contains '~').
  *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the type set.
- *  @param ts Type set to check for compliment.
+ *  @param ts Type set to check for complement.
  *  @param is_comp Pointer to integer to set.
- *  Will be set to 1 if ts is complimented or 0 otherwise.
+ *  Will be set to 1 if ts is complemented or 0 otherwise.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_comp will be 0.
  */
@@ -207,24 +207,12 @@ extern int qpol_syn_terule_get_source_type_set(qpol_handle_t *handle, qpol_polic
  *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Terule from which to get the target types et.
- *  @param target_set Type set returned; ther caller <b>should not</>
+ *  @param target_set Type set returned; ther caller <b>should not</b>
  *  free this pointer.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target_set will be NULL.
  */
 extern int qpol_syn_terule_get_target_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **target_set);
-
-/**
- *  Deternime if a syntactic rule inludes hte self flag in the target set.
- *  @param handle Error handler for the policy database.
- *  @param policy Policy associated with the rule.
- *  @param rule Terule to check for the self flag.
- *  @param is_self Pointer to the integer to set; if the rule includes self,
- *  this will be set to 1, otherwise it will be set to 0.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *is_self will be 0.
- */
-extern int qpol_syn_terule_get_is_target_self(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *is_self);
 
 /**
  *  Get an iterator over all classes specified in a syntactic rule.

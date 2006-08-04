@@ -603,27 +603,6 @@ int qpol_syn_terule_get_target_type_set(qpol_handle_t *handle, qpol_policy_t *po
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_is_target_self(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *is_self)
-{
-	avrule_t *internal_rule = NULL;
-
-	if (is_self)
-		*is_self = 0;
-
-	if (!handle || !policy || !rule || !is_self) {
-		ERR(handle, "%s", strerror(EINVAL));
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	internal_rule = rule->rule;
-
-	if (internal_rule->flags & RULE_SELF)
-		*is_self = 1;
-
-	return STATUS_SUCCESS;
-}
-
 int qpol_syn_terule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_iterator_t **classes)
 {
 	syn_rule_class_state_t *srcs = NULL;
