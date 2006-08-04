@@ -1286,6 +1286,8 @@ int apol_policy_domain_trans_table_build(apol_policy_t *policy)
 			} else if (!strcmp(tmp, "execute_no_trans")) {
 				rule_type |= APOL_DOMAIN_TRANS_RULE_EXEC_NO_TRANS;
 			}
+			free(tmp);
+			tmp = NULL;
 		}
 		qpol_iterator_destroy(&iter);
 		if (rule_type) {

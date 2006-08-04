@@ -90,6 +90,7 @@ int apol_avrule_to_tcl_obj(Tcl_Interp *interp,
 			goto cleanup;
 		}
 		perm_obj = Tcl_NewStringObj(perm_name, -1);
+		free(perm_name);
 		if (Tcl_ListObjAppendElement(interp, avrule_elem[4], perm_obj) == TCL_ERROR) {
 			goto cleanup;
 		}
@@ -505,6 +506,7 @@ static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int
 			goto cleanup;
 		}
 		perm_obj = Tcl_NewStringObj(perm_name, -1);
+		free(perm_name);
 		if (Tcl_ListObjAppendElement(interp, result_obj, perm_obj) == TCL_ERROR) {
 			goto cleanup;
 		}
