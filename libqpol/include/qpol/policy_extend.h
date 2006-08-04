@@ -50,7 +50,34 @@ extern void qpol_extended_image_destroy(qpol_extended_image_t **ext);
 struct qpol_avrule;
 struct qpol_terule;
 
+/**
+ *  Get an iterator over the syntactic rules contributing to an av rule.
+ *  @param handle Error handler for the policy.
+ *  @param policy Policy associated with the rule.
+ *  @param rule Rule from which to get the syntactic rules.
+ *  @param iter Iterator over items of type qpol_syn_avrule_t returned. 
+ *  The caller is responsible for calling qpol_iterator_destroy()
+ *  to free memory used by this iterator.
+ *  It is important to note that this iterator is only valid as long as
+ *  the policy is unmodified.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *iter will be NULL.
+ */
 extern int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter);
+
+/**
+ *  Get an iterator over the syntactic rules contributing to a type rule.
+ *  @param handle Error handler for the policy.
+ *  @param policy Policy associated with the rule.
+ *  @param rule Rule from which to get the syntactic rules.
+ *  @param iter Iterator over items of type qpol_syn_terule_t returned. 
+ *  The caller is responsible for calling qpol_iterator_destroy()
+ *  to free memory used by this iterator.
+ *  It is important to note that this iterator is only valid as long as
+ *  the policy is unmodified.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *iter will be NULL.
+ */
 extern int qpol_terule_get_syn_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter);
 
 #endif /* QPOL_POLICY_EXTEND_H */
