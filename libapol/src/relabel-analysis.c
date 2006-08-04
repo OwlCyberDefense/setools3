@@ -99,6 +99,8 @@ static int relabel_analysis_get_direction(apol_policy_t *p,
 		else if (strcmp(perm, PERM_RELABELFROM) == 0) {
 			from = 1;
 		}
+		free(perm);
+		perm = NULL;
 	}
 	if (to && from) {
 		retval = APOL_RELABEL_DIR_BOTH;

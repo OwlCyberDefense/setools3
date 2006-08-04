@@ -469,6 +469,8 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 			error = ENOMEM;
 			goto err;
 		}
+		free(tmp_name);
+		tmp_name = NULL;
 		if (apol_str_append(&tmp, &tmp_sz, " ")) {
 			ERR(policy, "%s", strerror(ENOMEM));
 			error = ENOMEM;
