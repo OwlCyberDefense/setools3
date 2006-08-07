@@ -108,7 +108,9 @@ apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v)
 }
 
 apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1,
-						    const apol_vector_t *v2)
+						    const apol_vector_t *v2,
+						    apol_vector_comp_func *cmp,
+						    void* data)
 {
 	apol_vector_t *new_v;
 	size_t i, j;
@@ -121,7 +123,8 @@ apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1,
 	}
 	for (i = 0; i < v1->size; i++) {
 		for (j = 0; j < v2->size; j++) {
-			if (v1->array[i] == v2->array[j]) {
+			if ((cmp != NULL && cmp(v1->array[i], v2->array[j], data) == 0) ||
+			    (cmp == NULL && v1->array[i] == v2->array[j])) {
 				if (apol_vector_append(new_v, v1->array[i]) < 0) {
 					apol_vector_destroy(&new_v, NULL);
 					return NULL;

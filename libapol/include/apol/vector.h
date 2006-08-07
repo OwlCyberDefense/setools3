@@ -100,13 +100,22 @@ extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v);
  *
  *  @param v1 First vector from which to compute the intersection.
  *  @param v2 Other vector to compute intersection.
+ *  @param cmp A comparison call back for the type of element stored
+ *  in the vector.  The expected return value from this function is
+ *  less than, equal to, or greater than 0 if the first argument is
+ *  less than, equal to, or greater than the second respectively.  If
+ *  this is NULL then do pointer address comparison.
+ *  @param data Arbitrary data to pass as the comparison function's
+ *  third paramater.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1,
-							   const apol_vector_t *v2);
+extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1, 
+							   const apol_vector_t *v2,
+							   apol_vector_comp_func *cmp, 
+							   void* data);
 
 /**
  *  Free a vector and any memory used by it.
