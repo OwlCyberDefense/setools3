@@ -1242,10 +1242,7 @@ static int Apol_GetSynAVRules(ClientData clientData, Tcl_Interp *interp, int obj
 		ERR(policydb, "%s", "Need an avrule identifier.");
 		goto cleanup;
 	}
-	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR) {
-                goto cleanup;
-        }
-        if ( 
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
 	    qpol_avrule_get_syn_avrule_iter(policydb->qh, policydb->p, avrule, &iter) < 0) {
 		goto cleanup;
 	}

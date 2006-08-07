@@ -315,7 +315,6 @@ proc Apol_Widget::makeSearchResults {path args} {
     set sw [ScrolledWindow $path -scrollbar both -auto both]
     set tb [eval text $sw.tb $args -bg white -wrap none -state disabled -font $ApolTop::text_font]
     set vars($path:cursor) [$tb cget -cursor]
-    $tb tag configure header -font {Helvetica 12}
     $tb tag configure linenum -foreground blue -underline 1
     $tb tag configure selected -foreground red -underline 1
     $tb tag configure enabled -foreground green -underline 1
@@ -335,7 +334,7 @@ proc Apol_Widget::clearSearchResults {path} {
 
 proc Apol_Widget::appendSearchResultHeader {path header} {
     $path.tb configure -state normal
-    $path.tb insert end "$text\n" header
+    $path.tb insert 1.0 "$header\n"
     $path.tb configure -state disabled
 }
 
@@ -368,14 +367,15 @@ proc Apol_Widget::appendSearchResultLine {path indent cond_info line_type args} 
 # Append a list of avrules, as specified by their unique ids, to a
 # search results box.  If the loaded policy is a source policy,
 # instead show all matching syntactic rules, sorted by line number.
-# Otherwise sort by string representation.
+# Otherwise sort by string representation.  Returns the number of
+# rules that were appended.
 proc Apol_Widget::appendSearchResultAVRules {path indent rule_list} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set is_binary [ApolTop::is_binary_policy]
     set rules {}
     if {$is_binary} {
-        set rules [lsort -command _sort_avrule_bin $rule_list]
+        set rules [lsort -command _sort_avrule_bin [lsort -unique $rule_list]]
     } else {
         foreach r $rule_list {
             set rules [concat $rules [apol_GetSynAVRules $r]]
@@ -420,19 +420,21 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list} {
         $path.tb insert end "\n"
     }
     $path.tb configure -state $curstate
+    llength $rules
 }
 
 # Append a list of terules, as specified by their unique ids, to a
 # search results box.  If the loaded policy is a source policy,
 # instead show all matching syntactic rules, sorted by line number.
-# Otherwise sort by string representation.
+# Otherwise sort by string representation.  Returns the number of
+# rules that were appended.
 proc Apol_Widget::appendSearchResultTERules {path indent rule_list} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set is_binary [ApolTop::is_binary_policy]
     set rules {}
     if {$is_binary} {
-        set rules [lsort -command _sort_terule_bin $rule_list]
+        set rules [lsort -command _sort_terule_bin [lsort -unique $rule_list]]
     } else {
         foreach r $rule_list {
             set rules [concat $rules [apol_GetSynTERules $r]]
@@ -446,10 +448,10 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list} {
             foreach {rule_type source_set target_set class default_type cond_info} [apol_RenderTERule $r] {break}
             set text [list "$rule_type $source_set $target_set" {}]
         } else {
-            foreach {rule_type source_set target_set class default_type line_nume cond_info} [apol_RenderSynTERule $r] {break}
+            foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderSynTERule $r] {break}
             set text [list \[ {} \
                       $line_num linenum \
-                      "\] " {}
+                      "\] " {} \
                       $rule_type {}]
             if {[llength $source_set] > 1} {
                 set source_set "\{$source_set\}"
@@ -474,6 +476,7 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list} {
         $path.tb insert end "\n"
     }
     $path.tb configure -state $curstate
+    llength $rules
 }
 
 proc Apol_Widget::gotoLineSearchResults {path line_num} {

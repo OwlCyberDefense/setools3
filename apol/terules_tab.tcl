@@ -929,6 +929,7 @@ proc Apol_TE::search_terules {whichButton} {
     set retval [catch {apol_SearchTERules $rule_selection $other_opts \
                            $source $target $default $classes $perms} results]
 
+    $widgets(new) configure -state normal
     if {$retval} {
         ApolTop::resetBusyCursor
         destroy .terules_busy
@@ -938,7 +939,6 @@ proc Apol_TE::search_terules {whichButton} {
         set tabs(searches_text) "Rendering results."
         update idletasks
         foreach {avresults teresults} $results {break}
-        set num_rules [expr {[llength $avresults] + [llength $teresults]}]
         if {$whichButton == "new"} {
             set sr [create_new_results_tab]
         } else {
@@ -947,23 +947,20 @@ proc Apol_TE::search_terules {whichButton} {
             set sr $tabs($id)
             Apol_Widget::clearSearchResults $sr
         }
+        set numAV [Apol_Widget::appendSearchResultAVRules $sr 0 $avresults]
+        set numTE [Apol_Widget::appendSearchResultTERules $sr 0 $teresults]
+        set num_rules [expr {$numAV + $numTE}]
         set header "$num_rules rule"
         if {$num_rules != 1} {
             append header s
         }
-        append header " match the search criteria.\n\n"
-        Apol_Widget::appendSearchResultText $sr $header
-        apol_GetSynAVRules [lindex $avresults 0]
-        Apol_Widget::appendSearchResultAVRules $sr 0 $avresults
-        Apol_Widget::appendSearchResultTERules $sr 0 $teresults
+        append header " match the search criteria.\n"
+        Apol_Widget::appendSearchResultHeader $sr $header
         ApolTop::resetBusyCursor
         destroy .terules_busy
         focus $last_focus
     }
 
-    foreach x {new reset} {
-        $widgets($x) configure -state normal
-    }
     if {[$widgets(results) pages] != {} || $retval == 0} {
         $widgets(update) configure -state normal
     }
