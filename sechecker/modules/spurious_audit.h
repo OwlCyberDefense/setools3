@@ -6,6 +6,7 @@
  *
  */
 
+
 #ifndef SPURIOUS_AUDIT
 #define SPURIOUS_AUDIT
 
@@ -13,7 +14,8 @@
 #include <apol/policy.h>
 
 /* The spurious_audit_data structure is used to hold the check specific
- *  private data of a module.*/
+ *  private data of a module. */
+
 typedef struct spurious_audit_data {
 } spurious_audit_data_t;
 
@@ -26,7 +28,7 @@ typedef struct spurious_audit_data {
 int spurious_audit_register(sechk_lib_t *lib);
 int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy);
 int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy);
-void spurious_audit_free(sechk_module_t *mod);
+void spurious_audit_data_free(void *data);
 int spurious_audit_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *spurious_audit_get_result(sechk_module_t *mod);
 
