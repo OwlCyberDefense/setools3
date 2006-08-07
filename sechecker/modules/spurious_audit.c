@@ -3,13 +3,17 @@
 
 /*
  * Author: jmowery@tresys.com
+ *         rjordan@tresys.com
  *
  */
 
+#include "sechecker.h"
 #include "spurious_audit.h"
+#include <apol/policy-query.h>
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
@@ -17,120 +21,115 @@
 static const char *const mod_name = "spurious_audit";
 
 /* The register function registers all of a module's functions
- * with the library. */
+ * with the library.  */
 int spurious_audit_register(sechk_lib_t *lib)
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+		ERR(NULL, "%s", "no library");	
 		return -1;
-	}
-
-	library = lib;
+}
 
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
 	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+		ERR(NULL, "%s%s%s", "module unknown, \"", mod_name, "\"");
+		errno = ENOENT;
 		return -1;
 	}
+
+	mod->parent_lib = lib;
 	
 	/* assign the descriptions */
 	mod->brief_description = "audit rules with no effect";
-	mod->detailed_description = 
+	mod->detailed_description =
 "--------------------------------------------------------------------------------\n"
-"This module finds audit rules in the policy which do not affect the auditing of \n"
+"This module finds audit rules in the policy which do not affect the auditing of\n"
 "the policy.  This could happen in the following situations:\n"
 "\n"
-"   1) there is an allow rule with the same key and permissions for a dontaudit   \n"
+"   1) there is an allow rule with the same key and permissions for a dontaudit\n"
 "      rule\n"
-"   2) there is an auditallow rule without an allow rule with a key and permission\n"
-"      that does not appear in an allow rule.\n";
-	mod->opt_description =
-"Module requirements:\n"
-"   none\n"
-"Module dependencies:\n"
-"   none\n"
-"Module options:\n"
-"   none\n";
+"   2) there is an auditallow rule without an allow rule with a key and\n"
+"      permission that does not appear in an allow rule.\n";
+	mod->opt_description = 
+"  Module requirements:\n"
+"    none\n"
+"  Module dependencies:\n"
+"    none\n"
+"  Module options:\n"
+"    none\n";
 	mod->severity = SECHK_SEV_LOW;
+
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(errno));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &spurious_audit_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(errno));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &spurious_audit_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(errno));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &spurious_audit_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &spurious_audit_data_free;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(errno));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &spurious_audit_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(errno));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &spurious_audit_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
-#endif
 	return 0;
 }
 
@@ -139,33 +138,36 @@ int spurious_audit_register(sechk_lib_t *lib)
  * file. */
 int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
 	sechk_name_value_t *opt = NULL;
 	spurious_audit_data_t *datum = NULL;
-
+	int error = 0;
+	size_t i = 0;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "%s%s%s", "wrong module (", mod->name, ")");
+		errno = EINVAL;
 		return -1;
 	}
 
 	datum = spurious_audit_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		errno = error;
 		return -1;
 	}
 	mod->data = datum;
 
-	opt = mod->options;
-	while (opt) {
-		opt = opt->next;
+	for (i = 0; i < apol_vector_get_size(mod->options); i++) {
+		opt = apol_vector_get_element(mod->options, i);
+		/* spurious_audit uses no options, so we skip them all. */
 	}
 
-#endif
 	return 0;
 }
 
@@ -174,30 +176,37 @@ int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy)
  * structure and fills in all relavant item and proof data. */
 int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	spurious_audit_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i, j, src, tgt, obj, perm, retv;
-	avh_node_t *node, *tmp_node;
-	int *src_types = NULL, num_src_types = 0;
-	int *tgt_types = NULL, num_tgt_types = 0;
-	int *obj_classes = NULL, num_obj_classes = 0;
-	int *perms = NULL, num_perms = 0;
-	int *node_perms = NULL, node_perms_sz = 0;
-	bool_t *used_perms = NULL;
-	avh_key_t key = {-1,-1,-1,RULE_INVALID};
-	avh_rule_t *hash_rule = NULL;
-	char *tmp = NULL;
+	int error, rule_found;
+	apol_avrule_query_t *query = 0;
+	apol_vector_t *allow_rules, *auditallow_rules, *dontaudit_rules,
+					  *perm_vector1, *perm_vector2, *perm_intersection;
+	size_t i, j, k, l, tmp_counter;
+	qpol_avrule_t *rule1, *rule2;
+	qpol_type_t *source, *target;
+   qpol_class_t *object;
+	qpol_iterator_t *perm_iter1, *perm_iter2;
+	char *string1, *string2, *tmp, *src_name, *tgt_name, *obj_name, *perms;
+	
+	error = rule_found = 0;
+	allow_rules = auditallow_rules = dontaudit_rules =
+		perm_vector1 = perm_vector2 = perm_intersection = NULL;
+	rule1 = rule2 = 0;
+	source = target = NULL;
+	perm_iter1 = perm_iter2 = NULL;
+	string1 = string2 = tmp = src_name = tgt_name = obj_name = perms = NULL;
+
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(NULL, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "%s%s%s","wrong module (", mod->name, ")");
 		return -1;
 	}
 
@@ -208,349 +217,603 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (spurious_audit_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		errno = error;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+		error = errno;
+
+		ERR(policy, "%s", strerror(error));
 		goto spurious_audit_run_fail;
 	}
-	res->item_type = POL_LIST_AV_AU;
+	res->item_type = SECHK_ITEM_AVRULE;
 
-	if (!avh_hash_table_present(policy->avh)) {
-		retv = avh_build_hashtab(policy);
-		if (retv) {
-			fprintf(stderr, "Error: could not build hash table\n");
-			goto spurious_audit_run_fail;
-		}
+	query = apol_avrule_query_create();
+	if (!query) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto spurious_audit_run_fail;
+	}
+	
+	apol_avrule_query_set_rules(policy, query, QPOL_RULE_AUDITALLOW);
+	if (apol_get_avrule_by_query(policy, query, &auditallow_rules)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto spurious_audit_run_fail;
 	}
 
-	for (i = 0; i < policy->num_av_audit; i++) {
-		retv = extract_types_from_te_rule(i, 1, SRC_LIST, &src_types, &num_src_types, policy);
-		if (retv) {
-			fprintf(stderr, "Error: out of memory\n");
+	apol_avrule_query_set_rules(policy, query, QPOL_RULE_DONTAUDIT);
+	if (apol_get_avrule_by_query(policy, query, &dontaudit_rules)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto spurious_audit_run_fail;
+	}
+
+	/* First error case: Allow && Don't Audit */
+	for (i = 0; i < apol_vector_get_size(dontaudit_rules); i++)
+	{
+		/* get first (DONT_AUDIT) rule */
+		rule1 = (qpol_avrule_t *) apol_vector_get_element(dontaudit_rules, i);
+		if (!rule1) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		extract_types_from_te_rule(i, 1, TGT_LIST, &tgt_types, &num_tgt_types, policy);
-		if (retv) {
-			fprintf(stderr, "Error: out of memory\n");
+
+		/* get source, target, object for Don't Audit rule */
+		if (qpol_avrule_get_source_type(policy->qh, policy->p, rule1, &source)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		retv = extract_obj_classes_from_te_rule(i, 1, &obj_classes, &num_obj_classes, policy);
-		if (retv) {
-			fprintf(stderr, "Error: out of memory\n");
+		if (qpol_avrule_get_target_type(policy->qh, policy->p, rule1, &target)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		retv = extract_perms_from_te_rule(i, 1, &perms, &num_perms, policy);
-		if (retv) {
-			fprintf(stderr, "Error: out of memory\n");
+		if (qpol_avrule_get_object_class(policy->qh, policy->p, rule1, &object)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (num_perms) {
-			used_perms = (bool_t*)calloc(num_perms, sizeof(bool_t));
-			if (!used_perms) {
-				fprintf(stderr, "Error: out of memory\n");
+
+		/* extract name strings from source, target, object */
+		if (qpol_type_get_name(policy->qh, policy->p, source, &src_name)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		if (qpol_type_get_name(policy->qh, policy->p, target, &tgt_name)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		if (qpol_class_get_name(policy->qh, policy->p, object, &obj_name)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+
+		/* configure Allow rule query to match above Don't Audit rule */
+		apol_avrule_query_set_rules(policy, query, QPOL_RULE_ALLOW);
+		apol_avrule_query_set_source(policy, query, src_name, 1);
+		apol_avrule_query_set_target(policy, query, tgt_name, 1);
+		apol_avrule_query_append_class(policy, query, NULL);
+		apol_avrule_query_append_class(policy, query, obj_name);
+
+		/* get vector of matching ALLOW rules */
+		if (apol_get_avrule_by_query(policy, query, &allow_rules)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+
+
+		if (apol_vector_get_size(allow_rules) != 0) {
+			/* Bad News: Allow && Don't Audit */
+			for (j = 0; j < apol_vector_get_size(allow_rules); j++)
+			{	
+				/* get second (Allow) rule */
+				rule2 = (qpol_avrule_t *) apol_vector_get_element(allow_rules, j);
+				if (!rule2) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+
+				/* get permission iterators for both rules, and make vectors from them */
+				if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule1, &perm_iter1)) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+				perm_vector1 = apol_vector_create_from_iter(perm_iter1);
+				if (!perm_vector1) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+
+				if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule2, &perm_iter2)) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+				perm_vector2 = apol_vector_create_from_iter(perm_iter2);
+				if (!perm_vector2) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+
+				/* create intersection of permissions */
+				perm_intersection = apol_vector_create_from_intersection(perm_vector1,
+						perm_vector2, apol_str_strcmp, NULL);
+				if (!perm_intersection) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+
+				if (apol_vector_get_size(perm_intersection) != 0) {
+					proof = sechk_proof_new(NULL);
+					if (!proof) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto spurious_audit_run_fail;
+					}
+					proof->elem = (void*)rule2; /* proof is the allow rule */
+					proof->type = SECHK_ITEM_AVRULE;
+					/* text will show the permissions that conflict */
+					tmp_counter = 0;
+					for (k = 0; k < apol_vector_get_size(perm_intersection); k++)
+					{
+						apol_str_append(&(proof->text), &tmp_counter,
+							  	(char*) apol_vector_get_element(perm_intersection, k));
+						if (k != (apol_vector_get_size(perm_intersection) - 1))
+							apol_str_append(&(proof->text), &tmp_counter, ", ");
+					}
+					if (!item) {
+						item = sechk_item_new(NULL);
+						if (!item) {
+							error = errno;
+							ERR(policy, "%s", strerror(error));
+							goto spurious_audit_run_fail;
+						}
+						item->item = rule1; /* item is the dontaudit rule */
+					}
+					if (!item->proof) {
+						item->proof = apol_vector_create();
+						if (!item->proof) {
+							error = errno;
+							ERR(policy, "%s", strerror(error));
+							goto spurious_audit_run_fail;
+						}
+					}
+					apol_vector_append(item->proof, (void*) proof);
+	
+									}
+				else {
+					/* these two rules don't overlap, no problem */
+				}
+				/* clean up */
+				rule2 = NULL;
+				apol_vector_destroy(&perm_vector1, free);
+				apol_vector_destroy(&perm_vector2, free);
+				apol_vector_destroy(&perm_intersection, NULL);
+				qpol_iterator_destroy(&perm_iter1);
+				qpol_iterator_destroy(&perm_iter2);
+			}
+			if (!res->items) {
+				res->items = apol_vector_create();
+				if (!res->items) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+			}
+			apol_vector_append(res->items, (void*) item);
+
+			item = NULL;
+			apol_vector_destroy(&allow_rules, NULL);
+		}
+	}
+	apol_vector_destroy(&dontaudit_rules, NULL);
+
+	/* Second error case: AuditAllow w/out Allow */
+	for (i = 0; i < apol_vector_get_size(auditallow_rules); i++)
+	{
+		/* get first (AuditAllow) rule */
+		rule1 = (qpol_avrule_t *)apol_vector_get_element(auditallow_rules, i);
+		if (!rule1) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		/* get first rule's source, target, object class */
+		if (qpol_avrule_get_source_type(policy->qh, policy->p, rule1, &source)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		if (qpol_avrule_get_target_type(policy->qh, policy->p, rule1, &target)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		if (qpol_avrule_get_object_class(policy->qh, policy->p, rule1, &object)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		/* extract name strings from source, target, object */
+		if (qpol_type_get_name(policy->qh, policy->p, source, &src_name)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		if (qpol_type_get_name(policy->qh, policy->p, target, &tgt_name)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		if (qpol_class_get_name(policy->qh, policy->p, object, &obj_name)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+
+		/* configure ALLOW rule query to match above rule */
+		apol_avrule_query_set_rules(policy, query, QPOL_RULE_ALLOW);
+		apol_avrule_query_set_source(policy, query, src_name, 1);
+		apol_avrule_query_set_target(policy, query, tgt_name, 1);
+		apol_avrule_query_append_class(policy, query, obj_name);
+
+		if (apol_get_avrule_by_query(policy, query, &allow_rules)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+
+		if (!apol_vector_get_size(allow_rules)) {
+			/* No ALLOW rule for given AUDIT_ALLOW rule */
+
+			/* Make proof: missing allow rule */
+			proof = sechk_proof_new(NULL);
+			if (!proof) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
 				goto spurious_audit_run_fail;
 			}
-		}
-		for (src = 0; src < num_src_types; src++) {
-			for (tgt = 0; tgt < num_tgt_types; tgt++) {
-				for (obj = 0; obj < num_obj_classes; obj++) {
-					proof = NULL;
-					key.src = src_types[src];
-					key.tgt = tgt_types[tgt];
-					key.cls = obj_classes[obj];
-					key.rule_type = RULE_TE_ALLOW;
-					node = avh_find_first_node(&(policy->avh), &key);
-					if (policy->av_audit[i].type == RULE_AUDITALLOW) {
-						if (!node) {
-							proof = sechk_proof_new();
-							if (!proof) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto spurious_audit_run_fail;
-							}
-							proof->idx = -1;
-							proof->type = SECHK_TYPE_NONE;
-							tmp = re_render_av_rule(!is_binary_policy(policy), i, 1, policy);
-							if (!tmp) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto spurious_audit_run_fail;
-							}
-							proof->text = (char*)calloc(9 + strlen(tmp), sizeof(char));
-							if (!proof->text) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto spurious_audit_run_fail;
-							}
-							snprintf(proof->text, 9+strlen(tmp), "missing: %s", strstr(tmp, "allow"));
-							if (!item) {
-								item = sechk_item_new();
-								if (!item) {
-									fprintf(stderr, "Error: out of memory\n");
-									goto spurious_audit_run_fail;
-								}
-								item->item_id = i;
-								item->test_result = SECHK_SPUR_AU_AA_MISS;
-							} else {
-								item->test_result |= SECHK_SPUR_AU_AA_MISS;
-							}
-							proof->next = item->proof;
-							item->proof = proof;
-						} else {
-							retv = 0;
-							node_perms_sz = 0;
-							node_perms = NULL;
-							for ( ; node; node = avh_find_next_node(node)) {
-								for (j = 0; j < node->num_data; j++) 
-									add_i_to_a(node->data[j], &node_perms_sz, &node_perms);
-							}	       
-							for (perm = 0; perm < num_perms; perm++) {
-								if (find_int_in_array(perms[perm], node_perms, node_perms_sz) != -1) {
-									used_perms[perm] = TRUE;
-									retv ++;
-								}
-							}
-							if (node_perms_sz > 0) {
-								free(node_perms);
-								node_perms_sz = 0;
-							}					       	
-							if (retv == num_perms)
-								continue;
-							proof = sechk_proof_new();
-							proof->idx = -1;
-							proof->type = SECHK_TYPE_NONE;
-							retv = 0;
-							tmp = (char*)calloc(3*LIST_SZ, sizeof(char));
-							if (!tmp) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto spurious_audit_run_fail;
-							}
-							retv = snprintf(tmp, 3*LIST_SZ, "missing: allow %s %s : %s { ", policy->types[src_types[src]].name, policy->types[tgt_types[tgt]].name, policy->obj_classes[obj_classes[obj]].name);
-							for (perm = 0; perm < num_perms; perm++) {
-								if (!used_perms[perm])
-									retv += snprintf(tmp+retv, 3*LIST_SZ-retv, "%s ", policy->perms[perms[perm]]);
-							}
-							snprintf(tmp+retv, 3*LIST_SZ-retv, "};");
-							proof->text = strdup(tmp);
-							if (!proof->text) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto spurious_audit_run_fail;
-							}
-							if (!item) {
-								item = sechk_item_new();
-								if (!item) {
-									fprintf(stderr, "Error: out of memory\n");
-									goto spurious_audit_run_fail;
-								}
-								item->item_id = i;
-								item->test_result = SECHK_SPUR_AU_AA_PART;
-							} else {
-								item->test_result |= SECHK_SPUR_AU_AA_PART;
-							}
-							proof->next = item->proof;
-							item->proof = proof;
-						}
-					} else if (policy->av_audit[i].type == RULE_DONTAUDIT) {
-						if (!node) {
-							continue;
-						}
-						retv = 0;
-						node_perms_sz = 0;
-						node_perms = NULL;
-						for (tmp_node = node; tmp_node; tmp_node = avh_find_next_node(tmp_node)) {
-							for (j = 0; j < tmp_node->num_data; j++) 
-								add_i_to_a(tmp_node->data[j], &node_perms_sz, &node_perms);
-						}
-						for (perm = 0; perm < num_perms; perm++) {
-							if (find_int_in_array(perms[perm], node_perms, node_perms_sz) != -1) {
-								used_perms[perm] = TRUE;
-								retv ++;
-							}
-						}
-						if (node_perms_sz > 0) {
-							free(node_perms);
-							node_perms_sz = 0;
-						}					       	
-							
-						if (!retv)
-							continue;
-						if (!item) {
-							item = sechk_item_new();
-							if (!item) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto spurious_audit_run_fail;
-							}
-							item->item_id = i;
-							if (retv == num_perms) 
-								item->test_result = SECHK_SPUR_AU_DA_FULL;
-							else
-								item->test_result = SECHK_SPUR_AU_DA_PART;
-						} else {
-							if (retv == num_perms)
-								item->test_result |= SECHK_SPUR_AU_DA_FULL;
-							else
-								item->test_result |= SECHK_SPUR_AU_DA_PART;
-						}
-						for (hash_rule = node->rules; hash_rule; hash_rule = hash_rule->next) {
-							proof = NULL;
-							tmp = NULL;
-							if (does_av_rule_use_perms(hash_rule->rule, 1, perms, num_perms, policy)) {
-								if (sechk_item_has_proof(hash_rule->rule, POL_LIST_AV_ACC, item))
-									continue;
-								proof = sechk_proof_new();
-								if (!proof) {
-									fprintf(stderr, "Error: out of memory\n");
-									goto spurious_audit_run_fail;
-								}
-								proof->idx = hash_rule->rule;
-								proof->type = POL_LIST_AV_ACC;
-								tmp = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, 0, policy);
-								proof->text = (char*)calloc(15+strlen(tmp), sizeof(char));
-								if (!proof->text) {
-									fprintf(stderr, "Error: out of memory\n");
-									goto spurious_audit_run_fail;
-								}
-								strcat(proof->text, "inconsistent: ");
-								strcat(proof->text, tmp);
-								free(tmp);
-								proof->next = item->proof;
-								item->proof = proof;
-							}
-						}
+			proof->elem = NULL;
+			proof->type = SECHK_ITEM_AVRULE;
+
+			/* grab permisisons of auditallow rule, and make text */
+			if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule1, &perm_iter1)) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto spurious_audit_run_fail;
+			}
+			perm_vector1 = apol_vector_create_from_iter(perm_iter1);
+			if (!perm_vector1) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto spurious_audit_run_fail;
+			}
+
+			tmp_counter = 0;
+			for (j = 0; j < apol_vector_get_size(perm_vector1); j++)
+			{
+				if (apol_str_append(&(proof->text), &tmp_counter,
+						(char*)apol_vector_get_element(perm_vector1, j)))
+				{
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+				if (j != (apol_vector_get_size(perm_vector1) - 1)) {
+					if (apol_str_append(&(proof->text), &tmp_counter, ", ")) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto spurious_audit_run_fail;
 					}
 				}
 			}
-		}
-		if (item) {
-			item->next = res->items;
-			res->items = item;
-			(res->num_items)++;
-		}
-		item = NULL;
+			apol_vector_destroy(&perm_vector1, free);
+			qpol_iterator_destroy(&perm_iter1);
 
-		/* free temporary lists */
-		free(used_perms);
-		used_perms = NULL;
-		free(src_types);
-		src_types = NULL;
-		num_src_types = 0;
-		free(tgt_types);
-		tgt_types = NULL;
-		num_tgt_types = 0;
-		free(obj_classes);
-		obj_classes = NULL;
-		num_obj_classes = 0;
-		free(perms);
-		perms = NULL;
-		num_perms = 0;
+			/* Make item: inconsistent auditallow rule */
+			if (!item) {
+				item = sechk_item_new(NULL);
+				if (!item) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+			}
+			item->item = rule1;
+			if (!item->proof) {
+				item->proof = apol_vector_create();
+				if (!item->proof) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+			}
+			apol_vector_append(item->proof, (void*) proof);
+
+			/* Add item to test result */
+			if (!res->items) {
+				res->items = apol_vector_create();
+				if (!res->items) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+			}
+			apol_vector_append(res->items, (void*) item);
+			item = NULL;
+			continue;
+		}
+		
+		/* Here we have AuditAllow rule and Allow rule(s) with same key */
+		/* Checking to make sure they have the same permissions */
+
+		/* Make vector of AuditAllow permissions */
+		if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule1, &perm_iter1)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+		perm_vector1 = apol_vector_create_from_iter(perm_iter1);
+		if (!perm_vector1) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto spurious_audit_run_fail;
+		}
+
+		/* Get permissions vector for Allow rule(s) */
+		for (j = 0; j < apol_vector_get_size(allow_rules); j++)
+		{
+			/* get Allow rule */
+			rule2 = (qpol_avrule_t *)apol_vector_get_element(allow_rules, j);
+			if (!rule2) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto spurious_audit_run_fail;
+			}
+
+			if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule2, &perm_iter2)) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto spurious_audit_run_fail;
+			}
+
+			if (!perm_vector2) {
+				perm_vector2 = apol_vector_create();
+				if (!perm_vector2) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+			}
+
+			/* concatenate permissions from this rule, check for errors, all in one go */
+			if (apol_vector_cat(perm_vector2, apol_vector_create_from_iter(perm_iter2))) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto spurious_audit_run_fail;
+			}
+		}
+
+		/* Find intersection of permission, put into a vector */
+		perm_intersection = apol_vector_create_from_intersection(perm_vector1, perm_vector2,
+				apol_str_strcmp, NULL);
+
+		if (apol_vector_get_size(perm_intersection) != apol_vector_get_size(perm_vector1)) {
+			/* Auditallow rule audits things that are not allowed */
+
+			/* item for result is the AuditAllow rule */
+			if (!item) {
+				item = sechk_item_new(NULL);
+				if (!item) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));;
+					goto spurious_audit_run_fail;
+				}
+			}
+			item->item = rule1;
+			/* proof is the lack of Allow rule */
+			proof = sechk_proof_new(NULL);
+			if (!proof) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto spurious_audit_run_fail;
+			}
+			proof->elem = NULL;
+			proof->type = SECHK_ITEM_AVRULE;
+			
+			/* the next series of if statements prints the following:
+				missing: allow <src_name> <tgt_name> : <obj_name> { perms }; */
+			tmp_counter = 0;
+			for (j = 0; j < apol_vector_get_size(perm_vector1); j++)
+			{
+				string1 = (char*) apol_vector_get_element(perm_vector1, j);
+				if (!apol_vector_get_index(perm_intersection, (void*)string1,
+							apol_str_strcmp, NULL, &l))
+				{
+					if (apol_str_append(&(proof->text), &tmp_counter, string1)) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto spurious_audit_run_fail;
+					}
+					if (apol_str_append(&(proof->text), &tmp_counter, ", "))
+					{
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto spurious_audit_run_fail;
+					}
+				}
+				string1 = NULL;
+			}
+
+			if (!item->proof) {
+				item->proof = apol_vector_create();
+				if (!item->proof) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+			}
+			apol_vector_append(item->proof, (void*) proof);
+			proof = NULL;
+			if (!res->items) {
+				res->items = apol_vector_create();
+				if (!res->items) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto spurious_audit_run_fail;
+				}
+			}
+			apol_vector_append(res->items, (void*) item);
+			item = NULL;
+		}
+
+		/* clean up */
+		apol_vector_destroy(&perm_vector1, free);
+		apol_vector_destroy(&perm_vector2, free);
+		apol_vector_destroy(&perm_intersection, NULL);
+		apol_vector_destroy(&allow_rules, NULL);
+		qpol_iterator_destroy(&perm_iter1);
+		qpol_iterator_destroy(&perm_iter2);
 	}
+
+	apol_vector_destroy(&auditallow_rules, NULL);
+	apol_avrule_query_destroy(&query);
 
 	mod->result = res;
 
-#endif
+	/* If module finds something that would be considered a fail 
+	 * on the policy return 1 here */
+	if (apol_vector_get_size(res->items) > 0)
+		return 1;
+
 	return 0;
 
-#if 0
 spurious_audit_run_fail:
-	free(tmp);
-	free(used_perms);
-	free(src_types);
-	free(tgt_types);
-	free(obj_classes);
-	free(perms);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
+	sechk_result_destroy(&res);
+	apol_vector_destroy(&allow_rules, NULL);
+	apol_vector_destroy(&auditallow_rules, NULL);
+	apol_vector_destroy(&dontaudit_rules, NULL);
+	apol_vector_destroy(&perm_vector1, free);
+	apol_vector_destroy(&perm_vector2, free);
+	apol_vector_destroy(&perm_intersection, NULL);
+	qpol_iterator_destroy(&perm_iter1);
+	qpol_iterator_destroy(&perm_iter2);
+	apol_avrule_query_destroy(&query);
+	free(tmp);
+	tmp = NULL;
+	errno = error;
 	return -1;
-#endif
 }
 
 /* The free function frees the private data of a module */
 void spurious_audit_data_free(void *data)
 {
-#if 0
-	spurious_audit_data_t *datum;
+	spurious_audit_data_t *datum = (spurious_audit_data_t *)data;
 
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
+	if (datum) {
 	}
 
-	datum = (spurious_audit_data_t*)mod->data;
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
-/* The print output function generates the text printed in the
- * report and prints it to stdout. */
+/* The print output function generates the text and prints the
+ * results to stdout. */
 int spurious_audit_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	spurious_audit_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	char *tmp = NULL;
-
-        if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+	size_t i = 0, j = 0;
+	uint32_t ruletype;
+	
+	if (!mod || !policy) {
+		ERR(NULL, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "%s%s%s","wrong module (", mod->name, ")");
+		errno = EINVAL;
 		return -1;
 	}
-
+	
 	datum = (spurious_audit_data_t*)mod->data;
 	outformat = mod->outputformat;
 
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+		ERR(policy, "%s%s%s","module ", mod->name, "has not been run");
+		errno = EINVAL;
 		return -1;
 	}
-
+	
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i rules.\n", mod->result->num_items);
+		i = apol_vector_get_size(mod->result->items);
+		printf("Found %zd rule%s.\n", i, (i == 1) ? "" : "s" );
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			printf("%s\n", (tmp=re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy))); 
-			free(tmp);
+		for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
+			item = apol_vector_get_element(mod->result->items, i);
+			printf("%s\n", apol_avrule_render(policy, (qpol_avrule_t*)item->item)); 
 		}
 		printf("\n");
 	}
 	/* The proof report component is a display of a list of items
 	 * with an indented list of proof statements supporting the result
-	 * of the check for that item (e.g. rules with a given type)
-	 * this field also lists the computed severity of each item
-	 * items are printed on a line followed by the severity.
-	 * Each proof element is then displayed in an indented list
-	 * one per line below it. */
+	 * of the check for that item. */
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy));/* TODO: item name */
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
+		for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
+			item = apol_vector_get_element(mod->result->items, i);
+			printf("%s\n", apol_avrule_render(policy, (qpol_avrule_t*)item->item));
+
+			qpol_avrule_get_rule_type(policy->qh, policy->p, (qpol_avrule_t*)item->item, &ruletype);
+			if (ruletype == QPOL_RULE_DONTAUDIT) {
+				for (j = 0; j < apol_vector_get_size(item->proof); j++) {
+					proof = apol_vector_get_element(item->proof, j);
+					printf("\tinconsistent: ");
+					printf("%s\n", apol_avrule_render(policy, (qpol_avrule_t*)proof->elem));
+					printf("\tinconsistent permissions:\n");
+					printf("\t%s\n", proof->text);
+				}
+			}
+			else if(ruletype == QPOL_RULE_AUDITALLOW) {
+				printf("\tmissing: ");
+				printf("%s\n", strstr(apol_avrule_render(policy, (qpol_avrule_t*)item->item), "allow"));
+				printf("\tmissing permissions:\n");
+				for (j = 0; j < apol_vector_get_size(item->proof); j++) {
+					proof = apol_vector_get_element(item->proof, j);
+					printf("\t%s\n", proof->text);
+				}
 			}
 			printf("\n");
 		}
+		printf("\n");
 	}
 
-#endif
 	return 0;
 }
 
@@ -558,34 +821,28 @@ int spurious_audit_print_output(sechk_module_t *mod, apol_policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *spurious_audit_get_result(sechk_module_t *mod) 
 {
-#if 0
-
 	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(NULL, "%s", strerror(EINVAL));	
+		errno = EINVAL;
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(mod->parent_lib->policy, "%s%s%s", "wrong module (", mod->name, ")");
 		return NULL;
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 /* The spurious_audit_data_new function allocates and returns an
  * initialized private data storage structure for this
- * module. */
+ * module. */ 
 spurious_audit_data_t *spurious_audit_data_new(void)
 {
-#if 0
 	spurious_audit_data_t *datum = NULL;
 
 	datum = (spurious_audit_data_t*)calloc(1,sizeof(spurious_audit_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
 
