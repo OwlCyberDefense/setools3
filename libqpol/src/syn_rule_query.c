@@ -1,7 +1,7 @@
 /**
  *  @file syn_rule_query.c
  *  Public interface for querying syntactic rules from the extended
- *  policy image. 
+ *  policy image.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -22,7 +22,7 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */ 
+ */
 
 #include <qpol/syn_rule_query.h>
 #include <qpol/policy_query.h>
@@ -687,4 +687,3 @@ int qpol_syn_terule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 
 	return STATUS_SUCCESS;
 }
-

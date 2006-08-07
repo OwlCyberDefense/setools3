@@ -195,20 +195,24 @@ static int qpol_terule_to_tcl_obj(Tcl_Interp *interp,
 }
 
 /**
- * Given a type set, create and return a Tcl list containing the type
- * set's elements.  If the set is complemented then the list will
- * begin with a "~".  Next, if the set is starred then the list will
- * have a "*".  Following that are all included types.  Excluded types
- * follow; those types will be prepended by a "-".
+ * Given a type set and a 'self' flag, create and return a Tcl list
+ * containing the type set's elements.  If the set is complemented
+ * then the list will begin with a "~".  Next, if the set is starred
+ * then the list will have a "*".  Following that are all included
+ * types.  Excluded types follow; those types will be prepended by a
+ * "-".  Finally, if the self flag is set then append the word "self"
+ * to the list.
  *
  * @param interp Tcl interpreter object.
  * @param ts Type set to convert.
+ * @param is_self 1 if the word "self" should be appended to the list.
  * @param obj Reference to where to build Tcl list.
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
 static int qpol_type_set_to_tcl_list(Tcl_Interp *interp,
 				     qpol_type_set_t *ts,
+				     uint32_t is_self,
 				     Tcl_Obj **obj)
 {
 	uint32_t is_star, is_comp;
@@ -253,6 +257,12 @@ static int qpol_type_set_to_tcl_list(Tcl_Interp *interp,
 		}
 		o = Tcl_NewStringObj("-", -1);
 		Tcl_AppendStringsToObj(o, type_name, (char *) NULL);
+		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	if (is_self) {
+		o = Tcl_NewStringObj("self", -1);
 		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
 			goto cleanup;
 		}
@@ -304,17 +314,12 @@ static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	avrule_elem[0] = Tcl_NewStringObj(rule_string, -1);
-	if (qpol_type_set_to_tcl_list(interp, source_set, avrule_elem + 1) == TCL_ERROR) {
+	if (qpol_type_set_to_tcl_list(interp, source_set, 0, avrule_elem + 1) == TCL_ERROR) {
 		goto cleanup;
 	}
-	if (is_self) {
-		avrule_elem[2] = Tcl_NewStringObj("self", -1);
-	}
-	else {
-		if (qpol_syn_avrule_get_target_type_set(policydb->qh, policydb->p, avrule, &target_set) < 0 ||
-		    qpol_type_set_to_tcl_list(interp, target_set, avrule_elem + 2) == TCL_ERROR) {
-			goto cleanup;
-		}
+	if (qpol_syn_avrule_get_target_type_set(policydb->qh, policydb->p, avrule, &target_set) < 0 ||
+	    qpol_type_set_to_tcl_list(interp, target_set, is_self, avrule_elem + 2) == TCL_ERROR) {
+		goto cleanup;
 	}
 	avrule_elem[3] = Tcl_NewListObj(0, NULL);
 	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
@@ -388,8 +393,8 @@ static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	terule_elem[0] = Tcl_NewStringObj(rule_string, -1);
-	if (qpol_type_set_to_tcl_list(interp, source_set, terule_elem + 1) == TCL_ERROR ||
-	    qpol_type_set_to_tcl_list(interp, target_set, terule_elem + 2) == TCL_ERROR) {
+	if (qpol_type_set_to_tcl_list(interp, source_set, 0, terule_elem + 1) == TCL_ERROR ||
+	    qpol_type_set_to_tcl_list(interp, target_set, 0, terule_elem + 2) == TCL_ERROR) {
 		goto cleanup;
 	}
 	terule_elem[3] = Tcl_NewListObj(0, NULL);
