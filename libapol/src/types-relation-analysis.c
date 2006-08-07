@@ -99,7 +99,7 @@ static int apol_types_relation_common_attribs(apol_policy_t *p,
 	}
 	if ((vA = apol_vector_create_from_iter(iA)) == NULL ||
 	    (vB = apol_vector_create_from_iter(iB)) == NULL ||
-	    (r->attribs = apol_vector_create_from_intersection(vA, vB)) == NULL) {
+	    (r->attribs = apol_vector_create_from_intersection(vA, vB, NULL, NULL)) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 	}
 
@@ -149,7 +149,7 @@ static int apol_types_relation_common_roles(apol_policy_t *p,
 	    apol_get_role_by_query(p, rq, &vB) < 0) {
 		goto cleanup;
 	}
-	if ((r->roles = apol_vector_create_from_intersection(vA, vB)) == NULL) {
+	if ((r->roles = apol_vector_create_from_intersection(vA, vB, NULL, NULL)) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 	}
 
