@@ -28,6 +28,7 @@
 #include <qpol/policy_query.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/util.h>
+#include <sepol/policydb/conditional.h>
 #include "debug.h"
 #include "iterator_internal.h"
 #include "syn_rule_internal.h"
@@ -547,6 +548,50 @@ int qpol_syn_avrule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
+int qpol_syn_avrule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond)
+{
+	if (cond)
+		*cond = NULL;
+
+	if (!handle || !policy || !rule || !cond) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	*cond = (qpol_cond_t *) rule->cond;
+	return STATUS_SUCCESS;
+}
+
+int qpol_syn_avrule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_enabled)
+{
+	int truth;
+	if (is_enabled)
+		*is_enabled = 0;
+
+	if (!handle || !policy || !rule || !is_enabled) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	if (!rule->cond)
+		*is_enabled = 1;
+	else {
+		truth = cond_evaluate_expr(&policy->p->p, rule->cond->expr);
+		if (truth < 0) {
+			ERR(handle, "%s", strerror(ERANGE));
+			errno = ERANGE;
+			return STATUS_ERR;
+		}
+		if (!rule->cond_branch)
+			*is_enabled = truth;
+		else
+			*is_enabled = truth ? 0 : 1;
+	}
+	return STATUS_SUCCESS;
+}
+
 /***************************** syn_terule functions ****************************/
 
 int qpol_syn_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *rule_type)
@@ -688,5 +733,49 @@ int qpol_syn_terule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 
 	*lineno = internal_rule->line;
 
+	return STATUS_SUCCESS;
+}
+
+int qpol_syn_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond)
+{
+	if (cond)
+		*cond = NULL;
+
+	if (!handle || !policy || !rule || !cond) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	*cond = (qpol_cond_t *) rule->cond;
+	return STATUS_SUCCESS;
+}
+
+int qpol_syn_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *is_enabled)
+{
+	int truth;
+	if (is_enabled)
+		*is_enabled = 0;
+
+	if (!handle || !policy || !rule || !is_enabled) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	if (!rule->cond)
+		*is_enabled = 1;
+	else {
+		truth = cond_evaluate_expr(&policy->p->p, rule->cond->expr);
+		if (truth < 0) {
+			ERR(handle, "%s", strerror(ERANGE));
+			errno = ERANGE;
+			return STATUS_ERR;
+		}
+		if (!rule->cond_branch)
+			*is_enabled = truth;
+		else
+			*is_enabled = truth ? 0 : 1;
+	}
 	return STATUS_SUCCESS;
 }

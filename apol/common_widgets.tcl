@@ -368,21 +368,31 @@ proc Apol_Widget::appendSearchResultLine {path indent cond_info line_type args} 
 # search results box.  If the loaded policy is a source policy,
 # instead show all matching syntactic rules, sorted by line number.
 # Otherwise sort by string representation.  Returns the number of
-# rules that were appended.
-proc Apol_Widget::appendSearchResultAVRules {path indent rule_list} {
+# rules that were appended, number of enabled rules, and number of
+# disabled rules.
+proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set is_binary [ApolTop::is_binary_policy]
     set rules {}
+    if {$varname != {}} {
+        upvar $varname progressvar
+    }
     if {$is_binary} {
         set rules [lsort -command _sort_avrule_bin [lsort -unique $rule_list]]
-    } else {
-        foreach r $rule_list {
-            set rules [concat $rules [apol_GetSynAVRules $r]]
+        if {$progressvar != {}} {
+            set progressvar "Rendering [llength $rules] semantic av rule(s)..."
         }
-        set rules [lsort -unique -command _sort_avrule_source $rules]
+    } else {
+        set rules [lsort -command _sort_avrule_source [apol_GetSynAVRulesList $rule_list]]
+        if {$progressvar != {}} {
+            set progressvar "Rendering [llength $rules] syntactic av rule(s)..."
+        }
     }
+    update idletasks
 
+    set num_enabled 0
+    set num_disabled 0
     foreach r $rules {
         $path.tb insert end [string repeat " " $indent]
         if {$is_binary} {
@@ -394,12 +404,8 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list} {
                           $line_num linenum \
                           "\] " {} \
                           $rule_type {}]
-            if {[llength $source_set] > 1} {
-                set source_set "\{$source_set\}"
-            }
-            if {[llength $target_set] > 1} {
-                set target_set "\{$target_set\}"
-            }
+            set source_set [_render_typeset $source_set]
+            set target_set [_render_typeset $target_set]
             if {[llength $class] > 1} {
                 set class "\{$class\}"
             }
@@ -413,14 +419,16 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list} {
         if {$cond_info != {}} {
             if {[lindex $cond_info 0] == "enabled"} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
+                incr num_enabled
             } else {
                 $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+                incr num_disabled
             }
         }
         $path.tb insert end "\n"
     }
     $path.tb configure -state $curstate
-    llength $rules
+    list [llength $rules] $num_enabled $num_disabled
 }
 
 # Append a list of terules, as specified by their unique ids, to a
@@ -428,20 +436,29 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list} {
 # instead show all matching syntactic rules, sorted by line number.
 # Otherwise sort by string representation.  Returns the number of
 # rules that were appended.
-proc Apol_Widget::appendSearchResultTERules {path indent rule_list} {
+proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set is_binary [ApolTop::is_binary_policy]
     set rules {}
+    if {$varname != {}} {
+        upvar $varname progressvar
+    }
     if {$is_binary} {
         set rules [lsort -command _sort_terule_bin [lsort -unique $rule_list]]
-    } else {
-        foreach r $rule_list {
-            set rules [concat $rules [apol_GetSynTERules $r]]
+        if {$progressvar != {}} {
+            set progressvar "Rendering [llength $rules] semantic type rule(s)..."
         }
-        set rules [lsort -unique -command _sort_terule_source $rules]
+    } else {
+        set rules [lsort -command _sort_terule_source [apol_GetSynTERulesList $rule_list]]
+        if {$progressvar != {}} {
+            set progressvar "Rendering [llength $rules] syntactic type rule(s)..."
+        }
     }
+    update idletasks
 
+    set num_enabled 0
+    set num_disabled 0
     foreach r $rules {
         $path.tb insert end [string repeat " " $indent]
         if {$is_binary} {
@@ -453,12 +470,8 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list} {
                       $line_num linenum \
                       "\] " {} \
                       $rule_type {}]
-            if {[llength $source_set] > 1} {
-                set source_set "\{$source_set\}"
-            }
-            if {[llength $target_set] > 1} {
-                set target_set "\{$target_set\}"
-            }
+            set source_set [_render_typeset $source_set]
+            set target_set [_render_typeset $target_set]
             if {[llength $class] > 1} {
                 set target_set "\{$class\}"
             }
@@ -469,14 +482,16 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list} {
         if {$cond_info != {}} {
             if {[lindex $cond_info 0] == "enabled"} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
+                incr num_enabled
             } else {
                 $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+                incr num_disabled
             }
         }
         $path.tb insert end "\n"
     }
     $path.tb configure -state $curstate
-    llength $rules
+    list [llength $rules] $num_enabled $num_disabled
 }
 
 proc Apol_Widget::gotoLineSearchResults {path line_num} {
@@ -654,17 +669,17 @@ proc Apol_Widget::_sort_avrule_bin {a b} {
     set sa [apol_RenderAVRuleType $a]
     set sb [apol_RenderAVRuleType $b]
     if {[set i [string compare $sa $sb]] != 0} {
-        return $i;
+        return $i
     }
     set sa [apol_RenderAVRuleSource $a]
     set sb [apol_RenderAVRuleSource $b]
     if {[set i [string compare $sa $sb]] != 0} {
-        return $i;
+        return $i
     }
     set sa [apol_RenderAVRuleTarget $a]
     set sb [apol_RenderAVRuleTarget $b]
     if {[set i [string compare $sa $sb]] != 0} {
-        return $i;
+        return $i
     }
     set sa [apol_RenderAVRuleClass $a]
     set sb [apol_RenderAVRuleClass $b]
@@ -675,17 +690,17 @@ proc Apol_Widget::_sort_terule_bin {a b} {
     set sa [apol_RenderTERuleType $a]
     set sb [apol_RenderTERuleType $b]
     if {[set i [string compare $sa $sb]] != 0} {
-        return $i;
+        return $i
     }
     set sa [apol_RenderTERuleSource $a]
     set sb [apol_RenderTERuleSource $b]
     if {[set i [string compare $sa $sb]] != 0} {
-        return $i;
+        return $i
     }
     set sa [apol_RenderTERuleTarget $a]
     set sb [apol_RenderTERuleTarget $b]
     if {[set i [string compare $sa $sb]] != 0} {
-        return $i;
+        return $i
     }
     set sa [apol_RenderTERuleClass $a]
     set sb [apol_RenderTERuleClass $b]
@@ -702,4 +717,16 @@ proc Apol_Widget::_sort_terule_source {a b} {
     set i [apol_RenderSynTERuleLine $a]
     set j [apol_RenderSynTERuleLine $b]
     expr {$i - $j}
+}
+
+proc Apol_Widget::_render_typeset {typeset} {
+    if {[llength $typeset] > 1} {
+        if {[lindex $typeset 0] == "~"} {
+            set typeset "~\{[lrange $typeset 1 end]\}"
+        } else {
+            set typeset "~\{$typeset\}"
+        }
+    } else {
+        set typeset
+    }
 }

@@ -296,6 +296,8 @@ static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
 	qpol_iterator_t *class_iter = NULL, *perm_iter = NULL;
 	const char *rule_string;
 	unsigned long lineno;
+	qpol_cond_t *cond;
+	uint32_t is_enabled;
 	qpol_class_t *obj_class;
 	char *obj_class_name, *perm_name;
 	Tcl_Obj *avrule_elem[7], *o;
@@ -306,7 +308,9 @@ static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
 	    qpol_syn_avrule_get_is_target_self(policydb->qh, policydb->p, avrule, &is_self) < 0 ||
 	    qpol_syn_avrule_get_class_iter(policydb->qh, policydb->p, avrule, &class_iter) < 0 ||
 	    qpol_syn_avrule_get_perm_iter(policydb->qh, policydb->p, avrule, &perm_iter) < 0 ||
-	    qpol_syn_avrule_get_lineno(policydb->qh, policydb->p, avrule, &lineno) < 0) {
+	    qpol_syn_avrule_get_lineno(policydb->qh, policydb->p, avrule, &lineno) < 0 ||
+	    qpol_syn_avrule_get_cond(policydb->qh, policydb->p, avrule, &cond) < 0 ||
+	    qpol_syn_avrule_get_is_enabled(policydb->qh, policydb->p, avrule, &is_enabled) < 0) {
 		goto cleanup;
 	}
 	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
@@ -343,7 +347,15 @@ static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
 		}
 	}
 	avrule_elem[5] = Tcl_NewLongObj((long) lineno);
+	if (cond == NULL) {
 		avrule_elem[6] = Tcl_NewListObj(0, NULL);
+	}
+	else {
+		Tcl_Obj *cond_elem[2];
+		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
+		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		avrule_elem[6] = Tcl_NewListObj(2, cond_elem);
+	}
 	*obj = Tcl_NewListObj(7, avrule_elem);
 	retval = TCL_OK;
  cleanup:
@@ -375,6 +387,8 @@ static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
 	qpol_iterator_t *class_iter = NULL;
 	const char *rule_string;
 	unsigned long lineno;
+	qpol_cond_t *cond;
+	uint32_t is_enabled;
 	qpol_class_t *obj_class;
 	char *obj_class_name, *default_type_name;
 	Tcl_Obj *terule_elem[7], *o;
@@ -385,7 +399,9 @@ static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
 	    qpol_syn_terule_get_target_type_set(policydb->qh, policydb->p, terule, &target_set) < 0 ||
 	    qpol_syn_terule_get_class_iter(policydb->qh, policydb->p, terule, &class_iter) < 0 ||
 	    qpol_syn_terule_get_default_type(policydb->qh, policydb->p, terule, &default_type) < 0 ||
-	    qpol_syn_terule_get_lineno(policydb->qh, policydb->p, terule, &lineno) < 0) {
+	    qpol_syn_terule_get_lineno(policydb->qh, policydb->p, terule, &lineno) < 0 ||
+	    qpol_syn_terule_get_cond(policydb->qh, policydb->p, terule, &cond) < 0 ||
+	    qpol_syn_terule_get_is_enabled(policydb->qh, policydb->p, terule, &is_enabled) < 0) {
 		goto cleanup;
 	}
 	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
@@ -413,7 +429,15 @@ static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
 	}
 	terule_elem[4] = Tcl_NewStringObj(default_type_name, -1);
 	terule_elem[5] = Tcl_NewLongObj((long) lineno);
+	if (cond == NULL) {
 		terule_elem[6] = Tcl_NewListObj(0, NULL);
+	}
+	else {
+		Tcl_Obj *cond_elem[2];
+		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
+		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		terule_elem[6] = Tcl_NewListObj(2, cond_elem);
+	}
 	*obj = Tcl_NewListObj(7, terule_elem);
 	retval = TCL_OK;
  cleanup:

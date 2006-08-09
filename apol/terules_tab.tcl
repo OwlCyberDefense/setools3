@@ -916,11 +916,11 @@ proc Apol_TE::search_terules {whichButton} {
     }
 
     set tabs(searches_done) -1
-    set tabs(searches_text) "Searching for TE Rules."
+    set tabs(searches_text) "Searching for TE Rules..."
     set last_focus [focus -lastfor .]
     ProgressDlg .terules_busy -title "TE Rules Search" \
         -type normal -stop {} -separator 1 -parent . -maximum 2 \
-        -textvariable Apol_TE::tabs(searches_text) \
+        -textvariable Apol_TE::tabs(searches_text) -width 32 \
         -variable Apol_TE::tabs(searches_done)
     ApolTop::setBusyCursor
     update idletasks
@@ -936,7 +936,7 @@ proc Apol_TE::search_terules {whichButton} {
         focus $last_focus
         tk_messageBox -icon error -type ok -title Error -message "Error searching TE rules:\n$results"
     } else {
-        set tabs(searches_text) "Rendering results."
+        set tabs(searches_text) "Collecting results..."
         update idletasks
         foreach {avresults teresults} $results {break}
         if {$whichButton == "new"} {
@@ -947,14 +947,18 @@ proc Apol_TE::search_terules {whichButton} {
             set sr $tabs($id)
             Apol_Widget::clearSearchResults $sr
         }
-        set numAV [Apol_Widget::appendSearchResultAVRules $sr 0 $avresults]
-        set numTE [Apol_Widget::appendSearchResultTERules $sr 0 $teresults]
-        set num_rules [expr {$numAV + $numTE}]
+        set numAVs [Apol_Widget::appendSearchResultAVRules $sr 0 $avresults tabs(searches_text)]
+        set numTEs [Apol_Widget::appendSearchResultTERules $sr 0 $teresults tabs(searches_text)]
+        set num_rules [expr {[lindex $numAVs 0] + [lindex $numTEs 0]}]
+        set num_enabled [expr {[lindex $numAVs 1] + [lindex $numTEs 1]}]
+        set num_disabled [expr {[lindex $numAVs 2] + [lindex $numTEs 2]}]
         set header "$num_rules rule"
         if {$num_rules != 1} {
             append header s
         }
         append header " match the search criteria.\n"
+        append header "Number of enabled conditional rules: $num_enabled\n"
+        append header "Number of disabled conditional rules: $num_disabled\n"
         Apol_Widget::appendSearchResultHeader $sr $header
         ApolTop::resetBusyCursor
         destroy .terules_busy
