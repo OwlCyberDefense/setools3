@@ -1,7 +1,7 @@
 /**
  *  @file syn_rule_query.h
  *  Public interface for querying syntactic rules from the extended
- *  policy image. 
+ *  policy image.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -22,12 +22,13 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */ 
+ */
 
 #ifndef QPOL_SYN_RULE_QUERY_H
 #define QPOL_SYN_RULE_QUERY_H
 
 #include <qpol/policy.h>
+#include <qpol/cond_query.h>
 #include <qpol/iterator.h>
 #include <stdint.h>
 
@@ -155,7 +156,7 @@ extern int qpol_syn_avrule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *
 /**
  *  Get an iterator over all permissions specified in a syntactic rule.
  *  @param handle Error handler for the policy database.
- *  @param policy Policy associated with the 
+ *  @param policy Policy associated with the
  *  @param rule The rule from which to get the permissions.
  *  @param perms Iterator over items of type char* returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
@@ -177,6 +178,32 @@ extern int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *p
  *  errno will be set and *lineno will be 0.
  */
 extern int qpol_syn_avrule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, unsigned long *lineno);
+
+/**
+ *  If the syntactic rule is within a conditional, then get that
+ *  conditional.  Otherwise return NULL.
+ *  @param handle Error handler for the policy database.
+ *  @param policy Policy associated with the rule.
+ *  @param rule The rule for which to get the conditional.
+ *  @param cond Reference pointer to this rule's conditional
+ *  expression, or NULL if the rule is unconditional.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *lineno will be 0.
+ */
+extern int qpol_syn_avrule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_cond_t **cond);
+
+/**
+ *  Determine if the syntactic rule is enabled.  Unconditional rules
+ *  are always enabled.
+ *  @param handle Error handler for the policy database.
+ *  @param policy Policy associated with the rule.
+ *  @param rule The rule for which to get the conditional.
+ *  @param is_enabled Integer in which to store the result: set to 1
+ *  if enabled and 0 otherwise.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *lineno will be 0.
+ */
+extern int qpol_syn_avrule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_enabled);
 
 /**
  *  Get the rule type of a syntactic terule.
@@ -254,5 +281,30 @@ extern int qpol_syn_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t
  */
 extern int qpol_syn_terule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, unsigned long *lineno);
 
-#endif /* QPOL_SYN_RULE_QUERY_H */
+/**
+ *  If the syntactic rule is within a conditional, then get that
+ *  conditional.  Otherwise return NULL.
+ *  @param handle Error handler for the policy database.
+ *  @param policy Policy associated with the rule.
+ *  @param rule The rule for which to get the conditional.
+ *  @param cond Reference pointer to this rule's conditional
+ *  expression, or NULL if the rule is unconditional.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *lineno will be 0.
+ */
+extern int qpol_syn_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond);
 
+/**
+ *  Determine if the syntactic rule is enabled.  Unconditional rules
+ *  are always enabled.
+ *  @param handle Error handler for the policy database.
+ *  @param policy Policy associated with the rule.
+ *  @param rule The rule for which to get the conditional.
+ *  @param is_enabled Integer in which to store the result: set to 1
+ *  if enabled and 0 otherwise.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *lineno will be 0.
+ */
+extern int qpol_syn_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *is_enabled);
+
+#endif /* QPOL_SYN_RULE_QUERY_H */

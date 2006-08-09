@@ -1,7 +1,7 @@
 /**
  *  @file syn_rule_internal.h
  *  Protected definition for syntactic rules from the extended
- *  policy image. 
+ *  policy image.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -22,14 +22,16 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */ 
+ */
 #ifndef QPOL_SYN_RULE_INTERNAL_H
 #define QPOL_SYN_RULE_INTERNAL_H
 
 struct qpol_syn_rule {
 	avrule_t *rule;
+	cond_node_t *cond;
+        /** 0 if this rule is unconditional or in a conditional's true branch, 1 if in else */
+        int cond_branch;
 /*	char *mod_name; for later use */
 };
 
 #endif /* QPOL_SYN_RULE_INTERNAL_H */
- 
