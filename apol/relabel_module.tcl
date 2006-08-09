@@ -759,9 +759,9 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
                 " by " {} \
                 $source_type type_tag \
                 "\n" {}
-            Apol_Widget::appendSearchResultAVRule $res 6 $a_rule
+            Apol_Widget::appendSearchResultAVRules $res 6 $a_rule
             if {$a_rule != $b_rule} {
-                Apol_Widget::appendSearchResultAVRule $res 6 $b_rule
+                Apol_Widget::appendSearchResultAVRules $res 6 $b_rule
             }
         }
     }
@@ -835,9 +835,7 @@ proc Apol_Analysis_relabel::renderResultsRuleSubject {res tree node data} {
         [$tree itemcget $node -text] type_tag \
         "\n\n" {}
     eval $res.tb insert end $header
-    foreach rule $rules {
-        Apol_Widget::appendSearchResultAVRule $res 0 $rule
-    }
+    Apol_Widget::appendSearchResultAVRules $res 0 $rules
 }
 
 proc Apol_Analysis_relabel::expandTargetTypeSet {rule_num} {
