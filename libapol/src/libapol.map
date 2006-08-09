@@ -16,7 +16,7 @@
                 apol_fs_use_*;
                 apol_genfscon_*;
                 apol_get_*;
-                apol_handle_route_to_callback;
+                apol_handle_msg;
                 apol_infoflow_*;
                 apol_ipv4_addr_render;
                 apol_ipv6_addr_render;
@@ -41,6 +41,7 @@
                 apol_str_*;
                 apol_terule_*;
                 apol_type_*;
+		apol_types_relation_*;
                 apol_user_*;
                 apol_validatetrans_*;
                 apol_vector_*;
