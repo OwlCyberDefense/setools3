@@ -538,8 +538,6 @@ proc Apol_Analysis_directflow::renderResultsDirectFlow {res tree node data} {
         foreach {class_name rules} $c {break}
         $res.tb insert end "      " {} \
             $class_name\n subtitle
-        foreach r $rules {
-            Apol_Widget::appendSearchResultAVRule $res 12 $r
-        }
+        Apol_Widget::appendSearchResultAVRules $res 12 $rules
     }
 }
