@@ -514,7 +514,7 @@ static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(qpol_syn_rule_
 		return NULL;
 
 	for (node = table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)]; node; node = node->next) {
-		if (node->key->rule_type == key->rule_type &&
+		if (node->key->rule_type & key->rule_type &&
 			node->key->source_val == key->source_val &&
 			node->key->target_val == key->target_val &&
 			node->key->class_val == key->class_val &&
@@ -992,7 +992,7 @@ int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy
 		error = errno;
 		goto err;
 	}
-	key->rule_type = tmp_val;
+	key->rule_type = (tmp_val == QPOL_RULE_DONTAUDIT ? (AVRULE_AUDITDENY|AVRULE_DONTAUDIT) : tmp_val);
 
 	if (qpol_avrule_get_source_type(handle, policy, rule, &tmp_type)) {
 		error = errno;
