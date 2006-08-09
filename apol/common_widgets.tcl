@@ -380,16 +380,17 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}}
     }
     if {$is_binary} {
         set rules [lsort -command _sort_avrule_bin [lsort -unique $rule_list]]
-        if {$progressvar != {}} {
+        if {$varname != {}} {
             set progressvar "Rendering [llength $rules] semantic av rule(s)..."
+            update idletasks
         }
     } else {
         set rules [lsort -command _sort_avrule_source [apol_GetSynAVRulesList $rule_list]]
-        if {$progressvar != {}} {
+        if {$varname != {}} {
             set progressvar "Rendering [llength $rules] syntactic av rule(s)..."
+            update idletasks
         }
     }
-    update idletasks
 
     set num_enabled 0
     set num_disabled 0
@@ -446,16 +447,17 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}}
     }
     if {$is_binary} {
         set rules [lsort -command _sort_terule_bin [lsort -unique $rule_list]]
-        if {$progressvar != {}} {
+        if {$varname != {}} {
             set progressvar "Rendering [llength $rules] semantic type rule(s)..."
+            update idletasks
         }
     } else {
         set rules [lsort -command _sort_terule_source [apol_GetSynTERulesList $rule_list]]
-        if {$progressvar != {}} {
+        if {$varname != {}} {
             set progressvar "Rendering [llength $rules] syntactic type rule(s)..."
+            update idletasks
         }
     }
-    update idletasks
 
     set num_enabled 0
     set num_disabled 0

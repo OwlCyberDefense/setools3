@@ -69,8 +69,9 @@ proc Apol_Cond_Rules::cond_rules_search {} {
     }
     Apol_Widget::appendSearchResultText $widgets(results) $text
     set counter 1
-    foreach r [lsort $results] {
+    foreach r [lsort -index 0 $results] {
         renderConditional $r $counter
+        Apol_Widget::appendSearchResultText $widgets(results) "\n\n"
         incr counter
     }
 }
@@ -81,21 +82,11 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
     set text "conditional expression $cond_number: \[ [join $cond_expr] \]\n"
     append text "\nTRUE list:\n"
     Apol_Widget::appendSearchResultText $widgets(results) $text
-    foreach rule $true_list {
-        renderConditionalRule $rule
-    }
+    Apol_Widget::appendSearchResultAVRules $widgets(results) 4 [lindex $true_list 0]
+    Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $true_list 1]
     Apol_Widget::appendSearchResultText $widgets(results) "\nFALSE list:\n"
-    foreach rule $false_list {
-        renderConditionalRule $rule
-    }
-    Apol_Widget::appendSearchResultText $widgets(results) "\n\n"
-}
-
-proc Apol_Cond_Rules::renderConditionalRule {rule} {
-    variable widgets
-    foreach {rule_type source_set target_set class perm_default line_num cond_info} $rule {break}
-    Apol_Widget::appendSearchResultLine $widgets(results) 4 $line_num \
-        $cond_info $rule_type "\{ $source_set \}" "\{ $target_set \}" ":" $class "\{ $perm_default \}"
+    Apol_Widget::appendSearchResultAVRules $widgets(results) 4 [lindex $false_list 0]
+    Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $false_list 1]
 }
 
 ################################################################
