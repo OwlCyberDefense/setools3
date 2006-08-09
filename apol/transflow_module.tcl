@@ -879,10 +879,9 @@ proc Apol_Analysis_transflow::renderPath {res path_num path} {
     }
     $res.tb insert end \n {}
     foreach steps $path {
-        Apol_Widget::appendSearchResultAVRule $res 6 [lindex $steps 3 0]
-        foreach step [lrange [lindex $steps 3] 1 end] {
-            Apol_Widget::appendSearchResultAVRule $res 10 $step
-        }
+        set rules [lindex $steps 3]
+        Apol_Widget::appendSearchResultAVRules $res 6 [lindex $rules 0]
+        Apol_Widget::appendSearchResultAVRules $res 10 [lrange $rules 1 end]
     }
 }
 
