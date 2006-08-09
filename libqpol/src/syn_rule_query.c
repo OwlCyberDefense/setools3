@@ -321,7 +321,10 @@ int qpol_syn_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, 
 
 	internal_rule = rule->rule;
 
-	*rule_type = internal_rule->specified;
+	if (internal_rule->specified == AVRULE_DONTAUDIT)
+		*rule_type = QPOL_RULE_DONTAUDIT;
+	else
+		*rule_type = internal_rule->specified;
 
 	return STATUS_SUCCESS;
 }
