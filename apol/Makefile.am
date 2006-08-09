@@ -16,9 +16,7 @@ dist_pkgdata_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 
 BUILT_SOURCES = tmp.tcl
 
-AM_CFLAGS = -I$(top_srcdir)/libqpol/include \
-	-I$(top_srcdir)/libapol/include \
-	@TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
+AM_CFLAGS = @QPOL_CFLAGS@ @APOL_CFLAGS@ @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
 AM_LDFLAGS = @TCL_LIB_SPEC@ @TK_LIB_SPEC@
 
 apol_SOURCES = apol_gui.c \
@@ -38,12 +36,12 @@ apol_SOURCES = apol_gui.c \
 
 noinst_DATA = foo_module.tcl
 
-LDADD = $(top_srcdir)/libapol/src/libapol.a $(top_srcdir)/libqpol/src/libqpol.so @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
-apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol-tcl/libapol-tcl.a $(top_srcdir)/libapol/src/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/config.tcl
+LDADD = @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
+apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol-tcl/libapol-tcl.a $(top_srcdir)/libapol/src/libapol.so $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/config.tcl
 
 if WANT_LIBSEFS
-apol_LDADD = $(top_srcdir)/libapol-tcl/libapol-tcl.a $(top_srcdir)/libsefs/libsefs.a $(LDADD)
-apol_DEPENDENCIES += $(top_srcdir)/libsefs/libsefs.a
+apol_LDADD = $(top_srcdir)/libapol-tcl/libapol-tcl.a @SEFS_LIB_FLAG@ $(LDADD)
+apol_DEPENDENCIES += $(top_srcdir)/libsefs/libsefs.so
 else
 apol_LDADD = $(top_srcdir)/libapol-tcl/libapol-tcl.a $(LDADD)
 endif
@@ -68,13 +66,13 @@ tmp.tcl: $(TCL_STRIP_FILES)
 $(top_srcdir)/libapol/libapol-tcl.a:
 	$(MAKE) -C $(top_srcdir)/libapol-tcl $(notdir $@)
 
-$(top_srcdir)/libapol/libapol.a:
+$(top_srcdir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_srcdir)/libapol/src $(notdir $@)
 
 $(top_srcdir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_srcdir)/libqpol/src $(notdir $@)
 
-$(top_srcdir)/libsefs/libsefs.a:
+$(top_srcdir)/libsefs/libsefs.so:
 	$(MAKE) -C $(top_srcdir)/libsefs $(notdir $@)
 
 CLEANFILES = $(dist_bin_SCRIPTS)

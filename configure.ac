@@ -18,23 +18,55 @@ libapol_version=3.0.0
 libapol_soname=libapol.so.3
 libapol_tcl_soname=libapol-tcl.so.3
 
+libsefs_version=3.0.0
+libsefs_soname=libsefs.so.3
+
 libseaudit_version=3.0.0
 
 AC_CHECK_SIZEOF(char *)
 AC_C_BIGENDIAN
 AC_CHECK_FUNCS(rand_r)
 
+AC_ARG_ENABLE(shared, [  --enable-shared         link against shared libapol (default)], enable_shared="$enableval", enable_shared="yes")
+AC_MSG_CHECKING([for how to link against libraries])
+if test "x${enable_shared}" = xyes; then
+    use_shared=yes
+    AC_MSG_RESULT(shared)
+else
+    use_shared=no
+    AC_MSG_RESULT(static)
+fi
+
 AC_ARG_ENABLE(debug, [  --enable-debug          compile with full debugging support], enable_debug="$enableval")
 AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
     CFLAGS="-g3 -gdwarf-2 -O0 -Wall"
     LDFLAGS="-g"
-    QPOL_LIB_FLAG="-Wl,-rpath=../libqpol/src"
-    AC_SUBST(QPOL_LIB_FLAG)
+    QPOL_LIB_FLAG='$(top_srcdir)/libqpol/src/libqpol.so -Wl,-rpath=../libqpol/src'
+    APOL_LIB_FLAG='$(top_srcdir)/libapol/src/libapol.a -Wl,-rpath=../libapol/src'
+    SEFS_LIB_FLAG='$(top_srcdir)/libsefs/libsefs.a -Wl,-rpath=../libsefs/src'
     AC_MSG_RESULT(yes)
 else
+    if test ${use_shared} = yes; then
+        QPOL_LIB_FLAG='-L$(top_srcdir)/libqpol/src -lqpol'
+        APOL_LIB_FLAG='-L$(top_srcdir)/libapol/src -lapol'
+        SEFS_LIB_FLAG='-L$(top_srcdir)/libsefs -lsefs'
+    else
+        QPOL_LIB_FLAG='-L$(top_srcdir)/libqpol/src -lqpol'
+        APOL_LIB_FLAG='$(top_srcdir)/libapol/src/libapol.a'
+        SEFS_LIB_FLAG='$(top_srcdir)/libsefs/libsefs.a'
+    fi
     AC_MSG_RESULT(disabled)
 fi
+QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
+APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
+SEFS_CFLAGS='-I$(top_srcdir)/libsefs'
+AC_SUBST(QPOL_CFLAGS)
+AC_SUBST(APOL_CFLAGS)
+AC_SUBST(SEFS_CFLAGS)
+AC_SUBST(QPOL_LIB_FLAG)
+AC_SUBST(APOL_LIB_FLAG)
+AC_SUBST(SEFS_LIB_FLAG)
 
 AC_ARG_ENABLE(profiling, [  --enable-profiling      compile with gcov and gprof profiling support], enable_profiling="$enableval")
 AC_MSG_CHECKING([for profiling support])
@@ -44,17 +76,6 @@ if test "x${enable_profiling}" = xyes; then
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(disabled)
-fi
-
-AC_ARG_ENABLE(shared, [  --enable-shared         link against shared libapol instead of static libapol], enable_shared="$enableval")
-AC_MSG_CHECKING([for how to link against libraries])
-if test "x${enable_shared}" = xyes; then
-    use_shared=yes
-    AC_MSG_RESULT(shared)
-    ## FIX ME
-else
-    use_shared=no
-    AC_MSG_RESULT(static)
 fi
 
 dnl ** find the Tcl/Tk development libraries, then find BWidget
@@ -201,17 +222,20 @@ fi
 
 AC_ARG_ENABLE(sefs, [  --enable-sefs           allow file system analyses (default)
                           (requires SELinux development files)], sefs="$enableval", sefs="yes")
+AC_MSG_CHECKING([for file system analyses])
 if test "x${sefs}" = "xyes" ; then
    if test ${use_selinux} = no; then
       AC_MSG_ERROR([sefs requires a running SELinux system])
    fi
    use_sefs=yes
+   AC_MSG_RESULT(yes)
 else
    use_sefs=no
+   AC_MSG_RESULT(disabled)
 fi
 
 AC_ARG_ENABLE(sepol-src, [  --enable-sepol-src=PATH use another sepol source tree at PATH
-                          (developer only flag)], sepol_srcdir="$enableval", sepol_srcdir="${top_srcdir}/libqpol")
+                          (developer only flag)], sepol_srcdir="$enableval", sepol_srcdir='$(top_srcdir)/libqpol')
 AC_MSG_CHECKING([for sepol source tree])
 sepol_src_save_CFLAGS=${CFLAGS}
 CFLAGS="$CFLAGS -I${sepol_srcdir}/include -lsepol"
@@ -243,7 +267,7 @@ main ()
 EOF
     changequote([,])dnl
     CFLAGS="$CFLAGS -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
-    LDFLAGS="$LDFLAGS -L${sepol_devel_libdir} -L${selinux_devel_libdir} -lselinux -lsepol"  
+    LDFLAGS="$LDFLAGS -L${sepol_devel_libdir} -L${selinux_devel_libdir} -lselinux -lsepol"
     gcc ${CFLAGS} ${LDFLAGS} -o conftest conftest.c >&5
     selinux_policy_dir=`./conftest`
     AC_MSG_RESULT(${selinux_policy_dir})
@@ -287,11 +311,11 @@ dnl check for libglade
 AC_MSG_CHECKING([for libglade])
 GLADE_CFLAGS=`pkg-config --cflags libglade-2.0`
 if test -z "${GLADE_CFLAGS}"; then
-   AC_MSG_ERROR([could not find libglade headers]) 
+   AC_MSG_ERROR([could not find libglade headers])
 fi
 GLADE_LIBS=`pkg-config --libs libglade-2.0`
 if test -z "${GLADE_LIBS}"; then
-   AC_MSG_ERROR([could not find libglade libraries])          
+   AC_MSG_ERROR([could not find libglade libraries])
 fi
 AC_MSG_RESULT([yes])
 AC_SUBST(GLADE_CFLAGS)
@@ -313,22 +337,20 @@ AC_SUBST(XML_LIBS)
 
 dnl  todo:  dynamic, log file, sharedir
 dnl MANDIR			= $(PREFIX)/share/man
-dnl DEFAULT_LOG_FILE 	= /var/log/messages
+dnl DEFAULT_LOG_FILE	= /var/log/messages
 
 dnl set up variables here
 if test ${use_selinux} = "yes"; then
    AC_DEFINE(LIBSELINUX, 1, [enable libselinux-specific code])
-   LDADD="$LDADD -lselinux"
 fi
 
 if test ${use_sefs} = "yes"; then
    AC_DEFINE(LIBSEFS, 1, [enable analyses of a SELinux filesystem])
    AC_SUBST(use_sefs)
 fi
+
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
-
-AC_SUBST(use_shared)
 
 apol_install_dir=${datadir}/apol
 apol_help_dir=${datadir}/apol
@@ -341,6 +363,8 @@ AC_SUBST(libqpol_soname)
 AC_SUBST(libapol_version)
 AC_SUBST(libapol_soname)
 AC_SUBST(libapol_tcl_soname)
+AC_SUBST(libsefs_version)
+AC_SUBST(libsefs_soname)
 AC_SUBST(apol_install_dir)
 AC_SUBST(apol_help_dir)
 AC_SUBST(selinux_policy_dir)

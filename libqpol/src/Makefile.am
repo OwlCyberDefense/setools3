@@ -1,7 +1,7 @@
 sepol_srcdir = @sepol_srcdir@
 
 lib_LIBRARIES = libqpol.a
-qpolso_DATA = libqpol.so
+qpolso_DATA = @libqpol_soname@
 qpolsodir = $(libdir)
 
 AM_YFLAGS = -d
@@ -55,9 +55,12 @@ $(srcdir)/tmp_sepol: $(sepol_srcdir)/src/libsepol.a
 	cp $< $@
 	(cd $@; ar x libsepol.a)
 
-libqpol.so: $(srcdir)/tmp_sepol $(libqpol_so_OBJS) libqpol.map
+$(qpolso_DATA): $(srcdir)/tmp_sepol $(libqpol_so_OBJS) libqpol.map
 	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/src/libsepol.a -Wl,--no-whole-archive -lselinux
-	ln -sf $@ $(LIBQPOL_SONAME)
+	$(LN_S) -f $@ libqpol.so
+
+install-data-hook:
+	cd $(qpolsodir) && $(LN_S) -f $(qpolso_DATA) libqpol.so
 
 CLEANFILES = policy_parse.h policy_scan.c policy_parse.c
 
@@ -65,4 +68,4 @@ clean-local:
 	-rm -rf $(srcdir)/tmp_sepol
 
 mostlyclean-local:
-	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so
+	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so $(qpolso_DATA)

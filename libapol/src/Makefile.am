@@ -1,9 +1,9 @@
 lib_LIBRARIES = libapol.a
 
-apolso_DATA = libapol.so
+apolso_DATA = @libapol_soname@
 apolsodir = $(libdir)
 
-AM_CFLAGS = -fpic -I$(top_srcdir)/libqpol/include -I$(srcdir)/../include \
+AM_CFLAGS = -fpic @QPOL_CFLAGS@ -I$(srcdir)/../include \
 	-DAPOL_INSTALL_DIR='"${apol_install_dir}"' \
 	-DAPOL_HELP_DIR='"${apol_help_dir}"' \
 	-DLIBAPOL_POLICY_INSTALL_DIR='"@selinux_policy_dir@/policy"' \
@@ -46,9 +46,12 @@ LIBAPOL_SONAME = @libapol_soname@
 
 noinst_DATA = libapol.map
 
-libapol.so: $(libqpol_so_OBJS) libapol.map
+$(apolso_DATA): $(libapol_so_OBJS) libapol.map
 	$(CC) -shared -o $@ $(libapol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs -lqpol -L$(top_srcdir)/libqpol/src
-	ln -sf $@ $(LIBAPOL_SONAME)
+	$(LN_S) -f $@ libapol.so
+
+install-data-hook:
+	cd $(apolsodir) && $(LN_S) -f $(apolso_DATA) libapol.so
 
 mostlyclean-local:
-	-rm -rf *.gcno *.gcda *.gprof *.gcov libapol.so
+	-rm -rf *.gcno *.gcda *.gprof *.gcov libapol.so $(apolso_DATA)
