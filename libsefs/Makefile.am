@@ -28,6 +28,7 @@ libsqlite_a_SOURCES += \
 	sqlite/opcodes.h sqlite/os_unix.h sqlite/sqlite3.h \
 	sqlite/os_common.h sqlite/os_win.h sqlite/sqliteInt.h
 libsefs_a_LIBADD=libsqlite_a-*.o
+libsefs_a_DEPENDENCIES=libsqlite.a
 endif
 
 libsefs_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libsefs_a_SOURCES)))
