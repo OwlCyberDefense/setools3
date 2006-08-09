@@ -439,17 +439,13 @@ proc Apol_Analysis_tra::showSimilar {res name parent_data data} {
         " accesses " title \
         $name title_type \
         ":\n\n" title
-    foreach r $rulesA {
-         Apol_Widget::appendSearchResultAVRule $res 2 $r
-    }
+    Apol_Widget::appendSearchResultAVRules $res 2 $rulesA
     $res.tb insert end "\n" title \
         $typeB title_type \
         " accesses " title \
         $name title_type \
         ":\n\n" title
-    foreach r $rulesB {
-         Apol_Widget::appendSearchResultAVRule $res 2 $r
-    }
+    Apol_Widget::appendSearchResultAVRules $res 2 $rulesB
 }
 
 proc Apol_Analysis_tra::renderDissimilars {tree results} {
@@ -503,9 +499,7 @@ proc Apol_Analysis_tra::showDissimilar {res name parent_name data} {
         " accesses " title \
         $name title_type \
         ":\n\n" title
-    foreach r $data {
-         Apol_Widget::appendSearchResultAVRule $res 2 $r
-    }
+    Apol_Widget::appendSearchResultAVRules $res 2 $data
 }
 
 proc Apol_Analysis_tra::renderAllows {tree rules} {
@@ -514,9 +508,7 @@ proc Apol_Analysis_tra::renderAllows {tree rules} {
 
 proc Apol_Analysis_tra::showAllows {res data} {
     $res.tb insert end "TE Allow Rules ([llength $data]):\n\n" title
-    foreach r $data {
-         Apol_Widget::appendSearchResultAVRule $res 2 $r
-    }
+    Apol_Widget::appendSearchResultAVRules $res 2 $data
 }
 
 proc Apol_Analysis_tra::renderTypeRules {tree rules} {
@@ -559,9 +551,7 @@ proc Apol_Analysis_tra::showDirectFlow {res data} {
         foreach {class_name rules} $c {break}
         $res.tb insert end "      " {} \
             $class_name\n subtitle
-        foreach r $rules {
-            Apol_Widget::appendSearchResultAVRule $res 12 $r
-        }
+        Apol_Widget::appendSearchResultAVRules $res 12 $rules
     }
 }
 
@@ -639,17 +629,13 @@ proc Apol_Analysis_tra::showDTA {res data} {
     $res.tb insert end "Process Transition Rules: " subtitle \
         [llength $proctrans] num \
         "\n" subtitle
-    foreach p $proctrans {
-        Apol_Widget::appendSearchResultAVRule $res 6 $p
-    }
+    Apol_Widget::appendSearchResultAVRules $res 6 $proctrans
     if {[llength $setexec] > 0} {
         $res.tb insert end "\n" {} \
             "Setexec Rules: " subtitle \
             [llength $setexec] num \
             "\n" subtitle
-        foreach s $setexec {
-            Apol_Widget::appendSearchResultAVRule $res 6 $s
-        }
+        Apol_Widget::appendSearchResultAVRules $res 6 $setexec
     }
     $res.tb insert end "\nEntry Point File Types: " subtitle \
         [llength $ep] num
@@ -660,26 +646,20 @@ proc Apol_Analysis_tra::showDTA {res data} {
             "File Entrypoint Rules: " subtitle \
             [llength $entrypoint] num \
             "\n" subtitle
-        foreach e $entrypoint {
-            Apol_Widget::appendSearchResultAVRule $res 12 $e
-        }
+        Apol_Widget::appendSearchResultAVRules $res 12 $entrypoint
         $res.tb insert end "\n" {} \
             "            " {} \
             "File Execute Rules: " subtitle \
             [llength $execute] num \
             "\n" subtitle
-        foreach e $execute {
-            Apol_Widget::appendSearchResultAVRule $res 12 $e
-        }
+        Apol_Widget::appendSearchResultAVRules $res 12 $execute
         if {[llength $type_trans] > 0} {
             $res.tb insert end "\n" {} \
                 "            " {} \
                 "Type_transition Rules: " subtitle \
                 [llength $type_trans] num \
                 "\n" subtitle
-            foreach t $type_trans {
-                Apol_Widget::appendSearchResultTERule $res 12 $t
-            }
+            Apol_Widget::appendSearchResultTERules $res 12 $type_trans
         }
     }
     if {[llength $access_list] > 0} {
@@ -687,8 +667,6 @@ proc Apol_Analysis_tra::showDTA {res data} {
             "The access filters you specified returned the following rules: " subtitle \
             [llength $access_list] num \
             "\n" subtitle
-        foreach a $access_list {
-            Apol_Widget::appendSearchResultAVRule $res 6 $a
-        }
+        Apol_Widget::appendSearchResultAVRule $res 6 $access_list
     }
 }
