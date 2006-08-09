@@ -585,12 +585,14 @@ static int qpol_syn_rule_table_insert_entry(qpol_handle_t *handle,
  *  @param polciy Policy associated with the rule.
  *  @param table The table to which to add the rule.
  *  @param rule The rule to add.
- *  @param cond The conditional associated with the rule (NULL if unconditional).
- *  with the rule (needed for conditional tracking).
+ *  @param cond The conditional associated with the rule (NULL if
+ *  unconditional).  with the rule (needed for conditional tracking).
+ *  @param branch If the rule is conditional, then 0 if in the true
+ *  branch, 1 if in else.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and the table may be in an inconsistent state.
  */
-static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_rule_table_t *table, avrule_t *rule, cond_node_t *cond)
+static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_rule_table_t *table, avrule_t *rule, cond_node_t *cond, int branch)
 {
 	int error = 0, created = 0;
 	qpol_syn_rule_key_t *key = NULL;
@@ -614,6 +616,8 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 		goto err;
 	}
 	new_rule->rule = rule;
+	new_rule->cond = cond;
+	new_rule->cond_branch = branch;
 
 	policy->ext->syn_rule_master_list[policy->ext->master_list_sz] = new_rule;
 	policy->ext->master_list_sz++;
@@ -796,20 +800,20 @@ static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t
 			continue;
 
 		for (cur_rule = decl->avrules; cur_rule; cur_rule = cur_rule->next) {
-			if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, NULL)) {
+			if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, NULL, 0)) {
 				error = errno;
 				goto err;
 			}
 		}
 		for (cur_cond = decl->cond_list; cur_cond; cur_cond = cur_cond->next) {
 			for (cur_rule = cur_cond->avtrue_list; cur_rule; cur_rule = cur_rule->next) {
-				if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, cur_cond)) {
+				if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, cur_cond, 0)) {
 					error = errno;
 					goto err;
 				}
 			}
 			for (cur_rule = cur_cond->avfalse_list; cur_rule; cur_rule = cur_rule->next) {
-				if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, cur_cond)) {
+				if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, cur_cond, 1)) {
 					error = errno;
 					goto err;
 				}
