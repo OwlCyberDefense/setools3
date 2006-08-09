@@ -726,7 +726,7 @@ proc Apol_Widget::_render_typeset {typeset} {
         if {[lindex $typeset 0] == "~"} {
             set typeset "~\{[lrange $typeset 1 end]\}"
         } else {
-            set typeset "~\{$typeset\}"
+            set typeset "\{$typeset\}"
         }
     } else {
         set typeset
