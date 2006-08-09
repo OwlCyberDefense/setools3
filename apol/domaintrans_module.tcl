@@ -859,17 +859,13 @@ proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
     $res.tb insert end "Process Transition Rules: " subtitle \
         [llength $proctrans] num \
         "\n" subtitle
-    foreach p $proctrans {
-        Apol_Widget::appendSearchResultAVRule $res 6 $p
-    }
+    Apol_Widget::appendSearchResultAVRules $res 6 $proctrans
     if {[llength $setexec] > 0} {
         $res.tb insert end "\n" {} \
             "Setexec Rules: " subtitle \
             [llength $setexec] num \
             "\n" subtitle
-        foreach s $setexec {
-            Apol_Widget::appendSearchResultAVRule $res 6 $s
-        }
+        Apol_Widget::appendSearchResultAVRules $res 6 $setexec
     }
     $res.tb insert end "\nEntry Point File Types: " subtitle \
         [llength $ep] num
@@ -880,26 +876,20 @@ proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
             "File Entrypoint Rules: " subtitle \
             [llength $entrypoint] num \
             "\n" subtitle
-        foreach e $entrypoint {
-            Apol_Widget::appendSearchResultAVRule $res 12 $e
-        }
+        Apol_Widget::appendSearchResultAVRules $res 12 $entrypoint
         $res.tb insert end "\n" {} \
             "            " {} \
             "File Execute Rules: " subtitle \
             [llength $execute] num \
             "\n" subtitle
-        foreach e $execute {
-            Apol_Widget::appendSearchResultAVRule $res 12 $e
-        }
+        Apol_Widget::appendSearchResultAVRules $res 12 $execute
         if {[llength $type_trans] > 0} {
             $res.tb insert end "\n" {} \
                 "            " {} \
                 "Type_transition Rules: " subtitle \
                 [llength $type_trans] num \
                 "\n" subtitle
-            foreach t $type_trans {
-                Apol_Widget::appendSearchResultTERule $res 12 $t
-            }
+            Apol_Widget::appendSearchResultTERules $res 12 $type_trans
         }
     }
     if {[llength $access_list] > 0} {
@@ -907,8 +897,6 @@ proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
             "The access filters you specified returned the following rules: " subtitle \
             [llength $access_list] num \
             "\n" subtitle
-        foreach a $access_list {
-            Apol_Widget::appendSearchResultAVRule $res 6 $a
-        }
+        Apol_Widget::appendSearchResultAVRules $res 6 $access_list
     }
 }
