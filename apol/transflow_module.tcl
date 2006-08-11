@@ -802,14 +802,10 @@ proc Apol_Analysis_transflow::createResultsNodes {tree parent_node results do_ex
     foreach r $results {
         foreach {flow_dir source target length steps} $r {break}
         if {!$do_expand} {
-            set expanded_list [lindex $results 0 2]
-        } else {
-            set expanded_list [apol_ExpandType $target]
+            set target [lindex $results 0 2]
         }
-        foreach t $expanded_list {
-            lappend all_targets $t
-            lappend paths($t) [list $length $steps]
-        }
+        lappend all_targets $target
+        lappend paths($target) [list $length $steps]
     }
     foreach t [lsort -uniq $all_targets] {
         set sorted_paths {}

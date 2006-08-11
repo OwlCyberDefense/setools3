@@ -1170,7 +1170,7 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
  *   <li>list of rule pairs that can be relabeled to and from
  * </ul>
  *
- * A rule pair consists of two qpol_avrule_t pointers and a 
+ * A rule pair consists of two qpol_avrule_t pointers and a
  * type name.
  *
  * Rules are unique identifiers (relative to currently loaded policy).

@@ -219,7 +219,7 @@ proc Apol_Analysis::analyze {which_button} {
 
     set m [$widgets(search_opts) raise]
     set tabs(analyses_done) -1
-    set tabs(analyses_text) "Performing $vals($m:name) Analysis"
+    set tabs(analyses_text) "Performing $vals($m:name) Analysis..."
     ProgressDlg .analysis_busy -title "$vals($m:name) Analysis" \
         -type normal -stop {} -separator 1 -parent . -maximum 2 \
         -width [string length $tabs(analyses_text)] \
