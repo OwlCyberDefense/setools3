@@ -54,8 +54,6 @@ int qpol_src_yyinput(char *buf, int max_size);
 
 %}
 
-
-
 %option nounput
 %option noyywrap
 
@@ -252,7 +250,6 @@ H2				{ return(H2); }
 "*"				{ return(yytext[0]); } 
 .                               { yywarn("unrecognized character");}
 %%
-
 int yyerror(char *msg)
 {
 	if (source_file[0])
