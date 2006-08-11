@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 /* command line parsing commands */
-#define _GNU_SOURCE
 #include <getopt.h>
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
@@ -42,10 +41,10 @@ static void sefs_double_array_print(char **array,int size)
 
 }
 
-static void sefs_search_keys_ret_print(sefs_search_ret_t *key) 
+static void sefs_search_keys_ret_print(sefs_search_ret_t *key)
 {
 	sefs_search_ret_t *curr = NULL;
-	
+
 	/* walk the linked list	 */
 	curr = key;
 	if (curr == NULL) {
@@ -110,7 +109,7 @@ int main(int argc, char **argv, char **envp)
 
 	while ((optc = getopt_long (argc, argv, "t:u:m:p:o:rlhv", longopts, NULL)) != -1)  {
 		switch (optc) {
-		case 't': /* type */	
+		case 't': /* type */
 			if((holder = (const char**)realloc(search_keys.type,sizeof(char *)*(search_keys.num_type+1))) == NULL){
 				printf("Out of memory\n");
 				return 1;
@@ -178,19 +177,19 @@ int main(int argc, char **argv, char **envp)
 	if (argc - optind > 1 || argc - optind < 1) {
 		usage(argv[0], 1);
 		exit(-1);
-	} else 
+	} else
 		filename = argv[optind];
 
 	if (sefs_filesystem_db_load(&fsdata,filename) == -1 ){
 		fprintf(stderr, "sefs_filesystem_data_load failed\n");
 		return -1;
 	}
-	
+
 	if (list == 1) {
 		if ((list_ret = sefs_filesystem_db_get_known(&fsdata, &list_sz, SEFS_TYPES)) != NULL) {
 			sefs_double_array_print(list_ret, list_sz);
 			sefs_double_array_destroy(list_ret, list_sz);
-		} 
+		}
 	}
 	else {
 		sefs_filesystem_db_search(&fsdata,&search_keys);

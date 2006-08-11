@@ -2,6 +2,7 @@ AC_INIT(setools, 3.0, [Tresys Technology <setools@tresys.com>], [setools])
 AC_CONFIG_SRCDIR(awish/awish.c)
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(setools, 3.0)
+AC_GNU_SOURCE
 AC_PROG_CC
 AC_LANG_C
 AC_HEADER_STDC

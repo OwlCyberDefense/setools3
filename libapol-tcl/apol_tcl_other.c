@@ -27,7 +27,6 @@
 
 #include <config.h>
 
-#define _GNU_SOURCE
 #include <stdarg.h>
 #include <string.h>
 #include <tcl.h>
