@@ -105,6 +105,7 @@ static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t
 	char *tmp_name = NULL, buff[10];
 	int error = 0, retv;
 
+	INFO(handle, "%s", "Generating attributes for policy.");
 	if (handle == NULL || policy == NULL) {
 		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -357,6 +358,7 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 	avtab_ptr_t rule = NULL;
 	int error = 0;
 
+	INFO(handle, "%s", "Building conditional rules tables.");
 	if (!handle || !policy) {
 		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -783,6 +785,13 @@ static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t
 			}
 		}
 	}
+
+	if (policy->ext->master_list_sz == 0) {
+		policy->ext->syn_rule_master_list = NULL;
+		return 0;	 /* policy is not a source policy */
+	}
+
+	INFO(handle, "%s", "Building syntactic rules tables.");
 
 	policy->ext->syn_rule_master_list = calloc(policy->ext->master_list_sz, sizeof(struct qpol_syn_rule*));
 	if (!policy->ext->syn_rule_master_list) {
