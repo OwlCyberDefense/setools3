@@ -662,21 +662,10 @@ proc Apol_Analysis_relabel::renderResultsObject {results tree} {
     } else {
         set dir from
     }
-    foreach r $results {
-        foreach {to from both} $r {break}
-        set expanded_type [expandTargetTypeSet [lindex $from 0]]
-        if {$expanded_type == {}} {
-            set expanded_type $target_type
-        }
-        foreach type $expanded_type {
-            foreach a $to b $from {
-                lappend types($type) [list $a $b]
-            }
-        }
-    }
-    foreach key [lsort [array names types]] {
-        set types($key) [lsort -unique $types($key)]
-        $tree insert end top o:$dir:\#auto -text $key -data $types($key)
+    foreach r [lsort -index 0 $results] {
+        foreach {type to from both} $r {break}
+        set pairs [lsort -unique [concat $to $from $both]]
+        $tree insert end top o:$dir:\#auto -text $type -data $pairs
     }
 
     set top_text [list "Direct Relabel Analysis: " title]
@@ -688,13 +677,13 @@ proc Apol_Analysis_relabel::renderResultsObject {results tree} {
     lappend top_text $vals(type) title_type \
         "\n\n" title \
         $vals(type) type_tag
-    if {[llength [array names types]] > 0} {
+    if {[llength $results]} {
         switch -- $dir {
             both { lappend top_text " can be relabeled to and from " {} }
             to   { lappend top_text " can be relabeled to " {} }
             from { lappend top_text " can be relabeled from " {} }
         }
-        lappend top_text [llength [array names types]] num \
+        lappend top_text [llength $results] num \
             " type(s).\n\n" {} \
             "This tab provides the results of a Direct Relabel Analysis beginning\n" {}
         switch -- $dir {
@@ -722,8 +711,7 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
     lappend header " can be relabeled:\n" {}
     eval $res.tb insert end $header
 
-    # the search direction is embedded within the node ID
-    regexp -- {^[^:]+:([^:]+)} $node -> dir
+    set dir [lindex [split $node :] 1]
     set target_type [$tree itemcget $node -text]
     foreach rule_pairs $data {
         set class [apol_RenderAVRuleClass [lindex $rule_pairs 0]]
@@ -732,9 +720,8 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
     foreach key [lsort [array names classes]] {
         $res.tb configure -state normal
         $res.tb insert end "\n$key:\n" title
-        foreach rule_pairs $classes($key) {
-            foreach {a_rule b_rule} $rule_pairs {break}
-            set source_type [apol_RenderAVRuleSource $a_rule]
+        foreach rule_pairs [lsort -index 2 $classes($key)] {
+            foreach {a_rule b_rule intermed} $rule_pairs {break}
 
             # determine direction of relabelling
             if {$dir == "to" || $dir == "from"} {
@@ -744,10 +731,11 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
                 set b_perms [apol_RenderAVRulePerms $b_rule]
                 if {[lsearch $a_perms "relabelto"] >= 0 && \
                         [lsearch $a_perms "relabelfrom"] >= 0 && \
-                        $a_rule == $b_rule} {
+                        [lsearch $b_perms "relabelto"] >= 0 && \
+                        [lsearch $b_perms "relabelfrom"] >= 0} {
                     set dir_string "to and from"
-                } elseif {[lsearch $a_perms "relabelfrom"] >= 0 &&
-                          [lsearch $b_perms "relabelto"] >= 0} {
+                } elseif {[lsearch $a_perms "relabelto"] >= 0 &&
+                          [lsearch $b_perms "relabelfrom"] >= 0} {
                     set dir_string "to"
                 } else {
                     set dir_string "from"
@@ -757,7 +745,7 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
             $res.tb insert end "\n  $dir_string " num \
                 $target_type type_tag \
                 " by " {} \
-                $source_type type_tag \
+                $intermed type_tag \
                 "\n" {}
             Apol_Widget::appendSearchResultAVRules $res 6 $a_rule
             if {$a_rule != $b_rule} {
@@ -769,42 +757,39 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
 
 proc Apol_Analysis_relabel::renderResultsSubject {results tree} {
     variable vals
-    foreach {to from both} [lindex $results 0] {}  ;# only first element used
     set to_count 0
     set from_count 0
 
-    if {[llength $to] + [llength $both]} {
-        $tree insert end top to -text "To" -drawcross auto
+    foreach r $results {
+        foreach {type to from both} $r {break}
         foreach rule [concat $to $both] {
-            foreach t [expandTargetTypeSet $rule] {
-                lappend to_types($t) $rule
-            }
+            lappend to_types($type) [lindex $rule 0]  ;# second half of pair is NULL
         }
-        set to_count [llength [array names to_types]]
-        foreach type [lsort -index 0 [array names to_types]] {
-            $tree insert end to s\#auto -text $type -data [list to $to_types($type)]
+        foreach rule [concat $from $both] {
+            lappend from_types($type) [lindex $rule 0]
         }
+    }
+    set to_count [llength [array names to_types]]
+    if {$to_count} {
         set to_text [list $vals(type) title_type " can relabel to " {} ]
         lappend to_text $to_count num \
             " type(s). Open the subtree of this item to view the list of types." {}
-        $tree itemconfigure to -data $to_text
+        $tree insert end top to -text "To" -data $to_text -drawcross auto
+        foreach type [lsort [array names to_types]] {
+            set rules [lsort -unique $to_types($type)]
+            $tree insert end to s\#auto -text $type -data [list to $rules]
+        }
     }
-
-    if {[llength $from] + [llength $both]} {
-        $tree insert end top from -text "From" -drawcross auto
-        foreach rule [concat $from $both] {
-            foreach t [expandTargetTypeSet $rule] {
-                lappend from_types($t) $rule
-            }
-        }
-        set from_count [llength [array names from_types]]
-        foreach type [lsort -index 0 [array names from_types]] {
-            $tree insert end from s\#auto -text $type -data [list from $from_types($type)]
-        }
+    set from_count [llength [array names from_types]]
+    if {$from_count} {
         set from_text [list $vals(type) title_type " can relabel from " {} ]
         lappend from_text $from_count num \
             " type(s). Open the subtree of this item to view the list of types." {}
-        $tree itemconfigure from -data $from_text
+        $tree insert end top from -text "From" -data $from_text -drawcross auto
+        foreach type [lsort [array names from_types]] {
+            set rules [lsort -unique $from_types($type)]
+            $tree insert end from s\#auto -text $type -data [list from $rules]
+        }
     }
 
     set top_text [list "Direct Relabel Analysis: Subject: " title]
@@ -832,21 +817,8 @@ proc Apol_Analysis_relabel::renderResultsRuleSubject {res tree node data} {
     foreach {dir rules} $data {break}
     set header [list [$tree itemcget top -text] title_type]
     lappend header " can relabel $dir " {} \
-        [$tree itemcget $node -text] type_tag \
+        [$tree itemcget $node -text] title_type \
         "\n\n" {}
     eval $res.tb insert end $header
     Apol_Widget::appendSearchResultAVRules $res 0 $rules
-}
-
-proc Apol_Analysis_relabel::expandTargetTypeSet {rule_num} {
-    set orig_type_set [apol_RenderAVRuleTarget $rule_num]
-    set exp_type_set {}
-    foreach t $orig_type_set {
-        set exp_type_set [concat $exp_type_set [lindex [apol_GetAttribs $t] 0 1]]
-    }
-    if {$exp_type_set != {}} {
-        return [lsort -unique $exp_type_set]
-    } else {
-        return $orig_type_set
-    }
 }
