@@ -18,8 +18,6 @@
 #include "preferences.h"
 #include "seaudit_callback.h"
 #include "report_window.h"
-#include <libapol/policy-io.h>
-#include <libapol/util.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -84,7 +82,7 @@ seaudit_t* seaudit_init(void)
 void seaudit_destroy(seaudit_t *seaudit_app)
 {
 	if (seaudit_app->cur_policy)
-		close_policy(seaudit_app->cur_policy);
+		apol_policy_destroy(&seaudit_app->cur_policy);
 	seaudit_callbacks_free();
 	if (seaudit_app->log_file_ptr)
 		fclose(seaudit_app->log_file_ptr);
@@ -160,7 +158,7 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 		gtk_label_set_text(v_status_bar, ver_str);
 		seaudit_policy_menu_items_update(TRUE);
 	} else {
-		snprintf(str, STR_SIZE, "Policy Version: %s", (tmp = get_policy_version_type_mls_str(seaudit->cur_policy)));
+		snprintf(str, STR_SIZE, "Policy Version: %s", apol_policy_get_version_type_mls_str(seaudit->cur_policy));
 		free(tmp);
 		gtk_label_set_text(v_status_bar, str);
 		seaudit_policy_menu_items_update(FALSE);
@@ -180,14 +178,15 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 		else 
 			num_filtered_log_msgs = 0;
 
-		num_log_msgs = seaudit->cur_log->num_msgs;
+		num_log_msgs = apol_vector_get_size(seaudit->cur_log->msg_list);
 		snprintf(str, STR_SIZE, "Log Messages: %d/%d", num_filtered_log_msgs, num_log_msgs);
 		gtk_label_set_text(l_status_bar, str);
 		if (num_log_msgs > 0) {
-			strftime(old_time, TIME_SIZE, "%b %d %H:%M:%S" , 
-				 seaudit->cur_log->msg_list[0]->date_stamp);
-			strftime(recent_time, TIME_SIZE, "%b %d %H:%M:%S", 
-				 seaudit->cur_log->msg_list[num_log_msgs-1]->date_stamp);
+			msg_t *msg;	
+			msg = apol_vector_get_element(seaudit->cur_log->msg_list, 0);
+			strftime(old_time, TIME_SIZE, "%b %d %H:%M:%S", msg->date_stamp); 
+			msg = apol_vector_get_element(seaudit->cur_log->msg_list, num_log_msgs - 1);
+			strftime(recent_time, TIME_SIZE, "%b %d %H:%M:%S", msg->date_stamp);
 			snprintf(str, STR_SIZE, "Dates: %s - %s", old_time, recent_time);
 			gtk_label_set_text(d_status_bar, str);
 		} else {
@@ -202,9 +201,8 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 
 int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 {
-	unsigned int opts;
 	FILE *file;
-	policy_t *tmp_policy = NULL;
+	apol_policy_t *tmp_policy = NULL;
 	int rt;
 	const int SEAUDIT_STR_SZ = 128;
 	GString *msg;
@@ -259,12 +257,14 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 	} else 
 		fclose(file);
 	
+/*
 	opts = POLOPT_AV_RULES | POLOPT_USERS | POLOPT_ROLES;
+*/
 	
-	rt = open_partial_policy(filename, opts, &tmp_policy);
+	rt = apol_policy_open(filename, &tmp_policy);
 	if (rt != 0) {
 		if (tmp_policy)
-			close_policy(tmp_policy);
+			apol_policy_destroy(&tmp_policy);
 		msg = g_string_new("");
 		g_string_append(msg, "The specified file does not appear to be a valid\nSE Linux Policy\n\n");
 		message_display(seaudit->window->window, GTK_MESSAGE_ERROR, msg->str);
@@ -272,10 +272,11 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 		return -1;
 	}
 	if (seaudit->cur_policy)
-		close_policy(seaudit->cur_policy);
+		apol_policy_destroy(&seaudit->cur_policy);
 	seaudit->cur_policy = tmp_policy;
+
 	g_string_assign(seaudit->policy_file, filename);
-	if (!is_binary_policy(seaudit_app->cur_policy)) {
+	if (apol_policy_is_binary(seaudit_app->cur_policy)) {
 		seaudit_read_policy_conf(filename);
 	}
 	policy_load_signal_emit();
@@ -403,8 +404,8 @@ static int seaudit_export_selected_msgs_to_file(const audit_log_view_t *log_view
 				return -1;	
 			}
 			fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
-			msg_list_idx = log_view->fltr_msgs[fltr_msg_idx];
-			message = audit_log->msg_list[msg_list_idx];
+			msg_list_idx = fltr_msg_idx;
+			message = apol_vector_get_element(audit_log->msg_list, msg_list_idx);
 			
 			message_header = (char*) malloc((TIME_SIZE + STR_SIZE) * sizeof(char));
 			if (message_header == NULL) {
@@ -415,7 +416,7 @@ static int seaudit_export_selected_msgs_to_file(const audit_log_view_t *log_view
 				return -1;
 			}
 	
-			generate_message_header(message_header, audit_log, message->date_stamp, message->host);
+			generate_message_header(message_header, audit_log, message->date_stamp, (char *)audit_log_get_host(audit_log, message->host));
 			if (message->msg_type == AVC_MSG)
 				write_avc_message_to_file(log_file, message->msg_data.avc_msg, message_header, audit_log);
 			else if (message->msg_type == LOAD_POLICY_MSG)
@@ -524,13 +525,13 @@ int seaudit_write_log_file(const audit_log_view_t *log_view, const char *filenam
 		return -1;
 	}
 	
-	for (i = 0; i < audit_log->num_msgs; i++) {	
-		message = audit_log->msg_list[i];
+	for (i = 0; i < apol_vector_get_size(audit_log->msg_list); i++) {	
+		message = apol_vector_get_element(audit_log->msg_list,i );
 		/* If the multifilter member is NULL, then there are no 
 		 * filters for this view, so all messages are ok for writing to file. */
 		if (log_view->multifilter == NULL || 
 		    seaudit_multifilter_should_message_show(log_view->multifilter, message, audit_log)) {
-			generate_message_header(message_header, audit_log, message->date_stamp, message->host);
+			generate_message_header(message_header, audit_log, message->date_stamp, (char *)audit_log_get_host(audit_log, message->host));
 
 			if (message->msg_type == AVC_MSG)
 				write_avc_message_to_file(log_file, message->msg_data.avc_msg, message_header, audit_log);
@@ -549,15 +550,13 @@ int seaudit_write_log_file(const audit_log_view_t *log_view, const char *filenam
 	return 0;
 }
 
-void generate_message_header(char *message_header, audit_log_t *audit_log, struct tm *date_stamp, int host)
+void generate_message_header(char *message_header, audit_log_t *audit_log, struct tm *date_stamp, char *host)
 {
 	assert(message_header != NULL && audit_log != NULL && date_stamp != NULL);
 
 	strftime(message_header, TIME_SIZE, "%b %d %T", date_stamp);
-	if (audit_log_get_host(audit_log, host)) {
-		strcat(message_header, " ");
-		strcat(message_header, audit_log_get_host(audit_log, host));
-	}
+	strcat(message_header, " ");
+	strcat(message_header, host);
 	strcat(message_header, " kernel: ");
 
 	return;
@@ -575,8 +574,8 @@ void write_avc_message_to_file(FILE *log_file, const avc_msg_t *message, const c
 		
 	fprintf(log_file, "avc:  %s  {", ((message->msg == AVC_GRANTED) ? "granted" : "denied"));
 
-	for (i = 0; i < message->num_perms; i++)
-		fprintf(log_file, " %s", audit_log_get_perm(audit_log, message->perms[i]));
+	for (i = 0; i < apol_vector_get_size(message->perms); i++)
+		fprintf(log_file, " %s", audit_log_get_perm(audit_log, (int)apol_vector_get_element(message->perms,i)));
 
 	fprintf(log_file, " } for ");
 
@@ -647,14 +646,16 @@ void write_avc_message_to_file(FILE *log_file, const avc_msg_t *message, const c
 		fprintf(log_file, " key=%i", message->key);
 
 	if (message->is_src_con)
-		fprintf(log_file, " scontext=%s:%s:%s", audit_log_get_user(audit_log, message->src_user),
-			                                audit_log_get_role(audit_log, message->src_role), 
-			                                audit_log_get_type(audit_log, message->src_type));
+		fprintf(log_file, " scontext=%s:%s:%s",
+			audit_log_get_user(audit_log, message->src_user),
+			audit_log_get_role(audit_log, message->src_role), 
+			audit_log_get_type(audit_log, message->src_type));
 
 	if (message->is_tgt_con)
-		fprintf(log_file, " tcontext=%s:%s:%s", audit_log_get_user(audit_log, message->tgt_user),
-			                                audit_log_get_role(audit_log, message->tgt_role), 
-			                                audit_log_get_type(audit_log, message->tgt_type));
+		fprintf(log_file, " tcontext=%s:%s:%s", 
+			audit_log_get_user(audit_log, message->tgt_user), 
+			audit_log_get_role(audit_log, message->tgt_role), 
+			audit_log_get_type(audit_log, message->tgt_type));
 
 	if (message->is_obj_class)
 		fprintf(log_file, " tclass=%s", audit_log_get_obj(audit_log, message->obj_class));
@@ -713,8 +714,8 @@ write_avc_message_to_gtk_text_buf(GtkTextBuffer *buffer, const avc_msg_t *messag
 		
 	g_string_append_printf(str, "avc:  %s  {", ((message->msg == AVC_GRANTED) ? "granted" : "denied"));
 
-	for (i = 0; i < message->num_perms; i++)
-		g_string_append_printf(str, " %s", audit_log_get_perm(audit_log, message->perms[i]));
+	for (i = 0; i < apol_vector_get_size(message->perms); i++)
+		g_string_append_printf(str, " %s", audit_log_get_perm(audit_log, (int)apol_vector_get_element(message->perms,i)));
 
 	g_string_append_printf(str, " } for ");
 
@@ -785,14 +786,16 @@ write_avc_message_to_gtk_text_buf(GtkTextBuffer *buffer, const avc_msg_t *messag
 		g_string_append_printf(str, " key=%i", message->key);
 
 	if (message->is_src_con)
-		g_string_append_printf(str, " scontext=%s:%s:%s", audit_log_get_user(audit_log, message->src_user),
-			                                audit_log_get_role(audit_log, message->src_role), 
-			                                audit_log_get_type(audit_log, message->src_type));
+		g_string_append_printf(str, " scontext=%s:%s:%s", 
+					audit_log_get_user(audit_log, message->src_user), 
+					audit_log_get_role(audit_log, message->src_role), 
+					audit_log_get_type(audit_log, message->src_type));
 
 	if (message->is_tgt_con)
-		g_string_append_printf(str, " tcontext=%s:%s:%s", audit_log_get_user(audit_log, message->tgt_user),
-			                                audit_log_get_role(audit_log, message->tgt_role), 
-			                                audit_log_get_type(audit_log, message->tgt_type));
+		g_string_append_printf(str, " tcontext=%s:%s:%s", 
+					audit_log_get_user(audit_log, message->tgt_user), 
+					audit_log_get_role(audit_log, message->tgt_role), 
+					audit_log_get_type(audit_log, message->tgt_type));
 
 	if (message->is_obj_class)
 		g_string_append_printf(str, " tclass=%s", audit_log_get_obj(audit_log, message->obj_class));
@@ -923,11 +926,11 @@ int main(int argc, char **argv)
                         /* There was no default policy file specified at the command-line or
                          * in the users .seaudit file, so use the policy default logic from 
                          * libapol. With seaudit we prefer the source policy over binary. */
-                        rt = find_default_policy_file((POL_TYPE_SOURCE | POL_TYPE_BINARY), &policy_file);
+                        rt = qpol_find_default_policy_file((QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY), &policy_file);
                         if (rt == GENERAL_ERROR) {
                         	exit(1);	
                         } else if (rt != FIND_DEFAULT_SUCCESS) {
-                        	printf("Default policy search failed: %s\n", find_default_policy_file_strerr(rt));
+                        	printf("Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
                         	/* no policy to use, so warn the user and then start up without a default policy. */
                                 msg = g_string_new("Could not find system default policy to open. \nUse the File menu to open a policy");
                                 message_display(seaudit_app->window->window,
@@ -1117,8 +1120,8 @@ seaudit_window_view_entire_message_in_textbox(int *tree_item_idx)
 		fltr_msg_idx = *tree_item_idx;	
 	}
 
-	msg_list_idx = log_view->fltr_msgs[fltr_msg_idx];
-	message = audit_log->msg_list[msg_list_idx];
+	msg_list_idx = fltr_msg_idx;
+	message = apol_vector_get_element(audit_log->msg_list, msg_list_idx);
 	
 	message_header = (char*) malloc((TIME_SIZE + STR_SIZE) * sizeof(char));
 	if (message_header == NULL) {
@@ -1130,7 +1133,7 @@ seaudit_window_view_entire_message_in_textbox(int *tree_item_idx)
 		return;
 	}
 
-	generate_message_header(message_header, audit_log, message->date_stamp, message->host);
+	generate_message_header(message_header, audit_log, message->date_stamp, (char *)audit_log_get_host(audit_log, message->host));
 	if (message->msg_type == AVC_MSG)
 		write_avc_message_to_gtk_text_buf(buffer, message->msg_data.avc_msg, message_header, audit_log);
 	else if (message->msg_type == LOAD_POLICY_MSG)
@@ -1228,7 +1231,7 @@ void seaudit_on_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	gtk_container_add(GTK_CONTAINER(window), scroll);
 	gtk_container_add(GTK_CONTAINER(scroll), text_view);
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));	
-	dir = apol_find_file("seaudit_help.txt");
+	dir = apol_file_find("seaudit_help.txt");
 	if (!dir) {
 		string = g_string_new("");
 		g_string_assign(string, "Can not find help file");

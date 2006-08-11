@@ -32,7 +32,7 @@ typedef struct seaudit_criteria {
 	seaudit_criteria_action_t criteria_act; /* function to perform the criteria matching */
 	seaudit_criteria_print_t print;
 	seaudit_criteria_destroy_t destroy;     /* function to free the criteria type */
-	void *data;                             /* data for the criteria ie. date_criteria_t */
+	void *data;				/* data for the criteria ie. date_criteria_t */
 	bool_t dirty;
 } seaudit_criteria_t;
 
@@ -59,14 +59,14 @@ seaudit_criteria_t* ports_criteria_create(int port);            /* a generic mat
 seaudit_criteria_t *date_time_criteria_create(struct tm *start, struct tm *end, int option);
 seaudit_criteria_t* msg_criteria_create(int msg);
 
-const char **strs_criteria_get_strs(seaudit_criteria_t *criteria, int *size);
-#define src_type_criteria_get_strs(criteria, size) strs_criteria_get_strs(criteria, size)
-#define tgt_type_criteria_get_strs(criteria, size) strs_criteria_get_strs(criteria, size)
-#define src_user_criteria_get_strs(criteria, size) strs_criteria_get_strs(criteria, size)
-#define tgt_user_criteria_get_strs(criteria, size) strs_criteria_get_strs(criteria, size)
-#define src_role_criteria_get_strs(criteria, size) strs_criteria_get_strs(criteria, size)
-#define tgt_role_criteria_get_strs(criteria, size) strs_criteria_get_strs(criteria, size)
-#define class_criteria_get_strs(criteria, size) strs_criteria_get_strs(criteria, size)
+apol_vector_t *strs_criteria_get_strs(seaudit_criteria_t *criteria);
+#define src_type_criteria_get_strs(criteria) strs_criteria_get_strs(criteria)
+#define tgt_type_criteria_get_strs(criteria) strs_criteria_get_strs(criteria)
+#define src_user_criteria_get_strs(criteria) strs_criteria_get_strs(criteria)
+#define tgt_user_criteria_get_strs(criteria) strs_criteria_get_strs(criteria)
+#define src_role_criteria_get_strs(criteria) strs_criteria_get_strs(criteria)
+#define tgt_role_criteria_get_strs(criteria) strs_criteria_get_strs(criteria)
+#define class_criteria_get_strs(criteria) strs_criteria_get_strs(criteria)
 
 const char *glob_criteria_get_str(seaudit_criteria_t *criteria);
 #define exe_criteria_get_str(criteria) glob_criteria_get_str(criteria)

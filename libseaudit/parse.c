@@ -140,7 +140,7 @@ static int avc_msg_is_prefix(char *token, char *prefix, char **result)
 
 static unsigned int avc_msg_insert_perms(char **tokens, msg_t *msg, audit_log_t *log, int *position, int num_tokens)
 {
-	int i = 0, num_perms = 0, id = 0, start_pos;
+	int i = 0, id, num_perms = 0, start_pos;
 	
 	assert(tokens != NULL && msg != NULL && log != NULL && *position >= 0);
 	/* Permissions should start and end with brackets and if not, then this is invalid. */		
@@ -164,15 +164,13 @@ static unsigned int avc_msg_insert_perms(char **tokens, msg_t *msg, audit_log_t 
 		return PARSE_REACHED_END_OF_MSG;
 
 	/* Allocate memory for the permissions */
-	msg->msg_data.avc_msg->num_perms = num_perms;
-	if ((msg->msg_data.avc_msg->perms = (int*) malloc(num_perms * sizeof(int))) == NULL){
+	if (!(msg->msg_data.avc_msg->perms = apol_vector_create())) {
 		return PARSE_RET_MEMORY_ERROR;
 	}
 
-	for (i = 0 ; i < num_perms ; i++) {
-		if(audit_log_add_perm(log, tokens[i + start_pos], &id) == -1)
-			return PARSE_RET_MEMORY_ERROR;
-		msg->msg_data.avc_msg->perms[i] = id;
+	for (i = 0 ; i < num_perms ; i++) { 
+		audit_log_add_perm(log, tokens[i + start_pos], &id);
+		apol_vector_append(msg->msg_data.avc_msg->perms, (void **)id);
 	}
 	return PARSE_RET_SUCCESS;
 }
@@ -325,13 +323,10 @@ static int avc_msg_insert_key(msg_t *msg, char **tmp)
 
 static int avc_msg_insert_tclass(msg_t *msg, char **tmp, audit_log_t *log)
 {
-	int id = -1;
-	
+	int id;
 	assert(msg != NULL && tmp != NULL && *tmp != NULL && log != NULL);
-	if (audit_log_add_obj(log, *tmp, &id) == -1)
-		return MSG_MEMORY_ERROR;
+	audit_log_add_obj(log, *tmp, &id);
 	msg->msg_data.avc_msg->obj_class = id;
-
 	msg->msg_data.avc_msg->is_obj_class = TRUE;
 	
 	return MSG_INSERT_SUCCESS;
@@ -358,7 +353,7 @@ static int parse_context(char *token, char *user, char *role, char *type)
 static int avc_msg_insert_tcon(msg_t *msg, char **tmp, audit_log_t *log)
 {
 	char *user = NULL, *role = NULL, *type = NULL;
-	int id = -1, length;
+	int length, id = -1;
 
 	assert(msg != NULL && tmp != NULL && *tmp != NULL && log != NULL);
 	if (*tmp != NULL) {
@@ -380,30 +375,31 @@ static int avc_msg_insert_tcon(msg_t *msg, char **tmp, audit_log_t *log)
 			free(type);
 			return AVC_MSG_INSERT_INVALID_CONTEXT;			
 		}
-		if (audit_log_add_user(log, user, &id) == -1){
-			free(user);
-			free(role);
-			free(type);
-			return MSG_MEMORY_ERROR;
-		}
-		msg->msg_data.avc_msg->tgt_user = id;
 
-		if (audit_log_add_role(log, role, &id) == -1){
-			free(user);
-			free(role);
-			free(type);
-			return MSG_MEMORY_ERROR;
-		}
-		msg->msg_data.avc_msg->tgt_role = id;
+               if (audit_log_add_user(log, user, &id) == -1){
+                        free(user);
+                        free(role);
+                        free(type);
+                        return MSG_MEMORY_ERROR;
+                }
+                msg->msg_data.avc_msg->tgt_user = id;
 
-		if (audit_log_add_type(log, type, &id) == -1){
-			free(user);
-			free(role);
-			free(type);
-			return MSG_MEMORY_ERROR;
-		}
-		msg->msg_data.avc_msg->tgt_type = id;
-	       
+                if (audit_log_add_role(log, role, &id) == -1){
+                        free(user);
+                        free(role);
+                        free(type);
+                        return MSG_MEMORY_ERROR;
+                }
+                msg->msg_data.avc_msg->tgt_role = id;
+
+                if (audit_log_add_type(log, type, &id) == -1){
+                        free(user);
+                        free(role);
+                        free(type);
+                        return MSG_MEMORY_ERROR;
+                }
+                msg->msg_data.avc_msg->tgt_type = id;
+
 		msg->msg_data.avc_msg->is_tgt_con = TRUE;
 
 		free(user);
@@ -417,7 +413,7 @@ static int avc_msg_insert_tcon(msg_t *msg, char **tmp, audit_log_t *log)
 static int avc_msg_insert_scon(msg_t *msg, char **tmp, audit_log_t *log)
 {
 	char *user = NULL, *role = NULL, *type = NULL;
-	int id = -1, length;
+	int length, id = -1;
 
 	assert(msg != NULL && tmp != NULL && *tmp != NULL && log != NULL);
 	if (*tmp != NULL) {
@@ -440,32 +436,31 @@ static int avc_msg_insert_scon(msg_t *msg, char **tmp, audit_log_t *log)
 			free(type);
 			return AVC_MSG_INSERT_INVALID_CONTEXT;
 		}
+               if (audit_log_add_user(log, user, &id) == -1){
+                        free(user);
+                        free(role);
+                        free(type);
+                        return MSG_MEMORY_ERROR;
+                }
 
-		if (audit_log_add_user(log, user, &id) == -1){
-			free(user);
-			free(role);
-			free(type);
-			return MSG_MEMORY_ERROR;
-		}
+                msg->msg_data.avc_msg->src_user = id;
 
-		msg->msg_data.avc_msg->src_user = id;
+                if (audit_log_add_role(log, role, &id) == -1) {
+                        free(user);
+                        free(role);
+                        free(type);
+                        return MSG_MEMORY_ERROR;
+                }
+                msg->msg_data.avc_msg->src_role = id;
 
-		if (audit_log_add_role(log, role, &id) == -1) {
-			free(user);
-			free(role);
-			free(type);
-			return MSG_MEMORY_ERROR;
-		}
-		msg->msg_data.avc_msg->src_role = id;
+                if (audit_log_add_type(log, type, &id) == -1){
+                        free(user);
+                        free(role);
+                        free(type);
+                        return MSG_MEMORY_ERROR;
+                }
+                msg->msg_data.avc_msg->src_type = id;
 
-		if (audit_log_add_type(log, type, &id) == -1){
-			free(user);
-			free(role);
-			free(type);
-			return MSG_MEMORY_ERROR;
-		}
-		msg->msg_data.avc_msg->src_type = id;
-	       
 		msg->msg_data.avc_msg->is_src_con = TRUE;
 
 		free(user);
@@ -514,25 +509,17 @@ static int avc_msg_remove_quotes_insert_string(char **dest, char **src)
 
 static unsigned int insert_hostname(audit_log_t *log, char **tokens, msg_t *msg, int *position, int num_tokens)
 {
-        int id;
-	
+	int id = -1;
 	assert(log != NULL && tokens != NULL && msg != NULL && *position >= 0);
 	
 	/* Make sure this is not the kernel string identifier, which may indicate that the hostname is empty. */
 	if (strstr(tokens[*position], "kernel")) {
-		if (audit_log_add_host(log, "", &id) == -1)
-                	return PARSE_RET_MEMORY_ERROR;
-                else {
-	                msg->host = id;
-	                return PARSE_RET_INVALID_MSG_WARN;
-	        }
-	} else {
-	        if (audit_log_add_host(log, tokens[*position], &id) == -1)
-	                return PARSE_RET_MEMORY_ERROR;
-	        else {
-	                msg->host = id;
-	                return PARSE_RET_SUCCESS;
-	        }
+                msg->host = 0;
+                return PARSE_RET_INVALID_MSG_WARN;
+        } else {
+		audit_log_add_host(log, tokens[*position], &id);
+                msg->host = id;
+                return PARSE_RET_SUCCESS;
 	}
 }
 

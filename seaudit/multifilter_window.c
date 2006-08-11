@@ -12,7 +12,6 @@
 #include "filter_window.h"
 #include "seaudit.h"
 #include "utilgui.h"
-#include <libapol/util.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -102,7 +101,7 @@ void multifilter_window_display(multifilter_window_t *window, GtkWindow *parent)
 		return;
 	}
 
-	dir = apol_find_file("multifilter_window.glade");
+	dir = apol_file_find("multifilter_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find multifilter_window.glade\n");
 		return;
@@ -263,11 +262,10 @@ int multifilter_window_load_multifilter(multifilter_window_t *window)
 	seaudit_multifilter_t *multifilter;
 	filter_window_t *filter_window;
 	seaudit_filter_t *filter;
-	llist_t *list;
-	llist_node_t *node;
 	GString *filename, *message;
 	bool_t is_multi;
 	gint response, err;
+	int i;
 
 	if (!window)
 		return -1;
@@ -298,9 +296,8 @@ int multifilter_window_load_multifilter(multifilter_window_t *window)
 		if (response != GTK_RESPONSE_YES)
 			return -1;
 	}
-	list = multifilter->filters;
-	for (node = list->head; node != NULL; node = node->next) {
-		filter = (seaudit_filter_t*)node->data;
+	for (i=0;i < apol_vector_get_size(multifilter->filters); i++) {
+		filter = apol_vector_get_element(multifilter->filters, i);
 		filter_window = filter_window_create(window, window->num_filter_windows, filter->name);
 		filter_window_set_values_from_filter(filter_window, filter);
 		multifilter_window_add_filter_window(window, filter_window);
@@ -477,7 +474,6 @@ static void multifilter_window_on_import_button_pressed(GtkButton *button, multi
 	seaudit_multifilter_t *multifilter;
 	filter_window_t *filter_window;
 	seaudit_filter_t *filter;
-	llist_t *list;
 	bool_t is_multi;
 	GString *filename, *message;
 	gint err;
@@ -501,14 +497,13 @@ static void multifilter_window_on_import_button_pressed(GtkButton *button, multi
 	}
 	if (!multifilter)
 		goto exit;
-	list = multifilter->filters;
-	g_assert(list);
-	if (list->head == NULL) {
+	g_assert(multifilter->filters);
+	if (apol_vector_get_size(multifilter->filters) == 0) {
 		seaudit_multifilter_destroy(multifilter);
 		goto exit;
 	}
-	if (list->num == 1) {
-		filter = (seaudit_filter_t*)list->head->data;
+	if (apol_vector_get_size(multifilter->filters) == 1) {
+		filter = apol_vector_get_element(multifilter->filters, 0);
 		filter_window = filter_window_create(window, window->num_filter_windows, filter->name);
 		filter_window_set_values_from_filter(filter_window, filter);
 		multifilter_window_add_filter_window(window, filter_window);
@@ -669,11 +664,10 @@ static void multifilter_window_get_selected_filters(multifilter_window_t *window
 	GtkTreeViewColumn *column;
 	GtkCellRenderer *renderer;
 	GtkListStore *store;
-	llist_t *list;
-	llist_node_t *node;
 	seaudit_filter_t *filter;
 	GtkTreeIter iter;
 	GString *title;
+	int i;
 
 	select_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	g_assert(filename);
@@ -687,9 +681,8 @@ static void multifilter_window_get_selected_filters(multifilter_window_t *window
 	treeview = gtk_tree_view_new();
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview)), GTK_SELECTION_MULTIPLE);
 	store = gtk_list_store_new(1, G_TYPE_STRING);
-	list = multifilter->filters;
-	for (node = list->head; node != NULL; node = node->next) {
-		filter = (seaudit_filter_t*)node->data;
+	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) {
+		filter = apol_vector_get_element(multifilter->filters, i);
 		gtk_list_store_append(store, &iter);
 		gtk_list_store_set(store, &iter, 0, filter->name, -1);
 	}
@@ -760,12 +753,11 @@ static void multifilter_window_get_selected_filters_on_ok_clicked(GtkButton *but
 	GtkTreeModel *model;
 	GtkTreePath *path;
 	GList *glist, *item;
-	llist_t *list;
-	llist_node_t *node;
 	seaudit_multifilter_t *multifilter;
-	seaudit_filter_t **filters, *filter;
+	seaudit_filter_t *filter;
 	filter_window_t *filter_window;
 	int i, *index;
+	apol_vector_t *filters;
 
         select_window = g_object_get_data(G_OBJECT(button), "window");
 	g_assert(select_window);
@@ -774,16 +766,12 @@ static void multifilter_window_get_selected_filters_on_ok_clicked(GtkButton *but
 	multifilter = g_object_get_data(G_OBJECT(select_window), "multifilter");
 	g_assert(multifilter);
 	g_assert(multifilter->filters);
-	filters = (seaudit_filter_t**)malloc(sizeof(seaudit_filter_t*) * multifilter->filters->num);
-	if (!filters) {
+	if (!(filters = apol_vector_create())) {
 		message_display(select_window, GTK_MESSAGE_ERROR, "out of memory");
 		return;
 	}
-	memset(filters, 0, sizeof(seaudit_filter_t*)*multifilter->filters->num);
-	list = multifilter->filters;
-	i = 0;
-	for (node = list->head; node != NULL; node = node->next)
-		filters[i++] = (seaudit_filter_t*)node->data;
+	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) 
+		apol_vector_append(filters, apol_vector_get_element(multifilter->filters, i));
 	model = gtk_tree_view_get_model(treeview);
 	selection = gtk_tree_view_get_selection(treeview);
 	glist = gtk_tree_selection_get_selected_rows(selection, &model);
@@ -794,15 +782,15 @@ static void multifilter_window_get_selected_filters_on_ok_clicked(GtkButton *but
 		for (item = glist; item != NULL; item = g_list_next(item)) {
 			path = item->data;
 			index = gtk_tree_path_get_indices(path);
-			assert(index[0] >= 0 && index[0] < multifilter->filters->num);
-			filter = filters[index[0]];
+			assert(index[0] >= 0 && index[0] < apol_vector_get_size(multifilter->filters));
+			filter = apol_vector_get_element(filters, index[0]);
 			assert(filter);
 			filter_window = filter_window_create(window, window->num_filter_windows, filter->name);
 			filter_window_set_values_from_filter(filter_window, filter);
 			multifilter_window_add_filter_window(window, filter_window);
 		}
 	}
-	free(filters);
+	apol_vector_destroy(&filters, NULL);
 	seaudit_multifilter_destroy(multifilter);
 	g_list_foreach(glist, (GFunc)gtk_tree_path_free, NULL);
 	g_list_free(glist);

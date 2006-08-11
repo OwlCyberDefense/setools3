@@ -16,7 +16,9 @@
 #include "filter_window.h"
 #include "preferences.h"
 #include "report_window.h"
-#include <libapol/policy.h>
+#include <apol/util.h>
+#include <apol/policy.h>
+#include <apol/vector.h>
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include <assert.h>
@@ -38,7 +40,7 @@
 #endif
 
 typedef struct seaudit {
-	policy_t *cur_policy;
+	apol_policy_t *cur_policy;
 	audit_log_t *cur_log;
 	seaudit_window_t *window;
 	GtkTextBuffer *policy_text;
@@ -68,7 +70,7 @@ void seaudit_view_entire_selection_update_sensitive(bool_t disable);
 void seaudit_save_log_file(bool_t selected_only);
 int  seaudit_write_log_file(const audit_log_view_t *log_view, const char *filename);
 audit_log_view_t* seaudit_get_current_audit_log_view();
-void generate_message_header(char *message_header, audit_log_t *audit_log, struct tm *date_stamp, int host);
+void generate_message_header(char *message_header, audit_log_t *audit_log, struct tm *date_stamp, char *host);
 void write_avc_message_to_file(FILE *log_file, const avc_msg_t *message, const char *message_header, audit_log_t *audit_log);
 void write_load_policy_message_to_file(FILE *log_file, const load_policy_msg_t *message, const char *message_header);
 void write_boolean_message_to_file(FILE *log_file, const boolean_msg_t *message, const char *message_header, audit_log_t *audit_log);

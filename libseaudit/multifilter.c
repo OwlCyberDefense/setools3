@@ -363,7 +363,7 @@ void seaudit_multifilter_init(seaudit_multifilter_t *multifilter)
 	if (multifilter == NULL)
 		return;
 
-	multifilter->filters = ll_new();
+	multifilter->filters = apol_vector_create();
 	multifilter->match = SEAUDIT_FILTER_MATCH_ALL;
 	multifilter->name = NULL;
 	multifilter->show = TRUE;
@@ -371,21 +371,21 @@ void seaudit_multifilter_init(seaudit_multifilter_t *multifilter)
 
 void seaudit_multifilter_destroy(seaudit_multifilter_t *multifilter)
 {
-	llist_node_t *node;
-	llist_t *list;
+	seaudit_filter_t *filter;
+	int i;
 
 	if (multifilter == NULL)
 		return;
 
-	if ((list = multifilter->filters) != NULL)
-		for (node = list->head; node != NULL; )
-			/* free current and return next */
-			node = ll_node_free(node, (void (*)(void*))seaudit_filter_destroy);
-	free(list);
+	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++)  {
+		/* free current and return next */
+		filter = apol_vector_get_element(multifilter->filters, i);
+		seaudit_filter_destroy(filter);
+	}
+	free(multifilter->filters);
 	
 	if (multifilter->name)
 		free(multifilter->name);
-
 }
 
 void seaudit_multifilter_add_filter(seaudit_multifilter_t *multifilter, seaudit_filter_t *filter)
@@ -393,7 +393,7 @@ void seaudit_multifilter_add_filter(seaudit_multifilter_t *multifilter, seaudit_
 	if (multifilter == NULL || filter == NULL)
 		return;
 
-	ll_append_data(multifilter->filters, filter);	
+	apol_vector_append(multifilter->filters, (void *)filter);
 }
 
 void seaudit_multifilter_set_match(seaudit_multifilter_t *multifilter, enum seaudit_filter_match_t match)
@@ -423,30 +423,30 @@ void seaudit_multifilter_set_name(seaudit_multifilter_t *multifilter, const char
 
 void seaudit_multifilter_make_dirty_filters(seaudit_multifilter_t *multifilter)
 {
-	llist_t *list;
-	llist_node_t *node;
+	seaudit_filter_t *filter;
+	int i;
 
-	if ((list = multifilter->filters) != NULL)
-		for (node = list->head; node != NULL; node = node->next)
-			seaudit_filter_make_dirty_criterias((seaudit_filter_t*)node->data);
+	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) {
+		filter = apol_vector_get_element(multifilter->filters, i);
+		seaudit_filter_make_dirty_criterias(filter);
+	}
 }
 
 static bool_t seaudit_multifilter_does_message_match(seaudit_multifilter_t *multifilter, msg_t *message, audit_log_t *log)
 {
-	llist_node_t *node;
-	llist_t *list;
 	seaudit_filter_t *filter;
 	bool_t match = TRUE;
+	int i;
 
 	if (multifilter == NULL || message == NULL || log == NULL)
 		return FALSE;
 
-	list = multifilter->filters;
-	if (!list)
+	if (!multifilter->filters)
 		return TRUE;
 		
-	for (node = list->head; node != NULL; node = node->next) {
-		filter = (seaudit_filter_t*)node->data;
+	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) {
+		filter = apol_vector_get_element(multifilter->filters, i);
+
 		if (seaudit_filter_does_message_match(filter, message, log)) {
 			if (multifilter->match == SEAUDIT_FILTER_MATCH_ANY)
 				return TRUE;
@@ -504,8 +504,7 @@ int seaudit_multifilter_save_to_file(seaudit_multifilter_t *multifilter, const c
 	FILE *file;
 	const char *XML_VER = "<?xml version=\"1.0\"?>\n";
 	seaudit_filter_t *filter;
-	llist_node_t *node;
-	llist_t *list;
+	int i;
 
 	if (!multifilter || !filename)
 		return -1;
@@ -519,9 +518,8 @@ int seaudit_multifilter_save_to_file(seaudit_multifilter_t *multifilter, const c
 		multifilter->match == SEAUDIT_FILTER_MATCH_ALL? "all" : "any",
 		multifilter->show == TRUE? "true" : "false");
 	
-	list = multifilter->filters;
-	for (node = list->head; node != NULL; node = node->next) {
-		filter = (seaudit_filter_t*)node->data;
+	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) {
+		filter = apol_vector_get_element(multifilter->filters, i);
 		seaudit_filter_append_to_file(filter, file, 1);
 	}
 	fprintf(file, "</view>\n");
