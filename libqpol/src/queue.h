@@ -60,11 +60,8 @@ int queue_map(queue_t, int (*f) (queue_element_t, void *), void *);
  */
 void queue_map_remove_on_error(queue_t,
 			       int (*f) (queue_element_t, void *),
-			       void (*g) (queue_element_t, void *),
-			       void *);
+			       void (*g) (queue_element_t, void *), void *);
 
 #endif
 
-
 /* FLASK */
-
