@@ -59,18 +59,7 @@ static struct Tcl_ObjType qpol_avrule_tcl_obj_type = {
 	NULL
 };
 
-/**
- * Given a qpol_avrule_t object, create a new Tcl_Obj with that
- * represents it.  The Tcl_Obj will have a unique string identifier
- * for the rule.
- *
- * @param interp Tcl interpreter object.
- * @param rule Rule to store.
- * @param o Reference to where to create the new Tcl_Obj.
- *
- * @return TCL_OK on success, TCL_ERROR on error.
- */
-static int qpol_avrule_to_tcl_obj(Tcl_Interp *interp, qpol_avrule_t *rule, Tcl_Obj **o)
+int qpol_avrule_to_tcl_obj(Tcl_Interp *interp, qpol_avrule_t *rule, Tcl_Obj **o)
 {
 	*o = rule_to_tcl_obj("avrule", rule);
 	(*o)->typePtr = &qpol_avrule_tcl_obj_type;
@@ -85,18 +74,7 @@ static struct Tcl_ObjType qpol_terule_tcl_obj_type = {
 	NULL
 };
 
-/**
- * Given a qpol_terule_t object, create a new Tcl_Obj with that
- * represents it.  The Tcl_Obj will have a unique string identifier
- * for the rule.
- *
- * @param interp Tcl interpreter object.
- * @param rule Rule to store.
- * @param o Reference to where to create the new Tcl_Obj.
- *
- * @return TCL_OK on success, TCL_ERROR on error.
- */
-static int qpol_terule_to_tcl_obj(Tcl_Interp *interp, qpol_terule_t *rule, Tcl_Obj **o)
+int qpol_terule_to_tcl_obj(Tcl_Interp *interp, qpol_terule_t *rule, Tcl_Obj **o)
 {
 	*o = rule_to_tcl_obj("terule", rule);
 	(*o)->typePtr = &qpol_terule_tcl_obj_type;

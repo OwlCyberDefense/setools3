@@ -42,26 +42,18 @@ struct apol_relabel_analysis {
 
 /**
  * Results are in the form of a list of apol_relabel_result_t nodes.
- * For subject mode analysis, there is exactly one node, of which the
- * to, from, and both vectors are used; the type field is ignored.
- * For object mode analysis, there are multiple nodes such that within
- * each node,
- *
- * to_1(T) = to_2(T) = ... = to_m(T) = target type
- * from_1(T) = from_2(T) = ... = from_n(T) = type
- * to_i(S) = from_i(S) for all 1 <= i <= m
- * m = n
+ * Each node has three sublists of apol_relabel_result_pair_t.
  */
 struct apol_relabel_result {
-	/** vector of qpol_rule_t pointers */
 	apol_vector_t *to;
-	/** vector of qpol_rule_t pointers */
 	apol_vector_t *from;
-	/** vector of qpol_rule_t pointers */
 	apol_vector_t *both;
-	/** private field, used when building results for object mode
-	 * analysis */
 	qpol_type_t *type;
+};
+
+struct apol_relabel_result_pair {
+	qpol_avrule_t *ruleA, *ruleB;
+	qpol_type_t *intermed;
 };
 
 #define PERM_RELABELTO "relabelto"
@@ -117,6 +109,24 @@ static int relabel_analysis_get_direction(apol_policy_t *p,
 }
 
 /**
+ * Given an apol_relabel_result_t node and a qpol_type_t, determine if
+ * the two match.
+ *
+ * @param a Pointer to a apol_relabel_result_t.
+ * @param b Pointer to a type.
+ * @param data (Unused).
+ *
+ * @return 0 if the result node's type matches the given type,
+ * non-zero if not.
+ */
+static int relabel_result_comp_func(const void *a, const void *b, void *data __attribute__((unused)))
+{
+	apol_relabel_result_t *r = (apol_relabel_result_t *) a;
+	qpol_type_t *t = (qpol_type_t *) b;
+	return (int) ((char *) r->type - (char *) t);
+}
+
+/**
  * Given a qpol_type_t pointer, find and return the first
  * apol_relabel_result_t node within vector v that matches the type.
  * If there does not exist a node with that type, then allocate a new
@@ -126,96 +136,33 @@ static int relabel_analysis_get_direction(apol_policy_t *p,
  * not free the individual nodes.
  *
  * @param p Policy, used for error handling.
- * @param v A vector of apol_relabel_result_t nodes.
+ * @param results A vector of apol_relabel_result_t nodes.
  * @param type Target type to find.
  *
  * @return An apol_relabel_result_t node from which to append results,
  * or NULL upon error.
  */
 static apol_relabel_result_t *relabel_result_get_node(apol_policy_t *p,
-						      apol_vector_t *v,
+						      apol_vector_t *results,
 						      qpol_type_t *type)
 {
 	apol_relabel_result_t *result;
 	size_t i;
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		result = (apol_relabel_result_t *) apol_vector_get_element(v, i);
-		if (result->type == type) {
-			return result;
-		}
+	if (apol_vector_get_index(results, type, relabel_result_comp_func, NULL, &i) == 0) {
+		return (apol_relabel_result_t *) apol_vector_get_element(results, i);
 	}
 	/* make a new result node */
 	if ((result = calloc(1, sizeof(*result))) == NULL ||
 	    (result->to = apol_vector_create()) == NULL ||
 	    (result->from = apol_vector_create()) == NULL ||
 	    (result->both = apol_vector_create()) == NULL ||
-	    apol_vector_append(v, result) < 0) {
+	    apol_vector_append(results, result) < 0) {
 		apol_relabel_result_free(result);
 		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	result->type = type;
 	return result;
-}
-
-/**
- * Given an avrule, possbily append it to the result object onto the
- * appropriate rules vector.  The decision to actually append or not
- * is dependent upon the filtering options stored within the relabel
- * analysis object.
- *
- * @param p Policy containing avrule.
- * @param r Relabel analysis query object, containing filtering options.
- * @param avrule AV rule to add.
- * @param result Pointer to the result object being built.
- *
- * @return 0 on success, < 0 on error.
- */
-static int append_avrule_to_result(apol_policy_t *p,
-				   apol_relabel_analysis_t *r,
-				   qpol_avrule_t *avrule,
-				   apol_relabel_result_t *result)
-{
-	qpol_type_t *target;
-	int retval = -1, dir, compval;
-	if ((dir = relabel_analysis_get_direction(p, avrule)) < 0) {
-		goto cleanup;
-	}
-	if (qpol_avrule_get_target_type(p->qh, p->p, avrule, &target) < 0) {
-		goto cleanup;
-	}
-	compval = apol_compare_type(p, target, r->result, APOL_QUERY_REGEX, &r->result_regex);
-	if (compval < 0) {
-		goto cleanup;
-	}
-	else if (compval == 0) {
-		retval = 0;
-		goto cleanup;
-	}
-	switch (dir) {
-	case APOL_RELABEL_DIR_TO:
-		if ((apol_vector_append(result->to, avrule)) < 0) {
-			ERR(p, "%s", strerror(ENOMEM));
-			goto cleanup;
-		}
-		break;
-	case APOL_RELABEL_DIR_FROM:
-		if ((apol_vector_append(result->from, avrule)) < 0) {
-			ERR(p, "%s", strerror(ENOMEM));
-			goto cleanup;
-		}
-		break;
-	case APOL_RELABEL_DIR_BOTH:
-		if ((apol_vector_append(result->both, avrule)) < 0) {
-			ERR(p, "%s", strerror(ENOMEM));
-			goto cleanup;
-		}
-		break;
-	}
-
-	retval = 0;
- cleanup:
-	return retval;
 }
 
 /**
@@ -311,6 +258,106 @@ static int relabel_analysis_compare_type_to_vector(apol_policy_t *p,
 }
 
 /**
+ * Given two avrules, possbily append it to the object results vector
+ * onto the appropriate rules vector.  The decision to actually append
+ * or not is dependent upon the filtering options stored within the
+ * relabel analysis object.
+ *
+ * @param p Policy containing avrule.
+ * @param r Relabel analysis query object, containing filtering options.
+ * @param ruleA First AV rule to add.
+ * @param ruleB Other AV rule to add.
+ * @param result Results vector being built.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int append_avrules_to_subject_vector(apol_policy_t *p,
+					    apol_relabel_analysis_t *r,
+					    qpol_avrule_t *ruleA,
+					    qpol_avrule_t *ruleB,
+					    apol_vector_t *results)
+{
+	qpol_type_t *sourceA, *sourceB, *target, *intermed;
+	unsigned char isattrA, isattrB;
+	apol_vector_t *target_v = NULL, *result_list;
+	size_t i;
+	apol_relabel_result_t *result;
+	apol_relabel_result_pair_t *pair = NULL;
+	int retval = -1, compval, dirA, dirB;
+	if (qpol_avrule_get_target_type(p->qh, p->p, ruleB, &target) < 0 ||
+	    (target_v = apol_query_expand_type(p, target)) == NULL) {
+		goto cleanup;
+	}
+	if (qpol_avrule_get_source_type(p->qh, p->p, ruleA, &sourceA) < 0 ||
+	    qpol_avrule_get_source_type(p->qh, p->p, ruleB, &sourceB) < 0 ||
+	    qpol_type_get_isattr(p->qh, p->p, sourceA, &isattrA) < 0 ||
+	    qpol_type_get_isattr(p->qh, p->p, sourceB, &isattrB) < 0) {
+		goto cleanup;
+        }
+	if ((isattrA && isattrB) || !isattrA) {
+		intermed = sourceA;
+	}
+	else {
+		intermed = sourceB;
+	}
+	for (i = 0; i < apol_vector_get_size(target_v); i++) {
+		target = (qpol_type_t *) apol_vector_get_element(target_v, i);
+		/* exclude if B(t) does not match search criteria */
+		compval = apol_compare_type(p, target, r->type, 0, NULL);
+		if (compval < 0) {
+			goto cleanup;
+		}
+		else if (compval == 1) {
+			continue;    /* don't care about relabels to itself */
+		}
+		compval = apol_compare_type(p, target, r->result, APOL_QUERY_REGEX, &r->result_regex);
+		if (compval < 0) {
+			goto cleanup;
+		}
+		else if (compval == 0) {
+			continue;
+		}
+		if ((result = relabel_result_get_node(p, results, target)) == NULL) {
+			goto cleanup;
+		}
+		if ((dirA = relabel_analysis_get_direction(p, ruleA)) < 0 ||
+		    (dirB = relabel_analysis_get_direction(p, ruleB)) < 0) {
+			goto cleanup;
+		}
+		if ((pair = calloc(1, sizeof(*pair))) == NULL) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		if (dirA == APOL_RELABEL_DIR_BOTH && dirB == APOL_RELABEL_DIR_BOTH) {
+			result_list = result->both;
+			pair->ruleA = ruleA;
+			pair->ruleB = ruleB;
+		}
+		else if (dirA == APOL_RELABEL_DIR_FROM || dirB == APOL_RELABEL_DIR_TO) {
+			result_list = result->to;
+			pair->ruleA = ruleA;
+			pair->ruleB = ruleB;
+		}
+		else {
+			result_list = result->from;
+			pair->ruleA = ruleB;
+			pair->ruleB = ruleA;
+		}
+		pair->intermed = intermed;
+		if ((apol_vector_append(result_list, pair)) < 0) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		pair = NULL;
+	}
+	retval = 0;
+ cleanup:
+	free(pair);
+	apol_vector_destroy(&target_v, NULL);
+	return retval;
+}
+
+/**
  * Search through sets av and bv, finding pairs of avrules that
  * satisfy a relabel and adding those pairs to result vector v.
  *
@@ -326,15 +373,15 @@ static int relabel_analysis_compare_type_to_vector(apol_policy_t *p,
  */
 static int relabel_analysis_matchup(apol_policy_t *p,
 				    apol_relabel_analysis_t *r,
-				    apol_vector_t *v,
 				    apol_vector_t *av,
 				    apol_vector_t *bv,
-				    apol_vector_t *subjects_v)
+				    apol_vector_t *subjects_v,
+				    apol_vector_t *v)
 {
 	qpol_avrule_t *a_avrule, *b_avrule;
 	qpol_type_t *a_source, *a_target, *b_source, *b_target, *start_type;
 	qpol_class_t *a_class, *b_class;
-	apol_relabel_result_t *result = NULL;
+	apol_vector_t *start_v = NULL;
 	size_t i, j;
 	int compval, retval = -1;
 
@@ -355,6 +402,9 @@ static int relabel_analysis_matchup(apol_policy_t *p,
 		else if (compval == 0) {
 			continue;
 		}
+		if ((start_v = apol_query_expand_type(p, a_source)) == NULL) {
+			goto cleanup;
+		}
 
 		/* check if there exists a B s.t. B(s) = source and
 		   B(t) != r->type and B(o) = A(o) */
@@ -365,36 +415,21 @@ static int relabel_analysis_matchup(apol_policy_t *p,
 			    qpol_avrule_get_object_class(p->qh, p->p, b_avrule, &b_class) < 0) {
 				goto cleanup;
 			}
-			if (a_source != b_source ||
+			if (relabel_analysis_compare_type_to_vector(p, start_v, b_source) != 1 ||
 			    b_target == start_type ||
 			    a_class != b_class) {
 				continue;
 			}
-
-			/* exclude B if B(t) does not match search criteria */
-			compval = apol_compare_type(p, b_target, r->result, APOL_QUERY_REGEX, &r->result_regex);
-			if (compval < 0) {
-				goto cleanup;
-			}
-			else if (compval == 0) {
-				continue;
-			}
-
-			/* add the pairing (A, B) to results v, at an
-			 * existing relabel_results_t if possible */
-			if ((result = relabel_result_get_node(p, v, b_target)) == NULL) {
-				goto cleanup;
-			}
-			if (apol_vector_append(result->to, a_avrule) < 0 ||
-			    apol_vector_append(result->from, b_avrule) < 0) {
-				ERR(p, "%s", strerror(ENOMEM));
+			if (append_avrules_to_subject_vector(p, r, a_avrule, b_avrule, v) < 0) {
 				goto cleanup;
 			}
 		}
+		apol_vector_destroy(&start_v, NULL);
 	}
 
 	retval = 0;
  cleanup:
+	apol_vector_destroy(&start_v, NULL);
 	return retval;
 }
 
@@ -468,7 +503,7 @@ static int relabel_analysis_object(apol_policy_t *p,
 		goto cleanup;
 	}
 
-	if (relabel_analysis_matchup(p, r, v, a_rules, b_rules, subjects_v) < 0) {
+	if (relabel_analysis_matchup(p, r, a_rules, b_rules, subjects_v, v) < 0) {
 		goto cleanup;
 	}
 	retval = 0;
@@ -477,6 +512,87 @@ static int relabel_analysis_object(apol_policy_t *p,
 	apol_vector_destroy(&a_rules, NULL);
 	apol_avrule_query_destroy(&b);
 	apol_vector_destroy(&b_rules, NULL);
+	return retval;
+}
+
+/**
+ * Given an avrule, possbily append it to the subject results vector
+ * onto the appropriate rules vector.  The decision to actually append
+ * or not is dependent upon the filtering options stored within the
+ * relabel analysis object.
+ *
+ * @param p Policy containing avrule.
+ * @param r Relabel analysis query object, containing filtering options.
+ * @param avrule AV rule to add.
+ * @param result Results vector being built.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int append_avrule_to_subject_vector(apol_policy_t *p,
+					   apol_relabel_analysis_t *r,
+					   qpol_avrule_t *avrule,
+					   apol_vector_t *results)
+{
+	qpol_type_t *target;
+	apol_vector_t *target_v = NULL, *result_list;
+	size_t i;
+	apol_relabel_result_t *result;
+	apol_relabel_result_pair_t *pair = NULL;
+	int retval = -1, dir, compval;
+	if ((dir = relabel_analysis_get_direction(p, avrule)) < 0) {
+		goto cleanup;
+	}
+	if (qpol_avrule_get_target_type(p->qh, p->p, avrule, &target) < 0 ||
+	    (target_v = apol_query_expand_type(p, target)) == NULL) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(target_v); i++) {
+		target = (qpol_type_t *) apol_vector_get_element(target_v, i);
+		compval = apol_compare_type(p, target, r->type, 0, NULL);
+		if (compval < 0) {
+			goto cleanup;
+		}
+		else if (compval == 1) {
+			continue;    /* don't care about relabels to itself */
+		}
+		compval = apol_compare_type(p, target, r->result, APOL_QUERY_REGEX, &r->result_regex);
+		if (compval < 0) {
+			goto cleanup;
+		}
+		else if (compval == 0) {
+			continue;
+		}
+		if ((result = relabel_result_get_node(p, results, target)) == NULL) {
+			goto cleanup;
+		}
+		if ((pair = calloc(1, sizeof(*pair))) == NULL) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		pair->ruleA = avrule;
+		pair->ruleB = NULL;
+		pair->intermed = NULL;
+		switch (dir) {
+		case APOL_RELABEL_DIR_TO:
+			result_list = result->to;
+			break;
+		case APOL_RELABEL_DIR_FROM:
+			result_list = result->from;
+			break;
+		case APOL_RELABEL_DIR_BOTH:
+			result_list = result->both;
+			break;
+		}
+		if ((apol_vector_append(result_list, pair)) < 0) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		pair = NULL;
+	}
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&target_v, NULL);
+	free(pair);
 	return retval;
 }
 
@@ -500,7 +616,6 @@ static int relabel_analysis_subject(apol_policy_t *p,
 	apol_avrule_query_t *a = NULL;
 	apol_vector_t *avrules_v = NULL;
 	qpol_avrule_t *avrule;
-        apol_relabel_result_t *result = NULL;
 	size_t i;
 	int retval = -1;
 
@@ -523,12 +638,9 @@ static int relabel_analysis_subject(apol_policy_t *p,
 		goto cleanup;
 	}
 
-	if ((result = relabel_result_get_node(p, v, NULL)) == NULL) {
-		goto cleanup;
-	}
 	for (i = 0; i < apol_vector_get_size(avrules_v); i++) {
 		avrule = (qpol_avrule_t *) apol_vector_get_element(avrules_v, i);
-		if (append_avrule_to_result(p, r, avrule, result) < 0) {
+		if (append_avrule_to_subject_vector(p, r, avrule, v) < 0) {
 			goto cleanup;
 		}
 	}
@@ -694,9 +806,9 @@ void apol_relabel_result_free(void *result)
 {
 	if (result != NULL) {
 		apol_relabel_result_t *r = (apol_relabel_result_t *) result;
-		apol_vector_destroy(&r->to, NULL);
-		apol_vector_destroy(&r->from, NULL);
-		apol_vector_destroy(&r->both, NULL);
+		apol_vector_destroy(&r->to, free);
+		apol_vector_destroy(&r->from, free);
+		apol_vector_destroy(&r->both, free);
 		free(result);
 	}
 }
@@ -714,4 +826,24 @@ apol_vector_t *apol_relabel_result_get_from(apol_relabel_result_t *r)
 apol_vector_t *apol_relabel_result_get_both(apol_relabel_result_t *r)
 {
 	return r->both;
+}
+
+qpol_type_t *apol_relabel_result_get_result_type(apol_relabel_result_t *r)
+{
+	return r->type;
+}
+
+qpol_avrule_t *apol_relabel_result_pair_get_ruleA(apol_relabel_result_pair_t *p)
+{
+	return p->ruleA;
+}
+
+qpol_avrule_t *apol_relabel_result_pair_get_ruleB(apol_relabel_result_pair_t *p)
+{
+	return p->ruleB;
+}
+
+qpol_type_t *apol_relabel_result_pair_get_intermediate_type(apol_relabel_result_pair_t *p)
+{
+	return p->intermed;
 }

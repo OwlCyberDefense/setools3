@@ -149,70 +149,6 @@ static void infoflow_tcl_free(infoflow_tcl_t *i)
 }
 
 /**
- * For the given symbol, expand it if an attribute, or return the
- * symbol otherwise.
- *
- * @param argv This fuction takes one parameter:
- * <ol>
- *   <li>symbol to expand
- * </ol>
- *
- */
-static int Apol_ExpandType(ClientData clientData, Tcl_Interp *interp,
-			   int argc, CONST char *argv[])
-{
-	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *o;
-	qpol_type_t *type;
-	unsigned char isattr;
-	char *type_name;
-	qpol_iterator_t *iter = NULL;
-	int retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		goto cleanup;
-	}
-	if (argc != 2) {
-		ERR(policydb, "%s", "Need a type symbol.");
-		goto cleanup;
-	}
-	if (qpol_policy_get_type_by_name(policydb->qh, policydb->p, argv[1], &type) < 0 ||
-	    qpol_type_get_isattr(policydb->qh, policydb->p, type, &isattr) < 0) {
-		goto cleanup;
-	}
-	if (!isattr) {
-		if (qpol_type_get_name(policydb->qh, policydb->p, type, &type_name) < 0) {
-			goto cleanup;
-		}
-		result_obj = Tcl_NewStringObj(type_name, -1);
-	}
-	else {
-		if (qpol_type_get_type_iter(policydb->qh, policydb->p, type, &iter) < 0) {
-			goto cleanup;
-		}
-		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			if (qpol_iterator_get_item(iter, (void **) &type) < 0 ||
-			    qpol_type_get_name(policydb->qh, policydb->p, type, &type_name) < 0) {
-				goto cleanup;
-			}
-			o = Tcl_NewStringObj(type_name, -1);
-			if (Tcl_ListObjAppendElement(interp, result_obj, o) == TCL_ERROR) {
-				goto cleanup;
-			}
-		}
-	}
-	Tcl_SetObjResult(interp, result_obj);
-	retval = TCL_OK;
- cleanup:
-	qpol_iterator_destroy(&iter);
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
-/**
  * For the given object class, return an unsorted list of its
  * permissions, including those that the class inherits from its
  * common.
@@ -1132,6 +1068,60 @@ static int Apol_InformationFlowDestroy(ClientData clientData, Tcl_Interp *interp
 }
 
 /**
+ * Given a vector of rule pairs, create a new Tcl list with those
+ * pairs.
+ *
+ * @param inter Tcl interpreter object.
+ * @param v Vector of apol_relabel_result_pair objects.
+ * @param o Reference to where to create Tcl list.
+ *
+ * @return TCL_OK on success, TCL_ERROR on error.
+ */
+static int apol_relabel_pair_vector_to_tcl_list(Tcl_Interp *interp,
+						apol_vector_t *v,
+						Tcl_Obj **o)
+{
+	size_t i;
+	apol_relabel_result_pair_t *pair;
+	qpol_avrule_t *rA, *rB;
+	qpol_type_t *intermed;
+	char *intermed_name;
+	Tcl_Obj *pair_elem[3], *pair_list;
+	*o = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		pair = (apol_relabel_result_pair_t *) apol_vector_get_element(v, i);
+		rA = apol_relabel_result_pair_get_ruleA(pair);
+		rB = apol_relabel_result_pair_get_ruleB(pair);
+                intermed = apol_relabel_result_pair_get_intermediate_type(pair);
+		if (qpol_avrule_to_tcl_obj(interp, rA, pair_elem + 0) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+		if (rB == NULL) {
+			pair_elem[1] = Tcl_NewListObj(0, NULL);
+		}
+		else {
+			if (qpol_avrule_to_tcl_obj(interp, rB, pair_elem + 1) == TCL_ERROR) {
+				return TCL_ERROR;
+			}
+		}
+                if (intermed == NULL) {
+                        pair_elem[2] = Tcl_NewStringObj("", -1);
+                }
+                else {
+			if (qpol_type_get_name(policydb->qh, policydb->p, intermed, &intermed_name) < 0) {
+				return TCL_ERROR;
+			}
+			pair_elem[2] = Tcl_NewStringObj(intermed_name, -1);
+		}
+		pair_list = Tcl_NewListObj(3, pair_elem);
+		if (Tcl_ListObjAppendElement(interp, *o, pair_list) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+	}
+	return TCL_OK;
+}
+
+/**
  * Take a result node from a relabel analysis and append a tuple of it
  * to result_list.  The tuple consists of:
  * <code>
@@ -1139,18 +1129,29 @@ static int Apol_InformationFlowDestroy(ClientData clientData, Tcl_Interp *interp
  * </code>
  */
 static int append_relabel_result_to_list(Tcl_Interp *interp,
-                                         apol_relabel_result_t *result,
-                                         Tcl_Obj *result_list)
+					 apol_relabel_result_t *result,
+					 Tcl_Obj *result_list)
 {
-	Tcl_Obj *relabel_elem[3], *relabel_list;
+	Tcl_Obj *relabel_elem[4], *relabel_list;
+	qpol_type_t *type;
+	apol_vector_t *to, *from, *both;
+	char *type_name;
 	int retval = TCL_ERROR;
 
-	if (apol_vector_avrule_to_tcl_list(interp, apol_relabel_result_get_to(result), relabel_elem + 0) < 0 ||
-	    apol_vector_avrule_to_tcl_list(interp, apol_relabel_result_get_from(result), relabel_elem + 1) < 0 ||
-	    apol_vector_avrule_to_tcl_list(interp, apol_relabel_result_get_both(result), relabel_elem + 2) < 0) {
+	type = apol_relabel_result_get_result_type(result);
+	to = apol_relabel_result_get_to(result);
+	from = apol_relabel_result_get_from(result);
+	both = apol_relabel_result_get_both(result);
+	if (qpol_type_get_name(policydb->qh, policydb->p, type, &type_name) < 0) {
 		goto cleanup;
 	}
-	relabel_list = Tcl_NewListObj(3, relabel_elem);
+	relabel_elem[0] = Tcl_NewStringObj(type_name, -1);
+	if (apol_relabel_pair_vector_to_tcl_list(interp, to, relabel_elem + 1) < 0 ||
+	    apol_relabel_pair_vector_to_tcl_list(interp, from, relabel_elem + 2) < 0 ||
+	    apol_relabel_pair_vector_to_tcl_list(interp, both, relabel_elem + 3) < 0) {
+		goto cleanup;
+	}
+	relabel_list = Tcl_NewListObj(4, relabel_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, relabel_list) == TCL_ERROR) {
 	    goto cleanup;
 	}
@@ -1163,12 +1164,14 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
  * Return an unsorted list of result tuples for a relabel analysis.
  * Each tuple consists of:
  * <ul>
- *   <li>list of rules to which can be relabeled
- *   <li>list of rules from which can be relabeled
- *   <li>list of rules that can be relabeled to and from
+ *   <li>result type
+ *   <li>list of rule pairs to which can be relabeled
+ *   <li>list of rule pairs from which can be relabeled
+ *   <li>list of rule pairs that can be relabeled to and from
  * </ul>
- * Note that for subject mode searches, this list will have exactly
- * one result tuple.
+ *
+ * A rule pair consists of two qpol_avrule_t pointers and a 
+ * type name.
  *
  * Rules are unique identifiers (relative to currently loaded policy).
  * Call [apol_RenderAVRule] to display them.
@@ -1694,7 +1697,6 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 int apol_tcl_analysis_init(Tcl_Interp *interp)
 {
 	Tcl_InitHashTable(&infoflow_htable, TCL_STRING_KEYS);
-	Tcl_CreateCommand(interp, "apol_ExpandType", Apol_ExpandType, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetAllPermsForClass", Apol_GetAllPermsForClass, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", Apol_DomainTransitionAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DirectInformationFlowAnalysis", Apol_DirectInformationFlowAnalysis, NULL, NULL);

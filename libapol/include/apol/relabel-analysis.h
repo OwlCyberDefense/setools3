@@ -38,6 +38,7 @@
 
 typedef struct apol_relabel_analysis apol_relabel_analysis_t;
 typedef struct apol_relabel_result apol_relabel_result_t;
+typedef struct apol_relabel_result_pair apol_relabel_result_pair_t;
 
 /******************** functions to do relabel analysis ********************/
 
@@ -175,38 +176,98 @@ extern void apol_relabel_result_free(void *result);
 
 /**
  * Return the relabelto vector embedded within an apol_relabel_result
- * node.  This is a vector qpol_rule_t pointers.  The caller shall not
- * call apol_vector_destroy() upon this pointer.
+ * node.  This is a vector of apol_relabel_result_pair_t objects.  The
+ * caller shall not call apol_vector_destroy() upon this pointer.
  *
  * @param r Relabel result node.
  *
- * @return Pointer to a vector of rules, relative to the policy
+ * @return Pointer to a vector of rule pairs, relative to the policy
  * originally used to generate the relabelling result.
  */
 extern apol_vector_t *apol_relabel_result_get_to(apol_relabel_result_t *r);
 
 /**
  * Return the relabelfrom vector embedded within an
- * apol_relabel_result node.  This is a vector qpol_rule_t pointers.
- * The caller shall not call apol_vector_destroy() upon this pointer.
+ * apol_relabel_result node.  This is a vector of
+ * apol_relabel_result_pair_t objects.  The caller shall not call
+ * apol_vector_destroy() upon this pointer.
  *
  * @param r Relabel result node.
  *
- * @return Pointer to a vector of rules, relative to the policy
+ * @return Pointer to a vector of rule pairs, relative to the policy
  * originally used to generate the relabelling result.
  */
 extern apol_vector_t *apol_relabel_result_get_from(apol_relabel_result_t *r);
 
 /**
  * Return the relabelboth vector embedded within an
- * apol_relabel_result node.  This is a vector qpol_rule_t pointers.
- * The caller shall not call apol_vector_destroy() upon this pointer.
+ * apol_relabel_result node.  This is a vector of
+ * apol_relabel_result_pair_t objects.  The caller shall not call
+ * apol_vector_destroy() upon this pointer.
  *
  * @param r Relabel result node.
  *
- * @return Pointer to a vector of rules, relative to the policy
+ * @return Pointer to a vector of rule pairs, relative to the policy
  * originally used to generate the relabelling result.
  */
 extern apol_vector_t *apol_relabel_result_get_both(apol_relabel_result_t *r);
+
+/**
+ * Return the resulting type for an apol_relabel_result node.
+ *
+ * @param r Relabel result node.
+ *
+ * @return Pointer to a result type.
+ */
+extern qpol_type_t *apol_relabel_result_get_result_type(apol_relabel_result_t *r);
+
+/**
+ * Return the first rule from an apol_relabel_result_pair object.
+ *
+ * For object mode analysis, this is the rule that affects the
+ * starting type.  Either that type or one of its attributes will be
+ * the target type for the returned rule.
+ *
+ * For subject mode analysis, this is a rule affects the starting
+ * subject.  Either that subject or one of its attributes will be the
+ * source type for the returned rule.
+ *
+ * @param p Relabel result pair object.
+ *
+ * @return Rule affecting the starting type/subject.
+ */
+extern qpol_avrule_t *apol_relabel_result_pair_get_ruleA(apol_relabel_result_pair_t *p);
+
+/**
+ * Return the other rule from an apol_relabel_result_pair object.
+ *
+ * For object mode analysis, this is the rule that affects the
+ * resulting type.  Either that type or one of its attributes will be
+ * the target type for the returned rule.
+ *
+ * For subject mode analysis, the returned pointer will be NULL.
+ *
+ * @param p Relabel result pair object.
+ *
+ * @return Rule affecting the resulting type/subject (for object mode)
+ * or NULL (for subject mode).
+ */
+extern qpol_avrule_t *apol_relabel_result_pair_get_ruleB(apol_relabel_result_pair_t *p);
+
+/**
+ * Return the intermediate type for an apol_relabel_result_pair
+ * object.
+ *
+ * For object mode analysis, this is the source type for the first
+ * rule; it also will be the source type for the other rule.
+ *
+ * For subject mode analysis, the returned pointer will be NULL.
+ *
+ * @param p Relabel result pair object.
+ *
+ * @return Intermediate type for relabel result (for object mode) or
+ * NULL (for subject mode).
+ */
+extern qpol_type_t *apol_relabel_result_pair_get_intermediate_type(apol_relabel_result_pair_t *p);
 
 #endif
