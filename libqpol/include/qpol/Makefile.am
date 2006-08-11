@@ -14,14 +14,12 @@ qpol_HEADERS = \
 	iterator.h \
 	mls_query.h \
 	mlsrule_query.h \
-	module_compiler.h \
 	netifcon_query.h \
 	nodecon_query.h \
 	policy_extend.h \
 	policy.h \
 	policy_query.h \
 	portcon_query.h \
-	queue.h \
 	rbacrule_query.h \
 	role_query.h \
 	syn_rule_query.h \

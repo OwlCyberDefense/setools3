@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 /* command line parsing commands */
-#define _GNU_SOURCE
 #include <getopt.h>
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
@@ -55,24 +54,24 @@ int main(int argc, char **argv, char **envp)
 
 	while ((optc = getopt_long (argc, argv, "d:hv", longopts, NULL)) != -1)  {
 		switch (optc) {
-	  	case 'd': /* directory */
-	  		dir = optarg;
-	  		break;
+		case 'd': /* directory */
+			dir = optarg;
+			break;
 		case 'h': /* help */
-	  		usage(argv[0], 0);
-	  		exit(0);
+			usage(argv[0], 0);
+			exit(0);
 		case 'v': /* version */
-	  		printf("\n%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	  		exit(0);
+			printf("\n%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
+			exit(0);
 		default:
-	  		usage(argv[0], 1);
-	  		exit(1);
+			usage(argv[0], 1);
+			exit(1);
 		}
 	}
 	if (argc - optind > 1 || argc - optind < 1) {
 		usage(argv[0], 1);
 		exit(1);
-	} else 
+	} else
 		outfilename = argv[optind];
 
 	if (outfilename == NULL) {
@@ -90,14 +89,12 @@ int main(int argc, char **argv, char **envp)
 		fprintf(stderr, "You do not have permission to read the directory %s.\n", dir);
 		return -1;
 	}
-	
+
 	if (sefs_filesystem_db_save(&fsdata, outfilename) != 0) {
 		fprintf(stderr, "Error creating index file.\n");
 		return -1;
 	}
 	sefs_filesystem_db_close(&fsdata);
 
-	return 0;	
+	return 0;
 }
-
-

@@ -1,8 +1,8 @@
 /* Copyright (C) 2003-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
-/* 
- * Author: mayerf@tresys.com 
+/*
+ * Author: mayerf@tresys.com
  */
 
 /* sesearch.c: command line tool to search TE rules.
@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#define _GNU_SOURCE
 #include <getopt.h>
 #include <string.h>
 
@@ -116,7 +115,7 @@ Search Type Enforcement rules in an SELinux policy.\n\
   -h, --help              display this help and exit\n\
   -v, --version           output version information and exit\n\
 ", stdout);
-  	fputs("\n\
+	fputs("\n\
 If none of -s, -t, -c, -p, -b, --role_source, or --role_target\n\
 are specified, then all rules are shown.\n\
 You must specify -a (--all), or one of more of --allow, --neverallow, \n\
@@ -183,7 +182,7 @@ static int perform_av_query(apol_policy_t *policy, options_t *opt, apol_vector_t
 		}
 		free(tmp);
 	}
-	
+
 	if (apol_get_avrule_by_query(policy, avq, v)) {
 		error = errno;
 		goto err;
@@ -597,11 +596,11 @@ int main (int argc, char **argv)
 {
 	options_t cmd_opts;
 	int optc, rt;
-		
+
 	apol_policy_t *policy = NULL;
 	apol_vector_t *v = NULL;
 	unsigned int search_opts = 0;
-	
+
 	cmd_opts.all = cmd_opts.lineno = cmd_opts.allow = FALSE;
 	cmd_opts.nallow = cmd_opts.audit = cmd_opts.type = FALSE;
 	cmd_opts.rtrans = cmd_opts.indirect = cmd_opts.show_cond = FALSE;
@@ -610,143 +609,143 @@ int main (int argc, char **argv)
 	cmd_opts.src_name = cmd_opts.tgt_name = cmd_opts.class_name = NULL;
 	cmd_opts.permlist = cmd_opts.bool_name = cmd_opts.src_role_name = NULL;
 	cmd_opts.tgt_role_name = NULL;
-	
+
 	while ((optc = getopt_long (argc, argv, "s:t:r:g:c:p:b:ANURaTLolCinhv0", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
-	  		break;
-	  	case 's': /* source */
-	  		if(optarg == 0) {
-	  			usage(argv[0], 1);
-	  			printf("Missing source type/attribute for -s (--source)\n");
-	  			exit(1);
-	  		}
-	  		cmd_opts.src_name = strdup(optarg);
-	  		if (!cmd_opts.src_name) {
+			break;
+		case 's': /* source */
+			if(optarg == 0) {
+				usage(argv[0], 1);
+				printf("Missing source type/attribute for -s (--source)\n");
+				exit(1);
+			}
+			cmd_opts.src_name = strdup(optarg);
+			if (!cmd_opts.src_name) {
 				fprintf(stderr, "Memory error!\n");
-				exit(1);	
+				exit(1);
 			}
-	  		break;
-	  	case 't': /* target */
-	  		if(optarg == 0) {
-	  			usage(argv[0], 1);
-	  			printf("Missing target type/attribute for -t (--target)\n");
-	  			exit(1);
-	  		}
-	  		cmd_opts.tgt_name = strdup(optarg);
-	  		if (!cmd_opts.tgt_name) {
-	  			fprintf(stderr, "Memory error!\n");
-		  		exit(1);	
+			break;
+		case 't': /* target */
+			if(optarg == 0) {
+				usage(argv[0], 1);
+				printf("Missing target type/attribute for -t (--target)\n");
+				exit(1);
 			}
-	  		break;
+			cmd_opts.tgt_name = strdup(optarg);
+			if (!cmd_opts.tgt_name) {
+				fprintf(stderr, "Memory error!\n");
+				exit(1);
+			}
+			break;
 		case 'r':
-	  		if(optarg == 0) {
-	  			usage(argv[0], 1);
-	  			printf("Missing source role for --role_source\n");
-	  			exit(1);
-	  		}
-  			cmd_opts.src_role_name = strdup(optarg);
-  			if (!cmd_opts.src_role_name) {
-  				fprintf(stderr, "Memory error!\n");
-	  			exit(1);	
-	  		}
+			if(optarg == 0) {
+				usage(argv[0], 1);
+				printf("Missing source role for --role_source\n");
+				exit(1);
+			}
+			cmd_opts.src_role_name = strdup(optarg);
+			if (!cmd_opts.src_role_name) {
+				fprintf(stderr, "Memory error!\n");
+				exit(1);
+			}
 			break;
 		case 'g':
-	  		if(optarg == 0) {
-	  			usage(argv[0], 1);
-	  			printf("Missing target role for --role_target\n");
-	  			exit(1);
-	  		}
-  			cmd_opts.tgt_role_name = strdup(optarg);
-  			if (!cmd_opts.tgt_role_name) {
-  				fprintf(stderr, "Memory error!\n");
-	  			exit(1);	
-	  		}
+			if(optarg == 0) {
+				usage(argv[0], 1);
+				printf("Missing target role for --role_target\n");
+				exit(1);
+			}
+			cmd_opts.tgt_role_name = strdup(optarg);
+			if (!cmd_opts.tgt_role_name) {
+				fprintf(stderr, "Memory error!\n");
+				exit(1);
+			}
 			break;
-	  	case 'c': /* class */
-	  		if(optarg == 0) {
-	  			usage(argv[0], 1);
-	  			printf("Missing object class for -c (--class)\n");
-	  			exit(1);
-	  		}
-	  		cmd_opts.class_name = strdup(optarg);
-	  		if (!cmd_opts.class_name) {
-	  			fprintf(stderr, "Memory error!\n");
-	  			exit(1);	
-	  		}
-	  		break;
-	  	case 'p': /* permissions */
-	  		if(optarg == 0) {
-	  			usage(argv[0], 1);
-	  			printf("Missing permissions for -p (--perms)\n");
-	  			exit(1);
-	  		}
-	  		cmd_opts.permlist = strdup(optarg);
-	  		if (!cmd_opts.permlist) {
-	  			fprintf(stderr, "Memory error!\n");
-	  			exit(1);	
-	  		}
-	  		break;
+		case 'c': /* class */
+			if(optarg == 0) {
+				usage(argv[0], 1);
+				printf("Missing object class for -c (--class)\n");
+				exit(1);
+			}
+			cmd_opts.class_name = strdup(optarg);
+			if (!cmd_opts.class_name) {
+				fprintf(stderr, "Memory error!\n");
+				exit(1);
+			}
+			break;
+		case 'p': /* permissions */
+			if(optarg == 0) {
+				usage(argv[0], 1);
+				printf("Missing permissions for -p (--perms)\n");
+				exit(1);
+			}
+			cmd_opts.permlist = strdup(optarg);
+			if (!cmd_opts.permlist) {
+				fprintf(stderr, "Memory error!\n");
+				exit(1);
+			}
+			break;
 		case 'b':
-	  		if(optarg == 0) {
-	  			usage(argv[0], 1);
-	  			printf("Missing boolean for -b (--boolean)\n");
-	  			exit(1);
-	  		}
-	  		cmd_opts.bool_name = strdup(optarg);
-	  		if (!cmd_opts.bool_name) {
-	  			fprintf(stderr, "Memory error!\n");
-	  			exit(1);	
-	  		}
+			if(optarg == 0) {
+				usage(argv[0], 1);
+				printf("Missing boolean for -b (--boolean)\n");
+				exit(1);
+			}
+			cmd_opts.bool_name = strdup(optarg);
+			if (!cmd_opts.bool_name) {
+				fprintf(stderr, "Memory error!\n");
+				exit(1);
+			}
 			break;
-	  	case 'i': /* indirect search */
-	  		cmd_opts.indirect = TRUE;
-	  		break;
-	  	case 'n': /* no regex */
-	  		cmd_opts.useregex = FALSE;
-	  		break;
-	  	case 'A': /* allow */
-	  		cmd_opts.allow = TRUE;
-	  		break;
-	  	case 'N': /* neverallow */
-	  		cmd_opts.nallow = TRUE;
-	  		break;
-	  	case 'U': /* audit */
-	  		cmd_opts.audit = TRUE;
-	  		break;
-	  	case 'T': /* type */
-	  		cmd_opts.type = TRUE;
-	  		break;
-	  	case 'R': /* range transition */
-	  		cmd_opts.rtrans = TRUE;
-	  		break;
+		case 'i': /* indirect search */
+			cmd_opts.indirect = TRUE;
+			break;
+		case 'n': /* no regex */
+			cmd_opts.useregex = FALSE;
+			break;
+		case 'A': /* allow */
+			cmd_opts.allow = TRUE;
+			break;
+		case 'N': /* neverallow */
+			cmd_opts.nallow = TRUE;
+			break;
+		case 'U': /* audit */
+			cmd_opts.audit = TRUE;
+			break;
+		case 'T': /* type */
+			cmd_opts.type = TRUE;
+			break;
+		case 'R': /* range transition */
+			cmd_opts.rtrans = TRUE;
+			break;
 		case 'L':
 			cmd_opts.role_allow = TRUE;
 			break;
 		case 'o':
 			cmd_opts.role_trans = TRUE;
 			break;
-	  	case 'a': /* all */
-	  		cmd_opts.all = TRUE;
-	  		break;
-	  	case 'l': /* lineno */
-	  		cmd_opts.lineno = TRUE;
-	  		break;
+		case 'a': /* all */
+			cmd_opts.all = TRUE;
+			break;
+		case 'l': /* lineno */
+			cmd_opts.lineno = TRUE;
+			break;
 		case 'C':
 			cmd_opts.show_cond = TRUE;
 			break;
-	  	case 'h': /* help */
-	  		usage(argv[0], 0);
-	  		exit(0);
-	  	case 'v': /* version */
-	  		printf("\n%s (sesearch ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	  		exit(0);
-	  	default:
-	  		usage(argv[0], 1);
-	  		exit(1);
+		case 'h': /* help */
+			usage(argv[0], 0);
+			exit(0);
+		case 'v': /* version */
+			printf("\n%s (sesearch ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
+			exit(0);
+		default:
+			usage(argv[0], 1);
+			exit(1);
 		}
 	}
- 
+
 	if(!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.audit || cmd_opts.role_allow ||
 			cmd_opts.type || cmd_opts.rtrans || cmd_opts.role_trans || cmd_opts.all)) {
 		usage(argv[0], 1);
@@ -756,7 +755,7 @@ int main (int argc, char **argv)
 	}
 	if (!search_opts)
 		search_opts = (QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY);
-		
+
 	if (argc - optind > 1) {
 		usage(argv[0], 1);
 		exit(1);
@@ -766,7 +765,7 @@ int main (int argc, char **argv)
 			printf("Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
 			exit(1);
 		}
-	} else 
+	} else
 		policy_file = argv[optind];
 
 	/* attempt to open the policy */
@@ -839,4 +838,3 @@ cleanup:
 	free(cmd_opts.tgt_role_name);
 	exit(rt);
 }
-
