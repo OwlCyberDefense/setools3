@@ -6,32 +6,33 @@ LDADD = $(top_srcdir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
 seaudit_SOURCES = \
 	auditlogmodel.c auditlogmodel.h \
-	query_window.c query_window.h \
+	filtered_view.c filtered_view.h \
 	filter_window.c filter_window.h \
 	multifilter_window.c multifilter_window.h \
-	utilgui.c utilgui.h \
 	preferences.c preferences.h \
-	seaudit_window.c seaudit_window.h \
-	seaudit_callback.c seaudit_callback.h \
-	filtered_view.c filtered_view.h \
+	query_window.c query_window.h \
+	report.c report.h \
 	report_window.c report_window.h \
-	seaudit.c report.c report.h
+	seaudit.c seaudit_callback.c \
+	seaudit_callback.h seaudit.h \
+	seaudit_window.c seaudit_window.h \
+	utilgui.c utilgui.h
 seaudit_DEPENDENCIES = $(top_srcdir)/libseaudit/libseaudit.a \
-                       $(top_srcdir)/libapol/libapol.so \
+                       $(top_srcdir)/libapol/src/libapol.so \
                        $(top_srcdir)/libqpol/src/libqpol.so
 
 seaudit_report_SOURCES = seaudit-report.c report.c report.h
 seaudit_report_DEPENDENCIES = $(top_srcdir)/libseaudit/libseaudit.a \
-                              $(top_srcdir)/libapol/libapol.so \
+                              $(top_srcdir)/libapol/src/libapol.so \
                               $(top_srcdir)/libqpol/src/libqpol.so
 
 $(top_srcdir)/libapol/src/libapol.so:
-	$(MAKE) -C $(top_srcdir)/libapol $(notdir $@)
+	$(MAKE) -C $(top_srcdir)/libapol/src $(notdir $@)
 
 $(top_srcdir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_srcdir)/libqpol/src $(notdir $@)
 
-$(top_srcdir)/libseaudit/libseaudit.so:
+$(top_srcdir)/libseaudit/libseaudit.a:
 	$(MAKE) -C $(top_srcdir)/libseaudit $(notdir $@)
 
 # FIX ME:

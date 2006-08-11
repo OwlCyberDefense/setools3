@@ -41,7 +41,6 @@
 #include <limits.h>
 #include <fnmatch.h>
 /* command line parsing commands */
-#define _GNU_SOURCE
 #include <getopt.h>
 /* file tree walking commands */
 #define __USE_XOPEN_EXTENDED 1
