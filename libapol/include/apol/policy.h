@@ -102,6 +102,7 @@ extern char *apol_policy_get_version_type_mls_str(apol_policy_t *p);
 
 #define APOL_MSG_ERR 1
 #define APOL_MSG_WARN 2
+#define APOL_MSG_INFO 3
 
 /**
  * Write a message to the callback stored within an apol error
@@ -110,8 +111,8 @@ extern char *apol_policy_get_version_type_mls_str(apol_policy_t *p);
  *
  * @param p Error reporting handler.  If NULL then write message to
  * stderr.
- * @param level Severity of message, one of APOL_MSG_ERR or
- * APOL_MSG_WARN.
+ * @param level Severity of message, one of APOL_MSG_ERR,
+ * APOL_MSG_WARN, or APOL_MSG_INFO.
  * @param fmt Format string to print, using syntax of printf(3).
  */
 __attribute__ ((format(printf, 3, 4)))
@@ -128,5 +129,11 @@ extern void apol_handle_msg(apol_policy_t *p, int level, const char *fmt, ...);
  * format string and arguments.
  */
 #define WARN(p, format, ...) apol_handle_msg(p, APOL_MSG_WARN, format, __VA_ARGS__)
+
+/**
+ * Invoke a apol_policy_t's callback for an informational messag,
+ * passing it a format string and arguments.
+ */
+#define INFO(p, format, ...) apol_handle_msg(p, APOL_MSG_INFO, format, __VA_ARGS__)
 
 #endif

@@ -397,7 +397,7 @@ static int are_all_perms_mapped(apol_policy_t *p, apol_permmap_class_t *pc)
  */
 static int parse_permmap_class(apol_policy_t *p, FILE *fp,
                                size_t num_perms, apol_permmap_class_t *pc) {
-	char line[LINE_SZ], perm_name[LINE_SZ], *line_ptr = NULL;
+	char line[APOL_LINE_SZ], perm_name[APOL_LINE_SZ], *line_ptr = NULL;
 	size_t perms_read = 0;
 	int retval = 0;
 
@@ -470,7 +470,7 @@ static int parse_permmap_class(apol_policy_t *p, FILE *fp,
  */
 static int parse_permmap(apol_policy_t *p, FILE *fp)
 {
-	char line[LINE_SZ], class_name[LINE_SZ], *line_ptr = NULL;
+	char line[APOL_LINE_SZ], class_name[APOL_LINE_SZ], *line_ptr = NULL;
 	size_t num_classes = 0, num_perms = 0;
 	size_t i;
 	int retval = 0;
@@ -494,7 +494,7 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 	for (i = 0; i < num_classes; i++) {
 		apol_permmap_class_t *pc;
 		int found_class_decl = 0, rt;
-		while(fgets(line, LINE_SZ, fp) != NULL) {
+		while(fgets(line, APOL_LINE_SZ, fp) != NULL) {
 			line_ptr = line;
 			if (apol_str_trim(&line_ptr) != 0) {
 				return -1;

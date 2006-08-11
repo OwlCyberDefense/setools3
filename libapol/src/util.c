@@ -1,191 +1,3 @@
-#include <config.h>
-
-#include <apol/util.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <assert.h>
-#include <unistd.h>
-#include <errno.h>
-
-/****************************************
- * generic linked list functions
- *
- */
-
-/* create a new initialize list */
-llist_t *ll_new(void)
-{
-	llist_t *ll = NULL;
-
-	ll = (llist_t *)malloc(sizeof(llist_t));
-	if (ll == NULL) {
-		fprintf(stderr, "out of memory");
-		return NULL;
-	}
-	ll->head = ll->tail = NULL;
-	ll->num = 0;
-	return ll;
-}
-
-/* frees a node; caller must provide an appropriate
- * free_data() function that can free assoicated data pointers
- * Returns a pointer the n->next.
- */
-llist_node_t *ll_node_free(llist_node_t *n, void(*free_data)(void *))
-{
-	llist_node_t *r;
-	if(n == NULL)
-		return NULL;
-	assert(free_data != NULL);
-	(*free_data)(n->data);
-	r = n->next;
-	free(n);
-	return r;
-}
-
-/* frees an entire list...caller must provide an appropriate
- * free_data() function that can free assoicated data pointers
- */
-void ll_free(llist_t *ll, void (*free_data)(void *))
-{
-	llist_node_t *n;
-	if(ll == NULL)
-		return;
-	for(n = ll->head; n != NULL;) {
-		n = ll_node_free(n, free_data);
-	}
-	free(ll);
-	return;
-}
-/* removes a node from list..caller must free the node
- * separately using ll_node_free */
-int ll_unlink_node(llist_t *ll, llist_node_t *n)
-{
-	if(n == NULL || ll == NULL)
-		return -1;
-	if(n->prev == NULL) { /* deleting head node */
-		ll->head = n->next;
-		if(ll->head != NULL) {
-			ll->head->prev = NULL;
-			if(ll->head->next != NULL)
-				ll->head->next->prev = ll->head;
-		}
-	}
-	else {
-		llist_node_t *p;
-		p = n->prev;
-		p->next = n->next;
-		if(p->next != NULL)
-			p->next->prev = p;
-	}
-	if(ll->tail == n)
-		ll->tail = n->prev;
-	(ll->num)--;
-	return 0;
-}
-
-
-/* insert after provided node */
-int ll_insert_data(llist_t *ll, llist_node_t *n, void *data)
-{
-	llist_node_t *newnode;
-	if(data == NULL || ll == NULL)
-		return -1;
-
-	newnode = (llist_node_t *)malloc(sizeof (llist_node_t));
-	if(newnode == NULL) {
-		fprintf(stderr, "out of memory");
-		return -1;
-	}
-	newnode->data = data;
-
-	if(n == NULL) {
-		assert(ll->head == NULL && ll->tail == NULL && ll->num == 0); /* inserting after null means empty list */
-		ll->head = ll->tail = newnode;
-		newnode->next = NULL;
-		newnode->prev = NULL;
-		ll->num = 1;
-	}
-	else {
-		if(n->next == NULL)
-			ll->tail = newnode;
-		else
-			n->next->prev = newnode;
-		newnode->next = n->next;
-		newnode->prev = n;
-		n->next = newnode;
-		(ll->num)++;
-	}
-	return 0;
-}
-
-/* appends new item to end of list */
-int ll_append_data(llist_t *ll, void *data)
-{
-	if(ll == NULL)
-		return -1;
-	return ll_insert_data(ll, ll->tail, data);
-}
-
-/* end of of link list functions
- *************************************************************/
-
-int add_i_to_a(int i, int *cnt, int **a)
-{
-	if(cnt == NULL || a == NULL)
-		return -1;
-
-	/* FIX: This is not very elegant! We use an array that we
-	 * grow as new int are added to an array.  But rather than be smart
-	 * about it, for now we realloc() the array each time a new int is added! */
-	if(*a != NULL)
-		*a = (int *) realloc(*a, (*cnt + 1) * sizeof(int));
-	else /* empty list */ {
-		*cnt = 0;
-		*a = (int *) malloc(sizeof(int));
-	}
-	if(*a == NULL) {
-		fprintf(stderr, "out of memory\n");
-		return -1;
-	}
-	(*a)[*cnt] = i;
-	(*cnt)++;
-	return 0;
-}
-
-/* See if provided integer is in the provided integer array; if found return
- * the index for a, otherwise return -1 */
-int find_int_in_array(int i, const int *a, int a_sz)
-{
-	int j;
-	if(a == NULL  || a_sz < 1)
-		return -1;
-	for(j = 0; j < a_sz; j++) {
-		if(a[j] == i)
-			return j;
-	}
-	return -1;
-}
-
-int int_compare(const void *aptr, const void *bptr)
-{
-	int *a = (int*)aptr;
-	int *b = (int*)bptr;
-
-	assert(a);
-	assert(b);
-
-	if (*a < *b)
-		return -1;
-	if (*a > *b)
-		return 1;
-	return 0;
-}
-
-/******************** new stuff here ********************/
-
 /**
  * @file util.c
  *
@@ -211,6 +23,16 @@ int int_compare(const void *aptr, const void *bptr)
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+#include <config.h>
+
+#include <apol/util.h>
+
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
 
 /* these are needed for nodecons and IPv4 and IPv6 */
 #include <qpol/policy_query.h>
@@ -553,14 +375,14 @@ int apol_file_read_to_buffer(const char *fname, char **buf, size_t *len)
 
 char *apol_config_get_var(const char *var, FILE *fp)
 {
-	char line[LINE_SZ], t1[LINE_SZ], t2[LINE_SZ], *result = NULL;
+	char line[APOL_LINE_SZ], t1[APOL_LINE_SZ], t2[APOL_LINE_SZ], *result = NULL;
 	char *line_ptr = NULL;
 
 	if (var == NULL)
 		return NULL;
 
 	rewind(fp);
-	while (fgets(line, LINE_SZ, fp) != NULL) {
+	while (fgets(line, APOL_LINE_SZ, fp) != NULL) {
 		line_ptr = &line[0];
 		if (apol_str_trim(&line_ptr) != 0)
 			return NULL;

@@ -1,43 +1,3 @@
-#ifndef _APOLICY_UTIL_H_
-#define _APOLICY_UTIL_H_
-
-#include <config.h>
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <regex.h>
-#include <stdint.h>
-
-/* generic link list structures */
-typedef struct llist_node {
-	void			*data;	/* data of any type or structure */
-	struct llist_node	*prev;
-	struct llist_node	*next;
-} llist_node_t;
-
-typedef struct llist {
-	int		num;
-	llist_node_t	*head;
-	llist_node_t	*tail;
-} llist_t;
-
-/* prototypes */
-llist_t *ll_new(void);
-void ll_free(llist_t *ll, void(*free_data)(void *));
-llist_node_t *ll_node_free(llist_node_t *n, void(*free_data)(void *));
-int ll_unlink_node(llist_t *ll, llist_node_t *n);
-int ll_insert_data(llist_t *ll, llist_node_t *n, void *data);
-int ll_append_data(llist_t *ll, void *data);
-
-int add_i_to_a(int i, int *cnt, int **a);
-int find_int_in_array(int i, const int *a, int a_sz);
-int copy_int_array(int **dest, int *src, int len);
-
-#endif /*_APOLICY_UTIL_H_*/
-
-
-/******************** new stuff here ********************/
-
 /**
  * @file util.h
  *
@@ -69,10 +29,12 @@ int copy_int_array(int **dest, int *src, int len);
 
 #include <config.h>
 
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 /* use 8k line size */
-#define LINE_SZ 8192
+#define APOL_LINE_SZ 8192
 
 #define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
 

@@ -1,6 +1,6 @@
 /**
  * @file expand.c
- * 
+ *
  * Provides a way for setools to expand policy.
  *
  * @author Kevin Carr  kcarr@tresys.com
@@ -32,7 +32,7 @@
 
 static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_datum_t datum, void *ptr)
 {
-  	type_datum_t *type = NULL, *orig_type;
+	type_datum_t *type = NULL, *orig_type;
 	policydb_t *db = (policydb_t *)ptr;
 	ebitmap_node_t *node = NULL;
 	uint32_t bit = 0;
@@ -61,6 +61,7 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 	policydb_t *db;
 	int rt;
 
+	INFO(handle, "%s", "Expanding policy.");
 	if (handle == NULL || base == NULL) {
 		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -87,7 +88,7 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 	for (i = 0; i < db->p_types.nprim; i++) {
 		typemap[i] = i+1;
 	}
-	
+
 	if (expand_module_avrules(handle->sh, db, db, typemap, 0, 1) < 0) {
 		goto err;
 	}
