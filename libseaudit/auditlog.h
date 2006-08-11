@@ -19,8 +19,10 @@
 
 #include <config.h>
 #include <time.h>
-#include <apol/avl-util.h>
 #include <apol/util.h>
+#include <apol/policy.h>
+#include <apol/vector.h>
+#include <errno.h>
 
 /* The following should be defined in the make environment */
 #ifndef LIBSEAUDIT_VERSION_STRING
@@ -136,8 +138,7 @@ typedef struct avc_msg {
         time_t tm_stmp_sec; 		/* audit header timestamp (seconds) */
         long tm_stmp_nano;  		/* audit header timestamp (nanoseconds) */
         unsigned int serial; 		/* audit header serial number */
-        int *perms;	     /* object permissions */
-	int num_perms;	     /* num of object permissions */
+        apol_vector_t *perms;	     /* object permissions */
 	int msg;             /* message ie. AVC_DENIED or AVC_GRANTED */
 	int key;
 	bool_t is_key;
@@ -148,15 +149,15 @@ typedef struct avc_msg {
 	int dest;
 	int port;
 	int source;
-	int src_user;         /* source user */
-	int src_role;         /* source role */
-	int src_type;         /* source type */
+	int src_user;
+	int src_role;
+	int src_type;
 	bool_t is_src_con;
-	int tgt_user;         /* target user */
-	int tgt_role;         /* target role */
-	int tgt_type;         /* target type */
+	int tgt_user;
+	int tgt_role;
+	int tgt_type;
 	bool_t is_tgt_con;
-	int obj_class;        /* object class */
+	int obj_class;     
 	bool_t is_obj_class;
         unsigned int src_sid; /* source sid */
 	bool_t is_src_sid;    
@@ -220,31 +221,29 @@ typedef struct strs {
  * amount as needed */
 #define ARRAY_SZ 100
 
-#define TYPE_TREE 0
-#define USER_TREE 1
-#define ROLE_TREE 2
-#define OBJ_TREE  3
-#define PERM_TREE 4
-#define HOST_TREE 5
-#define BOOL_TREE 6
-#define NUM_TREES 7
-
-typedef struct audit_log_malformed_msg_list {
-	char **list;
-	int size;
-} audit_log_malformed_msg_list_t;
+#define TYPE_VECTOR 0
+#define USER_VECTOR 1
+#define ROLE_VECTOR 2
+#define OBJ_VECTOR 3
+#define PERM_VECTOR 4
+#define HOST_VECTOR 5
+#define BOOL_VECTOR 6
+#define NUM_VECTORS 7
 
 typedef struct audit_log {
-	msg_t **msg_list;    /* the array of messages */
-	int msg_list_sz;     /* the size of message list */
-	int num_msgs;        /* the number of total messages */
+	apol_vector_t *msg_list;    /* the array of messages */
 	int num_bool_msgs;
 	int num_load_msgs;
 	int num_allow_msgs;
 	int num_deny_msgs;
-	audit_log_malformed_msg_list_t *malformed_msgs;
-	avl_tree_t trees[NUM_TREES];
-	strs_t symbols[NUM_TREES];
+	apol_vector_t *malformed_msgs;
+	apol_vector_t *types; 
+	apol_vector_t *classes;
+	apol_vector_t *roles; 
+	apol_vector_t *users;
+	apol_vector_t *perms;
+	apol_vector_t *hosts;
+	apol_vector_t *bools;
 	int logtype;         /* the type of log, syslog or auditlog */
 } audit_log_t;
 
@@ -252,9 +251,6 @@ audit_log_t* audit_log_create(void);
 msg_t* avc_msg_create(void);
 msg_t* load_policy_msg_create(void);
 msg_t* boolean_msg_create(void);
-#define msg_get_avc_data(msg) msg->msg_data.avc_msg
-#define msg_get_load_policy_data(msg) msg->msg_data.load_policy_msg
-#define msg_get_boolean_data(msg) msg->msg_data.boolean_msg
 void audit_log_destroy(audit_log_t *tmp);
 void msg_print(msg_t *msg, FILE *file);
 void msg_destroy(msg_t *tmp);/* Free all memory associated with a message */
@@ -270,29 +266,33 @@ bool_t audit_log_has_valid_years(audit_log_t *log);  /* does the log have valid 
 
 enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 
-#define audit_log_add_type(log, str, id) audit_log_add_str(log, str, id, TYPE_TREE)
-#define audit_log_add_user(log, str, id) audit_log_add_str(log, str, id, USER_TREE)
-#define audit_log_add_role(log, str, id) audit_log_add_str(log, str, id, ROLE_TREE)
-#define audit_log_add_obj(log, str, id)  audit_log_add_str(log, str, id, OBJ_TREE)
-#define audit_log_add_perm(log, str, id) audit_log_add_str(log, str, id, PERM_TREE)
-#define audit_log_add_host(log, str, id) audit_log_add_str(log, str, id, HOST_TREE)
-#define audit_log_add_bool(log, str, id) audit_log_add_str(log, str, id, BOOL_TREE)
+#define msg_get_avc_data(msg) msg->msg_data.avc_msg
+#define msg_get_load_policy_data(msg) msg->msg_data.load_policy_msg
+#define msg_get_boolean_data(msg) msg->msg_data.boolean_msg
 
-#define audit_log_get_type_idx(log, str) audit_log_get_str_idx(log, str, TYPE_TREE)
-#define audit_log_get_user_idx(log, str) audit_log_get_str_idx(log, str, USER_TREE)
-#define audit_log_get_role_idx(log, str) audit_log_get_str_idx(log, str, ROLE_TREE)
-#define audit_log_get_obj_idx(log, str)  audit_log_get_str_idx(log, str, OBJ_TREE)
-#define audit_log_get_perm_idx(log, str) audit_log_get_str_idx(log, str, PERM_TREE)
-#define audit_log_get_host_idx(log, str) audit_log_get_str_idx(log, str, HOST_TREE)
-#define audit_log_get_bool_idx(log, str) audit_log_get_str_idx(log, str, BOOL_TREE)
+#define audit_log_add_type(log, str, id) audit_log_add_str(log, str, id, TYPE_VECTOR)
+#define audit_log_add_user(log, str, id) audit_log_add_str(log, str, id, USER_VECTOR)
+#define audit_log_add_role(log, str, id) audit_log_add_str(log, str, id, ROLE_VECTOR)
+#define audit_log_add_obj(log, str, id)  audit_log_add_str(log, str, id, OBJ_VECTOR)
+#define audit_log_add_perm(log, str, id) audit_log_add_str(log, str, id, PERM_VECTOR)
+#define audit_log_add_host(log, str, id) audit_log_add_str(log, str, id, HOST_VECTOR)
+#define audit_log_add_bool(log, str, id) audit_log_add_str(log, str, id, BOOL_VECTOR)
 
-#define audit_log_get_type(log, idx) audit_log_get_str(log, idx, TYPE_TREE)
-#define audit_log_get_user(log, idx) audit_log_get_str(log, idx, USER_TREE)
-#define audit_log_get_role(log, idx) audit_log_get_str(log, idx, ROLE_TREE)
-#define audit_log_get_obj(log, idx)  audit_log_get_str(log, idx, OBJ_TREE)
-#define audit_log_get_perm(log, idx) audit_log_get_str(log, idx, PERM_TREE)
-#define audit_log_get_host(log, idx) audit_log_get_str(log, idx, HOST_TREE)
-#define audit_log_get_bool(log, idx) audit_log_get_str(log, idx, BOOL_TREE)
+#define audit_log_get_type_idx(log, str) audit_log_get_str_idx(log, str, TYPE_VECTOR)
+#define audit_log_get_user_idx(log, str) audit_log_get_str_idx(log, str, USER_VECTOR)
+#define audit_log_get_role_idx(log, str) audit_log_get_str_idx(log, str, ROLE_VECTOR)
+#define audit_log_get_obj_idx(log, str)  audit_log_get_str_idx(log, str, OBJ_VECTOR)
+#define audit_log_get_perm_idx(log, str) audit_log_get_str_idx(log, str, PERM_VECTOR)
+#define audit_log_get_host_idx(log, str) audit_log_get_str_idx(log, str, HOST_VECTOR)
+#define audit_log_get_bool_idx(log, str) audit_log_get_str_idx(log, str, BOOL_VECTOR)
+
+#define audit_log_get_type(log, idx) audit_log_get_str(log, idx, TYPE_VECTOR)
+#define audit_log_get_user(log, idx) audit_log_get_str(log, idx, USER_VECTOR)
+#define audit_log_get_role(log, idx) audit_log_get_str(log, idx, ROLE_VECTOR)
+#define audit_log_get_obj(log, idx)  audit_log_get_str(log, idx, OBJ_VECTOR)
+#define audit_log_get_perm(log, idx) audit_log_get_str(log, idx, PERM_VECTOR)
+#define audit_log_get_host(log, idx) audit_log_get_str(log, idx, HOST_VECTOR)
+#define audit_log_get_bool(log, idx) audit_log_get_str(log, idx, BOOL_VECTOR)
 
 const char* libseaudit_get_version(void);
 

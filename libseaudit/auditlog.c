@@ -68,51 +68,24 @@ const char *audit_log_field_strs[] = { "msg_field",
 				       "date_field" ,
                                        "host_field" };
 
-static void audit_log_malformed_msg_list_free(audit_log_malformed_msg_list_t *list)
-{
-	int i;
-
-	if (!list->list)
-		return;
-	for (i = 0; i < list->size; i++)
-		if (list->list[i])
-			free(list->list[i]);
-	if (list->list)
-		free(list->list);
-	return;
-}
-
 int audit_log_add_malformed_msg(char *line, audit_log_t **log) {
-	int idx, new_sz, strsz;
 	
 	assert(line != NULL && log != NULL && *log != NULL);
-	strsz = strlen(line) + 1;
-	new_sz = (*log)->malformed_msgs->size + 1;
-	if ((*log)->malformed_msgs->list == NULL) {
-		(*log)->malformed_msgs->list = (char **)malloc(sizeof(char*));
-		if((*log)->malformed_msgs->list == NULL) {
-			fprintf(stderr, "out of memory\n");
-			return -1;
-		}
-	} else {
-		(*log)->malformed_msgs->list = (char **)realloc((*log)->malformed_msgs->list, new_sz * sizeof(char*));
-		if ((*log)->malformed_msgs->list == NULL) {
-			audit_log_malformed_msg_list_free((*log)->malformed_msgs);
-			fprintf(stderr, "out of memory\n");
+
+	if ((*log)->malformed_msgs == NULL) {
+		if ( !((*log)->malformed_msgs = apol_vector_create()) ) {
+			ERR(NULL, "%s", strerror(ENOMEM));
 			return -1;
 		}
 	}
+
 	/* We subtract 1 from the new size to get the correct index */
-	idx = new_sz - 1;
-	(*log)->malformed_msgs->list[idx] = (char *)malloc(strlen((const char*)line) + 1);
-	if ((*log)->malformed_msgs->list[idx] == NULL) {
-		audit_log_malformed_msg_list_free((*log)->malformed_msgs);
-		fprintf(stderr, "out of memory\n");
+	if ( apol_vector_append((*log)->malformed_msgs, (void *)line) < 0 ) {
+		apol_vector_destroy(&(*log)->malformed_msgs, NULL);
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	strncpy((*log)->malformed_msgs->list[idx], (const char*)line, strsz);
-	(*log)->malformed_msgs->size = new_sz;
-	
+
 	return 0;	
 }
 
@@ -133,232 +106,60 @@ const char* libseaudit_get_version(void)
 }
 
 /*
- * helper functions for the avl_tree in audit_log_t */
-static int strs_compare(void *user_data, const void *a, int idx, int which)
-{
-	strs_t *d = &((audit_log_t*)user_data)->symbols[which];
-	assert(idx < d->num_strs);
-	return strcmp(d->strs[idx], (char*)a);
-} 
-
-static int strs_grow(void *user_data, int sz, int which)
-{
-	int prev_sz;
-	strs_t *d = &((audit_log_t*)user_data)->symbols[which];
-
-	if (sz > d->strs_sz) {
-		prev_sz = d->strs_sz;
-	        d->strs_sz += ARRAY_SZ;
-	        d->strs = (char**)realloc(d->strs, sizeof(char*) * d->strs_sz);
-		if (d->strs == NULL) {
-			fprintf(stderr, "Out of memory");
-		        return -1;
-	        }
-	        memset(&d->strs[prev_sz], 0, sizeof(char*) * ARRAY_SZ);
-	}
-	return 0;
-}
-
-static int strs_add(void *user_data, const void *key, int idx, int which)
-{
-	char *newstr;
-	strs_t *d = &((audit_log_t*)user_data)->symbols[which];
-	char *string = (char*)key;
-
-	newstr = (char*)malloc(sizeof(char) * (strlen(string) + 1));
-	if (newstr == NULL){
-		fprintf(stderr, "Out of memory");
-		return -1;
-	}
-
-	strcpy(newstr, string);
-	d->strs[idx] = newstr; 
-	d->num_strs++;
-	return 0;
-}
-
-static int type_compare(void *user_data, const void *key, int idx)
-{
-	return strs_compare(user_data, key, idx, TYPE_TREE);
-}
-
-static int type_grow(void *user_data, int sz)
-{
-	return strs_grow(user_data, sz, TYPE_TREE);
-}
-
-static int type_add(void *user_data, const void *key, int idx)
-{
-	return strs_add(user_data, key, idx, TYPE_TREE);
-}
-
-static int user_compare(void *user_data, const void *key, int idx)
-{
-	return strs_compare(user_data, key, idx, USER_TREE);
-}
-
-static int user_grow(void *user_data, int sz)
-{
-	return strs_grow(user_data, sz, USER_TREE);
-}
-
-static int user_add(void *user_data, const void *key, int idx)
-{
-	return strs_add(user_data, key, idx, USER_TREE);
-}
-
-static int role_compare(void *user_data, const void *key, int idx)
-{
-	return strs_compare(user_data, key, idx, ROLE_TREE);
-}
-
-static int role_grow(void *user_data, int sz)
-{
-	return strs_grow(user_data, sz, ROLE_TREE);
-}
-
-static int role_add(void *user_data, const void *key, int idx)
-{
-	return strs_add(user_data, key, idx, ROLE_TREE);
-}
-
-static int obj_compare(void *user_data, const void *key, int idx)
-{
-	return strs_compare(user_data, key, idx, OBJ_TREE);
-}
-
-static int obj_grow(void *user_data, int sz)
-{
-	return strs_grow(user_data, sz, OBJ_TREE);
-}
-
-static int obj_add(void *user_data, const void *key, int idx)
-{
-	return strs_add(user_data, key, idx, OBJ_TREE);
-}
-
-static int perm_compare(void *user_data, const void *key, int idx)
-{
-	return strs_compare(user_data, key, idx, PERM_TREE);
-}
-
-static int perm_grow(void *user_data, int sz)
-{
-	return strs_grow(user_data, sz, PERM_TREE);
-}
-
-static int perm_add(void *user_data, const void *key, int idx)
-{
-	return strs_add(user_data, key, idx, PERM_TREE);
-}
-
-static int host_compare(void *user_data, const void *key, int idx)
-{
-	return strs_compare(user_data, key, idx, HOST_TREE);
-}
-
-static int host_grow(void *user_data, int sz)
-{
-	return strs_grow(user_data, sz, HOST_TREE);
-}
-
-static int host_add(void *user_data, const void *key, int idx)
-{
-	return strs_add(user_data, key, idx, HOST_TREE);
-}
-
-static int bool_compare(void *user_data, const void *key, int idx)
-{
-        return strs_compare(user_data, key, idx, BOOL_TREE);
-}
-
-static int bool_grow(void *user_data, int sz)
-{
-        return strs_grow(user_data, sz, BOOL_TREE);
-}
-
-static int bool_add(void *user_data, const void *key, int idx)
-{
-        return strs_add(user_data, key, idx, BOOL_TREE);
-}
-
-static int audit_log_str_init(audit_log_t *log, int which)
-{
-
-	log->symbols[which].strs = (char**)malloc(sizeof(char*) * ARRAY_SZ);
-
-	if (log->symbols[which].strs == NULL) { 
-		fprintf(stderr, "Out of memory"); 
-		return -1;
-	}
-        memset(log->symbols[which].strs, 0, sizeof(char*) * ARRAY_SZ); 
-	log->symbols[which].strs_sz = ARRAY_SZ;
-	log->symbols[which].num_strs = 0;
-	return 0;
-}
-
-/*
  * dynamically create the audit log structure. */
 audit_log_t* audit_log_create(void) 
 {
-	int i;
 	audit_log_t *new;
 	new = (audit_log_t*)malloc(sizeof(audit_log_t));
 	if (new == NULL) 
 		goto bad;
 	memset(new, 0, sizeof(audit_log_t));
-	new->msg_list = (msg_t**)malloc(sizeof(msg_t*) * ARRAY_SZ);
-	if (new->msg_list == NULL)
+	if (!(new->msg_list = apol_vector_create()) ) 
 		goto bad;
-	memset(new->msg_list, 0, sizeof(msg_t*) * ARRAY_SZ);
-	new->msg_list_sz = ARRAY_SZ;
-	
-	if (audit_log_str_init(new, TYPE_TREE))
-		goto bad;
-	avl_init(&new->trees[TYPE_TREE], new, type_compare, type_grow, type_add);
 
-	if (audit_log_str_init(new, USER_TREE))
-		goto bad;
-	avl_init(&new->trees[USER_TREE], new, user_compare, user_grow, user_add);
-
-	if (audit_log_str_init(new, ROLE_TREE))
-		goto bad;
-	avl_init(&new->trees[ROLE_TREE], new, role_compare, role_grow, role_add);
-
-	if (audit_log_str_init(new, OBJ_TREE))
-		goto bad;
-	avl_init(&new->trees[OBJ_TREE], new, obj_compare, obj_grow, obj_add);
-
-	if (audit_log_str_init(new, PERM_TREE))
-		goto bad;
-	avl_init(&new->trees[PERM_TREE], new, perm_compare, perm_grow, perm_add);
-
-	if (audit_log_str_init(new, HOST_TREE))
-		goto bad;
-	avl_init(&new->trees[HOST_TREE], new, host_compare, host_grow, host_add);
-	if (audit_log_str_init(new, BOOL_TREE))
-	        goto bad;
-	avl_init(&new->trees[BOOL_TREE], new, bool_compare, bool_grow, bool_add);
-	
 	/* New member to hold malformed messages as a list of strings */
-	new->malformed_msgs = (audit_log_malformed_msg_list_t *)malloc(sizeof(audit_log_malformed_msg_list_t));
-	if (new->malformed_msgs == NULL) {
+	if ( !(new->malformed_msgs = apol_vector_create()) ) 
 		goto bad;
-	}
-	memset(new->malformed_msgs, 0, sizeof(audit_log_malformed_msg_list_t));
-	
-	return new;
 
+	/* Create vectors for types/users/roles/classes found in log */
+	if ( !(new->classes = apol_vector_create()) )
+		goto bad;
+
+	if ( !(new->users = apol_vector_create()) )
+		goto bad;
+
+	if ( !(new->roles = apol_vector_create()) )
+		goto bad;
+
+	if ( !(new->types = apol_vector_create()) )
+		goto bad;
+
+	if ( !(new->hosts = apol_vector_create()) ) 
+		goto bad;
+	apol_vector_append(new->hosts, (void **)"");
+
+	if ( !(new->bools = apol_vector_create()) )
+		goto bad;
+
+	if ( !(new->perms = apol_vector_create()) )
+		goto bad;
+
+	return new;
 bad:
-	fprintf(stderr, "Out of memory");
+	ERR(NULL, "%s", strerror(ENOMEM));
 	if (new) {
 		if (new->msg_list)
-			free(new->msg_list);
-		for (i = 0; i < NUM_TREES; i++) {
-			if (new->symbols[i].strs)
-				free(new->symbols[i].strs);
-			avl_free(&new->trees[i]);
-		}
+			apol_vector_destroy(&new->msg_list, NULL);	
+		if (new->classes)
+			apol_vector_destroy(&new->classes, NULL);	
+		if (new->users)
+			apol_vector_destroy(&new->users, NULL);	
+		if (new->roles)
+			apol_vector_destroy(&new->roles, NULL);	
+		if (new->types)
+			apol_vector_destroy(&new->types, NULL);	
+		if (new->malformed_msgs)
+			apol_vector_destroy(&new->malformed_msgs, NULL);	
 		free(new);
 	}
 	return NULL;
@@ -370,14 +171,13 @@ static msg_t* msg_create(void)
 	
 	new = (msg_t*)malloc(sizeof(msg_t));
 	if (new == NULL) {
-		fprintf(stderr, "Out of memory");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	memset(new, 0, sizeof(msg_t));
-	new->host = -1;
 	new->date_stamp = (struct tm*)malloc(sizeof(struct tm));
 	if (!new->date_stamp) {
-		fprintf(stderr, "Out of memory");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		free(new);
 		return NULL;
 	}
@@ -394,12 +194,12 @@ msg_t* avc_msg_create(void)
 
 	msg = msg_create();
 	if (!msg) {
-		fprintf(stderr, "Out of memory.");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	new = (avc_msg_t*)malloc(sizeof(avc_msg_t));
 	if (new == NULL) {
-		fprintf(stderr, "Out of memory.");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		msg_destroy(msg);
 		return NULL;
 	}
@@ -427,13 +227,13 @@ msg_t* load_policy_msg_create(void)
 
 	msg = msg_create();
 	if (!msg) {
-		fprintf(stderr, "Out of memory.");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 
 	new = (load_policy_msg_t*)malloc(sizeof(load_policy_msg_t));
 	if (new == NULL) {
-		fprintf(stderr, "Out of memory.");
+                ERR(NULL, "%s", strerror(ENOMEM));
 		msg_destroy(msg);
 		return NULL;
 	}
@@ -450,13 +250,13 @@ msg_t* boolean_msg_create(void)
 
         msg = msg_create();
         if (!msg) {
-                fprintf(stderr, "Out of memory,");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 return NULL;
         }
 
         new = (boolean_msg_t*)malloc(sizeof(boolean_msg_t));
         if(new == NULL) {
-                fprintf(stderr, "Out of memory.");
+                ERR(NULL, "%s", strerror(ENOMEM));
                 msg_destroy(msg);
                 return NULL;
         }
@@ -470,31 +270,27 @@ msg_t* boolean_msg_create(void)
  * destroy an audit log, previously created by audit_log_create */
 void audit_log_destroy(audit_log_t *tmp)
 {
-	int i, j;
 	if (tmp == NULL)
 		return;
 
-	for (i = 0; i < NUM_TREES; i++) {
-		if (tmp->symbols[i].strs) {
-			for (j = 0; j < tmp->symbols[i].num_strs; j++) {
-				if (tmp->symbols[i].strs[j] != NULL)
-					free(tmp->symbols[i].strs[j]);
-			}
-			free(tmp->symbols[i].strs);
-		}
-		avl_free(&tmp->trees[i]);
-	}
-	for (i = 0; i < tmp->num_msgs; i++) {
-		if (tmp->msg_list[i] == NULL)
-			break;
-		msg_destroy(tmp->msg_list[i]);
-	}
 	if (tmp->msg_list)
-		free(tmp->msg_list);
-	
+		apol_vector_destroy(&tmp->msg_list, NULL);
 	if (tmp->malformed_msgs) 
-		audit_log_malformed_msg_list_free(tmp->malformed_msgs);
-	
+		apol_vector_destroy(&tmp->malformed_msgs, NULL);
+	if (tmp->users) 
+		apol_vector_destroy(&tmp->users, NULL);
+	if (tmp->classes)
+		apol_vector_destroy(&tmp->classes, NULL);
+	if (tmp->roles)
+		apol_vector_destroy(&tmp->roles, NULL);
+	if (tmp->types)
+		apol_vector_destroy(&tmp->types, NULL);
+	if (tmp->bools)
+		apol_vector_destroy(&tmp->bools, NULL);
+	if (tmp->hosts)
+		apol_vector_destroy(&tmp->hosts, NULL);
+	if (tmp->perms)
+		apol_vector_destroy(&tmp->perms, NULL);
 	free(tmp);
 }
 
@@ -619,27 +415,175 @@ bool_t audit_log_has_valid_years(audit_log_t *log)
 
 int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 {
-	if (string == NULL || log == NULL || id == NULL || which >= NUM_TREES)
+	int i;
+	if (string == NULL || log == NULL || which >= NUM_VECTORS)
 		return -1;
-	return avl_insert(&log->trees[which], string, id);
+	switch (which) {
+		case TYPE_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->types); i++) {
+				if (!strcmp(string, (char*)apol_vector_get_element(log->types, i))) {
+					*id = i; 
+					return i;
+				}
+			}
+			apol_vector_append(log->types, (void **)strdup(string));
+			*id = apol_vector_get_size(log->types)-1;
+			break;
+		case USER_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->users); i++) {
+				if (!strcmp(string, (char*)apol_vector_get_element(log->users, i))) {
+					*id = i;
+					return i;
+				}
+			}
+			apol_vector_append(log->users, (void **)strdup(string));
+			*id = apol_vector_get_size(log->users)-1;
+			break;
+		case ROLE_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->roles); i++) {
+				if (!strcmp(string, (char*)apol_vector_get_element(log->roles, i))) {
+					*id = i;
+					return i;
+				}
+			}
+			apol_vector_append(log->roles, (void **)strdup(string));
+			*id = apol_vector_get_size(log->roles)-1;
+			break;
+		case OBJ_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->classes); i++) {
+				if (!strcmp(string, (char*)apol_vector_get_element(log->classes, i))) {
+					*id = i;
+					return i;
+				}
+			}
+			apol_vector_append(log->classes, (void **)strdup(string));
+			*id = apol_vector_get_size(log->classes)-1;
+			break;
+		case PERM_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->perms); i++) {
+				if (!strcmp(string, (char*)apol_vector_get_element(log->perms, i))) {
+					*id = i;
+					return i;
+				}
+			}
+			apol_vector_append(log->perms, (void **)strdup(string));
+			*id = apol_vector_get_size(log->perms)-1;
+			break;
+		case HOST_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->hosts); i++) {
+				if (!strcmp(string, (char*)apol_vector_get_element(log->hosts, i))) {
+					*id = i;
+					return i;
+				}
+			}
+			apol_vector_append(log->hosts, (void **)strdup(string));
+			*id = apol_vector_get_size(log->hosts)-1;
+			break;
+		case BOOL_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->bools); i++) {
+				if (!strcmp(string, (char*)apol_vector_get_element(log->bools, i))) {
+					*id = i;
+					return i;
+				}
+			}
+			apol_vector_append(log->bools, (void **)strdup(string));
+			*id = apol_vector_get_size(log->bools)-1; 
+	}
+	return 0; 
 }
 
 /*
  * get the integer handle for a string in the audit log database. */
 int audit_log_get_str_idx(audit_log_t *log, const char *str, int which)
 {
-	if (log == NULL || str == NULL || which >= NUM_TREES)
-		return -1;
-	return avl_get_idx(str, &log->trees[which]);
+	int i;
+
+        if (log == NULL || str == NULL || which >= NUM_VECTORS)
+                return -1;
+	switch (which) {
+		case TYPE_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->types); i++) {
+				char *type;
+				type = apol_vector_get_element(log->types, i);
+				if (!strcmp(type, str)) return i;
+			}
+			break;
+		case ROLE_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->roles); i++) {
+				char *role;
+				role = apol_vector_get_element(log->roles, i);
+				if (!strcmp(role, str)) return i;
+			}
+			break;
+		case USER_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->users); i++) {
+				char *user;
+				user = apol_vector_get_element(log->users, i);
+				if (!strcmp(user, str)) return i;
+			}
+			break;
+		case OBJ_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->classes); i++) {
+				char *obj;
+				obj = apol_vector_get_element(log->classes, i);
+				if (!strcmp(obj, str)) return i;
+			}
+			break;
+		case PERM_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->perms); i++) {
+				char *perm;
+				perm = apol_vector_get_element(log->perms, i);
+				if (!strcmp(perm, str)) return i;
+			}
+			break;
+		case HOST_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->hosts); i++) {
+				char *host;
+				host = apol_vector_get_element(log->hosts, i);
+				if (!strcmp(host, str)) return i;
+			}
+			break;
+		case BOOL_VECTOR:
+			for (i = 0; i < apol_vector_get_size(log->bools); i++) {
+				char *bool;
+				bool = apol_vector_get_element(log->bools, i);
+				if (!strcmp(bool, str)) return i;
+			}
+			break;
+	}
+        return -1; 
 }
 
 /*
  * get a string from the audit log database, based on the integer handle. */
 const char* audit_log_get_str(audit_log_t *log, int idx, int which)
 {
-	if (log == NULL || idx < 0 || idx >= log->symbols[which].num_strs)
-		return NULL;
-	return log->symbols[which].strs[idx];
+        if (log == NULL || idx < 0)
+                return NULL;
+	switch (which) {
+		case TYPE_VECTOR:
+			return apol_vector_get_element(log->types, idx);
+			break;
+		case ROLE_VECTOR:
+			return apol_vector_get_element(log->roles, idx);
+			break;
+		case USER_VECTOR:
+			return apol_vector_get_element(log->users, idx);
+			break;
+		case OBJ_VECTOR:
+			return apol_vector_get_element(log->classes, idx);
+			break;
+		case PERM_VECTOR:
+			return apol_vector_get_element(log->perms, idx);
+			break;
+		case HOST_VECTOR:
+			return apol_vector_get_element(log->hosts, idx);
+			break;
+		case BOOL_VECTOR:
+			return apol_vector_get_element(log->bools, idx);
+			break;
+	}		
+       	return NULL; 
 }
 
 /*
@@ -649,17 +593,11 @@ int audit_log_add_msg(audit_log_t *log, msg_t *msg)
 {
 	if (log == NULL || msg == NULL)
 		return -1;
-	if (log->num_msgs >= log->msg_list_sz) {
-		log->msg_list = (msg_t**)realloc(log->msg_list, sizeof(msg_t*)*(log->msg_list_sz+ ARRAY_SZ));
-		if (log->msg_list == NULL) {
-			fprintf(stderr, "Out of memory");
-			return -1;
-		}
-		log->msg_list_sz += ARRAY_SZ;
-		memset(&log->msg_list[log->num_msgs],0, sizeof(msg_t*) * ARRAY_SZ);
+	
+	if ( apol_vector_append(log->msg_list, (void *) msg) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1;
 	}
-	log->msg_list[log->num_msgs] = msg;
-	log->num_msgs++;
 	return 0;
 }
 

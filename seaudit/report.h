@@ -16,7 +16,8 @@
 #ifndef SEAUDIT_REPORT_H
 #define SEAUDIT_REPORT_H
 
-#include "../libapol/util.h"
+#include <apol/util.h>
+#include <apol/vector.h>
 #include "../libseaudit/parse.h"
 #include "../libseaudit/auditlog_view.h"
 

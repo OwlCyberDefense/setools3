@@ -15,6 +15,7 @@
 #define LIBSEAUDIT_FILTER_H
 
 #include <apol/util.h>
+#include <apol/vector.h>
 #include "filter_criteria.h"
 
 #define FILTER_FILE_FORMAT_VERSION "1.3"
@@ -56,6 +57,6 @@ void seaudit_filter_make_dirty_criterias(seaudit_filter_t *seaudit_filter);
 bool_t seaudit_filter_does_message_match(seaudit_filter_t *filter, msg_t *message, audit_log_t *log);
 int seaudit_filter_save_to_file(seaudit_filter_t *filter, const char *filename);
 void seaudit_filter_append_to_file(seaudit_filter_t *filter, FILE *file, int tabs);
-llist_t* seaudit_filter_get_list(seaudit_filter_t *filter);
+apol_vector_t* seaudit_filter_get_list(seaudit_filter_t *filter);
 
 #endif

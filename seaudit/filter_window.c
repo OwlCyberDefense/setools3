@@ -19,7 +19,7 @@
 #include "seaudit_callback.h"
 #include <libseaudit/filters.h>
 #include <libseaudit/auditlog.h>
-#include <libapol/policy.h>
+#include <apol/policy.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
@@ -272,10 +272,12 @@ static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, con
 	
 	/* As a defensive programming technique, we first make sure the string is */
 	/* a valid size before adding it to the list store. If not, then ignore.  */
+/*
 	if (!is_valid_str_sz(item)) {
 		fprintf(stderr, "Item string too large....Ignoring");
 		return;
 	}
+*/
 	
 	valid = gtk_tree_model_get_iter_first(model, &iter);
 	while (valid) {
@@ -326,17 +328,22 @@ static gboolean filters_select_items_is_value_unselected(filters_select_items_t 
 
 static gboolean is_value_from_current_items_source(filters_select_items_t *filter_items_list, const gchar *item_str)
 {
+	qpol_type_t *type;
+	qpol_user_t *user;
+	qpol_role_t *role;
+	qpol_class_t *class;
+
 	if (filter_items_list->items_list_type == SEAUDIT_SRC_TYPES ||
 	    filter_items_list->items_list_type == SEAUDIT_TGT_TYPES)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_type_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (get_type_idx(item_str, seaudit_app->cur_policy) != -1);
+			return (qpol_policy_get_type_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &type) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_type_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (get_type_idx(item_str, seaudit_app->cur_policy) != -1)
+			if (qpol_policy_get_type_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &type) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -349,11 +356,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_user_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return does_user_exists(item_str, seaudit_app->cur_policy);
+			return (qpol_policy_get_user_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &user) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_user_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (does_user_exists(item_str, seaudit_app->cur_policy))
+			if (qpol_policy_get_user_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &user) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -366,11 +373,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_role_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (get_role_idx(item_str, seaudit_app->cur_policy) != -1);
+			return (qpol_policy_get_role_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &role) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_role_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (get_role_idx(item_str, seaudit_app->cur_policy) != -1)
+			if (qpol_policy_get_role_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &role) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -381,11 +388,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_obj_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (get_obj_class_idx(item_str, seaudit_app->cur_policy));
+			return (qpol_policy_get_class_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &class) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_obj_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (get_obj_class_idx(item_str, seaudit_app->cur_policy))
+			if (qpol_policy_get_class_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &class) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -417,6 +424,11 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 {
 	int i;
 	const char *object;
+	char *class_name;
+	apol_vector_t *class_vector;
+	qpol_class_t *class;
+
+	apol_get_class_by_query(seaudit_app->cur_policy, NULL, &class_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
@@ -426,10 +438,11 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 									  object);
 		break;
 	case SEAUDIT_FROM_POLICY:
-		for (i = 0; i < seaudit_app->cur_policy->num_obj_classes; i++) {
+		for (i = 0; i < apol_vector_get_size(class_vector); i++) {
 			/* Add to excluded objects list store */
-			filters_select_items_add_unselected_value(filter_items_list,
-								  seaudit_app->cur_policy->obj_classes[i].name);
+			class = apol_vector_get_element(class_vector, i);
+			qpol_class_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, class, &class_name);
+			filters_select_items_add_unselected_value(filter_items_list, class_name);
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
@@ -437,21 +450,28 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 			if (g_utf8_validate(object, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  object);
-		for (i = 0; i < seaudit_app->cur_policy->num_obj_classes; i++)
+		for (i = 0; i < apol_vector_get_size(class_vector); i++)
 			/* Add to excluded objects list store */
-			filters_select_items_add_unselected_value(filter_items_list,
-								  seaudit_app->cur_policy->obj_classes[i].name);
+			class = apol_vector_get_element(class_vector, i);
+			qpol_class_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, class, &class_name);
+			filters_select_items_add_unselected_value(filter_items_list, class_name);
 		break;
 	default:
 		fprintf(stderr, "Bad filters_select_items_t object!!\n");
-		return;
+		break;
 	}
+	apol_vector_destroy(&class_vector, NULL);
 }
 
 static void filters_select_items_set_roles_list_stores_default_values(filters_select_items_t *filter_items_list)
 {
 	int i;
 	const char *role;
+	char *role_name;
+	apol_vector_t *role_vector;
+	qpol_role_t *role_type;
+
+	apol_get_role_by_query (seaudit_app->cur_policy, NULL, &role_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
@@ -461,95 +481,112 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 									  role);
 		break;
 	case SEAUDIT_FROM_POLICY:
-		for (i = 0; i < seaudit_app->cur_policy->num_roles; i++)
-			filters_select_items_add_unselected_value(filter_items_list,
-								  seaudit_app->cur_policy->roles[i].name);
+		for (i = 0; i < apol_vector_get_size(role_vector); i++) {
+			role_type = apol_vector_get_element(role_vector, i);
+			qpol_role_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, role_type, &role_name);
+			filters_select_items_add_unselected_value(filter_items_list, role_name);
+		}
 		break;
 	case SEAUDIT_FROM_UNION:
 		for (i = 0; (role = audit_log_get_role(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(role, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  role);
-		for (i = 0; i < seaudit_app->cur_policy->num_roles; i++)
-			filters_select_items_add_unselected_value(filter_items_list,
-								  seaudit_app->cur_policy->roles[i].name);
+		for (i = 0; i < apol_vector_get_size(role_vector); i++) {
+                        role_type = apol_vector_get_element(role_vector, i);
+                        qpol_role_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, role_type, &role_name);
+                        filters_select_items_add_unselected_value(filter_items_list, role_name);
+		}
 		break;
 	default:
 		fprintf(stderr, "Bad filters_select_items_t object!!\n");
-		return;
-	}	
+		break;
+	}
+	apol_vector_destroy(&role_vector, NULL);	
 }
 
 static void filters_select_items_set_users_list_stores_default_values(filters_select_items_t *filter_items_list)
 {
-	const char *user;
-	char *name;
+	const char *user_str;
 	int i;
+	apol_vector_t *user_vector;
+	qpol_user_t *user;
+	char *user_name;
 
+	apol_get_user_by_query(seaudit_app->cur_policy, NULL, &user_vector);
+	
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
-		for (i = 0; (user = audit_log_get_user(seaudit_app->cur_log, i)) != NULL; i++)
-			if (g_utf8_validate(user, -1, NULL))
+		for (i = 0; (user_str = audit_log_get_user(seaudit_app->cur_log, i)) != NULL; i++)
+			if (g_utf8_validate(user_str, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
-									  user);
+									  user_str);
 		break;
 	case SEAUDIT_FROM_POLICY:
-		for (i = 0; is_valid_user_idx(i, seaudit_app->cur_policy); i++) {
-			get_user_name2(i, &name, seaudit_app->cur_policy);
-			filters_select_items_add_unselected_value(filter_items_list, name);
-			free(name);
+		for (i = 0; apol_vector_get_size(user_vector); i++) {
+			user = apol_vector_get_element(user_vector, i);
+			qpol_user_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, user, &user_name);
+			filters_select_items_add_unselected_value(filter_items_list, user_name);
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
-		for (i = 0; (user = audit_log_get_user(seaudit_app->cur_log, i)) != NULL; i++)
-			if (g_utf8_validate(user, -1, NULL))
+		for (i = 0; (user_str = audit_log_get_user(seaudit_app->cur_log, i)) != NULL; i++)
+			if (g_utf8_validate(user_str, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
-									  user);
-		for (i = 0; is_valid_user_idx(i, seaudit_app->cur_policy); i++) {
-			get_user_name2(i, &name, seaudit_app->cur_policy);
-			filters_select_items_add_unselected_value(filter_items_list, name);
-			free(name);
+									  user_str);
+		for (i = 0; apol_vector_get_size(user_vector); i++) {
+			user = apol_vector_get_element(user_vector, i);
+			qpol_user_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, user, &user_name);
+			filters_select_items_add_unselected_value(filter_items_list, user_name);
 		}
 		break;
 	default:
 		fprintf(stderr, "Bad filters_select_items_t object!!\n");
-		return;
+		break;
 	}		
+	apol_vector_destroy(&user_vector, NULL);
 }
 
 static void filters_select_items_set_types_list_stores_default_values(filters_select_items_t *filter_items_list)
 {
 	int i; 
-	const char *type;
+	const char *type_str;
+	apol_vector_t *type_vector;
+	qpol_type_t *type;
+	char *type_name;
+	
+	apol_get_type_by_query(seaudit_app->cur_policy, NULL, &type_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
-		for (i = 0; (type = audit_log_get_type(seaudit_app->cur_log, i)) != NULL; i++)
-			if (g_utf8_validate(type, -1, NULL))
+		for (i = 0; (type_str = audit_log_get_type(seaudit_app->cur_log, i)) != NULL; i++)
+			if (g_utf8_validate(type_str, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
-									  type);
+									  type_str);
 		break;
 	case SEAUDIT_FROM_POLICY:
 		/* start iteration of types at index 1 in order to skip 'self' type */
-		for (i = 1; i < seaudit_app->cur_policy->num_types; i++) {
-			filters_select_items_add_unselected_value(filter_items_list,
-								  seaudit_app->cur_policy->types[i].name);
+		for (i = 1; i < apol_vector_get_size(type_vector); i++) {
+                        type = apol_vector_get_element(type_vector, i);
+                        qpol_type_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, type, &type_name);
+                        filters_select_items_add_unselected_value(filter_items_list, type_name);
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
-		for (i = 0; (type = audit_log_get_type(seaudit_app->cur_log, i)) != NULL; i++)
-			if (g_utf8_validate(type, -1, NULL))
+		for (i = 0; (type_str = audit_log_get_type(seaudit_app->cur_log, i)) != NULL; i++)
+			if (g_utf8_validate(type_str, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
-									  type);
-		for (i = 1; i < seaudit_app->cur_policy->num_types; i++) {
-			filters_select_items_add_unselected_value(filter_items_list,
-								  seaudit_app->cur_policy->types[i].name);
-		}
+									  type_str);
+                for (i = 1; i < apol_vector_get_size(type_vector); i++) {
+                        type = apol_vector_get_element(type_vector, i);
+                        qpol_type_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, type, &type_name);
+                        filters_select_items_add_unselected_value(filter_items_list, type_name);
+                }
 		break;
 	default:
 		fprintf(stderr, "Bad filters_select_items_t object!!\n");
-		return;
 	}
+	apol_vector_destroy(&type_vector, NULL);
 }
 
 static void filters_select_items_set_list_stores_default_values(filters_select_items_t* filter_items_list)
@@ -911,7 +948,7 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	GtkLabel *excl_lbl;
 
 	/* Load the glade interface specifications */
-	dir = apol_find_file("customize_filter_window.glade");
+	dir = apol_file_find("customize_filter_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find customize_filter_window.glade\n");
 		return;
@@ -1665,7 +1702,7 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 		gtk_window_present(filter_window->window);
 		return;
 	}
-	dir = apol_find_file("filter_window.glade");
+	dir = apol_file_find("filter_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find filter_window.glade\n");
 		return;
@@ -2007,8 +2044,8 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 
 void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudit_filter_t *filter)
 {
-	const char **strs;
-	int num_strs, i;
+	apol_vector_t *strs;
+	int i;
 	char ports_str[16];
 	const int ports_str_len = 16;
 	
@@ -2022,39 +2059,39 @@ void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudi
 	if (filter->desc)
 		filter_window->notes = g_string_assign(filter_window->notes, filter->desc);
 	if (filter->src_type_criteria) {
-		strs = src_type_criteria_get_strs(filter->src_type_criteria, &num_strs);
-		for (i = 0; i < num_strs; i++)
-			filters_select_items_add_selected_value(filter_window->src_types_items, strs[i]);
+		strs = src_type_criteria_get_strs(filter->src_type_criteria);
+		for (i = 0; i < apol_vector_get_size(strs); i++)
+			filters_select_items_add_selected_value(filter_window->src_types_items, apol_vector_get_element(strs, i));
 	}
 	if (filter->tgt_type_criteria) {
-		strs = tgt_type_criteria_get_strs(filter->tgt_type_criteria, &num_strs);
-		for (i = 0; i < num_strs; i++)
-			filters_select_items_add_selected_value(filter_window->tgt_types_items, strs[i]);
+		strs = tgt_type_criteria_get_strs(filter->tgt_type_criteria);
+		for (i = 0; i < apol_vector_get_size(strs); i++)
+			filters_select_items_add_selected_value(filter_window->tgt_types_items, apol_vector_get_element(strs,i));
 	}
 	if (filter->src_user_criteria) {
-		strs = src_user_criteria_get_strs(filter->src_user_criteria, &num_strs);
-		for (i = 0; i < num_strs; i++)
-			filters_select_items_add_selected_value(filter_window->src_users_items, strs[i]);
+		strs = src_user_criteria_get_strs(filter->src_user_criteria);
+		for (i = 0; i < apol_vector_get_size(strs); i++)
+			filters_select_items_add_selected_value(filter_window->src_users_items, apol_vector_get_element(strs,i));
 	}
 	if (filter->tgt_user_criteria) {
-		strs = tgt_user_criteria_get_strs(filter->tgt_user_criteria, &num_strs);
-		for (i = 0; i < num_strs; i++)
-			filters_select_items_add_selected_value(filter_window->tgt_users_items, strs[i]);
+		strs = tgt_user_criteria_get_strs(filter->tgt_user_criteria);
+		for (i = 0; i < apol_vector_get_size(strs); i++)
+			filters_select_items_add_selected_value(filter_window->tgt_users_items, apol_vector_get_element(strs,i));
 	}
 	if (filter->src_role_criteria) {
-		strs = src_role_criteria_get_strs(filter->src_role_criteria, &num_strs);
-		for (i = 0; i < num_strs; i++)
-			filters_select_items_add_selected_value(filter_window->src_roles_items, strs[i]);
+		strs = src_role_criteria_get_strs(filter->src_role_criteria);
+		for (i = 0; i < apol_vector_get_size(strs); i++)
+			filters_select_items_add_selected_value(filter_window->src_roles_items, apol_vector_get_element(strs,i));
 	}
 	if (filter->tgt_role_criteria) {
-		strs = tgt_role_criteria_get_strs(filter->tgt_role_criteria, &num_strs);
-		for (i = 0; i < num_strs; i++)
-			filters_select_items_add_selected_value(filter_window->tgt_roles_items, strs[i]);
+		strs = tgt_role_criteria_get_strs(filter->tgt_role_criteria);
+		for (i = 0; i < apol_vector_get_size(strs); i++)
+			filters_select_items_add_selected_value(filter_window->tgt_roles_items, apol_vector_get_element(strs,i));
 	}
 	if (filter->class_criteria) {
-		strs = class_criteria_get_strs(filter->class_criteria, &num_strs);
-		for (i = 0; i < num_strs; i++)
-			filters_select_items_add_selected_value(filter_window->obj_class_items, strs[i]);
+		strs = class_criteria_get_strs(filter->class_criteria);
+		for (i = 0; i < apol_vector_get_size(strs); i++)
+			filters_select_items_add_selected_value(filter_window->obj_class_items, apol_vector_get_element(strs,i));
 	}
 	if (filter->ports_criteria) {
 		snprintf(ports_str, ports_str_len, "%d", ports_criteria_get_val(filter->ports_criteria));

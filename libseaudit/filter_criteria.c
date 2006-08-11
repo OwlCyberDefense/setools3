@@ -20,9 +20,8 @@
 #include "sort.h"
 
 typedef struct strs_criteria {
-	char **strs;
-	int num_strs;
-	int *indexes;
+	apol_vector_t *strs;
+	char *indexes;
 } strs_criteria_t;
 
 typedef strs_criteria_t type_criteria_t;
@@ -79,7 +78,7 @@ const char *glob_criteria_get_str(seaudit_criteria_t *criteria)
 	return (const char*)glob_criteria->globex;
 }
 
-const char **strs_criteria_get_strs(seaudit_criteria_t *criteria, int *size)
+apol_vector_t *strs_criteria_get_strs(seaudit_criteria_t *criteria)
 {
 	strs_criteria_t *strs_criteria;
 
@@ -87,8 +86,7 @@ const char **strs_criteria_get_strs(seaudit_criteria_t *criteria, int *size)
 		return NULL;
 
 	strs_criteria = (strs_criteria_t*)criteria->data;
-	*size = strs_criteria->num_strs;
-	return (const char**)strs_criteria->strs;
+	return (apol_vector_t *)strs_criteria->strs;
 }
 
 int ports_criteria_get_val(seaudit_criteria_t *criteria)
@@ -546,16 +544,9 @@ static bool_t src_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	if (!user)
 		return FALSE;
 	user_criteria = (user_criteria_t*)criteria->data;
-	if (criteria->dirty == TRUE) {
-		for (i = 0; i < user_criteria->num_strs; i++)
-			user_criteria->indexes[i] = audit_log_get_user_idx(log, user_criteria->strs[i]);
-	}
 	criteria->dirty = FALSE;
-	for (i = 0; i < user_criteria->num_strs; i++) { 
-		if (user_criteria->indexes[i] == -1)
-			if (fnmatch(user_criteria->strs[i], user, 0) == 0)
-				return TRUE;			
-		if (user_criteria->indexes[i] == msg->msg_data.avc_msg->src_user)
+	for (i = 0; i < apol_vector_get_size(user_criteria->strs); i++) { 
+		if (!strcmp(apol_vector_get_element(user_criteria->strs,i),user))
 			return TRUE; 
 	} 
 	return FALSE;
@@ -569,8 +560,8 @@ static void strs_criteria_print(strs_criteria_t *strs_criteria, FILE *stream, in
 
 	if (!strs_criteria)
 		return;
-	for (i = 0; i < strs_criteria->num_strs; i++) {
-		str_xml = xmlCharStrdup(strs_criteria->strs[i]);
+	for (i = 0; i < apol_vector_get_size(strs_criteria->strs); i++) {
+		str_xml = xmlCharStrdup(apol_vector_get_element(strs_criteria->strs,i));
 		escaped = xmlURIEscapeStr(str_xml, NULL);
 		for (j = 0; j < tabs; j++)
 			fprintf(stream, "\t");
@@ -611,16 +602,9 @@ static bool_t tgt_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	if (!user)
 		return FALSE;
 	user_criteria = (user_criteria_t*)criteria->data;
-	if (criteria->dirty == TRUE) {
-		for (i = 0; i < user_criteria->num_strs; i++)
-			user_criteria->indexes[i] = audit_log_get_user_idx(log, user_criteria->strs[i]);
-	}
 	criteria->dirty = FALSE;
-	for (i = 0; i < user_criteria->num_strs; i++) { 
-		if (user_criteria->indexes[i] == -1)
-			if (fnmatch(user_criteria->strs[i], user, 0) == 0)
-				return TRUE;
-		if (user_criteria->indexes[i] == msg->msg_data.avc_msg->tgt_user)
+	for (i = 0; i < apol_vector_get_size(user_criteria->strs); i++) { 
+		if (!strcmp(apol_vector_get_element(user_criteria->strs,i),user))
 			return TRUE; 
 	} 
 	return FALSE;
@@ -657,16 +641,9 @@ static bool_t src_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	if (!role)
 		return FALSE;
 	role_criteria = (role_criteria_t*)criteria->data;
-	if (criteria->dirty == TRUE) {
-		for (i = 0; i < role_criteria->num_strs; i++)
-			role_criteria->indexes[i] = audit_log_get_role_idx(log, role_criteria->strs[i]);
-	}
 	criteria->dirty = FALSE;
-	for (i = 0; i < role_criteria->num_strs; i++) { 
-		if (role_criteria->indexes[i] == -1)
-			if (fnmatch(role_criteria->strs[i], role, 0) == 0)
-				return TRUE;		       
-		if (role_criteria->indexes[i] == msg->msg_data.avc_msg->src_role) 
+	for (i = 0; i < apol_vector_get_size(role_criteria->strs); i++) { 
+		if (!strcmp(apol_vector_get_element(role_criteria->strs,i), role))
 			return TRUE; 
 	} 
 	return FALSE;
@@ -703,16 +680,9 @@ static bool_t tgt_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	if (!role)
 		return FALSE;
 	role_criteria = (role_criteria_t*)criteria->data;
-	if (criteria->dirty == TRUE) {
-		for (i = 0; i < role_criteria->num_strs; i++)
-			role_criteria->indexes[i] = audit_log_get_role_idx(log, role_criteria->strs[i]);
-	}
 	criteria->dirty = FALSE;
-	for (i = 0; i < role_criteria->num_strs; i++) { 
-		if (role_criteria->indexes[i] == -1)
-			if (fnmatch(role_criteria->strs[i], role, 0) == 0)
-				return TRUE;
-		if (role_criteria->indexes[i] == msg->msg_data.avc_msg->tgt_role) 
+	for (i = 0; i < apol_vector_get_size(role_criteria->strs); i++) { 
+		if (!strcmp(apol_vector_get_element(role_criteria->strs,i), role))
 			return TRUE; 
 	} 
 	return FALSE;
@@ -749,16 +719,9 @@ static bool_t src_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	if (!type)
 		return FALSE;
 	type_criteria = (type_criteria_t*)criteria->data;
-	if (criteria->dirty == TRUE) {
-		for (i = 0; i < type_criteria->num_strs; i++)
-			type_criteria->indexes[i] = audit_log_get_type_idx(log, type_criteria->strs[i]);
-	}
 	criteria->dirty = FALSE;
-	for (i = 0; i < type_criteria->num_strs; i++) { 
-		if (type_criteria->indexes[i] == -1)
-			if (fnmatch(type_criteria->strs[i], type, 0) == 0)
-				return TRUE;
-		if (type_criteria->indexes[i] == msg->msg_data.avc_msg->src_type)
+	for (i = 0; i < apol_vector_get_size(type_criteria->strs); i++) { 
+		if (!strcmp(apol_vector_get_element(type_criteria->strs,i), type))
 			return TRUE;
 	} 
 	return FALSE;
@@ -795,16 +758,9 @@ static bool_t tgt_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	if (!type)
 		return FALSE;
 	type_criteria = (type_criteria_t*)criteria->data;
-	if (criteria->dirty == TRUE) {
-		for (i = 0; i < type_criteria->num_strs; i++)
-			type_criteria->indexes[i] = audit_log_get_type_idx(log, type_criteria->strs[i]);
-	}
 	criteria->dirty = FALSE;
-	for (i = 0; i < type_criteria->num_strs; i++) { 
-		if (type_criteria->indexes[i] == -1)
-			if (fnmatch(type_criteria->strs[i], type, 0) == 0)
-				return TRUE;
-		if (type_criteria->indexes[i] == msg->msg_data.avc_msg->tgt_type)
+	for (i = 0; i < apol_vector_get_size(type_criteria->strs); i++) { 
+		if (!strcmp(apol_vector_get_element(type_criteria->strs,i), type))
 			return TRUE;
 	} 
 	return FALSE;
@@ -841,16 +797,9 @@ static bool_t class_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 	if (!class)
 		return FALSE;
 	class_criteria = (class_criteria_t*)criteria->data;
-	if (criteria->dirty == TRUE) {
-		for (i = 0; i < class_criteria->num_strs; i++)
-			class_criteria->indexes[i] = audit_log_get_obj_idx(log, class_criteria->strs[i]);
-	}
 	criteria->dirty = FALSE;
-	for (i = 0; i < class_criteria->num_strs; i++) { 
-		if (class_criteria->indexes[i] == -1)
-			if (fnmatch(class_criteria->strs[i], class, 0) == 0)
-				return TRUE;
-		if (class_criteria->indexes[i] == msg->msg_data.avc_msg->obj_class) 
+	for (i = 0; i < apol_vector_get_size(class_criteria->strs); i++) { 
+		if (!strcmp(apol_vector_get_element(class_criteria->strs,i), class))
 			return TRUE; 
 	} 
 	return FALSE;	
@@ -916,9 +865,11 @@ static void strs_criteria_destroy(strs_criteria_t *strs_criteria)
 	if (strs_criteria->indexes)
 		free(strs_criteria->indexes);
 	if (strs_criteria->strs) {
-		for (i = 0; i < strs_criteria->num_strs; i++) {
-			if (strs_criteria->strs[i])
-				free(strs_criteria->strs[i]);
+		for (i = 0; i < apol_vector_get_size(strs_criteria->strs); i++) {
+			char *str;
+			str = apol_vector_get_element(strs_criteria->strs, i);
+			if (str)
+				free(str);
 		}
 		free(strs_criteria->strs);
 	}
@@ -936,30 +887,27 @@ static strs_criteria_t *strs_criteria_create(char **strs, int num_strs)
 	}
 	memset(d, 0, sizeof(type_criteria_t));
 	/* alloc strs and deep copy */
-	d->strs = (char**)calloc(num_strs, sizeof(char*));
+	d->strs = apol_vector_create();
 	if (!d->strs) {
 		goto bad;
 	}
 	for (i = 0; i < num_strs; i++) {
-		d->strs[i] = strdup(strs[i]);
-		if (!d->strs[i])
+		if ( apol_vector_append(d->strs, (void **)strdup(strs[i])) < 0 ) 
 			goto bad;
 	}
 	/* alloc indexes */
-	d->indexes = (int*)malloc(sizeof(int) * num_strs);
+/*
+	d->indexes = (int*)malloc(sizeof(int) * apol_vector_get_size(d->strs));
 	if (!d->indexes)
 		goto bad;
-	d->num_strs = num_strs;
+*/
 	return d;
  bad:
 	if (d) {
 		if (d->indexes)
 			free(d->indexes);
 		if (d->strs) {
-			for (i = 0; i < num_strs; i++)
-				if (d->strs[i])
-					free(d->strs[i]);
-			free(d->strs);
+			apol_vector_destroy(&d->strs, NULL);
 		}
 		free(d);
 	}

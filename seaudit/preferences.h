@@ -7,7 +7,6 @@
  * Modified: don.patterson@tresys.com 10-2004
  */
 
-#include <libapol/util.h>
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include "auditlog.h"
