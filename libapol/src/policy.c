@@ -39,6 +39,11 @@
 static void apol_handle_default_callback(apol_policy_t *p __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
+		case APOL_MSG_INFO:
+			{
+				/* by default do not display these messages */
+				return;
+			}
 		case APOL_MSG_WARN:
 			{
 				fprintf(stderr, "WARNING: ");
