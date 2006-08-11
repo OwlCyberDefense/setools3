@@ -10,8 +10,7 @@
 #include "utilgui.h"
 #include "seaudit_callback.h"
 #include <string.h>
-#include <libapol/render.h>
-#include <libapol/policy-query.h>
+#include <apol/policy-query.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -121,14 +120,14 @@ out:
 	return FALSE;
 }
 
-static void display_policy_query_results(GladeXML *xml, GString *src_type, GString *tgt_type, GString *obj_class, teq_results_t *r)
+static void display_policy_query_results(GladeXML *xml, GString *src_type, GString *tgt_type, GString *obj_class, apol_vector_t *av_vector)
 {
 	GtkTextView *view;
 	GtkTextBuffer *buffer;
 	GtkTextIter start, end; 
 	GtkTextTag *link_tag, *rules_tag, *summary_tag;
 	GtkTextTagTable *table;
-	char *string = NULL, tbuf[APOL_STR_SZ + 64];
+	char *string = NULL, tbuf[192];
 	char str[STR_SIZE]; 
 	int i;
 
@@ -148,7 +147,7 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 							 "weight", "bold", NULL);
 	}
 	link_tag = gtk_text_tag_table_lookup(table, "policy-link-tag");
-	if (!is_binary_policy(seaudit_app->cur_policy)) {
+	if (!apol_policy_is_binary(seaudit_app->cur_policy)) {
 		if (!link_tag) {
 			link_tag = gtk_text_buffer_create_tag(buffer, "policy-link-tag",
 							      "family", "monospace",
@@ -166,7 +165,7 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 	}
 	
 	snprintf(str, STR_SIZE, 
-		 "Found %d Rule(s) containing ", r->num_av_access);
+		 "Found %d Rule(s) containing ", apol_vector_get_size(av_vector));
 	gtk_text_buffer_insert_with_tags_by_name(buffer, &end, str, -1, "summary-tag", NULL);
 
 	if (strcmp(src_type->str, "") != 0) {
@@ -192,16 +191,19 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 
 	gtk_text_buffer_insert(buffer, &end, "\n", -1);
 
-	for (i = 0; i < r->num_av_access; i++) {
-		if (!is_binary_policy(seaudit_app->cur_policy)) {
+	for (i = 0; i < apol_vector_get_size(av_vector); i++) {
+		qpol_avrule_t *avrule;
+		
+		avrule = apol_vector_get_element(av_vector, i);
+		if (!apol_policy_is_binary(seaudit_app->cur_policy)) {
                        sprintf(tbuf, "(");
                        gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
-                       sprintf(tbuf, "%d", r->av_access_lineno[i]);
+                       sprintf(tbuf, "%d", 0 /* r->av_access_lineno[i] */);
                        gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "policy-link-tag", NULL);
                        sprintf(tbuf, ") ");
                        gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
                	}
-		string = re_render_av_rule(FALSE, r->av_access[i], FALSE, seaudit_app->cur_policy);
+		string = apol_avrule_render(seaudit_app->cur_policy, avrule);
 		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, string, -1, "rules-tag", NULL);
 		gtk_text_buffer_insert(buffer, &end, "\n", -1);
 	}
@@ -213,70 +215,67 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 
 	GtkWindow *window;
 	GtkWidget *widget;
-	teq_query_t q;
-	teq_results_t r;
-	int obj_class_idx, i;
+	int i, indirect = 0;
+	apol_vector_t *avrule_vector = NULL;
+	apol_avrule_query_t *avrule_query = NULL;	
 
 	/* setup the query struct */
-	init_teq_query(&q);
-	q.rule_select = TEQ_ALLOW;
-	q.any = FALSE;
+	avrule_query = apol_avrule_query_create();
+	apol_avrule_query_set_rules(seaudit_app->cur_policy, avrule_query, QPOL_RULE_ALLOW);
+
 	widget = glade_xml_get_widget(xml, "SrcTypeIndirectCheck");
 	g_assert(widget);
-	q.ta1.indirect = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-	if (strcmp(src_type->str, "") != 0)
-		q.ta1.ta = strdup(src_type->str);
-	else 
-		q.ta1.ta = NULL;
-	q.ta1.t_or_a = IDX_TYPE;
-
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) ) indirect = 1;
+	if (strcmp(src_type->str, "") != 0) {
+		apol_avrule_query_set_source(seaudit_app->cur_policy, avrule_query, src_type->str, indirect);
+		apol_avrule_query_set_regex(seaudit_app->cur_policy, avrule_query, 1);
+	}
+	indirect = 0;
 	widget = glade_xml_get_widget(xml, "TgtTypeIndirectCheck");
 	g_assert(widget);
-	q.ta2.indirect = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-	if (strcmp(tgt_type->str, "") != 0)
-		q.ta2.ta = strdup(tgt_type->str);
-	else 
-		q.ta2.ta = NULL;
-	q.ta2.t_or_a = IDX_TYPE;
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) ) indirect = 1;
+	if (strcmp(tgt_type->str, "") != 0) {
+		apol_avrule_query_set_target(seaudit_app->cur_policy, avrule_query, tgt_type->str, indirect);
+		apol_avrule_query_set_regex(seaudit_app->cur_policy, avrule_query, 1);
+	}
 
 	/* get the object class index.  
 	 * If its valid use it in the query */
 	if (strcmp(obj_class->str, "") != 0) {
-		obj_class_idx = get_obj_class_idx(obj_class->str, seaudit_app->cur_policy);
-		if (obj_class_idx >= 0) {
-			q.classes = (int*)malloc(sizeof(int));
-			*q.classes = obj_class_idx;
-			q.num_classes = 1;
+/*
+		qpol_class_t *class;
+
+		if ( qpol_policy_get_class_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, obj_class->str, &class) < 0 ) {
+*/
+			apol_avrule_query_append_class(seaudit_app->cur_policy, avrule_query, obj_class->str);	
+/*
 		} else {
 			window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
 			g_assert(window);
 			message_display(window, GTK_MESSAGE_ERROR, "Invalid object class");
-			free_teq_query_contents(&q);
 			return -1;
 		}
+*/
 	}
 
 	/* initialize the results structure */
-	init_teq_results(&r);
-	i = search_te_rules(&q, &r, seaudit_app->cur_policy);
+	i = apol_get_avrule_by_query(seaudit_app->cur_policy, avrule_query, &avrule_vector);
 
-	/* free the query */
-	free_teq_query_contents(&q);
-
-	if (i < 0) {
+	if ( i < 0 ) {
 		window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
 		g_assert(window);
-		if(r.errmsg) {
-			message_display(window, GTK_MESSAGE_ERROR, r.errmsg);
-			free(r.errmsg);
+		if(errno) {
+			message_display(window, GTK_MESSAGE_ERROR, strerror(errno));
 			return -1;
 		} else {
 			message_display(window, GTK_MESSAGE_ERROR, "unrecoverable error in search.");
 			return -1;
 		}
 	}
-	display_policy_query_results(xml, src_type, tgt_type, obj_class, &r);
-	free_teq_results_contents(&r);
+	display_policy_query_results(xml, src_type, tgt_type, obj_class, avrule_vector);
+	/* free the query */
+	apol_avrule_query_destroy(&avrule_query);
+	apol_vector_destroy(&avrule_vector, NULL);
 	return 0;
 }
 
@@ -407,10 +406,18 @@ void on_obj_check_button_toggled(GtkToggleButton *button, gpointer user_data)
 static void query_window_populate_combo_boxes(GtkWidget *src_type_combo, GtkWidget *tgt_type_combo, GtkWidget *obj_class_combo) 
 {
 	GList *items = NULL;
+	apol_vector_t *type_vector = NULL;
+	apol_vector_t *class_vector = NULL;
 	int i;
 
-	for (i = 0; i < seaudit_app->cur_policy->num_types; i++) {
-		items = g_list_append(items, seaudit_app->cur_policy->types[i].name);
+	apol_get_type_by_query(seaudit_app->cur_policy, NULL, &type_vector);
+	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
+		qpol_type_t *type = NULL;
+		char *type_name = NULL;
+
+		type = apol_vector_get_element(type_vector, i);
+		qpol_type_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, type, &type_name);
+		items = g_list_append(items, type_name);
 	}
 	items = g_list_sort(items, &query_window_str_compare);
 	gtk_combo_set_popdown_strings(GTK_COMBO(src_type_combo), items);
@@ -418,8 +425,14 @@ static void query_window_populate_combo_boxes(GtkWidget *src_type_combo, GtkWidg
 	g_list_free(items);
 	items = NULL;
 	
-	for (i = 0; i < seaudit_app->cur_policy->num_obj_classes; i++) {
-		items = g_list_append(items, seaudit_app->cur_policy->obj_classes[i].name);
+	apol_get_class_by_query(seaudit_app->cur_policy, NULL, &class_vector);	
+	for (i = 0; i < apol_vector_get_size(class_vector); i++) {
+		qpol_class_t *class = NULL;
+		char *class_name = NULL;
+
+		class = apol_vector_get_element(class_vector, i);
+		qpol_class_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, class, &class_name);
+		items = g_list_append(items, class_name);
 	}
 	items = g_list_sort(items, &query_window_str_compare);
 	gtk_combo_set_popdown_strings(GTK_COMBO(obj_class_combo), items);
@@ -494,8 +507,8 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 		selected = TRUE;
 	}
 	
-	msg_list_idx = view->store->log_view->fltr_msgs[fltr_msg_idx];
-	msg = seaudit_app->cur_log->msg_list[msg_list_idx];
+	msg_list_idx = fltr_msg_idx;
+	msg = apol_vector_get_element(seaudit_app->cur_log->msg_list,msg_list_idx);
 	if (msg->msg_type!=AVC_MSG) {
 		selected = FALSE;
 	} else {
@@ -587,7 +600,7 @@ int query_window_create(int *tree_item_idx)
 		return -1;
 	}	
 
-	dir = apol_find_file("query_window.glade");
+	dir = apol_file_find("query_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find query_window.glade\n");
 		return -1;
@@ -625,7 +638,7 @@ int query_window_create(int *tree_item_idx)
 	
 	populate_query_window_widgets(xml, tree_item_idx);
 	
-	if (is_binary_policy(seaudit_app->cur_policy)) {
+	if (apol_policy_is_binary(seaudit_app->cur_policy)) {
 		/* Remove the policy.conf tab if this is a binary policy. */
 		notebook = GTK_NOTEBOOK(glade_xml_get_widget(xml, "query_policy_notebook"));
 		g_assert(notebook);

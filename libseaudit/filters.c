@@ -14,9 +14,6 @@
 #include <string.h>
 #include <libxml/uri.h>
 
-static void dummy_free(void *foo) {  }
-
-
 seaudit_filter_t* seaudit_filter_create(void)
 {
 	seaudit_filter_t *rt = NULL;
@@ -40,18 +37,20 @@ void seaudit_filter_init(seaudit_filter_t *seaudit_filter)
 
 void seaudit_filter_destroy(seaudit_filter_t *seaudit_filter)
 {
-	llist_node_t *node;
-	llist_t *list;
+	apol_vector_t *criteria_vector;
+	seaudit_criteria_t *criteria;
+	int i;
 
 	if (seaudit_filter == NULL)
 		return;
 
-	list = seaudit_filter_get_list(seaudit_filter);
-	for (node = list->head; node != NULL;)
+	criteria_vector = (apol_vector_t *)seaudit_filter_get_list(seaudit_filter);
+	for (i = 0; i < apol_vector_get_size(criteria_vector); i++) {
 		/* free current and return next */
-		node = ll_node_free(node, (void (*)(void*))seaudit_criteria_destroy);
-	
-	free(list);
+		criteria = apol_vector_get_element(criteria_vector, i);
+		seaudit_criteria_destroy(criteria);
+	}
+	apol_vector_destroy(&criteria_vector, 0);	
 }
 
 void seaudit_filter_set_match(seaudit_filter_t *seaudit_filter, enum seaudit_filter_match_t match)
@@ -82,36 +81,37 @@ void seaudit_filter_set_desc(seaudit_filter_t *seaudit_filter, const char *desc)
 
 void seaudit_filter_make_dirty_criterias(seaudit_filter_t *seaudit_filter)
 {
-	llist_t *list;
-	llist_node_t *node;
 	seaudit_criteria_t *criteria;
+	apol_vector_t *criteria_vector;
+	int i;
 
-	list = seaudit_filter_get_list(seaudit_filter);
-	for (node = list->head; node != NULL; node = node->next) {
-		criteria = (seaudit_criteria_t*)node->data;
+	criteria_vector = (apol_vector_t *)seaudit_filter_get_list(seaudit_filter);
+	for (i = 0; i < apol_vector_get_size(criteria_vector); i++) {
+		criteria = apol_vector_get_element(criteria_vector, i);
 		if (criteria)
 			criteria->dirty = TRUE;
 	}
+	apol_vector_destroy(&criteria_vector, 0);
 }
 
 bool_t seaudit_filter_does_message_match(seaudit_filter_t *filter, msg_t *message, audit_log_t *log)
 {
-	llist_node_t *node = NULL;
-	llist_t *list = NULL;
 	seaudit_criteria_t *criteria = NULL;
 	bool_t match = TRUE;
+	apol_vector_t *criteria_vector;
+	int i;
 
 	if (filter == NULL || message == NULL || log == NULL)
 		return FALSE;
 
-	list = seaudit_filter_get_list(filter);
-	if (list == NULL) {
+	criteria_vector = (apol_vector_t *)seaudit_filter_get_list(filter);
+	if (criteria_vector == NULL) {
 		return FALSE;
 	}
-	for (node = list->head; node != NULL; node = node->next) {
-		if (!node->data)
+	for (i = 0; i < apol_vector_get_size(criteria_vector); i++) {
+		criteria = apol_vector_get_element(criteria_vector, i);
+		if (!criteria)
 			continue;
-		criteria = (seaudit_criteria_t*)node->data;
 		if (message->msg_type & criteria->msg_types) {
 			if (!criteria->criteria_act(message, criteria, log)) {
 				match = FALSE;
@@ -131,35 +131,34 @@ bool_t seaudit_filter_does_message_match(seaudit_filter_t *filter, msg_t *messag
 		match = FALSE;
 	if (filter->match == SEAUDIT_FILTER_MATCH_ALL)
 		match = TRUE;
-	ll_free(list, dummy_free);
+	apol_vector_destroy(&criteria_vector, 0);
 	return match;
 }
 
-llist_t* seaudit_filter_get_list(seaudit_filter_t *filter)
+apol_vector_t *seaudit_filter_get_list(seaudit_filter_t *filter)
 {
-	llist_t* list = NULL;
+	apol_vector_t *criterias;
 	
-	list = ll_new();
-	if (list == NULL) {
+	if (!(criterias = apol_vector_create())) {
 		return NULL;
 	}
-	ll_append_data(list, filter->src_type_criteria);
-	ll_append_data(list, filter->tgt_type_criteria);
-	ll_append_data(list, filter->src_role_criteria);
-	ll_append_data(list, filter->tgt_role_criteria);
-	ll_append_data(list, filter->src_user_criteria);
-	ll_append_data(list, filter->tgt_user_criteria);
-	ll_append_data(list, filter->class_criteria);
-	ll_append_data(list, filter->exe_criteria);
-	ll_append_data(list, filter->comm_criteria);
-	ll_append_data(list, filter->msg_criteria);
-	ll_append_data(list, filter->path_criteria);
-	ll_append_data(list, filter->netif_criteria);
-	ll_append_data(list, filter->ipaddr_criteria);
-	ll_append_data(list, filter->ports_criteria);
-	ll_append_data(list, filter->host_criteria);
-	ll_append_data(list, filter->date_time_criteria);	
-	return list;
+	apol_vector_append(criterias, (void *)filter->src_type_criteria);
+	apol_vector_append(criterias, (void *)filter->tgt_type_criteria);
+	apol_vector_append(criterias, (void *)filter->src_role_criteria);
+	apol_vector_append(criterias, (void *)filter->tgt_role_criteria);
+	apol_vector_append(criterias, (void *)filter->src_user_criteria);
+	apol_vector_append(criterias, (void *)filter->tgt_user_criteria);
+	apol_vector_append(criterias, (void *)filter->class_criteria);
+	apol_vector_append(criterias, (void *)filter->exe_criteria);
+	apol_vector_append(criterias, (void *)filter->comm_criteria);
+	apol_vector_append(criterias, (void *)filter->msg_criteria);
+	apol_vector_append(criterias, (void *)filter->path_criteria);
+	apol_vector_append(criterias, (void *)filter->netif_criteria);
+	apol_vector_append(criterias, (void *)filter->ipaddr_criteria);
+	apol_vector_append(criterias, (void *)filter->ports_criteria);
+	apol_vector_append(criterias, (void *)filter->host_criteria);
+	apol_vector_append(criterias, (void *)filter->date_time_criteria);	
+	return criterias;
 }
 
 int seaudit_filter_save_to_file(seaudit_filter_t *filter, const char *filename)
@@ -184,8 +183,7 @@ int seaudit_filter_save_to_file(seaudit_filter_t *filter, const char *filename)
 void seaudit_filter_append_to_file(seaudit_filter_t *filter, FILE *file, int tabs)
 {
 	seaudit_criteria_t *criteria;
-	llist_t *list;
-	llist_node_t *node;
+	apol_vector_t *criteria_vector;
 	xmlChar *escaped;
 	xmlChar *str_xml;
 	int i;
@@ -211,14 +209,12 @@ void seaudit_filter_append_to_file(seaudit_filter_t *filter, FILE *file, int tab
 		free(escaped);
 		free(str_xml);
 	}
-	list = seaudit_filter_get_list(filter);
-	for (node = list->head; node != NULL; node = node->next) {
-		criteria = (seaudit_criteria_t*)node->data;
+	criteria_vector = (apol_vector_t *)seaudit_filter_get_list(filter);
+	for (i = 0; i < apol_vector_get_size(criteria_vector); i++) {
+		criteria = apol_vector_get_element(criteria_vector, i);
 		if (criteria)
 			seaudit_criteria_print(criteria, file, tabs+2);
 	}
+	apol_vector_destroy(&criteria_vector, 0);
 	fprintf(file, "\t</filter>\n"); 
 }
-
-
-

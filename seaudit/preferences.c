@@ -11,6 +11,7 @@
 #include "utilgui.h"
 #include "seaudit.h"
 #include <glib/gprintf.h>
+#include <string.h>
 
 extern seaudit_t *seaudit_app;
 
@@ -77,7 +78,8 @@ static int set_seaudit_conf_file_path(char **conf_variable, const char *filename
 int load_seaudit_conf_file(seaudit_conf_t *conf)
 {
   	FILE *file;
-	int i, j, size, index;
+	int i, j, index;
+	size_t size;
 	GString *path;
 	char *value, **list, *dir;
 
@@ -86,7 +88,7 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 
 	dir = apol_file_find_user_config(".seaudit");
 	if (!dir) {
-		dir = apol_find_file("dot_seaudit");
+		dir = apol_file_find("dot_seaudit");
 		if (!dir)
 			return -1;
 		else {
@@ -633,7 +635,7 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	GString *interval = g_string_new("");
 	
 	assert(interval);
-	dir = apol_find_file("prefer_window.glade");
+	dir = apol_file_find("prefer_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find prefer_window.glade\n");
 		return;

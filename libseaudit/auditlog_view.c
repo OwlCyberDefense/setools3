@@ -85,8 +85,8 @@ int audit_log_view_do_filter(audit_log_view_t *view, int **deleted, int *num_del
 
 	/* by default append everything that is not already filtered */
 	if (!view->multifilter) {
-		view->fltr_msgs = (int*)realloc(view->fltr_msgs, sizeof(int) * view->my_log->num_msgs);
-		for(i = 0; i < view->my_log->num_msgs; i++) {
+		view->fltr_msgs = (int*)realloc(view->fltr_msgs, sizeof(int) * apol_vector_get_size(view->my_log->msg_list));
+		for(i = 0; i < apol_vector_get_size(view->my_log->msg_list); i++) {
 			found = FALSE;
 			for (j = 0; j < view->num_fltr_msgs; j++)
 				if (view->fltr_msgs[j] == i)
@@ -114,20 +114,20 @@ int audit_log_view_do_filter(audit_log_view_t *view, int **deleted, int *num_del
 		return -1;
 	}
 	num_kept = 0;
-	added = (int*)malloc(sizeof(int)*view->my_log->num_msgs);
+	added = (int*)malloc(sizeof(int)*apol_vector_get_size(view->my_log->msg_list));
 	if (!added) {
 		free(*deleted); free(kept);
 		fprintf(stderr, "out of memory");
 		return -1;
 	}
 	num_added = 0;
-	info = (filter_info_t*)malloc(sizeof(filter_info_t)*view->my_log->num_msgs);
+	info = (filter_info_t*)malloc(sizeof(filter_info_t)*apol_vector_get_size(view->my_log->msg_list));
 	if (!info) {
 		free(*deleted); free(kept); free(added);
 		fprintf(stderr, "out of memory");
 		return -1;
 	}
-	memset(info, 0, sizeof(filter_info_t) * view->my_log->num_msgs);
+	memset(info, 0, sizeof(filter_info_t) * apol_vector_get_size(view->my_log->msg_list));
 	for (i = 0; i < view->num_fltr_msgs; i++) {
 		msg_index = view->fltr_msgs[i];
 		info[msg_index].orig_indx = i;
@@ -136,8 +136,10 @@ int audit_log_view_do_filter(audit_log_view_t *view, int **deleted, int *num_del
 	/* filter log into view */
 	audit_log_view_purge_fltr_msgs(view);
         seaudit_multifilter_make_dirty_filters(view->multifilter);
-	for (i = 0; i < view->my_log->num_msgs; i++) {
-		show = seaudit_multifilter_should_message_show(view->multifilter, view->my_log->msg_list[i], view->my_log);
+	for (i = 0; i < apol_vector_get_size(view->my_log->msg_list); i++) {
+		msg_t *msg;
+		msg = apol_vector_get_element(view->my_log->msg_list, i);
+		show = seaudit_multifilter_should_message_show(view->multifilter, msg, view->my_log);
 		if (show) {
 			if (info[i].filtered == TRUE) {
 				kept[num_kept] = i;

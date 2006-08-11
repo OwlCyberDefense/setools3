@@ -9,7 +9,6 @@
 #ifndef SEAUDIT_REPORT_WINDOW_H
 #define SEAUDIT_REPORT_WINDOW_H
 
-#include "util.h"
 #include "report.h"
 #include "seaudit_window.h"
 #include "preferences.h"

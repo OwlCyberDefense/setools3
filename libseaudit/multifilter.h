@@ -16,9 +16,10 @@
 
 #include "filters.h"
 #include <apol/util.h>
+#include <apol/vector.h>
 
 typedef struct seaudit_multifilter {
-	llist_t *filters;
+	apol_vector_t *filters;
 	enum seaudit_filter_match_t match; /* SEAUDIT_FILTER_MATCH_ALL, 
 					      SEAUDIT_FILTER_MATCH_ANY */
 	bool_t show;  /* show matches */

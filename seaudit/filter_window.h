@@ -20,6 +20,12 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+#include <qpol/policy_query.h>
+#include <apol/policy.h>
+#include <apol/class-perm-query.h>
+#include <apol/role-query.h>
+#include <apol/user-query.h>
+#include <apol/type-query.h>
 
 
 struct filters_select_items;

@@ -230,6 +230,7 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 	const char *cur_perm;
 	const char *cur_bool;
 	GString *string;
+	msg_t *msg;
 
 	store = (SEAuditLogViewStore*)tree_model;
 	if (!store->log_view)
@@ -244,28 +245,28 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 	g_assert(i < store->log_view->num_fltr_msgs);
 	g_value_init(value, G_TYPE_STRING);
 	indx = store->log_view->fltr_msgs[i];
+	msg = apol_vector_get_element(store->log_view->my_log->msg_list, indx);
 
 	if (DATE_FIELD == column) {
 		char date[DATE_STR_SIZE];
 		/* check to see if we have been given a valid year, if so display, otherwise no year displayed */
-		if (store->log_view->my_log->msg_list[indx]->date_stamp->tm_year == 0)
-			strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S", store->log_view->my_log->msg_list[indx]->date_stamp);
+		if (msg->date_stamp->tm_year == 0)
+			strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S", msg->date_stamp);
 		else 
-			strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S %Y", store->log_view->my_log->msg_list[indx]->date_stamp);
+			strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S %Y", msg->date_stamp);
 		set_utf8_return_value(value, date);
 		return;
 	}
 	if (HOST_FIELD == column) {
-		set_utf8_return_value(value, audit_log_get_host(store->log_view->my_log, 
-								store->log_view->my_log->msg_list[indx]->host));
+		set_utf8_return_value(value, audit_log_get_host(store->log_view->my_log, msg->host));
 		return;
 	}
-	if (store->log_view->my_log->msg_list[indx]->msg_type == BOOLEAN_MSG) {
+	if (msg->msg_type == BOOLEAN_MSG) {
 	        if(AVC_MSG_FIELD == column) {
 	                set_utf8_return_value(value, "Boolean");
 	                return;
 		} else if (AVC_MISC_FIELD == column ){
-			boolean_msg = store->log_view->my_log->msg_list[indx]->msg_data.boolean_msg;
+			boolean_msg = msg->msg_data.boolean_msg;
 			if (boolean_msg->num_bools > 0) {
 				string = g_string_new(audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[0]));
 				if (!string)
@@ -291,14 +292,14 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		        return;
 		}
 	}
-	else if (store->log_view->my_log->msg_list[indx]->msg_type == LOAD_POLICY_MSG) {
+	else if (msg->msg_type == LOAD_POLICY_MSG) {
 		if (AVC_MSG_FIELD == column) {
 			set_utf8_return_value(value, "Load");
 			return;
 		}
 		if (AVC_MISC_FIELD == column) {
 			string = g_string_new("");
-			policy_msg = store->log_view->my_log->msg_list[indx]->msg_data.load_policy_msg;
+			policy_msg = msg->msg_data.load_policy_msg;
 			g_string_printf(string, "users=%d roles=%d types=%d bools=%d classes=%d rules=%d",
 					policy_msg->users, policy_msg->roles, policy_msg->types,
 					policy_msg->bools, policy_msg->classes, policy_msg->rules);
@@ -309,12 +310,12 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 			set_utf8_return_value(value, "");
 			return;
 		}
-	} else if (store->log_view->my_log->msg_list[indx]->msg_type != AVC_MSG) {
+	} else if (msg->msg_type != AVC_MSG) {
 		set_utf8_return_value(value, "");
 		return;
 	}
 
-	cur_msg = store->log_view->my_log->msg_list[indx]->msg_data.avc_msg;
+	cur_msg = msg->msg_data.avc_msg;
 
 	switch (column) {
 	case AVC_MSG_FIELD:
@@ -357,12 +358,12 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		set_utf8_return_value(value, audit_log_get_obj(store->log_view->my_log, cur_msg->obj_class));
 		break;
 	case AVC_PERM_FIELD:
-		if (cur_msg->num_perms > 0) {
-			string = g_string_new(audit_log_get_perm(store->log_view->my_log, cur_msg->perms[0]));
+		if (apol_vector_get_size(cur_msg->perms) > 0) {
+			string = g_string_new(audit_log_get_perm(store->log_view->my_log, (int)apol_vector_get_element(cur_msg->perms, 0)));
 			if (!string)
 				return;
-			for (j = 1; j < cur_msg->num_perms; j++) {
-				cur_perm = audit_log_get_perm(store->log_view->my_log, cur_msg->perms[j]);
+			for (j = 1; j < apol_vector_get_size(cur_msg->perms); j++) {
+				cur_perm = audit_log_get_perm(store->log_view->my_log, (int)apol_vector_get_element(cur_msg->perms, j));
 				string = g_string_append(string, ",");
 				if (!string)
 					return;
@@ -678,6 +679,22 @@ static gboolean seaudit_log_view_store_has_default_sort_func (GtkTreeSortable *s
 {
 	return FALSE;
 }
+
+static int int_compare(const void *aptr, const void *bptr)
+{
+        int *a = (int*)aptr;
+        int *b = (int*)bptr;
+
+        assert(a);
+        assert(b);
+
+        if (*a < *b)
+                return -1;
+        if (*a > *b)
+                return 1;
+        return 0;
+}
+
 
 void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 {
