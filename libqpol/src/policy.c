@@ -53,12 +53,12 @@
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
-#include <qpol/queue.h>
 #include <qpol/expand.h>
 #include <qpol/cond_query.h>
 #include <qpol/constraint_query.h>
 #include <qpol/class_perm_query.h>
 #include <qpol/fs_use_query.h>
+#include "queue.h"
 
 /* redefine input so we can read from a string */
 /* borrowed from O'Reilly lex and yacc pg 157 */

@@ -32,8 +32,8 @@ int define_policy(int pass, int module_header_given);
  * duplicate declarations, -3 for all else.
  */
 int declare_symbol(uint32_t symbol_type,
-                   hashtab_key_t key, hashtab_datum_t datum,
-                   uint32_t *dest_value, uint32_t *datum_value);
+		   hashtab_key_t key, hashtab_datum_t datum,
+		   uint32_t * dest_value, uint32_t * datum_value);
 
 role_datum_t *declare_role(void);
 type_datum_t *declare_type(unsigned char primary, unsigned char isattr);
@@ -45,8 +45,8 @@ type_datum_t *get_local_type(char *id, uint32_t value, unsigned char isattr);
  * that a module may not both declare and require the same symbol.
  * Returns 0 on success, -1 on error. */
 int require_symbol(uint32_t symbol_type,
-                   hashtab_key_t key, hashtab_datum_t datum,
-                   uint32_t *dest_value, uint32_t *datum_value);
+		   hashtab_key_t key, hashtab_datum_t datum,
+		   uint32_t * dest_value, uint32_t * datum_value);
 
 /* Enable a permission for a class within the current avrule_decl.
  * Return 0 on success, -1 if out of memory. */
@@ -75,13 +75,13 @@ int is_perm_in_scope(hashtab_key_t perm_id, hashtab_key_t class_id);
 /* Search the current avrules block for a conditional with the same
  * expression as 'cond'.  If the conditional does not exist then
  * create one.  Either way, return the conditional. */
-cond_list_t *get_current_cond_list(cond_list_t *cond);
+cond_list_t *get_current_cond_list(cond_list_t * cond);
 
 /* Append rule to the current avrule_block. */
-void append_cond_list(cond_list_t *cond);
-void append_avrule(avrule_t *avrule);
-void append_role_trans(role_trans_rule_t *role_tr_rules);
-void append_role_allow(role_allow_rule_t *role_allow_rules);
+void append_cond_list(cond_list_t * cond);
+void append_avrule(avrule_t * avrule);
+void append_role_trans(role_trans_rule_t * role_tr_rules);
+void append_role_allow(role_allow_rule_t * role_allow_rules);
 
 /* Create a new optional block and add it to the global policy.
  * During the second pass resolve the block's requirements.  Return 0

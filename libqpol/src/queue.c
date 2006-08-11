@@ -13,10 +13,9 @@
  */
 
 #include <stdlib.h>
-#include <qpol/queue.h>
+#include "queue.h"
 
-queue_t
-queue_create(void)
+queue_t queue_create(void)
 {
 	queue_t q;
 
@@ -32,7 +31,6 @@ queue_create(void)
 int queue_insert(queue_t q, queue_element_t e)
 {
 	queue_node_ptr_t newnode;
-
 
 	if (!q)
 		return -1;
@@ -58,7 +56,6 @@ int queue_push(queue_t q, queue_element_t e)
 {
 	queue_node_ptr_t newnode;
 
-
 	if (!q)
 		return -1;
 
@@ -79,12 +76,10 @@ int queue_push(queue_t q, queue_element_t e)
 	return 0;
 }
 
-queue_element_t
-queue_remove(queue_t q)
+queue_element_t queue_remove(queue_t q)
 {
 	queue_node_ptr_t node;
 	queue_element_t e;
-
 
 	if (!q)
 		return NULL;
@@ -103,8 +98,7 @@ queue_remove(queue_t q)
 	return e;
 }
 
-queue_element_t
-queue_head(queue_t q)
+queue_element_t queue_head(queue_t q)
 {
 	if (!q)
 		return NULL;
@@ -118,7 +112,6 @@ queue_head(queue_t q)
 void queue_destroy(queue_t q)
 {
 	queue_node_ptr_t p, temp;
-
 
 	if (!q)
 		return;
@@ -138,7 +131,6 @@ int queue_map(queue_t q, int (*f) (queue_element_t, void *), void *vp)
 	queue_node_ptr_t p;
 	int ret;
 
-
 	if (!q)
 		return 0;
 
@@ -152,15 +144,12 @@ int queue_map(queue_t q, int (*f) (queue_element_t, void *), void *vp)
 	return 0;
 }
 
-
 void queue_map_remove_on_error(queue_t q,
 			       int (*f) (queue_element_t, void *),
-			       void (*g) (queue_element_t, void *),
-			       void *vp)
+			       void (*g) (queue_element_t, void *), void *vp)
 {
 	queue_node_ptr_t p, last, temp;
 	int ret;
-
 
 	if (!q)
 		return;
@@ -193,6 +182,4 @@ void queue_map_remove_on_error(queue_t q,
 	return;
 }
 
-
 /* FLASK */
-
