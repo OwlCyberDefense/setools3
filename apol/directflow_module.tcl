@@ -468,24 +468,22 @@ your selection above) its parent node.
 same, you cannot open the child.  This avoids cyclic analyses."
 }
 
+# create results to the given tree.  if do_expand is non-zero then
+# allow subbranches to be made.
 proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results do_expand} {
     set all_targets {}
     foreach r $results {
         foreach {flow_dir source target rules} $r {break}
         if {!$do_expand} {
-            set expanded_list [lindex $results 0 2]
-        } else {
-            set expanded_list [apol_ExpandType $target]
+            set target [lindex $results 0 2]
         }
-        foreach t $expanded_list {
-            lappend all_targets $t
-            foreach r $rules {
-                set class [apol_RenderAVRuleClass $r]
-                lappend classes($t) $class
-                lappend classes($t:$class) $r
-            }
-            set dir($t:$flow_dir) 1
+        lappend all_targets $target
+        foreach r $rules {
+            set class [apol_RenderAVRuleClass $r]
+            lappend classes($target) $class
+            lappend classes($target:$class) $r
         }
+        set dir($target:$flow_dir) 1
     }
     foreach t [lsort -uniq $all_targets] {
         if {[info exists dir($t:both)] ||

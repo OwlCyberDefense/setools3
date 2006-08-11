@@ -99,9 +99,17 @@ proc Apol_Perms_Map::loadPermMap {filename shortname saveable} {
             -title "Error Loading Permission Map File" -message $err
         return 0
     } elseif {$err != {}} {
+        set len [llength [split $err "\n"]]
+        if {$len > 5} {
+            incr len -4
+            set err [lrange [split $err "\n"] 0 3]
+            lappend err "(plus $len more lines)"
+            set err [join $err "\n"]
+        }
+        set message "The permission map has been loaded, but there were warnings:"
         tk_messageBox -icon warning -type ok \
             -title "Warning While Loading Permission Map" \
-            -message "The permission map has been loaded, but there were warnings:\n\n$err"
+            -message "$message\n\n$err"
     }
     variable opts
     set opts(filename) $filename
