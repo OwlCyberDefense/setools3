@@ -62,9 +62,9 @@ int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj *
  * second element is a unique identifier to the conditional
  * expression.
  */
-static int qpol_avrule_to_tcl_obj(Tcl_Interp *interp,
-				  qpol_avrule_t *avrule,
-				  Tcl_Obj **obj)
+static int qpol_avrule_to_tcl_list(Tcl_Interp *interp,
+				   qpol_avrule_t *avrule,
+				   Tcl_Obj **obj)
 {
         uint32_t rule_type, is_enabled;
 	const char *rule_string;
@@ -141,9 +141,9 @@ static int qpol_avrule_to_tcl_obj(Tcl_Interp *interp,
  * second element is a unique identifier to the conditional
  * expression.
  */
-static int qpol_terule_to_tcl_obj(Tcl_Interp *interp,
-				  qpol_terule_t *terule,
-				  Tcl_Obj **obj)
+static int qpol_terule_to_tcl_list(Tcl_Interp *interp,
+				   qpol_terule_t *terule,
+				   Tcl_Obj **obj)
 {
 	uint32_t rule_type, is_enabled;
 	const char *rule_string;
@@ -586,7 +586,7 @@ static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int objc
 		goto cleanup;
 	}
 	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
-	    qpol_avrule_to_tcl_obj(interp, avrule, &result_obj) == TCL_ERROR) {
+	    qpol_avrule_to_tcl_list(interp, avrule, &result_obj) == TCL_ERROR) {
 		goto cleanup;
 	}
 	Tcl_SetObjResult(interp, result_obj);
@@ -845,7 +845,7 @@ static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int objc
 		goto cleanup;
 	}
 	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
-	    qpol_terule_to_tcl_obj(interp, terule, &result_obj) == TCL_ERROR) {
+	    qpol_terule_to_tcl_list(interp, terule, &result_obj) == TCL_ERROR) {
 		goto cleanup;
 	}
 	Tcl_SetObjResult(interp, result_obj);
