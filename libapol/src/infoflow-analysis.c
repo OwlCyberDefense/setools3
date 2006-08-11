@@ -142,6 +142,13 @@ struct apol_infoflow_step {
 	int weight;
 };
 
+/**
+ * Deallocate all space associated with an apol_infoflow_step_t,
+ * including the pointer itself.  Does nothing if the pointer is
+ * already NULL.
+ *
+ * @param step Infoflow step to free.
+ */
 static void apol_infoflow_step_free(void *step)
 {
 	if (step != NULL) {
@@ -896,18 +903,18 @@ static int apol_infoflow_direct_define(apol_policy_t *p,
 
 /**
  * Given the regular expression compiled into the graph object and a
- * type, determine if that regex matches a node's type or any of the
- * type's aliases.
+ * type, determine if that regex matches atype or any of the type's
+ * aliases.
  *
  * @param p Policy containing type names.
  * @param g Graph object containing regex.
- * @param node Ndoe to check against.
+ * @param type Type to check against.
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
 static int apol_infoflow_graph_compare(apol_policy_t *p,
 				       apol_infoflow_graph_t *g,
-				       apol_infoflow_node_t *node)
+				       qpol_type_t *type)
 {
 	char *type_name;
 	qpol_iterator_t *alias_iter = NULL;
@@ -915,14 +922,14 @@ static int apol_infoflow_graph_compare(apol_policy_t *p,
 	if (g->regex == NULL) {
 		return 1;
 	}
-	if (qpol_type_get_name(p->qh, p->p, node->type, &type_name) < 0) {
+	if (qpol_type_get_name(p->qh, p->p, type, &type_name) < 0) {
 		return -1;
 	}
 	if (regexec(g->regex, type_name, 0, NULL, 0) == 0) {
 		return 1;
 	}
 	/* also check for matches against any of target's aliases */
-	if (qpol_type_get_alias_iter(p->qh, p->p, node->type, &alias_iter) < 0) {
+	if (qpol_type_get_alias_iter(p->qh, p->p, type, &alias_iter) < 0) {
 		return -1;
 	}
 	for ( ; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
@@ -982,6 +989,88 @@ static int apol_infoflow_results_check_both(apol_policy_t *p,
 }
 
 /**
+ * Given a start node, an edge, and flow direction, add an infoflow
+ * results to a vector.  If the node on the other end of the edge is
+ * an attribute, first expand the attribute to its component types.
+ * If a regular expression is compiled into the infoflow graph, apply
+ * that regex match against candidate end node types prior to creating
+ * result nodes.
+ *
+ * @param p Policy to analyze.
+ * @param g Information flow graph to analyze.
+ * @param start_node Starting node.
+ * @param edge An edge from start_node.
+ * @param flow_dir Direction of search, either APOL_INFOFLOW_IN or
+ * APOL_INFOFLOW_OUT.
+ * @param results Non-NULL vector to which append infoflow results.
+ * The caller is responsible for calling apol_infoflow_results_free()
+ * upon each element afterwards.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_infoflow_analysis_direct_expand(apol_policy_t *p,
+						apol_infoflow_graph_t *g,
+						apol_infoflow_node_t *start_node,
+						apol_infoflow_edge_t *edge,
+						unsigned int flow_dir,
+						apol_vector_t *results)
+{
+	apol_infoflow_node_t *end_node;
+	unsigned char isattr;
+	qpol_iterator_t *iter = NULL;
+	qpol_type_t *type;
+	apol_infoflow_result_t *r;
+	int retval = -1, compval;
+
+	if (edge->start_node == start_node) {
+		end_node = edge->end_node;
+	}
+	else {
+		end_node = edge->start_node;
+	}
+	if (qpol_type_get_isattr(p->qh, p->p, end_node->type, &isattr) < 0) {
+		goto cleanup;
+	}
+	if (isattr) {
+		if (qpol_type_get_type_iter(p->qh, p->p, end_node->type, &iter) < 0) {
+			goto cleanup;
+		}
+		if (qpol_iterator_end(iter)) {
+			retval = 0;
+			goto cleanup;
+		}
+	}
+	/* always do this loop once, either if end_node is an attribute or not */
+	do {
+		if (isattr) {
+			if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
+				goto cleanup;
+			}
+			qpol_iterator_next(iter);
+		}
+		else {
+			type = end_node->type;
+		}
+		compval = apol_infoflow_graph_compare(p, g, type);
+		if (compval < 0) {
+			goto cleanup;
+		}
+		else if (compval == 0) {
+			continue;
+		}
+		if ((r = apol_infoflow_direct_get_result(p, results, start_node->type, type)) == NULL ||
+		    apol_infoflow_direct_define(p, edge, flow_dir, r) < 0) {
+			goto cleanup;
+		}
+	} while (isattr && !qpol_iterator_end(iter));
+
+	retval = 0;
+ cleanup:
+	qpol_iterator_destroy(&iter);
+	return retval;
+}
+
+/**
  * Perform a direct information flow analysis upon the given infoflow
  * graph.
  *
@@ -1001,11 +1090,10 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 {
 	apol_vector_t *nodes = NULL;
 	size_t i, j;
-	apol_infoflow_node_t *node, *end_node;
+	apol_infoflow_node_t *node;
 	apol_infoflow_edge_t *edge;
-	apol_infoflow_result_t *r;
 	apol_vector_t *working_results = NULL;
-	int retval = -1, compval;
+	int retval = -1;
 
 	if ((nodes = apol_vector_create()) == NULL ||
 	    (working_results = apol_vector_create()) == NULL) {
@@ -1023,21 +1111,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 			node = (apol_infoflow_node_t *) apol_vector_get_element(nodes, i);
 			for (j = 0; j < apol_vector_get_size(node->in_edges); j++) {
 				edge = (apol_infoflow_edge_t *) apol_vector_get_element(node->in_edges, j);
-				if (edge->start_node == node) {
-					end_node = edge->end_node;
-				}
-				else {
-					end_node = edge->start_node;
-				}
-				compval = apol_infoflow_graph_compare(p, g, end_node);
-				if (compval < 0) {
-					goto cleanup;
-				}
-				else if (compval == 0) {
-					continue;
-				}
-				if ((r = apol_infoflow_direct_get_result(p, working_results, node->type, end_node->type)) == NULL ||
-				    apol_infoflow_direct_define(p, edge, APOL_INFOFLOW_IN, r) < 0) {
+				if (apol_infoflow_analysis_direct_expand(p, g, node, edge, APOL_INFOFLOW_IN, working_results) < 0) {
 					goto cleanup;
 				}
 			}
@@ -1050,21 +1124,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 			node = (apol_infoflow_node_t *) apol_vector_get_element(nodes, i);
 			for (j = 0; j < apol_vector_get_size(node->out_edges); j++) {
 				edge = (apol_infoflow_edge_t *) apol_vector_get_element(node->out_edges, j);
-				if (edge->start_node == node) {
-					end_node = edge->end_node;
-				}
-				else {
-					end_node = edge->start_node;
-				}
-				compval = apol_infoflow_graph_compare(p, g, end_node);
-				if (compval < 0) {
-					goto cleanup;
-				}
-				else if (compval == 0) {
-					continue;
-				}
-				if ((r = apol_infoflow_direct_get_result(p, working_results, node->type, end_node->type)) == NULL ||
-				    apol_infoflow_direct_define(p, edge, APOL_INFOFLOW_OUT, r) < 0) {
+				if (apol_infoflow_analysis_direct_expand(p, g, node, edge, APOL_INFOFLOW_OUT, working_results) < 0) {
 					goto cleanup;
 				}
 			}
@@ -1260,14 +1320,16 @@ static apol_infoflow_edge_t *apol_infoflow_trans_find_edge(apol_policy_t *p,
 }
 
 /**
- * Given a path of nodes, defind a new infoflow result that represents
+ * Given a path of nodes, define a new infoflow result that represents
  * that path.  The given path is a list of nodes that must be in
  * reverse order (i.e., from end node to start node) and must have at
  * least 2 elements within.
  *
  * @param p Policy handler, for reporting errors.
  * @param g Graph from which the node path originated.
- * @param path Vector of apol_infoflow_node_t representing an infoflow path.
+ * @param path Vector of apol_infoflow_node_t representing an infoflow
+ * path.
+ * @param end_type Ending type for the path.
  * @param result Reference pointer to where to store result.  The
  * caller is responsible for calling apol_infoflow_result_free() upon
  * the returned value.  Upon error this will be set to NULL.
@@ -1277,6 +1339,7 @@ static apol_infoflow_edge_t *apol_infoflow_trans_find_edge(apol_policy_t *p,
 static int apol_infoflow_trans_define(apol_policy_t *p,
                                       apol_infoflow_graph_t *g,
                                       apol_vector_t *path,
+				      qpol_type_t *end_type,
                                       apol_infoflow_result_t **result)
 {
 	apol_infoflow_step_t *step = NULL;
@@ -1291,10 +1354,9 @@ static int apol_infoflow_trans_define(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
+	(*result)->end_type = end_type;
 	/* build in reverse order because path is from end node to
 	 * start node */
-	node = (apol_infoflow_node_t *) apol_vector_get_element(path, 0);
-	(*result)->end_type = node->type;
 	node = (apol_infoflow_node_t *) apol_vector_get_element(path, path_len - 1);
 	(*result)->start_type = node->type;
 	(*result)->direction = g->direction;
@@ -1362,6 +1424,7 @@ static int apol_infoflow_trans_step_comp(const void *a,
  * @param g Infoflow graph to which create results.
  * @param path Vector of apol_infoflow_node_t describing a path from
  * an end node to a starting node.
+ * @param end_type Ending type for the path.
  * @param results Vector of apol_infoflow_result_t to possibly append
  * a new result.
  *
@@ -1370,21 +1433,21 @@ static int apol_infoflow_trans_step_comp(const void *a,
 static int apol_infoflow_trans_append(apol_policy_t *p,
 				      apol_infoflow_graph_t *g,
 				      apol_vector_t *path,
+				      qpol_type_t *end_type,
 				      apol_vector_t *results)
 {
 	apol_infoflow_result_t *new_r = NULL, *r;
 	size_t i, j;
 	int compval, retval = -1;
-	apol_infoflow_node_t *end_node = apol_vector_get_element(results, 0);
 
-	if (apol_infoflow_trans_define(p, g, path, &new_r) < 0) {
+	if (apol_infoflow_trans_define(p, g, path, end_type, &new_r) < 0) {
 		goto cleanup;
 	}
 
 	/* First we look for duplicate paths */
 	for (i = 0; i < apol_vector_get_size(results); i++) {
 		r = (apol_infoflow_result_t *) apol_vector_get_element(results, i);
-		if (r->end_type != end_node->type ||
+		if (r->end_type != end_type ||
 		    r->direction != new_r->direction ||
 		    apol_vector_get_size(r->steps) != apol_vector_get_size(new_r->steps)) {
 			break;
@@ -1411,6 +1474,82 @@ static int apol_infoflow_trans_append(apol_policy_t *p,
 	if (retval != 0) {
 		apol_infoflow_result_free(new_r);
 	}
+	return retval;
+}
+
+/**
+ * Given a start and end node, add a trans infoflow results to a
+ * vector.  If the end node is an attribute, first expand the
+ * attribute to its component types.  If a regular expression is
+ * compiled into the infoflow graph, apply that regex match against
+ * candidate end node types prior to creating result nodes.
+ *
+ * @param p Policy to analyze.
+ * @param g Information flow graph to analyze.
+ * @param start_node Starting node.
+ * @param end_node Ending node.
+ * @param results Non-NULL vector to which append infoflow results.
+ * The caller is responsible for calling apol_infoflow_results_free()
+ * upon each element afterwards.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_infoflow_analysis_trans_expand(apol_policy_t *p,
+                                               apol_infoflow_graph_t *g,
+                                               apol_infoflow_node_t *start_node,
+                                               apol_infoflow_node_t *end_node,
+                                               apol_vector_t *results)
+{
+	unsigned char isattr;
+	qpol_iterator_t *iter = NULL;
+	qpol_type_t *type;
+        apol_vector_t *path = NULL;
+	int retval = -1, compval;
+
+	if (qpol_type_get_isattr(p->qh, p->p, end_node->type, &isattr) < 0) {
+		goto cleanup;
+	}
+	if (isattr) {
+		if (qpol_type_get_type_iter(p->qh, p->p, end_node->type, &iter) < 0) {
+			goto cleanup;
+		}
+		if (qpol_iterator_end(iter)) {
+			retval = 0;
+			goto cleanup;
+		}
+	}
+	/* always do this loop once, either if end_node is an attribute or not */
+	do {
+		if (isattr) {
+			if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
+				goto cleanup;
+			}
+			qpol_iterator_next(iter);
+		}
+		else {
+			type = end_node->type;
+		}
+                if (start_node->type == type) {
+                        continue;
+                }
+		compval = apol_infoflow_graph_compare(p, g, type);
+		if (compval < 0) {
+			goto cleanup;
+		}
+		else if (compval == 0) {
+			continue;
+		}
+		if (apol_infoflow_trans_path(p, g, start_node, end_node, &path) < 0 ||
+		    apol_infoflow_trans_append(p, g, path, type, results) < 0) {
+			goto cleanup;
+		}
+		apol_vector_destroy(&path, NULL);
+	} while (isattr && !qpol_iterator_end(iter));
+
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&path, NULL);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 
@@ -1451,12 +1590,12 @@ static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
 						      apol_infoflow_node_t *start,
 						      apol_vector_t *results)
 {
-	apol_vector_t *edge_list, *path = NULL;
+	apol_vector_t *edge_list;
 	apol_queue_t *queue = NULL;
 	apol_infoflow_node_t *node, *cur_node;
 	apol_infoflow_edge_t *edge;
 	size_t i;
-	int retval = -1, compval;
+	int retval = -1;
 
 	if ((queue = apol_queue_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
@@ -1519,23 +1658,13 @@ static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
 		if (cur_node->parent == NULL || cur_node == start) {
 			continue;
 		}
-		compval = apol_infoflow_graph_compare(p, g, cur_node);
-		if (compval < 0) {
+		if (apol_infoflow_analysis_trans_expand(p, g, start, cur_node, results) < 0) {
 			goto cleanup;
 		}
-		else if (compval == 0) {
-			continue;
-		}
-		if (apol_infoflow_trans_path(p, g, start, cur_node, &path) < 0 ||
-		    apol_infoflow_trans_append(p, g, path, results) < 0) {
-			goto cleanup;
-		}
-		apol_vector_destroy(&path, NULL);
 	}
 
 	retval = 0;
  cleanup:
-	apol_vector_destroy(&path, NULL);
 	apol_queue_destroy(&queue);
 	return retval;
 }
@@ -1650,7 +1779,7 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
                                                 apol_infoflow_node_t *start,
                                                 apol_vector_t *results)
 {
-	apol_vector_t *edge_list = NULL, *path = NULL;
+	apol_vector_t *edge_list = NULL;
 	apol_queue_t *queue = NULL;
 	apol_infoflow_node_t *node, *cur_node;
 	apol_infoflow_edge_t *edge;
@@ -1667,12 +1796,9 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
 
 	while ((cur_node = apol_queue_remove(queue)) != NULL) {
 		if (cur_node != start &&
-		    apol_vector_get_index(g->further_end, cur_node, NULL, NULL, &i) == 0) {
-			if (apol_infoflow_trans_path(p, g, start, cur_node, &path) < 0 ||
-			    apol_infoflow_trans_append(p, g, path, results) < 0) {
-				goto cleanup;
-			}
-			apol_vector_destroy(&path, NULL);
+		    apol_vector_get_index(g->further_end, cur_node, NULL, NULL, &i) == 0 &&
+		    apol_infoflow_analysis_trans_expand(p, g, start, cur_node, results) < 0) {
+			goto cleanup;
 		}
 		cur_node->color = APOL_INFOFLOW_COLOR_BLACK;
 		if (g->direction == APOL_INFOFLOW_OUT) {
