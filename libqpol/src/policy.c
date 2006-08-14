@@ -78,13 +78,13 @@ extern policydb_t *policydbp;
 extern int mlspol;
 
 /* Error TEXT definitions for decoding the above error definitions. */
-#define TEXT_BIN_POL_FILE_DOES_NOT_EXIST	"Could not locate a default binary policy file.\n"
-#define TEXT_SRC_POL_FILE_DOES_NOT_EXIST	"Could not locate default source policy file.\n"
-#define TEXT_BOTH_POL_FILE_DO_NOT_EXIST		"Could not locate a default source policy or binary file.\n"
-#define TEXT_POLICY_INSTALL_DIR_DOES_NOT_EXIST	"The default policy install directory does not exist.\n"
-#define TEXT_READ_POLICY_FILE_ERROR		"Cannot read default policy file.\n"
-#define TEXT_INVALID_SEARCH_OPTIONS		"Invalid search options provided to find_default_policy_file().\n"
-#define TEXT_GENERAL_ERROR_TEXT			"Error in find_default_policy_file().\n"
+#define TEXT_BIN_POL_FILE_DOES_NOT_EXIST	"Could not locate a default binary policy file."
+#define TEXT_SRC_POL_FILE_DOES_NOT_EXIST	"Could not locate default source policy file."
+#define TEXT_BOTH_POL_FILE_DO_NOT_EXIST		"Could not locate a default source policy or binary file."
+#define TEXT_POLICY_INSTALL_DIR_DOES_NOT_EXIST	"The default policy install directory does not exist."
+#define TEXT_READ_POLICY_FILE_ERROR		"Cannot read default policy file."
+#define TEXT_INVALID_SEARCH_OPTIONS		"Invalid search options provided to find_default_policy_file()."
+#define TEXT_GENERAL_ERROR_TEXT			"Error in find_default_policy_file()."
 
 /* use 8k line size */
 #define LINE_SZ 8192
@@ -109,6 +109,7 @@ static void qpol_handle_route_to_callback(void *varg __attribute__((unused)), qp
 {
 	if (!qh || !(qh->fn)) {
 		vfprintf(stderr, fmt, va_args);
+		fprintf(stderr, "\n");
 		return;
 	}
 
@@ -124,6 +125,7 @@ static void sepol_handle_route_to_callback(void *varg, sepol_handle_t *sh, const
 		va_start(ap, fmt);
 		vfprintf(stderr, fmt, ap);
 		va_end(ap);
+		fprintf(stderr, "\n");
 		return;
 	}
 
@@ -140,6 +142,7 @@ void qpol_handle_msg(qpol_handle_t *handle, int level, const char *fmt, ...)
 		va_start(ap, fmt);
 		vfprintf(stderr, fmt, ap);
 		va_end(ap);
+		fprintf(stderr, "\n");
 		return;
 	}
 
