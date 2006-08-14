@@ -769,7 +769,7 @@ int main (int argc, char **argv)
 		policy_file = argv[optind];
 
 	/* attempt to open the policy */
-	rt = apol_policy_open(policy_file, &policy);
+	rt = apol_policy_open(policy_file, &policy, NULL);
 	if(rt) {
 		perror("Error opening policy");
 		apol_policy_destroy(&policy);

@@ -67,6 +67,7 @@ char *qpol_src_input;
 char *qpol_src_inputptr;/* current position in qpol_src_input */
 char *qpol_src_inputlim;/* end of data */
 
+extern void init_scanner(void);
 extern int yyparse(void);
 extern void init_parser(int);
 extern queue_t id_queue;
@@ -182,24 +183,33 @@ static int read_source_policy(qpol_handle_t *handle, policydb_t *p, char *progna
 	policydbp = p;
 	mlspol = p->mls;
 
+	init_scanner();
 	init_parser(1);
 	if (yyparse() || policydb_errors) {
 		ERR(handle, "%s:  error(s) encountered while parsing configuration\n", progname);
+		queue_destroy(id_queue);
+		id_queue = NULL;
+		errno = EIO;
 		return -1;
 	}
 	/* rewind the pointer */
-        qpol_src_inputptr = qpol_src_originalinput;
-        init_parser(2);
-        source_file[0] = '\0';
-        if (yyparse() || policydb_errors) {
+	qpol_src_inputptr = qpol_src_originalinput;
+	init_parser(2);
+	source_file[0] = '\0';
+	if (yyparse() || policydb_errors) {
 		ERR(handle, "%s:  error(s) encountered while parsing configuration\n", progname);
-                return -1;
-        }
-        queue_destroy(id_queue);
-        if (policydb_errors)
-                return -1;
-
-        return 0;
+		queue_destroy(id_queue);
+		id_queue = NULL;
+		errno = EIO;
+		return -1;
+	}
+	queue_destroy(id_queue);
+	id_queue = NULL;
+	if (policydb_errors) {
+		errno = EIO;
+		return -1;
+	}
+	return 0;
 }
 
 static int qpol_init_fbuf(qpol_fbuf_t **fb)

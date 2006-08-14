@@ -227,69 +227,6 @@ proc ApolTop::strip_list_of_empty_items {list_1} {
 	return $items
 }
 	
-proc ApolTop::disable_tkListbox { my_list_box } {
-        global tk_version
-
-        if {$tk_version >= "8.4"} {
-	    $my_list_box configure -state disabled
-        } else {
-	    set class_name [winfo class $my_list_box]
-	    # Insert for the class name in bindtags list
-	    if {$class_name != ""} {
-		set idx [lsearch -exact [bindtags $my_list_box] $class_name]
-		if {$idx != -1} {
-		    bindtags $my_list_box [lreplace [bindtags $my_list_box] $idx $idx]
-		} else {
-		    # The default bindtag is already unavailable so just return
-		    return
-		}
-	    } else {
-		tk_messageBox -parent $ApolTop::mainframe -icon error -type ok -title "Error" -message \
-			"Could not determine the class name of the widget."
-		return -1
-	    }
-	}
-	return
-}
-
-proc ApolTop::enable_tkListbox { my_list_box } {
-        global tk_version
-
-        if { $tk_version >= "8.4"} {
-	    $my_list_box configure -state normal
-	} else {
-	    set class_name [winfo class $my_list_box]
-	    # Insert for the class name in the bindtags list
-	    if {$class_name != ""} {
-		set idx [lsearch -exact [bindtags $my_list_box] $class_name]
-		if {$idx != -1} {
-		    #default class bindtag already defined, so return
-		    return
-		}
-		bindtags $my_list_box [linsert [bindtags $my_list_box] 1 $class_name]
-	    } else {
-		tk_messageBox -parent $ApolTop::mainframe -icon error -type ok -titls "Error" -message \
-			"Could not determine the class name of the widget."
-		return -1
-	    }
-	}
-	return
-}
-
-# ------------------------------------------------------------------------------
-#  Command ApolTop::change_comboBox_state
-# ------------------------------------------------------------------------------
-proc ApolTop::change_comboBox_state {cb_value combo_box} {
-	selection clear -displayof $combo_box
-
-	if {$cb_value} {
-		$combo_box configure -state normal -entrybg white
-	} else {
-		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
-	}
-	
-	return 0
-}
 
 # ------------------------------------------------------------------------------
 #  Command ApolTop::popup_listbox_Menu
@@ -513,37 +450,6 @@ proc ApolTop::search {} {
 	
 	return 0
 }
-
-######################################################################
-#  Command: ApolTop::tklistbox_select_on_key_callback
-#  Arguments: Takes a tk listbox widget,
-#	      the variable name of the associated global list, and 
-#	      the key pressed. Handles lowercase and uppercase key
-#	      values.
-# NOTE: This proc expects the associated list to be globally defined. 
-proc ApolTop::tklistbox_select_on_key_callback { path list_items_1 key } {     
-	upvar #0 $list_items_1 list_items
-	if {$path == ""} {
-		tk_messageBox \
-			-icon error \
-			-type ok \
-			-title "Error" \
-			-message "No listbox pathname provided." \
-			-parent $mainframe
-	}
-	if {[string is alpha $key]} {
-		set low_key_str [string tolower $key]
-		set matches [lsearch -regexp $list_items "^\[$key$low_key_str\]"]
-		if {$matches != -1} {
-			$path selection clear 0 end
-			$path selection set [lindex $matches 0]
-			$path see [lindex $matches 0]
-		}
-	}
-	
-	return 0
-}
-
 
 ##############################################################
 # ::load_query_info
@@ -887,12 +793,7 @@ proc ApolTop::display_goto_line_Dlg { } {
 }
 
 proc ApolTop::check_libsefs {} {
-	set rt [catch {set ret [apol_IsLibsefs_BuiltIn]} err]
-	if {$rt != 0} {
-		return -code error $err
-	} 
-	set ApolTop::libsefs $ret
-	return 0
+    set ApolTop::libsefs [apol_IsLibsefs_BuiltIn]
 }
 
 proc ApolTop::create { } {
@@ -1723,16 +1624,19 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 
     set policy_is_open 0
 
-    variable dialogText "Opening policy\n$file."
-    variable dialogVar -1
+    variable openDialogText "$file:\n    Opening policy."
+    variable openDialogVal -1
+    if {[set dialog_width [string length $file]] < 16} {
+        set dialog_width 16
+    }
     ProgressDlg .apol_policy_open -title "Open Policy" \
         -type normal -stop {} -separator 1 -parent . -maximum 2 \
-        -width [string length $file] -textvariable ApolTop::dialogText \
-        -variable ApolTop::dialogVar
+        -width $dialog_width -textvariable ApolTop::openDialogText \
+        -variable ApolTop::openDialogVal
     set orig_Cursor [. cget -cursor]
     . configure -cursor watch
     update idletasks
-
+    after idle ApolTop::doOpenIdle
     set retval [catch {apol_OpenPolicy $file} err]
     . configure -cursor $orig_Cursor
     destroy .apol_policy_open
@@ -1763,6 +1667,16 @@ proc ApolTop::openPolicyFile {file recent_flag} {
     set policy_is_open 1
     variable filename $file
     wm title . "SE Linux Policy Analysis - $file"
+}
+
+proc ApolTop::doOpenIdle {} {
+    variable openDialogText
+    if {[set infoString [apol_GetInfoString]] != {}} {
+        set openDialogText [lindex [split $openDialogText "\n"] 0]
+        append openDialogText "\n    $infoString"
+        update idletasks
+        after idle ApolTop::doOpenIdle
+    }
 }
 
 proc ApolTop::openPolicy {} {
@@ -1864,14 +1778,6 @@ proc ApolTop::load_fonts { } {
 	return 0	
 }
 
-proc ApolTop::disable_DeleteWindow_event {} {
-	wm protocol . WM_DELETE_WINDOW { } 
-}
-
-proc ApolTop::enable_DeleteWindow_event {} {
-	wm protocol . WM_DELETE_WINDOW "ApolTop::apolExit"
-}
-
 proc ApolTop::main {} {
 	global tk_version
 	global tk_patchLevel
@@ -1904,7 +1810,7 @@ proc ApolTop::main {} {
 
 	wm withdraw .
 	wm title . "SE Linux Policy Analysis"
-	ApolTop::enable_DeleteWindow_event
+    wm protocol . WM_DELETE_WINDOW ApolTop::apolExit
 	
 	set rt [catch {ApolTop::check_libsefs} err]
 	if {$rt != 0} {
