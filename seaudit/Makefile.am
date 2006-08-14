@@ -1,8 +1,19 @@
 bin_PROGRAMS = seaudit seaudit_report
 
 AM_CFLAGS = -I$(top_srcdir)/libseaudit @QPOL_CFLAGS@ @APOL_CFLAGS@ @GTK_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ -DAPOL_INSTALL_DIR='"${apol_install_dir}"'
-AM_LDFLAGS = @GTK_LIBS@ @GLADE_LIBS@ @XML_LIBS@
+# need the -rdynamic flag below glade uses dlopen() upon seaudit callbacks
+AM_LDFLAGS = @GTK_LIBS@ @GLADE_LIBS@ @XML_LIBS@ -rdynamic
 LDADD = $(top_srcdir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
+
+dist_pkgdata_DATA = \
+	customize_filter_window.glade \
+	filter_window.glade \
+	multifilter_window.glade \
+	prefer_window.glade \
+	query_window.glade \
+	report_window.glade \
+	seaudit.glade \
+	seaudit_help.txt
 
 seaudit_SOURCES = \
 	auditlogmodel.c auditlogmodel.h \

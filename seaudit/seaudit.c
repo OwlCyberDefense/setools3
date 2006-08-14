@@ -73,6 +73,10 @@ seaudit_t* seaudit_init(void)
 	}
 
 	seaudit->window = seaudit_window_create(NULL, seaudit->seaudit_conf.column_visibility);
+	if (seaudit->window == NULL) {
+		free(seaudit);
+		return NULL;
+	}
 	seaudit->policy_file = g_string_new("");
 	seaudit->audit_log_file = g_string_new("");
 	
