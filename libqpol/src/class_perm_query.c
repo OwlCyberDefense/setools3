@@ -418,7 +418,7 @@ int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_clas
 	}
 
 	internal_datum = (class_datum_t*)obj_class;
-	*value = internal_datum->value;
+	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;
 }
@@ -501,7 +501,7 @@ int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class
 	db = &policy->p->p;
 	internal_datum = (class_datum_t*)obj_class;
 
-	*name = db->p_class_val_to_name[internal_datum->value - 1];
+	*name = db->p_class_val_to_name[internal_datum->s.value - 1];
 
 	return STATUS_SUCCESS;
 }
@@ -584,7 +584,7 @@ int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_com
 	}
 
 	internal_datum = (common_datum_t*)common;
-	*value = internal_datum->value;
+	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;	
 }
@@ -645,7 +645,7 @@ int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_comm
 	db = &policy->p->p;
 	internal_datum = (common_datum_t*)common;
 
-	*name = db->p_common_val_to_name[internal_datum->value - 1];
+	*name = db->p_common_val_to_name[internal_datum->s.value - 1];
 
 	return STATUS_SUCCESS;
 }

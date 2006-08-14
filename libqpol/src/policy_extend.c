@@ -144,7 +144,7 @@ static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t
 		}
 		tmp_type->primary = 1;
 		tmp_type->flavor = TYPE_ATTRIB;
-		tmp_type->value = i+1;
+		tmp_type->s.value = i+1;
 		if (ebitmap_cpy(&tmp_type->types, &db->attr_type_map[i])) {
 			error = ENOMEM;
 			goto err;
@@ -155,7 +155,7 @@ static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t
 		ebitmap_for_each_bit(&tmp_type->types, node, bit) {
 			if (ebitmap_node_get_bit(node, bit)) {
 				orig_type = db->type_val_to_struct[bit];
-				if (ebitmap_set_bit(&orig_type->types, tmp_type->value - 1, 1)) {
+				if (ebitmap_set_bit(&orig_type->types, tmp_type->s.value - 1, 1)) {
 					error = ENOMEM;
 					goto err;
 				}
@@ -236,7 +236,7 @@ static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *pol
 		}
 		tmp_type->primary = 1;
 		tmp_type->flavor = TYPE_ATTRIB;
-		tmp_type->value = i+1;
+		tmp_type->s.value = i+1;
 		tmp_type->types = tmp_bmap;
 
 		retv = hashtab_insert(db->p_types.table, (hashtab_key_t)tmp_name, (hashtab_datum_t)tmp_type);
