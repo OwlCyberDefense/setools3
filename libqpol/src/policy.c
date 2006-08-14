@@ -90,8 +90,6 @@ extern int mlspol;
 #define LINE_SZ 8192
 #define BUF_SZ 240
 
-#define BIN_POLICY_ROOTNAME  "policy."
-
 #undef FALSE
 #define FALSE   0
 #undef TRUE
@@ -383,25 +381,26 @@ static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *bin
 
 	assert(binpol_install_dir != NULL && policy_path_tmp && version != NULL);
 	/* a. allocate pattern string to use for our call to glob() */
-	len = strlen(binpol_install_dir) + strlen(BIN_POLICY_ROOTNAME) + 2;
+	len = strlen(binpol_install_dir) + 2;
 	if((pattern = (char *)malloc(sizeof(char) * (len+1))) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
 		return GENERAL_ERROR;
 	}
-	sprintf(pattern, "%s/%s*", binpol_install_dir, BIN_POLICY_ROOTNAME);
+	sprintf(pattern, "%s.*", binpol_install_dir);
 
 	/* Call glob() to get a list of filenames matching pattern. */
 	glob_buf.gl_offs = 1;
 	glob_buf.gl_pathc = 0;
 	rt = glob(pattern, GLOB_DOOFFS, NULL, &glob_buf);
 	if (rt != 0 && rt != GLOB_NOMATCH) {
-		ERR(handle, "Error globbing %s for %s*", binpol_install_dir, BIN_POLICY_ROOTNAME);
+		ERR(handle, "Error globbing %s.*", binpol_install_dir);
 		perror("search_for_policyfile_with_ver");
 		return GENERAL_ERROR;
 	}
 	num_matches = glob_buf.gl_pathc;
 	for (i = 0; i < num_matches; i++) {
-		if (stat(glob_buf.gl_pathv[i], &fstat) != 0) {
+		char *path = glob_buf.gl_pathv[i + glob_buf.gl_offs];
+		if (stat(path, &fstat) != 0) {
 			globfree(&glob_buf);
 			free(pattern);
 			perror("search_for_policyfile_with_ver");
@@ -410,15 +409,15 @@ static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *bin
 		/* skip directories */
 		if (S_ISDIR(fstat.st_mode))
 			continue;
-		if (is_binpol_valid(handle, glob_buf.gl_pathv[i], version)) {
-			len = strlen(glob_buf.gl_pathv[i]) + 1;
+		if (is_binpol_valid(handle, path, version)) {
+			len = strlen(path) + 1;
 			if((*policy_path_tmp = (char *)malloc(sizeof(char) * (len+1))) == NULL) {
 				ERR(handle, "%s", strerror(ENOMEM));
 				globfree(&glob_buf);
 				free(pattern);
 				return GENERAL_ERROR;
 			}
-			strcpy(*policy_path_tmp, glob_buf.gl_pathv[i]);
+			strcpy(*policy_path_tmp, path);
 		}
 	}
 	free(pattern);
@@ -435,24 +434,25 @@ static int search_for_policyfile_with_highest_ver(qpol_handle_t *handle, const c
 
 	assert(binpol_install_dir != NULL && policy_path_tmp);
 	/* a. allocate pattern string */
-	len = strlen(binpol_install_dir) + strlen(BIN_POLICY_ROOTNAME) + 2;
+	len = strlen(binpol_install_dir) + 2;
 	if((pattern = (char *)malloc(sizeof(char) * (len+1))) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
 		return GENERAL_ERROR;
 	}
-	sprintf(pattern, "%s/%s*", binpol_install_dir, BIN_POLICY_ROOTNAME);
+	sprintf(pattern, "%s*", binpol_install_dir);
 	glob_buf.gl_offs = 0;
 	glob_buf.gl_pathc = 0;
 	/* Call glob() to get a list of filenames matching pattern */
 	rt = glob(pattern, GLOB_DOOFFS, NULL, &glob_buf);
 	if (rt != 0 && rt != GLOB_NOMATCH) {
-		ERR(handle, "Error globbing %s for %s*", binpol_install_dir, BIN_POLICY_ROOTNAME);
+		ERR(handle, "Error globbing %s.*", binpol_install_dir);
 		perror("search_for_policyfile_with_highest_ver");
 		return GENERAL_ERROR;
 	}
 	num_matches = glob_buf.gl_pathc;
 	for (i = 0; i < num_matches; i++) {
-		if (stat(glob_buf.gl_pathv[i], &fstat) != 0) {
+		char *path = glob_buf.gl_pathv[i + glob_buf.gl_offs];
+		if (stat(path, &fstat) != 0) {
 			globfree(&glob_buf);
 			free(pattern);
 			perror("search_for_policyfile_with_highest_ver");
@@ -462,20 +462,20 @@ static int search_for_policyfile_with_highest_ver(qpol_handle_t *handle, const c
 		if (S_ISDIR(fstat.st_mode))
 			continue;
 
-		if (*policy_path_tmp != NULL && strcmp(glob_buf.gl_pathv[i], *policy_path_tmp) > 0) {
+		if (*policy_path_tmp != NULL && strcmp(path, *policy_path_tmp) > 0) {
 			free(*policy_path_tmp);
 			*policy_path_tmp = NULL;
 		} else if (*policy_path_tmp != NULL) {
 			continue;
 		}
-		len = strlen(glob_buf.gl_pathv[i]) + 1;
+		len = strlen(path) + 1;
 		if((*policy_path_tmp = (char *)malloc(sizeof(char) * (len+1))) == NULL) {
 			ERR(handle, "%s", strerror(ENOMEM));
 			globfree(&glob_buf);
 			free(pattern);
 			return GENERAL_ERROR;
 		}
-		strcpy(*policy_path_tmp, glob_buf.gl_pathv[i]);
+		strcpy(*policy_path_tmp, path);
 	}
 	free(pattern);
 	globfree(&glob_buf);
@@ -559,7 +559,7 @@ static int search_policy_src_file(qpol_handle_t *handle, char **policy_file_path
 		ERR(handle, "%s", strerror(ENOMEM));
 		return GENERAL_ERROR;
 	}
-	snprintf(path, PATH_MAX - 1, "%s/src/policy.conf",
+	snprintf(path, PATH_MAX - 1, "%s/src/policy/policy.conf",
 		 selinux_policy_root());
 	assert(path != NULL);
 	rt = access(path, F_OK);
