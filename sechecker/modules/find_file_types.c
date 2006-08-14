@@ -211,7 +211,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	int buff_sz;
 
 	/* NEW */
-	int num_fc_entries;
+	int num_fc_entries = 0;
 	apol_vector_t *type_vector = NULL;
 	apol_vector_t *fc_entry_vector = NULL;
 
@@ -249,9 +249,11 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 #ifdef LIBSEFS
 	if (mod->parent_lib->fc_entries) {
 		if (mod->parent_lib->fc_path) {
-			retv = parse_file_contexts_file(mod->parent_lib->fc_path, &fc_entry_vector, (int *)&num_fc_entries, policy);
-			if (retv) 
+			retv = sefs_fc_entry_parse_file_contexts(policy, mod->parent_lib->fc_path, &fc_entry_vector);
+			if (retv)
 		                ERR(policy, "%s", "Unable to parse file contexts file");
+			else
+			    num_fc_entries = apol_vector_get_size(fc_entry_vector);
 		} else 
 	                ERR(policy, "%s", "Unable to find file contexts file");
 	}
@@ -439,19 +441,19 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 					buff_sz = 1;
 					buff_sz += strlen(fc_entry->path);
 					switch (fc_entry->filetype) {
-					case FILETYPE_DIR: /* Directory */
-					case FILETYPE_CHR: /* Character device */
-					case FILETYPE_BLK: /* Block device */
-					case FILETYPE_REG: /* Regular file */
-					case FILETYPE_FIFO: /* FIFO */
-					case FILETYPE_LNK: /* Symbolic link */
-					case FILETYPE_SOCK: /* Socket */
+					case SEFS_FILETYPE_DIR: /* Directory */
+					case SEFS_FILETYPE_CHR: /* Character device */
+					case SEFS_FILETYPE_BLK: /* Block device */
+					case SEFS_FILETYPE_REG: /* Regular file */
+					case SEFS_FILETYPE_FIFO: /* FIFO */
+					case SEFS_FILETYPE_LNK: /* Symbolic link */
+					case SEFS_FILETYPE_SOCK: /* Socket */
 						buff_sz += 4;
 						break;
-					case FILETYPE_ANY: /* any type */
+					case SEFS_FILETYPE_ANY: /* any type */
 						buff_sz += 2;
 						break;
-					case FILETYPE_NONE: /* none */
+					case SEFS_FILETYPE_NONE: /* none */
 					default:
 				                ERR(policy, "%s", "Invalid file type");
 						goto find_file_types_run_fail;
@@ -467,31 +469,31 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 					buff = (char*)calloc(buff_sz, sizeof(char));
 					strcat(buff, fc_entry->path);
 					switch (fc_entry->filetype) {
-					case FILETYPE_DIR: /* Directory */
+					case SEFS_FILETYPE_DIR: /* Directory */
 						strcat(buff, "\t-d\t");
 						break;
-					case FILETYPE_CHR: /* Character device */
+					case SEFS_FILETYPE_CHR: /* Character device */
 						strcat(buff, "\t-c\t");
 						break;
-					case FILETYPE_BLK: /* Block device */
+					case SEFS_FILETYPE_BLK: /* Block device */
 						strcat(buff, "\t-b\t");
 						break;
-					case FILETYPE_REG: /* Regular file */
+					case SEFS_FILETYPE_REG: /* Regular file */
 						strcat(buff, "\t--\t");
 						break;
-					case FILETYPE_FIFO: /* FIFO */
+					case SEFS_FILETYPE_FIFO: /* FIFO */
 						strcat(buff, "\t-p\t");
 						break;
-					case FILETYPE_LNK: /* Symbolic link */
+					case SEFS_FILETYPE_LNK: /* Symbolic link */
 						strcat(buff, "\t-l\t");
 						break;
-					case FILETYPE_SOCK: /* Socket */
+					case SEFS_FILETYPE_SOCK: /* Socket */
 						strcat(buff, "\t-s\t");
 						break;
-					case FILETYPE_ANY: /* any type */
+					case SEFS_FILETYPE_ANY: /* any type */
 						strcat(buff, "\t\t");
 						break;
-					case FILETYPE_NONE: /* none */
+					case SEFS_FILETYPE_NONE: /* none */
 					default:
 				                ERR(policy, "%s", "Invalid file type");
 						goto find_file_types_run_fail;

@@ -400,7 +400,6 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 {
 	int retv = -1, error = 0;
 	char *default_fc_path = NULL;
-	int num_fc_entries = 0;
 
 	/* if no policy we can't parse the fc file */
 	if (!lib || !lib->policy) {
@@ -410,17 +409,17 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 
 	/* if no file_contexts file is given attempt to find the default */
 	if (!fcfilelocation) {
-		retv = find_default_file_contexts_file(&default_fc_path);
+		retv = sefs_fc_find_default_file_contexts(&default_fc_path);
 		if (retv) {
 			error = errno;
-			ERR(lib->policy, "Warning: unable to find default file_contexts file: %s\n", strerror(error));
+			WARN(lib->policy, "Unable to find default file_contexts file: %s", strerror(error));
 			errno = error;
 			return 0; /* not fatal error until a module requires this to exist */
 		}
-		retv = parse_file_contexts_file(default_fc_path, &(lib->fc_entries), &(num_fc_entries), lib->policy);
+		retv = sefs_fc_entry_parse_file_contexts(lib->policy, default_fc_path, &(lib->fc_entries));
 		if (retv) {
 			error = errno;
-			fprintf(stderr, "Warning: unable to process file_contexts file\n");
+			WARN(lib->policy, "Unable to process file_contexts file %s.", default_fc_path);
 			errno = error;
 			return -1;
 		} else {
@@ -430,10 +429,10 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 			fprintf(stderr,"Using file contexts: %s\n",lib->fc_path);
 		}
 	} else {
-		retv = parse_file_contexts_file(fcfilelocation, &(lib->fc_entries), &(num_fc_entries), lib->policy);
+		retv = sefs_fc_entry_parse_file_contexts(lib->policy, fcfilelocation, &(lib->fc_entries));
 		if (retv) {
 			error = errno;
-			fprintf(stderr, "Warning: unable to process file_contexts file\n");
+			WARN(lib->policy, "Unable to process file_contexts file %s.", fcfilelocation);
 			errno = error;
 			return -1;
 		} else {
