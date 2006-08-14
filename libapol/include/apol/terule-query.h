@@ -234,5 +234,16 @@ extern int apol_terule_query_set_regex(apol_policy_t *p,
  */
 extern char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule);
 
+/**
+ *  Render a syntactic terule to a string.
+ *
+ *  @param policy Policy handler to report errors.
+ *  @param rule The rule to render.
+ *
+ *  @return a newly malloc()'d string representation of the rule, or NULL on
+ *  failure; if the call fails, errno will be set. The caller is responsible
+ *  for calling free() on the returned string.
+*/
+extern char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule);
 
 #endif

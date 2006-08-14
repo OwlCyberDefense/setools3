@@ -456,3 +456,342 @@ err:
 	errno = error;
 	return NULL;
 }
+
+char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
+{
+	char *tmp = NULL, *tmp_name = NULL;
+	int error = 0;
+	uint32_t rule_type = 0, star = 0, comp = 0;
+	qpol_type_t *type = NULL;
+	qpol_class_t *obj_class = NULL;
+	qpol_iterator_t *iter = NULL, *iter2 = NULL;
+	size_t tmp_sz = 0, iter_sz = 0, iter2_sz = 0;
+	qpol_type_set_t *set = NULL;
+
+	if (!policy || !rule) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/* rule type */
+	if (qpol_syn_terule_get_rule_type(policy->qh, policy->p, rule, &rule_type)) {
+		error = errno;
+		return NULL;
+	}
+	if (!(rule_type &= (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER))) {
+		ERR(policy, "%s", "Invalid te rule type");
+		errno = EINVAL;
+		return NULL;
+	}
+	if (!(tmp_name = (char*)apol_rule_type_to_str(rule_type))) {
+		ERR(policy, "%s", "Te rule has multiple rule types?");
+		errno = EINVAL;
+		return NULL;
+	}
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* source type set */
+	if (qpol_syn_terule_get_source_type_set(policy->qh, policy->p, rule, &set)) {
+		error = errno;
+		goto err;
+	}
+	if (qpol_type_set_get_is_star(policy->qh, policy->p, set, &star)) {
+		error = errno;
+		goto err;
+	}
+	if (star) {
+		if (apol_str_append(&tmp, &tmp_sz, "* ")) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+	} else {
+		if (qpol_type_set_get_is_comp(policy->qh, policy->p, set, &comp)) {
+			error = errno;
+			goto err;
+		}
+		if (comp) {
+			if (apol_str_append(&tmp, &tmp_sz, "~")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		if (qpol_type_set_get_included_types_iter(policy->qh, policy->p, set, &iter)) {
+			error = errno;
+			goto err;
+		}
+		if (qpol_type_set_get_subtracted_types_iter(policy->qh, policy->p, set, &iter2)) {
+			error = errno;
+			goto err;
+		}
+		if (qpol_iterator_get_size(iter, &iter_sz) || qpol_iterator_get_size(iter2, &iter2_sz)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto err;
+		}
+		if (iter_sz + iter2_sz > 1) {
+			if (apol_str_append(&tmp, &tmp_sz, "{ ")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+			if (qpol_iterator_get_item(iter, (void**)&type)) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto err;
+			}
+			if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)){
+				error = errno;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, " ")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		for (; !qpol_iterator_end(iter2); qpol_iterator_next(iter2)) {
+			if (qpol_iterator_get_item(iter2, (void**)&type)) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto err;
+			}
+			if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)){
+				error = errno;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, "-")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, " ")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		qpol_iterator_destroy(&iter);
+		qpol_iterator_destroy(&iter2);
+		if (iter_sz + iter2_sz > 1) {
+			if (apol_str_append(&tmp, &tmp_sz, "} ")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+	}
+
+	/* target type set */
+	if (qpol_syn_terule_get_target_type_set(policy->qh, policy->p, rule, &set)) {
+		error = errno;
+		goto err;
+	}
+	if (qpol_type_set_get_is_star(policy->qh, policy->p, set, &star)) {
+		error = errno;
+		goto err;
+	}
+	if (star) {
+		if (apol_str_append(&tmp, &tmp_sz, "* ")) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+	} else {
+		if (qpol_type_set_get_is_comp(policy->qh, policy->p, set, &comp)) {
+			error = errno;
+			goto err;
+		}
+		if (comp) {
+			if (apol_str_append(&tmp, &tmp_sz, "~")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		if (qpol_type_set_get_included_types_iter(policy->qh, policy->p, set, &iter)) {
+			error = errno;
+			goto err;
+		}
+		if (qpol_type_set_get_subtracted_types_iter(policy->qh, policy->p, set, &iter2)) {
+			error = errno;
+			goto err;
+		}
+		if (qpol_iterator_get_size(iter, &iter_sz) || qpol_iterator_get_size(iter2, &iter2_sz)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto err;
+		}
+		if (iter_sz + iter2_sz > 1) {
+			if (apol_str_append(&tmp, &tmp_sz, "{ ")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+			if (qpol_iterator_get_item(iter, (void**)&type)) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto err;
+			}
+			if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)){
+				error = errno;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, " ")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		for (; !qpol_iterator_end(iter2); qpol_iterator_next(iter2)) {
+			if (qpol_iterator_get_item(iter2, (void**)&type)) {
+				error = errno;
+				ERR(policy, "%s", strerror(error));
+				goto err;
+			}
+			if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)){
+				error = errno;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, "-")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+			if (apol_str_append(&tmp, &tmp_sz, " ")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		qpol_iterator_destroy(&iter);
+		qpol_iterator_destroy(&iter2);
+		if (iter_sz + iter2_sz > 1) {
+			if (apol_str_append(&tmp, &tmp_sz, "} ")) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+	}
+	
+	if (apol_str_append(&tmp, &tmp_sz, ": ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* object classes */
+	if (qpol_syn_terule_get_class_iter(policy->qh, policy->p, rule, &iter)) {
+		error = errno;
+		goto err;
+	}
+	if (qpol_iterator_get_size(iter, &iter_sz)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (iter_sz > 1) {
+		if (apol_str_append(&tmp, &tmp_sz, "{ ")) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+	}
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void**)&obj_class)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto err;
+		}
+		if (qpol_class_get_name(policy->qh, policy->p, obj_class, &tmp_name)) {
+			error = errno;
+			goto err;
+		}
+		if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+		if (apol_str_append(&tmp, &tmp_sz, " ")) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+	}
+	qpol_iterator_destroy(&iter);
+	if (iter_sz > 1) {
+		if (apol_str_append(&tmp, &tmp_sz, "} ")) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+	}
+
+	/* default type */
+	if (qpol_syn_terule_get_default_type(policy->qh, policy->p, rule, &type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	if (apol_str_append(&tmp, &tmp_sz, ";")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	return tmp;
+
+err:
+	free(tmp);
+	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter2);
+	errno = error;
+	return NULL;
+}
