@@ -188,7 +188,7 @@ role_datum_t *declare_role(void)
 	    declare_symbol(SYM_ROLES, id, (hashtab_datum_t *) role, &value,
 			   &value);
 	if (retval == 0) {
-		role->value = value;
+		role->s.value = value;
 		if ((dest_id = strdup(id)) == NULL) {
 			yyerror("Out of memory!");
 			return NULL;
@@ -219,7 +219,7 @@ role_datum_t *declare_role(void)
 				return NULL;
 			}
 			role_datum_init(dest_role);
-			dest_role->value = value;
+			dest_role->s.value = value;
 			if (hashtab_insert(roles_tab, dest_id, dest_role)) {
 				yyerror("Out of memory!");
 				free(dest_id);
@@ -248,7 +248,7 @@ role_datum_t *declare_role(void)
 		}
 	case 0:{
 			if (ebitmap_set_bit
-			    (&dest_role->dominates, role->value - 1, 1)) {
+			    (&dest_role->dominates, role->s.value - 1, 1)) {
 				yyerror("out of memory");
 				return NULL;
 			}
@@ -295,7 +295,7 @@ type_datum_t *declare_type(unsigned char primary, unsigned char isattr)
 	retval = declare_symbol(SYM_TYPES, id, typdatum, &value, &value);
 	if (retval == 0 || retval == 1) {
 		if (typdatum->primary) {
-			typdatum->value = value;
+			typdatum->s.value = value;
 		}
 	} else {
 		/* error occurred (can't have duplicate type declarations) */
@@ -349,7 +349,7 @@ user_datum_t *declare_user(void)
 			   &value);
 
 	if (retval == 0) {
-		user->value = value;
+		user->s.value = value;
 		if ((dest_id = strdup(id)) == NULL) {
 			yyerror("Out of memory!");
 			return NULL;
@@ -380,7 +380,7 @@ user_datum_t *declare_user(void)
 				return NULL;
 			}
 			user_datum_init(dest_user);
-			dest_user->value = value;
+			dest_user->s.value = value;
 			if (hashtab_insert(users_tab, dest_id, dest_user)) {
 				yyerror("Out of memory!");
 				free(dest_id);
@@ -446,7 +446,7 @@ type_datum_t *get_local_type(char *id, uint32_t value, unsigned char isattr)
 			return NULL;
 		}
 		type_datum_init(dest_typdatum);
-		dest_typdatum->value = value;
+		dest_typdatum->s.value = value;
 		dest_typdatum->flavor = isattr ? TYPE_ATTRIB : TYPE_TYPE;
 		dest_typdatum->primary = 1;
 		if (hashtab_insert(types_tab, id, dest_typdatum)) {
@@ -629,8 +629,8 @@ int require_class(int pass)
 		goto cleanup;
 	}
 	ret =
-	    require_symbol(SYM_CLASSES, class_id, datum, &datum->value,
-			   &datum->value);
+	    require_symbol(SYM_CLASSES, class_id, datum, &datum->s.value,
+			   &datum->s.value);
 	switch (ret) {
 	case -3:{
 			yyerror("Out of memory!");
@@ -710,10 +710,10 @@ int require_class(int pass)
 				free(perm);
 				goto cleanup;
 			}
-			perm->value = datum->permissions.nprim + 1;
+			perm->s.value = datum->permissions.nprim + 1;
 		}
 
-		if (add_perm_to_class(perm->value, datum->value) == -1) {
+		if (add_perm_to_class(perm->s.value, datum->s.value) == -1) {
 			yyerror("Out of memory!");
 			goto cleanup;
 		}
@@ -748,7 +748,7 @@ int require_role(int pass)
 	role_datum_init(role);
 	retval =
 	    require_symbol(SYM_ROLES, id, (hashtab_datum_t *) role,
-			   &role->value, &role->value);
+			   &role->s.value, &role->s.value);
 	if (retval != 0) {
 		free(id);
 		role_datum_destroy(role);
@@ -770,7 +770,7 @@ int require_role(int pass)
 	case 0:{
 			/* all roles dominate themselves */
 			if (ebitmap_set_bit
-			    (&role->dominates, role->value - 1, 1)) {
+			    (&role->dominates, role->s.value - 1, 1)) {
 				yyerror("Out of memory");
 				return -1;
 			}
@@ -808,7 +808,7 @@ static int require_type_or_attribute(int pass, unsigned char isattr)
 	type->flavor = isattr ? TYPE_ATTRIB : TYPE_TYPE;
 	retval =
 	    require_symbol(SYM_TYPES, id, (hashtab_datum_t *) type,
-			   &type->value, &type->value);
+			   &type->s.value, &type->s.value);
 	if (retval != 0) {
 		free(id);
 		free(type);
@@ -869,7 +869,7 @@ int require_user(int pass)
 	user_datum_init(user);
 	retval =
 	    require_symbol(SYM_USERS, id, (hashtab_datum_t *) user,
-			   &user->value, &user->value);
+			   &user->s.value, &user->s.value);
 	if (retval != 0) {
 		free(id);
 		user_datum_destroy(user);
@@ -919,7 +919,7 @@ int require_bool(int pass)
 	}
 	retval =
 	    require_symbol(SYM_BOOLS, id, (hashtab_datum_t *) booldatum,
-			   &booldatum->value, &booldatum->value);
+			   &booldatum->s.value, &booldatum->s.value);
 	if (retval != 0) {
 		cond_destroy_bool(id, booldatum, NULL);
 	}
@@ -1031,7 +1031,7 @@ int is_perm_in_scope(hashtab_key_t perm_id, hashtab_key_t class_id)
 	if (perdatum == NULL) {
 		return 1;
 	}
-	return is_perm_in_stack(perdatum->value, cladatum->value, stack_top);
+	return is_perm_in_stack(perdatum->s.value, cladatum->s.value, stack_top);
 }
 
 cond_list_t *get_current_cond_list(cond_list_t * cond)

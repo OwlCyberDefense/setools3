@@ -44,7 +44,7 @@ static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_dat
 		ebitmap_for_each_bit(&type->types, node, bit) {
 			if (ebitmap_node_get_bit(node, bit)) {
 				orig_type = db->type_val_to_struct[bit];
-				if (ebitmap_set_bit(&orig_type->types, type->value - 1, 1)) {
+				if (ebitmap_set_bit(&orig_type->types, type->s.value - 1, 1)) {
 					return -1;
 				}
 			}

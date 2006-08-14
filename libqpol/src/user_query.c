@@ -114,7 +114,7 @@ int qpol_user_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_
 	}
 
 	internal_datum = (user_datum_t*)datum;
-	*value = internal_datum->value;
+	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;
 }
@@ -210,7 +210,7 @@ int qpol_user_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t
 	db = &policy->p->p;
 	internal_datum = (user_datum_t*)datum;
 
-	*name = db->p_user_val_to_name[internal_datum->value - 1];
+	*name = db->p_user_val_to_name[internal_datum->s.value - 1];
 
 	return STATUS_SUCCESS;
 }

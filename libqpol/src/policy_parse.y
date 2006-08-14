@@ -1012,7 +1012,7 @@ static int define_class(void)
 			assert(0);	/* should never get here */
 		}
 	}
-	datum->value = value;
+	datum->s.value = value;
 	return 0;
 
       bad:
@@ -1117,7 +1117,7 @@ static int define_common_perms(void)
 		yyerror("hash table overflow");
 		goto bad;
 	}
-	comdatum->value = policydbp->p_commons.nprim + 1;
+	comdatum->s.value = policydbp->p_commons.nprim + 1;
 	if (symtab_init(&comdatum->permissions, PERM_SYMTAB_SIZE)) {
 		yyerror("out of memory");
 		goto bad;
@@ -1130,9 +1130,9 @@ static int define_common_perms(void)
 			goto bad_perm;
 		}
 		memset(perdatum, 0, sizeof(perm_datum_t));
-		perdatum->value = comdatum->permissions.nprim + 1;
+		perdatum->s.value = comdatum->permissions.nprim + 1;
 
-		if (perdatum->value > (sizeof(sepol_access_vector_t) * 8)) {
+		if (perdatum->s.value > (sizeof(sepol_access_vector_t) * 8)) {
 			yyerror
 			    ("too many permissions to fit in an access vector");
 			goto bad_perm;
@@ -1241,9 +1241,9 @@ static int define_av_perms(int inherits)
 			goto bad;
 		}
 		memset(perdatum, 0, sizeof(perm_datum_t));
-		perdatum->value = ++cladatum->permissions.nprim;
+		perdatum->s.value = ++cladatum->permissions.nprim;
 
-		if (perdatum->value > (sizeof(sepol_access_vector_t) * 8)) {
+		if (perdatum->s.value > (sizeof(sepol_access_vector_t) * 8)) {
 			yyerror
 			    ("too many permissions to fit in an access vector");
 			goto bad;
@@ -1279,7 +1279,7 @@ static int define_av_perms(int inherits)
 			yyerror("hash table overflow");
 			goto bad;
 		}
-		if (add_perm_to_class(perdatum->value, cladatum->value)) {
+		if (add_perm_to_class(perdatum->s.value, cladatum->s.value)) {
 			yyerror("out of memory");
 			goto bad;
 		}
@@ -1532,7 +1532,7 @@ static int define_category(void)
 			assert(0);	/* should never get here */
 		}
 	}
-	datum->value = value;
+	datum->s.value = value;
 
 	while ((id = queue_remove(id_queue))) {
 		if (id_has_dot(id)) {
@@ -1546,11 +1546,11 @@ static int define_category(void)
 		}
 		memset(aliasdatum, 0, sizeof(cat_datum_t));
 		aliasdatum->isalias = TRUE;
-		aliasdatum->value = datum->value;
+		aliasdatum->s.value = datum->s.value;
 
 		ret =
 		    declare_symbol(SYM_CATS, id, aliasdatum, NULL,
-				   &datum->value);
+				   &datum->s.value);
 		switch (ret) {
 		case -3:{
 				yyerror("Out of memory!");
@@ -1678,7 +1678,7 @@ static int define_level(void)
 				free(id);
 				return -1;
 			}
-			range_start = cdatum->value - 1;
+			range_start = cdatum->s.value - 1;
 			cdatum =
 			    (cat_datum_t *) hashtab_search(policydbp->p_cats.
 							   table,
@@ -1691,7 +1691,7 @@ static int define_level(void)
 				free(id);
 				return -1;
 			}
-			range_end = cdatum->value - 1;
+			range_end = cdatum->s.value - 1;
 
 			if (range_end < range_start) {
 				sprintf(errormsg, "category range is invalid");
@@ -1704,7 +1704,7 @@ static int define_level(void)
 			    (cat_datum_t *) hashtab_search(policydbp->p_cats.
 							   table,
 							   (hashtab_key_t) id);
-			range_start = range_end = cdatum->value - 1;
+			range_start = range_end = cdatum->s.value - 1;
 		}
 
 		for (i = range_start; i <= range_end; i++) {
@@ -1759,10 +1759,10 @@ static int add_aliases_to_type(type_datum_t * type)
 			return -1;
 		}
 		memset(aliasdatum, 0, sizeof(type_datum_t));
-		aliasdatum->value = type->value;
+		aliasdatum->s.value = type->s.value;
 
 		ret = declare_symbol(SYM_TYPES, id, aliasdatum,
-				     NULL, &aliasdatum->value);
+				     NULL, &aliasdatum->s.value);
 		switch (ret) {
 		case -3:{
 				yyerror("Out of memory!");
@@ -1882,12 +1882,12 @@ static int define_typeattribute(void)
 			return -1;
 		}
 
-		if ((attr = get_local_type(id, attr->value, 1)) == NULL) {
+		if ((attr = get_local_type(id, attr->s.value, 1)) == NULL) {
 			yyerror("Out of memory!");
 			return -1;
 		}
 
-		if (ebitmap_set_bit(&attr->types, (t->value - 1), TRUE)) {
+		if (ebitmap_set_bit(&attr->types, (t->s.value - 1), TRUE)) {
 			yyerror("out of memory");
 			return -1;
 		}
@@ -1945,12 +1945,12 @@ static int define_type(int alias)
 			return -1;
 		}
 
-		if ((attr = get_local_type(id, attr->value, 1)) == NULL) {
+		if ((attr = get_local_type(id, attr->s.value, 1)) == NULL) {
 			yyerror("Out of memory!");
 			return -1;
 		}
 
-		if (ebitmap_set_bit(&attr->types, datum->value - 1, TRUE)) {
+		if (ebitmap_set_bit(&attr->types, datum->s.value - 1, TRUE)) {
 			yyerror("Out of memory");
 			return -1;
 		}
@@ -2015,10 +2015,10 @@ static int set_types(type_set_t * set, char *id, int *add, char starallowed)
 	}
 
 	if (*add == 0) {
-		if (ebitmap_set_bit(&set->negset, t->value - 1, TRUE))
+		if (ebitmap_set_bit(&set->negset, t->s.value - 1, TRUE))
 			goto oom;
 	} else {
-		if (ebitmap_set_bit(&set->types, t->value - 1, TRUE))
+		if (ebitmap_set_bit(&set->types, t->s.value - 1, TRUE))
 			goto oom;
 	}
 	free(id);
@@ -2073,7 +2073,7 @@ static int define_compute_type_helper(int which, avrule_t ** rule)
 			yyerror(errormsg);
 			goto bad;
 		}
-		if (ebitmap_set_bit(&tclasses, cladatum->value - 1, TRUE)) {
+		if (ebitmap_set_bit(&tclasses, cladatum->s.value - 1, TRUE)) {
 			yyerror("Out of memory");
 			goto bad;
 		}
@@ -2108,7 +2108,7 @@ static int define_compute_type_helper(int which, avrule_t ** rule)
 			}
 			class_perm_node_init(perm);
 			perm->class = i + 1;
-			perm->data = datum->value;
+			perm->data = datum->s.value;
 			perm->next = avrule->perms;
 			avrule->perms = perm;
 		}
@@ -2244,7 +2244,7 @@ static int define_bool(void)
 			assert(0);	/* should never get here */
 		}
 	}
-	datum->value = value;
+	datum->s.value = value;
 
 	bool_value = (char *)queue_remove(id_queue);
 	if (!bool_value) {
@@ -2338,7 +2338,7 @@ static int define_te_avtab_helper(int which, avrule_t ** rule)
 			ret = -1;
 			goto out;
 		}
-		if (ebitmap_set_bit(&tclasses, cladatum->value - 1, TRUE)) {
+		if (ebitmap_set_bit(&tclasses, cladatum->s.value - 1, TRUE)) {
 			yyerror("Out of memory");
 			ret = -1;
 			goto out;
@@ -2415,7 +2415,7 @@ static int define_te_avtab_helper(int which, avrule_t ** rule)
 				}
 				continue;
 			} else {
-				cur_perms->data |= 1U << (perdatum->value - 1);
+				cur_perms->data |= 1U << (perdatum->s.value - 1);
 			}
 		      next:
 			cur_perms = cur_perms->next;
@@ -2513,7 +2513,7 @@ static role_datum_t *merge_roles_dom(role_datum_t * r1, role_datum_t * r2)
 		return NULL;
 	}
 	memset(new, 0, sizeof(role_datum_t));
-	new->value = 0;		/* temporary role */
+	new->s.value = 0;		/* temporary role */
 	if (ebitmap_or(&new->dominates, &r1->dominates, &r2->dominates)) {
 		yyerror("out of memory");
 		return NULL;
@@ -2522,13 +2522,13 @@ static role_datum_t *merge_roles_dom(role_datum_t * r1, role_datum_t * r2)
 		yyerror("out of memory");
 		return NULL;
 	}
-	if (!r1->value) {
+	if (!r1->s.value) {
 		/* free intermediate result */
 		type_set_destroy(&r1->types);
 		ebitmap_destroy(&r1->dominates);
 		free(r1);
 	}
-	if (!r2->value) {
+	if (!r2->s.value) {
 		/* free intermediate result */
 		yyerror("right hand role is temporary?");
 		type_set_destroy(&r2->types);
@@ -2548,11 +2548,11 @@ static int dominate_role_recheck(hashtab_key_t key, hashtab_datum_t datum,
 	int i;
 
 	/* Don't bother to process against self role */
-	if (rdatum->value == rdp->value)
+	if (rdatum->s.value == rdp->s.value)
 		return 0;
 
 	/* If a dominating role found */
-	if (ebitmap_get_bit(&(rdatum->dominates), rdp->value - 1)) {
+	if (ebitmap_get_bit(&(rdatum->dominates), rdp->s.value - 1)) {
 		ebitmap_t types;
 		ebitmap_init(&types);
 		if (type_set_expand(&rdp->types, &types, policydbp, 1)) {
@@ -2614,8 +2614,8 @@ static role_datum_t *define_role_dom(role_datum_t * r)
 		memset(role, 0, sizeof(role_datum_t));
 		ret =
 		    declare_symbol(SYM_ROLES, (hashtab_key_t) role_id,
-				   (hashtab_datum_t) role, &role->value,
-				   &role->value);
+				   (hashtab_datum_t) role, &role->s.value,
+				   &role->s.value);
 		switch (ret) {
 		case -3:{
 				yyerror("Out of memory!");
@@ -2638,7 +2638,7 @@ static role_datum_t *define_role_dom(role_datum_t * r)
 				assert(0);	/* should never get here */
 			}
 		}
-		if (ebitmap_set_bit(&role->dominates, role->value - 1, TRUE)) {
+		if (ebitmap_set_bit(&role->dominates, role->s.value - 1, TRUE)) {
 			yyerror("Out of memory!");
 			goto cleanup;
 		}
@@ -2662,7 +2662,7 @@ static role_datum_t *define_role_dom(role_datum_t * r)
 					goto oom;
 		}
 		ebitmap_destroy(&types);
-		if (!r->value) {
+		if (!r->s.value) {
 			/* free intermediate result */
 			type_set_destroy(&r->types);
 			ebitmap_destroy(&r->dominates);
@@ -2694,7 +2694,7 @@ static int role_val_to_name_helper(hashtab_key_t key, hashtab_datum_t datum,
 
 	roldatum = (role_datum_t *) datum;
 
-	if (v->val == roldatum->value) {
+	if (v->val == roldatum->s.value) {
 		v->name = key;
 		return 1;
 	}
@@ -2741,7 +2741,7 @@ static int set_roles(role_set_t * set, char *id)
 		return -1;
 	}
 
-	if (ebitmap_set_bit(&set->roles, r->value - 1, TRUE)) {
+	if (ebitmap_set_bit(&set->roles, r->s.value - 1, TRUE)) {
 		yyerror("out of memory");
 		free(id);
 		return -1;
@@ -2841,7 +2841,7 @@ static int define_role_trans(void)
 			memset(tr, 0, sizeof(struct role_trans));
 			tr->role = i + 1;
 			tr->type = j + 1;
-			tr->new_role = role->value;
+			tr->new_role = role->s.value;
 			tr->next = policydbp->role_tr;
 			policydbp->role_tr = tr;
 		}
@@ -2855,7 +2855,7 @@ static int define_role_trans(void)
 	memset(rule, 0, sizeof(struct role_trans_rule));
 	rule->roles = roles;
 	rule->types = types;
-	rule->new_role = role->value;
+	rule->new_role = role->s.value;
 
 	append_role_trans(rule);
 
@@ -3021,7 +3021,7 @@ static int define_constraint(constraint_expr_t * expr)
 			free(id);
 			return -1;
 		}
-		if (ebitmap_set_bit(&classmap, cladatum->value - 1, TRUE)) {
+		if (ebitmap_set_bit(&classmap, cladatum->s.value - 1, TRUE)) {
 			yyerror("out of memory");
 			ebitmap_destroy(&classmap);
 			free(id);
@@ -3085,7 +3085,7 @@ static int define_constraint(constraint_expr_t * expr)
 					}
 				}
 				node->permissions |=
-				    (1 << (perdatum->value - 1));
+				    (1 << (perdatum->s.value - 1));
 			}
 		}
 		free(id);
@@ -3172,7 +3172,7 @@ static int define_validatetrans(constraint_expr_t * expr)
 			free(id);
 			return -1;
 		}
-		if (ebitmap_set_bit(&classmap, (cladatum->value - 1), TRUE)) {
+		if (ebitmap_set_bit(&classmap, (cladatum->s.value - 1), TRUE)) {
 			yyerror("out of memory");
 			ebitmap_destroy(&classmap);
 			free(id);
@@ -3304,7 +3304,7 @@ define_cexpr(uint32_t expr_type, uintptr_t arg1, uintptr_t arg2)
 					constraint_expr_destroy(expr);
 					return 0;
 				}
-				val = user->value;
+				val = user->s.value;
 			} else if (expr->attr & CEXPR_ROLE) {
 				if (!is_id_in_scope(SYM_ROLES, id)) {
 					yyerror2("role %s is not within scope",
@@ -3325,7 +3325,7 @@ define_cexpr(uint32_t expr_type, uintptr_t arg1, uintptr_t arg2)
 					constraint_expr_destroy(expr);
 					return 0;
 				}
-				val = role->value;
+				val = role->s.value;
 			} else if (expr->attr & CEXPR_TYPE) {
 				if (set_types(expr->type_names, id, &add, 0)) {
 					constraint_expr_destroy(expr);
@@ -3638,7 +3638,7 @@ static cond_expr_t *define_cond_expr(uint32_t expr_type, void *arg1, void *arg2)
 			free(id);
 			return NULL;
 		}
-		expr->bool = bool_var->value;
+		expr->bool = bool_var->s.value;
 		free(id);
 		return expr;
 	default:
@@ -3711,7 +3711,7 @@ parse_categories(char *id, level_datum_t * levdatum, ebitmap_t * cats)
 			yyerror(errormsg);
 			return -1;
 		}
-		range_start = cdatum->value - 1;
+		range_start = cdatum->s.value - 1;
 		cdatum = (cat_datum_t *) hashtab_search(policydbp->p_cats.table,
 							(hashtab_key_t) id_end);
 		if (!cdatum) {
@@ -3719,7 +3719,7 @@ parse_categories(char *id, level_datum_t * levdatum, ebitmap_t * cats)
 			yyerror(errormsg);
 			return -1;
 		}
-		range_end = cdatum->value - 1;
+		range_end = cdatum->s.value - 1;
 
 		if (range_end < range_start) {
 			sprintf(errormsg, "category range is invalid");
@@ -3734,7 +3734,7 @@ parse_categories(char *id, level_datum_t * levdatum, ebitmap_t * cats)
 			yyerror(errormsg);
 			return -1;
 		}
-		range_start = range_end = cdatum->value - 1;
+		range_start = range_end = cdatum->s.value - 1;
 	}
 
 	for (i = range_start; i <= range_end; i++) {
@@ -3946,7 +3946,7 @@ static int parse_security_context(context_struct_t * c)
 		free(id);
 		goto bad;
 	}
-	c->user = usrdatum->value;
+	c->user = usrdatum->s.value;
 
 	/* no need to keep the user name */
 	free(id);
@@ -3970,7 +3970,7 @@ static int parse_security_context(context_struct_t * c)
 		free(id);
 		return -1;
 	}
-	c->role = role->value;
+	c->role = role->s.value;
 
 	/* no need to keep the role name */
 	free(id);
@@ -3995,7 +3995,7 @@ static int parse_security_context(context_struct_t * c)
 		free(id);
 		return -1;
 	}
-	c->type = typdatum->value;
+	c->type = typdatum->s.value;
 
 	/* no need to keep the type name */
 	free(id);
