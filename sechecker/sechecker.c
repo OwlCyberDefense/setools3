@@ -375,7 +375,7 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 			fprintf(stderr, "Error: %s\n", qpol_find_default_policy_file_strerr(retv));
 			return -1;
 		}
-		retv = apol_policy_open(default_policy_path, &(lib->policy));
+		retv = apol_policy_open(default_policy_path, &(lib->policy), NULL);
 		if (retv) {
 			fprintf(stderr, "Error: failed opening default policy\n");
 			return -1;
@@ -385,7 +385,7 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 			fprintf(stderr,"Using policy: %s\n",lib->policy_path);
 		}
 	} else {
-		retv = apol_policy_open(policyfilelocation, &(lib->policy));
+		retv = apol_policy_open(policyfilelocation, &(lib->policy), NULL);
 		if (retv) {
 			fprintf(stderr, "Error: failed opening policy %s\n", policyfilelocation);
 			return -1;
