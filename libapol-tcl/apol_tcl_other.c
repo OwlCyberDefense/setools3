@@ -69,7 +69,19 @@ static void apol_tcl_route_handle_to_string(apol_policy_t *p, int level,
 					    const char *fmt, va_list ap)
 {
 	char *s;
-	if (p->msg_callback_arg == NULL || level < p->msg_level) {
+	if (level == APOL_MSG_INFO && p->msg_level >= APOL_MSG_INFO) {
+		free(p->msg_callback_arg);
+		p->msg_callback_arg = NULL;
+		if (vasprintf(&s, fmt, ap) < 0) {
+			fprintf(stderr, "%s\n", strerror(ENOMEM));
+			return;
+		}
+		else {
+			p->msg_callback_arg = s;
+		}
+		Tcl_DoOneEvent(TCL_IDLE_EVENTS | TCL_DONT_WAIT);
+	}
+	else if (p->msg_callback_arg == NULL || level < p->msg_level) {
 		free(p->msg_callback_arg);
 		p->msg_callback_arg = NULL;
 		if (vasprintf(&s, fmt, ap) < 0) {
@@ -378,6 +390,21 @@ static int Apol_GetHelpDir(ClientData clientData, Tcl_Interp *interp, int argc, 
 }
 
 /**
+ * If the current message stored withing the apol_policy_t handler is
+ * an info string, then return it.  Otherwise return an empty string.
+ */
+static int Apol_GetInfoString(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	if (policydb != NULL && policydb->msg_level == APOL_MSG_INFO) {
+		Tcl_SetResult(interp, policydb->msg_callback_arg, TCL_VOLATILE);
+	}
+	else {
+		Tcl_SetResult(interp, "", TCL_STATIC);
+	}
+	return TCL_OK;
+}
+
+/**
  * Open a policy file, either source or binary, on disk.  If the file
  * was opened successfully then set the global policydb pointer to it,
  * and set its error handler to apol_tcl_route_handle_to_string().
@@ -396,14 +423,13 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, 
 		free(policydb->msg_callback_arg);
 	}
 	apol_policy_destroy(&policydb);
-	if (apol_policy_open(argv[1], &policydb)) {
+	if (apol_policy_open(argv[1], &policydb, apol_tcl_route_handle_to_string)) {
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error opening policy: ", -1);
 		Tcl_AppendToObj(result_obj, strerror(errno), -1);
 		Tcl_SetObjResult(interp, result_obj);
 		return TCL_ERROR;
 	}
 	policydb->msg_callback_arg = NULL;
-	policydb->msg_callback = apol_tcl_route_handle_to_string;
 
 	return TCL_OK;
 }
@@ -1126,6 +1152,7 @@ int apol_tcl_init(Tcl_Interp *interp)
 {
 	Tcl_CreateCommand(interp, "apol_GetScriptDir", Apol_GetScriptDir, NULL,  NULL);
 	Tcl_CreateCommand(interp, "apol_GetHelpDir", Apol_GetHelpDir, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetInfoString", Apol_GetInfoString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_OpenPolicy", Apol_OpenPolicy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_ClosePolicy", Apol_ClosePolicy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetVersion", Apol_GetVersion, NULL, NULL);

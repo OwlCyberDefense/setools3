@@ -261,7 +261,7 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 	opts = POLOPT_AV_RULES | POLOPT_USERS | POLOPT_ROLES;
 */
 	
-	rt = apol_policy_open(filename, &tmp_policy);
+	rt = apol_policy_open(filename, &tmp_policy, NULL);
 	if (rt != 0) {
 		if (tmp_policy)
 			apol_policy_destroy(&tmp_policy);

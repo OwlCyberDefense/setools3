@@ -305,3 +305,8 @@ int qpol_src_yyinput(char *buf, int max_size)
 
 	return n;
 }
+
+void init_scanner(void)
+{
+	yy_flush_buffer(YY_CURRENT_BUFFER);
+}

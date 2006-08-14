@@ -36,16 +36,20 @@ typedef struct policy policy_t;
 #include <stdarg.h>
 #include <qpol/policy.h>
 
+struct apol_policy;
+
 /* forward declaration. the definition resides within perm-map.c */
 struct apol_permmap;
 
 /* forward declaration. the definition resides within domain-trans-analysis.c */
 struct apol_domain_trans_table;
 
+typedef void (*apol_callback_fn_t) (struct apol_policy *p, int level, const char *fmt, va_list argp);
+
 typedef struct apol_policy {
         qpol_policy_t *p;
         qpol_handle_t *qh;
-	void (*msg_callback) (struct apol_policy *p, int level, const char *fmt, va_list argp);
+	apol_callback_fn_t msg_callback;
 	int msg_level;
 	void *msg_callback_arg;
 	int policy_type;
@@ -59,10 +63,13 @@ typedef struct apol_policy {
  *  Open a policy file and load it into a newly created apol_policy.
  *  @param path The path of the policy file to open.
  *  @param policy The policy to create from the file.
+ *  @param msg_callback Callback to invoke as errors/warnings are
+ *  generated.  If NULL, then write messages to standard error.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL;
  */
-extern int apol_policy_open(const char *path, apol_policy_t **policy);
+extern int apol_policy_open(const char *path, apol_policy_t **policy,
+			    apol_callback_fn_t msg_callback);
 
 /**
  * Deallocate all memory associated with a policy, and then set it to

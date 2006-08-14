@@ -1378,7 +1378,7 @@ int main (int argc, char **argv)
 	}
 
 	/* attempt to open the policy */
-	if (apol_policy_open(policy_file, &policydb)) {
+	if (apol_policy_open(policy_file, &policydb, NULL)) {
 		perror("Error opening policy");
 		free(policy_file);
 		exit(1);
