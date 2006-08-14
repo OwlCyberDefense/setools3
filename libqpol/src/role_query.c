@@ -112,7 +112,7 @@ int qpol_role_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_
 	}
 
 	internal_datum = (role_datum_t*)datum;
-	*value = internal_datum->value;
+	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;
 }
@@ -187,7 +187,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 	if (type_set_expand(&internal_datum->types, expanded_set, db, 1)) {
 		ebitmap_destroy(expanded_set);
 		free(expanded_set);
-		ERR(handle, "error reading type set for role %s", db->p_role_val_to_name[internal_datum->value -1]);
+		ERR(handle, "error reading type set for role %s", db->p_role_val_to_name[internal_datum->s.value -1]);
 		errno = EIO;
 		return STATUS_ERR;
 	}
@@ -234,7 +234,7 @@ int qpol_role_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t
 	db = &policy->p->p;
 	internal_datum = (role_datum_t*)datum;
 
-	*name = db->p_role_val_to_name[internal_datum->value - 1];
+	*name = db->p_role_val_to_name[internal_datum->s.value - 1];
 
 	return STATUS_SUCCESS;
 }

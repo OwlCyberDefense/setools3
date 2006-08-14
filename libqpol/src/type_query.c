@@ -111,7 +111,7 @@ int qpol_type_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_
 	}
 
 	internal_datum = (type_datum_t*)datum;
-	*value = internal_datum->value;
+	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;
 }
@@ -260,7 +260,7 @@ int qpol_type_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_t
 	db = &policy->p->p;
 	internal_datum = (type_datum_t*)datum;
 
-	*name = db->p_type_val_to_name[internal_datum->value - 1];
+	*name = db->p_type_val_to_name[internal_datum->s.value - 1];
 
 	return STATUS_SUCCESS;
 }
@@ -295,7 +295,7 @@ static int hash_state_next_type_alias(qpol_iterator_t *iter)
 	do {
 		hash_state_next(iter);
 		datum = hs->node ? (type_datum_t*)hs->node->datum : NULL;
-	} while (datum != NULL && (datum->value != hs->val || datum->primary));
+	} while (datum != NULL && (datum->s.value != hs->val || datum->primary));
 	
 	return STATUS_SUCCESS;
 }
@@ -339,7 +339,7 @@ static size_t hash_alias_state_size(qpol_iterator_t *iter)
 		for (tmp_node = (*(hs->table))->htable[tmp_bucket]; tmp_node;tmp_node = tmp_node->next) {
 			tmp_datum = tmp_node? tmp_node->datum:NULL;
 			if (tmp_datum) {
-				if (tmp_datum->value == hs->val && ! tmp_datum->primary) {
+				if (tmp_datum->s.value == hs->val && ! tmp_datum->primary) {
 					count++;
 				}
 			}
@@ -375,7 +375,7 @@ int qpol_type_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	}
 	hs->table = &db->p_types.table;
 	hs->node = (*(hs->table))->htable[0];
-	hs->val = internal_datum->value;
+	hs->val = internal_datum->s.value;
 
 	if (qpol_iterator_create(handle, db, (void*)hs, hash_state_get_cur_alias,
 		hash_state_next_type_alias, hash_state_end, hash_alias_state_size, free, aliases)) {
@@ -383,7 +383,7 @@ int qpol_type_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 		return STATUS_ERR;
 	}
 
-	if (hs->node == NULL ||((type_datum_t*)(hs->node->datum))->value != hs->val)
+	if (hs->node == NULL ||((type_datum_t*)(hs->node->datum))->s.value != hs->val)
 		hash_state_next_type_alias(*aliases);
 
 	return STATUS_SUCCESS;
