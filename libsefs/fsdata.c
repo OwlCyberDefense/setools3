@@ -1,9 +1,9 @@
 /**
- * @file file_contexts.c
+ * @file fsdata.c
  *
- * Public interface for creating, saving, and loading a sqlite3
- * database containing paths + file contexts.  Also contains routines
- * to search a created database.
+ * Routines for creating, saving, and loading a sqlite3 database
+ * containing paths + file contexts.  Also contains routines to search
+ * a created database.
  *
  * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
@@ -24,7 +24,7 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ */
 
 #include <config.h>
 

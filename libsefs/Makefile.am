@@ -38,8 +38,10 @@ endif
 
 LIBSEFS_SONAME = @libsefs_soname@
 
-$(sefsso_DATA): $(libsefs_so_OBJS)
-	$(CC) -shared -o $@ $(libsefs_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME) -L$(top_srcdir)/libapol/src -L$(top_srcdir)/libqpol/src -lapol -lqpol
+noinst_DATA = libsefs.map
+
+$(sefsso_DATA): $(libsefs_so_OBJS) libsefs.map
+	$(CC) -shared -o $@ $(libsefs_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs -L$(top_srcdir)/libapol/src -L$(top_srcdir)/libqpol/src -lapol -lqpol
 	$(LN_S) -f $@ libsefs.so
 
 install-data-hook:
