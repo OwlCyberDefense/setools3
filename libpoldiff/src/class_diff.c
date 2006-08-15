@@ -26,63 +26,63 @@
 #include <poldiff/class_diff.h>
 #include <apol/vector.h>
 
-struct poldiff_class_diff_summary {
+struct poldiff_class_summary {
 	size_t num_added;
 	size_t num_removed;
 	size_t num_modified;
 	apol_vector_t *class_diffs;
 };
 
-struct poldiff_class_diff {
+struct poldiff_class {
 	char *name;
-	poldiff_diff_type_e diff_type;
+	poldiff_form_e form;
 	apol_vector_t *added_perms;
 	apol_vector_t *removed_perms;
 };
 
-char *poldiff_class_diff_get_name(poldiff_t *diff, poldiff_class_diff_t *cls)
+const char *poldiff_class_get_name(poldiff_t *diff, poldiff_class_t *cls)
 {
 	//TODO
 	return NULL;
 }
 
-poldiff_diff_type_e poldiff_class_diff_get_diff_type(poldiff_t *diff, poldiff_class_diff_t *cls)
+poldiff_form_e poldiff_class_get_form(poldiff_t *diff, poldiff_class_t *cls)
 {
 	//TODO
-	return DIFF_TYPE_NONE;
+	return POLDIFF_FORM_NONE;
 }
 
-apol_vector_t *poldiff_class_diff_get_added_perms(poldiff_t *diff, poldiff_class_diff_t *cls)
-{
-	//TODO
-	return NULL;
-}
-
-apol_vector_t *poldiff_class_diff_get_removed_perms(poldiff_t *diff, poldiff_class_diff_t *cls)
+apol_vector_t *poldiff_class_get_added_perms(poldiff_t *diff, poldiff_class_t *cls)
 {
 	//TODO
 	return NULL;
 }
 
-size_t poldiff_class_diff_summary_get_num_added_classes(poldiff_t *diff, poldiff_class_diff_summary_t *cds)
+apol_vector_t *poldiff_class_get_removed_perms(poldiff_t *diff, poldiff_class_t *cls)
+{
+	//TODO
+	return NULL;
+}
+
+size_t poldiff_get_num_added_classes(poldiff_t *diff)
 {
 	//TODO
 	return 0;
 }
 
-size_t poldiff_class_diff_summary_get_num_removed_classes(poldiff_t *diff, poldiff_class_diff_summary_t *cds)
+size_t poldiff_get_num_removed_classes(poldiff_t *diff)
 {
 	//TODO
 	return 0;
 }
 
-size_t poldiff_class_diff_summary_get_num_modified_classes(poldiff_t *diff, poldiff_class_diff_summary_t *cds)
+size_t poldiff_get_num_modified_classes(poldiff_t *diff)
 {
 	//TODO
 	return 0;
 }
 
-apol_vector_t *poldiff_class_diff_summary_get_class_diff_vector(poldiff_t *diff, poldiff_class_diff_summary_t *cds)
+apol_vector_t *poldiff_get_class_diff_vector(poldiff_t *diff)
 {
 	//TODO
 	return NULL;

@@ -29,12 +29,51 @@
 #include <apol/policy.h>
 #include <poldiff/poldiff.h>
 
-struct poldiff_state {
+/* forward declarations */
+struct poldiff_class_summary;
+struct poldiff_common_summary;
+struct poldiff_type_summary;
+struct poldiff_attrib_summary;
+struct poldiff_role_summary;
+struct poldiff_user_summary;
+struct poldiff_bool_summary;
+struct poldiff_cond_summary;
+/*struct poldiff_sens_summary;*/
+/*struct poldiff_cat_summary;*/
+struct poldiff_avrule_summary;
+struct poldiff_terule_summary;
+struct poldiff_role_allow_summary;
+struct poldiff_role_trans_summary;
+/*struct range_trans_summary;*/
+/* and so forth for ocon_summary structs */
+
+struct poldiff {
 	apol_policy_t *policy1;
 	apol_policy_t *policy2;
-	podiff_handle_fn_t
+	poldiff_handle_fn_t
 	void *handle_arg;
 	uint32_t diff_status;
-}
+	/* symbol maps ? */
+	struct poldiff_class_summary *class_diffs;
+	struct poldiff_common_summary *common_diffs;
+	struct poldiff_type_summary *type_diffs;
+	struct poldiff_attrib_summary *attrib_diffs;
+	struct poldiff_role_summary *role_diffs;
+	struct poldiff_user_summary *user_diffs;
+	struct poldiff_bool_summary *bool_diffs;
+	struct poldiff_cond_summary *cond_diffs;
+/*	struct poldiff_sens_summary *sens_diffs;*/
+/*	struct poldiff_cat_summary *cat_diffs;*/
+	struct poldiff_avrule_summary *avrule_diffs;
+	struct poldiff_terule_summary *terule_diffs;
+	struct poldiff_role_allow_summary *role_allow_diffs;
+	struct poldiff_role_trans_summary *role_trans_diffs;
+/*	struct poldiff_range_trans_summary *range_trans_diffs;*/
+	/* and so forth if we want ocon_diffs */
+	apol_vector_t *type_renames;
+};
+
+typedef struct poldiff_type_rename poldiff_type_rename_t;
+
 
 #endif /* POLDIFF_POLDIFF_INTERNAL_H */
