@@ -29,57 +29,106 @@
 #include <apol/vector.h>
 #include <stdarg.h>
 
-typedef struct poldiff_state poldiff_state_t;
-
-/* forward declarations */
-struct poldiff_class_diff_summary;
-struct common_diff_summary;
-struct type_diff_summary;
-struct attrib_diff_summary;
-struct role_diff_summary;
-struct user_diff_summary;
-struct bool_diff_summary;
-struct sens_diff_summary;
-struct cat_diff_summary;
-struct avrule_diff_summary;
-struct terule_diff_summary;
-struct role_allow_diff_summary;
-struct role_trans_diff_summary;
-struct range_trans_diff_summary;
-
-typedef struct poldiff {
-	poldiff_state_t *state;
-	struct class_diff_summary *class_diffs;
-	struct common_diff_summary *common_diffs;
-	struct type_diff_summary *type_diffs;
-	struct attrib_diff_summary *attrib_diffs;
-	struct role_diff_summary *role_diffs;
-	struct user_diff_summary *user_diffs;
-	struct bool_diff_summary *bool_diffs;
-	struct sens_diff_summary *sens_diffs;
-	struct cat_diff_summary *cat_diffs;
-	struct avrule_diff_summary *avrule_diffs;
-	struct terule_diff_summary *terule_diffs;
-	struct role_allow_diff_summary *role_allow_diffs;
-	struct role_trans_diff_summary *role_trans_diffs;
-	struct range_trans_diff_summary *range_trans_diffs;
-	/* and so forth if we want ocon_diffs */
-	apol_vector_t *type_renames;
-} poldiff_t;
-
-typedef struct poldiff_type_rename poldiff_type_rename_t;
+typedef struct poldiff poldiff_t;
 typedef void (*poldiff_handle_callback_fn_t)(void *arg, poldiff_t *diff, char *fmt, va_list va_args);
 
-typedef enum poldiff_diff_type {
-	DIFF_TYPE_NONE,	/* only for error conditions */
-	DIFF_TYPE_ADDED,	   /* item was added - only in policy 2 */
-	DIFF_TYPE_REMOVED,	/* item was removed - only in policy 1 */
-	DIFF_TYPE_MODIFIED	/* item was modified - exists in both policies but with different semantic meaning */
-} poldiff_diff_type_e;
+/**
+ *  Form of a difference. This enumeration describes the kind of change
+ *  in a policy component or rule from policy1 to policy2.
+ *  Differences can be additions (item present only in policy2),
+ *  removals (item present only in policy1) or a modification
+ *  (item present in both policies with different semantic meaning).
+ *  For rules there are two more options - added or removed due to a
+ *  type being added or removed; these forms differentiate these cases
+ *  from those of added/removed rules where the types exist in both policies.
+ */
+typedef enum poldiff_form {
+	/** only for error conditions */
+	POLDIFF_FORM_NONE,
+	/** item was added - only in policy 2 */
+	POLDIFF_FORM_ADDED,
+	/** item was removed - only in policy 1 */
+	POLDIFF_FORM_REMOVED,
+	/** item was modified - in both policies but with different meaning */
+	POLDIFF_FORM_MODIFIED
+	/** item was added due to an added type - for rules only */
+	POLDIFF_FORM_ADD_TYPE
+	/** item was removed due to a removed type - for rules only */
+	POLDIFF_FORM_REMOVE_TYPE
+} poldiff_form_e;
 
-extern int poldiff_run(poldiff_t *diff, uint32_t flags);
-extern poldiff_t *poldiff_create(apol_policy_t *policy1, apol_policy_t *polciy2, poldiff_handle_callback_fn_t fn, void *callback_arg);
+/* NOTE: while defined MLS amd OCONS are not currently supported */
+#define POLDIFF_DIFF_CLASSES     0x00000001
+#define POLDIFF_DIFF_COMMONS     0x00000002
+#define POLDIFF_DIFF_TYPES       0x00000004
+#define POLDIFF_DIFF_ATTRIBS     0x00000008
+#define POLDIFF_DIFF_ROLES       0x00000010
+#define POLDIFF_DIFF_USERS       0x00000020
+#define POLDIFF_DIFF_BOOLS       0x00000040
+#define POLDIFF_DIFF_SENS        0x00000080
+#define POLDIFF_DIFF_CATS        0x00000100
+#define POLDIFF_DIFF_AVRULES     0x00000200
+#define POLDIFF_DIFF_TERULES     0x00000400
+#define POLDIFF_DIFF_ROLE_ALLOWS 0x00000800
+#define POLDIFF_DIFF_ROLE_TRANS  0x00001000
+#define POLDIFF_DIFF_RANGE_TRANS 0x00002000
+#define POLDIFF_DIFF_CONDS       0x00004000
+/*
+ * Add ocons here and modify POLDIFF_DIFF_OCONS below
+ * #define POLDIFF_DIFF_ *
+ */
+#define POLDIFF_DIFF_SYMBOLS (POLDIFF_DIFF_CLASSES|POLDIFF_DIFF_COMMONS|POLDIFF_DIFF_TYPES|POLDIFF_DIFF_ATTRIBS|POLDIFF_DIFF_ROLES|POLDIFF_DIFF_USERS|POLDIFF_DIFF_BOOLS)
+#define POLDIFF_DIFF_RULES (POLDIFF_DIFF_AVRULES|POLDIFF_DIFF_TERULES|POLDIFF_DIFF_ROLE_ALLOWS|POLDIFF_DIFF_ROLE_TRANS)
+#define POLDIFF_DIFF_RBAC (POLDIFF_DIFF_ROLES|POLDIFF_DIFF_ROLE_ALLOWS|POLDIFF_DIFF_ROLE_ALLOWS)
+#define POLDIFF_DIFF_COND_ITEMS (POLDIFF_DIFF_BOOLS|POLDIFF_DIFF_CONDS)
+#define POLDIFF_DIFF_MLS (POLDIFF_DIFF_SENS|POLDIFF_DIFF_CATS|POLDIFF_DIFF_RANGE_TRANS)
+#define POLDIFF_DIFF_OCONS 0
+#define POLDIFF_DIFF_ALL (POLDIFF_DIFF_SYMBOLS|POLDIFF_DIFF_RULES|POLDIFF_DIFF_CONDS|POLDIFF_DIFF_MLS|POLDIFF_DIFF_OCONS)
+
+/**
+ *  Allocate and initialize a new policy difference structure.
+ *  @param policy1 The original policy.
+ *  @param policy2 The new (modified) policy.
+ *  @param fn Function to be called by the error handler.
+ *  @param callback_arg argument for the callback.
+ *  @return a newly allocated and initialized difference structure or
+ *  NULL on error; if the call fails, errno will be set.
+ *  The caller is responsible for calling poldiff_destroy() to free
+ *  memory used by this structure.
+ */
+extern poldiff_t *poldiff_create(apol_policy_t *policy1, apol_policy_t *policy2, poldiff_handle_callback_fn_t fn, void *callback_arg);
+
+/**
+ *  Free all memory used by a policy difference structure and set it to NULL.
+ *  @param diff Reference pointer to the difference structure to destroy.
+ *  This pointer will be set to NULL. (If already NULL, function is a no-op.)
+ */
 extern void poldiff_destroy(poldiff_t **diff);
-extern int poldiff_type_rename_append(poldiff_t *diff, poldiff_type_rename_t *rename);
+
+/**
+ *  Run the difference algorithm for the selected policy components.
+ *  @param diff The policy difference structure for which to compute
+ *  the differences.
+ *  @param flags Bit-wise or'd set of POLDIFF_DIFF_* from above indicating
+ *  the components and rules for which to compute the difference.
+ *  If an item has already been computed the flag for that item is ignored.
+ *  @return 0 on success or < 0 on error; if the call fails, errno will
+ *  be set and the only defined operation on the difference structure is
+ *  poldiff_destroy().
+ */
+extern int poldiff_run(poldiff_t *diff, uint32_t flags);
+
+/**
+ *  Append a type rename entry to the difference.
+ *  @param diff The difference structure to which to append a type rename.
+ *  Note that changing the list of type renames will reset the status of
+ *  previously run difference calculations and they will need to be rerun.
+ *  @param policy1_name The name of the type in policy 1.
+ *  @param policy2_name The name of a type in policy 2 to consider equivalent.
+ *  If both name parameters are NULL the list of renames will be cleared.
+ *  @return 0 on success or < 0 on error; if the call fails,
+ *  errno will be set and the difference structure will be unchanged.
+ */
+extern int poldiff_type_rename_append(poldiff_t *diff, const char *policy1_name, const char *policy2_name);
 
 #endif /* POLDIFF_POLDIFF_H */
