@@ -1421,7 +1421,7 @@ main(int argc, char **argv)
 	hashtab = sefs_hash_new(SEFS_BIND_HASH_SIZE);
 	if (!hashtab)
 		goto err;
-	if (find_mount_points("/", &mounts, &num_mounts, hashtab, rw)) {
+	if (sefs_filesystem_find_mount_points("/", rw, hashtab, &mounts, &num_mounts)) {
 		fprintf(stderr, "Could not enumerate mountpoints.\n");
 		goto err;
 	}
