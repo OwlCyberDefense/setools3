@@ -78,7 +78,7 @@ int main(int argc, char **argv, char **envp)
 		usage(argv[0], 1);
 		exit(1);
 	}
-	rt = sefs_filesystem_db_populate(&fsdata,dir);
+	rt = sefs_filesystem_db_populate(&fsdata, dir);
 	if (rt == -1) {
 		fprintf(stderr, "Error populating database.\n");
 		return -1;
