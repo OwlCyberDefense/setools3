@@ -78,7 +78,7 @@ $(top_srcdir)/libsefs/libsefs.so:
 CLEANFILES = $(dist_bin_SCRIPTS)
 
 mostlyclean-local:
-	-rm -rf $(dist_bin_SCRI)
+	-rm -rf $(dist_bin_SCRIPTS)
 
 clean-local:
 	-rm -rf tmp.tcl
