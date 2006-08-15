@@ -1,19 +1,44 @@
-/* Copyright (C) 2005-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* fshash.c
+/**
+ * @file fsdata.c
  *
- * hash fcns for bind mount hashing 
+ * Implementation of a simple hash table (really a string array).
  *
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
 #include "fshash.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-/*
-  Initialize the hash
- */
+typedef struct sefs_hash_node {
+	struct sefs_hash_node *next;
+	char *key;
+} sefs_hash_node_t;
+
+struct sefs_hash {
+	sefs_hash_node_t **table;
+	int size;
+};
+
 sefs_hash_t *sefs_hash_new(int size)
 {
 	sefs_hash_t *hashtab = NULL;
@@ -36,7 +61,7 @@ sefs_hash_t *sefs_hash_new(int size)
 }
 
 /* Hash function, this can be optimized */
-unsigned sefs_hash(const char *s, int size)
+static unsigned sefs_hash(const char *s, int size)
 {
 	unsigned hashval;
 
@@ -45,11 +70,6 @@ unsigned sefs_hash(const char *s, int size)
 	return hashval % size;
 }
 
-/* search the hash for key 
-   return -1 on no hash
-   return 1 on find
-   return 0 on no find
-*/
 int sefs_hash_find(sefs_hash_t *hashtab, const char *key)
 {
 	sefs_hash_node_t *np;
@@ -62,12 +82,11 @@ int sefs_hash_find(sefs_hash_t *hashtab, const char *key)
 	return 0;
 }
 
-/* insert the key into the hash */
 int sefs_hash_insert(sefs_hash_t *hashtab, const char *key)
 {
 	sefs_hash_node_t *np;
- 	unsigned hashval;
-	
+	unsigned hashval;
+
 	if (hashtab == NULL)
 		return -1;
 
@@ -80,7 +99,7 @@ int sefs_hash_insert(sefs_hash_t *hashtab, const char *key)
 		}
 		hashval = sefs_hash(key, hashtab->size);
 		np->next = hashtab->table[hashval];
-		hashtab->table[hashval] = np;	
+		hashtab->table[hashval] = np;
 	} else {
 		printf("Error: Duplicate key attempted to be inserted\n");
 		return -1;
@@ -88,7 +107,6 @@ int sefs_hash_insert(sefs_hash_t *hashtab, const char *key)
 	return 0;
 }
 
-/* clear out the data and destroy the hash  */
 void sefs_hash_destroy(sefs_hash_t *hashtab)
 {
 	sefs_hash_node_t *curr,*next;
@@ -106,9 +124,8 @@ void sefs_hash_destroy(sefs_hash_t *hashtab)
 				free(curr);
 				curr = next;
 			}
-		}	
+		}
 	}
 	free(hashtab->table);
 	free(hashtab);
 }
-
