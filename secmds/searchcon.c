@@ -180,13 +180,13 @@ int main(int argc, char **argv, char **envp)
 	} else
 		filename = argv[optind];
 
-	if (sefs_filesystem_db_load(&fsdata,filename) == -1 ){
+	if (sefs_filesystem_db_load(&fsdata, filename) == -1 ){
 		fprintf(stderr, "sefs_filesystem_data_load failed\n");
 		return -1;
 	}
 
 	if (list == 1) {
-		if ((list_ret = sefs_filesystem_db_get_known(&fsdata, &list_sz, SEFS_TYPES)) != NULL) {
+		if ((list_ret = sefs_filesystem_db_get_known(&fsdata, SEFS_TYPES, &list_sz)) != NULL) {
 			sefs_double_array_print(list_ret, list_sz);
 			sefs_double_array_destroy(list_ret, list_sz);
 		}

@@ -1,12 +1,32 @@
-/* Copyright (C) 2003-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* fsdata.c
+/**
+ * @file file_contexts.c
  *
- * analysis policy database filesystem functions 
+ * Public interface for creating, saving, and loading a sqlite3
+ * database containing paths + file contexts.  Also contains routines
+ * to search a created database.
  *
- */
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2003-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
 
+#include <config.h>
 
 #include "fsdata.h"
 /* sqlite db stuff */
@@ -15,6 +35,7 @@
 /* SE Linux includes*/
 #include <selinux/selinux.h>
 #include <selinux/context.h>
+
 /* standard library includes */
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +50,6 @@
 #include <stdarg.h>
 
 /* AVL Tree Handling */
-#include <apol/policy.h>
 #include <apol/avl-util.h>
 
 /* file tree walking commands */
@@ -46,7 +66,7 @@
 #define SEFS_XATTR_UNLABELED "UNLABELED"
 #endif
 
-#define NFTW_FLAGS FTW_MOUNT 
+#define NFTW_FLAGS FTW_MOUNT
 #define NFTW_DEPTH 1024
 
 #define STMTSTART_MLS "SELECT types.type_name,users.user_name,paths.path,inodes.obj_class,mls.mls_range from inodes,types,users,paths,mls"
@@ -80,7 +100,7 @@ typedef struct sefs_typeinfo {
 	uint32_t		num_inodes;
 	uint32_t *		index_list;
 } sefs_typeinfo_t;
-	
+
 
 typedef struct sefs_filesystem_data {
 	uint32_t		num_types;
@@ -117,7 +137,7 @@ static int sefs_lgetfilecon(const char *path, security_context_t *context)
 	}
 }
 
-									     
+
 /* Management and creation functions */
 static void sefs_types_compare(sqlite3_context *context, int argc, sqlite3_value **argv);
 static void sefs_users_compare(sqlite3_context *context, int argc, sqlite3_value **argv);
@@ -130,15 +150,12 @@ static int sefs_get_class_int(const char *class);
 static const char * sefs_get_class_string( int flag_val);
 
 /* our main sqlite db struct */
-struct sqlite3 *db;
+static struct sqlite3 *db;
 /* this is the struct that has sqlite and the old data struct */
 static sefs_filesystem_data_t *fsdata = NULL;
 /* this is the search key stuff */
 static sefs_search_keys_t *sefs_search_keys = NULL;
 static sefs_search_ret_t *sefs_search_ret = NULL;
-/* list and list size are used for passing back known contexts */
-/* and paths */
-static char **list;
 
 /* these are precompiled regular expressions */
 static regex_t types_re;
@@ -215,7 +232,7 @@ static const char *sefs_object_classes[] =
 "fifo_file", "all_files" };
 
 
-static int sefs_count_callback(void *NotUsed, int argc, char **argv, char **azColName) 
+static int sefs_count_callback(void *NotUsed, int argc, char **argv, char **azColName)
 {
 	int *count = (int *)NotUsed;
 	*count = atoi(argv[0]);
@@ -238,7 +255,7 @@ static int sefs_append(char **stmt, size_t *stmt_size, char *fmt, ...)
 	int retval;
 	va_list ap;
 	char *tmp;
-	
+
 	/* first calculate how much bigger to make stmt */
 	va_start(ap, fmt);
 	retval = vsnprintf("", 0, fmt, ap);
@@ -290,7 +307,7 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 	else {
 		APPEND("%s", STMTSTART_NONMLS);
 	}
-	
+
 	/* now we go through the search keys populating the statement */
 	/* type,user,path,object_class */
 	if (search_keys->type && search_keys->num_type > 0) {
@@ -311,7 +328,7 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 				APPEND(" types.type_name = \"%s\"", search_keys->type[index]);
 		}
 	}
-		
+
 	if (search_keys->user && search_keys->num_user > 0) {
 		if (!where_added) {
 			APPEND(" where (");
@@ -324,7 +341,7 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 			if (index > 0) {
 				APPEND(" OR");
 			}
-			if (search_keys->do_user_regEx) 
+			if (search_keys->do_user_regEx)
 				APPEND(" sefs_users_compare(users.user_name,\"%s\")", search_keys->user[index]);
 			else
 				APPEND(" users.user_name = \"%s\"", search_keys->user[index]);
@@ -343,13 +360,13 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 			if (index > 0) {
 				APPEND(" OR");
 			}
-			if (search_keys->do_path_regEx) 
+			if (search_keys->do_path_regEx)
 				APPEND(" sefs_paths_compare(paths.path,\"%s\")", search_keys->path[index]);
-			else 
+			else
 				APPEND(" paths.path LIKE \"%s%%\"", search_keys->path[index]);
 		}
 	}
-	
+
 	if (search_keys->object_class && search_keys->num_object_class > 0) {
 		if (!where_added) {
 			APPEND(" where (");
@@ -400,19 +417,24 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 	return 0;
 }
 
-static int sefs_search_types_callback(void *NotUsed, int argc, char **argv, char **azColName) 
+struct search_types_arg {
+	char **list;
+	int count;
+};
+
+static int sefs_search_types_callback(void *data, int argc, char **argv, char **azColName)
 {
-	int *count = (int *)NotUsed;
+	struct search_types_arg *arg = (struct search_types_arg *) data;
 	/* lets create memory and copy over*/
-	if ((list[*count] = strdup(argv[0])) == NULL) {
+	if ((arg->list[arg->count] = strdup(argv[0])) == NULL) {
 		fprintf(stderr,"Out of memory\n");
 		return 1;
 	}
-	*count += 1;
+	arg->count += 1;
 	return 0;
 }
 
-static int sefs_search_callback(void *arg, int argc, char **argv, char **azColName) 
+static int sefs_search_callback(void *arg, int argc, char **argv, char **azColName)
 {
 	int i, *db_is_mls = (int *) arg;
 	sefs_search_ret_t *search_ret=NULL;
@@ -488,8 +510,8 @@ static void sefs_types_compare(sqlite3_context *context, int argc, sqlite3_value
 
 	/* make sure we got the right kind of argument */
 	if (sqlite3_value_type(argv[0]) == SQLITE_TEXT) {
-		text = (const char *)sqlite3_value_text(argv[0]);	
-		if (regexec (&types_re,text, 1, &pm, 0) == 0) 
+		text = (const char *)sqlite3_value_text(argv[0]);
+		if (regexec (&types_re,text, 1, &pm, 0) == 0)
 			retVal = 1;
 	}
 	sqlite3_result_int(context,retVal);
@@ -556,21 +578,21 @@ static void sefs_range_compare(sqlite3_context *context, int argc, sqlite3_value
 /* return the define of the object class */
 static int sefs_get_class_int(const char *class)
 {
-	if (strcmp(class,"file") == 0) 
+	if (strcmp(class,"file") == 0)
 		return SEFS_NORM_FILE;
-	else if (strcmp(class,"dir") == 0) 
+	else if (strcmp(class,"dir") == 0)
 		return SEFS_DIR;
-	else if (strcmp(class,"lnk_file") == 0) 
+	else if (strcmp(class,"lnk_file") == 0)
 		return SEFS_LNK_FILE;
-	else if (strcmp(class,"chr_file") == 0) 
+	else if (strcmp(class,"chr_file") == 0)
 		return SEFS_CHR_FILE;
-	else if (strcmp(class,"blk_file") == 0) 
+	else if (strcmp(class,"blk_file") == 0)
 		return SEFS_BLK_FILE;
-	else if (strcmp(class,"sock_file") == 0) 
+	else if (strcmp(class,"sock_file") == 0)
 		return SEFS_SOCK_FILE;
-	else if (strcmp(class,"fifo_file") == 0) 
+	else if (strcmp(class,"fifo_file") == 0)
 		return SEFS_FIFO_FILE;
-	else if (strcmp(class,"all_files") == 0) 
+	else if (strcmp(class,"all_files") == 0)
 		return SEFS_ALL_FILES;
 	else return -1;
 
@@ -599,12 +621,6 @@ static const char * sefs_get_class_string( int flag_val)
 	}
 }
 
-
-/*
- * sefs_get_file_class
- *
- * Determines the file's class, and returns it
- */
 int sefs_get_file_class(const struct stat64 *statptr)
 {
 	assert(statptr != NULL);
@@ -625,15 +641,13 @@ int sefs_get_file_class(const struct stat64 *statptr)
 	return SEFS_ALL_FILES;
 }
 
-/* find_mount_points finds all mount points and if hashtab is not NULL it attempts to put
-   the bind mounts found into it.  The user is expected to have already called
-   sefs_hash_init before calling this function if finding bind mounts */
-int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, sefs_hash_t *hashtab, int rw) 
+int sefs_filesystem_find_mount_points(const char *dir, int rw, sefs_hash_t *hashtab, char ***mounts, unsigned int *num_mounts)
 {
 	FILE *mtab = NULL;
 	int nel = 0, len = 10;
 	struct mntent *entry;
-	security_context_t con;	
+	security_context_t con;
+	char *dirdup = strdup(dir);
 
 	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
 		return -1;
@@ -644,12 +658,12 @@ int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, sefs_
 		fprintf(stderr, "Out of memory.\n");
 		return -1;
 	}
-	
+
 	while ((entry = getmntent(mtab))) {
 		if (strstr(entry->mnt_dir, dir) != entry->mnt_dir)
 			continue;
 
-		/* This checks for bind mounts so that we don't recurse them 
+		/* This checks for bind mounts so that we don't recurse them
 		   I'll use a string constant for now */
 		if (strstr(entry->mnt_opts, "bind") != NULL) {
 			if (!hashtab)
@@ -658,12 +672,12 @@ int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, sefs_
 				return -1;
 		}
 
-		nel = strlen(dir);
+		nel = strlen(dirdup);
 		if (nel > 1) {
-			if (dir[nel - 1] == '/')
-				dir[nel - 1] = '\0';
+			if (dirdup[nel - 1] == '/')
+				dirdup[nel - 1] = '\0';
 		}
-				
+
 		if (strcmp(entry->mnt_dir, dir) == 0)
 			continue;
 
@@ -691,6 +705,7 @@ int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, sefs_
 		}
 	}
 	fclose(mtab);
+	free(dirdup);
 	return 0;
 }
 
@@ -724,7 +739,7 @@ static int avl_path_compare(void *user_data, const void *key, int idx)
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-	
+
 	memcpy(tmp, &(fsdata->files[idx].key.inode), sizeof(ino_t));
 	memcpy(tmp + sizeof(ino_t), &(fsdata->files[idx].key.dev), sizeof(dev_t));
 
@@ -767,7 +782,7 @@ static int avl_grow_type_array(void * user_data, int sz)
 		fsdata->types = ptr;
 	}
 
-	return 0;	
+	return 0;
 }
 
 
@@ -783,14 +798,14 @@ static int avl_add_type(void *user_data, const void *key, int idx)
 {
 	fsdata = (sefs_filesystem_data_t *)user_data;
 	char *path = (char*)key;
-	
+
 	assert(fsdata != NULL && path != NULL);
-	
+
 	fsdata->types[idx].name = (char *)key;
 	fsdata->types[idx].num_inodes=0;
 	fsdata->types[idx].index_list = NULL;
 	(fsdata->num_types)++;
-		
+
 	return 0;
 }
 
@@ -801,7 +816,7 @@ static int avl_grow_user_array(void * user_data, int sz)
 
 	assert(fsdata != NULL);
 
-	if (sz > fsdata->num_users) 
+	if (sz > fsdata->num_users)
 	{
 		if (!( ptr = (char**)realloc(fsdata->users, sz * sizeof(char*)) ))
 		{
@@ -827,7 +842,7 @@ static int avl_add_user(void * user_data, const void *key, int idx)
 	char * user = (char*)key;
 
 	assert(fsdata != NULL && user != NULL);
-	
+
 
 	fsdata->users[idx] = user;
 	(fsdata->num_users)++;
@@ -865,7 +880,7 @@ static int avl_add_range(void * user_data, const void *key, int idx)
 	char * range= (char*)key;
 
 	assert(fsdata != NULL && range != NULL);
-	
+
 
 	fsdata->range[idx] = range;
 	(fsdata->num_range)++;
@@ -873,7 +888,7 @@ static int avl_add_range(void * user_data, const void *key, int idx)
 	return 0;
 }
 
-int sefs_double_array_destroy(char **array,int size)
+void sefs_double_array_destroy(char **array, int size)
 {
 	int i;
 	if (array != NULL) {
@@ -882,10 +897,9 @@ int sefs_double_array_destroy(char **array,int size)
 		}
 		free(array);
 	}
-	return 0;
 }
 
-int sefs_search_keys_ret_destroy(sefs_search_ret_t *key) 
+void sefs_search_keys_ret_destroy(sefs_search_ret_t *key)
 {
 	sefs_search_ret_t *curr = NULL;
 	sefs_search_ret_t *prev = NULL;
@@ -902,7 +916,6 @@ int sefs_search_keys_ret_destroy(sefs_search_ret_t *key)
 		curr = curr->next;
 		free(prev);
 	}
-	return 0;
 }
 
 /**
@@ -949,21 +962,21 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 	const char *user, *role, *type, *range;
 	char *tmp2;
 	char** ptr = NULL;
-	
+
 	key.inode = sb->st_ino;
 	key.dev = sb->st_dev;
-	
+
 	idx = avl_get_idx(&key, &(fsdata->file_tree));
-	
+
 	if (idx == -1) {
 		if ((rc = avl_insert(&(fsdata->file_tree), &key, &idx)) == -1) {
 			fprintf(stderr, "avl error\n");
 			return -1;
 		}
-		
+
 		pi = &(fsdata->files[idx]);
 		(pi->num_links) = 0;
-		
+
 		/* Get the file context. Interrogate the link itself, not the file it points to. */
 		rc = sefs_lgetfilecon(file, &con);
 		if (rc < 0) {
@@ -987,7 +1000,7 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 		pi->context.user=rc;
 
 		if (role != NULL && strcmp(role, "object_r") == 0)
-			pi->context.role = OBJECT_R;
+			pi->context.role = SEFS_OBJECT_R;
 		else
 			/* FIXME v this is bad */
 			pi->context.role = 0;
@@ -1022,19 +1035,19 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 		pi->context.range=(int32_t)rc;
 	} else {
 		pi = &(fsdata->files[idx]);
-	}	
+	}
 
 	freecon(con);
 
 	pi->obj_class = sefs_get_file_class(sb);
 
-	ptr = (char**)realloc(pi->path_names, (pi->num_links + 1) * sizeof(char*)); 
+	ptr = (char**)realloc(pi->path_names, (pi->num_links + 1) * sizeof(char*));
 	if (!ptr) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
 	pi->path_names = ptr;
-	
+
 	if ((pi->path_names[pi->num_links] = (char *)malloc((strlen(file) + 1) * sizeof(char))) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -1051,7 +1064,7 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
-		readlink(file, tmp2, (PATH_MAX + 1) * sizeof(char)); 
+		readlink(file, tmp2, (PATH_MAX + 1) * sizeof(char));
 		if (errno == EINVAL || errno == EIO)
 		{
 			fprintf(stderr, "error reading link\n");
@@ -1077,7 +1090,7 @@ static int sefs_init_pathtree(sefs_filesystem_data_t * fsd)
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-	
+
 	memset(fsd->files, 0, sizeof(sefs_fileinfo_t) * 1);
 
 	fsd->num_files = 0;
@@ -1087,7 +1100,7 @@ static int sefs_init_pathtree(sefs_filesystem_data_t * fsd)
 		 avl_path_compare,
 		 avl_grow_path_array,
 		 avl_add_path);
-		 
+
 	return 0;
 }
 
@@ -1097,7 +1110,7 @@ static int sefs_init_typetree(sefs_filesystem_data_t * fsd)
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-	
+
 	memset(fsd->types, 0, sizeof(sefs_typeinfo_t) * 1);
 
 	fsd->num_types = 0;
@@ -1107,13 +1120,13 @@ static int sefs_init_typetree(sefs_filesystem_data_t * fsd)
 		 avl_type_compare,
 		 avl_grow_type_array,
 		 avl_add_type);
-	
+
 	return 0;
 }
 
-static int sefs_init_usertree(sefs_filesystem_data_t * fsd) 
+static int sefs_init_usertree(sefs_filesystem_data_t * fsd)
 {
-	if (!( fsd->users = (char**)malloc(sizeof(char*) * 1) )) 
+	if (!( fsd->users = (char**)malloc(sizeof(char*) * 1) ))
 	{
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -1132,9 +1145,9 @@ static int sefs_init_usertree(sefs_filesystem_data_t * fsd)
 	return 0;
 }
 
-static int sefs_init_rangetree(sefs_filesystem_data_t * fsd) 
+static int sefs_init_rangetree(sefs_filesystem_data_t * fsd)
 {
-	if (!( fsd->range = (char**)malloc(sizeof(char*) * 1) )) 
+	if (!( fsd->range = (char**)malloc(sizeof(char*) * 1) ))
 	{
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -1159,7 +1172,7 @@ static int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 		fprintf(stderr, "Invalid structure\n");
 		return -1;
 	}
-	
+
 	fsdata = fsd;
 	fsd->num_files = 0;
 	fsd->num_types = 0;
@@ -1169,17 +1182,17 @@ static int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 	fsd->types = NULL;
 	fsd->users = NULL;
 	fsd->range = NULL;
-	
+
 	if (sefs_init_pathtree(fsd) == -1) {
 		fprintf(stderr, "fsdata_init_paths() failed\n");
 		return -1;
 	}
-	
+
 	if (sefs_init_typetree(fsd) == -1) {
 		fprintf(stderr, "fsdata_init_types() failed\n");
 		return -1;
 	}
-	
+
 	if (sefs_init_usertree(fsd) == -1)
 	{
 		fprintf(stderr, "fsdata_init_users() failed\n");
@@ -1194,16 +1207,10 @@ static int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 	return 0;
 }
 
-/*
- * sefs_is_valid_object_class
- *
- * Determines if class_name is a valid object class.  Return -1 if invalid
- * otherwise the index of the valid object class
- */
 int sefs_is_valid_object_class(const char *class_name)
 {
 	int i;
-	
+
 	assert(class_name != NULL);
 	for (i = 0; i < SEFS_NUM_OBJECT_CLASSES; i++)
 		if (strcmp(class_name, sefs_object_classes[i]) == 0)
@@ -1211,16 +1218,11 @@ int sefs_is_valid_object_class(const char *class_name)
 	return -1;
 }
 
-/*
- * sefs_get_valid_object_classes
- *
- *  returns the valid object classes to specify for the search.
- */
 char **sefs_get_valid_object_classes(int *size)
 {
 	int i, num_objs_on_line = 0;
 	char **local_list = NULL;
-	
+
 	assert(sefs_object_classes != NULL);
 
 
@@ -1243,12 +1245,12 @@ char **sefs_get_valid_object_classes(int *size)
 	return local_list;
 }
 
-char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int request_type)
+char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd, int request_type, int *count_in)
 {
 	char *count_stmt = NULL, *select_stmt = NULL;
 	int rc=0, list_size = 0;
 	char *errmsg=NULL;
-	int count=0;
+	struct search_types_arg arg;
 
 	db = (sqlite3 *)(*fsd->dbh);
 
@@ -1282,12 +1284,12 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 			return malloc(sizeof(char *));
 		}
 		/* malloc out the memory for the types */
-		if ((list = (char **)malloc(list_size * sizeof(char *))) == NULL) {
+		if ((arg.list = (char **) calloc(list_size, sizeof(char *))) == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return NULL;
 		}
-		memset(list, 0, list_size * sizeof(char *));
-		rc = sqlite3_exec(db,select_stmt,sefs_search_types_callback,&count,&errmsg);
+		arg.count = 0;
+		rc = sqlite3_exec(db, select_stmt, sefs_search_types_callback, &arg, &errmsg);
 		if (rc != SQLITE_OK) {
 			fprintf(stderr, "SQL error: %s\n", errmsg);
 			sqlite3_free(errmsg);
@@ -1295,15 +1297,14 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 		}
 		*count_in = list_size;
 	} else {
-		if ((list = (char **)sefs_get_valid_object_classes(&list_size)) == NULL) {
+		if ((arg.list = (char **)sefs_get_valid_object_classes(&list_size)) == NULL) {
 			fprintf(stderr, "No object classes defined!\n");
 			return NULL;
 		}
 		*count_in = list_size;
 	}
-	
-	return list;
 
+	return arg.list;
 }
 
 static int sefs_is_mls_callback(void *arg,
@@ -1334,7 +1335,7 @@ int sefs_filesystem_db_is_mls(sefs_filesystem_db_t *fsd)
 
 int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *search_keys)
 {
-	
+
 	char *stmt = NULL;
 	int *object_class = NULL;
 	int types_regcomp = 0, users_regcomp = 0, paths_regcomp = 0,
@@ -1366,7 +1367,7 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 			fprintf(stderr, "Out of memory.");
 			goto cleanup;
 		}
-		for (i=0; i<search_keys->num_object_class; i++){ 
+		for (i=0; i<search_keys->num_object_class; i++){
 			object_class[i] = sefs_get_class_int(search_keys->object_class[i]);
 		}
 	}
@@ -1390,7 +1391,7 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 		else {
 			types_regcomp = 1;
 		}
-	} 
+	}
 	if (search_keys->num_user > 0 && search_keys->do_user_regEx) {
 		sqlite3_create_function(db,"sefs_users_compare",2,SQLITE_UTF8,NULL,&sefs_users_compare,NULL,NULL);
 		rc = regcomp(&users_re, search_keys->user[0], REG_NOSUB|REG_EXTENDED);
@@ -1424,7 +1425,7 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 		else {
 			paths_regcomp = 1;
 		}
-	}		
+	}
 	if (db_is_mls && search_keys->num_range > 0 && search_keys->do_range_regEx) {
 		sqlite3_create_function(db, "sefs_range_compare", 2, SQLITE_UTF8, NULL, &sefs_range_compare, NULL, NULL);
 		rc = regcomp(&range_re, search_keys->range[0], REG_NOSUB|REG_EXTENDED);
@@ -1471,7 +1472,7 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 	return ret_val;
 }
 
-int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
+int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, const char *dir)
 {
 
 	char **mounts = NULL;
@@ -1479,7 +1480,7 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
 	int i;
 	sefs_filesystem_data_t *fsdh;
 	struct stat fstat;
-	
+
 	assert(dir);
 	/* Make sure directory exists */
 	if (access(dir, R_OK) != 0) {
@@ -1502,7 +1503,7 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
 	/* init it so that all the old fcns work right */
 	sefs_filesystem_data_init(fsdh);
 
-	find_mount_points(dir, &mounts, &num_mounts, NULL, 0);
+	sefs_filesystem_find_mount_points(dir, 0, NULL, &mounts, &num_mounts);
 
 	int (*fn)(const char *file, const struct stat64 *sb, int flag, struct FTW *s) = ftw_handler;
 	for (i = 0; i < num_mounts; i++ ) {
@@ -1517,29 +1518,29 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
 		return -1;
 	}
 
-	
+
 	fsd->fsdh = (void *)fsdh;
 
-	return 0;	
+	return 0;
 
 
 }
 
-int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd) 
+int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd)
 {
 	int loop = 0, idx = 0 , rc = 0;
 	sefs_fileinfo_t * pi = NULL;
 	sefs_typeinfo_t * ti = NULL;
 
 	for (loop = 0; loop < fsd->num_files; loop++) {
-				
+
 		pi = &(fsd->files[loop]);
 
 		/* index type */
 		idx = avl_get_idx(fsd->types[pi->context.type].name, &(fsd->type_tree));
 		if (idx == -1) {
-			if ((rc = avl_insert(&(fsd->type_tree), 
-				fsd->types[pi->context.type].name, &idx)) == -1) 
+			if ((rc = avl_insert(&(fsd->type_tree),
+				fsd->types[pi->context.type].name, &idx)) == -1)
 			{
 				fprintf(stderr, "avl error\n");
 				return -1;
@@ -1552,23 +1553,22 @@ int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd)
 				return -1;
 			}
 			memset(ti->index_list, 0, 1 * sizeof(uint32_t));
-			
+
 			ti->num_inodes = 0;
 			ti->index_list[ti->num_inodes] = loop;
 		} else {
 			ti = &(fsd->types[idx]);
 			ti->num_inodes++;
-		
+
 			ti->index_list[ti->num_inodes] = loop;
 		}
 
 	}
 
-	return 0;	
+	return 0;
 }
 
-/* Caller must remember to free the database. */
-int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
+int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 {
 	int i, j, rc = 0;
 	FILE *fp = NULL;
@@ -1579,13 +1579,13 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	char *new_stmt = NULL;
 	char hostname[100];
 	time_t mytime;
-	
+
 	sefs_filesystem_data_t *fsdh = (sefs_filesystem_data_t *)(fsd->fsdh);
-	
+
 
 	/* we should have an fsdh by now */
 	assert(fsdh != NULL);
-	
+
 	fp = fopen(filename, "w");
 	if (!fp) {
 		fprintf(stderr, "Error opening save file %s\n", filename);
@@ -1619,25 +1619,25 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 
 	/* now we basically just go through the old data struct moving */
 	/* the data to the places it should be for our sqlite3 db */
-	sprintf(stmt,"BEGIN TRANSACTION");  
+	sprintf(stmt,"BEGIN TRANSACTION");
 	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-	if (rc != SQLITE_OK) 
+	if (rc != SQLITE_OK)
 		goto bad;
 	for (i=0; i < fsdh->num_types; i++) {
 		sprintf(stmt,"insert into types (type_name,type_id) values "
-			"(\"%s\",%d);",fsdh->types[i].name,i);	
+			"(\"%s\",%d);",fsdh->types[i].name,i);
 		rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-		if (rc != SQLITE_OK) 
+		if (rc != SQLITE_OK)
 			goto bad;
-		
+
 	}
 	for (i=0; i < fsdh->num_users; i++) {
 		sprintf(stmt,"insert into users (user_name,user_id) values "
-			"(\"%s\",%d);",fsdh->users[i],i);  
+			"(\"%s\",%d);",fsdh->users[i],i);
 
 		rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-		if (rc != SQLITE_OK) 
-			goto bad;		
+		if (rc != SQLITE_OK)
+			goto bad;
 	}
 	for (i=0; fsdh->fs_had_range && i < fsdh->num_range; i++) {
 		sprintf(stmt,"insert into mls (mls_range,mls_id) values "
@@ -1652,7 +1652,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 		pinfo = &(fsdh->files[i]);
 
 
-		if (pinfo->obj_class == SEFS_LNK_FILE && pinfo->symlink_target) {	    
+		if (pinfo->obj_class == SEFS_LNK_FILE && pinfo->symlink_target) {
 			sprintf(stmt,"insert into inodes (inode_id,user,type,range,obj_class,symlink_target,dev,ino"
 				") values (%d,%d,%d,%d,%d,'%s',%u,%llu);",
 				i,
@@ -1662,9 +1662,9 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 				pinfo->obj_class,
 				pinfo->symlink_target,
 				(unsigned int)(pinfo->key.dev),
-				(unsigned long long)(pinfo->key.inode));  
+				(unsigned long long)(pinfo->key.inode));
 			rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-			if (rc != SQLITE_OK) 
+			if (rc != SQLITE_OK)
 				goto bad;
 		}
 		else {
@@ -1678,23 +1678,23 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 				(unsigned int)(pinfo->key.dev),
 				(unsigned long long)(pinfo->key.inode));
 			rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-			if (rc != SQLITE_OK) 
+			if (rc != SQLITE_OK)
 				goto bad;
 		}
-	
+
 		for (j = 0; j < pinfo->num_links;  j++) {
 			new_stmt = sqlite3_mprintf("insert into paths (inode,path) values (%d,'%q')",
 				i,(char *)pinfo->path_names[j]);
 			rc = sqlite3_exec(db,new_stmt,NULL,0,&errmsg);
 			sqlite3_free(new_stmt);
-			if (rc != SQLITE_OK) 
+			if (rc != SQLITE_OK)
 				goto bad;
 		}
 
 	}
-	sprintf(stmt,"END TRANSACTION");  
+	sprintf(stmt,"END TRANSACTION");
 	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-	if (rc != SQLITE_OK) 
+	if (rc != SQLITE_OK)
 		goto bad;
 	gethostname(hostname,50);
 	time(&mytime);
@@ -1703,9 +1703,9 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 		"insert into info (key,value) values ('datetime','%s');"
 		,hostname,ctime(&mytime));
 	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-	if (rc != SQLITE_OK) 
+	if (rc != SQLITE_OK)
 		goto bad;
-		
+
 	return 0;
 
 bad:
@@ -1714,9 +1714,9 @@ bad:
 	return -1;
 }
 
-int sefs_filesystem_db_close(sefs_filesystem_db_t* fsd)
+void sefs_filesystem_db_close(sefs_filesystem_db_t* fsd)
 {
-	
+
 	sefs_filesystem_data_t *fsdh = NULL;
 	if (fsd->fsdh) {
 		fsdh = (sefs_filesystem_data_t *)(fsd->fsdh);
@@ -1731,29 +1731,27 @@ int sefs_filesystem_db_close(sefs_filesystem_db_t* fsd)
 			*(fsd->dbh) = NULL;
 		fsd->dbh = NULL;
 	}
-	return 0;
 }
 
-/* load an sqlite3 db from a file */
-int sefs_filesystem_db_load(sefs_filesystem_db_t* fsd, char *file)
+int sefs_filesystem_db_load(sefs_filesystem_db_t *fsd, const char *filename)
 {
 	int rc, list_size;
 	char *errmsg = NULL;
-	
-	assert(file);
-	rc = access(file, R_OK);
+
+	assert(filename);
+	rc = access(filename, R_OK);
 	if (rc != 0) {
 		perror("Load file");
 		return -1;
 	}
-	rc = sqlite3_open(file, &db);
+	rc = sqlite3_open(filename, &db);
 	if (rc) {
 		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
 		sqlite3_close(db);
 		return -1;
 	}
-	/* HACK!! Currently, a limitation of sqlite is that is 
-	 * doesn't check whether the file is a valid sqlite database, 
+	/* HACK!! Currently, a limitation of sqlite is that is
+	 * doesn't check whether the file is a valid sqlite database,
 	 * so it may have opened  a corrupt file, so we check this by
 	 * executing a simple query statment. */
 	rc = sqlite3_exec(db, "SELECT type_name from types", sefs_count_callback, &list_size, &errmsg);
@@ -1762,13 +1760,13 @@ int sefs_filesystem_db_load(sefs_filesystem_db_t* fsd, char *file)
 		fprintf(stderr, "Can't open database: %s\n", errmsg);
 		sqlite3_free(errmsg);
 		return -1;
-	}		
+	}
 	fsd->dbh = (void *)&db;
 
 	return 0;
 }
 
-static void destroy_fsdata(sefs_filesystem_data_t * fsd) 
+static void destroy_fsdata(sefs_filesystem_data_t * fsd)
 {
 	int i,j;
 

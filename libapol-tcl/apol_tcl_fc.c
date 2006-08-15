@@ -64,7 +64,7 @@ static int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, 
 	}
 	fsdata_local.dbh = NULL;
 	fsdata_local.fsdh = NULL;
-	rt = sefs_filesystem_db_populate(&fsdata_local, (char *) argv[2]);
+	rt = sefs_filesystem_db_populate(&fsdata_local, argv[2]);
 	if (rt == -1) {
 		Tcl_SetResult(interp, "Error populating database.", TCL_STATIC);
 		return TCL_ERROR;
@@ -115,7 +115,7 @@ static int Apol_Load_FC_Index_File(ClientData clientData, Tcl_Interp *interp, in
 		memset(fsdata, 0, sizeof(sefs_filesystem_db_t));
 	}
 
-	if (sefs_filesystem_db_load(fsdata, (char *) argv[1]) == -1) {
+	if (sefs_filesystem_db_load(fsdata, argv[1]) == -1) {
 		Tcl_SetResult(interp, "Loading of database failed.", TCL_STATIC);
 		return TCL_ERROR;
 	}
@@ -323,7 +323,7 @@ static int Apol_FC_Index_DB_Get_Items(ClientData clientData, Tcl_Interp *interp,
 		return TCL_ERROR;
 	}
 
-	if ((list_ret = sefs_filesystem_db_get_known(fsdata, &list_sz, request_type)) == NULL) {
+	if ((list_ret = sefs_filesystem_db_get_known(fsdata, request_type, &list_sz)) == NULL) {
 		Tcl_SetResult(interp, "Error in getting items.", TCL_STATIC);
 		return TCL_ERROR;
 	}
