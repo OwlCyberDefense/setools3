@@ -1,5 +1,5 @@
 /**
- *  @file policy.h
+ *  @file fsdata.h
  *  Defines the public interface for building a database of file
  *  contexts.
  *
