@@ -32,7 +32,7 @@
 #include <stdint.h>
 
 typedef struct poldiff poldiff_t;
-typedef void (*poldiff_handle_callback_fn_t)(void *arg, poldiff_t *diff, char *fmt, va_list va_args);
+typedef void (*poldiff_handle_fn_t)(void *arg, poldiff_t *diff, char *fmt, va_list va_args);
 
 /**
  *  Form of a difference. This enumeration describes the kind of change
@@ -100,7 +100,7 @@ typedef enum poldiff_form {
  */
 extern poldiff_t *poldiff_create(apol_policy_t *policy1,
 				 apol_policy_t *policy2,
-				 poldiff_handle_callback_fn_t fn,
+				 poldiff_handle_fn_t fn,
 				 void *callback_arg);
 
 /**
