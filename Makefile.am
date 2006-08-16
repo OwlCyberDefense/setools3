@@ -2,7 +2,7 @@ if COPY_BWIDGET
 	MAYBE_BWIDGET = packages
 endif
 
-SUBDIRS = libqpol libapol libapol-tcl libsefs libseaudit apol secmds sechecker seaudit awish $(MAYBE_BWIDGET)
+SUBDIRS = libqpol libapol libapol-tcl libpoldiff libsefs libseaudit apol secmds sechecker seaudit awish $(MAYBE_BWIDGET)
 
 EXTRA_DIST = VERSION KNOWN-BUGS
 
@@ -12,6 +12,9 @@ libqpol:
 libapol:
 	$(MAKE) -C $(top_srcdir)/libapol
 	$(MAKE) -C $(top_srcdir)/libapol-tcl
+
+libpoldiff:
+	$(MAKE) -C $(top_srcdir)/libpoldiff
 
 libsefs:
 	$(MAKE) -C $(top_srcdir)/libsefs
@@ -61,7 +64,7 @@ help:
 	@echo "   clean:        clean up interim files"
 	@echo "   distclean:    clean everything not in original distribution"
 
-.PHONY: libqpol libapol libapol-tcl libsefs \
+.PHONY: libqpol libapol libapol-tcl libpoldiff libsefs libseaudit \
 	apol secmds seaudit sediff sediffx sechecker awish \
 	all-nogui help \
 	seinfo sesearch indexcon findcon replcon searchcon

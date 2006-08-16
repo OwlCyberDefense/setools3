@@ -1,6 +1,7 @@
 /**
  *  @file class_diff.c
- *  Implementation for computing a semantic differences in classes.
+ *  Implementation for computing a semantic differences in classes and
+ *  commons.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
