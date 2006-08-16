@@ -1,19 +1,34 @@
-/* Copyright (C) 2001-2003 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: mayerf@tresys.com and Karl MacMillan <kmacmillan@tresys.com>
- */
-
-/* avl-util.c
+/**
+ * @file util.c
  *
  * Generic support functions for AVL trees.
+ *
+ * @author mayerf@tresys.com
+ * @author Karl MacMillan <kmacmillan@tresys.com>
+ *
+ * Copyright (C) 2001-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
+
+#include <config.h>
+
 #include <apol/avl-util.h>
 #include <apol/util.h>
 
-#include<assert.h>
+#include <assert.h>
 #include <stdlib.h>
 
 #define	LEFT	0
@@ -23,9 +38,9 @@
 
 #define avl_max_child(idx, list) ((avl_height(list[idx].left, list) - avl_height(list[idx].right, list)) ? \
 		avl_height(list[idx].left, list) : avl_height(list[idx].right, list) )
-		
+
 /* single rotated right */
-int avl_srl(int head, avl_ptrs_t *ptrs)
+static int avl_srl(int head, apol_avl_ptrs_t *ptrs)
 {
 	int newhead;
 
@@ -37,8 +52,9 @@ int avl_srl(int head, avl_ptrs_t *ptrs)
 	ptrs[newhead].height = avl_max_child(newhead, ptrs) + 1;
 	return newhead;
 }
+
 /* single rotate right */
-int avl_srr(int head, avl_ptrs_t *ptrs)
+static int avl_srr(int head, apol_avl_ptrs_t *ptrs)
 {
 	int newhead;
 
@@ -50,22 +66,24 @@ int avl_srr(int head, avl_ptrs_t *ptrs)
 	ptrs[newhead].height = avl_max_child(newhead, ptrs) + 1;
 	return newhead;
 }
+
 /* double rotate left */
-int avl_drl(int head, avl_ptrs_t *ptrs)
+static int avl_drl(int head, apol_avl_ptrs_t *ptrs)
 {
 	assert(head >= 0 && ptrs != NULL);
 	ptrs[head].left = avl_srr(ptrs[head].left, ptrs);
 	return avl_srl(head, ptrs);
 }
+
 /* double rotate right */
-int avl_drr(int head, avl_ptrs_t *ptrs)
+static int avl_drr(int head, apol_avl_ptrs_t *ptrs)
 {
 	assert(head >= 0 && ptrs != NULL);
 	ptrs[head].right = avl_srl(ptrs[head].right, ptrs);
 	return avl_srr(head, ptrs);
 }
 
-static int avl_get_subtree(int idx, int dir, avl_tree_t *tree)
+static int avl_get_subtree(int idx, int dir, apol_avl_tree_t *tree)
 {
 	assert(idx >= 0 && (dir == LEFT || dir == RIGHT) && tree != NULL);
 	if (dir == LEFT)
@@ -75,15 +93,15 @@ static int avl_get_subtree(int idx, int dir, avl_tree_t *tree)
 }
 
 /* Searches an avl tree looking for a match to key. */
-static int do_avl_get_idx(const void *key, int head, avl_tree_t *tree)
+static int do_avl_get_idx(const void *key, int head, apol_avl_tree_t *tree)
 {
 	int cmpval, subtree;
 
 	if(head < 0)
 		return -1; /* no match */
-	
+
 	cmpval = tree->compare(tree->user_data, key, head);
-	if(cmpval == 0) 
+	if(cmpval == 0)
 		return head; /* found! */
 	else if(cmpval < 0) {
 		subtree = avl_get_subtree(head, LEFT, tree);
@@ -95,16 +113,13 @@ static int do_avl_get_idx(const void *key, int head, avl_tree_t *tree)
 	}
 }
 
-/* Search for the given key. On success the index of the
- * key is returned. On error -1 is returned.
- */
-int avl_get_idx(const void *key, avl_tree_t *tree)
+int apol_avl_get_idx(apol_avl_tree_t *tree, const void *key)
 {
 	assert(key != NULL && tree != NULL);
 	return do_avl_get_idx(key, tree->head, tree);
 }
 
-static bool_t avl_check_balance(int idx, int dir, avl_tree_t *tree)
+static bool_t avl_check_balance(int idx, int dir, apol_avl_tree_t *tree)
 {
 	int l, r;
 
@@ -119,7 +134,11 @@ static bool_t avl_check_balance(int idx, int dir, avl_tree_t *tree)
 	}
 }
 
-int avl_init(avl_tree_t *tree, void *user_data, avl_compare_t compare, avl_grow_t grow, avl_add_t add)
+int apol_avl_init(apol_avl_tree_t *tree,
+		  void *user_data,
+		  apol_avl_compare_t compare,
+		  apol_avl_grow_t grow,
+		  apol_avl_add_t add)
 {
 	tree->head = -1;
 	tree->ptrs = NULL;
@@ -131,16 +150,16 @@ int avl_init(avl_tree_t *tree, void *user_data, avl_compare_t compare, avl_grow_
 	return 0;
 }
 
-void avl_free(avl_tree_t *tree)
+void apol_avl_free(apol_avl_tree_t *tree)
 {
 	if (tree->ptrs != NULL)
 		free(tree->ptrs);
 }
 
-static int avl_grow(avl_tree_t *tree)
+static int avl_grow(apol_avl_tree_t *tree)
 {
 	tree->ptrs_len++;
-	tree->ptrs = (avl_ptrs_t *)realloc(tree->ptrs, tree->ptrs_len * sizeof(avl_ptrs_t));
+	tree->ptrs = (apol_avl_ptrs_t *)realloc(tree->ptrs, tree->ptrs_len * sizeof(apol_avl_ptrs_t));
 
 	if (tree->ptrs == NULL) {
 		fprintf(stderr, "Out of memory!\n");
@@ -157,7 +176,7 @@ static int avl_grow(avl_tree_t *tree)
 }
 
 
-static int do_avl_insert(avl_tree_t *tree, int head, void *key, int *idx)
+static int do_avl_insert(apol_avl_tree_t *tree, int head, void *key, int *idx)
 {
 	int newidx, cmpval, tmpidx, newhead;
 
@@ -194,7 +213,7 @@ static int do_avl_insert(avl_tree_t *tree, int head, void *key, int *idx)
 				newhead = avl_drr(head, tree->ptrs);
 		} else {
 			newhead = head;
-		}		
+		}
 	} else {
 		tmpidx = do_avl_insert(tree, tree->ptrs[head].left, key, idx);
 		if (tmpidx < 0)
@@ -215,13 +234,7 @@ static int do_avl_insert(avl_tree_t *tree, int head, void *key, int *idx)
 	return newhead;
 }
 
-/*
- * Try to insert a key into the avl tree. If the key already exists -2 is
- * returned and newidx is set to the index of the existing key. If the key
- * is inserted 0 or a positive number is returned and newidx is set to the
- * index. -1 is returned on error.
- */
-int avl_insert(avl_tree_t *tree, void *key, int *newidx)
+int apol_avl_insert(apol_avl_tree_t *tree, void *key, int *newidx)
 {
 	int rt;
 
@@ -233,7 +246,3 @@ int avl_insert(avl_tree_t *tree, void *key, int *newidx)
 	tree->head = rt;
 	return tree->head;
 }
-
-
-
-

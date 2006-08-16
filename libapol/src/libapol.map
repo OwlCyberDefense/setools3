@@ -1,7 +1,7 @@
 {
         global:
-                avl_*;
                 apol_attr_*;
+                apol_avl_*;
                 apol_avrule_*;
                 apol_bool_*;
                 apol_cat_*;
