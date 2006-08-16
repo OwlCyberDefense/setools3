@@ -25,6 +25,7 @@
  */
 
 #include <poldiff/class_diff.h>
+#include "poldiff_internal.h"
 #include <apol/vector.h>
 
 struct poldiff_class_summary {
