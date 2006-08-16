@@ -19,6 +19,9 @@ libapol_version=3.0.0
 libapol_soname=libapol.so.3
 libapol_tcl_soname=libapol-tcl.so.3
 
+libpoldiff_version=1.0.0
+libpoldiff_soname=libpoldiff.so.1
+
 libsefs_version=3.0.0
 libsefs_soname=libsefs.so.3
 
@@ -46,28 +49,34 @@ if test "x${enable_debug}" = xyes; then
     QPOL_LIB_FLAG='$(top_srcdir)/libqpol/src/libqpol.so -Wl,-rpath=../libqpol/src'
     APOL_LIB_FLAG='$(top_srcdir)/libapol/src/libapol.a -Wl,-rpath=../libapol/src'
     SEFS_LIB_FLAG='$(top_srcdir)/libsefs/libsefs.a -Wl,-rpath=../libsefs/src'
+    POLDIFF_LIB_FLAG='$(top_srcdir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=../libpoldiff/src'
     AC_MSG_RESULT(yes)
 else
     if test ${use_shared} = yes; then
         QPOL_LIB_FLAG='-L$(top_srcdir)/libqpol/src -lqpol'
         APOL_LIB_FLAG='-L$(top_srcdir)/libapol/src -lapol'
         SEFS_LIB_FLAG='-L$(top_srcdir)/libsefs -lsefs'
+        POLDIFF_LIB_FLAG='-L$(top_srcdir)/libpoldiff/src -lpoldiff'
     else
         QPOL_LIB_FLAG='-L$(top_srcdir)/libqpol/src -lqpol'
         APOL_LIB_FLAG='$(top_srcdir)/libapol/src/libapol.a'
         SEFS_LIB_FLAG='$(top_srcdir)/libsefs/libsefs.a'
+        POLDIFF_LIB_FLAG='$(top_srcdir)/libpoldiff/src/libpoldiff.a'
     fi
     AC_MSG_RESULT(disabled)
 fi
 QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
 APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
 SEFS_CFLAGS='-I$(top_srcdir)/libsefs'
+POLDIFF_CFLAGS='-I$(top_srcdir)/libpoldiff/include'
 AC_SUBST(QPOL_CFLAGS)
 AC_SUBST(APOL_CFLAGS)
 AC_SUBST(SEFS_CFLAGS)
+AC_SUBST(POLDIFF_CFLAGS)
 AC_SUBST(QPOL_LIB_FLAG)
 AC_SUBST(APOL_LIB_FLAG)
 AC_SUBST(SEFS_LIB_FLAG)
+AC_SUBST(POLDIFF_LIB_FLAG)
 
 AC_ARG_ENABLE(profiling, [  --enable-profiling      compile with gcov and gprof profiling support], enable_profiling="$enableval")
 AC_MSG_CHECKING([for profiling support])
@@ -364,6 +373,8 @@ AC_SUBST(libqpol_soname)
 AC_SUBST(libapol_version)
 AC_SUBST(libapol_soname)
 AC_SUBST(libapol_tcl_soname)
+AC_SUBST(libpoldiff_version)
+AC_SUBST(libpoldiff_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
 AC_SUBST(apol_install_dir)
@@ -379,6 +390,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
                  libapol-tcl/Makefile \
+                 libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
                  libsefs/Makefile \
 		 libseaudit/Makefile \
                  secmds/Makefile \

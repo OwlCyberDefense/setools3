@@ -1,4 +1,5 @@
 poldiffdir = $(includedir)/poldiff
 
 poldiff_HEADERS = \
-	poldiff.h
+	poldiff.h \
+	class_diff.h
