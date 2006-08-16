@@ -113,10 +113,10 @@ typedef struct sefs_filesystem_data {
 	char**			users;
 	char**			range;
 	/* not stored in index file */
-	avl_tree_t		file_tree;
-	avl_tree_t		type_tree;
-	avl_tree_t		user_tree;
-	avl_tree_t		range_tree;
+	apol_avl_tree_t		file_tree;
+	apol_avl_tree_t		type_tree;
+	apol_avl_tree_t		user_tree;
+	apol_avl_tree_t		range_tree;
 } sefs_filesystem_data_t;
 
 
@@ -966,10 +966,10 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 	key.inode = sb->st_ino;
 	key.dev = sb->st_dev;
 
-	idx = avl_get_idx(&key, &(fsdata->file_tree));
+	idx = apol_avl_get_idx(&(fsdata->file_tree), &key);
 
 	if (idx == -1) {
-		if ((rc = avl_insert(&(fsdata->file_tree), &key, &idx)) == -1) {
+		if ((rc = apol_avl_insert(&(fsdata->file_tree), &key, &idx)) == -1) {
 			fprintf(stderr, "avl error\n");
 			return -1;
 		}
@@ -989,13 +989,13 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 		if (user == NULL) {
 			user = SEFS_XATTR_UNLABELED;
 		}
-		rc = avl_get_idx(user, &fsdata->user_tree);
+		rc = apol_avl_get_idx(&fsdata->user_tree, user);
 		if (rc == -1) {
 			if ((tmp2 = strdup(user)) == NULL) {
 				fprintf(stderr, "Out of memory\n");
 				return -1;
 			}
-			avl_insert(&(fsdata->user_tree),tmp2, &rc);
+			apol_avl_insert(&(fsdata->user_tree),tmp2, &rc);
 		}
 		pi->context.user=rc;
 
@@ -1008,13 +1008,13 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 		if (type == NULL) {
 			type = SEFS_XATTR_UNLABELED;
 		}
-		rc = avl_get_idx(type, &fsdata->type_tree);
+		rc = apol_avl_get_idx(&fsdata->type_tree, type);
 		if (rc == -1) {
 			if ((tmp2 = strdup(type)) == NULL) {
 				fprintf(stderr, "Out of memory\n");
 				return -1;
 			}
-			avl_insert(&(fsdata->type_tree), tmp2, &rc);
+			apol_avl_insert(&(fsdata->type_tree), tmp2, &rc);
 		}
 		pi->context.type=(int32_t)rc;
 
@@ -1024,13 +1024,13 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 		else {
 			fsdata->fs_had_range = 1;
 		}
-		rc = avl_get_idx(range, &fsdata->range_tree);
+		rc = apol_avl_get_idx(&fsdata->range_tree, range);
 		if (rc == -1) {
 			if ((tmp2 = strdup(range)) == NULL) {
 				fprintf(stderr, "Out of memory\n");
 				return -1;
 			}
-			avl_insert(&(fsdata->range_tree), tmp2, &rc);
+			apol_avl_insert(&(fsdata->range_tree), tmp2, &rc);
 		}
 		pi->context.range=(int32_t)rc;
 	} else {
@@ -1095,7 +1095,7 @@ static int sefs_init_pathtree(sefs_filesystem_data_t * fsd)
 
 	fsd->num_files = 0;
 
-	avl_init(&(fsd->file_tree),
+	apol_avl_init(&(fsd->file_tree),
 		 (void *)fsd,
 		 avl_path_compare,
 		 avl_grow_path_array,
@@ -1115,7 +1115,7 @@ static int sefs_init_typetree(sefs_filesystem_data_t * fsd)
 
 	fsd->num_types = 0;
 
-	avl_init(&(fsd->type_tree),
+	apol_avl_init(&(fsd->type_tree),
 		 (void *)fsd,
 		 avl_type_compare,
 		 avl_grow_type_array,
@@ -1136,7 +1136,7 @@ static int sefs_init_usertree(sefs_filesystem_data_t * fsd)
 
 	fsd->num_users = 0;
 
-	avl_init( &(fsd->user_tree),
+	apol_avl_init( &(fsd->user_tree),
 		(void*)fsd,
 		avl_user_compare,
 		avl_grow_user_array,
@@ -1157,7 +1157,7 @@ static int sefs_init_rangetree(sefs_filesystem_data_t * fsd)
 
 	fsd->num_range = 0;
 
-	avl_init( &(fsd->range_tree),
+	apol_avl_init( &(fsd->range_tree),
 		(void*)fsd,
 		avl_range_compare,
 		avl_grow_range_array,
@@ -1537,9 +1537,9 @@ int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd)
 		pi = &(fsd->files[loop]);
 
 		/* index type */
-		idx = avl_get_idx(fsd->types[pi->context.type].name, &(fsd->type_tree));
+		idx = apol_avl_get_idx(&(fsd->type_tree), fsd->types[pi->context.type].name);
 		if (idx == -1) {
-			if ((rc = avl_insert(&(fsd->type_tree),
+			if ((rc = apol_avl_insert(&(fsd->type_tree),
 				fsd->types[pi->context.type].name, &idx)) == -1)
 			{
 				fprintf(stderr, "avl error\n");
@@ -1800,8 +1800,8 @@ static void destroy_fsdata(sefs_filesystem_data_t * fsd)
 	free(fsd->range);
 
 	/* fell trees */
-	avl_free(&(fsd->file_tree));
-	avl_free(&(fsd->type_tree));
-	avl_free(&(fsd->user_tree));
-	avl_free(&(fsd->range_tree));
+	apol_avl_free(&(fsd->file_tree));
+	apol_avl_free(&(fsd->type_tree));
+	apol_avl_free(&(fsd->user_tree));
+	apol_avl_free(&(fsd->range_tree));
 }
