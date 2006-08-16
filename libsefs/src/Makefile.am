@@ -43,7 +43,10 @@ $(sefsso_DATA): $(libsefs_so_OBJS) libsefs.map
 	$(LN_S) -f $@ libsefs.so
 
 install-data-hook:
-	cd $(sefssodir) && $(LN_S) -f $(sefsso_DATA) libsefs.so
+	cd $(DESTDIR)$(sefssodir) && $(LN_S) -f $(sefsso_DATA) libsefs.so
 
 mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libsefs.so $(sefsso_DATA)
+
+uninstall-local:
+	-rm -rf $(sefssodir)/libsefs.so

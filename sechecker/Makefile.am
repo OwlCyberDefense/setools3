@@ -1,7 +1,7 @@
 bin_PROGRAMS = sechecker
 
 profilesdir = @profile_install_dir@
-profiles_DATA = \
+dist_profiles_DATA = \
 	profiles/all-checks.sechecker \
 	profiles/analysis-checks.sechecker \
 	profiles/devel-checks.sechecker \
