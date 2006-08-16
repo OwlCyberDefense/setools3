@@ -51,7 +51,10 @@ $(apolso_DATA): $(libapol_so_OBJS) libapol.map
 	$(LN_S) -f $@ libapol.so
 
 install-data-hook:
-	cd $(apolsodir) && $(LN_S) -f $(apolso_DATA) libapol.so
+	cd $(DESTDIR)$(apolsodir) && $(LN_S) -f $(apolso_DATA) libapol.so
 
 mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libapol.so $(apolso_DATA)
+
+uninstall-local:
+	-rm -rf $(apolsodir)/libapol.so

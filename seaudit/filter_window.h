@@ -16,7 +16,7 @@
 
 #include "auditlogmodel.h"
 #include "multifilter_window.h"
-#include <libseaudit/filters.h>
+#include "../libseaudit/filters.h"
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <glade/glade.h>
@@ -48,7 +48,7 @@ typedef struct filter_window {
 	GString *name;
 	GString *match;
 	GString *notes;
-	GString *host;	
+	GString *host;
 	struct filters_date_item *dates;
 	int msg;
 	GtkWindow *window;

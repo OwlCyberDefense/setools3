@@ -64,7 +64,7 @@ $(qpolso_DATA): $(tmp_sepol) $(libqpol_so_OBJS) libqpol.map
 	$(LN_S) -f $@ libqpol.so
 
 install-data-hook:
-	cd $(qpolsodir) && $(LN_S) -f $(qpolso_DATA) libqpol.so
+	cd $(DESTDIR)$(qpolsodir) && $(LN_S) -f $(qpolso_DATA) libqpol.so
 
 CLEANFILES = policy_parse.h policy_scan.c policy_parse.c
 
@@ -73,3 +73,6 @@ clean-local:
 
 mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so $(qpolso_DATA)
+
+uninstall-local:
+	-rm -rf $(qpolsodir)/libqpol.so
