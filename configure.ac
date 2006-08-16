@@ -48,26 +48,26 @@ if test "x${enable_debug}" = xyes; then
     LDFLAGS="-g"
     QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=../libqpol/src'
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=../libapol/src'
-    SEFS_LIB_FLAG='$(top_builddir)/libsefs/libsefs.a -Wl,-rpath=../libsefs/src'
+    SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=../libsefs/src'
     POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=../libpoldiff/src'
     AC_MSG_RESULT(yes)
 else
     if test ${use_shared} = yes; then
         QPOL_LIB_FLAG='-L$(top_builddir)/libqpol/src -lqpol'
         APOL_LIB_FLAG='-L$(top_builddir)/libapol/src -lapol'
-        SEFS_LIB_FLAG='-L$(top_builddir)/libsefs -lsefs'
+        SEFS_LIB_FLAG='-L$(top_builddir)/libsefs/src -lsefs'
         POLDIFF_LIB_FLAG='-L$(top_builddir)/libpoldiff/src -lpoldiff'
     else
         QPOL_LIB_FLAG='-L$(top_builddir)/libqpol/src -lqpol'
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a'
-        SEFS_LIB_FLAG='$(top_builddir)/libsefs/libsefs.a'
+        SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a'
     fi
     AC_MSG_RESULT(disabled)
 fi
 QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
 APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
-SEFS_CFLAGS='-I$(top_srcdir)/libsefs'
+SEFS_CFLAGS='-I$(top_srcdir)/libsefs/include'
 POLDIFF_CFLAGS='-I$(top_srcdir)/libpoldiff/include'
 AC_SUBST(QPOL_CFLAGS)
 AC_SUBST(APOL_CFLAGS)
@@ -398,7 +398,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
-                 libsefs/Makefile \
+                 libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
 		 libseaudit/Makefile \
                  secmds/Makefile \
                  apol/Makefile \

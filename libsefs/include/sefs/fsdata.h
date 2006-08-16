@@ -27,7 +27,7 @@
 #ifndef SEFS_FSDATA_H
 #define SEFS_FSDATA_H
 
-#include "fshash.h"
+#include <sefs/fshash.h>
 #include <stdint.h>
 #include <sys/types.h>
 

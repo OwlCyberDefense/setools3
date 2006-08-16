@@ -41,7 +41,7 @@ apol_DEPENDENCIES = apol.tcl $(top_builddir)/libapol-tcl/libapol-tcl.a $(top_bui
 
 if WANT_LIBSEFS
 apol_LDADD = $(top_builddir)/libapol-tcl/libapol-tcl.a @SEFS_LIB_FLAG@ $(LDADD)
-apol_DEPENDENCIES += $(top_builddir)/libsefs/libsefs.so
+apol_DEPENDENCIES += $(top_builddir)/libsefs/src/libsefs.so
 else
 apol_LDADD = $(top_builddir)/libapol-tcl/libapol-tcl.a $(LDADD)
 endif
@@ -72,8 +72,8 @@ $(top_builddir)/libapol/src/libapol.so:
 $(top_builddir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
-$(top_builddir)/libsefs/libsefs.so:
-	$(MAKE) -C $(top_builddir)/libsefs $(notdir $@)
+$(top_builddir)/libsefs/src/libsefs.so:
+	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)
 
 CLEANFILES = $(dist_bin_SCRIPTS)
 

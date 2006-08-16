@@ -18,7 +18,7 @@
 #include <apol/util.h>
 
 #ifdef LIBSEFS
-#include <libsefs/file_contexts.h>
+#include <sefs/file_contexts.h>
 #endif
 #include <libxml/xmlstring.h>
 

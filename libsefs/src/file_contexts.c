@@ -27,7 +27,7 @@
 
 #include <config.h>
 
-#include "file_contexts.h"
+#include <sefs/file_contexts.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
