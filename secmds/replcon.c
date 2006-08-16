@@ -26,8 +26,8 @@
 
 #include <config.h>
 
-#include <fsdata.h>
-#include "fshash.h"
+#include <sefs/fsdata.h>
+#include <sefs/fshash.h>
 /* SE Linux includes*/
 #include <selinux/selinux.h>
 #include <selinux/context.h>

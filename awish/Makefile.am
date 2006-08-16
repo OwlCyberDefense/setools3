@@ -9,19 +9,20 @@ awish_DEPENDENCIES = $(top_builddir)/libapol-tcl/libapol-tcl.a $(top_builddir)/l
 
 if WANT_LIBSEFS
 awish_LDADD = $(top_builddir)/libapol-tcl/libapol-tcl.a @SEFS_LIB_FLAG@ $(LDADD)
-awish_DEPENDENCIES += $(top_builddir)/libsefs/libsefs.so
+awish_DEPENDENCIES += $(top_builddir)/libsefs/src/libsefs.so
 else
 awish_LDADD = $(top_builddir)/libapol-tcl/libapol-tcl.a $(LDADD)
 endif
+
 
 $(top_builddir)/libapol/libapol-tcl.a:
 	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
 
 $(top_builddir)/libapol/src/libapol.so:
-	$(MAKE) -C $(top_builddir)/libapol $(notdir $@)
+	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 
 $(top_builddir)/libqpol/src/libqpol.so:
-	$(MAKE) -C $(top_builddir)/libqpol $(notdir $@)
+	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
-$(top_builddir)/libsefs/libsefs.so:
-	$(MAKE) -C $(top_builddir)/libsefs $(notdir $@)
+$(top_builddir)/libsefs/src/libsefs.so:
+	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)

@@ -37,14 +37,18 @@ seaudit_report_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
                               $(top_builddir)/libapol/src/libapol.so \
                               $(top_builddir)/libqpol/src/libqpol.so
 
+
+$(top_builddir)/libapol/libapol-tcl.a:
+	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
+
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 
 $(top_builddir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
-$(top_builddir)/libseaudit/libseaudit.a:
-	$(MAKE) -C $(top_builddir)/libseaudit $(notdir $@)
+$(top_builddir)/libsefs/src/libsefs.so:
+	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)
 
 # FIX ME:
 # install glade files, saudit_help.txt, dot_seaudit, conf file, report

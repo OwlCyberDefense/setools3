@@ -43,7 +43,7 @@
 #define APOL_TCL_FC_H
 
 #ifdef LIBSEFS
-#include "../libsefs/fsdata.h"
+#include <sefs/fsdata.h>
 extern sefs_filesystem_db_t *fsdata;
 
 #endif
