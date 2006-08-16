@@ -44,10 +44,10 @@ libapol_a_SOURCES = \
 libapol_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libapol_a_SOURCES)))
 LIBAPOL_SONAME = @libapol_soname@
 
-noinst_DATA = libapol.map
+dist_noinst_DATA = libapol.map
 
 $(apolso_DATA): $(libapol_so_OBJS) libapol.map
-	$(CC) -shared -o $@ $(libapol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs -lqpol -L$(top_srcdir)/libqpol/src
+	$(CC) -shared -o $@ $(libapol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs -lqpol -L$(top_builddir)/libqpol/src
 	$(LN_S) -f $@ libapol.so
 
 install-data-hook:
