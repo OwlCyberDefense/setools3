@@ -22,7 +22,7 @@
 #include <apol/policy.h>
 #include <apol/util.h>
 #ifdef LIBSEFS
-#include <libsefs/file_contexts.h>
+#include <sefs/file_contexts.h>
 #endif
 
 #ifdef LIBSELINUX

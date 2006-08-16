@@ -8,7 +8,7 @@
 
 #include "find_file_types.h"
 #ifdef LIBSEFS
-#include "../libsefs/file_contexts.h"
+#include <sefs/file_contexts.h>
 #endif
 
 #include <stdio.h>

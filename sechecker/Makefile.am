@@ -16,7 +16,7 @@ sechecker_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so $(top_builddir)/
 
 if WANT_LIBSEFS
 sechecker_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
-sechecker_DEPENDENCIES += $(top_builddir)/libsefs/libsefs.so
+sechecker_DEPENDENCIES += $(top_builddir)/libsefs/src/libsefs.so
 else
 sechecker_LDADD = $(LDADD)
 endif
@@ -49,8 +49,14 @@ sechecker_SOURCES = \
 	modules/unreachable_doms.c modules/unreachable_doms.h \
 	modules/users_wo_roles.c modules/users_wo_roles.h
 
+$(top_builddir)/libapol/libapol-tcl.a:
+	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
+
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 
 $(top_builddir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
+
+$(top_builddir)/libsefs/src/libsefs.so:
+	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)

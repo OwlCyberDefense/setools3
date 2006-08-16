@@ -28,7 +28,7 @@
 
 #include <config.h>
 
-#include "fsdata.h"
+#include <sefs/fsdata.h>
 /* sqlite db stuff */
 #include "sqlite/sqlite3.h"
 

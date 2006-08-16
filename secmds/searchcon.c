@@ -8,7 +8,7 @@
 #include <config.h>
 
 /* libsefs */
-#include <fsdata.h>
+#include <sefs/fsdata.h>
 /* standard library includes */
 #include <stdio.h>
 #include <stdlib.h>

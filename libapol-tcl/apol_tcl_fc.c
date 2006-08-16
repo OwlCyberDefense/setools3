@@ -32,7 +32,7 @@
 #include <tcl.h>
 
 #ifdef LIBSEFS
-	#include "../libsefs/fsdata.h"
+	#include <sefs/fsdata.h>
 	/* local global for file context DB */
 	sefs_filesystem_db_t *fsdata = NULL;
 	static bool_t is_libsefs_builtin = TRUE;
