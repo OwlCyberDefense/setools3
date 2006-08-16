@@ -26,8 +26,10 @@
 #ifndef POLDIFF_POLDIFF_H
 #define POLDIFF_POLDIFF_H
 
+#include <apol/policy.h>
 #include <apol/vector.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 typedef struct poldiff poldiff_t;
 typedef void (*poldiff_handle_callback_fn_t)(void *arg, poldiff_t *diff, char *fmt, va_list va_args);
@@ -50,9 +52,9 @@ typedef enum poldiff_form {
 	/** item was removed - only in policy 1 */
 	POLDIFF_FORM_REMOVED,
 	/** item was modified - in both policies but with different meaning */
-	POLDIFF_FORM_MODIFIED
+	POLDIFF_FORM_MODIFIED,
 	/** item was added due to an added type - for rules only */
-	POLDIFF_FORM_ADD_TYPE
+	POLDIFF_FORM_ADD_TYPE,
 	/** item was removed due to a removed type - for rules only */
 	POLDIFF_FORM_REMOVE_TYPE
 } poldiff_form_e;
@@ -90,13 +92,16 @@ typedef enum poldiff_form {
  *  @param policy1 The original policy.
  *  @param policy2 The new (modified) policy.
  *  @param fn Function to be called by the error handler.
- *  @param callback_arg argument for the callback.
+ *  @param callback_arg Argument for the callback.
  *  @return a newly allocated and initialized difference structure or
  *  NULL on error; if the call fails, errno will be set.
  *  The caller is responsible for calling poldiff_destroy() to free
  *  memory used by this structure.
  */
-extern poldiff_t *poldiff_create(apol_policy_t *policy1, apol_policy_t *policy2, poldiff_handle_callback_fn_t fn, void *callback_arg);
+extern poldiff_t *poldiff_create(apol_policy_t *policy1,
+				 apol_policy_t *policy2,
+				 poldiff_handle_callback_fn_t fn,
+				 void *callback_arg);
 
 /**
  *  Free all memory used by a policy difference structure and set it to NULL.
@@ -106,7 +111,7 @@ extern poldiff_t *poldiff_create(apol_policy_t *policy1, apol_policy_t *policy2,
 extern void poldiff_destroy(poldiff_t **diff);
 
 /**
- *  Run the difference algorithm for the selected policy components.
+ *  Run the difference algorithm for the selected policy components/rules.
  *  @param diff The policy difference structure for which to compute
  *  the differences.
  *  @param flags Bit-wise or'd set of POLDIFF_DIFF_* from above indicating
@@ -119,7 +124,9 @@ extern void poldiff_destroy(poldiff_t **diff);
 extern int poldiff_run(poldiff_t *diff, uint32_t flags);
 
 /**
- *  Append a type rename entry to the difference.
+ *  Note a type from policy1 was renamed in policy2.  Subsequent diffs
+ *  will thus treat policy1_name to be equivalent to policy2_name.
+ *
  *  @param diff The difference structure to which to append a type rename.
  *  Note that changing the list of type renames will reset the status of
  *  previously run difference calculations and they will need to be rerun.
