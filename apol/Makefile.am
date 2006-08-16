@@ -34,19 +34,19 @@ apol_SOURCES = apol_gui.c \
 	relabel_module.tcl types_relation_module.tcl \
 	top.tcl
 
-noinst_DATA = foo_module.tcl
+dist_noinst_DATA = foo_module.tcl
 
 LDADD = @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
-apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol-tcl/libapol-tcl.a $(top_srcdir)/libapol/src/libapol.so $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/config.tcl
+apol_DEPENDENCIES = apol.tcl $(top_builddir)/libapol-tcl/libapol-tcl.a $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/config.tcl
 
 if WANT_LIBSEFS
-apol_LDADD = $(top_srcdir)/libapol-tcl/libapol-tcl.a @SEFS_LIB_FLAG@ $(LDADD)
-apol_DEPENDENCIES += $(top_srcdir)/libsefs/libsefs.so
+apol_LDADD = $(top_builddir)/libapol-tcl/libapol-tcl.a @SEFS_LIB_FLAG@ $(LDADD)
+apol_DEPENDENCIES += $(top_builddir)/libsefs/libsefs.so
 else
-apol_LDADD = $(top_srcdir)/libapol-tcl/libapol-tcl.a $(LDADD)
+apol_LDADD = $(top_builddir)/libapol-tcl/libapol-tcl.a $(LDADD)
 endif
 
-TCL_STRIP_FILES = $(top_srcdir)/config.tcl $(filter-out head.tcl,$(filter %.tcl,$(apol_SOURCES)))
+TCL_STRIP_FILES = $(top_builddir)/config.tcl $(filter-out head.tcl,$(filter %.tcl,$(apol_SOURCES)))
 
 apol.tcl: head.tcl tmp.tcl
 	cat $^ | \
@@ -63,17 +63,17 @@ tmp.tcl: $(TCL_STRIP_FILES)
 
 # FIX ME: install help files, perm maps, and link to default perm map
 
-$(top_srcdir)/libapol/libapol-tcl.a:
-	$(MAKE) -C $(top_srcdir)/libapol-tcl $(notdir $@)
+$(top_builddir)/libapol/libapol-tcl.a:
+	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
 
-$(top_srcdir)/libapol/src/libapol.so:
-	$(MAKE) -C $(top_srcdir)/libapol/src $(notdir $@)
+$(top_builddir)/libapol/src/libapol.so:
+	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 
-$(top_srcdir)/libqpol/src/libqpol.so:
-	$(MAKE) -C $(top_srcdir)/libqpol/src $(notdir $@)
+$(top_builddir)/libqpol/src/libqpol.so:
+	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
-$(top_srcdir)/libsefs/libsefs.so:
-	$(MAKE) -C $(top_srcdir)/libsefs $(notdir $@)
+$(top_builddir)/libsefs/libsefs.so:
+	$(MAKE) -C $(top_builddir)/libsefs $(notdir $@)
 
 CLEANFILES = $(dist_bin_SCRIPTS)
 

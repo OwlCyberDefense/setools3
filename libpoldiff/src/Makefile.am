@@ -12,10 +12,10 @@ libpoldiff_a_SOURCES = \
 libpoldiff_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libpoldiff_a_SOURCES)))
 LIBPOLDIFF_SONAME = @libpoldiff_soname@
 
-noinst_DATA = libpoldiff.map
+dist_noinst_DATA = libpoldiff.map
 
 libpoldiff.so: $(libpoldiff_so_OBJS) libpoldiff.map
-	$(CC) -shared -o $@ $(libpoldiff_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBPOLDIFF_SONAME),--version-script=$(srcdir)/libpoldiff.map,-z,defs -lqpol -lapol -L$(top_srcdir)/libqpol/src -L$(top_srcdir)/libapol/src
+	$(CC) -shared -o $@ $(libpoldiff_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBPOLDIFF_SONAME),--version-script=$(srcdir)/libpoldiff.map,-z,defs -lqpol -lapol -L$(top_builddir)/libqpol/src -L$(top_builddir)/libapol/src
 	$(LN_S) -f $@ $(LIBPOLDIFF_SONAME)
 
 install-data-hook:

@@ -4,6 +4,8 @@ endif
 
 SUBDIRS = libqpol libapol libapol-tcl libpoldiff libsefs libseaudit apol secmds sechecker seaudit awish $(MAYBE_BWIDGET)
 
+DIST_SUBDIRS = $(SUBDIRS) packages
+
 EXTRA_DIST = VERSION KNOWN-BUGS
 
 libqpol:

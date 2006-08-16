@@ -46,22 +46,22 @@ AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
     CFLAGS="-g3 -gdwarf-2 -O0 -Wall"
     LDFLAGS="-g"
-    QPOL_LIB_FLAG='$(top_srcdir)/libqpol/src/libqpol.so -Wl,-rpath=../libqpol/src'
-    APOL_LIB_FLAG='$(top_srcdir)/libapol/src/libapol.a -Wl,-rpath=../libapol/src'
-    SEFS_LIB_FLAG='$(top_srcdir)/libsefs/libsefs.a -Wl,-rpath=../libsefs/src'
-    POLDIFF_LIB_FLAG='$(top_srcdir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=../libpoldiff/src'
+    QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=../libqpol/src'
+    APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=../libapol/src'
+    SEFS_LIB_FLAG='$(top_builddir)/libsefs/libsefs.a -Wl,-rpath=../libsefs/src'
+    POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=../libpoldiff/src'
     AC_MSG_RESULT(yes)
 else
     if test ${use_shared} = yes; then
-        QPOL_LIB_FLAG='-L$(top_srcdir)/libqpol/src -lqpol'
-        APOL_LIB_FLAG='-L$(top_srcdir)/libapol/src -lapol'
-        SEFS_LIB_FLAG='-L$(top_srcdir)/libsefs -lsefs'
-        POLDIFF_LIB_FLAG='-L$(top_srcdir)/libpoldiff/src -lpoldiff'
+        QPOL_LIB_FLAG='-L$(top_builddir)/libqpol/src -lqpol'
+        APOL_LIB_FLAG='-L$(top_builddir)/libapol/src -lapol'
+        SEFS_LIB_FLAG='-L$(top_builddir)/libsefs -lsefs'
+        POLDIFF_LIB_FLAG='-L$(top_builddir)/libpoldiff/src -lpoldiff'
     else
-        QPOL_LIB_FLAG='-L$(top_srcdir)/libqpol/src -lqpol'
-        APOL_LIB_FLAG='$(top_srcdir)/libapol/src/libapol.a'
-        SEFS_LIB_FLAG='$(top_srcdir)/libsefs/libsefs.a'
-        POLDIFF_LIB_FLAG='$(top_srcdir)/libpoldiff/src/libpoldiff.a'
+        QPOL_LIB_FLAG='-L$(top_builddir)/libqpol/src -lqpol'
+        APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a'
+        SEFS_LIB_FLAG='$(top_builddir)/libsefs/libsefs.a'
+        POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a'
     fi
     AC_MSG_RESULT(disabled)
 fi
@@ -110,8 +110,6 @@ fi
 TEA_PUBLIC_TCL_HEADERS
 TEA_PUBLIC_TK_HEADERS
 
-echo "" > ./config.tcl
-
 AC_ARG_ENABLE(bwidget-check, [  --disable-bwidget-check do not check for BWidget 1.8, assume it exists], enable_bwidget="$enableval", enable_bwidget="yes", enable_bwidget="no")
 if test "x${enable_bwidget}" = "xyes"; then
     TEA_PROG_TCLSH
@@ -158,29 +156,9 @@ EOF
         BWIDGET_DESTDIR=`${TCLSH_PROG} ./conftest.tcl`
         AC_SUBST(BWIDGET_DESTDIR)
     fi
-    if test ${bwidget_ver} = 1.7; then
-        # overcome bug in NoteBook::bindtabs and add a new -autopost option to ComboBox
-        changequote(<<<,>>>)dnl
-        cat >> ./config.tcl <<EOF
-proc tcl_patch_bwidget {} {
-    # explicitly pull in old BWidget code before patching
-    NoteBook .foo ; destroy .foo
-    ComboBox .foo ; destroy .foo
-    proc NoteBook::bindtabs { path event script } {
-        if { \$script != "" } {
-            append script " \[NoteBook::_get_page_name [list \$path] current 1\]"
-            \$path.c bind "page" \$event \$script
-        } else {
-            \$path.c bind "page" \$event {}
-        }
-    }
-EOF
-        cat packages/combobox.tcl >> ./config.tcl
-        echo "}" >> ./config.tcl
-        changequote([,])dnl
-    fi
 else
     copy_bwidget=no
+    bwidget_ver=1.8
 fi
 
 dnl ** look for selinuxfs mount point
@@ -245,19 +223,23 @@ else
 fi
 
 AC_ARG_ENABLE(sepol-src, [  --enable-sepol-src=PATH use another sepol source tree at PATH
-                          (developer only flag)], sepol_srcdir="$enableval", sepol_srcdir='$(top_srcdir)/libqpol')
-AC_MSG_CHECKING([for sepol source tree])
-sepol_src_save_CFLAGS=${CFLAGS}
-CFLAGS="$CFLAGS -I${sepol_srcdir}/include -lsepol"
-AC_TRY_RUN([#include <sepol/policydb/policydb.h>
-   #include <stdlib.h>
+                          (developer only flag)], sepol_srcdir="$enableval", sepol_srcdir="")
+if test "x${sepol_srcdir}" = "x"; then
+   sepol_srcdir='${top_srcdir}/libqpol'
+else
+   AC_MSG_CHECKING([for sepol source tree])
+   sepol_src_save_CFLAGS=${CFLAGS}
+   CFLAGS="$CFLAGS -I${sepol_srcdir}/include -lsepol"
+   AC_TRY_RUN([#include <sepol/policydb/policydb.h>
+#include <stdlib.h>
    int main(void) { exit(0); }],,
        AC_MSG_ERROR([could not find sepol source tree]))
-CFLAGS="${sepol_src_save_CFLAGS}"
-if test ! -f "${sepol_srcdir}/src/libsepol.a"; then
-   AC_MSG_ERROR([could not find precompiled libsepol.a])
+   CFLAGS="${sepol_src_save_CFLAGS}"
+   if test ! -f "${sepol_srcdir}/src/libsepol.a"; then
+      AC_MSG_ERROR([could not find precompiled libsepol.a])
+   fi
+   AC_MSG_RESULT(yes)
 fi
-AC_MSG_RESULT(yes)
 
 if test ${use_selinux} = "yes"; then
 dnl Locate selinux policy root directory
@@ -385,6 +367,31 @@ AC_SUBST(profile_install_dir)
 
 AC_DEFINE_UNQUOTED(LIBAPOL_VERSION_STRING, "${libapol_version}", [libapol version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
+
+# for older version of BWidget, overcome bug in NoteBook::bindtabs and
+# add a new -autopost option to ComboBox
+AC_CONFIG_COMMANDS([config.tcl], [[
+   if test ${bwidget_ver} = 1.7; then
+        cat > ./config.tcl <<EOF
+proc tcl_patch_bwidget {} {
+    # explicitly pull in old BWidget code before patching
+    NoteBook .foo ; destroy .foo
+    ComboBox .foo ; destroy .foo
+    proc NoteBook::bindtabs { path event script } {
+        if { \$script != "" } {
+            append script " \\[NoteBook::_get_page_name [list \$path] current 1\\]"
+            \$path.c bind "page" \$event \$script
+        } else {
+            \$path.c bind "page" \$event {}
+        }
+    }
+EOF
+        cat ${ac_top_srcdir}/packages/combobox.tcl >> ./config.tcl
+        echo "}" >> ./config.tcl
+   else
+        echo "" > config.tcl
+   fi
+]], [bwidget_ver=$bwidget_ver])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
