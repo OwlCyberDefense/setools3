@@ -3,7 +3,7 @@ bin_PROGRAMS = seaudit seaudit_report
 AM_CFLAGS = -I$(top_srcdir)/libseaudit @QPOL_CFLAGS@ @APOL_CFLAGS@ @GTK_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ -DAPOL_INSTALL_DIR='"${apol_install_dir}"'
 # need the -rdynamic flag below glade uses dlopen() upon seaudit callbacks
 AM_LDFLAGS = @GTK_LIBS@ @GLADE_LIBS@ @XML_LIBS@ -rdynamic
-LDADD = $(top_srcdir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
+LDADD = $(top_builddir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
 dist_pkgdata_DATA = \
 	customize_filter_window.glade \
@@ -28,23 +28,23 @@ seaudit_SOURCES = \
 	seaudit_callback.h seaudit.h \
 	seaudit_window.c seaudit_window.h \
 	utilgui.c utilgui.h
-seaudit_DEPENDENCIES = $(top_srcdir)/libseaudit/libseaudit.a \
-                       $(top_srcdir)/libapol/src/libapol.so \
-                       $(top_srcdir)/libqpol/src/libqpol.so
+seaudit_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
+                       $(top_builddir)/libapol/src/libapol.so \
+                       $(top_builddir)/libqpol/src/libqpol.so
 
 seaudit_report_SOURCES = seaudit-report.c report.c report.h
-seaudit_report_DEPENDENCIES = $(top_srcdir)/libseaudit/libseaudit.a \
-                              $(top_srcdir)/libapol/src/libapol.so \
-                              $(top_srcdir)/libqpol/src/libqpol.so
+seaudit_report_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
+                              $(top_builddir)/libapol/src/libapol.so \
+                              $(top_builddir)/libqpol/src/libqpol.so
 
-$(top_srcdir)/libapol/src/libapol.so:
-	$(MAKE) -C $(top_srcdir)/libapol/src $(notdir $@)
+$(top_builddir)/libapol/src/libapol.so:
+	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 
-$(top_srcdir)/libqpol/src/libqpol.so:
-	$(MAKE) -C $(top_srcdir)/libqpol/src $(notdir $@)
+$(top_builddir)/libqpol/src/libqpol.so:
+	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
-$(top_srcdir)/libseaudit/libseaudit.a:
-	$(MAKE) -C $(top_srcdir)/libseaudit $(notdir $@)
+$(top_builddir)/libseaudit/libseaudit.a:
+	$(MAKE) -C $(top_builddir)/libseaudit $(notdir $@)
 
 # FIX ME:
 # install glade files, saudit_help.txt, dot_seaudit, conf file, report

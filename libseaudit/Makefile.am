@@ -6,7 +6,7 @@ libseaudit_a_SOURCES = \
 	auditlog.c auditlog.h auditlog_view.c auditlog_view.h \
 	filters.c filters.h filter_criteria.c filter_criteria.h \
 	multifilter.c multifilter.h sort.c sort.h parse.c parse.h
-libseaudit_a_DEPENDENCIES = $(top_srcdir)/libapol/src/libapol.so
+libseaudit_a_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so
 
-$(top_srcdir)/libapol/src/libapol.so:
-	$(MAKE) -C $(top_srcdir)/libapol/src $(notdir $@)
+$(top_builddir)/libapol/src/libapol.so:
+	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)

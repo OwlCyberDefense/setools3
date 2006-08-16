@@ -4,6 +4,8 @@ lib_LIBRARIES = libqpol.a
 qpolso_DATA = @libqpol_soname@
 qpolsodir = $(libdir)
 
+tmp_sepol = ./tmp_sepol
+
 AM_YFLAGS = -d
 BUILT_SOURCES = policy_parse.h
 
@@ -43,21 +45,21 @@ libqpol_a_SOURCES = \
 	type_query.c \
 	user_query.c \
 	policy_parse.y policy_scan.l
-libqpol_a_DEPENDENCIES = $(srcdir)/tmp_sepol
-libqpol_a_LIBADD = $(srcdir)/tmp_sepol/*.o
+libqpol_a_DEPENDENCIES = $(tmp_sepol)
+libqpol_a_LIBADD = $(tmp_sepol)/*.o
 
 libqpol_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libqpol_a_SOURCES))) policy_parse.o policy_scan.o
 LIBQPOL_SONAME = @libqpol_soname@
 
-noinst_DATA = libqpol.map
+dist_noinst_DATA = libqpol.map libsepol.a
 
-$(srcdir)/tmp_sepol: $(sepol_srcdir)/src/libsepol.a
+$(tmp_sepol): $(sepol_srcdir)/src/libsepol.a
 	mkdir -p $@
 	rm -f $@/*
 	cp $< $@
 	(cd $@; ar x libsepol.a)
 
-$(qpolso_DATA): $(srcdir)/tmp_sepol $(libqpol_so_OBJS) libqpol.map
+$(qpolso_DATA): $(tmp_sepol) $(libqpol_so_OBJS) libqpol.map
 	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/src/libsepol.a -Wl,--no-whole-archive -lselinux
 	$(LN_S) -f $@ libqpol.so
 
@@ -67,7 +69,7 @@ install-data-hook:
 CLEANFILES = policy_parse.h policy_scan.c policy_parse.c
 
 clean-local:
-	-rm -rf $(srcdir)/tmp_sepol
+	-rm -rf $(tmp_sepol)
 
 mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so $(qpolso_DATA)
