@@ -24,6 +24,7 @@
  */
 
 #include "poldiff_internal.h"
+#include "class_internal.h"
 
 #include <poldiff/class_diff.h>
 
@@ -31,41 +32,35 @@
 #include <stdio.h>
 #include <string.h>
 
+/**
+ * All policy items (object classes, types, rules, etc.) must
+ * implement at least these functions.  Next, a record should be
+ * appended to the array 'item_records' below.
+ */
 typedef struct poldiff_item_record {
 	const char *item_name;
 	uint32_t flag_bit;
+	poldiff_get_item_stats_fn_t get_stats;
+	poldiff_item_to_string_fn_t to_string;
 	poldiff_get_items_fn_t get_items;
 	poldiff_free_item_fn_t free_item;
 	poldiff_item_comp_fn_t comp;
 	poldiff_new_diff_fn_t new_diff;
 	poldiff_deep_diff_fn_t deep_diff;
-	poldiff_get_item_stats_fn_t get_stats;
-	poldiff_item_to_string_fn_t to_string;
 } poldiff_item_record_t;
 
 static const poldiff_item_record_t item_records[] = {
-/* TODO
 	{
 		"class",
 		POLDIFF_DIFF_CLASSES,
-		poldiff_class_get_classes,
-		poldiff_class_comp,
-		poldiff_class_new,
-		poldiff_class_deep_diff,
 		poldiff_class_get_stats,
-		poldiff_class_to_string
-	},
-	{
-		"common",
-		POLDIFF_DIFF_COMMONS,
-		poldiff_common_get_classes,
-		poldiff_common_comp,
-		poldiff_common_new,
-		poldiff_common_deep_diff,
-		poldiff_common_get_stats,
-		poldiff_common_to_string
+		poldiff_class_to_string,
+		poldiff_class_get_items,
+		NULL,
+		poldiff_class_comp,
+		poldiff_class_new_diff,
+		poldiff_class_deep_diff,
 	}
-*/
 };
 
 poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
@@ -275,11 +270,9 @@ void poldiff_handle_msg(poldiff_t *p, int level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	if (p == NULL) {
+	if (p == NULL || p->fn == NULL) {
 		poldiff_handle_default_callback(NULL, NULL, level, fmt, ap);
 	}
-	else if (p->fn != NULL) {
-		p->fn(p->handle_arg, p, level, fmt, ap);
-	}
+	p->fn(p->handle_arg, p, level, fmt, ap);
 	va_end(ap);
 }

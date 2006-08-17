@@ -35,40 +35,19 @@
 typedef struct poldiff_class poldiff_class_t;
 
 /**
- *  Get the number of added classes from a policy difference
- *  structure.
+ *  Get an array of statistics for the number of differences of each
+ *  form for object classes.
  *
  *  @param diff The policy difference structure from which to get the
- *  number of added classes.
- *
- *  @return the number of added classes or 0 if not yet run.  (The
- *  number of differences could also be zero.)
+ *  stats.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated). The order of the values written to the array is as
+ *  follows:  number of items of form POLDIFF_FORM_ADDED, number of
+ *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
+ *  form POLDIFF_FORM_ADD_TYPE, and number of
+ *  POLDIFF_FORM_REMOVE_TYPE.
  */
-extern size_t poldiff_get_num_added_classes(poldiff_t *diff);
-
-/**
- *  Get the number of removed classes from a policy difference
- *  structure.
- *
- *  @param diff The policy difference structure from which to get the
- *  number of removed classes.
- *
- *  @return the number of removed classes or 0 if not yet run.  (The
- *  number of differences could also be zero.)
- */
-extern size_t poldiff_get_num_removed_classes(poldiff_t *diff);
-
-/**
- *  Get the number of modified classes from a policy difference
- *  structure.
- *
- *  @param diff The policy difference structure from which to get the
- *  number of modified classes.
- *
- *  @return the number of modified classes or 0 if not yet run.  (The
- *  number of differences could also be zero.)
- */
-extern size_t poldiff_get_num_modified_classes(poldiff_t *diff);
+extern void poldiff_class_get_stats(poldiff_t *diff, size_t stats[5]);
 
 /**
  *  Get the vector of class differences from the class difference
@@ -82,6 +61,19 @@ extern size_t poldiff_get_num_modified_classes(poldiff_t *diff);
  *  returned.  If the call fails, errno will be set.
  */
 extern apol_vector_t *poldiff_get_class_vector(poldiff_t *diff);
+
+/**
+ *  Obtain a newly allocated string representation of a difference in
+ *  an object class.
+ *
+ *  @param diff The policy difference structure associated with the class.
+ *  @param item The class from which to generate the string.
+ *
+ *  @return A string representation of class difference; the caller is
+ *  responsible for free()ing this string.  On error, return NULL and
+ *  set errno.
+ */
+extern char *poldiff_class_to_string(poldiff_t *diff, const void *cls);
 
 /**
  *  Get the name of the class from a class diff.
@@ -112,7 +104,7 @@ extern poldiff_form_e poldiff_class_get_form(poldiff_t *diff,
 					     poldiff_class_t *cls);
 
 /**
- *  Get a vector of the permissions added to the class.
+ *  Get a vector of permissions added to the class.
  *
  *  @param diff The policy difference structure associated with the
  *  class diff.
@@ -128,7 +120,7 @@ extern apol_vector_t *poldiff_class_get_added_perms(poldiff_t *diff,
 						    poldiff_class_t *cls);
 
 /**
- *  Get a vector of the permissions removed from the class.
+ *  Get a vector of permissions removed from the class.
  *
  *  @param diff The policy difference structure associated with the
  *  class diff.
@@ -140,6 +132,7 @@ extern apol_vector_t *poldiff_class_get_added_perms(poldiff_t *diff,
  *  0.  The caller must not destroy this vector.  On error, errno will
  *  be set.
  */
-extern apol_vector_t *poldiff_class_get_removed_perms(poldiff_t *diff, poldiff_class_t *cls);
+extern apol_vector_t *poldiff_class_get_removed_perms(poldiff_t *diff,
+						      poldiff_class_t *cls);
 
 #endif /* POLDIFF_CLASS_DIFF_H */
