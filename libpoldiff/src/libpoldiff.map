@@ -1,5 +1,9 @@
 {
 	global:
-		poldiff_*;
+                poldiff_create;
+                poldiff_destroy;
+                poldiff_run;
+                poldiff_type_rename_append;
+		poldiff_class_*;
 	local: *;
 };
