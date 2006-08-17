@@ -23,17 +23,29 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <poldiff/poldiff.h>
-#include <poldiff/class_diff.h>
 #include "poldiff_internal.h"
 
-#include <apol/vector.h>
+#include <poldiff/class_diff.h>
 
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
 
-const poldiff_item_record_t item_records[] = {
+typedef struct poldiff_item_record {
+	const char *item_name;
+	uint32_t flag_bit;
+	poldiff_get_items_fn_t get_items;
+	poldiff_free_item_fn_t free_item;
+	poldiff_item_comp_fn_t comp;
+	poldiff_new_diff_fn_t new_diff;
+	poldiff_deep_diff_fn_t deep_diff;
+	poldiff_get_item_stats_fn_t get_stats;
+	poldiff_item_to_string_fn_t to_string;
+} poldiff_item_record_t;
+
+static const poldiff_item_record_t item_records[] = {
 /* TODO
-{
+	{
 		"class",
 		POLDIFF_DIFF_CLASSES,
 		poldiff_class_get_classes,
@@ -52,23 +64,34 @@ const poldiff_item_record_t item_records[] = {
 		poldiff_common_deep_diff,
 		poldiff_common_get_stats,
 		poldiff_common_to_string
-}*/
+	}
+*/
 };
 
-poldiff_t *poldiff_create(apol_policy_t *policy1, apol_policy_t *policy2,
+poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 				 poldiff_handle_fn_t fn, void *callback_arg)
 {
 	poldiff_t *diff = NULL;
 
-	if (!policy1 || !policy2) {
-		//TODO: error reporting
+	if (!orig_policy || !mod_policy) {
+		ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}
 
 	if (!(diff = calloc(1, sizeof(poldiff_t)))) {
-		//TODO: ERR();
-		errno = EINVAL;
+		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return NULL;
+	}
+	diff->orig_pol = orig_policy;
+	diff->mod_pol = mod_policy;
+	diff->fn = fn;
+	diff->handle_arg = callback_arg;
+	if ((diff->type_renames = apol_vector_create()) == NULL) {
+		ERR(diff, "%s", strerror(ENOMEM));
+		poldiff_destroy(&diff);
+		errno = ENOMEM;
 		return NULL;
 	}
 
@@ -77,14 +100,119 @@ poldiff_t *poldiff_create(apol_policy_t *policy1, apol_policy_t *policy2,
 	return diff;
 }
 
+static void type_renames_free(void *elem)
+{
+	if (elem != NULL) {
+		// TODO: free individual elements
+		free(elem);
+	}
+}
+
 void poldiff_destroy(poldiff_t **diff)
 {
 	if (!diff || !(*diff))
 		return;
 
 	//TODO: free stuff here
+	apol_vector_destroy(&(*diff)->type_renames, type_renames_free);
 	free(*diff);
 	*diff = NULL;
+}
+
+/**
+ * Given a particular policy item record (e.g., one for object
+ * classes), (re-)perform a diff of them between the two policies
+ * listed in the poldiff_t structure.  Upon success, set the status
+ * flag within 'diff' to indicate that this diff is done.
+ *
+ * @param diff The policy difference structure containing the policies
+ * to compare and to populate with the item differences.
+ * @param item_record Item record containg callbacks to perform each
+ * step of the computation for a particular kind of item.
+ *
+ * @return 0 on success and < 0 on error; if the call fails; errno
+ * will be set and the only defined operation on the policy difference
+ * structure will be poldiff_destroy().
+ */static int poldiff_do_item_diff(poldiff_t *diff, const poldiff_item_record_t *item_record)
+{
+	apol_vector_t *p1_v = NULL, *p2_v = NULL;
+	int error = 0, retv;
+	size_t x = 0, y = 0;
+	void *item_x = NULL, *item_y = NULL;
+
+	if (!diff || !item_record) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	diff->diff_status &= (~item_record->flag_bit);
+
+	diff->diff_step = POLDIFF_STEP_ORIG_POL_SORT;
+	p1_v = item_record->get_items(diff->orig_pol);
+	if (!p1_v) {
+		error = errno;
+		goto err;
+	}
+	apol_vector_sort(p1_v, item_record->comp, (void*)diff);
+
+	diff->diff_step = POLDIFF_STEP_MOD_POL_SORT;
+	p2_v = item_record->get_items(diff->mod_pol);
+	if (!p2_v) {
+		error = errno;
+		goto err;
+	}
+	apol_vector_sort(p2_v, item_record->comp, (void*)diff);
+
+	diff->diff_step = POLDIFF_STEP_DIFF;
+	for (x = 0, y = 0; x < apol_vector_get_size(p1_v); x++) {
+		if (y >= apol_vector_get_size(p2_v))
+			break;
+		item_x = apol_vector_get_element(p1_v, x);
+		item_y = apol_vector_get_element(p2_v, y);
+		retv = item_record->comp(item_x, item_y, (void*)diff);
+		if (retv < 0) {
+			if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
+				error = errno;
+				goto err;
+			}
+		} else if (retv > 0) {
+			if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
+				error = errno;
+				goto err;
+			}
+			y++;
+		} else {
+			if (item_record->deep_diff(diff, item_x, item_y)) {
+				error = errno;
+				goto err;
+			}
+			y++;
+		}
+        }
+	for (; x < apol_vector_get_size(p1_v); x++) {
+		item_x = apol_vector_get_element(p1_v, x);
+		if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
+			error = errno;
+			goto err;
+		}
+	}
+	for (; y < apol_vector_get_size(p2_v); y++) {
+		item_y = apol_vector_get_element(p2_v, y);
+		if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	apol_vector_destroy(&p1_v, item_record->free_item);
+	apol_vector_destroy(&p2_v, item_record->free_item);
+	diff->diff_status |= item_record->flag_bit;
+	return 0;
+err:
+	apol_vector_destroy(&p1_v, item_record->free_item);
+	apol_vector_destroy(&p2_v, item_record->free_item);
+	errno = error;
+	return -1;
 }
 
 int poldiff_run(poldiff_t *diff, uint32_t flags)
@@ -96,7 +224,7 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 		return 0; /* noting to do */
 
 	if (!diff) {
-		//TODO ERR();
+		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -104,10 +232,9 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 	num_items = sizeof(item_records)/sizeof(poldiff_item_record_t);
 	for (i = 0; i < num_items; i++) {
 		/* item requested but not yet run */
-		if (flags & item_records[i].flag_bit && !(flags & diff->diff_status)) {
+		if ((flags & item_records[i].flag_bit) && !(flags & diff->diff_status)) {
 			if (poldiff_do_item_diff(diff, &(item_records[i]))) {
 				error = errno;
-				//TODO ERR();
 				return -1;
 			}
 		}
@@ -116,96 +243,43 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 	return 0;
 }
 
-int poldiff_do_item_diff(poldiff_t *diff, const poldiff_item_record_t *item_record)
+static void poldiff_handle_default_callback(void *arg __attribute__((unused)),
+					    poldiff_t *p __attribute__ ((unused)),
+					    int level,
+					    const char *fmt,
+					    va_list va_args)
 {
-	apol_vector_t *p1_v = NULL, *p2_v = NULL;
-	int error = 0, retv;
-	size_t x = 0, y = 0;
-	void *item_x = NULL, *item_y = NULL;
-
-	if (!diff || !item_record) {
-		//TODO ERR();
-		errno = EINVAL;
-		return -1;
+	switch (level) {
+		case POLDIFF_MSG_INFO:
+			{
+				/* by default do not display these messages */
+				return;
+			}
+		case POLDIFF_MSG_WARN:
+			{
+				fprintf(stderr, "WARNING: ");
+				break;
+			}
+		case POLDIFF_MSG_ERR:
+		default:
+			{
+				fprintf(stderr, "ERROR: ");
+				break;
+			}
 	}
+	vfprintf(stderr, fmt, va_args);
+	fprintf(stderr, "\n");
+}
 
-	diff->diff_step = POLDIFF_STEP_P1_SORT;
-	p1_v = item_record->get_items(diff->policy1);
-	if (!p1_v) {
-		error = errno;
-		//TODO ERR();
-		goto err;
+void poldiff_handle_msg(poldiff_t *p, int level, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	if (p == NULL) {
+		poldiff_handle_default_callback(NULL, NULL, level, fmt, ap);
 	}
-	apol_vector_sort(p1_v, item_record->comp, (void*)diff);
-
-	diff->diff_step = POLDIFF_STEP_P2_SORT;
-	p2_v = item_record->get_items(diff->policy2);
-	if (!p2_v) {
-		error = errno;
-		//TODO ERR();
-		goto err;
+	else if (p->fn != NULL) {
+		p->fn(p->handle_arg, p, level, fmt, ap);
 	}
-	apol_vector_sort(p2_v, item_record->comp, (void*)diff);
-
-	diff->diff_step = POLDIFF_STEP_DIFF;
-	for (x = 0, y = 0; x < apol_vector_get_size(p1_v); x++) {
-		if (y >= apol_vector_get_size(p2_v))
-			break;
-		if (!(item_x = apol_vector_get_element(p1_v, x)) || !(item_y = apol_vector_get_element(p2_v, y))) {
-			error = errno;
-			//TODO ERR();
-			goto err;
-		}
-		retv = item_record->comp(item_x, item_y, (void*)diff);
-		if (retv < 0) {
-			if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
-				error = errno;
-				//TODO ERR();
-				goto err;
-			}
-		} else if (retv > 0) {
-			if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
-				error = errno;
-				//TODO ERR();
-				goto err;
-			}
-			y++;
-		} else {
-			if (item_record->deep_diff(diff, item_x, item_y)) {
-				error = errno;
-				//TODO ERR();
-				goto err;
-			}
-			y++;
-		}
-		for (; x < apol_vector_get_size(p1_v); x++) {
-			if (!(item_x = apol_vector_get_element(p1_v, x))) {
-				error = errno;
-				//TODO ERR();
-				goto err;
-			}
-			if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
-				error = errno;
-				//TODO ERR();
-				goto err;
-			}
-		}
-		for (; y < apol_vector_get_size(p2_v); y++) {
-			if (!(item_y = apol_vector_get_element(p2_v, y))) {
-				error = errno;
-				//TODO ERR();
-				goto err;
-			}
-			if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
-				error = errno;
-				//TODO ERR();
-				goto err;
-			}
-		}
-	}
-	return 0;
-
-err:
-	errno = error;
-	return -1;
+	va_end(ap);
 }
