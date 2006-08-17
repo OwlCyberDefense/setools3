@@ -48,13 +48,13 @@ struct poldiff_role_trans_summary;
 /*struct range_trans_summary;*/
 /* and so forth for ocon_summary structs */
 
-#define POLDIFF_STEP_P1_SORT 1
-#define POLDIFF_STEP_P2_SORT 2
+#define POLDIFF_STEP_ORIG_POL_SORT 1
+#define POLDIFF_STEP_MOD_POL_SORT 2
 #define POLDIFF_STEP_DIFF    3
 
 struct poldiff {
-	apol_policy_t *policy1; /* The "original" policy */
-	apol_policy_t *policy2; /* The "modified" policy */
+	apol_policy_t *orig_pol; /* The "original" policy */
+	apol_policy_t *mod_pol; /* The "modified" policy */
 	poldiff_handle_fn_t fn;
 	void *handle_arg;
 	uint32_t diff_status; /* set of POLDIF_DIFF_* for diffs run */
@@ -76,6 +76,8 @@ struct poldiff {
 	struct poldiff_role_trans_summary *role_trans_diffs;
 /*	struct poldiff_range_trans_summary *range_trans_diffs;*/
 	/* and so forth if we want ocon_diffs */
+
+	/** vector of poldiff_type_rename_t */
 	apol_vector_t *type_renames;
 };
 
@@ -90,6 +92,16 @@ typedef struct poldiff_type_rename poldiff_type_rename_t;
  *  if the call fails, errno will be set.
  */
 typedef apol_vector_t *(*poldiff_get_items_fn_t)(apol_policy_t *policy);
+
+/**
+ *  Callback function signature for destroying an element from the
+ *  vector returned by poldiff_get_items_fn_t.  (This is the second
+ *  parameter passed to apol_vector_destroy().)  This callback can be
+ *  NULL.
+ *
+ *  @param Pointer to an element to free.
+ */
+typedef void (*poldiff_free_item_fn_t)(void *elem);
 
 /**
  *  Callback funtion signature for comparing two items
@@ -160,27 +172,32 @@ typedef void (*poldiff_get_item_stats_fn_t)(poldiff_t *diff, size_t stats[5]);
  */
 typedef char *(*poldiff_item_to_string_fn_t)(poldiff_t *diff, const void *item);
 
-typedef struct poldiff_item_record {
-	const char *item_name;
-	uint32_t flag_bit;
-	poldiff_get_items_fn_t get_items;
-	poldiff_item_comp_fn_t comp;
-	poldiff_new_diff_fn_t new_diff;
-	poldiff_deep_diff_fn_t deep_diff;
-	poldiff_get_item_stats_fn_t get_stats;
-	poldiff_item_to_string_fn_t to_string;
-} poldiff_item_record_t;
+/******************** error handling code below ********************/
+
+#define POLDIFF_MSG_ERR  1
+#define POLDIFF_MSG_WARN 2
+#define POLDIFF_MSG_INFO 3
 
 /**
- *  Compute the differences for a particular kind of item.
- *  @param diff The policy difference structure containing the policies to
- *  compare and to populate with the item differences.
- *  @param item_record Item record containg callbacks to perform each step
- *  of the computation for a particular kind of item.
- *  @return 0 on success and < 0 on error; if the call fails; errno will be
- *  set and the only defined operation on the policy difference structure
- *  will be poldiff_destroy().
+ * Write a message to the callback stored within a poldiff error
+ * handler.  If the msg_callback field is empty then suppress the
+ * message.
+ *
+ * @param p Error reporting handler.  If NULL then write message to
+ * stderr.
+ * @param level Severity of message, one of POLDIFF_MSG_ERR,
+ * POLDIFF_MSG_WARN, or POLDIFF_MSG_INFO.
+ * @param fmt Format string to print, using syntax of printf(3).
  */
-int poldiff_do_item_diff(poldiff_t *diff, const poldiff_item_record_t *item_record);
+__attribute__ ((format(printf, 3, 4)))
+extern void poldiff_handle_msg(poldiff_t *p, int level, const char *fmt, ...);
+
+#undef ERR
+#undef WARN
+#undef INFO
+
+#define ERR(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_ERR, format, __VA_ARGS__)
+#define WARN(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_WARN, format, __VA_ARGS__)
+#define INFO(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_INFO, format, __VA_ARGS__)
 
 #endif /* POLDIFF_POLDIFF_INTERNAL_H */
