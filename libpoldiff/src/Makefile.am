@@ -7,7 +7,7 @@ AM_CFLAGS = -fpic -I$(srcdir)/../include @APOL_CFLAGS@ @QPOL_CFLAGS@
 
 libpoldiff_a_SOURCES = \
 	poldiff.c \
-	class_diff.c \
+	class_diff.c class_internal.h \
 	poldiff_internal.h
 
 libpoldiff_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libpoldiff_a_SOURCES)))

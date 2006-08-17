@@ -26,8 +26,6 @@
 #ifndef POLDIFF_POLDIFF_INTERNAL_H
 #define POLDIFF_POLDIFF_INTERNAL_H
 
-#include <apol/policy.h>
-#include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
 /* forward declarations */
@@ -84,6 +82,29 @@ struct poldiff {
 typedef struct poldiff_type_rename poldiff_type_rename_t;
 
 /**
+ *  Callback function signature for getting an array of statistics for the
+ *  number of differences of each form for a given item.
+ *  @param diff The policy difference structure from which to get the stats.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated). The order of the values written to the array is as follows:
+ *  number of items of form POLDIFF_FORM_ADDED, number of POLDIFF_FORM_REMOVED,
+ *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
+ *  number of POLDIFF_FORM_REMOVE_TYPE.
+ */
+typedef void (*poldiff_get_item_stats_fn_t)(poldiff_t *diff, size_t stats[5]);
+
+/**
+ *  Callback function signature for obtaining a newly allocated string
+ *  representation of a difference item.
+ *  @param diff The policy difference structure associated with the item.
+ *  @param item The item from which to generate the string.
+ *  @return Expected return value from this function is a newly allocated
+ *  string representation of the item or NULL on error; if the call fails,
+ *  it is expected to set errno.
+ */
+typedef char *(*poldiff_item_to_string_fn_t)(poldiff_t *diff, const void *item);
+
+/**
  *  Callback function signature for getting a vector of all
  *  unique items of a given kind in a policy.
  *  @param policy The policy from which to get the items.
@@ -91,7 +112,7 @@ typedef struct poldiff_type_rename poldiff_type_rename_t;
  *  of the appropriate kind on success, or NULL on error;
  *  if the call fails, errno will be set.
  */
-typedef apol_vector_t *(*poldiff_get_items_fn_t)(apol_policy_t *policy);
+typedef apol_vector_t * (*poldiff_get_items_fn_t)(apol_policy_t *policy);
 
 /**
  *  Callback function signature for destroying an element from the
@@ -104,14 +125,18 @@ typedef apol_vector_t *(*poldiff_get_items_fn_t)(apol_policy_t *policy);
 typedef void (*poldiff_free_item_fn_t)(void *elem);
 
 /**
- *  Callback funtion signature for comparing two items
- *  to determine if they are semantically the same item.
- *  @param x The item from the first policy.
- *  @param y The item from the second policy.
+ *  Callback funtion signature for quickly comparing two items to
+ *  determine if they are semantically the same item.  This operation
+ *  should quickly determine if the two are obviously different or
+ *  not.
+ *
+ *  @param x The item from the original policy.
+ *  @param y The item from the modified policy.
  *  @param diff The policy difference structure associated with both
  *  items. Note: due to requirements of apol_vector_sort() this parameter
  *  is passed as a void pointer and must internally be cast to poldiff_t
  *  inside this function.
+ *
  *  @return Expected return value from this function is < 0, 0, or > 0
  *  if item x is respectively less than, equal to, or greater than item y.
  *  This must be able to return a defined stable ordering for all items
@@ -139,38 +164,13 @@ typedef int (*poldiff_new_diff_fn_t)(poldiff_t *diff, poldiff_form_e form, const
  *  entry for that item.
  *  @param diff The policy difference structure associated with both items and
  *  to which to add an entry if needed.
- *  @param x The item from the first policy.
- *  @param y The item from the second policy.
+ *  @param x The item from the original policy.
+ *  @param y The item from the modified policy.
  *  @return Expected return value from this function is 0 on success and
  *  < 0 on error; if the call fails, it is expected to set errno and to
  *  leave the policy difference structure unchanged.
  */
 typedef int (*poldiff_deep_diff_fn_t)(poldiff_t *diff, const void *x, const void *y);
-
-/**
- *  Callback function signature for getting an array of statistics for the
- *  number of differences of each form for a given item.
- *  @param diff The policy difference structure from which to get the stats.
- *  @param stats Array into which to write the numbers (array must be
- *  pre-allocated). The order of the values written to the array is as follows:
- *  number of items of form POLDIFF_FORM_ADDED, number of POLDIFF_FORM_REMOVED,
- *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
- *  number of POLDIFF_FORM_REMOVE_TYPE.
- *  @return Expected return value from this function is 0 on success and
- *  < 0 on error; if the call fails, it is expected to set errno.
- */
-typedef void (*poldiff_get_item_stats_fn_t)(poldiff_t *diff, size_t stats[5]);
-
-/**
- *  Callback function signature for obtaining a string representation of
- *  a difference item.
- *  @param diff The policy difference structure associated with the item.
- *  @param item The item from which to generate the string.
- *  @return Expected return value from this function is a newly allocated
- *  string representation of the item or NULL on error; if the call fails,
- *  it is expected to set errno.
- */
-typedef char *(*poldiff_item_to_string_fn_t)(poldiff_t *diff, const void *item);
 
 /******************** error handling code below ********************/
 
