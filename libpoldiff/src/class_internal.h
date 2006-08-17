@@ -26,18 +26,37 @@
 #ifndef POLDIFF_CLASSDIFF_INTERNAL_H
 #define POLDIFF_CLASSDIFF_INTERNAL_H
 
-#include "poldiff_internal.h"
+typedef struct poldiff_class_summary poldiff_class_summary_t;
 
 /**
- * Get a vector of all object classes from the given policy.
+ * Allocate and return a new poldiff_class_summary_t object.
  *
+ * @return A new class summary.  The caller must call class_destroy()
+ * afterwards.  On error, return NULL and set errno.
+ */
+poldiff_class_summary_t *class_create(void);
+
+/**
+ * Deallocate all space associated with a poldiff_class_summary_t
+ * object, including the pointer itself.  If the pointer is already
+ * NULL then do nothing.
+ *
+ * @param cs Reference to a class summary to destroy.  The pointer
+ * will be set to NULL afterwards.
+ */
+void class_destroy(poldiff_class_summary_t **cs);
+
+/**
+ * Get a vector of all object classes from the given policy, sorted by name.
+ *
+ * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
  *
  * @return a newly allocated vector of all classes.  The caller is
  * responsible for calling apol_vector_destroy() afterwards, passing
  * NULL as the second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *poldiff_class_get_items(apol_policy_t *policy);
+apol_vector_t *class_get_items(poldiff_t *diff, apol_policy_t *policy);
 
 /**
  * Compare two qpol_class_t objects, determining if they have the same
@@ -46,13 +65,12 @@ apol_vector_t *poldiff_class_get_items(apol_policy_t *policy);
  * @param x The class from the original policy.
  * @param y The class from the modified policy.
  * @param diff The policy difference structure associated with both
- * items cast to poldiff_t
- * inside this function.
+ * policies.
  *
  * @return < 0, 0, or > 0 if class x is respectively less than, equal
  * to, or greater than class y.
  */
-int poldiff_class_comp(const void *x, const void *y, void *diff);
+int class_comp(const void *x, const void *y, poldiff_t *diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -65,7 +83,7 @@ int poldiff_class_comp(const void *x, const void *y, void *diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int poldiff_class_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
+int class_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
 
 /**
  * Computing the semantic difference of two classes for which the
@@ -81,6 +99,14 @@ int poldiff_class_new_diff(poldiff_t *diff, poldiff_form_e form, const void *ite
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int poldiff_class_deep_diff(poldiff_t *diff, const void *x, const void *y);
+int class_deep_diff(poldiff_t *diff, const void *x, const void *y);
+
+/**
+ *  Callback function signature for destroying an entire diffs
+ *  structure.  This will be invoked during poldiff_destroy().
+ *
+ *  @param Pointer to a diffst structur.
+ */
+typedef void (*poldiff_free_diffs_fn_t)(void *elem);
 
 #endif /* POLDIFF_CLASSDIFF_INTERNAL_H */
