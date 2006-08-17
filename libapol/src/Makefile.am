@@ -40,6 +40,7 @@ libapol_a_SOURCES = \
 	util.c \
 	vector.c \
 	policy-query-internal.h queue.h
+libapol_a_DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so
 
 libapol_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libapol_a_SOURCES)))
 LIBAPOL_SONAME = @libapol_soname@
@@ -47,8 +48,11 @@ LIBAPOL_SONAME = @libapol_soname@
 dist_noinst_DATA = libapol.map
 
 $(apolso_DATA): $(libapol_so_OBJS) libapol.map
-	$(CC) -shared -o $@ $(libapol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs -lqpol -L$(top_builddir)/libqpol/src
+	$(CC) -shared -o $@ $(libapol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so
 	$(LN_S) -f $@ libapol.so
+
+$(top_builddir)/libqpol/src/libqpol.so:
+	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
 install-data-hook:
 	cd $(DESTDIR)$(apolsodir) && $(LN_S) -f $(apolso_DATA) libapol.so

@@ -26,8 +26,15 @@ libsqlite_a_SOURCES += \
 	sqlite/opcodes.h sqlite/os_unix.h sqlite/sqlite3.h \
 	sqlite/os_common.h sqlite/os_win.h sqlite/sqliteInt.h
 libsefs_a_LIBADD=libsqlite_a-*.o
-libsefs_a_DEPENDENCIES=libsqlite.a
+libsefs_a_DEPENDENCIES=libsqlite.a $(top_builddir)/libapol/src/libapol.so
+
+else
+
+libsefs_a_DEPENDENCIES=$(top_builddir)/libapol/src/libapol.so
+
 endif
+
+
 
 libsefs_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libsefs_a_SOURCES)))
 if WANT_LIBSEFS
@@ -39,8 +46,12 @@ LIBSEFS_SONAME = @libsefs_soname@
 dist_noinst_DATA = libsefs.map
 
 $(sefsso_DATA): $(libsefs_so_OBJS) libsefs.map
-	$(CC) -shared -o $@ $(libsefs_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs -L$(top_builddir)/libapol/src -L$(top_builddir)/libqpol/src -lapol -lqpol
+	$(CC) -shared -o $@ $(libsefs_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs $(top_builddir)/libapol/src/libapol.so
 	$(LN_S) -f $@ libsefs.so
+
+$(top_builddir)/libapol/src/libapol.so:
+	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
+
 
 install-data-hook:
 	cd $(DESTDIR)$(sefssodir) && $(LN_S) -f $(sefsso_DATA) libsefs.so
