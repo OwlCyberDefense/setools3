@@ -46,19 +46,19 @@ AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
     CFLAGS="-g3 -gdwarf-2 -O0 -Wall"
     LDFLAGS="-g"
-    QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=../libqpol/src'
-    APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=../libapol/src'
-    SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=../libsefs/src'
-    POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=../libpoldiff/src'
+    QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=$(top_builddir)/libqpol/src'
+    APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
+    SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=$(top_builddir)/libsefs/src'
+    POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=$(top_builddir)/libpoldiff/src'
     AC_MSG_RESULT(yes)
 else
     if test ${use_shared} = yes; then
-        QPOL_LIB_FLAG='-L$(top_builddir)/libqpol/src -lqpol'
-        APOL_LIB_FLAG='-L$(top_builddir)/libapol/src -lapol'
-        SEFS_LIB_FLAG='-L$(top_builddir)/libsefs/src -lsefs'
-        POLDIFF_LIB_FLAG='-L$(top_builddir)/libpoldiff/src -lpoldiff'
+        QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
+        APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.so'
+        SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.so'
+        POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.so'
     else
-        QPOL_LIB_FLAG='-L$(top_builddir)/libqpol/src -lqpol'
+        QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a'
