@@ -78,61 +78,46 @@ extern char *poldiff_class_to_string(poldiff_t *diff, const void *cls);
 /**
  *  Get the name of the class from a class diff.
  *
- *  @param diff The policy difference structure associated with the
- *  class diff.
  *  @param cls The class from which to get the name.
  *
  *  @return name of the class on success and NULL on failure; if the
  *  call fails, errno will be set. The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_class_get_name(poldiff_t *diff,
-					  poldiff_class_t *cls);
+extern const char *poldiff_class_get_name(poldiff_class_t *cls);
 
 /**
  *  Get the form of difference from a class diff.
- *
- *  @param diff The policy difference structure associated with the
- *  class diff.
  *
  *  @param cls The class from which to get the difference form.
  *
  *  @return the form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_class_get_form(poldiff_t *diff,
-					     poldiff_class_t *cls);
+extern poldiff_form_e poldiff_class_get_form(poldiff_class_t *cls);
 
 /**
  *  Get a vector of permissions added to the class.
  *
- *  @param diff The policy difference structure associated with the
- *  class diff.
  *  @param cls The class diff from which to get the permission vector.
  *
  *  @return a vector of permission names (type char *) that are
- *  assigned to the class in only policy 2 or NULL on error.  If no
- *  permissions were added the size of the returned vector will be 0.
- *  The caller must not destroy this vector.  On error, errno will be
- *  set.
+ *  assigned to the class in the modified policy.  If no permissions
+ *  were added the size of the returned vector will be 0.  The caller
+ *  must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_class_get_added_perms(poldiff_t *diff,
-						    poldiff_class_t *cls);
+extern apol_vector_t *poldiff_class_get_added_perms(poldiff_class_t *cls);
 
 /**
  *  Get a vector of permissions removed from the class.
  *
- *  @param diff The policy difference structure associated with the
- *  class diff.
  *  @param cls The class diff from which to get the permission vector.
  *
  *  @return a vector of permission names (type char *) that are
- *  assigned to the class in only policy 1 or NULL on error.  If no
- *  permissions were removed the size of the returned vector will be
- *  0.  The caller must not destroy this vector.  On error, errno will
- *  be set.
+ *  assigned to the class in the original policy.  If no permissions
+ *  were removed the size of the returned vector will be 0.  The
+ *  caller must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_class_get_removed_perms(poldiff_t *diff,
-						      poldiff_class_t *cls);
+extern apol_vector_t *poldiff_class_get_removed_perms(poldiff_class_t *cls);
 
 #endif /* POLDIFF_CLASS_DIFF_H */

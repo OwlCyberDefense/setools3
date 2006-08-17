@@ -24,9 +24,6 @@
  */
 
 #include "poldiff_internal.h"
-#include "class_internal.h"
-
-#include <poldiff/class_diff.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -55,11 +52,11 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_CLASSES,
 		poldiff_class_get_stats,
 		poldiff_class_to_string,
-		poldiff_class_get_items,
+		class_get_items,
 		NULL,
-		poldiff_class_comp,
-		poldiff_class_new_diff,
-		poldiff_class_deep_diff,
+		class_comp,
+		class_new_diff,
+		class_deep_diff,
 	}
 };
 
@@ -91,6 +88,12 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	}
 
 	//TODO: allocate and initialize fields here
+	if ((diff->class_diffs = class_create()) == NULL) {
+		ERR(diff, "%s", strerror(ENOMEM));
+		poldiff_destroy(&diff);
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	return diff;
 }
@@ -108,8 +111,9 @@ void poldiff_destroy(poldiff_t **diff)
 	if (!diff || !(*diff))
 		return;
 
-	//TODO: free stuff here
 	apol_vector_destroy(&(*diff)->type_renames, type_renames_free);
+	//TODO: free stuff here
+	class_destroy(&(*diff)->class_diffs);
 	free(*diff);
 	*diff = NULL;
 }
@@ -142,29 +146,24 @@ void poldiff_destroy(poldiff_t **diff)
 	}
 	diff->diff_status &= (~item_record->flag_bit);
 
-	diff->diff_step = POLDIFF_STEP_ORIG_POL_SORT;
-	p1_v = item_record->get_items(diff->orig_pol);
+	p1_v = item_record->get_items(diff, diff->orig_pol);
 	if (!p1_v) {
 		error = errno;
 		goto err;
 	}
-	apol_vector_sort(p1_v, item_record->comp, (void*)diff);
 
-	diff->diff_step = POLDIFF_STEP_MOD_POL_SORT;
-	p2_v = item_record->get_items(diff->mod_pol);
+	p2_v = item_record->get_items(diff, diff->mod_pol);
 	if (!p2_v) {
 		error = errno;
 		goto err;
 	}
-	apol_vector_sort(p2_v, item_record->comp, (void*)diff);
 
-	diff->diff_step = POLDIFF_STEP_DIFF;
 	for (x = 0, y = 0; x < apol_vector_get_size(p1_v); x++) {
 		if (y >= apol_vector_get_size(p2_v))
 			break;
 		item_x = apol_vector_get_element(p1_v, x);
 		item_y = apol_vector_get_element(p2_v, y);
-		retv = item_record->comp(item_x, item_y, (void*)diff);
+		retv = item_record->comp(item_x, item_y, diff);
 		if (retv < 0) {
 			if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
 				error = errno;
