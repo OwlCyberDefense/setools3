@@ -238,7 +238,10 @@ extern int apol_str_trim(char **str);
  *
  * @param tgt Reference to a string to modify, or NULL to create a new
  * string.
- * @param tgt_sz Number of bytes allocated to tgt.
+ * @param tgt_sz Pointer to number of bytes currently allocated to
+ * tgt.  This will be updated with the new string size.  If *tgt is
+ * NULL then the existing value is ignored.  (It will still be updated
+ * afterwards).
  * @param str String to append.
  *
  * @return 0 on success, < 0 on out of memory or error.

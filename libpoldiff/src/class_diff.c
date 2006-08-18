@@ -24,11 +24,14 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 #include "poldiff_internal.h"
 
 #include <apol/util.h>
 #include <qpol/policy_query.h>
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 
 struct poldiff_class_summary {
@@ -47,6 +50,11 @@ struct poldiff_class {
 
 void poldiff_class_get_stats(poldiff_t *diff, size_t stats[5])
 {
+	if (diff == NULL || stats == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return;
+	}
 	stats[0] = diff->class_diffs->num_added;
 	stats[1] = diff->class_diffs->num_removed;
 	stats[2] = diff->class_diffs->num_modified;
@@ -56,7 +64,103 @@ void poldiff_class_get_stats(poldiff_t *diff, size_t stats[5])
 
 char *poldiff_class_to_string(poldiff_t *diff, const void *cls)
 {
-        return strdup("FIX ME");
+	poldiff_class_t *c = (poldiff_class_t *) cls;
+	size_t num_added, num_removed, len, i;
+	char *s = NULL, *t = NULL, *perm;
+	if (diff == NULL || cls == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return NULL;
+	}
+	num_added = apol_vector_get_size(c->added_perms);
+	num_removed = apol_vector_get_size(c->removed_perms);
+	switch (c->form) {
+	case POLDIFF_FORM_ADDED: {
+		if (asprintf(&s, "+ %s", c->name) < 0) {
+			s = NULL;
+			break;
+		}
+		return s;
+	}
+	case POLDIFF_FORM_REMOVED: {
+		if (asprintf(&s, "- %s", c->name) < 0) {
+			s = NULL;
+			break;
+		}
+		return s;
+	}
+	case POLDIFF_FORM_MODIFIED: {
+		if (asprintf(&s, "* %s (", c->name) < 0) {
+			s = NULL;
+			break;
+		}
+		len = strlen(s);
+		if (num_added > 0) {
+			if (asprintf(&t, "%d Added Permissions", num_added) < 0) {
+				t = NULL;
+				break;
+			}
+			if (apol_str_append(&s, &len, t) < 0) {
+				break;
+			}
+			free(t);
+			t = NULL;
+		}
+		if (num_removed > 0) {
+			if (asprintf(&t, "%s%d Removed Permissions",
+				     (num_added > 0 ? "," : ""),
+				     num_removed) < 0) {
+				t = NULL;
+				break;
+			}
+			if (apol_str_append(&s, &len, t) < 0) {
+				break;
+			}
+			free(t);
+			t = NULL;
+		}
+		if (apol_str_append(&s, &len, ")\n") < 0) {
+			break;
+		}
+		for (i = 0; i < apol_vector_get_size(c->added_perms); i++) {
+			perm = (char *) apol_vector_get_element(c->added_perms, i);
+			if (asprintf(&t, "\t+ %s\n", perm) < 0) {
+				t = NULL;
+				goto err;
+			}
+			if (apol_str_append(&s, &len, t) < 0) {
+				goto err;
+			}
+			free(t);
+			t = NULL;
+		}
+		for (i = 0; i < apol_vector_get_size(c->removed_perms); i++) {
+			perm = (char *) apol_vector_get_element(c->removed_perms, i);
+			if (asprintf(&t, "\t- %s\n", perm) < 0) {
+				t = NULL;
+				goto err;
+			}
+			if (apol_str_append(&s, &len, t) < 0) {
+				goto err;
+			}
+			free(t);
+			t = NULL;
+		}
+		return s;
+	}
+	default: {
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
+	}
+ err:
+	/* if this is reached then an error occurred */
+	free(s);
+	free(t);
+	ERR(diff, "%s", strerror(ENOMEM));
+	errno = ENOMEM;
+	return NULL;
 }
 
 apol_vector_t *poldiff_get_class_vector(poldiff_t *diff)
