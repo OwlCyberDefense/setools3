@@ -165,9 +165,6 @@ proc ApolTop::create_fc_index_file {} {
 	return 0
 }
 
-########################################################################
-# ::load_perm_map_fileDlg -- 
-#	- Called from Advanced menu
 proc ApolTop::load_perm_map_fileDlg {} {
     if {[Apol_Perms_Map::loadPermMapFromFile]} {
         ApolTop::configure_edit_pmap_menu_item 1
@@ -846,7 +843,7 @@ proc ApolTop::create { } {
 	set mainframe [MainFrame .mainframe -menu $descmenu -textvariable ApolTop::status]
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Edit Perm Map... (Not loaded)" -command "Apol_Perms_Map::editPermMappings"
 	[$mainframe getmenu pmap_menu] insert 0 separator
-	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from File..." -command "ApolTop::load_perm_map_file"
+	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from File..." -command "ApolTop::load_perm_map_fileDlg"
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Default Perm Map" -command "ApolTop::load_default_perm_map_Dlg"
 	
 	#[$mainframe getmenu fc_index_menu] insert 0 command -label "Load Index... (Not loaded)" -command "ApolTop::load_fc_index_file"
