@@ -89,6 +89,29 @@ static void usage(const char *prog_name, int brief)
 	return;
 }
 
+static void print_diff_string(const char *str, unsigned int indent_level)
+{
+	const char *c = str;
+	unsigned int i;
+	static const char *indent = "   ";
+
+	for (i = 0; i < indent_level; i++)
+		printf("%s", indent);
+	for (; *c; c++) {
+		if (*c == '\n') {
+			if (c[1] == '\0')
+				break;
+			printf("%c", *c);
+			for (i = 0; i < indent_level; i++)
+				printf("%s", indent);
+		} else if (*c == '\t') {
+			printf("%s", indent);
+		} else {
+			printf("%c", *c);
+		}
+	}
+}
+
 static void print_class_diffs(poldiff_t *diff)
 {
 	apol_vector_t *v = NULL;
@@ -113,7 +136,8 @@ static void print_class_diffs(poldiff_t *diff)
 			str = poldiff_class_to_string(diff, (const void*)item);
 			if (!str)
 				return;
-			printf("%s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -128,7 +152,8 @@ static void print_class_diffs(poldiff_t *diff)
 			str = poldiff_class_to_string(diff, (const void*)item);
 			if (!str)
 				return;
-			printf("%s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -143,7 +168,76 @@ static void print_class_diffs(poldiff_t *diff)
 			str = poldiff_class_to_string(diff, (const void*)item);
 			if (!str)
 				return;
-			printf("%s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
+static void print_common_diffs(poldiff_t *diff)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	char *str = NULL;
+	poldiff_common_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_COMMONS, stats);
+	printf("Commons (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+	v = poldiff_get_common_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Commons: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_common_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_common_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Commons: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_common_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_common_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified common: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_common_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_common_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -179,7 +273,8 @@ static void print_XXX_diffs(poldiff_t *diff)
 			str = poldiff_XXX_to_string(diff, (const void*)item);
 			if (!str)
 				return;
-			printf("%s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -194,7 +289,8 @@ static void print_XXX_diffs(poldiff_t *diff)
 			str = poldiff_XXX_to_string(diff, (const void*)item);
 			if (!str)
 				return;
-			printf("%s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -209,7 +305,8 @@ static void print_XXX_diffs(poldiff_t *diff)
 			str = poldiff_XXX_to_string(diff, (const void*)item);
 			if (!str)
 				return;
-			printf("%s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -247,7 +344,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 		print_class_diffs(diff);
 	}
 	if (flags & POLDIFF_DIFF_COMMONS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_COMMONS))) {
-		printf("TODO: Commons\n\n");
+		print_common_diffs(diff);
 	}
 	if (flags & POLDIFF_DIFF_TYPES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TYPES))) {
 		printf("TODO: Types\n\n");
