@@ -158,7 +158,7 @@ void poldiff_destroy(poldiff_t **diff)
 		goto err;
 	}
 
-	for (x = 0, y = 0; x < apol_vector_get_size(p1_v); x++) {
+	for (x = 0, y = 0; x < apol_vector_get_size(p1_v); ) {
 		if (y >= apol_vector_get_size(p2_v))
 			break;
 		item_x = apol_vector_get_element(p1_v, x);
@@ -169,6 +169,7 @@ void poldiff_destroy(poldiff_t **diff)
 				error = errno;
 				goto err;
 			}
+			x++;
 		} else if (retv > 0) {
 			if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
 				error = errno;
@@ -180,6 +181,7 @@ void poldiff_destroy(poldiff_t **diff)
 				error = errno;
 				goto err;
 			}
+			x++;
 			y++;
 		}
         }

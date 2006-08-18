@@ -108,7 +108,7 @@ char *poldiff_class_to_string(poldiff_t *diff, const void *cls)
 		}
 		if (num_removed > 0) {
 			if (asprintf(&t, "%s%d Removed Permissions",
-				     (num_added > 0 ? "," : ""),
+				     (num_added > 0 ? ", " : ""),
 				     num_removed) < 0) {
 				t = NULL;
 				break;
@@ -434,7 +434,7 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	}
 	apol_vector_sort(v1, apol_str_strcmp, NULL);
 	apol_vector_sort(v2, apol_str_strcmp, NULL);
-	for (i = j = 0; i < apol_vector_get_size(v1); j++) {
+	for (i = j = 0; i < apol_vector_get_size(v1); ) {
 		if (j >= apol_vector_get_size(v2))
 			break;
 		perm1 = (char *) apol_vector_get_element(v1, i);
@@ -448,15 +448,16 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		}
 		if (compval < 0) {
 			if ((perm1 = strdup(perm1)) == NULL ||
-					apol_vector_append(c->added_perms, perm1) < 0) {
+					apol_vector_append(c->removed_perms, perm1) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
+			i++;
 		}
 		else if (compval > 0) {
 			if ((perm2 = strdup(perm2)) == NULL ||
-					 apol_vector_append(c->removed_perms, perm2) < 0) {
+					 apol_vector_append(c->added_perms, perm2) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -464,6 +465,7 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			j++;
 		}
 		else {
+			i++;
 			j++;
 		}
 	}
