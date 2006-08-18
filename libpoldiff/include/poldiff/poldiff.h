@@ -126,6 +126,22 @@ extern void poldiff_destroy(poldiff_t **diff);
 extern int poldiff_run(poldiff_t *diff, uint32_t flags);
 
 /**
+ *  Get a total of the differences of each form for a given item (or set
+ *  of items).
+ *  @param diff The policy difference structure from which to get the stats.
+ *  @param flags Bit-wise or'd set of POLDIFF_DIFF_* from above indicating
+ *  the items for which to get the total differences. If more that one bit
+ *  is set differences of the same form are totaled for all specified items.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated). The order of the values written to the array is as follows:
+ *  number of items of form POLDIFF_FORM_ADDED, number of POLDIFF_FORM_REMOVED,
+ *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
+ *  number of POLDIFF_FORM_REMOVE_TYPE.
+ *  @return 0 on success an < 0 on error; if the call fails, errno will be set.
+ */
+extern int poldiff_get_stats(poldiff_t *diff, uint32_t flags, size_t stats[5]);
+
+/**
  *  Note a type from policy1 was renamed in policy2.  Subsequent diffs
  *  will thus treat policy1_name to be equivalent to policy2_name.
  *
