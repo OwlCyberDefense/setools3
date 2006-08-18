@@ -1,6 +1,6 @@
 /**
  *  @file class_internal.h
- *  Protected Interface for class differences.
+ *  Protected Interface for class and common differences.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -25,6 +25,8 @@
 
 #ifndef POLDIFF_CLASSDIFF_INTERNAL_H
 #define POLDIFF_CLASSDIFF_INTERNAL_H
+
+/******************** object classes ********************/
 
 typedef struct poldiff_class_summary poldiff_class_summary_t;
 
@@ -101,12 +103,83 @@ int class_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
  */
 int class_deep_diff(poldiff_t *diff, const void *x, const void *y);
 
+/******************** common classes ********************/
+
+typedef struct poldiff_common_summary poldiff_common_summary_t;
+
 /**
- *  Callback function signature for destroying an entire diffs
- *  structure.  This will be invoked during poldiff_destroy().
+ * Allocate and return a new poldiff_common_summary_t object.
  *
- *  @param Pointer to a diffst structur.
+ * @return A new common summary.  The caller must call
+ * common_destroy() afterwards.  On error, return NULL and set errno.
  */
-typedef void (*poldiff_free_diffs_fn_t)(void *elem);
+poldiff_common_summary_t *common_create(void);
+
+/**
+ * Deallocate all space associated with a poldiff_common_summary_t
+ * object, including the pointer itself.  If the pointer is already
+ * NULL then do nothing.
+ *
+ * @param cs Reference to a common summary to destroy.  The pointer
+ * will be set to NULL afterwards.
+ */
+void common_destroy(poldiff_common_summary_t **cs);
+
+/**
+ * Get a vector of all common classes from the given policy, sorted by
+ * name.
+ *
+ * @param diff Policy diff error handler.
+ * @param policy The policy from which to get the items.
+ *
+ * @return a newly allocated vector of all commons.  The caller is
+ * responsible for calling apol_vector_destroy() afterwards, passing
+ * NULL as the second parameter.  On error, return NULL and set errno.
+ */
+apol_vector_t *common_get_items(poldiff_t *diff, apol_policy_t *policy);
+
+/**
+ * Compare two qpol_common_t objects, determining if they have the
+ * same name or not.
+ *
+ * @param x The common from the original policy.
+ * @param y The common from the modified policy.
+ * @param diff The policy difference structure associated with both
+ * policies.
+ *
+ * @return < 0, 0, or > 0 if common x is respectively less than, equal
+ * to, or greater than common y.
+ */
+int common_comp(const void *x, const void *y, poldiff_t *diff);
+
+/**
+ * Create, initialize, and insert a new semantic difference entry for
+ * a common.
+ *
+ * @param diff The policy difference structure to which to add the
+ * entry.
+ * @param form The form of the difference.
+ * @param item Item for which the entry is being created.
+ *
+ * @return 0 on success and < 0 on error; if the call fails, set errno
+ * and leave the policy difference structure unchanged.
+ */
+int common_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
+
+/**
+ * Computing the semantic difference of two commons for which the
+ * compare callback returns 0.  If a difference is found then
+ * allocate, initialize, and insert an new semantic difference entry
+ * for that common.
+ *
+ * @param diff The policy difference structure associated with both
+ * commons and to which to add an entry if needed.
+ * @param x The common from the original policy.
+ * @param y The common from the modified policy.
+ *
+ * @return 0 on success and < 0 on error; if the call fails, set errno
+ * and leave the policy difference structure unchanged.
+ */
+int common_deep_diff(poldiff_t *diff, const void *x, const void *y);
 
 #endif /* POLDIFF_CLASSDIFF_INTERNAL_H */
