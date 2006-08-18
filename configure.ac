@@ -399,12 +399,13 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
-		 libseaudit/Makefile \
+                 libseaudit/Makefile \
                  secmds/Makefile \
                  apol/Makefile \
                  awish/Makefile \
                  sechecker/Makefile \
-		 seaudit/Makefile \
+                 seaudit/Makefile \
+                 sediff/Makefile \
                  packages/Makefile])
 
 AC_OUTPUT

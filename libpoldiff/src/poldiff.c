@@ -237,6 +237,30 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 	return 0;
 }
 
+int poldiff_get_stats(poldiff_t *diff, uint32_t flags, size_t stats[5])
+{
+	size_t i, j, num_items, tmp_stats[5] = {0, 0, 0, 0, 0};
+
+	if (!diff || !flags) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	stats[0] = stats[1] = stats[2] = stats[3] = stats[4] = 0;
+
+	num_items = sizeof(item_records)/sizeof(poldiff_item_record_t);
+	for (i = 0; i < num_items; i++) {
+		if (flags & item_records[i].flag_bit) {
+			item_records[i].get_stats(diff, tmp_stats);
+			for (j = 0; j < 5; j++)
+				stats[j] += tmp_stats[j];
+		}
+	}
+
+	return 0;
+}
+
 static void poldiff_handle_default_callback(void *arg __attribute__((unused)),
 					    poldiff_t *p __attribute__ ((unused)),
 					    int level,

@@ -309,7 +309,7 @@ static apol_vector_t *class_get_perms(poldiff_t *diff, apol_policy_t *p, qpol_cl
 		apol_vector_destroy(&v, free);
 		return NULL;
 	}
-	return NULL;
+	return v;
 }
 
 int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
@@ -343,14 +343,16 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			}
 		}
 		if (compval < 0) {
-			if (apol_vector_append(c->added_perms, perm1) < 0) {
+			if ((perm1 = strdup(perm1)) == NULL ||
+					apol_vector_append(c->added_perms, perm1) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
 		}
 		else if (compval > 0) {
-			if (apol_vector_append(c->removed_perms, perm2) < 0) {
+			if ((perm2 = strdup(perm2)) == NULL ||
+					 apol_vector_append(c->removed_perms, perm2) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -363,13 +365,14 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	}
 	for (; i < apol_vector_get_size(v1); i++) {
 		perm1 = (char *) apol_vector_get_element(v1, i);
-		if (compval != 0 && c == NULL) {
+		if (c == NULL) {
 			if ((c = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
 				error = errno;
 				goto cleanup;
 			}
 		}
-		if (apol_vector_append(c->removed_perms, perm1) < 0) {
+		if ((perm1 = strdup(perm1)) == NULL ||
+				apol_vector_append(c->removed_perms, perm1) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -377,13 +380,14 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	}
 	for (; j < apol_vector_get_size(v2); j++) {
 		perm2 = (char *) apol_vector_get_element(v2, j);
-		if (compval != 0 && c == NULL) {
+		if (c == NULL) {
 			if ((c = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
 				error = errno;
 				goto cleanup;
 			}
 		}
-		if (apol_vector_append(c->added_perms, perm2) < 0) {
+		if ((perm2 = strdup(perm2)) == NULL ||
+				apol_vector_append(c->added_perms, perm2) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
