@@ -241,7 +241,7 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 	num_items = sizeof(item_records)/sizeof(poldiff_item_record_t);
 	for (i = 0; i < num_items; i++) {
 		/* item requested but not yet run */
-		if ((flags & item_records[i].flag_bit) && !(flags & diff->diff_status)) {
+		if ((flags & item_records[i].flag_bit) && !(item_records[i].flag_bit & diff->diff_status)) {
 			if (poldiff_do_item_diff(diff, &(item_records[i]))) {
 				error = errno;
 				return -1;
