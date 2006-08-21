@@ -8,6 +8,8 @@
 /* This file contains the tcl/tk initialization code for apol
  */
 
+#include <config.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -97,8 +99,7 @@ void usage(const char *program_name, bool_t brief)
 void print_version_info(void)
 {
 	printf("Policy Analysis tool for Security Enhanced Linux.\n\n");
-	/* printf("   GUI version \n"); 
-	 * TODO: can we export a TCL variable to C for GUI version?? */
+	printf("   GUI version %s\n", VERSION);
 	printf("   libapol version %s\n\n", libapol_get_version());
 	return;
 }

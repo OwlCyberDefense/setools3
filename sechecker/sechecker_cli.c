@@ -6,6 +6,8 @@
  *
  */
 
+#include <config.h>
+
 #include "sechecker.h"
 #include "register_list.h"
 #include <apol/policy.h>
@@ -16,8 +18,8 @@
 #include <errno.h>
 
 /* SECHECKER_VERSION should be defined in the make environment */
-#ifndef SECHECKER_VERSION
-#define SECHECKER_VERSION "UNKNOWN"
+#ifndef VERSION
+#define VERSION "UNKNOWN"
 #endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2005-2006 Tresys Technology, LLC"
@@ -46,7 +48,7 @@ static struct option const longopts[] =
 /* display usage help */
 void usage(const char *arg0, bool_t brief) 
 {
-	printf("%s (sechecker v%s)\n\n", COPYRIGHT_INFO, SECHECKER_VERSION);
+	printf("%s (sechecker v%s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: sechecker [OPTS] -m module             run module\n");
 	printf("   or: sechecker [OPTS] -p profile            run profile\n");
 	printf("   or: sechecker [OPTS] -p profile -m module  run module with profile options\n");
@@ -185,7 +187,7 @@ int main(int argc, char **argv)
 			usage(argv[0], 0);
 			exit(0);
 		case 'V':
-			printf("\nSEChecker v%s\n%s\n\n", SECHECKER_VERSION, COPYRIGHT_INFO);
+			printf("\nSEChecker v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
 			usage(argv[0], 1);

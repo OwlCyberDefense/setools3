@@ -8,6 +8,8 @@
  * 	   don.patterson@tresys.com 10-2004
  */
 
+#include <config.h>
+
 #include "seaudit.h"
 #include "parse.h"
 #include "auditlog.h"
@@ -24,8 +26,8 @@
 #include <getopt.h>
 
 /* The following should be defined in the make environment */
-#ifndef SEAUDIT_GUI_VERSION_STRING
-	#define SEAUDIT_GUI_VERSION_STRING "UNKNOWN"
+#ifndef VERSION
+	#define VERSION "UNKNOWN"
 #endif
 
 seaudit_t *seaudit_app = NULL;
@@ -1194,7 +1196,7 @@ void seaudit_on_about_seaudit_activate(GtkWidget *widget, GdkEvent *event, gpoin
 	g_string_assign(str, "Audit Log Analysis Tool for Security \nEnhanced Linux");
         g_string_append(str, "\n\nCopyright (c) 2003-2006\nTresys Technology, LLC\nwww.tresys.com/selinux");
 	g_string_append(str, "\n\nGUI version ");
-	g_string_append(str, SEAUDIT_GUI_VERSION_STRING);
+	g_string_append(str, VERSION);
 	g_string_append(str, "\nlibseaudit version ");
 	g_string_append(str, libseaudit_get_version());
 	g_string_append(str, "\nlibapol version ");
@@ -1439,7 +1441,7 @@ static int seaudit_read_policy_conf(const char *fname)
 static void seaudit_print_version_info(void)
 {
 	printf("Audit Log analysis tool for Security Enhanced Linux\n\n");
-	printf("   GUI version %s\n", SEAUDIT_GUI_VERSION_STRING);
+	printf("   GUI version %s\n", VERSION);
 	printf("   libapol version %s\n", libapol_get_version());
 	printf("   libseaudit version %s\n\n", libseaudit_get_version());
 }

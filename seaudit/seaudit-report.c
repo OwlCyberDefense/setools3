@@ -14,7 +14,9 @@
  * or by configuring the default stylesheet. This tool also provides the 
  * option for including malformed strings within the report.
  */
- 
+
+#include <config.h>
+
 #include "report.h"
 
 #include <stdio.h>
@@ -24,8 +26,8 @@
 #include <libxml/xmlreader.h>
 
 /* SEREPORT_VERSION_NUM should be defined in the make environment */
-#ifndef SEREPORT_VERSION_NUM
-#define SEREPORT_VERSION_NUM "UNKNOWN"
+#ifndef VERSION
+#define VERSION "UNKNOWN"
 #endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2004-2006 Tresys Technology, LLC"
@@ -44,7 +46,7 @@ static struct option const longopts[] = {
 
 void seaudit_report_info_usage(const char *program_name, bool_t brief)
 {
-	printf("%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO, SEREPORT_VERSION_NUM);
+	printf("%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("\nDescription: Generate a customized SELinux log report.\n");
 	printf("Usage: %s [OPTIONS] LOGFILES\n", program_name);
 	if (brief) {
@@ -112,7 +114,7 @@ static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudi
 		case 'v':	
 			/* display version */
 			printf("\n%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO,
-       					SEREPORT_VERSION_NUM);			
+       					VERSION);
 			seaudit_report_destroy(report_info);
 			exit(0);
 		case 'h':	
