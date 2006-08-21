@@ -68,6 +68,17 @@ static const poldiff_item_record_t item_records[] = {
 		common_comp,
 		common_new_diff,
 		common_deep_diff,
+	},
+	{
+		"user",
+		POLDIFF_DIFF_USERS,
+		poldiff_user_get_stats,
+		poldiff_user_to_string,
+		user_get_items,
+		NULL,
+		user_comp,
+		user_new_diff,
+		user_deep_diff,
 	}
 };
 
@@ -100,7 +111,8 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 
 	//TODO: allocate and initialize fields here
 	if ((diff->class_diffs = class_create()) == NULL ||
-	    (diff->common_diffs = common_create()) == NULL) {
+	    (diff->common_diffs = common_create()) == NULL ||
+	    (diff->user_diffs = user_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
 		errno = ENOMEM;
@@ -128,6 +140,7 @@ void poldiff_destroy(poldiff_t **diff)
 	//TODO: free stuff here
 	class_destroy(&(*diff)->class_diffs);
 	common_destroy(&(*diff)->common_diffs);
+	user_destroy(&(*diff)->user_diffs);
 	free(*diff);
 	*diff = NULL;
 }
