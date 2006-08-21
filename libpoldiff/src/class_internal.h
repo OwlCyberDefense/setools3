@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLDIFF_CLASSDIFF_INTERNAL_H
-#define POLDIFF_CLASSDIFF_INTERNAL_H
+#ifndef POLDIFF_CLASS_INTERNAL_H
+#define POLDIFF_CLASS_INTERNAL_H
 
 /******************** object classes ********************/
 
@@ -49,7 +49,8 @@ poldiff_class_summary_t *class_create(void);
 void class_destroy(poldiff_class_summary_t **cs);
 
 /**
- * Get a vector of all object classes from the given policy, sorted by name.
+ * Get a vector of all object classes (type qpol_class_t) from the
+ * given policy, sorted by name.
  *
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
@@ -88,9 +89,9 @@ int class_comp(const void *x, const void *y, poldiff_t *diff);
 int class_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
 
 /**
- * Computing the semantic difference of two classes for which the
+ * Compute the semantic difference of two classes for which the
  * compare callback returns 0.  If a difference is found then
- * allocate, initialize, and insert an new semantic difference entry
+ * allocate, initialize, and insert a new semantic difference entry
  * for that class.
  *
  * @param diff The policy difference structure associated with both
@@ -126,8 +127,8 @@ poldiff_common_summary_t *common_create(void);
 void common_destroy(poldiff_common_summary_t **cs);
 
 /**
- * Get a vector of all common classes from the given policy, sorted by
- * name.
+ * Get a vector of all common classes (type qpol_common_t) from the
+ * given policy, sorted by name.
  *
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
@@ -167,9 +168,9 @@ int common_comp(const void *x, const void *y, poldiff_t *diff);
 int common_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
 
 /**
- * Computing the semantic difference of two commons for which the
+ * Compute the semantic difference of two commons for which the
  * compare callback returns 0.  If a difference is found then
- * allocate, initialize, and insert an new semantic difference entry
+ * allocate, initialize, and insert a new semantic difference entry
  * for that common.
  *
  * @param diff The policy difference structure associated with both
@@ -182,4 +183,4 @@ int common_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
  */
 int common_deep_diff(poldiff_t *diff, const void *x, const void *y);
 
-#endif /* POLDIFF_CLASSDIFF_INTERNAL_H */
+#endif /* POLDIFF_CLASS_INTERNAL_H */

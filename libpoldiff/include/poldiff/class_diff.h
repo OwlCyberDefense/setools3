@@ -66,7 +66,7 @@ extern apol_vector_t *poldiff_get_class_vector(poldiff_t *diff);
  *  an object class.
  *
  *  @param diff The policy difference structure associated with the class.
- *  @param item The class from which to generate the string.
+ *  @param cls The class from which to generate the string.
  *
  *  @return A string representation of class difference; the caller is
  *  responsible for free()ing this string.  On error, return NULL and
@@ -157,7 +157,7 @@ extern apol_vector_t *poldiff_get_common_vector(poldiff_t *diff);
  *
  *  @param diff The policy difference structure associated with the
  *  common.
- *  @param item The common from which to generate the string.
+ *  @param common The common from which to generate the string.
  *
  *  @return A string representation of common difference; the caller
  *  is responsible for free()ing this string.  On error, return NULL
