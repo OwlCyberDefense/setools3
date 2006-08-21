@@ -411,6 +411,8 @@ static apol_vector_t *class_get_perms(poldiff_t *diff, apol_policy_t *p, qpol_cl
 
 	retval = 0;
  cleanup:
+	qpol_iterator_destroy(&perm_iter);
+	qpol_iterator_destroy(&common_iter);
 	if (retval < 0) {
 		apol_vector_destroy(&v, free);
 		return NULL;
@@ -423,7 +425,7 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	qpol_class_t *c1 = (qpol_class_t *) x;
 	qpol_class_t *c2 = (qpol_class_t *) y;
 	apol_vector_t *v1 = NULL, *v2 = NULL;
-	char *perm1, *perm2, *name;
+	char *perm1 = NULL, *perm2 = NULL, *name;
 	poldiff_class_t *c = NULL;
 	size_t i, j;
 	int retval = -1, error = 0, compval;
@@ -450,8 +452,9 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		}
 		if (compval < 0) {
 			if ((perm1 = strdup(perm1)) == NULL ||
-					apol_vector_append(c->removed_perms, perm1) < 0) {
+			    apol_vector_append(c->removed_perms, perm1) < 0) {
 				error = errno;
+				free(perm1);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
@@ -459,8 +462,9 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		}
 		else if (compval > 0) {
 			if ((perm2 = strdup(perm2)) == NULL ||
-					 apol_vector_append(c->added_perms, perm2) < 0) {
+			    apol_vector_append(c->added_perms, perm2) < 0) {
 				error = errno;
+				free(perm2);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
@@ -480,8 +484,9 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			}
 		}
 		if ((perm1 = strdup(perm1)) == NULL ||
-				apol_vector_append(c->removed_perms, perm1) < 0) {
+		    apol_vector_append(c->removed_perms, perm1) < 0) {
 			error = errno;
+			free(perm1);
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
@@ -495,8 +500,9 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			}
 		}
 		if ((perm2 = strdup(perm2)) == NULL ||
-				apol_vector_append(c->added_perms, perm2) < 0) {
+		    apol_vector_append(c->added_perms, perm2) < 0) {
 			error = errno;
+			free(perm2);
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
@@ -513,6 +519,9 @@ int class_deep_diff(poldiff_t *diff, const void *x, const void *y)
  cleanup:
 	apol_vector_destroy(&v1, free);
 	apol_vector_destroy(&v2, free);
+	if (retval != 0) {
+		class_free(c);
+	}
 	errno = error;
 	return retval;
 }
@@ -877,6 +886,7 @@ static apol_vector_t *common_get_perms(poldiff_t *diff, apol_policy_t *p, qpol_c
 
 	retval = 0;
  cleanup:
+	qpol_iterator_destroy(&perm_iter);
 	if (retval < 0) {
 		apol_vector_destroy(&v, free);
 		return NULL;
@@ -889,7 +899,7 @@ int common_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	qpol_common_t *c1 = (qpol_common_t *) x;
 	qpol_common_t *c2 = (qpol_common_t *) y;
 	apol_vector_t *v1 = NULL, *v2 = NULL;
-	char *perm1, *perm2, *name;
+	char *perm1 = NULL, *perm2 = NULL, *name;
 	poldiff_common_t *c = NULL;
 	size_t i, j;
 	int retval = -1, error = 0, compval;
@@ -916,8 +926,9 @@ int common_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		}
 		if (compval < 0) {
 			if ((perm1 = strdup(perm1)) == NULL ||
-					apol_vector_append(c->removed_perms, perm1) < 0) {
+			    apol_vector_append(c->removed_perms, perm1) < 0) {
 				error = errno;
+				free(perm1);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
@@ -925,8 +936,9 @@ int common_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		}
 		else if (compval > 0) {
 			if ((perm2 = strdup(perm2)) == NULL ||
-					 apol_vector_append(c->added_perms, perm2) < 0) {
+			    apol_vector_append(c->added_perms, perm2) < 0) {
 				error = errno;
+				free(perm2);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
@@ -946,8 +958,9 @@ int common_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			}
 		}
 		if ((perm1 = strdup(perm1)) == NULL ||
-				apol_vector_append(c->removed_perms, perm1) < 0) {
+		    apol_vector_append(c->removed_perms, perm1) < 0) {
 			error = errno;
+			free(perm1);
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
@@ -961,8 +974,9 @@ int common_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			}
 		}
 		if ((perm2 = strdup(perm2)) == NULL ||
-				apol_vector_append(c->added_perms, perm2) < 0) {
+		    apol_vector_append(c->added_perms, perm2) < 0) {
 			error = errno;
+			free(perm2);
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
@@ -979,6 +993,9 @@ int common_deep_diff(poldiff_t *diff, const void *x, const void *y)
  cleanup:
 	apol_vector_destroy(&v1, free);
 	apol_vector_destroy(&v2, free);
+	if (retval != 0) {
+		common_free(c);
+	}
 	errno = error;
 	return retval;
 }
