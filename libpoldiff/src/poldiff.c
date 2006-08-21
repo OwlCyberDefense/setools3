@@ -122,7 +122,8 @@ void poldiff_destroy(poldiff_t **diff)
 {
 	if (!diff || !(*diff))
 		return;
-
+	apol_policy_destroy(&(*diff)->orig_pol);
+	apol_policy_destroy(&(*diff)->mod_pol);
 	apol_vector_destroy(&(*diff)->type_renames, type_renames_free);
 	//TODO: free stuff here
 	class_destroy(&(*diff)->class_diffs);

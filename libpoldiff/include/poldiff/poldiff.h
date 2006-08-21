@@ -90,7 +90,9 @@ typedef enum poldiff_form {
 #define POLDIFF_DIFF_ALL (POLDIFF_DIFF_SYMBOLS|POLDIFF_DIFF_RULES|POLDIFF_DIFF_CONDS|POLDIFF_DIFF_MLS|POLDIFF_DIFF_OCONS)
 
 /**
- *  Allocate and initialize a new policy difference structure.
+ *  Allocate and initialize a new policy difference structure.  This
+ *  function takes ownership of the supplied policies and will handle
+ *  their destruction upon poldiff_destroy().
  *  @param orig_policy The original policy.
  *  @param mod_policy The new (modified) policy.
  *  @param fn Function to be called by the error handler.
