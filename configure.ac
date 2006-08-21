@@ -328,7 +328,6 @@ AC_SUBST(XML_CFLAGS)
 AC_SUBST(XML_LIBS)
 
 dnl  todo:  dynamic, log file, sharedir
-dnl MANDIR			= $(PREFIX)/share/man
 dnl DEFAULT_LOG_FILE	= /var/log/messages
 
 dnl set up variables here
@@ -406,6 +405,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  sechecker/Makefile \
                  seaudit/Makefile \
                  sediff/Makefile \
+                 man/Makefile \
                  packages/Makefile])
 
 AC_OUTPUT
