@@ -23,6 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 #include <poldiff/poldiff.h>
 #include <apol/policy.h>
 #include <apol/vector.h>
@@ -33,8 +35,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef SEDIFF_VERSION
-#define SEDIFF_VERSION "UNKNOWN"
+#ifndef VERSION
+#define VERSION "UNKNOWN"
 #endif
 #define COPYRIGHT_INFO "Copyright (C) 2004-2006 Tresys Technology, LLC"
 
@@ -61,7 +63,7 @@ static struct option const longopts[] =
 
 static void usage(const char *prog_name, int brief)
 {
-	printf("\nSEDiff v%s\n%s\n\n", SEDIFF_VERSION, COPYRIGHT_INFO);
+	printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
 	printf("Usage: %s [OPTIONS] POLICY1 POLICY2\n", prog_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", prog_name);
@@ -543,7 +545,7 @@ int main (int argc, char **argv)
 				usage(argv[0], 0);
 				exit(0);
 			case 'v':
-				printf("\nSEDiff v%s\n%s\n\n", SEDIFF_VERSION, COPYRIGHT_INFO);
+				printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
 				exit(0);
 			default:
 				usage(argv[0], 1);

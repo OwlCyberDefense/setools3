@@ -8,8 +8,7 @@ dist_profiles_DATA = \
 	profiles/sechecker.dtd
 
 AM_CFLAGS = @QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ @XML_CFLAGS@ \
-	-DPROFILE_INSTALL_DIR='"${profile_install_dir}"' \
-	-DBASE_PATH='"${prefix}/share/setools-@VERSION@"'
+	-DPROFILE_INSTALL_DIR='"${profile_install_dir}"'
 
 LDADD = @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @XML_LIBS@
 sechecker_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libqpol/src/libqpol.so
