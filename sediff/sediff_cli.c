@@ -79,7 +79,7 @@ static void usage(const char *prog_name, int brief)
 "  -b, --booleans    boolean definitions and default values\n"
 "  -T, --terules     type enforcement rules\n"
 "  -R, --roletrans   role transition rules\n"
-"  -A, --roleallows  role allow rules\n"  
+"  -A, --roleallows  role allow rules\n"
 "  -C, --conds       conditionals and their rules\n\n"
 "  -q, --quiet       only print different definitions\n"
 "  -s, --stats       print useful policy statics\n"
@@ -99,7 +99,7 @@ static void print_diff_string(const char *str, unsigned int indent_level)
 		printf("%s", indent);
 	for (; *c; c++) {
 		if (*c == '\n') {
-			if (c[1] == '\0')
+			if (*(c + 1) == '\0')
 				break;
 			printf("%c", *c);
 			for (i = 0; i < indent_level; i++)
@@ -227,13 +227,81 @@ static void print_common_diffs(poldiff_t *diff)
 		}
 	}
 
-	printf("   Modified common: %zd\n", stats[2]);
+	printf("   Modified Commons: %zd\n", stats[2]);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		item = apol_vector_get_element(v, i);
 		if (!item)
 			return;
 		if (poldiff_common_get_form(item) == POLDIFF_FORM_MODIFIED) {
 			str = poldiff_common_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
+static void print_user_diffs(poldiff_t *diff)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	char *str = NULL;
+	poldiff_user_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_USERS, stats);
+	printf("Users (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+	v = poldiff_get_user_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Users: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_user_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_user_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Users: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_user_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_user_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Users: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_user_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_user_to_string(diff, (const void*)item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -356,7 +424,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 		printf("TODO: Roles\n\n");
 	}
 	if (flags & POLDIFF_DIFF_USERS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_USERS))) {
-		printf("TODO: Users\n\n");
+		print_user_diffs(diff);
 	}
 	if (flags & POLDIFF_DIFF_BOOLS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_BOOLS))) {
 		printf("TODO: Bools\n\n");

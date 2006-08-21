@@ -29,6 +29,7 @@
 #include <poldiff/poldiff.h>
 
 #include "class_internal.h"
+#include "user_internal.h"
 
 /* forward declarations */
 struct poldiff_class_summary;

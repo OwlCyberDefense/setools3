@@ -8,6 +8,7 @@ AM_CFLAGS = -fpic -I$(srcdir)/../include @APOL_CFLAGS@ @QPOL_CFLAGS@
 libpoldiff_a_SOURCES = \
 	poldiff.c \
 	class_diff.c class_internal.h \
+	user_diff.c user_internal.h \
 	poldiff_internal.h
 libpoldiff_a_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so
 
