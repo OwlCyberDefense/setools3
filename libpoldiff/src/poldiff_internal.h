@@ -28,6 +28,7 @@
 
 #include <poldiff/poldiff.h>
 
+#include "bool_internal.h"
 #include "class_internal.h"
 #include "user_internal.h"
 
