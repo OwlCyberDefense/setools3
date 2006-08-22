@@ -59,6 +59,7 @@ typedef enum poldiff_form {
 	POLDIFF_FORM_REMOVE_TYPE
 } poldiff_form_e;
 
+#include <poldiff/bool_diff.h>
 #include <poldiff/class_diff.h>
 #include <poldiff/user_diff.h>
 

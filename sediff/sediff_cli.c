@@ -182,6 +182,74 @@ static void print_class_diffs(poldiff_t *diff)
 	return;
 }
 
+static void print_bool_diffs(poldiff_t *diff)
+{
+        apol_vector_t *v = NULL;
+        size_t i, stats[5] = {0, 0, 0, 0, 0};
+        char *str = NULL;
+        poldiff_bool_t *item = NULL;
+
+        if (!diff)
+                return;
+
+        poldiff_get_stats(diff, POLDIFF_DIFF_BOOLS, stats);
+        printf("Booleans (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+        v = poldiff_get_bool_vector(diff);
+        if (!v)
+                return;
+        printf("   Added Booleans: %zd\n", stats[0]);
+        for (i = 0; i < apol_vector_get_size(v); i++) {
+                item = apol_vector_get_element(v, i);
+                if (!item)
+                        return;
+                if (poldiff_bool_get_form(item) == POLDIFF_FORM_ADDED) {
+                        str = poldiff_bool_to_string(diff, (const void*)item);
+                        if (!str)
+                                return;
+                        print_diff_string(str, 1);
+                        printf("\n");
+
+                        free(str);
+                        str = NULL;
+                }
+        }
+
+        printf("   Removed Booleans: %zd\n", stats[1]);
+        for (i = 0; i < apol_vector_get_size(v); i++) {
+                item = apol_vector_get_element(v, i);
+                if (!item)
+                        return;
+                if (poldiff_bool_get_form(item) == POLDIFF_FORM_REMOVED) {
+                        str = poldiff_bool_to_string(diff, (const void*)item);
+                        if (!str)
+                                return;
+                        print_diff_string(str, 1);
+                        printf("\n");
+                        free(str);
+                        str = NULL;
+                }
+        }
+
+        printf("   Modified Booleans: %zd\n", stats[2]);
+        for (i = 0; i < apol_vector_get_size(v); i++) {
+                item = apol_vector_get_element(v, i);
+                if (!item)
+                        return;
+                if (poldiff_bool_get_form(item) == POLDIFF_FORM_MODIFIED) {
+                        str = poldiff_bool_to_string(diff, (const void*)item);
+                        if (!str)
+                                return;
+                        print_diff_string(str, 1);
+                        printf("\n");
+                        free(str);
+                        str = NULL;
+                }
+        }
+
+        printf("\n");
+        return;
+}
+
 static void print_common_diffs(poldiff_t *diff)
 {
 	apol_vector_t *v = NULL;
@@ -429,7 +497,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 		print_user_diffs(diff);
 	}
 	if (flags & POLDIFF_DIFF_BOOLS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_BOOLS))) {
-		printf("TODO: Bools\n\n");
+		print_bool_diffs(diff);
 	}
 	if (flags & POLDIFF_DIFF_AVRULES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVRULES))) {
 		printf("TODO: AVRules\n\n");
