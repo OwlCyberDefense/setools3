@@ -4,6 +4,9 @@
                 poldiff_destroy;
                 poldiff_run;
                 poldiff_type_rename_append;
+                poldiff_get_*;
 		poldiff_class_*;
+                poldiff_common_*;
+                poldiff_user_*;
 	local: *;
 };
