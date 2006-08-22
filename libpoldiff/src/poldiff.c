@@ -121,15 +121,10 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	}
 
 	//TODO: allocate and initialize fields here
-	if ((diff->class_diffs = class_create()) == NULL ||
+	if ((diff->bool_diffs = bool_create()) == NULL ||
+	    (diff->class_diffs = class_create()) == NULL ||
 	    (diff->common_diffs = common_create()) == NULL ||
 	    (diff->user_diffs = user_create()) == NULL) {
-		ERR(diff, "%s", strerror(ENOMEM));
-		poldiff_destroy(&diff);
-		errno = ENOMEM;
-		return NULL;
-	}
-	if ((diff->bool_diffs = bool_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
 		errno = ENOMEM;
@@ -155,8 +150,8 @@ void poldiff_destroy(poldiff_t **diff)
 	apol_policy_destroy(&(*diff)->mod_pol);
 	apol_vector_destroy(&(*diff)->type_renames, type_renames_free);
 	//TODO: free stuff here
-	class_destroy(&(*diff)->class_diffs);
 	bool_destroy(&(*diff)->bool_diffs);
+	class_destroy(&(*diff)->class_diffs);
 	common_destroy(&(*diff)->common_diffs);
 	user_destroy(&(*diff)->user_diffs);
 	free(*diff);
