@@ -1,5 +1,5 @@
 if COPY_BWIDGET
-	MAYBE_BWIDGET = packages
+  MAYBE_BWIDGET = packages
 endif
 
 SUBDIRS = libqpol libapol libapol-tcl libpoldiff libsefs libseaudit apol secmds sechecker seaudit awish sediff man $(MAYBE_BWIDGET)

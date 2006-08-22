@@ -279,7 +279,8 @@ failure:
 	apol_vector_destroy(contexts, sefs_fc_entry_free);
 	free(line);
 	free(context);
-	fclose(fc_file);
+	if (fc_file)
+		fclose(fc_file);
 	errno = error;
 	return -1;
 }
