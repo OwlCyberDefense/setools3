@@ -1,11 +1,13 @@
+setoolsdir = @setoolsdir@
 bin_PROGRAMS = seaudit seaudit_report
 
-AM_CFLAGS = -I$(top_srcdir)/libseaudit @QPOL_CFLAGS@ @APOL_CFLAGS@ @GTK_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ -DAPOL_INSTALL_DIR='"${apol_install_dir}"'
-# need the -rdynamic flag below glade uses dlopen() upon seaudit callbacks
+AM_CFLAGS = -I$(top_srcdir)/libseaudit @QPOL_CFLAGS@ @APOL_CFLAGS@ @GTK_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ -DAPOL_INSTALL_DIR='"${setoolsdir}"'
+
+# need the -rdynamic flag below - glade uses dlopen() upon seaudit callbacks
 AM_LDFLAGS = @GTK_LIBS@ @GLADE_LIBS@ @XML_LIBS@ -rdynamic
 LDADD = $(top_builddir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
-dist_pkgdata_DATA = \
+dist_setools_DATA = \
 	customize_filter_window.glade \
 	filter_window.glade \
 	multifilter_window.glade \
@@ -49,7 +51,3 @@ $(top_builddir)/libqpol/src/libqpol.so:
 
 $(top_builddir)/libsefs/src/libsefs.so:
 	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)
-
-# FIX ME:
-# install glade files, saudit_help.txt, dot_seaudit, conf file, report
-# stylesheet, man pages, logwatch install, DEFAULT_LOG, INSTALL_LIBDIR

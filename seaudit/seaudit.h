@@ -35,10 +35,6 @@
 	#define DEFAULT_LOG "/var/log/messages"
 #endif
 
-#ifndef INSTALL_LIBDIR
-        #define INSTALL_LIBDIR "/usr/share/setools"
-#endif
-
 typedef struct seaudit {
 	apol_policy_t *cur_policy;
 	audit_log_t *cur_log;

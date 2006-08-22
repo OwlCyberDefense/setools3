@@ -27,6 +27,8 @@ libsefs_soname=libsefs.so.3
 
 libseaudit_version=3.0.0
 
+setoolsdir='${prefix}/share/setools-3.0'
+
 AC_CHECK_SIZEOF(char *)
 AC_C_BIGENDIAN
 AC_CHECK_FUNCS(rand_r)
@@ -327,9 +329,6 @@ AC_MSG_RESULT([yes])
 AC_SUBST(XML_CFLAGS)
 AC_SUBST(XML_LIBS)
 
-dnl  todo:  dynamic, log file, sharedir
-dnl DEFAULT_LOG_FILE	= /var/log/messages
-
 dnl set up variables here
 if test ${use_selinux} = "yes"; then
    AC_DEFINE(LIBSELINUX, 1, [enable libselinux-specific code])
@@ -343,9 +342,7 @@ fi
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 
-apol_install_dir=${datadir}/apol
-apol_help_dir=${datadir}/apol
-profile_install_dir=${datadir}/sechecker/profiles
+profile_install_dir='${setoolsdir}/sechecker-profiles'
 
 AC_SUBST(VERSION)
 AC_SUBST(sepol_srcdir)
@@ -358,8 +355,7 @@ AC_SUBST(libpoldiff_version)
 AC_SUBST(libpoldiff_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
-AC_SUBST(apol_install_dir)
-AC_SUBST(apol_help_dir)
+AC_SUBST(setoolsdir)
 AC_SUBST(selinux_policy_dir)
 AC_SUBST(selinux_default_policy)
 AC_SUBST(profile_install_dir)

@@ -1,11 +1,12 @@
 lib_LIBRARIES = libapol.a
+setoolsdir = @setoolsdir@
 
 apolso_DATA = @libapol_soname@
 apolsodir = $(libdir)
 
 AM_CFLAGS = -fpic @QPOL_CFLAGS@ -I$(srcdir)/../include \
-	-DAPOL_INSTALL_DIR='"${apol_install_dir}"' \
-	-DAPOL_HELP_DIR='"${apol_help_dir}"' \
+	-DAPOL_INSTALL_DIR='"${setoolsdir}"' \
+	-DAPOL_HELP_DIR='"${setoolsdir}"' \
 	-DLIBAPOL_POLICY_INSTALL_DIR='"@selinux_policy_dir@/policy"' \
 	-DLIBAPOL_DEFAULT_POLICY='"@selinux_default_policy@"'
 
