@@ -1,7 +1,6 @@
 /**
  *  @file bool_diff.c
- *  Implementation for computing a semantic differences in booles and
- *  commons.
+ *  Implementation for computing a semantic differences in bools.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -179,7 +178,7 @@ void bool_destroy(poldiff_bool_summary_t **bs)
 }
 
 /**
- * Comparison function for two booles from the same policy.
+ * Comparison function for two bools from the same policy.
  */
 static int bool_name_comp(const void *x, const void *y, void *arg) {
 	qpol_bool_t *c1 = (qpol_bool_t *) x;

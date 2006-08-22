@@ -36,7 +36,7 @@ typedef struct poldiff_bool poldiff_bool_t;
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for object bools.
+ *  form for bools.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -64,7 +64,7 @@ extern apol_vector_t *poldiff_get_bool_vector(poldiff_t *diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
- *  an object bool.
+ *  a bool.
  *
  *  @param diff The policy difference structure associated with the bool.
  *  @param item The bool from which to generate the string.
@@ -112,7 +112,7 @@ extern size_t poldiff_get_num_removed_bools(poldiff_t *diff);
 extern size_t poldiff_get_num_modified_bools(poldiff_t *diff);
 
 /**
- *  Get the name of the bool from boolean diff.
+ *  Get the name of the bool from a bool diff.
  *
  *  @param diff The policy difference structure associated with the
  *  bool diff.

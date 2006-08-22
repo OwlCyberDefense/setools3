@@ -24,8 +24,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLDIFF_BOOLDIFF_INTERNAL_H
-#define POLDIFF_BOOLDIFF_INTERNAL_H
+#ifndef POLDIFF_BOOL_INTERNAL_H
+#define POLDIFF_BOOL_INTERNAL_H
 
 typedef struct poldiff_bool_summary poldiff_bool_summary_t;
 
@@ -48,7 +48,7 @@ poldiff_bool_summary_t *bool_create(void);
 void bool_destroy(poldiff_bool_summary_t **cs);
 
 /**
- * Get a vector of all object bools from the given policy, sorted by name.
+ * Get a vector of all bools from the given policy, sorted by name.
  *
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
@@ -87,7 +87,7 @@ int bool_comp(const void *x, const void *y, poldiff_t *diff);
 int bool_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
 
 /**
- * Computing the semantic difference of two bools for which the
+ * Compute the semantic difference of two bools for which the
  * compare callback returns 0.  If a difference is found then
  * allocate, initialize, and insert an new semantic difference entry
  * for that bool.
@@ -102,12 +102,4 @@ int bool_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
  */
 int bool_deep_diff(poldiff_t *diff, const void *x, const void *y);
 
-/**
- *  Callback function signature for destroying an entire diffs
- *  structure.  This will be invoked during poldiff_destroy().
- *
- *  @param Pointer to a diffst structur.
- */
-typedef void (*poldiff_free_diffs_fn_t)(void *elem);
-
-#endif /* POLDIFF_CLASSDIFF_INTERNAL_H */
+#endif /* POLDIFF_BOOL_INTERNAL_H */
