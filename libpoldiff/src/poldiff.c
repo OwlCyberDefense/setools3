@@ -59,6 +59,17 @@ static const poldiff_item_record_t item_records[] = {
 		class_deep_diff,
 	},
 	{
+		"bool",
+		POLDIFF_DIFF_BOOLS, 
+		poldiff_bool_get_stats,
+		poldiff_bool_to_string,
+		bool_get_items,
+		NULL,
+		bool_comp,
+		bool_new_diff,
+		bool_deep_diff,
+	},
+	{
 		"common",
 		POLDIFF_DIFF_COMMONS,
 		poldiff_common_get_stats,
@@ -118,6 +129,12 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 		errno = ENOMEM;
 		return NULL;
 	}
+	if ((diff->bool_diffs = bool_create()) == NULL) {
+		ERR(diff, "%s", strerror(ENOMEM));
+		poldiff_destroy(&diff);
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	return diff;
 }
@@ -139,6 +156,7 @@ void poldiff_destroy(poldiff_t **diff)
 	apol_vector_destroy(&(*diff)->type_renames, type_renames_free);
 	//TODO: free stuff here
 	class_destroy(&(*diff)->class_diffs);
+	bool_destroy(&(*diff)->bool_diffs);
 	common_destroy(&(*diff)->common_diffs);
 	user_destroy(&(*diff)->user_diffs);
 	free(*diff);
