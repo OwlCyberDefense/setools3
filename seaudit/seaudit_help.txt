@@ -1,10 +1,10 @@
 Audit Log Analysis Tool for Security Enhanced Linux
-seaudit, version 1.6
+seaudit, version 3.0
 September 1, 2006
 selinux@tresys.com
 
-Overview:  
---------- 
+Overview:
+---------
 This file contains basic help information for using seaudit, an audit
 log analysis tool for Security Enhanced Linux (SE Linux) audit
 messages.  Please report any bugs to selinux@tresys.com.
@@ -342,7 +342,7 @@ You may configure an seaudit report configuration file to use for
 creating reports in seaudit.  This file is used to configure
 information that is to be presented in the report.  The seaudit report
 feature is dependent upon this file in order to successfully generate
-reports. From this file, one can configure various sections for the
+reports.  From this file, one can configure various sections for the
 report, as well as create custom sections in the report through the
 use of saved seaudit view files.  Review the default
 seaudit-report.conf file that comes packaged with your setools
