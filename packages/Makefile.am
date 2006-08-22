@@ -7,4 +7,4 @@ install-data-local:
 	mv BWidget-1.7.0 $(bwidget_destdir)
 
 uninstall-local:
-	-rm -rf $(bwidget_destdir)
+	-rm -rf $(bwidget_destdir)/BWidget-1.7.0

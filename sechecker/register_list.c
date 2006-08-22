@@ -56,7 +56,7 @@ static sechk_profile_name_reg_t sechk_profile_register_list[] = {
 size_t sechk_register_list_get_num_profiles()
 {
 	size_t i;
-	if (sechk_register_num_profiles != -1)
+	if (sechk_register_num_profiles != 0)
 		return sechk_register_num_profiles;
 	for (i=0; sechk_profile_register_list[i].name != NULL; i++);
 

@@ -1,6 +1,8 @@
+setoolsdir = @setoolsdir@
+
 lib_LIBRARIES = libapol-tcl.a
 
-AM_CFLAGS = -fpic @QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -DAPOL_INSTALL_DIR='"${apol_install_dir}"'
+AM_CFLAGS = -fpic @QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -DAPOL_INSTALL_DIR='"${setoolsdir}"'
 
 libapol_tcl_a_SOURCES = apol_tcl_other.c apol_tcl_other.h \
 	apol_tcl_render.c apol_tcl_render.h \

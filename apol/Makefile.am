@@ -1,10 +1,10 @@
-apol_install_dir = @apol_install_dir@
+setoolsdir = @setoolsdir@
 apol_gui_version = @VERSION@
 
 bin_PROGRAMS = apol
-dist_bin_SCRIPTS = apol.tcl
+dist_setools_SCRIPTS = apol.tcl
 
-dist_pkgdata_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
+dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 	infoflow_help.txt obj_perms_help.txt types_relation_help.txt \
 	perm_maps/apol_perm_mapping_ver12 \
 	perm_maps/apol_perm_mapping_ver15 \
@@ -51,7 +51,7 @@ TCL_STRIP_FILES = $(top_builddir)/config.tcl $(filter-out head.tcl,$(filter %.tc
 apol.tcl: head.tcl tmp.tcl
 	cat $^ | \
 	sed -e 's/APOL_GUI_VERSION/$(apol_gui_version)/g' | \
-	sed -e 's|APOL_INSTALL_DIR|$(apol_install_dir)|g' > $@
+	sed -e 's|APOL_INSTALL_DIR|$(setoolsdir)|g' > $@
 
 # build a compacted version of apol Tcl files
 tmp.tcl: $(TCL_STRIP_FILES)
