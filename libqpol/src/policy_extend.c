@@ -24,6 +24,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 #include <qpol/policy_extend.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/conditional.h>
@@ -187,7 +189,7 @@ err:
 	ERR(handle, "%s", strerror(error));
 	errno = error;
 	return STATUS_ERR;
-};
+}
 
 /**
  *  Builds data for empty attributes and inserts them into the policydb.

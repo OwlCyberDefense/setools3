@@ -534,7 +534,7 @@ static int append_avrule_to_subject_vector(apol_policy_t *p,
 					   apol_vector_t *results)
 {
 	qpol_type_t *target;
-	apol_vector_t *target_v = NULL, *result_list;
+	apol_vector_t *target_v = NULL, *result_list = NULL;
 	size_t i;
 	apol_relabel_result_t *result;
 	apol_relabel_result_pair_t *pair = NULL;

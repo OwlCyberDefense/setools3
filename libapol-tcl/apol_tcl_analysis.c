@@ -1488,9 +1488,9 @@ static int apol_types_relation_directflows_to_tcl_list(Tcl_Interp *interp,
 	size_t i;
 	*o = Tcl_NewListObj(0, NULL);
 	for (i = 0; v != NULL && i < apol_vector_get_size(v); i++) {
-		apol_infoflow_result_t *r;
-		r = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
-		if (append_direct_infoflow_result_to_list(interp, r, *o) == TCL_ERROR) {
+		apol_infoflow_result_t *res;
+		res = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
+		if (append_direct_infoflow_result_to_list(interp, res, *o) == TCL_ERROR) {
 			return TCL_ERROR;
 		}
 	}

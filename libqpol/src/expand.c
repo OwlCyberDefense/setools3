@@ -57,7 +57,7 @@ static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_dat
 int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 {
 	unsigned int i;
-	uint32_t *typemap;
+	uint32_t *typemap = NULL;
 	policydb_t *db;
 	int rt;
 

@@ -29,6 +29,8 @@
 #ifndef APOL_POLICY_QUERY_INTERNAL_H
 #define APOL_POLICY_QUERY_INTERNAL_H
 
+#include <config.h>
+
 #include <apol/policy.h>
 #include <apol/policy-query.h>
 #include <apol/util.h>

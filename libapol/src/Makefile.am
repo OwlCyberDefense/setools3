@@ -25,7 +25,6 @@ libapol_a_SOURCES = \
 	mls-query.c \
 	netcon-query.c \
 	perm-map.c \
-	poldiff.c \
 	policy.c \
 	policy-query.c \
 	queue.c \

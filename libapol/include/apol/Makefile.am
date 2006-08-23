@@ -15,7 +15,6 @@ apol_HEADERS = \
 	mls-query.h \
 	netcon-query.h \
 	perm-map.h \
-	poldiff.h \
 	policy.h \
 	policy-query.h \
 	rangetrans-query.h \
