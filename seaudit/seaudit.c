@@ -85,19 +85,19 @@ seaudit_t* seaudit_init(void)
 	return seaudit;
 }
 
-void seaudit_destroy(seaudit_t *seaudit_app)
+void seaudit_destroy(seaudit_t *seaudit_ap)
 {
-	if (seaudit_app->cur_policy)
-		apol_policy_destroy(&seaudit_app->cur_policy);
+	if (seaudit_ap->cur_policy)
+		apol_policy_destroy(&seaudit_ap->cur_policy);
 	seaudit_callbacks_free();
-	if (seaudit_app->log_file_ptr)
-		fclose(seaudit_app->log_file_ptr);
-	free_seaudit_conf(&(seaudit_app->seaudit_conf));
-	g_string_free(seaudit_app->policy_file, TRUE);
-	g_string_free(seaudit_app->audit_log_file, TRUE);
-	report_window_destroy(seaudit_app->report_window);
-	free(seaudit_app);
-	seaudit_app = NULL;
+	if (seaudit_ap->log_file_ptr)
+		fclose(seaudit_ap->log_file_ptr);
+	free_seaudit_conf(&(seaudit_ap->seaudit_conf));
+	g_string_free(seaudit_ap->policy_file, TRUE);
+	g_string_free(seaudit_ap->audit_log_file, TRUE);
+	report_window_destroy(seaudit_ap->report_window);
+	free(seaudit_ap);
+	seaudit_ap = NULL;
 }
 
 
