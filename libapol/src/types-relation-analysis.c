@@ -1200,12 +1200,12 @@ apol_vector_t *apol_types_relation_result_get_domainsBA(apol_types_relation_resu
 	return result->domsBA;
 }
 
-qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *access)
+qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *a)
 {
-	return access->type;
+	return a->type;
 }
 
-apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t *access)
+apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t *a)
 {
-	return access->rules;
+	return a->rules;
 }

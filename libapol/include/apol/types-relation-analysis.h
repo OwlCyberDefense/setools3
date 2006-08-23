@@ -355,21 +355,21 @@ extern apol_vector_t *apol_types_relation_result_get_domainsBA(apol_types_relati
 /**
  * Given a types relation access node, return the type stored within.
  *
- * @param access Types relation access node.
+ * @param a Types relation access node.
  *
  * @return Pointer to the type stored within.
  */
-extern qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *access);
+extern qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *a);
 
 /**
  * Given a types relation access node, return the vector of
  * qpol_avrule_t pointers stored within.
  *
- * @param access Types relation access node.
+ * @param a Types relation access node.
  *
  * @return Pointer to the vector of rules.  The caller <b>must not</b>
  * destroy this vector.
  */
-extern apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t *access);
+extern apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t *a);
 
 #endif
