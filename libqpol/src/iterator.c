@@ -25,6 +25,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/mls_query.h>
@@ -38,12 +40,12 @@
 #include <sepol/policydb.h>
 
 #include "debug.h"
-#include "iterator_internal.h" 
+#include "iterator_internal.h"
 
 /**
  * Declaration of qpol_iterator, an arbitrary valued policy component
  * iterator used to return lists of components.
- * 
+ *
  */
 struct qpol_iterator {
 	policydb_t *policy;
@@ -633,7 +635,7 @@ void *perm_state_get_cur(qpol_iterator_t *iter)
 	unsigned int perm_max = 0;
 	char *tmp = NULL;
 
-	if (iter == NULL || (db = qpol_iterator_policy(iter)) == NULL || 
+	if (iter == NULL || (db = qpol_iterator_policy(iter)) == NULL ||
 		(ps = (perm_state_t*)qpol_iterator_state(iter)) == NULL ||
 		perm_state_end(iter)) {
 		errno = EINVAL;
@@ -643,7 +645,7 @@ void *perm_state_get_cur(qpol_iterator_t *iter)
 	obj_class = db->class_val_to_struct[ps->obj_class_val - 1];
 	comm = obj_class->comdatum;
 
-	/* permission max is number of permissions in the class which includes 
+	/* permission max is number of permissions in the class which includes
 	 * the number of permissions in its common if it inherits one */
 	perm_max = obj_class->permissions.nprim;
 	if (perm_max > 32) {
@@ -682,7 +684,7 @@ int perm_state_next(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	/* permission max is number of permissions in the class which includes 
+	/* permission max is number of permissions in the class which includes
 	 * the number of permissions in its common if it inherits one */
 	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim;
 	if (perm_max > 32) {
@@ -716,7 +718,7 @@ size_t perm_state_size(qpol_iterator_t *iter)
 		return 0; /* as a size_t 0 is error */
 	}
 
-	/* permission max is number of permissions in the class which includes 
+	/* permission max is number of permissions in the class which includes
 	 * the number of permissions in its common if it inherits one */
 	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim;
 	if (perm_max > 32) {
@@ -729,6 +731,5 @@ size_t perm_state_size(qpol_iterator_t *iter)
 			count++;
 	}
 
-	return count;	
+	return count;
 }
-

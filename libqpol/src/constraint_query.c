@@ -23,7 +23,9 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
+
+#include <config.h>
+
 #include <qpol/policy.h>
 #include <qpol/constraint_query.h>
 #include <qpol/iterator.h>
@@ -104,7 +106,7 @@ static int policy_constr_state_next(qpol_iterator_t *iter)
 			return STATUS_ERR;
 		if (qpol_class_get_constraint_iter(pcs->handle, pcs->policy, obj_class, &pcs->constr_iter))
 			return STATUS_ERR;
-	} 
+	}
 
 	return STATUS_SUCCESS;
 }
@@ -394,7 +396,7 @@ static int policy_constr_state_next_vtrans(qpol_iterator_t *iter)
 			return STATUS_ERR;
 		if (qpol_class_get_validatetrans_iter(pcs->handle, pcs->policy, obj_class, &pcs->constr_iter))
 			return STATUS_ERR;
-	} 
+	}
 
 	return STATUS_SUCCESS;
 }
@@ -967,5 +969,5 @@ int qpol_class_get_validatetrans_iter(qpol_handle_t *handle, qpol_policy_t *poli
 		return STATUS_ERR;
 	}
 
-	return STATUS_SUCCESS;}
-
+	return STATUS_SUCCESS;
+}
