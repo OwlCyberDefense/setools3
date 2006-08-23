@@ -184,10 +184,10 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy)
         sechk_run_fn_t run_fn = NULL;
         sechk_result_t *(*get_result_fn)(sechk_module_t *mod) = NULL;
 	sechk_result_t *find_domains_res = NULL;
-	apol_domain_trans_analysis_t *domain_trans;
+	apol_domain_trans_analysis_t *domain_trans = NULL;
 	apol_vector_t *domain_vector = NULL, *role_vector = NULL, *user_vector = NULL, *rbac_vector = NULL;
-	apol_user_query_t *user_query;
-	apol_role_trans_query_t *role_trans_query;
+	apol_user_query_t *user_query = NULL;
+	apol_role_trans_query_t *role_trans_query = NULL;
 	char *buff = NULL;
 	int buff_sz;
 
@@ -260,7 +260,6 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 	domain_vector = (apol_vector_t *)find_domains_res->items;
 
 	for (i=0;i<apol_vector_get_size(domain_vector);i++) {
-		sechk_item_t *item;
 		qpol_type_t *domain = NULL;
 		char *domain_name = NULL;
 		apol_vector_t *domain_trans_vector;

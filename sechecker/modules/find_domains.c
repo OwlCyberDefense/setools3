@@ -204,9 +204,9 @@ int find_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 	size_t num_items, rule_type, proof_idx;
 	uint32_t type_val, t_val;
 	apol_vector_t *domain_vector, *terule_vector, *role_vector;
-	apol_terule_query_t * terule_query;
+	apol_terule_query_t * terule_query = NULL;
 	qpol_terule_t *tmp_terule;
-	apol_role_query_t * role_query;
+	apol_role_query_t * role_query = NULL;
 
 	if (!mod || !policy) {
                 ERR(policy, "%s", "Invalid parameters");

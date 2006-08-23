@@ -181,7 +181,7 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_result_t *(*get_result_fn)(sechk_module_t *mod) = NULL;
 	apol_vector_t *domain_vector;
 	apol_vector_t *role_vector;
-	apol_role_query_t *role_query;
+	apol_role_query_t *role_query = NULL;
 	sechk_result_t *find_domains_res = NULL;
 
 	if (!mod || !policy) {
@@ -242,7 +242,6 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy)
         }
 
 	for (i = 0; i < apol_vector_get_size(domain_vector); i++) {
-		sechk_item_t *item;
 		qpol_type_t *domain;
 		char *domain_name;
 		
@@ -311,7 +310,7 @@ int domains_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	domains_wo_roles_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0, j, num_items;
+	size_t i = 0, j = 0, num_items;
 	qpol_type_t *type;
 	char *type_name;
 

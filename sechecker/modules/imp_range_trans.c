@@ -240,8 +240,8 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 		apol_vector_t *role_vector;
 		apol_vector_t *rbac_vector;
 		apol_vector_t *user_vector;
-		apol_role_query_t *role_query;
-		apol_user_query_t *user_query;
+		apol_role_query_t *role_query = NULL;
+		apol_user_query_t *user_query = NULL;
 		apol_mls_range_t *range;
 		qpol_mls_range_t *qpol_range;
 		int info, j;
@@ -313,7 +313,7 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 		apol_get_role_by_query(policy, role_query, &role_vector);
 		for (j = 0; j < apol_vector_get_size(role_vector); j++) {
 			qpol_role_t *role;
-			apol_role_trans_query_t *rbac_query;
+			apol_role_trans_query_t *rbac_query = NULL;
 			char *role_name;
 
 			rbac_query = apol_role_trans_query_create();

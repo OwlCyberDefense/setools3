@@ -286,7 +286,7 @@ int roles_wo_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	roles_wo_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0, j, num_items;
+	size_t i = 0, j = 0, num_items;
 	qpol_role_t *role;
 	char *role_name;
 

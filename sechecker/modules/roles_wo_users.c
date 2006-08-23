@@ -191,7 +191,7 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy)
 	size_t i;	
 	apol_vector_t *role_vector;
 	apol_vector_t *user_vector;
-	apol_user_query_t *user_query;
+	apol_user_query_t *user_query = NULL;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -310,7 +310,7 @@ int roles_wo_users_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_item_t *item = NULL;
 	qpol_role_t *role;
 	char *role_name;
-	int i = 0,j, num_items;
+	size_t i = 0, j = 0, num_items;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
