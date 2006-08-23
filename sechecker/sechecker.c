@@ -136,6 +136,7 @@ sechk_lib_t *sechk_lib_new(void)
 	/* allocate the new sechk_lib_t structure */
 	lib = (sechk_lib_t*)calloc(1, sizeof(sechk_lib_t));
 	if (!lib) {
+		error = errno;
 		perror("Error creating module library");
 		goto exit_err;
 	}

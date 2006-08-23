@@ -184,8 +184,8 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 	char *buff = NULL;
 	apol_vector_t *mount_vector;
 	apol_vector_t *mounton_vector;
-	apol_avrule_query_t *mount_avrule_query;
-	apol_avrule_query_t *mounton_avrule_query;
+	apol_avrule_query_t *mount_avrule_query = NULL;
+	apol_avrule_query_t *mounton_avrule_query = NULL;
 
 	if (!mod || !policy) {
                 ERR(policy, "%s", "Invalid parameters");

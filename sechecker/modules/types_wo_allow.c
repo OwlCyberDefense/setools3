@@ -195,7 +195,7 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy)
 	bool_t used = FALSE;
 	apol_vector_t *type_vector;
 	apol_vector_t *avrule_vector;
-	apol_avrule_query_t *avrule_query;
+	apol_avrule_query_t *avrule_query = NULL;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

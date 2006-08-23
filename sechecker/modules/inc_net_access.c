@@ -227,7 +227,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_vector_t *port_vector;
 	apol_vector_t *node_vector;
 	apol_vector_t *assoc_type_vector;
-	apol_avrule_query_t *avrule_query;
+	apol_avrule_query_t *avrule_query = NULL;
 	apol_vector_t *avrule_vector;
 
 	if (!mod || !policy) {
@@ -338,7 +338,6 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 
 	/* for each net domain, check permissions */
 	for (i=0; i<apol_vector_get_size(net_domain_vector); i++) {
-		sechk_item_t *item;
 		qpol_type_t *net_domain = NULL;
 		char *net_domain_name = NULL;
 
@@ -348,7 +347,6 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 	
 		/* Check netif types */
 		for (j=0; j<apol_vector_get_size(netif_vector); j++) {
-			sechk_item_t *item;
 			qpol_type_t *netif = NULL;
 			char *netif_name = NULL;
 
@@ -421,7 +419,6 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 
 		/* Check port types */
                 for (j=0; j<apol_vector_get_size(port_vector); j++) {
-			sechk_item_t *item;
                         qpol_type_t *port = NULL;
                         char *port_name = NULL;
 
@@ -495,7 +492,6 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
                 }
 
                 for (j=0; j<apol_vector_get_size(node_vector); j++) {
-			sechk_item_t *item;
                         qpol_type_t *node = NULL;
                         char *node_name = NULL;
 

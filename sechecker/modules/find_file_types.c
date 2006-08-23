@@ -578,7 +578,7 @@ int find_file_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j = 0, k=0, l=0, num_items;
+	size_t i = 0, j = 0, k=0, l=0, num_items = 0;
 	qpol_type_t *type;
 	char *type_name;
 
@@ -610,7 +610,7 @@ int find_file_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	}
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-	        for (i = 0; i < num_items; i++) {
+	        for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
 			j++;
 			item  = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
@@ -623,13 +623,13 @@ int find_file_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 
         if (outformat & SECHK_OUT_PROOF) {
                 printf("\n");
-                for (k=0;k<num_items;k++) {
+                for (k=0; k< apol_vector_get_size(mod->result->items); k++) {
                         item = apol_vector_get_element(mod->result->items, k);
 			if ( item ) {
 				type = item->item;
 				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
                         	printf("%s\n", (char*)type_name);
-                        	for (l=0; l<sizeof(item->proof);l++) {
+                        	for (l=0; l < apol_vector_get_size(item->proof); l++) {
                                 	proof = apol_vector_get_element(item->proof,l);
 					if ( proof ) 
                                 		printf("\t%s\n", proof->text);

@@ -232,9 +232,9 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_get_result_fn_t get_res = NULL;
 	sechk_result_t *find_domains_res = NULL, *inc_dom_trans_res = NULL;
 	apol_vector_t *dom_vector = NULL, *idt_vector = NULL, *role_vector = NULL, *rbac_vector = NULL, *user_vector = NULL;
-	apol_user_query_t *user_query;
-	apol_role_trans_query_t *role_trans_query;
-	apol_domain_trans_analysis_t *dta;
+	apol_user_query_t *user_query = NULL;
+	apol_role_trans_query_t *role_trans_query = NULL;
+	apol_domain_trans_analysis_t *dta = NULL;
 	
        	if (!mod || !policy) {
                 ERR(policy, "%s", "Invalid parameters");
@@ -314,7 +314,6 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* first search incomplete domain transitions: 
 	   those domains with no other domains transitioning to them are unreachable */
 	for ( i = 0; i < apol_vector_get_size(idt_vector); i++ ) {
-		sechk_item_t *item;
 		apol_domain_trans_result_t *dtr;
 		apol_vector_t *rev_dtr_vector;
 		qpol_type_t *end_type;
@@ -395,7 +394,6 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* for all domains: check to see if a valid transition to this domain exists */
 	for (i = 0; i < apol_vector_get_size(dom_vector); i++) {
                 apol_vector_t *rev_dtr_vector;
-		sechk_item_t *item;
 		qpol_type_t *dom;
 		char *dom_name;
 
@@ -612,8 +610,6 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		if (apol_vector_get_size(datum->ctx_vector) > 0 ) {
 			printf("Found %d domains in %s:\n", apol_vector_get_size(datum->ctx_vector), selinux_default_context_path());
 			for (j = 0; j < apol_vector_get_size(datum->ctx_vector); j++) {
-				char *type_name;
-
 				type_name = apol_vector_get_element(datum->ctx_vector, j);
 				printf("\t%s\n", type_name);
                         }

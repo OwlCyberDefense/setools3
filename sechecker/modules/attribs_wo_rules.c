@@ -199,9 +199,9 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	size_t i;
 	apol_vector_t *attr_vector;
-	apol_role_query_t *role_query;
-	apol_avrule_query_t *avrule_query;
-	apol_terule_query_t *terule_query;
+	apol_role_query_t *role_query = NULL;
+	apol_avrule_query_t *avrule_query = NULL;
+	apol_terule_query_t *terule_query = NULL;
 	apol_vector_t *avrule_vector;
 	apol_vector_t *terule_vector;
 	apol_vector_t *role_vector;
@@ -385,7 +385,7 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j=0, k=0, l=0, num_items;
+	size_t i = 0, j=0, k=0, l=0, num_items;
 	qpol_type_t *type;
 	char *type_name;
 
@@ -439,7 +439,7 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy)
 				type = item->item;
 				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 				printf("%s\n", type_name);
-				for (l=0; l<sizeof(item->proof);l++) {
+				for (l = 0; l < apol_vector_get_sizeitem->proof); l++) {
 					proof = apol_vector_get_element(item->proof,l);
 					if ( proof )
 						printf("\t%s\n", proof->text);
