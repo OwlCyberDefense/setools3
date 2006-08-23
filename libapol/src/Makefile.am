@@ -4,11 +4,13 @@ setoolsdir = @setoolsdir@
 apolso_DATA = @libapol_soname@
 apolsodir = $(libdir)
 
-AM_CFLAGS = -fpic @QPOL_CFLAGS@ -I$(srcdir)/../include \
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@QPOL_CFLAGS@ -fpic -I$(srcdir)/../include \
 	-DAPOL_INSTALL_DIR='"${setoolsdir}"' \
 	-DAPOL_HELP_DIR='"${setoolsdir}"' \
 	-DLIBAPOL_POLICY_INSTALL_DIR='"@selinux_policy_dir@/policy"' \
 	-DLIBAPOL_DEFAULT_POLICY='"@selinux_default_policy@"'
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libapol_a_SOURCES = \
 	avl-util.c \
@@ -48,7 +50,7 @@ LIBAPOL_SONAME = @libapol_soname@
 dist_noinst_DATA = libapol.map
 
 $(apolso_DATA): $(libapol_so_OBJS) libapol.map
-	$(CC) -shared -o $@ $(libapol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so
+	$(CC) -shared -o $@ $(libapol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so
 	$(LN_S) -f $@ libapol.so
 
 $(top_builddir)/libqpol/src/libqpol.so:

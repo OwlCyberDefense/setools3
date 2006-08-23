@@ -10,9 +10,11 @@ endif
 STATICAPOL = ../libapol/src/libapol.a
 STATICSEFS = ../libsefs/libsefs.a
 
-AM_CFLAGS = @QPOL_CFLAGS@ @APOL_CFLAGS@
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
-LDADD = @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
+LDADD = @SELINUX_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libqpol/src/libqpol.so
 
 seinfo_SOURCES = seinfo.c

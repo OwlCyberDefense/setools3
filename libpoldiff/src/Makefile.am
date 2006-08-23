@@ -3,7 +3,9 @@ lib_LIBRARIES = libpoldiff.a
 poldiffso_DATA = @libpoldiff_soname@
 poldiffsodir = $(libdir)
 
-AM_CFLAGS = -fpic -I$(srcdir)/../include @APOL_CFLAGS@ @QPOL_CFLAGS@
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(srcdir)/../include -fpic
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libpoldiff_a_SOURCES = \
 	poldiff.c \
@@ -19,7 +21,7 @@ LIBPOLDIFF_SONAME = @libpoldiff_soname@
 dist_noinst_DATA = libpoldiff.map
 
 $(poldiffso_DATA): $(libpoldiff_so_OBJS) libpoldiff.map
-	$(CC) -shared -o $@ $(libpoldiff_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBPOLDIFF_SONAME),--version-script=$(srcdir)/libpoldiff.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so
+	$(CC) -shared -o $@ $(libpoldiff_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBPOLDIFF_SONAME),--version-script=$(srcdir)/libpoldiff.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so
 	$(LN_S) -f $@ libpoldiff.so
 
 $(top_builddir)/libapol/src/libapol.so:

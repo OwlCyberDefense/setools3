@@ -204,7 +204,7 @@ err:
 	ERR(policy, "%s", strerror(error));
 	errno = error;
 	return -1;
-};
+}
 
 static void print_av_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
 {

@@ -50,7 +50,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 {
 	char *line = NULL, *tmp = NULL, *context = NULL;
 	size_t line_len = 0;
-	int i = 0, error, retv, j;
+	int i = 0, error = 0, retv, j;
 	FILE *fc_file = NULL;
 
 	if (!contexts)
