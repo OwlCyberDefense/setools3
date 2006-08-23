@@ -377,7 +377,7 @@ static bool_t is_binpol_valid(qpol_handle_t *handle, const char *policy_fname, c
 static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *binpol_install_dir, char **policy_path_tmp, const char *version)
 {
 	glob_t glob_buf;
-	struct stat fstat;
+	struct stat fs;
 	int len, i, num_matches = 0, rt;
 	char *pattern = NULL;
 
@@ -402,14 +402,14 @@ static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *bin
 	num_matches = glob_buf.gl_pathc;
 	for (i = 0; i < num_matches; i++) {
 		char *path = glob_buf.gl_pathv[i + glob_buf.gl_offs];
-		if (stat(path, &fstat) != 0) {
+		if (stat(path, &fs) != 0) {
 			globfree(&glob_buf);
 			free(pattern);
 			perror("search_for_policyfile_with_ver");
 			return GENERAL_ERROR;
 		}
 		/* skip directories */
-		if (S_ISDIR(fstat.st_mode))
+		if (S_ISDIR(fs.st_mode))
 			continue;
 		if (is_binpol_valid(handle, path, version)) {
 			len = strlen(path) + 1;
@@ -430,7 +430,7 @@ static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *bin
 static int search_for_policyfile_with_highest_ver(qpol_handle_t *handle, const char *binpol_install_dir, char **policy_path_tmp)
 {
 	glob_t glob_buf;
-	struct stat fstat;
+	struct stat fs;
 	int len, i, num_matches = 0, rt;
 	char *pattern = NULL;
 
@@ -454,14 +454,14 @@ static int search_for_policyfile_with_highest_ver(qpol_handle_t *handle, const c
 	num_matches = glob_buf.gl_pathc;
 	for (i = 0; i < num_matches; i++) {
 		char *path = glob_buf.gl_pathv[i + glob_buf.gl_offs];
-		if (stat(path, &fstat) != 0) {
+		if (stat(path, &fs) != 0) {
 			globfree(&glob_buf);
 			free(pattern);
 			perror("search_for_policyfile_with_highest_ver");
 			return GENERAL_ERROR;
 		}
 		/* skip directories */
-		if (S_ISDIR(fstat.st_mode))
+		if (S_ISDIR(fs.st_mode))
 			continue;
 
 		if (*policy_path_tmp != NULL && strcmp(path, *policy_path_tmp) > 0) {

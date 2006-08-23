@@ -178,7 +178,7 @@ static unsigned int avc_msg_insert_perms(char **tokens, msg_t *msg, audit_log_t 
 
 static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int num_tokens)
 {
-	char *time = NULL;
+	char *t = NULL;
 	int i, length = 0;
 	extern int daylight;
 	
@@ -189,23 +189,23 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 	
 	/* Increase size for terminating string char and whitespace within. */
 	length += 1 + (NUM_TIME_COMPONENTS - 1); 
-	if ((time = (char*) malloc(length * (sizeof(char)))) == NULL)
+	if ((t = (char*) malloc(length * (sizeof(char)))) == NULL)
 		return PARSE_RET_MEMORY_ERROR;
 
 	if (*position == num_tokens)
 		return PARSE_REACHED_END_OF_MSG;
-	strcpy(time, tokens[*position]);	
-	time = strcat(time, " ");
+	strcpy(t, tokens[*position]);	
+	t = strcat(t, " ");
 	(*position)++;
 	if (*position == num_tokens)
 		return PARSE_REACHED_END_OF_MSG;
 
-	time = strcat(time, tokens[*position]);
-	time = strcat(time, " " );
+	t = strcat(t, tokens[*position]);
+	t = strcat(t, " " );
 	(*position)++;
 	if (*position == num_tokens)
 		return PARSE_REACHED_END_OF_MSG;
-	time = strcat(time, tokens[*position]);
+	t = strcat(t, tokens[*position]);
 
 	if (!msg->date_stamp) {
 		if ((msg->date_stamp = (struct tm*) malloc(sizeof(struct tm))) == NULL)
@@ -213,14 +213,14 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 		memset(msg->date_stamp, 0, sizeof(sizeof(struct tm)));
 	}
 
-	if (!strptime(time, "%b %d %T", msg->date_stamp)) {
-		free(time); 
+	if (!strptime(t, "%b %d %T", msg->date_stamp)) {
+		free(t); 
 		return 0;
 	} else {
-		free(time);
+		free(t);
 		/* set year to 1900 since we know no valid
 		 logs were generated then this will tell us that
-		the msg does not really have a year*/
+		 the msg does not really have a year*/
 		msg->date_stamp->tm_isdst = 0;
 		msg->date_stamp->tm_year = 0;
 		return PARSE_RET_SUCCESS;

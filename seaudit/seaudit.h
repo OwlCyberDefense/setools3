@@ -56,9 +56,9 @@ extern seaudit_t *seaudit_app;
 #define SEAUDIT_FILTER_EXT ".ftr"
 
 seaudit_t *seaudit_init(void);
-void seaudit_destroy(seaudit_t *seaudit_app);
-int seaudit_open_policy(seaudit_t *seaudit_app, const char *filename);
-int seaudit_open_log_file(seaudit_t *seaudit_app, const char *filename);
+void seaudit_destroy(seaudit_t *seaudit_ap);
+int seaudit_open_policy(seaudit_t *seaudit_ap, const char *filename);
+int seaudit_open_log_file(seaudit_t *seaudit_ap, const char *filename);
 void seaudit_update_status_bar(seaudit_t *seaudit);
 void seaudit_view_entire_selection_update_sensitive(bool_t disable);
 /* Functions related to exporting log files */
