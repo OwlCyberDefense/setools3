@@ -58,7 +58,7 @@ int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy,
 	*ocon = (qpol_fs_use_t *)tmp;
 
 	if (*ocon == NULL) {
-		ERR(handle, "cound not find fs_use statement for %s", name);
+		ERR(handle, "could not find fs_use statement for %s", name);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
