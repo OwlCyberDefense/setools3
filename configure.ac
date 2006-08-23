@@ -46,8 +46,10 @@ fi
 AC_ARG_ENABLE(debug, [  --enable-debug          compile with full debugging support], enable_debug="$enableval")
 AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
-    CFLAGS="-g3 -gdwarf-2 -O0 -Wall"
-    LDFLAGS="-g"
+    DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall"
+    DEBUGLDFLAGS="-g"
+    AC_SUBST(DEBUGCFLAGS)
+    AC_SUBST(DEBUGLDFLAGS)
     QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=$(top_builddir)/libqpol/src'
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
     SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=$(top_builddir)/libsefs/src'
@@ -80,15 +82,30 @@ AC_SUBST(APOL_LIB_FLAG)
 AC_SUBST(SEFS_LIB_FLAG)
 AC_SUBST(POLDIFF_LIB_FLAG)
 
+AC_ARG_ENABLE(warnall, [  --enable-warnall        compile with most warnings enabled], enable_warnall="$enableval")
+if test "x${enable_warnall}" = xyes; then
+    WARNCFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic-errors -Wuninitialized -fno-strict-aliasing -std=c99"
+    WARNLDFLAGS=""
+else
+    WARNCFLAGS=""
+    WARNLDFLAGS=""
+fi
+AC_SUBST(WARNCFLAGS)
+AC_SUBST(WARNLDFLAGS)
+
 AC_ARG_ENABLE(profiling, [  --enable-profiling      compile with gcov and gprof profiling support], enable_profiling="$enableval")
 AC_MSG_CHECKING([for profiling support])
 if test "x${enable_profiling}" = xyes; then
-    CFLAGS="-O0 -Wall -ftest-coverage -fprofile-arcs -pg"
-    LDFLAGS="$LDFLAGS -lgcov"
+    PROFILECFLAGS="-ftest-coverage -fprofile-arcs -pg"
+    PROFILELDFLAGS="-lgcov"
     AC_MSG_RESULT(yes)
 else
+    PROFILECFLAGS=""
+    PROFILELDFLAGS=""
     AC_MSG_RESULT(disabled)
 fi
+AC_SUBST(PROFILECFLAGS)
+AC_SUBST(PROFILELDFLAGS)
 
 dnl ** find the Tcl/Tk development libraries, then find BWidget
 
@@ -179,7 +196,6 @@ else
       use_selinux=yes
 fi
 
-
 if test ${use_selinux} = "yes"; then
    dnl ** find libselinux and libsepol
 
@@ -189,9 +205,11 @@ if test ${use_selinux} = "yes"; then
    sepol_devel_libdir="${sepol_devel}/lib"
    selinux_devel_incdir="${selinux_devel}/include"
    selinux_devel_libdir="${selinux_devel}/lib"
-   CFLAGS="$CFLAGS -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
-   LDFLAGS="$LDFLAGS -L${sepol_devel_libdir} -L${selinux_devel_libdir}"
+   SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
+   SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
    AC_MSG_CHECKING([for sepol/sepol.h])
+   selinux_save_CFLAGS="${CFLAGS}"
+   CFLAGS="${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG} ${CFLAGS}"
    AC_TRY_RUN([#include <sepol/sepol.h>
    #include <stdlib.h>
    int main(void) { exit(0); }],
@@ -208,7 +226,13 @@ if test ${use_selinux} = "yes"; then
    AC_CHECK_LIB(selinux, selinux_policy_root,,
         AC_MSG_ERROR([could not find libselinux - make sure it is installed]),
         -lsepol)
+   CFLAGS="${selinux_save_CFLAGS}"
+else
+   SELINUX_CFLAGS=""
+   SELINUX_LIB_FLAG="-lselinux -lsepol"
 fi
+AC_SUBST(SELINUX_CFLAGS)
+AC_SUBST(SELINUX_LIB_FLAG)
 
 AC_ARG_ENABLE(sefs, [  --enable-sefs           allow file system analyses (default)
                           (requires SELinux development files)], sefs="$enableval", sefs="yes")
@@ -230,8 +254,8 @@ if test "x${sepol_srcdir}" = "x"; then
    sepol_srcdir='${top_srcdir}/libqpol'
 else
    AC_MSG_CHECKING([for sepol source tree])
-   sepol_src_save_CFLAGS=${CFLAGS}
-   CFLAGS="$CFLAGS -I${sepol_srcdir}/include -lsepol"
+   sepol_src_save_CFLAGS="${CFLAGS}"
+   CFLAGS="${CFLAGS} -I${sepol_srcdir}/include ${SELINUX_LIB_FLAG}"
    AC_TRY_RUN([#include <sepol/policydb/policydb.h>
 #include <stdlib.h>
    int main(void) { exit(0); }],,
@@ -260,11 +284,12 @@ main ()
 }
 EOF
     changequote([,])dnl
-    CFLAGS="$CFLAGS -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
-    LDFLAGS="$LDFLAGS -L${sepol_devel_libdir} -L${selinux_devel_libdir} -lselinux -lsepol"
-    gcc ${CFLAGS} ${LDFLAGS} -o conftest conftest.c >&5
+    selinux_save_CFLAGS="${CFLAGS}"
+    CFLAGS="${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG} -lselinux -lsepol ${CFLAGS}"
+    gcc ${CFLAGS} -o conftest conftest.c >&5
     selinux_policy_dir=`./conftest`
     AC_MSG_RESULT(${selinux_policy_dir})
+    CFLAGS="${selinux_save_CFLAGS}"
 fi
 
 dnl check for policy source

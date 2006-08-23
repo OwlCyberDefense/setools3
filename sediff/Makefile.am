@@ -1,8 +1,10 @@
 bin_PROGRAMS = sediff
 
-AM_CFLAGS = @QPOL_CFLAGS@ @APOL_CFLAGS@ @POLDIFF_CFLAGS@
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @POLDIFF_CFLAGS@
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
-sediff_LDADD = @POLDIFF_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
+sediff_LDADD = @SELINUX_LIB_FLAG@ @POLDIFF_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 sediff_CFLAGS = $(AM_CFLAGS)
 sediff_DEPENDENCIES = $(top_builddir)/libpoldiff/src/libpoldiff.so \
 	$(top_builddir)/libapol/src/libapol.so \
@@ -18,4 +20,3 @@ $(top_builddir)/libapol/src/libapol.so:
 
 $(top_builddir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
-

@@ -10,6 +10,8 @@
  * filter_criteria.c
  */
 
+#include <config.h>
+
 #include <string.h>
 #include <sys/types.h>
 #include <assert.h>

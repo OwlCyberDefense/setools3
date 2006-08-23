@@ -1,11 +1,13 @@
 setoolsdir = @setoolsdir@
 bin_PROGRAMS = seaudit seaudit_report
 
-AM_CFLAGS = -I$(top_srcdir)/libseaudit @QPOL_CFLAGS@ @APOL_CFLAGS@ @GTK_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ -DAPOL_INSTALL_DIR='"${setoolsdir}"'
-
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @GTK_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ \
+	-DAPOL_INSTALL_DIR='"${setoolsdir}"' -I$(top_srcdir)/libseaudit
 # need the -rdynamic flag below - glade uses dlopen() upon seaudit callbacks
-AM_LDFLAGS = @GTK_LIBS@ @GLADE_LIBS@ @XML_LIBS@ -rdynamic
-LDADD = $(top_builddir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
+	@GTK_LIBS@ @GLADE_LIBS@ @XML_LIBS@ -rdynamic
+LDADD = @SELINUX_LIB_FLAG@ $(top_builddir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
 dist_setools_DATA = \
 	customize_filter_window.glade \

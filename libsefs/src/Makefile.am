@@ -3,7 +3,9 @@ lib_LIBRARIES = libsefs.a
 sefsso_DATA = @libsefs_soname@
 sefssodir = $(libdir)
 
-AM_CFLAGS = -fPIC @QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -fpic
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libsefs_a_SOURCES = \
 	fsdata.c \
@@ -46,7 +48,7 @@ LIBSEFS_SONAME = @libsefs_soname@
 dist_noinst_DATA = libsefs.map
 
 $(sefsso_DATA): $(libsefs_so_OBJS) libsefs.map
-	$(CC) -shared -o $@ $(libsefs_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs $(top_builddir)/libapol/src/libapol.so
+	$(CC) -shared -o $@ $(libsefs_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs $(top_builddir)/libapol/src/libapol.so @SELINUX_LIB_FLAG@ -lselinux -lsepol
 	$(LN_S) -f $@ libsefs.so
 
 $(top_builddir)/libapol/src/libapol.so:

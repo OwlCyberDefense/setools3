@@ -1,6 +1,7 @@
 lib_LIBRARIES = libseaudit.a
 
-AM_CFLAGS = -fPIC @QPOL_CFLAGS@ @APOL_CFLAGS@ @XML_CFLAGS@
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @XML_CFLAGS@ -fpic
 
 libseaudit_a_SOURCES = \
 	auditlog.c auditlog.h auditlog_view.c auditlog_view.h \

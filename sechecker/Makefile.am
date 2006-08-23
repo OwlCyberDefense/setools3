@@ -7,10 +7,12 @@ dist_profiles_DATA = \
 	profiles/devel-checks.sechecker \
 	profiles/sechecker.dtd
 
-AM_CFLAGS = @QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ @XML_CFLAGS@ \
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ @XML_CFLAGS@ \
 	-DPROFILE_INSTALL_DIR='"${profile_install_dir}"'
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
-LDADD = @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @XML_LIBS@
+LDADD = @SELINUX_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @XML_LIBS@
 sechecker_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libqpol/src/libqpol.so
 
 if WANT_LIBSEFS
