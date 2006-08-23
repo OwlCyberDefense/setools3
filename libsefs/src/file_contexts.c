@@ -48,7 +48,7 @@
 
 int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apol_vector_t **contexts)
 {
-	char *line = NULL, *tmp = NULL, *context = NULL;
+	char *line = NULL, *tmp = NULL;
 	size_t line_len = 0;
 	int i = 0, error = 0, retv, j;
 	FILE *fc_file = NULL;
@@ -193,21 +193,14 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 			if (tmp - line > line_len) {
 				goto failure;
 			}
-			context = strdup(tmp);
-			if (!context) {
-				error = errno;
-				ERR(p, "%s", strerror(error));
-				goto failure;
-			}
 			/* Get data on the user from the policy file
 			 * and save it in the context */
 			fc_entry->context->user = NULL;
-			if ( !(fc_entry->context->user = strdup(context)) ) {
+			if ( !(fc_entry->context->user = strdup(tmp)) ) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto failure;
 			}
-			context = NULL;
 			j += (strlen(tmp) + 1);
 
 			for (; j < line_len; j++) {
@@ -217,23 +210,16 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 				}
 			}
 			if (tmp - line > line_len) {
-				goto failure;
-			}
-			context = strdup(tmp);
-			if (!context) {
-				error = errno;
-				ERR(p, "%s", strerror(error));
 				goto failure;
 			}
 			/* Get data on the role from the policy file
 			 * and save it in the context */
 			fc_entry->context->role = NULL;
-			if ( !(fc_entry->context->role = strdup(context)) ) {
+			if ( !(fc_entry->context->role = strdup(tmp)) ) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto failure;
 			}
-			context = NULL;
 			j += (strlen(tmp) + 1);
 
 			for (; j < line_len; j++) {
@@ -245,16 +231,10 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 			if (tmp - line > line_len) {
 				goto failure;
 			}
-			context = strdup(tmp);
-			if (!context) {
-				error = errno;
-				ERR(p, "%s", strerror(error));
-				goto failure;
-			}
 			/* Get data on the type from the policy file
 			 * and save it in the context */
 			fc_entry->context->type = NULL;
-			if ( !(fc_entry->context->type = strdup(context)) ) {
+			if ( !(fc_entry->context->type = strdup(tmp)) ) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto failure;
@@ -264,8 +244,6 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 		}
 		free(line);
 		line = NULL;
-		free(context);
-		context = NULL;
 		i++;
 		if ( apol_vector_append(*contexts, (void *)fc_entry ) < 0 ) {
 			error = errno;
@@ -278,7 +256,6 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 failure:
 	apol_vector_destroy(contexts, sefs_fc_entry_free);
 	free(line);
-	free(context);
 	if (fc_file)
 		fclose(fc_file);
 	errno = error;

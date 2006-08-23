@@ -1,7 +1,7 @@
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
- 
-/* 
+
+/*
  * Author: jmowery@tresys.com
  *
  */
@@ -20,7 +20,7 @@ static const char *const mod_name = "attribs_wo_types";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int attribs_wo_types_register(sechk_lib_t *lib) 
+int attribs_wo_types_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod     = NULL;
 	sechk_fn_t *fn_struct   = NULL;
@@ -39,16 +39,16 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	mod->parent_lib = lib;
-	
+
 	/* assign the descriptions */
 	mod->brief_description = "attributes with no types";
-	mod->detailed_description = 
+	mod->detailed_description =
 "--------------------------------------------------------------------------------\n"
 "This module finds attributes in the policy that are not associated with any\n"
 "types.  Attributes without types can cause type fields in rules to expand to\n"
 "empty sets and thus become unreachable.  This makes for misleading policy source\n"
 "files.\n";
-	mod->opt_description = 
+	mod->opt_description =
 "Module requirements:\n"
 "   policy source\n"
 "Module dependencies:\n"
@@ -184,7 +184,7 @@ int attribs_wo_types_init(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 	mod->data = datum;
-	
+
 	return 0;
 }
 
@@ -197,12 +197,12 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	size_t i;	
+	size_t i;
 	apol_vector_t *attr_vector = NULL;
-	qpol_iterator_t *types;
+	qpol_iterator_t *types = NULL;
 
 	if (!mod || !policy) {
-		ERR(policy, "%s", "Invalid parameters");	
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
@@ -229,21 +229,24 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	if ( !(res->items = apol_vector_create()) ) {
                 ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_types_run_fail;
-	}	
+	}
 
 	apol_get_attr_by_query(policy, NULL, &attr_vector);
 	for ( i = 0; i < apol_vector_get_size(attr_vector); i++ ) {
 		qpol_type_t *attr;
 		char *attr_name;
+		int at_end;
 
 		attr = apol_vector_get_element(attr_vector, i);
 		qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
 		qpol_type_get_type_iter(policy->qh, policy->p, attr, &types);
-		if ( !qpol_iterator_end(types) ) continue;
-		
+		at_end = qpol_iterator_end(types);
+		qpol_iterator_destroy(&types);
+		if ( !at_end ) continue;
+
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
-                	ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_types_run_fail;
 		}
 		proof->type = SECHK_ITEM_ATTRIB;
@@ -251,24 +254,24 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
 		sprintf(proof->text, "attribute %s has no types", attr_name);
 		item = sechk_item_new(NULL);
 		if (!item) {
-                	ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_types_run_fail;
 		}
 		if ( !item->proof ) {
 			if ( !(item->proof = apol_vector_create()) ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto attribs_wo_types_run_fail;
 			}
 		}
 		item->item = (void *)attr;
 		item->test_result = 1;
-                if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-                         goto attribs_wo_types_run_fail;
-                }
-                if ( apol_vector_append(res->items, (void *)item) < 0 ) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-                        goto attribs_wo_types_run_fail;
+		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto attribs_wo_types_run_fail;
+		}
+		if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto attribs_wo_types_run_fail;
                 }
 	}
 	qpol_iterator_destroy(&types);
@@ -284,14 +287,14 @@ attribs_wo_types_run_fail:
 }
 
 /* The free function frees the private data of a module */
-void attribs_wo_types_data_free(void *data) 
+void attribs_wo_types_data_free(void *data)
 {
 	free(data);
 }
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int attribs_wo_types_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+int attribs_wo_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 {
 	attribs_wo_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -369,7 +372,7 @@ int attribs_wo_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *attribs_wo_types_get_result(sechk_module_t *mod) 
+sechk_result_t *attribs_wo_types_get_result(sechk_module_t *mod)
 {
 	if (!mod) {
                 ERR(NULL, "%s", "Invalid parameters");
@@ -414,4 +417,3 @@ int attribs_wo_types_get_list(sechk_module_t *mod, apol_vector_t **v)
 
         return 0;
 }
-

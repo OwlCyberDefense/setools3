@@ -1,7 +1,7 @@
  /* Copyright (C) 2005-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
- 
-/* 
+
+/*
  * Author: jmowery@tresys.com, kcarr@tresys.com
  *
  * sechecker.c
@@ -34,7 +34,7 @@
 static int sechk_lib_compare_sev(const char *a, const char *b)
 {
 	int aval, bval;
-	
+
 	if (a == NULL || b == NULL) {
 		assert(FALSE);
 		errno = EINVAL;
@@ -82,7 +82,7 @@ int sechk_lib_set_minsev(const char *minsev, sechk_lib_t *lib)
 		errno = EINVAL;
 		return -1;
 	}
-	
+
 	if (strcmp(minsev, SECHK_SEV_LOW) == 0)
 		lib->minsev = SECHK_SEV_LOW;
 	else if (strcmp(minsev, SECHK_SEV_MED) == 0)
@@ -149,7 +149,7 @@ sechk_lib_t *sechk_lib_new(void)
 		error = errno;
 		perror("Error adding modules");
 		goto exit_err;
-		
+
 	}
 	for (i = 0; i < num_known_modules; i++) {
 		tmp = sechk_module_new();
@@ -192,9 +192,9 @@ exit_err:
 	goto exit;
 }
 
-void sechk_lib_destroy(sechk_lib_t **lib) 
+void sechk_lib_destroy(sechk_lib_t **lib)
 {
-	if (lib == NULL)
+	if (lib == NULL || *lib == NULL)
 		return;
 
 	apol_vector_destroy(&((*lib)->modules), sechk_module_free);
@@ -205,6 +205,8 @@ void sechk_lib_destroy(sechk_lib_t **lib)
 #endif
 	free((*lib)->selinux_config_path);
 	free((*lib)->policy_path);
+	free(*lib);
+	*lib = NULL;
 }
 
 void sechk_module_free(void *module)
@@ -227,6 +229,7 @@ void sechk_module_free(void *module)
 		free_fn(mod->data);
 	}
 	free(mod->name);
+	mod->name = NULL;
 	apol_vector_destroy(&mod->functions, sechk_fn_free);
 	free(mod);
 }
@@ -253,7 +256,7 @@ void sechk_name_value_free(void *nv)
 	free(nv);
 }
 
-void sechk_result_destroy(sechk_result_t **res) 
+void sechk_result_destroy(sechk_result_t **res)
 {
 	if (!res || !(*res))
 		return;
@@ -264,7 +267,7 @@ void sechk_result_destroy(sechk_result_t **res)
 	*res = NULL;
 }
 
-void sechk_item_free(void *item) 
+void sechk_item_free(void *item)
 {
 	sechk_item_t *it = (sechk_item_t*)item;
 
@@ -278,7 +281,7 @@ void sechk_item_free(void *item)
 	free(item);
 }
 
-void sechk_proof_free(void *proof) 
+void sechk_proof_free(void *proof)
 {
 	sechk_proof_t *p = (sechk_proof_t*)proof;
 
@@ -294,7 +297,7 @@ void sechk_proof_free(void *proof)
 	free(proof);
 }
 
-sechk_fn_t *sechk_fn_new(void) 
+sechk_fn_t *sechk_fn_new(void)
 {
 	/* no initialization needed here */
 	return (sechk_fn_t*)calloc(1, sizeof(sechk_fn_t));
@@ -332,13 +335,13 @@ err:
 	return NULL;
 }
 
-sechk_result_t *sechk_result_new(void) 
+sechk_result_t *sechk_result_new(void)
 {
 	/* initilization to zero is sufficient here */
 	return (sechk_result_t*)calloc(1, sizeof(sechk_result_t));
 }
 
-sechk_item_t *sechk_item_new(free_fn_t fn) 
+sechk_item_t *sechk_item_new(free_fn_t fn)
 {
 	sechk_item_t *it = NULL;
 
@@ -350,7 +353,7 @@ sechk_item_t *sechk_item_new(free_fn_t fn)
 	return it;
 }
 
-sechk_proof_t *sechk_proof_new(free_fn_t fn) 
+sechk_proof_t *sechk_proof_new(free_fn_t fn)
 {
 	sechk_proof_t *proof = NULL;
 	proof = (sechk_proof_t*)calloc(1, sizeof(sechk_proof_t));
@@ -363,7 +366,7 @@ sechk_proof_t *sechk_proof_new(free_fn_t fn)
 
 int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 {
-	
+
 	char *default_policy_path = NULL;
 	int retv = -1;
 	if (!lib)
@@ -446,7 +449,7 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 }
 #endif
 
-int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sechk_lib_t *lib) 
+int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sechk_lib_t *lib)
 {
 	int retv, error = 0;
 	size_t i;
@@ -471,11 +474,11 @@ int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sech
 			return retv;
 		}
 	}
-	
+
 	return 0;
 }
 
-void *sechk_lib_get_module_function(const char *module_name, const char *function_name, const sechk_lib_t *lib) 
+void *sechk_lib_get_module_function(const char *module_name, const char *function_name, const sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -512,11 +515,11 @@ void *sechk_lib_get_module_function(const char *module_name, const char *functio
 	return fn_struct->fn;
 }
 
-sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t *lib) 
+sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t *lib)
 {
 	size_t i;
 	sechk_module_t *mod = NULL;
-	
+
 	if (!module_name || !lib) {
 		fprintf(stderr, "Error: failed to get module\n");
 		errno = EINVAL;
@@ -620,7 +623,7 @@ int sechk_lib_check_module_requirements(sechk_lib_t *lib)
 					return -1;
 				} else {
 					/* otherwise we just disable this module and keep testing */
-					ERR(lib->policy, "Error: requirements not met for %s\n", mod->name);	
+					ERR(lib->policy, "Error: requirements not met for %s\n", mod->name);
 					mod->selected = FALSE;
 					retv = -1;
 					break;
@@ -661,7 +664,7 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 	return 0;
 }
 
-int sechk_lib_run_modules(sechk_lib_t *lib) 
+int sechk_lib_run_modules(sechk_lib_t *lib)
 {
 	int retv, num_selected = 0, rc = 0;
 	size_t i;
@@ -694,18 +697,18 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 			return -1;
 		}
 		retv = run_fn(mod, lib->policy);
-	       
+
 		if (retv < 0) {
 			/* module failure */
 			/* only put output failures if we are not in quiet mode */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET)) 
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				ERR(lib->policy, "Error: module %s failed\n", mod->name);
 			rc = -1;
 		} else if (retv > 0) {
 			/* a module looking for policy errors has found one
 			 * if in quiet mode stop since running additional
 			 * modules will not change the return code */
-			if (lib->outputformat & (SECHK_OUT_QUIET)) 
+			if (lib->outputformat & (SECHK_OUT_QUIET))
 				return -1;
 		}
 	}
@@ -718,7 +721,7 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib)
 	size_t i;
 	sechk_module_t *mod = NULL;
 	sechk_print_output_fn_t print_fn = NULL;
-	
+
 	if (!lib) {
 		fprintf(stderr, "Error: invalid library\n");
 		errno = EINVAL;
@@ -807,23 +810,23 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 		else
 			pol_ver = 0;
 
-		unsigned int ver; 
+		unsigned int ver;
 		if (qpol_policy_get_policy_version(lib->policy->qh, lib->policy->p, &ver) < 0) {
 			ERR(lib->policy, "%s", "Unable to get policy version.");
 			return FALSE;
 		}
 		if (ver < pol_ver) {
 			/* as long as we're not in quiet mode print output */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET))				
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				fprintf(stderr, "Error: module requires newer policy version\n");
 			return FALSE;
 		}
-	} 
+	}
 	else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_SELINUX)) {
 #ifdef LIBSELINUX
 		if (!is_selinux_enabled()) {
 			/* as long as we're not in quiet mode print output */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET))				
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				fprintf(stderr, "Error: module requires selinux system\n");
 			return FALSE;
 		}
@@ -833,7 +836,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 			fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
 		return FALSE;
 #endif
-	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {		
+	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
 		if (!qpol_policy_is_mls_enabled(lib->policy->qh, lib->policy->p)) {
 			/* as long as we're not in quiet mode print output */
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))
@@ -866,7 +869,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 	}
 	else {
 		/* as long as we're not in quiet mode print output */
-		if (lib->outputformat & ~(SECHK_OUT_QUIET))			
+		if (lib->outputformat & ~(SECHK_OUT_QUIET))
 			fprintf(stderr, "Error: unrecognized requirement\n");
 		return FALSE;
 	}
@@ -904,14 +907,14 @@ int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib)
 {
 	int i;
 	sechk_module_t *mod = NULL;
-	
+
 	if (!lib || !out) {
 		errno = EINVAL;
 		return -1;
 	}
-	
+
 	lib->outputformat = out;
-	
+
 	for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
 		mod = apol_vector_get_element(lib->modules, i);
 		mod->outputformat = out;
@@ -977,7 +980,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 			errno = ENOMEM;
 			return -1;
 		}
-		sprintf(prof_filename, "%s/%s", PROF_SUBDIR, profiles[i].file);		
+		sprintf(prof_filename, "%s/%s", PROF_SUBDIR, profiles[i].file);
 		path = apol_file_find(prof_filename);
 		if (!path) {
 			free(prof_filename);
@@ -988,7 +991,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 				errno = ENOMEM;
 				return -1;
 			}
-			sprintf(prof_filename, "%s/%s", PROFILE_INSTALL_DIR, profiles[i].file);		
+			sprintf(prof_filename, "%s/%s", PROFILE_INSTALL_DIR, profiles[i].file);
 			path = apol_file_find(prof_filename);
 			if (!path) {
 				fprintf(stderr, "Error: Unable to find path\n");
@@ -996,7 +999,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 				goto sechk_load_profile_error;
 			}
 		}
-		
+
 		/* concatenate path and filename */
 		profpath = (char*)calloc(3 + strlen(path) + strlen(prof_filename), sizeof(char));
 		if (!profpath) {
@@ -1020,19 +1023,19 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 		fprintf(stderr, "Error: could not parse profile\n");
 		goto sechk_load_profile_error;
 	}
-	
+
 	/* turn off output for any unselected modules */
 	for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
 		mod = apol_vector_get_element(lib->modules, i);
 		if (!mod->selected)
 			mod->outputformat = SECHK_OUT_NONE;
 	}
-	
+
 	free(profpath);
 	free(prof_filename);
 	free(path);
 	return 0;
-	
+
 sechk_load_profile_error:
 	free(profpath);
 	free(prof_filename);
@@ -1073,7 +1076,7 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 	/* if not here nothing to do */
 	if (apol_vector_get_index(module->options, needle, sechk_option_name_compare, NULL, &i) < 0) {
 		sechk_name_value_free(needle);
-		return 0;	
+		return 0;
 	}
 
 	/* add all options of a different name to a new vector to replace the old */
@@ -1135,4 +1138,3 @@ int sechk_proof_with_element_compare(const void *in_proof, const void *elem, voi
 	/* explicit pointer to integer cast */
 	return (int)(proof->elem - elem);
 }
-

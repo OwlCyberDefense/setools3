@@ -57,7 +57,7 @@ int qpol_policy_get_isid_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	*ocon = (qpol_isid_t *)tmp;
 
 	if (*ocon == NULL) {
-		ERR(handle, "cound not find initial SID statement for %s", name);
+		ERR(handle, "could not find initial SID statement for %s", name);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}

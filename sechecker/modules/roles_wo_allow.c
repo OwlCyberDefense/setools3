@@ -227,11 +227,6 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy)
                 goto roles_wo_allow_run_fail;
         }
 
-        if ( !(role_allow_query = apol_role_allow_query_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
-                goto roles_wo_allow_run_fail;
-        }
-
         if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
                 ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
@@ -320,7 +315,7 @@ int roles_wo_allow_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	roles_wo_allow_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0, j, num_items;
+	size_t i = 0, j = 0, num_items;
 	qpol_role_t *role;
 	char *role_name;
 
