@@ -38,15 +38,15 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 		return -1;
 	}
 	mod->parent_lib = lib;
-	
+
 	/* assign the descriptions */
 	mod->brief_description = "domains with no roles";
-	mod->detailed_description = 
+	mod->detailed_description =
 "--------------------------------------------------------------------------------\n"
 "This module finds all domains in the policy not associated with a role.  These  \n"
 "domains cannot have a valid security context.  The object_r role is not         \n"
 "considered in this check.\n";
-	mod->opt_description = 
+	mod->opt_description =
 "Module requirements:\n"
 "   none\n"
 "Module dependencies:\n"
@@ -178,7 +178,7 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy)
 	int i, retv, error;
 	sechk_module_t *mod_ptr = NULL;
 	sechk_run_fn_t run_fn = NULL;
-	sechk_result_t *(*get_result_fn)(sechk_module_t *mod) = NULL;
+	sechk_result_t *(*get_result_fn)(sechk_module_t *) = NULL;
 	apol_vector_t *domain_vector;
 	apol_vector_t *role_vector;
 	apol_role_query_t *role_query = NULL;
@@ -232,7 +232,7 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy)
                 ERR(policy, "%s", "Unable to get results for module find_domains");
 		goto domains_wo_roles_run_fail;
 	}
-	
+
 	domain_vector = (apol_vector_t *)find_domains_res->items;
 
         if ( !(role_query = apol_role_query_create()) ) {
@@ -244,11 +244,11 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy)
 	for (i = 0; i < apol_vector_get_size(domain_vector); i++) {
 		qpol_type_t *domain;
 		char *domain_name;
-		
+
 		item = apol_vector_get_element(domain_vector, i);
-		domain = item->item;	
+		domain = item->item;
 		qpol_type_get_name(policy->qh, policy->p, domain, &domain_name);
-		
+
 		apol_role_query_set_type(policy, role_query, domain_name);
 		apol_get_role_by_query(policy, role_query, &role_vector);
 		if ( apol_vector_get_size(role_vector) > 0 ) continue;
@@ -284,7 +284,7 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy)
                 if ( apol_vector_append(res->items, (void*)item) < 0 ) {
 	                ERR(NULL, "%s", strerror(ENOMEM));
                         goto domains_wo_roles_run_fail;
-		}	
+		}
 	}
 	apol_role_query_destroy(&role_query);
 	mod->result = res;
@@ -300,12 +300,12 @@ domains_wo_roles_run_fail:
 /* The free function frees the private data of a module */
 void domains_wo_roles_data_free(void *data)
 {
-	free(data);	
+	free(data);
 }
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout.  */
-int domains_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+int domains_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
 {
 	domains_wo_roles_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -361,7 +361,7 @@ int domains_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *domains_wo_roles_get_result(sechk_module_t *mod) 
+sechk_result_t *domains_wo_roles_get_result(sechk_module_t *mod)
 {
 	if (!mod) {
                 ERR(NULL, "%s", "Invalid parameters");

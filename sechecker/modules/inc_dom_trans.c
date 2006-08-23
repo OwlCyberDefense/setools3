@@ -182,7 +182,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 	size_t i, j, k, retv;
         sechk_module_t *mod_ptr = NULL;
         sechk_run_fn_t run_fn = NULL;
-        sechk_result_t *(*get_result_fn)(sechk_module_t *mod) = NULL;
+        sechk_result_t *(*get_result_fn)(sechk_module_t *) = NULL;
 	sechk_result_t *find_domains_res = NULL;
 	apol_domain_trans_analysis_t *domain_trans = NULL;
 	apol_vector_t *domain_vector = NULL, *role_vector = NULL, *user_vector = NULL, *rbac_vector = NULL;
