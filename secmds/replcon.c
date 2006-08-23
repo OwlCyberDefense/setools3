@@ -182,7 +182,7 @@ replcon_context_destroy(replcon_context_t * context)
  * (caller must free) on success, NULL on error
  */
 replcon_context_t *
-replcon_context_create(const char *context_str)
+replcon_context_create(const char *ctx_str)
 {
 	replcon_context_t *context = NULL;
 	char **parts = NULL;
@@ -192,8 +192,8 @@ replcon_context_create(const char *context_str)
 	int i = 0, context_size = is_selinux_mls_enabled() ? 4 : 3;
 	int num_colon = 0;
 
-	assert(context_str != NULL);
-	str = context_str;
+	assert(ctx_str != NULL);
+	str = ctx_str;
 
 	while(str[i]) {
 		if (str[i] == ':')
@@ -213,7 +213,7 @@ replcon_context_create(const char *context_str)
 	}
 	memset(parts, 0, sizeof(char *) * context_size);
 
-	tokens_orig = tokens = strdup(context_str);
+	tokens_orig = tokens = strdup(ctx_str);
 	if (tokens == NULL) {
 		fprintf(stderr, "Out of memory.\n");
 		goto err;
@@ -277,7 +277,7 @@ replcon_context_create(const char *context_str)
 	  if (parts) free (parts);
 	  if (tokens_orig) free(tokens_orig);
 	  replcon_context_destroy(context);
-	  fprintf(stderr, "Could not create file context from %s...\n", context_str);
+	  fprintf(stderr, "Could not create file context from %s...\n", ctx_str);
 	  return NULL;
 }
 
@@ -683,22 +683,22 @@ int replcon_info_has_object_class(replcon_info_t *info, sefs_classes_t obj_class
 /**
  * Determines if context is a valid file context format.
  *
- * @param context_str A string containing a security context
+ * @param ctx_str A string containing a security context
  * @return TRUE if security context string is valid,
  * FALSE if the string is invalid
  */
-int replcon_is_valid_context_format(const char *context_str)
+int replcon_is_valid_context_format(const char *ctx_str)
 {
 	int i, len, count = 0;
 
-	assert(context_str != NULL);
-	if (!strcasecmp("unlabeled", context_str))
+	assert(ctx_str != NULL);
+	if (!strcasecmp("unlabeled", ctx_str))
 		return TRUE;
 
-	len = strlen(context_str);
+	len = strlen(ctx_str);
 
 	for (i = 0; i < len; i++) {
-		if (context_str[i] == ':')
+		if (ctx_str[i] == ':')
 			count++;
 	}
 

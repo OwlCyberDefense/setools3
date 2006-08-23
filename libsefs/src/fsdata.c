@@ -296,7 +296,7 @@ static int sefs_append(char **stmt, size_t *stmt_size, char *fmt, ...)
  */
 static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int *objects, int db_is_mls)
 {
-	int index, where_added = 0;
+	int idx, where_added = 0;
 	size_t stmt_size = 0;
 	*stmt = NULL;
 
@@ -318,14 +318,14 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 		else {
 			APPEND(" (");
 		}
-		for (index = 0; index < search_keys->num_type; index++) {
-			if (index > 0) {
+		for (idx = 0; idx < search_keys->num_type; idx++) {
+			if (idx > 0) {
 				APPEND(" OR");
 			}
 			if (search_keys->do_type_regEx)
-				APPEND(" sefs_types_compare(types.type_name,\"%s\")", search_keys->type[index]);
+				APPEND(" sefs_types_compare(types.type_name,\"%s\")", search_keys->type[idx]);
 			else
-				APPEND(" types.type_name = \"%s\"", search_keys->type[index]);
+				APPEND(" types.type_name = \"%s\"", search_keys->type[idx]);
 		}
 	}
 
@@ -337,14 +337,14 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 		else {
 			APPEND(") AND (");
 		}
-		for (index = 0; index < search_keys->num_user; index++) {
-			if (index > 0) {
+		for (idx = 0; idx < search_keys->num_user; idx++) {
+			if (idx > 0) {
 				APPEND(" OR");
 			}
 			if (search_keys->do_user_regEx)
-				APPEND(" sefs_users_compare(users.user_name,\"%s\")", search_keys->user[index]);
+				APPEND(" sefs_users_compare(users.user_name,\"%s\")", search_keys->user[idx]);
 			else
-				APPEND(" users.user_name = \"%s\"", search_keys->user[index]);
+				APPEND(" users.user_name = \"%s\"", search_keys->user[idx]);
 		}
 	}
 
@@ -356,14 +356,14 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 		else {
 			APPEND(") AND (");
 		}
-		for (index = 0; index < search_keys->num_path; index++) {
-			if (index > 0) {
+		for (idx = 0; idx < search_keys->num_path; idx++) {
+			if (idx > 0) {
 				APPEND(" OR");
 			}
 			if (search_keys->do_path_regEx)
-				APPEND(" sefs_paths_compare(paths.path,\"%s\")", search_keys->path[index]);
+				APPEND(" sefs_paths_compare(paths.path,\"%s\")", search_keys->path[idx]);
 			else
-				APPEND(" paths.path LIKE \"%s%%\"", search_keys->path[index]);
+				APPEND(" paths.path LIKE \"%s%%\"", search_keys->path[idx]);
 		}
 	}
 
@@ -375,11 +375,11 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 		else {
 			APPEND(") AND (");
 		}
-		for (index = 0; index < search_keys->num_object_class; index++) {
-			if (index > 0) {
+		for (idx = 0; idx < search_keys->num_object_class; idx++) {
+			if (idx > 0) {
 				APPEND(" OR");
 			}
-			APPEND(" inodes.obj_class = %d", objects[index]);
+			APPEND(" inodes.obj_class = %d", objects[idx]);
 		}
 	}
 
@@ -391,14 +391,14 @@ static int sefs_stmt_populate(char **stmt, sefs_search_keys_t *search_keys, int 
 		else {
 			APPEND(") AND (");
 		}
-		for (index = 0; index < search_keys->num_range; index++) {
-			if (index > 0) {
+		for (idx = 0; idx < search_keys->num_range; idx++) {
+			if (idx > 0) {
 				APPEND(" OR");
 			}
 			if (search_keys->do_range_regEx)
-				APPEND(" sefs_range_compare(mls.mls_range,\"%s\")", search_keys->range[index]);
+				APPEND(" sefs_range_compare(mls.mls_range,\"%s\")", search_keys->range[idx]);
 			else
-				APPEND(" mls.mls_range = \"%s\"", search_keys->range[index]);
+				APPEND(" mls.mls_range = \"%s\"", search_keys->range[idx]);
 		}
 	}
 
@@ -1479,19 +1479,19 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, const char *dir)
 	unsigned int num_mounts=0;
 	int i;
 	sefs_filesystem_data_t *fsdh;
-	struct stat fstat;
+	struct stat f_stat;
 
 	assert(dir);
 	/* Make sure directory exists */
 	if (access(dir, R_OK) != 0) {
 		return SEFS_DIR_ACCESS_ERROR;
 	}
-	if (stat(dir, &fstat) != 0) {
+	if (stat(dir, &f_stat) != 0) {
 		fprintf(stderr, "Error getting file stats.\n");
 		return -1;
 	}
 	/* Verify it is a directory. */
-	if (!S_ISDIR(fstat.st_mode)) {
+	if (!S_ISDIR(f_stat.st_mode)) {
 		return SEFS_NOT_A_DIR_ERROR;
 	}
 	/* malloc out some memory for the fsdh */
@@ -1573,7 +1573,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 	int i, j, rc = 0;
 	FILE *fp = NULL;
 	sefs_fileinfo_t *pinfo = NULL;
-	struct sqlite3 *db = NULL;
+	struct sqlite3 *sqldb = NULL;
 	char stmt[100000];
 	char *errmsg = NULL;
 	char *new_stmt = NULL;
@@ -1593,40 +1593,40 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 	}
 	fclose(fp);
 
-	/* now open up the file db */
-	rc = sqlite3_open(filename, &db);
+	/* now open up the file sqldb */
+	rc = sqlite3_open(filename, &sqldb);
 	if ( rc ) {
-		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-		sqlite3_close(db);
+		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(sqldb));
+		sqlite3_close(sqldb);
 		return -1;
 	}
 
 	/* apply our schema to it, based upon if any of the files had
 	 * a MLS range associated with them */
 	if (fsdh->fs_had_range) {
-		rc = sqlite3_exec(db, DB_SCHEMA_MLS, NULL, 0, &errmsg);
+		rc = sqlite3_exec(sqldb, DB_SCHEMA_MLS, NULL, 0, &errmsg);
 	}
 	else {
-		rc = sqlite3_exec(db, DB_SCHEMA_NONMLS, NULL, 0, &errmsg);
+		rc = sqlite3_exec(sqldb, DB_SCHEMA_NONMLS, NULL, 0, &errmsg);
 	}
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "SQL error while creating database(%d): %s\n",rc, errmsg);
 		sqlite3_free(errmsg);
-		sqlite3_close(db);
+		sqlite3_close(sqldb);
 		return -1;
 	}
 
 
 	/* now we basically just go through the old data struct moving */
-	/* the data to the places it should be for our sqlite3 db */
+	/* the data to the places it should be for our sqlite3 sqldb */
 	sprintf(stmt,"BEGIN TRANSACTION");
-	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
+	rc = sqlite3_exec(sqldb,stmt,NULL,0,&errmsg);
 	if (rc != SQLITE_OK)
 		goto bad;
 	for (i=0; i < fsdh->num_types; i++) {
 		sprintf(stmt,"insert into types (type_name,type_id) values "
 			"(\"%s\",%d);",fsdh->types[i].name,i);
-		rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
+		rc = sqlite3_exec(sqldb,stmt,NULL,0,&errmsg);
 		if (rc != SQLITE_OK)
 			goto bad;
 
@@ -1635,14 +1635,14 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 		sprintf(stmt,"insert into users (user_name,user_id) values "
 			"(\"%s\",%d);",fsdh->users[i],i);
 
-		rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
+		rc = sqlite3_exec(sqldb,stmt,NULL,0,&errmsg);
 		if (rc != SQLITE_OK)
 			goto bad;
 	}
 	for (i=0; fsdh->fs_had_range && i < fsdh->num_range; i++) {
 		sprintf(stmt,"insert into mls (mls_range,mls_id) values "
 			"(\"%s\",%d);", fsdh->range[i], i);
-		rc = sqlite3_exec(db, stmt, NULL, 0, &errmsg);
+		rc = sqlite3_exec(sqldb, stmt, NULL, 0, &errmsg);
 		if (rc != SQLITE_OK)
 			goto bad;
 	}
@@ -1663,7 +1663,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 				pinfo->symlink_target,
 				(unsigned int)(pinfo->key.dev),
 				(unsigned long long)(pinfo->key.inode));
-			rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
+			rc = sqlite3_exec(sqldb,stmt,NULL,0,&errmsg);
 			if (rc != SQLITE_OK)
 				goto bad;
 		}
@@ -1677,7 +1677,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 				pinfo->obj_class,
 				(unsigned int)(pinfo->key.dev),
 				(unsigned long long)(pinfo->key.inode));
-			rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
+			rc = sqlite3_exec(sqldb,stmt,NULL,0,&errmsg);
 			if (rc != SQLITE_OK)
 				goto bad;
 		}
@@ -1685,7 +1685,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 		for (j = 0; j < pinfo->num_links;  j++) {
 			new_stmt = sqlite3_mprintf("insert into paths (inode,path) values (%d,'%q')",
 				i,(char *)pinfo->path_names[j]);
-			rc = sqlite3_exec(db,new_stmt,NULL,0,&errmsg);
+			rc = sqlite3_exec(sqldb,new_stmt,NULL,0,&errmsg);
 			sqlite3_free(new_stmt);
 			if (rc != SQLITE_OK)
 				goto bad;
@@ -1693,7 +1693,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 
 	}
 	sprintf(stmt,"END TRANSACTION");
-	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
+	rc = sqlite3_exec(sqldb,stmt,NULL,0,&errmsg);
 	if (rc != SQLITE_OK)
 		goto bad;
 	gethostname(hostname,50);
@@ -1702,7 +1702,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, const char *filename)
 		"insert into info (key,value) values ('hostname','%s');"
 		"insert into info (key,value) values ('datetime','%s');"
 		,hostname,ctime(&mytime));
-	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
+	rc = sqlite3_exec(sqldb,stmt,NULL,0,&errmsg);
 	if (rc != SQLITE_OK)
 		goto bad;
 
