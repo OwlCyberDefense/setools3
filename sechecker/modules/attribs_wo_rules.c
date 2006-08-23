@@ -439,7 +439,7 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy)
 				type = item->item;
 				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 				printf("%s\n", type_name);
-				for (l = 0; l < apol_vector_get_sizeitem->proof); l++) {
+				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof,l);
 					if ( proof )
 						printf("\t%s\n", proof->text);

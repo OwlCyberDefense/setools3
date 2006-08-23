@@ -16,8 +16,9 @@ dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 
 BUILT_SOURCES = tmp.tcl
 
-AM_CFLAGS = @QPOL_CFLAGS@ @APOL_CFLAGS@ @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
-AM_LDFLAGS = @TCL_LIB_SPEC@ @TK_LIB_SPEC@
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @TCL_LIB_SPEC@ @TK_LIB_SPEC@
 
 apol_SOURCES = apol_gui.c \
 	head.tcl \
@@ -36,7 +37,7 @@ apol_SOURCES = apol_gui.c \
 
 dist_noinst_DATA = foo_module.tcl
 
-LDADD = @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
+LDADD = @SELINUX_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
 apol_DEPENDENCIES = apol.tcl $(top_builddir)/libapol-tcl/libapol-tcl.a $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/config.tcl
 
 if WANT_LIBSEFS
@@ -61,7 +62,7 @@ tmp.tcl: $(TCL_STRIP_FILES)
 %.tcl:
 # do nothing
 
-# FIX ME: install help files, perm maps, and link to default perm map
+# FIX ME: link to default perm map
 
 $(top_builddir)/libapol/libapol-tcl.a:
 	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
@@ -75,10 +76,10 @@ $(top_builddir)/libqpol/src/libqpol.so:
 $(top_builddir)/libsefs/src/libsefs.so:
 	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)
 
-CLEANFILES = $(dist_bin_SCRIPTS)
+CLEANFILES = $(dist_setools_SCRIPTS)
 
 mostlyclean-local:
-	-rm -rf $(dist_bin_SCRIPTS)
+	-rm -rf $(dist_setools_SCRIPTS)
 
 clean-local:
 	-rm -rf tmp.tcl

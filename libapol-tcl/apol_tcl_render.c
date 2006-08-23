@@ -515,7 +515,7 @@ static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc,
  */
 static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	Tcl_Obj *result_obj;
+	Tcl_Obj *result_obj = NULL;
 	apol_context_t *context = NULL;
 	char *rendered_context = NULL;
 	int retval = TCL_ERROR;
@@ -573,7 +573,7 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int arg
  */
 static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *result_obj;
+	Tcl_Obj *result_obj = NULL;
 	qpol_avrule_t *avrule;
 	int retval = TCL_ERROR;
 	apol_tcl_clear_error();
@@ -775,7 +775,7 @@ static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int
  */
 static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *result_obj, *perm_obj;
+	Tcl_Obj *result_obj = NULL, *perm_obj;
 	qpol_avrule_t *avrule;
 	qpol_iterator_t *perm_iter = NULL;
 	int retval = TCL_ERROR;
@@ -1078,7 +1078,7 @@ static int Apol_RenderTERuleDefault(ClientData clientData, Tcl_Interp *interp, i
  */
 static int Apol_RenderSynAVRule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *result_obj;
+	Tcl_Obj *result_obj = NULL;
 	qpol_syn_avrule_t *avrule;
 	int retval = TCL_ERROR;
 	apol_tcl_clear_error();
@@ -1159,7 +1159,7 @@ static int Apol_RenderSynAVRuleLine(ClientData clientData, Tcl_Interp *interp, i
  */
 static int Apol_RenderSynTERule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	Tcl_Obj *result_obj;
+	Tcl_Obj *result_obj = NULL;
 	qpol_syn_terule_t *terule;
 	int retval = TCL_ERROR;
 	apol_tcl_clear_error();

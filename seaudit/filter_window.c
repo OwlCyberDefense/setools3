@@ -12,6 +12,8 @@
  *
  */
 
+#include <config.h>
+
 #include "filter_window.h"
 #include "seaudit.h"
 #include "utilgui.h"
@@ -426,7 +428,7 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 	const char *object;
 	char *class_name;
 	apol_vector_t *class_vector;
-	qpol_class_t *class;
+	qpol_class_t *class = NULL;
 
 	apol_get_class_by_query(seaudit_app->cur_policy, NULL, &class_vector);
 
