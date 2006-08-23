@@ -86,7 +86,7 @@ int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 	}
 
 	if (*genfscon == NULL) {
-		ERR(handle, "cound not find genfscon statement for %s %s", name, path);
+		ERR(handle, "could not find genfscon statement for %s %s", name, path);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}

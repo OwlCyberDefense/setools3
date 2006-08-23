@@ -72,8 +72,8 @@ typedef struct sefs_fc_entry {
  * @param fc_path Path to the file_contexts.
  * @param contexts Reference to a vector of sefs_fc_t objects.  Upon
  * error this will be set to NULL.  The caller is responsible for
- * calling apol_vector_destroy(), passing in sefs_fc_free() as the
- * second parameter.
+ * calling apol_vector_destroy(), passing in sefs_fc_entry free() as
+ * the second parameter.
  *
  * @return 0 on success, < 0 on error.
  */

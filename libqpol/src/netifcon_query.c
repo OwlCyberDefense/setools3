@@ -57,7 +57,7 @@ int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 	*ocon = (qpol_netifcon_t *)tmp;
 
 	if (*ocon == NULL) {
-		ERR(handle, "cound not find netifcon statement for %s", name);
+		ERR(handle, "could not find netifcon statement for %s", name);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}

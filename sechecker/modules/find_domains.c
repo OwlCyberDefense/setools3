@@ -1,7 +1,7 @@
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
-/* 
+/*
  * Author: jmowery@tresys.com
  *
  */
@@ -14,27 +14,27 @@
 
 static const char *const mod_name = "find_domains";
 
-int find_domains_register(sechk_lib_t *lib) 
+int find_domains_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-                ERR(NULL, "%s", "No library");
+		ERR(NULL, "%s", "No library");
 		return -1;
 	}
 
 
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-                ERR(NULL, "%s", "Module has not been run");
+		ERR(NULL, "%s", "Module has not been run");
 		return -1;
 	}
 	mod->parent_lib = lib;
 
 	/* assign descriptions */
 	mod->brief_description = "utility module";
-	mod->detailed_description = 
+	mod->detailed_description =
 			"--------------------------------------------------------------------------------\n"
 			"This is a utility module which finds types in a policy that are treated as a    \n"
 			"domain.  A type is considered a domain if any of the following is true:\n"
@@ -43,7 +43,7 @@ int find_domains_register(sechk_lib_t *lib)
 			"   2) it is the source of a TE rule for object class other than filesystem\n"
 			"   3) it is the default type in a type_transition rule for object class process \n"
 			"   4) it is associated with a role other than object_r\n";
-	mod->opt_description = 
+	mod->opt_description =
 			"Module requirements:\n"
 			"   none\n"
 			"Module dependencies:\n"
@@ -60,12 +60,12 @@ int find_domains_register(sechk_lib_t *lib)
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_domains_init;
@@ -73,12 +73,12 @@ int find_domains_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_domains_run;
@@ -86,12 +86,12 @@ int find_domains_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_domains_data_free;
@@ -99,12 +99,12 @@ int find_domains_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_domains_print_output;
@@ -112,12 +112,12 @@ int find_domains_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_domains_get_result;
@@ -125,12 +125,12 @@ int find_domains_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->fn = &find_domains_get_list;
@@ -139,59 +139,60 @@ int find_domains_register(sechk_lib_t *lib)
 	return 0;
 }
 
-int find_domains_init(sechk_module_t *mod, apol_policy_t *policy) 
+int find_domains_init(sechk_module_t *mod, apol_policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
 	find_domains_data_t *datum = NULL;
 	size_t i, j;
 	qpol_type_t *attr = NULL;
-        apol_vector_t *attr_vector = NULL;
-        apol_attr_query_t *attr_query = apol_attr_query_create();
+	apol_vector_t *attr_vector = NULL;
+	apol_attr_query_t *attr_query = apol_attr_query_create();
 
 	if (!mod || !policy) {
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = find_domains_data_new();
 	if (!datum) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 
 	if ( !(datum->domain_attribs = apol_vector_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 
 	mod->data = datum;
 
 	//opt = mod->options;
-        for (i = 0; i < apol_vector_get_size(mod->options); i++) {
-                opt = apol_vector_get_element(mod->options, i);
-                if (!strcmp(opt->name, "domain_attribute")) {
-                        apol_attr_query_set_attr(policy, attr_query, opt->value);
-                        apol_get_attr_by_query(policy, attr_query, &attr_vector);
-                        for (j=0;j<apol_vector_get_size(attr_vector);j++) {
-                                char *domain_attrib;
-                                attr = apol_vector_get_element(attr_vector, j);
-                                qpol_type_get_name(policy->qh, policy->p, attr, &domain_attrib);
-                                if ( apol_vector_append( datum->domain_attribs,(void*) domain_attrib ) < 0 ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
-               				return -1;	
+	for (i = 0; i < apol_vector_get_size(mod->options); i++) {
+		opt = apol_vector_get_element(mod->options, i);
+		if (!strcmp(opt->name, "domain_attribute")) {
+			apol_attr_query_set_attr(policy, attr_query, opt->value);
+			apol_get_attr_by_query(policy, attr_query, &attr_vector);
+			for (j=0;j<apol_vector_get_size(attr_vector);j++) {
+				char *domain_attrib;
+				attr = apol_vector_get_element(attr_vector, j);
+				qpol_type_get_name(policy->qh, policy->p, attr, &domain_attrib);
+				if ( apol_vector_append( datum->domain_attribs,(void*) domain_attrib ) < 0 ) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					return -1;
 
 				}
-                        }
-                }
-        }
-        return 0;
+			}
+		}
+	}
+	apol_attr_query_destroy(&attr_query);
+	return 0;
 }
 
-int find_domains_run(sechk_module_t *mod, apol_policy_t *policy) 
+int find_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 {
 	int i, j, error;
 	sechk_result_t *res = NULL;
@@ -209,40 +210,40 @@ int find_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_role_query_t * role_query = NULL;
 
 	if (!mod || !policy) {
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	/* if already run return */
-	if (mod->result) 
+	if (mod->result)
 		return 0;
 
-        res = sechk_result_new();
-        if (!res) {
-                ERR(policy, "%s", strerror(ENOMEM));
-                return -1;
-        }
+	res = sechk_result_new();
+	if (!res) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		return -1;
+	}
 
 	datum = (find_domains_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_domains_run_fail;
 	}
-	
-        if ( !(res->items = apol_vector_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
-                goto find_domains_run_fail;
+
+	if ( !(res->items = apol_vector_create()) ) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto find_domains_run_fail;
 	}
 
 	if (apol_get_type_by_query(policy, NULL, &domain_vector) < 0){
@@ -253,146 +254,146 @@ int find_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 		goto find_domains_run_fail;
 	}
 
-        for (i=0;i<apol_vector_get_size(domain_vector);i++) {
-                qpol_iterator_t *domain_attr_iter;
+	for (i=0;i<apol_vector_get_size(domain_vector);i++) {
+		qpol_iterator_t *domain_attr_iter;
 
-                qpol_type_t *type = apol_vector_get_element(domain_vector,i);
-                qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+		qpol_type_t *type = apol_vector_get_element(domain_vector,i);
+		qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 
-                if ( qpol_type_get_attr_iter(policy->qh, policy->p, type, &domain_attr_iter) < 0 ) {
-	                ERR(policy, "Can't get attributes for type %s", type_name);
-                        goto find_domains_run_fail;
-                }
+		if ( qpol_type_get_attr_iter(policy->qh, policy->p, type, &domain_attr_iter) < 0 ) {
+			ERR(policy, "Can't get attributes for type %s", type_name);
+			goto find_domains_run_fail;
+		}
 
-                for (;!qpol_iterator_end(domain_attr_iter);qpol_iterator_next(domain_attr_iter)) {
-                        char *attr_name;
-                        qpol_type_t *attr;
-                        int nfta;
+		for (;!qpol_iterator_end(domain_attr_iter);qpol_iterator_next(domain_attr_iter)) {
+			char *attr_name;
+			qpol_type_t *attr;
+			int nfta;
 
-                        buff = NULL;
-                        proof = sechk_proof_new(NULL);
-                        if (!proof) {
-		                ERR(policy, "%s", strerror(ENOMEM));
-                                goto find_domains_run_fail;
-                        }
-                        qpol_iterator_get_item(domain_attr_iter, (void **)&attr);
-                        qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
-                        for (nfta=0;nfta<apol_vector_get_size(datum->domain_attribs); nfta++) {
-                                char *domain_attrib;
+			buff = NULL;
+			proof = sechk_proof_new(NULL);
+			if (!proof) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_domains_run_fail;
+			}
+			qpol_iterator_get_item(domain_attr_iter, (void **)&attr);
+			qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
+			for (nfta=0;nfta<apol_vector_get_size(datum->domain_attribs); nfta++) {
+				char *domain_attrib;
 
-                                domain_attrib = apol_vector_get_element(datum->domain_attribs,nfta);
-                                if (!strcmp(attr_name, domain_attrib)) {
-                        		proof->type = SECHK_ITEM_ATTRIB;
-		                        buff_sz = 1+strlen(type_name)+strlen(attr_name)+strlen("has attribute ");
-        		                buff = (char*)calloc(buff_sz, sizeof(char));
-                		        if (!buff) {
-				                ERR(policy, "%s", strerror(ENOMEM));
-		                                goto find_domains_run_fail;
-		                        }
-        	        	        strcat(buff, "has attribute ");
-        	        	        strcat(buff, attr_name);
-	        	                proof->text = buff;
-	                	        if (!proof->text) {
-				                ERR(policy, "%s", strerror(ENOMEM));
-        	        	                goto find_domains_run_fail;
-        	        	        }
-                       			if (!item) {
-                     			           item = sechk_item_new(NULL);
-                 			           if (!item) {
-					                ERR(policy, "%s", strerror(ENOMEM));
-                		                        goto find_domains_run_fail;
-                        		           }
-                                	 	   item->test_result = 1;
-                        		}
-                        		if ( !item->proof ) {
-                                		if ( !(item->proof = apol_vector_create()) ) {
-					                ERR(policy, "%s", strerror(ENOMEM));
-                					goto find_domains_run_fail;
-						}
-                        		}
-                        		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-				                ERR(policy, "%s", strerror(ENOMEM));
-				                goto find_domains_run_fail;
+				domain_attrib = apol_vector_get_element(datum->domain_attribs,nfta);
+				if (!strcmp(attr_name, domain_attrib)) {
+					proof->type = SECHK_ITEM_ATTRIB;
+					buff_sz = 1+strlen(type_name)+strlen(attr_name)+strlen("has attribute ");
+					buff = (char*)calloc(buff_sz, sizeof(char));
+					if (!buff) {
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto find_domains_run_fail;
 					}
-                        		buff = NULL;
+					strcat(buff, "has attribute ");
+					strcat(buff, attr_name);
+					proof->text = buff;
+					if (!proof->text) {
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto find_domains_run_fail;
+					}
+					if (!item) {
+						item = sechk_item_new(NULL);
+						if (!item) {
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto find_domains_run_fail;
+						}
+						item->test_result = 1;
+					}
+					if ( !item->proof ) {
+						if ( !(item->proof = apol_vector_create()) ) {
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto find_domains_run_fail;
+						}
+					}
+					if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto find_domains_run_fail;
+					}
+					buff = NULL;
 				}
 				buff = NULL;
 			}
 			buff = NULL;
-                }
-                qpol_iterator_destroy(&domain_attr_iter);
+		}
+		qpol_iterator_destroy(&domain_attr_iter);
 
-                /* rule src check filesystem associate */
-                if ( !(terule_query = apol_terule_query_create()) ) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-	                goto find_domains_run_fail;
+		/* rule src check filesystem associate */
+		if ( !(terule_query = apol_terule_query_create()) ) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_domains_run_fail;
 		}
-                apol_terule_query_set_source(policy, terule_query, type_name, 0);
-                if ( apol_get_terule_by_query(policy, terule_query, &terule_vector) < 0 ) {
-	                ERR(policy, "%s", "Unable to retrieve TE rules");
-        	        goto find_domains_run_fail;
+		apol_terule_query_set_source(policy, terule_query, type_name, 0);
+		if ( apol_get_terule_by_query(policy, terule_query, &terule_vector) < 0 ) {
+			ERR(policy, "%s", "Unable to retrieve TE rules");
+			goto find_domains_run_fail;
 		}
-                for ( j=0;j<apol_vector_get_size(terule_vector);j++) {
-                        qpol_terule_t *terule = NULL;
+		for ( j=0;j<apol_vector_get_size(terule_vector);j++) {
+			qpol_terule_t *terule = NULL;
 			qpol_class_t * class = NULL;
 			char * class_name = NULL;
-	
-                        terule = apol_vector_get_element(terule_vector, j);
+
+			terule = apol_vector_get_element(terule_vector, j);
 			qpol_terule_get_object_class(policy->qh, policy->p, terule, &class);
 			qpol_class_get_name(policy->qh, policy->p, class, &class_name);
-                        if (strcmp("filesystem", class_name)){
-	                        if( qpol_terule_get_rule_type(policy->qh, policy->p, terule, &rule_type)){
-			                ERR(policy, "%s", "Unable to retrieve type for TE rule");
+			if (strcmp("filesystem", class_name)){
+				if( qpol_terule_get_rule_type(policy->qh, policy->p, terule, &rule_type)){
+					ERR(policy, "%s", "Unable to retrieve type for TE rule");
 					goto find_domains_run_fail;
-                                }
-                                buff = NULL;
-                                proof = sechk_proof_new(NULL);
-                                if (!proof) {
-			                ERR(policy, "%s", strerror(ENOMEM));
-                                        goto find_domains_run_fail;
-                                }
-                                proof->type = SECHK_ITEM_AVRULE;
-                                proof->text = apol_terule_render(policy, terule);
-                                if (!item) {
-  	                        	item = sechk_item_new(NULL);
-        	                      	if (!item) {
-				                ERR(policy, "%s", strerror(ENOMEM));
-                                		goto find_domains_run_fail;
-                                      	}
-                                	item->test_result = 1;
-                                }
-                                if ( !item->proof ) {
-                                	if ( !(item->proof = apol_vector_create()) ) {
-				                ERR(policy, "%s", strerror(ENOMEM));
-				                goto find_domains_run_fail;
+				}
+				buff = NULL;
+				proof = sechk_proof_new(NULL);
+				if (!proof) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					goto find_domains_run_fail;
+				}
+				proof->type = SECHK_ITEM_AVRULE;
+				proof->text = apol_terule_render(policy, terule);
+				if (!item) {
+					item = sechk_item_new(NULL);
+					if (!item) {
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto find_domains_run_fail;
+					}
+					item->test_result = 1;
+				}
+				if ( !item->proof ) {
+					if ( !(item->proof = apol_vector_create()) ) {
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto find_domains_run_fail;
 					}
 				}
-                                if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
-			                goto find_domains_run_fail;
+				if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					goto find_domains_run_fail;
 				}
-                        }
-                }
-                apol_vector_destroy(&terule_vector,NULL);
-                apol_terule_query_destroy(&terule_query);
+			}
+		}
+		apol_vector_destroy(&terule_vector,NULL);
+		apol_terule_query_destroy(&terule_query);
 
-                /* type rule check file object */
-                if ( !(terule_query = apol_terule_query_create()) ) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-        	        goto find_domains_run_fail;
+		/* type rule check file object */
+		if ( !(terule_query = apol_terule_query_create()) ) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_domains_run_fail;
 		}
-                apol_terule_query_set_default(policy, terule_query, type_name);
-                if ( apol_get_terule_by_query(policy, terule_query, &terule_vector) < 0 ) {
-	                ERR(policy, "%s", "Unable to retrieve TE rules");
-        	        goto find_domains_run_fail;
+		apol_terule_query_set_default(policy, terule_query, type_name);
+		if ( apol_get_terule_by_query(policy, terule_query, &terule_vector) < 0 ) {
+			ERR(policy, "%s", "Unable to retrieve TE rules");
+			goto find_domains_run_fail;
 		}
-                for ( j=0;j<apol_vector_get_size(terule_vector);j++) {
-                        qpol_terule_t *terule     = NULL;
-			qpol_class_t  *objclass   = NULL;
+		for ( j=0;j<apol_vector_get_size(terule_vector);j++) {
+			qpol_terule_t *terule	  = NULL;
+			qpol_class_t  *objclass	  = NULL;
 			qpol_type_t   *dflt_type  = NULL;
 			char	      *class_name = NULL;
 
-                        terule = apol_vector_get_element(terule_vector, j);
+			terule = apol_vector_get_element(terule_vector, j);
 			qpol_terule_get_object_class(policy->qh, policy->p, terule, &objclass);
 			qpol_class_get_name(policy->qh, policy->p, objclass, &class_name);
 			qpol_terule_get_default_type(policy->qh, policy->p, terule, &dflt_type);
@@ -401,51 +402,48 @@ int find_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 				if ( apol_vector_get_index(item->proof, tmp_terule, sechk_proof_with_element_compare, NULL, &proof_idx) == 0 ) {
 					continue;
 				}
-                                buff = NULL;
-                                proof = sechk_proof_new(NULL);
-                                if (!proof) {
-			                ERR(policy, "%s", strerror(ENOMEM));
-                                        goto find_domains_run_fail;
-                                }
-                                proof->type = SECHK_ITEM_TERULE;
-                                proof->text = apol_terule_render(policy, terule);
-                               	if (!item) {
-                                        item = sechk_item_new(NULL);
-                                        if (!item) {
-				                ERR(policy, "%s", strerror(ENOMEM));
-                                                goto find_domains_run_fail;
-                                        }
-                                        item->test_result = 1;
-                                }
-                                if ( !item->proof ) {
-                                        if ( !(item->proof = apol_vector_create()) ) {
-				                ERR(policy, "%s", strerror(ENOMEM));
-				                goto find_domains_run_fail;
+				buff = NULL;
+				proof = sechk_proof_new(NULL);
+				if (!proof) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					goto find_domains_run_fail;
+				}
+				proof->type = SECHK_ITEM_TERULE;
+				proof->text = apol_terule_render(policy, terule);
+				if (!item) {
+					item = sechk_item_new(NULL);
+					if (!item) {
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto find_domains_run_fail;
+					}
+					item->test_result = 1;
+				}
+				if ( !item->proof ) {
+					if ( !(item->proof = apol_vector_create()) ) {
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto find_domains_run_fail;
 					}
 				}
-                                if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
-			                goto find_domains_run_fail;
+				if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					goto find_domains_run_fail;
 				}
-                        }
-                }
-                apol_vector_destroy(&terule_vector,NULL);
-                apol_terule_query_destroy(&terule_query);
+			}
+		}
+		apol_vector_destroy(&terule_vector,NULL);
+		apol_terule_query_destroy(&terule_query);
 
 		/* Check Roles */
 		if ( !(role_query = apol_role_query_create()) ) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-	                goto find_domains_run_fail;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_domains_run_fail;
 		}
 		apol_role_query_set_type(policy, role_query, type_name);
 		apol_get_role_by_query(policy, role_query, &role_vector);
-		if ( (num_items = apol_vector_get_size ( role_vector )) < 0){
-			goto find_domains_run_fail;
-		}
 		for (j=0;j<apol_vector_get_size(role_vector);j++) {
-			qpol_role_t *role; 
+			qpol_role_t *role;
 			char *role_name;
-			
+
 			role = (qpol_role_t*)apol_vector_get_element(role_vector, j);
 			qpol_role_get_name(policy->qh, policy->p, role, &role_name);
 			if (!strcmp("object_r", role_name)) continue;
@@ -453,13 +451,13 @@ int find_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 			buff_sz = 1 + strlen("role types ;") + strlen(role_name) + strlen(type_name);
 			buff = (char*)calloc(buff_sz, sizeof(char));
 			if (!buff) {
-                		ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_domains_run_fail;
 			}
 			snprintf(buff, buff_sz, "role %s types %s;", role_name, type_name);
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_domains_run_fail;
 			}
 			proof->type = SECHK_ITEM_ROLE;
@@ -467,61 +465,62 @@ int find_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
-			                ERR(policy, "%s", strerror(ENOMEM));
+					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_domains_run_fail;
 				}
 				item->test_result = 1;
 			}
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
-			                goto find_domains_run_fail;
+					ERR(policy, "%s", strerror(ENOMEM));
+					goto find_domains_run_fail;
 
 				}
 			}
 			if ( apol_vector_append(item->proof,(void *) proof) < 0 ) {
-		                error =	errno;
-		                ERR(policy, "Error: %s\n", strerror(error));
-		                goto find_domains_run_fail;
+				error =	errno;
+				ERR(policy, "Error: %s\n", strerror(error));
+				goto find_domains_run_fail;
 			}
 			buff = NULL;
 		}
 
-                /* insert any results for this type */
-                if (item) {
-                        item->item = type;
-                        if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
-		                goto find_domains_run_fail;
+		/* insert any results for this type */
+		if (item) {
+			item->item = type;
+			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_domains_run_fail;
 			}
-                }
-                item = NULL;
-                type = NULL;
-                type_name = NULL;
+		}
+		item = NULL;
+		type = NULL;
+		type_name = NULL;
 	}
 
 	/* results are valid at this point */
 	mod->result = res;
+	apol_role_query_destroy(&role_query);
 	return 0;
 
-find_domains_run_fail:
+ find_domains_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
 	return -1;
 }
 
-void find_domains_data_free(void *data) 
+void find_domains_data_free(void *data)
 {
-        find_domains_data_t *datum = (find_domains_data_t*)data;
+	find_domains_data_t *datum = (find_domains_data_t*)data;
 
-        if (datum) {
-                free(datum->domain_attribs);
-        }
-        free(data);
+	if (datum) {
+		free(datum->domain_attribs);
+	}
+	free(data);
 }
 
-int find_domains_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+int find_domains_print_output(sechk_module_t *mod, apol_policy_t *policy)
 {
 	find_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -532,20 +531,20 @@ int find_domains_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
 	if (!mod || !policy){
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp("find_domains", mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = (find_domains_data_t*)mod->data;
 	outformat = mod->outputformat;
-        num_items = apol_vector_get_size(mod->result->items);
+	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-                ERR(policy, "%s", "Module has not been run");
+		ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
 
@@ -559,48 +558,48 @@ int find_domains_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		printf("\nThe following types are domains.\n");
 	}
 
-        if (outformat & SECHK_OUT_LIST) {
-                printf("\n");
-                for (i = 0; i < num_items; i++) {
-                        j++;
-                        item  = apol_vector_get_element(mod->result->items, i);
+	if (outformat & SECHK_OUT_LIST) {
+		printf("\n");
+		for (i = 0; i < num_items; i++) {
+			j++;
+			item  = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
 			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
-                        j %= 4;
-                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
-                }
-                printf("\n");
-        }
+			j %= 4;
+			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+		}
+		printf("\n");
+	}
 
-        if (outformat & SECHK_OUT_PROOF) {
-                printf("\n");
-                for (k=0;k< num_items;k++) {
-                        item = apol_vector_get_element(mod->result->items, k);
-                        if ( item ) {
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\n");
+		for (k=0;k< num_items;k++) {
+			item = apol_vector_get_element(mod->result->items, k);
+			if ( item ) {
 				type = item->item;
 				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
-                                printf("%s\n", (char*)type_name);
-                                for (l=0; l<apol_vector_get_size(item->proof);l++) {
-                                        proof = apol_vector_get_element(item->proof,l);
-                                        if ( proof )
-                                                printf("\t%s\n", proof->text);
-                                }
-                        }
-                }
-                printf("\n");
-        }
+				printf("%s\n", (char*)type_name);
+				for (l=0; l<apol_vector_get_size(item->proof);l++) {
+					proof = apol_vector_get_element(item->proof,l);
+					if ( proof )
+						printf("\t%s\n", proof->text);
+				}
+			}
+		}
+		printf("\n");
+	}
 
 	return 0;
 }
 
-sechk_result_t *find_domains_get_result(sechk_module_t *mod) 
+sechk_result_t *find_domains_get_result(sechk_module_t *mod)
 {
 	if (!mod) {
-                ERR(NULL, "%s", "Invalid parameters");
+		ERR(NULL, "%s", "Invalid parameters");
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(NULL, "Wrong module (%s)", mod->name);
+		ERR(NULL, "Wrong module (%s)", mod->name);
 		return NULL;
 	}
 
@@ -609,25 +608,25 @@ sechk_result_t *find_domains_get_result(sechk_module_t *mod)
 
 int find_domains_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
-        if (!mod || !v) {
-                ERR(NULL, "%s", "Invalid parameters");
-                return -1;
-        }
-        if (strcmp(mod_name, mod->name)) {
-                ERR(NULL, "Wrong module (%s)", mod->name);
-                return -1;
-        }
-        if (!mod->result) {
-                ERR(NULL, "%s", "Module has not been run");
-                return -1;
-        }
+	if (!mod || !v) {
+		ERR(NULL, "%s", "Invalid parameters");
+		return -1;
+	}
+	if (strcmp(mod_name, mod->name)) {
+		ERR(NULL, "Wrong module (%s)", mod->name);
+		return -1;
+	}
+	if (!mod->result) {
+		ERR(NULL, "%s", "Module has not been run");
+		return -1;
+	}
 
-        v = &mod->result->items;
+	v = &mod->result->items;
 
-        return 0;
+	return 0;
 }
 
-find_domains_data_t *find_domains_data_new(void) 
+find_domains_data_t *find_domains_data_new(void)
 {
 	find_domains_data_t *datum = NULL;
 

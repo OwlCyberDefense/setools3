@@ -317,7 +317,7 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j = 0, k = 0, num_items;
+	size_t i = 0, j = 0, k = 0, num_items;
 	qpol_type_t *type;
 	char *type_name;
 
@@ -372,13 +372,13 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	 * displayed in an indented list one per line below it. */
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
-		for (j=0;j<sizeof(apol_vector_get_size(mod->result->items));j++) {
+		for (j = 0; j < apol_vector_get_size(mod->result->items); j++) {
 			item = apol_vector_get_element(mod->result->items, j);
 			if ( item ) {
 				type = item->item;
 				qpol_type_get_name(policy->qh, policy->p, type, &type_name);	
 				printf("%s\n", type_name);
-				for (k=0; k<sizeof(item->proof);k++) {
+				for (k = 0; k < apol_vector_get_size(item->proof); k++) {
 					proof = apol_vector_get_element(item->proof,k);
 					if ( proof )
 						printf("\t%s\n", proof->text);

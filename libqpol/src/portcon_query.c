@@ -60,7 +60,7 @@ int qpol_policy_get_portcon_by_port(qpol_handle_t *handle, qpol_policy_t *policy
 	*ocon = (qpol_portcon_t *)tmp;
 
 	if (*ocon == NULL) {
-		ERR(handle, "cound not find portcon statement for %u-%u:%u", low, high, protocol);
+		ERR(handle, "could not find portcon statement for %u-%u:%u", low, high, protocol);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}

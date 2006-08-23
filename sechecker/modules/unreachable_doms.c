@@ -6,11 +6,10 @@
  *
  */
 
+#include <config.h>
+
 #include "unreachable_doms.h"
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -46,7 +45,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 		return -1;
 	}
 	mod->parent_lib = lib;
-	
+
 	/* assign the descriptions */
 	mod->brief_description = "unreachable domains";
 	mod->detailed_description =
@@ -58,7 +57,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 "3) There are no users with proper roles to allow a transition.\n"
 "However, if any of the above rules indicate an unreachable domain, yet the\n"
 "domain appears in the system default contexts file, it is considered reachable.\n";
-	mod->opt_description = 
+	mod->opt_description =
 "  Module requirements:\n"
 "    source policy\n"
 "    default contexts file\n"
@@ -71,7 +70,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 
 	/* assign requirements */
 	/* find_domains requires source policy.. */
-	
+
 	/* assign dependencies */
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains")) < 0 ) {
                 ERR(NULL, "%s", strerror(ENOMEM));
@@ -214,11 +213,11 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy)
 /* The run function performs the check. This function runs only once
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
- * in all relevant item and proof data. 
+ * in all relevant item and proof data.
  * Return Values:
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
- *   1 The module "failed" 		- some negative results found */
+ *   1 The module "failed"		- some negative results found */
 int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 {
 	unreachable_doms_data_t *datum;
@@ -235,8 +234,8 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_user_query_t *user_query = NULL;
 	apol_role_trans_query_t *role_trans_query = NULL;
 	apol_domain_trans_analysis_t *dta = NULL;
-	
-       	if (!mod || !policy) {
+
+	if (!mod || !policy) {
                 ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
@@ -265,7 +264,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
                 ERR(policy, "%s", strerror(ENOMEM));
                 goto unreachable_doms_run_fail;
         }
-		
+
 	if ( !(dta = apol_domain_trans_analysis_create()) ) {
                 ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
@@ -311,7 +310,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
         }
         idt_vector = (apol_vector_t *)inc_dom_trans_res->items;
 
-	/* first search incomplete domain transitions: 
+	/* first search incomplete domain transitions:
 	   those domains with no other domains transitioning to them are unreachable */
 	for ( i = 0; i < apol_vector_get_size(idt_vector); i++ ) {
 		apol_domain_trans_result_t *dtr;
@@ -322,8 +321,8 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 		item = apol_vector_get_element(idt_vector, i);
 		dtr = item->item;
 		end_type = apol_domain_trans_result_get_end_type(dtr);
-		qpol_type_get_name(policy->qh, policy->p, end_type, &end_name);	
-		
+		qpol_type_get_name(policy->qh, policy->p, end_type, &end_name);
+
 		apol_domain_trans_table_reset(policy);
 		apol_domain_trans_analysis_set_start_type(policy, dta, end_name);
 		apol_domain_trans_analysis_set_direction(policy, dta, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
@@ -332,10 +331,10 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	                ERR(policy, "%s", strerror(ENOMEM));
 			goto unreachable_doms_run_fail;
 		}
-		
+
 		found_valid_trans = FALSE;
 		if ( apol_vector_get_size(rev_dtr_vector) > 0 ) found_valid_trans = TRUE;
-		
+
 		/* we did not find a valid transition to this domain */
 		if (!found_valid_trans) {
 			if (in_isid_ctx(end_name, policy))
@@ -343,15 +342,15 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 
 			item = NULL;
 	                for (j=0;j<apol_vector_get_size(res->items);j++) {
-	                        sechk_item_t *res_item;
-	                        qpol_type_t *res_type;
-	                        char *res_type_name;
+				sechk_item_t *res_item;
+				qpol_type_t *res_type;
+				char *res_type_name;
 
-        	                res_item = apol_vector_get_element(res->items, j);
-                	        res_type = res_item->item;
-                        	qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
-	                        if (!strcmp(res_type_name, end_name)) item = res_item;
-        	        }
+				res_item = apol_vector_get_element(res->items, j);
+				res_type = res_item->item;
+				qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+				if (!strcmp(res_type_name, end_name)) item = res_item;
+			}
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
@@ -361,10 +360,10 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 
 				item->item = (void *)end_type;
 				item->test_result = 1;
-                        	if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
+				if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
-                	        }
+				}
 			}
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
@@ -390,7 +389,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 		}
 	}
 
-	
+
 	/* for all domains: check to see if a valid transition to this domain exists */
 	for (i = 0; i < apol_vector_get_size(dom_vector); i++) {
                 apol_vector_t *rev_dtr_vector;
@@ -476,38 +475,38 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
                                                 }
                                         }
 				}
-			} 
+			}
 		}
 
 		/* if we haven't found a valid transition to this type, check default ctxs */
 		if (!found_valid_trans && !in_def_ctx(dom_name, datum)) {
-			if (in_isid_ctx(dom_name, policy))  			
+			if (in_isid_ctx(dom_name, policy))
 				break;
-	       	
-			item = NULL;
-	                for (j=0;j<apol_vector_get_size(res->items);j++) {
-	                        sechk_item_t *res_item;
-	                        qpol_type_t *res_type;
-	                        char *res_type_name;
 
-        	                res_item = apol_vector_get_element(res->items, j);
-                	        res_type = res_item->item;
-                        	qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
-	                        if (!strcmp(res_type_name, dom_name)) item = res_item;
-        	        }
+			item = NULL;
+			for (j=0;j<apol_vector_get_size(res->items);j++) {
+				sechk_item_t *res_item;
+				qpol_type_t *res_type;
+				char *res_type_name;
+
+				res_item = apol_vector_get_element(res->items, j);
+				res_type = res_item->item;
+				qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+				if (!strcmp(res_type_name, dom_name)) item = res_item;
+			}
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
-			                ERR(policy, "%s", strerror(ENOMEM));
+					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 
 				item->item = (void *)dom;
 				item->test_result = 1;
-                        	if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
+				if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
-                	        }
+				}
 			}
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
@@ -534,7 +533,9 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	}
 
 	mod->result = res;
-
+	apol_domain_trans_analysis_destroy(&dta);
+	apol_user_query_destroy(&user_query);
+	apol_role_trans_query_destroy(&role_trans_query);
 	return 0;
 
 unreachable_doms_run_fail:
@@ -558,13 +559,13 @@ void unreachable_doms_data_free(void *data)
  * outline and will need a different specification. It is
  * required that each of the flags for output components be
  * tested in this function (stats, list, proof, detailed, and brief) */
-int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 {
 	unreachable_doms_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int j, i = 0, k, l, num_items;
+	size_t i = 0, j = 0, k, l, num_items;
 	qpol_type_t *type;
 	char *type_name;
 
@@ -576,7 +577,7 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
                 ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
-	
+
 	datum = (unreachable_doms_data_t*)mod->data;
 	outformat = mod->outputformat;
 	num_items = apol_vector_get_size(mod->result->items);
@@ -585,7 +586,7 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
                 ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
-	
+
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
@@ -622,13 +623,13 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
                                 type = item->item;
                                 qpol_type_get_name(policy->qh, policy->p, type, &type_name);
                                 printf("%s\n", (char*)type_name);
-                                for (l=0; l<sizeof(item->proof);l++) {
+                                for (l = 0; l < apol_vector_get_size(item->proof); l++) {
                                         proof = apol_vector_get_element(item->proof,l);
                                         if ( proof )
                                                 printf("\t%s\n", proof->text);
                                 }
                         }
-                	printf("\n");
+			printf("\n");
                 }
 	}
 
@@ -638,7 +639,7 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check.
  * You should not need to modify this function. */
-sechk_result_t *unreachable_doms_get_result(sechk_module_t *mod) 
+sechk_result_t *unreachable_doms_get_result(sechk_module_t *mod)
 {
 	if (!mod) {
 		ERR(NULL, "%s", "Invalid parameters");
@@ -685,7 +686,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		ERR(policy, "Opening default contexts file %s", ctx_file_path);
 		goto parse_default_contexts_fail;
 	}
-	
+
 	while(!feof(ctx_file)) {
 		retv = getline(&line, &line_len, ctx_file);
 		if (retv == -1) {
@@ -758,7 +759,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 				dst_role[charno] = line[i];
 				charno++;
 			}
-	
+
 			i++;
 		}
 		i++; /* skip ':' */
@@ -778,11 +779,11 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 
 			if (!isspace(line[i]))
 			    dst_dom[charno] = line[i];
-			
+
 			charno++;
 			i++;
 		}
-		
+
 /*
 		if ( qpol_policy_get_type_by_name(policy->qh, policy->p, src_dom, &type) ) {
 */
@@ -815,10 +816,10 @@ parse_default_contexts_fail:
 bool_t in_def_ctx(char *type_name, unreachable_doms_data_t *datum)
 {
 	int i;
-	
+
 	for (i = 0; i <apol_vector_get_size(datum->ctx_vector); i++ ) {
 		char *dom_name;
-		
+
 		dom_name = (char *)apol_vector_get_element(datum->ctx_vector, i);
 		if (dom_name && !strcmp(dom_name, type_name)) return TRUE;
 	}
@@ -839,7 +840,7 @@ bool_t in_isid_ctx(char *type_name, apol_policy_t *policy)
 		qpol_context_t *context;
 		qpol_type_t *context_type;
 		char *context_type_name;
-		
+
 		isid = apol_vector_get_element(isid_vector, i);
 		qpol_isid_get_context(policy->qh, policy->p, isid, &context);
 		qpol_context_get_type(policy->qh, policy->p, context, &context_type);

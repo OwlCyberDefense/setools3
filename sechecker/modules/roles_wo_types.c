@@ -19,7 +19,7 @@ static const char *const mod_name = "roles_wo_types";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int roles_wo_types_register(sechk_lib_t *lib) 
+int roles_wo_types_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -41,11 +41,11 @@ int roles_wo_types_register(sechk_lib_t *lib)
 
 	/* assign descriptions */
 	mod->brief_description = "roles with no types";
-	mod->detailed_description = 
+	mod->detailed_description =
 "--------------------------------------------------------------------------------\n"
 "This module finds roles in the policy that have no types.  A role with no types \n"
 "cannot form a valid context.\n";
-	mod->opt_description = 
+	mod->opt_description =
 "Module requirements:\n"
 "   none\n"
 "Module dependencies:\n"
@@ -174,7 +174,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	size_t i;
 	apol_vector_t *role_vector;
-	qpol_iterator_t *type_iter;
+	qpol_iterator_t *type_iter = NULL;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Ivalid parameters");
@@ -194,7 +194,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	if (!res) {
                 ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
-	} 
+	}
 	res->test_name = strdup(mod_name);
         if (!res->test_name) {
                 ERR(policy, "%s", strerror(ENOMEM));
@@ -214,6 +214,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	for (i = 0; i < apol_vector_get_size(role_vector); i++) {
                 qpol_role_t *role;
                 char *role_name;
+		int at_end;
 
                 role = apol_vector_get_element(role_vector, i);
                 qpol_role_get_name(policy->qh, policy->p, role, &role_name);
@@ -222,7 +223,9 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
                         continue;
 
 		qpol_role_get_type_iter(policy->qh, policy->p, role, &type_iter);
-		if (!qpol_iterator_end(type_iter))
+		at_end = qpol_iterator_end(type_iter);
+		qpol_iterator_destroy(&type_iter);
+		if (!at_end)
 			continue;
 
 		proof = sechk_proof_new(NULL);
@@ -230,7 +233,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	                ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
 		}
-		proof->type = SECHK_ITEM_ROLE; 
+		proof->type = SECHK_ITEM_ROLE;
 		proof->text = (char*)calloc(strlen("role has no types")+strlen(role_name)+1, sizeof(char));
 		sprintf(proof->text, "role %s has no types", role_name);
 		item = sechk_item_new(NULL);
@@ -281,7 +284,7 @@ void roles_wo_types_data_free(void *data)
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int roles_wo_types_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+int roles_wo_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 {
 	roles_wo_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -338,7 +341,7 @@ int roles_wo_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *roles_wo_types_get_result(sechk_module_t *mod) 
+sechk_result_t *roles_wo_types_get_result(sechk_module_t *mod)
 {
 	if (!mod) {
 		ERR(NULL, "%s", "Invalid parameters");
