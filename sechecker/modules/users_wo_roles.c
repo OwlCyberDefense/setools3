@@ -271,7 +271,7 @@ int users_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	users_wo_roles_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0, j, num_items;
+	size_t i = 0, j = 0, num_items;
 	qpol_user_t *user;
 	char *user_name;
 

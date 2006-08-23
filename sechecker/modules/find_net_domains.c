@@ -222,7 +222,7 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0, j = 0, k=0;
 	apol_vector_t *avrule_vector;
-	apol_avrule_query_t *avrule_query;
+	apol_avrule_query_t *avrule_query = NULL;
 
 	if (!mod || !policy) {
                 ERR(policy, "%s", "Invalid parameters");
