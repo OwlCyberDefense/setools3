@@ -62,6 +62,7 @@ typedef enum poldiff_form {
 #include <poldiff/bool_diff.h>
 #include <poldiff/class_diff.h>
 #include <poldiff/user_diff.h>
+#include <poldiff/type_map.h>
 
 /* NOTE: while defined MLS amd OCONS are not currently supported */
 #define POLDIFF_DIFF_CLASSES     0x00000001

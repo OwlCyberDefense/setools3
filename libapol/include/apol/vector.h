@@ -112,9 +112,9 @@ extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1, 
+extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1,
 							   const apol_vector_t *v2,
-							   apol_vector_comp_func *cmp, 
+							   apol_vector_comp_func *cmp,
 							   void* data);
 
 /**
@@ -167,12 +167,13 @@ extern void *apol_vector_get_element(const apol_vector_t *v, size_t idx);
  *  @param v The vector from which to get the element.
  *  @param elem The element to find.
  *  @param cmp A comparison call back for the type of element stored
- *  in the vector.  The expected return value from this function is
- *  less than, equal to, or greater than 0 if the first argument is
- *  less than, equal to, or greater than the second respectively.  For
- *  use in this function the return value is only checked for 0 or
- *  non-zero return.  If this is NULL then do pointer address
- *  comparison.
+ *  in the vector.  The first parameter will be an existing element
+ *  from the vector; next will be elem and then data.  The expected
+ *  return value from this function is less than, equal to, or greater
+ *  than 0 if the first argument is less than, equal to, or greater
+ *  than the second respectively.  For use in this function the return
+ *  value is only checked for 0 or non-zero return.  If this is NULL
+ *  then do pointer address comparison.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
  *  @param i Index into vector where element was found.  This value is
