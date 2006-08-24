@@ -791,6 +791,7 @@ int qpol_constraint_expr_node_get_names_iter(qpol_handle_t *handle, qpol_policy_
 			cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
 			return STATUS_ERR;
 		}
+		break;
 	}
 	case QPOL_CEXPR_SYM_ROLE:
 	{
@@ -799,6 +800,7 @@ int qpol_constraint_expr_node_get_names_iter(qpol_handle_t *handle, qpol_policy_
 			cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
 			return STATUS_ERR;
 		}
+		break;
 	}
 	case QPOL_CEXPR_SYM_TYPE:
 	{
@@ -807,6 +809,7 @@ int qpol_constraint_expr_node_get_names_iter(qpol_handle_t *handle, qpol_policy_
 			cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
 			return STATUS_ERR;
 		}
+		break;
 	}
 	default:
 	{
