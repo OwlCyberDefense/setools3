@@ -1,6 +1,6 @@
 /**
  *  @file type_map.h
- *  Public Interface for type equivalence mapping for semantic 
+ *  Public Interface for type equivalence mapping for semantic
  *  difference calculations.
  *
  *  @author Kevin Carr kcarr@tresys.com
@@ -30,25 +30,40 @@
 #include <poldiff/poldiff.h>
 #include <apol/vector.h>
 
-typedef struct poldiff_type_map poldiff_type_map_t;
+typedef struct poldiff_type_remap_entry poldiff_type_remap_entry_t;
 
 /**
- *  Note that a type(s) from the original policy should be remapped in the
- *  modified policy. Subsequent diffs will treat types in orig_names to be
- *  equivalent to types in mod_names. It is an error for the size of both
- *  vectors to be > 1.
+ *  Note that a type(s) from the original policy should be remapped in
+ *  the modified policy.  Subsequent diffs will treat type(s) in
+ *  orig_names to be equivalent to type(s) in mod_names.  It is an
+ *  error for the size of both vectors to be greater than one.
  *
  *  @param diff The difference structure associated with the types.
  *  Note that renaming a type will reset the status of previously run
  *  difference calculations and they will need to be rerun.
- *  @param orig_names The list of names of types in the original policy.
- *  @param mod_name The list of names of types in the modified policy to
- *  consider equivalent.
+ *  @param orig_names A vector of type names (char *) in the original
+ *  policy.
+ *  @param mod_name A vector of type names (char *) in the modified
+ *  policy to consider equivalent.
  *
- *  @return 0 on success or < 0 on error; if the call fails, errno will be set
- *  and the difference structure will be unchanged.
+ *  @return 0 on success or < 0 on error; if the call fails, errno
+ *  will be set and the poldiff object remains unchanged.
  */
-extern int poldiff_type_remap(poldiff_t *diff, apol_vector_t *orig_names, apol_vector_t *mod_names);
+extern int poldiff_type_remap_create(poldiff_t *diff,
+				     apol_vector_t *orig_names,
+				     apol_vector_t *mod_names);
+
+/**
+ *  Get a vector of all identified type remap entries.  The caller may
+ *  then manipulate this list by selectively enabling/disabling
+ *  individual entries.
+ *
+ *  @param diff The difference structure associated with the types
+ *  remaps.
+ *
+ *  @return Vector of poldiff_type_remap_entry_t objects.  The caller
+ *  should not destroy this vector.
+ */
+extern apol_vector_t *poldiff_type_remap_get_entries(poldiff_t *diff);
 
 #endif /* POLDIFF_TYPE_MAP_H */
-

@@ -12,7 +12,8 @@ libpoldiff_a_SOURCES = \
 	bool_diff.c bool_internal.h \
 	class_diff.c class_internal.h \
 	user_diff.c user_internal.h \
-	poldiff_internal.h
+	poldiff_internal.h \
+	type_map.c type_map_internal.h
 libpoldiff_a_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so
 
 libpoldiff_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libpoldiff_a_SOURCES)))
