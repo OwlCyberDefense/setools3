@@ -32,6 +32,8 @@
 #include "class_internal.h"
 #include "user_internal.h"
 
+#include "type_map_internal.h"
+
 /* forward declarations */
 struct poldiff_class_summary;
 struct poldiff_common_summary;
@@ -74,11 +76,8 @@ struct poldiff {
 /*	struct poldiff_range_trans_summary *range_trans_diffs;*/
 	/* and so forth if we want ocon_diffs */
 
-	/** vector of poldiff_type_rename_t */
-	apol_vector_t *type_renames;
+	type_map_t *type_map;
 };
-
-typedef struct poldiff_type_rename poldiff_type_rename_t;
 
 /**
  *  Callback function signature for getting an array of statistics for the

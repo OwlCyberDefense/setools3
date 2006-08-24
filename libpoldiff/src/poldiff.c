@@ -60,7 +60,7 @@ static const poldiff_item_record_t item_records[] = {
 	},
 	{
 		"bool",
-		POLDIFF_DIFF_BOOLS, 
+		POLDIFF_DIFF_BOOLS,
 		poldiff_bool_get_stats,
 		poldiff_bool_to_string,
 		bool_get_items,
@@ -97,6 +97,7 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 				 poldiff_handle_fn_t fn, void *callback_arg)
 {
 	poldiff_t *diff = NULL;
+	int error;
 
 	if (!orig_policy || !mod_policy) {
 		ERR(NULL, "%s", strerror(EINVAL));
@@ -113,10 +114,16 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	diff->mod_pol = mod_policy;
 	diff->fn = fn;
 	diff->handle_arg = callback_arg;
-	if ((diff->type_renames = apol_vector_create()) == NULL) {
+	if ((diff->type_map = type_map_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
 		errno = ENOMEM;
+		return NULL;
+	}
+	if (type_map_infer(diff) < 0) {
+		error = errno;
+		poldiff_destroy(&diff);
+		errno = error;
 		return NULL;
 	}
 
@@ -134,21 +141,13 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	return diff;
 }
 
-static void type_renames_free(void *elem)
-{
-	if (elem != NULL) {
-		// TODO: free individual elements
-		free(elem);
-	}
-}
-
 void poldiff_destroy(poldiff_t **diff)
 {
 	if (!diff || !(*diff))
 		return;
 	apol_policy_destroy(&(*diff)->orig_pol);
 	apol_policy_destroy(&(*diff)->mod_pol);
-	apol_vector_destroy(&(*diff)->type_renames, type_renames_free);
+	type_map_destroy(&(*diff)->type_map);
 	//TODO: free stuff here
 	bool_destroy(&(*diff)->bool_diffs);
 	class_destroy(&(*diff)->class_diffs);
@@ -262,6 +261,9 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 	if (!diff) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
+		return -1;
+	}
+	if (type_map_build(diff)) {
 		return -1;
 	}
 
