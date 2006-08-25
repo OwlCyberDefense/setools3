@@ -36,8 +36,6 @@ libsefs_a_DEPENDENCIES=$(top_builddir)/libapol/src/libapol.so
 
 endif
 
-
-
 libsefs_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libsefs_a_SOURCES)))
 if WANT_LIBSEFS
 libsefs_so_OBJS += $(patsubst %.c,libsqlite_a-%.o,$(filter %.c,$(notdir $(libsqlite_a_SOURCES))))
@@ -50,6 +48,8 @@ dist_noinst_DATA = libsefs.map
 $(sefsso_DATA): $(libsefs_so_OBJS) libsefs.map
 	$(CC) -shared -o $@ $(libsefs_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs $(top_builddir)/libapol/src/libapol.so @SELINUX_LIB_FLAG@ -lselinux -lsepol
 	$(LN_S) -f $@ libsefs.so
+
+libsefs.so: $(sefso_DATA)
 
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)

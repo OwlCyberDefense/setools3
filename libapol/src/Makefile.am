@@ -53,6 +53,8 @@ $(apolso_DATA): $(libapol_so_OBJS) libapol.map
 	$(CC) -shared -o $@ $(libapol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so
 	$(LN_S) -f $@ libapol.so
 
+libapol.so: $(apolso_DATA)
+
 $(top_builddir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
