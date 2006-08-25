@@ -2,16 +2,8 @@ AC_INIT(setools, 3.0, [Tresys Technology <setools@tresys.com>], [setools])
 AC_CONFIG_SRCDIR(awish/awish.c)
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(setools, 3.0)
-AC_GNU_SOURCE
-AC_PROG_CC
-AC_LANG_C
-AC_HEADER_STDC
-AC_PROG_RANLIB
-AC_PROG_LN_S
-AM_PROG_LEX
-AC_PROG_YACC
-AC_PROG_INSTALL
 
+dnl *** update these variables as versions change; also update AC_INIT ***
 libqpol_version=1.0.0
 libqpol_soname=libqpol.so.1
 
@@ -29,11 +21,24 @@ libseaudit_version=3.0.0
 
 setoolsdir='${prefix}/share/setools-3.0'
 
+AC_GNU_SOURCE
+AC_PROG_CC
+AC_LANG_C
+AC_HEADER_STDC
+AC_PROG_RANLIB
+AC_PROG_LN_S
+AM_PROG_LEX
+AC_PROG_YACC
+AC_PROG_INSTALL
 AC_CHECK_SIZEOF(char *)
 AC_C_BIGENDIAN
 AC_CHECK_FUNCS(rand_r)
 
-AC_ARG_ENABLE(shared, [  --enable-shared         link against shared libapol (default)], enable_shared="$enableval", enable_shared="yes")
+AC_ARG_ENABLE(shared,
+              AC_HELP_STRING([--enable-shared],
+                             [link against shared libapol (default)]),
+              enable_shared="$enableval",
+              enable_shared="yes")
 AC_MSG_CHECKING([for how to link against libraries])
 if test "x${enable_shared}" = xyes; then
     use_shared=yes
@@ -43,7 +48,10 @@ else
     AC_MSG_RESULT(static)
 fi
 
-AC_ARG_ENABLE(debug, [  --enable-debug          compile with full debugging support], enable_debug="$enableval")
+AC_ARG_ENABLE(debug,
+              AC_HELP_STRING([--enable-debug],
+                             [compile with full debugging support]),
+              enable_debug="$enableval")
 AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
     DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall"
@@ -82,7 +90,10 @@ AC_SUBST(APOL_LIB_FLAG)
 AC_SUBST(SEFS_LIB_FLAG)
 AC_SUBST(POLDIFF_LIB_FLAG)
 
-AC_ARG_ENABLE(warnall, [  --enable-warnall        compile with most warnings enabled], enable_warnall="$enableval")
+AC_ARG_ENABLE(warnall,
+              AC_HELP_STRING([--enable-warnall],
+                             [compile with most warnings enabled]),
+              enable_warnall="$enableval")
 if test "x${enable_warnall}" = xyes; then
     WARNCFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic-errors -Wuninitialized -fno-strict-aliasing -std=c99"
     WARNLDFLAGS=""
@@ -93,7 +104,10 @@ fi
 AC_SUBST(WARNCFLAGS)
 AC_SUBST(WARNLDFLAGS)
 
-AC_ARG_ENABLE(profiling, [  --enable-profiling      compile with gcov and gprof profiling support], enable_profiling="$enableval")
+AC_ARG_ENABLE(profiling,
+              AC_HELP_STRING([--enable-profiling],
+                             [compile with gcov and gprof profiling support]),
+              enable_profiling="$enableval")
 AC_MSG_CHECKING([for profiling support])
 if test "x${enable_profiling}" = xyes; then
     PROFILECFLAGS="-ftest-coverage -fprofile-arcs -pg"
@@ -107,29 +121,50 @@ fi
 AC_SUBST(PROFILECFLAGS)
 AC_SUBST(PROFILELDFLAGS)
 
-dnl ** find the Tcl/Tk development libraries, then find BWidget
-
-TEA_INIT(3.5)
-TEA_PATH_TCLCONFIG
-TEA_LOAD_TCLCONFIG
-AC_MSG_CHECKING([for Tcl 8.4 or greater])
-if test \( "${TCL_MAJOR_VERSION}" -gt 8 \) -o \( "${TCL_MAJOR_VERSION}" -eq 8 -a "${TCL_MINOR_VERSION}" -ge 4 \); then
-    AC_MSG_RESULT(yes)
+AC_ARG_ENABLE(gui,
+              AC_HELP_STRING([--disable-gui],
+                             [do not compile graphical tools (default is ENABLE)]),
+              build_gui="$enableval",
+              build_gui="yes")
+AC_MSG_CHECKING([which setools programs to build])
+if test "x${build_gui}" = "xyes"; then
+    AC_MSG_RESULT(all)
 else
-    AC_MSG_ERROR([setools requires Tcl 8.4 or greater])
+    AC_MSG_RESULT(only command line tools)
 fi
-TEA_PATH_TKCONFIG
-TEA_LOAD_TKCONFIG
-AC_MSG_CHECKING([for Tk 8.4 or greater])
-if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "${TK_MINOR_VERSION}" -ge 4 \); then
-    AC_MSG_RESULT(yes)
-else
-    AC_MSG_ERROR([setools requires Tk 8.4 or greater])
-fi
-TEA_PUBLIC_TCL_HEADERS
-TEA_PUBLIC_TK_HEADERS
 
-AC_ARG_ENABLE(bwidget-check, [  --disable-bwidget-check do not check for BWidget 1.8, assume it exists], enable_bwidget="$enableval", enable_bwidget="yes", enable_bwidget="no")
+if test "x${build_gui}" = "xyes"; then
+  dnl ** find the Tcl/Tk development libraries, then find BWidget
+
+  TEA_INIT(3.5)
+  TEA_PATH_TCLCONFIG
+  TEA_LOAD_TCLCONFIG
+  AC_MSG_CHECKING([for Tcl 8.4 or greater])
+  if test \( "${TCL_MAJOR_VERSION}" -gt 8 \) -o \( "${TCL_MAJOR_VERSION}" -eq 8 -a "${TCL_MINOR_VERSION}" -ge 4 \); then
+      AC_MSG_RESULT(yes)
+  else
+      AC_MSG_ERROR([setools requires Tcl 8.4 or greater])
+  fi
+  TEA_PATH_TKCONFIG
+  TEA_LOAD_TKCONFIG
+  AC_MSG_CHECKING([for Tk 8.4 or greater])
+  if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "${TK_MINOR_VERSION}" -ge 4 \); then
+      AC_MSG_RESULT(yes)
+  else
+      AC_MSG_ERROR([setools requires Tk 8.4 or greater])
+  fi
+  TEA_PUBLIC_TCL_HEADERS
+  TEA_PUBLIC_TK_HEADERS
+fi
+
+AC_ARG_ENABLE(bwidget-check,
+              AC_HELP_STRING([--disable-bwidget-check],
+                             [do not check for BWidget 1.8, assume it exists]),
+              enable_bwidget="$enableval",
+              enable_bwidget="yes")
+if test "x${enable_gui}" = "xno"; then
+    enable_bwidget=no
+fi
 if test "x${enable_bwidget}" = "xyes"; then
     TEA_PROG_TCLSH
     AC_MSG_CHECKING([for BWidget 1.7 or greater])
@@ -182,7 +217,11 @@ fi
 
 dnl ** look for selinuxfs mount point
 
-AC_ARG_ENABLE(selinux-check, [  --disable-selinux-check do not check for running SELinux, assume it is there], enable_selinux_check="$enableval", enable_selinux_check="yes")
+AC_ARG_ENABLE(selinux-check,
+              AC_HELP_STRING([--disable-selinux-check],
+                             [do not check for running SELinux, assume it is there]),
+              enable_selinux_check="$enableval",
+              enable_selinux_check="yes")
 if test "x${enable_selinux_check}" = "xyes"; then
   AC_MSG_CHECKING([for running SELinux system])
   if test ! -r "/selinux/policyvers" ; then
@@ -199,17 +238,24 @@ fi
 if test ${use_selinux} = "yes"; then
    dnl ** find libselinux and libsepol
 
-   AC_ARG_WITH(sepol-devel, [  --with-sepol-devel      prefix where sepol development files are installed], sepol_devel="$withval", sepol_devel="/usr")
-   AC_ARG_WITH(selinux-devel, [  --with-selinux-devel    prefix where SELinux development files are installed], selinux_devel="$withval", selinux_devel="/usr")
+   AC_ARG_WITH(sepol-devel,
+               AC_HELP_STRING([--with-sepol-devel],
+                              [prefix where sepol development files are installed]),
+               sepol_devel="$withval",
+               sepol_devel="/usr")
+   AC_ARG_WITH(selinux-devel,
+               AC_HELP_STRING([--with-selinux-devel],
+                              [prefix where SELinux development files are installed]),
+               selinux_devel="$withval",
+               selinux_devel="/usr")
    sepol_devel_incdir="${sepol_devel}/include"
    sepol_devel_libdir="${sepol_devel}/lib"
    selinux_devel_incdir="${selinux_devel}/include"
    selinux_devel_libdir="${selinux_devel}/lib"
-   SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
-   SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
    AC_MSG_CHECKING([for sepol/sepol.h])
    selinux_save_CFLAGS="${CFLAGS}"
-   CFLAGS="${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG} ${CFLAGS}"
+   SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
+   CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir} ${SELINUX_LIB_FLAG} ${CFLAGS}"
    AC_TRY_RUN([#include <sepol/sepol.h>
    #include <stdlib.h>
    int main(void) { exit(0); }],
@@ -228,14 +274,16 @@ if test ${use_selinux} = "yes"; then
         -lsepol)
    CFLAGS="${selinux_save_CFLAGS}"
 else
-   SELINUX_CFLAGS=""
+   sepol_devel_incdir="/usr/include"
+   selinux_devel_incdir="/usr/include"
    SELINUX_LIB_FLAG="-lselinux -lsepol"
 fi
-AC_SUBST(SELINUX_CFLAGS)
-AC_SUBST(SELINUX_LIB_FLAG)
 
-AC_ARG_ENABLE(sefs, [  --enable-sefs           allow file system analyses (default)
-                          (requires SELinux development files)], sefs="$enableval", sefs="yes")
+AC_ARG_ENABLE(sefs,
+              AC_HELP_STRING([--enable-sefs],
+                             [allow file system analyses (default) (requires SELinux development files)]),
+              sefs="$enableval",
+              sefs="yes")
 AC_MSG_CHECKING([for file system analyses])
 if test "x${sefs}" = "xyes" ; then
    if test ${use_selinux} = no; then
@@ -248,8 +296,11 @@ else
    AC_MSG_RESULT(disabled)
 fi
 
-AC_ARG_ENABLE(sepol-src, [  --enable-sepol-src=PATH use another sepol source tree at PATH
-                          (developer only flag)], sepol_srcdir="$enableval", sepol_srcdir="")
+AC_ARG_ENABLE(sepol-src,
+              AC_HELP_STRING([--enable-sepol-src=PATH],
+                             [use another sepol source tree at PATH (developer only flag)]),
+              sepol_srcdir="$enableval",
+              sepol_srcdir="")
 if test "x${sepol_srcdir}" = "x"; then
    sepol_srcdir='${top_srcdir}/libqpol'
 else
@@ -264,8 +315,12 @@ else
    if test ! -f "${sepol_srcdir}/src/libsepol.a"; then
       AC_MSG_ERROR([could not find precompiled libsepol.a])
    fi
+   sepol_devel_incdir="${sepol_srcdir}/include"
    AC_MSG_RESULT(yes)
 fi
+SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
+AC_SUBST(SELINUX_CFLAGS)
+AC_SUBST(SELINUX_LIB_FLAG)
 
 if test ${use_selinux} = "yes"; then
 dnl Locate selinux policy root directory
@@ -295,9 +350,10 @@ fi
 dnl check for policy source
 if test ${use_selinux} = "yes"; then
    AC_ARG_WITH(default-policy,
-                [  --with-default-policy   path to default policy file],
-                selinux_default_policy="$withval",
-                selinux_default_policy="${selinux_policy_dir}/src/policy/policy.conf")
+               AC_HELP_STRING([--with-default-policy],
+                              [path to default policy file]),
+               selinux_default_policy="$withval",
+               selinux_default_policy="${selinux_policy_dir}/src/policy/policy.conf")
    AC_MSG_CHECKING([for policy source])
    if test ! -r "${selinux_default_policy}" ; then
       AC_MSG_WARN([could not read default policy ${selinux_default_policy}])
@@ -312,33 +368,35 @@ if test ${pkg_config_dir} = "no"; then
    AC_MSG_ERROR([pkg-config not found])
 fi
 
-dnl check for GTK
-AC_MSG_CHECKING([for GTK])
-GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
-if test -z "${GTK_CFLAGS}"; then
-   AC_MSG_ERROR([could not find GTK headers])
-fi
-GTK_LIBS=`pkg-config --libs gtk+-2.0`
-if test -z "${GTK_LIBS}"; then
-   AC_MSG_ERROR([could not find GTK libraries])
-fi
-AC_MSG_RESULT([yes])
-AC_SUBST(GTK_CFLAGS)
-AC_SUBST(GTK_LIBS)
+if test "x${build_gui}" = xyes; then
+  dnl check for GTK
+  AC_MSG_CHECKING([for GTK])
+  GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
+  if test -z "${GTK_CFLAGS}"; then
+     AC_MSG_ERROR([could not find GTK headers])
+  fi
+  GTK_LIBS=`pkg-config --libs gtk+-2.0`
+  if test -z "${GTK_LIBS}"; then
+     AC_MSG_ERROR([could not find GTK libraries])
+  fi
+  AC_MSG_RESULT([yes])
+  AC_SUBST(GTK_CFLAGS)
+  AC_SUBST(GTK_LIBS)
 
-dnl check for libglade
-AC_MSG_CHECKING([for libglade])
-GLADE_CFLAGS=`pkg-config --cflags libglade-2.0`
-if test -z "${GLADE_CFLAGS}"; then
-   AC_MSG_ERROR([could not find libglade headers])
+  dnl check for libglade
+  AC_MSG_CHECKING([for libglade])
+  GLADE_CFLAGS=`pkg-config --cflags libglade-2.0`
+  if test -z "${GLADE_CFLAGS}"; then
+     AC_MSG_ERROR([could not find libglade headers])
+  fi
+  GLADE_LIBS=`pkg-config --libs libglade-2.0`
+  if test -z "${GLADE_LIBS}"; then
+     AC_MSG_ERROR([could not find libglade libraries])
+  fi
+  AC_MSG_RESULT([yes])
+  AC_SUBST(GLADE_CFLAGS)
+  AC_SUBST(GLADE_LIBS)
 fi
-GLADE_LIBS=`pkg-config --libs libglade-2.0`
-if test -z "${GLADE_LIBS}"; then
-   AC_MSG_ERROR([could not find libglade libraries])
-fi
-AC_MSG_RESULT([yes])
-AC_SUBST(GLADE_CFLAGS)
-AC_SUBST(GLADE_LIBS)
 
 dnl check for libxml
 AC_MSG_CHECKING([for libxml])
@@ -366,6 +424,7 @@ fi
 
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
+AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
 
 profile_install_dir='${setoolsdir}/sechecker-profiles'
 

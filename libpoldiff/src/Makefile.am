@@ -25,6 +25,8 @@ $(poldiffso_DATA): $(libpoldiff_so_OBJS) libpoldiff.map
 	$(CC) -shared -o $@ $(libpoldiff_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBPOLDIFF_SONAME),--version-script=$(srcdir)/libpoldiff.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so
 	$(LN_S) -f $@ libpoldiff.so
 
+libpoldiff.so: $(poldiffso_DATA)
+
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 

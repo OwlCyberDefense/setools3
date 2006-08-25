@@ -41,6 +41,19 @@ seaudit_report_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
                               $(top_builddir)/libapol/src/libapol.so \
                               $(top_builddir)/libqpol/src/libqpol.so
 
+logwatch = /etc/logwatch
+LOGWATCH_GROUP = $(logwatch)/conf/logfiles
+LOGWATCH_SERVICE = $(logwatch)/conf/services
+LOGWATCH_FILTER = $(logwatch)/scripts/services
+
+dist_noinst_DATA = seaudit-report-group.conf \
+        seaudit-report-service.conf \
+        seaudit-report-service
+
+install-logwatch: $(dist_noinst_DATA)
+	install -m 644 seaudit-report-group.conf $(LOGWATCH_GROUP)
+	install -m 644 seaudit-report-service.conf $(LOGWATCH_SERVICE)
+	install -m 755 seaudit-report-service $(LOGWATCH_FILTER)
 
 $(top_builddir)/libapol/libapol-tcl.a:
 	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)

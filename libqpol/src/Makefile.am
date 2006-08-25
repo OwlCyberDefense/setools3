@@ -67,6 +67,8 @@ $(qpolso_DATA): $(tmp_sepol) $(libqpol_so_OBJS) libqpol.map
 	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/src/libsepol.a -Wl,--no-whole-archive @SELINUX_LIB_FLAG@ -lselinux -lsepol
 	$(LN_S) -f $@ libqpol.so
 
+libqpol.so: $(qpolso_DATA)
+
 install-data-hook:
 	cd $(DESTDIR)$(qpolsodir) && $(LN_S) -f $(qpolso_DATA) libqpol.so
 
