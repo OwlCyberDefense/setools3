@@ -2,9 +2,13 @@ if COPY_BWIDGET
   MAYBE_BWIDGET = packages
 endif
 
-SUBDIRS = libqpol libapol libapol-tcl libpoldiff libsefs libseaudit apol secmds sechecker seaudit awish sediff man $(MAYBE_BWIDGET)
+if BUILD_GUI
+  MAYBE_GUI = libapol-tcl apol awish seaudit
+endif
 
-DIST_SUBDIRS = $(SUBDIRS) packages
+SUBDIRS = libqpol libapol libpoldiff libsefs libseaudit secmds sechecker sediff man $(MAYBE_GUI) $(MAYBE_BWIDGET)
+
+DIST_SUBDIRS = $(SUBDIRS) packages libapol-tcl apol awish seaudit
 
 EXTRA_DIST = VERSION KNOWN-BUGS
 
@@ -37,7 +41,7 @@ sediff:
 	$(MAKE) -C $(top_srcdir)/sediff sediff
 
 sediffx:
-	@echo "FIX ME: sediffx not done yet"
+	$(MAKE) -C $(top_srcdir)/sediff sediffx
 
 sechecker:
 	$(MAKE) -C $(top_srcdir)/sechecker
@@ -45,12 +49,9 @@ sechecker:
 awish:
 	$(MAKE) -C $(top_srcdir)/awish
 
-all-nogui: secmds sediff sechecker
-
 help:
 	@echo "Make targets for setools:"
 	@echo "   all:          build everything, but don't install"
-	@echo "   all-nogui:    only build non-GUI tools and libraries"
 	@echo "   install:      install everything"
 	@echo "   uninstall:    remove setools from your system"
 	@echo ""
@@ -61,14 +62,20 @@ help:
 	@echo "   sediffx:      build semantic policy diff GUI tool"
 	@echo "   sechecker:    build policy checking tool"
 	@echo "   awish:        build Tcl/Tk wish interpreter with SE Linux tools extensions"
-	@echo "                 (useful for de-bugging problems with Tcl/Tk scripts)"
+	@echo "                 (useful for debugging problems with Tcl/Tk scripts)"
+	@echo ""
+	@echo "   install-logwatch:   install LogWatch config files for seaudit-report"
+	@echo "                       (requires LogWatch and root privileges)"
 	@echo ""
 	@echo "   clean:        clean up interim files"
 	@echo "   distclean:    clean everything not in original distribution"
 
+install-logwatch:
+	$(MAKE) -C $(top_srcdir)/seaudit install-logwatch
+
 .PHONY: libqpol libapol libapol-tcl libpoldiff libsefs libseaudit \
 	apol secmds seaudit sediff sediffx sechecker awish \
-	all-nogui help \
+	install-logwatch help \
 	seinfo sesearch indexcon findcon replcon searchcon
 
 seinfo:
