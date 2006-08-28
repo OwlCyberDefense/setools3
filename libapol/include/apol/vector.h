@@ -1,6 +1,7 @@
 /**
  *  @file vector.h
- *  Contains the API for a generic vector.
+ *  Contains the API for a generic vector.  Note that vector functions
+ *  are not thread-safe.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -223,13 +224,25 @@ extern int apol_vector_append_unique(apol_vector_t *v, void *elem,
 /**
  *  Concatenate two vectors.  Appends all elements of src to dest.
  *  <b>NOTE: No type checking is done for elements in the two
- *  vectors.</b> Elements are not deep copies.
- *  @param dest vector to which to append elements.
- *  @param src vector containing elements to append.
+ *  vectors.</b>  Elements are not deep copies.
+ *  @param dest Vector to which to append elements.
+ *  @param src Vector containing elements to append.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and dest's contents will be reverted.
  */
 extern int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src);
+
+/**
+ *  Remove an element from a vector, and renumber all subsequent
+ *  elements.  <b>This does not free memory that was used by the
+ *  removed element<b>; the caller is responsible for doing that.
+ *
+ *  @param v Vector containing element.
+ *  @param idx Index to the element to remove.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and dest's contents will be reverted.
+ */
+extern int apol_vector_remove(apol_vector_t *v, const size_t idx);
 
 /**
  *  Compares two vectors, determining if one is different than

@@ -444,3 +444,14 @@ int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src)
 
 	return 0;
 }
+
+int apol_vector_remove(apol_vector_t *v, const size_t idx)
+{
+	if (v == NULL || idx >= v->size) {
+		errno = EINVAL;
+		return -1;
+	}
+	memmove(v->array + idx, v->array + idx + 1, sizeof(v->array[0]) * (v->size - idx - 1));
+	v->size--;
+	return 0;
+}

@@ -98,7 +98,8 @@ typedef enum poldiff_form {
  *  their destruction upon poldiff_destroy().
  *  @param orig_policy The original policy.
  *  @param mod_policy The new (modified) policy.
- *  @param fn Function to be called by the error handler.
+ *  @param fn Function to be called by the error handler.  If NULL
+ *  then write messages to standard error.
  *  @param callback_arg Argument for the callback.
  *  @return a newly allocated and initialized difference structure or
  *  NULL on error; if the call fails, errno will be set.
