@@ -8,6 +8,7 @@
                 poldiff_bool_*;
                 poldiff_class_*;
                 poldiff_common_*;
+                poldiff_role_*;      
                 poldiff_user_*;
 	local: *;
 };

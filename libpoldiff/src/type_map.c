@@ -758,7 +758,6 @@ static int type_map_prim_aliases_comp(const void *a, const void *b, void *data)
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-	apol_vector_sort_uniquify(v1, apol_str_strcmp, NULL, NULL);
 	if (qpol_type_get_alias_iter(qh2, p2, tb, &iter2) < 0) {
 		error = errno;
 		goto cleanup;
@@ -768,8 +767,15 @@ static int type_map_prim_aliases_comp(const void *a, const void *b, void *data)
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-	apol_vector_sort_uniquify(v2, apol_str_strcmp, NULL, NULL);
-	retval = apol_vector_compare(v1, v2, apol_str_strcmp, NULL, &i);
+	if (apol_vector_get_size(v1) == 0 || apol_vector_get_size(v2)) {
+		retval = 1;
+		goto cleanup;
+	}
+	else {
+		apol_vector_sort_uniquify(v1, apol_str_strcmp, NULL, NULL);
+		apol_vector_sort_uniquify(v2, apol_str_strcmp, NULL, NULL);
+		retval = apol_vector_compare(v1, v2, apol_str_strcmp, NULL, &i);
+	}
  cleanup:
 	qpol_iterator_destroy(&iter1);
 	qpol_iterator_destroy(&iter2);
