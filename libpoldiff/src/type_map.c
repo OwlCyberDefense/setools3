@@ -32,6 +32,7 @@
 #include "poldiff_internal.h"
 
 #include <apol/policy-query.h>
+#include <apol/util.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -352,7 +353,10 @@ void type_map_destroy(type_map_t **map)
 
 static void type_map_dump(poldiff_t *diff)
 {
-        size_t i;
+        size_t i, j;
+        apol_vector_t *v;
+        qpol_type_t *t;
+        char *name;
         printf("# type map, debug dump:\norig:\n");
         for (i = 0; i < diff->type_map->num_orig_types; i++) {
                 printf("%3d:%5d", i, diff->type_map->orig_to_pseudo[i]);
@@ -363,6 +367,15 @@ static void type_map_dump(poldiff_t *diff)
                         printf("\t");
                 }
         }
+        for (i = 0; i < apol_vector_get_size (diff->type_map->pseudo_to_orig); i++) {
+                v = apol_vector_get_element (diff->type_map->pseudo_to_orig, i);
+                printf("\n%3d->", i);
+                for (j = 0; j < apol_vector_get_size (v); j++) {
+                        t = apol_vector_get_element (v, j);
+                        qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, t, &name);
+                        printf (" %s", name);
+                }
+        }
         printf("\nmod:\n");
         for (i = 0; i < diff->type_map->num_mod_types; i++) {
                 printf("%3d:%5d", i, diff->type_map->mod_to_pseudo[i]);
@@ -371,6 +384,15 @@ static void type_map_dump(poldiff_t *diff)
                 }
                 else {
                         printf("\t");
+                }
+        }
+        for (i = 0; i < apol_vector_get_size (diff->type_map->pseudo_to_mod); i++) {
+                v = apol_vector_get_element (diff->type_map->pseudo_to_mod, i);
+                printf("\n%3d->", i);
+                for (j = 0; j < apol_vector_get_size (v); j++) {
+                        t = apol_vector_get_element (v, j);
+                        qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, t, &name);
+                        printf (" %s", name);
                 }
         }
         printf("\n");
@@ -543,9 +565,15 @@ int type_map_build(poldiff_t *diff)
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
+			if ((reverse_v = apol_vector_create_with_capacity(1)) == NULL ||
+			    apol_vector_append(map->pseudo_to_mod, reverse_v) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
 			reverse_v = NULL;
+			next_val++;
 		}
-		next_val++;
 	}
 	for (i = 0; i < apol_vector_get_size(mv); i++) {
 		t = apol_vector_get_element(mv, i);
@@ -562,9 +590,15 @@ int type_map_build(poldiff_t *diff)
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
+			if ((reverse_v = apol_vector_create_with_capacity(1)) == NULL ||
+			    apol_vector_append(map->pseudo_to_orig, reverse_v) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
 			reverse_v = NULL;
+			next_val++;
 		}
-		next_val++;
 	}
 
         type_map_dump(diff);
@@ -678,6 +712,71 @@ static int type_map_prim_alias_comp(const void *a, const void *b, void *data)
 	}
 	qpol_iterator_destroy(&iter);
 	return -1;
+}
+
+/**
+ * Given two qpol_type_t pointers, both of which are primary types,
+ * see if the first type's aliases matches the second type's aliases.
+ *
+ * @param a Pointer to a qpol_type_t from a policy.
+ * @param b Pointer to a qpol_type_t from a policy.
+ * @param data Pointer to a type_map_comp struct.
+ *
+ * @return 0 if b is a member of a's aliases, non-zero if not.
+ */
+static int type_map_prim_aliases_comp(const void *a, const void *b, void *data)
+{
+	qpol_type_t *ta = (qpol_type_t *) a;
+	qpol_type_t *tb = (qpol_type_t *) b;
+	struct type_map_comp *c = (struct type_map_comp *) data;
+	poldiff_t *diff = c->diff;
+	int dir = c->dir;
+	qpol_handle_t *qh1, *qh2;
+	qpol_policy_t *p1, *p2;
+	qpol_iterator_t *iter1 = NULL, *iter2 = NULL;
+	apol_vector_t *v1 = NULL, *v2 = NULL;
+	size_t i;
+	int retval = -1, error = 0;
+	if (dir == POLDIFF_POLICY_ORIG) {
+		qh1 = diff->orig_pol->qh;
+		qh2 = diff->mod_pol->qh;
+		p1 = diff->orig_pol->p;
+		p2 = diff->mod_pol->p;
+	}
+	else {
+		qh1 = diff->mod_pol->qh;
+		qh2 = diff->orig_pol->qh;
+		p1 = diff->mod_pol->p;
+		p2 = diff->orig_pol->p;
+	}
+	if (qpol_type_get_alias_iter(qh1, p1, ta, &iter1) < 0) {
+		error = errno;
+		goto cleanup;
+	}
+	if ((v1 = apol_vector_create_from_iter(iter1)) == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		goto cleanup;
+	}
+	apol_vector_sort_uniquify(v1, apol_str_strcmp, NULL, NULL);
+	if (qpol_type_get_alias_iter(qh2, p2, tb, &iter2) < 0) {
+		error = errno;
+		goto cleanup;
+	}
+	if ((v2 = apol_vector_create_from_iter(iter2)) == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		goto cleanup;
+	}
+	apol_vector_sort_uniquify(v2, apol_str_strcmp, NULL, NULL);
+	retval = apol_vector_compare(v1, v2, apol_str_strcmp, NULL, &i);
+ cleanup:
+	qpol_iterator_destroy(&iter1);
+	qpol_iterator_destroy(&iter2);
+	apol_vector_destroy(&v1, NULL);
+	apol_vector_destroy(&v2, NULL);
+	errno = error;
+	return retval;
 }
 
 static void type_remap_vector_dump(poldiff_t *diff)
@@ -823,7 +922,36 @@ int type_map_infer(poldiff_t *diff)
 	}
 
 	/* map alias <-> alias */
-        /* FIX ME! */
+	c.dir = POLDIFF_POLICY_MOD;
+	for (i = 0; i < num_orig; i++) {
+		if (orig_done[i]) {
+			continue;
+		}
+		t = (qpol_type_t *) apol_vector_get_element(ov, i);
+		u = NULL;
+		for (j = 0; j < num_mod; j++) {
+			if (mod_done[j]) {
+				continue;
+			}
+			u = (qpol_type_t *) apol_vector_get_element(mv, j);
+			if (type_map_prim_aliases_comp(u, t, &c) == 0) {
+				break;
+			}
+		}
+		if (j >= num_mod) {
+			continue;
+		}
+		if ((entry = poldiff_type_remap_entry_create(diff)) == NULL ||
+		    apol_vector_append(entry->orig_types, t) < 0 ||
+		    apol_vector_append(entry->mod_types, u) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+		entry->enabled = 1;
+		orig_done[i] = 1;
+		mod_done[j] = 1;
+        }
 
         type_remap_vector_dump(diff);
 

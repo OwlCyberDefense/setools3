@@ -94,10 +94,9 @@ void poldiff_type_remap_flush(poldiff_t *diff);
  *  policy, if that type name appears as an alias to an unmapped
  *  primary in the original then map it.
  *
- *  <li>For all remaining unmapped primary types in the original
- *  policy, if there is exactly one alias that matches exactly one
- *  modified policy's unmapped type (and the modified policy's type's
- *  aliases only matches the original) the map it.
+ *  <li>For all remaining unmapped primary types in both policies, if
+ *  all of the aliases of one type are exactly the same as another
+ *  type's aliases then map it.
  *
  *  <li>All remaining types are left as unmapped.
  *
