@@ -1,12 +1,29 @@
- /* Copyright (C) 2005-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: jmowery@tresys.com, kcarr@tresys.com
+/**
+ *  @file sechecker.c
+ *  Implementation of the public interface for all sechecker modules
+ *  and the library. 
  *
- * sechecker.c
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
  *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
 
 #include "sechecker.h"
 #include "register_list.h"
@@ -212,7 +229,6 @@ void sechk_lib_destroy(sechk_lib_t **lib)
 void sechk_module_free(void *module)
 {
 	sechk_module_t *mod = (sechk_module_t*)module;
-	sechk_data_free_fn_t free_fn = NULL;
 
 	if (!module)
 		return;
@@ -224,9 +240,8 @@ void sechk_module_free(void *module)
 	apol_vector_destroy(&mod->dependencies, sechk_name_value_free);
 	/* do not free severity */
 	if (mod->data) {
-		free_fn = sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_FREE, mod->parent_lib);
-		assert(free_fn);
-		free_fn(mod->data);
+		assert(mod->data_free);
+		mod->data_free(mod->data);
 	}
 	free(mod->name);
 	mod->name = NULL;
@@ -478,7 +493,7 @@ int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sech
 	return 0;
 }
 
-void *sechk_lib_get_module_function(const char *module_name, const char *function_name, const sechk_lib_t *lib)
+sechk_mod_fn_t sechk_lib_get_module_function(const char *module_name, const char *function_name, const sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -532,6 +547,37 @@ sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t 
 			continue;
 		if (!strcmp(mod->name, module_name))
 			return mod;
+	}
+	fprintf(stderr, "Error: %s: no such module\n", module_name);
+	errno = ENOENT;
+	return NULL;
+}
+
+sechk_result_t *sechk_lib_get_module_result(const char *module_name, const sechk_lib_t *lib)
+{
+	size_t i;
+	sechk_module_t *mod = NULL;
+	sechk_mod_fn_t run = NULL;
+
+	if (!module_name || !lib) {
+		fprintf(stderr, "Error: failed to get module result\n");
+		errno = EINVAL;
+		return NULL;
+	}
+
+	for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
+		mod = apol_vector_get_element(lib->modules, i);
+		if (!(mod->name))
+			continue;
+		if (strcmp(mod->name, module_name))
+			continue;
+		if (!(mod->result)) {
+			if (!(run = sechk_lib_get_module_function(module_name, SECHK_MOD_FN_RUN, lib)) ||
+				run(mod, lib->policy, NULL) < 0) {
+				return NULL; /* run or get function will set errno */
+			}
+		}
+		return mod->result;
 	}
 	fprintf(stderr, "Error: %s: no such module\n", module_name);
 	errno = ENOENT;
@@ -639,7 +685,7 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 	int retv, error = 0;
 	size_t i;
 	sechk_module_t *mod = NULL;
-	sechk_init_fn_t init_fn = NULL;
+	sechk_mod_fn_t init_fn = NULL;
 
 	if (lib == NULL || lib->modules == NULL) {
 		errno = EINVAL;
@@ -649,14 +695,14 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 		mod = apol_vector_get_element(lib->modules, i);
 		if (!mod->selected)
 			continue;
-		init_fn = (sechk_init_fn_t)sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_INIT, lib);
+		init_fn = sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_INIT, lib);
 		if (!init_fn) {
 			error = errno;
 			fprintf(stderr, "Error: could not initialize module %s\n", mod->name);
 			errno = error;
 			return -1;
 		}
-		retv = init_fn(mod, lib->policy);
+		retv = init_fn(mod, lib->policy, NULL);
 		if (retv)
 			return retv;
 	}
@@ -669,7 +715,7 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 	int retv, num_selected = 0, rc = 0;
 	size_t i;
 	sechk_module_t *mod = NULL;
-	sechk_run_fn_t run_fn = NULL;
+	sechk_mod_fn_t run_fn = NULL;
 
 	if (!lib) {
 		fprintf(stderr, "Error: invalid library\n");
@@ -690,13 +736,13 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 		if (lib->minsev && sechk_lib_compare_sev(mod->severity, lib->minsev) < 0 && num_selected != 1)
 			continue;
 		assert(mod->name);
-		run_fn = (sechk_run_fn_t)sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_RUN, lib);
+		run_fn = sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_RUN, lib);
 		if (!run_fn) {
 			ERR(lib->policy, "Error: could not run module %s\n", mod->name);
 			errno = ENOTSUP;
 			return -1;
 		}
-		retv = run_fn(mod, lib->policy);
+		retv = run_fn(mod, lib->policy, NULL);
 
 		if (retv < 0) {
 			/* module failure */
@@ -720,7 +766,7 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib)
 	int retv, num_selected = 0, rc = 0;
 	size_t i;
 	sechk_module_t *mod = NULL;
-	sechk_print_output_fn_t print_fn = NULL;
+	sechk_mod_fn_t print_fn = NULL;
 
 	if (!lib) {
 		fprintf(stderr, "Error: invalid library\n");
@@ -745,13 +791,13 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib)
 			mod->outputformat = SECHK_OUT_SHORT;
 		assert(mod->name);
 		printf("\nModule name: %s\tSeverity: %s\n%s\n", mod->name, mod->severity, mod->detailed_description);
-		print_fn = (sechk_run_fn_t)sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_PRINT, lib);
+		print_fn = sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_PRINT, lib);
 		if (!print_fn) {
 			ERR(lib->policy, "Error: could not get print function for module %s\n", mod->name);
 			errno = ENOTSUP;
 			return -1;
 		}
-		retv = print_fn(mod, lib->policy);
+		retv = print_fn(mod, lib->policy, NULL);
 		if (retv) {
 			fprintf(stderr, "Error: unable to print results for module %s \n", mod->name);
 			rc = -1;
@@ -1136,5 +1182,6 @@ int sechk_proof_with_element_compare(const void *in_proof, const void *elem, voi
 		return 1;
 
 	/* explicit pointer to integer cast */
-	return (int)(proof->elem - elem);
+	return ((int)(proof->elem) - (int)elem);
 }
+
