@@ -1,10 +1,28 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: dwindsor@tresys.com
+/**
+ *  @file find_assoc_types.h
+ *  Implementation of the association types utility module. 
  *
- */
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *  @author David Windsor dwindsor@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */ 
 
 #include "find_assoc_types.h"
 
@@ -66,7 +84,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
                 ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
-	fn_struct->fn = &find_assoc_types_init;
+	fn_struct->fn = find_assoc_types_init;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
                 ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
@@ -82,27 +100,13 @@ int find_assoc_types_register(sechk_lib_t *lib)
                 ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
-	fn_struct->fn = &find_assoc_types_run;
+	fn_struct->fn = find_assoc_types_run;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
                 ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
 
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-	}
-	fn_struct->fn = &find_assoc_types_data_free;
-	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-	}
+	mod->data_free = NULL;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -114,23 +118,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
                 ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
 	}
-	fn_struct->fn = &find_assoc_types_print_output;
-	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-	}
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
-	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-	}
-	fn_struct->fn = &find_assoc_types_get_result;
+	fn_struct->fn = find_assoc_types_print;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
                 ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
@@ -146,7 +134,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
                 ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
         }
-        fn_struct->fn = &find_assoc_types_get_list;
+        fn_struct->fn = find_assoc_types_get_list;
 	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
                 ERR(NULL, "%s", strerror(ENOMEM));
                 return -1;
@@ -158,10 +146,8 @@ int find_assoc_types_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy)
+int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	find_assoc_types_data_t *datum = NULL;
-
 	if (!mod || !policy) {
                 ERR(policy, "%s", "Invalid parameters");
 		return -1;
@@ -170,13 +156,6 @@ int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy)
 		ERR(policy, "Wrong module (%s)\n", mod->name);
 		return -1;
 	}
-
-	datum = find_assoc_types_data_new();
-	if (!datum) {
-                ERR(policy, "%s", strerror(ENOMEM));
-                return -1;
-	}
-	mod->data = datum;
 
 	return 0;
 }
@@ -189,9 +168,8 @@ int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found */
-int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
+int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	find_assoc_types_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -215,7 +193,6 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (find_assoc_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
                 ERR(policy, "%s", strerror(ENOMEM));
@@ -298,22 +275,10 @@ find_assoc_types_run_fail:
 	return -1;
 }
 
-/* The free function frees the private data of a module */
-void find_assoc_types_data_free(void *data)
+/* The print function generates the text and prints the
+ * results to stdout. */
+int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused))) 
 {
-        free(data);
-}
-
-/* The print output function generates the text and prints the
- * results to stdout. The outline below prints
- * the standard format of a reassoc section. Some modules may
- * not have results in a format that can be represented by this
- * outline and will need a different specification. It is
- * required that each of the flags for output components be
- * tested in this function (stats, list, proof, detailed, and brief) */
-int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy) 
-{
-	find_assoc_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -330,7 +295,6 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 	
-	datum = (find_assoc_types_data_t*)mod->data;
 	outformat = mod->outputformat;
 	num_items = apol_vector_get_size(mod->result->items);
 
@@ -393,25 +357,11 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	return 0;
 }
 
-/* The get_result function returns a pointer to the results
- * structure for this check to be used in another check. */
-sechk_result_t *find_assoc_types_get_result(sechk_module_t *mod) 
+int find_assoc_types_get_list(sechk_module_t *mod, apol_policy_t *policy __attribute__((unused)), void *arg)
 {
-	if (!mod) {
-                ERR(NULL, "%s", "Invalid parameters");
-		return NULL;
-	}
-	if (strcmp(mod_name, mod->name)) {
-                ERR(NULL, "Wrong module (%s)", mod->name);
-		return NULL;
-	}
+	apol_vector_t **v = arg;
 
-	return mod->result;
-}
-
-int find_assoc_types_get_list(sechk_module_t *mod, apol_vector_t **v)
-{
-	if (!mod || !v) {
+	if (!mod || !arg) {
                 ERR(NULL, "%s", "Invalid parameters");
 		return -1;
 	}
@@ -425,24 +375,7 @@ int find_assoc_types_get_list(sechk_module_t *mod, apol_vector_t **v)
 	}
 	
 	v = &mod->result->items;
+
 	return 0;
-}
-
-/* The find_assoc_types_data_new function allocates and returns an
- * initialized private data storage structure for this
- * module. Initialization expected is as follows:
- * all arrays (including strings) are initialized to NULL
- * array sizes are set to 0
- * any other pointers should be NULL
- * indices into other arrays (such as type or permission indices)
- * should be initialized to -1
- * any other data should be initialized as needed by the check logic */
-find_assoc_types_data_t *find_assoc_types_data_new(void)
-{
-	find_assoc_types_data_t *datum = NULL;
-
-	datum = (find_assoc_types_data_t*)calloc(1,sizeof(find_assoc_types_data_t));
-
-	return datum;
 }
 

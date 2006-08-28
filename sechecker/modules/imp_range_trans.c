@@ -186,9 +186,9 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i;
-	apol_vector_t *range_trans_vector;
-	qpol_type_t *entry_point;
-	qpol_class_t *class;
+	apol_vector_t *range_trans_vector = NULL;
+	qpol_type_t *entry_point = NULL;
+	qpol_class_t *class = NULL;
 
 	if (!mod || !policy) {
                 ERR(policy, "%s", "Invalid parameters");

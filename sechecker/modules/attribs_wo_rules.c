@@ -1,9 +1,26 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: jmowery@tresys.com
+/**
+ *  @file attribs_wo_rules.c
+ *  Implementation of the attributes without rules module. 
  *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "attribs_wo_rules.h"
@@ -72,7 +89,7 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &attribs_wo_rules_init;
+	fn_struct->fn = attribs_wo_rules_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
@@ -88,27 +105,13 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &attribs_wo_rules_run;
+	fn_struct->fn = attribs_wo_rules_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &attribs_wo_rules_data_free;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
+	mod->data_free = NULL;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -120,23 +123,7 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &attribs_wo_rules_print_output;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
-	if (!fn_struct->name) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &attribs_wo_rules_get_result;
+	fn_struct->fn = attribs_wo_rules_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
@@ -164,10 +151,8 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int attribs_wo_rules_init(sechk_module_t *mod, apol_policy_t *policy)
+int attribs_wo_rules_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	attribs_wo_rules_data_t *datum = NULL;
-
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
 		return -1;
@@ -177,12 +162,7 @@ int attribs_wo_rules_init(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 
-	datum = attribs_wo_rules_data_new();
-	if (!datum) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	mod->data = datum;
+	mod->data = NULL;
 
 	return 0;
 }
@@ -191,9 +171,8 @@ int attribs_wo_rules_init(sechk_module_t *mod, apol_policy_t *policy)
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
  * in all relavant item and proof data. */
-int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy)
+int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	attribs_wo_rules_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -208,6 +187,7 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy)
 	qpol_iterator_t *constraint_iter;
 	qpol_iterator_t *node_iter = NULL;
 	qpol_iterator_t *name_iter = NULL;
+	int found = 0;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -222,7 +202,6 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (attribs_wo_rules_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
@@ -262,37 +241,53 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy)
 		/* access rules */
 		apol_avrule_query_set_source(policy, avrule_query, attr_name, 0);
 		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
-		if ( apol_vector_get_size(avrule_vector) > 0 ) continue;
+		if ( apol_vector_get_size(avrule_vector) > 0 ) {
+			apol_vector_destroy(&avrule_vector, NULL);
+			continue;
+		}
 
 		apol_avrule_query_set_source(policy, avrule_query, NULL, 0);
 		apol_avrule_query_set_target(policy, avrule_query, attr_name, 0);
 		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
-		if ( apol_vector_get_size(avrule_vector) > 0 ) continue;
+		if ( apol_vector_get_size(avrule_vector) > 0 ) {
+			apol_vector_destroy(&avrule_vector, NULL);
+			continue;
+		}
 		apol_avrule_query_set_target(policy, avrule_query, NULL, 0);
 		apol_vector_destroy(&avrule_vector, NULL);
 
 		/* type rules */
 		apol_terule_query_set_source(policy, terule_query, attr_name, 0);
 		apol_get_terule_by_query(policy, terule_query, &terule_vector);
-		if ( apol_vector_get_size(terule_vector) > 0 ) continue;
+		if ( apol_vector_get_size(terule_vector) > 0 ) {
+			apol_vector_destroy(&terule_vector, NULL);
+			continue;
+		}
 
 		apol_terule_query_set_source(policy, terule_query, NULL, 0);
 		apol_terule_query_set_target(policy, terule_query, attr_name, 0);
 		apol_get_terule_by_query(policy, terule_query, &terule_vector);
-		if ( apol_vector_get_size(terule_vector) > 0 ) continue;
+		if ( apol_vector_get_size(terule_vector) > 0 ) {
+			apol_vector_destroy(&terule_vector, NULL);
+			continue;
+		}
 		apol_terule_query_set_target(policy, terule_query, NULL, 0);
 		apol_vector_destroy(&terule_vector, NULL);
 
 		/* role trans */
 		apol_role_query_set_type(policy, role_query, attr_name);
 		apol_get_role_by_query(policy, role_query, &role_vector);
-		if ( apol_vector_get_size(role_vector) > 0 ) continue;
+		if ( apol_vector_get_size(role_vector) > 0 ) {
+			apol_vector_destroy(&role_vector, NULL);
+			continue;
+		}
 		apol_vector_destroy(&role_vector, NULL);
 
 		/* Check constraints */
 		constraint_iter = NULL;
 		node_iter = NULL;
 		name_iter = NULL;
+		found = 0;
 		qpol_policy_get_constraint_iter(policy->qh, policy->p, &constraint_iter);
 		for ( ; !qpol_iterator_end(constraint_iter); qpol_iterator_next(constraint_iter) ) {
 			qpol_constraint_t *constraint;
@@ -314,14 +309,23 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy)
 						char *name;
 
 						qpol_iterator_get_item(name_iter, (void **)&name);
-						if (!strcmp(name, attr_name)) continue;
+						if (!strcmp(name, attr_name)) {
+							found = 1;
+							break;
+						}
 					}
+					if (found)
+						break;
 				}
 			}
+			if (found)
+				break;
 		}
 		qpol_iterator_destroy(&constraint_iter);
 		qpol_iterator_destroy(&node_iter);
 		qpol_iterator_destroy(&name_iter);
+		if (found)
+			continue;
 
 		/* if we get here then the attrib was not found anywhere in a rule so add it */
 		item = sechk_item_new(NULL);
@@ -365,23 +369,16 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy)
 	mod->result = res;
 	return 0;
 
- attribs_wo_rules_run_fail:
+attribs_wo_rules_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	return -1;
 }
 
-/* The free function frees the private data of a module */
-void attribs_wo_rules_data_free(void *data)
-{
-	free(data);
-}
-
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy)
+int attribs_wo_rules_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	attribs_wo_rules_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -398,7 +395,6 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 
-	datum = (attribs_wo_rules_data_t*)mod->data;
 	outformat = mod->outputformat;
 	num_items = apol_vector_get_size(mod->result->items);
 
@@ -454,37 +450,11 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	return 0;
 }
 
-/* The get_result function returns a pointer to the results
- * structure for this check to be used in another check. */
-sechk_result_t *attribs_wo_rules_get_result(sechk_module_t *mod)
+int attribs_wo_rules_get_list(sechk_module_t *mod, apol_policy_t *policy __attribute__((unused)), void *arg)
 {
-	if (!mod) {
-		ERR(NULL, "%s", "Invalid parameters");
-		return NULL;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		ERR(NULL, "Wrong module (%s)", mod->name);
-		return NULL;
-	}
+	apol_vector_t **v = arg;
 
-	return mod->result;
-}
-
-/* The attribs_wo_rules_data_new function allocates and returns an
- * initialized private data storage structure for this
- * module. */
-attribs_wo_rules_data_t *attribs_wo_rules_data_new(void)
-{
-	attribs_wo_rules_data_t *datum = NULL;
-
-	datum = (attribs_wo_rules_data_t*)calloc(1,sizeof(attribs_wo_rules_data_t));
-
-	return datum;
-}
-
-int attribs_wo_rules_get_list(sechk_module_t *mod, apol_vector_t **v)
-{
-	if (!mod || !v) {
+	if (!mod || !arg) {
 		ERR(NULL, "%s", "Invalid parameters");
 		return -1;
 	}
