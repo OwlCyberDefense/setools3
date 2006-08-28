@@ -174,10 +174,11 @@ extern int qpol_constraint_expr_node_get_expr_type(qpol_handle_t *handle, qpol_p
  *  @param handle Error handler for the policy database.
  *  @patam policy The policy from which the expression comes.
  *  @param expr The expression node from which to get the symbol type.
+ *  Must be of expression type QPOL_CEXPR_TYPE_ATTR or QPOL_CEXPR_TYPE_NAMES.
  *  @param sym_type Integer in which to store the symbol type; the value
  *  will be a bitwise or'ed set of QPOL_CEXPR_SYM_* above.
  *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *op will be 0.
+ *  errno will be set and *sym_type will be 0.
  */
 extern int qpol_constraint_expr_node_get_sym_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *sym_type);
 
@@ -193,6 +194,7 @@ extern int qpol_constraint_expr_node_get_sym_type(qpol_handle_t *handle, qpol_po
  *  @param handle Error handler for the policy database.
  *  @patam policy The policy from which the expression comes.
  *  @param expr The expression node from which to get the operator.
+ *  Must be of expression type QPOL_CEXPR_TYPE_ATTR or QPOL_CEXPR_TYPE_NAMES.
  *  @param op Integer in which to store the operator; the value
  *  will be one of QPOL_CEXPR_OP_* above.
  *  @return 0 on success and < 0 on failure; if the call fails,
@@ -205,6 +207,7 @@ extern int qpol_constraint_expr_node_get_op(qpol_handle_t *handle, qpol_policy_t
  *  @param handle Error handler for the policy database.
  *  @patam policy The policy from which the expression comes.
  *  @param expr The expression node from which to create the iterator.
+ *  Must be of expression type QPOL_CEXPR_TYPE_NAMES.
  *  @param iter Iterator over items of type char* returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
  *  to free memory used by this iterator. <b>The caller should call
