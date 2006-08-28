@@ -134,7 +134,7 @@ int poldiff_type_remap_create(poldiff_t *diff,
 	    (entry->orig_types = apol_vector_create_with_capacity(1)) == NULL ||
 	    (entry->mod_types = apol_vector_create_with_capacity(1)) == NULL) {
 		error = ENOMEM;
-		ERR(diff, "%s", strerror(error));a
+		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(orig_names); i++) {
