@@ -81,6 +81,17 @@ static const poldiff_item_record_t item_records[] = {
 		common_deep_diff,
 	},
 	{
+		"role",
+		POLDIFF_DIFF_ROLES,
+		poldiff_role_get_stats,
+		poldiff_role_to_string,
+		role_get_items,
+		NULL,
+		role_comp,
+		role_new_diff,
+		role_deep_diff,
+	},
+	{
 		"user",
 		POLDIFF_DIFF_USERS,
 		poldiff_user_get_stats,
@@ -131,6 +142,7 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	if ((diff->bool_diffs = bool_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
 	    (diff->common_diffs = common_create()) == NULL ||
+	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->user_diffs = user_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
@@ -152,6 +164,7 @@ void poldiff_destroy(poldiff_t **diff)
 	bool_destroy(&(*diff)->bool_diffs);
 	class_destroy(&(*diff)->class_diffs);
 	common_destroy(&(*diff)->common_diffs);
+	role_destroy(&(*diff)->role_diffs);
 	user_destroy(&(*diff)->user_diffs);
 	free(*diff);
 	*diff = NULL;
@@ -171,7 +184,8 @@ void poldiff_destroy(poldiff_t **diff)
  * @return 0 on success and < 0 on error; if the call fails; errno
  * will be set and the only defined operation on the policy difference
  * structure will be poldiff_destroy().
- */static int poldiff_do_item_diff(poldiff_t *diff, const poldiff_item_record_t *item_record)
+ */
+static int poldiff_do_item_diff(poldiff_t *diff, const poldiff_item_record_t *item_record)
 {
 	apol_vector_t *p1_v = NULL, *p2_v = NULL;
 	int error = 0, retv;

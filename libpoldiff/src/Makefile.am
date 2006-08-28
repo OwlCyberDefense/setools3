@@ -11,6 +11,7 @@ libpoldiff_a_SOURCES = \
 	poldiff.c \
 	bool_diff.c bool_internal.h \
 	class_diff.c class_internal.h \
+	role_diff.c role_internal.h \
 	user_diff.c user_internal.h \
 	poldiff_internal.h \
 	type_map.c type_map_internal.h
