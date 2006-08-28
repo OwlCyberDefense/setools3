@@ -340,6 +340,8 @@ void poldiff_handle_msg(poldiff_t *p, int level, const char *fmt, ...)
 	if (p == NULL || p->fn == NULL) {
 		poldiff_handle_default_callback(NULL, NULL, level, fmt, ap);
 	}
-	p->fn(p->handle_arg, p, level, fmt, ap);
+	else {
+		p->fn(p->handle_arg, p, level, fmt, ap);
+	}
 	va_end(ap);
 }

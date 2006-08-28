@@ -53,8 +53,9 @@ type_map_t *type_map_create(void);
 void type_map_destroy(type_map_t **map);
 
 /**
- *  (Re-)Build the type map for a policy difference structure if
- *  necessary.  This function should be called by poldiff_run() before
+ *  Build the type map for a policy difference structure, using all
+ *  enabled poldiff_type_remap_entry entries as hints for the
+ *  mappings.  This function should be called by poldiff_run() before
  *  each run.
  *
  *  @param diff The policy difference structure containing the

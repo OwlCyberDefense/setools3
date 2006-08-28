@@ -35,8 +35,14 @@ typedef struct poldiff_type_remap_entry poldiff_type_remap_entry_t;
 /**
  *  Note that a type(s) from the original policy should be remapped in
  *  the modified policy.  Subsequent diffs will treat type(s) in
- *  orig_names to be equivalent to type(s) in mod_names.  It is an
- *  error for the size of both vectors to be greater than one.
+ *  orig_names to be equivalent to type(s) in mod_names.  The created
+ *  remap entry will be marked as enabled.
+ *
+ *  It is an error for the size of both vectors to be greater than
+ *  one.
+ *
+ *  Note that you may only remap primary types, not attributes nor
+ *  aliases.
  *
  *  @param diff The difference structure associated with the types.
  *  Note that renaming a type will reset the status of previously run
@@ -65,5 +71,63 @@ extern int poldiff_type_remap_create(poldiff_t *diff,
  *  should not destroy this vector.
  */
 extern apol_vector_t *poldiff_type_remap_get_entries(poldiff_t *diff);
+
+/**
+ *  Remove a poldiff_type_remap_entry object.  This function will
+ *  destroy the entry object afterwards.
+ *
+ *  @param diff The difference structure associated with the types
+ *  remaps.
+ *  @param entry Type remap entry to remove and destroy.
+ */
+extern void poldiff_type_remap_entry_remove(poldiff_t *diff, poldiff_type_remap_entry_t *entry);
+
+/**
+ *  Allocate and return a vector of type names (char *) corresponding
+ *  to the original types within a poldiff_type_remap_entry_t object.
+ *  The strings themselves are to be considered immutable; if the
+ *  caller needs them for future use it should duplicate them.
+ *
+ *  @param diff Difference structure, for error reporting.
+ *  @param entry Remap entry from which to get type names.
+ *
+ *  @return Vector of type names.  The caller is responsible for
+ *  calling apol_vector_destroy() afterwards, passing NULL as the
+ *  second parameter.  Upon error return NULL and set errno.
+ */
+extern apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t *diff, poldiff_type_remap_entry_t *entry);
+
+/**
+ *  Allocate and return a vector of type names (char *) corresponding
+ *  to the modified types within a poldiff_type_remap_entry_t object.
+ *  The strings themselves are to be considered immutable; if the
+ *  caller needs them for future use it should duplicate them.
+ *
+ *  @param diff Difference structure, for error reporting.
+ *  @param entry Remap entry from which to get type names.
+ *
+ *  @return Vector of type names.  The caller is responsible for
+ *  calling apol_vector_destroy() afterwards, passing NULL as the
+ *  second parameter.  Upon error return NULL and set errno.
+ */
+extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t *diff, poldiff_type_remap_entry_t *entry);
+
+/**
+ *  Given a poldiff_type_remap_entry_t object, determine if it is
+ *  enabled or not.
+ *
+ *  @param entry Remap entry from which to get its enabled status.
+ *
+ *  @return 1 if it is enabled, 0 if not, < 0 on error.
+ */
+extern int poldiff_type_remap_entry_get_is_enabled(poldiff_type_remap_entry_t *entry);
+
+/**
+ *  Enable or disable a poldiff_type_remap_entry_t object.
+ *
+ *  @param entry Remap entry from which to set its enabled status.
+ *  @param enabled 0 to disable this entry, non-zero to enable it.
+ */
+extern void poldiff_type_remap_entry_set_enabled(poldiff_type_remap_entry_t *entry, int enabled);
 
 #endif /* POLDIFF_TYPE_MAP_H */
