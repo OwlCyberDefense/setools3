@@ -1,3 +1,29 @@
+/**
+ *  @file find_node_types.c
+ *  Implementation of the node types utility module. 
+ *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *  @author David Windsor dwindsor@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
@@ -25,13 +51,13 @@ int find_node_types_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-                ERR(NULL, "%s", "No library");
+		ERR(NULL, "%s", "No library");
 		return -1;
 	}
 
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-                ERR(NULL, "%s", "Unknown module");
+		ERR(NULL, "%s", "Unknown module");
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -39,26 +65,26 @@ int find_node_types_register(sechk_lib_t *lib)
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
 	 * where to store the function structures */
-	
+
 	/* assign the descriptions */
 	mod->brief_description = "utility module";
 	mod->detailed_description =
-"--------------------------------------------------------------------------------\n"
-"This module finds all types in a policy treated as a node type.  A type is      \n"
-"considered a node type if it is the type in a nodecon statement.\n";
+		"--------------------------------------------------------------------------------\n"
+		"This module finds all types in a policy treated as a node type.  A type is      \n"
+		"considered a node type if it is the type in a nodecon statement.\n";
 	mod->opt_description = 
-"  Module requirements:\n"
-"    none\n"
-"  Module dependencies:\n"
-"    none\n"
-"  Module options:\n"
-"    none\n";
+		"  Module requirements:\n"
+		"    none\n"
+		"  Module dependencies:\n"
+		"    none\n"
+		"  Module options:\n"
+		"    none\n";
 	mod->severity = SECHK_SEV_NONE;
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
@@ -66,7 +92,7 @@ int find_node_types_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &find_node_types_init;
+	fn_struct->fn = find_node_types_init;
 	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	fn_struct = sechk_fn_new();
@@ -79,21 +105,10 @@ int find_node_types_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &find_node_types_run;
+	fn_struct->fn = find_node_types_run;
 	apol_vector_append(mod->functions, (void *)fn_struct);
 
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &find_node_types_data_free;
-	apol_vector_append(mod->functions, (void *)fn_struct);
+	mod->data_free = NULL;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -105,7 +120,7 @@ int find_node_types_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &find_node_types_print_output;
+	fn_struct->fn = find_node_types_print;
 	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	fn_struct = sechk_fn_new();
@@ -113,25 +128,12 @@ int find_node_types_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
+	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &find_node_types_get_result;
-	apol_vector_append(mod->functions, (void *)fn_struct);
-
-	fn_struct = sechk_fn_new();
-        if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
-        fn_struct->name = strdup("get_list");
-        if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
-        fn_struct->fn = &find_node_types_get_list;
+	fn_struct->fn = find_node_types_get_list;
 	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	return 0;
@@ -141,25 +143,16 @@ int find_node_types_register(sechk_lib_t *lib)
  * and initializes its values based on the options parsed in the config
  * file.
  * Add any option processing logic as indicated below. */
-int find_node_types_init(sechk_module_t *mod, apol_policy_t *policy)
+int find_node_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	find_node_types_data_t *datum = NULL;
-
 	if (!mod || !policy) {
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
-
-	datum = find_node_types_data_new();
-	if (!datum) {
-                ERR(policy, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	mod->data = datum;
 
 	return 0;
 }
@@ -172,9 +165,8 @@ int find_node_types_init(sechk_module_t *mod, apol_policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found */
-int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
+int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	find_node_types_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -183,11 +175,11 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_vector_t *nodecon_vector = NULL;
 
 	if (!mod || !policy) {
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -195,26 +187,25 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (find_node_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_node_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
 	if ( !(res->items = apol_vector_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_node_types_run_fail;		
 	}
-	
+
 	if ( !(nodecon_vector = apol_vector_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
-                goto find_node_types_run_fail;
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto find_node_types_run_fail;
 	}
 
 	if ( apol_get_nodecon_by_query(policy, NULL, &nodecon_vector) < 0 ) {
@@ -230,15 +221,15 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 		qpol_nodecon_get_context(policy->qh, policy->p, nodecon, &context);
 		qpol_context_get_type(policy->qh, policy->p, context, &context_type);
 		qpol_type_get_name(policy->qh, policy->p, context_type, &type_name);
-		
+
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto find_node_types_run_fail;
 		}
 		proof->type = SECHK_ITEM_TYPE;
 		proof->text = apol_nodecon_render(policy, nodecon);
-		
+
 		for (j=0;j<apol_vector_get_size(res->items);j++) {
 			sechk_item_t *res_item;
 			qpol_type_t *res_type;
@@ -252,25 +243,25 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 		if (!item) {
 			item = sechk_item_new(NULL);
 			if (!item) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 			item->test_result = 1;
 			item->item = (void *)context_type;
 			if ( apol_vector_append(res->items, (void *)item) < 0 ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
-               		 	goto find_node_types_run_fail;
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_node_types_run_fail;
 			}
 		} 
 		if (!item->proof) { 
 			if ( !(item->proof = apol_vector_create()) ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
-                		goto find_node_types_run_fail;
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_node_types_run_fail;
 			}
 		}
 		if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-                	goto find_node_types_run_fail;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_node_types_run_fail;
 		}
 		item = NULL;
 	}
@@ -292,21 +283,21 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 			qpol_context_get_type(policy->qh, policy->p, context, &context_type);
 			qpol_type_get_name(policy->qh, policy->p, context_type, &context_type_name);
 			a_context = apol_context_create_from_qpol_context(policy, context);
-	
+
 			if (apol_str_append(&buff, &buff_sz, "sid port ") != 0) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 
 			if (apol_str_append(&buff, &buff_sz, apol_context_render(policy, a_context)) != 0) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
-			                ERR(policy, "%s", strerror(ENOMEM));
+					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_node_types_run_fail;
 				}
 				item->test_result = 1;
@@ -314,27 +305,27 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 
 			proof->type = SECHK_ITEM_TYPE;
 			proof->text = buff;
-		
+
 			item->item = (void *)context_type;
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
-               			 	goto find_node_types_run_fail;
+					ERR(policy, "%s", strerror(ENOMEM));
+					goto find_node_types_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
-			        goto find_node_types_run_fail;
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_node_types_run_fail;
 			}
 			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
-                		goto find_node_types_run_fail;
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_node_types_run_fail;
 			}
 		}
 	}
@@ -350,22 +341,9 @@ find_node_types_run_fail:
 	return -1;
 }
 
-/* The free function frees the private data of a module */
-void find_node_types_data_free(void *data)
+/* The print function generates the text and prints the results to stdout. */
+int find_node_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute((unused))) 
 {
-	free(data);
-}
-
-/* The print output function generates the text and prints the
- * results to stdout. The outline below prints
- * the standard format of a renode section. Some modules may
- * not have results in a format that can be represented by this
- * outline and will need a different specification. It is
- * required that each of the flags for output components be
- * tested in this function (stats, list, proof, detailed, and brief) */
-int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy) 
-{
-	find_node_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -374,24 +352,23 @@ int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
 	if (!mod || !policy){
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
-	
-	datum = (find_node_types_data_t*)mod->data;
+
 	outformat = mod->outputformat;
 
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-                ERR(policy, "%s", "Module has not been run");
+		ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
-	
+
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
@@ -409,9 +386,9 @@ int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 			j++;
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
-                        type = (qpol_type_t *)item->item;
-                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
-                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+			type = (qpol_type_t *)item->item;
+			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
@@ -428,8 +405,8 @@ int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		printf("\n");
 		for ( j=0;j<num_items;j++) {
 			item = apol_vector_get_element(mod->result->items, j);
-                        type = (qpol_type_t *)item->item;
-                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			type = (qpol_type_t *)item->item;
+			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 			if ( item ) {
 				printf("%s\n", type_name);
 				for (k=0;k<apol_vector_get_size(item->proof);k++) {
@@ -445,59 +422,25 @@ int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	return 0;
 }
 
-/* The get_result function returns a pointer to the results
- * structure for this check to be used in another check.
- * You should not need to modify this function. */
-sechk_result_t *find_node_types_get_result(sechk_module_t *mod) 
+int find_node_types_get_list(sechk_module_t *mod, apol_policy_t *policy __attribute__((unused)), void *arg)
 {
-	if (!mod) {
-                ERR(NULL, "%s", "Invalid parameters");
-		return NULL;
+	apol_vector_t **v = arg;
+
+	if (!mod || !arg) {
+		ERR(NULL, "%s", "Invalid parameters");
+		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(NULL, "Wrong module (%s)", mod->name);
-		return NULL;
+		ERR(NULL, "Wrong module (%s)", mod->name);
+		return -1;
+	}
+	if (!mod->result) {
+		ERR(NULL, "%s", "Module has not been run");
+		return -1;
 	}
 
-	return mod->result;
+	v = &mod->result->items;
+
+	return 0;
 }
 
-int find_node_types_get_list(sechk_module_t *mod, apol_vector_t **v)
-{
-        if (!mod || !v) {
-                ERR(NULL, "%s", "Invalid parameters");
-                return -1;
-        }
-        if (strcmp(mod_name, mod->name)) {
-                ERR(NULL, "Wrong module (%s)", mod->name);
-                return -1;
-        }
-        if (!mod->result) {
-                ERR(NULL, "%s", "Module has not been run");
-                return -1;
-        }
-
-        v = &mod->result->items;
-
-        return 0;
-}
-
-/* The find_node_types_data_new function allocates and returns an
- * initialized private data storage structure for this
- * module. Initialization expected is as follows:
- * all arrays (including strings) are initialized to NULL
- * array sizes are set to 0
- * any other pointers should be NULL
- * indices into other arrays (such as type or permission indices)
- * should be initialized to -1
- * any other data should be initialized as needed by the check logic */
-find_node_types_data_t *find_node_types_data_new(void)
-{
-	find_node_types_data_t *datum = NULL;
-
-	datum = (find_node_types_data_t*)calloc(1,sizeof(find_node_types_data_t));
-
-	return datum;
-}
-
- 
