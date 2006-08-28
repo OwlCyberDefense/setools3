@@ -1,9 +1,26 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: jmowery@tresys.com
+/**
+ *  @file inc_mount.c
+ *  Implementation of the incomplete mount permissions module. 
  *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "inc_mount.h"
@@ -42,102 +59,72 @@ int inc_mount_register(sechk_lib_t *lib)
 	/* assign the descriptions */
 	mod->brief_description = "domains with partial mount permissions";
 	mod->detailed_description =
-"--------------------------------------------------------------------------------\n"
-"This module finds domains that have incomplete mount permissions.  In order for \n"
-"a mount operation to be allowed by the policy the follow rules must be present: \n"
-"\n"
-"   1.) allow somedomain_d sometype_t : filesystem  { mount };\n"
-"   2.) allow somedomain_d sometype_t : dir { mounton };\n"
-"\n"
-"This module finds domains that have only one of the rules listed above.\n";
+		"--------------------------------------------------------------------------------\n"
+		"This module finds domains that have incomplete mount permissions.  In order for \n"
+		"a mount operation to be allowed by the policy the follow rules must be present: \n"
+		"\n"
+		"   1.) allow somedomain_d sometype_t : filesystem  { mount };\n"
+		"   2.) allow somedomain_d sometype_t : dir { mounton };\n"
+		"\n"
+		"This module finds domains that have only one of the rules listed above.\n";
 	mod->opt_description =
-"Module requirements:\n"
-"   none\n"
-"Module dependencies:\n"
-"   none\n"
-"Module options:\n"
-"   none\n";
+		"Module requirements:\n"
+		"   none\n"
+		"Module dependencies:\n"
+		"   none\n"
+		"Module options:\n"
+		"   none\n";
 	mod->severity = SECHK_SEV_MED;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &inc_mount_init;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
+	fn_struct->fn = inc_mount_init;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1;
+	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &inc_mount_run;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
+	fn_struct->fn = inc_mount_run;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1;
+	}
+
+	mod->data_free = NULL;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &inc_mount_data_free;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &inc_mount_print_output;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+	fn_struct->fn = inc_mount_print;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
-	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &inc_mount_get_result;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
 
 	return 0;
 }
@@ -145,10 +132,8 @@ int inc_mount_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int inc_mount_init(sechk_module_t *mod, apol_policy_t *policy)
+int inc_mount_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	inc_mount_data_t *datum = NULL;
-
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
 		return -1;
@@ -158,12 +143,7 @@ int inc_mount_init(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 
-	datum = inc_mount_data_new();
-	if (!datum) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	mod->data = datum;
+	mod->data = NULL;
 
 	return 0;
 }
@@ -172,9 +152,8 @@ int inc_mount_init(sechk_module_t *mod, apol_policy_t *policy)
  * even if called multiple times. This function allocates the result
  * structure and fills in all relavant item and proof data. */
 
-int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
+int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	inc_mount_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -200,7 +179,6 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (inc_mount_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
@@ -266,7 +244,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 
 			/* Check to see if they match */
 			if ( !strcmp(mount_source_name, mounton_source_name) &&
-			     !strcmp(mount_target_name, mounton_target_name)) both = TRUE;
+					!strcmp(mount_target_name, mounton_target_name)) both = TRUE;
 		}
 		if ( !both ) {
 			proof = sechk_proof_new(NULL);
@@ -284,7 +262,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 				goto inc_mount_run_fail;
 			}
 			snprintf(buff, buff_sz, "%s\n\tMissing:\n\tallow %s %s : dir mounton;\n",apol_avrule_render(policy, mount_rule),
-				 mount_source_name, mount_target_name);
+					mount_source_name, mount_target_name);
 			proof->text = strdup(buff);
 			if ( !proof->text ) {
 				ERR(policy, "%s", strerror(ENOMEM));
@@ -343,7 +321,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 
 			/* Check to see if they match */
 			if ( !strcmp(mount_source_name, mounton_source_name) &&
-			     !strcmp(mount_target_name, mounton_target_name)) both = TRUE;
+					!strcmp(mount_target_name, mounton_target_name)) both = TRUE;
 		}
 		if ( !both ) {
 			proof = sechk_proof_new(NULL);
@@ -361,7 +339,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 				goto inc_mount_run_fail;
 			}
 			snprintf(buff, buff_sz, "%s\n\tMissing:\n\t\tallow %s %s : filesystem mount;\n",apol_avrule_render(policy,mounton_rule),
-				 mounton_source_name, mounton_target_name);
+					mounton_source_name, mounton_target_name);
 			proof->text = strdup(buff);
 			if ( !proof->text ) {
 				ERR(policy, "%s", strerror(ENOMEM));
@@ -397,23 +375,16 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_avrule_query_destroy(&mounton_avrule_query);
 	return 0;
 
- inc_mount_run_fail:
+inc_mount_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	return -1;
 }
 
-/* The free function frees the private data of a module */
-void inc_mount_data_free(void *data)
-{
-	free(data);
-}
-
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int inc_mount_print_output(sechk_module_t *mod, apol_policy_t *policy)
+int inc_mount_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	inc_mount_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -430,7 +401,6 @@ int inc_mount_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 
-	datum = (inc_mount_data_t*)mod->data;
 	outformat = mod->outputformat;
 	num_items = apol_vector_get_size(mod->result->items);
 
@@ -448,16 +418,16 @@ int inc_mount_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
 	if (outformat & SECHK_OUT_LIST) {
-                printf("\n");
-                for (i = 0; i < num_items; i++) {
-                        j++;
-                        item  = apol_vector_get_element(mod->result->items, i);
-                        type = item->item;
-                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
-                        j %= 4;
-                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
-                }
-                printf("\n");
+		printf("\n");
+		for (i = 0; i < num_items; i++) {
+			j++;
+			item  = apol_vector_get_element(mod->result->items, i);
+			type = item->item;
+			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			j %= 4;
+			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+		}
+		printf("\n");
 	}
 	/* The proof report component is a display of a list of items
 	 * with an indented list of proof statements supporting the result
@@ -468,50 +438,23 @@ int inc_mount_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	 * Each proof element is then displayed in an indented list one per
 	 * line below it. */
 	if (outformat & SECHK_OUT_PROOF) {
-                printf("\n");
-                for (k=0;k< num_items;k++) {
-                        item = apol_vector_get_element(mod->result->items, k);
-                        if ( item ) {
-                                type = item->item;
-                                qpol_type_get_name(policy->qh, policy->p, type, &type_name);
-                                printf("%s\n", (char*)type_name);
-                                for (l=0; l<apol_vector_get_size(item->proof);l++) {
-                                        proof = apol_vector_get_element(item->proof,l);
-                                        if ( proof )
-                                                printf("\t%s\n", proof->text);
-                                }
-                        }
-                }
-                printf("\n");
+		printf("\n");
+		for (k=0;k< num_items;k++) {
+			item = apol_vector_get_element(mod->result->items, k);
+			if ( item ) {
+				type = item->item;
+				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+				printf("%s\n", (char*)type_name);
+				for (l=0; l<apol_vector_get_size(item->proof);l++) {
+					proof = apol_vector_get_element(item->proof,l);
+					if ( proof )
+						printf("\t%s\n", proof->text);
+				}
+			}
+		}
+		printf("\n");
 	}
 
 	return 0;
 }
 
-/* The get_result function returns a pointer to the results
- * structure for this check to be used in another check. */
-sechk_result_t *inc_mount_get_result(sechk_module_t *mod)
-{
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return NULL;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return NULL;
-	}
-
-	return mod->result;
-}
-
-/* The inc_mount_data_new function allocates and returns an
- * initialized private data storage structure for this
- * module. */
-inc_mount_data_t *inc_mount_data_new(void)
-{
-	inc_mount_data_t *datum = NULL;
-
-	datum = (inc_mount_data_t*)calloc(1,sizeof(inc_mount_data_t));
-
-	return datum;
-}
