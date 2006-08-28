@@ -359,17 +359,17 @@ int user_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
  * @param p Policy from which the user came.
  * @param user User whose roles to get.
  *
- * @return Vector of role strings for the class.  The caller is
- * responsible for calling apol_vector_destroy(), passing free as the
+ * @return Vector of role strings for the user.  The caller is
+ * responsible for calling apol_vector_destroy(), passing NULL as the
  * second parameter.  On error, return NULL.
  */
 static apol_vector_t *user_get_roles(poldiff_t *diff, apol_policy_t *p, qpol_user_t *user)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_role_t *role;
-	char *role_name, *new_role_name;
+	char *role_name;
 	apol_vector_t *v = NULL;
-	int retval = -1;
+	int retval = -1, error = 0;
 
 	if ((v = apol_vector_create()) == NULL) {
 		ERR(diff, "%s", strerror(errno));
@@ -381,11 +381,12 @@ static apol_vector_t *user_get_roles(poldiff_t *diff, apol_policy_t *p, qpol_use
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, (void **) &role) < 0 ||
 		    qpol_role_get_name(p->qh, p->p, role, &role_name)) {
-				goto cleanup;
+			error = errno;
+			goto cleanup;
 		}
-		if ((new_role_name = strdup(role_name)) == NULL ||
-		    apol_vector_append(v, new_role_name) < 0) {
-			ERR(diff, "%s", strerror(errno));
+		if (apol_vector_append(v, role_name) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
 	}
@@ -394,7 +395,8 @@ static apol_vector_t *user_get_roles(poldiff_t *diff, apol_policy_t *p, qpol_use
  cleanup:
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
-		apol_vector_destroy(&v, free);
+		apol_vector_destroy(&v, NULL);
+		errno = error;
 		return NULL;
 	}
 	return v;
@@ -488,6 +490,8 @@ int user_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		}
 	}
 	if (u != NULL) {
+		apol_vector_sort(u->removed_roles, apol_str_strcmp, NULL);
+		apol_vector_sort(u->added_roles, apol_str_strcmp, NULL);
 		if (apol_vector_append(diff->user_diffs->diffs, u) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
@@ -497,8 +501,8 @@ int user_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	}
 	retval = 0;
  cleanup:
-	apol_vector_destroy(&v1, free);
-	apol_vector_destroy(&v2, free);
+	apol_vector_destroy(&v1, NULL);
+	apol_vector_destroy(&v2, NULL);
 	if (retval != 0) {
 		user_free(u);
 	}

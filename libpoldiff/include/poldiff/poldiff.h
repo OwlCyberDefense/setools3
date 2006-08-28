@@ -61,6 +61,7 @@ typedef enum poldiff_form {
 
 #include <poldiff/bool_diff.h>
 #include <poldiff/class_diff.h>
+#include <poldiff/role_diff.h>
 #include <poldiff/user_diff.h>
 #include <poldiff/type_map.h>
 

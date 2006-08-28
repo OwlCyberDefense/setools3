@@ -84,7 +84,7 @@ static void usage(const char *prog_name, int brief)
 "  -A, --roleallows  role allow rules\n"
 "  -C, --conds       conditionals and their rules\n\n"
 "  -q, --quiet       only print different definitions\n"
-"  -s, --stats       print useful policy statics\n"
+"  -s, --stats       print useful policy statistics\n"
 "  -h, --help        display this help and exit\n"
 "  -v, --version     output version information and exit\n\n"
 , stdout);
@@ -318,6 +318,74 @@ static void print_common_diffs(poldiff_t *diff)
 	return;
 }
 
+static void print_role_diffs(poldiff_t *diff)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	char *str = NULL;
+	poldiff_role_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_ROLES, stats);
+	printf("Roles (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+	v = poldiff_get_role_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Roles: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_role_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Roles: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_role_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Roles: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_role_to_string(diff, (const void*)item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
 static void print_user_diffs(poldiff_t *diff)
 {
 	apol_vector_t *v = NULL;
@@ -491,7 +559,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 		printf("TODO: Attributes\n\n");
 	}
 	if (flags & POLDIFF_DIFF_ROLES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLES))) {
-		printf("TODO: Roles\n\n");
+		print_role_diffs(diff);
 	}
 	if (flags & POLDIFF_DIFF_USERS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_USERS))) {
 		print_user_diffs(diff);
