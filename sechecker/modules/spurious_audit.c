@@ -1,10 +1,27 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: jmowery@tresys.com
- *         rjordan@tresys.com
+/**
+ *  @file spurious_audit.c
+ *  Implementation of the spurious audit rule module. 
  *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *  @author Ryan Jordan rjordan@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "sechecker.h"
@@ -30,7 +47,7 @@ int spurious_audit_register(sechk_lib_t *lib)
 	if (!lib) {
 		ERR(NULL, "%s", "no library");	
 		return -1;
-}
+	}
 
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
@@ -43,25 +60,25 @@ int spurious_audit_register(sechk_lib_t *lib)
 	}
 
 	mod->parent_lib = lib;
-	
+
 	/* assign the descriptions */
 	mod->brief_description = "audit rules with no effect";
 	mod->detailed_description =
-"--------------------------------------------------------------------------------\n"
-"This module finds audit rules in the policy which do not affect the auditing of\n"
-"the policy.  This could happen in the following situations:\n"
-"\n"
-"   1) there is an allow rule with the same key and permissions for a dontaudit\n"
-"      rule\n"
-"   2) there is an auditallow rule without an allow rule with a key and\n"
-"      permission that does not appear in an allow rule.\n";
+		"--------------------------------------------------------------------------------\n"
+		"This module finds audit rules in the policy which do not affect the auditing of\n"
+		"the policy.  This could happen in the following situations:\n"
+		"\n"
+		"   1) there is an allow rule with the same key and permissions for a dontaudit\n"
+		"      rule\n"
+		"   2) there is an auditallow rule without an allow rule with a key and\n"
+		"      permission that does not appear in an allow rule.\n";
 	mod->opt_description = 
-"  Module requirements:\n"
-"    none\n"
-"  Module dependencies:\n"
-"    none\n"
-"  Module options:\n"
-"    none\n";
+		"  Module requirements:\n"
+		"    none\n"
+		"  Module dependencies:\n"
+		"    none\n"
+		"  Module options:\n"
+		"    none\n";
 	mod->severity = SECHK_SEV_LOW;
 
 	/* register functions */
@@ -75,7 +92,7 @@ int spurious_audit_register(sechk_lib_t *lib)
 		ERR(lib->policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &spurious_audit_init;
+	fn_struct->fn = spurious_audit_init;
 	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
@@ -88,21 +105,10 @@ int spurious_audit_register(sechk_lib_t *lib)
 		ERR(lib->policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &spurious_audit_run;
+	fn_struct->fn = spurious_audit_run;
 	apol_vector_append(mod->functions, (void*)fn_struct);
 
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(lib->policy, "%s", strerror(errno));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-		ERR(lib->policy, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &spurious_audit_data_free;
-	apol_vector_append(mod->functions, (void*)fn_struct);
+	mod->data_free = NULL;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -114,20 +120,7 @@ int spurious_audit_register(sechk_lib_t *lib)
 		ERR(lib->policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &spurious_audit_print_output;
-	apol_vector_append(mod->functions, (void*)fn_struct);
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(lib->policy, "%s", strerror(errno));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
-	if (!fn_struct->name) {
-		ERR(lib->policy, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &spurious_audit_get_result;
+	fn_struct->fn = spurious_audit_print;
 	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	return 0;
@@ -136,13 +129,8 @@ int spurious_audit_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy)
+int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	sechk_name_value_t *opt = NULL;
-	spurious_audit_data_t *datum = NULL;
-	int error = 0;
-	size_t i = 0;
-
 	if (!mod || !policy) {
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -154,19 +142,7 @@ int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 
-	datum = spurious_audit_data_new();
-	if (!datum) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		errno = error;
-		return -1;
-	}
-	mod->data = datum;
-
-	for (i = 0; i < apol_vector_get_size(mod->options); i++) {
-		opt = apol_vector_get_element(mod->options, i);
-		/* spurious_audit uses no options, so we skip them all. */
-	}
+	mod->data = NULL;
 
 	return 0;
 }
@@ -174,9 +150,8 @@ int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy)
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result
  * structure and fills in all relavant item and proof data. */
-int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
+int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	spurious_audit_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -187,10 +162,10 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 	size_t i, j, k, l, tmp_counter;
 	qpol_avrule_t *rule1, *rule2;
 	qpol_type_t *source, *target;
-   qpol_class_t *object;
+	qpol_class_t *object;
 	qpol_iterator_t *perm_iter1, *perm_iter2;
 	char *string1, *string2, *tmp, *src_name, *tgt_name, *obj_name, *perms;
-	
+
 	error = rule_found = 0;
 	allow_rules = auditallow_rules = dontaudit_rules =
 		perm_vector1 = perm_vector2 = perm_intersection = NULL;
@@ -214,7 +189,6 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (spurious_audit_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		error = errno;
@@ -237,7 +211,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 		ERR(policy, "%s", strerror(error));
 		goto spurious_audit_run_fail;
 	}
-	
+
 	apol_avrule_query_set_rules(policy, query, QPOL_RULE_AUDITALLOW);
 	if (apol_get_avrule_by_query(policy, query, &auditallow_rules)) {
 		error = errno;
@@ -372,7 +346,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 					for (k = 0; k < apol_vector_get_size(perm_intersection); k++)
 					{
 						apol_str_append(&(proof->text), &tmp_counter,
-							  	(char*) apol_vector_get_element(perm_intersection, k));
+								(char*) apol_vector_get_element(perm_intersection, k));
 						if (k != (apol_vector_get_size(perm_intersection) - 1))
 							apol_str_append(&(proof->text), &tmp_counter, ", ");
 					}
@@ -394,8 +368,8 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 						}
 					}
 					apol_vector_append(item->proof, (void*) proof);
-	
-									}
+
+				}
 				else {
 					/* these two rules don't overlap, no problem */
 				}
@@ -508,7 +482,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 			for (j = 0; j < apol_vector_get_size(perm_vector1); j++)
 			{
 				if (apol_str_append(&(proof->text), &tmp_counter,
-						(char*)apol_vector_get_element(perm_vector1, j)))
+							(char*)apol_vector_get_element(perm_vector1, j)))
 				{
 					error = errno;
 					ERR(policy, "%s", strerror(error));
@@ -558,7 +532,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 			item = NULL;
 			continue;
 		}
-		
+
 		/* Here we have AuditAllow rule and Allow rule(s) with same key */
 		/* Checking to make sure they have the same permissions */
 
@@ -635,9 +609,9 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 			}
 			proof->elem = NULL;
 			proof->type = SECHK_ITEM_AVRULE;
-			
+
 			/* the next series of if statements prints the following:
-				missing: allow <src_name> <tgt_name> : <obj_name> { perms }; */
+missing: allow <src_name> <tgt_name> : <obj_name> { perms }; */
 			tmp_counter = 0;
 			for (j = 0; j < apol_vector_get_size(perm_vector1); j++)
 			{
@@ -722,28 +696,16 @@ spurious_audit_run_fail:
 	return -1;
 }
 
-/* The free function frees the private data of a module */
-void spurious_audit_data_free(void *data)
-{
-	spurious_audit_data_t *datum = (spurious_audit_data_t *)data;
-
-	if (datum) {
-	}
-
-	free(data);
-}
-
-/* The print output function generates the text and prints the
+/* The print function generates the text and prints the
  * results to stdout. */
-int spurious_audit_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+int spurious_audit_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused))) 
 {
-	spurious_audit_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0;
 	uint32_t ruletype;
-	
+
 	if (!mod || !policy) {
 		ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -754,8 +716,7 @@ int spurious_audit_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		errno = EINVAL;
 		return -1;
 	}
-	
-	datum = (spurious_audit_data_t*)mod->data;
+
 	outformat = mod->outputformat;
 
 	if (!mod->result) {
@@ -763,7 +724,7 @@ int spurious_audit_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		errno = EINVAL;
 		return -1;
 	}
-	
+
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
@@ -815,34 +776,5 @@ int spurious_audit_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	}
 
 	return 0;
-}
-
-/* The get_result function returns a pointer to the results
- * structure for this check to be used in another check. */
-sechk_result_t *spurious_audit_get_result(sechk_module_t *mod) 
-{
-	if (!mod) {
-		ERR(NULL, "%s", strerror(EINVAL));	
-		errno = EINVAL;
-		return NULL;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		ERR(mod->parent_lib->policy, "%s%s%s", "wrong module (", mod->name, ")");
-		return NULL;
-	}
-
-	return mod->result;
-}
-
-/* The spurious_audit_data_new function allocates and returns an
- * initialized private data storage structure for this
- * module. */ 
-spurious_audit_data_t *spurious_audit_data_new(void)
-{
-	spurious_audit_data_t *datum = NULL;
-
-	datum = (spurious_audit_data_t*)calloc(1,sizeof(spurious_audit_data_t));
-
-	return datum;
 }
 
