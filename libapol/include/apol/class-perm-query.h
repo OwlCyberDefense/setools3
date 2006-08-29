@@ -29,6 +29,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_class_query apol_class_query_t;
 typedef struct apol_common_query apol_common_query_t;

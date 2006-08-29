@@ -29,6 +29,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 /* Specify a which types relationship analysis/analyses to run using
  * these bit values.

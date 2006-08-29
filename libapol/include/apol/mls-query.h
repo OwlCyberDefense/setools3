@@ -27,9 +27,9 @@
 #ifndef APOL_MLS_QUERY_H
 #define APOL_MLS_QUERY_H
 
-#include <qpol/policy_query.h>
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 /**
  * Declaration of a MLS level.  Users of this struct are free

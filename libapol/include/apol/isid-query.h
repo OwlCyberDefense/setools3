@@ -29,6 +29,7 @@
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_isid_query apol_isid_query_t;
 

@@ -29,6 +29,7 @@
 #include "policy.h"
 #include "vector.h"
 #include "mls-query.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_user_query apol_user_query_t;
 

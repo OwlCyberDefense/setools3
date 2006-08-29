@@ -30,6 +30,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_cond_query apol_cond_query_t;
 

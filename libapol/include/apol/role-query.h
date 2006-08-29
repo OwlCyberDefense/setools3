@@ -28,6 +28,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_role_query apol_role_query_t;
 
