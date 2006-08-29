@@ -15,6 +15,8 @@ libqpol:
 
 libapol:
 	$(MAKE) -C $(top_srcdir)/libapol
+
+libapol-tcl:
 	$(MAKE) -C $(top_srcdir)/libapol-tcl
 
 libpoldiff:
@@ -26,25 +28,25 @@ libsefs:
 libseaudit:
 	$(MAKE) -C $(top_srcdir)/libseaudit
 
-apol:
+apol: libqpol libapol libsefs libapol-tcl
 	$(MAKE) -C $(top_srcdir)/apol
 
-secmds:
+secmds: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/secmds
 
-seaudit:
+seaudit: libqpol libapol libseaudit
 	$(MAKE) -C $(top_srcdir)/seaudit
 
-sediff:
+sediff: libqpol libapol libpoldiff
 	$(MAKE) -C $(top_srcdir)/sediff sediff
 
-sediffx:
+sediffx: libqpol libapol libpoldiff
 	$(MAKE) -C $(top_srcdir)/sediff sediffx
 
-sechecker:
+sechecker: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/sechecker
 
-awish:
+awish: libqpol libapol libsefs libapol-tcl
 	$(MAKE) -C $(top_srcdir)/awish
 
 help:
@@ -76,22 +78,22 @@ install-logwatch:
 	install-logwatch help \
 	seinfo sesearch indexcon findcon replcon searchcon
 
-seinfo:
+seinfo: libqpol libapol
 	$(MAKE) -C $(top_srcdir)/secmds seinfo
 
-sesearch:
+sesearch: libqpol libapol
 	$(MAKE) -C $(top_srcdir)/secmds sesearch
 
-indexcon:
+indexcon: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/secmds indexcon
 
-findcon:
+findcon: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/secmds findcon
 
-replcon:
+replcon: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/secmds replcon
 
-searchcon:
+searchcon: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/secmds searchcon
 
 distclean-local:
