@@ -29,6 +29,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 /* defines for direction flag */
 #define APOL_RELABEL_DIR_TO      0x01

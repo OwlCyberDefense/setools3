@@ -31,10 +31,10 @@
 #ifndef APOL_RENDER_H
 #define APOL_RENDER_H
 
-#include <qpol/policy_query.h>
 #include "policy.h"
 #include "mls-query.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 #include <stdlib.h>
 
 /**

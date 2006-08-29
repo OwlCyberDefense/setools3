@@ -26,9 +26,9 @@
 #ifndef APOL_CONTEXT_QUERY_H
 #define APOL_CONTEXT_QUERY_H
 
-#include <qpol/policy_query.h>
 #include "policy.h"
 #include "mls-query.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_context {
 	char *user, *role, *type;
