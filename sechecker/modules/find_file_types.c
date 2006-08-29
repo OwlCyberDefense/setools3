@@ -1,9 +1,27 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: jmowery@tresys.com
+/**
+ *  @file find_file_types.c
+ *  Implementation of the find file types utility module.
  *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *  @author Randy Wicks rwicks@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "find_file_types.h"
@@ -76,7 +94,7 @@ int find_file_types_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &find_file_types_init;
+	fn_struct->fn = find_file_types_init;
 	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
@@ -89,21 +107,10 @@ int find_file_types_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &find_file_types_run;
+	fn_struct->fn = find_file_types_run;
 	apol_vector_append(mod->functions, (void*)fn_struct);
 
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &find_file_types_data_free;
-	apol_vector_append(mod->functions, (void*)fn_struct);
+	mod->data_free = find_file_types_data_free;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -115,20 +122,7 @@ int find_file_types_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &find_file_types_print_output;
-	apol_vector_append(mod->functions, (void*)fn_struct);
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
-	if (!fn_struct->name) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &find_file_types_get_result;
+	fn_struct->fn = find_file_types_print;
 	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
@@ -141,13 +135,14 @@ int find_file_types_register(sechk_lib_t *lib)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &find_file_types_get_list;
+	fn_struct->fn = find_file_types_get_list;
 	apol_vector_append(mod->functions, (void*)fn_struct);
+
 
 	return 0;
 }
 
-int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy)
+int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	sechk_name_value_t *opt = NULL;
 	find_file_types_data_t *datum = NULL;
@@ -196,7 +191,7 @@ int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy)
 	return 0;
 }
 
-int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
+int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	find_file_types_data_t *datum;
 	sechk_item_t *item = NULL;
@@ -282,12 +277,6 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 			qpol_type_t *attr;
 			int nfta;
 
-			buff = NULL;
-			proof = sechk_proof_new(NULL);
-			if (!proof) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_file_types_run_fail;
-			}
 			qpol_iterator_get_item(file_attr_iter, (void **)&attr);
 			qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
 			for (nfta=0;nfta<apol_vector_get_size(datum->file_type_attribs); nfta++) {
@@ -295,16 +284,14 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 
 				file_type_attrib = apol_vector_get_element(datum->file_type_attribs,nfta);
 				if (!strcmp(attr_name, file_type_attrib)) {
-					proof->type = SECHK_ITEM_ATTRIB;
-					buff_sz = 1+strlen(attr_name)+strlen("has attribute ");
-					buff = (char*)calloc(buff_sz, sizeof(char));
-					if (!buff) {
+					proof = sechk_proof_new(NULL);
+					if (!proof) {
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
-					strcat(buff, "has attribute ");
-					strcat(buff, attr_name);
-					proof->text = buff;
+					proof->type = SECHK_ITEM_ATTRIB;
+					proof->elem = attr;
+					asprintf(&proof->text, "has attribute %s", attr_name); 
 					if (!item) {
 						item = sechk_item_new(NULL);
 						if (!item) {
@@ -324,9 +311,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto find_file_types_run_fail;
 					}
 				}
-				buff = NULL;
 			}
-			buff = NULL;
 		}
 		qpol_iterator_destroy(&file_attr_iter);
 
@@ -343,13 +328,13 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 			qpol_avrule_t *avrule;
 			avrule = apol_vector_get_element(avrule_vector, x);
 			if ( avrule ) {
-				buff = NULL;
 				proof = sechk_proof_new(NULL);
 				if (!proof) {
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_file_types_run_fail;
 				}
 				proof->type = SECHK_ITEM_AVRULE;
+				proof->elem = avrule;
 				proof->text = apol_avrule_render(policy, avrule);
 				if (!item) {
 					item = sechk_item_new(NULL);
@@ -370,11 +355,8 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_file_types_run_fail;
 				}
-				buff = NULL;
 			}
-			buff = NULL;
 		}
-		buff = NULL;
 		apol_vector_destroy(&avrule_vector,NULL);
 		apol_avrule_query_destroy(&avrule_query);
 
@@ -394,13 +376,13 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 			qpol_terule_get_object_class(policy->qh, policy->p, terule, &objclass);
 			qpol_class_get_name(policy->qh, policy->p, objclass, &class_name);
 			if (strcmp(class_name,"process")) {
-				buff = NULL;
 				proof = sechk_proof_new(NULL);
 				if (!proof) {
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_file_types_run_fail;
 				}
 				proof->type = SECHK_ITEM_TERULE;
+				proof->elem = terule;
 				proof->text = apol_terule_render(policy, terule);
 				if (!item) {
 					item = sechk_item_new(NULL);
@@ -421,17 +403,15 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_file_types_run_fail;
 				}
-				buff = NULL;
 			}
-			buff = NULL;
 		}
-		buff = NULL;
 		apol_vector_destroy(&terule_vector,NULL);
 		apol_terule_query_destroy(&terule_query);
 
 #ifdef LIBSEFS
 		/* assigned in fc check */
 		if (fc_entry_vector) {
+			buff = NULL;
 			for (j=0; j < num_fc_entries; j++) {
 				sefs_fc_entry_t *fc_entry;
 				char *fc_type_name = NULL;
@@ -442,23 +422,23 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 					buff_sz = 1;
 					buff_sz += strlen(fc_entry->path);
 					switch (fc_entry->filetype) {
-					case SEFS_FILETYPE_DIR: /* Directory */
-					case SEFS_FILETYPE_CHR: /* Character device */
-					case SEFS_FILETYPE_BLK: /* Block device */
-					case SEFS_FILETYPE_REG: /* Regular file */
-					case SEFS_FILETYPE_FIFO: /* FIFO */
-					case SEFS_FILETYPE_LNK: /* Symbolic link */
-					case SEFS_FILETYPE_SOCK: /* Socket */
-						buff_sz += 4;
-						break;
-					case SEFS_FILETYPE_ANY: /* any type */
-						buff_sz += 2;
-						break;
-					case SEFS_FILETYPE_NONE: /* none */
-					default:
-						ERR(policy, "%s", "Invalid file type");
-						goto find_file_types_run_fail;
-						break;
+						case SEFS_FILETYPE_DIR: /* Directory */
+						case SEFS_FILETYPE_CHR: /* Character device */
+						case SEFS_FILETYPE_BLK: /* Block device */
+						case SEFS_FILETYPE_REG: /* Regular file */
+						case SEFS_FILETYPE_FIFO: /* FIFO */
+						case SEFS_FILETYPE_LNK: /* Symbolic link */
+						case SEFS_FILETYPE_SOCK: /* Socket */
+							buff_sz += 4;
+							break;
+						case SEFS_FILETYPE_ANY: /* any type */
+							buff_sz += 2;
+							break;
+						case SEFS_FILETYPE_NONE: /* none */
+						default:
+							ERR(policy, "%s", "Invalid file type");
+							goto find_file_types_run_fail;
+							break;
 					}
 					if (apol_vector_get_size(mod->parent_lib->fc_entries)>0) {
 						buff_sz += (strlen(fc_entry->context->user) + 1);
@@ -470,35 +450,35 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 					buff = (char*)calloc(buff_sz, sizeof(char));
 					strcat(buff, fc_entry->path);
 					switch (fc_entry->filetype) {
-					case SEFS_FILETYPE_DIR: /* Directory */
-						strcat(buff, "\t-d\t");
-						break;
-					case SEFS_FILETYPE_CHR: /* Character device */
-						strcat(buff, "\t-c\t");
-						break;
-					case SEFS_FILETYPE_BLK: /* Block device */
-						strcat(buff, "\t-b\t");
-						break;
-					case SEFS_FILETYPE_REG: /* Regular file */
-						strcat(buff, "\t--\t");
-						break;
-					case SEFS_FILETYPE_FIFO: /* FIFO */
-						strcat(buff, "\t-p\t");
-						break;
-					case SEFS_FILETYPE_LNK: /* Symbolic link */
-						strcat(buff, "\t-l\t");
-						break;
-					case SEFS_FILETYPE_SOCK: /* Socket */
-						strcat(buff, "\t-s\t");
-						break;
-					case SEFS_FILETYPE_ANY: /* any type */
-						strcat(buff, "\t\t");
-						break;
-					case SEFS_FILETYPE_NONE: /* none */
-					default:
-						ERR(policy, "%s", "Invalid file type");
-						goto find_file_types_run_fail;
-						break;
+						case SEFS_FILETYPE_DIR: /* Directory */
+							strcat(buff, "\t-d\t");
+							break;
+						case SEFS_FILETYPE_CHR: /* Character device */
+							strcat(buff, "\t-c\t");
+							break;
+						case SEFS_FILETYPE_BLK: /* Block device */
+							strcat(buff, "\t-b\t");
+							break;
+						case SEFS_FILETYPE_REG: /* Regular file */
+							strcat(buff, "\t--\t");
+							break;
+						case SEFS_FILETYPE_FIFO: /* FIFO */
+							strcat(buff, "\t-p\t");
+							break;
+						case SEFS_FILETYPE_LNK: /* Symbolic link */
+							strcat(buff, "\t-l\t");
+							break;
+						case SEFS_FILETYPE_SOCK: /* Socket */
+							strcat(buff, "\t-s\t");
+							break;
+						case SEFS_FILETYPE_ANY: /* any type */
+							strcat(buff, "\t\t");
+							break;
+						case SEFS_FILETYPE_NONE: /* none */
+						default:
+							ERR(policy, "%s", "Invalid file type");
+							goto find_file_types_run_fail;
+							break;
 					}
 					if (fc_entry->context) {
 						strcat(buff, fc_entry->context->user);
@@ -515,7 +495,8 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto find_file_types_run_fail;
 					}
 					proof->type = SECHK_ITEM_FCENT;
-					proof->text = buff;
+					proof->elem = fc_entry;
+					proof->text = strdup(buff);
 					if (!item) {
 						item = sechk_item_new(NULL);
 						if (!item) {
@@ -556,7 +537,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy)
 
 	return 0;
 
- find_file_types_run_fail:
+find_file_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
@@ -573,7 +554,7 @@ void find_file_types_data_free(void *data)
 	free(data);
 }
 
-int find_file_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
+int find_file_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	find_file_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -643,19 +624,29 @@ int find_file_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	return 0;
 }
 
-
-sechk_result_t *find_file_types_get_result(sechk_module_t *mod)
+int find_file_types_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	if (!mod) {
-		ERR(NULL, "%s", "Invalid parameters");
-		return NULL;
+	apol_vector_t **v = arg;
+
+	if (!mod || !arg) {
+		ERR(NULL, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(NULL, "Wrong module (%s)", mod->name);
-		return NULL;
+		errno = EINVAL;
+		return -1;
+	}
+	if (!mod->result) {
+		ERR(NULL, "%s", "Module has not been run");
+		errno = EINVAL;
+		return -1;
 	}
 
-	return mod->result;
+	v = &mod->result->items;
+
+	return 0;
 }
 
 find_file_types_data_t *find_file_types_data_new(void)
@@ -667,22 +658,3 @@ find_file_types_data_t *find_file_types_data_new(void)
 	return datum;
 }
 
-int find_file_types_get_list(sechk_module_t *mod, apol_vector_t **v)
-{
-	if (!mod || !v) {
-		ERR(NULL, "%s", "Invalid parameters");
-		return -1;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		ERR(NULL, "Wrong module (%s)", mod->name);
-		return -1;
-	}
-	if (!mod->result) {
-		ERR(NULL, "%s", "Module has not been run");
-		return -1;
-	}
-
-	v = &mod->result->items;
-
-	return 0;
-}
