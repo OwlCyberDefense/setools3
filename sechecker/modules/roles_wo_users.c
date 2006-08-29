@@ -1,9 +1,26 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: jmowery@tresys.com
+/**
+ *  @file roles_wo_users.h
+ *  Defines the interface for the roles without users module. 
  *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "roles_wo_users.h"
@@ -38,117 +55,87 @@ int roles_wo_users_register(sechk_lib_t *lib)
 		return -1;
 	}
 	mod->parent_lib = lib;
-	
+
 	/* assign the descriptions */
 	mod->brief_description = "roles not assigned to users";
 	mod->detailed_description = 
-"--------------------------------------------------------------------------------\n"
-"This module finds roles that are not assigned to users.  If a role is not       \n"
-"assigned to a user it cannot form a valid context.\n";
+		"--------------------------------------------------------------------------------\n"
+		"This module finds roles that are not assigned to users.  If a role is not       \n"
+		"assigned to a user it cannot form a valid context.\n";
 	mod->opt_description = 
-"Module requirements:\n"
-"   none\n"
-"Module dependencies:\n"
-"   none\n"
-"Module options:\n"
-"   none\n";
+		"Module requirements:\n"
+		"   none\n"
+		"Module dependencies:\n"
+		"   none\n"
+		"Module options:\n"
+		"   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &roles_wo_users_init;
+	fn_struct->fn = roles_wo_users_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &roles_wo_users_run;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
+	fn_struct->fn = roles_wo_users_run;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1;
+	}
+
+	mod->data_free = NULL;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &roles_wo_users_data_free;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &roles_wo_users_print_output;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
+	fn_struct->fn = roles_wo_users_print;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1;
+	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
-	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &roles_wo_users_get_result;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &roles_wo_users_get_list;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
+	fn_struct->fn = roles_wo_users_get_list;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1;
+	}
 
 	return 0;
 }
@@ -156,10 +143,8 @@ int roles_wo_users_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int roles_wo_users_init(sechk_module_t *mod, apol_policy_t *policy)
+int roles_wo_users_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	roles_wo_users_data_t *datum = NULL;
-
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
 		return -1;
@@ -169,12 +154,7 @@ int roles_wo_users_init(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 
-	datum = roles_wo_users_data_new();
-	if (!datum) {
-                ERR(policy, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	mod->data = datum;
+	mod->data = NULL;
 
 	return 0;
 }
@@ -182,9 +162,8 @@ int roles_wo_users_init(sechk_module_t *mod, apol_policy_t *policy)
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result 
  * structure and fills in all relavant item and proof data. */
-int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy)
+int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
-	roles_wo_users_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -206,33 +185,32 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (roles_wo_users_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_users_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ROLE;
-        if ( !(res->items = apol_vector_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
-                goto roles_wo_users_run_fail;
-        }
-
-	if ( !(user_query = apol_user_query_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
-                goto roles_wo_users_run_fail;
+	if ( !(res->items = apol_vector_create()) ) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto roles_wo_users_run_fail;
 	}
 
-        if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
-                ERR(policy, "%s", "Unable to retrieve roles");
-                return -1;
-        }
-	
+	if ( !(user_query = apol_user_query_create()) ) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto roles_wo_users_run_fail;
+	}
+
+	if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
+		ERR(policy, "%s", "Unable to retrieve roles");
+		return -1;
+	}
+
 	for (i=0; i<apol_vector_get_size(role_vector);i++) {
 		qpol_role_t *role;
 		char *role_name;
@@ -249,12 +227,12 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy)
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_users_run_fail;
 		}
 		item = sechk_item_new(NULL);
 		if (!item) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_users_run_fail;
 		}
 		item->item = (void *)role;
@@ -262,23 +240,23 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy)
 		proof->type = SECHK_ITEM_ROLE;
 		proof->text = strdup("This role is not assigned to any user.");
 		if (!proof->text) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_users_run_fail;
 		}
-                if ( !item->proof ) {
-	                if ( !(item->proof = apol_vector_create()) ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
-                		goto roles_wo_users_run_fail;
-                        }
-                }
-                if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-                        goto roles_wo_users_run_fail;
-                }
-                if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-                        goto roles_wo_users_run_fail;
-                }
+		if ( !item->proof ) {
+			if ( !(item->proof = apol_vector_create()) ) {
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto roles_wo_users_run_fail;
+			}
+		}
+		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto roles_wo_users_run_fail;
+		}
+		if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto roles_wo_users_run_fail;
+		}
 		item = NULL;
 		proof = NULL;
 	}
@@ -295,17 +273,10 @@ roles_wo_users_run_fail:
 	return -1;
 }
 
-/* The free function frees the private data of a module */
-void roles_wo_users_data_free(void *data)
-{
-	free(data);
-}
-
-/* The print output function generates the text printed in the
+/* The print function generates the text printed in the
  * report and prints it to stdout. */
-int roles_wo_users_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+int roles_wo_users_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused))) 
 {
-	roles_wo_users_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	qpol_role_t *role;
@@ -321,7 +292,6 @@ int roles_wo_users_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 
-	datum = (roles_wo_users_data_t*)mod->data;
 	outformat = mod->outputformat;
 	num_items = apol_vector_get_size(mod->result->items);
 
@@ -342,65 +312,40 @@ int roles_wo_users_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
 	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
-                printf("\n");
-                for (i=0;i<num_items;i++) {
-                        j++;
-                        j %= 4;
-                        item = apol_vector_get_element(mod->result->items, i);
+		printf("\n");
+		for (i=0;i<num_items;i++) {
+			j++;
+			j %= 4;
+			item = apol_vector_get_element(mod->result->items, i);
 			role = (qpol_role_t*)item->item;
 			qpol_role_get_name(policy->qh, policy->p, role, &role_name);
-                        printf("%s%s", role_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
-                }
-                printf("\n");
-        }
+			printf("%s%s", role_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+		}
+		printf("\n");
+	}
 
 	return 0;
 }
 
-/* The get_result function returns a pointer to the results
- * structure for this check to be used in another check. */
-sechk_result_t *roles_wo_users_get_result(sechk_module_t *mod) 
+int roles_wo_users_get_list(sechk_module_t *mod, apol_policy_t *policy __attribute__((unused)), void *arg)
 {
-	if (!mod) {
+	apol_vector_t **v = arg;
+
+	if (!mod || !arg) {
 		ERR(NULL, "%s", "Invalid parameters");
-		return NULL;
+		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(NULL, "Wrong module (%s)", mod->name);
-		return NULL;
+		return -1;
+	}
+	if (!mod->result) {
+		ERR(NULL, "%s", "Module has not been run");
+		return -1;
 	}
 
-	return mod->result;
+	v = &mod->result->items;
+
+	return 0;
 }
 
-/* The roles_wo_users_data_new function allocates and returns an
- * initialized private data storage structure for this
- * module. */
-roles_wo_users_data_t *roles_wo_users_data_new(void)
-{
-	roles_wo_users_data_t *datum = NULL;
-
-	datum = (roles_wo_users_data_t*)calloc(1,sizeof(roles_wo_users_data_t));
-
-	return datum;
-}
-
-int roles_wo_users_get_list(sechk_module_t *mod, apol_vector_t **v)
-{
-        if (!mod || !v) {
-                ERR(NULL, "%s", "Invalid parameters");
-                return -1;
-        }
-        if (strcmp(mod_name, mod->name)) {
-                ERR(NULL, "Wrong module (%s)", mod->name);
-                return -1;
-        }
-        if (!mod->result) {
-                ERR(NULL, "%s", "Module has not been run");
-                return -1;
-        }
-
-        v = &mod->result->items;
-
-        return 0;
-}
