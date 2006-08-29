@@ -8,14 +8,13 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libsefs_a_SOURCES = \
-	fsdata.c \
-	file_contexts.c \
-	fshash.c
+	file_contexts.c
 
 noinst_LIBRARIES = libsqlite.a
 libsqlite_a_SOURCES =
 libsqlite_a_CFLAGS = -fPIC -w -O2
 if WANT_LIBSEFS
+libsefs_a_SOURCES += fsdata.c fshash.c
 libsqlite_a_SOURCES += \
 	sqlite/attach.c sqlite/auth.c sqlite/btree.c sqlite/build.c sqlite/date.c \
 	sqlite/delete.c sqlite/expr.c sqlite/func.c sqlite/hash.c sqlite/insert.c sqlite/legacy.c \
