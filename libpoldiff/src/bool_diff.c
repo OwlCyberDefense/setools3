@@ -93,7 +93,7 @@ char *poldiff_bool_to_string(poldiff_t *diff, const void *boolean)
 				break;
 			}
 			len = strlen(s);
-			if (asprintf(&t, "changed from %s", 
+			if (asprintf(&t, "changed from %s",
 				( b->state ? "FALSE to TRUE" : "TRUE to FALSE")) < 0) {
 				t = NULL;
 				break;
@@ -103,7 +103,7 @@ char *poldiff_bool_to_string(poldiff_t *diff, const void *boolean)
 			}
 			free(t);
 			t = NULL;
-			if (apol_str_append(&s, &len, ")") < 0) 
+			if (apol_str_append(&s, &len, ")") < 0)
 				break;
 			return s;
 		}
@@ -275,9 +275,9 @@ int bool_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 		errno = error;
 		return -1;
 	}
-	if (form == POLDIFF_FORM_ADDED) 
+	if (form == POLDIFF_FORM_ADDED)
 		diff->bool_diffs->num_added++;
-	else 
+	else
 		diff->bool_diffs->num_removed++;
 	return 0;
 }
@@ -302,10 +302,10 @@ int bool_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			error = errno;
 			goto cleanup;
 		}
-		if ( s2 ) 
+		if ( s2 )
 			b->state = TRUE;
 		else
-			b->state = FALSE;	
+			b->state = FALSE;
 	}
 	if (b != NULL) {
 		if (apol_vector_append(diff->bool_diffs->diffs, b) < 0) {

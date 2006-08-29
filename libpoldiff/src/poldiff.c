@@ -38,6 +38,7 @@ typedef struct poldiff_item_record {
 	const char *item_name;
 	uint32_t flag_bit;
 	poldiff_get_item_stats_fn_t get_stats;
+	poldiff_get_result_items_fn_t get_results;
 	poldiff_item_to_string_fn_t to_string;
 	poldiff_get_items_fn_t get_items;
 	poldiff_free_item_fn_t free_item;
@@ -51,6 +52,7 @@ static const poldiff_item_record_t item_records[] = {
 		"class",
 		POLDIFF_DIFF_CLASSES,
 		poldiff_class_get_stats,
+		poldiff_get_class_vector,
 		poldiff_class_to_string,
 		class_get_items,
 		NULL,
@@ -62,6 +64,7 @@ static const poldiff_item_record_t item_records[] = {
 		"bool",
 		POLDIFF_DIFF_BOOLS,
 		poldiff_bool_get_stats,
+		poldiff_get_bool_vector,
 		poldiff_bool_to_string,
 		bool_get_items,
 		NULL,
@@ -73,6 +76,7 @@ static const poldiff_item_record_t item_records[] = {
 		"common",
 		POLDIFF_DIFF_COMMONS,
 		poldiff_common_get_stats,
+		poldiff_get_common_vector,
 		poldiff_common_to_string,
 		common_get_items,
 		NULL,
@@ -84,6 +88,7 @@ static const poldiff_item_record_t item_records[] = {
 		"role",
 		POLDIFF_DIFF_ROLES,
 		poldiff_role_get_stats,
+		poldiff_get_role_vector,
 		poldiff_role_to_string,
 		role_get_items,
 		NULL,
@@ -95,6 +100,7 @@ static const poldiff_item_record_t item_records[] = {
 		"user",
 		POLDIFF_DIFF_USERS,
 		poldiff_user_get_stats,
+		poldiff_get_user_vector,
 		poldiff_user_to_string,
 		user_get_items,
 		NULL,
