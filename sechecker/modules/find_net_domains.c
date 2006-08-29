@@ -344,14 +344,9 @@ void find_net_domains_data_free(void *data)
 	free(data);
 }
 
-/* The print output function generates the text and prints the
- * results to stdout. The outline below prints
- * the standard format of a renode section. Some modules may
- * not have results in a format that can be represented by this
- * outline and will need a different specification. It is
- * required that each of the flags for output components be
- * tested in this function (stats, list, proof, detailed, and brief) */
-int find_net_domains_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+/* The print function generates the text and prints the
+ * results to stdout. */
+int find_net_domains_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused))) 
 {
 	find_net_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
