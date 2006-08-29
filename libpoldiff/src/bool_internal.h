@@ -42,10 +42,10 @@ poldiff_bool_summary_t *bool_create(void);
  * object, including the pointer itself.  If the pointer is already
  * NULL then do nothing.
  *
- * @param cs Reference to a bool summary to destroy.  The pointer
+ * @param bs Reference to a bool summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void bool_destroy(poldiff_bool_summary_t **cs);
+void bool_destroy(poldiff_bool_summary_t **bs);
 
 /**
  * Get a vector of all bools from the given policy, sorted by name.

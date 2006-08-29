@@ -93,6 +93,15 @@ struct poldiff {
 typedef void (*poldiff_get_item_stats_fn_t)(poldiff_t *diff, size_t stats[5]);
 
 /**
+ *  Callback function signature for getting a vector of all result
+ *  items that were created during a call to poldiff_do_item_diff().
+ *  @param diff Policy diff structure containing results.
+ *  @return A vector of result items, which the caller may not modify
+ *  or destroy.  Upon error, return NULL and set errno.
+ */
+typedef apol_vector_t * (*poldiff_get_result_items_fn_t)(poldiff_t *diff);
+
+/**
  *  Callback function signature for obtaining a newly allocated string
  *  representation of a difference item.
  *  @param diff The policy difference structure associated with the item.
