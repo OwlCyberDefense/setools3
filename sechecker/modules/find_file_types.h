@@ -1,9 +1,27 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
- 
-/* 
- * Author: jmowery@tresys.com
+/**
+ *  @file find_file_types.h
+ *  Defines the interface for the find file types utility module.
  *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *  @author Randy Wicks rwicks@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #ifndef FIND_FILE_TYPES
@@ -20,15 +38,14 @@ typedef struct find_file_types_data {
 	int num_file_type_attribs;
 } find_file_types_data_t;
 
-int find_file_types_register(sechk_lib_t *lib);
-int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy);
-int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy);
 void find_file_types_data_free(void *data);
-int find_file_types_print_output(sechk_module_t *mod, apol_policy_t *policy);
-sechk_result_t *find_file_types_get_result(sechk_module_t *mod);
- 
-int find_file_types_get_list(sechk_module_t *mod, apol_vector_t **v);
-
 find_file_types_data_t *find_file_types_data_new(void);
 
+int find_file_types_register(sechk_lib_t *lib);
+int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int find_file_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int find_file_types_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+
 #endif
+
