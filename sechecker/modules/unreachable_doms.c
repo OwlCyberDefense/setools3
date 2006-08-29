@@ -1,9 +1,27 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: David Windsor <dwindsor@tresys.com>
+/**
+ *  @file unreachable_doms.c
+ *  Implementation of the unreachable domains module. 
  *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *  @author David Windsor <dwindsor@tresys.com>
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <config.h>
@@ -49,118 +67,85 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	/* assign the descriptions */
 	mod->brief_description = "unreachable domains";
 	mod->detailed_description =
-"--------------------------------------------------------------------------------\n"
-"This module finds all domains in a policy which are unreachable.  A domain is\n"
-"unreachable if any of the following apply:\n"
-"1) There is insufficient type enforcement policy to allow a transition,\n"
-"2) There is insufficient RBAC policy to allow a transition,\n"
-"3) There are no users with proper roles to allow a transition.\n"
-"However, if any of the above rules indicate an unreachable domain, yet the\n"
-"domain appears in the system default contexts file, it is considered reachable.\n";
+		"--------------------------------------------------------------------------------\n"
+		"This module finds all domains in a policy which are unreachable.  A domain is\n"
+		"unreachable if any of the following apply:\n"
+		"1) There is insufficient type enforcement policy to allow a transition,\n"
+		"2) There is insufficient RBAC policy to allow a transition,\n"
+		"3) There are no users with proper roles to allow a transition.\n"
+		"However, if any of the above rules indicate an unreachable domain, yet the\n"
+		"domain appears in the system default contexts file, it is considered reachable.\n";
 	mod->opt_description =
-"  Module requirements:\n"
-"    source policy\n"
-"    default contexts file\n"
-"  Module dependencies:\n"
-"    find_domains module\n"
-"    inc_dom_trans module\n"
-"  Module options:\n"
-"    none\n";
+		"  Module requirements:\n"
+		"    source policy\n"
+		"    default contexts file\n"
+		"  Module dependencies:\n"
+		"    find_domains module\n"
+		"    inc_dom_trans module\n"
+		"  Module options:\n"
+		"    none\n";
 	mod->severity = SECHK_SEV_MED;
-
-	/* assign requirements */
-	/* find_domains requires source policy.. */
 
 	/* assign dependencies */
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains")) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "inc_dom_trans")) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &unreachable_doms_init;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
+	fn_struct->fn = unreachable_doms_init;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1;
+	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &unreachable_doms_run;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
+	fn_struct->fn = unreachable_doms_run;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1;
+	}
+
+	mod->data_free = unreachable_doms_data_free;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &unreachable_doms_data_free;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->fn = &unreachable_doms_print_output;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-                ERR(NULL, "%s", strerror(ENOMEM));
+	fn_struct->fn = unreachable_doms_print;
+	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
-	if (!fn_struct->name) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	fn_struct->fn = &unreachable_doms_get_result;
-        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
-                ERR(NULL, "%s", strerror(ENOMEM));
-                return -1;
-        }
 
 	return 0;
 }
@@ -168,24 +153,24 @@ int unreachable_doms_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy)
+int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	unreachable_doms_data_t *datum = NULL;
 	bool_t retv;
 	const char *ctx_file_path = NULL;
 
 	if (!mod || !policy) {
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = unreachable_doms_data_new();
 	if (!datum) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	mod->data = datum;
@@ -193,16 +178,16 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy)
 	/* Parse default contexts file */
 	ctx_file_path = selinux_default_context_path();
 	if ( !(datum->ctx_vector = apol_vector_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	if (!ctx_file_path) {
-                ERR(policy, "%s", "Unable to find default contexts file");
+		ERR(policy, "%s", "Unable to find default contexts file");
 		return -1;
 	} else {
 		retv = parse_default_contexts(ctx_file_path, &datum->ctx_vector, policy);
 		if (!retv) {
-	                ERR(policy, "%s", "Unable to parse default contexts file");
+			ERR(policy, "%s", "Unable to parse default contexts file");
 			return -1;
 		}
 	}
@@ -218,7 +203,7 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed"		- some negative results found */
-int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
+int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	unreachable_doms_data_t *datum;
 	sechk_name_value_t *dep = NULL;
@@ -227,8 +212,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	size_t retv, i, j, k;
 	bool_t found_valid_trans, found_invalid_trans;
-	sechk_run_fn_t run_fn = NULL;
-	sechk_get_result_fn_t get_res = NULL;
+	sechk_mod_fn_t run_fn = NULL;
 	sechk_result_t *find_domains_res = NULL, *inc_dom_trans_res = NULL;
 	apol_vector_t *dom_vector = NULL, *idt_vector = NULL, *role_vector = NULL, *rbac_vector = NULL, *user_vector = NULL;
 	apol_user_query_t *user_query = NULL;
@@ -236,11 +220,11 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	apol_domain_trans_analysis_t *dta = NULL;
 
 	if (!mod || !policy) {
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -251,67 +235,57 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (unreachable_doms_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-        if ( !(res->items = apol_vector_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
-                goto unreachable_doms_run_fail;
-        }
+	if ( !(res->items = apol_vector_create()) ) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto unreachable_doms_run_fail;
+	}
 
 	if ( !(dta = apol_domain_trans_analysis_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 
 	if ( !(user_query = apol_user_query_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 	if ( !(role_trans_query = apol_role_trans_query_create()) ) {
-                ERR(policy, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 
 	/* run dependencies and get results */
-        for (i=0;i<apol_vector_get_size(mod->dependencies);i++) {
-                dep = apol_vector_get_element(mod->dependencies, i);
-                run_fn = sechk_lib_get_module_function(dep->value, SECHK_MOD_FN_RUN, mod->parent_lib);
-                run_fn(sechk_lib_get_module(dep->value, mod->parent_lib), policy);
-        }
+	for (i=0;i<apol_vector_get_size(mod->dependencies);i++) {
+		dep = apol_vector_get_element(mod->dependencies, i);
+		run_fn = sechk_lib_get_module_function(dep->value, SECHK_MOD_FN_RUN, mod->parent_lib);
+		run_fn(sechk_lib_get_module(dep->value, mod->parent_lib), policy, NULL);
+	}
 
-        get_res = sechk_lib_get_module_function("find_domains", SECHK_MOD_FN_GET_RES, mod->parent_lib);
-        if (!get_res) {
-                ERR(policy, "%s", "Unable to find result function for module find_domains");
-                goto unreachable_doms_run_fail;
-        }
-        find_domains_res = get_res(sechk_lib_get_module("find_domains", mod->parent_lib));
-        if (!find_domains_res) {
-                ERR(policy, "%s", "Unable to get results for module find_domains");
-                goto unreachable_doms_run_fail;
-        }
-        dom_vector = (apol_vector_t *)find_domains_res->items;
+	find_domains_res = sechk_lib_get_module_result("find_domains", mod->parent_lib);
+	if (!find_domains_res) {
+		ERR(policy, "%s", "Unable to get results for module find_domains");
+		goto unreachable_doms_run_fail;
+	}
+	dom_vector = (apol_vector_t *)find_domains_res->items;
 
-        get_res = sechk_lib_get_module_function("inc_dom_trans", SECHK_MOD_FN_GET_RES, mod->parent_lib);
-        if (!get_res) {
-                ERR(policy, "%s", "Unable to find results function for module inc_dom_trans");
-                goto unreachable_doms_run_fail;
-        }
-        inc_dom_trans_res = get_res(sechk_lib_get_module("inc_dom_trans", mod->parent_lib));
-        if (!inc_dom_trans_res) {
-                ERR(policy, "%s", "Unable to get results for module inc_dom_trans");
-                goto unreachable_doms_run_fail;
-        }
-        idt_vector = (apol_vector_t *)inc_dom_trans_res->items;
+	inc_dom_trans_res = sechk_lib_get_module_result("inc_dom_trans", mod->parent_lib);
+	if (!inc_dom_trans_res) {
+		ERR(policy, "%s", "Unable to get results for module inc_dom_trans");
+		goto unreachable_doms_run_fail;
+	}
+	idt_vector = (apol_vector_t *)inc_dom_trans_res->items;
 
 	/* first search incomplete domain transitions:
-	   those domains with no other domains transitioning to them are unreachable */
+		those domains with no other domains transitioning to them are unreachable */
 	for ( i = 0; i < apol_vector_get_size(idt_vector); i++ ) {
 		apol_domain_trans_result_t *dtr;
 		apol_vector_t *rev_dtr_vector;
@@ -328,7 +302,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 		apol_domain_trans_analysis_set_direction(policy, dta, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
 		retv = apol_domain_trans_analysis_do(policy, dta, &rev_dtr_vector);
 		if (retv < 0) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto unreachable_doms_run_fail;
 		}
 
@@ -341,7 +315,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 				break;
 
 			item = NULL;
-	                for (j=0;j<apol_vector_get_size(res->items);j++) {
+			for (j=0;j<apol_vector_get_size(res->items);j++) {
 				sechk_item_t *res_item;
 				qpol_type_t *res_type;
 				char *res_type_name;
@@ -354,7 +328,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
-			                ERR(policy, "%s", strerror(ENOMEM));
+					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 
@@ -367,23 +341,23 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 			}
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			proof->type = SECHK_ITEM_TYPE;
 			proof->text = strdup("There is insufficient TE policy for a transition to this domain to occur");
 			if (!proof->text) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
+					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 		}
@@ -392,22 +366,22 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 
 	/* for all domains: check to see if a valid transition to this domain exists */
 	for (i = 0; i < apol_vector_get_size(dom_vector); i++) {
-                apol_vector_t *rev_dtr_vector;
+		apol_vector_t *rev_dtr_vector;
 		qpol_type_t *dom;
 		char *dom_name;
 
 		item = apol_vector_get_element(dom_vector, i);
 		dom = (qpol_type_t *)item->item;
-                qpol_type_get_name(policy->qh, policy->p, dom, &dom_name);
+		qpol_type_get_name(policy->qh, policy->p, dom, &dom_name);
 
 		apol_domain_trans_table_reset(policy);
-                apol_domain_trans_analysis_set_start_type(policy, dta, dom_name);
-                apol_domain_trans_analysis_set_direction(policy, dta, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
-                retv = apol_domain_trans_analysis_do(policy, dta, &rev_dtr_vector);
+		apol_domain_trans_analysis_set_start_type(policy, dta, dom_name);
+		apol_domain_trans_analysis_set_direction(policy, dta, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
+		retv = apol_domain_trans_analysis_do(policy, dta, &rev_dtr_vector);
 		if (retv) {
-	                ERR(policy, "%s", strerror(ENOMEM));
-                        goto unreachable_doms_run_fail;
-                }
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto unreachable_doms_run_fail;
+		}
 
 		/* try to find a valid transition to this domain */
 		found_valid_trans = FALSE;
@@ -430,50 +404,50 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 
 			if ( apol_domain_trans_result_is_trans_valid(rev_dtr) ) {
 				/* a valid transition exists - verify that a common role exists */
-		                apol_get_role_by_query(policy, NULL, &role_vector);
-                                for (k=0; (k<apol_vector_get_size(role_vector)) && !found_valid_trans; k++) {
-                                        qpol_role_t *role;
-                                        char *role_name;
+				apol_get_role_by_query(policy, NULL, &role_vector);
+				for (k=0; (k<apol_vector_get_size(role_vector)) && !found_valid_trans; k++) {
+					qpol_role_t *role;
+					char *role_name;
 
-                                        role = apol_vector_get_element(role_vector, k);
-                                        qpol_role_get_name(policy->qh, policy->p, role, &role_name);
-                                        if ( apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end) ) {
-                                                apol_user_query_set_role(policy, user_query, role_name);
-                                                apol_get_user_by_query(policy, user_query, &user_vector);
-                                                if ( apol_vector_get_size(user_vector) > 0 ) {
-                                                        found_valid_trans = TRUE;
-                                                }
-                                        }
-                                }
+					role = apol_vector_get_element(role_vector, k);
+					qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+					if ( apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end) ) {
+						apol_user_query_set_role(policy, user_query, role_name);
+						apol_get_user_by_query(policy, user_query, &user_vector);
+						if ( apol_vector_get_size(user_vector) > 0 ) {
+							found_valid_trans = TRUE;
+						}
+					}
+				}
 				if ( !found_valid_trans ) {
-                                        apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
-                                        apol_get_role_trans_by_query(policy, role_trans_query, &rbac_vector);
-                                        for ( k = 0; ( k < apol_vector_get_size(rbac_vector)) && !found_valid_trans ; k++ ) {
-                                                qpol_role_trans_t *role_trans;
-                                                qpol_role_t *source_role;
-                                                qpol_role_t *default_role;
-                                                char *source_role_name;
-                                                char *default_role_name;
+					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
+					apol_get_role_trans_by_query(policy, role_trans_query, &rbac_vector);
+					for ( k = 0; ( k < apol_vector_get_size(rbac_vector)) && !found_valid_trans ; k++ ) {
+						qpol_role_trans_t *role_trans;
+						qpol_role_t *source_role;
+						qpol_role_t *default_role;
+						char *source_role_name;
+						char *default_role_name;
 
-                                                role_trans = apol_vector_get_element(rbac_vector, k);
-                                                qpol_role_trans_get_source_role(policy->qh, policy->p, role_trans, &source_role);
-                                                qpol_role_trans_get_default_role(policy->qh, policy->p, role_trans, &default_role);
-                                                qpol_role_get_name(policy->qh, policy->p, source_role, &source_role_name);
-                                                qpol_role_get_name(policy->qh, policy->p, default_role, &default_role_name);
+						role_trans = apol_vector_get_element(rbac_vector, k);
+						qpol_role_trans_get_source_role(policy->qh, policy->p, role_trans, &source_role);
+						qpol_role_trans_get_default_role(policy->qh, policy->p, role_trans, &default_role);
+						qpol_role_get_name(policy->qh, policy->p, source_role, &source_role_name);
+						qpol_role_get_name(policy->qh, policy->p, default_role, &default_role_name);
 
-                                                if ( apol_role_has_type(policy, source_role, start) &&
-                                                     apol_role_has_type(policy, default_role, end) ) {
-                                                        apol_user_query_set_role(policy, user_query, source_role_name);
-                                                        apol_get_user_by_query(policy, user_query, &user_vector);
-                                                        if ( apol_vector_get_size(user_vector) > 0 ) {
-                                                                apol_user_query_set_role(policy, user_query, default_role_name);
-                                                                apol_get_user_by_query(policy, user_query, &user_vector);
-                                                                if ( apol_vector_get_size(user_vector) > 0 ) {
-                                                                        found_valid_trans = TRUE;
-                                                                }
-                                                        }
-                                                }
-                                        }
+						if ( apol_role_has_type(policy, source_role, start) &&
+								apol_role_has_type(policy, default_role, end) ) {
+							apol_user_query_set_role(policy, user_query, source_role_name);
+							apol_get_user_by_query(policy, user_query, &user_vector);
+							if ( apol_vector_get_size(user_vector) > 0 ) {
+								apol_user_query_set_role(policy, user_query, default_role_name);
+								apol_get_user_by_query(policy, user_query, &user_vector);
+								if ( apol_vector_get_size(user_vector) > 0 ) {
+									found_valid_trans = TRUE;
+								}
+							}
+						}
+					}
 				}
 			}
 		}
@@ -510,23 +484,23 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 			}
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			proof->type = SECHK_ITEM_TYPE;
 			proof->text = strdup("There is insufficient TE policy for a transition to this domain to occur");
 			if (!proof->text) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
-			                ERR(policy, "%s", strerror(ENOMEM));
+					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
+				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 		}
@@ -552,14 +526,8 @@ void unreachable_doms_data_free(void *data)
 	free(data);
 }
 
-/* The print output function generates the text and prints the
- * results to stdout. The outline below prints
- * the standard format of a report section. Some modules may
- * not have results in a format that can be represented by this
- * outline and will need a different specification. It is
- * required that each of the flags for output components be
- * tested in this function (stats, list, proof, detailed, and brief) */
-int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
+/* The print function generates the text and prints the results to stdout. */
+int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	unreachable_doms_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -570,11 +538,11 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name;
 
 	if (!mod || !policy){
-                ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-                ERR(policy, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -583,7 +551,7 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-                ERR(policy, "%s", "Module has not been run");
+		ERR(policy, "%s", "Module has not been run");
 		return -1;
 	}
 
@@ -595,16 +563,16 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	}
 
 	if (outformat & SECHK_OUT_LIST) {
-                printf("\n");
-                for (i=0;i<num_items;i++) {
-                        j++;
-                        j %= 4;
-                        item = apol_vector_get_element(mod->result->items, i);
-                        type = (qpol_type_t *)item->item;
-                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
-                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
-                }
-                printf("\n");
+		printf("\n");
+		for (i=0;i<num_items;i++) {
+			j++;
+			j %= 4;
+			item = apol_vector_get_element(mod->result->items, i);
+			type = (qpol_type_t *)item->item;
+			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+		}
+		printf("\n");
 	}
 
 	if (outformat & SECHK_OUT_PROOF) {
@@ -613,55 +581,31 @@ int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy)
 			for (j = 0; j < apol_vector_get_size(datum->ctx_vector); j++) {
 				type_name = apol_vector_get_element(datum->ctx_vector, j);
 				printf("\t%s\n", type_name);
-                        }
+			}
 		}
 
-                printf("\n");
-                for (k=0;k<num_items;k++) {
-                        item = apol_vector_get_element(mod->result->items, k);
-                        if ( item ) {
-                                type = item->item;
-                                qpol_type_get_name(policy->qh, policy->p, type, &type_name);
-                                printf("%s\n", (char*)type_name);
-                                for (l = 0; l < apol_vector_get_size(item->proof); l++) {
-                                        proof = apol_vector_get_element(item->proof,l);
-                                        if ( proof )
-                                                printf("\t%s\n", proof->text);
-                                }
-                        }
+		printf("\n");
+		for (k=0;k<num_items;k++) {
+			item = apol_vector_get_element(mod->result->items, k);
+			if ( item ) {
+				type = item->item;
+				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+				printf("%s\n", (char*)type_name);
+				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
+					proof = apol_vector_get_element(item->proof,l);
+					if ( proof )
+						printf("\t%s\n", proof->text);
+				}
+			}
 			printf("\n");
-                }
+		}
 	}
 
 	return 0;
 }
 
-/* The get_result function returns a pointer to the results
- * structure for this check to be used in another check.
- * You should not need to modify this function. */
-sechk_result_t *unreachable_doms_get_result(sechk_module_t *mod)
-{
-	if (!mod) {
-		ERR(NULL, "%s", "Invalid parameters");
-		return NULL;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		ERR(NULL, "Wrong module (%s)\n", mod->name);
-		return NULL;
-	}
-
-	return mod->result;
-}
-
-/* The unreachable_doms_data_new function allocates and returns an
- * initialized private data storage structure for this
- * module. Initialization expected is as follows:
- * all arrays (including strings) are initialized to NULL
- * array sizes are set to 0
- * any other pointers should be NULL
- * indices into other arrays (such as type or permission indices)
- * should be initialized to -1
- * any other data should be initialized as needed by the check logic */
+/* The unreachable_doms_data_new function allocates and returns an initialized
+ * private data storage structure for this module. */
 unreachable_doms_data_t *unreachable_doms_data_new(void)
 {
 	unreachable_doms_data_t *datum = NULL;
@@ -705,7 +649,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* source role */
 		src_role = malloc(str_sz);
 		if (!src_role) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
 
@@ -723,7 +667,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* source type */
 		src_dom = malloc(str_sz);
 		if (!src_dom) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
 		memset(src_dom, 0x0, str_sz);
@@ -736,7 +680,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 				uses_mls = TRUE;
 				i++; /* skip ':' */
 				while (!isspace(line[i]))
-				       i++;
+					i++;
 			}
 			if (uses_mls)
 				break;
@@ -749,7 +693,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* dest role */
 		dst_role = malloc(str_sz);
 		if (!dst_role) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
 		memset(dst_role, 0x0, str_sz);
@@ -767,7 +711,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* dest type */
 		dst_dom = malloc(str_sz);
 		if (!dst_dom) {
-	                ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
 		memset(dst_dom, 0x0, str_sz);
@@ -778,22 +722,22 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 					break;
 
 			if (!isspace(line[i]))
-			    dst_dom[charno] = line[i];
+				dst_dom[charno] = line[i];
 
 			charno++;
 			i++;
 		}
 
-/*
-		if ( qpol_policy_get_type_by_name(policy->qh, policy->p, src_dom, &type) ) {
-*/
-			if ( apol_vector_append(*ctx_vector, (void *)strdup(src_dom)) < 0 ) {
-		                ERR(policy, "%s", strerror(ENOMEM));
-				goto parse_default_contexts_fail;
-			}
-/*
+		/*
+			if ( qpol_policy_get_type_by_name(policy->qh, policy->p, src_dom, &type) ) {
+		 */
+		if ( apol_vector_append(*ctx_vector, (void *)strdup(src_dom)) < 0 ) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto parse_default_contexts_fail;
 		}
-*/
+		/*
+			}
+		 */
 	}
 	free(src_role);
 	free(src_dom);
@@ -849,3 +793,4 @@ bool_t in_isid_ctx(char *type_name, apol_policy_t *policy)
 	}
 	return FALSE;
 }
+
