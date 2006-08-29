@@ -30,6 +30,7 @@
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_portcon_query apol_portcon_query_t;
 typedef struct apol_netifcon_query apol_netifcon_query_t;

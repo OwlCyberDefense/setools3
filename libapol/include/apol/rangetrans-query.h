@@ -29,6 +29,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_range_trans_query apol_range_trans_query_t;
 

@@ -30,6 +30,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_terule_query apol_terule_query_t;
 

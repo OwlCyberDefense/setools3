@@ -30,6 +30,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 /*
  * Information flows can be either direct (A -> B) or transitive (A ->

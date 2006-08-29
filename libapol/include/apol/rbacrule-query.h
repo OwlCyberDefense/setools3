@@ -31,6 +31,7 @@
 
 #include "policy.h"
 #include "vector.h"
+#include <qpol/policy_query.h>
 
 typedef struct apol_role_allow_query apol_role_allow_query_t;
 typedef struct apol_role_trans_query apol_role_trans_query_t;
