@@ -36,6 +36,7 @@ typedef struct qpol_cond_expr_node qpol_cond_expr_node_t;
 
 /**
  *  Get an iterator over all conditionals in a policy.
+ *  It is an error to call this function if rules are not loaded.
  *  @param handle Error handler for the policy database.
  *  @param policy Policy from which to get the conditionals.
  *  @param iter Iterator over items of type qpol_cond_t returned.

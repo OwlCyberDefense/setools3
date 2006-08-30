@@ -71,7 +71,7 @@ char *qpol_src_inputlim;/* end of data */
 
 extern void init_scanner(void);
 extern int yyparse(void);
-extern void init_parser(int);
+extern void init_parser(int, int);
 extern queue_t id_queue;
 extern unsigned int policydb_errors;
 extern unsigned long policydb_lineno;
@@ -176,7 +176,7 @@ static void qpol_handle_default_callback(void *varg, qpol_handle_t *handle, int 
 	fprintf(stderr, "\n");
 }
 
-static int read_source_policy(qpol_handle_t *handle, policydb_t *p, char *progname)
+static int read_source_policy(qpol_handle_t *handle, policydb_t *p, char *progname, int load_rules)
 {
 	if ((id_queue = queue_create()) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
@@ -187,7 +187,7 @@ static int read_source_policy(qpol_handle_t *handle, policydb_t *p, char *progna
 	mlspol = p->mls;
 
 	init_scanner();
-	init_parser(1);
+	init_parser(1, load_rules);
 	if (yyparse() || policydb_errors) {
 		ERR(handle, "%s:  error(s) encountered while parsing configuration\n", progname);
 		queue_destroy(id_queue);
@@ -197,7 +197,7 @@ static int read_source_policy(qpol_handle_t *handle, policydb_t *p, char *progna
 	}
 	/* rewind the pointer */
 	qpol_src_inputptr = qpol_src_originalinput;
-	init_parser(2);
+	init_parser(2, load_rules);
 	source_file[0] = '\0';
 	if (yyparse() || policydb_errors) {
 		ERR(handle, "%s:  error(s) encountered while parsing configuration\n", progname);
@@ -729,6 +729,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 		error = errno;
 		goto err;
 	}
+	(*policy)->rules_loaded = 1;
 
 	if (sepol_policydb_create(&((*policy)->p))) {
 		error = errno;
@@ -784,7 +785,160 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 		qpol_src_inputlim = &qpol_src_inputptr[sb.st_size-1];
 		qpol_src_originalinput = qpol_src_input;
 
-		if (read_source_policy(*handle, &(*policy)->p->p, "libqpol") < 0) {
+		if (read_source_policy(*handle, &(*policy)->p->p, "libqpol", (*policy)->rules_loaded) < 0) {
+			error = errno;
+			goto err;
+		}
+
+		(*policy)->p->p.policy_type = POLICY_BASE;
+		/* link the source */
+		INFO(*handle, "%s", "Linking source policy.");
+		if (sepol_link_modules((*handle)->sh, (*policy)->p, NULL, 0, 0)) {
+			error = EIO;
+			goto err;
+		}
+		avtab_destroy(&((*policy)->p->p.te_avtab));
+		avtab_destroy(&((*policy)->p->p.te_cond_avtab));
+		avtab_init(&((*policy)->p->p.te_avtab));
+		avtab_init(&((*policy)->p->p.te_cond_avtab));
+
+		/* expand :) */
+		if (qpol_expand_module(*handle, *policy)) {
+			error = errno;
+			goto err;
+		}
+
+		if (infer_policy_version(*handle, *policy)) {
+			error = errno;
+			goto err;
+		}
+		if (qpol_policy_extend(*handle, *policy)) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	fclose(infile);
+	sepol_policy_file_free(pfile);
+	return retv;
+
+err:
+	qpol_handle_destroy(handle);
+	*handle = NULL;
+	sepol_policydb_free((*policy)->p);
+	*policy = NULL;
+	sepol_policy_file_free(pfile);
+	if (infile)
+		fclose(infile);
+	errno = error;
+	return -1;
+}
+
+int qpol_open_policy_from_file_no_rules(const char *path, qpol_policy_t **policy, qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg)
+{
+	int error = 0, retv = -1;
+	FILE *infile = NULL;
+	sepol_policy_file_t *pfile = NULL;
+	int fd = 0;
+	struct stat sb;
+
+	if (policy != NULL)
+		*policy = NULL;
+
+	if (handle != NULL)
+		*handle = NULL;
+
+	if (path == NULL || policy == NULL || handle == NULL) {
+		/* handle passed as NULL here as it has yet to be created */
+		ERR(NULL, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (!(*handle = calloc(1, sizeof(qpol_handle_t)))) {
+		error = errno;
+		ERR(NULL, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+	(*handle)->sh = sepol_handle_create();
+	if ((*handle)->sh == NULL) {
+		error = errno;
+		ERR(*handle, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	if (fn) {
+		(*handle)->fn = fn;
+		(*handle)->varg = varg;
+	} else {
+		(*handle)->fn = qpol_handle_default_callback;
+	}
+	sepol_msg_set_callback((*handle)->sh, sepol_handle_route_to_callback, (*handle));
+
+	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
+		error = errno;
+		goto err;
+	}
+	INFO(*handle, "%s", "Rule loading disabled");
+	(*policy)->rules_loaded = 0;
+
+	if (sepol_policydb_create(&((*policy)->p))) {
+		error = errno;
+		goto err;
+	}
+
+	if (sepol_policy_file_create(&pfile)) {
+		error = errno;
+		goto err;
+	}
+
+	infile = fopen(path,  "rb");
+	if (infile == NULL) {
+		error = errno;
+		goto err;
+	}
+
+	sepol_policy_file_set_handle(pfile, (*handle)->sh);
+
+	if (qpol_is_file_binpol(infile)) {
+		retv = QPOL_POLICY_KERNEL_BINARY;
+		sepol_policy_file_set_fp(pfile, infile);
+		if (sepol_policydb_read((*policy)->p, pfile)) {
+			error = EIO;
+			goto err;
+		}
+		if (qpol_policy_extend(*handle, *policy)) {
+			error = errno;
+			goto err;
+		}
+	} else {
+		retv = QPOL_POLICY_KERNEL_SOURCE;
+		fd = fileno(infile);
+		if (fd < 0) {
+			error = errno;
+			goto err;
+		}
+		if (fstat(fd, &sb) < 0) {
+			error = errno;
+			ERR(*handle, "Can't stat '%s':	%s\n",
+					path, strerror(errno));
+			goto err;
+		}
+		qpol_src_input = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+		if (qpol_src_input == MAP_FAILED) {
+			error = errno;
+			ERR(*handle, "Can't map '%s':  %s\n",
+					path, strerror(errno));
+
+			goto err;
+		}
+		qpol_src_inputptr = qpol_src_input;
+		qpol_src_inputlim = &qpol_src_inputptr[sb.st_size-1];
+		qpol_src_originalinput = qpol_src_input;
+
+		if (read_source_policy(*handle, &(*policy)->p->p, "libqpol", (*policy)->rules_loaded) < 0) {
 			error = errno;
 			goto err;
 		}
@@ -879,7 +1033,7 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 	qpol_src_originalinput = qpol_src_input;
 
 	/* read in source */
-	if (read_source_policy(*handle, &(*policy)->p->p, "parse") < 0)
+	if (read_source_policy(*handle, &(*policy)->p->p, "parse", (*policy)->rules_loaded) < 0)
 		exit(1);
 
 	/* link the source */

@@ -1378,10 +1378,18 @@ int main (int argc, char **argv)
 	}
 
 	/* attempt to open the policy */
-	if (apol_policy_open(policy_file, &policydb, NULL)) {
-		perror("Error opening policy");
-		free(policy_file);
-		exit(1);
+	if (stats) {
+		if (apol_policy_open(policy_file, &policydb, NULL)) {
+			perror("Error opening policy");
+			free(policy_file);
+			exit(1);
+		}
+	} else {
+		if (apol_policy_open_no_rules(policy_file, &policydb, NULL)) {
+			perror("Error opening policy");
+			free(policy_file);
+			exit(1);
+		}
 	}
 
 	policydb->msg_callback_arg = NULL;
