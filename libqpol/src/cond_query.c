@@ -118,6 +118,12 @@ int qpol_policy_get_cond_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
+	if (!(policy->rules_loaded)) {
+		ERR(handle,  "%s", "Cannot get conditionals: Rules not loaded");
+		errno = ENOTSUP;
+		return STATUS_ERR;
+	}
+
 	db = &policy->p->p;
 
 	if (!(cs = calloc(1, sizeof(cond_state_t)))) {

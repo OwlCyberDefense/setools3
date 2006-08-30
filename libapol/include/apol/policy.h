@@ -72,6 +72,19 @@ extern int apol_policy_open(const char *path, apol_policy_t **policy,
 			    apol_callback_fn_t msg_callback);
 
 /**
+ *  Open a policy file and load all components except rules into a newly
+ *  created apol_policy.
+ *  @param path The path of the policy file to open.
+ *  @param policy The policy to create from the file.
+ *  @param msg_callback Callback to invoke as errors/warnings are
+ *  generated.  If NULL, then write messages to standard error.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *policy will be NULL;
+ */
+extern int apol_policy_open_no_rules(const char *path, apol_policy_t **policy,
+			    apol_callback_fn_t msg_callback);
+
+/**
  * Deallocate all memory associated with a policy, and then set it to
  * NULL.  Does nothing if the pointer is already NULL.
  *

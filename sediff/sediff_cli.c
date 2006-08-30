@@ -700,13 +700,24 @@ int main (int argc, char **argv)
 	orig_pol_path = argv[optind++];
 	mod_pol_path = argv[optind];
 
-	if (apol_policy_open(orig_pol_path, &orig_policy, NULL)) {
-		ERR(NULL, "%s", strerror(errno));
-		goto err;
-	}
-	if (apol_policy_open(mod_pol_path, &mod_policy, NULL)) {
-		ERR(NULL, "%s", strerror(errno));
-		goto err;
+	if (flags & POLDIFF_DIFF_RULES) {
+		if (apol_policy_open(orig_pol_path, &orig_policy, NULL)) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
+		if (apol_policy_open(mod_pol_path, &mod_policy, NULL)) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
+	} else {
+		if (apol_policy_open_no_rules(orig_pol_path, &orig_policy, NULL)) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
+		if (apol_policy_open_no_rules(mod_pol_path, &mod_policy, NULL)) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
 	}
 	/* default callback for error handling is sufficient here */
 	if (!(diff = poldiff_create(orig_policy, mod_policy, NULL, NULL))) {

@@ -40,8 +40,9 @@ typedef struct qpol_avrule qpol_avrule_t;
 #define QPOL_RULE_DONTAUDIT     4 
 
 /**
- *  Get an iterator over all av rules in a policy of a rule type
- *  in rule_type_mask.
+ *  Get an iterator over all av rules in a policy of a rule type in
+ *  rule_type_mask. It is an error to call this function if rules are not
+ *  loaded.
  *  @param handle Error handler for the policy database.
  *  @param policy Policy from which to get the av rules.
  *  @param rule_type_mask Bitwise or'ed set of QPOL_RULE_* values.
