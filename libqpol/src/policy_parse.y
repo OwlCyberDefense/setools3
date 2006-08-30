@@ -67,6 +67,8 @@ static avrule_t *conditional_unused_error_code;
 policydb_t *policydbp;
 queue_t id_queue = 0;
 static unsigned int pass;
+static int load_rules;
+static unsigned int num_rules = 0;
 char *curfile = 0;
 int mlspol = 0;
 
@@ -876,12 +878,14 @@ avrule_user_defs        : user_def avrule_user_defs
 %%
 
 /* initialize all of the state variables for the scanner/parser */
-void init_parser(int pass_number)
+void init_parser(int pass_number, int do_rules)
 {
 	policydb_lineno = 1;
 	source_lineno = 1;
 	policydb_errors = 0;
 	pass = pass_number;
+	load_rules = do_rules;
+	num_rules = 0;
 }
 
 void yyerror2(char *fmt, ...)
@@ -943,6 +947,9 @@ static int insert_id(char *id, int push)
 static int insert_check_type_rule(avrule_t *rule, avtab_t *avtab, cond_av_list_t **list, cond_av_list_t **other)
 {
 	int ret;
+
+	if (num_rules && !load_rules)
+		return 2;
 
 	ret = expand_rule(NULL, policydbp, rule, avtab, list, other, 0);
 	if (ret < 0) {
@@ -2130,7 +2137,7 @@ static int define_compute_type(int which)
 	avrule_t *avrule;
 	int retval;
 
-	if (pass == 1) {
+	if (pass == 1 || (num_rules && !load_rules)) {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		while ((id = queue_remove(id_queue)))
@@ -2141,6 +2148,8 @@ static int define_compute_type(int which)
 		free(id);
 		return 0;
 	}
+
+	num_rules++;
 
 	if (define_compute_type_helper(which, &avrule))
 		return -1;
@@ -2174,7 +2183,7 @@ static avrule_t *define_cond_compute_type(int which)
 	char *id;
 	avrule_t *avrule;
 
-	if (pass == 1) {
+	if (pass == 1 || (num_rules && !load_rules)) {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		while ((id = queue_remove(id_queue)))
@@ -2185,6 +2194,8 @@ static avrule_t *define_cond_compute_type(int which)
 		free(id);
 		return (avrule_t *) 1;
 	}
+
+	num_rules++;
 
 	if (define_compute_type_helper(which, &avrule))
 		return COND_ERR;
@@ -2263,7 +2274,7 @@ static int define_bool(void)
 
 static avrule_t *define_cond_pol_list(avrule_t * avlist, avrule_t * sl)
 {
-	if (pass == 1) {
+	if (pass == 1 || (num_rules && !load_rules)) {
 		/* return something so we get through pass 1 */
 		return (avrule_t *) 1;
 	}
@@ -2440,13 +2451,15 @@ static avrule_t *define_cond_te_avtab(int which)
 	avrule_t *avrule;
 	int i;
 
-	if (pass == 1) {
+	if (pass == 1 || (num_rules && !load_rules)) {
 		for (i = 0; i < 4; i++) {
 			while ((id = queue_remove(id_queue)))
 				free(id);
 		}
 		return (avrule_t *) 1;	/* any non-NULL value */
 	}
+
+	num_rules++;
 
 	if (define_te_avtab_helper(which, &avrule))
 		return COND_ERR;
@@ -2460,13 +2473,15 @@ static int define_te_avtab(int which)
 	avrule_t *avrule;
 	int i;
 
-	if (pass == 1) {
+	if (pass == 1 || (num_rules && !load_rules)) {
 		for (i = 0; i < 4; i++) {
 			while ((id = queue_remove(id_queue)))
 				free(id);
 		}
 		return 0;
 	}
+
+	num_rules++;
 
 	if (define_te_avtab_helper(which, &avrule))
 		return -1;
@@ -3479,7 +3494,10 @@ static int define_conditional(cond_expr_t * expr, avrule_t * t, avrule_t * f)
 		case -1: {
 			return -1;
 		}
-		default: {
+		case 2: {
+			return 0;
+		}
+	default: {
 			assert(0);  /* should never get here */
 		}
 		}
@@ -3517,6 +3535,9 @@ static int define_conditional(cond_expr_t * expr, avrule_t * t, avrule_t * f)
 		}
 		case -1: {
 			return -1;
+		}
+		case 2: {
+			return 0;
 		}
 		default: {
 			assert(0);  /* should never get here */

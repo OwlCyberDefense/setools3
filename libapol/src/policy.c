@@ -105,6 +105,38 @@ int apol_policy_open(const char *path, apol_policy_t **policy, apol_callback_fn_
 	return 0;
 }
 
+int apol_policy_open_no_rules(const char *path, apol_policy_t **policy, apol_callback_fn_t msg_callback)
+{
+	int policy_type;
+	if (!path || !policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (policy)
+		*policy = NULL;
+
+	if (!(*policy = calloc(1, sizeof(apol_policy_t)))) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		return -1; /* errno set by calloc */
+	}
+	if (msg_callback != NULL) {
+		(*policy)->msg_callback = msg_callback;
+	}
+	else {
+		(*policy)->msg_callback = apol_handle_default_callback;
+	}
+
+        policy_type = qpol_open_policy_from_file_no_rules(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy));
+        if (policy_type < 0) {
+		ERR(*policy, "Unable to open policy at %s.", path);
+		apol_policy_destroy(policy);
+		return -1; /* qpol sets errno */
+        }
+        (*policy)->policy_type = policy_type;
+	return 0;
+}
+
 void apol_policy_destroy(apol_policy_t **policy)
 {
 	if (policy != NULL && *policy != NULL) {

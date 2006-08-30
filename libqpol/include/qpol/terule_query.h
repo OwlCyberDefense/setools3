@@ -38,8 +38,9 @@ typedef struct qpol_terule qpol_terule_t;
 #define QPOL_RULE_TYPE_MEMBER  32
 
 /**
- *  Get an iterator over all type rules in a policy of a rule type
- *  in rule_type_mask.
+ *  Get an iterator over all type rules in a policy of a rule type in
+ *  rule_type_mask. It is an error to call this function if rules are not
+ *  loaded.
  *  @param handle Error handler for the policy database.
  *  @param policy Policy from which to get the av rules.
  *  @param rule_type_mask Bitwise or'ed set of QPOL_RULE_TYPE_* values.

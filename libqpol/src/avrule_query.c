@@ -46,6 +46,13 @@ int qpol_policy_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
+
+	if (!(policy->rules_loaded)) {
+		ERR(handle, "%s", "Cannot get avrules: Rules not loaded");
+		errno = ENOTSUP;
+		return STATUS_ERR;
+	}
+
 	db = &policy->p->p;
 
 	state = calloc(1, sizeof(avtab_state_t));
