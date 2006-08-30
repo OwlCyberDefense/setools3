@@ -873,6 +873,9 @@ int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy)
 		goto err;
 	}
 
+	if (!policy->rules_loaded)
+		return STATUS_SUCCESS;
+
 	retv = qpol_policy_add_cond_rule_traceback(handle, policy);
 	if (retv) {
 		error = errno;
