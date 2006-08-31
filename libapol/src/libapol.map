@@ -4,6 +4,7 @@
                 apol_avl_*;
                 apol_avrule_*;
                 apol_bool_*;
+                apol_bst_*;
                 apol_cat_*;
                 apol_class_*;
                 apol_common_*;
