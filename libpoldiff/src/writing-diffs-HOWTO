@@ -111,10 +111,10 @@ it.  He could print it via poldiff_type_to_string(); or just get the
 type's name, form, list of added attributes, or list of removed
 attributes.  Therefore add these four functions to type_diff.h:
 
-  extern const char *poldiff_class_get_name (poldiff_class_t *cls);
-  extern poldiff_form_e *poldiff_class_get_form (poldiff_class_t *cls);
-  extern apol_vector_t *poldiff_class_get_added_perms (poldiff_class_t *cls);
-  extern apol_vector_t *poldiff_class_get_removed_perms (poldiff_class_t *cls);
+  extern const char *poldiff_type_get_name(poldiff_type_t *type);
+  extern poldiff_form_e *poldiff_type_get_form(poldiff_type_t *type);
+  extern apol_vector_t *poldiff_type_get_added_attribs(poldiff_type_t *type);
+  extern apol_vector_t *poldiff_type_get_removed_attribs(poldiff_type_t *type);
 
 As a convenience to developers, one should only need to #include the
 public poldiff.h to pick up all diff modules.  Modify
@@ -187,7 +187,9 @@ The public functions are easy to write.
 
   * poldiff_type_to_string() returns an allocated string akin to
     poldiff_user_to_string().  Note that you must first cast the
-    second parameter from void* to a poldiff_type_t*.
+    second parameter from void* to a poldiff_type_t*, because this
+    function operates upon items returned by
+    poldiff_get_type_vector().
 
   * poldiff_get_type_vector() returns diff->type_diffs->diffs.
 
@@ -203,7 +205,7 @@ The protected functions are more difficult.
 
 Finally, modify libpoldiff/src/Makefile.am by adding an entry for
 type_diff.c.
-  
+
 3d. Adding Hooks to Diff Module
 
 The main library now needs to create and destroy the
@@ -280,9 +282,10 @@ the type originated.  Use these lines to calculating the parameter:
 
 Now that you have a vector of pseudo-type values, all further
 functions will need to be in terms of these values.  libpoldiff will
-pass into protected functions elements from the vector returned by
-type_get_items(); thus you will need to cast all values from void* to
-uint32_t.  For example:
+pass elements from the type_get_items() vector into your protected
+functions.  In this walkthrough you will thus need to cast all values
+from void* to uint32_t because type_get_items() returned a vector of
+uint32_ts.  For example:
 
     int type_comp(const void *x, const void *y,
                   poldiff_t *diff __attribute__((unused)))
@@ -340,4 +343,3 @@ uint32_t.  For example:
 One implementation of creating temporary vectors added_attribs and
 removed_attribs may be found at
 libpoldiff/src/role_diff.c:role_deep_diff().
-

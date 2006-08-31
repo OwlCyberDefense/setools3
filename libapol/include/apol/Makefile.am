@@ -4,6 +4,7 @@ apol_HEADERS = \
 	avl-util.h \
 	avrule-query.h \
 	bool-query.h \
+	bst.h \
 	class-perm-query.h \
 	condrule-query.h \
 	constraint-query.h \
