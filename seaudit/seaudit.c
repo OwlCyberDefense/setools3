@@ -282,7 +282,7 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 	seaudit->cur_policy = tmp_policy;
 
 	g_string_assign(seaudit->policy_file, filename);
-	if (apol_policy_is_binary(seaudit_app->cur_policy)) {
+	if (!apol_policy_is_binary(seaudit_app->cur_policy)) {
 		seaudit_read_policy_conf(filename);
 	}
 	policy_load_signal_emit();
