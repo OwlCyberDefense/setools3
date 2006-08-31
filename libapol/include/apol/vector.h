@@ -235,7 +235,7 @@ extern int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src);
 /**
  *  Remove an element from a vector, and renumber all subsequent
  *  elements.  <b>This does not free memory that was used by the
- *  removed element<b>; the caller is responsible for doing that.
+ *  removed element</b>; the caller is responsible for doing that.
  *
  *  @param v Vector containing element.
  *  @param idx Index to the element to remove.

@@ -16,6 +16,7 @@ libapol_a_SOURCES = \
 	avl-util.c \
 	avrule-query.c \
 	bool-query.c \
+	bst.c \
 	class-perm-query.c \
 	condrule-query.c \
 	constraint-query.c \

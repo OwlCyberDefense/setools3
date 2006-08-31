@@ -131,16 +131,17 @@ uint32_t type_map_lookup(poldiff_t *diff, qpol_type_t *type, int which_pol);
  *  Given a pseudo-type's value and a flag indicating for which policy
  *  to look up, return a vector of qpol_type_t pointers to reference
  *  back to the unmapped types.  (type_map_build() must have been
- *  first called.)
+ *  first called.)  Note that the returned vector could be empty for
+ *  the situation where a type was added or removed.
  *
  *  @param diff The policy difference structure assocated with the
  *  types.
  *  @param val Pseudo-type value to lookup.
  *  @param which_pol One of POLDIFF_POLICY_ORIG or POLDIFF_POLICY_MOD.
  *
- *  @return A vector of qpol_type_t pointers.  The caller is should
- *  not free this vector.  If the call fails, NULL will be returned
- *  and errno will be set.
+ *  @return A vector of qpol_type_t pointers.  The caller should not
+ *  free this vector.  If the call fails, NULL will be returned and
+ *  errno will be set.
  */
 apol_vector_t *type_map_lookup_reverse(poldiff_t *diff, uint32_t val, int which_pol);
 
