@@ -156,6 +156,22 @@ int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	return STATUS_SUCCESS;
 }
 
+int qpol_bool_set_state_no_eval(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int state)
+{
+	cond_bool_datum_t *internal_datum;
+
+	if (handle == NULL || policy == NULL || datum == NULL) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	internal_datum = (cond_bool_datum_t*)datum;
+	internal_datum->state = state;
+
+	return STATUS_SUCCESS;
+}
+
 int qpol_bool_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, char **name)
 {
 	cond_bool_datum_t *internal_datum = NULL;
