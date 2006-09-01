@@ -95,6 +95,21 @@ extern int qpol_bool_get_state(qpol_handle_t *handle, qpol_policy_t *policy, qpo
  */
 extern int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int state);
 
+/** 
+ *  Set the state of a boolean but do not update the state of all conditionals
+ *  using the boolean. The caller is responsible for calling
+ *  qpol_policy_reevaluate_conds() at a later time to maintain a consistent
+ *  state of conditional expressions.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy with which the boolean is associated.
+ *  The state of the policy is changed by this function.
+ *  @param datum Boolean datum for which to set the state. Must be non-NULL.
+ *  @param state Value to which to set the state of the boolean.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set.
+ */
+extern int qpol_bool_set_state_no_eval(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int state);
+
 /**
  *  Get the name which identifies a boolean from its datum.
  *  @param handle Error handler for the policy database.
