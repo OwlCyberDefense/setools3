@@ -5,6 +5,7 @@
                 poldiff_run;
                 poldiff_type_rename_append;
                 poldiff_get_*;
+                poldiff_avrule_*;
                 poldiff_bool_*;
                 poldiff_class_*;
                 poldiff_common_*;

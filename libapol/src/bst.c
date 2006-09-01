@@ -36,7 +36,7 @@ typedef struct bst_node {
 } bst_node_t;
 
 /**
- *  Generic vector structure. Stores elements as void*.
+ *  Generic binary search tree structure.  Stores elements as void*.
  */
 struct apol_bst {
 	/** Comparison function for nodes. */
@@ -144,7 +144,7 @@ int apol_bst_get_element(const apol_bst_t *b, void *elem,
 {
 	bst_node_t *node;
 	int compval;
-	if (!b || !elem) {
+	if (!b || !elem || !result) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -197,6 +197,7 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
 		b->size++;
 		return 0;
 	}
+	node = b->head;
 	while (node != NULL) {
 		if (b->cmp != NULL) {
 			compval = b->cmp(node->elem, elem, data);

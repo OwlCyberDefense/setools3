@@ -52,7 +52,7 @@ extern void poldiff_user_get_stats(poldiff_t *diff, size_t stats[5]);
  *  @param diff The policy difference structure associated with the
  *  user difference summary.
  *
- *  @return a vector of elements of type poldiff_user_t, or NULL on
+ *  @return A vector of elements of type poldiff_user_t, or NULL on
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
@@ -76,44 +76,44 @@ extern char *poldiff_user_to_string(poldiff_t *diff, const void *user);
  *
  *  @param user The user from which to get the name.
  *
- *  @return name of the user on success and NULL on failure; if the
+ *  @return Name of the user on success and NULL on failure; if the
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_user_get_name(poldiff_user_t *user);
+extern const char *poldiff_user_get_name(const poldiff_user_t *user);
 
 /**
  *  Get the form of difference from a user diff.
  *
  *  @param user The user from which to get the difference form.
  *
- *  @return the form of difference (one of POLDIFF_FORM_*) or
+ *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_user_get_form(poldiff_user_t *user);
+extern poldiff_form_e poldiff_user_get_form(const poldiff_user_t *user);
 
 /**
  *  Get a vector of roles added to the user.
  *
  *  @param user The user diff from which to get the roles vector.
  *
- *  @return a vector of role names (type char *) that are assigned to
+ *  @return A vector of role names (type char *) that are assigned to
  *  the user in the modified policy.  If no roles were added the size
  *  of the returned vector will be 0.  The caller must not destroy
  *  this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_user_get_added_roles(poldiff_user_t *user);
+extern apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t *user);
 
 /**
  *  Get a vector of roles removed from the user.
  *
  *  @param user The user diff from which to get the roles vector.
  *
- *  @return a vector of role names (type char *) that are assigned to
+ *  @return A vector of role names (type char *) that are assigned to
  *  the user in the original policy.  If no roles were removed the
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_user_get_removed_roles(poldiff_user_t *user);
+extern apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t *user);
 
 #endif /* POLDIFF_USER_DIFF_H */

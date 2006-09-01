@@ -62,6 +62,7 @@ typedef enum poldiff_form {
 #include <poldiff/bool_diff.h>
 #include <poldiff/class_diff.h>
 #include <poldiff/role_diff.h>
+#include <poldiff/rule_diff.h>
 #include <poldiff/user_diff.h>
 #include <poldiff/type_map.h>
 
@@ -147,20 +148,5 @@ extern int poldiff_run(poldiff_t *diff, uint32_t flags);
  *  @return 0 on success an < 0 on error; if the call fails, errno will be set.
  */
 extern int poldiff_get_stats(poldiff_t *diff, uint32_t flags, size_t stats[5]);
-
-/**
- *  Note a type from policy1 was renamed in policy2.  Subsequent diffs
- *  will thus treat policy1_name to be equivalent to policy2_name.
- *
- *  @param diff The difference structure to which to append a type rename.
- *  Note that changing the list of type renames will reset the status of
- *  previously run difference calculations and they will need to be rerun.
- *  @param policy1_name The name of the type in policy 1.
- *  @param policy2_name The name of a type in policy 2 to consider equivalent.
- *  If both name parameters are NULL the list of renames will be cleared.
- *  @return 0 on success or < 0 on error; if the call fails,
- *  errno will be set and the difference structure will be unchanged.
- */
-extern int poldiff_type_rename_append(poldiff_t *diff, const char *policy1_name, const char *policy2_name);
 
 #endif /* POLDIFF_POLDIFF_H */

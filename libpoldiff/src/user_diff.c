@@ -171,7 +171,7 @@ apol_vector_t *poldiff_get_user_vector(poldiff_t *diff)
 	return diff->user_diffs->diffs;
 }
 
-const char *poldiff_user_get_name(poldiff_user_t *user)
+const char *poldiff_user_get_name(const poldiff_user_t *user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
@@ -180,7 +180,7 @@ const char *poldiff_user_get_name(poldiff_user_t *user)
 	return user->name;
 }
 
-poldiff_form_e poldiff_user_get_form(poldiff_user_t *user)
+poldiff_form_e poldiff_user_get_form(const poldiff_user_t *user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
@@ -189,7 +189,7 @@ poldiff_form_e poldiff_user_get_form(poldiff_user_t *user)
 	return user->form;
 }
 
-apol_vector_t *poldiff_user_get_added_roles(poldiff_user_t *user)
+apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t *user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
@@ -198,7 +198,7 @@ apol_vector_t *poldiff_user_get_added_roles(poldiff_user_t *user)
 	return user->added_roles;
 }
 
-apol_vector_t *poldiff_user_get_removed_roles(poldiff_user_t *user)
+apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t *user)
 {
 	if (user == NULL) {
 		errno = EINVAL;

@@ -353,7 +353,8 @@ void type_map_destroy(type_map_t **map)
 
 static void type_map_dump(poldiff_t *diff)
 {
-        size_t i, j;
+        return;
+        /*        size_t i, j;
         apol_vector_t *v;
         qpol_type_t *t;
         char *name;
@@ -395,7 +396,7 @@ static void type_map_dump(poldiff_t *diff)
                         printf (" %s", name);
                 }
         }
-        printf("\n");
+        printf("\n"); */
 }
 
 int type_map_build(poldiff_t *diff)
@@ -787,7 +788,8 @@ static int type_map_prim_aliases_comp(const void *a, const void *b, void *data)
 
 static void type_remap_vector_dump(poldiff_t *diff)
 {
-	apol_vector_t *v, *w;
+    return;
+    /*	apol_vector_t *v, *w;
 	size_t i, j;
 	poldiff_type_remap_entry_t *e;
 	char *name;
@@ -810,7 +812,7 @@ static void type_remap_vector_dump(poldiff_t *diff)
 		}
 		apol_vector_destroy(&w, NULL);
 		printf("\n");
-	}
+                } */
 }
 
 int type_map_infer(poldiff_t *diff)
@@ -984,6 +986,7 @@ uint32_t type_map_lookup(poldiff_t *diff, qpol_type_t *type, int which_pol)
 			return 0;
 		}
 		assert(val <= diff->type_map->num_orig_types);
+		assert(diff->type_map->orig_to_pseudo[val - 1] != 0);
 		return diff->type_map->orig_to_pseudo[val - 1];
 	}
 	else {
@@ -991,6 +994,7 @@ uint32_t type_map_lookup(poldiff_t *diff, qpol_type_t *type, int which_pol)
 			return 0;
 		}
 		assert(val <= diff->type_map->num_mod_types);
+		assert(diff->type_map->mod_to_pseudo[val - 1] != 0);
 		return diff->type_map->mod_to_pseudo[val - 1];
 	}
 }

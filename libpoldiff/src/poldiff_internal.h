@@ -31,6 +31,7 @@
 #include "bool_internal.h"
 #include "class_internal.h"
 #include "role_internal.h"
+#include "rule_internal.h"
 #include "user_internal.h"
 
 #include "type_map_internal.h"

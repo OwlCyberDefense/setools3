@@ -126,7 +126,7 @@ apol_vector_t *poldiff_get_bool_vector(poldiff_t *diff)
 	return diff->bool_diffs->diffs;
 }
 
-const char *poldiff_bool_get_name(poldiff_bool_t *boolean)
+const char *poldiff_bool_get_name(const poldiff_bool_t *boolean)
 {
 	if (boolean == NULL) {
 		errno = EINVAL;
@@ -135,7 +135,7 @@ const char *poldiff_bool_get_name(poldiff_bool_t *boolean)
 	return boolean->name;
 }
 
-poldiff_form_e poldiff_bool_get_form(poldiff_bool_t *boolean)
+poldiff_form_e poldiff_bool_get_form(const poldiff_bool_t *boolean)
 {
 	if (boolean == NULL) {
 		errno = EINVAL;
