@@ -174,7 +174,7 @@ apol_vector_t *poldiff_get_class_vector(poldiff_t *diff)
 	return diff->class_diffs->diffs;
 }
 
-const char *poldiff_class_get_name(poldiff_class_t *cls)
+const char *poldiff_class_get_name(const poldiff_class_t *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
@@ -183,7 +183,7 @@ const char *poldiff_class_get_name(poldiff_class_t *cls)
 	return cls->name;
 }
 
-poldiff_form_e poldiff_class_get_form(poldiff_class_t *cls)
+poldiff_form_e poldiff_class_get_form(const poldiff_class_t *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
@@ -192,7 +192,7 @@ poldiff_form_e poldiff_class_get_form(poldiff_class_t *cls)
 	return cls->form;
 }
 
-apol_vector_t *poldiff_class_get_added_perms(poldiff_class_t *cls)
+apol_vector_t *poldiff_class_get_added_perms(const poldiff_class_t *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
@@ -201,7 +201,7 @@ apol_vector_t *poldiff_class_get_added_perms(poldiff_class_t *cls)
 	return cls->added_perms;
 }
 
-apol_vector_t *poldiff_class_get_removed_perms(poldiff_class_t *cls)
+apol_vector_t *poldiff_class_get_removed_perms(const poldiff_class_t *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
@@ -667,7 +667,7 @@ apol_vector_t *poldiff_get_common_vector(poldiff_t *diff)
 	return diff->common_diffs->diffs;
 }
 
-const char *poldiff_common_get_name(poldiff_common_t *cls)
+const char *poldiff_common_get_name(const poldiff_common_t *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
@@ -676,7 +676,7 @@ const char *poldiff_common_get_name(poldiff_common_t *cls)
 	return cls->name;
 }
 
-poldiff_form_e poldiff_common_get_form(poldiff_common_t *cls)
+poldiff_form_e poldiff_common_get_form(const poldiff_common_t *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
@@ -685,7 +685,7 @@ poldiff_form_e poldiff_common_get_form(poldiff_common_t *cls)
 	return cls->form;
 }
 
-apol_vector_t *poldiff_common_get_added_perms(poldiff_common_t *cls)
+apol_vector_t *poldiff_common_get_added_perms(const poldiff_common_t *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
@@ -694,7 +694,7 @@ apol_vector_t *poldiff_common_get_added_perms(poldiff_common_t *cls)
 	return cls->added_perms;
 }
 
-apol_vector_t *poldiff_common_get_removed_perms(poldiff_common_t *cls)
+apol_vector_t *poldiff_common_get_removed_perms(const poldiff_common_t *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;

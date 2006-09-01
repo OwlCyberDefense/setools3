@@ -119,7 +119,7 @@ static void print_class_diffs(poldiff_t *diff, int stats_only)
 	apol_vector_t *v = NULL;
 	size_t i, stats[5] = {0, 0, 0, 0, 0};
 	char *str = NULL;
-	poldiff_class_t *item = NULL;
+	const poldiff_class_t *item = NULL;
 
 	if (!diff)
 		return;
@@ -137,7 +137,7 @@ static void print_class_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_class_get_form(item) == POLDIFF_FORM_ADDED) {
-			str = poldiff_class_to_string(diff, (const void*)item);
+			str = poldiff_class_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -153,7 +153,7 @@ static void print_class_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_class_get_form(item) == POLDIFF_FORM_REMOVED) {
-			str = poldiff_class_to_string(diff, (const void*)item);
+			str = poldiff_class_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -169,7 +169,7 @@ static void print_class_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_class_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			str = poldiff_class_to_string(diff, (const void*)item);
+			str = poldiff_class_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -259,7 +259,7 @@ static void print_common_diffs(poldiff_t *diff, int stats_only)
 	apol_vector_t *v = NULL;
 	size_t i, stats[5] = {0, 0, 0, 0, 0};
 	char *str = NULL;
-	poldiff_common_t *item = NULL;
+	const poldiff_common_t *item = NULL;
 
 	if (!diff)
 		return;
@@ -277,7 +277,7 @@ static void print_common_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_common_get_form(item) == POLDIFF_FORM_ADDED) {
-			str = poldiff_common_to_string(diff, (const void*)item);
+			str = poldiff_common_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -293,7 +293,7 @@ static void print_common_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_common_get_form(item) == POLDIFF_FORM_REMOVED) {
-			str = poldiff_common_to_string(diff, (const void*)item);
+			str = poldiff_common_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -309,7 +309,7 @@ static void print_common_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_common_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			str = poldiff_common_to_string(diff, (const void*)item);
+			str = poldiff_common_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -329,7 +329,7 @@ static void print_role_diffs(poldiff_t *diff, int stats_only)
 	apol_vector_t *v = NULL;
 	size_t i, stats[5] = {0, 0, 0, 0, 0};
 	char *str = NULL;
-	poldiff_role_t *item = NULL;
+	const poldiff_role_t *item = NULL;
 
 	if (!diff)
 		return;
@@ -347,7 +347,7 @@ static void print_role_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_role_get_form(item) == POLDIFF_FORM_ADDED) {
-			str = poldiff_role_to_string(diff, (const void*)item);
+			str = poldiff_role_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -363,7 +363,7 @@ static void print_role_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_role_get_form(item) == POLDIFF_FORM_REMOVED) {
-			str = poldiff_role_to_string(diff, (const void*)item);
+			str = poldiff_role_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -379,7 +379,7 @@ static void print_role_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_role_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			str = poldiff_role_to_string(diff, (const void*)item);
+			str = poldiff_role_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -399,7 +399,7 @@ static void print_user_diffs(poldiff_t *diff, int stats_only)
 	apol_vector_t *v = NULL;
 	size_t i, stats[5] = {0, 0, 0, 0, 0};
 	char *str = NULL;
-	poldiff_user_t *item = NULL;
+	const poldiff_user_t *item = NULL;
 
 	if (!diff)
 		return;
@@ -417,7 +417,7 @@ static void print_user_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_user_get_form(item) == POLDIFF_FORM_ADDED) {
-			str = poldiff_user_to_string(diff, (const void*)item);
+			str = poldiff_user_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -433,7 +433,7 @@ static void print_user_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_user_get_form(item) == POLDIFF_FORM_REMOVED) {
-			str = poldiff_user_to_string(diff, (const void*)item);
+			str = poldiff_user_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -449,7 +449,7 @@ static void print_user_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_user_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			str = poldiff_user_to_string(diff, (const void*)item);
+			str = poldiff_user_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -464,13 +464,98 @@ static void print_user_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
+static void print_avrule_diffs(poldiff_t *diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	char *str = NULL;
+	const poldiff_avrule_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES, stats);
+	printf("TE Rules (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n",
+               stats[0], stats[3], stats[1], stats[4], stats[2]);
+	if (stats_only)
+		return;
+	if ((v = poldiff_get_avrule_vector(diff)) == NULL) {
+		return;
+        }
+	printf("   Added TE Rules: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_ADDED) {
+			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+				return;
+                        }
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+	printf("   Added TE Rules because of new type: %zd\n", stats[3]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_ADD_TYPE) {
+			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+				return;
+                        }
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed TE Rules: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_REMOVED) {
+			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+				return;
+                        }
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+	printf("   Removed TE Rules because of missing type: %zd\n", stats[4]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_REMOVE_TYPE) {
+			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+				return;
+                        }
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Changed TE Rules: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+				return;
+                        }
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+	return;
+}
+
 /* TODO template print x function
 static void print_XXX_diffs(poldiff_t *diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
 	size_t i, stats[5] = {0, 0, 0, 0, 0};
 	char *str = NULL;
-	poldiff_XXX_t *item = NULL;
+	const poldiff_XXX_t *item = NULL;
 
 	if (!diff)
 		return;
@@ -488,7 +573,7 @@ static void print_XXX_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_XXX_get_form(item) == POLDIFF_FORM_ADDED) {
-			str = poldiff_XXX_to_string(diff, (const void*)item);
+			str = poldiff_XXX_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -504,7 +589,7 @@ static void print_XXX_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_XXX_get_form(item) == POLDIFF_FORM_REMOVED) {
-			str = poldiff_XXX_to_string(diff, (const void*)item);
+			str = poldiff_XXX_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -520,7 +605,7 @@ static void print_XXX_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_XXX_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			str = poldiff_XXX_to_string(diff, (const void*)item);
+			str = poldiff_XXX_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -580,7 +665,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 		print_bool_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_AVRULES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVRULES))) {
-		printf("TODO: AVRules\n\n");
+		print_avrule_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_TERULES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TERULES))) {
 		printf("TODO: TERules\n\n");

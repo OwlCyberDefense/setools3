@@ -534,8 +534,10 @@ int apol_str_append(char **tgt, size_t *tgt_sz, const char *str)
 	size_t str_len;
 	if (str == NULL || (str_len = strlen(str)) == 0)
 		return 0;
-	if (tgt == NULL)
+	if (tgt == NULL) {
+		errno = EINVAL;
 		return -1;
+	}
 	str_len++;
 	/* target is currently empty */
 	if (*tgt == NULL || *tgt_sz == 0) {
@@ -551,9 +553,11 @@ int apol_str_append(char **tgt, size_t *tgt_sz, const char *str)
 		/* tgt has some memory */
 		char *t = (char *)realloc(*tgt, *tgt_sz + str_len);
 		if (t == NULL) {
+			int error = errno;
 			free(*tgt);
 			*tgt = NULL;
 			*tgt_sz = 0;
+			errno = error;
 			return -1;
 		}
 		*tgt = t;
