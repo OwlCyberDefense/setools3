@@ -52,7 +52,7 @@ extern void poldiff_role_get_stats(poldiff_t *diff, size_t stats[5]);
  *  @param diff The policy difference structure associated with the
  *  role difference summary.
  *
- *  @return a vector of elements of type poldiff_role_t, or NULL on
+ *  @return A vector of elements of type poldiff_role_t, or NULL on
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
@@ -76,21 +76,21 @@ extern char *poldiff_role_to_string(poldiff_t *diff, const void *role);
  *
  *  @param role The role from which to get the name.
  *
- *  @return name of the role on success and NULL on failure; if the
+ *  @return Name of the role on success and NULL on failure; if the
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_role_get_name(poldiff_role_t *role);
+extern const char *poldiff_role_get_name(const poldiff_role_t *role);
 
 /**
  *  Get the form of difference from a role diff.
  *
  *  @param role The role from which to get the difference form.
  *
- *  @return the form of difference (one of POLDIFF_FORM_*) or
+ *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_role_get_form(poldiff_role_t *role);
+extern poldiff_form_e poldiff_role_get_form(const poldiff_role_t *role);
 
 /**
  *  Get a vector of types added to the role.
@@ -102,18 +102,18 @@ extern poldiff_form_e poldiff_role_get_form(poldiff_role_t *role);
  *  of the returned vector will be 0.  The caller must not destroy
  *  this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_role_get_added_roles(poldiff_role_t *role);
+extern apol_vector_t *poldiff_role_get_added_roles(const poldiff_role_t *role);
 
 /**
  *  Get a vector of types removed from the role.
  *
  *  @param role The role diff from which to get the types vector.
  *
- *  @return a vector of type names (type char *) that are allowed to
+ *  @return A vector of type names (type char *) that are allowed to
  *  the role in the original policy.  If no types were removed the
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_role_get_removed_roles(poldiff_role_t *role);
+extern apol_vector_t *poldiff_role_get_removed_roles(const poldiff_role_t *role);
 
 #endif /* POLDIFF_ROLE_DIFF_H */

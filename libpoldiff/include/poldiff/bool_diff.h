@@ -56,7 +56,7 @@ extern void poldiff_bool_get_stats(poldiff_t *diff, size_t stats[5]);
  *  @param diff The policy difference structure associated with the
  *  bool difference summary.
  *
- *  @return a vector of elements of type poldiff_bool_t, or NULL on
+ *  @return A vector of elements of type poldiff_bool_t, or NULL on
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
@@ -82,7 +82,7 @@ extern char *poldiff_bool_to_string(poldiff_t *diff, const void *boolean);
  *  @param diff The policy difference structure from which to get the
  *  number of added bools.
  *
- *  @return the number of added bools or 0 if not yet run.  (The
+ *  @return The number of added bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
 extern size_t poldiff_get_num_added_bools(poldiff_t *diff);
@@ -94,7 +94,7 @@ extern size_t poldiff_get_num_added_bools(poldiff_t *diff);
  *  @param diff The policy difference structure from which to get the
  *  number of removed bools.
  *
- *  @return the number of removed bools or 0 if not yet run.  (The
+ *  @return The number of removed bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
 extern size_t poldiff_get_num_removed_bools(poldiff_t *diff);
@@ -106,7 +106,7 @@ extern size_t poldiff_get_num_removed_bools(poldiff_t *diff);
  *  @param diff The policy difference structure from which to get the
  *  number of modified bools.
  *
- *  @return the number of modified bools or 0 if not yet run.  (The
+ *  @return The number of modified bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
 extern size_t poldiff_get_num_modified_bools(poldiff_t *diff);
@@ -118,11 +118,11 @@ extern size_t poldiff_get_num_modified_bools(poldiff_t *diff);
  *  bool diff.
  *  @param cls The bool from which to get the name.
  *
- *  @return name of the bool on success and NULL on failure; if the
+ *  @return Name of the bool on success and NULL on failure; if the
  *  call fails, errno will be set. The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_bool_get_name(poldiff_bool_t *boolean);
+extern const char *poldiff_bool_get_name(const poldiff_bool_t *boolean);
 
 /**
  *  Get the form of difference from a bool diff.
@@ -132,9 +132,9 @@ extern const char *poldiff_bool_get_name(poldiff_bool_t *boolean);
  *
  *  @param cls The bool from which to get the difference form.
  *
- *  @return the form of difference (one of POLDIFF_FORM_*) or
+ *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_bool_get_form(poldiff_bool_t *boolean);
+extern poldiff_form_e poldiff_bool_get_form(const poldiff_bool_t *boolean);
 
 #endif /* POLDIFF_BOOL_DIFF_H */
