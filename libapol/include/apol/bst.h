@@ -130,14 +130,15 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data);
  *  function) and then the existing element is returned.
  *
  *  @param b The BST to which to add the element.
- *  @param elem Pointer to an element to add.  Afterwards the pointer
- *  will be assigned to a BST node, which could be an existing node.
- *  This function performs no checking on this element other than a
- *  check for NULL.
+ *  @param elem Reference to an element to add.  If the element is
+ *  new, then the pointer remains unchanged.  Otherwise set the
+ *  reference to the element already within the tree.  This function
+ *  performs no checking on this element other than a check for NULL.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater (the function given in apol_bst_create()).
  *  @param fr If the element already exists and this is non-NULL, then
- *  invoke this callback to free the new element.
+ *  invoke this callback to free the new element.  Otherwise do not
+ *  free the new element.
  *
  *  @return 0 if the item was inserted, 1 if the item already exists
  *  (and thus not inserted).  On failure return < 0, set errno, and b

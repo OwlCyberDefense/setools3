@@ -134,12 +134,11 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 		goto err;
 	}
 	len = strlen(s);
-	if (pa->form != POLDIFF_FORM_MODIFIED) {
-		diff_char = "";
-	}
 	for (i = 0; i < apol_vector_get_size(pa->added_perms); i++) {
 		perm_name = (char *) apol_vector_get_element(pa->added_perms, i);
-		if (asprintf(&t, " %s%s", diff_char, perm_name) < 0) {
+		if (asprintf(&t, " %s%s",
+			     (pa->form == POLDIFF_FORM_MODIFIED ? "+" : ""),
+			     perm_name) < 0) {
 			error = errno;
 			t = NULL;
 			goto err;
@@ -153,7 +152,9 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 	}
 	for (i = 0; i < apol_vector_get_size(pa->removed_perms); i++) {
 		perm_name = (char *) apol_vector_get_element(pa->removed_perms, i);
-		if (asprintf(&t, " %s%s", diff_char, perm_name) < 0) {
+		if (asprintf(&t, " %s%s",
+			     (pa->form == POLDIFF_FORM_MODIFIED ? "-" : ""),
+			     perm_name) < 0) {
 			error = errno;
 			t = NULL;
 			goto err;
@@ -330,30 +331,6 @@ void avrule_destroy(poldiff_avrule_summary_t **as)
 }
 
 /**
- * Duplicate a name and then try inserting it into the BST.
- */
-static int insert_into_bst(poldiff_t *diff, apol_bst_t *bst, char *name)
-{
-	char *new_name;
-	int compval, error;
-	if ((new_name = strdup(name)) == NULL) {
-		error = errno;
-		ERR(diff, "%s", strerror(error));
-		return error;
-	}
-	compval = apol_bst_insert(bst, new_name, NULL);
-	if (compval < 0) {
-		error = errno;
-		ERR(diff, "%s", strerror(error));
-		return error;
-	}
-	else if (compval == 1) {
-		free(new_name);
-	}
-	return 0;
-}
-
-/**
  * Build the BST for classes, permissions, and booleans.  This
  * effectively provides a partial mapping of rules from one policy to
  * the other.
@@ -369,7 +346,7 @@ static int avrule_build_bsts(poldiff_t *diff) {
 	size_t i, j;
 	qpol_class_t *cls;
 	qpol_bool_t *bool;
-	char *name;
+	char *name, *new_name;
 	int retval = -1, error = 0;
 	if ((diff->avrule_diffs->class_bst = apol_bst_create(apol_str_strcmp)) == NULL ||
 	    (diff->avrule_diffs->perm_bst = apol_bst_create(apol_str_strcmp)) == NULL ||
@@ -391,15 +368,19 @@ static int avrule_build_bsts(poldiff_t *diff) {
 				error = errno;
 				goto cleanup;
 			}
-			if (insert_into_bst(diff, diff->avrule_diffs->class_bst, name) < 0) {
+			if ((new_name = strdup(name)) == NULL ||
+			    apol_bst_insert_and_get(diff->avrule_diffs->class_bst, (void **) &new_name, NULL, free) < 0) {
 				error = errno;
+				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
 		}
 		for (j = 0; j < apol_vector_get_size(perms[i]); j++) {
 			name = (char *) apol_vector_get_element(perms[i], j);
-			if (insert_into_bst(diff, diff->avrule_diffs->perm_bst, name) < 0) {
+			if ((new_name = strdup(name)) == NULL ||
+			    apol_bst_insert_and_get(diff->avrule_diffs->perm_bst, (void **) &new_name, NULL, free) < 0) {
 				error = errno;
+				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
 		}
@@ -409,8 +390,10 @@ static int avrule_build_bsts(poldiff_t *diff) {
 				error = errno;
 				goto cleanup;
 			}
-			if (insert_into_bst(diff, diff->avrule_diffs->bool_bst, name) < 0) {
+			if ((new_name = strdup(name)) == NULL ||
+			    apol_bst_insert_and_get(diff->avrule_diffs->bool_bst, (void **) &new_name, NULL, free) < 0) {
 				error = errno;
+				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
 		}
@@ -448,7 +431,7 @@ static int pseudo_avrule_comp(poldiff_t *diff, pseudo_avrule_t *rule1, pseudo_av
 	if (rule1->target != rule2->target) {
 		return rule1->target - rule2->target;
 	}
-	if (rule1->source !=  rule2->source) {
+	if (rule1->source != rule2->source) {
 		return rule1->source - rule2->source;
 	}
 	if (rule1->cls != rule2->cls) {
@@ -663,27 +646,13 @@ static int avrule_add_to_bst(poldiff_t *diff, apol_policy_t *p,
 	}
 
 	/* insert this pseudo into the tree if not already there */
-        if ((compval = apol_bst_insert(b, key, NULL)) < 0) {
+        if ((compval = apol_bst_insert_and_get(b, (void **) &key, NULL, avrule_free_item)) < 0) {
                 error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-        if (compval == 0) {
-		/* new rule */
-                inserted_key = key;
-                key = NULL;
-        }
-        else {
-                /* rule already exists */
-                if (apol_bst_get_element(b, key, NULL, (void **) &inserted_key) < 0) {
-			error = EBADRQC;  /* should never get here */
-			ERR(diff, "%s", strerror(error));
-			assert(0);
-			goto cleanup;
-                }
-                avrule_free_item(key);
-                key = NULL;
-        }
+	inserted_key = key;
+	key = NULL;
 	/* append and uniquify this rule's permissions */
 	if (inserted_key->perms == NULL) {
 		if (qpol_iterator_get_size(perm_iter, &num_perms) < 0) {
