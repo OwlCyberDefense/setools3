@@ -119,6 +119,18 @@ static const poldiff_item_record_t item_records[] = {
 		user_comp,
 		user_new_diff,
 		user_deep_diff,
+	},
+	{
+		"type",
+		POLDIFF_DIFF_TYPES,
+		poldiff_type_get_stats,
+		poldiff_get_type_vector,
+		poldiff_type_to_string,
+		type_get_items,
+		NULL,
+		type_comp,
+		type_new_diff,
+		type_deep_diff,
 	}
 };
 
@@ -162,7 +174,8 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	    (diff->class_diffs = class_create()) == NULL ||
 	    (diff->common_diffs = common_create()) == NULL ||
 	    (diff->role_diffs = role_create()) == NULL ||
-	    (diff->user_diffs = user_create()) == NULL) {
+	    (diff->user_diffs = user_create()) == NULL ||
+	    (diff->type_diffs = type_summary_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
 		errno = ENOMEM;
@@ -186,6 +199,7 @@ void poldiff_destroy(poldiff_t **diff)
 	common_destroy(&(*diff)->common_diffs);
 	role_destroy(&(*diff)->role_diffs);
 	user_destroy(&(*diff)->user_diffs);
+	type_summary_destroy(&(*diff)->type_diffs);
 	free(*diff);
 	*diff = NULL;
 }
