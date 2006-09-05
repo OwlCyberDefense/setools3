@@ -186,10 +186,11 @@ static int poldiff_avrule_cmp(const void *x, const void *y, void *data __attribu
 {
 	const poldiff_avrule_t *a = (const poldiff_avrule_t *) x;
 	const poldiff_avrule_t *b = (const poldiff_avrule_t *) y;
+	int compval;
 	if (a->spec != b->spec) {
 		const char *rule_type1 = apol_rule_type_to_str(a->spec);
 		const char *rule_type2 = apol_rule_type_to_str(b->spec);
-		int compval = strcmp(rule_type1, rule_type2);
+		compval = strcmp(rule_type1, rule_type2);
 		if (compval != 0) {
 			return compval;
 		}
