@@ -122,4 +122,28 @@ extern int apol_bst_get_element(const apol_bst_t *b, void *elem,
  */
 extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data);
 
+/**
+ *  Insert an element into the BST, and then get the element back out.
+ *  If the element did not already exist, then this function behaves
+ *  the same as apol_bst_insert().  If however the element did exist,
+ *  then the passed in element is freed (as per the given free
+ *  function) and then the existing element is returned.
+ *
+ *  @param b The BST to which to add the element.
+ *  @param elem Pointer to an element to add.  Afterwards the pointer
+ *  will be assigned to a BST node, which could be an existing node.
+ *  This function performs no checking on this element other than a
+ *  check for NULL.
+ *  @param data Arbitrary data to pass as the comparison function's
+ *  third paramater (the function given in apol_bst_create()).
+ *  @param fr If the element already exists and this is non-NULL, then
+ *  invoke this callback to free the new element.
+ *
+ *  @return 0 if the item was inserted, 1 if the item already exists
+ *  (and thus not inserted).  On failure return < 0, set errno, and b
+ *  will be unchanged.
+ */
+extern int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data
+				   apol_bst_free_func *fr);
+
 #endif /* APOL_BST_H */
