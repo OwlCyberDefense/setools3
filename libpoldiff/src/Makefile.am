@@ -14,8 +14,10 @@ libpoldiff_a_SOURCES = \
 	role_diff.c role_internal.h \
 	rule_diff.c rule_internal.h \
 	user_diff.c user_internal.h \
+	type_diff.c type_internal.h \
 	poldiff_internal.h \
 	type_map.c type_map_internal.h
+
 libpoldiff_a_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so
 
 libpoldiff_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libpoldiff_a_SOURCES)))
