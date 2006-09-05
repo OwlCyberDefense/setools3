@@ -170,7 +170,7 @@ int apol_bst_get_element(const apol_bst_t *b, void *elem,
 			*result = node->elem;
 			return 0;
 		}
-		else if (compval < 0) {
+		else if (compval > 0) {
 			node = node->left;
 		}
 		else {
@@ -180,11 +180,17 @@ int apol_bst_get_element(const apol_bst_t *b, void *elem,
 	return -1;
 }
 
-extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
+int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
+{
+	return apol_bst_insert_and_get(b, &elem, data, NULL);
+}
+
+int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data,
+			    apol_bst_free_func *fr)
 {
 	bst_node_t *node, *new_node;
-	int compval;
-	if (!b || !elem) {
+        int compval;
+	if (!b || !elem || !(*elem)) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -192,7 +198,7 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
 		if ((new_node = calloc(1, sizeof(*node))) == NULL) {
 			return -1;
 		}
-		new_node->elem = elem;
+		new_node->elem = *elem;
 		b->head = new_node;
 		b->size++;
 		return 0;
@@ -200,11 +206,11 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
 	node = b->head;
 	while (node != NULL) {
 		if (b->cmp != NULL) {
-			compval = b->cmp(node->elem, elem, data);
+			compval = b->cmp(node->elem, *elem, data);
 		}
 		else {
 			char *p1 = (char *) node->elem;
-			char *p2 = (char *) elem;
+			char *p2 = (char *) (*elem);
 			if (p1 < p2) {
 				compval = -1;
 			}
@@ -216,14 +222,19 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
 			}
 		}
 		if (compval == 0) {
+			/* already exists */
+			if (fr != NULL) {
+				fr(*elem);
+			}
+			*elem = node->elem;
 			return 1;
 		}
-		else if (compval < 0) {
+		else if (compval > 0) {
 			if (node->left == NULL) {
 				if ((new_node = calloc(1, sizeof(*node))) == NULL) {
 					return -1;
 				}
-				new_node->elem = elem;
+				new_node->elem = *elem;
 				node->left = new_node;
 				b->size++;
 				return 0;
@@ -235,7 +246,7 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
 				if ((new_node = calloc(1, sizeof(*node))) == NULL) {
 					return -1;
 				}
-				new_node->elem = elem;
+				new_node->elem = *elem;
 				node->right = new_node;
 				b->size++;
 				return 0;
