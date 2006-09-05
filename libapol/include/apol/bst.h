@@ -143,7 +143,7 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data);
  *  (and thus not inserted).  On failure return < 0, set errno, and b
  *  will be unchanged.
  */
-extern int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data
+extern int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data,
 				   apol_bst_free_func *fr);
 
 #endif /* APOL_BST_H */
