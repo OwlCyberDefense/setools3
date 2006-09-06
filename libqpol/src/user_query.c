@@ -22,7 +22,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -49,7 +49,7 @@ int qpol_policy_get_user_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	
+
 	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_users.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
@@ -171,7 +171,7 @@ int qpol_user_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_
 	}
 
 	internal_datum = (user_datum_t*)datum;
-	*range = (qpol_mls_range_t*)&internal_datum->range;
+	*range = (qpol_mls_range_t*)&internal_datum->exp_range;
 
 	return STATUS_SUCCESS;
 }
@@ -189,7 +189,7 @@ int qpol_user_get_dfltlevel(qpol_handle_t *handle, qpol_policy_t *policy, qpol_u
 	}
 
 	internal_datum = (user_datum_t*)datum;
-	*level = (qpol_mls_level_t*)&internal_datum->dfltlevel;
+	*level = (qpol_mls_level_t*)&internal_datum->exp_dfltlevel;
 
 	return STATUS_SUCCESS;
 }
@@ -214,4 +214,3 @@ int qpol_user_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t
 
 	return STATUS_SUCCESS;
 }
- 

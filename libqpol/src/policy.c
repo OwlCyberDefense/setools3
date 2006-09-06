@@ -785,12 +785,12 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 		qpol_src_inputlim = &qpol_src_inputptr[sb.st_size-1];
 		qpol_src_originalinput = qpol_src_input;
 
+		(*policy)->p->p.policy_type = POLICY_BASE;
 		if (read_source_policy(*handle, &(*policy)->p->p, "libqpol", (*policy)->rules_loaded) < 0) {
 			error = errno;
 			goto err;
 		}
 
-		(*policy)->p->p.policy_type = POLICY_BASE;
 		/* link the source */
 		INFO(*handle, "%s", "Linking source policy.");
 		if (sepol_link_modules((*handle)->sh, (*policy)->p, NULL, 0, 0)) {
@@ -938,12 +938,12 @@ int qpol_open_policy_from_file_no_rules(const char *path, qpol_policy_t **policy
 		qpol_src_inputlim = &qpol_src_inputptr[sb.st_size-1];
 		qpol_src_originalinput = qpol_src_input;
 
+		(*policy)->p->p.policy_type = POLICY_BASE;
 		if (read_source_policy(*handle, &(*policy)->p->p, "libqpol", (*policy)->rules_loaded) < 0) {
 			error = errno;
 			goto err;
 		}
 
-		(*policy)->p->p.policy_type = POLICY_BASE;
 		/* link the source */
 		INFO(*handle, "%s", "Linking source policy.");
 		if (sepol_link_modules((*handle)->sh, (*policy)->p, NULL, 0, 0)) {

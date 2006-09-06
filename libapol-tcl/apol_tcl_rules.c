@@ -1067,7 +1067,7 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int a
  * Takes a qpol_range_trans_t and appends a tuple of it to
  * result_list.  The tuple consists of:
  * <code>
- *    { source_type_set target_type_set range }
+ *    { source_type_set target_type_set target_class range }
  * </code>
  * The type sets are Tcl lists.
  */
@@ -1076,20 +1076,23 @@ static int append_range_trans_to_list(Tcl_Interp *interp,
 				      Tcl_Obj *result_list)
 {
 	qpol_type_t *source, *target;
+	qpol_class_t *target_class;
 	qpol_mls_range_t *range;
 	apol_mls_range_t *apol_range = NULL;
-	char *source_name, *target_name;
-	Tcl_Obj *range_elem[2], *rule_elem[3], *rule_list;
+	char *source_name, *target_name, *target_class_name;
+	Tcl_Obj *range_elem[2], *rule_elem[4], *rule_list;
 	int retval = TCL_ERROR;
 
 	if (qpol_range_trans_get_source_type(policydb->qh, policydb->p, rule, &source) < 0 ||
 	    qpol_range_trans_get_target_type(policydb->qh, policydb->p, rule, &target) < 0 ||
+	    qpol_range_trans_get_target_class(policydb->qh, policydb->p, rule, &target_class) < 0 ||
 	    qpol_range_trans_get_range(policydb->qh, policydb->p, rule, &range) < 0) {
 		goto cleanup;
 	}
 
 	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
 	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, target_class, &target_class_name) < 0 ||
 	    (apol_range =
 	     apol_mls_range_create_from_qpol_mls_range(policydb, range)) == NULL) {
 		goto cleanup;
@@ -1097,12 +1100,13 @@ static int append_range_trans_to_list(Tcl_Interp *interp,
 
 	rule_elem[0] = Tcl_NewStringObj(source_name, -1);
 	rule_elem[1] = Tcl_NewStringObj(target_name, -1);
+	rule_elem[2] = Tcl_NewStringObj(target_class_name, -1);
 	if (apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) < 0 ||
 	    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) < 0) {
 		goto cleanup;
 	}
-	rule_elem[2] = Tcl_NewListObj(2, range_elem);
-	rule_list = Tcl_NewListObj(3, rule_elem);
+	rule_elem[3] = Tcl_NewListObj(2, range_elem);
+	rule_list = Tcl_NewListObj(4, rule_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, rule_list) == TCL_ERROR) {
 		goto cleanup;
 	}
@@ -1118,6 +1122,7 @@ static int append_range_trans_to_list(Tcl_Interp *interp,
  * <ul>
  *   <li>source type set
  *   <li>target type set
+ *   <li>target class
  *   <li>new range (range = 2-uple of levels)
  * </ul>
  *
