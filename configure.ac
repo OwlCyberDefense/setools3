@@ -302,20 +302,21 @@ AC_ARG_ENABLE(sepol-src,
               sepol_srcdir="$enableval",
               sepol_srcdir="")
 if test "x${sepol_srcdir}" = "x"; then
-   sepol_srcdir='${top_srcdir}/libqpol'
+   sepol_srcdir='/usr/lib'
 else
    AC_MSG_CHECKING([for sepol source tree])
+   sepol_srcdir="${sepol_srcdir}/src"
    sepol_src_save_CFLAGS="${CFLAGS}"
-   CFLAGS="${CFLAGS} -I${sepol_srcdir}/include ${SELINUX_LIB_FLAG}"
+   CFLAGS="${CFLAGS} -I${sepol_srcdir}/../include ${SELINUX_LIB_FLAG}"
    AC_TRY_RUN([#include <sepol/policydb/policydb.h>
 #include <stdlib.h>
    int main(void) { exit(0); }],,
        AC_MSG_ERROR([could not find sepol source tree]))
    CFLAGS="${sepol_src_save_CFLAGS}"
-   if test ! -f "${sepol_srcdir}/src/libsepol.a"; then
+   if test ! -f "${sepol_srcdir}/libsepol.a"; then
       AC_MSG_ERROR([could not find precompiled libsepol.a])
    fi
-   sepol_devel_incdir="${sepol_srcdir}/include"
+   sepol_devel_incdir="${sepol_srcdir}/../include"
    AC_MSG_RESULT(yes)
 fi
 SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
