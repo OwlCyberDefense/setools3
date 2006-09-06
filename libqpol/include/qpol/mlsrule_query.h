@@ -1,7 +1,7 @@
 /**
  *  @file mlsrule_query.h
- *  Defines the public interface for searching and iterating over 
- *  range transition rules. 
+ *  Defines the public interface for searching and iterating over
+ *  range transition rules.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -69,6 +69,18 @@ extern int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t
  *  errno will be set and *target will be NULL.
  */
 extern int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **target);
+
+/**
+ *  Get the target class from a range transition rule.
+ *  @param handle Error handler for the policy database.
+ *  @param policy Policy from which the rule comes.
+ *  @param rule The rule from which to get the target class.
+ *  @param target Pointer in which to store the target class.
+ *  The caller should not free this pointer.
+ *  @returm 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *target will be NULL.
+ */
+extern int qpol_range_trans_get_target_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_class_t **target);
 
 /**
  *  Get the range from a range transition rule.

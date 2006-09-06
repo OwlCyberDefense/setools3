@@ -226,6 +226,7 @@ char *apol_range_trans_render(apol_policy_t *policy, qpol_range_trans_t *rule)
 	int error = 0;
 	size_t tmp_sz = 0;
 	qpol_type_t *type = NULL;
+	qpol_class_t *target_class = NULL;
 	qpol_mls_range_t *range = NULL;
 	apol_mls_range_t *arange = NULL;
 
@@ -237,52 +238,38 @@ char *apol_range_trans_render(apol_policy_t *policy, qpol_range_trans_t *rule)
 
 	/* range_transition */
 	if (apol_str_append(&tmp, &tmp_sz, "range_transition ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+		error = errno;
+		ERR(policy, "%s", strerror(error));
 		return NULL;
 	}
 
 	/* source type */
-	if (qpol_range_trans_get_source_type(policy->qh, policy->p, rule, &type)) {
+	if (qpol_range_trans_get_source_type(policy->qh, policy->p, rule, &type) ||
+	    qpol_type_get_name(policy->qh, policy->p, type, &tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
 		goto err;
 	}
 
 	/* target type */
-	if (qpol_range_trans_get_target_type(policy->qh, policy->p, rule, &type)) {
+	if (qpol_range_trans_get_target_type(policy->qh, policy->p, rule, &type) ||
+	    qpol_type_get_name(policy->qh, policy->p, type, &tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, " : ")) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+
+	/* target class */
+	if (qpol_range_trans_get_target_class(policy->qh, policy->p, rule, &target_class) ||
+	    qpol_class_get_name(policy->qh, policy->p, target_class, &tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
 		goto err;
 	}
 
@@ -303,18 +290,14 @@ char *apol_range_trans_render(apol_policy_t *policy, qpol_range_trans_t *rule)
 		goto err;
 	}
 	apol_mls_range_destroy(&arange);
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, ";")) {
+		free(tmp_name);
+		error = errno;
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-
-	if (apol_str_append(&tmp, &tmp_sz, ";")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-
+	free(tmp_name);
 	return tmp;
 
 err:

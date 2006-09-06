@@ -159,14 +159,14 @@ proc Apol_Range::searchRanges {} {
 
 proc Apol_Range::renderRangeTrans {rule} {
     variable widgets
-    foreach {source_set target_set range} $rule {
+    foreach {source_set target_set target_class range} $rule {
         if {[llength $source_set] > 1} {
             set source_set "\{ $source_set \}"
         }
         if {[llength $target_set] > 1} {
             set target_set "\{ $target_set \}"
         }
-        set text "$source_set $target_set "
+        set text "$source_set $target_set : $target_class "
         set low [apol_RenderLevel [lindex $range 0]]
         set high [apol_RenderLevel [lindex $range 1]]
         if {$low == $high} {

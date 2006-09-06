@@ -144,15 +144,12 @@ int declare_symbol(uint32_t symbol_type,
 	retval = symtab_insert(policydbp, symbol_type, key, datum,
 			       SCOPE_DECL, decl->decl_id, dest_value);
 	if (retval == 1) {
-		/* because C has no polymorphism, make the
-		 * [outrageous] assumption that the first field of all
-		 * symbol table data is a uint32_t representing its
-		 * value */
-		uint32_t *v =
-		    (uint32_t *) hashtab_search(policydbp->symtab[symbol_type].
-						table, key);
-		assert(v != NULL);
-		*dest_value = *v;
+		symtab_datum_t *s =
+		    (symtab_datum_t *) hashtab_search(policydbp->
+						      symtab[symbol_type].table,
+						      key);
+		assert(s != NULL);
+		*dest_value = s->value;
 	} else if (retval == -2) {
 		return -2;
 	} else if (retval < 0) {
@@ -501,15 +498,12 @@ int require_symbol(uint32_t symbol_type,
 	retval = symtab_insert(policydbp, symbol_type, key, datum,
 			       SCOPE_REQ, decl->decl_id, dest_value);
 	if (retval == 1) {
-		/* because C has no polymorphism, make the
-		 * [outrageous] assumption that the first field of all
-		 * symbol table data is a uint32_t representing its
-		 * value */
-		uint32_t *v =
-		    (uint32_t *) hashtab_search(policydbp->symtab[symbol_type].
-						table, key);
-		assert(v != NULL);
-		*dest_value = *v;
+		symtab_datum_t *s =
+		    (symtab_datum_t *) hashtab_search(policydbp->
+						      symtab[symbol_type].table,
+						      key);
+		assert(s != NULL);
+		*dest_value = s->value;
 	} else if (retval == -2) {
 		/* ignore require statements if that symbol was
 		 * previously declared and is in current scope */
@@ -1033,7 +1027,8 @@ int is_perm_in_scope(hashtab_key_t perm_id, hashtab_key_t class_id)
 	if (perdatum == NULL) {
 		return 1;
 	}
-	return is_perm_in_stack(perdatum->s.value, cladatum->s.value, stack_top);
+	return is_perm_in_stack(perdatum->s.value, cladatum->s.value,
+				stack_top);
 }
 
 cond_list_t *get_current_cond_list(cond_list_t * cond)
@@ -1110,6 +1105,18 @@ void append_role_allow(role_allow_rule_t * role_allow_rules)
 
 	role_allow_rules->next = decl->role_allow_rules;
 	decl->role_allow_rules = role_allow_rules;
+}
+
+/* this doesn't actually append, but really prepends it */
+void append_range_trans(range_trans_rule_t * range_tr_rules)
+{
+	avrule_decl_t *decl = stack_top->decl;
+
+	/* range transitions are not allowed within conditionals */
+	assert(stack_top->type == 1);
+
+	range_tr_rules->next = decl->range_tr_rules;
+	decl->range_tr_rules = range_tr_rules;
 }
 
 int begin_optional(int pass)

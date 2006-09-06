@@ -1,6 +1,6 @@
 /**
  *  @file mlsrule_query.c
- *  Implementation for the public interface for searching and iterating over 
+ *  Implementation for the public interface for searching and iterating over
  *  range transition rules.
  *
  *  @author Kevin Carr kcarr@tresys.com
@@ -155,7 +155,7 @@ int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t *polic
 	db = &policy->p->p;
 	rt = (range_trans_t*)rule;
 
-	*source = (qpol_type_t*)db->type_val_to_struct[rt->dom - 1];
+	*source = (qpol_type_t*)db->type_val_to_struct[rt->source_type - 1];
 
 	return STATUS_SUCCESS;
 }
@@ -178,7 +178,30 @@ int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *polic
 	db = &policy->p->p;
 	rt = (range_trans_t*)rule;
 
-	*target = (qpol_type_t*)db->type_val_to_struct[rt->type - 1];
+	*target = (qpol_type_t*)db->type_val_to_struct[rt->target_type - 1];
+
+	return STATUS_SUCCESS;
+}
+
+int qpol_range_trans_get_target_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_class_t **target)
+{
+	policydb_t *db = NULL;
+	range_trans_t *rt = NULL;
+
+	if (target) {
+		*target = NULL;
+	}
+
+	if (!handle || !policy || !rule || !target) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p->p;
+	rt = (range_trans_t*)rule;
+
+	*target = (qpol_class_t*)db->class_val_to_struct[rt->target_class - 1];
 
 	return STATUS_SUCCESS;
 }
@@ -201,8 +224,7 @@ int qpol_range_trans_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	db = &policy->p->p;
 	rt = (range_trans_t*)rule;
 
-	*range = (qpol_mls_range_t*)&rt->range;
+	*range = (qpol_mls_range_t*)&rt->target_range;
 
 	return STATUS_SUCCESS;
 }
-

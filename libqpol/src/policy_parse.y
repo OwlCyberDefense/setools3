@@ -48,9 +48,9 @@
 #include <sepol/policydb/conditional.h>
 #include <sepol/policydb/flask.h>
 #include <sepol/policydb/hierarchy.h>
+#include "queue.h"
 #include <qpol/policy.h>
 #include "module_compiler.h"
-#include "queue.h"
 
 /* 
  * We need the following so we have a valid error return code in yacc
@@ -115,7 +115,7 @@ static int define_role_types(void);
 static role_datum_t *merge_roles_dom(role_datum_t *r1,role_datum_t *r2);
 static role_datum_t *define_role_dom(role_datum_t *r);
 static int define_role_trans(void);
-static int define_range_trans(void);
+static int define_range_trans(int class_specified);
 static int define_role_allow(void);
 static int define_constraint(constraint_expr_t *expr);
 static int define_mls(void);
@@ -451,7 +451,9 @@ transition_def		: TYPE_TRANSITION names names ':' names identifier ';'
                         {if (define_compute_type(AVRULE_CHANGE)) return -1;}
     			;
 range_trans_def		: RANGE_TRANSITION names names mls_range_def ';'
-			{ if (define_range_trans()) return -1; }
+			{ if (define_range_trans(0)) return -1; }
+			| RANGE_TRANSITION names names ':' names mls_range_def ';'
+			{ if (define_range_trans(1)) return -1; }
 			;
 te_avtab_def		: allow_def
 			| auditallow_def
@@ -3780,6 +3782,65 @@ parse_categories(char *id, level_datum_t * levdatum, ebitmap_t * cats)
 	return 0;
 }
 
+static int
+parse_semantic_categories(char *id, level_datum_t * levdatum,
+                          mls_semantic_cat_t ** cats)
+{
+	cat_datum_t *cdatum;
+	mls_semantic_cat_t *newcat;
+	unsigned int range_start, range_end;
+
+	if (id_has_dot(id)) {
+		char *id_start = id;
+		char *id_end = strchr(id, '.');
+
+		*(id_end++) = '\0';
+
+		cdatum = (cat_datum_t *) hashtab_search(policydbp->p_cats.table,
+							(hashtab_key_t)
+							id_start);
+		if (!cdatum) {
+			sprintf(errormsg, "unknown category %s", id_start);
+			yyerror(errormsg);
+			return -1;
+		}
+		range_start = cdatum->s.value;
+
+		cdatum = (cat_datum_t *) hashtab_search(policydbp->p_cats.table,
+							(hashtab_key_t) id_end);
+		if (!cdatum) {
+			sprintf(errormsg, "unknown category %s", id_end);
+			yyerror(errormsg);
+			return -1;
+		}
+		range_end = cdatum->s.value;
+	} else {
+		cdatum = (cat_datum_t *) hashtab_search(policydbp->p_cats.table,
+							(hashtab_key_t) id);
+		if (!cdatum) {
+			sprintf(errormsg, "unknown category %s", id);
+			yyerror(errormsg);
+			return -1;
+		}
+		range_start = range_end = cdatum->s.value;
+	}
+
+	newcat = (mls_semantic_cat_t *) malloc(sizeof(mls_semantic_cat_t));
+	if (!newcat) {
+		yyerror("out of memory");
+		return -1;
+	}
+
+	mls_semantic_cat_init(newcat);
+	newcat->next = *cats;
+	newcat->low = range_start;
+	newcat->high = range_end;
+
+	*cats = newcat;
+
+	return 0;
+}
+
 static int define_user(void)
 {
 	char *id;
@@ -3842,11 +3903,10 @@ static int define_user(void)
 		free(id);
 
 		usrdatum->dfltlevel.sens = levdatum->level->sens;
-		ebitmap_init(&usrdatum->dfltlevel.cat);
 
 		while ((id = queue_remove(id_queue))) {
-			if (parse_categories(id, levdatum,
-					     &usrdatum->dfltlevel.cat)) {
+			if (parse_semantic_categories(id, levdatum,
+			                            &usrdatum->dfltlevel.cat)) {
 				free(id);
 				return -1;
 			}
@@ -3868,13 +3928,12 @@ static int define_user(void)
 				return -1;
 			}
 			free(id);
+
 			usrdatum->range.level[l].sens = levdatum->level->sens;
-			ebitmap_init(&usrdatum->range.level[l].cat);
 
 			while ((id = queue_remove(id_queue))) {
-				if (parse_categories(id, levdatum,
-						     &usrdatum->range.level[l].
-						     cat)) {
+				if (parse_semantic_categories(id, levdatum,
+				               &usrdatum->range.level[l].cat)) {
 					free(id);
 					return -1;
 				}
@@ -3887,33 +3946,14 @@ static int define_user(void)
 		}
 
 		if (l == 0) {
-			usrdatum->range.level[1].sens =
-			    usrdatum->range.level[0].sens;
-			if (ebitmap_cpy(&usrdatum->range.level[1].cat,
-					&usrdatum->range.level[0].cat)) {
+			if (mls_semantic_level_cpy(&usrdatum->range.level[1],
+			                           &usrdatum->range.level[0])) {
 				yyerror("out of memory");
-				goto out;
+				return -1;
 			}
-		}
-		if (!mls_level_dom(&usrdatum->range.level[1],
-				   &usrdatum->range.level[0])) {
-			yyerror("high level does not dominate low level");
-			goto out;
-		}
-		if (!mls_level_between(&usrdatum->dfltlevel,
-				       &usrdatum->range.level[0],
-				       &usrdatum->range.level[1])) {
-			yyerror("default level not within user range");
-			goto out;
 		}
 	}
 	return 0;
-
-      out:
-	ebitmap_destroy(&usrdatum->dfltlevel.cat);
-	ebitmap_destroy(&usrdatum->range.level[0].cat);
-	ebitmap_destroy(&usrdatum->range.level[1].cat);
-	return -1;
 }
 
 static int parse_security_context(context_struct_t * c)
@@ -4647,15 +4687,12 @@ static int define_genfs_context(int has_type)
 	return define_genfs_context_helper(queue_remove(id_queue), has_type);
 }
 
-static int define_range_trans(void)
+static int define_range_trans(int class_specified)
 {
 	char *id;
 	level_datum_t *levdatum = 0;
-	mls_range_t range;
-	type_set_t doms, types;
-	ebitmap_node_t *snode, *tnode;
-	range_trans_t *rt = 0;
-	unsigned int i, j;
+	class_datum_t *cladatum;
+	range_trans_rule_t *rule;
 	int l, add = 1;
 
 	if (!mlspol) {
@@ -4668,6 +4705,9 @@ static int define_range_trans(void)
 			free(id);
 		while ((id = queue_remove(id_queue)))
 			free(id);
+		if (class_specified)
+			while ((id = queue_remove(id_queue)))
+				free(id);
 		id = queue_remove(id_queue);
 		free(id);
 		for (l = 0; l < 2; l++) {
@@ -4682,43 +4722,79 @@ static int define_range_trans(void)
 		return 0;
 	}
 
-	type_set_init(&doms);
-	type_set_init(&types);
+	rule = malloc(sizeof(struct range_trans_rule));
+	if (!rule) {
+		yyerror("out of memory");
+		return -1;
+	}
+	range_trans_rule_init(rule);
 
 	while ((id = queue_remove(id_queue))) {
-		if (set_types(&doms, id, &add, 0))
-			return -1;
+		if (set_types(&rule->stypes, id, &add, 0))
+			goto out;
 	}
 	add = 1;
 	while ((id = queue_remove(id_queue))) {
-		if (set_types(&types, id, &add, 0))
-			return -1;
+		if (set_types(&rule->ttypes, id, &add, 0))
+			goto out;
+	}
+
+	if (class_specified) {
+		while ((id = queue_remove(id_queue))) {
+			if (!is_id_in_scope(SYM_CLASSES, id)) {
+				yyerror2("class %s is not within scope", id);
+				free(id);
+				goto out;
+			}
+			cladatum = hashtab_search(policydbp->p_classes.table,
+			                          id);
+			if (!cladatum) {
+				sprintf(errormsg, "unknown class %s", id);
+				yyerror(errormsg);
+				goto out;
+			}
+
+			ebitmap_set_bit(&rule->tclasses, cladatum->s.value - 1,
+			                TRUE);
+			free(id);
+		}
+	} else {
+		cladatum = hashtab_search(policydbp->p_classes.table,
+		                          "process");
+		if (!cladatum) {
+			sprintf(errormsg, "could not find process class for "
+			        "legacy range_transition statement\n");
+			yyerror(errormsg);
+			goto out;
+		}
+
+		ebitmap_set_bit(&rule->tclasses, cladatum->s.value - 1, TRUE);
 	}
 
 	id = (char *)queue_remove(id_queue);
 	if (!id) {
 		yyerror("no range in range_transition definition?");
-		return -1;
+		goto out;
 	}
 	for (l = 0; l < 2; l++) {
 		levdatum = hashtab_search(policydbp->p_levels.table, id);
 		if (!levdatum) {
 			sprintf(errormsg,
-				"unknown level %s used in range_transition definition",
-				id);
+				"unknown level %s used in range_transition "
+			        "definition", id);
 			yyerror(errormsg);
 			free(id);
-			return -1;
+			goto out;
 		}
 		free(id);
-		range.level[l].sens = levdatum->level->sens;
 
-		ebitmap_init(&range.level[l].cat);
+		rule->trange.level[l].sens = levdatum->level->sens;
 
 		while ((id = queue_remove(id_queue))) {
-			if (parse_categories(id, levdatum, &range.level[l].cat)) {
+			if (parse_semantic_categories(id, levdatum,
+			                          &rule->trange.level[l].cat)) {
 				free(id);
-				return -1;
+				goto out;
 			}
 			free(id);
 		}
@@ -4728,73 +4804,19 @@ static int define_range_trans(void)
 			break;
 	}
 	if (l == 0) {
-		range.level[1].sens = range.level[0].sens;
-		if (ebitmap_cpy(&range.level[1].cat, &range.level[0].cat)) {
+		if (mls_semantic_level_cpy(&rule->trange.level[1],
+		                           &rule->trange.level[0])) {
 			yyerror("out of memory");
-			return -1;
+			goto out;
 		}
 	}
 
-	if (!mls_level_dom(&range.level[1], &range.level[0])) {
-		yyerror
-		    ("range_transition high level does not dominate low level");
-		return -1;
-	}
-
-	/* FIXME: this expands type_sets at compile time which is inappropriate, the type_sets
-	 * should be stored which is a format change */
-	ebitmap_for_each_bit(&doms.types, snode, i) {
-		if (!ebitmap_node_get_bit(snode, i))
-			continue;
-		ebitmap_for_each_bit(&types.types, tnode, j) {
-			if (!ebitmap_node_get_bit(tnode, j))
-				continue;
-
-			for (rt = policydbp->range_tr; rt; rt = rt->next) {
-				if (rt->dom == (i + 1) && rt->type == (j + 1)) {
-					sprintf(errormsg,
-						"duplicate range_transition defined for (%s,%s)",
-						policydbp->
-						p_type_val_to_name[i],
-						policydbp->
-						p_type_val_to_name[j]);
-					yyerror(errormsg);
-					return -1;
-				}
-			}
-
-			rt = malloc(sizeof(range_trans_t));
-			if (!rt) {
-				yyerror("out of memory");
-				return -1;
-			}
-			memset(rt, 0, sizeof(range_trans_t));
-			rt->dom = i + 1;
-			rt->type = j + 1;
-			rt->range.level[0].sens = range.level[0].sens;
-			if (ebitmap_cpy(&rt->range.level[0].cat,
-					&range.level[0].cat)) {
-				yyerror("out of memory");
-				free(rt);
-				return -1;
-			}
-			rt->range.level[1].sens = range.level[1].sens;
-			if (ebitmap_cpy(&rt->range.level[1].cat,
-					&range.level[1].cat)) {
-				yyerror("out of memory");
-				free(rt);
-				return -1;
-			}
-			rt->next = policydbp->range_tr;
-			policydbp->range_tr = rt;
-		}
-	}
-
-	type_set_destroy(&doms);
-	type_set_destroy(&types);
-	ebitmap_destroy(&range.level[0].cat);
-	ebitmap_destroy(&range.level[1].cat);
+	append_range_trans(rule);
 	return 0;
+
+out:
+	range_trans_rule_destroy(rule);
+	return -1;
 }
 
 
