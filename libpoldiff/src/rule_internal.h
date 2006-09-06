@@ -26,27 +26,28 @@
 #ifndef POLDIFF_RULE_INTERNAL_H
 #define POLDIFF_RULE_INTERNAL_H
 
-/******************** avrule diffs ********************/
-
-typedef struct poldiff_avrule_summary poldiff_avrule_summary_t;
+typedef struct poldiff_rule_summary poldiff_rule_summary_t;
 
 /**
- * Allocate and return a new poldiff_avrule_summary_t object.
+ * Allocate and return a new poldiff_rule_summary_t object, used by
+ * both AV and TE rule searches.
  *
- * @return A new av rule summary.  The caller must call
- * avrule_destroy() afterwards.  On error, return NULL and set errno.
+ * @return A new rule summary.  The caller must call rule_destroy()
+ * afterwards.  On error, return NULL and set errno.
  */
-poldiff_avrule_summary_t *avrule_create(void);
+poldiff_rule_summary_t *rule_create(void);
 
 /**
- * Deallocate all space associated with a poldiff_avrule_summary_t
+ * Deallocate all space associated with a poldiff_rule_summary_t
  * object, including the pointer itself.  If the pointer is already
  * NULL then do nothing.
  *
- * @param as Reference to an avrule summary to destroy.  The pointer
+ * @param rs Reference to an rule summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void avrule_destroy(poldiff_avrule_summary_t **as);
+void rule_destroy(poldiff_rule_summary_t **rs);
+
+/******************** avrule diffs ********************/
 
 /**
  * Get a vector of all avrule from the given policy, sorted.  This

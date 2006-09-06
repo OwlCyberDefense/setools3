@@ -244,7 +244,7 @@ extern int apol_str_trim(char **str);
  * afterwards).
  * @param str String to append.
  *
- * @return 0 on success, < 0 on out of memory or error.
+ * @return 0 on success, < 0 on error and errno will be set.
  */
 extern int apol_str_append(char **tgt, size_t *tgt_sz, const char *str);
 

@@ -169,7 +169,7 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	}
 
 	//TODO: allocate and initialize fields here
-	if ((diff->avrule_diffs = avrule_create()) == NULL ||
+	if ((diff->rule_diffs = rule_create()) == NULL ||
 	    (diff->bool_diffs = bool_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
 	    (diff->common_diffs = common_create()) == NULL ||
@@ -193,7 +193,7 @@ void poldiff_destroy(poldiff_t **diff)
 	apol_policy_destroy(&(*diff)->mod_pol);
 	type_map_destroy(&(*diff)->type_map);
 	//TODO: free stuff here
-	avrule_destroy(&(*diff)->avrule_diffs);
+	rule_destroy(&(*diff)->rule_diffs);
 	bool_destroy(&(*diff)->bool_diffs);
 	class_destroy(&(*diff)->class_diffs);
 	common_destroy(&(*diff)->common_diffs);
