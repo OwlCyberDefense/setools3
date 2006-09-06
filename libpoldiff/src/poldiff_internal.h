@@ -48,8 +48,7 @@ struct poldiff_bool_summary;
 struct poldiff_cond_summary;
 /*struct poldiff_sens_summary;*/
 /*struct poldiff_cat_summary;*/
-struct poldiff_avrule_summary;
-struct poldiff_terule_summary;
+struct poldiff_rule_summary;
 struct poldiff_role_allow_summary;
 struct poldiff_role_trans_summary;
 /*struct range_trans_summary;*/
@@ -72,8 +71,7 @@ struct poldiff {
 	struct poldiff_cond_summary *cond_diffs;
 /*	struct poldiff_sens_summary *sens_diffs;*/
 /*	struct poldiff_cat_summary *cat_diffs;*/
-	struct poldiff_avrule_summary *avrule_diffs;
-	struct poldiff_terule_summary *terule_diffs;
+	struct poldiff_rule_summary *rule_diffs;
 	struct poldiff_role_allow_summary *role_allow_diffs;
 	struct poldiff_role_trans_summary *role_trans_diffs;
 /*	struct poldiff_range_trans_summary *range_trans_diffs;*/

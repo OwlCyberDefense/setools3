@@ -54,7 +54,7 @@ AC_ARG_ENABLE(debug,
               enable_debug="$enableval")
 AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
-    DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall"
+    DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall -DSETOOLS_DEBUG=1"
     DEBUGLDFLAGS="-g"
     AC_SUBST(DEBUGCFLAGS)
     AC_SUBST(DEBUGLDFLAGS)
