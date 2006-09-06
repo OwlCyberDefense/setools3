@@ -55,7 +55,7 @@ libqpol_a_LIBADD = $(tmp_sepol)/*.o
 libqpol_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libqpol_a_SOURCES))) policy_parse.o policy_scan.o
 LIBQPOL_SONAME = @libqpol_soname@
 
-dist_noinst_DATA = libqpol.map libsepol.a
+dist_noinst_DATA = libqpol.map
 
 $(tmp_sepol): $(sepol_srcdir)/src/libsepol.a
 	mkdir -p $@
