@@ -1,9 +1,11 @@
-
-/*
+/**
+ * @file policy_parse.y
+ *
+ * This file is based upon checkpolicy/policy_parse.y fram NSA's SVN
+ * repository.  It has been modified to support older policy formats.
+ *
  * Author : Stephen Smalley, <sds@epoch.ncsc.mil> 
- */
-
-/*
+ *
  * Updated: Trusted Computer Solutions, Inc. <dgoeddel@trustedcs.com>
  *
  *	Support for enhanced MLS infrastructure.
@@ -61,7 +63,8 @@ static avrule_t *conditional_unused_error_code;
 #define TRUE 1
 #define FALSE 0
 
-/* this will need to be put in libsepol ? */
+/** parser used to support fs_use_psid declarations, so revert that bit
+ *  of code here */
 #define SECURITY_FS_USE_PSIDS 6
 
 policydb_t *policydbp;
@@ -87,7 +90,6 @@ extern int yyerror(char *msg);
 extern char qpol_src_input[];
 extern char *qpol_src_inputptr;/* current position in qpol_src_input */
 extern char *qpol_src_inputlim;/* end of data */
-
 
 #define ERRORMSG_LEN 255
 static char errormsg[ERRORMSG_LEN + 1] = {0};
