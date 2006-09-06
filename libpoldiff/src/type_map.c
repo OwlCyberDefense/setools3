@@ -351,52 +351,57 @@ void type_map_destroy(type_map_t **map)
 	}
 }
 
+/**
+ * If --enable-debug is given, then dump to stdout the type map from
+ * policy's types -> pseudo-types.
+ */
 static void type_map_dump(poldiff_t *diff)
 {
-        return;
-        /*        size_t i, j;
-        apol_vector_t *v;
-        qpol_type_t *t;
-        char *name;
-        printf("# type map, debug dump:\norig:\n");
-        for (i = 0; i < diff->type_map->num_orig_types; i++) {
-                printf("%3d:%5d", i, diff->type_map->orig_to_pseudo[i]);
-                if ((i + 1) % 5 == 0) {
-                        printf("\n");
-                }
-                else {
-                        printf("\t");
-                }
-        }
-        for (i = 0; i < apol_vector_get_size (diff->type_map->pseudo_to_orig); i++) {
-                v = apol_vector_get_element (diff->type_map->pseudo_to_orig, i);
-                printf("\n%3d->", i);
-                for (j = 0; j < apol_vector_get_size (v); j++) {
-                        t = apol_vector_get_element (v, j);
-                        qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, t, &name);
-                        printf (" %s", name);
-                }
-        }
-        printf("\nmod:\n");
-        for (i = 0; i < diff->type_map->num_mod_types; i++) {
-                printf("%3d:%5d", i, diff->type_map->mod_to_pseudo[i]);
-                if ((i + 1) % 5 == 0) {
-                        printf("\n");
-                }
-                else {
-                        printf("\t");
-                }
-        }
-        for (i = 0; i < apol_vector_get_size (diff->type_map->pseudo_to_mod); i++) {
-                v = apol_vector_get_element (diff->type_map->pseudo_to_mod, i);
-                printf("\n%3d->", i);
-                for (j = 0; j < apol_vector_get_size (v); j++) {
-                        t = apol_vector_get_element (v, j);
-                        qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, t, &name);
-                        printf (" %s", name);
-                }
-        }
-        printf("\n"); */
+#ifdef SETOOLS_DEBUG
+	size_t i, j;
+	apol_vector_t *v;
+	qpol_type_t *t;
+	char *name;
+	printf("# type map debug dump (qpol_type_t -> pseudo-type):\norig:\n");
+	for (i = 0; i < diff->type_map->num_orig_types; i++) {
+		printf("%3d:%5d", i, diff->type_map->orig_to_pseudo[i]);
+		if ((i + 1) % 5 == 0) {
+			printf("\n");
+		}
+		else {
+			printf("\t");
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(diff->type_map->pseudo_to_orig); i++) {
+		v = apol_vector_get_element(diff->type_map->pseudo_to_orig, i);
+		printf("\n%3d->", i);
+		for (j = 0; j < apol_vector_get_size(v); j++) {
+			t = apol_vector_get_element(v, j);
+			qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, t, &name);
+			printf(" %s", name);
+		}
+	}
+	printf("\nmod:\n");
+	for (i = 0; i < diff->type_map->num_mod_types; i++) {
+		printf("%3d:%5d", i, diff->type_map->mod_to_pseudo[i]);
+		if ((i + 1) % 5 == 0) {
+			printf("\n");
+		}
+		else {
+			printf("\t");
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(diff->type_map->pseudo_to_mod); i++) {
+		v = apol_vector_get_element(diff->type_map->pseudo_to_mod, i);
+		printf("\n%3d->", i);
+		for (j = 0; j < apol_vector_get_size(v); j++) {
+			t = apol_vector_get_element(v, j);
+			qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, t, &name);
+			printf(" %s", name);
+		}
+	}
+	printf("\n");
+#endif
 }
 
 int type_map_build(poldiff_t *diff)
@@ -786,14 +791,18 @@ static int type_map_prim_aliases_comp(const void *a, const void *b, void *data)
 	return retval;
 }
 
+/**
+ * If --enable-debug is given, then dump to stdout the type-map from
+ * pseudo-types to the policy's type(s).
+ */
 static void type_remap_vector_dump(poldiff_t *diff)
 {
-    return;
-    /*	apol_vector_t *v, *w;
+#ifdef SETOOLS_DEBUG
+	apol_vector_t *v, *w;
 	size_t i, j;
 	poldiff_type_remap_entry_t *e;
 	char *name;
-	printf("# type remap vector, debug dump:\n");
+	printf("# type remap vector debug dump (pseudo-type -> qpol_type_t(s):\n");
 	v = poldiff_type_remap_get_entries(diff);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		e = apol_vector_get_element(v, i);
@@ -812,7 +821,8 @@ static void type_remap_vector_dump(poldiff_t *diff)
 		}
 		apol_vector_destroy(&w, NULL);
 		printf("\n");
-                } */
+	}
+#endif
 }
 
 int type_map_infer(poldiff_t *diff)

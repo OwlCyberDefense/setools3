@@ -113,7 +113,7 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 	qpol_cond_expr_node_t *expr = NULL;
 	char *tmp = NULL, *bool_name = NULL;
 	int error = 0;
-	size_t tmp_sz = 0;
+	size_t tmp_sz = 0, i;
 	uint32_t expr_type = 0;
 	qpol_bool_t *cond_bool = NULL;
 
@@ -136,8 +136,8 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 		}
 		if (expr_type != QPOL_COND_EXPR_BOOL) {
 			if (apol_str_append(&tmp, &tmp_sz, apol_cond_expr_type_to_str(expr_type))) {
-				ERR(p, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+				error = errno;
+				ERR(p, "%s", strerror(error));
 				goto err;
 			}
 		} else {
@@ -152,18 +152,23 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 				goto err;
 			}
 			if (apol_str_append(&tmp, &tmp_sz, bool_name)) {
-				ERR(p, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+				error = errno;
+				ERR(p, "%s", strerror(error));
 				goto err;
 			}
 		}
 		if (apol_str_append(&tmp, &tmp_sz, " ")) {
-			ERR(p, "%s", strerror(ENOMEM));
-			error = ENOMEM;
+                        error = errno;
+			ERR(p, "%s", strerror(error));
 			goto err;
 		}
 	}
 
+	/* remove trailing space */
+	i = strlen(tmp);
+	if (i > 1) {
+		tmp[i - 1] = '\0';
+	}
 	return tmp;
 
 err:

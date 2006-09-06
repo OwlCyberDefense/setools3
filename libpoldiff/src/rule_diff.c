@@ -37,14 +37,17 @@
 #include <stdio.h>
 #include <string.h>
 
-struct poldiff_avrule_summary {
-	size_t num_added;
-	size_t num_removed;
-	size_t num_modified;
-	size_t num_added_type;
-	size_t num_removed_type;
-	int diffs_sorted;
-	apol_vector_t *diffs;
+struct poldiff_rule_summary {
+	size_t num_added_av, num_added_te;
+	size_t num_removed_av, num_removed_te;
+	size_t num_modified_av, num_modified_te;
+	size_t num_added_type_av, num_added_type_te;
+	size_t num_removed_type_av, num_removed_type_te;
+	int diffs_sorted_av, diffs_sorted_te;
+	/** vector of poldiff_avrule_t */
+	apol_vector_t *diffs_av;
+	/** vector of poldiff_terule_t */
+	apol_vector_t *diffs_te;
 	/** BST of duplicated strings */
 	apol_bst_t *class_bst;
 	/** BST of duplicated strings */
@@ -55,14 +58,21 @@ struct poldiff_avrule_summary {
 
 struct poldiff_avrule {
 	uint32_t spec;
+	/* pointer into policy's symbol table */
 	char *source, *target;
 	/** the class string is pointer into the class_bst BST */
         char *cls;
 	poldiff_form_e form;
-	/** vector of pointers into the bool_bst BST (char *) */
+	/** vector of pointers into the perm_bst BST (char *) */
+	apol_vector_t *unmodified_perms;
+	/** vector of pointers into the perm_bst BST (char *) */
 	apol_vector_t *added_perms;
-	/** vector of pointers into the bool_bst BST (char *) */
+	/** vector of pointers into the perm_bst BST (char *) */
 	apol_vector_t *removed_perms;
+	/** pointer into policy's conditional list, needed to render
+	 * conditional expressions */
+	qpol_cond_t *cond;
+	uint32_t branch;
 };
 
 typedef struct pseudo_avrule {
@@ -77,6 +87,9 @@ typedef struct pseudo_avrule {
 	char *bools[5];
 	uint32_t bool_val;
 	uint32_t branch;
+	/** pointer into policy's conditional list, needed to render
+	 * conditional expressions */
+	qpol_cond_t *cond;
 } pseudo_avrule_t;
 
 void poldiff_avrule_get_stats(poldiff_t *diff, size_t stats[5])
@@ -86,18 +99,20 @@ void poldiff_avrule_get_stats(poldiff_t *diff, size_t stats[5])
 		errno = EINVAL;
 		return;
 	}
-	stats[0] = diff->avrule_diffs->num_added;
-	stats[1] = diff->avrule_diffs->num_removed;
-	stats[2] = diff->avrule_diffs->num_modified;
-	stats[3] = diff->avrule_diffs->num_added_type;
-	stats[4] = diff->avrule_diffs->num_removed_type;
+	stats[0] = diff->rule_diffs->num_added_av;
+	stats[1] = diff->rule_diffs->num_removed_av;
+	stats[2] = diff->rule_diffs->num_modified_av;
+	stats[3] = diff->rule_diffs->num_added_type_av;
+	stats[4] = diff->rule_diffs->num_removed_type_av;
 }
 
 char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 {
 	const poldiff_avrule_t *pa = (const poldiff_avrule_t *) avrule;
+	apol_policy_t *p;
 	const char *rule_type;
-	char *diff_char = "", *s = NULL, *t = NULL, *perm_name;
+	char *diff_char = "", *s = NULL, *t = NULL, *perm_name, *cond_expr = NULL;
+	qpol_iterator_t *cond_iter = NULL;
 	size_t i, len;
 	int error;
 	if (diff == NULL || avrule == NULL) {
@@ -109,15 +124,18 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 	case POLDIFF_FORM_ADDED:
 	case POLDIFF_FORM_ADD_TYPE: {
 		diff_char = "+";
+		p = diff->mod_pol;
 		break;
 	}
 	case POLDIFF_FORM_REMOVED:
 	case POLDIFF_FORM_REMOVE_TYPE: {
 		diff_char = "-";
+		p = diff->orig_pol;
 		break;
 	}
 	case POLDIFF_FORM_MODIFIED: {
 		diff_char = "*";
+		p = diff->orig_pol;
 		break;
 	}
 	default: {
@@ -134,11 +152,9 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 		goto err;
 	}
 	len = strlen(s);
-	for (i = 0; i < apol_vector_get_size(pa->added_perms); i++) {
-		perm_name = (char *) apol_vector_get_element(pa->added_perms, i);
-		if (asprintf(&t, " %s%s",
-			     (pa->form == POLDIFF_FORM_MODIFIED ? "+" : ""),
-			     perm_name) < 0) {
+	for (i = 0; pa->unmodified_perms != NULL && i < apol_vector_get_size(pa->unmodified_perms); i++) {
+		perm_name = (char *) apol_vector_get_element(pa->unmodified_perms, i);
+		if (asprintf(&t, " %s", perm_name) < 0) {
 			error = errno;
 			t = NULL;
 			goto err;
@@ -150,11 +166,23 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 		free(t);
 		t = NULL;
 	}
-	for (i = 0; i < apol_vector_get_size(pa->removed_perms); i++) {
+	for (i = 0; pa->added_perms != NULL && i < apol_vector_get_size(pa->added_perms); i++) {
+		perm_name = (char *) apol_vector_get_element(pa->added_perms, i);
+		if (asprintf(&t, " +%s", perm_name) < 0) {
+			error = errno;
+			t = NULL;
+			goto err;
+		}
+		if (apol_str_append(&s, &len, t) < 0) {
+			error = errno;
+			goto err;
+		}
+		free(t);
+		t = NULL;
+	}
+	for (i = 0; pa->removed_perms != NULL && i < apol_vector_get_size(pa->removed_perms); i++) {
 		perm_name = (char *) apol_vector_get_element(pa->removed_perms, i);
-		if (asprintf(&t, " %s%s",
-			     (pa->form == POLDIFF_FORM_MODIFIED ? "-" : ""),
-			     perm_name) < 0) {
+		if (asprintf(&t, " -%s", perm_name) < 0) {
 			error = errno;
 			t = NULL;
 			goto err;
@@ -170,11 +198,33 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 		error = errno;
 		goto err;
 	}
-/* FIX ME: print conditional and line number */
+	if (pa->cond != NULL) {
+		if (qpol_cond_get_expr_node_iter(p->qh, p->p, pa->cond, &cond_iter) < 0 ||
+		    (cond_expr = apol_cond_expr_render(p, cond_iter)) == NULL) {
+			error = errno;
+			goto err;
+		}
+		if (asprintf(&t, "  [%s]:%s", cond_expr,
+			     (pa->branch ? "TRUE" : "FALSE")) < 0) {
+			error = errno;
+			t = NULL;
+			goto err;
+		}
+		if (apol_str_append(&s, &len, t) < 0) {
+			error = errno;
+			goto err;
+		}
+		free(t);
+		t = NULL;
+		free(cond_expr);
+		qpol_iterator_destroy(&cond_iter);
+	}
 	return s;
  err:
 	free(s);
 	free(t);
+	free(cond_expr);
+	qpol_iterator_destroy(&cond_iter);
 	ERR(diff, "%s", strerror(error));
 	errno = error;
 	return NULL;
@@ -205,8 +255,11 @@ static int poldiff_avrule_cmp(const void *x, const void *y, void *data __attribu
 	if ((compval = strcmp(a->cls, b->cls)) != 0) {
 		return compval;
 	}
-	/* FIX ME: sort by conditional ? */
-	return 0;
+	if (a->cond != b->cond) {
+		return (char *) a->cond - (char *) b->cond;
+	}
+	/* sort true branch before false branch */
+	return b->branch - a->branch;
 }
 
 apol_vector_t *poldiff_get_avrule_vector(poldiff_t *diff)
@@ -215,11 +268,11 @@ apol_vector_t *poldiff_get_avrule_vector(poldiff_t *diff)
 		errno = EINVAL;
 		return NULL;
 	}
-	if (diff->avrule_diffs->diffs_sorted == 0) {
-		apol_vector_sort(diff->avrule_diffs->diffs, poldiff_avrule_cmp, NULL);
-		diff->avrule_diffs->diffs_sorted = 1;
+	if (diff->rule_diffs->diffs_sorted_av == 0) {
+		apol_vector_sort(diff->rule_diffs->diffs_av, poldiff_avrule_cmp, NULL);
+		diff->rule_diffs->diffs_sorted_av = 1;
 	}
-	return diff->avrule_diffs->diffs;
+	return diff->rule_diffs->diffs_av;
 }
 
 poldiff_form_e poldiff_avrule_get_form(const poldiff_avrule_t *avrule)
@@ -287,17 +340,18 @@ apol_vector_t *poldiff_avrule_get_removed_types(const poldiff_avrule_t *avrule)
 
 /*************** protected functions for roles ***************/
 
-poldiff_avrule_summary_t *avrule_create(void)
+poldiff_rule_summary_t *rule_create(void)
 {
-	poldiff_avrule_summary_t *as = calloc(1, sizeof(*as));
-	if (as == NULL) {
+	poldiff_rule_summary_t *rs = calloc(1, sizeof(*rs));
+	if (rs == NULL) {
 		return NULL;
 	}
-	if ((as->diffs = apol_vector_create()) == NULL) {
-		avrule_destroy(&as);
+	if ((rs->diffs_av = apol_vector_create()) == NULL ||
+	    (rs->diffs_te = apol_vector_create()) == NULL) {
+		rule_destroy(&rs);
 		return NULL;
 	}
-	return as;
+	return rs;
 }
 
 /**
@@ -310,23 +364,23 @@ static void poldiff_avrule_free(void *elem)
 {
 	if (elem != NULL) {
 		poldiff_avrule_t *a = (poldiff_avrule_t *) elem;
-		free(a->source);
-		free(a->target);
+		apol_vector_destroy(&a->unmodified_perms, NULL);
 		apol_vector_destroy(&a->added_perms, NULL);
 		apol_vector_destroy(&a->removed_perms, NULL);
 		free(a);
 	}
 }
 
-void avrule_destroy(poldiff_avrule_summary_t **as)
+void rule_destroy(poldiff_rule_summary_t **rs)
 {
-	if (as != NULL && *as != NULL) {
-		apol_vector_destroy(&(*as)->diffs, poldiff_avrule_free);
-		apol_bst_destroy(&(*as)->class_bst, free);
-		apol_bst_destroy(&(*as)->perm_bst, free);
-		apol_bst_destroy(&(*as)->bool_bst, free);
-		free(*as);
-		*as = NULL;
+	if (rs != NULL && *rs != NULL) {
+		apol_vector_destroy(&(*rs)->diffs_av, poldiff_avrule_free);
+		apol_vector_destroy(&(*rs)->diffs_te, NULL); /* FIX ME */
+		apol_bst_destroy(&(*rs)->class_bst, free);
+		apol_bst_destroy(&(*rs)->perm_bst, free);
+		apol_bst_destroy(&(*rs)->bool_bst, free);
+		free(*rs);
+		*rs = NULL;
 	}
 }
 
@@ -339,7 +393,7 @@ void avrule_destroy(poldiff_avrule_summary_t **as)
  *
  * @return 0 on success, < 0 on error.
  */
-static int avrule_build_bsts(poldiff_t *diff) {
+static int rule_build_bsts(poldiff_t *diff) {
 	apol_vector_t *classes[2] = {NULL, NULL};
 	apol_vector_t *perms[2] = {NULL, NULL};
 	apol_vector_t *bools[2] = {NULL, NULL};
@@ -348,9 +402,9 @@ static int avrule_build_bsts(poldiff_t *diff) {
 	qpol_bool_t *bool;
 	char *name, *new_name;
 	int retval = -1, error = 0;
-	if ((diff->avrule_diffs->class_bst = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (diff->avrule_diffs->perm_bst = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (diff->avrule_diffs->bool_bst = apol_bst_create(apol_str_strcmp)) == NULL) {
+	if ((diff->rule_diffs->class_bst = apol_bst_create(apol_str_strcmp)) == NULL ||
+	    (diff->rule_diffs->perm_bst = apol_bst_create(apol_str_strcmp)) == NULL ||
+	    (diff->rule_diffs->bool_bst = apol_bst_create(apol_str_strcmp)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -369,7 +423,7 @@ static int avrule_build_bsts(poldiff_t *diff) {
 				goto cleanup;
 			}
 			if ((new_name = strdup(name)) == NULL ||
-			    apol_bst_insert_and_get(diff->avrule_diffs->class_bst, (void **) &new_name, NULL, free) < 0) {
+			    apol_bst_insert_and_get(diff->rule_diffs->class_bst, (void **) &new_name, NULL, free) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -378,7 +432,7 @@ static int avrule_build_bsts(poldiff_t *diff) {
 		for (j = 0; j < apol_vector_get_size(perms[i]); j++) {
 			name = (char *) apol_vector_get_element(perms[i], j);
 			if ((new_name = strdup(name)) == NULL ||
-			    apol_bst_insert_and_get(diff->avrule_diffs->perm_bst, (void **) &new_name, NULL, free) < 0) {
+			    apol_bst_insert_and_get(diff->rule_diffs->perm_bst, (void **) &new_name, NULL, free) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -391,7 +445,7 @@ static int avrule_build_bsts(poldiff_t *diff) {
 				goto cleanup;
 			}
 			if ((new_name = strdup(name)) == NULL ||
-			    apol_bst_insert_and_get(diff->avrule_diffs->bool_bst, (void **) &new_name, NULL, free) < 0) {
+			    apol_bst_insert_and_get(diff->rule_diffs->bool_bst, (void **) &new_name, NULL, free) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -419,12 +473,16 @@ static int avrule_build_bsts(poldiff_t *diff) {
  * <li>Then by object class's BST's pointer value,
  * <li>Then by rule specified (allow, neverallow, etc.),
  * <li>Then choose unconditional rules over conditional rules,
- * <li>Then by conditional expression's BST's boolean pointer value,
- * <li>Then by truth value, inverting rule2's value if in the other branch.
- * <li>Otherwise the rules are the same.
+ * <li>Then by conditional expression's BST's boolean pointer value.
  * </ul>
+ *
+ * If this function is being used for sorting (via avrule_get_items())
+ * then sort by truth value, and then by branch (true branch, then
+ * false branch).  Otherwise, when comparing rules (via avrule_comp())
+ * then by truth value, inverting rule2's value if in the other
+ * branch.
  */
-static int pseudo_avrule_comp(poldiff_t *diff, pseudo_avrule_t *rule1, pseudo_avrule_t *rule2)
+static int pseudo_avrule_comp(pseudo_avrule_t *rule1, pseudo_avrule_t *rule2, int is_sorting)
 {
 	size_t i;
 	uint32_t bool_val;
@@ -457,21 +515,28 @@ static int pseudo_avrule_comp(poldiff_t *diff, pseudo_avrule_t *rule1, pseudo_av
 			return (int) (rule1->bools[i] - rule2->bools[i]);
 		}
 	}
-	if (rule1->branch == rule2->branch) {
-		bool_val = rule2->bool_val;
+	if (is_sorting) {
+		if (rule1->branch != rule2->branch) {
+			return rule1->branch - rule2->branch;
+		}
+		return (int) rule1->bool_val - (int) rule2->bool_val;
 	}
 	else {
-		bool_val = ~rule2->bool_val;
+		if (rule1->branch == rule2->branch) {
+			bool_val = rule2->bool_val;
+		}
+		else {
+			bool_val = ~rule2->bool_val;
+		}
+		return rule1->bool_val - bool_val;
 	}
-	return rule1->bool_val - bool_val;
 }
 
-static int avrule_bst_comp(const void *x, const void *y, void *data)
+static int avrule_bst_comp(const void *x, const void *y, void *data __attribute__((unused)))
 {
 	pseudo_avrule_t *r1 = (pseudo_avrule_t *) x;
 	pseudo_avrule_t *r2 = (pseudo_avrule_t *) y;
-	poldiff_t *diff = (poldiff_t *) data;
-	return pseudo_avrule_comp(diff, r1, r2);
+	return pseudo_avrule_comp(r1, r2, 1);
 }
 
 /**
@@ -517,7 +582,7 @@ static int avrule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 				break;
 			}
 		}
-		if (i < num_bools) {
+		if (i >= num_bools) {
 			assert(num_bools < 4);
 			bools[i] = bool;
 			num_bools++;
@@ -528,7 +593,7 @@ static int avrule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_bst_get_element(diff->avrule_diffs->bool_bst, bool_name, NULL, (void **) &pseudo_bool) < 0) {
+		if (apol_bst_get_element(diff->rule_diffs->bool_bst, bool_name, NULL, (void **) &pseudo_bool) < 0) {
 			error = EBADRQC;  /* should never get here */
 			ERR(diff, "%s", strerror(error));
 			assert(0);
@@ -539,7 +604,7 @@ static int avrule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 
 	/* bubble sorth the pseudo bools (not bad because there are at
 	 * most five elements */
-	for (i = num_bools; i > 1; i++) {
+	for (i = num_bools; i > 1; i--) {
 		for (j = 1; j < i; j++) {
 			compval = strcmp(key->bools[j - 1], key->bools[j]);
 			if (compval > 0) {
@@ -577,13 +642,14 @@ static int avrule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 		key->bool_val = (key->bool_val << 1) | truthiness;
 	}
 
-	/* rostore old boolean states */
+	/* restore old boolean states */
 	for (i = 0; i < num_bools; i++) {
 		if (qpol_bool_set_state_no_eval(p->qh, p->p, bools[i], orig_states[i]) < 0) {
 			error = errno;
 			goto cleanup;
 		}
 	}
+	key->cond = cond;
 	retval = 0;
  cleanup:
 	qpol_iterator_destroy(&iter);
@@ -613,7 +679,7 @@ static int avrule_add_to_bst(poldiff_t *diff, apol_policy_t *p,
         char *class_name, *perm_name, *pseudo_perm;
 	size_t num_perms;
 	qpol_cond_t *cond;
-	int retval = -1, error, compval;
+	int retval = -1, error = 0, compval;
 	if ((key = calloc(1, sizeof(*key))) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -630,7 +696,7 @@ static int avrule_add_to_bst(poldiff_t *diff, apol_policy_t *p,
 		error = errno;
 		goto cleanup;
 	}
-	if (apol_bst_get_element(diff->avrule_diffs->class_bst, class_name, NULL, (void **) &key->cls) < 0) {
+	if (apol_bst_get_element(diff->rule_diffs->class_bst, class_name, NULL, (void **) &key->cls) < 0) {
 		error = EBADRQC;  /* should never get here */
 		ERR(diff, "%s", strerror(error));
 		assert(0);
@@ -670,7 +736,7 @@ static int avrule_add_to_bst(poldiff_t *diff, apol_policy_t *p,
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_bst_get_element(diff->avrule_diffs->perm_bst, perm_name, NULL, (void **) &pseudo_perm) < 0) {
+		if (apol_bst_get_element(diff->rule_diffs->perm_bst, perm_name, NULL, (void **) &pseudo_perm) < 0) {
 			error = EBADRQC;  /* should never get here */
 			ERR(diff, "%s", strerror(error));
 			assert(0);
@@ -781,8 +847,8 @@ apol_vector_t *avrule_get_items(poldiff_t *diff, apol_policy_t *policy)
 	qpol_iterator_t *iter = NULL;
 	qpol_avrule_t *rule;
 	int retval = -1, error = 0;
-	if (diff->avrule_diffs->class_bst == NULL &&
-	    avrule_build_bsts(diff) < 0) {
+	if (diff->rule_diffs->class_bst == NULL &&
+	    rule_build_bsts(diff) < 0) {
 		error = errno;
 		goto cleanup;
 	}
@@ -830,11 +896,11 @@ void avrule_free_item(void *item)
 	}
 }
 
-int avrule_comp(const void *x, const void *y, poldiff_t *diff)
+int avrule_comp(const void *x, const void *y, poldiff_t *diff __attribute__((unused)))
 {
 	pseudo_avrule_t *r1 = (pseudo_avrule_t *) x;
 	pseudo_avrule_t *r2 = (pseudo_avrule_t *) y;
-	return pseudo_avrule_comp(diff, r1, r2);
+	return pseudo_avrule_comp(r1, r2, 0);
 }
 
 /**
@@ -872,6 +938,8 @@ static poldiff_avrule_t *make_diff(poldiff_t *diff, poldiff_form_e form, pseudo_
 		assert(0);
 		return NULL;
 	}
+	/* only generate one missing rule, for the case where the type
+	 * map reverse lookup yielded multiple types */
 	t1 = apol_vector_get_element(v1, 0);
 	t2 = apol_vector_get_element(v2, 0);
 	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
@@ -886,20 +954,20 @@ static poldiff_avrule_t *make_diff(poldiff_t *diff, poldiff_form_e form, pseudo_
 			return NULL;
 		}
 	}
-	if ((pa = calloc(1, sizeof(*pa))) == NULL ||
-	    (pa->added_perms = apol_vector_create_with_capacity(4)) == NULL ||
-	    (pa->removed_perms = apol_vector_create_with_capacity(4)) == NULL ||
-	    (pa->source = strdup(n1)) == NULL ||
-	    (pa->target = strdup(n2)) == NULL) {
+	if ((pa = calloc(1, sizeof(*pa))) == NULL) {
 		error = errno;
 		poldiff_avrule_free(pa);
 		ERR(diff, "%s", strerror(error));
 		errno = error;
 		return NULL;
 	}
-	pa->cls = rule->cls;
 	pa->spec = rule->spec;
+	pa->source = n1;
+	pa->target = n2;
+	pa->cls = rule->cls;
 	pa->form = form;
+	pa->cond = rule->cond;
+	pa->branch = rule->branch;
 	return pa;
 }
 
@@ -938,36 +1006,29 @@ int avrule_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 	if (pa == NULL) {
 		return -1;
 	}
-	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
-		v1 = pa->added_perms;
-	}
-	else {
-		v1 = pa->removed_perms;
-	}
-	if (apol_vector_cat(v1, rule->perms) < 0) {
+        if ((pa->unmodified_perms = apol_vector_create_from_vector(rule->perms)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-	apol_vector_sort(v1, apol_str_strcmp, NULL);
 
-	if (apol_vector_append(diff->avrule_diffs->diffs, pa) < 0) {
+	if (apol_vector_append(diff->rule_diffs->diffs_av, pa) < 0) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-		diff->avrule_diffs->num_added++;
+		diff->rule_diffs->num_added_av++;
 		break;
 	case POLDIFF_FORM_ADD_TYPE:
-		diff->avrule_diffs->num_added_type++;
+		diff->rule_diffs->num_added_type_av++;
 		break;
 	case POLDIFF_FORM_REMOVED:
-		diff->avrule_diffs->num_removed++;
+		diff->rule_diffs->num_removed_av++;
 		break;
 	case POLDIFF_FORM_REMOVE_TYPE:
-		diff->avrule_diffs->num_removed_type++;
+		diff->rule_diffs->num_removed_type_av++;
 		break;
         default:
 		error = EBADRQC;  /* should never get here */
@@ -975,7 +1036,7 @@ int avrule_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 		assert(0);
 		goto cleanup;
         }
-	diff->avrule_diffs->diffs_sorted = 0;
+	diff->rule_diffs->diffs_sorted_av = 0;
 	retval = 0;
  cleanup:
 	if (retval < 0) {
@@ -989,13 +1050,14 @@ int avrule_deep_diff(poldiff_t *diff, const void *x, const void *y)
 {
 	pseudo_avrule_t *r1 = (pseudo_avrule_t *) x;
 	pseudo_avrule_t *r2 = (pseudo_avrule_t *) y;
-	apol_vector_t *added_perms = NULL, *removed_perms = NULL;
+	apol_vector_t *unmodified_perms = NULL, *added_perms = NULL, *removed_perms = NULL;
 	size_t i, j;
 	char *perm1, *perm2;
 	poldiff_avrule_t *pa = NULL;
 	int retval = -1, error = 0;
 
-	if ((added_perms = apol_vector_create()) == NULL ||
+	if ((unmodified_perms = apol_vector_create()) == NULL ||
+	    (added_perms = apol_vector_create()) == NULL ||
 	    (removed_perms = apol_vector_create()) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -1023,6 +1085,11 @@ int avrule_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			j++;
 		}
 		else {
+			if (apol_vector_append(unmodified_perms, perm1) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
 			i++;
 			j++;
 		}
@@ -1050,34 +1117,26 @@ int avrule_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			error = errno;
 			goto cleanup;
 		}
-		for (i = 0; i < apol_vector_get_size(removed_perms); i++) {
-			perm1 = (char *) apol_vector_get_element(removed_perms, i);
-			if (apol_vector_append(pa->removed_perms, perm1) < 0) {
-				error = errno;
-				ERR(diff, "%s", strerror(error));
-				goto cleanup;
-			}
-		}
-		for (i = 0; i < apol_vector_get_size(added_perms); i++) {
-			perm2 = (char *) apol_vector_get_element(added_perms, i);
-			if (apol_vector_append(pa->added_perms, perm2) < 0) {
-				error = errno;
-				ERR(diff, "%s", strerror(error));
-				goto cleanup;
-			}
-		}
-		apol_vector_sort(pa->removed_perms, apol_str_strcmp, NULL);
+		pa->unmodified_perms = unmodified_perms;
+		pa->added_perms = added_perms;
+		pa->removed_perms = removed_perms;
+		unmodified_perms = NULL;
+		added_perms = NULL;
+		removed_perms = NULL;
+		apol_vector_sort(pa->unmodified_perms, apol_str_strcmp, NULL);
 		apol_vector_sort(pa->added_perms, apol_str_strcmp, NULL);
-		if (apol_vector_append(diff->avrule_diffs->diffs, pa) < 0) {
+		apol_vector_sort(pa->removed_perms, apol_str_strcmp, NULL);
+		if (apol_vector_append(diff->rule_diffs->diffs_av, pa) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		diff->avrule_diffs->num_modified++;
-		diff->avrule_diffs->diffs_sorted = 0;
+		diff->rule_diffs->num_modified_av++;
+		diff->rule_diffs->diffs_sorted_av = 0;
 	}
 	retval = 0;
  cleanup:
+	apol_vector_destroy(&unmodified_perms, NULL);
 	apol_vector_destroy(&added_perms, NULL);
 	apol_vector_destroy(&removed_perms, NULL);
 	if (retval != 0) {
