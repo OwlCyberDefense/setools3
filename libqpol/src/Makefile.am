@@ -11,7 +11,7 @@ BUILT_SOURCES = policy_parse.h
 
 # search in sepol_srcdir/include before system's sepol directory
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ \
-	-I$(srcdir)/../include -I$(sepol_srcdir)/include @SELINUX_CFLAGS@ -fpic
+	-I$(srcdir)/../include -I$(sepol_srcdir)/../include @SELINUX_CFLAGS@ -fpic
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libqpol_a_SOURCES = \
@@ -57,14 +57,14 @@ LIBQPOL_SONAME = @libqpol_soname@
 
 dist_noinst_DATA = libqpol.map
 
-$(tmp_sepol): $(sepol_srcdir)/src/libsepol.a
+$(tmp_sepol): $(sepol_srcdir)/libsepol.a
 	mkdir -p $@
 	rm -f $@/*
 	cp $< $@
 	(cd $@; ar x libsepol.a)
 
 $(qpolso_DATA): $(tmp_sepol) $(libqpol_so_OBJS) libqpol.map
-	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/src/libsepol.a -Wl,--no-whole-archive @SELINUX_LIB_FLAG@ -lselinux -lsepol
+	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/libsepol.a -Wl,--no-whole-archive @SELINUX_LIB_FLAG@ -lselinux -lsepol
 	$(LN_S) -f $@ libqpol.so
 
 libqpol.so: $(qpolso_DATA)
