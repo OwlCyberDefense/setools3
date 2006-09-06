@@ -1,5 +1,5 @@
 /**
- * @file queue.h
+ * @file queue.c
  *
  * This file is a copy of queue.h from NSA's CVS repository.  It has
  * been modified to follow the setools naming conventions.
