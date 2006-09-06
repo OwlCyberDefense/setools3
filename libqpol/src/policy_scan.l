@@ -1,9 +1,12 @@
-
-/* 
- * Author : Stephen Smalley, <sds@epoch.ncsc.mil> 
- */
-
-/* Updated: David Caplan, <dac@tresys.com>
+/**
+ * @file policy_parse.y
+ *
+ * This file is based upon checkpolicy/policy_scan.l fram NSA's SVN
+ * repository.  It has been modified to support older policy formats.
+ *
+ * Author : Stephen Smalley, <sds@epoch.ncsc.mil>
+ *
+ * Updated: David Caplan, <dac@tresys.com>
  *
  * 	Added conditional policy language extensions
  *
