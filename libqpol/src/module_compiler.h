@@ -82,6 +82,7 @@ void append_cond_list(cond_list_t * cond);
 void append_avrule(avrule_t * avrule);
 void append_role_trans(role_trans_rule_t * role_tr_rules);
 void append_role_allow(role_allow_rule_t * role_allow_rules);
+void append_range_trans(range_trans_rule_t * range_tr_rules);
 
 /* Create a new optional block and add it to the global policy.
  * During the second pass resolve the block's requirements.  Return 0
