@@ -1063,6 +1063,168 @@ static int Apol_RenderTERuleDefault(ClientData clientData, Tcl_Interp *interp, i
 }
 
 /**
+ * Take two Tcl objects representing AV rule identifiers (relative to
+ * the currently loaded policy) and return -1, 0, or 1 if the first
+ * come before, the same, or after the other one, respectively,
+ * according to printing order.
+ *
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>Tcl object representing an av rule identifier.
+ *   <li>Tcl object representing another av rule identifier.
+ * </ol>
+ */
+static int Apol_RenderAVRuleComp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_avrule_t *r1, *r2;
+	uint32_t rt1, rt2;
+	const char *rule_type1, *rule_type2;
+	qpol_type_t *t1, *t2;
+	qpol_class_t *c1, *c2;
+	char *s1, *s2;
+	int retval = TCL_ERROR, compval;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 3) {
+		ERR(policydb, "%s", "Need two avrule identifiers.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &r1) == TCL_ERROR ||
+	    tcl_obj_to_qpol_avrule(interp, objv[2], &r2) == TCL_ERROR) {
+		goto cleanup;
+	}
+	if (qpol_avrule_get_rule_type(policydb->qh, policydb->p, r1, &rt1) < 0 ||
+	    qpol_avrule_get_rule_type(policydb->qh, policydb->p, r2, &rt2) < 0 ||
+            (rule_type1 = apol_rule_type_to_str(rt1)) == NULL ||
+	    (rule_type2 = apol_rule_type_to_str(rt2)) == NULL) {
+		ERR(policydb, "%s", "Invalid avrule type.");
+		goto cleanup;
+	}
+	if ((compval = strcmp(rule_type1, rule_type2)) != 0) {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
+		return TCL_OK;
+	}
+	if (qpol_avrule_get_source_type(policydb->qh, policydb->p, r1, &t1) < 0 ||
+	    qpol_avrule_get_source_type(policydb->qh, policydb->p, r2, &t2) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, t1, &s1) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, t2, &s2) < 0) {
+		goto cleanup;
+	}
+	if ((compval = strcmp(s1, s2)) != 0) {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
+		return TCL_OK;
+	}
+	if (qpol_avrule_get_target_type(policydb->qh, policydb->p, r1, &t1) < 0 ||
+	    qpol_avrule_get_target_type(policydb->qh, policydb->p, r2, &t2) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, t1, &s1) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, t2, &s2) < 0) {
+		goto cleanup;
+	}
+	if ((compval = strcmp(s1, s2)) != 0) {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
+		return TCL_OK;
+	}
+	if (qpol_avrule_get_object_class(policydb->qh, policydb->p, r1, &c1) < 0 ||
+	    qpol_avrule_get_object_class(policydb->qh, policydb->p, r2, &c2) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, c1, &s1) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, c2, &s2) < 0) {
+		goto cleanup;
+	}
+	compval = strcmp(s1, s2);
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
+	return TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take two Tcl objects representing TE rule identifiers (relative to
+ * the currently loaded policy) and return -1, 0, or 1 if the first
+ * come before, the same, or after the other one, respectively,
+ * according to printing order.
+ *
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>Tcl object representing an te rule identifier.
+ *   <li>Tcl object representing another te rule identifier.
+ * </ol>
+ */
+static int Apol_RenderTERuleComp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+{
+	qpol_terule_t *r1, *r2;
+	uint32_t rt1, rt2;
+	const char *rule_type1, *rule_type2;
+	qpol_type_t *t1, *t2;
+	qpol_class_t *c1, *c2;
+	char *s1, *s2;
+	int retval = TCL_ERROR, compval;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (objc != 3) {
+		ERR(policydb, "%s", "Need two terule identifiers.");
+		goto cleanup;
+	}
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &r1) == TCL_ERROR ||
+	    tcl_obj_to_qpol_terule(interp, objv[2], &r2) == TCL_ERROR) {
+		goto cleanup;
+	}
+	if (qpol_terule_get_rule_type(policydb->qh, policydb->p, r1, &rt1) < 0 ||
+	    qpol_terule_get_rule_type(policydb->qh, policydb->p, r2, &rt2) < 0 ||
+	    (rule_type1 = apol_rule_type_to_str(rt1)) == NULL ||
+	    (rule_type2 = apol_rule_type_to_str(rt2)) == NULL) {
+		ERR(policydb, "%s", "Invalid terule type.");
+		goto cleanup;
+	}
+	if ((compval = strcmp(rule_type1, rule_type2)) != 0) {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
+		return TCL_OK;
+	}
+	if (qpol_terule_get_source_type(policydb->qh, policydb->p, r1, &t1) < 0 ||
+	    qpol_terule_get_source_type(policydb->qh, policydb->p, r2, &t2) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, t1, &s1) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, t2, &s2) < 0) {
+		goto cleanup;
+	}
+	if ((compval = strcmp(s1, s2)) != 0) {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
+		return TCL_OK;
+	}
+	if (qpol_terule_get_target_type(policydb->qh, policydb->p, r1, &t1) < 0 ||
+	    qpol_terule_get_target_type(policydb->qh, policydb->p, r2, &t2) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, t1, &s1) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, t2, &s2) < 0) {
+		goto cleanup;
+	}
+	if ((compval = strcmp(s1, s2)) != 0) {
+		Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
+		return TCL_OK;
+	}
+	if (qpol_terule_get_object_class(policydb->qh, policydb->p, r1, &c1) < 0 ||
+	    qpol_terule_get_object_class(policydb->qh, policydb->p, r2, &c2) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, c1, &s1) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, c2, &s2) < 0) {
+		goto cleanup;
+	}
+	compval = strcmp(s1, s2);
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
+	return TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
  * Take a Tcl object representing a syntactic AV rule identifier
  * (relative to the currently loaded policy) and return a Tcl list
  * representation of it:
@@ -1095,46 +1257,6 @@ static int Apol_RenderSynAVRule(ClientData clientData, Tcl_Interp *interp, int o
 		goto cleanup;
 	}
 	Tcl_SetObjResult(interp, result_obj);
-	retval = TCL_OK;
- cleanup:
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
-/**
- * Take a Tcl object representing a syntactic AV rule identifier
- * (relative to the currently loaded policy) and return the line
- * number on which the rule resides.
- *
- * @param argv This function takes one parameter:
- * <ol>
- *   <li>Tcl object representing a syntactic av rule identifier.
- * </ol>
- */
-static int Apol_RenderSynAVRuleLine(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
-{
-	qpol_syn_avrule_t *avrule;
-	unsigned long lineno;
-	Tcl_Obj *o;
-	int retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		goto cleanup;
-	}
-	if (objc != 2) {
-		ERR(policydb, "%s", "Need a syn avrule identifier.");
-		goto cleanup;
-	}
-	if (tcl_obj_to_qpol_syn_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
-	    qpol_syn_avrule_get_lineno(policydb->qh, policydb->p, avrule, &lineno) < 0) {
-		goto cleanup;
-	}
-	o = Tcl_NewLongObj((long) lineno);
-	Tcl_SetObjResult(interp, o);
 	retval = TCL_OK;
  cleanup:
 	if (retval == TCL_ERROR) {
@@ -1184,46 +1306,6 @@ static int Apol_RenderSynTERule(ClientData clientData, Tcl_Interp *interp, int o
 	return retval;
 }
 
-/**
- * Take a Tcl object representing a syntactic TE rule identifier
- * (relative to the currently loaded policy) and return the line
- * number on which the rule resides.
- *
- * @param argv This function takes one parameter:
- * <ol>
- *   <li>Tcl object representing a syntactic te rule identifier.
- * </ol>
- */
-static int Apol_RenderSynTERuleLine(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
-{
-	qpol_syn_terule_t *terule;
-	unsigned long lineno;
-	Tcl_Obj *o;
-	int retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		goto cleanup;
-	}
-	if (objc != 2) {
-		ERR(policydb, "%s", "Need a syn terule identifier.");
-		goto cleanup;
-	}
-	if (tcl_obj_to_qpol_syn_terule(interp, objv[1], &terule) == TCL_ERROR ||
-	    qpol_syn_terule_get_lineno(policydb->qh, policydb->p, terule, &lineno) < 0) {
-		goto cleanup;
-	}
-	o = Tcl_NewLongObj((long) lineno);
-	Tcl_SetObjResult(interp, o);
-	retval = TCL_OK;
- cleanup:
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
 int apol_tcl_render_init(Tcl_Interp *interp) {
         Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderContext", Apol_RenderContext, NULL, NULL);
@@ -1239,9 +1321,9 @@ int apol_tcl_render_init(Tcl_Interp *interp) {
 	Tcl_CreateObjCommand(interp, "apol_RenderTERuleTarget", Apol_RenderTERuleTarget, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_RenderTERuleClass", Apol_RenderTERuleClass, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_RenderTERuleDefault", Apol_RenderTERuleDefault, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderAVRuleComp", Apol_RenderAVRuleComp, NULL, NULL);
+	Tcl_CreateObjCommand(interp, "apol_RenderTERuleComp", Apol_RenderTERuleComp, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_RenderSynAVRule", Apol_RenderSynAVRule, NULL, NULL);
-	Tcl_CreateObjCommand(interp, "apol_RenderSynAVRuleLine", Apol_RenderSynAVRuleLine, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_RenderSynTERule", Apol_RenderSynTERule, NULL, NULL);
-	Tcl_CreateObjCommand(interp, "apol_RenderSynTERuleLine", Apol_RenderSynTERuleLine, NULL, NULL);
 	return TCL_OK;
 }
