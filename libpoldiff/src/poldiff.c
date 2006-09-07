@@ -121,6 +121,18 @@ static const poldiff_item_record_t item_records[] = {
 		user_deep_diff,
 	},
 	{
+		"terule",
+		POLDIFF_DIFF_TERULES,
+		poldiff_terule_get_stats,
+		poldiff_get_terule_vector,
+		poldiff_terule_to_string,
+		terule_get_items,
+		terule_free_item,
+		terule_comp,
+		terule_new_diff,
+		terule_deep_diff,
+	},
+	{
 		"type",
 		POLDIFF_DIFF_TYPES,
 		poldiff_type_get_stats,

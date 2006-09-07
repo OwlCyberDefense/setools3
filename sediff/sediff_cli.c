@@ -464,29 +464,42 @@ static void print_user_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_avrule_diffs(poldiff_t *diff, int stats_only)
+static void print_rule_diffs(poldiff_t *diff, int stats_only)
 {
-	apol_vector_t *v = NULL;
+	apol_vector_t *v1 = NULL, *v2 = NULL;
 	size_t i, stats[5] = {0, 0, 0, 0, 0};
 	char *str = NULL;
-	const poldiff_avrule_t *item = NULL;
+	const poldiff_avrule_t *item1 = NULL;
+	const poldiff_terule_t *item2 = NULL;
 
 	if (!diff)
 		return;
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES, stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, stats);
 	printf("TE Rules (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n",
 			stats[0], stats[3], stats[1], stats[4], stats[2]);
 	if (stats_only)
 		return;
-	if ((v = poldiff_get_avrule_vector(diff)) == NULL) {
+	if ((v1 = poldiff_get_avrule_vector(diff)) == NULL ||
+	    (v2 = poldiff_get_terule_vector(diff)) == NULL) {
 		return;
 	}
 	printf("   Added TE Rules: %zd\n", stats[0]);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		item = apol_vector_get_element(v, i);
-		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_ADDED) {
-			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+	for (i = 0; i < apol_vector_get_size(v1); i++) {
+		item1 = apol_vector_get_element(v1, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_ADDED) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(v2); i++) {
+		item2 = apol_vector_get_element(v2, i);
+		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_ADDED) {
+			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
 			printf("      %s\n", str);
@@ -495,10 +508,21 @@ static void print_avrule_diffs(poldiff_t *diff, int stats_only)
 		}
 	}
 	printf("   Added TE Rules because of new type: %zd\n", stats[3]);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		item = apol_vector_get_element(v, i);
-		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_ADD_TYPE) {
-			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+	for (i = 0; i < apol_vector_get_size(v1); i++) {
+		item1 = apol_vector_get_element(v1, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_ADD_TYPE) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(v2); i++) {
+		item2 = apol_vector_get_element(v2, i);
+		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_ADD_TYPE) {
+			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
 			printf("      %s\n", str);
@@ -508,10 +532,21 @@ static void print_avrule_diffs(poldiff_t *diff, int stats_only)
 	}
 
 	printf("   Removed TE Rules: %zd\n", stats[1]);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		item = apol_vector_get_element(v, i);
-		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_REMOVED) {
-			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+	for (i = 0; i < apol_vector_get_size(v1); i++) {
+		item1 = apol_vector_get_element(v1, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_REMOVED) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(v2); i++) {
+		item2 = apol_vector_get_element(v2, i);
+		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_REMOVED) {
+			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
 			printf("      %s\n", str);
@@ -520,10 +555,21 @@ static void print_avrule_diffs(poldiff_t *diff, int stats_only)
 		}
 	}
 	printf("   Removed TE Rules because of missing type: %zd\n", stats[4]);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		item = apol_vector_get_element(v, i);
-		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_REMOVE_TYPE) {
-			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+	for (i = 0; i < apol_vector_get_size(v1); i++) {
+		item1 = apol_vector_get_element(v1, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_REMOVE_TYPE) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(v2); i++) {
+		item2 = apol_vector_get_element(v2, i);
+		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_REMOVE_TYPE) {
+			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
 			printf("      %s\n", str);
@@ -533,10 +579,21 @@ static void print_avrule_diffs(poldiff_t *diff, int stats_only)
 	}
 
 	printf("   Changed TE Rules: %zd\n", stats[2]);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		item = apol_vector_get_element(v, i);
-		if (poldiff_avrule_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			if ((str = poldiff_avrule_to_string(diff, item)) == NULL) {
+	for (i = 0; i < apol_vector_get_size(v1); i++) {
+		item1 = apol_vector_get_element(v1, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_MODIFIED) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			printf("      %s\n", str);
+			free(str);
+			str = NULL;
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(v2); i++) {
+		item2 = apol_vector_get_element(v2, i);
+		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_MODIFIED) {
+			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
 			printf("      %s\n", str);
@@ -746,11 +803,9 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 	if (flags & POLDIFF_DIFF_BOOLS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_BOOLS))) {
 		print_bool_diffs(diff, stats);
 	}
-	if (flags & POLDIFF_DIFF_AVRULES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVRULES))) {
-		print_avrule_diffs(diff, stats);
-	}
-	if (flags & POLDIFF_DIFF_TERULES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TERULES))) {
-		printf("TODO: TERules\n\n");
+	if (flags & (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES) \
+	    && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVRULES))) {
+		print_rule_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_ROLE_ALLOWS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLE_ALLOWS))) {
 		printf("TODO: RoleAllows\n\n");
