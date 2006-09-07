@@ -21,6 +21,12 @@ libseaudit_version=3.0.0
 
 setoolsdir='${prefix}/share/setools-3.0'
 
+version_min_sepol_major=1
+version_min_sepol_minor=12
+version_min_sepol_patch=26
+
+dnl *** end of tunable values ***
+
 AC_GNU_SOURCE
 AC_PROG_CC
 AC_LANG_C
@@ -299,12 +305,30 @@ fi
 AC_ARG_ENABLE(sepol-src,
               AC_HELP_STRING([--enable-sepol-src=PATH],
                              [use another sepol source tree at PATH (developer only flag)]),
-              sepol_srcdir="$enableval",
+              sepol_srcdir="$enableval",r
               sepol_srcdir="")
 if test "x${sepol_srcdir}" = "x"; then
    sepol_srcdir='/usr/lib'
 else
-   AC_MSG_CHECKING([for sepol source tree])
+   AC_MSG_CHECKING([for compatible sepol source tree])
+   version_sepol_major=$(cut -d. -f1 < ${sepol_srcdir}/VERSION)
+   version_sepol_minor=$(cut -d. -f2 < ${sepol_srcdir}/VERSION)
+   version_sepol_patch=$(cut -d. -f3 < ${sepol_srcdir}/VERSION)
+   version_ok=""
+   if test $version_sepol_major -gt $version_min_sepol_major; then
+      version_ok=1
+   elif test $version_sepol_major -eq $version_min_sepol_major -a \
+             $version_sepol_minor -gt $version_min_sepol_minor; then
+      version_ok=1
+   elif test $version_sepol_major -eq $version_min_sepol_major -a \
+             $version_sepol_minor -eq $version_min_sepol_minor -a \
+             $version_sepol_patch -ge $version_min_sepol_patch; then
+      version_ok=1
+   fi
+   if test -z $version_ok; then
+      version_min_sepol="${version_min_sepol_major}.${version_min_sepol_minor}.${version_min_sepol_patch}"
+      AC_MSG_ERROR([setools requires sepol version $version_min_sepol or greater])
+   fi
    sepol_srcdir="${sepol_srcdir}/src"
    sepol_src_save_CFLAGS="${CFLAGS}"
    CFLAGS="${CFLAGS} -I${sepol_srcdir}/../include ${SELINUX_LIB_FLAG}"
