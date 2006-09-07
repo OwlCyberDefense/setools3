@@ -24,14 +24,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: dwindsor@tresys.com
- *
- */
-
 #include "find_node_types.h"
 #include <apol/netcon-query.h>
 
@@ -198,21 +190,16 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		goto find_node_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_node_types_run_fail;		
 	}
 
-	if ( !(nodecon_vector = apol_vector_create()) ) {
-		ERR(policy, "%s", strerror(ENOMEM));
+	if (apol_get_nodecon_by_query(policy, NULL, &nodecon_vector) < 0) {
 		goto find_node_types_run_fail;
 	}
 
-	if ( apol_get_nodecon_by_query(policy, NULL, &nodecon_vector) < 0 ) {
-		goto find_node_types_run_fail;
-	}
-
-	for ( i = 0; i<apol_vector_get_size(nodecon_vector); i++) {
+	for (i = 0; i<apol_vector_get_size(nodecon_vector); i++) {
 		char *type_name;
 		int j;
 		qpol_context_t *context;
@@ -265,6 +252,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		}
 		item = NULL;
 	}
+	apol_vector_destroy(&nodecon_vector, free);
 
 	/* if we are provided a source policy, search initial SIDs */
 	if (policy) {
@@ -272,11 +260,11 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 		buff = NULL;
 		qpol_policy_get_isid_by_name(policy->qh, policy->p, "node", &isid);
-		if ( isid ) { 
+		if ( isid ) {
 			qpol_context_t *context; 
 			apol_context_t *a_context;
 			qpol_type_t *context_type;
-			char *context_type_name;
+			char *context_type_name, *tmp;
 
 			proof = NULL;
 			qpol_isid_get_context(policy->qh, policy->p, isid, &context);
@@ -284,15 +272,22 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			qpol_type_get_name(policy->qh, policy->p, context_type, &context_type_name);
 			a_context = apol_context_create_from_qpol_context(policy, context);
 
-			if (apol_str_append(&buff, &buff_sz, "sid port ") != 0) {
+			if (apol_str_append(&buff, &buff_sz, "sid node ") != 0) {
 				ERR(policy, "%s", strerror(ENOMEM));
+				apol_context_destroy(&a_context);
 				goto find_node_types_run_fail;
 			}
 
-			if (apol_str_append(&buff, &buff_sz, apol_context_render(policy, a_context)) != 0) {
+			tmp = apol_context_render(policy, a_context);
+			if (apol_str_append(&buff, &buff_sz, tmp) != 0) {
 				ERR(policy, "%s", strerror(ENOMEM));
+				apol_context_destroy(&a_context);
+				free(tmp);
 				goto find_node_types_run_fail;
 			}
+			apol_context_destroy(&a_context);
+			free(tmp);
+			tmp = NULL;
 
 			if (!item) {
 				item = sechk_item_new(NULL);
@@ -309,7 +304,8 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 				goto find_node_types_run_fail;
 			}
 
-			proof->type = SECHK_ITEM_TYPE;
+			proof->type = SECHK_ITEM_ISID;
+			proof->elem = isid;
 			proof->text = buff;
 
 			item->item = (void *)context_type;
@@ -335,6 +331,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	return 0;
 
 find_node_types_run_fail:
+	apol_vector_destroy(&nodecon_vector, free);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);

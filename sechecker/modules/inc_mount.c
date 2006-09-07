@@ -160,7 +160,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 	size_t i, j;
 	bool_t both = FALSE;
 	int buff_sz;
-	char *buff = NULL;
+	char *buff = NULL, *tmp = NULL;
 	apol_vector_t *mount_vector;
 	apol_vector_t *mounton_vector;
 	apol_avrule_query_t *mount_avrule_query = NULL;
@@ -243,32 +243,35 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			qpol_type_get_name(policy->qh, policy->p, mounton_target, &mounton_target_name);
 
 			/* Check to see if they match */
-			if ( !strcmp(mount_source_name, mounton_source_name) &&
+			if (!strcmp(mount_source_name, mounton_source_name) &&
 					!strcmp(mount_target_name, mounton_target_name)) both = TRUE;
 		}
-		if ( !both ) {
+		if (!both) {
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
-			proof->type = SECHK_ITEM_TYPE;
+			proof->type = SECHK_ITEM_AVRULE;
+			proof->elem = mount_rule;
 			buff = NULL;
-			buff_sz = 6 + strlen(apol_avrule_render(policy, mount_rule))+strlen("\tMissing:\n\tallow ")+
-				strlen(mount_source_name)+strlen(mount_target_name)+strlen(" : dir mounton;\n");
+			buff_sz = 6 + strlen((tmp = apol_avrule_render(policy, mount_rule)))+strlen("\tMissing:\n\tallow ") +
+				strlen(mount_source_name)+strlen(mount_target_name) + strlen(" : dir mounton;\n");
 			buff = (char *)calloc(buff_sz, sizeof(char));
 			if ( !buff ) {
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
-			snprintf(buff, buff_sz, "%s\n\tMissing:\n\tallow %s %s : dir mounton;\n",apol_avrule_render(policy, mount_rule),
+			snprintf(buff, buff_sz, "%s\n\tMissing:\n\tallow %s %s : dir mounton;\n", tmp,
 					mount_source_name, mount_target_name);
 			proof->text = strdup(buff);
-			if ( !proof->text ) {
+			if (!proof->text) {
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
-			buff = NULL;
+			free(buff);
+			free(tmp);
+			buff = tmp = NULL;
 			item = sechk_item_new(NULL);
 			if (!item) {
 				ERR(NULL, "%s", strerror(ENOMEM));
@@ -329,22 +332,26 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
-			proof->type = SECHK_ITEM_TYPE;
+			proof->type = SECHK_ITEM_AVRULE;
+			proof->elem = mounton_rule;
 			buff = NULL;
-			buff_sz = 6 + strlen(apol_avrule_render(policy,mounton_rule))+strlen("\tMissing:\n\t\tallow ")+strlen(mounton_source_name)+
-				strlen(mounton_target_name)+strlen(" : filesystem mount;\n");
+			buff_sz = 6 + strlen((tmp = apol_avrule_render(policy, mounton_rule)))+strlen("\tMissing:\n\t\tallow ")+strlen(mounton_source_name)+
+				strlen(mounton_target_name) + strlen(" : filesystem mount;\n");
 			buff = (char *)calloc(buff_sz, sizeof(char));
 			if ( !buff ) {
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
-			snprintf(buff, buff_sz, "%s\n\tMissing:\n\t\tallow %s %s : filesystem mount;\n",apol_avrule_render(policy,mounton_rule),
+			snprintf(buff, buff_sz, "%s\n\tMissing:\n\t\tallow %s %s : filesystem mount;\n", tmp,
 					mounton_source_name, mounton_target_name);
 			proof->text = strdup(buff);
 			if ( !proof->text ) {
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
+			free(tmp);
+			free(buff);
+			buff = tmp = NULL;
 			item = sechk_item_new(NULL);
 			if (!item) {
 				ERR(policy, "%s", strerror(ENOMEM));
@@ -369,6 +376,8 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			proof = NULL;
 		}
 	}
+	apol_vector_destroy(&mount_vector, NULL);
+	apol_vector_destroy(&mounton_vector, NULL);
 
 	mod->result = res;
 	apol_avrule_query_destroy(&mount_avrule_query);
@@ -376,8 +385,14 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 	return 0;
 
 inc_mount_run_fail:
+	apol_vector_destroy(&mount_vector, NULL);
+	apol_vector_destroy(&mounton_vector, NULL);
+	apol_avrule_query_destroy(&mount_avrule_query);
+	apol_avrule_query_destroy(&mounton_avrule_query);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	free(tmp);
+	free(buff);
 	return -1;
 }
 

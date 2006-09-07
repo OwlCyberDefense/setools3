@@ -295,11 +295,8 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	}
 	assoc_type_vector = (apol_vector_t *)assoc_type_res->items;
 
-	/* Create avrule query object */
-	avrule_query = apol_avrule_query_create();
-
 	/* for each net domain, check permissions */
-	for (i=0; i<apol_vector_get_size(net_domain_vector); i++) {
+	for (i = 0; i < apol_vector_get_size(net_domain_vector); i++) {
 		qpol_type_t *net_domain = NULL;
 		char *net_domain_name = NULL;
 
@@ -325,8 +322,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			apol_avrule_query_append_perm(policy, avrule_query, "tcp_recv");
 			apol_avrule_query_append_perm(policy, avrule_query, "udp_recv");
 			apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
-			if ( apol_vector_get_size(avrule_vector) > 0 ) continue;
-			else {
+			apol_avrule_query_destroy(&avrule_query);
+			if (apol_vector_get_size(avrule_vector) > 0) {
+				apol_vector_destroy(&avrule_vector, NULL);
+				continue;
+			} else {
+				apol_vector_destroy(&avrule_vector, NULL);
 				item = NULL;
 				proof = sechk_proof_new(NULL);
 				buff_sz = 1+strlen(netif_name)+strlen("Domain has no send or receive permissions for netif ");
@@ -376,7 +377,6 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				}
 				item = NULL;
 			}
-			apol_avrule_query_destroy(&avrule_query);
 		}
 
 		/* Check port types */
@@ -398,8 +398,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			apol_avrule_query_append_perm(policy, avrule_query, "send_msg");
 			apol_avrule_query_append_perm(policy, avrule_query, "recv_msg");
 			apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
-			if ( apol_vector_get_size(avrule_vector) > 0 ) continue;
-			else {
+			apol_avrule_query_destroy(&avrule_query);
+			if (apol_vector_get_size(avrule_vector) > 0) {
+				apol_vector_destroy(&avrule_vector, NULL);
+				continue;
+			} else {
+				apol_vector_destroy(&avrule_vector, NULL);
 				/* Add to results */
 				item = NULL;
 				proof = sechk_proof_new(NULL);
@@ -450,7 +454,6 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				}
 				item = NULL;
 			}
-			apol_avrule_query_destroy(&avrule_query);
 		}
 
 		for (j=0; j<apol_vector_get_size(node_vector); j++) {
@@ -470,8 +473,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			apol_avrule_query_append_perm(policy, avrule_query, "tcp_recv");
 			apol_avrule_query_append_perm(policy, avrule_query, "udp_recv");
 			apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
-			if ( apol_vector_get_size(avrule_vector) > 0 ) continue;
-			else {
+			apol_avrule_query_destroy(&avrule_query);
+			if (apol_vector_get_size(avrule_vector) > 0) {
+				apol_vector_destroy(&avrule_vector, NULL);
+				continue;
+			} else {
+				apol_vector_destroy(&avrule_vector, NULL);
 				/* Add to results */
 				item = NULL;
 				proof = sechk_proof_new(NULL);
@@ -487,7 +494,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
-				for (k=0;k<apol_vector_get_size(res->items);k++) {
+				for (k = 0; k < apol_vector_get_size(res->items); k++) {
 					sechk_item_t *res_item = NULL;
 					qpol_type_t *res_type;
 					char *res_type_name;
@@ -497,7 +504,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 					qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
 					if (!strcmp(res_type_name, net_domain_name)) item = res_item;
 				}
-				if ( !item) {
+				if (!item) {
 					item = sechk_item_new(NULL);
 					if (!item) {
 						ERR(policy, "%s", strerror(ENOMEM));
@@ -522,7 +529,6 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				}
 				item = NULL;
 			}
-			apol_avrule_query_destroy(&avrule_query);
 		}
 		item = NULL;
 	}
@@ -532,6 +538,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	return 0;
 
 inc_net_access_run_fail:
+	apol_avrule_query_destroy(&avrule_query);
 	sechk_item_free(item);
 	return -1;
 }
