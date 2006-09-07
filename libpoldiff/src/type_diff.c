@@ -175,7 +175,7 @@ apol_vector_t *poldiff_get_type_vector(poldiff_t *diff)
 	return diff->type_diffs->diffs;
 }
 
-const char *poldiff_type_get_name(poldiff_type_t *type)
+const char *poldiff_type_get_name(const poldiff_type_t *type)
 {
 	if (type == NULL) {
 		errno = EINVAL;
@@ -184,7 +184,7 @@ const char *poldiff_type_get_name(poldiff_type_t *type)
 	return type->name;
 }
 
-poldiff_form_e poldiff_type_get_form(poldiff_type_t *type)
+poldiff_form_e poldiff_type_get_form(const poldiff_type_t *type)
 {
 	if (type == NULL) {
 		errno = EINVAL;
@@ -193,7 +193,7 @@ poldiff_form_e poldiff_type_get_form(poldiff_type_t *type)
 	return type->form;
 }
 
-apol_vector_t *poldiff_type_get_added_attribs(poldiff_type_t *type)
+apol_vector_t *poldiff_type_get_added_attribs(const poldiff_type_t *type)
 {
 	if (type == NULL) {
 		errno = EINVAL;
@@ -202,7 +202,7 @@ apol_vector_t *poldiff_type_get_added_attribs(poldiff_type_t *type)
 	return type->added_attribs;
 }
 
-apol_vector_t *poldiff_type_get_removed_attribs(poldiff_type_t *type)
+apol_vector_t *poldiff_type_get_removed_attribs(const poldiff_type_t *type)
 {
 	if (type == NULL) {
 		errno = EINVAL;
