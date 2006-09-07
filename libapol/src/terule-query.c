@@ -29,7 +29,8 @@
  */
 
 #include "policy-query-internal.h"
-
+#include <apol/bst.h>
+#include <qpol/policy_extend.h>
 #include <errno.h>
 #include <string.h>
 
@@ -317,6 +318,118 @@ int apol_terule_query_set_regex(apol_policy_t *p, apol_terule_query_t *t, int is
 	return apol_query_set_regex(p, &t->flags, is_regex);
 }
 
+/**
+ * Comparison function for two syntactic terules.  Will return -1 if
+ * a's line number is before b's, 1 if b is greater.
+ */
+static int apol_syn_terule_comp(const void *a, const void *b, void *data)
+{
+	qpol_syn_terule_t *r1 = (qpol_syn_terule_t *) a;
+	qpol_syn_terule_t *r2 = (qpol_syn_terule_t *) b;
+	apol_policy_t *p = (apol_policy_t *) data;
+	unsigned long num1, num2;
+	if (qpol_syn_terule_get_lineno(p->qh, p->p, r1, &num1) < 0 ||
+	    qpol_syn_terule_get_lineno(p->qh, p->p, r2, &num2) < 0) {
+		return 0;
+	}
+	if (num1 != num2) {
+		return (int) num1 - (int) num2;
+	}
+	return (int) ((char *) r1 - (char *) r2);
+}
+
+apol_vector_t *apol_terule_to_syn_terules(apol_policy_t *p,
+					  qpol_terule_t *rule)
+{
+	apol_vector_t *v = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_syn_terule_t *syn_terule;
+	int retval = -1, error = 0;
+	if (qpol_terule_get_syn_terule_iter(p->qh, p->p, rule, &iter) < 0) {
+		error = errno;
+		goto cleanup;
+	}
+	if ((v = apol_vector_create()) == NULL) {
+		error = errno;
+		ERR(p, "%s", strerror(error));
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &syn_terule) < 0) {
+			error = errno;
+			ERR(p, "%s", strerror(error));
+			goto cleanup;
+		}
+		if (apol_vector_append(v, syn_terule) < 0) {
+			error = errno;
+			ERR(p, "%s", strerror(error));
+			goto cleanup;
+		}
+	}
+	apol_vector_sort_uniquify(v, apol_syn_terule_comp, p, NULL);
+	retval = 0;
+ cleanup:
+	qpol_iterator_destroy(&iter);
+	if (retval != 0) {
+		apol_vector_destroy(&v, NULL);
+		errno = error;
+		return NULL;
+	}
+	return v;
+}
+
+apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t *p,
+					       apol_vector_t *rules)
+{
+	apol_bst_t *b = NULL;
+	qpol_terule_t *rule;
+	qpol_iterator_t *iter = NULL;
+	qpol_syn_terule_t *syn_terule;
+	apol_vector_t *v = NULL;
+	size_t i;
+	int retval = -1, error = 0;
+
+	if ((b = apol_bst_create(apol_syn_terule_comp)) == NULL) {
+		error = errno;
+		ERR(p, "%s", strerror(error));
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(rules); i++) {
+		rule = apol_vector_get_element(rules, i);
+		if (qpol_terule_get_syn_terule_iter(p->qh, p->p, rule, &iter) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+			if (qpol_iterator_get_item(iter, (void **) &syn_terule) < 0) {
+				error = errno;
+				ERR(p, "%s", strerror(error));
+				goto cleanup;
+			}
+			if (apol_bst_insert(b, syn_terule, p) < 0) {
+				error = errno;
+				ERR(p, "%s", strerror(error));
+				goto cleanup;
+			}
+		}
+		qpol_iterator_destroy(&iter);
+	}
+	if ((v = apol_bst_get_vector(b)) == NULL) {
+		error = errno;
+		ERR(p, "%s", strerror(error));
+		goto cleanup;
+	}
+	retval = 0;
+ cleanup:
+	apol_bst_destroy(&b, NULL);
+	qpol_iterator_destroy(&iter);
+	if (retval != 0) {
+		errno = error;
+		return NULL;
+	}
+	return v;
+}
+
 char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
@@ -335,7 +448,6 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 	/* rule type */
 	if (qpol_terule_get_rule_type(policy->qh, policy->p, rule, &rule_type)) {
 		error = errno;
-		ERR(policy, "%s", strerror(error));
 		errno = error;
 		return NULL;
 	}
@@ -349,103 +461,74 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, " ")) {
+		error = error;
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
 	/* source type */
 	if (qpol_terule_get_source_type(policy->qh, policy->p, rule, &type)) {
 		error = errno;
-		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
 		error = errno;
+		goto err;
+	}
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, " ")) {
+		error = error;
 		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
 		goto err;
 	}
 
 	/* target type */
 	if (qpol_terule_get_target_type(policy->qh, policy->p, rule, &type)) {
 		error = errno;
-		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
 		error = errno;
+		goto err;
+	}
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, " : ")) {
+		error = error;
 		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, " : ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
 		goto err;
 	}
 
 	/* object class */
 	if (qpol_terule_get_object_class(policy->qh, policy->p, rule, &obj_class)) {
 		error = errno;
-		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	if (qpol_class_get_name(policy->qh, policy->p, obj_class, &tmp_name)) {
 		error = errno;
+		goto err;
+	}
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, " ")) {
+		error = error;
 		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
 		goto err;
 	}
 
 	/* default type */
 	if (qpol_terule_get_default_type(policy->qh, policy->p, rule, &type)) {
 		error = errno;
-		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
 		error = errno;
+		goto err;
+	}
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, ";")) {
+		error = error;
 		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-
-	if (apol_str_append(&tmp, &tmp_sz, ";")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
 		goto err;
 	}
 
@@ -489,14 +572,10 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+            apol_str_append(&tmp, &tmp_sz, " ")) {
+		error = error;
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
@@ -511,8 +590,8 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 	}
 	if (star) {
 		if (apol_str_append(&tmp, &tmp_sz, "* ")) {
-			ERR(policy, "%s", strerror(ENOMEM));
-			error = ENOMEM;
+			error = error;
+			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
 	} else {
@@ -522,8 +601,8 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 		}
 		if (comp) {
 			if (apol_str_append(&tmp, &tmp_sz, "~")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -542,8 +621,8 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 		}
 		if (iter_sz + iter2_sz > 1) {
 			if (apol_str_append(&tmp, &tmp_sz, "{ ")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -557,14 +636,10 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
-				goto err;
-			}
-			if (apol_str_append(&tmp, &tmp_sz, " ")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+			if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+			    apol_str_append(&tmp, &tmp_sz, " ")) {
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -578,19 +653,11 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, "-")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
-				goto err;
-			}
-			if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
-				goto err;
-			}
-			if (apol_str_append(&tmp, &tmp_sz, " ")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+			if (apol_str_append(&tmp, &tmp_sz, "-") ||
+			    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+			    apol_str_append(&tmp, &tmp_sz, " ")) {
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -598,8 +665,8 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 		qpol_iterator_destroy(&iter2);
 		if (iter_sz + iter2_sz > 1) {
 			if (apol_str_append(&tmp, &tmp_sz, "} ")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -616,8 +683,8 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 	}
 	if (star) {
 		if (apol_str_append(&tmp, &tmp_sz, "* ")) {
-			ERR(policy, "%s", strerror(ENOMEM));
-			error = ENOMEM;
+			error = error;
+			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
 	} else {
@@ -627,8 +694,8 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 		}
 		if (comp) {
 			if (apol_str_append(&tmp, &tmp_sz, "~")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -647,8 +714,8 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 		}
 		if (iter_sz + iter2_sz > 1) {
 			if (apol_str_append(&tmp, &tmp_sz, "{ ")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -662,14 +729,10 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
-				goto err;
-			}
-			if (apol_str_append(&tmp, &tmp_sz, " ")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+			if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+			    apol_str_append(&tmp, &tmp_sz, " ")) {
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -683,19 +746,11 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, "-")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
-				goto err;
-			}
-			if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
-				goto err;
-			}
-			if (apol_str_append(&tmp, &tmp_sz, " ")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+			if (apol_str_append(&tmp, &tmp_sz, "-") ||
+			    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+			    apol_str_append(&tmp, &tmp_sz, " ")) {
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -703,16 +758,16 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 		qpol_iterator_destroy(&iter2);
 		if (iter_sz + iter2_sz > 1) {
 			if (apol_str_append(&tmp, &tmp_sz, "} ")) {
-				ERR(policy, "%s", strerror(ENOMEM));
-				error = ENOMEM;
+				error = error;
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
 	}
-	
+
 	if (apol_str_append(&tmp, &tmp_sz, ": ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
+		error = error;
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
@@ -728,8 +783,8 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 	}
 	if (iter_sz > 1) {
 		if (apol_str_append(&tmp, &tmp_sz, "{ ")) {
-			ERR(policy, "%s", strerror(ENOMEM));
-			error = ENOMEM;
+			error = errno;
+			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
 	}
@@ -743,22 +798,18 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 			error = errno;
 			goto err;
 		}
-		if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-			ERR(policy, "%s", strerror(ENOMEM));
-			error = ENOMEM;
-			goto err;
-		}
-		if (apol_str_append(&tmp, &tmp_sz, " ")) {
-			ERR(policy, "%s", strerror(ENOMEM));
-			error = ENOMEM;
+		if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+		    apol_str_append(&tmp, &tmp_sz, " ")) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
 	}
 	qpol_iterator_destroy(&iter);
 	if (iter_sz > 1) {
 		if (apol_str_append(&tmp, &tmp_sz, "} ")) {
-			ERR(policy, "%s", strerror(ENOMEM));
-			error = ENOMEM;
+			error = errno;
+			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
 	}
@@ -766,23 +817,16 @@ char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 	/* default type */
 	if (qpol_syn_terule_get_default_type(policy->qh, policy->p, rule, &type)) {
 		error = errno;
-		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
 		error = errno;
+		goto err;
+	}
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
+	    apol_str_append(&tmp, &tmp_sz, ";")) {
+		error = errno;
 		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
-		goto err;
-	}
-
-	if (apol_str_append(&tmp, &tmp_sz, ";")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		error = ENOMEM;
 		goto err;
 	}
 

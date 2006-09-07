@@ -6,6 +6,9 @@
  * callback functions and stores all of the data: the avl trees simply
  * provide a fast way to find a specific item in an array.
  *
+ * @deprecated This class will be removed very soon.  See bst.h for
+ * the preferred way of constructing trees.
+ *
  * @author mayerf@tresys.com
  * @author Karl MacMillan <kmacmillan@tresys.com>
  *

@@ -947,8 +947,8 @@ proc Apol_TE::search_terules {whichButton} {
             set sr $tabs($id)
             Apol_Widget::clearSearchResults $sr
         }
-        set numAVs [Apol_Widget::appendSearchResultAVRules $sr 0 $avresults tabs(searches_text)]
-        set numTEs [Apol_Widget::appendSearchResultTERules $sr 0 $teresults tabs(searches_text)]
+        set numAVs [Apol_Widget::appendSearchResultSynAVRules $sr 0 $avresults $perms tabs(searches_text)]
+        set numTEs [Apol_Widget::appendSearchResultSynTERules $sr 0 $teresults tabs(searches_text)]
         set num_rules [expr {[lindex $numAVs 0] + [lindex $numTEs 0]}]
         set num_enabled [expr {[lindex $numAVs 1] + [lindex $numTEs 1]}]
         set num_disabled [expr {[lindex $numAVs 2] + [lindex $numTEs 2]}]

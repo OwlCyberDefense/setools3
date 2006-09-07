@@ -1201,120 +1201,96 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
 }
 
 /**
- * Take a Tcl object representing an av rule identifier (relative to
- * the currently loaded policy) and return a list of syn_av tcl
- * objects from which this rule derived.
+ * Given a list of Tcl objects representing av rule identifiers
+ * (relative to the currently loaded policy) return a list of syn_av
+ * tcl objects from which these rules were derived.
  *
- * @param argv This function takes one parameter:
+ * @param argv This function takes one or two parameters:
  * <ol>
- *   <li>Tcl object representing an av rule identifier.
+ *   <li>Tcl object representing a list of av rule identifiers.
+ *   <li>(optional) List of permissions that syn av rules must have at
+ *   least one of.
  * </ol>
  */
 static int Apol_GetSynAVRules(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	qpol_avrule_t *avrule;
-	qpol_syn_avrule_t *syn_avrule;
-	qpol_iterator_t *iter = NULL;
+	apol_vector_t *rules = NULL, *perms = NULL, *syn_rules = NULL;
+	qpol_avrule_t *rule;
+	qpol_syn_avrule_t *syn_rule;
 	Tcl_Obj *o, *result_list;
-	int retval = TCL_ERROR;
+	size_t j;
+	int len, i, retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
 	if (policydb == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (objc != 2) {
-		ERR(policydb, "%s", "Need an avrule identifier.");
+	if (objc < 2 || objc > 3) {
+		ERR(policydb, "%s", "Need a list of avrule identifiers ?and permissions list?.");
 		goto cleanup;
 	}
-	if (tcl_obj_to_qpol_avrule(interp, objv[1], &avrule) == TCL_ERROR ||
-	    qpol_avrule_get_syn_avrule_iter(policydb->qh, policydb->p, avrule, &iter) < 0) {
-		goto cleanup;
-	}
-	result_list = Tcl_NewListObj(0, NULL);
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &syn_avrule) < 0 ||
-		    qpol_syn_avrule_to_tcl_obj(interp, syn_avrule, &o) == TCL_ERROR ||
-		    Tcl_ListObjAppendElement(interp, result_list, o) == TCL_ERROR) {
-			goto cleanup;
-		}
-	}
-	Tcl_SetObjResult(interp, result_list);
-	retval = TCL_OK;
- cleanup:
-	qpol_iterator_destroy(&iter);
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
 
-/**
- * Given a list of Tcl objects representing an av rule identifier
- * (relative to the currently loaded policy) and return a list of
- * syn_av tcl objects from which these rules were derived.  The list
- * will be first uniquified.
- *
- * @param argv This function takes one parameter:
- * <ol>
- *   <li>Tcl object representing a list of av rule identifiers.
- * </ol>
- */
-static int Apol_GetSynAVRulesList(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
-{
-	qpol_avrule_t *avrule;
-	qpol_syn_avrule_t *syn_avrule;
-	qpol_iterator_t *iter = NULL;
-	apol_vector_t *syn_list = NULL;
-	Tcl_Obj **avrules_list, *result_list, *o;
-	int num_avrules, i, retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		goto cleanup;
-	}
-	if (objc != 2) {
-		ERR(policydb, "%s", "Need a list of avrule identifiers.");
-		goto cleanup;
-	}
-	if (Tcl_ListObjGetElements(interp, objv[1], &num_avrules, &avrules_list) == TCL_ERROR) {
-		goto cleanup;
-	}
-	if ((syn_list = apol_vector_create()) == NULL) {
+	if ((rules = apol_vector_create()) == NULL) {
 		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for (i = 0; i < num_avrules; i++) {
-		if (tcl_obj_to_qpol_avrule(interp, avrules_list[i], &avrule) == TCL_ERROR ||
-		    qpol_avrule_get_syn_avrule_iter(policydb->qh, policydb->p, avrule, &iter) < 0) {
+	if (Tcl_ListObjLength(interp, objv[1], &len) == TCL_ERROR) {
+		goto cleanup;
+	}
+	for (i = 0; i < len; i++) {
+		if (Tcl_ListObjIndex(interp, objv[1], i, &o) == TCL_ERROR ||
+		    tcl_obj_to_qpol_avrule(interp, o, &rule) == TCL_ERROR) {
 			goto cleanup;
 		}
-		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			if (qpol_iterator_get_item(iter, (void **) &syn_avrule) < 0) {
+		if (apol_vector_append(rules, rule) < 0) {
+			ERR(policydb, "%s", strerror(errno));
+			goto cleanup;
+		}
+	}
+
+	if (objc >= 3) {
+		if ((perms = apol_vector_create()) == NULL) {
+			ERR(policydb, "%s", strerror(errno));
+			goto cleanup;
+		}
+		if (Tcl_ListObjLength(interp, objv[2], &len) == TCL_ERROR) {
+			goto cleanup;
+		}
+		for (i = 0; i < len; i++) {
+			if (Tcl_ListObjIndex(interp, objv[2], i, &o) == TCL_ERROR) {
 				goto cleanup;
 			}
-			if (apol_vector_append(syn_list, syn_avrule) < 0) {
-				ERR(policydb, "%s", strerror(ENOMEM));
+			if (apol_vector_append(perms, Tcl_GetString(o)) < 0) {
+				ERR(policydb, "%s", strerror(errno));
 				goto cleanup;
 			}
 		}
-		qpol_iterator_destroy(&iter);
 	}
-	apol_vector_sort_uniquify(syn_list, NULL, NULL, NULL);
+
+	if (apol_vector_get_size(rules) == 1) {
+		syn_rules = apol_avrule_to_syn_avrules(policydb, apol_vector_get_element(rules, 0), perms);
+	}
+	else {
+		syn_rules = apol_avrule_list_to_syn_avrules(policydb, rules, perms);
+	}
+	if (syn_rules == NULL) {
+		goto cleanup;
+	}
 	result_list = Tcl_NewListObj(0, NULL);
-	for (i = 0; i < apol_vector_get_size(syn_list); i++) {
-		syn_avrule = (qpol_syn_avrule_t *) apol_vector_get_element(syn_list, i);
-		if (qpol_syn_avrule_to_tcl_obj(interp, syn_avrule, &o) == TCL_ERROR ||
+	for (j = 0; j < apol_vector_get_size(syn_rules); j++) {
+		syn_rule = apol_vector_get_element(syn_rules, j);
+		if (qpol_syn_avrule_to_tcl_obj(interp, syn_rule, &o) == TCL_ERROR ||
 		    Tcl_ListObjAppendElement(interp, result_list, o) == TCL_ERROR) {
-			return -1;
+			goto cleanup;
 		}
 	}
 	Tcl_SetObjResult(interp, result_list);
 	retval = TCL_OK;
  cleanup:
-	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&syn_list, NULL);
+	apol_vector_destroy(&rules, NULL);
+	apol_vector_destroy(&perms, NULL);
+	apol_vector_destroy(&syn_rules, NULL);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1322,9 +1298,9 @@ static int Apol_GetSynAVRulesList(ClientData clientData, Tcl_Interp *interp, int
 }
 
 /**
- * Take a Tcl object representing a te rule identifier (relative to
- * the currently loaded policy) and return a list of syn_te tcl
- * objects from which this rule derived.
+ * Given a list of Tcl objects representing te rule identifiers
+ * (relative to the currently loaded policy) return a list of syn_te
+ * tcl objects from which this rule derived.
  *
  * @param argv This function takes one parameter:
  * <ol>
@@ -1333,62 +1309,12 @@ static int Apol_GetSynAVRulesList(ClientData clientData, Tcl_Interp *interp, int
  */
 static int Apol_GetSynTERules(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
 {
-	qpol_terule_t *terule;
-	qpol_syn_terule_t *syn_terule;
-	qpol_iterator_t *iter = NULL;
+	apol_vector_t *rules = NULL, *syn_rules = NULL;
+	qpol_terule_t *rule;
+	qpol_syn_terule_t *syn_rule;
 	Tcl_Obj *o, *result_list;
-	int retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		goto cleanup;
-	}
-	if (objc != 2) {
-		ERR(policydb, "%s", "Need a terule identifier.");
-		goto cleanup;
-	}
-	if (tcl_obj_to_qpol_terule(interp, objv[1], &terule) == TCL_ERROR ||
-	    qpol_terule_get_syn_terule_iter(policydb->qh, policydb->p, terule, &iter) < 0) {
-		goto cleanup;
-	}
-	result_list = Tcl_NewListObj(0, NULL);
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &syn_terule) < 0 ||
-		    qpol_syn_terule_to_tcl_obj(interp, syn_terule, &o) == TCL_ERROR ||
-		    Tcl_ListObjAppendElement(interp, result_list, o) == TCL_ERROR) {
-			goto cleanup;
-		}
-	}
-	Tcl_SetObjResult(interp, result_list);
-	retval = TCL_OK;
- cleanup:
-	qpol_iterator_destroy(&iter);
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
-/**
- * Given a list of Tcl objects representing a te rule identifier
- * (relative to the currently loaded policy) and return a list of
- * syn_t tcl objects from which these rules were derived.  The list
- * will be first uniquified.
- *
- * @param argv This function takes one parameter:
- * <ol>
- *   <li>Tcl object representing a list of av rule identifiers.
- * </ol>
- */
-static int Apol_GetSynTERulesList(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
-{
-	qpol_terule_t *terule;
-	qpol_syn_terule_t *syn_terule;
-	qpol_iterator_t *iter = NULL;
-	apol_vector_t *syn_list = NULL;
-	Tcl_Obj **terules_list, *result_list, *o;
-	int num_terules, i, retval = TCL_ERROR;
+	size_t j;
+	int len, i, retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
 	if (policydb == NULL) {
@@ -1399,43 +1325,47 @@ static int Apol_GetSynTERulesList(ClientData clientData, Tcl_Interp *interp, int
 		ERR(policydb, "%s", "Need a list of terule identifiers.");
 		goto cleanup;
 	}
-	if (Tcl_ListObjGetElements(interp, objv[1], &num_terules, &terules_list) == TCL_ERROR) {
-		goto cleanup;
-	}
-	if ((syn_list = apol_vector_create()) == NULL) {
+
+	if ((rules = apol_vector_create()) == NULL) {
 		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for (i = 0; i < num_terules; i++) {
-		if (tcl_obj_to_qpol_terule(interp, terules_list[i], &terule) == TCL_ERROR ||
-		    qpol_terule_get_syn_terule_iter(policydb->qh, policydb->p, terule, &iter) < 0) {
+	if (Tcl_ListObjLength(interp, objv[1], &len) == TCL_ERROR) {
+		goto cleanup;
+	}
+	for (i = 0; i < len; i++) {
+		if (Tcl_ListObjIndex(interp, objv[1], i, &o) == TCL_ERROR ||
+		    tcl_obj_to_qpol_terule(interp, o, &rule) == TCL_ERROR) {
 			goto cleanup;
 		}
-		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			if (qpol_iterator_get_item(iter, (void **) &syn_terule) < 0) {
-				goto cleanup;
-			}
-			if (apol_vector_append(syn_list, syn_terule) < 0) {
-				ERR(policydb, "%s", strerror(ENOMEM));
-				goto cleanup;
-			}
+		if (apol_vector_append(rules, rule) < 0) {
+			ERR(policydb, "%s", strerror(errno));
+			goto cleanup;
 		}
-		qpol_iterator_destroy(&iter);
 	}
-	apol_vector_sort_uniquify(syn_list, NULL, NULL, NULL);
+
+	if (apol_vector_get_size(rules) == 1) {
+		syn_rules = apol_terule_to_syn_terules(policydb, apol_vector_get_element(rules, 0));
+	}
+	else {
+		syn_rules = apol_terule_list_to_syn_terules(policydb, rules);
+	}
+	if (syn_rules == NULL) {
+		goto cleanup;
+	}
 	result_list = Tcl_NewListObj(0, NULL);
-	for (i = 0; i < apol_vector_get_size(syn_list); i++) {
-		syn_terule = (qpol_syn_terule_t *) apol_vector_get_element(syn_list, i);
-		if (qpol_syn_terule_to_tcl_obj(interp, syn_terule, &o) == TCL_ERROR ||
+	for (j = 0; j < apol_vector_get_size(syn_rules); j++) {
+		syn_rule = apol_vector_get_element(syn_rules, j);
+		if (qpol_syn_terule_to_tcl_obj(interp, syn_rule, &o) == TCL_ERROR ||
 		    Tcl_ListObjAppendElement(interp, result_list, o) == TCL_ERROR) {
-			return -1;
+			goto cleanup;
 		}
 	}
 	Tcl_SetObjResult(interp, result_list);
 	retval = TCL_OK;
  cleanup:
-	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&syn_list, NULL);
+	apol_vector_destroy(&rules, NULL);
+	apol_vector_destroy(&syn_rules, NULL);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1448,8 +1378,6 @@ int apol_tcl_rules_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_SearchRBACRules", Apol_SearchRBACRules, NULL, NULL);
         Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", Apol_SearchRangeTransRules, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_GetSynAVRules", Apol_GetSynAVRules, NULL, NULL);
-	Tcl_CreateObjCommand(interp, "apol_GetSynAVRulesList", Apol_GetSynAVRulesList, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_GetSynTERules", Apol_GetSynTERules, NULL, NULL);
-	Tcl_CreateObjCommand(interp, "apol_GetSynTERulesList", Apol_GetSynTERulesList, NULL, NULL);
         return TCL_OK;
 }
