@@ -194,7 +194,11 @@ int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 		user = apol_vector_get_element(user_vector, i);
 		qpol_user_get_role_iter(policy->qh, policy->p, user, &role_iter);
-		if ( !qpol_iterator_end(role_iter) ) continue;		
+		if (!qpol_iterator_end(role_iter)) {
+			qpol_iterator_destroy(&role_iter);
+			continue;
+		}
+		qpol_iterator_destroy(&role_iter);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {

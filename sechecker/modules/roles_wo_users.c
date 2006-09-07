@@ -196,12 +196,12 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		goto roles_wo_users_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ROLE;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_users_run_fail;
 	}
 
-	if ( !(user_query = apol_user_query_create()) ) {
+	if (!(user_query = apol_user_query_create())) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_users_run_fail;
 	}
@@ -211,7 +211,7 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		return -1;
 	}
 
-	for (i=0; i<apol_vector_get_size(role_vector);i++) {
+	for (i = 0; i < apol_vector_get_size(role_vector); i++) {
 		qpol_role_t *role;
 		char *role_name;
 
@@ -223,7 +223,11 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 		apol_user_query_set_role(policy, user_query, role_name);
 		apol_get_user_by_query(policy, user_query, &user_vector);
-		if (apol_vector_get_size(user_vector) > 0 ) continue; 
+		if (apol_vector_get_size(user_vector) > 0) {
+			apol_vector_destroy(&user_vector, NULL);
+			continue;
+		}
+		apol_vector_destroy(&user_vector, NULL);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -268,6 +272,9 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	return 0;
 
 roles_wo_users_run_fail:
+	apol_vector_destroy(&role_vector, NULL);
+	apol_vector_destroy(&user_vector, NULL);
+	apol_user_query_destroy(&user_query);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	return -1;
