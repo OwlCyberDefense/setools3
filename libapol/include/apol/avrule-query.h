@@ -229,6 +229,51 @@ extern int apol_avrule_query_set_regex(apol_policy_t *p,
 				       apol_avrule_query_t *a, int is_regex);
 
 /**
+ * Given a single avrule, return a newly allocated vector of
+ * qpol_syn_avrule_t pointers (relative to the given policy) which
+ * comprise that rule.  The vector will be sorted by line numbers.  If
+ * the given perms vector is non-NULL and non-empty, then only return
+ * syntactic rules with at least one permission listed within the
+ * perms vector.
+ *
+ * @param p Policy from which to obtain syntactic rules.
+ * @param rule AV rule to convert.
+ * @param perms If non-NULL and non-empty, a list of permission
+ * strings.  Returned syn avrules will have at least one permission in
+ * common with this list.
+ *
+ * @return A newly allocated vector of syn_avrule_t pointers.  The
+ * caller is responsible for calling apol_vector_destroy() afterwards,
+ * passing NULL as the second parameter.
+ */
+extern apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t *p,
+						 qpol_avrule_t *rule,
+						 apol_vector_t *perms);
+
+/**
+ * Given a vector of avrules (qpol_avrule_t pointers), return a newly
+ * allocated vector of qpol_syn_avrule_t pointers (relative to the
+ * given policy) which comprise all of those rules.  The returned
+ * vector will be sorted by line numbers and will not have any
+ * duplicate syntactic rules.  If the given perms vector is non-NULL
+ * and non-empty, then only return syntactic rules with at least one
+ * permission listed within the perms vector.
+ *
+ * @param p Policy from which to obtain syntactic rules.
+ * @param rules Vector of AV rules to convert.
+ * @param perms If non-NULL and non-empty, a list of permission
+ * strings.  Returned syn avrules will have at least one permission in
+ * common with this list.
+ *
+ * @return A newly allocated vector of syn_avrule_t pointers.  The
+ * caller is responsible for calling apol_vector_destroy() afterwards,
+ * passing NULL as the second parameter.
+ */
+extern apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
+						      apol_vector_t *rules,
+						      apol_vector_t *perms);
+
+/**
  *  Render an avrule to a string.
  *
  *  @param policy Policy handler, to report errors.
