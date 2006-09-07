@@ -54,7 +54,7 @@ extern void poldiff_type_get_stats(poldiff_t *diff, size_t stats[5]);
  *  @param diff The policy difference structure associated with the
  *  type difference summary.
  *
- *  @return a vector of elements of type poldiff_type_t, or NULL on
+ *  @return A vector of elements of type poldiff_type_t, or NULL on
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
@@ -78,21 +78,21 @@ extern char *poldiff_type_to_string(poldiff_t *diff, const void *type);
  *
  *  @param type The type from which to get the name.
  *
- *  @return name of the type on success and NULL on failure; if the
+ *  @return Name of the type on success and NULL on failure; if the
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_type_get_name(poldiff_type_t *type);
+extern const char *poldiff_type_get_name(const poldiff_type_t *type);
 
 /**
  *  Get the form of difference from a type diff.
  *
  *  @param cls The type from which to get the difference form.
  *
- *  @return the form of difference (one of POLDIFF_FORM_*) or
+ *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_type_get_form(poldiff_type_t *type);
+extern poldiff_form_e poldiff_type_get_form(const poldiff_type_t *type);
 
 /**
  *  Get a vector of attributes added to the type.
@@ -100,12 +100,12 @@ extern poldiff_form_e poldiff_type_get_form(poldiff_type_t *type);
  *  @param type The type diff from which to get the attribute
  *  vector.
  *
- *  @return a vector of attribute names (type char *) that are
+ *  @return A vector of attribute names (type char *) that are
  *  assigned to the type in the modified policy.  If no attributes
  *  were added the size of the returned vector will be 0.  The
  *  caller must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_type_get_added_attribs(poldiff_type_t *type);
+extern apol_vector_t *poldiff_type_get_added_attribs(const poldiff_type_t *type);
 
 /**
  *  Get a vector of attributes removed from the type.
@@ -113,12 +113,12 @@ extern apol_vector_t *poldiff_type_get_added_attribs(poldiff_type_t *type);
  *  @param type The type diff from which to get the attribute
  *  vector.
  *
- *  @return a vector of attribute names (type char *) that are
+ *  @return A vector of attribute names (type char *) that are
  *  assigned to the type in the original policy.  If no attributes
  *  were removed the size of the returned vector will be 0.  The
  *  caller must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_type_get_removed_attribs(poldiff_type_t *type);
+extern apol_vector_t *poldiff_type_get_removed_attribs(const poldiff_type_t *type);
 
 
 #endif /* POLDIFF_TYPE_DIFF_H */

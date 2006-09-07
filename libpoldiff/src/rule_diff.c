@@ -781,7 +781,9 @@ static int rule_build_bsts(poldiff_t *diff) {
  * then by truth value, inverting rule2's value if in the other
  * branch.
  */
-static int pseudo_avrule_comp(pseudo_avrule_t *rule1, pseudo_avrule_t *rule2, int is_sorting)
+static int pseudo_avrule_comp(const pseudo_avrule_t *rule1,
+			      const  pseudo_avrule_t *rule2,
+			      int is_sorting)
 {
 	size_t i;
 	uint32_t bool_val;
@@ -833,8 +835,8 @@ static int pseudo_avrule_comp(pseudo_avrule_t *rule1, pseudo_avrule_t *rule2, in
 
 static int avrule_bst_comp(const void *x, const void *y, void *data __attribute__((unused)))
 {
-	pseudo_avrule_t *r1 = (pseudo_avrule_t *) x;
-	pseudo_avrule_t *r2 = (pseudo_avrule_t *) y;
+	const pseudo_avrule_t *r1 = (const pseudo_avrule_t *) x;
+	const pseudo_avrule_t *r2 = (const pseudo_avrule_t *) y;
 	return pseudo_avrule_comp(r1, r2, 1);
 }
 
@@ -1197,8 +1199,8 @@ void avrule_free_item(void *item)
 
 int avrule_comp(const void *x, const void *y, poldiff_t *diff __attribute__((unused)))
 {
-	pseudo_avrule_t *r1 = (pseudo_avrule_t *) x;
-	pseudo_avrule_t *r2 = (pseudo_avrule_t *) y;
+	const pseudo_avrule_t *r1 = (const pseudo_avrule_t *) x;
+	const pseudo_avrule_t *r2 = (const pseudo_avrule_t *) y;
 	return pseudo_avrule_comp(r1, r2, 0);
 }
 
@@ -1465,7 +1467,9 @@ int avrule_deep_diff(poldiff_t *diff, const void *x, const void *y)
  * then by truth value, inverting rule2's value if in the other
  * branch.
  */
-static int pseudo_terule_comp(pseudo_terule_t *rule1, pseudo_terule_t *rule2, int is_sorting)
+static int pseudo_terule_comp(const pseudo_terule_t *rule1,
+			      const pseudo_terule_t *rule2,
+			      int is_sorting)
 {
 	size_t i;
 	uint32_t bool_val;
@@ -1517,8 +1521,8 @@ static int pseudo_terule_comp(pseudo_terule_t *rule1, pseudo_terule_t *rule2, in
 
 static int terule_bst_comp(const void *x, const void *y, void *data __attribute__((unused)))
 {
-	pseudo_terule_t *r1 = (pseudo_terule_t *) x;
-	pseudo_terule_t *r2 = (pseudo_terule_t *) y;
+	const pseudo_terule_t *r1 = (const pseudo_terule_t *) x;
+	const pseudo_terule_t *r2 = (const pseudo_terule_t *) y;
 	return pseudo_terule_comp(r1, r2, 1);
 }
 
@@ -1852,8 +1856,8 @@ void terule_free_item(void *item)
 
 int terule_comp(const void *x, const void *y, poldiff_t *diff __attribute__((unused)))
 {
-	pseudo_terule_t *r1 = (pseudo_terule_t *) x;
-	pseudo_terule_t *r2 = (pseudo_terule_t *) y;
+	const pseudo_terule_t *r1 = (const pseudo_terule_t *) x;
+	const pseudo_terule_t *r2 = (const pseudo_terule_t *) y;
 	return pseudo_terule_comp(r1, r2, 0);
 }
 
