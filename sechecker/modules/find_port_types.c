@@ -279,7 +279,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			qpol_context_t *context;
 			apol_context_t *a_context;
 			qpol_type_t *context_type;
-			char *context_type_name;
+			char *context_type_name, *tmp;
 
 			proof = NULL;
 			qpol_isid_get_context(policy->qh, policy->p, isid, &context);
@@ -289,13 +289,20 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 			if (apol_str_append(&buff, &buff_sz, "sid port ") != 0) {
 				ERR(policy, "%s", strerror(ENOMEM));
+				apol_context_destroy(&a_context);
 				goto find_port_types_run_fail;
 			}
 
-			if (apol_str_append(&buff, &buff_sz, apol_context_render(policy, a_context)) != 0 ) {
+			tmp = apol_context_render(policy, a_context);
+			if (apol_str_append(&buff, &buff_sz, tmp) != 0 ) {
 				ERR(policy, "%s", strerror(ENOMEM));
+				apol_context_destroy(&a_context);
+				free(tmp);
 				goto find_port_types_run_fail;
 			}
+			free(tmp);
+			tmp = NULL;
+			apol_context_destroy(&a_context);
 
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
@@ -304,6 +311,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			}
 
 			proof->type = SECHK_ITEM_PORTCON;
+			proof->elem = isid;
 			proof->text = buff;
 
 			/* Have we encountered this type before?  If so, use that type. */

@@ -464,12 +464,13 @@ int find_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __att
 				goto find_domains_run_fail;
 			}
 		}
+		apol_vector_destroy(&role_vector, NULL);
 		apol_role_query_destroy(&role_query);
 
 		/* insert any results for this type */
 		if (item) {
 			item->item = type;
-			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+			if (apol_vector_append(res->items, (void*)item) < 0) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_domains_run_fail;

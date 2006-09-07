@@ -182,7 +182,7 @@ int find_net_domains_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 		return -1;
 	}
 
-	if ( !(datum->net_objs = apol_vector_create()) ) {
+	if (!(datum->net_objs = apol_vector_create()) ) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		return -1;
 	}
@@ -245,18 +245,18 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		goto find_net_domains_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_net_domains_run_fail;
 	}
 
-	if ( !(avrule_query = apol_avrule_query_create()) ) {
+	if (!(avrule_query = apol_avrule_query_create())) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_net_domains_run_fail;
 	}
 	apol_avrule_query_set_rules(policy, avrule_query, QPOL_RULE_ALLOW);
 	apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
-	for (k=0;k<apol_vector_get_size(avrule_vector);k++) {	
+	for (k = 0; k < apol_vector_get_size(avrule_vector); k++) {	
 		qpol_avrule_t *avrule;
 		qpol_class_t *class;
 		char *class_name;
@@ -264,7 +264,7 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		avrule = apol_vector_get_element(avrule_vector, k);	
 		qpol_avrule_get_object_class(policy->qh, policy->p, avrule, &class);
 		qpol_class_get_name(policy->qh, policy->p, class, &class_name);
-		for (i=0;i<apol_vector_get_size(datum->net_objs);i++) {
+		for (i = 0; i < apol_vector_get_size(datum->net_objs); i++) {
 			char *net_obj_name;
 
 			net_obj_name = apol_vector_get_element(datum->net_objs, i);
@@ -280,7 +280,8 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_net_domains_run_fail;
 				}
-				proof->type = SECHK_ITEM_TYPE;
+				proof->type = SECHK_ITEM_AVRULE;
+				proof->elem = avrule;
 				proof->text = strdup(apol_avrule_render(policy, avrule));
 				if ( !proof->text ) {
 					ERR(policy, "%s", strerror(ENOMEM));
@@ -341,6 +342,8 @@ find_net_domains_run_fail:
 /* The free function frees the private data of a module */
 void find_net_domains_data_free(void *data)
 {
+	find_net_domains_data_t *d = data;
+	apol_vector_destroy(&d->net_objs, NULL);
 	free(data);
 }
 

@@ -171,9 +171,7 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	size_t i;
 	apol_vector_t *role_vector;
 	apol_vector_t *role_allow_vector;
-	apol_vector_t *role_trans_vector;
 	apol_role_allow_query_t *role_allow_query = NULL;
-	apol_role_trans_query_t *role_trans_query = NULL;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -209,11 +207,11 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
 	}
-	if ((role_allow_query = apol_role_allow_query_create()) == NULL ||
-			(role_trans_query = apol_role_trans_query_create()) == NULL) {
+	if ((role_allow_query = apol_role_allow_query_create()) == NULL) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
-	}		 
+	}
+
 	for (i = 0; i < apol_vector_get_size(role_vector); i++) {
 		qpol_role_t *role;
 		char *role_name;
@@ -227,12 +225,11 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		apol_role_allow_query_set_source(policy, role_allow_query, role_name);
 		apol_role_allow_query_set_source_any(policy, role_allow_query, 1);
 		apol_get_role_allow_by_query(policy, role_allow_query, &role_allow_vector);
-		if ( apol_vector_get_size(role_allow_vector) > 0 ) continue;
-
-		apol_role_trans_query_set_source(policy, role_trans_query, role_name);
-		apol_role_trans_query_set_source_any(policy, role_trans_query, 1);
-		apol_get_role_trans_by_query(policy, role_trans_query, &role_trans_vector);
-		if ( apol_vector_get_size(role_trans_vector) > 0 ) continue;
+		if (apol_vector_get_size(role_allow_vector) > 0) {
+			apol_vector_destroy(&role_allow_vector, NULL);
+			continue;
+		}
+		apol_vector_destroy(&role_allow_vector, NULL);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -267,14 +264,12 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	apol_vector_destroy(&role_vector, NULL);	
 	apol_vector_destroy(&role_allow_vector,NULL);
 	apol_role_allow_query_destroy(&role_allow_query);
-	apol_role_trans_query_destroy(&role_trans_query);
 	mod->result = res;
 
 	return 0;
 
 roles_wo_allow_run_fail:
 	apol_role_allow_query_destroy(&role_allow_query);
-	apol_role_trans_query_destroy(&role_trans_query);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	return -1;
