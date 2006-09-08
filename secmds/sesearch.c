@@ -81,6 +81,7 @@ typedef struct options {
 	bool_t role_trans;
 	bool_t useregex;
 	bool_t show_cond;
+	apol_vector_t *perm_vector;
 } options_t;
 
 void usage(const char *program_name, int brief)
@@ -137,7 +138,7 @@ static int perform_av_query(apol_policy_t *policy, options_t *opt, apol_vector_t
 	apol_avrule_query_t *avq = NULL;
 	unsigned int rules = 0;
 	int error = 0;
-	char *tmp = NULL, *tok = NULL;
+	char *tmp = NULL, *tok = NULL, *s = NULL;
 
 	if (!policy || !opt || !v) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -185,6 +186,12 @@ static int perform_av_query(apol_policy_t *policy, options_t *opt, apol_vector_t
 				error = errno;
 				goto err;
 			}
+			if ((s = strdup(tok)) == NULL ||
+			    apol_vector_append(opt->perm_vector, s) < 0) {
+				error = errno;
+				goto err;
+			}
+			s = NULL;
 		}
 		free(tmp);
 	}
@@ -201,9 +208,70 @@ err:
 	apol_vector_destroy(v, NULL);
 	apol_avrule_query_destroy(&avq);
 	free(tmp);
+	free(s);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
 	return -1;
+}
+
+static void print_syn_av_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
+{
+	size_t i, num_rules = 0;
+	apol_vector_t *syn_list = NULL;
+	qpol_syn_avrule_t *rule = NULL;
+	char *tmp = NULL, *rule_str = NULL, *expr = NULL;
+	char enable_char = ' ', branch_char = ' ';
+	qpol_cond_t *cond = NULL;
+	uint32_t enabled = 0, is_true = 0;
+	unsigned long lineno = 0;
+
+
+	if (!policy || !v)
+		return;
+
+	if ((syn_list = apol_avrule_list_to_syn_avrules(policy, v, opt->perm_vector)) == NULL)
+		goto cleanup;
+	if (!(num_rules = apol_vector_get_size(syn_list)))
+		goto cleanup;
+
+	fprintf(stdout, "Found %zd av rules:\n", num_rules);
+
+	for (i = 0; i < num_rules; i++) {
+		rule = apol_vector_get_element(syn_list, i);
+		enable_char = branch_char = ' ';
+		if (opt->show_cond) {
+			if (qpol_syn_avrule_get_cond(policy->qh, policy->p, rule, &cond))
+				goto cleanup;
+			if (cond) {
+				if (qpol_syn_avrule_get_is_enabled(policy->qh, policy->p, rule, &enabled) < 0 ||
+				    qpol_cond_eval(policy->qh, policy->p, cond, &is_true) < 0)
+					goto cleanup;
+				tmp = apol_cond_expr_render(policy, cond);
+				enable_char = (enabled ? 'E' : 'D');
+				branch_char = ((is_true && enabled) || (!is_true && !enabled) ? 'T' : 'F');
+				asprintf(&expr, "[ %s ]", tmp);
+				free(tmp);
+				tmp = NULL;
+				if (!expr)
+					goto cleanup;
+			}
+		}
+		if (qpol_syn_avrule_get_lineno(policy->qh, policy->p, rule, &lineno))
+			goto cleanup;
+		if (!(rule_str = apol_syn_avrule_render(policy, rule)))
+			goto cleanup;
+		fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr?expr:"");
+		free(rule_str);
+		rule_str = NULL;
+		free(expr);
+		expr = NULL;
+	}
+
+cleanup:
+	apol_vector_destroy(&syn_list, NULL);
+	free(tmp);
+	free(rule_str);
+	free(expr);
 }
 
 static void print_av_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
@@ -215,8 +283,6 @@ static void print_av_results(apol_policy_t *policy, options_t *opt, apol_vector_
 	qpol_iterator_t *iter = NULL;
 	qpol_cond_t *cond = NULL;
 	uint32_t enabled = 0, list = 0;
-	unsigned long lineno = 0;
-	qpol_syn_avrule_t *synrule = NULL;
 
 	if (!policy || !v)
 		return;
@@ -229,18 +295,16 @@ static void print_av_results(apol_policy_t *policy, options_t *opt, apol_vector_
 	for (i = 0; i < num_rules; i++) {
 		enable_char = branch_char = ' ';
 		if (!(rule = (qpol_avrule_t*)apol_vector_get_element(v, i)))
-			break;
+			goto cleanup;
 		if (opt->show_cond) {
 			if (qpol_avrule_get_cond(policy->qh, policy->p, rule, &cond))
-				break;
+				goto cleanup;
 			if (qpol_avrule_get_is_enabled(policy->qh, policy->p, rule, &enabled))
-				break;
+				goto cleanup;
 			if (cond) {
 				if (qpol_avrule_get_which_list(policy->qh, policy->p, rule, &list))
-					break;
-				if (qpol_cond_get_expr_node_iter(policy->qh, policy->p, cond, &iter))
-					break;
-				tmp = apol_cond_expr_render(policy, iter);
+					goto cleanup;
+				tmp = apol_cond_expr_render(policy, cond);
 				qpol_iterator_destroy(&iter);
 				enable_char = (enabled ? 'E' : 'D');
 				branch_char = (list ? 'T' : 'F');
@@ -248,31 +312,14 @@ static void print_av_results(apol_policy_t *policy, options_t *opt, apol_vector_
 				free(tmp);
 				tmp = NULL;
 				if (!expr)
-					break;
+					goto cleanup;
 			}
 		}
-		if (opt->lineno) {
-			if (qpol_avrule_get_syn_avrule_iter(policy->qh, policy->p, rule, &iter))
-				break;
-			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-				if (qpol_iterator_get_item(iter, (void**)&synrule))
-					goto cleanup;
-				if (qpol_syn_avrule_get_lineno(policy->qh, policy->p, synrule, &lineno))
-					goto cleanup;
-				if (!(rule_str = apol_syn_avrule_render(policy, synrule)))
-					goto cleanup;
-				fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr?expr:"");
-				free(rule_str);
-				rule_str = NULL;
-			}
-			qpol_iterator_destroy(&iter);
-		} else {
-			if (!(rule_str = apol_avrule_render(policy, rule)))
-				break;
-			fprintf(stdout, "%c%c %s %s\n", enable_char, branch_char, rule_str, expr?expr:"");
-			free(rule_str);
-			rule_str = NULL;
-		}
+		if (!(rule_str = apol_avrule_render(policy, rule)))
+			goto cleanup;
+		fprintf(stdout, "%c%c %s %s\n", enable_char, branch_char, rule_str, expr?expr:"");
+		free(rule_str);
+		rule_str = NULL;
 		free(expr);
 		expr = NULL;
 	}
@@ -340,6 +387,65 @@ err:
 	return -1;
 }
 
+static void print_syn_te_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
+{
+	size_t i, num_rules = 0;
+	apol_vector_t *syn_list = NULL;
+	qpol_syn_terule_t *rule = NULL;
+	char *tmp = NULL, *rule_str = NULL, *expr = NULL;
+	char enable_char = ' ', branch_char = ' ';
+	qpol_cond_t *cond = NULL;
+	uint32_t enabled = 0, is_true = 0;
+	unsigned long lineno = 0;
+
+	if (!policy || !v)
+		return;
+
+	if ((syn_list = apol_terule_list_to_syn_terules(policy, v)) == NULL)
+		goto cleanup;
+	if (!(num_rules = apol_vector_get_size(syn_list)))
+		goto cleanup;
+
+	fprintf(stdout, "Found %zd te rules:\n", num_rules);
+
+	for (i = 0; i < num_rules; i++) {
+		rule = apol_vector_get_element(syn_list, i);
+		enable_char = branch_char = ' ';
+		if (opt->show_cond) {
+			if (qpol_syn_terule_get_cond(policy->qh, policy->p, rule, &cond))
+				goto cleanup;
+			if (cond) {
+				if (qpol_syn_terule_get_is_enabled(policy->qh, policy->p, rule, &enabled) < 0 ||
+				    qpol_cond_eval(policy->qh, policy->p, cond, &is_true) < 0)
+					goto cleanup;
+				tmp = apol_cond_expr_render(policy, cond);
+				enable_char = (enabled ? 'E' : 'D');
+				branch_char = ((is_true && enabled) || (!is_true && !enabled) ? 'T' : 'F');
+				asprintf(&expr, "[ %s ]", tmp);
+				free(tmp);
+				tmp = NULL;
+				if (!expr)
+					break;
+			}
+		}
+		if (qpol_syn_terule_get_lineno(policy->qh, policy->p, rule, &lineno))
+			goto cleanup;
+		if (!(rule_str = apol_syn_terule_render(policy, rule)))
+			goto cleanup;
+		fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr?expr:"");
+		free(rule_str);
+		rule_str = NULL;
+		free(expr);
+		expr = NULL;
+	}
+
+cleanup:
+	apol_vector_destroy(&syn_list, NULL);
+	free(tmp);
+	free(rule_str);
+	free(expr);
+}
+
 static void print_te_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
 {
 	size_t i, num_rules = 0;
@@ -349,32 +455,30 @@ static void print_te_results(apol_policy_t *policy, options_t *opt, apol_vector_
 	qpol_iterator_t *iter = NULL;
 	qpol_cond_t *cond = NULL;
 	uint32_t enabled = 0, list = 0;
-	unsigned long lineno = 0;
-	qpol_syn_terule_t *synrule = NULL;
 
 	if (!policy || !v)
-		return;
+		goto cleanup;
 
 	if (!(num_rules = apol_vector_get_size(v)))
-		return;
+		goto cleanup;
 
 	fprintf(stdout, "Found %zd te rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
 		enable_char = branch_char = ' ';
 		if (!(rule = (qpol_terule_t*)apol_vector_get_element(v, i)))
-			break;
+			goto cleanup;
 		if (opt->show_cond) {
 			if (qpol_terule_get_cond(policy->qh, policy->p, rule, &cond))
-				break;
+				goto cleanup;
 			if (qpol_terule_get_is_enabled(policy->qh, policy->p, rule, &enabled))
-				break;
+				goto cleanup;
 			if (cond) {
 				if (qpol_terule_get_which_list(policy->qh, policy->p, rule, &list))
-					break;
+					goto cleanup;
 				if (qpol_cond_get_expr_node_iter(policy->qh, policy->p, cond, &iter))
-					break;
-				tmp = apol_cond_expr_render(policy, iter);
+					goto cleanup;
+				tmp = apol_cond_expr_render(policy, cond);
 				qpol_iterator_destroy(&iter);
 				enable_char = (enabled ? 'E' : 'D');
 				branch_char = (list ? 'T' : 'F');
@@ -382,31 +486,14 @@ static void print_te_results(apol_policy_t *policy, options_t *opt, apol_vector_
 				free(tmp);
 				tmp = NULL;
 				if (!expr)
-					break;
+					goto cleanup;
 			}
 		}
-		if (opt->lineno) {
-			if (qpol_terule_get_syn_terule_iter(policy->qh, policy->p, rule, &iter))
-				break;
-			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-				if (qpol_iterator_get_item(iter, (void**)&synrule))
-					goto cleanup;
-				if (qpol_syn_terule_get_lineno(policy->qh, policy->p, synrule, &lineno))
-					goto cleanup;
-				if (!(rule_str = apol_syn_terule_render(policy, synrule)))
-					goto cleanup;
-				fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr?expr:"");
-				free(rule_str);
-				rule_str = NULL;
-			}
-			qpol_iterator_destroy(&iter);
-		} else {
-			if (!(rule_str = apol_terule_render(policy, rule)))
-				break;
-			fprintf(stdout, "%c%c %s %s\n", enable_char, branch_char, rule_str, expr?expr:"");
-			free(rule_str);
-			rule_str = NULL;
-		}
+		if (!(rule_str = apol_terule_render(policy, rule)))
+			goto cleanup;
+		fprintf(stdout, "%c%c %s %s\n", enable_char, branch_char, rule_str, expr?expr:"");
+		free(rule_str);
+		rule_str = NULL;
 		free(expr);
 		expr = NULL;
 	}
@@ -667,6 +754,7 @@ int main (int argc, char **argv)
 	cmd_opts.src_name = cmd_opts.tgt_name = cmd_opts.class_name = NULL;
 	cmd_opts.permlist = cmd_opts.bool_name = cmd_opts.src_role_name = NULL;
 	cmd_opts.tgt_role_name = NULL;
+	cmd_opts.perm_vector = NULL;
 
 	while ((optc = getopt_long (argc, argv, "s:t:r:g:c:p:b:ANURaTLolCinhv0", longopts, NULL)) != -1)  {
 		switch (optc) {
@@ -739,8 +827,9 @@ int main (int argc, char **argv)
 				exit(1);
 			}
 			cmd_opts.permlist = strdup(optarg);
-			if (!cmd_opts.permlist) {
-				fprintf(stderr, "Memory error!\n");
+			cmd_opts.perm_vector = apol_vector_create();
+			if (!cmd_opts.permlist || !cmd_opts.perm_vector) {
+				fprintf(stderr, "%s", strerror(ENOMEM));
 				exit(1);
 			}
 			break;
@@ -839,7 +928,10 @@ int main (int argc, char **argv)
 		goto cleanup;
 	}
 	if (v) {
-		print_av_results(policy, &cmd_opts, v);
+		if (cmd_opts.lineno && !apol_policy_is_binary(policy))
+			print_syn_av_results(policy, &cmd_opts, v);
+		else
+			print_av_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
 	apol_vector_destroy(&v, NULL);
@@ -849,7 +941,10 @@ int main (int argc, char **argv)
 		goto cleanup;
 	}
 	if (v) {
-		print_te_results(policy, &cmd_opts, v);
+		if (cmd_opts.lineno && !apol_policy_is_binary(policy))
+			print_syn_te_results(policy, &cmd_opts, v);
+		else
+			print_te_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
 	apol_vector_destroy(&v, NULL);
@@ -894,5 +989,6 @@ cleanup:
 	free(cmd_opts.bool_name);
 	free(cmd_opts.src_role_name);
 	free(cmd_opts.tgt_role_name);
+	apol_vector_destroy(&cmd_opts.perm_vector, free);
 	exit(rt);
 }

@@ -144,7 +144,6 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 	apol_policy_t *p;
 	const char *rule_type;
 	char *diff_char = "", *s = NULL, *t = NULL, *perm_name, *cond_expr = NULL;
-	qpol_iterator_t *cond_iter = NULL;
 	size_t i, len;
 	int error;
 	if (diff == NULL || avrule == NULL) {
@@ -231,8 +230,7 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 		goto err;
 	}
 	if (pa->cond != NULL) {
-		if (qpol_cond_get_expr_node_iter(p->qh, p->p, pa->cond, &cond_iter) < 0 ||
-		    (cond_expr = apol_cond_expr_render(p, cond_iter)) == NULL) {
+		if ((cond_expr = apol_cond_expr_render(p, pa->cond)) == NULL) {
 			error = errno;
 			goto err;
 		}
@@ -249,14 +247,12 @@ char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule)
 		free(t);
 		t = NULL;
 		free(cond_expr);
-		qpol_iterator_destroy(&cond_iter);
 	}
 	return s;
  err:
 	free(s);
 	free(t);
 	free(cond_expr);
-	qpol_iterator_destroy(&cond_iter);
 	ERR(diff, "%s", strerror(error));
 	errno = error;
 	return NULL;
@@ -401,7 +397,6 @@ char *poldiff_terule_to_string(poldiff_t *diff, const void *terule)
 	apol_policy_t *p;
 	const char *rule_type;
 	char *diff_char = "", *s = NULL, *t = NULL, *cond_expr = NULL;
-	qpol_iterator_t *cond_iter = NULL;
 	size_t len;
 	int error;
 	if (diff == NULL || terule == NULL) {
@@ -483,8 +478,7 @@ char *poldiff_terule_to_string(poldiff_t *diff, const void *terule)
 		goto err;
 	}
 	if (pt->cond != NULL) {
-		if (qpol_cond_get_expr_node_iter(p->qh, p->p, pt->cond, &cond_iter) < 0 ||
-		    (cond_expr = apol_cond_expr_render(p, cond_iter)) == NULL) {
+		if ((cond_expr = apol_cond_expr_render(p, pt->cond)) == NULL) {
 			error = errno;
 			goto err;
 		}
@@ -501,14 +495,12 @@ char *poldiff_terule_to_string(poldiff_t *diff, const void *terule)
 		free(t);
 		t = NULL;
 		free(cond_expr);
-		qpol_iterator_destroy(&cond_iter);
 	}
 	return s;
  err:
 	free(s);
 	free(t);
 	free(cond_expr);
-	qpol_iterator_destroy(&cond_iter);
 	ERR(diff, "%s", strerror(error));
 	errno = error;
 	return NULL;
