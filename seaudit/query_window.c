@@ -121,15 +121,6 @@ out:
 	return FALSE;
 }
 
-int compare_syn_avrule_lineno(const void *a, const void *b, void *unused __attribute__ ((unused)) )
-{
-	unsigned long a_lineno, b_lineno;
-
-	qpol_syn_avrule_get_lineno(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, (qpol_syn_avrule_t*)a, &a_lineno);
-	qpol_syn_avrule_get_lineno(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, (qpol_syn_avrule_t*)b, &b_lineno);
-	return a_lineno - b_lineno;
-}
-
 static void display_policy_query_results(GladeXML *xml, GString *src_type, GString *tgt_type, GString *obj_class, apol_vector_t *av_vector)
 {
 	GtkTextView *view;
@@ -140,7 +131,6 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 	char *string = NULL, tbuf[192];
 	char str[STR_SIZE];
 	int i;
-	apol_vector_t *syn_avrule_vector = NULL;
 
 	view = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "query_results"));
 	g_assert(view);
@@ -202,40 +192,37 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 
 	gtk_text_buffer_insert(buffer, &end, "\n", -1);
 
-	syn_avrule_vector = apol_vector_create();
-	for (i = 0; i < apol_vector_get_size(av_vector); i++) {
-		qpol_avrule_t *avrule;
-		qpol_iterator_t *syn_avrule_iter;
-
-		avrule = apol_vector_get_element(av_vector, i);
-		qpol_avrule_get_syn_avrule_iter(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, avrule, &syn_avrule_iter);
-		for (;!qpol_iterator_end(syn_avrule_iter);qpol_iterator_next(syn_avrule_iter)) {
-			qpol_syn_avrule_t *rule;
-
-			qpol_iterator_get_item(syn_avrule_iter, (void **)&rule);
-			apol_vector_append(syn_avrule_vector, rule);
+	if (apol_policy_is_binary(seaudit_app->cur_policy)) {
+		for (i = 0; i < apol_vector_get_size(av_vector); i++) {
+			qpol_avrule_t *rule;
+			rule = apol_vector_get_element(av_vector, i);
+			string = apol_avrule_render(seaudit_app->cur_policy, rule);
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, string, -1, "rules-tag", NULL);
+			free(string);
+			gtk_text_buffer_insert(buffer, &end, "\n", -1);
 		}
 	}
-	apol_vector_sort_uniquify(syn_avrule_vector, compare_syn_avrule_lineno, NULL, NULL);
-	for (i = 0; i < apol_vector_get_size(syn_avrule_vector); i++) {
-		qpol_syn_avrule_t *rule;
-
-		rule = apol_vector_get_element(syn_avrule_vector, i);
-		if (!apol_policy_is_binary(seaudit_app->cur_policy)) {
+	else {
+		apol_vector_t *syn_avrule_vector = NULL;
+		syn_avrule_vector = apol_avrule_list_to_syn_avrules(seaudit_app->cur_policy, av_vector, NULL);
+		for (i = 0; i < apol_vector_get_size(syn_avrule_vector); i++) {
+			qpol_syn_avrule_t *rule;
 			unsigned long lineno;
-			sprintf(tbuf, "(");
+			rule = apol_vector_get_element(syn_avrule_vector, i);
+			sprintf(tbuf, "[");
 			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
 			qpol_syn_avrule_get_lineno(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, rule, &lineno);
 			sprintf(tbuf, "%ld", lineno);
 			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "policy-link-tag", NULL);
-			sprintf(tbuf, ") ");
+			sprintf(tbuf, "] ");
 			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
+			string = apol_syn_avrule_render(seaudit_app->cur_policy, rule);
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, string, -1, "rules-tag", NULL);
+			free(string);
+			gtk_text_buffer_insert(buffer, &end, "\n", -1);
 		}
-		string = apol_syn_avrule_render(seaudit_app->cur_policy, rule);
-		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, string, -1, "rules-tag", NULL);
-		gtk_text_buffer_insert(buffer, &end, "\n", -1);
+		apol_vector_destroy(&syn_avrule_vector, NULL);
 	}
-	apol_vector_destroy(&syn_avrule_vector, NULL);
 
 	return;
 }
