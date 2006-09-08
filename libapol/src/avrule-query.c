@@ -459,7 +459,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
 		ERR(p, "%s", strerror(error));
 		goto cleanup;
 	}
-	if (perms != NULL && apol_vector_get_size(perms) == 0) {
+	if (perms == NULL || apol_vector_get_size(perms) == 0) {
 		v = tmp_v;
 		tmp_v = NULL;
 	}

@@ -101,16 +101,16 @@ extern int apol_cond_query_set_regex(apol_policy_t *p,
 				     apol_cond_query_t *c, int is_regex);
 
 /**
- * Given an iterator of qpol_cond_expr_node_t, return a string
- * representation of the conditional expression.
+ * Given a conditional node, allocate and return a string
+ * representation of its conditional expression.
  *
  * @param p Policy handler, to report errors.
- * @param iter An iterator of qpol_cond_expr_node_t.
+ * @param cond Conditional node whose expression to render.
  *
- * @return a newly malloc()'d string representation of conditonal
+ * @return A newly malloc()'d string representation of conditonal
  * expression, or NULL on failure.  The caller is responsible for
  * calling free() on the returned string.
  */
-extern char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter);
+extern char *apol_cond_expr_render(apol_policy_t *p, qpol_cond_t *cond);
 
 #endif

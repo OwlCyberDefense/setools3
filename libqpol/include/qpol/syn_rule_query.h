@@ -181,7 +181,7 @@ extern int qpol_syn_avrule_get_lineno(qpol_handle_t *handle, qpol_policy_t *poli
 
 /**
  *  If the syntactic rule is within a conditional, then get that
- *  conditional.  Otherwise return NULL.
+ *  conditional and assign it to cond.  Otherwise assign to cond NULL.
  *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule for which to get the conditional.
@@ -283,7 +283,7 @@ extern int qpol_syn_terule_get_lineno(qpol_handle_t *handle, qpol_policy_t *poli
 
 /**
  *  If the syntactic rule is within a conditional, then get that
- *  conditional.  Otherwise return NULL.
+ *  conditional and assign it to cond.  Otherwise assign to cond NULL.
  *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule for which to get the conditional.
