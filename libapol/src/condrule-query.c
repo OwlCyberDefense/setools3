@@ -108,8 +108,9 @@ int apol_cond_query_set_regex(apol_policy_t *p, apol_cond_query_t *c, int is_reg
 	return apol_query_set_regex(p, &c->flags, is_regex);
 }
 
-char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
+char *apol_cond_expr_render(apol_policy_t *p, qpol_cond_t *cond)
 {
+	qpol_iterator_t *iter = NULL;
 	qpol_cond_expr_node_t *expr = NULL;
 	char *tmp = NULL, *bool_name = NULL;
 	int error = 0;
@@ -117,10 +118,14 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 	uint32_t expr_type = 0;
 	qpol_bool_t *cond_bool = NULL;
 
-	if (!p || !iter || qpol_iterator_end(iter)) {
+	if (!p || !cond) {
 		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
+	}
+	if (qpol_cond_get_expr_node_iter(p->qh, p->p, cond, &iter) < 0) {
+		error = errno;
+		goto err;
 	}
 
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -169,9 +174,11 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 	if (i > 1) {
 		tmp[i - 1] = '\0';
 	}
+	qpol_iterator_destroy(&iter);
 	return tmp;
 
 err:
+	qpol_iterator_destroy(&iter);
 	free(tmp);
 	errno = error;
 	return NULL;
