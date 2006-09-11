@@ -1,4 +1,8 @@
+setoolsdir = @setoolsdir@
 bin_PROGRAMS = sechecker
+
+dist_setools_DATA = \
+	sechecker_help.txt
 
 profilesdir = @profile_install_dir@
 dist_profiles_DATA = \
