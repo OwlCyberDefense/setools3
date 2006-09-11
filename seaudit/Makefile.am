@@ -17,7 +17,8 @@ dist_setools_DATA = \
 	query_window.glade \
 	report_window.glade \
 	seaudit.glade \
-	seaudit_help.txt
+	seaudit_help.txt \
+	dot_seaudit
 
 seaudit_SOURCES = \
 	auditlogmodel.c auditlogmodel.h \
