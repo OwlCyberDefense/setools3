@@ -1,146 +1,236 @@
-SELinux Tools (setools), version 2.4
-by Tresys Technology, LLC
-(selinux@tresys.com, www.tresys.com/selinux)
+Installation Instructions
+*************************
 
-May 17, 2006
+Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005 Free
+Software Foundation, Inc.
 
-BUILDING AND INSTALLING NOTES AND WARNINGS
+This file is free documentation; the Free Software Foundation gives
+unlimited permission to copy, distribute and modify it.
 
-We have built and used this package on several distributions with and
-without SELinux (see TESTING INFORMATION in KNOWN-BUGS file). These
-directions should work well on most distributions, but you should be
-familiar with the documentation for the distribution you are using.
+Basic Installation
+==================
 
-The directory structure of the Setools distribution is as follows:
+These are generic installation instructions.
 
-apol            The policy analysis tool
-awish           Our customized version of the Tk wish interpreter
-docs-src	Repository for generating setools documentation.
-libapol         The main policy analysis library
-libseaudit	The seaudit support library 
-libsefs		The selinux filesystem database library	
-seaudit 	The audit log analysis tools (seaudit and seaudit-report)
-secmds		The setools command line tools (seinfo, sesearch, 
-		findcon, replcon, indexcon, searchcon)
-sediff 		The semantic policy difference tool (command-line and GUI)
-sechecker	The modular policy checking tool
-packages	External packages required by setools
+   The `configure' shell script attempts to guess correct values for
+various system-dependent variables used during compilation.  It uses
+those values to create a `Makefile' in each directory of the package.
+It may also create one or more `.h' files containing system-dependent
+definitions.  Finally, it creates a shell script `config.status' that
+you can run in the future to recreate the current configuration, and a
+file `config.log' containing compiler output (useful mainly for
+debugging `configure').
 
-REQUIREMENTS
+   It can also use an optional file (typically called `config.cache'
+and enabled with `--cache-file=config.cache' or simply `-C') that saves
+the results of its tests to speed up reconfiguring.  (Caching is
+disabled by default to prevent problems with accidental use of stale
+cache files.)
 
-TCL/TK VERSION AND INSTALL: Before building you will need to ensure that you
-have Tcl/Tk 8.4 or higher installed with BWidgets. Generally, modern Linux
-distributions have appropriate versions of Tcl and Tk. Usually the BWidgets
-package IS NOT installed by default, however. If you do not have BWidgets
-installed it is available in the packages subdirectory of the Setools
-distribution. It can be installed by going to the packages subdirectory and
-typing "make install". If you have BWidgets installed make certain that it
-is a compatible version. See BWIDGETS VERSIONS below for more information.
+   If you need to do unusual things to compile the package, please try
+to figure out how `configure' could check whether to do them, and mail
+diffs or instructions to the address given in the `README' so they can
+be considered for the next release.  If you are using the cache, and at
+some point `config.cache' contains results you don't want to keep, you
+may remove or edit it.
 
-LIBSELINUX: In order to successfully build and install the file context tools 
-that come with the secmds package onto your system, as well as include the 
-file context interface in apol, you will need to install libselinux version 
-1.18 or higher and the associated headers. A package may be available for 
-your distribution - on Fedora Core it is called libselinux-devel. 
+   The file `configure.ac' (or `configure.in') is used to create
+`configure' by a program called `autoconf'.  You only need
+`configure.ac' if you want to change it or regenerate `configure' using
+a newer version of `autoconf'.
 
-If you DO NOT wish to install libselinux, make sure to set the USE_LIBSELINUX 
-variable in the top-level Makefile to 0, which is set to 1 by default. Setting 
-this variable to 0 will only build seinfo and sesearch, as well as exclude the 
-file context interface from apol.
+The simplest way to compile this package is:
 
-GTK: In order to successfully install seaudit and sediffx onto your system you 
-will need libglade and GTK2.0 or above installed. GTK2.4 is specifically required 
-for Fedora Core 1 systems. It also requires the pkg-config program to be installed 
-before you can build. 
+  1. `cd' to the directory containing the package's source code and type
+     `./configure' to configure the package for your system.  If you're
+     using `csh' on an old version of System V, you might need to type
+     `sh ./configure' instead to prevent `csh' from trying to execute
+     `configure' itself.
 
-INSTALLATION
+     Running `configure' takes awhile.  While running, it prints some
+     messages telling which features it is checking for.
 
-These are the instructions for building and installing all of the Setools.
-You can also build and install portions of the package including only those
-tools and libraries that do not require a GUI and X support. See "make help"
-for more information or for a complete list of make targets.
+  2. Type `make' to compile the package.
 
-BUILDING AND INSTALL
+  3. Optionally, type `make check' to run any self-tests that come with
+     the package.
 
-Short version: make all; su root; make install; make install-policy  
+  4. Type `make install' to install the programs and any data files and
+     documentation.
 
-Long version follows:
+  5. You can remove the program binaries and object files from the
+     source code directory by typing `make clean'.  To also remove the
+     files that `configure' created (so you can compile the package for
+     a different kind of computer), type `make distclean'.  There is
+     also a `make maintainer-clean' target, but that is intended mainly
+     for the package's developers.  If you use it, you may have to get
+     all sorts of other programs in order to regenerate files that came
+     with the distribution.
 
-0. Review the ./setools/Makefile. The following is information on important
-variables in this Makefile.
+Compilers and Options
+=====================
 
-	- TCLVER : When running 'make', the TCLVER should be automatically set 
-	      for your installation of Tcl/Tk. 
-	- TCL_LIBS : This variable is commented out by default and should 
-	      only be changed if your Tcl/Tk libraries cannot be located
-	      using the default search path.
-	- DEBUG : If set to 0, this will create an optimized version
-	- DYNAMIC : If set to 1, this will dynamically link with internal 
-	     libraries.
-	- USE_LIBSELINUX : This determines:
-	     	1. whether libapol uses libselinux to find the default policies. 
-		   NOTE: libselinux must be version 1.18 or greater.
-		2. whether libsefs will be built into apol, and awish. 
-	   Useful to create a version of apol that runs on non-selinux machines. 
-	   Set this to 0 for non-selinux machines.
-      
-Build and install tools:  If you want to install all tools, just 
-type "make install" to build and install everything.  Type "make help" 
-to see options to build individual pieces, for example to install just 
-apol.
+Some systems require unusual options for compilation or linking that the
+`configure' script does not know about.  Run `./configure --help' for
+details on some of the pertinent environment variables.
 
-Most errors result from improperly installed Tcl/Tk, BWidgets, or the 
-above libapol files.  
-   
-Send comments/questions to selinux@tresys.com.
+   You can give `configure' initial values for configuration parameters
+by setting variables in the command line or in the environment.  Here
+is an example:
 
-DEVELOPMENT SUPPORT INSTALLATION
+     ./configure CC=c89 CFLAGS=-O2 LIBS=-lposix
 
-Support for development using the setools libraries can be installed using the 
-'make install-dev' target. This target installs the headers and libraries for 
-libapol, and libseaudit. This is provided as a convenience to third 
-party developers, but is not otherwise supported. These libraries are in 
-constant development and interfaces can and will change, sometimes 
-substantially.
+   *Note Defining Variables::, for more details.
 
-INSTALLING SEAUDIT-REPORT AS A LOGWATCH PLUG-IN
+Compiling For Multiple Architectures
+====================================
 
-Support for installing seaudit-report as a plug-in to the LogWatch program,
-which comes standard with Red Hat Linux, is provided using the 
-'make install-logwatch-files' target. This target installs and labels the 
-configuration files for LogWatch necessary for having seaudit-report run as 
-a service to LogWatch. These configuration files are provided with the setools
-source distribution and are located in the seaudit subdirectory. They are as 
-follows:
-	- seaudit-report-group.conf: the logfile group configuration file
-	- seaudit-report-service.conf: the service filter config file
-	- seaudit-report-service: the service filter script
-	
-Integrating the seaudit-report tool with LogWatch can provide an 
-effective IDS solution by automating customized audit reports and having them 
-e-mailed to a specific recipient(s) for further analysis. You should make sure 
-that the LogWatch program is installed, before proceeding with using this 
-install target. 
+You can compile the package for more than one kind of computer at the
+same time, by placing the object files for each architecture in their
+own directory.  To do this, you must use a version of `make' that
+supports the `VPATH' variable, such as GNU `make'.  `cd' to the
+directory where you want the object files and executables to go and run
+the `configure' script.  `configure' automatically checks for the
+source code in the directory that `configure' is in and in `..'.
 
-BWIDGETS VERSIONS
+   If you have to use a `make' that does not support the `VPATH'
+variable, you have to compile the package for one architecture at a
+time in the source code directory.  After you have installed the
+package for one architecture, use `make distclean' before reconfiguring
+for another architecture.
 
-The BWidgets package can be found at 
-http://sourceforge.net/projects/tcllib. There are some 
-incompatibilities with different versions of Tcl/Tk and BWidgets that 
-can cause critical runtime errors. You will not be able to run any of 
-the tools if you are using incompatible versions of Tcl/Tk and 
-BWidgets. Correct versions of BWidgets for the Tcl/Tk version you are 
-using are:
+Installation Names
+==================
 
-	- Tcl/Tk 8.4 - BWidget-1.7.0
+By default, `make install' installs the package's commands under
+`/usr/local/bin', include files under `/usr/local/include', etc.  You
+can specify an installation prefix other than `/usr/local' by giving
+`configure' the option `--prefix=PREFIX'.
 
-NOTE: You may run the tools using a pre-1.7.0 BWidgets package, 
-however, you may experience problems. These tools have been tested 
-using the latest BWidgets packages starting from version 1.7.0. 
-See TESTING INFORMATION in KNOWN-BUGS for more information on what 
-platforms and configurations these tools have been tested against.
+   You can specify separate installation prefixes for
+architecture-specific files and architecture-independent files.  If you
+pass the option `--exec-prefix=PREFIX' to `configure', the package uses
+PREFIX as the prefix for installing programs and libraries.
+Documentation and other data files still use the regular prefix.
 
-Once you  have downloaded the correct version of BWidgets, then you 
-can install it in your TCL directory. For instance, if you have 
-Tcl installed in the /usr/lib directory, then you should install the 
-BWidgets directory to /usr/lib/tcl8.4/.
+   In addition, if you use an unusual directory layout you can give
+options like `--bindir=DIR' to specify different values for particular
+kinds of files.  Run `configure --help' for a list of the directories
+you can set and what kinds of files go in them.
+
+   If the package supports it, you can cause programs to be installed
+with an extra prefix or suffix on their names by giving `configure' the
+option `--program-prefix=PREFIX' or `--program-suffix=SUFFIX'.
+
+Optional Features
+=================
+
+Some packages pay attention to `--enable-FEATURE' options to
+`configure', where FEATURE indicates an optional part of the package.
+They may also pay attention to `--with-PACKAGE' options, where PACKAGE
+is something like `gnu-as' or `x' (for the X Window System).  The
+`README' should mention any `--enable-' and `--with-' options that the
+package recognizes.
+
+   For packages that use the X Window System, `configure' can usually
+find the X include and library files automatically, but if it doesn't,
+you can use the `configure' options `--x-includes=DIR' and
+`--x-libraries=DIR' to specify their locations.
+
+Specifying the System Type
+==========================
+
+There may be some features `configure' cannot figure out automatically,
+but needs to determine by the type of machine the package will run on.
+Usually, assuming the package is built to be run on the _same_
+architectures, `configure' can figure that out, but if it prints a
+message saying it cannot guess the machine type, give it the
+`--build=TYPE' option.  TYPE can either be a short name for the system
+type, such as `sun4', or a canonical name which has the form:
+
+     CPU-COMPANY-SYSTEM
+
+where SYSTEM can have one of these forms:
+
+     OS KERNEL-OS
+
+   See the file `config.sub' for the possible values of each field.  If
+`config.sub' isn't included in this package, then this package doesn't
+need to know the machine type.
+
+   If you are _building_ compiler tools for cross-compiling, you should
+use the option `--target=TYPE' to select the type of system they will
+produce code for.
+
+   If you want to _use_ a cross compiler, that generates code for a
+platform different from the build platform, you should specify the
+"host" platform (i.e., that on which the generated programs will
+eventually be run) with `--host=TYPE'.
+
+Sharing Defaults
+================
+
+If you want to set default values for `configure' scripts to share, you
+can create a site shell script called `config.site' that gives default
+values for variables like `CC', `cache_file', and `prefix'.
+`configure' looks for `PREFIX/share/config.site' if it exists, then
+`PREFIX/etc/config.site' if it exists.  Or, you can set the
+`CONFIG_SITE' environment variable to the location of the site script.
+A warning: not all `configure' scripts look for a site script.
+
+Defining Variables
+==================
+
+Variables not defined in a site shell script can be set in the
+environment passed to `configure'.  However, some packages may run
+configure again during the build, and the customized values of these
+variables may be lost.  In order to avoid this problem, you should set
+them in the `configure' command line, using `VAR=value'.  For example:
+
+     ./configure CC=/usr/local2/bin/gcc
+
+causes the specified `gcc' to be used as the C compiler (unless it is
+overridden in the site shell script).  Here is a another example:
+
+     /bin/bash ./configure CONFIG_SHELL=/bin/bash
+
+Here the `CONFIG_SHELL=/bin/bash' operand causes subsequent
+configuration-related scripts to be executed by `/bin/bash'.
+
+`configure' Invocation
+======================
+
+`configure' recognizes the following options to control how it operates.
+
+`--help'
+`-h'
+     Print a summary of the options to `configure', and exit.
+
+`--version'
+`-V'
+     Print the version of Autoconf used to generate the `configure'
+     script, and exit.
+
+`--cache-file=FILE'
+     Enable the cache: use and save the results of the tests in FILE,
+     traditionally `config.cache'.  FILE defaults to `/dev/null' to
+     disable caching.
+
+`--config-cache'
+`-C'
+     Alias for `--cache-file=config.cache'.
+
+`--quiet'
+`--silent'
+`-q'
+     Do not print messages saying which checks are being made.  To
+     suppress all normal output, redirect it to `/dev/null' (any error
+     messages will still be shown).
+
+`--srcdir=DIR'
+     Look for the package's source code in directory DIR.  Usually
+     `configure' can determine that directory automatically.
+
+`configure' also accepts some other, not widely useful, options.  Run
+`configure --help' for more details.
+
