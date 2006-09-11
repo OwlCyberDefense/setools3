@@ -1,9 +1,24 @@
-/* Copyright (C) 2004-2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: Kevin Carr <kcarr@tresys.com>
- * Date: December 31, 2003
+/**
+ *  @file utilgui.c
+ *  Miscellaneous GTK utility functions.
+ *
+ *  @author Kevin Carr kcarr@tresys.com
+ *
+ *  Copyright (C) 2004-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "utilgui.h"
@@ -69,7 +84,7 @@ GString* get_filename_from_user(GtkWindow *parent, const char *title, const gcha
 	if (startfilename)
 		gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selector), startfilename);
 
-	g_signal_connect(GTK_OBJECT(file_selector), "response", 
+	g_signal_connect(GTK_OBJECT(file_selector), "response",
 			 G_CALLBACK(get_dialog_response), &response);
 	while (1) {
 		gtk_dialog_run(GTK_DIALOG(file_selector));
@@ -82,7 +97,7 @@ GString* get_filename_from_user(GtkWindow *parent, const char *title, const gcha
 		 * under the Files list. */
 		if (g_file_test(filename->str, G_FILE_TEST_IS_DIR))
 			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename->str);
-		else 
+		else
 			break;
 	}
 	gtk_widget_destroy(file_selector);
