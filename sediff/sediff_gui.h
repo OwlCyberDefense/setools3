@@ -1,12 +1,28 @@
-/* Copyright (C) 2005-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: Don Patterson <don.patterson@tresys.com>
- * Author: Brandon Whalen <bwhalen@tresys.com>
- * Date: January 31, 2005
+/**
+ *  @file sediff_gui.h
+ *  Headers for main sediffx program.
+ *
+ *  @author Don Patterson don.patterson@tresys.com
+ *  @author Brandon Whalen bwhalen@tresys.com
+ *  @author Randy Wicks rwicks@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
+
 #ifndef SEDIFF_GUI_H
 #define SEDIFF_GUI_H
 
@@ -19,8 +35,8 @@
 
 #define GLADEFILE "sediff.glade"
 
-#define MAIN_WINDOW_ID 	       "sediff_main_window"
-#define OPEN_DIALOG_ID 	       "sediff_policies_dialog"
+#define MAIN_WINDOW_ID	       "sediff_main_window"
+#define OPEN_DIALOG_ID	       "sediff_policies_dialog"
 #define RENAME_TYPES_DIALOG_ID "sediff_rename_types_dialog"
 #define FIND_DIALOG_ID       "sediff_find_dialog"
 #define FIND_FORWARD_ID      "sediff_find_forward"
@@ -43,7 +59,7 @@ typedef struct sediff_app {
 	GladeXML *window_xml;             /* the main windows xml */
 	GladeXML *open_dlg_xml;           /* the open dialogs xml */
 	GtkWidget *tree_view;	          /* the treeview seen on left hand pane */
-	GList *callbacks;               
+	GList *callbacks;
 	gint progress_completed;
 	GtkTextBuffer *main_buffer;       /* the generic buffer used for everything but te rules and conditionals(because they take so long to draw */
 	GtkTextBuffer *te_add_buffer;     /* the added te rules buffer */
@@ -61,7 +77,7 @@ typedef struct sediff_app {
 	struct sediff_rename_types *rename_types_window; /* the renamed types window reference */
 	struct sediff_find_window *find_window;          /* the find window reference */
 	apol_policy_t *p1;                     /* the policy 1 struct */
-	apol_policy_t *p2;                     /* the policy 2 struct */      
+	apol_policy_t *p2;                     /* the policy 2 struct */
 	int tv_buf_offsets[OPT_NUM_DIFF_NODES];   /* the line offsets used for remembering position in treeview buffers */
 	int tv_curr_buf;         /* the buffer currently displayed for the treeview */
 } sediff_app_t;

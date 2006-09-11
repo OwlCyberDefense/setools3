@@ -1,10 +1,28 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: Don Patterson <don.patterson@tresys.com>
- * Date: December 28, 2004
+/**
+ *  @file sediff_treemodel.c
+ *  Display a tree from which the user can show the results of a
+ *  particular diff.
+ *
+ *  @author Don Patterson don.patterson@tresys.com
+ *  @author Randy Wicks rwicks@tresys.com
+ *
+ *  Copyright (C) 2004-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
 #include "sediff_treemodel.h"
 #include <poldiff/poldiff.h>
 #include <stdlib.h>
@@ -21,17 +39,17 @@ gboolean widget_event(GtkWidget *widget,GdkEventMotion *event,
 	GdkEventButton *event_button;
 	GtkTreeIter iter;
 	GtkTreeModel *treemodel = NULL;
-	
+
 	if (event->type == GDK_BUTTON_PRESS) {
 		/* is this a right click event */
 		event_button = (GdkEventButton*)event;
-		if (event->is_hint) {	
+		if (event->is_hint) {
 			gdk_window_get_pointer(event->window, &ex, &ey, NULL);
 		} else {
 			ex = event->x;
 			ey = event->y;
 		}
-		
+
 		gtk_tree_view_get_path_at_pos   (treeview,
 						 ex,
 						 ey,
@@ -39,10 +57,10 @@ gboolean widget_event(GtkWidget *widget,GdkEventMotion *event,
 						 &column,
 						 &x,
 						 &y);
-		
+
 		if (path == NULL || column == NULL)
-			return FALSE;		
-		if (event_button->button == 1) {			
+			return FALSE;
+		if (event_button->button == 1) {
 			treemodel = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 			gtk_tree_model_get_iter(treemodel,&iter,path);
 			gtk_tree_model_get(treemodel, &iter, SEDIFF_HIDDEN_COLUMN,&row,-1);
@@ -61,7 +79,7 @@ int sediff_tree_store_add_row(GtkTreeStore *treestore,const char *str,int *row)
 	if (treestore == NULL || str == NULL)
 		return -1;
 
-	split_line_array = g_strsplit(str,":", 0);   
+	split_line_array = g_strsplit(str,":", 0);
 	gtk_tree_store_append(treestore,&toplevel,NULL);
 	gtk_tree_store_set(treestore, &toplevel,
 			   SEDIFF_HIDDEN_COLUMN,*row,
@@ -70,7 +88,7 @@ int sediff_tree_store_add_row(GtkTreeStore *treestore,const char *str,int *row)
 	*row += 1;
 
 	i = 1;
-	while (split_line_array[i] != NULL) {					
+	while (split_line_array[i] != NULL) {
 		gtk_tree_store_append(treestore,&child,&toplevel);
 		gtk_tree_store_set(treestore, &child,
 			   SEDIFF_HIDDEN_COLUMN,*row,
@@ -99,7 +117,7 @@ GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 	sediff_tree_store_add_row(treestore,"Summary",&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_CLASSES, stats);
-	g_string_printf(string,"Classes %d:Added %d:Removed %d:Changed %d", 
+	g_string_printf(string,"Classes %d:Added %d:Removed %d:Changed %d",
 			stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
@@ -172,8 +190,8 @@ int sediff_get_model_option_iter(GtkTreeModel *tree_model,GtkTreeIter *parent,Gt
 			if (gtk_tree_model_iter_children(tree_model,child,parent)) {
 				gtk_tree_model_get(tree_model, child, SEDIFF_HIDDEN_COLUMN,&option,-1);
 				while (option != opt && gtk_tree_model_iter_next(tree_model,child))
-					gtk_tree_model_get(tree_model, child, SEDIFF_HIDDEN_COLUMN,&option,-1); 
-				if (option == opt) {				       
+					gtk_tree_model_get(tree_model, child, SEDIFF_HIDDEN_COLUMN,&option,-1);
+				if (option == opt) {
 					return 0;
 				}
 			}
@@ -182,7 +200,7 @@ int sediff_get_model_option_iter(GtkTreeModel *tree_model,GtkTreeIter *parent,Gt
 		if (option == opt) {
 			child = parent;
 			return 0;
-				
+
 		}
 	}
 	return -1;
@@ -206,7 +224,7 @@ GtkWidget *sediff_create_treeview()
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	/* connect 'text' property of the cell renderer to
 	 *  model column that contains the first name */
-	gtk_tree_view_column_add_attribute(col, renderer, "text", SEDIFF_LABEL_COLUMN);	
+	gtk_tree_view_column_add_attribute(col, renderer, "text", SEDIFF_LABEL_COLUMN);
 	return view;
 }
 
@@ -228,18 +246,18 @@ int sediff_get_current_treeview_selected_row(GtkTreeView *tree_view)
 	/* Only grab the top-most selected item */
 	item = glist;
 	path = item->data;
-	
+
 	/* if we can't get the iterator, then we need to just exit */
 	if (!gtk_tree_model_get_iter(tree_model, &iter, path)) {
-		if (glist) {	
+		if (glist) {
 			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-			g_list_free(glist);			
-		}	
+			g_list_free(glist);
+		}
 		return FALSE;
 	}
-	if (glist) {	
+	if (glist) {
 		g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-		g_list_free(glist);			
+		g_list_free(glist);
 	}
 
 	gtk_tree_model_get(tree_model, &iter, SEDIFF_HIDDEN_COLUMN,&row,-1);
@@ -258,5 +276,3 @@ GtkWidget *sediff_create_view_and_model (poldiff_t *diff)
 
 	return view;
 }
-
-
