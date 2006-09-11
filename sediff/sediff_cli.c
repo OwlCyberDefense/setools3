@@ -617,7 +617,7 @@ static void print_role_allow_diffs(poldiff_t *diff, int stats_only)
 		return;
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_ALLOWS, stats);
-	printf("role_allow (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+	printf("Role Allow Rules (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
 	if (stats_only)
 		return;
 	v = poldiff_get_role_allow_vector(diff);

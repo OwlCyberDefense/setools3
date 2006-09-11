@@ -1,6 +1,7 @@
 /**
- *  @file role_allow_diff.h
- *  Implementation for computing a semantic differences in roles allow rules.
+ *  @file rbac_diff.h
+ *  Implementation for computing a semantic differences in roles allow rules
+ *  and role_transition rules.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -76,104 +77,108 @@ char *poldiff_role_allow_to_string(poldiff_t *diff, const void *role_allow)
 	num_added = apol_vector_get_size(ra->added_roles);
 	num_removed = apol_vector_get_size(ra->removed_roles);
 	switch (ra->form) {
-		case POLDIFF_FORM_ADDED: {
-											 if (asprintf(&s, "+ allow %s { ", ra->source_role) < 0) {
-												 s = NULL;
-												 break;
-											 }
-											 len = strlen(s);
-											 for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
-												 role = apol_vector_get_element(ra->orig_roles, i);
-												 if (asprintf(&t, "%s ", role) < 0) {
-													 t = NULL;
-													 break;
-												 }
-												 if (apol_str_append(&s, &len, t) < 0) {
-													 break;
-												 }
-												 free(t);
-												 t = NULL;
-											 }
-											 if (apol_str_append(&s, &len, "};") < 0) {
-												 break;
-											 }
-											 return s;
-										 }
-		case POLDIFF_FORM_REMOVED: {
-												if (asprintf(&s, "- allow %s { ", ra->source_role) < 0) {
-													s = NULL;
-													break;
-												}
-												len = strlen(s);
-												for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
-													role = apol_vector_get_element(ra->orig_roles, i);
-													if (asprintf(&t, "%s ", role) < 0) {
-														t = NULL;
-														break;
-													}
-													if (apol_str_append(&s, &len, t) < 0) {
-														break;
-													}
-													free(t);
-													t = NULL;
-												}
-												if (apol_str_append(&s, &len, "};") < 0) {
-													break;
-												}
-												return s;
-											}
-		case POLDIFF_FORM_MODIFIED: {
-												 if (asprintf(&s, "* allow %s { ", ra->source_role) < 0) {
-													 s = NULL;
-													 break;
-												 }
-												 len = strlen(s);
-												 for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
-													 role = apol_vector_get_element(ra->orig_roles, i);
-													 if (asprintf(&t, "%s ", role) < 0) {
-														 t = NULL;
-														 break;
-													 }
-													 if (apol_str_append(&s, &len, t) < 0) {
-														 break;
-													 }
-													 free(t);
-													 t = NULL;
-												 }
-												 for (i = 0; i < apol_vector_get_size(ra->added_roles); i++) {
-													 role = apol_vector_get_element(ra->added_roles, i);
-													 if (asprintf(&t, "+%s ", role) < 0) {
-														 t = NULL;
-														 break;
-													 }
-													 if (apol_str_append(&s, &len, t) < 0) {
-														 break;
-													 }
-													 free(t);
-													 t = NULL;
-												 }
-												 for (i = 0; i < apol_vector_get_size(ra->removed_roles); i++) {
-													 role = apol_vector_get_element(ra->removed_roles, i);
-													 if (asprintf(&t, "-%s ", role) < 0) {
-														 t = NULL;
-														 break;
-													 }
-													 if (apol_str_append(&s, &len, t) < 0) {
-														 break;
-													 }
-													 free(t);
-													 t = NULL;
-												 }
-												 if (apol_str_append(&s, &len, "};") < 0) {
-													 break;
-												 }
-												 return s;
-											 }
-		default: {
-						ERR(diff, "%s", strerror(ENOTSUP));
-						errno = ENOTSUP;
-						return NULL;
+		case POLDIFF_FORM_ADDED:
+			{
+				if (asprintf(&s, "+ allow %s { ", ra->source_role) < 0) {
+					s = NULL;
+					break;
+				}
+				len = strlen(s);
+				for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
+					role = apol_vector_get_element(ra->orig_roles, i);
+					if (asprintf(&t, "%s ", role) < 0) {
+						t = NULL;
+						break;
 					}
+					if (apol_str_append(&s, &len, t) < 0) {
+						break;
+					}
+					free(t);
+					t = NULL;
+				}
+				if (apol_str_append(&s, &len, "};") < 0) {
+					break;
+				}
+				return s;
+			}
+		case POLDIFF_FORM_REMOVED:
+			{
+				if (asprintf(&s, "- allow %s { ", ra->source_role) < 0) {
+					s = NULL;
+					break;
+				}
+				len = strlen(s);
+				for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
+					role = apol_vector_get_element(ra->orig_roles, i);
+					if (asprintf(&t, "%s ", role) < 0) {
+						t = NULL;
+						break;
+					}
+					if (apol_str_append(&s, &len, t) < 0) {
+						break;
+					}
+					free(t);
+					t = NULL;
+				}
+				if (apol_str_append(&s, &len, "};") < 0) {
+					break;
+				}
+				return s;
+			}
+		case POLDIFF_FORM_MODIFIED:
+			{
+				if (asprintf(&s, "* allow %s { ", ra->source_role) < 0) {
+					s = NULL;
+					break;
+				}
+				len = strlen(s);
+				for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
+					role = apol_vector_get_element(ra->orig_roles, i);
+					if (asprintf(&t, "%s ", role) < 0) {
+						t = NULL;
+						break;
+					}
+					if (apol_str_append(&s, &len, t) < 0) {
+						break;
+					}
+					free(t);
+					t = NULL;
+				}
+				for (i = 0; i < apol_vector_get_size(ra->added_roles); i++) {
+					role = apol_vector_get_element(ra->added_roles, i);
+					if (asprintf(&t, "+%s ", role) < 0) {
+						t = NULL;
+						break;
+					}
+					if (apol_str_append(&s, &len, t) < 0) {
+						break;
+					}
+					free(t);
+					t = NULL;
+				}
+				for (i = 0; i < apol_vector_get_size(ra->removed_roles); i++) {
+					role = apol_vector_get_element(ra->removed_roles, i);
+					if (asprintf(&t, "-%s ", role) < 0) {
+						t = NULL;
+						break;
+					}
+					if (apol_str_append(&s, &len, t) < 0) {
+						break;
+					}
+					free(t);
+					t = NULL;
+				}
+				if (apol_str_append(&s, &len, "};") < 0) {
+					break;
+				}
+				return s;
+			}
+		default:
+			{
+				ERR(diff, "%s", strerror(ENOTSUP));
+				errno = ENOTSUP;
+				return NULL;
+			}
 	}
 	/* if this is reached then an error occurred */
 	free(s);
@@ -462,7 +467,6 @@ int role_allow_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		if (compval < 0) {
 			if (apol_vector_append(pra->removed_roles, role1) < 0) {
 				error = errno;
-				free(role1);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
@@ -471,7 +475,6 @@ int role_allow_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		else if (compval > 0) {
 			if (apol_vector_append(pra->added_roles, role2) < 0) {
 				error = errno;
-				free(role2);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
@@ -480,7 +483,6 @@ int role_allow_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		else {
 			if (apol_vector_append(pra->orig_roles, role1) < 0) {
 				error = errno;
-				free(role1);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
@@ -533,8 +535,6 @@ int role_allow_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	}
 	retval = 0;
 cleanup:
-	apol_vector_destroy(&v1, NULL);
-	apol_vector_destroy(&v2, NULL);
 	if (retval != 0) {
 		role_allow_free(pra);
 	}
