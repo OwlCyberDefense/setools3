@@ -1,1 +1,22 @@
-FIX ME
+SETools - Policy analysis tools for SELinux (C) 2001-2006
+Tresys Technology
+setools@tresys.com, http://oss.tresys.com/setools
+
+Principal Design:
+
+Kevin Carr
+Jeremy A. Mowery
+Jason Tang
+
+
+With:
+
+Alessandro Ferrucci
+Ryan Jordan
+Karl MacMillan
+Frank Mayer
+Don Paterson
+Brandon Whalen
+Meggan Whalen
+Randy Wicks
+David Windsor
