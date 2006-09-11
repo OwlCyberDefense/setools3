@@ -1,6 +1,6 @@
 bwidget_destdir = @BWIDGET_DESTDIR@
 
-dist_noinst_DATA = BWidget-1.7.0.tar.gz combobox.tcl
+dist_noinst_DATA = BWidget-1.7.0.tar.gz combobox.tcl Doxyfile
 
 install-data-local:
 	tar -zxf BWidget-1.7.0.tar.gz

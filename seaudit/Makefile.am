@@ -67,3 +67,5 @@ $(top_builddir)/libqpol/src/libqpol.so:
 
 $(top_builddir)/libsefs/src/libsefs.so:
 	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)
+
+.PHONY: install-logwatch
