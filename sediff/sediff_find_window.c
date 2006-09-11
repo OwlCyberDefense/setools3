@@ -1,13 +1,31 @@
-/* Copyright (C) 2005-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: Brandon Whalen <bwhalen@tresys.com>
- * Date: August 8, 2005
+/**
+ *  @file sediff_find_window.c
+ *  Display a dialog to let the user search through results.
+ *
+ *  @author Brandon Whalen bwhalen@tresys.com
+ *  @author Randy Wicks rwicks@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
 #include "sediff_find_window.h"
 #include "utilgui.h"
 #include <apol/util.h>
+#include <string.h>
 
 /* hide we don't actually destroy the widget we just hide it */
 static void sediff_find_window_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data)
@@ -25,18 +43,18 @@ static void sediff_find_close_button_clicked(GtkButton *button, gpointer user_da
 }
 
 /* highlight text between to iters in the text buffer txt */
-static void sediff_scroll_and_highlight_iters(GtkTextView *view, GtkTextBuffer *txt, 
+static void sediff_scroll_and_highlight_iters(GtkTextView *view, GtkTextBuffer *txt,
 					      GtkTextIter *start, GtkTextIter *end)
 {
-	gtk_text_view_scroll_to_iter(view, start, 0.0, FALSE, 0.0, 0.5);			
+	gtk_text_view_scroll_to_iter(view, start, 0.0, FALSE, 0.0, 0.5);
 	gtk_text_view_set_cursor_visible(view, TRUE);
 	gtk_text_buffer_place_cursor(txt, start);
 	/* highlight */
 	gtk_text_buffer_select_range(txt,start,end);
 }
 
-/* This function gets the value stored in the GtkEntry(entry) and searches the 
-   current text buffer visible to the user for that string, then highlights the 
+/* This function gets the value stored in the GtkEntry(entry) and searches the
+   current text buffer visible to the user for that string, then highlights the
    items found */
 static void sediff_find_search_buffer(gpointer user_data)
 {
@@ -60,7 +78,7 @@ static void sediff_find_search_buffer(gpointer user_data)
 	/* user our stored offsets to move to the last position in the view,
 	   these are reset when we switch users by the gui */
 	gtk_text_buffer_get_iter_at_offset(gui_txt,&start,find_window->start_offset);
-	gtk_text_buffer_get_iter_at_offset(gui_txt,&end,find_window->end_offset);		
+	gtk_text_buffer_get_iter_at_offset(gui_txt,&end,find_window->end_offset);
 	sediff_scroll_and_highlight_iters(view,gui_txt,&start,&end);
 
 	/* now we actually search for the text  */
@@ -144,27 +162,27 @@ static int sediff_find_window_init(sediff_find_window_t *find_window)
 	gtk_window_set_position(find_window->window, GTK_WIN_POS_CENTER_ON_PARENT);
 
         /* connect to the window delete event */
-	g_signal_connect(G_OBJECT(find_window->window), "delete_event", 
+	g_signal_connect(G_OBJECT(find_window->window), "delete_event",
 			 G_CALLBACK(sediff_find_window_dialog_on_window_destroy), find_window);
 	glade_xml_signal_autoconnect(find_window->xml);
 
 	/* connect the button events */
 	button = GTK_BUTTON(glade_xml_get_widget(find_window->xml, "sediff_find_close_button"));
-	g_signal_connect(G_OBJECT(button), "clicked", 
+	g_signal_connect(G_OBJECT(button), "clicked",
 			 G_CALLBACK(sediff_find_close_button_clicked), find_window);
 	button = GTK_BUTTON(glade_xml_get_widget(find_window->xml, "sediff_find_button"));
-	g_signal_connect(G_OBJECT(button), "clicked", 
+	g_signal_connect(G_OBJECT(button), "clicked",
 			 G_CALLBACK(sediff_find_button_clicked), find_window);
 
 	/* connect the text entry callback events */
 	entry = GTK_ENTRY(glade_xml_get_widget(find_window->xml, "sediff_find_text_entry"));
-	g_signal_connect(G_OBJECT(entry), "activate", 
+	g_signal_connect(G_OBJECT(entry), "activate",
 			 G_CALLBACK(on_sediff_find_entry_activated), find_window);
 
 	return 0;
 }
 
-sediff_find_window_t *sediff_find_window_new(struct sediff_app *sediff_app) 
+sediff_find_window_t *sediff_find_window_new(struct sediff_app *sediff_app)
 {
 	sediff_find_window_t *find = NULL;
 
@@ -195,7 +213,3 @@ void sediff_find_window_reset_idx(sediff_find_window_t *find_window)
 		find_window->end_offset = 0;
 	}
 }
-
-
-
-

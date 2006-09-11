@@ -47,7 +47,7 @@ policy, then it represents the same semantic meaning in both policies.
 
 Sediff Commands:
 ================
-Sediff can be run from command line or as a GUI. For command line
+Sediff can be run from command line or as a GUI.  For command line
 help, run "sediff --help".  To start the GUI (the primary focus of
 this help file), use the following command:
         sediffx [policy1 policy2]
@@ -57,7 +57,7 @@ Understanding Sediff's Results:
 After differing two policies, the GUI shows the policy areas compared
 in the left hand frame.  Besides each policy area is a number
 representing the total number of differences in that area.  As a
-general rule, for each policy area the righthand window shows the
+general rule, for each policy area the right-hand window shows the
 detailed results.
 
 NOTE: All differences are shown from the perspective of the first
@@ -154,7 +154,7 @@ area:
    
    Rules can be added, removed, or changed.  Added means the STC
    triple for that rule is not present in the original policy but in
-   the modified one. Removed means the STC triple is present in the
+   the modified one.  Removed means the STC triple is present in the
    original but not modified policy.  For AV rules, change means
    that the permissions for the rule are different between the
    policies.  For Type rules, change means that the default type is

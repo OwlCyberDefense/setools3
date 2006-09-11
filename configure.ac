@@ -305,7 +305,7 @@ fi
 AC_ARG_ENABLE(sepol-src,
               AC_HELP_STRING([--enable-sepol-src=PATH],
                              [use another sepol source tree at PATH (developer only flag)]),
-              sepol_srcdir="$enableval",r
+              sepol_srcdir="$enableval",
               sepol_srcdir="")
 if test "x${sepol_srcdir}" = "x"; then
    sepol_srcdir='/usr/lib'
@@ -421,6 +421,20 @@ if test "x${build_gui}" = xyes; then
   AC_MSG_RESULT([yes])
   AC_SUBST(GLADE_CFLAGS)
   AC_SUBST(GLADE_LIBS)
+
+  dnl check for gthread
+  AC_MSG_CHECKING([for gthread])
+  GTHREAD_CFLAGS=`pkg-config --cflags gthread-2.0`
+  if test -z "${GTHREAD_CFLAGS}"; then
+     AC_MSG_ERROR([could not find gthread headers])
+  fi
+  GTHREAD_LIBS=`pkg-config --libs gthread-2.0`
+  if test -z "${GTHREAD_LIBS}"; then
+     AC_MSG_ERROR([could not find gthread libraries])
+  fi
+  AC_MSG_RESULT([yes])
+  AC_SUBST(GTHREAD_CFLAGS)
+  AC_SUBST(GTHREAD_LIBS)
 fi
 
 dnl check for libxml
@@ -493,7 +507,7 @@ EOF
         cat ${ac_top_srcdir}/packages/combobox.tcl >> ./config.tcl
         echo "}" >> ./config.tcl
    else
-        echo "" > config.tcl
+        echo "" > ./config.tcl
    fi
 ]], [bwidget_ver=$bwidget_ver])
 

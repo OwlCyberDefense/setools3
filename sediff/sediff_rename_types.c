@@ -1,15 +1,33 @@
-/* Copyright (C) 2005-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: Kevin Carr kcarr@tresys.com
- * Date:   June 14, 2005
+/**
+ *  @file sediff_rename_types.c
+ *  Displays a dialog that allows users to explicitly rename/remap
+ *  types from one policy to the other.
+ *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Randy Wicks rwicks@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "sediff_gui.h"
 #include "sediff_rename_types.h"
 #include <apol/policy.h>
 #include <apol/util.h>
+#include <string.h>
 
 static void sediff_rename_types_window_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 static gint sediff_str_compare_func(gconstpointer a, gconstpointer b);
@@ -59,7 +77,7 @@ err:
 }
 
 void sediff_rename_types_window_unref_members(sediff_rename_types_t *rename_types_window)
-{	
+{
 	if (rename_types_window == NULL)
 		return;
 	if (rename_types_window->xml) {
@@ -99,7 +117,7 @@ static void sediff_rename_types_window_on_remove_button_clicked(GtkButton *butto
 	g_assert(rename_types_window);
 	selection = gtk_tree_view_get_selection(rename_types_window->view);
 	if (gtk_tree_selection_get_selected(selection, &model, &iter) == FALSE) {
-		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
+		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
 						"You must select an item to remove.");
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
@@ -115,7 +133,7 @@ static void sediff_rename_types_window_on_remove_button_clicked(GtkButton *butto
 	g_assert(p2_idx >= 0);
 
 	if (ap_diff_rename_remove(p1_idx, p2_idx, rename_types_window->renamed_types) != 0) {
-		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
+		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
 						"Could not remove the selected item.");
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
@@ -153,12 +171,12 @@ static void sediff_rename_types_window_on_add_button_clicked(GtkButton *button, 
 	g_assert(p1_entry);
 	p2_entry = GTK_ENTRY(glade_xml_get_widget(rename_types_window->xml, "sediff_rename_types_entry2"));
 	g_assert(p2_entry);
-	
+
 	p1_str = gtk_entry_get_text(p1_entry);
 	p2_str = gtk_entry_get_text(p2_entry);
 
 	if (strcmp(p1_str, "") == 0 || strcmp(p2_str, "") == 0) {
-		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
+		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
 						"You must select a type from Policy 1 AND Policy 2 to continue.");
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
@@ -174,19 +192,19 @@ static void sediff_rename_types_window_on_add_button_clicked(GtkButton *button, 
 
 	switch (ap_diff_rename_add(p1_type, p2_type, rename_types_window->sediff_app->p1, rename_types_window->sediff_app->p2, rename_types_window->renamed_types)) {
 	case -1:
-		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
+		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
 						"The item %s is already renamed", p1_str);
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
 		break;
 	case -2:
-		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
+		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
 						"The item %s is already renamed", p2_str);
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
 		break;
 	case -5:
-		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
+		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
 						"Add failed");
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
@@ -194,12 +212,12 @@ static void sediff_rename_types_window_on_add_button_clicked(GtkButton *button, 
 	case 0:
 		store = GTK_LIST_STORE(gtk_tree_view_get_model(rename_types_window->view));
 		gtk_list_store_append(store, &iter);
-		gtk_list_store_set(store, &iter, SEDIFF_RENAME_POLICY_ONE_COLUMN, p1_str, 
+		gtk_list_store_set(store, &iter, SEDIFF_RENAME_POLICY_ONE_COLUMN, p1_str,
 				   SEDIFF_RENAME_POLICY_TWO_COLUMN, p2_str, -1);
 		break;
-	case -3: 
+	case -3:
 	case -4:
-	default: 
+	default:
 		g_assert(FALSE);
 		break;
 	}
@@ -241,19 +259,19 @@ static int sediff_rename_types_window_init(sediff_rename_types_t *rename_types_w
 	gtk_window_set_position(rename_types_window->window, GTK_WIN_POS_CENTER_ON_PARENT);
 
         /* connect to the window delete event */
-	g_signal_connect(G_OBJECT(rename_types_window->window), "delete_event", 
+	g_signal_connect(G_OBJECT(rename_types_window->window), "delete_event",
 			 G_CALLBACK(sediff_rename_types_window_dialog_on_window_destroy), rename_types_window);
 	glade_xml_signal_autoconnect(rename_types_window->xml);
 
 	/* connect the button events */
 	button = GTK_BUTTON(glade_xml_get_widget(rename_types_window->xml, "sediff_rename_types_close_button"));
-	g_signal_connect(G_OBJECT(button), "clicked", 
+	g_signal_connect(G_OBJECT(button), "clicked",
 			 G_CALLBACK(sediff_rename_types_window_on_close_button_clicked), rename_types_window);
 	button = GTK_BUTTON(glade_xml_get_widget(rename_types_window->xml, "sediff_rename_types_remove_button"));
-	g_signal_connect(G_OBJECT(button), "clicked", 
+	g_signal_connect(G_OBJECT(button), "clicked",
 			 G_CALLBACK(sediff_rename_types_window_on_remove_button_clicked), rename_types_window);
 	button = GTK_BUTTON(glade_xml_get_widget(rename_types_window->xml, "sediff_rename_types_add_button"));
-	g_signal_connect(G_OBJECT(button), "clicked", 
+	g_signal_connect(G_OBJECT(button), "clicked",
 			 G_CALLBACK(sediff_rename_types_window_on_add_button_clicked), rename_types_window);
 
 	/* get the combo boxes that we use */
@@ -289,7 +307,7 @@ static int sediff_rename_types_window_init(sediff_rename_types_t *rename_types_w
 	items = g_list_sort(items, &sediff_str_compare_func);
 	gtk_combo_set_popdown_strings(GTK_COMBO(rename_types_window->p2_combo), items);
 	g_list_free(items);
-		
+
 	/* get the listview */
 	rename_types_window->view = GTK_TREE_VIEW(glade_xml_get_widget(rename_types_window->xml, "sediff_renamed_types_treeview"));
 	g_assert(rename_types_window->view);
@@ -303,7 +321,7 @@ static int sediff_rename_types_window_init(sediff_rename_types_t *rename_types_w
 	column = gtk_tree_view_column_new_with_attributes ("Policy 1 Types", renderer, "text", SEDIFF_RENAME_POLICY_ONE_COLUMN, NULL);
 	gtk_tree_view_column_set_expand(column, TRUE);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(rename_types_window->view), column);
-		
+
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes ("Policy 2 Types", renderer, "text", SEDIFF_RENAME_POLICY_TWO_COLUMN, NULL);
 	gtk_tree_view_column_set_expand(column, TRUE);
