@@ -29,6 +29,7 @@
 #include <config.h>
 
 #include <apol/policy.h>
+#include <apol/policy-query.h>
 #include <apol/vector.h>
 #include <apol/util.h>
 
