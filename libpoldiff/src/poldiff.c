@@ -97,6 +97,18 @@ static const poldiff_item_record_t item_records[] = {
 		common_deep_diff,
 	},
 	{
+		"role_allow",
+		POLDIFF_DIFF_ROLE_ALLOWS,
+		poldiff_role_allow_get_stats,
+		poldiff_get_role_allow_vector,
+		poldiff_role_allow_to_string,
+		role_allow_get_items,
+		role_allow_free_item,
+		role_allow_comp,
+		role_allow_new_diff,
+		role_allow_deep_diff,
+	},
+	{
 		"role",
 		POLDIFF_DIFF_ROLES,
 		poldiff_role_get_stats,
@@ -186,6 +198,7 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	    (diff->class_diffs = class_create()) == NULL ||
 	    (diff->common_diffs = common_create()) == NULL ||
 	    (diff->role_diffs = role_create()) == NULL ||
+	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->user_diffs = user_create()) == NULL ||
 	    (diff->type_diffs = type_summary_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
@@ -210,6 +223,7 @@ void poldiff_destroy(poldiff_t **diff)
 	class_destroy(&(*diff)->class_diffs);
 	common_destroy(&(*diff)->common_diffs);
 	role_destroy(&(*diff)->role_diffs);
+	role_allow_destroy(&(*diff)->role_allow_diffs);
 	user_destroy(&(*diff)->user_diffs);
 	type_summary_destroy(&(*diff)->type_diffs);
 	free(*diff);

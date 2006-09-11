@@ -1,6 +1,6 @@
 /**
- *  @file role_diff.h
- *  Public Interface for computing a semantic differences in roles.
+ *  @file role_allow_diff.h
+ *  Public Interface for computing a semantic differences in roles allow rules.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -23,17 +23,17 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLDIFF_ROLE_DIFF_H
-#define POLDIFF_ROLE_DIFF_H
+#ifndef POLDIFF_ROLE_ALLOW_DIFF_H
+#define POLDIFF_ROLE_ALLOW_DIFF_H
 
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
-typedef struct poldiff_role poldiff_role_t;
+typedef struct poldiff_role_allow poldiff_role_allow_t;
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for roles.
+ *  form for role allow rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -43,77 +43,77 @@ typedef struct poldiff_role poldiff_role_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_role_get_stats(poldiff_t *diff, size_t stats[5]);
+extern void poldiff_role_allow_get_stats(poldiff_t *diff, size_t stats[5]);
 
 /**
- *  Get the vector of role differences from the role difference
- *  summary.
+ *  Get the vector of role allow differences from the policy difference
+ *  structure.
  *
- *  @param diff The policy difference structure associated with the
- *  role difference summary.
+ *  @param diff The policy difference structure from which to get the
+ *  differences.
  *
- *  @return A vector of elements of type poldiff_role_t, or NULL on
+ *  @return A vector of elements of type poldiff_role_allow_t, or NULL on
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_role_vector(poldiff_t *diff);
+extern apol_vector_t *poldiff_get_role_allow_vector(poldiff_t *diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
- *  a role.
+ *  a role allow rule.
  *
  *  @param diff The policy difference structure associated with the role.
- *  @param role The role from which to generate the string.
+ *  @param role_allow The role from which to generate the string.
  *
  *  @return A string representation of role difference; the caller is
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-extern char *poldiff_role_to_string(poldiff_t *diff, const void *role);
+extern char *poldiff_role_allow_to_string(poldiff_t *diff, const void *role_allow);
 
 /**
- *  Get the name of the role from a role diff.
+ *  Get the name of the source role from a role allow diff.
  *
- *  @param role The role from which to get the name.
+ *  @param role_alloe The role allow from which to get the source role name.
  *
- *  @return Name of the role on success and NULL on failure; if the
+ *  @return Name of the source role on success and NULL on failure; if the
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_role_get_name(const poldiff_role_t *role);
+extern const char *poldiff_role_allow_get_name(const poldiff_role_allow_t *role_allow);
 
 /**
- *  Get the form of difference from a role diff.
+ *  Get the form of difference from a role allow diff.
  *
- *  @param role The role from which to get the difference form.
+ *  @param role_allow The role allow rule from which to get the difference form.
  *
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_role_get_form(const poldiff_role_t *role);
+extern poldiff_form_e poldiff_role_allow_get_form(const poldiff_role_allow_t *role_allow);
 
 /**
- *  Get a vector of types added to the role.
+ *  Get a vector of roles added to the role allow rule.
  *
- *  @param role The role diff from which to get the types vector.
+ *  @param role_allow The role allow diff from which to get the types vector.
  *
- *  @return a vector of type names (type char *) that are allowed to
- *  the role in the modified policy.  If no types were added the size
+ *  @return A vector of role names (type char *) that are allowed to
+ *  the role in the modified policy.  If no roles were added the size
  *  of the returned vector will be 0.  The caller must not destroy
  *  this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_role_get_added_types(const poldiff_role_t *role);
+extern apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t *role_allow);
 
 /**
- *  Get a vector of types removed from the role.
+ *  Get a vector of roles removed from the role allow rule.
  *
- *  @param role The role diff from which to get the types vector.
+ *  @param role_allow The role allow diff from which to get the types vector.
  *
- *  @return A vector of type names (type char *) that are allowed to
- *  the role in the original policy.  If no types were removed the
+ *  @return A vector of role names (type char *) that are allowed to
+ *  the role in the original policy.  If no roles were removed the
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_role_get_removed_types(const poldiff_role_t *role);
+extern apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t *role_allow);
 
-#endif /* POLDIFF_ROLE_DIFF_H */
+#endif /* POLDIFF_ROLE_ALLOW_DIFF_H */ 
