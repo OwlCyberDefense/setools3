@@ -606,6 +606,76 @@ static void print_rule_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
+static void print_role_allow_diffs(poldiff_t *diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	char *str = NULL;
+	const poldiff_role_allow_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_ALLOWS, stats);
+	printf("role_allow (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+	if (stats_only)
+		return;
+	v = poldiff_get_role_allow_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Role Allow Rules: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_allow_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_role_allow_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Role Allow Rules: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_allow_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_role_allow_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Role Allow Rules: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_allow_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_role_allow_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
 /* TODO template print x function
 static void print_XXX_diffs(poldiff_t *diff, int stats_only)
 {
@@ -808,7 +878,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 		print_rule_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_ROLE_ALLOWS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLE_ALLOWS))) {
-		printf("TODO: RoleAllows\n\n");
+		print_role_allow_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_ROLE_TRANS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLE_TRANS))) {
 		printf("TODO: RoleTrans\n\n");
