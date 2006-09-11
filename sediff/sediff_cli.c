@@ -830,6 +830,75 @@ static void print_type_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
+static void print_attrib_diffs(poldiff_t *diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	char *str = NULL;
+	const poldiff_attrib_t *item = NULL;
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_ATTRIBS, stats);
+	printf("Attributes (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+	if (stats_only)
+		return;
+	v = poldiff_get_attrib_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Attributes: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_attrib_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_attrib_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Attributes: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_attrib_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_attrib_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Attributes: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_attrib_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_attrib_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
 static size_t get_diff_total(poldiff_t *diff, uint32_t flags)
 {
 	size_t total = 0;
@@ -862,7 +931,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 		print_type_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_ATTRIBS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ATTRIBS))) {
-		printf("TODO: Attributes\n\n");
+		print_attrib_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_ROLES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLES))) {
 		print_role_diffs(diff, stats);

@@ -35,6 +35,7 @@
 #include "rule_internal.h"
 #include "user_internal.h"
 #include "type_internal.h"
+#include "attrib_internal.h"
 
 #include "type_map_internal.h"
 

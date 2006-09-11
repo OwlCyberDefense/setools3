@@ -16,6 +16,7 @@ libpoldiff_a_SOURCES = \
 	rule_diff.c rule_internal.h \
 	user_diff.c user_internal.h \
 	type_diff.c type_internal.h \
+	attrib_diff.c attrib_internal.h \
 	poldiff_internal.h \
 	type_map.c type_map_internal.h
 

@@ -14,5 +14,6 @@
                 poldiff_user_*;
                 poldiff_terule_*;
                 poldiff_type_*;
+                poldiff_attrib_*;
 	local: *;
 };
