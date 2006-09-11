@@ -1,6 +1,7 @@
 /**
- *  @file role_allow_diff.h
- *  Public Interface for computing a semantic differences in roles allow rules.
+ *  @file rbac_diff.h
+ *  Public Interface for computing a semantic differences in roles allow rules
+ *  and role_transition rules.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com

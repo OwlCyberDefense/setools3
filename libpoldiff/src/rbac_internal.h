@@ -1,6 +1,7 @@
 /**
- *  @file role_allow_internal.h
- *  Protected Interface for role allow rule differences.
+ *  @file rbac_internal.h
+ *  Protected Interface for role allow rule and role_transition 
+ *  rule differences.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
