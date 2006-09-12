@@ -77,9 +77,11 @@ The following are not strictly required but highly recommended:
 
 Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is
 part of the tcllib package and is often not present in Linux
-distributions.  The supplied configure script attempts to detect the
-version of BWidget installed.  If it is not found then SETools will
-use the prepackaged one found within the 'packages' subdirectory.
+distributions; the toolkit may be freely downloaded at
+http://tcllib.sourceforge.net.  The supplied configure script attempts
+to detect the version of BWidget installed.  If it is not found then
+SETools will use the prepackaged one found within the 'packages'
+subdirectory.
 
 
 2.1. compiling from official distribution
@@ -237,7 +239,7 @@ proceeding with using this install target.
 
 All externally exported library functions use doxygen-style tags for
 their documentation.  You may want to produce your own HTML outputs if
-writing third-party tools.  A suggest doxygen configuration file
+writing third-party tools.  A suggested doxygen configuration file
 resides in packages/Doxyfile; it directs generated output to
 /tmp/setools.  To use the file, from the top-level source directory
 do:
