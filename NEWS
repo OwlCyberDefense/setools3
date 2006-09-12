@@ -17,7 +17,7 @@ apol:
 
 sediff:
 
-  * New diffing algrothim yields significant speed improvements.
+  * New diffing algorithm yields significant speed improvements.
         
 =======================================================
 May 1, 2006, Version 2.4
