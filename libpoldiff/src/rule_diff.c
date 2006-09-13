@@ -1081,15 +1081,25 @@ static int avrule_expand(poldiff_t *diff, apol_policy_t *p, qpol_avrule_t *rule,
 		error = errno;
 		goto cleanup;
 	}
-	if (source_attr &&
-	    qpol_type_get_type_iter(p->qh, p->p, source, &source_iter) < 0) {
-		error = errno;
-		goto cleanup;
-	}
+
 #ifdef SETOOLS_DEBUG
-	char *orig_source_name;
+	char *orig_source_name, *orig_target_name;
 	qpol_type_get_name(p->qh, p->p, source, &orig_source_name);
+	qpol_type_get_name(p->qh, p->p, orig_target, &orig_target_name);
 #endif
+
+	if (source_attr) {
+		if (qpol_type_get_type_iter(p->qh, p->p, source, &source_iter) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+		/* handle situation where a rule has as its source an
+		   attribute without any types */
+		if (qpol_iterator_end(source_iter)) {
+			retval = 0;
+			goto cleanup;
+		}
+	}
 	do {
 		if (source_attr) {
 			if (qpol_iterator_get_item(source_iter, (void **) &source) < 0) {
@@ -1098,13 +1108,15 @@ static int avrule_expand(poldiff_t *diff, apol_policy_t *p, qpol_avrule_t *rule,
 			}
 			qpol_iterator_next(source_iter);
 		}
-#ifdef SETOOLS_DEBUG
-		char *orig_target_name;
-		qpol_type_get_name(p->qh, p->p, orig_target, &orig_target_name);
-#endif
 		if (target_attr) {
 			if (qpol_type_get_type_iter(p->qh, p->p, orig_target, &target_iter) < 0) {
 				error = errno;
+				goto cleanup;
+			}
+			/* handle situation where a rule has as its
+			   target an attribute without any types */
+			if (qpol_iterator_end(target_iter)) {
+				retval = 0;
 				goto cleanup;
 			}
 		}
