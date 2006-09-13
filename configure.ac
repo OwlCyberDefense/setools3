@@ -62,14 +62,14 @@ AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
     DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall -DSETOOLS_DEBUG=1"
     DEBUGLDFLAGS="-g"
-    AC_SUBST(DEBUGCFLAGS)
-    AC_SUBST(DEBUGLDFLAGS)
     QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=$(top_builddir)/libqpol/src'
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
     SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=$(top_builddir)/libsefs/src'
     POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=$(top_builddir)/libpoldiff/src'
     AC_MSG_RESULT(yes)
 else
+    DEBUGCFLAGS="-fno-strict-aliasing"
+    DEBUGLDFLAGS=""
     if test ${use_shared} = yes; then
         QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.so'
@@ -83,6 +83,8 @@ else
     fi
     AC_MSG_RESULT(disabled)
 fi
+AC_SUBST(DEBUGCFLAGS)
+AC_SUBST(DEBUGLDFLAGS)
 QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
 APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
 SEFS_CFLAGS='-I$(top_srcdir)/libsefs/include'
