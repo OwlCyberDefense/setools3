@@ -840,6 +840,7 @@ int type_map_infer(poldiff_t *diff)
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
+	INFO(diff, "%s", "Inferring type remap.");
 	if (apol_get_type_by_query(diff->orig_pol, NULL, &ov) < 0 ||
 	    apol_get_type_by_query(diff->mod_pol, NULL, &mv) < 0) {
 		error = errno;

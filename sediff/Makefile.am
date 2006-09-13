@@ -1,6 +1,6 @@
 setoolsdir = @setoolsdir@
 
-dist_setools_DATA = sediff_help.txt
+dist_setools_DATA = sediff_help.txt sediff.glade
 
 if BUILD_GUI
   MAYBE_SEDIFFX = sediffx
@@ -34,6 +34,7 @@ sediffx_SOURCES = \
 	utilgui.c utilgui.h \
 	sediff_policy_open.c sediff_policy_open.h \
 	sediff_progress.c sediff_progress.h \
+	sediff_results.c sediff_results.h \
 	sediff_gui.c sediff_gui.h
 
 $(top_builddir)/libpoldiff/src/libpoldiff.so:

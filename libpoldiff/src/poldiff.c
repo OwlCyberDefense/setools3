@@ -212,7 +212,7 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->user_diffs = user_create()) == NULL ||
-	    (diff->type_diffs = type_summary_create()) == NULL || 
+	    (diff->type_diffs = type_summary_create()) == NULL ||
 	    (diff->attrib_diffs = attrib_summary_create()) == NULL){
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
@@ -362,6 +362,7 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 	for (i = 0; i < num_items; i++) {
 		/* item requested but not yet run */
 		if ((flags & item_records[i].flag_bit) && !(item_records[i].flag_bit & diff->diff_status)) {
+			INFO(diff, "Running %s diff.", item_records[i].item_name);
 			if (poldiff_do_item_diff(diff, &(item_records[i]))) {
 				error = errno;
 				return -1;
