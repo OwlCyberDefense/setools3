@@ -615,6 +615,14 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 	sediff_reset_policy_notebooks();
 	sediff_app->orig_pol = p1;
 	sediff_app->mod_pol = p2;
+        sediff_app->diff = poldiff_create(sediff_app->orig_pol,
+                                          sediff_app->mod_pol,
+                                          sediff_progress_poldiff_handle_func,
+                                          sediff_app);
+	if (sediff_app->diff == NULL) {
+		message_display(sediff_app->window,GTK_MESSAGE_ERROR, "Error creating differences.");
+		goto err;
+	}
 
 	/* open is done set cursor back to a ptr */
 	sediff_progress_hide(sediff_app);

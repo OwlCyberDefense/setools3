@@ -49,6 +49,7 @@ typedef struct sediff_file_data {
 } sediff_file_data_t;
 
 struct sediff_progress;
+struct sediff_results;
 
 /* STRUCT: sediff_app_t
    This structure is used to control the gui.  It contains the links
@@ -57,22 +58,13 @@ typedef struct sediff_app {
 	GtkWindow *window;		  /* the main window */
 	GtkWindow *open_dlg;              /* dialog box used when opening up the policies */
 	struct sediff_progress *progress;  /* dialog to show progress */
+	struct sediff_results *results;    /* results display */
 	GtkWidget *dummy_view;            /* this is a view we put in the left hand pane when we have no diff, and therefore no treeview */
 	GladeXML *window_xml;             /* the main windows xml */
 	GladeXML *open_dlg_xml;           /* the open dialogs xml */
 	GtkWidget *tree_view;	          /* the treeview seen on left hand pane */
 	GList *callbacks;
 	gint progress_completed;
-	GtkTextBuffer *main_buffer;       /* the generic buffer used for everything but te rules and conditionals(because they take so long to draw */
-	GtkTextBuffer *te_add_buffer;     /* the added te rules buffer */
-	GtkTextBuffer *te_rem_buffer;     /* the removed te rules buffer */
-	GtkTextBuffer *te_mod_buffer;     /* the modified te rules buffer */
-	GtkTextBuffer *te_add_type_buffer;/* the te rules added because of a new type buffer */
-	GtkTextBuffer *te_rem_type_buffer;/* the te rules removed because of a missing type buffer */
-	GtkTextBuffer *summary_buffer;    /* the summary buffer */
-	GtkTextBuffer *cond_add_buffer;   /* the added conditionals buffer */
-	GtkTextBuffer *cond_rem_buffer;   /* the removed conditionals buffer */
-	GtkTextBuffer *cond_mod_buffer;   /* modified conditionals buffer */
 	sediff_file_data_t p1_sfd;        /* file info for policy 1 */
 	sediff_file_data_t p2_sfd;        /* file info for policy 2 */
 	apol_policy_t *orig_pol, *mod_pol;
@@ -82,6 +74,14 @@ typedef struct sediff_app {
 	int tv_buf_offsets[OPT_NUM_DIFF_NODES];   /* the line offsets used for remembering position in treeview buffers */
 	int tv_curr_buf;         /* the buffer currently displayed for the treeview */
 } sediff_app_t;
+
+
+/* constants that denote how to sort rules within the results buffer */
+#define SORT_SOURCE 0
+#define SORT_TARGET 1
+#define SORT_CLASS 2
+#define SORT_ASCEND 1
+#define SORT_DESCEND -1
 
 /* return the textview currently displayed to the user */
 GtkTextView *sediff_get_current_view(sediff_app_t *app);
