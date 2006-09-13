@@ -117,7 +117,7 @@ Search Type Enforcement rules in an SELinux policy.\n\
   -i, --indirect          indirect; also search for the type's attributes\n\
   -n, --noregex           do not use regular expression to match type/attributes\n\
   -l, --lineno            include line # in policy.conf for each rule.\n\
-  			  This option is ignored if using a binary policy.\n\
+			  This option is ignored if using a binary policy.\n\
   -C, --show_cond         show conditional expression for conditional rules\n\
   -h, --help              display this help and exit\n\
   -v, --version           output version information and exit\n\
@@ -916,7 +916,7 @@ int main (int argc, char **argv)
 		policy_file = argv[optind];
 
 	/* attempt to open the policy */
-	rt = apol_policy_open(policy_file, &policy, NULL);
+	rt = apol_policy_open(policy_file, &policy, NULL, NULL);
 	if(rt) {
 		perror("Error opening policy");
 		apol_policy_destroy(&policy);

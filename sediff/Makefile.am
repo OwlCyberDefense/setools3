@@ -32,6 +32,7 @@ sediffx_SOURCES = \
 	sediff_rename_types.c sediff_rename_types.h \
 	sediff_treemodel.c sediff_treemodel.h \
 	utilgui.c utilgui.h \
+	sediff_progress.c sediff_progress.h \
 	sediff_gui.c sediff_gui.h
 
 $(top_builddir)/libpoldiff/src/libpoldiff.so:

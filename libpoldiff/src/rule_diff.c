@@ -1086,6 +1086,10 @@ static int avrule_expand(poldiff_t *diff, apol_policy_t *p, qpol_avrule_t *rule,
 		error = errno;
 		goto cleanup;
 	}
+#ifdef SETOOLS_DEBUG
+	char *orig_source_name;
+	qpol_type_get_name(p->qh, p->p, source, &orig_source_name);
+#endif
 	do {
 		if (source_attr) {
 			if (qpol_iterator_get_item(source_iter, (void **) &source) < 0) {
@@ -1094,6 +1098,10 @@ static int avrule_expand(poldiff_t *diff, apol_policy_t *p, qpol_avrule_t *rule,
 			}
 			qpol_iterator_next(source_iter);
 		}
+#ifdef SETOOLS_DEBUG
+		char *orig_target_name;
+		qpol_type_get_name(p->qh, p->p, orig_target, &orig_target_name);
+#endif
 		if (target_attr) {
 			if (qpol_type_get_type_iter(p->qh, p->p, orig_target, &target_iter) < 0) {
 				error = errno;
@@ -1111,9 +1119,11 @@ static int avrule_expand(poldiff_t *diff, apol_policy_t *p, qpol_avrule_t *rule,
 				}
 				qpol_iterator_next(target_iter);
 			}
+#ifdef SETOOLS_DEBUG
                         char *n1, *n2;
                         qpol_type_get_name(p->qh, p->p, source, &n1);
                         qpol_type_get_name(p->qh, p->p, target, &n2);
+#endif
 			if ((source_val = type_map_lookup(diff, source, which)) == 0 ||
 			    (target_val = type_map_lookup(diff, target, which)) == 0 ||
 			    avrule_add_to_bst(diff, p, rule, source_val, target_val, b) < 0) {

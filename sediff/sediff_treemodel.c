@@ -117,62 +117,62 @@ GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 	sediff_tree_store_add_row(treestore,"Summary",&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_CLASSES, stats);
-	g_string_printf(string,"Classes %d:Added %d:Removed %d:Changed %d",
+	g_string_printf(string,"Classes %d:Added %d:Removed %d:Modified %d",
 			stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_COMMONS, stats);
-	g_string_printf(string,"Common Permissions %d:Added %d:Removed %d:Changed %d",
+	g_string_printf(string,"Common Permissions %d:Added %d:Removed %d:Modified %d",
 			stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_TYPES, stats);
-	g_string_printf(string,"Types %d:Added %d:Removed %d:Changed %d",
+	g_string_printf(string,"Types %d:Added %d:Removed %d:Modified %d",
                         stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_ATTRIBS, stats);
-	g_string_printf(string,"Attributes %d:Added %d:Removed %d:Changed %d",
+	g_string_printf(string,"Attributes %d:Added %d:Removed %d:Modified %d",
                         stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLES, stats);
-	g_string_printf(string,"Roles %d:Added %d:Removed %d:Changed %d",
+	g_string_printf(string,"Roles %d:Added %d:Removed %d:Modified %d",
                         stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_USERS, stats);
-	g_string_printf(string,"Users %d:Added %d :Removed %d:Changed %d",
+	g_string_printf(string,"Users %d:Added %d :Removed %d:Modified %d",
                         stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_BOOLS, stats);
-	g_string_printf(string,"Booleans %d:Added %d:Removed %d:Changed %d",
+	g_string_printf(string,"Booleans %d:Added %d:Removed %d:Modified %d",
                         stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_ALLOWS, stats);
-	g_string_printf(string,"Role Allows %d:Added %d:Removed %d:Changed %d",
+	g_string_printf(string,"Role Allows %d:Added %d:Removed %d:Modified %d",
                         stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_TRANS, stats);
-	g_string_printf(string,"Role Transitions %d:Added %d:Removed %d:Changed %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
+	g_string_printf(string,"Role Transitions %d:Added %d:Removed %d:Modified %d:Added by Type %d:Removed by Type %d",
+                        stats[0]+stats[1]+stats[2]+stats[3]+stats[4], stats[0], stats[1], stats[2], stats[3], stats[4]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES, stats);
-	g_string_printf(string,"AV Rules %d:Added %d:Removed %d:Changed %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
+	g_string_printf(string,"AV Rules %d:Added %d:Removed %d:Modified %d:Added by Type %d:Removed by Type %d",
+                        stats[0]+stats[1]+stats[2]+stats[3]+stats[4], stats[0], stats[1], stats[2], stats[3], stats[4]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_TERULES, stats);
-	g_string_printf(string,"TE Rules %d:Added %d:Removed %d:Changed %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
+	g_string_printf(string,"TE Rules %d:Added %d:Removed %d:Modified %d:Added by Type %d:Removed by Type %d",
+                        stats[0]+stats[1]+stats[2]+stats[3]+stats[4], stats[0], stats[1], stats[2], stats[3], stats[4]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_CONDS, stats);
-	g_string_printf(string,"Conditionals %d:Added %d:Removed %d:Changed %d",
+	g_string_printf(string,"Conditionals %d:Added %d:Removed %d:Modified %d",
                         stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
 	sediff_tree_store_add_row(treestore,string->str,&i);
 

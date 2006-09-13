@@ -65,11 +65,12 @@ typedef struct apol_policy {
  *  @param policy The policy to create from the file.
  *  @param msg_callback Callback to invoke as errors/warnings are
  *  generated.  If NULL, then write messages to standard error.
+ *  @param callback_arg Value to write to (*policy)->msg_callback_arg.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL;
  */
 extern int apol_policy_open(const char *path, apol_policy_t **policy,
-			    apol_callback_fn_t msg_callback);
+			    apol_callback_fn_t msg_callback, void *callback_arg);
 
 /**
  *  Open a policy file and load all components except rules into a newly
@@ -78,11 +79,12 @@ extern int apol_policy_open(const char *path, apol_policy_t **policy,
  *  @param policy The policy to create from the file.
  *  @param msg_callback Callback to invoke as errors/warnings are
  *  generated.  If NULL, then write messages to standard error.
+ *  @param callback_arg Value to write to (*policy)->msg_callback_arg.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL;
  */
 extern int apol_policy_open_no_rules(const char *path, apol_policy_t **policy,
-			    apol_callback_fn_t msg_callback);
+			    apol_callback_fn_t msg_callback, void *callback_arg);
 
 /**
  * Deallocate all memory associated with a policy, and then set it to
