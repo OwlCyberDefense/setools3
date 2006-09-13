@@ -2,6 +2,7 @@ poldiffdir = $(includedir)/poldiff
 
 poldiff_HEADERS = \
 	poldiff.h \
+	attrib_diff.h \
 	bool_diff.h \
 	class_diff.h \
 	rbac_diff.h \

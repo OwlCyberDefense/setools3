@@ -73,7 +73,8 @@ static void qpol_handle_route_to_callback(void *varg, qpol_handle_t *handle, int
 	}
 }
 
-int apol_policy_open(const char *path, apol_policy_t **policy, apol_callback_fn_t msg_callback)
+int apol_policy_open(const char *path, apol_policy_t **policy,
+		     apol_callback_fn_t msg_callback, void *callback_arg)
 {
 	int policy_type;
 	if (!path || !policy) {
@@ -94,6 +95,7 @@ int apol_policy_open(const char *path, apol_policy_t **policy, apol_callback_fn_
 	else {
 		(*policy)->msg_callback = apol_handle_default_callback;
 	}
+	(*policy)->msg_callback_arg = callback_arg;
 
         policy_type = qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy));
         if (policy_type < 0) {
@@ -105,7 +107,8 @@ int apol_policy_open(const char *path, apol_policy_t **policy, apol_callback_fn_
 	return 0;
 }
 
-int apol_policy_open_no_rules(const char *path, apol_policy_t **policy, apol_callback_fn_t msg_callback)
+int apol_policy_open_no_rules(const char *path, apol_policy_t **policy,
+			      apol_callback_fn_t msg_callback, void *callback_arg)
 {
 	int policy_type;
 	if (!path || !policy) {
@@ -126,6 +129,7 @@ int apol_policy_open_no_rules(const char *path, apol_policy_t **policy, apol_cal
 	else {
 		(*policy)->msg_callback = apol_handle_default_callback;
 	}
+	(*policy)->msg_callback_arg = callback_arg;
 
         policy_type = qpol_open_policy_from_file_no_rules(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy));
         if (policy_type < 0) {

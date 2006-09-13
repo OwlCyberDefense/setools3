@@ -423,14 +423,12 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, 
 		free(policydb->msg_callback_arg);
 	}
 	apol_policy_destroy(&policydb);
-	if (apol_policy_open(argv[1], &policydb, apol_tcl_route_handle_to_string)) {
+	if (apol_policy_open(argv[1], &policydb, apol_tcl_route_handle_to_string, NULL)) {
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error opening policy: ", -1);
 		Tcl_AppendToObj(result_obj, strerror(errno), -1);
 		Tcl_SetObjResult(interp, result_obj);
 		return TCL_ERROR;
 	}
-	policydb->msg_callback_arg = NULL;
-
 	return TCL_OK;
 }
 

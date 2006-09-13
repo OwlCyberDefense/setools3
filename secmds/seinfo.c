@@ -1379,13 +1379,13 @@ int main (int argc, char **argv)
 
 	/* attempt to open the policy */
 	if (stats) {
-		if (apol_policy_open(policy_file, &policydb, NULL)) {
+		if (apol_policy_open(policy_file, &policydb, NULL, NULL)) {
 			perror("Error opening policy");
 			free(policy_file);
 			exit(1);
 		}
 	} else {
-		if (apol_policy_open_no_rules(policy_file, &policydb, NULL)) {
+		if (apol_policy_open_no_rules(policy_file, &policydb, NULL, NULL)) {
 			perror("Error opening policy");
 			free(policy_file);
 			exit(1);

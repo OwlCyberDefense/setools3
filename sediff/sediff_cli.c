@@ -1034,20 +1034,20 @@ int main (int argc, char **argv)
 	mod_pol_path = argv[optind];
 
 	if (flags & POLDIFF_DIFF_RULES) {
-		if (apol_policy_open(orig_pol_path, &orig_policy, NULL)) {
+		if (apol_policy_open(orig_pol_path, &orig_policy, NULL, NULL)) {
 			ERR(NULL, "%s", strerror(errno));
 			goto err;
 		}
-		if (apol_policy_open(mod_pol_path, &mod_policy, NULL)) {
+		if (apol_policy_open(mod_pol_path, &mod_policy, NULL, NULL)) {
 			ERR(NULL, "%s", strerror(errno));
 			goto err;
 		}
 	} else {
-		if (apol_policy_open_no_rules(orig_pol_path, &orig_policy, NULL)) {
+		if (apol_policy_open_no_rules(orig_pol_path, &orig_policy, NULL, NULL)) {
 			ERR(NULL, "%s", strerror(errno));
 			goto err;
 		}
-		if (apol_policy_open_no_rules(mod_pol_path, &mod_policy, NULL)) {
+		if (apol_policy_open_no_rules(mod_pol_path, &mod_policy, NULL, NULL)) {
 			ERR(NULL, "%s", strerror(errno));
 			goto err;
 		}
