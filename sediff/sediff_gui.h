@@ -86,4 +86,9 @@ typedef struct sediff_app {
 /* return the textview currently displayed to the user */
 GtkTextView *sediff_get_current_view(sediff_app_t *app);
 
+void sediff_clear_text_buffer(GtkTextBuffer *txt);
+void sediff_initialize_diff(void);
+void sediff_initialize_policies(void);
+void run_diff_clicked(void);
+
 #endif
