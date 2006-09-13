@@ -11,6 +11,12 @@ dist_profiles_DATA = \
 	profiles/devel-checks.sechecker \
 	profiles/sechecker.dtd
 
+dist_noinst_DATA = \
+	modules/template/profiles.readme \
+	modules/template/template.howto \
+	modules/template/xx.c \
+	modules/template/xx.h
+
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ @XML_CFLAGS@ \
 	-DPROFILE_INSTALL_DIR='"${profile_install_dir}"'
