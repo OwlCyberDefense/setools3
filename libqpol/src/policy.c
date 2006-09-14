@@ -41,6 +41,8 @@
 #include <glob.h>
 #include <limits.h>
 #include <errno.h>
+#include <byteswap.h>
+#include <endian.h>
 
 #include <sepol/debug.h>
 #include <sepol/handle.h>
@@ -78,6 +80,22 @@ extern unsigned long policydb_lineno;
 extern char source_file[];
 extern policydb_t *policydbp;
 extern int mlspol;
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define cpu_to_le16(x) (x)
+#define le16_to_cpu(x) (x)
+#define cpu_to_le32(x) (x)
+#define le32_to_cpu(x) (x)
+#define cpu_to_le64(x) (x)
+#define le64_to_cpu(x) (x)
+#else
+#define cpu_to_le16(x) bswap_16(x)
+#define le16_to_cpu(x) bswap_16(x)
+#define cpu_to_le32(x) bswap_32(x)
+#define le32_to_cpu(x) bswap_32(x)
+#define cpu_to_le64(x) bswap_64(x)
+#define le64_to_cpu(x) bswap_64(x)
+#endif
 
 /* Error TEXT definitions for decoding the above error definitions. */
 #define TEXT_BIN_POL_FILE_DOES_NOT_EXIST	"Could not locate a default binary policy file."
