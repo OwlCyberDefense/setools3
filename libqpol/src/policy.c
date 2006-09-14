@@ -104,7 +104,7 @@ extern int mlspol;
 #define TEXT_POLICY_INSTALL_DIR_DOES_NOT_EXIST	"The default policy install directory does not exist."
 #define TEXT_READ_POLICY_FILE_ERROR		"Cannot read default policy file."
 #define TEXT_INVALID_SEARCH_OPTIONS		"Invalid search options provided to find_default_policy_file()."
-#define TEXT_GENERAL_ERROR_TEXT			"Error in find_default_policy_file()."
+#define TEXT_QPOL_GENERAL_ERROR_TEXT			"Error in find_default_policy_file()."
 
 /* use 8k line size */
 #define LINE_SZ 8192
@@ -354,18 +354,18 @@ static bool_t qpol_is_file_binpol(FILE *fp)
 const char* qpol_find_default_policy_file_strerr(int err)
 {
 	switch(err) {
-	case BIN_POL_FILE_DOES_NOT_EXIST:
+	case QPOL_BIN_POL_FILE_DOES_NOT_EXIST:
 		return TEXT_BIN_POL_FILE_DOES_NOT_EXIST;
-	case SRC_POL_FILE_DOES_NOT_EXIST:
+	case QPOL_SRC_POL_FILE_DOES_NOT_EXIST:
 		return TEXT_SRC_POL_FILE_DOES_NOT_EXIST;
-	case POLICY_INSTALL_DIR_DOES_NOT_EXIST:
+	case QPOL_POLICY_INSTALL_DIR_DOES_NOT_EXIST:
 		return TEXT_POLICY_INSTALL_DIR_DOES_NOT_EXIST;
-	case BOTH_POL_FILE_DO_NOT_EXIST:
+	case QPOL_BOTH_POL_FILE_DO_NOT_EXIST:
 		return TEXT_BOTH_POL_FILE_DO_NOT_EXIST;
-	case INVALID_SEARCH_OPTIONS:
+	case QPOL_INVALID_SEARCH_OPTIONS:
 		return TEXT_INVALID_SEARCH_OPTIONS;
 	default:
-		return TEXT_GENERAL_ERROR_TEXT;
+		return TEXT_QPOL_GENERAL_ERROR_TEXT;
 	}
 }
 
@@ -404,7 +404,7 @@ static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *bin
 	len = strlen(binpol_install_dir) + 2;
 	if((pattern = (char *)malloc(sizeof(char) * (len+1))) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	sprintf(pattern, "%s.*", binpol_install_dir);
 
@@ -415,7 +415,7 @@ static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *bin
 	if (rt != 0 && rt != GLOB_NOMATCH) {
 		ERR(handle, "Error globbing %s.*", binpol_install_dir);
 		perror("search_for_policyfile_with_ver");
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	num_matches = glob_buf.gl_pathc;
 	for (i = 0; i < num_matches; i++) {
@@ -424,7 +424,7 @@ static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *bin
 			globfree(&glob_buf);
 			free(pattern);
 			perror("search_for_policyfile_with_ver");
-			return GENERAL_ERROR;
+			return QPOL_GENERAL_ERROR;
 		}
 		/* skip directories */
 		if (S_ISDIR(fs.st_mode))
@@ -435,7 +435,7 @@ static int search_for_policyfile_with_ver(qpol_handle_t *handle, const char *bin
 				ERR(handle, "%s", strerror(ENOMEM));
 				globfree(&glob_buf);
 				free(pattern);
-				return GENERAL_ERROR;
+				return QPOL_GENERAL_ERROR;
 			}
 			strcpy(*policy_path_tmp, path);
 		}
@@ -457,7 +457,7 @@ static int search_for_policyfile_with_highest_ver(qpol_handle_t *handle, const c
 	len = strlen(binpol_install_dir) + 2;
 	if((pattern = (char *)malloc(sizeof(char) * (len+1))) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	sprintf(pattern, "%s*", binpol_install_dir);
 	glob_buf.gl_offs = 0;
@@ -467,7 +467,7 @@ static int search_for_policyfile_with_highest_ver(qpol_handle_t *handle, const c
 	if (rt != 0 && rt != GLOB_NOMATCH) {
 		ERR(handle, "Error globbing %s.*", binpol_install_dir);
 		perror("search_for_policyfile_with_highest_ver");
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	num_matches = glob_buf.gl_pathc;
 	for (i = 0; i < num_matches; i++) {
@@ -476,7 +476,7 @@ static int search_for_policyfile_with_highest_ver(qpol_handle_t *handle, const c
 			globfree(&glob_buf);
 			free(pattern);
 			perror("search_for_policyfile_with_highest_ver");
-			return GENERAL_ERROR;
+			return QPOL_GENERAL_ERROR;
 		}
 		/* skip directories */
 		if (S_ISDIR(fs.st_mode))
@@ -493,7 +493,7 @@ static int search_for_policyfile_with_highest_ver(qpol_handle_t *handle, const c
 			ERR(handle, "%s", strerror(ENOMEM));
 			globfree(&glob_buf);
 			free(pattern);
-			return GENERAL_ERROR;
+			return QPOL_GENERAL_ERROR;
 		}
 		strcpy(*policy_path_tmp, path);
 	}
@@ -515,19 +515,19 @@ static int search_binary_policy_file(qpol_handle_t *handle, char **policy_file_p
 	ver = security_policyvers();
 	if (ver < 0) {
 		ERR(handle, "%s", "Error getting policy version.");
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	/* Store the version number into string */
 	if ((version = (char *)malloc(sizeof(char) * LINE_SZ)) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	snprintf(version, LINE_SZ - 1, "%d", ver);
 	assert(version);
 	if ((policy_path_tmp = (char *)malloc(sizeof(char) * PATH_MAX)) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
 		free(version);
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	snprintf(policy_path_tmp, PATH_MAX - 1, "%s%s%s", selinux_binary_policy_path(),
 		"." , version);
@@ -542,31 +542,31 @@ static int search_binary_policy_file(qpol_handle_t *handle, char **policy_file_p
 		rt = search_for_policyfile_with_ver(handle, selinux_binary_policy_path(), &policy_path_tmp, version);
 	}
 	if (version) free(version);
-	if (rt == GENERAL_ERROR)
-		return GENERAL_ERROR;
+	if (rt == QPOL_GENERAL_ERROR)
+		return QPOL_GENERAL_ERROR;
 
 	/* C. If we have not found a valid binary policy file,
 	 * then try to use the highest version we find. */
 	if (!policy_path_tmp) {
 		rt = search_for_policyfile_with_highest_ver(handle, selinux_binary_policy_path(), &policy_path_tmp);
-		if (rt == GENERAL_ERROR)
-			return GENERAL_ERROR;
+		if (rt == QPOL_GENERAL_ERROR)
+			return QPOL_GENERAL_ERROR;
 	}
 	/* If the following case is true, then we were not able to locate a binary
 	 * policy within the policy install dir */
 	if (!policy_path_tmp) {
-		return BIN_POL_FILE_DOES_NOT_EXIST;
+		return QPOL_BIN_POL_FILE_DOES_NOT_EXIST;
 	}
 	/* D. Set the policy file path */
 	if((*policy_file_path = (char *)malloc(sizeof(char) * (strlen(policy_path_tmp)+1))) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	strcpy(*policy_file_path, policy_path_tmp);
 	free(policy_path_tmp);
 	assert(*policy_file_path);
 
-	return FIND_DEFAULT_SUCCESS;
+	return QPOL_FIND_DEFAULT_SUCCESS;
 }
 
 static int search_policy_src_file(qpol_handle_t *handle, char **policy_file_path)
@@ -577,7 +577,7 @@ static int search_policy_src_file(qpol_handle_t *handle, char **policy_file_path
 	/* Check if the default policy source file exists. */
 	if ((path = (char *)malloc(sizeof(char) * PATH_MAX)) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	snprintf(path, PATH_MAX - 1, "%s/src/policy/policy.conf",
 		 selinux_policy_root());
@@ -585,17 +585,17 @@ static int search_policy_src_file(qpol_handle_t *handle, char **policy_file_path
 	rt = access(path, F_OK);
 	if (rt != 0) {
 		free(path);
-		return SRC_POL_FILE_DOES_NOT_EXIST;
+		return QPOL_SRC_POL_FILE_DOES_NOT_EXIST;
 	}
 	if ((*policy_file_path = (char *)malloc(sizeof(char) * (strlen(path)+1))) == NULL) {
 		ERR(handle, "%s", strerror(ENOMEM));
 		free(path);
-		return GENERAL_ERROR;
+		return QPOL_GENERAL_ERROR;
 	}
 	strcpy(*policy_file_path, path);
 	free(path);
 
-	return FIND_DEFAULT_SUCCESS;
+	return QPOL_FIND_DEFAULT_SUCCESS;
 }
 
 int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_path)
@@ -608,11 +608,11 @@ int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_pa
 	 * policy contains more useful information. */
 	if (search_opt & QPOL_TYPE_SOURCE) {
 		rt = search_policy_src_file(handle, policy_file_path);
-		if (rt == FIND_DEFAULT_SUCCESS) {
-			return FIND_DEFAULT_SUCCESS;
+		if (rt == QPOL_FIND_DEFAULT_SUCCESS) {
+			return QPOL_FIND_DEFAULT_SUCCESS;
 		}
 		/* Only continue if a source policy couldn't be found. */
-		if (rt != SRC_POL_FILE_DOES_NOT_EXIST) {
+		if (rt != QPOL_SRC_POL_FILE_DOES_NOT_EXIST) {
 			return rt;
 		}
 		src_not_found = 1;
@@ -621,13 +621,13 @@ int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_pa
 	/* Try a binary policy */
         if (search_opt & QPOL_TYPE_BINARY) {
 		rt = search_binary_policy_file(handle, policy_file_path);
-		if (rt == BIN_POL_FILE_DOES_NOT_EXIST && src_not_found) {
-			return BOTH_POL_FILE_DO_NOT_EXIST;
+		if (rt == QPOL_BIN_POL_FILE_DOES_NOT_EXIST && src_not_found) {
+			return QPOL_BOTH_POL_FILE_DO_NOT_EXIST;
 		}
 		return rt;
 	}
 	/* Only get here if invalid search options was provided. */
-	return INVALID_SEARCH_OPTIONS;
+	return QPOL_INVALID_SEARCH_OPTIONS;
 }
 
 static int infer_policy_version(qpol_handle_t *handle, qpol_policy_t *policy)

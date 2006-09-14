@@ -908,7 +908,7 @@ int main (int argc, char **argv)
 		exit(1);
 	} else if(argc - optind < 1) {
 		rt = qpol_find_default_policy_file(search_opts, &policy_file);
-		if (rt != FIND_DEFAULT_SUCCESS) {
+		if (rt != QPOL_FIND_DEFAULT_SUCCESS) {
 			printf("Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
 			exit(1);
 		}

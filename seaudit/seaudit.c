@@ -933,9 +933,9 @@ int main(int argc, char **argv)
                          * in the users .seaudit file, so use the policy default logic from 
                          * libapol. With seaudit we prefer the source policy over binary. */
                         rt = qpol_find_default_policy_file((QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY), &policy_file);
-                        if (rt == GENERAL_ERROR) {
+                        if (rt == QPOL_GENERAL_ERROR) {
                         	exit(1);	
-                        } else if (rt != FIND_DEFAULT_SUCCESS) {
+                        } else if (rt != QPOL_FIND_DEFAULT_SUCCESS) {
                         	printf("Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
                         	/* no policy to use, so warn the user and then start up without a default policy. */
                                 msg = g_string_new("Could not find system default policy to open. \nUse the File menu to open a policy");
