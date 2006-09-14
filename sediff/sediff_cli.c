@@ -578,7 +578,7 @@ static void print_rule_diffs(poldiff_t *diff, int stats_only)
 		}
 	}
 
-	printf("   Changed TE Rules: %zd\n", stats[2]);
+	printf("   Modified TE Rules: %zd\n", stats[2]);
 	for (i = 0; i < apol_vector_get_size(v1); i++) {
 		item1 = apol_vector_get_element(v1, i);
 		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_MODIFIED) {
@@ -662,6 +662,107 @@ static void print_role_allow_diffs(poldiff_t *diff, int stats_only)
 			return;
 		if (poldiff_role_allow_get_form(item) == POLDIFF_FORM_MODIFIED) {
 			str = poldiff_role_allow_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
+static void print_role_trans_diffs(poldiff_t *diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	char *str = NULL;
+	const poldiff_role_trans_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_TRANS, stats);
+	printf("Role Transitions (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n", stats[0], stats[3], stats[1], stats[4], stats[2]);
+	if (stats_only)
+		return;
+	v = poldiff_get_role_trans_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Role Transitions: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_trans_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_role_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+	printf("   Added Role Transitions because of new type: %zd\n", stats[3]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_trans_get_form(item) == POLDIFF_FORM_ADD_TYPE) {
+			str = poldiff_role_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Role Transitions: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_trans_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_role_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Role Transitions because of missing type: %zd\n", stats[4]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_trans_get_form(item) == POLDIFF_FORM_REMOVE_TYPE) {
+			str = poldiff_role_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Role Transitions: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_role_trans_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_role_trans_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -950,7 +1051,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 		print_role_allow_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_ROLE_TRANS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLE_TRANS))) {
-		printf("TODO: RoleTrans\n\n");
+		print_role_trans_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_CONDS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_CONDS))) {
 		printf("TODO: Conds\n\n");
