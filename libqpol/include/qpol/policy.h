@@ -30,13 +30,13 @@
 #include <stdarg.h>
 
 /* * Return codes for qpol_find_default_policy_file() function. */
-#define FIND_DEFAULT_SUCCESS                    0
-#define GENERAL_ERROR                           -1
-#define BIN_POL_FILE_DOES_NOT_EXIST             -2
-#define SRC_POL_FILE_DOES_NOT_EXIST             -3
-#define BOTH_POL_FILE_DO_NOT_EXIST              -4
-#define POLICY_INSTALL_DIR_DOES_NOT_EXIST       -5
-#define INVALID_SEARCH_OPTIONS                  -6
+#define QPOL_FIND_DEFAULT_SUCCESS               0
+#define QPOL_GENERAL_ERROR                     -1
+#define QPOL_BIN_POL_FILE_DOES_NOT_EXIST       -2
+#define QPOL_SRC_POL_FILE_DOES_NOT_EXIST       -3
+#define QPOL_BOTH_POL_FILE_DO_NOT_EXIST        -4
+#define QPOL_POLICY_INSTALL_DIR_DOES_NOT_EXIST -5
+#define QPOL_INVALID_SEARCH_OPTIONS            -6
 
 /* Policy type macros */
 #define QPOL_TYPE_UNKNOWN	0
