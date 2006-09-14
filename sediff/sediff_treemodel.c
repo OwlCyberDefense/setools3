@@ -27,8 +27,8 @@
 #include <poldiff/poldiff.h>
 #include <stdlib.h>
 
-gboolean widget_event(GtkWidget *widget,GdkEventMotion *event,
-		      gpointer user_data)
+static gboolean widget_event(GtkWidget *widget,GdkEventMotion *event,
+			     gpointer user_data)
 {
 	GtkTreeView *treeview;
 	gint x, ex, ey, y;
@@ -63,7 +63,7 @@ gboolean widget_event(GtkWidget *widget,GdkEventMotion *event,
 		if (event_button->button == 1) {
 			treemodel = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 			gtk_tree_model_get_iter(treemodel,&iter,path);
-			gtk_tree_model_get(treemodel, &iter, SEDIFF_HIDDEN_COLUMN,&row,-1);
+			gtk_tree_model_get(treemodel, &iter, SEDIFF_DIFFBIT_COLUMN, &row, -1);
 
 		}
 	}
@@ -71,142 +71,107 @@ gboolean widget_event(GtkWidget *widget,GdkEventMotion *event,
 	return FALSE;
 }
 
-int sediff_tree_store_add_row(GtkTreeStore *treestore,const char *str,int *row)
+struct diff_tree {
+	const char *label;
+	int bit_pos;
+	int has_add_type;
+};
+
+static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 {
-	GtkTreeIter   toplevel,child;
-	gchar **split_line_array = NULL;
-	int i = 0;
-	if (treestore == NULL || str == NULL)
-		return -1;
-
-	split_line_array = g_strsplit(str,":", 0);
-	gtk_tree_store_append(treestore,&toplevel,NULL);
-	gtk_tree_store_set(treestore, &toplevel,
-			   SEDIFF_HIDDEN_COLUMN,*row,
-			   SEDIFF_LABEL_COLUMN,split_line_array[0],
-			   -1);
-	*row += 1;
-
-	i = 1;
-	while (split_line_array[i] != NULL) {
-		gtk_tree_store_append(treestore,&child,&toplevel);
-		gtk_tree_store_set(treestore, &child,
-			   SEDIFF_HIDDEN_COLUMN,*row,
-			   SEDIFF_LABEL_COLUMN,split_line_array[i],
-			   -1);
-
-		*row += 1;
-		i++;
-	}
-	g_strfreev(split_line_array);
-	return 0;
-}
-
-GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
-{
-	GtkTreeStore  *treestore;
-	int i = 0;
+	GtkTreeStore *treestore;
+	GtkTreeIter topiter, childiter;
+	struct diff_tree dt[] = {
+		{"Classes", POLDIFF_DIFF_CLASSES, 0},
+		{"Commons", POLDIFF_DIFF_COMMONS, 0},
+		{"Types", POLDIFF_DIFF_TYPES, 0},
+		{"Attribs", POLDIFF_DIFF_ATTRIBS, 0},
+		{"Roles", POLDIFF_DIFF_ROLES, 0},
+		{"Users", POLDIFF_DIFF_USERS, 0},
+		{"Booleans", POLDIFF_DIFF_BOOLS, 0},
+		{"Role Allows", POLDIFF_DIFF_ROLE_ALLOWS, 0},
+		{"Role Transitions", POLDIFF_DIFF_ROLE_TRANS, 1},
+		{"TE Rules", POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1}
+	};
+	size_t i;
 	size_t stats[5] = {0,0,0,0,0};
-	GString *string = g_string_new("");
+	GString *s = g_string_new("");
 
 	treestore = gtk_tree_store_new(SEDIFF_NUM_COLUMNS,
 				       G_TYPE_STRING,
+				       G_TYPE_INT,
 				       G_TYPE_INT);
 
 	/* Append a top level row and leave it empty */
-	sediff_tree_store_add_row(treestore,"Summary",&i);
+	gtk_tree_store_append(treestore, &topiter, NULL);
+	gtk_tree_store_set(treestore, &topiter,
+			   SEDIFF_LABEL_COLUMN, "Summary",
+			   SEDIFF_DIFFBIT_COLUMN, 0,
+			   SEDIFF_FORM_COLUMN, POLDIFF_FORM_NONE,
+			   -1);
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_CLASSES, stats);
-	g_string_printf(string,"Classes %d:Added %d:Removed %d:Modified %d",
-			stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
+	for (i = 0; i < sizeof(dt) / sizeof(dt[0]); i++) {
+		poldiff_get_stats(diff, dt[i].bit_pos, stats);
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_COMMONS, stats);
-	g_string_printf(string,"Common Permissions %d:Added %d:Removed %d:Modified %d",
-			stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
+		gtk_tree_store_append(treestore, &topiter, NULL);
+		g_string_printf(s, "%s %zd", dt[i].label,
+				stats[0] + stats[1] + stats[2] + stats[3] + stats[4]);
+		gtk_tree_store_set(treestore, &topiter,
+				   SEDIFF_LABEL_COLUMN, s->str,
+				   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_NONE,
+				   -1);
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_TYPES, stats);
-	g_string_printf(string,"Types %d:Added %d:Removed %d:Modified %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
+		gtk_tree_store_append(treestore, &childiter, &topiter);
+		g_string_printf(s, "Added %zd", stats[0]);
+		gtk_tree_store_set(treestore, &childiter,
+				   SEDIFF_LABEL_COLUMN, s->str,
+				   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_ADDED,
+				   -1);
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_ATTRIBS, stats);
-	g_string_printf(string,"Attributes %d:Added %d:Removed %d:Modified %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
+		if (dt[i].has_add_type) {
+			gtk_tree_store_append(treestore, &childiter, &topiter);
+			g_string_printf(s, "Added Type %zd", stats[3]);
+			gtk_tree_store_set(treestore, &childiter,
+					   SEDIFF_LABEL_COLUMN, s->str,
+					   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+					   SEDIFF_FORM_COLUMN, POLDIFF_FORM_ADD_TYPE,
+					   -1);
+		}
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_ROLES, stats);
-	g_string_printf(string,"Roles %d:Added %d:Removed %d:Modified %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
+		gtk_tree_store_append(treestore, &childiter, &topiter);
+		g_string_printf(s, "Removed %zd", stats[1]);
+		gtk_tree_store_set(treestore, &childiter,
+				   SEDIFF_LABEL_COLUMN, s->str,
+				   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_REMOVED,
+				   -1);
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_USERS, stats);
-	g_string_printf(string,"Users %d:Added %d :Removed %d:Modified %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
+		if (dt[i].has_add_type) {
+			gtk_tree_store_append(treestore, &childiter, &topiter);
+			g_string_printf(s, "Removed Type %zd", stats[4]);
+			gtk_tree_store_set(treestore, &childiter,
+					   SEDIFF_LABEL_COLUMN, s->str,
+					   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+					   SEDIFF_FORM_COLUMN, POLDIFF_FORM_REMOVE_TYPE,
+					   -1);
+		}
+		gtk_tree_store_append(treestore, &childiter, &topiter);
+		g_string_printf(s, "Modified %zd", stats[2]);
+		gtk_tree_store_set(treestore, &childiter,
+				   SEDIFF_LABEL_COLUMN, s->str,
+				   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_MODIFIED,
+				   -1);
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_BOOLS, stats);
-	g_string_printf(string,"Booleans %d:Added %d:Removed %d:Modified %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
+	}
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_ALLOWS, stats);
-	g_string_printf(string,"Role Allows %d:Added %d:Removed %d:Modified %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
-
-	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_TRANS, stats);
-	g_string_printf(string,"Role Transitions %d:Added %d:Removed %d:Modified %d:Added by Type %d:Removed by Type %d",
-                        stats[0]+stats[1]+stats[2]+stats[3]+stats[4], stats[0], stats[1], stats[2], stats[3], stats[4]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
-
-	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES, stats);
-	g_string_printf(string,"AV Rules %d:Added %d:Removed %d:Modified %d:Added by Type %d:Removed by Type %d",
-                        stats[0]+stats[1]+stats[2]+stats[3]+stats[4], stats[0], stats[1], stats[2], stats[3], stats[4]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
-
-	poldiff_get_stats(diff, POLDIFF_DIFF_TERULES, stats);
-	g_string_printf(string,"TE Rules %d:Added %d:Removed %d:Modified %d:Added by Type %d:Removed by Type %d",
-                        stats[0]+stats[1]+stats[2]+stats[3]+stats[4], stats[0], stats[1], stats[2], stats[3], stats[4]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
-
-	poldiff_get_stats(diff, POLDIFF_DIFF_CONDS, stats);
-	g_string_printf(string,"Conditionals %d:Added %d:Removed %d:Modified %d",
-                        stats[0]+stats[1]+stats[2], stats[0], stats[1], stats[2]);
-	sediff_tree_store_add_row(treestore,string->str,&i);
-
-	g_string_free(string,TRUE);
+	g_string_free(s,TRUE);
 	return GTK_TREE_MODEL(treestore);
 }
 
-int sediff_get_model_option_iter(GtkTreeModel *tree_model,GtkTreeIter *parent,GtkTreeIter *child,int opt)
-{
-	int option;
-
-	if(gtk_tree_model_get_iter_first(tree_model,parent)) {
-		gtk_tree_model_get(tree_model, parent, SEDIFF_HIDDEN_COLUMN,&option,-1);
-		while (option != opt && gtk_tree_model_iter_next(tree_model,parent)) {
-			if (gtk_tree_model_iter_children(tree_model,child,parent)) {
-				gtk_tree_model_get(tree_model, child, SEDIFF_HIDDEN_COLUMN,&option,-1);
-				while (option != opt && gtk_tree_model_iter_next(tree_model,child))
-					gtk_tree_model_get(tree_model, child, SEDIFF_HIDDEN_COLUMN,&option,-1);
-				if (option == opt) {
-					return 0;
-				}
-			}
-			gtk_tree_model_get(tree_model, parent, SEDIFF_HIDDEN_COLUMN,&option,-1);
-		}
-		if (option == opt) {
-			child = parent;
-			return 0;
-
-		}
-	}
-	return -1;
-}
-
-GtkWidget *sediff_create_treeview()
+static GtkWidget *sediff_create_treeview()
 {
 	GtkTreeViewColumn   *col;
 	GtkCellRenderer     *renderer;
@@ -215,7 +180,7 @@ GtkWidget *sediff_create_treeview()
 	view = gtk_tree_view_new();
 	g_signal_connect_after(G_OBJECT(view), "event", GTK_SIGNAL_FUNC(widget_event), NULL);
 	col = gtk_tree_view_column_new();
-	gtk_tree_view_column_set_sizing (col,GTK_TREE_VIEW_COLUMN_GROW_ONLY);
+	gtk_tree_view_column_set_sizing (col, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
 	gtk_tree_view_column_set_title(col, "Differences");
 	/* pack tree view column into tree view */
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
@@ -228,41 +193,26 @@ GtkWidget *sediff_create_treeview()
 	return view;
 }
 
-int sediff_get_current_treeview_selected_row(GtkTreeView *tree_view)
+int sediff_get_current_treeview_selected_row(GtkTreeView *tree_view,
+					     uint32_t *diffbit,
+					     enum poldiff_form *form)
 {
-	int row;
 	GtkTreeIter iter;
 	GtkTreeModel *tree_model;
 	GtkTreeSelection *sel;
-	GList *glist = NULL, *item = NULL;
-	GtkTreePath *path = NULL;
 
 	tree_model = gtk_tree_view_get_model(tree_view);
 	sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view));
-	glist = gtk_tree_selection_get_selected_rows(sel, &tree_model);
-	if (glist == NULL) {
-		return FALSE;
+	if (gtk_tree_selection_get_selected(sel, &tree_model, &iter)) {
+		gtk_tree_model_get(tree_model, &iter,
+				   SEDIFF_DIFFBIT_COLUMN, diffbit,
+				   SEDIFF_FORM_COLUMN, form,
+				   -1);
+		return 1;
 	}
-	/* Only grab the top-most selected item */
-	item = glist;
-	path = item->data;
-
-	/* if we can't get the iterator, then we need to just exit */
-	if (!gtk_tree_model_get_iter(tree_model, &iter, path)) {
-		if (glist) {
-			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-			g_list_free(glist);
-		}
-		return FALSE;
+	else {
+		return 0;
 	}
-	if (glist) {
-		g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-		g_list_free(glist);
-	}
-
-	gtk_tree_model_get(tree_model, &iter, SEDIFF_HIDDEN_COLUMN,&row,-1);
-	return row;
-
 }
 
 GtkWidget *sediff_create_view_and_model (poldiff_t *diff)
