@@ -1464,6 +1464,40 @@ int avrule_deep_diff(poldiff_t *diff, const void *x, const void *y)
 /******************** protected functions for terules ********************/
 
 /**
+ *  Get the first valid name that can be found for a pseudo type value.
+ *
+ *  @param diff Policy difference structure associated with the value.
+ *  @param pseudo_val Value for which to get a name.
+ *
+ *  @return A valid name of a type from either policy that maps to the
+ *  specified value. Original policy is searched first, then modified.
+ */
+static const char *get_valid_name(poldiff_t *diff, uint32_t pseudo_val)
+{
+	apol_vector_t *v = NULL;
+	char *name = NULL;
+	qpol_type_t *t;
+	int pol = POLDIFF_POLICY_ORIG;
+
+	v = type_map_lookup_reverse(diff, pseudo_val, pol);
+	if (!apol_vector_get_size(v)) {
+		pol = POLDIFF_POLICY_MOD;
+		v = type_map_lookup_reverse(diff, pseudo_val, pol);
+	}
+	if (!apol_vector_get_size(v)) {
+		ERR(diff, "%s", strerror(ERANGE));
+		errno = ERANGE;
+		return NULL;
+	}
+	t = apol_vector_get_element(v, 0);
+	if (pol == POLDIFF_POLICY_ORIG)
+		qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, t, &name);
+	else
+		qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, t, &name);
+	return name;
+}
+
+/**
  * Apply an ordering scheme to two pseudo-te rules.
  *
  * <ul>
@@ -1533,11 +1567,16 @@ static int pseudo_terule_comp(const pseudo_terule_t *rule1,
 	}
 }
 
-static int terule_bst_comp(const void *x, const void *y, void *data __attribute__((unused)))
+static int terule_bst_comp(const void *x, const void *y, void *data)
 {
 	const pseudo_terule_t *r1 = (const pseudo_terule_t *) x;
 	const pseudo_terule_t *r2 = (const pseudo_terule_t *) y;
-	return pseudo_terule_comp(r1, r2, 1);
+	poldiff_t *diff = data;
+	int retv;
+	retv = pseudo_terule_comp(r1, r2, 1);
+	if (!retv && r1->default_type != r2->default_type)
+		WARN(diff, "Multiple %s rules for %s %s %s with different default types", apol_rule_type_to_str(r1->spec), get_valid_name(diff, r1->source), get_valid_name(diff, r1->target), r1->cls);
+	return retv;
 }
 
 /**
@@ -1718,7 +1757,7 @@ static int terule_add_to_bst(poldiff_t *diff, apol_policy_t *p,
 	}
 
 	/* insert this pseudo into the tree if not already there */
-        if ((compval = apol_bst_insert_and_get(b, (void **) &key, NULL, terule_free_item)) < 0) {
+        if ((compval = apol_bst_insert_and_get(b, (void **) &key, diff, terule_free_item)) < 0) {
                 error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;

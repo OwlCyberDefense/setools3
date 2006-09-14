@@ -109,6 +109,18 @@ static const poldiff_item_record_t item_records[] = {
 		role_allow_deep_diff,
 	},
 	{
+		"role_transition",
+		POLDIFF_DIFF_ROLE_TRANS,
+		poldiff_role_trans_get_stats,
+		poldiff_get_role_trans_vector,
+		poldiff_role_trans_to_string,
+		role_trans_get_items,
+		role_trans_free_item,
+		role_trans_comp,
+		role_trans_new_diff,
+		role_trans_deep_diff,
+	},
+	{
 		"role",
 		POLDIFF_DIFF_ROLES,
 		poldiff_role_get_stats,
@@ -211,6 +223,7 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 	    (diff->common_diffs = common_create()) == NULL ||
 	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
+	    (diff->role_trans_diffs = role_trans_create()) == NULL ||
 	    (diff->user_diffs = user_create()) == NULL ||
 	    (diff->type_diffs = type_summary_create()) == NULL ||
 	    (diff->attrib_diffs = attrib_summary_create()) == NULL){
@@ -237,6 +250,7 @@ void poldiff_destroy(poldiff_t **diff)
 	common_destroy(&(*diff)->common_diffs);
 	role_destroy(&(*diff)->role_diffs);
 	role_allow_destroy(&(*diff)->role_allow_diffs);
+	role_trans_destroy(&(*diff)->role_trans_diffs);
 	user_destroy(&(*diff)->user_diffs);
 	type_summary_destroy(&(*diff)->type_diffs);
 	attrib_summary_destroy(&(*diff)->attrib_diffs);
