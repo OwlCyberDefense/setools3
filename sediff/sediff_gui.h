@@ -71,7 +71,6 @@ typedef struct sediff_app {
 	poldiff_t *diff;
 	struct sediff_rename_types *rename_types_window; /* the renamed types window reference */
 	struct sediff_find_window *find_window;          /* the find window reference */
-	int tv_buf_offsets[OPT_NUM_DIFF_NODES];   /* the line offsets used for remembering position in treeview buffers */
 	int tv_curr_buf;         /* the buffer currently displayed for the treeview */
 } sediff_app_t;
 

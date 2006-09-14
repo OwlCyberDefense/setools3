@@ -52,7 +52,7 @@
 
 sediff_app_t *sediff_app = NULL;
 gboolean toggle = TRUE;
-gint curr_option = OPT_CLASSES;
+gint curr_option = POLDIFF_DIFF_SUMMARY;
 
 static struct option const longopts[] =
 {
@@ -198,14 +198,12 @@ static void sediff_populate_key_buffer()
  */
 static gboolean sediff_results_txt_view_switch_results(gpointer data)
 {
-	gint option;
-	option = sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view));
-
-	g_return_val_if_fail(sediff_app->diff != NULL, FALSE);
-
-	/* Configure text_view */
-	sediff_results_select(sediff_app, option);
-
+	uint32_t diffbit = 0;
+	enum poldiff_form form = POLDIFF_FORM_NONE;
+	if (sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view), &diffbit, &form)) {
+		/* Configure text_view */
+		sediff_results_select(sediff_app, diffbit, form);
+	}
 	return FALSE;
 }
 
@@ -451,7 +449,7 @@ static gboolean sediff_populate_main_window()
 	}
 
 	/* set the buffer to the summary page */
-	sediff_results_select(sediff_app, OPT_SUMMARY);
+	sediff_results_select(sediff_app, POLDIFF_DIFF_SUMMARY, 0);
 
 	return FALSE;
 }
@@ -968,12 +966,11 @@ int main(int argc, char **argv)
 	free(dir);
 	g_string_append_printf(path, "/%s", GLADEFILE);
 
-	sediff_app = (sediff_app_t *)malloc(sizeof(sediff_app_t));
+	sediff_app = calloc(1, sizeof(*sediff_app));
 	if (!sediff_app) {
 		g_warning("Out of memory!");
 		exit(-1);
 	}
-	memset(sediff_app, 0, sizeof(sediff_app_t));
 
 	gtk_set_locale();
 	gtk_init(&argc, &argv);
@@ -1009,7 +1006,7 @@ int main(int argc, char **argv)
 	if (havefiles)
 		g_idle_add(&delayed_main, &delay_data);
 
-	sediff_results_select(sediff_app, OPT_SUMMARY);
+	sediff_results_select(sediff_app, POLDIFF_DIFF_SUMMARY, 0);
 
 	gtk_main();
 
