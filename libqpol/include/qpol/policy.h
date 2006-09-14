@@ -27,25 +27,7 @@
 #ifndef QPOL_POLICY_H
 #define QPOL_POLICY_H
 
-#include <byteswap.h>
-#include <endian.h>
 #include <stdarg.h>
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#define cpu_to_le16(x) (x)
-#define le16_to_cpu(x) (x)
-#define cpu_to_le32(x) (x)
-#define le32_to_cpu(x) (x)
-#define cpu_to_le64(x) (x)
-#define le64_to_cpu(x) (x)
-#else
-#define cpu_to_le16(x) bswap_16(x)
-#define le16_to_cpu(x) bswap_16(x)
-#define cpu_to_le32(x) bswap_32(x)
-#define le32_to_cpu(x) bswap_32(x)
-#define cpu_to_le64(x) bswap_64(x)
-#define le64_to_cpu(x) bswap_64(x)
-#endif
 
 /* * Return codes for qpol_find_default_policy_file() function. */
 #define FIND_DEFAULT_SUCCESS                    0
