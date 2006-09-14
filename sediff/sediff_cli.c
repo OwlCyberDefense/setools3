@@ -1153,6 +1153,15 @@ int main (int argc, char **argv)
 			goto err;
 		}
 	}
+
+	/* we disable attribute diffs if there is a binary policy because attribute
+	 * names won't make sense */
+	if ((apol_policy_is_binary(orig_policy) || apol_policy_is_binary(mod_policy)) &&
+	    (flags & POLDIFF_DIFF_ATTRIBS)) {
+		flags &= ~POLDIFF_DIFF_ATTRIBS;
+		WARN(NULL, "%s", "Attribute diffs are not supported for binary policies");
+	}
+
 	/* default callback for error handling is sufficient here */
 	if (!(diff = poldiff_create(orig_policy, mod_policy, NULL, NULL))) {
 		ERR(NULL, "%s", strerror(errno));
