@@ -85,9 +85,9 @@ void sediff_results_clear(sediff_app_t *app)
 	}
 }
 
-void sediff_results_select(sediff_app_t *app, int which_result)
+void sediff_results_select(sediff_app_t *app, uint32_t diffbit, enum poldiff_form form)
 {
-        printf("showing results for %d\n", which_result);
+        printf("showing results for %zd, form %d\n", diffbit, form);
 #if 0
 	GtkTextView *textview1;
 	/* grab the text buffers for our text views */
@@ -96,7 +96,7 @@ void sediff_results_select(sediff_app_t *app, int which_result)
 	gtk_text_view_set_editable(GTK_TEXT_VIEW (textview1), FALSE);
 	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW (textview1), FALSE);
 
-        
+
 #endif
 }
 
