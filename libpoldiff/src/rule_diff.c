@@ -2002,6 +2002,7 @@ int terule_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 			goto cleanup;
 		}
                 default_type = apol_vector_get_element(v3, 0);
+		assert(default_type != NULL);
 		if (qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, default_type, &mod_default) < 0) {
 			error = errno;
 			goto cleanup;
@@ -2010,7 +2011,7 @@ int terule_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 			form = POLDIFF_FORM_ADD_TYPE;
 		}
 	}
-	else {
+	else if (form == POLDIFF_FORM_REMOVED) {
 		if ((v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_MOD)) == NULL ||
 		    (v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_MOD)) == NULL ||
 		    (v3 = type_map_lookup_reverse(diff, rule->default_type, POLDIFF_POLICY_ORIG)) == NULL) {
@@ -2018,7 +2019,8 @@ int terule_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 			goto cleanup;
 		}
                 default_type = apol_vector_get_element(v3, 0);
-		if (qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, default_type, &orig_default) < 0) {
+		assert(default_type != NULL);
+		if (qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, default_type, &orig_default) < 0) {
 			error = errno;
 			goto cleanup;
 		}
@@ -2026,6 +2028,23 @@ int terule_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 			form = POLDIFF_FORM_REMOVE_TYPE;
 		}
 	}
+	else { /* form == modified */
+		if ((v1 = type_map_lookup_reverse(diff, rule->default_type, POLDIFF_POLICY_ORIG)) == NULL ||
+		    (v2 = type_map_lookup_reverse(diff, rule->default_type, POLDIFF_POLICY_MOD)) == NULL) {
+			error = errno;
+			goto cleanup;
+		}
+		default_type = apol_vector_get_element(v1, 0);
+		if (qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, default_type, &orig_default) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+		default_type = apol_vector_get_element(v2, 0);
+		if (qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, default_type, &mod_default) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+        }
 
 	pt = make_tediff(diff, form, rule);
 	if (pt == NULL) {
