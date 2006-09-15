@@ -59,5 +59,5 @@ GtkWidget *sediff_create_view_and_model(poldiff_t *diff);
  */
 int sediff_get_current_treeview_selected_row(GtkTreeView *tree_view,
 					     uint32_t *diffbit,
-					     enum poldiff_form *form);
+					     poldiff_form_e *form);
 #endif

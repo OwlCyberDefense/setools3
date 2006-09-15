@@ -184,13 +184,13 @@ const char *poldiff_type_get_name(const poldiff_type_t *type)
 	return type->name;
 }
 
-poldiff_form_e poldiff_type_get_form(const poldiff_type_t *type)
+poldiff_form_e poldiff_type_get_form(const void *type)
 {
 	if (type == NULL) {
 		errno = EINVAL;
 		return POLDIFF_FORM_NONE;
 	}
-	return type->form;
+	return ((const poldiff_type_t *) type)->form;
 }
 
 apol_vector_t *poldiff_type_get_added_attribs(const poldiff_type_t *type)

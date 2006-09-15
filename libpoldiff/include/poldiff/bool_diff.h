@@ -135,6 +135,6 @@ extern const char *poldiff_bool_get_name(const poldiff_bool_t *boolean);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_bool_get_form(const poldiff_bool_t *boolean);
+extern poldiff_form_e poldiff_bool_get_form(const void *boolean);
 
 #endif /* POLDIFF_BOOL_DIFF_H */

@@ -84,7 +84,7 @@ extern char *poldiff_avrule_to_string(poldiff_t *diff, const void *avrule);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.
  */
-extern poldiff_form_e poldiff_avrule_get_form(const poldiff_avrule_t *avrule);
+extern poldiff_form_e poldiff_avrule_get_form(const void *avrule);
 
 /**
  *  Get the type of rule this is from an av rule diff.
@@ -221,7 +221,7 @@ extern char *poldiff_terule_to_string(poldiff_t *diff, const void *terule);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.
  */
-extern poldiff_form_e poldiff_terule_get_form(const poldiff_terule_t *terule);
+extern poldiff_form_e poldiff_terule_get_form(const void *terule);
 
 /**
  *  Get the type of rule this is from a te rule diff.

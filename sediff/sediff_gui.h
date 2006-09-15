@@ -74,6 +74,14 @@ typedef struct sediff_app {
 	int tv_curr_buf;         /* the buffer currently displayed for the treeview */
 } sediff_app_t;
 
+typedef struct sediff_item_record {
+	const char *label;
+	uint32_t bit_pos;
+	int has_add_type;
+	apol_vector_t * (*get_vector)(poldiff_t *);
+	poldiff_form_e (*get_form)(const void *);
+	char * (*get_string)(poldiff_t *, const void *);
+} sediff_item_record_t;
 
 /* constants that denote how to sort rules within the results buffer */
 #define SORT_SOURCE 0

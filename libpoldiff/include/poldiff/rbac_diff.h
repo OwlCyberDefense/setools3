@@ -92,7 +92,7 @@ extern const char *poldiff_role_allow_get_name(const poldiff_role_allow_t *role_
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_role_allow_get_form(const poldiff_role_allow_t *role_allow);
+extern poldiff_form_e poldiff_role_allow_get_form(const void *role_allow);
 
 /**
  *  Get a vector of roles added to the role allow rule.
@@ -183,25 +183,25 @@ extern const char *poldiff_role_trans_get_target_type(const poldiff_role_trans_t
 /**
  *  Get the form of difference from a role_transition diff.
  *
- *  @param role_trans The role_transition rule from which to get the 
+ *  @param role_trans The role_transition rule from which to get the
  *  difference form.
  *
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_role_trans_get_form(const poldiff_role_trans_t *role_trans);
+extern poldiff_form_e poldiff_role_trans_get_form(const void *role_trans);
 
 /**
  *  Get the original default type from a role_transition diff. Note that
  *  if this rule was added (form POLDIFF_FORM_ADDED or POLDIFF_FORM_ADD_TYPE)
  *  then the return value will be NULL.
  *
- *  @param role_trans The role_transition rule from which to get the 
+ *  @param role_trans The role_transition rule from which to get the
  *  original default role.
  *
  *  @return Name of the original default role. If there was no original role or
  *  upon error then return NULL. The caller should not free the returned
- *  string. 
+ *  string.
  */
 extern const char *poldiff_role_trans_get_original_default(const poldiff_role_trans_t *role_trans);
 
@@ -210,14 +210,13 @@ extern const char *poldiff_role_trans_get_original_default(const poldiff_role_tr
  *  this rule was removed (form POLDIFF_FORM_REMOVED or
  *  POLDIFF_FORM_REMOVE_TYPE) then the return value will be NULL.
  *
- *  @param role_trans The role_transition rule from which to get the 
+ *  @param role_trans The role_transition rule from which to get the
  *  modified default role.
  *
  *  @return Name of the modified default role. If there was no modified role or
  *  upon error then return NULL. The caller should not free the returned
- *  string. 
+ *  string.
  */
 extern const char *poldiff_role_trans_get_modified_default(const poldiff_role_trans_t *role_trans);
 
-#endif /* POLDIFF_RBAC_DIFF_H */ 
-
+#endif /* POLDIFF_RBAC_DIFF_H */

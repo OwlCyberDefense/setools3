@@ -180,13 +180,13 @@ const char *poldiff_attrib_get_name(const poldiff_attrib_t *attrib)
 	return attrib->name;
 }
 
-poldiff_form_e poldiff_attrib_get_form(const poldiff_attrib_t *attrib)
+poldiff_form_e poldiff_attrib_get_form(const void *attrib)
 {
 	if (attrib == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	return attrib->form;
+	return ((const poldiff_attrib_t *) attrib)->form;
 }
 
 apol_vector_t *poldiff_attrib_get_added_types(const poldiff_attrib_t *attrib)
@@ -556,4 +556,3 @@ int attrib_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	errno = error;
 	return retval;
 }
-

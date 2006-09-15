@@ -104,6 +104,15 @@ typedef void (*poldiff_get_item_stats_fn_t)(poldiff_t *diff, size_t stats[5]);
 typedef apol_vector_t * (*poldiff_get_result_items_fn_t)(poldiff_t *diff);
 
 /**
+ *  Callback function signature for getting the form of difference for
+ *  a result item.
+ *  @param diff The policy difference structure associated with the item.
+ *  @param item The item from which to get the form.
+ *  @return One of the POLDIFF_FORM_* enumeration.
+ */
+typedef poldiff_form_e (*poldiff_item_get_form_fn_t)(const void *item);
+
+/**
  *  Callback function signature for obtaining a newly allocated string
  *  representation of a difference item.
  *  @param diff The policy difference structure associated with the item.

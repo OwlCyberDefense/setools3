@@ -92,7 +92,7 @@ extern const char *poldiff_type_get_name(const poldiff_type_t *type);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_type_get_form(const poldiff_type_t *type);
+extern poldiff_form_e poldiff_type_get_form(const void *type);
 
 /**
  *  Get a vector of attributes added to the type.

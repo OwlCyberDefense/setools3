@@ -24,6 +24,7 @@
  */
 
 #include "sediff_treemodel.h"
+#include "sediff_gui.h"
 #include <poldiff/poldiff.h>
 #include <stdlib.h>
 
@@ -77,24 +78,13 @@ struct diff_tree {
 	int has_add_type;
 };
 
+extern sediff_item_record_t sediff_items[];
+
 static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 {
 	GtkTreeStore *treestore;
 	GtkTreeIter topiter, childiter;
-	struct diff_tree dt[] = {
-		{"Classes", POLDIFF_DIFF_CLASSES, 0},
-		{"Commons", POLDIFF_DIFF_COMMONS, 0},
-		{"Types", POLDIFF_DIFF_TYPES, 0},
-		{"Attribs", POLDIFF_DIFF_ATTRIBS, 0},
-		{"Roles", POLDIFF_DIFF_ROLES, 0},
-		{"Users", POLDIFF_DIFF_USERS, 0},
-		{"Booleans", POLDIFF_DIFF_BOOLS, 0},
-		{"Role Allows", POLDIFF_DIFF_ROLE_ALLOWS, 0},
-		{"Role Transitions", POLDIFF_DIFF_ROLE_TRANS, 1},
-		{"TE Rules", POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1}
-	};
-	size_t i;
-	size_t stats[5] = {0,0,0,0,0};
+	size_t stats[5] = {0,0,0,0,0}, i;
 	GString *s = g_string_new("");
 
 	treestore = gtk_tree_store_new(SEDIFF_NUM_COLUMNS,
@@ -110,15 +100,15 @@ static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 			   SEDIFF_FORM_COLUMN, POLDIFF_FORM_NONE,
 			   -1);
 
-	for (i = 0; i < sizeof(dt) / sizeof(dt[0]); i++) {
-		poldiff_get_stats(diff, dt[i].bit_pos, stats);
+	for (i = 0; sediff_items[i].label != NULL; i++) {
+		poldiff_get_stats(diff, sediff_items[i].bit_pos, stats);
 
 		gtk_tree_store_append(treestore, &topiter, NULL);
-		g_string_printf(s, "%s %zd", dt[i].label,
+		g_string_printf(s, "%s %zd", sediff_items[i].label,
 				stats[0] + stats[1] + stats[2] + stats[3] + stats[4]);
 		gtk_tree_store_set(treestore, &topiter,
 				   SEDIFF_LABEL_COLUMN, s->str,
-				   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+				   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
 				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_NONE,
 				   -1);
 
@@ -126,16 +116,16 @@ static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 		g_string_printf(s, "Added %zd", stats[0]);
 		gtk_tree_store_set(treestore, &childiter,
 				   SEDIFF_LABEL_COLUMN, s->str,
-				   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+				   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
 				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_ADDED,
 				   -1);
 
-		if (dt[i].has_add_type) {
+		if (sediff_items[i].has_add_type) {
 			gtk_tree_store_append(treestore, &childiter, &topiter);
 			g_string_printf(s, "Added Type %zd", stats[3]);
 			gtk_tree_store_set(treestore, &childiter,
 					   SEDIFF_LABEL_COLUMN, s->str,
-					   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+					   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
 					   SEDIFF_FORM_COLUMN, POLDIFF_FORM_ADD_TYPE,
 					   -1);
 		}
@@ -144,16 +134,16 @@ static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 		g_string_printf(s, "Removed %zd", stats[1]);
 		gtk_tree_store_set(treestore, &childiter,
 				   SEDIFF_LABEL_COLUMN, s->str,
-				   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+				   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
 				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_REMOVED,
 				   -1);
 
-		if (dt[i].has_add_type) {
+		if (sediff_items[i].has_add_type) {
 			gtk_tree_store_append(treestore, &childiter, &topiter);
 			g_string_printf(s, "Removed Type %zd", stats[4]);
 			gtk_tree_store_set(treestore, &childiter,
 					   SEDIFF_LABEL_COLUMN, s->str,
-					   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+					   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
 					   SEDIFF_FORM_COLUMN, POLDIFF_FORM_REMOVE_TYPE,
 					   -1);
 		}
@@ -161,10 +151,9 @@ static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 		g_string_printf(s, "Modified %zd", stats[2]);
 		gtk_tree_store_set(treestore, &childiter,
 				   SEDIFF_LABEL_COLUMN, s->str,
-				   SEDIFF_DIFFBIT_COLUMN, dt[i].bit_pos,
+				   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
 				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_MODIFIED,
 				   -1);
-
 	}
 
 	g_string_free(s,TRUE);
@@ -195,7 +184,7 @@ static GtkWidget *sediff_create_treeview()
 
 int sediff_get_current_treeview_selected_row(GtkTreeView *tree_view,
 					     uint32_t *diffbit,
-					     enum poldiff_form *form)
+					     poldiff_form_e *form)
 {
 	GtkTreeIter iter;
 	GtkTreeModel *tree_model;

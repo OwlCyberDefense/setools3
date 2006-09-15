@@ -95,6 +95,7 @@ here:
 
   extern void poldiff_type_get_stats(poldiff_t *diff, size_t stats[5]);
   extern apol_vector_t *poldiff_get_type_vector(poldiff_t *diff);
+  extern poldiff_form_e *poldiff_type_get_form(const void *type);
   extern char *poldiff_type_to_string(poldiff_t *diff, const void *type);
 
 (The reason for using a void * in poldiff_type_to_string() will become
@@ -107,12 +108,12 @@ difference:
 
 Once a user gets a vector of poldiff_type_t objects, via
 poldiff_get_type_vector(), he may want to do a number of things with
-it.  He could print it via poldiff_type_to_string(); or just get the
-type's name, form, list of added attributes, or list of removed
-attributes.  Therefore add these four functions to type_diff.h:
+it.  He could print it via poldiff_type_to_string() or get its form;
+or just get the type's name, list of added attributes, or list of
+removed attributes.  Therefore add these three functions to
+type_diff.h:
 
   extern const char *poldiff_type_get_name(poldiff_type_t *type);
-  extern poldiff_form_e *poldiff_type_get_form(poldiff_type_t *type);
   extern apol_vector_t *poldiff_type_get_added_attribs(poldiff_type_t *type);
   extern apol_vector_t *poldiff_type_get_removed_attribs(poldiff_type_t *type);
 
@@ -185,6 +186,11 @@ The public functions are easy to write.
     diff->type_diffs->num_added, diff->type_diffs->num_removed, and
     diff->type_diffs->num_modified.
 
+  * poldiff_type_get_form() fetches an individual result's form.  Note
+    that you must first cast the second parameter from void* to a
+    poldiff_type_t*, because this function operates upon items
+    returned by poldiff_get_type_vector().
+
   * poldiff_type_to_string() returns an allocated string akin to
     poldiff_user_to_string().  Note that you must first cast the
     second parameter from void* to a poldiff_type_t*, because this
@@ -233,6 +239,7 @@ changes to libpoldiff/src/poldiff.c:
         POLDIFF_DIFF_TYPES,
         poldiff_type_get_stats,
         poldiff_get_type_vector,
+        poldiff_type_get_form,
         poldiff_type_to_string,
         type_get_items,
         NULL,

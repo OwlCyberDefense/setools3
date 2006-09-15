@@ -39,6 +39,7 @@ typedef struct poldiff_item_record {
 	uint32_t flag_bit;
 	poldiff_get_item_stats_fn_t get_stats;
 	poldiff_get_result_items_fn_t get_results;
+	poldiff_item_get_form_fn_t get_form;
 	poldiff_item_to_string_fn_t to_string;
 	poldiff_get_items_fn_t get_items;
 	poldiff_free_item_fn_t free_item;
@@ -53,6 +54,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_AVRULES,
 		poldiff_avrule_get_stats,
 		poldiff_get_avrule_vector,
+		poldiff_avrule_get_form,
 		poldiff_avrule_to_string,
 		avrule_get_items,
 		avrule_free_item,
@@ -65,6 +67,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_CLASSES,
 		poldiff_class_get_stats,
 		poldiff_get_class_vector,
+		poldiff_class_get_form,
 		poldiff_class_to_string,
 		class_get_items,
 		NULL,
@@ -77,6 +80,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_BOOLS,
 		poldiff_bool_get_stats,
 		poldiff_get_bool_vector,
+		poldiff_bool_get_form,
 		poldiff_bool_to_string,
 		bool_get_items,
 		NULL,
@@ -89,6 +93,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_COMMONS,
 		poldiff_common_get_stats,
 		poldiff_get_common_vector,
+		poldiff_common_get_form,
 		poldiff_common_to_string,
 		common_get_items,
 		NULL,
@@ -101,6 +106,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_ROLE_ALLOWS,
 		poldiff_role_allow_get_stats,
 		poldiff_get_role_allow_vector,
+		poldiff_role_allow_get_form,
 		poldiff_role_allow_to_string,
 		role_allow_get_items,
 		role_allow_free_item,
@@ -113,6 +119,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_ROLE_TRANS,
 		poldiff_role_trans_get_stats,
 		poldiff_get_role_trans_vector,
+		poldiff_role_trans_get_form,
 		poldiff_role_trans_to_string,
 		role_trans_get_items,
 		role_trans_free_item,
@@ -125,6 +132,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_ROLES,
 		poldiff_role_get_stats,
 		poldiff_get_role_vector,
+		poldiff_role_get_form,
 		poldiff_role_to_string,
 		role_get_items,
 		NULL,
@@ -137,6 +145,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_USERS,
 		poldiff_user_get_stats,
 		poldiff_get_user_vector,
+		poldiff_user_get_form,
 		poldiff_user_to_string,
 		user_get_items,
 		NULL,
@@ -149,6 +158,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_TERULES,
 		poldiff_terule_get_stats,
 		poldiff_get_terule_vector,
+		poldiff_terule_get_form,
 		poldiff_terule_to_string,
 		terule_get_items,
 		terule_free_item,
@@ -161,6 +171,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_TYPES,
 		poldiff_type_get_stats,
 		poldiff_get_type_vector,
+		poldiff_type_get_form,
 		poldiff_type_to_string,
 		type_get_items,
 		NULL,
@@ -173,6 +184,7 @@ static const poldiff_item_record_t item_records[] = {
 		POLDIFF_DIFF_ATTRIBS,
 		poldiff_attrib_get_stats,
 		poldiff_get_attrib_vector,
+		poldiff_attrib_get_form,
 		poldiff_attrib_to_string,
 		attrib_get_items,
 		NULL,

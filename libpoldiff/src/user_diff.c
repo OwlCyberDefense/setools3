@@ -180,13 +180,13 @@ const char *poldiff_user_get_name(const poldiff_user_t *user)
 	return user->name;
 }
 
-poldiff_form_e poldiff_user_get_form(const poldiff_user_t *user)
+poldiff_form_e poldiff_user_get_form(const void *user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	return user->form;
+	return ((const poldiff_user_t *) user)->form;
 }
 
 apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t *user)
