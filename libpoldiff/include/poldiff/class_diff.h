@@ -93,7 +93,7 @@ extern const char *poldiff_class_get_name(const poldiff_class_t *cls);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_class_get_form(const poldiff_class_t *cls);
+extern poldiff_form_e poldiff_class_get_form(const void *cls);
 
 /**
  *  Get a vector of permissions added to the class.
@@ -184,7 +184,7 @@ extern const char *poldiff_common_get_name(const poldiff_common_t *common);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_common_get_form(const poldiff_common_t *common);
+extern poldiff_form_e poldiff_common_get_form(const void *common);
 
 /**
  *  Get a vector of permissions added to the common.

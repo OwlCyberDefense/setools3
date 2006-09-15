@@ -23,7 +23,7 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "config.h"
+#include <config.h>
 
 #include "sediff_gui.h"
 #include "sediff_progress.h"
@@ -79,29 +79,29 @@ static void sediff_main_window_rename_policy_tabs(GString *p1, GString *p2)
 	g_string_free(string,TRUE);
 }
 
-void sediff_set_open_policies_gui_state(gboolean open)
+void sediff_set_open_policies_gui_state(gboolean is_open)
 {
 	GtkWidget *widget = NULL;
 
 	widget = glade_xml_get_widget(sediff_app->window_xml, "toolbutton_rename_types");
 	g_assert(widget);
-	gtk_widget_set_sensitive(widget, open);
+	gtk_widget_set_sensitive(widget, is_open);
 	widget = glade_xml_get_widget(sediff_app->window_xml, "toolbutton_run_diff");
 	g_assert(widget);
-	gtk_widget_set_sensitive(widget, open);
+	gtk_widget_set_sensitive(widget, is_open);
 	widget = glade_xml_get_widget(sediff_app->window_xml, "menu_rename_types");
 	g_assert(widget);
-	gtk_widget_set_sensitive(widget, open);
+	gtk_widget_set_sensitive(widget, is_open);
 	widget = glade_xml_get_widget(sediff_app->window_xml, "menu_run_diff");
 	g_assert(widget);
-	gtk_widget_set_sensitive(widget, open);
+	gtk_widget_set_sensitive(widget, is_open);
 	widget = glade_xml_get_widget(sediff_app->window_xml, "sediff_menu_find");
 	g_assert(widget);
-	gtk_widget_set_sensitive(widget, open);
+	gtk_widget_set_sensitive(widget, is_open);
 	sediff_main_window_rename_policy_tabs(sediff_app->p1_sfd.name, sediff_app->p2_sfd.name);
 }
 
-void sediff_policy_stats_textview_populate(apol_policy_t *p, GtkTextView *textview, const char *filename)
+static void sediff_policy_stats_textview_populate(apol_policy_t *p, GtkTextView *textview, const char *filename)
 {
 	GtkTextBuffer *txt;
 	GtkTextIter iter;

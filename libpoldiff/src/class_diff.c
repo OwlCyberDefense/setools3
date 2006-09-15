@@ -183,13 +183,13 @@ const char *poldiff_class_get_name(const poldiff_class_t *cls)
 	return cls->name;
 }
 
-poldiff_form_e poldiff_class_get_form(const poldiff_class_t *cls)
+poldiff_form_e poldiff_class_get_form(const void *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	return cls->form;
+	return ((const poldiff_class_t *) cls)->form;
 }
 
 apol_vector_t *poldiff_class_get_added_perms(const poldiff_class_t *cls)
@@ -676,13 +676,13 @@ const char *poldiff_common_get_name(const poldiff_common_t *cls)
 	return cls->name;
 }
 
-poldiff_form_e poldiff_common_get_form(const poldiff_common_t *cls)
+poldiff_form_e poldiff_common_get_form(const void *cls)
 {
 	if (cls == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	return cls->form;
+	return ((const poldiff_common_t *) cls)->form;
 }
 
 apol_vector_t *poldiff_common_get_added_perms(const poldiff_common_t *cls)

@@ -303,13 +303,13 @@ apol_vector_t *poldiff_get_avrule_vector(poldiff_t *diff)
 	return diff->rule_diffs->diffs_av;
 }
 
-poldiff_form_e poldiff_avrule_get_form(const poldiff_avrule_t *avrule)
+poldiff_form_e poldiff_avrule_get_form(const void *avrule)
 {
 	if (avrule == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	return avrule->form;
+	return ((const poldiff_avrule_t *) avrule)->form;
 }
 
 uint32_t poldiff_avrule_get_rule_type(const poldiff_avrule_t *avrule)
@@ -551,13 +551,13 @@ apol_vector_t *poldiff_get_terule_vector(poldiff_t *diff)
 	return diff->rule_diffs->diffs_te;
 }
 
-poldiff_form_e poldiff_terule_get_form(const poldiff_terule_t *terule)
+poldiff_form_e poldiff_terule_get_form(const void *terule)
 {
 	if (terule == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	return terule->form;
+	return ((const poldiff_terule_t *) terule)->form;
 }
 
 uint32_t poldiff_terule_get_rule_type(const poldiff_terule_t *terule)

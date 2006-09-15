@@ -90,7 +90,7 @@ extern const char *poldiff_user_get_name(const poldiff_user_t *user);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_user_get_form(const poldiff_user_t *user);
+extern poldiff_form_e poldiff_user_get_form(const void *user);
 
 /**
  *  Get a vector of roles added to the user.

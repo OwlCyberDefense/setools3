@@ -23,7 +23,7 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "config.h"
+#include <config.h>
 
 #include "sediff_gui.h"
 #include "sediff_policy_open.h"
@@ -60,6 +60,30 @@ static struct option const longopts[] =
   {"version", no_argument, NULL, 'v'},
   {"run-diff", no_argument, NULL, 'd' },
   {NULL, 0, NULL, 0}
+};
+
+const sediff_item_record_t sediff_items[] = {
+	{"Classes", POLDIFF_DIFF_CLASSES, 0,
+	 poldiff_get_class_vector, poldiff_class_get_form, poldiff_class_to_string},
+	{"Commons", POLDIFF_DIFF_COMMONS, 0,
+	 poldiff_get_common_vector, poldiff_common_get_form, poldiff_common_to_string},
+	{"Types", POLDIFF_DIFF_TYPES, 0,
+	 poldiff_get_type_vector, poldiff_type_get_form, poldiff_type_to_string},
+	{"Attributes", POLDIFF_DIFF_ATTRIBS, 0,
+	 poldiff_get_attrib_vector, poldiff_attrib_get_form, poldiff_attrib_to_string},
+	{"Roles", POLDIFF_DIFF_ROLES, 0,
+	 poldiff_get_role_vector, poldiff_role_get_form, poldiff_role_to_string},
+	{"Users", POLDIFF_DIFF_USERS, 0,
+	 poldiff_get_user_vector, poldiff_user_get_form, poldiff_user_to_string},
+	{"Booleans", POLDIFF_DIFF_BOOLS, 0,
+	 poldiff_get_bool_vector, poldiff_bool_get_form, poldiff_bool_to_string},
+	{"Role Allows", POLDIFF_DIFF_ROLE_ALLOWS, 0,
+	 poldiff_get_role_allow_vector, poldiff_role_allow_get_form, poldiff_role_allow_to_string},
+	{"Role Transitions", POLDIFF_DIFF_ROLE_TRANS, 1,
+	 poldiff_get_role_trans_vector, poldiff_role_trans_get_form, poldiff_role_trans_to_string},
+	{"TE Rules", POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1,
+	 NULL, NULL, NULL  /* special case because this is from two datum */ },
+	{NULL, 0, 0, NULL, NULL, NULL}
 };
 
 /* Generic function prototype for getting policy components */
@@ -113,7 +137,7 @@ static void sediff_callback_signal_emit_1(gpointer data, gpointer user_data)
 	registered_callback_t *callback = (registered_callback_t *)data;
 	unsigned int type = *(unsigned int*)user_data;
 	if (callback->type == type) {
-		gpointer data = &callback->user_data;
+		data = &callback->user_data;
 		g_idle_add_full(G_PRIORITY_HIGH_IDLE+10, callback->function, &data, NULL);
 	}
 	return;
@@ -128,7 +152,7 @@ static void sediff_callback_signal_emit(unsigned int type)
 }
 
 /* show the help message in the bottom-left corner */
-static void sediff_populate_key_buffer()
+static void sediff_populate_key_buffer(void)
 {
 	GtkTextView *txt_view;
 	GtkTextBuffer *txt;
@@ -199,7 +223,7 @@ static void sediff_populate_key_buffer()
 static gboolean sediff_results_txt_view_switch_results(gpointer data)
 {
 	uint32_t diffbit = 0;
-	enum poldiff_form form = POLDIFF_FORM_NONE;
+	poldiff_form_e form = POLDIFF_FORM_NONE;
 	if (sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view), &diffbit, &form)) {
 		/* Configure text_view */
 		sediff_results_select(sediff_app, diffbit, form);
@@ -254,7 +278,7 @@ static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 	return;
 }
 
-static void sediff_destroy(sediff_app_t *sediff_app)
+static void sediff_destroy(void)
 {
 
 	if (sediff_app == NULL)
@@ -292,19 +316,20 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 
 	/* destroy our stored buffers */
 	sediff_results_clear(sediff_app);
+	free(sediff_app->results);
 	free(sediff_app);
 	sediff_app = NULL;
 }
 
-static void sediff_exit_app(sediff_app_t *sediff_app)
+static void sediff_exit_app(void)
 {
-	sediff_destroy(sediff_app);
+	sediff_destroy();
 	gtk_main_quit();
 }
 
 static void sediff_main_window_on_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
-	sediff_exit_app(sediff_app);
+	sediff_exit_app();
 }
 
 /* this function is used to determine whether we allow
@@ -632,7 +657,7 @@ void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
 
 void sediff_menu_on_quit_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
-	sediff_exit_app(sediff_app);
+	sediff_exit_app();
 }
 
 void sediff_menu_on_help_clicked(GtkMenuItem *menuitem, gpointer user_data)
@@ -858,11 +883,11 @@ static gboolean delayed_main(gpointer data)
 
 static void sediff_main_notebook_on_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, gpointer user_data)
 {
-	sediff_app_t *sediff_app = (sediff_app_t*)user_data;
+	sediff_app_t *app = (sediff_app_t*)user_data;
 	GtkLabel *label = NULL;
 
 	if (pagenum == 0) {
-		label = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
+		label = (GtkLabel*)glade_xml_get_widget(app->window_xml, "line_label");
 		gtk_label_set_text(label, "");
 	}
 }

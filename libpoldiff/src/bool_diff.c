@@ -135,13 +135,13 @@ const char *poldiff_bool_get_name(const poldiff_bool_t *boolean)
 	return boolean->name;
 }
 
-poldiff_form_e poldiff_bool_get_form(const poldiff_bool_t *boolean)
+poldiff_form_e poldiff_bool_get_form(const void *boolean)
 {
 	if (boolean == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	return boolean->form;
+	return ((const poldiff_bool_t *) boolean)->form;
 }
 
 /******************** protected functions ********************/
