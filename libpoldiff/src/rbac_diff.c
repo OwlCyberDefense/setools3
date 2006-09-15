@@ -227,13 +227,13 @@ const char *poldiff_role_allow_get_name(const poldiff_role_allow_t *role_allow)
 	return role_allow->source_role;
 }
 
-poldiff_form_e poldiff_role_allow_get_form(const poldiff_role_allow_t *role_allow)
+poldiff_form_e poldiff_role_allow_get_form(const void *role_allow)
 {
 	if (role_allow == NULL) {
 		errno = EINVAL;
 		return POLDIFF_FORM_NONE;
 	}
-	return role_allow->form;
+	return ((const poldiff_role_allow_t *) role_allow)->form;
 }
 
 apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t *role_allow)
@@ -651,13 +651,13 @@ extern const char *poldiff_role_trans_get_target_type(const poldiff_role_trans_t
 	return role_trans->target_type;
 }
 
-extern poldiff_form_e poldiff_role_trans_get_form(const poldiff_role_trans_t *role_trans)
+extern poldiff_form_e poldiff_role_trans_get_form(const void *role_trans)
 {
 	if (role_trans == NULL) {
 		errno = EINVAL;
 		return POLDIFF_FORM_NONE;
 	}
-	return role_trans->form;
+	return ((const poldiff_role_trans_t *) role_trans)->form;
 }
 
 extern const char *poldiff_role_trans_get_original_default(const poldiff_role_trans_t *role_trans)
@@ -948,7 +948,7 @@ int role_trans_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 				return -1;
 			}
 	}
-	if (!mapped_types) 
+	if (!mapped_types)
 		return -1;
 	tgt = apol_vector_get_element(mapped_types, 0);
 	if (!tgt) {
@@ -1061,7 +1061,7 @@ int role_trans_deep_diff(poldiff_t *diff, const void *x, const void *y)
 
 	default1 = prt1->default_role;
 	default2 = prt2->default_role;
-	
+
 	if (!strcmp(default1, default2))
 		return 0; /* no difference */
 
@@ -1092,4 +1092,3 @@ int role_trans_deep_diff(poldiff_t *diff, const void *x, const void *y)
 
 	return 0;
 }
-

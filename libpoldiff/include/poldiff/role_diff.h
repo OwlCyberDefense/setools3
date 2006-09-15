@@ -90,7 +90,7 @@ extern const char *poldiff_role_get_name(const poldiff_role_t *role);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_role_get_form(const poldiff_role_t *role);
+extern poldiff_form_e poldiff_role_get_form(const void *role);
 
 /**
  *  Get a vector of types added to the role.
