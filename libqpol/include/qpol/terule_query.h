@@ -41,7 +41,6 @@ typedef struct qpol_terule qpol_terule_t;
  *  Get an iterator over all type rules in a policy of a rule type in
  *  rule_type_mask. It is an error to call this function if rules are not
  *  loaded.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which to get the av rules.
  *  @param rule_type_mask Bitwise or'ed set of QPOL_RULE_TYPE_* values.
  *  It is an error to specify any other values of QPOL_RULE_* in the mask.
@@ -53,11 +52,10 @@ typedef struct qpol_terule qpol_terule_t;
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter);
+extern int qpol_policy_get_terule_iter(qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter);
 
 /**
  *  Get the source type from a type rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the source type.
  *  @param source Pointer in which to store the source type.
@@ -65,11 +63,10 @@ extern int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *pol
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-extern int qpol_terule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **source);
+extern int qpol_terule_get_source_type(qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **source);
 
 /**
  *  Get the target type from a type rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the target type.
  *  @param target Pointer in which to store the target type.
@@ -77,11 +74,10 @@ extern int qpol_terule_get_source_type(qpol_handle_t *handle, qpol_policy_t *pol
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-extern int qpol_terule_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **target);
+extern int qpol_terule_get_target_type(qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **target);
 
 /**
  *  Get the object class from a type rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the object class.
  *  @param obj_class Pointer in which to store the object class.
@@ -89,11 +85,10 @@ extern int qpol_terule_get_target_type(qpol_handle_t *handle, qpol_policy_t *pol
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
-extern int qpol_terule_get_object_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_class_t **obj_class);
+extern int qpol_terule_get_object_class(qpol_policy_t *policy, qpol_terule_t *rule, qpol_class_t **obj_class);
 
 /**
  *  Get the default type from a type rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the default type.
  *  @param dflt Pointer in which to store the default type.
@@ -101,11 +96,10 @@ extern int qpol_terule_get_object_class(qpol_handle_t *handle, qpol_policy_t *po
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dflt will be NULL.
  */
-extern int qpol_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **dflt);
+extern int qpol_terule_get_default_type(qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **dflt);
 
 /**
  *  Get the rule type value for a type rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the rule type.
  *  @param rule_type Integer in which to store the rule type value.
@@ -113,12 +107,11 @@ extern int qpol_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *po
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *rule_type will be 0.
  */
-extern int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *rule_type);
+extern int qpol_terule_get_rule_type(qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *rule_type);
 
 /**
  *  Get the conditional from which a type rule comes. If the rule
  *  is not a conditional rule *cond is set to NULL.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the conditional.
  *  @param cond The conditional returned. (NULL if rule is not conditional)
@@ -126,11 +119,10 @@ extern int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *polic
  *  errno will be set and *cond will be NULL. If the rule is not conditional
  *  *cond is set to NULL and the function is considered successful.
  */
-extern int qpol_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_cond_t **cond);
+extern int qpol_terule_get_cond(qpol_policy_t *policy, qpol_terule_t *rule, qpol_cond_t **cond);
 
 /**
  *  Determine if a rule is enabled. Unconditional rules are always enabled.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule to check.
  *  @param is_enabled Integer in which to store the result: set to 1 if enabled
@@ -138,12 +130,11 @@ extern int qpol_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qp
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_enabled will be 0.
  */
-extern int qpol_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *is_enabled);
+extern int qpol_terule_get_is_enabled(qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *is_enabled);
 
 /**
  *  Get the list (true or false) in which a conditional rule is. It is 
  *  an error to call this function for an unconditional rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule to check.
  *  @param which_list Integer in which to store the result: set to 1 if 
@@ -151,6 +142,6 @@ extern int qpol_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *poli
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *which_list will be 0.
  */
-extern int qpol_terule_get_which_list(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *which_list);
+extern int qpol_terule_get_which_list(qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *which_list);
 
 #endif 

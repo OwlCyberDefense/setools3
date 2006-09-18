@@ -46,7 +46,7 @@ int apol_get_cond_by_query(apol_policy_t *p,
 	int retval = -1;
 	*v = NULL;
 
-	if (qpol_policy_get_cond_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_cond_iter(p->p, &iter) < 0) {
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -123,7 +123,7 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_cond_t *cond)
 		errno = EINVAL;
 		return NULL;
 	}
-	if (qpol_cond_get_expr_node_iter(p->qh, p->p, cond, &iter) < 0) {
+	if (qpol_cond_get_expr_node_iter(p->p, cond, &iter) < 0) {
 		error = errno;
 		goto err;
 	}
@@ -134,7 +134,7 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_cond_t *cond)
 			ERR(p, "%s", strerror(error));
 			goto err;
 		}
-		if (qpol_cond_expr_node_get_expr_type(p->qh, p->p, expr, &expr_type)) {
+		if (qpol_cond_expr_node_get_expr_type(p->p, expr, &expr_type)) {
 			error = errno;
 			ERR(p, "%s", strerror(error));
 			goto err;
@@ -146,12 +146,12 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_cond_t *cond)
 				goto err;
 			}
 		} else {
-			if (qpol_cond_expr_node_get_bool(p->qh, p->p, expr, &cond_bool)) {
+			if (qpol_cond_expr_node_get_bool(p->p, expr, &cond_bool)) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto err;
 			}
-			if (qpol_bool_get_name(p->qh, p->p, cond_bool, &bool_name)) {
+			if (qpol_bool_get_name(p->p, cond_bool, &bool_name)) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto err;

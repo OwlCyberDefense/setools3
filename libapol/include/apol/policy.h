@@ -47,8 +47,7 @@ struct apol_domain_trans_table;
 typedef void (*apol_callback_fn_t) (struct apol_policy *p, int level, const char *fmt, va_list argp);
 
 typedef struct apol_policy {
-        qpol_policy_t *p;
-        qpol_handle_t *qh;
+	qpol_policy_t *p;
 	apol_callback_fn_t msg_callback;
 	int msg_level;
 	void *msg_callback_arg;

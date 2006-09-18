@@ -89,7 +89,6 @@ struct qpol_extended_image {
  *  This function modifies the policydb. Names created for attributes
  *  are of the form @ttr<value> where value is the value of the attribute
  *  as a four digit number (prepended with 0's as needed).
- *  @param handle Error handler for the policy.
  *  @param policy The policy from which to read the attribute map and
  *  create the type data for the attributes. This policy will be altered
  *  by this function.
@@ -97,7 +96,7 @@ struct qpol_extended_image {
  *  errno will be set. On failure, the policy state may be inconsistent
  *  especially in the case where the hashtab functions return the error.
  */
-static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t *policy)
+static int qpol_policy_build_attrs_from_map(qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 	size_t i;
@@ -107,9 +106,9 @@ static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t
 	char *tmp_name = NULL, buff[10];
 	int error = 0, retv;
 
-	INFO(handle, "%s", "Generating attributes for policy.");
-	if (handle == NULL || policy == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	INFO(policy, "%s", "Generating attributes for policy.");
+	if (policy == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -186,7 +185,7 @@ err:
 	free(tmp_name);
 	type_datum_destroy(tmp_type);
 	free(tmp_type);
-	ERR(handle, "%s", strerror(error));
+	ERR(policy, "%s", strerror(error));
 	errno = error;
 	return STATUS_ERR;
 }
@@ -196,14 +195,13 @@ err:
  *  This function modifies the policydb. Names created for the attributes
  *  are of the form @ttr<value> where value is the value of the attribute
  *  as a four digit number (prepended with 0's as needed).
- *  @param handle Error handler for the policy.
  *  @param policy The policy to which to add type data for attributes.
  *  This policy will be altered by this function.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set. On failure, the policy state may be inconsistent
  *  especially in the case where the hashtab functions return the error.
  */
-static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *policy)
+static int qpol_policy_fill_attr_holes(qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 	char *tmp_name = NULL, buff[10];
@@ -212,8 +210,8 @@ static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *pol
 	type_datum_t *tmp_type = NULL;
 	size_t i;
 
-	if (handle == NULL || policy == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -262,7 +260,7 @@ static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *pol
 err:
 	free(tmp_type);
 	free(tmp_name);
-	ERR(handle, "%s", strerror(error));
+	ERR(policy, "%s", strerror(error));
 	errno = error;
 	return STATUS_ERR;
 }
@@ -302,21 +300,20 @@ static char *sidnames[] =
 /**
  *  Uses names from flask to fill in the isid names which are not normally
  *  saved. This function modified the policydb.
- *  @param handle Error handler for the policy.
  *  @param policy Policy to which to add sid names.
  *  This policy will be altered by this function.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set. On failure, the policy state may be inconsistent.
  */
-static int qpol_policy_add_isid_names(qpol_handle_t *handle, qpol_policy_t *policy)
+static int qpol_policy_add_isid_names(qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 	ocontext_t *sid = NULL;
 	uint32_t val = 0;
 	int error = 0;
 
-	if (handle == NULL || policy == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -332,7 +329,7 @@ static int qpol_policy_add_isid_names(qpol_handle_t *handle, qpol_policy_t *poli
 			sid->u.name = strdup(sidnames[val]);
 			if (!sid->u.name) {
 				error = errno;
-				ERR(handle, "%s",strerror(error));
+				ERR(policy, "%s",strerror(error));
 				errno = error;
 				return STATUS_ERR;
 			}
@@ -345,13 +342,12 @@ static int qpol_policy_add_isid_names(qpol_handle_t *handle, qpol_policy_t *poli
 /**
  *  Walks the conditional list and adds links for reverse look up from
  *  a te/av rule to the conditional from which it came.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy to which to add conditional trace backs.
  *  This policy will be altered by this function.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set. On failure, the policy state may be inconsistent.
  */
-static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_policy_t *policy)
+static int qpol_policy_add_cond_rule_traceback(qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 	cond_node_t *cond = NULL;
@@ -360,9 +356,9 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 	avtab_ptr_t rule = NULL;
 	int error = 0;
 
-	INFO(handle, "%s", "Building conditional rules tables.");
-	if (!handle || !policy) {
-		ERR(handle, "%s", strerror(EINVAL));
+	INFO(policy, "%s", "Building conditional rules tables.");
+	if (!policy) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -370,12 +366,12 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 	db = &policy->p->p;
 
 	/* mark all unconditional rules as enabled */
-	if (qpol_policy_get_avrule_iter(handle, policy, (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT), &iter))
+	if (qpol_policy_get_avrule_iter(policy, (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT), &iter))
 		return STATUS_ERR;
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, (void**)&rule)) {
 			error = errno;
-			ERR(handle, "%s", strerror(error));
+			ERR(policy, "%s", strerror(error));
 			errno = error;
 			return STATUS_ERR;
 		}
@@ -383,12 +379,12 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 		rule->merged = QPOL_COND_RULE_ENABLED;
 	}
 	qpol_iterator_destroy(&iter);
-	if (qpol_policy_get_terule_iter(handle, policy, (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER), &iter))
+	if (qpol_policy_get_terule_iter(policy, (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER), &iter))
 		return STATUS_ERR;
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, (void**)&rule)) {
 			error = errno;
-			ERR(handle, "%s", strerror(error));
+			ERR(policy, "%s", strerror(error));
 			errno = error;
 			return STATUS_ERR;
 		}
@@ -401,7 +397,7 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 		/* evaluate cond */
 		cond->cur_state = cond_evaluate_expr(db, cond->expr);
 		if (cond->cur_state < 0) {
-			ERR(handle, "Error evaluating conditional: %s", strerror(EILSEQ));
+			ERR(policy, "Error evaluating conditional: %s", strerror(EILSEQ));
 			errno = EILSEQ;
 			return STATUS_ERR;
 		}
@@ -535,7 +531,6 @@ static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(qpol_syn_rule_
  *  syn rule table.  Note that this function takes ownership of the
  *  key.
  *
- *  @param handle Error handler for the policy.
  *  @param polciy Policy associated with the rule.
  *  @param table The table to which to add the rule.
  *  @param key Hashtable key for rule lookup.
@@ -543,7 +538,7 @@ static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(qpol_syn_rule_
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and the table may be in an inconsistent state.
  */
-static int qpol_syn_rule_table_insert_entry(qpol_handle_t *handle,
+static int qpol_syn_rule_table_insert_entry(
 					    qpol_policy_t *policy,
 					    qpol_syn_rule_table_t *table,
 					    qpol_syn_rule_key_t *key,
@@ -555,7 +550,7 @@ static int qpol_syn_rule_table_insert_entry(qpol_handle_t *handle,
 
 	if (!(list_entry = calloc(1, sizeof(qpol_syn_rule_list_t)))) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		free(key);
 		return -1;
 	}
@@ -569,7 +564,7 @@ static int qpol_syn_rule_table_insert_entry(qpol_handle_t *handle,
 	} else {
 		if (!(table_node = calloc(1, sizeof(qpol_syn_rule_node_t)))) {
 			error = errno;
-			ERR(handle, "%s", strerror(error));
+			ERR(policy, "%s", strerror(error));
 			free(key);
 			free(list_entry);
 			return -1;
@@ -585,7 +580,6 @@ static int qpol_syn_rule_table_insert_entry(qpol_handle_t *handle,
 
 /**
  *  Add a syntactic rule (sepol's avrule_t) to the syntactic rule table.
- *  @param handle Error handler for the policy.
  *  @param polciy Policy associated with the rule.
  *  @param table The table to which to add the rule.
  *  @param rule The rule to add.
@@ -596,7 +590,7 @@ static int qpol_syn_rule_table_insert_entry(qpol_handle_t *handle,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and the table may be in an inconsistent state.
  */
-static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_rule_table_t *table, avrule_t *rule, cond_node_t *cond, int branch)
+static int qpol_syn_rule_table_insert_sepol_avrule(qpol_policy_t *policy, qpol_syn_rule_table_t *table, avrule_t *rule, cond_node_t *cond, int branch)
 {
 	int error = 0, created = 0;
 	qpol_syn_rule_key_t *key = NULL;
@@ -607,16 +601,16 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 	class_perm_node_t *class_node = NULL;
 	cond_node_t *tmp_cond = NULL;
 
-	if (!handle || !policy || !policy->ext ||
+	if (!policy || !policy->ext ||
 		!policy->ext->syn_rule_master_list || !table || !rule) {
-		ERR(handle, "%s",  strerror(EINVAL));
+		ERR(policy, "%s",  strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
 
 	if (!(new_rule = calloc(1, sizeof(struct qpol_syn_rule)))) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	new_rule->rule = rule;
@@ -628,19 +622,19 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 
 	if (type_set_expand(&rule->stypes, &source_types, &policy->p->p, 0) ||
 	    type_set_expand(&rule->stypes, &source_types2, &policy->p->p, 1)) {
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
 	}
 	if (type_set_expand(&rule->ttypes, &target_types, &policy->p->p, 0) ||
 	    type_set_expand(&rule->ttypes, &target_types2, &policy->p->p, 1)) {
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
 	}
 	if (ebitmap_union(&source_types, &source_types2) ||
 	    ebitmap_union(&target_types, &target_types2)) {
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
 	}
@@ -651,7 +645,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 			for (class_node = rule->perms; class_node; class_node = class_node->next) {
 				if (!(key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
 					error = errno;
-					ERR(handle, "%s", strerror(error));
+					ERR(policy, "%s", strerror(error));
 					goto err;
 				}
 				key->rule_type = rule->specified;
@@ -662,7 +656,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 					if (created || !tmp_cond) {
 						cond_node_destroy(tmp_cond);
 						error = EIO;
-						ERR(handle, "%s", "Inconsistent conditional records");
+						ERR(policy, "%s", "Inconsistent conditional records");
 						assert(0);
 						goto err;
 					}
@@ -670,7 +664,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 				} else {
 					key->cond = NULL;
 				}
-				if (qpol_syn_rule_table_insert_entry(handle, policy, table, key, new_rule))
+				if (qpol_syn_rule_table_insert_entry(policy, table, key, new_rule))
 					goto err;
 				key = NULL;
 			}
@@ -681,7 +675,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 			for (class_node = rule->perms; class_node; class_node = class_node->next) {
 				if (!(key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
 					error = errno;
-					ERR(handle, "%s", strerror(error));
+					ERR(policy, "%s", strerror(error));
 					goto err;
 				}
 				key->rule_type = rule->specified;
@@ -693,7 +687,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 					if (created || !tmp_cond) {
 						cond_node_destroy(tmp_cond);
 						error = EIO;
-						ERR(handle, "%s", "Inconsistent conditional records");
+						ERR(policy, "%s", "Inconsistent conditional records");
 						assert(0);
 						goto err;
 					}
@@ -701,7 +695,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_handle_t *handle, qpol_p
 				} else {
 					key->cond = NULL;
 				}
-				if (qpol_syn_rule_table_insert_entry(handle, policy, table, key, new_rule))
+				if (qpol_syn_rule_table_insert_entry(policy, table, key, new_rule))
 					goto err;
 				key = NULL;
 			}
@@ -724,13 +718,12 @@ err:
 
 /**
  *  Build the table of syntactic rules for a policy.
- *  @param handle Error handler for the policy.
  *  @param policy The policy for which to build the table.
  *  This policy will be modified by this call.
  *  @return 0 on success and < 0 on error; if the call fails,
  *  errno will be set.
  */
-static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t *policy)
+static int qpol_policy_build_syn_rule_table(qpol_policy_t *policy)
 {
 	int error = 0;
 	avrule_block_t *cur_block = NULL;
@@ -738,8 +731,8 @@ static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t
 	avrule_t *cur_rule = NULL;
 	cond_node_t *cur_cond = NULL;
 
-	if (!handle || !policy) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -748,7 +741,7 @@ static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t
 		policy->ext = calloc(1, sizeof(qpol_extended_image_t));
 		if (!policy->ext) {
 			error = errno;
-			ERR(handle, "%s", strerror(error));
+			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
 	}
@@ -759,13 +752,13 @@ static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t
 	policy->ext->syn_rule_table = calloc(1, sizeof(qpol_syn_rule_table_t));
 	if (!policy->ext->syn_rule_table) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	policy->ext->syn_rule_table->buckets = calloc(QPOL_SYN_RULE_TABLE_SIZE, sizeof(qpol_syn_rule_node_t*));
 	if (!policy->ext->syn_rule_table->buckets) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
@@ -793,12 +786,12 @@ static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t
 		return 0;	 /* policy is not a source policy */
 	}
 
-	INFO(handle, "%s", "Building syntactic rules tables.");
+	INFO(policy, "%s", "Building syntactic rules tables.");
 
 	policy->ext->syn_rule_master_list = calloc(policy->ext->master_list_sz, sizeof(struct qpol_syn_rule*));
 	if (!policy->ext->syn_rule_master_list) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
@@ -811,20 +804,20 @@ static int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t
 			continue;
 
 		for (cur_rule = decl->avrules; cur_rule; cur_rule = cur_rule->next) {
-			if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, NULL, 0)) {
+			if (qpol_syn_rule_table_insert_sepol_avrule(policy, policy->ext->syn_rule_table, cur_rule, NULL, 0)) {
 				error = errno;
 				goto err;
 			}
 		}
 		for (cur_cond = decl->cond_list; cur_cond; cur_cond = cur_cond->next) {
 			for (cur_rule = cur_cond->avtrue_list; cur_rule; cur_rule = cur_rule->next) {
-				if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, cur_cond, 0)) {
+				if (qpol_syn_rule_table_insert_sepol_avrule(policy, policy->ext->syn_rule_table, cur_rule, cur_cond, 0)) {
 					error = errno;
 					goto err;
 				}
 			}
 			for (cur_rule = cur_cond->avfalse_list; cur_rule; cur_rule = cur_rule->next) {
-				if (qpol_syn_rule_table_insert_sepol_avrule(handle, policy, policy->ext->syn_rule_table, cur_rule, cur_cond, 1)) {
+				if (qpol_syn_rule_table_insert_sepol_avrule(policy, policy->ext->syn_rule_table, cur_rule, cur_cond, 1)) {
 					error = errno;
 					goto err;
 				}
@@ -841,33 +834,33 @@ err:
 	return -1;
 }
 
-int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy)
+int qpol_policy_extend(qpol_policy_t *policy)
 {
 	int retv, error;
 	policydb_t *db = NULL;
 
-	if (handle == NULL || policy == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
 
 	db = &policy->p->p;
 	if (db->attr_type_map) {
-		retv = qpol_policy_build_attrs_from_map(handle, policy);
+		retv = qpol_policy_build_attrs_from_map(policy);
 		if (retv) {
 			error = errno;
 			goto err;
 		}
 		if (db->policy_type == POLICY_KERN) {
-			retv = qpol_policy_fill_attr_holes(handle, policy);
+			retv = qpol_policy_fill_attr_holes(policy);
 			if (retv) {
 				error = errno;
 				goto err;
 			}
 		}
 	}
-	retv = qpol_policy_add_isid_names(handle, policy);
+	retv = qpol_policy_add_isid_names(policy);
 	if (retv) {
 		error = errno;
 		goto err;
@@ -876,13 +869,13 @@ int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy)
 	if (!policy->rules_loaded)
 		return STATUS_SUCCESS;
 
-	retv = qpol_policy_add_cond_rule_traceback(handle, policy);
+	retv = qpol_policy_add_cond_rule_traceback(policy);
 	if (retv) {
 		error = errno;
 		goto err;
 	}
 
-	retv = qpol_policy_build_syn_rule_table(handle, policy);
+	retv = qpol_policy_build_syn_rule_table(policy);
 	if (retv) {
 		error = errno;
 		goto err;
@@ -980,7 +973,7 @@ static size_t syn_rule_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter)
+int qpol_avrule_get_syn_avrule_iter(qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter)
 {
 	qpol_syn_rule_key_t *key = NULL;
 	qpol_type_t *tmp_type;
@@ -993,8 +986,8 @@ int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy
 	if (iter)
 		*iter = NULL;
 
-	if (!handle || !policy || !policy->ext || !rule || !iter) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !policy->ext || !rule || !iter) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -1002,47 +995,47 @@ int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy
 	/* build key */
 	if (!(key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
 		error = errno;
-		ERR(handle, "%S", strerror(error));
+		ERR(policy, "%S", strerror(error));
 		goto err;
 	}
 
-	if (qpol_avrule_get_rule_type(handle, policy, rule, &tmp_val)) {
+	if (qpol_avrule_get_rule_type(policy, rule, &tmp_val)) {
 		error = errno;
 		goto err;
 	}
 	key->rule_type = (tmp_val == QPOL_RULE_DONTAUDIT ? (AVRULE_AUDITDENY|AVRULE_DONTAUDIT) : tmp_val);
 
-	if (qpol_avrule_get_source_type(handle, policy, rule, &tmp_type)) {
+	if (qpol_avrule_get_source_type(policy, rule, &tmp_type)) {
 		error = errno;
 		goto err;
 	}
-	if (qpol_type_get_value(handle, policy, tmp_type, &tmp_val)) {
+	if (qpol_type_get_value(policy, tmp_type, &tmp_val)) {
 		error = errno;
 		goto err;
 	}
 	key->source_val = tmp_val;
 
-	if (qpol_avrule_get_target_type(handle, policy, rule, &tmp_type)) {
+	if (qpol_avrule_get_target_type(policy, rule, &tmp_type)) {
 		error = errno;
 		goto err;
 	}
-	if (qpol_type_get_value(handle, policy, tmp_type, &tmp_val)) {
+	if (qpol_type_get_value(policy, tmp_type, &tmp_val)) {
 		error = errno;
 		goto err;
 	}
 	key->target_val = tmp_val;
 
-	if (qpol_avrule_get_object_class(handle, policy, rule, &tmp_class)) {
+	if (qpol_avrule_get_object_class(policy, rule, &tmp_class)) {
 		error = errno;
 		goto err;
 	}
-	if (qpol_class_get_value(handle, policy, tmp_class, &tmp_val)) {
+	if (qpol_class_get_value(policy, tmp_class, &tmp_val)) {
 		error = errno;
 		goto err;
 	}
 	key->class_val = tmp_val;
 
-	if (qpol_avrule_get_cond(handle, policy, rule, &tmp_cond)) {
+	if (qpol_avrule_get_cond(policy, rule, &tmp_cond)) {
 		error = errno;
 		goto err;
 	}
@@ -1051,19 +1044,19 @@ int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy
 	/* build state object */
 	if (!(srs = calloc(1, sizeof(syn_rule_state_t)))) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
 	srs->node = qpol_syn_rule_table_find_node_by_key(policy->ext->syn_rule_table, key);
 	if (!srs->node) {
-		ERR(handle, "%s", "Unable to locate syntactic rules for semantic av rule");
+		ERR(policy, "%s", "Unable to locate syntactic rules for semantic av rule");
 		errno = ENOENT;
 		goto err;
 	}
 	srs->cur = srs->node->rules;
 
-	if (qpol_iterator_create(handle, &policy->p->p, (void*)srs,
+	if (qpol_iterator_create(policy, (void*)srs,
 		syn_rule_state_get_cur, syn_rule_state_next,
 		syn_rule_state_end, syn_rule_state_size,
 		free, iter)) {
@@ -1082,7 +1075,7 @@ err:
 	return -1;
 }
 
-int qpol_terule_get_syn_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter)
+int qpol_terule_get_syn_terule_iter(qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter)
 {
 	qpol_syn_rule_key_t *key = NULL;
 	qpol_type_t *tmp_type;
@@ -1095,8 +1088,8 @@ int qpol_terule_get_syn_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy
 	if (iter)
 		*iter = NULL;
 
-	if (!handle || !policy || !policy->ext || !rule || !iter) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !policy->ext || !rule || !iter) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -1104,47 +1097,47 @@ int qpol_terule_get_syn_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy
 	/* build key */
 	if (!(key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
 		error = errno;
-		ERR(handle, "%S", strerror(error));
+		ERR(policy, "%S", strerror(error));
 		goto err;
 	}
 
-	if (qpol_terule_get_rule_type(handle, policy, rule, &tmp_val)) {
+	if (qpol_terule_get_rule_type(policy, rule, &tmp_val)) {
 		error = errno;
 		goto err;
 	}
 	key->rule_type = tmp_val;
 
-	if (qpol_terule_get_source_type(handle, policy, rule, &tmp_type)) {
+	if (qpol_terule_get_source_type(policy, rule, &tmp_type)) {
 		error = errno;
 		goto err;
 	}
-	if (qpol_type_get_value(handle, policy, tmp_type, &tmp_val)) {
+	if (qpol_type_get_value(policy, tmp_type, &tmp_val)) {
 		error = errno;
 		goto err;
 	}
 	key->source_val = tmp_val;
 
-	if (qpol_terule_get_target_type(handle, policy, rule, &tmp_type)) {
+	if (qpol_terule_get_target_type(policy, rule, &tmp_type)) {
 		error = errno;
 		goto err;
 	}
-	if (qpol_type_get_value(handle, policy, tmp_type, &tmp_val)) {
+	if (qpol_type_get_value(policy, tmp_type, &tmp_val)) {
 		error = errno;
 		goto err;
 	}
 	key->target_val = tmp_val;
 
-	if (qpol_terule_get_object_class(handle, policy, rule, &tmp_class)) {
+	if (qpol_terule_get_object_class(policy, rule, &tmp_class)) {
 		error = errno;
 		goto err;
 	}
-	if (qpol_class_get_value(handle, policy, tmp_class, &tmp_val)) {
+	if (qpol_class_get_value(policy, tmp_class, &tmp_val)) {
 		error = errno;
 		goto err;
 	}
 	key->class_val = tmp_val;
 
-	if (qpol_terule_get_cond(handle, policy, rule, &tmp_cond)) {
+	if (qpol_terule_get_cond(policy, rule, &tmp_cond)) {
 		error = errno;
 		goto err;
 	}
@@ -1153,19 +1146,19 @@ int qpol_terule_get_syn_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy
 	/* build state object */
 	if (!(srs = calloc(1, sizeof(syn_rule_state_t)))) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
 	srs->node = qpol_syn_rule_table_find_node_by_key(policy->ext->syn_rule_table, key);
 	if (!srs->node) {
-		ERR(handle, "%s", "Unable to locate syntactic rules for semantic te rule");
+		ERR(policy, "%s", "Unable to locate syntactic rules for semantic te rule");
 		errno = ENOENT;
 		goto err;
 	}
 	srs->cur = srs->node->rules;
 
-	if (qpol_iterator_create(handle, &policy->p->p, (void*)srs,
+	if (qpol_iterator_create(policy, (void*)srs,
 		syn_rule_state_get_cur, syn_rule_state_next,
 		syn_rule_state_end, syn_rule_state_size,
 		free, iter)) {

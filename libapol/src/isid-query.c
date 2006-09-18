@@ -48,7 +48,7 @@ int apol_get_isid_by_query(apol_policy_t *p,
 	int retval = -1, retval2;
 	qpol_isid_t *isid = NULL;
 	*v = NULL;
-	if (qpol_policy_get_isid_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_isid_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -62,8 +62,8 @@ int apol_get_isid_by_query(apol_policy_t *p,
 		if (i != NULL) {
 			char *name;
 			qpol_context_t *context;
-			if (qpol_isid_get_name(p->qh, p->p, isid, &name) < 0 ||
-			    qpol_isid_get_context(p->qh, p->p, isid, &context) < 0) {
+			if (qpol_isid_get_name(p->p, isid, &name) < 0 ||
+			    qpol_isid_get_context(p->p, isid, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, name, i->name, 0, NULL);

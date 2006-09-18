@@ -217,7 +217,7 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		char *role_name;
 
 		role = apol_vector_get_element(role_vector, i);
-		qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+		qpol_role_get_name(policy->p, role, &role_name);
 
 		if (!strcmp(role_name, "object_r"))
 			continue;
@@ -320,7 +320,7 @@ int roles_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			role = (qpol_role_t*)item->item;
-			qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+			qpol_role_get_name(policy->p, role, &role_name);
 			printf("%s%s", role_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");

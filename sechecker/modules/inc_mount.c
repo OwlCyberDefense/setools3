@@ -225,10 +225,10 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 
 		both = FALSE;
 		mount_rule = apol_vector_get_element(mount_vector, i);
-		qpol_avrule_get_source_type(policy->qh, policy->p, mount_rule, &mount_source);
-		qpol_avrule_get_target_type(policy->qh, policy->p, mount_rule, &mount_target);
-		qpol_type_get_name(policy->qh, policy->p, mount_source, &mount_source_name);
-		qpol_type_get_name(policy->qh, policy->p, mount_target, &mount_target_name);
+		qpol_avrule_get_source_type(policy->p, mount_rule, &mount_source);
+		qpol_avrule_get_target_type(policy->p, mount_rule, &mount_target);
+		qpol_type_get_name(policy->p, mount_source, &mount_source_name);
+		qpol_type_get_name(policy->p, mount_target, &mount_target_name);
 
 		for ( j = 0; j<apol_vector_get_size(mounton_vector); j++) {
 			qpol_avrule_t *mounton_rule;
@@ -237,10 +237,10 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			char *mounton_source_name, *mounton_target_name;
 
 			mounton_rule = apol_vector_get_element(mounton_vector, j);
-			qpol_avrule_get_source_type(policy->qh, policy->p, mounton_rule, &mounton_source);
-			qpol_avrule_get_target_type(policy->qh, policy->p, mounton_rule, &mounton_target);
-			qpol_type_get_name(policy->qh, policy->p, mounton_source, &mounton_source_name);
-			qpol_type_get_name(policy->qh, policy->p, mounton_target, &mounton_target_name);
+			qpol_avrule_get_source_type(policy->p, mounton_rule, &mounton_source);
+			qpol_avrule_get_target_type(policy->p, mounton_rule, &mounton_target);
+			qpol_type_get_name(policy->p, mounton_source, &mounton_source_name);
+			qpol_type_get_name(policy->p, mounton_target, &mounton_target_name);
 
 			/* Check to see if they match */
 			if (!strcmp(mount_source_name, mounton_source_name) &&
@@ -305,10 +305,10 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 
 		both = FALSE;
 		mounton_rule = apol_vector_get_element(mounton_vector, i);
-		qpol_avrule_get_source_type(policy->qh, policy->p, mounton_rule, &mounton_source);
-		qpol_avrule_get_target_type(policy->qh, policy->p, mounton_rule, &mounton_target);
-		qpol_type_get_name(policy->qh, policy->p, mounton_source, &mounton_source_name);
-		qpol_type_get_name(policy->qh, policy->p, mounton_target, &mounton_target_name);
+		qpol_avrule_get_source_type(policy->p, mounton_rule, &mounton_source);
+		qpol_avrule_get_target_type(policy->p, mounton_rule, &mounton_target);
+		qpol_type_get_name(policy->p, mounton_source, &mounton_source_name);
+		qpol_type_get_name(policy->p, mounton_target, &mounton_target_name);
 
 		for ( j = 0; j<apol_vector_get_size(mount_vector); j++) {
 			qpol_avrule_t *mount_rule;
@@ -317,10 +317,10 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			char *mount_source_name, *mount_target_name;
 
 			mount_rule = apol_vector_get_element(mount_vector, j);
-			qpol_avrule_get_source_type(policy->qh, policy->p, mount_rule, &mount_source);
-			qpol_avrule_get_target_type(policy->qh, policy->p, mount_rule, &mount_target);
-			qpol_type_get_name(policy->qh, policy->p, mount_source, &mount_source_name);
-			qpol_type_get_name(policy->qh, policy->p, mount_target, &mount_target_name);
+			qpol_avrule_get_source_type(policy->p, mount_rule, &mount_source);
+			qpol_avrule_get_target_type(policy->p, mount_rule, &mount_target);
+			qpol_type_get_name(policy->p, mount_source, &mount_source_name);
+			qpol_type_get_name(policy->p, mount_target, &mount_target_name);
 
 			/* Check to see if they match */
 			if ( !strcmp(mount_source_name, mounton_source_name) &&
@@ -438,7 +438,7 @@ int inc_mount_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attr
 			j++;
 			item  = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
@@ -458,7 +458,7 @@ int inc_mount_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attr
 			item = apol_vector_get_element(mod->result->items, k);
 			if ( item ) {
 				type = item->item;
-				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+				qpol_type_get_name(policy->p, type, &type_name);
 				printf("%s\n", (char*)type_name);
 				for (l=0; l<apol_vector_get_size(item->proof);l++) {
 					proof = apol_vector_get_element(item->proof,l);

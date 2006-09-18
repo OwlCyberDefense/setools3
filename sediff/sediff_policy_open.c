@@ -184,27 +184,27 @@ static void sediff_policy_stats_textview_populate(apol_policy_t *p, GtkTextView 
 	gtk_text_buffer_insert(txt, &iter, contents, -1);
 	g_free(contents);
 
-	qpol_policy_get_avrule_iter(p->qh, p->p, QPOL_RULE_ALLOW, &i);
+	qpol_policy_get_avrule_iter(p->p, QPOL_RULE_ALLOW, &i);
 	qpol_iterator_get_size(i, &num_allow);
 	qpol_iterator_destroy(&i);
 
-	qpol_policy_get_avrule_iter(p->qh, p->p, QPOL_RULE_NEVERALLOW, &i);
+	qpol_policy_get_avrule_iter(p->p, QPOL_RULE_NEVERALLOW, &i);
 	qpol_iterator_get_size(i, &num_neverallow);
 	qpol_iterator_destroy(&i);
 
-	qpol_policy_get_avrule_iter(p->qh, p->p, QPOL_RULE_AUDITALLOW, &i);
+	qpol_policy_get_avrule_iter(p->p, QPOL_RULE_AUDITALLOW, &i);
 	qpol_iterator_get_size(i, &num_auditallow);
 	qpol_iterator_destroy(&i);
 
-	qpol_policy_get_avrule_iter(p->qh, p->p, QPOL_RULE_DONTAUDIT, &i);
+	qpol_policy_get_avrule_iter(p->p, QPOL_RULE_DONTAUDIT, &i);
 	qpol_iterator_get_size(i, &num_dontaudit);
 	qpol_iterator_destroy(&i);
 
-	qpol_policy_get_terule_iter(p->qh, p->p, QPOL_RULE_TYPE_TRANS, &i);
+	qpol_policy_get_terule_iter(p->p, QPOL_RULE_TYPE_TRANS, &i);
 	qpol_iterator_get_size(i, &num_type_trans);
 	qpol_iterator_destroy(&i);
 
-	qpol_policy_get_terule_iter(p->qh, p->p, QPOL_RULE_TYPE_CHANGE, &i);
+	qpol_policy_get_terule_iter(p->p, QPOL_RULE_TYPE_CHANGE, &i);
 	qpol_iterator_get_size(i, &num_type_change);
 	qpol_iterator_destroy(&i);
 
@@ -229,11 +229,11 @@ static void sediff_policy_stats_textview_populate(apol_policy_t *p, GtkTextView 
 	num_roles = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 
-	qpol_policy_get_role_allow_iter(p->qh, p->p, &i);
+	qpol_policy_get_role_allow_iter(p->p, &i);
 	qpol_iterator_get_size(i, &num_roleallow);
 	qpol_iterator_destroy(&i);
 
-	qpol_policy_get_role_trans_iter(p->qh, p->p, &i);
+	qpol_policy_get_role_trans_iter(p->p, &i);
 	qpol_iterator_get_size(i, &num_roleallow);
 	qpol_iterator_destroy(&i);
 
@@ -551,7 +551,7 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
-	qpol_policy_get_policy_version(p1->qh, p1->p, &p1_ver);
+	qpol_policy_get_policy_version(p1->p, &p1_ver);
 	if (p1_ver < 12) {
 		g_string_printf(string,"Policy 1:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).");
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
@@ -570,7 +570,7 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
-	qpol_policy_get_policy_version(p2->qh, p2->p, &p2_ver);
+	qpol_policy_get_policy_version(p2->p, &p2_ver);
 	if (p2_ver < 12 ) {
 		g_string_printf(string,"Policy 2:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).");
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);

@@ -35,12 +35,12 @@
 #include "debug.h"
 
 /* generic information about policydb*/
-int qpol_policy_is_mls_enabled(qpol_handle_t *handle, qpol_policy_t *policy)
+int qpol_policy_is_mls_enabled(qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 
-	if (handle == NULL || policy == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -53,15 +53,15 @@ int qpol_policy_is_mls_enabled(qpol_handle_t *handle, qpol_policy_t *policy)
 		return 0;
 }
 
-int qpol_policy_get_policy_version(qpol_handle_t *handle, qpol_policy_t *policy, unsigned int *version)
+int qpol_policy_get_policy_version(qpol_policy_t *policy, unsigned int *version)
 {
 	policydb_t *db;
 
 	if (version != NULL)
 		*version = 0;
 
-	if (handle == NULL || policy == NULL || version == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || version == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

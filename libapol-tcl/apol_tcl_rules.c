@@ -597,14 +597,14 @@ static int cond_expr_iter_to_tcl_obj(Tcl_Interp *interp,
 	*obj = Tcl_NewListObj(0, NULL);
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, (void **) &expr) < 0 ||
-		    qpol_cond_expr_node_get_expr_type(policydb->qh, policydb->p,
+		    qpol_cond_expr_node_get_expr_type(policydb->p,
 						      expr, &expr_type) < 0) {
 			goto cleanup;
 		}
 		if (expr_type == QPOL_COND_EXPR_BOOL) {
-			if (qpol_cond_expr_node_get_bool(policydb->qh, policydb->p,
+			if (qpol_cond_expr_node_get_bool(policydb->p,
 							 expr, &cond_bool) < 0 ||
-			    qpol_bool_get_name(policydb->qh, policydb->p,
+			    qpol_bool_get_name(policydb->p,
 					       cond_bool, &bool_name) < 0) {
 				goto cleanup;
 			}
@@ -648,14 +648,14 @@ static int append_cond_result_to_list(Tcl_Interp *interp,
 	qpol_iterator_t *conditer, *aviter = NULL, *teiter = NULL;
 	int retval = TCL_ERROR;
 
-	if (qpol_cond_get_expr_node_iter(policydb->qh, policydb->p, result, &conditer) < 0 ||
+	if (qpol_cond_get_expr_node_iter(policydb->p, result, &conditer) < 0 ||
 	    cond_expr_iter_to_tcl_obj(interp, conditer, cond_elem + 0) == TCL_ERROR) {
 		goto cleanup;
 	}
 
-	if (qpol_cond_get_av_true_iter(policydb->qh, policydb->p,
+	if (qpol_cond_get_av_true_iter(policydb->p,
 				       result, avrules, &aviter) < 0 ||
-	    qpol_cond_get_te_true_iter(policydb->qh, policydb->p,
+	    qpol_cond_get_te_true_iter(policydb->p,
 				       result, terules, &teiter)) {
 		goto cleanup;
 	}
@@ -667,9 +667,9 @@ static int append_cond_result_to_list(Tcl_Interp *interp,
 	qpol_iterator_destroy(&aviter);
 	qpol_iterator_destroy(&teiter);
 
-	if (qpol_cond_get_av_false_iter(policydb->qh, policydb->p,
+	if (qpol_cond_get_av_false_iter(policydb->p,
 					result, avrules, &aviter) < 0 ||
-	    qpol_cond_get_te_false_iter(policydb->qh, policydb->p,
+	    qpol_cond_get_te_false_iter(policydb->p,
 					result, terules, &teiter)) {
 		goto cleanup;
 	}
@@ -849,13 +849,13 @@ static int append_role_allow_to_list(Tcl_Interp *interp,
 	Tcl_Obj *allow_elem[4], *allow_list;
 	int retval = TCL_ERROR;
 
-	if (qpol_role_allow_get_source_role(policydb->qh, policydb->p, rule, &source) < 0 ||
-	    qpol_role_allow_get_target_role(policydb->qh, policydb->p, rule, &target) < 0) {
+	if (qpol_role_allow_get_source_role(policydb->p, rule, &source) < 0 ||
+	    qpol_role_allow_get_target_role(policydb->p, rule, &target) < 0) {
 		goto cleanup;
 	}
 
-	if (qpol_role_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-	    qpol_role_get_name(policydb->qh, policydb->p, target, &target_name) < 0) {
+	if (qpol_role_get_name(policydb->p, source, &source_name) < 0 ||
+	    qpol_role_get_name(policydb->p, target, &target_name) < 0) {
 		goto cleanup;
 	}
 	allow_elem[0] = Tcl_NewStringObj("allow", -1);
@@ -888,15 +888,15 @@ static int append_role_trans_to_list(Tcl_Interp *interp,
 	Tcl_Obj *role_trans_elem[4], *role_trans_list;
 	int retval = TCL_ERROR;
 
-	if (qpol_role_trans_get_source_role(policydb->qh, policydb->p, rule, &source) < 0 ||
-	    qpol_role_trans_get_target_type(policydb->qh, policydb->p, rule, &target) < 0 ||
-	    qpol_role_trans_get_default_role(policydb->qh, policydb->p, rule, &default_role) < 0) {
+	if (qpol_role_trans_get_source_role(policydb->p, rule, &source) < 0 ||
+	    qpol_role_trans_get_target_type(policydb->p, rule, &target) < 0 ||
+	    qpol_role_trans_get_default_role(policydb->p, rule, &default_role) < 0) {
 		goto cleanup;
 	}
 
-	if (qpol_role_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
-	    qpol_role_get_name(policydb->qh, policydb->p, default_role, &default_name) < 0) {
+	if (qpol_role_get_name(policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->p, target, &target_name) < 0 ||
+	    qpol_role_get_name(policydb->p, default_role, &default_name) < 0) {
 		goto cleanup;
 	}
 	role_trans_elem[0] = Tcl_NewStringObj("role_transition", -1);
@@ -1083,16 +1083,16 @@ static int append_range_trans_to_list(Tcl_Interp *interp,
 	Tcl_Obj *range_elem[2], *rule_elem[4], *rule_list;
 	int retval = TCL_ERROR;
 
-	if (qpol_range_trans_get_source_type(policydb->qh, policydb->p, rule, &source) < 0 ||
-	    qpol_range_trans_get_target_type(policydb->qh, policydb->p, rule, &target) < 0 ||
-	    qpol_range_trans_get_target_class(policydb->qh, policydb->p, rule, &target_class) < 0 ||
-	    qpol_range_trans_get_range(policydb->qh, policydb->p, rule, &range) < 0) {
+	if (qpol_range_trans_get_source_type(policydb->p, rule, &source) < 0 ||
+	    qpol_range_trans_get_target_type(policydb->p, rule, &target) < 0 ||
+	    qpol_range_trans_get_target_class(policydb->p, rule, &target_class) < 0 ||
+	    qpol_range_trans_get_range(policydb->p, rule, &range) < 0) {
 		goto cleanup;
 	}
 
-	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
-	    qpol_class_get_name(policydb->qh, policydb->p, target_class, &target_class_name) < 0 ||
+	if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->p, target, &target_name) < 0 ||
+	    qpol_class_get_name(policydb->p, target_class, &target_class_name) < 0 ||
 	    (apol_range =
 	     apol_mls_range_create_from_qpol_mls_range(policydb, range)) == NULL) {
 		goto cleanup;

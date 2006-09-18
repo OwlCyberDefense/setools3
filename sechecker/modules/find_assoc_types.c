@@ -207,7 +207,7 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	/* Initialize vectors */
 
-	qpol_policy_get_isid_by_name(policy->qh, policy->p, "unlabeled", &isid);
+	qpol_policy_get_isid_by_name(policy->p, "unlabeled", &isid);
 
 	if ( !isid ) {
 		goto find_assoc_types_run_fail;
@@ -218,9 +218,9 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		goto find_assoc_types_run_fail;
 	}
 
-	qpol_isid_get_context(policy->qh, policy->p, isid, &context);
-	qpol_context_get_type(policy->qh, policy->p, context, &type);
-	qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+	qpol_isid_get_context(policy->p, isid, &context);
+	qpol_context_get_type(policy->p, context, &type);
+	qpol_type_get_name(policy->p, type, &type_name);
 	
 	if (apol_str_append(&buff, &buff_sz, type_name) !=  0) {
                 ERR(policy, "%s", strerror(ENOMEM));
@@ -320,7 +320,7 @@ int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			i %= 4;
 			item = apol_vector_get_element(mod->result->items, j);
 			type = item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			if ( item )
                         printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
@@ -340,7 +340,7 @@ int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			item = apol_vector_get_element(mod->result->items, j);
 			if ( item ) {
 				type = item->item;
-				qpol_type_get_name(policy->qh, policy->p, type, &type_name);	
+				qpol_type_get_name(policy->p, type, &type_name);	
 				printf("%s\n", type_name);
 				for (k = 0; k < apol_vector_get_size(item->proof); k++) {
 					proof = apol_vector_get_element(item->proof,k);

@@ -216,9 +216,9 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		qpol_type_t *portcon_type = NULL;
 
 		portcon = apol_vector_get_element(portcon_vector, i);
-		qpol_portcon_get_context(policy->qh, policy->p, portcon, &portcon_context);
-		qpol_context_get_type(policy->qh, policy->p, portcon_context, &portcon_type);
-		qpol_type_get_name(policy->qh, policy->p, portcon_type, &portcon_name);
+		qpol_portcon_get_context(policy->p, portcon, &portcon_context);
+		qpol_context_get_type(policy->p, portcon_context, &portcon_type);
+		qpol_type_get_name(policy->p, portcon_type, &portcon_name);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -237,7 +237,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 			res_item = apol_vector_get_element(res->items, j);
 			res_type = res_item->item;
-			qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+			qpol_type_get_name(policy->p, res_type, &res_type_name);
 			if (!strcmp(res_type_name, portcon_name)) item = res_item;
 		}
 
@@ -274,7 +274,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	if (policy) {
 		qpol_isid_t *isid = NULL;
 		buff = NULL;
-		qpol_policy_get_isid_by_name(policy->qh, policy->p, "port", &isid);
+		qpol_policy_get_isid_by_name(policy->p, "port", &isid);
 		if ( isid ) {
 			qpol_context_t *context;
 			apol_context_t *a_context;
@@ -282,9 +282,9 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			char *context_type_name, *tmp;
 
 			proof = NULL;
-			qpol_isid_get_context(policy->qh, policy->p, isid, &context);
-			qpol_context_get_type(policy->qh, policy->p, context, &context_type);
-			qpol_type_get_name(policy->qh, policy->p, context_type, &context_type_name);
+			qpol_isid_get_context(policy->p, isid, &context);
+			qpol_context_get_type(policy->p, context, &context_type);
+			qpol_type_get_name(policy->p, context_type, &context_type_name);
 			a_context = apol_context_create_from_qpol_context(policy, context);
 
 			if (apol_str_append(&buff, &buff_sz, "sid port ") != 0) {
@@ -322,7 +322,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 				res_item = apol_vector_get_element(res->items, j);
 				res_type = res_item->item;
-				qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+				qpol_type_get_name(policy->p, res_type, &res_type_name);
 				if (!strcmp(res_type_name, context_type_name)) item = res_item;
 			}
 
@@ -412,7 +412,7 @@ int find_port_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = (qpol_type_t *)item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");
@@ -431,7 +431,7 @@ int find_port_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 		for ( j=0;j<num_items;j++) {
 			item = apol_vector_get_element(mod->result->items, j);
 			type = (qpol_type_t *)item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			if ( item ) {
 				printf("%s\n", type_name);
 				for (k=0;k<apol_vector_get_size(item->proof);k++) {

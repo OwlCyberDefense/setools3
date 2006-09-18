@@ -34,15 +34,15 @@
 #include <qpol/bool_query.h>
 #include "debug.h"
 
-int qpol_policy_get_bool_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_bool_t **datum)
+int qpol_policy_get_bool_by_name(qpol_policy_t *policy, const char *name, qpol_bool_t **datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
 
-	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
+	if (policy == NULL || name == NULL || datum == NULL) {
 		if (datum != NULL)
 			*datum = NULL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -50,7 +50,7 @@ int qpol_policy_get_bool_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_bools.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
-		ERR(handle, "could not find datum for bool %s", name);
+		ERR(policy, "could not find datum for bool %s", name);
 		*datum = NULL;
 		errno = ENOENT;
 		return STATUS_ERR;
@@ -60,16 +60,16 @@ int qpol_policy_get_bool_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	return STATUS_SUCCESS;	
 }
 
-int qpol_policy_get_bool_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_bool_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	hash_state_t *hs = NULL;
 	int error = 0;
 
-	if (handle == NULL || policy == NULL || iter == NULL) {
+	if (policy == NULL || iter == NULL) {
 		if (iter != NULL)
 			*iter = NULL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -79,14 +79,14 @@ int qpol_policy_get_bool_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
 	hs->table = &db->p_bools.table;
 	hs->node = (*(hs->table))->htable[0];
 
-	if (qpol_iterator_create(handle, db, (void*)hs, hash_state_get_cur,
+	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur,
 		hash_state_next, hash_state_end, hash_state_size, free, iter)) {
 		free(hs);
 		return STATUS_ERR;
@@ -98,14 +98,14 @@ int qpol_policy_get_bool_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, uint32_t *value)
+int qpol_bool_get_value(qpol_policy_t *policy, qpol_bool_t *datum, uint32_t *value)
 {
 	cond_bool_datum_t *internal_datum;
 
-	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
+	if (policy == NULL || datum == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -116,14 +116,14 @@ int qpol_bool_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_get_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int *state)
+int qpol_bool_get_state(qpol_policy_t *policy, qpol_bool_t *datum, int *state)
 {
 	cond_bool_datum_t *internal_datum;
 
-	if (handle == NULL || policy == NULL || datum == NULL || state == NULL) {
+	if (policy == NULL || datum == NULL || state == NULL) {
 		if (state != NULL)
 			*state = 0;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -134,12 +134,12 @@ int qpol_bool_get_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int state)
+int qpol_bool_set_state(qpol_policy_t *policy, qpol_bool_t *datum, int state)
 {
 	cond_bool_datum_t *internal_datum;
 
-	if (handle == NULL || policy == NULL || datum == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || datum == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -148,7 +148,7 @@ int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	internal_datum->state = state;
 
 	/* re-evaluate conditionals to update the state of their rules */
-	if (qpol_policy_reevaluate_conds(handle, policy))
+	if (qpol_policy_reevaluate_conds(policy))
 	{
 		return STATUS_ERR; /* errno already set */
 	}
@@ -156,12 +156,12 @@ int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_set_state_no_eval(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int state)
+int qpol_bool_set_state_no_eval(qpol_policy_t *policy, qpol_bool_t *datum, int state)
 {
 	cond_bool_datum_t *internal_datum;
 
-	if (handle == NULL || policy == NULL || datum == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || datum == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -172,15 +172,15 @@ int qpol_bool_set_state_no_eval(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, char **name)
+int qpol_bool_get_name(qpol_policy_t *policy, qpol_bool_t *datum, char **name)
 {
 	cond_bool_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 
-	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
+	if (policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

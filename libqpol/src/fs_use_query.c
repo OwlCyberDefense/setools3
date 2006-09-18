@@ -35,7 +35,7 @@
 #include "debug.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon)
+int qpol_policy_get_fs_use_by_name(qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -43,8 +43,8 @@ int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy,
 	if (ocon != NULL)
 		*ocon = NULL;
 
-	if (handle == NULL || policy == NULL || name == NULL || ocon == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || name == NULL || ocon == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -58,7 +58,7 @@ int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy,
 	*ocon = (qpol_fs_use_t *)tmp;
 
 	if (*ocon == NULL) {
-		ERR(handle, "could not find fs_use statement for %s", name);
+		ERR(policy, "could not find fs_use statement for %s", name);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
@@ -66,7 +66,7 @@ int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy,
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_fs_use_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -75,8 +75,8 @@ int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	if (iter != NULL) 
 		*iter = NULL;
 
-	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || iter == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -86,14 +86,14 @@ int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	os = calloc(1, sizeof(ocon_state_t));
 	if (os == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
 
 	os->head = os->cur = db->ocontexts[OCON_FSUSE];
 
-	if (qpol_iterator_create(handle, db, (void*)os, ocon_state_get_cur,
+	if (qpol_iterator_create(policy, (void*)os, ocon_state_get_cur,
 		ocon_state_next, ocon_state_end, ocon_state_size, free, iter)) {
 		free(os);
 		return STATUS_ERR;
@@ -102,15 +102,15 @@ int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name)
+int qpol_fs_use_get_name(qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (name != NULL)
 		*name = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || name == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || name == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -121,15 +121,15 @@ int qpol_fs_use_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_u
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_behavior(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_t *behavior)
+int qpol_fs_use_get_behavior(qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_t *behavior)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (behavior != NULL)
 		*behavior = 0;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || behavior == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || behavior == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -140,15 +140,15 @@ int qpol_fs_use_get_behavior(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_context_t **context)
+int qpol_fs_use_get_context(qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_context_t **context)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (context != NULL)
 		*context = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || context == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || context == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -156,7 +156,7 @@ int qpol_fs_use_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_f
 	internal_ocon = (ocontext_t*)ocon;
 
 	if (internal_ocon->v.behavior == QPOL_FS_USE_PSID) {
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

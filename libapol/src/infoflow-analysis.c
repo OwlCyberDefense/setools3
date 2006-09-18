@@ -416,9 +416,9 @@ static int apol_infoflow_graph_connect_nodes(apol_policy_t *p,
 	apol_infoflow_edge_t *edge;
 	int retval = -1;
 
-	if (qpol_avrule_get_source_type(p->qh, p->p, rule, &src_type) < 0 ||
-	    qpol_avrule_get_target_type(p->qh, p->p, rule, &tgt_type) < 0 ||
-            qpol_avrule_get_object_class(p->qh, p->p, rule, &obj_class) < 0) {
+	if (qpol_avrule_get_source_type(p->p, rule, &src_type) < 0 ||
+	    qpol_avrule_get_target_type(p->p, rule, &tgt_type) < 0 ||
+            qpol_avrule_get_object_class(p->p, rule, &obj_class) < 0) {
 		goto cleanup;
 	}
 
@@ -475,9 +475,9 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
 	int found_read = 0, found_write = 0, perm_error = 0;
 	int read_len = INT_MAX, write_len = INT_MAX;
 	int retval = -1;
-	if (qpol_avrule_get_object_class(p->qh, p->p, rule, &obj_class) < 0 ||
-	    qpol_class_get_name(p->qh, p->p, obj_class, &obj_class_name) < 0 ||
-	    qpol_avrule_get_perm_iter(p->qh, p->p, rule, &perm_iter) < 0) {
+	if (qpol_avrule_get_object_class(p->p, rule, &obj_class) < 0 ||
+	    qpol_class_get_name(p->p, obj_class, &obj_class_name) < 0 ||
+	    qpol_avrule_get_perm_iter(p->p, rule, &perm_iter) < 0) {
 		goto cleanup;
 	}
 
@@ -597,8 +597,8 @@ static int apol_infoflow_graph_check_types(apol_policy_t *p,
 		retval = 1;
 		goto cleanup;
 	}
-	if (qpol_avrule_get_source_type(p->qh, p->p, rule, &source) < 0 ||
-	    qpol_avrule_get_target_type(p->qh, p->p, rule, &target) < 0) {
+	if (qpol_avrule_get_source_type(p->p, rule, &source) < 0 ||
+	    qpol_avrule_get_target_type(p->p, rule, &target) < 0) {
 		goto cleanup;
 	}
 	if (apol_vector_get_index(types, source, NULL, NULL, &i) < 0 ||
@@ -640,8 +640,8 @@ static int apol_infoflow_graph_check_class_perms(apol_policy_t *p,
 		retval = 1;
 		goto cleanup;
 	}
-	if (qpol_avrule_get_object_class(p->qh, p->p, rule, &obj_class) < 0 ||
-	    qpol_class_get_name(p->qh, p->p, obj_class, &obj_name) < 0) {
+	if (qpol_avrule_get_object_class(p->p, rule, &obj_class) < 0 ||
+	    qpol_class_get_name(p->p, obj_class, &obj_name) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(class_perms); i++) {
@@ -655,7 +655,7 @@ static int apol_infoflow_graph_check_class_perms(apol_policy_t *p,
 		retval = 0;  /* no matching class */
 		goto cleanup;
 	}
-        if (qpol_avrule_get_perm_iter(p->qh, p->p, rule, &iter) < 0) {
+        if (qpol_avrule_get_perm_iter(p->p, rule, &iter) < 0) {
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -722,7 +722,7 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 			goto cleanup;
 		}
 	}
-	if (qpol_policy_get_avrule_iter(p->qh, p->p, QPOL_RULE_ALLOW, &iter) < 0) {
+	if (qpol_policy_get_avrule_iter(p->p, QPOL_RULE_ALLOW, &iter) < 0) {
 		goto cleanup;
 	}
 
@@ -732,7 +732,7 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 		if (qpol_iterator_get_item(iter, (void **) &rule) < 0) {
 			goto cleanup;
 		}
-		if (qpol_avrule_get_is_enabled(p->qh, p->p, rule, &is_enabled) < 0) {
+		if (qpol_avrule_get_is_enabled(p->p, rule, &is_enabled) < 0) {
 			goto cleanup;
 		}
 		if (!is_enabled) {
@@ -922,14 +922,14 @@ static int apol_infoflow_graph_compare(apol_policy_t *p,
 	if (g->regex == NULL) {
 		return 1;
 	}
-	if (qpol_type_get_name(p->qh, p->p, type, &type_name) < 0) {
+	if (qpol_type_get_name(p->p, type, &type_name) < 0) {
 		return -1;
 	}
 	if (regexec(g->regex, type_name, 0, NULL, 0) == 0) {
 		return 1;
 	}
 	/* also check for matches against any of target's aliases */
-	if (qpol_type_get_alias_iter(p->qh, p->p, type, &alias_iter) < 0) {
+	if (qpol_type_get_alias_iter(p->p, type, &alias_iter) < 0) {
 		return -1;
 	}
 	for ( ; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
@@ -1028,11 +1028,11 @@ static int apol_infoflow_analysis_direct_expand(apol_policy_t *p,
 	else {
 		end_node = edge->start_node;
 	}
-	if (qpol_type_get_isattr(p->qh, p->p, end_node->type, &isattr) < 0) {
+	if (qpol_type_get_isattr(p->p, end_node->type, &isattr) < 0) {
 		goto cleanup;
 	}
 	if (isattr) {
-		if (qpol_type_get_type_iter(p->qh, p->p, end_node->type, &iter) < 0) {
+		if (qpol_type_get_type_iter(p->p, end_node->type, &iter) < 0) {
 			goto cleanup;
 		}
 		if (qpol_iterator_end(iter)) {
@@ -1506,11 +1506,11 @@ static int apol_infoflow_analysis_trans_expand(apol_policy_t *p,
         apol_vector_t *path = NULL;
 	int retval = -1, compval;
 
-	if (qpol_type_get_isattr(p->qh, p->p, end_node->type, &isattr) < 0) {
+	if (qpol_type_get_isattr(p->p, end_node->type, &isattr) < 0) {
 		goto cleanup;
 	}
 	if (isattr) {
-		if (qpol_type_get_type_iter(p->qh, p->p, end_node->type, &iter) < 0) {
+		if (qpol_type_get_type_iter(p->p, end_node->type, &iter) < 0) {
 			goto cleanup;
 		}
 		if (qpol_iterator_end(iter)) {

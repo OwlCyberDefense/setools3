@@ -164,7 +164,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	if (qpol_policy_get_class_iter(p->qh, p->p, &class_iter) < 0 ||
+	if (qpol_policy_get_class_iter(p->p, &class_iter) < 0 ||
 	    qpol_iterator_get_size(class_iter, &num_obj_classes) < 0) {
 		goto cleanup;
 	}
@@ -181,13 +181,13 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 		size_t num_unique_perms, num_common_perms = 0;
 		char *name;
 		if (qpol_iterator_get_item(class_iter, (void **) &c) < 0 ||
-		    qpol_class_get_perm_iter(p->qh, p->p, c, &perm_iter) < 0 ||
+		    qpol_class_get_perm_iter(p->p, c, &perm_iter) < 0 ||
 		    qpol_iterator_get_size(perm_iter, &num_unique_perms) < 0 ||
-		    qpol_class_get_common(p->qh, p->p, c, &common) < 0) {
+		    qpol_class_get_common(p->p, c, &common) < 0) {
 			goto cleanup;
 		}
 		if (common != NULL &&
-		    (qpol_common_get_perm_iter(p->qh, p->p, common, &common_iter) < 0 ||
+		    (qpol_common_get_perm_iter(p->p, common, &common_iter) < 0 ||
 		     qpol_iterator_get_size(common_iter, &num_common_perms) < 0)) {
 			goto cleanup;
 		}
@@ -268,7 +268,7 @@ static apol_permmap_class_t *find_permmap_class(apol_policy_t *p, const char *ta
 {
 	size_t i;
 	qpol_class_t *target_class;
-	if (qpol_policy_get_class_by_name(p->qh, p->p, target, &target_class) < 0) {
+	if (qpol_policy_get_class_by_name(p->p, target, &target_class) < 0) {
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(p->pmap->classes); i++) {
@@ -345,7 +345,7 @@ static int are_all_classes_mapped(apol_policy_t *p)
 		apol_permmap_class_t *pc = apol_vector_get_element(p->pmap->classes, i);
 		if (pc->mapped == 0) {
 			char *class_name;
-			if (qpol_class_get_name(p->qh, p->p, pc->c, &class_name) < 0) {
+			if (qpol_class_get_name(p->p, pc->c, &class_name) < 0) {
 				return 0;
 			}
 			WARN(p, "Some permissions were unmapped for class %s.", class_name);
@@ -371,7 +371,7 @@ static int are_all_perms_mapped(apol_policy_t *p, apol_permmap_class_t *pc)
 		apol_permmap_perm_t *pp = apol_vector_get_element(pc->perms, i);
 		if (pp->map == 0) {
 			char *class_name;
-			if (qpol_class_get_name(p->qh, p->p, pc->c, &class_name) < 0) {
+			if (qpol_class_get_name(p->p, pc->c, &class_name) < 0) {
 				return 0;
 			}
 			WARN(p, "Permission %s was unmapped for class %s.", pp->name, class_name);
@@ -593,7 +593,7 @@ int apol_permmap_save(apol_policy_t *p, const char *filename)
 	for (i = 0; i < apol_vector_get_size(p->pmap->classes); i++) {
 		apol_permmap_class_t *pc = apol_vector_get_element(p->pmap->classes, i);
 		char *class_name;
-		if (qpol_class_get_name(p->qh, p->p, pc->c, &class_name) < 0) {
+		if (qpol_class_get_name(p->p, pc->c, &class_name) < 0) {
 			goto cleanup;
 		}
 		if (fprintf(outfile, "\nclass %s %u\n", class_name, apol_vector_get_size(pc->perms)) < 0) {

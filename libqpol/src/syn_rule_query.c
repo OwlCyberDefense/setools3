@@ -185,7 +185,7 @@ static void syn_rule_perm_state_free(void *state)
 
 /***************************** type set functions ****************************/
 
-int qpol_type_set_get_included_types_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, qpol_iterator_t **iter)
+int qpol_type_set_get_included_types_iter(qpol_policy_t *policy, qpol_type_set_t *ts, qpol_iterator_t **iter)
 {
 	type_set_t *internal_ts = NULL;
 	ebitmap_state_t *es = NULL;
@@ -194,8 +194,8 @@ int qpol_type_set_get_included_types_iter(qpol_handle_t *handle, qpol_policy_t *
 	if (iter)
 		*iter = NULL;
 
-	if (!handle || !policy || !ts || !iter) {
-		ERR(handle, "%s",strerror(EINVAL));
+	if (!policy || !ts || !iter) {
+		ERR(policy, "%s",strerror(EINVAL));
 		error = EINVAL;
 		return STATUS_ERR;
 	}
@@ -205,7 +205,7 @@ int qpol_type_set_get_included_types_iter(qpol_handle_t *handle, qpol_policy_t *
 	es = calloc(1, sizeof(ebitmap_state_t));
 	if (!es) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -213,7 +213,7 @@ int qpol_type_set_get_included_types_iter(qpol_handle_t *handle, qpol_policy_t *
 	es->bmap = &(internal_ts->types);
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
-	if (qpol_iterator_create(handle, &policy->p->p, es, ebitmap_state_get_cur_type,
+	if (qpol_iterator_create(policy, es, ebitmap_state_get_cur_type,
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, iter)) {
 		free(es);
 		return STATUS_ERR;
@@ -225,7 +225,7 @@ int qpol_type_set_get_included_types_iter(qpol_handle_t *handle, qpol_policy_t *
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_set_get_subtracted_types_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, qpol_iterator_t **iter)
+int qpol_type_set_get_subtracted_types_iter(qpol_policy_t *policy, qpol_type_set_t *ts, qpol_iterator_t **iter)
 {
 	type_set_t *internal_ts = NULL;
 	ebitmap_state_t *es = NULL;
@@ -234,8 +234,8 @@ int qpol_type_set_get_subtracted_types_iter(qpol_handle_t *handle, qpol_policy_t
 	if (iter)
 		*iter = NULL;
 
-	if (!handle || !policy || !ts || !iter) {
-		ERR(handle, "%s",strerror(EINVAL));
+	if (!policy || !ts || !iter) {
+		ERR(policy, "%s",strerror(EINVAL));
 		error = EINVAL;
 		return STATUS_ERR;
 	}
@@ -245,7 +245,7 @@ int qpol_type_set_get_subtracted_types_iter(qpol_handle_t *handle, qpol_policy_t
 	es = calloc(1, sizeof(ebitmap_state_t));
 	if (!es) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -253,7 +253,7 @@ int qpol_type_set_get_subtracted_types_iter(qpol_handle_t *handle, qpol_policy_t
 	es->bmap = &(internal_ts->negset);
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
-	if (qpol_iterator_create(handle, &policy->p->p, es, ebitmap_state_get_cur_type,
+	if (qpol_iterator_create(policy, es, ebitmap_state_get_cur_type,
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, iter)) {
 		free(es);
 		return STATUS_ERR;
@@ -265,15 +265,15 @@ int qpol_type_set_get_subtracted_types_iter(qpol_handle_t *handle, qpol_policy_t
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_set_get_is_star(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_star)
+int qpol_type_set_get_is_star(qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_star)
 {
 	type_set_t *internal_ts = NULL;
 
 	if (is_star)
 		*is_star = 0;
 
-	if (!handle || !policy || !ts || !is_star) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !ts || !is_star) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -286,15 +286,15 @@ int qpol_type_set_get_is_star(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_set_get_is_comp(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_comp)
+int qpol_type_set_get_is_comp(qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_comp)
 {
 	type_set_t *internal_ts = NULL;
 
 	if (is_comp)
 		*is_comp = 0;
 
-	if (!handle || !policy || !ts || !is_comp) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !ts || !is_comp) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -309,15 +309,15 @@ int qpol_type_set_get_is_comp(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 
 /***************************** syn_avule functions ****************************/
 
-int qpol_syn_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *rule_type)
+int qpol_syn_avrule_get_rule_type(qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *rule_type)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (rule_type)
 		*rule_type = 0;
 
-	if (!handle || !policy || !rule || !rule_type) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !rule_type) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -332,15 +332,15 @@ int qpol_syn_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_source_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_type_set_t **source_set)
+int qpol_syn_avrule_get_source_type_set(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_type_set_t **source_set)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (source_set)
 		*source_set = NULL;
 
-	if (!handle || !policy || !rule || !source_set) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !source_set) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -352,15 +352,15 @@ int qpol_syn_avrule_get_source_type_set(qpol_handle_t *handle, qpol_policy_t *po
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_target_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_type_set_t **target_set)
+int qpol_syn_avrule_get_target_type_set(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_type_set_t **target_set)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (target_set)
 		*target_set = NULL;
 
-	if (!handle || !policy || !rule || !target_set) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !target_set) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -372,15 +372,15 @@ int qpol_syn_avrule_get_target_type_set(qpol_handle_t *handle, qpol_policy_t *po
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_is_target_self(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_self)
+int qpol_syn_avrule_get_is_target_self(qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_self)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (is_self)
 		*is_self = 0;
 
-	if (!handle || !policy || !rule || !is_self) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !is_self) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -393,7 +393,7 @@ int qpol_syn_avrule_get_is_target_self(qpol_handle_t *handle, qpol_policy_t *pol
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_iterator_t **classes)
+int qpol_syn_avrule_get_class_iter(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_iterator_t **classes)
 {
 	syn_rule_class_state_t *srcs = NULL;
 	avrule_t *internal_rule = NULL;
@@ -402,15 +402,15 @@ int qpol_syn_avrule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy,
 	if (classes)
 		*classes = NULL;
 
-	if (!handle || !policy || !rule || !classes) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !classes) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
 	if (!(srcs = calloc(1, sizeof(syn_rule_class_state_t)))) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -418,12 +418,12 @@ int qpol_syn_avrule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy,
 	internal_rule = rule->rule;
 	srcs->head = srcs->cur = internal_rule->perms;
 
-	if (qpol_iterator_create(handle, &policy->p->p, (void*)srcs,
+	if (qpol_iterator_create(policy, (void*)srcs,
 		syn_rule_class_state_get_cur, syn_rule_class_state_next,
 		syn_rule_class_state_end, syn_rule_class_state_size,
 		free, classes)) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		free(srcs);
 		errno = error;
 		return STATUS_ERR;
@@ -432,7 +432,7 @@ int qpol_syn_avrule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy,
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_iterator_t **perms)
+int qpol_syn_avrule_get_perm_iter(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_iterator_t **perms)
 {
 	avrule_t *internal_rule = NULL;
 	policydb_t *db = NULL;
@@ -445,8 +445,8 @@ int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	if (perms)
 		*perms = NULL;
 
-	if (!handle || !policy || !rule || !perms) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !perms) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -460,7 +460,7 @@ int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	perm_list = calloc(node_num * 32, sizeof(char*));
 	if (!perm_list) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -480,13 +480,13 @@ int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 				perm_list[perm_list_sz] = strdup(tmp);
 				if (!(perm_list[perm_list_sz])) {
 					error = errno;
-					ERR(handle, "%s", strerror(error));
+					ERR(policy, "%s", strerror(error));
 					goto err;
 				}
 				perm_list_sz++;
 			} else {
 				error = errno;
-				ERR(handle, "%s", strerror(error));
+				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
@@ -496,7 +496,7 @@ int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	tmp_copy = realloc(perm_list, perm_list_sz * sizeof(char*));
 	if (!tmp_copy) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	perm_list = tmp_copy;
@@ -504,19 +504,19 @@ int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	srps = calloc(1, sizeof(syn_rule_perm_state_t));
 	if (!srps) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	srps->perm_list = perm_list;
 	srps->perm_list_sz = perm_list_sz;
 	srps->cur = 0;
 
-	if (qpol_iterator_create(handle, db, (void*)srps,
+	if (qpol_iterator_create(policy, (void*)srps,
 		syn_rule_perm_state_get_cur, syn_rule_perm_state_next,
 		syn_rule_perm_state_end, syn_rule_perm_state_size,
 		syn_rule_perm_state_free, perms)) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
@@ -530,15 +530,15 @@ err:
 	return STATUS_ERR;
 }
 
-int qpol_syn_avrule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, unsigned long *lineno)
+int qpol_syn_avrule_get_lineno(qpol_policy_t *policy, qpol_syn_avrule_t *rule, unsigned long *lineno)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (lineno)
 		*lineno = 0;
 
-	if (!handle || !policy || !rule || !lineno) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !lineno) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -550,13 +550,13 @@ int qpol_syn_avrule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond)
+int qpol_syn_avrule_get_cond(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond)
 {
 	if (cond)
 		*cond = NULL;
 
-	if (!handle || !policy || !rule || !cond) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !cond) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -565,14 +565,14 @@ int qpol_syn_avrule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_enabled)
+int qpol_syn_avrule_get_is_enabled(qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_enabled)
 {
 	int truth;
 	if (is_enabled)
 		*is_enabled = 0;
 
-	if (!handle || !policy || !rule || !is_enabled) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !is_enabled) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -582,7 +582,7 @@ int qpol_syn_avrule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy,
 	else {
 		truth = cond_evaluate_expr(&policy->p->p, rule->cond->expr);
 		if (truth < 0) {
-			ERR(handle, "%s", strerror(ERANGE));
+			ERR(policy, "%s", strerror(ERANGE));
 			errno = ERANGE;
 			return STATUS_ERR;
 		}
@@ -596,15 +596,15 @@ int qpol_syn_avrule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy,
 
 /***************************** syn_terule functions ****************************/
 
-int qpol_syn_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *rule_type)
+int qpol_syn_terule_get_rule_type(qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *rule_type)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (rule_type)
 		*rule_type = 0;
 
-	if (!handle || !policy || !rule || !rule_type) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !rule_type) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -616,15 +616,15 @@ int qpol_syn_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_source_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **source_set)
+int qpol_syn_terule_get_source_type_set(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **source_set)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (source_set)
 		*source_set = NULL;
 
-	if (!handle || !policy || !rule || !source_set) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !source_set) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -636,15 +636,15 @@ int qpol_syn_terule_get_source_type_set(qpol_handle_t *handle, qpol_policy_t *po
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_target_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **target_set)
+int qpol_syn_terule_get_target_type_set(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **target_set)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (target_set)
 		*target_set = NULL;
 
-	if (!handle || !policy || !rule || !target_set) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !target_set) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -656,7 +656,7 @@ int qpol_syn_terule_get_target_type_set(qpol_handle_t *handle, qpol_policy_t *po
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_iterator_t **classes)
+int qpol_syn_terule_get_class_iter(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_iterator_t **classes)
 {
 	syn_rule_class_state_t *srcs = NULL;
 	avrule_t *internal_rule = NULL;
@@ -665,15 +665,15 @@ int qpol_syn_terule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy,
 	if (classes)
 		*classes = NULL;
 
-	if (!handle || !policy || !rule || !classes) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !classes) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
 	if (!(srcs = calloc(1, sizeof(syn_rule_class_state_t)))) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -681,12 +681,12 @@ int qpol_syn_terule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy,
 	internal_rule = rule->rule;
 	srcs->head = srcs->cur = internal_rule->perms;
 
-	if (qpol_iterator_create(handle, &policy->p->p, (void*)srcs,
+	if (qpol_iterator_create(policy, (void*)srcs,
 		syn_rule_class_state_get_cur, syn_rule_class_state_next,
 		syn_rule_class_state_end, syn_rule_class_state_size,
 		free, classes)) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		free(srcs);
 		errno = error;
 		return STATUS_ERR;
@@ -695,7 +695,7 @@ int qpol_syn_terule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy,
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_t **dflt)
+int qpol_syn_terule_get_default_type(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_t **dflt)
 {
 	avrule_t *internal_rule = NULL;
 	policydb_t *db = NULL;
@@ -703,8 +703,8 @@ int qpol_syn_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *polic
 	if (dflt)
 		*dflt = 0;
 
-	if (!handle || !policy || !rule || !dflt) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !dflt) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -718,15 +718,15 @@ int qpol_syn_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *polic
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, unsigned long *lineno)
+int qpol_syn_terule_get_lineno(qpol_policy_t *policy, qpol_syn_terule_t *rule, unsigned long *lineno)
 {
 	avrule_t *internal_rule = NULL;
 
 	if (lineno)
 		*lineno = 0;
 
-	if (!handle || !policy || !rule || !lineno) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !lineno) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -738,13 +738,13 @@ int qpol_syn_terule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond)
+int qpol_syn_terule_get_cond(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond)
 {
 	if (cond)
 		*cond = NULL;
 
-	if (!handle || !policy || !rule || !cond) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !cond) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -753,14 +753,14 @@ int qpol_syn_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *is_enabled)
+int qpol_syn_terule_get_is_enabled(qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *is_enabled)
 {
 	int truth;
 	if (is_enabled)
 		*is_enabled = 0;
 
-	if (!handle || !policy || !rule || !is_enabled) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !is_enabled) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -770,7 +770,7 @@ int qpol_syn_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy,
 	else {
 		truth = cond_evaluate_expr(&policy->p->p, rule->cond->expr);
 		if (truth < 0) {
-			ERR(handle, "%s", strerror(ERANGE));
+			ERR(policy, "%s", strerror(ERANGE));
 			errno = ERANGE;
 			return STATUS_ERR;
 		}
