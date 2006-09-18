@@ -28,13 +28,17 @@
 #include "sediff_gui.h"
 #include "sediff_progress.h"
 #include "sediff_results.h"
+#include "utilgui.h"
 
 #include <assert.h>
+#include <string.h>
 
 struct sediff_results {
 	GtkTextBuffer *main_buffer;       /* generic buffer used for everything but te rules and conditionals(because they take so long to draw) */
 	GtkTextBuffer *te_buffers[5];
 	int te_buffered[5];
+	gint *saved_offsets;
+	size_t current_buffer;
 };
 
 extern sediff_item_record_t sediff_items[];
@@ -52,6 +56,16 @@ void sediff_results_create(sediff_app_t *app)
 	if ((r = app->results) == NULL) {
 		app->results = g_malloc0(sizeof(*r));
 		r = app->results;
+		/* allocate an array to keep track of the scrollbar
+		 * position; that way when a user switches to a
+		 * particular result item the view will retain its
+		 * position */
+                for (i = 0; sediff_items[i].label != NULL; i++)
+                        ;
+		/* add 1 for the summary buffer; multiply by 6 for the
+		 * 5 different difference forms + summary display */
+		r->saved_offsets = g_malloc0((i + 1) * 6 * sizeof(gint));
+		r->current_buffer = 0;
         }
 	if (r->main_buffer == NULL) {
 		/* recreate the results buffer -- it could have been
@@ -327,24 +341,13 @@ static void sediff_results_print_item_header(sediff_app_t *app, GtkTextBuffer *t
 }
 
 static void sediff_results_select_simple(sediff_app_t *app, GtkTextView *view,
-					 uint32_t diffbit, poldiff_form_e form)
+					 sediff_item_record_t *item_record, poldiff_form_e form)
 {
 	sediff_results_t *r = app->results;
         GtkTextBuffer *tb = r->main_buffer;
-        sediff_item_record_t *item_record = NULL;
-        size_t i;
 
 	gtk_text_view_set_buffer(view, tb);
 	sediff_clear_text_buffer(tb);
-
-	/* find associated item record */
-	for (i = 0; sediff_items[i].label != NULL; i++) {
-		if (sediff_items[i].bit_pos == diffbit) {
-			item_record = sediff_items + i;
-			break;
-		}
-	}
-	assert(item_record != NULL);
 
 	if (form == POLDIFF_FORM_NONE) {
 		sediff_results_print_summary(app, tb, item_record);
@@ -366,7 +369,7 @@ static void sediff_results_select_simple(sediff_app_t *app, GtkTextView *view,
 				s = item_record->get_string(app->diff, elem);
 				sediff_results_print_string(tb, &iter, s, 2);
 				free(s);
-				gtk_text_buffer_insert(tb, iter, "\n", -1);
+				gtk_text_buffer_insert(tb, &iter, "\n", -1);
 			}
 		}
 	}
@@ -374,21 +377,10 @@ static void sediff_results_select_simple(sediff_app_t *app, GtkTextView *view,
 }
 
 static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
-					poldiff_form_e form)
+					sediff_item_record_t *item_record, poldiff_form_e form)
 {
 	sediff_results_t *r = app->results;
 	GtkTextBuffer *tb;
-	sediff_item_record_t *item_record = NULL;
-	size_t i;
-
-	/* get the item record for TE rules */
-	for (i = 0; sediff_items[i].label != NULL; i++) {
-		if (sediff_items[i].bit_pos == (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES)) {
-			item_record = sediff_items + i;
-			break;
-		}
-	}
-	assert(item_record != NULL);
 
 	if (form == POLDIFF_FORM_NONE) {
 		tb = r->main_buffer;
@@ -398,11 +390,17 @@ static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
 	}
 	else {
 		GtkTextIter iter;
+		GtkWidget *w;
 		apol_vector_t *v;
 		size_t i;
 		void *elem;
 		char *s = NULL;
 
+		/* enable sort TE rules menu */
+		w = glade_xml_get_widget(app->window_xml, "sediff_sort_menu");
+		g_assert(w);
+
+		gtk_widget_set_sensitive(w, TRUE);
 		tb = r->te_buffers[form - 1];
 		gtk_text_view_set_buffer(view, tb);
 		if (r->te_buffered[form - 1]) {
@@ -420,7 +418,7 @@ static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
 				s = poldiff_avrule_to_string(app->diff, elem);
 				sediff_results_print_string(tb, &iter, s, 2);
 				free(s);
-				gtk_text_buffer_insert(tb, iter, "\n", -1);
+				gtk_text_buffer_insert(tb, &iter, "\n", -1);
 			}
 		}
 
@@ -431,7 +429,7 @@ static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
 				s = poldiff_terule_to_string(app->diff, elem);
 				sediff_results_print_string(tb, &iter, s, 2);
 				free(s);
-				gtk_text_buffer_insert(tb, iter, "\n", -1);
+				gtk_text_buffer_insert(tb, &iter, "\n", -1);
 			}
 		}
 
@@ -442,7 +440,15 @@ static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
 
 void sediff_results_select(sediff_app_t *app, uint32_t diffbit, poldiff_form_e form)
 {
+	sediff_results_t *r = app->results;
 	GtkTextView *textview1;
+	GtkTextBuffer *tb;
+	GtkTextMark *mark;
+	GdkRectangle rect;
+	GtkTextIter iter;
+	GtkWidget *w;
+	size_t i, new_buffer;
+	sediff_item_record_t *item_record = NULL;
 
 	if (app->diff == NULL) {
 		/* diff not run yet, so don't display anything */
@@ -455,77 +461,243 @@ void sediff_results_select(sediff_app_t *app, uint32_t diffbit, poldiff_form_e f
 	gtk_text_view_set_editable(GTK_TEXT_VIEW(textview1), FALSE);
 	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview1), FALSE);
 
-	switch (diffbit) {
-	case POLDIFF_DIFF_SUMMARY: {
+	/* save view position */
+	gtk_text_view_get_visible_rect(textview1, &rect);
+	gtk_text_view_get_iter_at_location(textview1, &iter, rect.x, rect.y);
+	r->saved_offsets[r->current_buffer] = gtk_text_iter_get_offset(&iter);
+
+	/* disable sort TE rules menu */
+	w = glade_xml_get_widget(app->window_xml, "sediff_sort_menu");
+	g_assert(w);
+	gtk_widget_set_sensitive(w, FALSE);
+
+	if (diffbit == POLDIFF_DIFF_SUMMARY) {
 		sediff_results_select_summary(app, textview1);
+		new_buffer = 0;
+	}
+	else {
+		/* find associated item record */
+		for (i = 0; sediff_items[i].label != NULL; i++) {
+			if (sediff_items[i].bit_pos == diffbit) {
+				item_record = sediff_items + i;
+				break;
+			}
+		}
+		assert(item_record != NULL);
+
+		switch (diffbit) {
+		case POLDIFF_DIFF_CLASSES:
+		case POLDIFF_DIFF_COMMONS:
+		case POLDIFF_DIFF_TYPES:
+		case POLDIFF_DIFF_ATTRIBS:
+		case POLDIFF_DIFF_ROLES:
+		case POLDIFF_DIFF_USERS:
+		case POLDIFF_DIFF_BOOLS:
+		case POLDIFF_DIFF_ROLE_ALLOWS:
+		case POLDIFF_DIFF_ROLE_TRANS: {
+			sediff_results_select_simple(app, textview1, item_record, form);
+			break;
+		}
+		case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES): {
+			sediff_results_select_rules(app, textview1, item_record, form);
+			break;
+		}
+		}
+
+		/* add 1 to i because the first 6 slots are taken by
+		 * the overall diff summary */
+		new_buffer = (i + 1) * 6 + form;
+	}
+
+	/* restore saved location.  use marks to ensure that we go to
+	 * this position even if it hasn't been drawn. */
+	tb = gtk_text_view_get_buffer(textview1);
+	gtk_text_buffer_get_start_iter(tb, &iter);
+	gtk_text_iter_set_offset(&iter, r->saved_offsets[new_buffer]);
+	mark = gtk_text_buffer_create_mark(tb, "location-mark", &iter, FALSE);
+	gtk_text_view_scroll_to_mark(textview1, mark, 0.0, TRUE, 0.0, 0.0);
+	gtk_text_buffer_delete_mark(tb, mark);
+	r->current_buffer = new_buffer;
+}
+
+struct sort_opts {
+        poldiff_t *diff;
+        int field;
+        int direction;
+};
+
+static int sediff_results_avsort_comp(const void *a, const void *b, void *data)
+{
+	const poldiff_avrule_t *a1 = a;
+	const poldiff_avrule_t *a2 = b;
+	struct sort_opts *opts = data;
+	const char *s1, *s2;
+	switch (opts->field) {
+	case SORT_SOURCE: {
+		s1 = poldiff_avrule_get_source_type(a1);
+		s2 = poldiff_avrule_get_source_type(a2);
 		break;
 	}
-	case POLDIFF_DIFF_CLASSES:
-	case POLDIFF_DIFF_COMMONS:
-	case POLDIFF_DIFF_TYPES:
-	case POLDIFF_DIFF_ATTRIBS:
-	case POLDIFF_DIFF_ROLES:
-	case POLDIFF_DIFF_USERS:
-	case POLDIFF_DIFF_BOOLS:
-	case POLDIFF_DIFF_ROLE_ALLOWS:
-	case POLDIFF_DIFF_ROLE_TRANS: {
-		sediff_results_select_simple(app, textview1, diffbit, form);
+	case SORT_TARGET: {
+		s1 = poldiff_avrule_get_target_type(a1);
+		s2 = poldiff_avrule_get_target_type(a2);
 		break;
 	}
-	case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES): {
-		sediff_results_select_rules(app, textview1, form);
+	case SORT_CLASS: {
+		s1 = poldiff_avrule_get_object_class(a1);
+		s2 = poldiff_avrule_get_object_class(a2);
 		break;
 	}
+	default: {
+		/* shouldn't get here */
+		assert(0);
 	}
+	}
+	return opts->direction * strcmp(s1, s2);
+}
+
+static apol_vector_t *sediff_results_avsort(poldiff_t *diff, poldiff_form_e form, int field, int direction)
+{
+	apol_vector_t *orig_v, *v;
+	size_t i;
+	void *elem;
+	struct sort_opts opts = {diff, field, direction};
+	orig_v = poldiff_get_avrule_vector(diff);
+	if ((v = apol_vector_create()) == NULL) {
+		return NULL;
+	}
+	for (i = 0; i < apol_vector_get_size(orig_v); i++) {
+		elem = apol_vector_get_element(orig_v, i);
+		if (poldiff_avrule_get_form(elem) == form &&
+		    apol_vector_append(v, elem) < 0) {
+			apol_vector_destroy(&v, NULL);
+			return NULL;
+		}
+	}
+	if (field != SORT_DEFAULT) {
+		apol_vector_sort(v, sediff_results_avsort_comp, &opts);
+	}
+	return v;
+}
+
+static int sediff_results_tesort_comp(const void *a, const void *b, void *data)
+{
+	const poldiff_terule_t *a1 = a;
+	const poldiff_terule_t *a2 = b;
+	struct sort_opts *opts = data;
+	const char *s1, *s2;
+	switch (opts->field) {
+	case SORT_SOURCE: {
+		s1 = poldiff_terule_get_source_type(a1);
+		s2 = poldiff_terule_get_source_type(a2);
+		break;
+	}
+	case SORT_TARGET: {
+		s1 = poldiff_terule_get_target_type(a1);
+		s2 = poldiff_terule_get_target_type(a2);
+		break;
+	}
+	case SORT_CLASS: {
+		s1 = poldiff_terule_get_object_class(a1);
+		s2 = poldiff_terule_get_object_class(a2);
+		break;
+	}
+	default: {
+		/* shouldn't get here */
+		assert(0);
+	}
+	}
+	return opts->direction * strcmp(s1, s2);
+}
+
+static apol_vector_t *sediff_results_tesort(poldiff_t *diff, poldiff_form_e form, int field, int direction)
+{
+	apol_vector_t *orig_v, *v;
+	size_t i;
+	void *elem;
+	struct sort_opts opts = {diff, field, direction};
+	orig_v = poldiff_get_terule_vector(diff);
+	if ((v = apol_vector_create()) == NULL) {
+		return NULL;
+	}
+	for (i = 0; i < apol_vector_get_size(orig_v); i++) {
+		elem = apol_vector_get_element(orig_v, i);
+		if (poldiff_terule_get_form(elem) == form &&
+		    apol_vector_append(v, elem) < 0) {
+			apol_vector_destroy(&v, NULL);
+			return NULL;
+		}
+	}
+	if (field != SORT_DEFAULT) {
+		apol_vector_sort(v, sediff_results_tesort_comp, &opts);
+	}
+	return v;
 }
 
 void sediff_results_sort_current(sediff_app_t *app, int field, int direction)
 {
-        printf("sorting field %d towards %d\n", field, direction);
-#if 0
-	int treeview_row;
-	GtkTextIter iter;
-	int draw_opt;
-	GtkTextBuffer *buffer;
+        uint32_t diffbit;
+        poldiff_form_e form;
+        sediff_item_record_t *item_record;
+        size_t i;
+        GtkTextBuffer *tb;
+        GtkTextIter iter;
+        apol_vector_t *av = NULL, *te = NULL;
+        void *elem;
+        char *s;
 
-	sediff_progress_message(sediff_app, "Sorting", "Sorting - this may take a while");
 	/* get the current row so we know what to sort */
-	treeview_row = sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view));
-
-	/* set up the buffers and the drawing options */
-	if (treeview_row == OPT_TE_RULES_ADD) {
-		draw_opt = POLDIFF_FORM_ADDED;
-		buffer = sediff_app->te_add_buffer;
-	} else if (treeview_row == OPT_TE_RULES_ADD_TYPE) {
-		draw_opt = POLDIFF_FORM_ADD_TYPE;
-		buffer = sediff_app->te_add_type_buffer;
-	} else if (treeview_row == OPT_TE_RULES_REM) {
-		draw_opt = POLDIFF_FORM_REMOVED;
-		buffer = sediff_app->te_rem_buffer;
-	} else if (treeview_row == OPT_TE_RULES_REM_TYPE) {
-		draw_opt = POLDIFF_FORM_REMOVE_TYPE;
-		buffer = sediff_app->te_rem_type_buffer;
-	} else if (treeview_row == OPT_TE_RULES_MOD) {
-		draw_opt = POLDIFF_FORM_MODIFIED;
-		buffer = sediff_app->te_mod_buffer;
-	} else {
-		assert(FALSE);
+	if (sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(app->tree_view), &diffbit, &form) == 0) {
 		return;
 	}
 
-	/* sort the rules */
-/*
-	ap_single_view_diff_sort_te_rules(sediff_app->diff, sort_opt, draw_opt, direction);
-*/
-	sediff_clear_text_buffer(buffer);
-	gtk_text_buffer_get_start_iter(buffer, &iter);
+	sediff_progress_message(app, "Sorting", "Sorting - this may take a while.");
 
-	/* put the sorted rules into the buffer */
-	sediff_txt_buffer_insert_te_results(buffer, sediff_app->diff, draw_opt, TRUE);
+	/* find associated item record */
+	for (i = 0; sediff_items[i].label != NULL; i++) {
+		if (sediff_items[i].bit_pos == diffbit) {
+			item_record = sediff_items + i;
+			break;
+		}
+	}
+	assert(item_record != NULL);
 
-	sediff_progress_hide(sediff_app);
+	if ((av = sediff_results_avsort(app->diff, form, field, direction)) == NULL ||
+	    (te = sediff_results_tesort(app->diff, form, field, direction)) == NULL) {
+		message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
+		apol_vector_destroy(&av, NULL);
+		apol_vector_destroy(&te, NULL);
+		sediff_progress_hide(app);
+		return;
+	}
 
-#endif
+	tb = app->results->te_buffers[form - 1];
+	sediff_clear_text_buffer(tb);
+
+	sediff_results_print_item_header(app, tb, item_record, form);
+	gtk_text_buffer_get_end_iter(tb, &iter);
+
+	for (i = 0; i < apol_vector_get_size(av); i++) {
+		elem = apol_vector_get_element(av, i);
+		s = poldiff_avrule_to_string(app->diff, elem);
+		sediff_results_print_string(tb, &iter, s, 2);
+		free(s);
+		gtk_text_buffer_insert(tb, &iter, "\n", -1);
+	}
+
+	for (i = 0; i < apol_vector_get_size(te); i++) {
+		elem = apol_vector_get_element(te, i);
+		s = poldiff_terule_to_string(app->diff, elem);
+		sediff_results_print_string(tb, &iter, s, 2);
+		free(s);
+		gtk_text_buffer_insert(tb, &iter, "\n", -1);
+	}
+
+	app->results->te_buffered[form - 1] = 1;
+
+	apol_vector_destroy(&av, NULL);
+	apol_vector_destroy(&te, NULL);
+	sediff_progress_hide(app);
 }
 
 /* populate the status bar with summary info of our diff */
@@ -622,424 +794,6 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 	GtkTextBuffer *txt;
 	GdkRectangle rect;
 
-	/* Save position in this buffer
-	   you must use an offset because an x/y coord is does not stay true
-	   across clears and redraws */
-	gtk_text_view_get_visible_rect(textview, &rect);
-	gtk_text_view_get_iter_at_location(textview, &iter, rect.x,
-					   rect.y);
-	sediff_app->tv_buf_offsets[sediff_app->tv_curr_buf] = gtk_text_iter_get_offset(&iter);
-
-
-	attr = gtk_text_view_get_default_attributes(textview);
-	if (attr->font != NULL) {
-		size = pango_font_description_get_size(attr->font);
-		tabs = pango_tab_array_new_with_positions (4,
-					    FALSE,
-					    PANGO_TAB_LEFT, 3*size,
-					    PANGO_TAB_LEFT, 6*size,
-					    PANGO_TAB_LEFT, 9*size,
-					    PANGO_TAB_LEFT, 12*size);
-		if (gtk_text_view_get_tabs(textview) == NULL)
-			gtk_text_view_set_tabs(textview,tabs);
-	}
-	if (policy_option == 1) {
-		sediff_find_window_reset_idx(sediff_app->find_window);
-		widget = glade_xml_get_widget(sediff_app->window_xml, "sediff_sort_menu");
-		g_assert(widget);
-		gtk_widget_set_sensitive(widget, FALSE);
-
-		switch (option) {
-		case OPT_SUMMARY:
-			if (sediff_app->diff != NULL)
-				sediff_txt_buffer_insert_summary_results(sediff_app->main_buffer);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_CLASSES:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer,OPT_CLASSES);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_CLASSES_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->diff, POLDIFF_DIFF_CLASSES, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_CLASSES_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->diff, POLDIFF_DIFF_CLASSES, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_CLASSES_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->diff, POLDIFF_DIFF_CLASSES, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-/*
-		case OPT_PERMISSIONS:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer,OPT_PERMISSIONS);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_PERMISSIONS_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_perms_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->perms,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_PERMISSIONS_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_perms_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->perms,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview, sediff_app->main_buffer);
-			break;
-		case OPT_COMMON_PERMS:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_COMMON_PERMS);
-			gtk_text_view_set_buffer(textview, sediff_app->main_buffer);
-			break;
-		case OPT_COMMON_PERMS_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-							    string, sediff_app->svd->common_perms,
-							    sediff_app->svd->diff->p1,
-							    sediff_app->svd->diff->p2, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_COMMON_PERMS_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-							    string, sediff_app->svd->common_perms,
-							    sediff_app->svd->diff->p1,
-							    sediff_app->svd->diff->p2, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_COMMON_PERMS_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-							    string, sediff_app->svd->common_perms,
-							    sediff_app->svd->diff->p1,
-							    sediff_app->svd->diff->p2, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_TYPES:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_TYPES);
-			gtk_text_view_set_buffer(textview, sediff_app->main_buffer);
-			break;
-		case OPT_TYPES_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->types,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_TYPES_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->types,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_TYPES_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->types,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-*/
-		case OPT_ROLES:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_ROLES);
-			gtk_text_view_set_buffer(textview, sediff_app->main_buffer);
-			break;
-		case OPT_ROLES_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_ROLES, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLES_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_ROLES, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLES_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_ROLES, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-/*
-		case OPT_ROLES_MOD_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->roles,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_ADD_TYPE);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLES_MOD_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->roles,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_REMOVE_TYPE);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-*/
-		case OPT_USERS:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_USERS);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_USERS_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_USERS, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_USERS_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_USERS, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_USERS_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_USERS, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-/*
-		case OPT_ATTRIBUTES:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer,OPT_ATTRIBUTES);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ATTRIBUTES_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->attribs,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ATTRIBUTES_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->attribs,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ATTRIBUTES_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->attribs,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ATTRIBUTES_MOD_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->attribs,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_ADD_TYPE);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ATTRIBUTES_MOD_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->attribs,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_REMOVE_TYPE);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-*/
-		case OPT_BOOLEANS:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer,OPT_BOOLEANS);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_BOOLEANS_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_BOOLS, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_BOOLEANS_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_BOOLS, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_BOOLEANS_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-                        rt = sediff_txt_buffer_insert_results(sediff_app->main_buffer,
-                                            string, sediff_app->diff, POLDIFF_DIFF_BOOLS, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-/*
-		case OPT_ROLE_ALLOWS:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer,OPT_ROLE_ALLOWS);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_ALLOWS_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_rallow_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->rallows,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_ALLOWS_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_rallow_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->rallows,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_ALLOWS_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			rt = sediff_txt_buffer_insert_rallow_results(sediff_app->main_buffer,
-					    string, sediff_app->svd->rallows,
-					    sediff_app->svd->diff->p1,
-					    sediff_app->svd->diff->p2, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_TRANS:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer,OPT_ROLE_TRANS);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_TRANS_ADD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_rtrans_results(sediff_app->main_buffer,
-							 string, sediff_app->svd->rtrans,
-							 sediff_app->svd->diff->p1,
-							 sediff_app->svd->diff->p2, POLDIFF_FORM_ADDED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_TRANS_ADD_TYPE:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_rtrans_results(sediff_app->main_buffer,
-							 string, sediff_app->svd->rtrans,
-							 sediff_app->svd->diff->p1,
-							 sediff_app->svd->diff->p2, POLDIFF_FORM_ADD_TYPE);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_TRANS_REM:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_rtrans_results(sediff_app->main_buffer,
-							 string, sediff_app->svd->rtrans,
-							 sediff_app->svd->diff->p1,
-							 sediff_app->svd->diff->p2, POLDIFF_FORM_REMOVED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_TRANS_REM_TYPE:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_rtrans_results(sediff_app->main_buffer,
-							 string, sediff_app->svd->rtrans,
-							 sediff_app->svd->diff->p1,
-							 sediff_app->svd->diff->p2, POLDIFF_FORM_REOVE_TYPE);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_ROLE_TRANS_MOD:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_rtrans_results(sediff_app->main_buffer,
-							 string, sediff_app->svd->rtrans,
-							 sediff_app->svd->diff->p1,
-							 sediff_app->svd->diff->p2, POLDIFF_FORM_MODIFIED);
-			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
-			break;
-		case OPT_CONDITIONALS:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_CONDITIONALS);
-			gtk_text_view_set_buffer(textview, sediff_app->main_buffer);
-			break;
-		case OPT_CONDITIONALS_ADD:
-			if (sediff_app->cond_add_buffer == NULL)
-				sediff_lazy_load_large_buffer(OPT_CONDITIONALS_ADD, TRUE);
-			table = gtk_text_buffer_get_tag_table(sediff_app->cond_add_buffer);
-			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
-			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
-			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
-			}
-			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
-			}
-			gtk_text_view_set_buffer(textview,sediff_app->cond_add_buffer);
-			break;
-		case OPT_CONDITIONALS_REM:
-			if (sediff_app->cond_rem_buffer == NULL)
-				sediff_lazy_load_large_buffer(OPT_CONDITIONALS_REM, TRUE);
-			table = gtk_text_buffer_get_tag_table(sediff_app->cond_rem_buffer);
-			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
-			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
-			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
-			}
-			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
-			}
-			gtk_text_view_set_buffer(textview,sediff_app->cond_rem_buffer);
-			break;
-		case OPT_CONDITIONALS_MOD:
-			if (sediff_app->cond_mod_buffer == NULL)
-				sediff_lazy_load_large_buffer(OPT_CONDITIONALS_MOD, TRUE);
-			table = gtk_text_buffer_get_tag_table(sediff_app->cond_mod_buffer);
-			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
-			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
-			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
-			}
-			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
-			}
-			gtk_text_view_set_buffer(textview,sediff_app->cond_mod_buffer);
-			break;
 		case OPT_TE_RULES:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_TE_RULES);
@@ -1165,19 +919,6 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			fprintf(stderr, "Invalid list item %d!", option);
 			break;
 		};
-
-		/** go back to our previous location if we had one
-		   must use marks to ensure that we go to this position even if
-		   it hasn't been drawn
-		 **/
-		txt = gtk_text_view_get_buffer(textview);
-		gtk_text_buffer_get_start_iter(txt, &iter);
-		gtk_text_iter_set_offset(&iter, sediff_app->tv_buf_offsets[option]);
-		mark = gtk_text_buffer_create_mark(txt, "location-mark", &iter, FALSE);
-		gtk_text_view_scroll_to_mark(textview, mark, 0.0, TRUE, 0.0, 0.0);
-		gtk_text_buffer_delete_mark(txt, mark);
-		sediff_app->tv_curr_buf = option;
-	}
 }
 
 #endif
