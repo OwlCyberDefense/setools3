@@ -53,17 +53,16 @@ static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_dat
 	return 0;
 }
 
-//TODO: document differences in qpol's expand compared to sepol's expand
-int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
+int qpol_expand_module(qpol_policy_t *base)
 {
 	unsigned int i;
 	uint32_t *typemap = NULL;
 	policydb_t *db;
 	int rt;
 
-	INFO(handle, "%s", "Expanding policy.");
-	if (handle == NULL || base == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	INFO(base, "%s", "Expanding policy.");
+	if (base == NULL) {
+		ERR(base, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -75,21 +74,21 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 
 	/* expand out the types to include all the attributes */
 	if (hashtab_map(db->p_types.table, type_attr_map, (db))) {
-		ERR(handle, "%s", "Error expanding attributes for types.");
+		ERR(base, "%s", "Error expanding attributes for types.");
 		goto err;
 	}
 
 	/* Build the typemap such that we can expand into the same policy */
 	typemap = (uint32_t *)calloc(db->p_types.nprim, sizeof(uint32_t));
 	if (typemap == NULL) {
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(base, "%s", strerror(ENOMEM));
 		goto err;
 	}
 	for (i = 0; i < db->p_types.nprim; i++) {
 		typemap[i] = i+1;
 	}
 
-	if (expand_module_avrules(handle->sh, db, db, typemap, 0, 1) < 0) {
+	if (expand_module_avrules(base->sh, db, db, typemap, 0, 1) < 0) {
 		goto err;
 	}
 	rt = 0;

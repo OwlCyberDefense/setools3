@@ -67,7 +67,7 @@ int apol_get_range_trans_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	if (qpol_policy_get_range_trans_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_range_trans_iter(p->p, &iter) < 0) {
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -83,7 +83,7 @@ int apol_get_range_trans_by_query(apol_policy_t *p,
 		}
 		else {
 			qpol_type_t *source_type;
-			if (qpol_range_trans_get_source_type(p->qh, p->p, rule, &source_type) < 0) {
+			if (qpol_range_trans_get_source_type(p->p, rule, &source_type) < 0) {
 				goto cleanup;
 			}
 			if (apol_vector_get_index(source_list, source_type, NULL, NULL, &i) == 0) {
@@ -103,7 +103,7 @@ int apol_get_range_trans_by_query(apol_policy_t *p,
 		}
 		else {
 			qpol_type_t *target_type;
-			if (qpol_range_trans_get_target_type(p->qh, p->p, rule, &target_type) < 0) {
+			if (qpol_range_trans_get_target_type(p->p, rule, &target_type) < 0) {
 				goto cleanup;
 			}
 			if (apol_vector_get_index(target_list, target_type, NULL, NULL, &i) == 0) {
@@ -115,7 +115,7 @@ int apol_get_range_trans_by_query(apol_policy_t *p,
 			continue;
 		}
 
-		if (qpol_range_trans_get_range(p->qh, p->p, rule, &mls_range) < 0 ||
+		if (qpol_range_trans_get_range(p->p, rule, &mls_range) < 0 ||
 		    (range = apol_mls_range_create_from_qpol_mls_range(p, mls_range)) == NULL) {
 			goto cleanup;
 		}
@@ -244,8 +244,8 @@ char *apol_range_trans_render(apol_policy_t *policy, qpol_range_trans_t *rule)
 	}
 
 	/* source type */
-	if (qpol_range_trans_get_source_type(policy->qh, policy->p, rule, &type) ||
-	    qpol_type_get_name(policy->qh, policy->p, type, &tmp_name) ||
+	if (qpol_range_trans_get_source_type(policy->p, rule, &type) ||
+	    qpol_type_get_name(policy->p, type, &tmp_name) ||
 	    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
 	    apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = errno;
@@ -254,8 +254,8 @@ char *apol_range_trans_render(apol_policy_t *policy, qpol_range_trans_t *rule)
 	}
 
 	/* target type */
-	if (qpol_range_trans_get_target_type(policy->qh, policy->p, rule, &type) ||
-	    qpol_type_get_name(policy->qh, policy->p, type, &tmp_name) ||
+	if (qpol_range_trans_get_target_type(policy->p, rule, &type) ||
+	    qpol_type_get_name(policy->p, type, &tmp_name) ||
 	    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
 	    apol_str_append(&tmp, &tmp_sz, " : ")) {
 		error = errno;
@@ -264,8 +264,8 @@ char *apol_range_trans_render(apol_policy_t *policy, qpol_range_trans_t *rule)
 	}
 
 	/* target class */
-	if (qpol_range_trans_get_target_class(policy->qh, policy->p, rule, &target_class) ||
-	    qpol_class_get_name(policy->qh, policy->p, target_class, &tmp_name) ||
+	if (qpol_range_trans_get_target_class(policy->p, rule, &target_class) ||
+	    qpol_class_get_name(policy->p, target_class, &tmp_name) ||
 	    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
 	    apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = errno;
@@ -274,7 +274,7 @@ char *apol_range_trans_render(apol_policy_t *policy, qpol_range_trans_t *rule)
 	}
 
 	/* range */
-	if (qpol_range_trans_get_range(policy->qh, policy->p, rule, &range)) {
+	if (qpol_range_trans_get_range(policy->p, rule, &range)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;

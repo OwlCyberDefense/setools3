@@ -266,7 +266,7 @@ apol_vector_t *type_get_items(poldiff_t *diff, apol_policy_t *policy)
 		errno = error;
 		return NULL;
 	}
-	if (qpol_policy_get_type_iter(policy->qh, policy->p, &iter) < 0) {
+	if (qpol_policy_get_type_iter(policy->p, &iter) < 0) {
 		return NULL;
 	}
 	v = apol_vector_create();
@@ -279,8 +279,8 @@ apol_vector_t *type_get_items(poldiff_t *diff, apol_policy_t *policy)
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_iterator_get_item(iter, (void**)&t);
-		qpol_type_get_isalias(policy->qh, policy->p, t, &isalias);
-		qpol_type_get_isattr(policy->qh, policy->p, t, &isattr);
+		qpol_type_get_isalias(policy->p, t, &isalias);
+		qpol_type_get_isattr(policy->p, t, &isattr);
 		if (isattr || isalias)
 			continue;
 		val = type_map_lookup(diff, t, policy == diff->orig_pol ?
@@ -358,12 +358,12 @@ static char* type_get_name(poldiff_t *diff, poldiff_form_e form, uint32_t tval)
 	if (sv1 == 1 && sv2 == 0) {
 		/* return the name in v1 */
 		qtype = apol_vector_get_element(v1, 0);
-		qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, qtype, &name);
+		qpol_type_get_name(diff->orig_pol->p, qtype, &name);
 		ret = strdup(name);
 	} else if (sv1 == 0 && sv2 == 1) {
 		/* return the name in v2 */
 		qtype = apol_vector_get_element(v2, 0);
-		qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, qtype, &name);
+		qpol_type_get_name(diff->mod_pol->p, qtype, &name);
 		ret = strdup(name);
 	} else {
 		/* if the single name in v1 and v2 is the same return that name */
@@ -372,8 +372,8 @@ static char* type_get_name(poldiff_t *diff, poldiff_form_e form, uint32_t tval)
 			qpol_type_t *qtype2;
 			qtype = apol_vector_get_element(v1, 0);
 			qtype2 = apol_vector_get_element(v2, 0);
-			qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, qtype, &name);
-			qpol_type_get_name(diff->orig_pol->qh, diff->mod_pol->p, qtype2, &name2);
+			qpol_type_get_name(diff->orig_pol->p, qtype, &name);
+			qpol_type_get_name(diff->mod_pol->p, qtype2, &name2);
 			if (strcmp(name, name2) == 0) {
 				ret = strdup(name);
 				goto exit;
@@ -386,7 +386,7 @@ static char* type_get_name(poldiff_t *diff, poldiff_form_e form, uint32_t tval)
 				len = strlen(", ");
 				apol_str_append(&ret, &len, ", ");
 			}
-			qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, qtype, &name);
+			qpol_type_get_name(diff->orig_pol->p, qtype, &name);
 			apol_str_append(&ret, &len, name);
 		}
 		apol_str_append(&ret, &len, " -> ");
@@ -395,7 +395,7 @@ static char* type_get_name(poldiff_t *diff, poldiff_form_e form, uint32_t tval)
 			if (i > 0) {
 				apol_str_append(&ret, &len, ", ");
 			}
-			qpol_type_get_name(diff->orig_pol->qh, diff->mod_pol->p, qtype, &name);
+			qpol_type_get_name(diff->mod_pol->p, qtype, &name);
 			apol_str_append(&ret, &len, name);
 		}
 	}
@@ -470,13 +470,13 @@ static apol_vector_t *type_get_attrib_names(poldiff_t *diff, apol_policy_t *p, u
 			assert(FALSE);
 			return NULL;
 		}
-		qpol_type_get_attr_iter(p->qh, p->p, qt, &attrib_iter);
+		qpol_type_get_attr_iter(p->p, qt, &attrib_iter);
 		for ( ; !qpol_iterator_end(attrib_iter); qpol_iterator_next(attrib_iter)) {
 
 			if (qpol_iterator_get_item(attrib_iter, (void **) &qt) < 0) {
 				goto cleanup;
 			}
-			qpol_type_get_name(p->qh, p->p, qt, &attrib);
+			qpol_type_get_name(p->p, qt, &attrib);
 			if ((new_attrib = strdup(attrib)) == NULL ||
 			    apol_vector_append(ret, new_attrib) < 0) {
 				ERR(diff, "%s", strerror(errno));

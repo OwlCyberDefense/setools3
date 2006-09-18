@@ -341,11 +341,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_type_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (qpol_policy_get_type_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &type) == 0);
+			return (qpol_policy_get_type_by_name(seaudit_app->cur_policy->p, item_str, &type) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_type_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (qpol_policy_get_type_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &type) == 0)
+			if (qpol_policy_get_type_by_name(seaudit_app->cur_policy->p, item_str, &type) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -358,11 +358,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_user_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (qpol_policy_get_user_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &user) == 0);
+			return (qpol_policy_get_user_by_name(seaudit_app->cur_policy->p, item_str, &user) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_user_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (qpol_policy_get_user_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &user) == 0)
+			if (qpol_policy_get_user_by_name(seaudit_app->cur_policy->p, item_str, &user) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -375,11 +375,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_role_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (qpol_policy_get_role_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &role) == 0);
+			return (qpol_policy_get_role_by_name(seaudit_app->cur_policy->p, item_str, &role) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_role_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (qpol_policy_get_role_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &role) == 0)
+			if (qpol_policy_get_role_by_name(seaudit_app->cur_policy->p, item_str, &role) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -390,11 +390,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_obj_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (qpol_policy_get_class_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &class) == 0);
+			return (qpol_policy_get_class_by_name(seaudit_app->cur_policy->p, item_str, &class) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_obj_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (qpol_policy_get_class_by_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, item_str, &class) == 0)
+			if (qpol_policy_get_class_by_name(seaudit_app->cur_policy->p, item_str, &class) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -443,7 +443,7 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 		for (i = 0; i < apol_vector_get_size(class_vector); i++) {
 			/* Add to excluded objects list store */
 			class = apol_vector_get_element(class_vector, i);
-			qpol_class_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, class, &class_name);
+			qpol_class_get_name(seaudit_app->cur_policy->p, class, &class_name);
 			filters_select_items_add_unselected_value(filter_items_list, class_name);
 		}
 		break;
@@ -455,7 +455,7 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 		for (i = 0; i < apol_vector_get_size(class_vector); i++)
 			/* Add to excluded objects list store */
 			class = apol_vector_get_element(class_vector, i);
-			qpol_class_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, class, &class_name);
+			qpol_class_get_name(seaudit_app->cur_policy->p, class, &class_name);
 			filters_select_items_add_unselected_value(filter_items_list, class_name);
 		break;
 	default:
@@ -485,7 +485,7 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 	case SEAUDIT_FROM_POLICY:
 		for (i = 0; i < apol_vector_get_size(role_vector); i++) {
 			role_type = apol_vector_get_element(role_vector, i);
-			qpol_role_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, role_type, &role_name);
+			qpol_role_get_name(seaudit_app->cur_policy->p, role_type, &role_name);
 			filters_select_items_add_unselected_value(filter_items_list, role_name);
 		}
 		break;
@@ -496,7 +496,7 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 									  role);
 		for (i = 0; i < apol_vector_get_size(role_vector); i++) {
                         role_type = apol_vector_get_element(role_vector, i);
-                        qpol_role_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, role_type, &role_name);
+                        qpol_role_get_name(seaudit_app->cur_policy->p, role_type, &role_name);
                         filters_select_items_add_unselected_value(filter_items_list, role_name);
 		}
 		break;
@@ -527,7 +527,7 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 	case SEAUDIT_FROM_POLICY:
 		for (i = 0; apol_vector_get_size(user_vector); i++) {
 			user = apol_vector_get_element(user_vector, i);
-			qpol_user_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, user, &user_name);
+			qpol_user_get_name(seaudit_app->cur_policy->p, user, &user_name);
 			filters_select_items_add_unselected_value(filter_items_list, user_name);
 		}
 		break;
@@ -538,7 +538,7 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 									  user_str);
 		for (i = 0; apol_vector_get_size(user_vector); i++) {
 			user = apol_vector_get_element(user_vector, i);
-			qpol_user_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, user, &user_name);
+			qpol_user_get_name(seaudit_app->cur_policy->p, user, &user_name);
 			filters_select_items_add_unselected_value(filter_items_list, user_name);
 		}
 		break;
@@ -570,7 +570,7 @@ static void filters_select_items_set_types_list_stores_default_values(filters_se
 		/* start iteration of types at index 1 in order to skip 'self' type */
 		for (i = 1; i < apol_vector_get_size(type_vector); i++) {
                         type = apol_vector_get_element(type_vector, i);
-                        qpol_type_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, type, &type_name);
+                        qpol_type_get_name(seaudit_app->cur_policy->p, type, &type_name);
                         filters_select_items_add_unselected_value(filter_items_list, type_name);
 		}
 		break;
@@ -581,7 +581,7 @@ static void filters_select_items_set_types_list_stores_default_values(filters_se
 									  type_str);
                 for (i = 1; i < apol_vector_get_size(type_vector); i++) {
                         type = apol_vector_get_element(type_vector, i);
-                        qpol_type_get_name(seaudit_app->cur_policy->qh, seaudit_app->cur_policy->p, type, &type_name);
+                        qpol_type_get_name(seaudit_app->cur_policy->p, type, &type_name);
                         filters_select_items_add_unselected_value(filter_items_list, type_name);
                 }
 		break;

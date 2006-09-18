@@ -36,13 +36,12 @@ typedef struct qpol_extended_image qpol_extended_image_t;
  *  Create an extended image for a policy. This function modifies the policydb
  *  by adding additional records and information about attributes, initial sids
  *  and other components not normally written to a binary policy file.
- *  @param handle Error handler for the policydb.
  *  @param policy The policy for which the extended image should be created.
  *  @return Returns 0 on success and < 0 on failure. If the call fails,
  *  errno will be set; the state of the policy is not guaranteed to be stable
  *  if this call fails.
  */
-extern int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy);
+extern int qpol_policy_extend(qpol_policy_t *policy);
 
 extern void qpol_extended_image_destroy(qpol_extended_image_t **ext);
 
@@ -52,7 +51,6 @@ struct qpol_terule;
 
 /**
  *  Get an iterator over the syntactic rules contributing to an av rule.
- *  @param handle Error handler for the policy.
  *  @param policy Policy associated with the rule.
  *  @param rule Rule from which to get the syntactic rules.
  *  @param iter Iterator over items of type qpol_syn_avrule_t returned. 
@@ -63,11 +61,10 @@ struct qpol_terule;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter);
+extern int qpol_avrule_get_syn_avrule_iter(qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter);
 
 /**
  *  Get an iterator over the syntactic rules contributing to a type rule.
- *  @param handle Error handler for the policy.
  *  @param policy Policy associated with the rule.
  *  @param rule Rule from which to get the syntactic rules.
  *  @param iter Iterator over items of type qpol_syn_terule_t returned. 
@@ -78,7 +75,7 @@ extern int qpol_avrule_get_syn_avrule_iter(qpol_handle_t *handle, qpol_policy_t 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_terule_get_syn_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter);
+extern int qpol_terule_get_syn_terule_iter(qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter);
 
 #endif /* QPOL_POLICY_EXTEND_H */
 

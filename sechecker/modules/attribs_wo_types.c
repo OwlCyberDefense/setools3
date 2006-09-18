@@ -215,8 +215,8 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		int at_end;
 
 		attr = apol_vector_get_element(attr_vector, i);
-		qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
-		qpol_type_get_type_iter(policy->qh, policy->p, attr, &types);
+		qpol_type_get_name(policy->p, attr, &attr_name);
+		qpol_type_get_type_iter(policy->p, attr, &types);
 		at_end = qpol_iterator_end(types);
 		qpol_iterator_destroy(&types);
 		if ( !at_end ) continue;
@@ -309,7 +309,7 @@ int attribs_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			j++;
 			item  = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
@@ -322,7 +322,7 @@ int attribs_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			item = apol_vector_get_element(mod->result->items, k);
 			if ( item ) {
 				type = item->item;
-				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+				qpol_type_get_name(policy->p, type, &type_name);
 				printf("%s\n", type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof,l);

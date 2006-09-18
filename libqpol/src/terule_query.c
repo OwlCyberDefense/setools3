@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include "debug.h"
 
-int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter)
+int qpol_policy_get_terule_iter(qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	avtab_state_t *state;
@@ -41,14 +41,14 @@ int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 	if (iter) {
 		*iter = NULL;
 	}
-	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || iter == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
 	if (!(policy->rules_loaded)) {
-		ERR(handle, "%s", "Cannot get terules: Rules not loaded");
+		ERR(policy, "%s", "Cannot get terules: Rules not loaded");
 		errno = ENOTSUP;
 		return STATUS_ERR;
 	}
@@ -57,7 +57,7 @@ int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 
 	state = calloc(1, sizeof(avtab_state_t));
 	if (state == NULL) {
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return STATUS_ERR;
 	}
@@ -66,7 +66,7 @@ int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 	state->rule_type_mask = rule_type_mask;
 	state->node = db->te_avtab.htable[0];
 
-	if (qpol_iterator_create(handle, db, state, avtab_state_get_cur, avtab_state_next, avtab_state_end, avtab_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, state, avtab_state_get_cur, avtab_state_next, avtab_state_end, avtab_state_size, free, iter)) {
 		free(state);
 		return STATUS_ERR;
 	}
@@ -76,7 +76,7 @@ int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **source)
+int qpol_terule_get_source_type(qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **source)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -85,8 +85,8 @@ int qpol_terule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		*source = NULL;
 	}
 
-	if (!handle || !policy || !rule || !source) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !source) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -99,7 +99,7 @@ int qpol_terule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **target)
+int qpol_terule_get_target_type(qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **target)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -108,8 +108,8 @@ int qpol_terule_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		*target = NULL;
 	}
 
-	if (!handle || !policy || !rule || !target) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !target) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -122,7 +122,7 @@ int qpol_terule_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_object_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_class_t **obj_class)
+int qpol_terule_get_object_class(qpol_policy_t *policy, qpol_terule_t *rule, qpol_class_t **obj_class)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -131,8 +131,8 @@ int qpol_terule_get_object_class(qpol_handle_t *handle, qpol_policy_t *policy, q
 		*obj_class = NULL;
 	}
 
-	if (!handle || !policy || !rule || !obj_class) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !obj_class) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -145,7 +145,7 @@ int qpol_terule_get_object_class(qpol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **dflt)
+int qpol_terule_get_default_type(qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **dflt)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -154,8 +154,8 @@ int qpol_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *policy, q
 		*dflt = NULL;
 	}
 
-	if (!handle || !policy || !rule || !dflt) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !dflt) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -168,7 +168,7 @@ int qpol_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *rule_type)
+int qpol_terule_get_rule_type(qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *rule_type)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -177,8 +177,8 @@ int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		*rule_type = 0;
 	}
 
-	if (!handle || !policy || !rule || !rule_type) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !rule_type) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -191,7 +191,7 @@ int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_cond_t **cond)
+int qpol_terule_get_cond(qpol_policy_t *policy, qpol_terule_t *rule, qpol_cond_t **cond)
 {
 	avtab_ptr_t terule = NULL;
 
@@ -199,8 +199,8 @@ int qpol_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_teru
 		*cond = NULL;
 	}
 
-	if (!handle || !policy || !rule || !cond) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !cond) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -212,7 +212,7 @@ int qpol_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_teru
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *is_enabled)
+int qpol_terule_get_is_enabled(qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *is_enabled)
 {
 	avtab_ptr_t terule = NULL;
 
@@ -220,8 +220,8 @@ int qpol_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		*is_enabled = 0;
 	}
 
-	if (!handle || !policy || !rule || !is_enabled) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !is_enabled) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -233,7 +233,7 @@ int qpol_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_which_list(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *which_list)
+int qpol_terule_get_which_list(qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *which_list)
 {
 	avtab_ptr_t terule = NULL;
 
@@ -241,8 +241,8 @@ int qpol_terule_get_which_list(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		*which_list = 0;
 	}
 
-	if (!handle || !policy || !rule || !which_list) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !which_list) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -250,7 +250,7 @@ int qpol_terule_get_which_list(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	terule = (avtab_ptr_t)rule;
 
 	if (!terule->parse_context) {
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

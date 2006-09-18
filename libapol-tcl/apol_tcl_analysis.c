@@ -178,9 +178,9 @@ static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
 		ERR(policydb, "%s", "Need a class name.");
 		goto cleanup;
 	}
-	if (qpol_policy_get_class_by_name(policydb->qh, policydb->p, argv[1], &obj_class) < 0 ||
-	    qpol_class_get_common(policydb->qh, policydb->p, obj_class, &common) < 0 ||
-	    qpol_class_get_perm_iter(policydb->qh, policydb->p, obj_class, &perm_iter) < 0) {
+	if (qpol_policy_get_class_by_name(policydb->p, argv[1], &obj_class) < 0 ||
+	    qpol_class_get_common(policydb->p, obj_class, &common) < 0 ||
+	    qpol_class_get_perm_iter(policydb->p, obj_class, &perm_iter) < 0) {
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
@@ -193,7 +193,7 @@ static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
 		}
 	}
 	if (common != NULL) {
-		if (qpol_common_get_perm_iter(policydb->qh, policydb->p, common, &common_iter) < 0) {
+		if (qpol_common_get_perm_iter(policydb->p, common, &common_iter) < 0) {
 			goto cleanup;
 		}
 		for ( ; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
@@ -243,9 +243,9 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
 	proctrans = apol_domain_trans_result_get_proc_trans_rules(result);
 	entrypoint = apol_domain_trans_result_get_entrypoint_rules(result);
 	execute = apol_domain_trans_result_get_exec_rules(result);
-	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, entry, &entry_name) < 0) {
+	if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->p, target, &target_name) < 0 ||
+	    qpol_type_get_name(policydb->p, entry, &entry_name) < 0) {
 		goto cleanup;
 	}
 	dta_elem[0] = Tcl_NewStringObj(source_name, -1);
@@ -454,8 +454,8 @@ static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
 		Tcl_SetResult(interp, "Illegal flow direction.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0) {
+	if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->p, target, &target_name) < 0) {
 		goto cleanup;
 	}
 	direct_elem[0] = Tcl_NewStringObj(dir_str, -1);
@@ -689,8 +689,8 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
 		Tcl_SetResult(interp, "Illegal flow direction.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0) {
+	if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->p, target, &target_name) < 0) {
 		goto cleanup;
 	}
 	trans_elem[0] = Tcl_NewStringObj(dir_str, -1);
@@ -704,8 +704,8 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
 		target = apol_infoflow_step_get_end_type(step);
 		weight = apol_infoflow_step_get_weight(step);
 		rules = apol_infoflow_step_get_rules(step);
-		if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-		    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0) {
+		if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
+		    qpol_type_get_name(policydb->p, target, &target_name) < 0) {
 			goto cleanup;
 		}
 		step_elem[0] = Tcl_NewStringObj(source_name, -1);
@@ -1108,7 +1108,7 @@ static int apol_relabel_pair_vector_to_tcl_list(Tcl_Interp *interp,
                         pair_elem[2] = Tcl_NewStringObj("", -1);
                 }
                 else {
-			if (qpol_type_get_name(policydb->qh, policydb->p, intermed, &intermed_name) < 0) {
+			if (qpol_type_get_name(policydb->p, intermed, &intermed_name) < 0) {
 				return TCL_ERROR;
 			}
 			pair_elem[2] = Tcl_NewStringObj(intermed_name, -1);
@@ -1142,7 +1142,7 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
 	to = apol_relabel_result_get_to(result);
 	from = apol_relabel_result_get_from(result);
 	both = apol_relabel_result_get_both(result);
-	if (qpol_type_get_name(policydb->qh, policydb->p, type, &type_name) < 0) {
+	if (qpol_type_get_name(policydb->p, type, &type_name) < 0) {
 		goto cleanup;
 	}
 	relabel_elem[0] = Tcl_NewStringObj(type_name, -1);
@@ -1298,7 +1298,7 @@ static int apol_types_relation_attribs_to_tcl_list(Tcl_Interp *interp,
 		qpol_type_t *t = (qpol_type_t *) apol_vector_get_element(v, i);
 		char *name;
 		Tcl_Obj *type_obj;
-		if (qpol_type_get_name(policydb->qh, policydb->p, t, &name) < 0) {
+		if (qpol_type_get_name(policydb->p, t, &name) < 0) {
 			goto cleanup;
 		}
 		type_obj = Tcl_NewStringObj(name, -1);
@@ -1327,7 +1327,7 @@ static int apol_types_relation_roles_to_tcl_list(Tcl_Interp *interp,
 		qpol_role_t *role = (qpol_role_t *) apol_vector_get_element(v, i);
 		char *name;
 		Tcl_Obj *role_obj;
-		if (qpol_role_get_name(policydb->qh, policydb->p, role, &name) < 0) {
+		if (qpol_role_get_name(policydb->p, role, &name) < 0) {
 			goto cleanup;
 		}
 		role_obj = Tcl_NewStringObj(name, -1);
@@ -1356,7 +1356,7 @@ static int apol_types_relation_users_to_tcl_list(Tcl_Interp *interp,
 		qpol_user_t *u = (qpol_user_t *) apol_vector_get_element(v, i);
 		char *name;
 		Tcl_Obj *user_obj;
-		if (qpol_user_get_name(policydb->qh, policydb->p, u, &name) < 0) {
+		if (qpol_user_get_name(policydb->p, u, &name) < 0) {
 			goto cleanup;
 		}
 		user_obj = Tcl_NewStringObj(name, -1);
@@ -1389,7 +1389,7 @@ static int apol_types_relation_access_to_tcl_list(Tcl_Interp *interp,
 		a = (apol_types_relation_access_t *) apol_vector_get_element(v, i);
 		type = apol_types_relation_access_get_type(a);
 		rules = apol_types_relation_access_get_rules(a);
-		if (qpol_type_get_name(policydb->qh, policydb->p, type, &name) < 0) {
+		if (qpol_type_get_name(policydb->p, type, &name) < 0) {
 			goto cleanup;
 		}
 		access_elem[0] = Tcl_NewStringObj(name, -1);

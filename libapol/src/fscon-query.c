@@ -59,7 +59,7 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 	int retval = -1, retval2;
 	qpol_genfscon_t *genfscon = NULL;
 	*v = NULL;
-	if (qpol_policy_get_genfscon_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_genfscon_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -74,10 +74,10 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 			char *fs, *path;
 			uint32_t objclass;
 			qpol_context_t *context;
-			if (qpol_genfscon_get_name(p->qh, p->p, genfscon, &fs) < 0 ||
-			    qpol_genfscon_get_path(p->qh, p->p, genfscon, &path) < 0 ||
-			    qpol_genfscon_get_class(p->qh, p->p, genfscon, &objclass) < 0 ||
-			    qpol_genfscon_get_context(p->qh, p->p, genfscon, &context) < 0) {
+			if (qpol_genfscon_get_name(p->p, genfscon, &fs) < 0 ||
+			    qpol_genfscon_get_path(p->p, genfscon, &path) < 0 ||
+			    qpol_genfscon_get_class(p->p, genfscon, &objclass) < 0 ||
+			    qpol_genfscon_get_context(p->p, genfscon, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, fs, g->fs, 0, NULL);
@@ -217,7 +217,7 @@ char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
 	if (!genfscon || !p)
 		goto cleanup;
 
-	if (qpol_genfscon_get_name(p->qh, p->p, genfscon, &name))
+	if (qpol_genfscon_get_name(p->p, genfscon, &name))
 		goto cleanup;
 	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(name), sizeof(char));
 	if (!front_str) {
@@ -231,13 +231,13 @@ char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
 
 	len = strlen(front_str);
 
-	if (qpol_genfscon_get_context(p->qh, p->p, genfscon, &ctxt))
+	if (qpol_genfscon_get_context(p->p, genfscon, &ctxt))
 		goto cleanup;
 	context_str = apol_qpol_context_render(p, ctxt);
 	if (!context_str)
 		goto cleanup;
 
-	if (qpol_genfscon_get_class(p->qh, p->p, genfscon, &fclass))
+	if (qpol_genfscon_get_class(p->p, genfscon, &fclass))
 		return NULL;
 	switch (fclass) {
 	case QPOL_CLASS_DIR:
@@ -269,7 +269,7 @@ char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
 		break;
 	}
 
-	if (qpol_genfscon_get_path(p->qh, p->p, genfscon, &path))
+	if (qpol_genfscon_get_path(p->p, genfscon, &path))
 		goto cleanup;
 	line = (char*)calloc(len + strlen(path) + 4 + strlen(context_str) + 1 , sizeof(char));
 	if (!line) {
@@ -298,7 +298,7 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 	int retval = -1, retval2;
 	qpol_fs_use_t *fs_use = NULL;
 	*v = NULL;
-	if (qpol_policy_get_fs_use_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_fs_use_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -313,9 +313,9 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 			char *fs;
 			uint32_t behavior;
 			qpol_context_t *context;
-			if (qpol_fs_use_get_name(p->qh, p->p, fs_use, &fs) < 0 ||
-			    qpol_fs_use_get_behavior(p->qh, p->p, fs_use, &behavior) < 0 ||
-			    qpol_fs_use_get_context(p->qh, p->p, fs_use, &context) < 0) {
+			if (qpol_fs_use_get_name(p->p, fs_use, &fs) < 0 ||
+			    qpol_fs_use_get_behavior(p->p, fs_use, &behavior) < 0 ||
+			    qpol_fs_use_get_context(p->p, fs_use, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, fs, f->fs, 0, NULL);
@@ -432,21 +432,21 @@ char *apol_fs_use_render(apol_policy_t *p, qpol_fs_use_t *fsuse)
 	qpol_context_t *ctxt = NULL;
 	uint32_t behavior;
 
-	if (qpol_fs_use_get_behavior(p->qh, p->p, fsuse, &behavior))
+	if (qpol_fs_use_get_behavior(p->p, fsuse, &behavior))
 		goto cleanup;
 	if ((behavior_str = apol_fs_use_behavior_to_str(behavior)) == NULL) {
 		ERR(p, "%s", "Could not get behavior string.");
 		goto cleanup;
 	}
 
-	if (qpol_fs_use_get_name(p->qh, p->p, fsuse, &fsname))
+	if (qpol_fs_use_get_name(p->p, fsuse, &fsname))
 		goto cleanup;
 
 	if (behavior == QPOL_FS_USE_PSID) {
 		context_str = strdup("");
 	}
 	else {
-		if (qpol_fs_use_get_context(p->qh, p->p, fsuse, &ctxt))
+		if (qpol_fs_use_get_context(p->p, fsuse, &ctxt))
 			goto cleanup;
 		context_str = apol_qpol_context_render(p, ctxt);
 		if (!context_str) {

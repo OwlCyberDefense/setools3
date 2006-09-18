@@ -35,7 +35,6 @@ typedef struct qpol_bool qpol_bool_t;
  
 /** 
  *  Get the datum for a conditional boolean by name.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy database from which to retrieve the boolean.
  *  @param name The name of the boolean; searching is case sensitive.
  *  @param datum Pointer to set to the boolean's datum entry in the policy.
@@ -43,11 +42,10 @@ typedef struct qpol_bool qpol_bool_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-extern int qpol_policy_get_bool_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_bool_t **datum);
+extern int qpol_policy_get_bool_by_name(qpol_policy_t *policy, const char *name, qpol_bool_t **datum);
 
 /** 
  *  Get an iterator for conditional booleans in the policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy database from which to create the iterator.
  *  @param iter Iterator of type qpol_bool_t* returned; 
  *  the user is responsible for calling qpol_iterator_destroy to
@@ -56,23 +54,21 @@ extern int qpol_policy_get_bool_by_name(qpol_handle_t *handle, qpol_policy_t *po
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_bool_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_bool_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /** 
  *  Get the integer value associated with a boolean. Values range from 1 to 
  *  the number of conditional booleans declared in the policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy with which the boolean is associated. 
  *  @param datum Boolean datum from which to get the value. Must be non-NULL.
  *  @param value Pointer to integer be set to value. Must be non-NULL.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-extern int qpol_bool_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, uint32_t *value);
+extern int qpol_bool_get_value(qpol_policy_t *policy, qpol_bool_t *datum, uint32_t *value);
 
 /** 
  *  Get the state of a boolean.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy with which the boolean is associated.
  *  @param datum Boolean datum from which to get the state. Must be non-NULL.
  *  @param state Pointer to the integer to be set to the boolean's state. 
@@ -80,12 +76,11 @@ extern int qpol_bool_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpo
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *state will set to 0 (false).
  */
-extern int qpol_bool_get_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int *state);
+extern int qpol_bool_get_state(qpol_policy_t *policy, qpol_bool_t *datum, int *state);
 
 /** 
  *  Set the state of a boolean and update the state of all conditionals
  *  using the boolean.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy with which the boolean is associated.
  *  The state of the policy is changed by this function.
  *  @param datum Boolean datum for which to set the state. Must be non-NULL.
@@ -93,14 +88,13 @@ extern int qpol_bool_get_state(qpol_handle_t *handle, qpol_policy_t *policy, qpo
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set.
  */
-extern int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int state);
+extern int qpol_bool_set_state(qpol_policy_t *policy, qpol_bool_t *datum, int state);
 
 /** 
  *  Set the state of a boolean but do not update the state of all conditionals
  *  using the boolean. The caller is responsible for calling
  *  qpol_policy_reevaluate_conds() at a later time to maintain a consistent
  *  state of conditional expressions.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy with which the boolean is associated.
  *  The state of the policy is changed by this function.
  *  @param datum Boolean datum for which to set the state. Must be non-NULL.
@@ -108,11 +102,10 @@ extern int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpo
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set.
  */
-extern int qpol_bool_set_state_no_eval(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, int state);
+extern int qpol_bool_set_state_no_eval(qpol_policy_t *policy, qpol_bool_t *datum, int state);
 
 /**
  *  Get the name which identifies a boolean from its datum.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy with which the boolean is associated.
  *  @param datum Boolean datum for which to get the name. Must be non-NULL.
  *  @param name Pointer to the string in which to store the name.
@@ -120,6 +113,6 @@ extern int qpol_bool_set_state_no_eval(qpol_handle_t *handle, qpol_policy_t *pol
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL. 
  */
-extern int qpol_bool_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t *datum, char **name);
+extern int qpol_bool_get_name(qpol_policy_t *policy, qpol_bool_t *datum, char **name);
 
 #endif /* QPOL_BOOL_QUERY_H */

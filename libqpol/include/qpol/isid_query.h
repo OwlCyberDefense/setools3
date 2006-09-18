@@ -35,7 +35,6 @@ typedef struct qpol_isid qpol_isid_t;
 
 /**
  *  Get an initial SID statement by name.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to get the initial SID statement.
  *  @param name The name of the initial SID.
  *  @param ocon Pointer in which to store the initial SID.
@@ -43,11 +42,10 @@ typedef struct qpol_isid qpol_isid_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-extern int qpol_policy_get_isid_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_isid_t **ocon);
+extern int qpol_policy_get_isid_by_name(qpol_policy_t *policy, const char *name, qpol_isid_t **ocon);
 
 /**
  *  Get an iterator for the initial SID statements in a policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator over items of type qpol_isid_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy 
@@ -57,11 +55,10 @@ extern int qpol_policy_get_isid_by_name(qpol_handle_t *handle, qpol_policy_t *po
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_isid_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_isid_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the name from an initial SID statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the initial SID.
  *  @param ocon The initial SID from which to get the name.
  *  @param name Pointer to the string in which to store the name.
@@ -69,11 +66,10 @@ extern int qpol_policy_get_isid_iter(qpol_handle_t *handle, qpol_policy_t *polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_isid_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_isid_t *ocon, char **name);
+extern int qpol_isid_get_name(qpol_policy_t *policy, qpol_isid_t *ocon, char **name);
 
 /**
  *  Get the context from an initial SID statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the inital SID.
  *  @param ocon The initial SID from which to get the context.
  *  @param context Pointer in which to store the context.
@@ -81,6 +77,6 @@ extern int qpol_isid_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_isid_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_isid_t *ocon, qpol_context_t **context);
+extern int qpol_isid_get_context(qpol_policy_t *policy, qpol_isid_t *ocon, qpol_context_t **context);
 
 #endif /* QPOL_ISID_QUERY_H */

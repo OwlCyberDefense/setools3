@@ -240,11 +240,11 @@ static void print_syn_av_results(apol_policy_t *policy, options_t *opt, apol_vec
 		rule = apol_vector_get_element(syn_list, i);
 		enable_char = branch_char = ' ';
 		if (opt->show_cond) {
-			if (qpol_syn_avrule_get_cond(policy->qh, policy->p, rule, &cond))
+			if (qpol_syn_avrule_get_cond(policy->p, rule, &cond))
 				goto cleanup;
 			if (cond) {
-				if (qpol_syn_avrule_get_is_enabled(policy->qh, policy->p, rule, &enabled) < 0 ||
-				    qpol_cond_eval(policy->qh, policy->p, cond, &is_true) < 0)
+				if (qpol_syn_avrule_get_is_enabled(policy->p, rule, &enabled) < 0 ||
+				    qpol_cond_eval(policy->p, cond, &is_true) < 0)
 					goto cleanup;
 				tmp = apol_cond_expr_render(policy, cond);
 				enable_char = (enabled ? 'E' : 'D');
@@ -256,7 +256,7 @@ static void print_syn_av_results(apol_policy_t *policy, options_t *opt, apol_vec
 					goto cleanup;
 			}
 		}
-		if (qpol_syn_avrule_get_lineno(policy->qh, policy->p, rule, &lineno))
+		if (qpol_syn_avrule_get_lineno(policy->p, rule, &lineno))
 			goto cleanup;
 		if (!(rule_str = apol_syn_avrule_render(policy, rule)))
 			goto cleanup;
@@ -297,12 +297,12 @@ static void print_av_results(apol_policy_t *policy, options_t *opt, apol_vector_
 		if (!(rule = (qpol_avrule_t*)apol_vector_get_element(v, i)))
 			goto cleanup;
 		if (opt->show_cond) {
-			if (qpol_avrule_get_cond(policy->qh, policy->p, rule, &cond))
+			if (qpol_avrule_get_cond(policy->p, rule, &cond))
 				goto cleanup;
-			if (qpol_avrule_get_is_enabled(policy->qh, policy->p, rule, &enabled))
+			if (qpol_avrule_get_is_enabled(policy->p, rule, &enabled))
 				goto cleanup;
 			if (cond) {
-				if (qpol_avrule_get_which_list(policy->qh, policy->p, rule, &list))
+				if (qpol_avrule_get_which_list(policy->p, rule, &list))
 					goto cleanup;
 				tmp = apol_cond_expr_render(policy, cond);
 				qpol_iterator_destroy(&iter);
@@ -412,11 +412,11 @@ static void print_syn_te_results(apol_policy_t *policy, options_t *opt, apol_vec
 		rule = apol_vector_get_element(syn_list, i);
 		enable_char = branch_char = ' ';
 		if (opt->show_cond) {
-			if (qpol_syn_terule_get_cond(policy->qh, policy->p, rule, &cond))
+			if (qpol_syn_terule_get_cond(policy->p, rule, &cond))
 				goto cleanup;
 			if (cond) {
-				if (qpol_syn_terule_get_is_enabled(policy->qh, policy->p, rule, &enabled) < 0 ||
-				    qpol_cond_eval(policy->qh, policy->p, cond, &is_true) < 0)
+				if (qpol_syn_terule_get_is_enabled(policy->p, rule, &enabled) < 0 ||
+				    qpol_cond_eval(policy->p, cond, &is_true) < 0)
 					goto cleanup;
 				tmp = apol_cond_expr_render(policy, cond);
 				enable_char = (enabled ? 'E' : 'D');
@@ -428,7 +428,7 @@ static void print_syn_te_results(apol_policy_t *policy, options_t *opt, apol_vec
 					break;
 			}
 		}
-		if (qpol_syn_terule_get_lineno(policy->qh, policy->p, rule, &lineno))
+		if (qpol_syn_terule_get_lineno(policy->p, rule, &lineno))
 			goto cleanup;
 		if (!(rule_str = apol_syn_terule_render(policy, rule)))
 			goto cleanup;
@@ -469,14 +469,14 @@ static void print_te_results(apol_policy_t *policy, options_t *opt, apol_vector_
 		if (!(rule = (qpol_terule_t*)apol_vector_get_element(v, i)))
 			goto cleanup;
 		if (opt->show_cond) {
-			if (qpol_terule_get_cond(policy->qh, policy->p, rule, &cond))
+			if (qpol_terule_get_cond(policy->p, rule, &cond))
 				goto cleanup;
-			if (qpol_terule_get_is_enabled(policy->qh, policy->p, rule, &enabled))
+			if (qpol_terule_get_is_enabled(policy->p, rule, &enabled))
 				goto cleanup;
 			if (cond) {
-				if (qpol_terule_get_which_list(policy->qh, policy->p, rule, &list))
+				if (qpol_terule_get_which_list(policy->p, rule, &list))
 					goto cleanup;
-				if (qpol_cond_get_expr_node_iter(policy->qh, policy->p, cond, &iter))
+				if (qpol_cond_get_expr_node_iter(policy->p, cond, &iter))
 					goto cleanup;
 				tmp = apol_cond_expr_render(policy, cond);
 				qpol_iterator_destroy(&iter);

@@ -242,7 +242,7 @@ static int apol_domain_trans_find_rule_for_type(apol_policy_t *policy, apol_vect
 		return -1;
 	}
 
-	qpol_type_get_isattr(policy->qh, policy->p, type, &isattr);
+	qpol_type_get_isattr(policy->p, type, &isattr);
 	if (isattr) {
 		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
@@ -252,13 +252,13 @@ static int apol_domain_trans_find_rule_for_type(apol_policy_t *policy, apol_vect
 	if (!rule_list || list_sz == 0)
 		return -1; /* empty list, not necessarily an error */
 
-	qpol_type_get_value(policy->qh, policy->p, type, &type_val);
+	qpol_type_get_value(policy->p, type, &type_val);
 
 	/* potentially a lot of entries but list is sorted so
 	 * we can do a binary search */
 	do {
 		rule = apol_vector_get_element(rule_list, i);
-		qpol_type_get_value(policy->qh, policy->p, rule->type, &rule_type_val);
+		qpol_type_get_value(policy->p, rule->type, &rule_type_val);
 		if (rule_type_val == type_val) {
 			return i;
 		} else if (rule_type_val < type_val) {
@@ -286,7 +286,7 @@ static int apol_domain_trans_find_rule_for_dflt(apol_policy_t *policy, apol_vect
 		return -1;
 	}
 
-	qpol_type_get_isattr(policy->qh, policy->p, dflt, &isattr);
+	qpol_type_get_isattr(policy->p, dflt, &isattr);
 	if (isattr) {
 		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
@@ -296,7 +296,7 @@ static int apol_domain_trans_find_rule_for_dflt(apol_policy_t *policy, apol_vect
 	if (!rule_list)
 		return -1; /* empty list, not necessarily an error */
 
-	qpol_type_get_value(policy->qh, policy->p, dflt, &dflt_val);
+	qpol_type_get_value(policy->p, dflt, &dflt_val);
 
 	/* potentially a lot of entries but list is sorted so
 	 * we can do a binary search */
@@ -304,7 +304,7 @@ static int apol_domain_trans_find_rule_for_dflt(apol_policy_t *policy, apol_vect
 		dflt_val = 0;
 		rule = apol_vector_get_element(rule_list, i);
 		if (rule->dflt)
-			qpol_type_get_value(policy->qh, policy->p, rule->dflt, &rule_type_val);
+			qpol_type_get_value(policy->p, rule->dflt, &rule_type_val);
 		if (rule_type_val == dflt_val) {
 			return i;
 		}
@@ -320,8 +320,8 @@ static int apol_domain_trans_rule_compare(const void *a, const void *b, void *po
 	apol_policy_t *p = (apol_policy_t*)policy;
 	uint32_t a_val = 0, b_val = 0;
 
-	qpol_type_get_value(p->qh, p->p, rule_a->type, &a_val);
-	qpol_type_get_value(p->qh, p->p, rule_b->type, &b_val);
+	qpol_type_get_value(p->p, rule_a->type, &a_val);
+	qpol_type_get_value(p->p, rule_b->type, &b_val);
 
 	return (int)(a_val - b_val);
 }
@@ -338,7 +338,7 @@ static int apol_domain_trans_add_rule_to_list(apol_policy_t *policy, apol_vector
 		return -1;
 	}
 
-	qpol_type_get_isattr(policy->qh, policy->p, type, &isattr);
+	qpol_type_get_isattr(policy->p, type, &isattr);
 	if (isattr) {
 		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
@@ -410,19 +410,19 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 
 	if (rule_type & APOL_DOMAIN_TRANS_RULE_TYPE_TRANS) {
 		terule = rule;
-		qpol_terule_get_source_type(policy->qh, policy->p, terule, &src);
-		qpol_terule_get_target_type(policy->qh, policy->p, terule, &tgt);
-		qpol_terule_get_default_type(policy->qh, policy->p, terule, &dflt);
+		qpol_terule_get_source_type(policy->p, terule, &src);
+		qpol_terule_get_target_type(policy->p, terule, &tgt);
+		qpol_terule_get_default_type(policy->p, terule, &dflt);
 	} else {
 		avrule = rule;
-		qpol_avrule_get_source_type(policy->qh, policy->p, avrule, &src);
-		qpol_avrule_get_target_type(policy->qh, policy->p, avrule, &tgt);
+		qpol_avrule_get_source_type(policy->p, avrule, &src);
+		qpol_avrule_get_target_type(policy->p, avrule, &tgt);
 	}
 
 	/* handle any attributes*/
-	qpol_type_get_isattr(policy->qh, policy->p, src, &isattr);
+	qpol_type_get_isattr(policy->p, src, &isattr);
 	if (isattr) {
-		if (qpol_type_get_type_iter(policy->qh, policy->p, src, &iter)) {
+		if (qpol_type_get_type_iter(policy->p, src, &iter)) {
 			error = errno;
 			goto err;
 		}
@@ -442,9 +442,9 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 		}
 	}
 
-	qpol_type_get_isattr(policy->qh, policy->p, tgt, &isattr);
+	qpol_type_get_isattr(policy->p, tgt, &isattr);
 	if (isattr) {
-		if (qpol_type_get_type_iter(policy->qh, policy->p, tgt, &iter)) {
+		if (qpol_type_get_type_iter(policy->p, tgt, &iter)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
@@ -473,7 +473,7 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 	if (rule_type & APOL_DOMAIN_TRANS_RULE_PROC_TRANS) {
 		for (j = 0; j < apol_vector_get_size(src_types); j++) {
 			src = apol_vector_get_element(src_types, j);
-			qpol_type_get_value(policy->qh, policy->p, src, &src_val);
+			qpol_type_get_value(policy->p, src, &src_val);
 			for (i = 0; i < apol_vector_get_size(tgt_types); i++) {
 				tgt = apol_vector_get_element(tgt_types, i);
 				retv = apol_domain_trans_add_rule_to_list(policy, table->dom_list[src_val - 1].proc_trans_rules,
@@ -488,7 +488,7 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 	if (rule_type & APOL_DOMAIN_TRANS_RULE_EXEC) {
 		for (j = 0; j < apol_vector_get_size(tgt_types); j++) {
 			tgt = apol_vector_get_element(tgt_types, j);
-			qpol_type_get_value(policy->qh, policy->p, tgt, &tgt_val);
+			qpol_type_get_value(policy->p, tgt, &tgt_val);
 			for (i = 0; i < apol_vector_get_size(src_types); i++) {
 				src = apol_vector_get_element(src_types, i);
 				retv = apol_domain_trans_add_rule_to_list(policy, table->exec_list[tgt_val - 1].exec_rules,
@@ -503,10 +503,10 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 	if (rule_type & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT) {
 		for (i = 0; i < apol_vector_get_size(tgt_types); i++) {
 			tgt = apol_vector_get_element(tgt_types, i);
-			qpol_type_get_value(policy->qh, policy->p, tgt, &tgt_val);
+			qpol_type_get_value(policy->p, tgt, &tgt_val);
 			for (j = 0; j < apol_vector_get_size(src_types); j++) {
 				src = apol_vector_get_element(src_types, j);
-				qpol_type_get_value(policy->qh, policy->p, src, &src_val);
+				qpol_type_get_value(policy->p, src, &src_val);
 				retv = apol_domain_trans_add_rule_to_list(policy, table->dom_list[src_val - 1].ep_rules,
 						tgt, NULL, rule, 0);
 				if (retv) {
@@ -527,7 +527,7 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 			tgt = apol_vector_get_element(tgt_types, i);
 			for (j = 0; j < apol_vector_get_size(src_types); j++) {
 				src = apol_vector_get_element(src_types, j);
-				qpol_type_get_value(policy->qh, policy->p, src, &src_val);
+				qpol_type_get_value(policy->p, src, &src_val);
 				retv = apol_domain_trans_add_rule_to_list(policy, table->dom_list[src_val - 1].type_trans_rules,
 						tgt, dflt, rule, 0);
 				if (retv) {
@@ -540,10 +540,10 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 	if (rule_type & APOL_DOMAIN_TRANS_RULE_SETEXEC) {
 		for (i = 0; i < apol_vector_get_size(tgt_types); i++ ) {
 			tgt = apol_vector_get_element(tgt_types, i);
-			qpol_type_get_value(policy->qh, policy->p, tgt, &tgt_val);
+			qpol_type_get_value(policy->p, tgt, &tgt_val);
 			for (j = 0; j < apol_vector_get_size(src_types); j++) {
 				src = apol_vector_get_element(src_types, j);
-				qpol_type_get_value(policy->qh, policy->p, src, &src_val);
+				qpol_type_get_value(policy->p, src, &src_val);
 				if (src_val != tgt_val)
 					continue; /* only care about allow start self : processes setexec; */
 				retv = apol_domain_trans_add_rule_to_list(policy, table->dom_list[src_val - 1].setexec_rules,
@@ -586,16 +586,16 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 	}
 
 	table = policy->domain_trans_table;
-	qpol_policy_get_policy_version(policy->qh, policy->p, &policy_version);
+	qpol_policy_get_policy_version(policy->p, &policy_version);
 
-	qpol_type_get_isattr(policy->qh, policy->p, start, &isattr);
+	qpol_type_get_isattr(policy->p, start, &isattr);
 	if (isattr) {
 		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
 		return -1;
 	}
 
-	qpol_type_get_value(policy->qh, policy->p, start, &start_val);
+	qpol_type_get_value(policy->p, start, &start_val);
 
 	/* verify type transition rules */
 	for (i = 0; i < apol_vector_get_size(table->dom_list[start_val - 1].type_trans_rules); i++) {
@@ -614,8 +614,8 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 			ERR(policy, "%s", strerror(error));
 			goto exit_error;
 		}
-		qpol_type_get_value(policy->qh, policy->p, entry->ep_type, &ep_val);
-		qpol_type_get_value(policy->qh, policy->p, entry->end_type, &end_val);
+		qpol_type_get_value(policy->p, entry->ep_type, &ep_val);
+		qpol_type_get_value(policy->p, entry->end_type, &end_val);
 		tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].proc_trans_rules, entry->end_type);
 		if (tmp >= 0) {
 			tmp_rule = apol_vector_get_element(table->dom_list[start_val - 1].proc_trans_rules, tmp);
@@ -676,7 +676,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 		if (rule_entry->used)
 			continue; /* we already found this transition */
 		end = rule_entry->type;
-		qpol_type_get_value(policy->qh, policy->p, end, &end_val);
+		qpol_type_get_value(policy->p, end, &end_val);
 		if (end_val == start_val)
 			continue; /* if start is same as end no transition occurs */
 		rule_entry->used = TRUE;
@@ -685,7 +685,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 			tmp_rule = apol_vector_get_element(table->dom_list[end_val - 1].ep_rules, j);
 			tmp_rule->used = TRUE;
 			ep = tmp_rule->type;
-			qpol_type_get_value(policy->qh, policy->p, ep, &ep_val);
+			qpol_type_get_value(policy->p, ep, &ep_val);
 			tmp = apol_domain_trans_find_rule_for_type(policy, table->exec_list[ep_val - 1].ep_rules, end);
 			tmp_rule2 = apol_vector_get_element(table->exec_list[ep_val - 1].ep_rules, tmp);
 			if (tmp_rule2->used)
@@ -800,28 +800,28 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 	}
 
 	table = policy->domain_trans_table;
-	qpol_policy_get_policy_version(policy->qh, policy->p, &policy_version);
+	qpol_policy_get_policy_version(policy->p, &policy_version);
 
-	qpol_type_get_isattr(policy->qh, policy->p, end, &isattr);
+	qpol_type_get_isattr(policy->p, end, &isattr);
 	if (isattr) {
 		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
 		return -1;
 	}
 
-	qpol_type_get_value(policy->qh, policy->p, end, &end_val);
+	qpol_type_get_value(policy->p, end, &end_val);
 
 	/* follow entrypoints */
 	for (i = 0; i < apol_vector_get_size(table->dom_list[end_val - 1].ep_rules); i++) {
 		rule_entry = apol_vector_get_element(table->dom_list[end_val - 1].ep_rules, i);
 		ep = rule_entry->type;
-		qpol_type_get_value(policy->qh, policy->p, ep, &ep_val);
+		qpol_type_get_value(policy->p, ep, &ep_val);
 		rule_entry->used = TRUE;
 		/* follow each execute rule of ep */
 		for (j = 0; j < apol_vector_get_size(table->exec_list[ep_val - 1].exec_rules); j++) {
 			tmp_rule = apol_vector_get_element(table->exec_list[ep_val - 1].exec_rules, j);
 			start = tmp_rule->type;
-			qpol_type_get_value(policy->qh, policy->p, start, &start_val);
+			qpol_type_get_value(policy->p, start, &start_val);
 			if (start_val == end_val) {
 				if (apol_vector_get_size(table->exec_list[ep_val - 1].exec_rules) == 1)
 					dead = 1; /* if there is only on execute rule for this entrypoint and its source the same as end the entrypoint is dead */
@@ -865,7 +865,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 			if (tmp >= 0) {
 				tmp_rule2 = apol_vector_get_element(table->dom_list[start_val - 1].type_trans_rules, tmp);
 				dflt = tmp_rule2->dflt;
-				qpol_type_get_value(policy->qh, policy->p, dflt, &dflt_val);
+				qpol_type_get_value(policy->p, dflt, &dflt_val);
 				if (dflt_val == end_val) {
 					tmp_rule2->used = TRUE;
 					if (!(entry->type_trans_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
@@ -945,16 +945,16 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 			continue; /* either used or none exists */
 		if (tmp_rule) {
 			tmp_rule->used = TRUE;
-			qpol_terule_get_source_type(policy->qh, policy->p, apol_vector_get_element(tmp_rule->rules, 0), &start);
+			qpol_terule_get_source_type(policy->p, apol_vector_get_element(tmp_rule->rules, 0), &start);
 			ep = tmp_rule->type;
-			qpol_type_get_value(policy->qh, policy->p, ep, &ep_val);
+			qpol_type_get_value(policy->p, ep, &ep_val);
 		} else if (rule_entry) {
 			rule_entry->used = TRUE;
-			qpol_avrule_get_source_type(policy->qh, policy->p, apol_vector_get_element(rule_entry->rules, 0), &start);
+			qpol_avrule_get_source_type(policy->p, apol_vector_get_element(rule_entry->rules, 0), &start);
 		}
-		qpol_type_get_isattr(policy->qh, policy->p, start, &isattr);
+		qpol_type_get_isattr(policy->p, start, &isattr);
 		if (isattr) {
-			if (qpol_type_get_type_iter(policy->qh, policy->p, start, &iter)) {
+			if (qpol_type_get_type_iter(policy->p, start, &iter)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -984,7 +984,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 				goto exit_error;
 			}
 			entry->start_type = apol_vector_get_element(v, j);
-			qpol_type_get_value(policy->qh, policy->p, entry->start_type, &start_val);
+			qpol_type_get_value(policy->p, entry->start_type, &start_val);
 			entry->ep_type = ep;
 			entry->end_type = end;
 			if (rule_entry) {
@@ -1159,11 +1159,11 @@ static int apol_domain_trans_filter_access(apol_domain_trans_t **trans, apol_vec
 	apol_avrule_query_set_rules(policy, avq, QPOL_RULE_ALLOW);
 
 	for (cur = *trans; cur;) {
-		qpol_type_get_name(policy->qh, policy->p, cur->end_type, &tmp);
+		qpol_type_get_name(policy->p, cur->end_type, &tmp);
 		apol_avrule_query_set_source(policy, avq, tmp, 1);
 		for (i = 0; i < apol_vector_get_size(access_types); i++) {
 			type = apol_vector_get_element(access_types, i);
-			qpol_type_get_name(policy->qh, policy->p, type, &tmp);
+			qpol_type_get_name(policy->p, type, &tmp);
 			apol_avrule_query_set_target(policy, avq, tmp, 1);
 			for (j = 0; j < apol_vector_get_size(obj_perm_sets); j++) {
 				apol_avrule_query_append_class(policy, avq, NULL);
@@ -1237,7 +1237,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t *policy)
 		goto err;
 	}
 
-	qpol_policy_get_policy_version(policy->qh, policy->p, &policy_version);
+	qpol_policy_get_policy_version(policy->p, &policy_version);
 
 	avq = apol_avrule_query_create();
 	apol_avrule_query_set_rules(policy, avq, QPOL_RULE_ALLOW);
@@ -1272,7 +1272,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t *policy)
 	apol_get_avrule_by_query(policy, avq, &v);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		avrule = apol_vector_get_element(v, i);
-		if (qpol_avrule_get_perm_iter(policy->qh, policy->p, avrule, &iter)) {
+		if (qpol_avrule_get_perm_iter(policy->p, avrule, &iter)) {
 			error = errno;
 			goto err;
 		}
@@ -1631,7 +1631,7 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 	}
 
 	/* get starting type */
-	if (qpol_policy_get_type_by_name(policy->qh, policy->p, dta->start_type, &start_type)) {
+	if (qpol_policy_get_type_by_name(policy->p, dta->start_type, &start_type)) {
 		error = errno;
 		ERR(policy, "Unable to perform analysis: Invalid starting type %s", dta->start_type);
 		goto err;
@@ -1674,7 +1674,7 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 			goto err;
 		}
 		for (i = 0; i < apol_vector_get_size(dta->access_types); i++) {
-			if (qpol_policy_get_type_by_name(policy->qh, policy->p, apol_vector_get_element(dta->access_types, i), &tmp_type)) {
+			if (qpol_policy_get_type_by_name(policy->p, apol_vector_get_element(dta->access_types, i), &tmp_type)) {
 				error = errno;
 				goto err;
 			}
@@ -1922,11 +1922,11 @@ int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *sta
 	}
 
 	table = policy->domain_trans_table;
-	qpol_policy_get_policy_version(policy->qh, policy->p, &policy_version);
+	qpol_policy_get_policy_version(policy->p, &policy_version);
 
-	qpol_type_get_value(policy->qh, policy->p, start_dom, &start_val);
-	qpol_type_get_value(policy->qh, policy->p, ep_type, &ep_val);
-	qpol_type_get_value(policy->qh, policy->p, end_dom, &end_val);
+	qpol_type_get_value(policy->p, start_dom, &start_val);
+	qpol_type_get_value(policy->p, ep_type, &ep_val);
+	qpol_type_get_value(policy->p, end_dom, &end_val);
 
 	retv = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].proc_trans_rules, end_dom);
 	if (retv < 0)
@@ -1943,7 +1943,7 @@ int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *sta
 		retv = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].type_trans_rules, ep_type);
 		if (retv >= 0) {
 			rule = apol_vector_get_element(table->dom_list[start_val - 1].type_trans_rules, retv);
-			qpol_type_get_value(policy->qh, policy->p, rule->dflt, &dflt_val);
+			qpol_type_get_value(policy->p, rule->dflt, &dflt_val);
 		}
 		if (retv < 0 || dflt_val != end_val) { /* no type_transition or different default */
 			retv = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules, start_dom);

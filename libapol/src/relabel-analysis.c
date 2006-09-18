@@ -77,7 +77,7 @@ static int relabel_analysis_get_direction(apol_policy_t *p,
 	qpol_iterator_t *iter;
 	int to = 0, from = 0, retval = -1;
 
-	if (qpol_avrule_get_perm_iter(p->qh, p->p, avrule, &iter) < 0) {
+	if (qpol_avrule_get_perm_iter(p->p, avrule, &iter) < 0) {
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -231,14 +231,14 @@ static int relabel_analysis_compare_type_to_vector(apol_policy_t *p,
 		retval = 1;  /* found it */
 		goto cleanup;
 	}
-	if (qpol_type_get_isattr(p->qh, p->p, type, &isattr) < 0) {
+	if (qpol_type_get_isattr(p->p, type, &isattr) < 0) {
 		goto cleanup;
 	}
 	if (!isattr) {	/* not an attribute, so comparison failed */
 		retval = 0;
 		goto cleanup;
 	}
-	if (qpol_type_get_type_iter(p->qh, p->p, type, &iter) < 0) {
+	if (qpol_type_get_type_iter(p->p, type, &iter) < 0) {
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -284,14 +284,14 @@ static int append_avrules_to_subject_vector(apol_policy_t *p,
 	apol_relabel_result_t *result;
 	apol_relabel_result_pair_t *pair = NULL;
 	int retval = -1, compval, dirA, dirB;
-	if (qpol_avrule_get_target_type(p->qh, p->p, ruleB, &target) < 0 ||
+	if (qpol_avrule_get_target_type(p->p, ruleB, &target) < 0 ||
 	    (target_v = apol_query_expand_type(p, target)) == NULL) {
 		goto cleanup;
 	}
-	if (qpol_avrule_get_source_type(p->qh, p->p, ruleA, &sourceA) < 0 ||
-	    qpol_avrule_get_source_type(p->qh, p->p, ruleB, &sourceB) < 0 ||
-	    qpol_type_get_isattr(p->qh, p->p, sourceA, &isattrA) < 0 ||
-	    qpol_type_get_isattr(p->qh, p->p, sourceB, &isattrB) < 0) {
+	if (qpol_avrule_get_source_type(p->p, ruleA, &sourceA) < 0 ||
+	    qpol_avrule_get_source_type(p->p, ruleB, &sourceB) < 0 ||
+	    qpol_type_get_isattr(p->p, sourceA, &isattrA) < 0 ||
+	    qpol_type_get_isattr(p->p, sourceB, &isattrB) < 0) {
 		goto cleanup;
         }
 	if ((isattrA && isattrB) || !isattrA) {
@@ -390,9 +390,9 @@ static int relabel_analysis_matchup(apol_policy_t *p,
 	}
         for (i = 0; i < apol_vector_get_size(av); i++) {
 		a_avrule = apol_vector_get_element(av, i);
-		if (qpol_avrule_get_source_type(p->qh, p->p, a_avrule, &a_source) < 0 ||
-		    qpol_avrule_get_target_type(p->qh, p->p, a_avrule, &a_target) < 0 ||
-		    qpol_avrule_get_object_class(p->qh, p->p, a_avrule, &a_class) < 0) {
+		if (qpol_avrule_get_source_type(p->p, a_avrule, &a_source) < 0 ||
+		    qpol_avrule_get_target_type(p->p, a_avrule, &a_target) < 0 ||
+		    qpol_avrule_get_object_class(p->p, a_avrule, &a_class) < 0) {
 			goto cleanup;
 		}
 		compval = relabel_analysis_compare_type_to_vector(p, subjects_v, a_source);
@@ -410,9 +410,9 @@ static int relabel_analysis_matchup(apol_policy_t *p,
 		   B(t) != r->type and B(o) = A(o) */
 		for (j = 0; j < apol_vector_get_size(bv); j++) {
 			b_avrule = apol_vector_get_element(bv, j);
-			if (qpol_avrule_get_source_type(p->qh, p->p, b_avrule, &b_source) < 0 ||
-			    qpol_avrule_get_target_type(p->qh, p->p, b_avrule, &b_target) < 0 ||
-			    qpol_avrule_get_object_class(p->qh, p->p, b_avrule, &b_class) < 0) {
+			if (qpol_avrule_get_source_type(p->p, b_avrule, &b_source) < 0 ||
+			    qpol_avrule_get_target_type(p->p, b_avrule, &b_target) < 0 ||
+			    qpol_avrule_get_object_class(p->p, b_avrule, &b_class) < 0) {
 				goto cleanup;
 			}
 			if (relabel_analysis_compare_type_to_vector(p, start_v, b_source) != 1 ||
@@ -542,7 +542,7 @@ static int append_avrule_to_subject_vector(apol_policy_t *p,
 	if ((dir = relabel_analysis_get_direction(p, avrule)) < 0) {
 		goto cleanup;
 	}
-	if (qpol_avrule_get_target_type(p->qh, p->p, avrule, &target) < 0 ||
+	if (qpol_avrule_get_target_type(p->p, avrule, &target) < 0 ||
 	    (target_v = apol_query_expand_type(p, target)) == NULL) {
 		goto cleanup;
 	}

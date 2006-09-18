@@ -34,7 +34,7 @@
 #include "debug.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon)
+int qpol_policy_get_netifcon_by_name(qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -42,8 +42,8 @@ int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 	if (ocon != NULL)
 		*ocon = NULL;
 
-	if (handle == NULL || policy == NULL || name == NULL || ocon == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || name == NULL || ocon == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -57,7 +57,7 @@ int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 	*ocon = (qpol_netifcon_t *)tmp;
 
 	if (*ocon == NULL) {
-		ERR(handle, "could not find netifcon statement for %s", name);
+		ERR(policy, "could not find netifcon statement for %s", name);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
@@ -65,7 +65,7 @@ int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_netifcon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -74,8 +74,8 @@ int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	if (iter != NULL) 
 		*iter = NULL;
 
-	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || iter == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -85,14 +85,14 @@ int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	os = calloc(1, sizeof(ocon_state_t));
 	if (os == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
 
 	os->head = os->cur = db->ocontexts[OCON_NETIF];
 
-	if (qpol_iterator_create(handle, db, (void*)os, ocon_state_get_cur,
+	if (qpol_iterator_create(policy, (void*)os, ocon_state_get_cur,
 		ocon_state_next, ocon_state_end, ocon_state_size, free, iter)) {
 		free(os);
 		return STATUS_ERR;
@@ -101,15 +101,15 @@ int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name)
+int qpol_netifcon_get_name(qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (name != NULL)
 		*name = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || name == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || name == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -120,15 +120,15 @@ int qpol_netifcon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_ne
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_msg_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context)
+int qpol_netifcon_get_msg_con(qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (context != NULL)
 		*context = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || context == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || context == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -139,15 +139,15 @@ int qpol_netifcon_get_msg_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_if_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context)
+int qpol_netifcon_get_if_con(qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (context != NULL)
 		*context = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || context == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || context == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

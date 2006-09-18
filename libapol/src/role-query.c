@@ -47,7 +47,7 @@ int apol_get_role_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter = NULL, *type_iter = NULL;
 	int retval = -1, append_role;
 	*v = NULL;
-	if (qpol_policy_get_role_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_role_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -63,7 +63,7 @@ int apol_get_role_by_query(apol_policy_t *p,
 		if (r != NULL) {
 			char *role_name;
 			int compval;
-			if (qpol_role_get_name(p->qh, p->p, role, &role_name) < 0) {
+			if (qpol_role_get_name(p->p, role, &role_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, role_name, r->role_name,
@@ -74,7 +74,7 @@ int apol_get_role_by_query(apol_policy_t *p,
 			else if (compval == 0) {
 				continue;
 			}
-			if (qpol_role_get_type_iter(p->qh, p->p, role, &type_iter) < 0) {
+			if (qpol_role_get_type_iter(p->p, role, &type_iter) < 0) {
 				goto cleanup;
 			}
 			if (r->type_name == NULL || r->type_name[0] == '\0') {
@@ -155,14 +155,14 @@ int apol_role_has_type(apol_policy_t *p, qpol_role_t *r, qpol_type_t *t)
 	uint32_t type_value, t_type_value;
 	int retval = -1;
 
-	if (qpol_type_get_value(p->qh, p->p, t, &t_type_value) < 0 ||
-	    qpol_role_get_type_iter (p->qh, p->p, r, &iter) < 0) {
+	if (qpol_type_get_value(p->p, t, &t_type_value) < 0 ||
+	    qpol_role_get_type_iter (p->p, r, &iter) < 0) {
 		goto cleanup;
 	}
 
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_iterator_get_item(iter, (void **) (&tmp_type));
-		qpol_type_get_value(p->qh, p->p, tmp_type, &type_value);
+		qpol_type_get_value(p->p, tmp_type, &type_value);
 		if (t_type_value == type_value) {
 			retval = 1;
 			goto cleanup;

@@ -35,7 +35,6 @@ typedef struct qpol_genfscon qpol_genfscon_t;
 
 /**
  *  Get a genfscon statement by file system name and path.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to get the genfscon statement.
  *  @param name The name of the file system.
  *  @param path The path relative to the filesystem mount point.
@@ -44,11 +43,10 @@ typedef struct qpol_genfscon qpol_genfscon_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *genfscon will be NULL.
  */
-extern int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, const char *path, qpol_genfscon_t **genfscon);
+extern int qpol_policy_get_genfscon_by_name(qpol_policy_t *policy, const char *name, const char *path, qpol_genfscon_t **genfscon);
 
 /**
  *  Get an iterator for the genfscon statements in a policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator over items of type qpol_genfscon_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy() 
@@ -59,11 +57,10 @@ extern int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_genfscon_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the file system name from a gefscon statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the genfscon statement.
  *  @param genfs The genfscon statement from which to get the name.
  *  @param name Pointer to th string in which to store the name.
@@ -71,11 +68,10 @@ extern int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *p
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_genfscon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, char **name);
+extern int qpol_genfscon_get_name(qpol_policy_t *policy, qpol_genfscon_t *genfs, char **name);
 
 /**
  *  Get the relative path from a gefscon statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the genfscon statement.
  *  @param genfs The genfscon statement from which to get the path.
  *  @param path Pointer to th string in which to store the path.
@@ -83,7 +79,7 @@ extern int qpol_genfscon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *path will be NULL.
  */
-extern int qpol_genfscon_get_path(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, char **path);
+extern int qpol_genfscon_get_path(qpol_policy_t *policy, qpol_genfscon_t *genfs, char **path);
 
 /* values from flask do not change */
 #define QPOL_CLASS_ALL        0
@@ -97,7 +93,6 @@ extern int qpol_genfscon_get_path(qpol_handle_t *handle, qpol_policy_t *policy, 
 
 /**
  *  Get the object class from a genfscon statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the genfscon statement.
  *  @param genfs The genfscon statement from which to get the path.
  *  @param class Pointer in which to store the integer code for the
@@ -105,11 +100,10 @@ extern int qpol_genfscon_get_path(qpol_handle_t *handle, qpol_policy_t *policy, 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *class will be 0.
  */
-extern int qpol_genfscon_get_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, uint32_t *class);
+extern int qpol_genfscon_get_class(qpol_policy_t *policy, qpol_genfscon_t *genfs, uint32_t *class);
 
 /**
  *  Get the context from a path component of a genfscon statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the genfscon statement.
  *  @param genfscon The genfscon statement from which to get 
  *  the context.
@@ -118,6 +112,6 @@ extern int qpol_genfscon_get_class(qpol_handle_t *handle, qpol_policy_t *policy,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_genfscon_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfscon, qpol_context_t **context);
+extern int qpol_genfscon_get_context(qpol_policy_t *policy, qpol_genfscon_t *genfscon, qpol_context_t **context);
 
 #endif /* QPOL_OCON_QUERY_H */ 

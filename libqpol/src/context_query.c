@@ -36,7 +36,7 @@
 #include <sepol/policydb/context.h>
 #include "debug.h"
 
-int qpol_context_get_user(qpol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_user_t **user)
+int qpol_context_get_user(qpol_policy_t *policy, qpol_context_t *context, qpol_user_t **user)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -44,8 +44,8 @@ int qpol_context_get_user(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	if (user != NULL)
 		*user = NULL;
 
-	if (handle == NULL || policy == NULL || context == NULL || user == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || context == NULL || user == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -58,7 +58,7 @@ int qpol_context_get_user(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_role_t **role)
+int qpol_context_get_role(qpol_policy_t *policy, qpol_context_t *context, qpol_role_t **role)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -66,8 +66,8 @@ int qpol_context_get_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	if (role != NULL)
 		*role = NULL;
 
-	if (handle == NULL || policy == NULL || context == NULL || role == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || context == NULL || role == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -80,7 +80,7 @@ int qpol_context_get_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_type_t **type)
+int qpol_context_get_type(qpol_policy_t *policy, qpol_context_t *context, qpol_type_t **type)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -88,8 +88,8 @@ int qpol_context_get_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	if (type != NULL)
 		*type = NULL;
 
-	if (handle == NULL || policy == NULL || context == NULL || type == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || context == NULL || type == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -102,15 +102,15 @@ int qpol_context_get_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_mls_range_t **range)
+int qpol_context_get_range(qpol_policy_t *policy, qpol_context_t *context, qpol_mls_range_t **range)
 {
 	context_struct_t *internal_context = NULL;
 
 	if (range != NULL)
 		*range = NULL;
 
-	if (handle == NULL || policy == NULL || context == NULL || range == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || context == NULL || range == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

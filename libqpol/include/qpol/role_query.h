@@ -35,7 +35,6 @@ typedef struct qpol_role qpol_role_t;
 
 /**
  *  Get the datum for a role by name.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to get the role.
  *  @param name The name of the role; searching is case sensitive.
  *  @param datum Pointer in which to store the role datum; the caller
@@ -43,11 +42,10 @@ typedef struct qpol_role qpol_role_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-extern int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_role_t **datum);
+extern int qpol_policy_get_role_by_name(qpol_policy_t *policy, const char *name, qpol_role_t **datum);
 
 /**
  *  Get an iterator for roles declared in the policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy with which to create the iterator.
  *  @param iter Iterator of type qpol_role_t* returned; 
  *  the caller is responsible for calling qpol_iterator_destroy to
@@ -56,23 +54,21 @@ extern int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *po
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_role_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the integer value associated with a role; values range from
  *  1 to the number of declared roles. 
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the role.
  *  @param datum The role from which to get the value.
  *  @param value Pointer to the integer to set to value. Must be non-NULL.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and value will be 0.
  */
-extern int qpol_role_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value);
+extern int qpol_role_get_value(qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value);
 
 /**
  *  Get an iterator for the set of roles dominated by a role.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the role.
  *  @param datum The role from which to get the dominated roles.
  *  @param dominates Iterator of type qpol_role_t* returned; 
@@ -84,11 +80,10 @@ extern int qpol_role_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpo
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dominates will be NULL.
  */
-extern int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates);
+extern int qpol_role_get_dominate_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates);
 
 /**
  *  Get an iterator for the set of types assigned to a role.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the role.
  *  @param datum The role from which to get the types.
  *  @param types Iterator of type qpol_type_t* returned; 
@@ -98,11 +93,10 @@ extern int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *pol
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and types will be NULL.
  */
-extern int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types);
+extern int qpol_role_get_type_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types);
 
 /**
  *  Get the name by which a role is identified from its datum.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the role.
  *  @param datum The role for which to get the name.
  *  @param name Pointer in which to store the name; the caller
@@ -110,6 +104,6 @@ extern int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy,
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_role_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, char **name);
+extern int qpol_role_get_name(qpol_policy_t *policy, qpol_role_t *datum, char **name);
 
 #endif /* QPOL_ROLE_QUERY_H */

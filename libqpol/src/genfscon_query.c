@@ -41,7 +41,7 @@ struct qpol_genfscon {
 	uint32_t sclass;
 };
 
-int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, const char *path, qpol_genfscon_t **genfscon)
+int qpol_policy_get_genfscon_by_name(qpol_policy_t *policy, const char *name, const char *path, qpol_genfscon_t **genfscon)
 {
 	genfs_t *tmp = NULL;
 	ocontext_t *tmp2 = NULL;
@@ -51,8 +51,8 @@ int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 	if (genfscon != NULL)
 		*genfscon = NULL;
 
-	if (handle == NULL || policy == NULL || name == NULL || path == NULL || genfscon == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || name == NULL || path == NULL || genfscon == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -74,7 +74,7 @@ int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 		*genfscon = calloc(1, sizeof(qpol_genfscon_t));
 		if (!(*genfscon)) {
 			error = errno;
-			ERR(handle, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", strerror(ENOMEM));
 			errno = errno;
 			return STATUS_ERR;
 		}
@@ -86,7 +86,7 @@ int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 	}
 
 	if (*genfscon == NULL) {
-		ERR(handle, "could not find genfscon statement for %s %s", name, path);
+		ERR(policy, "could not find genfscon statement for %s %s", name, path);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
@@ -190,7 +190,7 @@ static int genfs_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_genfscon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	genfs_state_t *gs = NULL;
@@ -199,8 +199,8 @@ int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	if (iter != NULL) 
 		*iter = NULL;
 
-	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || iter == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -210,7 +210,7 @@ int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	gs = calloc(1, sizeof(genfs_state_t));
 	if (gs == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -218,7 +218,7 @@ int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	gs->head = gs->cur = db->genfs;
 	gs->cur_path = gs->head->head;
 
-	if (qpol_iterator_create(handle, db, (void*)gs, genfs_state_get_cur,
+	if (qpol_iterator_create(policy, (void*)gs, genfs_state_get_cur,
 		genfs_state_next, genfs_state_end, genfs_state_size, free, iter)) {
 		free(gs);
 		return STATUS_ERR;
@@ -227,13 +227,13 @@ int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, char **name)
+int qpol_genfscon_get_name(qpol_policy_t *policy, qpol_genfscon_t *genfs, char **name)
 {
 	if (name != NULL)
 		*name = NULL;
 
-	if (handle == NULL || policy == NULL || genfs == NULL || name == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || genfs == NULL || name == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -243,13 +243,13 @@ int qpol_genfscon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_ge
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_path(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, char **path)
+int qpol_genfscon_get_path(qpol_policy_t *policy, qpol_genfscon_t *genfs, char **path)
 {
 	if (path != NULL)
 		*path = NULL;
 
-	if (handle == NULL || policy == NULL || genfs == NULL || path == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || genfs == NULL || path == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -259,13 +259,13 @@ int qpol_genfscon_get_path(qpol_handle_t *handle, qpol_policy_t *policy, qpol_ge
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, uint32_t *class)
+int qpol_genfscon_get_class(qpol_policy_t *policy, qpol_genfscon_t *genfs, uint32_t *class)
 {
 	if (class != NULL)
 		*class = 0;
 
-	if (handle == NULL || policy == NULL || genfs == NULL || class == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || genfs == NULL || class == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -275,13 +275,13 @@ int qpol_genfscon_get_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_g
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfscon, qpol_context_t **context)
+int qpol_genfscon_get_context(qpol_policy_t *policy, qpol_genfscon_t *genfscon, qpol_context_t **context)
 {
 	if (context != NULL)
 		*context = NULL;
 
-	if (handle == NULL || policy == NULL || genfscon == NULL || context == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || genfscon == NULL || context == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

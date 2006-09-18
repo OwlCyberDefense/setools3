@@ -34,7 +34,6 @@ typedef struct qpol_range_trans qpol_range_trans_t;
 
 /**
  *  Get an iterator over all range transition rules in a policy.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which to get the range transitions.
  *  @param iter Iterator over items of type qpol_range_trans_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
@@ -44,11 +43,10 @@ typedef struct qpol_range_trans qpol_range_trans_t;
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_range_trans_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the source type from a range transition rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the source type.
  *  @param source Pointer in which to store the source type.
@@ -56,11 +54,10 @@ extern int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-extern int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **source);
+extern int qpol_range_trans_get_source_type(qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **source);
 
 /**
  *  Get the target type from a range transition rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the target type.
  *  @param target Pointer in which to store the target type.
@@ -68,11 +65,10 @@ extern int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-extern int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **target);
+extern int qpol_range_trans_get_target_type(qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **target);
 
 /**
  *  Get the target class from a range transition rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the target class.
  *  @param target Pointer in which to store the target class.
@@ -80,11 +76,10 @@ extern int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-extern int qpol_range_trans_get_target_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_class_t **target);
+extern int qpol_range_trans_get_target_class(qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_class_t **target);
 
 /**
  *  Get the range from a range transition rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the range.
  *  @param range Pointer in which to store the range.
@@ -92,6 +87,6 @@ extern int qpol_range_trans_get_target_class(qpol_handle_t *handle, qpol_policy_
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *range will be NULL.
  */
-extern int qpol_range_trans_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_mls_range_t **range);
+extern int qpol_range_trans_get_range(qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_mls_range_t **range);
 
 #endif /* QPOL_MLSRULE_QUERY_H */

@@ -33,10 +33,9 @@
  * Expand a policy. Linking should always be done prior to calling
  * this function.  
  *
- * @param handle the error handle.
  * @param base the module to expand.
  * @return 0 on success, -1 on error.
  */
-int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base);
+int qpol_expand_module(qpol_policy_t *base);
 
 #endif

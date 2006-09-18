@@ -236,7 +236,7 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		qpol_type_t *attr;
 		char *attr_name;
 		attr = apol_vector_get_element(attr_vector, i);
-		qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
+		qpol_type_get_name(policy->p, attr, &attr_name);
 
 		/* access rules */
 		apol_avrule_query_set_source(policy, avrule_query, attr_name, 0);
@@ -290,22 +290,22 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		node_iter = NULL;
 		name_iter = NULL;
 		found = 0;
-		qpol_policy_get_constraint_iter(policy->qh, policy->p, &constraint_iter);
+		qpol_policy_get_constraint_iter(policy->p, &constraint_iter);
 		for ( ; !qpol_iterator_end(constraint_iter); qpol_iterator_next(constraint_iter) ) {
 			qpol_constraint_t *constraint;
 
 			qpol_iterator_get_item(constraint_iter, (void **)&constraint);
-			qpol_constraint_get_expr_iter(policy->qh, policy->p, constraint, &node_iter);
+			qpol_constraint_get_expr_iter(policy->p, constraint, &node_iter);
 
 			for ( ; !qpol_iterator_end(node_iter); qpol_iterator_next(node_iter) ) {
 				qpol_constraint_expr_node_t *constraint_node;
 				size_t node_type;
 
 				qpol_iterator_get_item(node_iter, (void **)&constraint_node);
-				qpol_constraint_expr_node_get_expr_type(policy->qh, policy->p, constraint_node, &node_type);
+				qpol_constraint_expr_node_get_expr_type(policy->p, constraint_node, &node_type);
 
 				if ( node_type == QPOL_CEXPR_TYPE_NAMES ) {
-					qpol_constraint_expr_node_get_names_iter(policy->qh, policy->p, constraint_node, &name_iter);
+					qpol_constraint_expr_node_get_names_iter(policy->p, constraint_node, &name_iter);
 
 					for ( ; !qpol_iterator_end(name_iter); qpol_iterator_next(name_iter)) {
 						char *name;
@@ -427,7 +427,7 @@ int attribs_wo_rules_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			j++;
 			item  = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
@@ -440,7 +440,7 @@ int attribs_wo_rules_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			item = apol_vector_get_element(mod->result->items, k);
 			if ( item ) {
 				type = item->item;
-				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+				qpol_type_get_name(policy->p, type, &type_name);
 				printf("%s\n", type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof,l);

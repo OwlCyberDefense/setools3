@@ -37,7 +37,6 @@ typedef struct qpol_constraint_expr_node qpol_constraint_expr_node_t;
 
 /**
  *  Get an iterator for the constraints in a policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator over items of type qpol_constraint_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
@@ -48,11 +47,10 @@ typedef struct qpol_constraint_expr_node qpol_constraint_expr_node_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_constraint_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_constraint_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the object class from a constraint.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the constraint.
  *  @param constr The constraint from which to get the class.
  *  @param obj_class Pointer in which to store the object class.
@@ -60,11 +58,10 @@ extern int qpol_policy_get_constraint_iter(qpol_handle_t *handle, qpol_policy_t 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
-extern int qpol_constraint_get_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_constraint_t *constr, qpol_class_t **obj_class);
+extern int qpol_constraint_get_class(qpol_policy_t *policy, qpol_constraint_t *constr, qpol_class_t **obj_class);
 
 /**
  *  Get an iterator over the permissions in a constraint.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which the constraint comes.
  *  @param constr The constraint from which to get the permissions.
  *  @param iter Iterator over items of type char*.
@@ -76,11 +73,10 @@ extern int qpol_constraint_get_class(qpol_handle_t *handle, qpol_policy_t *polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_constraint_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_constraint_t *constr, qpol_iterator_t **iter);
+extern int qpol_constraint_get_perm_iter(qpol_policy_t *policy, qpol_constraint_t *constr, qpol_iterator_t **iter);
 
 /**
  *  Get an iterator over the nodes in a constraint expression.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which the constraint comes.
  *  @param constr The constraint from which to get the expression.
  *  @param iter Iterator over items of type qpol_constraint_expr_node_t.
@@ -92,11 +88,10 @@ extern int qpol_constraint_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *p
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_constraint_get_expr_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_constraint_t *constr, qpol_iterator_t **iter);
+extern int qpol_constraint_get_expr_iter(qpol_policy_t *policy, qpol_constraint_t *constr, qpol_iterator_t **iter);
 
 /**
  *  Get an iterator for the validatetrans statements in a policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator over items of type qpol_validatetrans_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
@@ -107,11 +102,10 @@ extern int qpol_constraint_get_expr_iter(qpol_handle_t *handle, qpol_policy_t *p
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_validatetrans_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_validatetrans_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the object class from a validatetrans statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the validatetrans statement.
  *  @param vtrans The validatetrans statement from which to get the class.
  *  @param obj_class Pointer in which to store the object class.
@@ -119,11 +113,10 @@ extern int qpol_policy_get_validatetrans_iter(qpol_handle_t *handle, qpol_policy
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
-extern int qpol_validatetrans_get_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_validatetrans_t *vtrans, qpol_class_t **obj_class);
+extern int qpol_validatetrans_get_class(qpol_policy_t *policy, qpol_validatetrans_t *vtrans, qpol_class_t **obj_class);
 
 /**
  *  Get an iterator over the nodes in a validatetrans expression.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which the validatetrans statement comes.
  *  @param vtrans The validatetrans statement from which to get the expression.
  *  @param iter Iterator over items of type qpol_constraint_expr_node_t.
@@ -135,7 +128,7 @@ extern int qpol_validatetrans_get_class(qpol_handle_t *handle, qpol_policy_t *po
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_validatetrans_get_expr_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_validatetrans_t *vtrans, qpol_iterator_t **iter);
+extern int qpol_validatetrans_get_expr_iter(qpol_policy_t *policy, qpol_validatetrans_t *vtrans, qpol_iterator_t **iter);
 
 /* expr_type values */
 #define QPOL_CEXPR_TYPE_NOT   1
@@ -146,7 +139,6 @@ extern int qpol_validatetrans_get_expr_iter(qpol_handle_t *handle, qpol_policy_t
 
 /**
  *  Get the code for the expression type of by an expression node.
- *  @param handle Error handler for the policy database.
  *  @patam policy The policy from which the expression comes.
  *  @param expr The expression node from which to get the expression type.
  *  @param expr_type Integer in which to store the expression type; the value
@@ -154,7 +146,7 @@ extern int qpol_validatetrans_get_expr_iter(qpol_handle_t *handle, qpol_policy_t
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *op will be 0.
  */
-extern int qpol_constraint_expr_node_get_expr_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *expr_type);
+extern int qpol_constraint_expr_node_get_expr_type(qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *expr_type);
 
 /* attr values */
 #define QPOL_CEXPR_SYM_USER       1
@@ -171,7 +163,6 @@ extern int qpol_constraint_expr_node_get_expr_type(qpol_handle_t *handle, qpol_p
 
 /**
  *  Get the code for the symbol type used by an expression node.
- *  @param handle Error handler for the policy database.
  *  @patam policy The policy from which the expression comes.
  *  @param expr The expression node from which to get the symbol type.
  *  Must be of expression type QPOL_CEXPR_TYPE_ATTR or QPOL_CEXPR_TYPE_NAMES.
@@ -180,7 +171,7 @@ extern int qpol_constraint_expr_node_get_expr_type(qpol_handle_t *handle, qpol_p
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *sym_type will be 0.
  */
-extern int qpol_constraint_expr_node_get_sym_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *sym_type);
+extern int qpol_constraint_expr_node_get_sym_type(qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *sym_type);
 
 /* op values */
 #define QPOL_CEXPR_OP_EQ     1
@@ -191,7 +182,6 @@ extern int qpol_constraint_expr_node_get_sym_type(qpol_handle_t *handle, qpol_po
 
 /**
  *  Get the operator used by an expression node.
- *  @param handle Error handler for the policy database.
  *  @patam policy The policy from which the expression comes.
  *  @param expr The expression node from which to get the operator.
  *  Must be of expression type QPOL_CEXPR_TYPE_ATTR or QPOL_CEXPR_TYPE_NAMES.
@@ -200,11 +190,10 @@ extern int qpol_constraint_expr_node_get_sym_type(qpol_handle_t *handle, qpol_po
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *op will be 0.
  */
-extern int qpol_constraint_expr_node_get_op(qpol_handle_t *handle, qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *op);
+extern int qpol_constraint_expr_node_get_op(qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *op);
 
 /**
  *  Get an iterator of the names in an expression node.
- *  @param handle Error handler for the policy database.
  *  @patam policy The policy from which the expression comes.
  *  @param expr The expression node from which to create the iterator.
  *  Must be of expression type QPOL_CEXPR_TYPE_NAMES.
@@ -219,11 +208,10 @@ extern int qpol_constraint_expr_node_get_op(qpol_handle_t *handle, qpol_policy_t
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_constraint_expr_node_get_names_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, qpol_iterator_t **iter);
+extern int qpol_constraint_expr_node_get_names_iter(qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, qpol_iterator_t **iter);
 
 /**
  *  Get an iterator for the constraints on a class.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the class.
  *  @param obj_class The class from which to create the iterator.
  *  @param constr Iterator over items of type qpol_constraint_t returned.
@@ -235,11 +223,10 @@ extern int qpol_constraint_expr_node_get_names_iter(qpol_handle_t *handle, qpol_
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *constr will be NULL.
  */
-extern int qpol_class_get_constraint_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, qpol_iterator_t **constr);
+extern int qpol_class_get_constraint_iter(qpol_policy_t *policy, qpol_class_t *obj_class, qpol_iterator_t **constr);
 
 /**
  *  Get an iterator for the validatetrans statements for a class.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the class.
  *  @param obj_class The class from which to create the iterator.
  *  @param vtrans Iterator over items of type qpol_validatetrans_t returned.
@@ -251,6 +238,6 @@ extern int qpol_class_get_constraint_iter(qpol_handle_t *handle, qpol_policy_t *
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *vtrans will be NULL.
  */
-extern int qpol_class_get_validatetrans_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, qpol_iterator_t **vtrans);
+extern int qpol_class_get_validatetrans_iter(qpol_policy_t *policy, qpol_class_t *obj_class, qpol_iterator_t **vtrans);
 
 #endif /* QPOL_CONSTRAINT_QUERY_H */
