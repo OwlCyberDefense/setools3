@@ -101,6 +101,9 @@ static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 			   -1);
 
 	for (i = 0; sediff_items[i].label != NULL; i++) {
+		if (!poldiff_is_run(diff, sediff_items[i].bit_pos)) {
+			continue;
+		}
 		poldiff_get_stats(diff, sediff_items[i].bit_pos, stats);
 
 		gtk_tree_store_append(treestore, &topiter, NULL);
