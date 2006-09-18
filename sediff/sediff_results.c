@@ -260,6 +260,9 @@ static void sediff_results_select_summary(sediff_app_t *app, GtkTextView *view)
 	gtk_text_buffer_insert(tb, &iter, string->str, -1);
 
 	for (i = 0; sediff_items[i].label != NULL; i++) {
+		if (!poldiff_is_run(app->diff, sediff_items[i].bit_pos)) {
+			continue;
+		}
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
                 sediff_results_print_summary(app, tb, sediff_items + i);
                 gtk_text_buffer_get_end_iter(tb, &iter);

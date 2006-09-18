@@ -482,6 +482,7 @@ static gboolean sediff_populate_main_window()
 void run_diff_clicked(void)
 {
 	GdkCursor *cursor = NULL;
+	uint32_t run_flags;
 
 	sediff_initialize_diff();
 
@@ -502,7 +503,18 @@ void run_diff_clicked(void)
                    renamed_types = sediff_app->rename_types_window->renamed_types;
                 */
 	}
-	poldiff_run(sediff_app->diff, POLDIFF_DIFF_ALL);
+
+	run_flags = POLDIFF_DIFF_ALL;
+	if (apol_policy_is_binary(sediff_app->orig_pol) ||
+	    apol_policy_is_binary(sediff_app->mod_pol)) {
+		message_display(sediff_app->window,
+				GTK_MESSAGE_INFO,
+				"Attribute diffs are not supported for binary policies.");
+		while (gtk_events_pending ())
+			gtk_main_iteration ();
+		run_flags &= ~POLDIFF_DIFF_ATTRIBS;
+	}
+	poldiff_run(sediff_app->diff, run_flags);
 	sediff_populate_main_window();
 
 	sediff_progress_hide(sediff_app);
