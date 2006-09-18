@@ -40,6 +40,7 @@ struct poldiff_type_summary {
 	size_t num_added;
 	size_t num_removed;
 	size_t num_modified;
+	int are_diffs_sorted;
 	apol_vector_t *diffs;
 };
 
@@ -166,12 +167,26 @@ char *poldiff_type_to_string(poldiff_t *diff, const void *type)
 	return NULL;
 }
 
+static int poldiff_type_comp(const void *a, const void *b, void *data __attribute__((unused)))
+{
+	const poldiff_type_t *t1 = a;
+	const poldiff_type_t *t2 = b;
+	return strcmp(t1->name, t2->name);
+}
+
 apol_vector_t *poldiff_get_type_vector(poldiff_t *diff)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
+	/* the elements of the results vector are not sorted by name,
+	   but by pseudo-type value.  thus sort them by name as
+	   necessary */
+        if (!diff->type_diffs->are_diffs_sorted) {
+		apol_vector_sort(diff->type_diffs->diffs, poldiff_type_comp, NULL);
+		diff->type_diffs->are_diffs_sorted = 1;
+        }
 	return diff->type_diffs->diffs;
 }
 
@@ -423,6 +438,7 @@ int type_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 		errno = error;
 		return -1;
 	}
+	diff->type_diffs->are_diffs_sorted = 0;
 	if (form == POLDIFF_FORM_ADDED) {
 		diff->type_diffs->num_added++;
 	}
@@ -594,6 +610,7 @@ int type_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
+		diff->type_diffs->are_diffs_sorted = 0;
 		diff->type_diffs->num_modified++;
 	}
 	retval = 0;

@@ -3,6 +3,7 @@
                 poldiff_create;
                 poldiff_destroy;
                 poldiff_run;
+                poldiff_is_run;
                 poldiff_type_rename_append;
                 poldiff_get_*;
                 poldiff_avrule_*;
