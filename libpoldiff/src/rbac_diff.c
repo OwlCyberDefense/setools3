@@ -477,7 +477,7 @@ int role_allow_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		role1 = (char *) apol_vector_get_element(v1, i);
 		role2 = (char *) apol_vector_get_element(v2, j);
 		compval = strcmp(role1, role2);
-		if (compval != 0 && pra == NULL) {
+		if (pra == NULL) {
 			if ((pra = make_ra_diff(diff, POLDIFF_FORM_MODIFIED, p1->source_role)) == NULL) {
 				error = errno;
 				goto cleanup;
@@ -541,7 +541,7 @@ int role_allow_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			goto cleanup;
 		}
 	}
-	if (pra != NULL) {
+	if (apol_vector_get_size(pra->added_roles) || apol_vector_get_size(pra->removed_roles)) {
 		apol_vector_sort(pra->removed_roles, apol_str_strcmp, NULL);
 		apol_vector_sort(pra->added_roles, apol_str_strcmp, NULL);
 		apol_vector_sort(pra->orig_roles, apol_str_strcmp, NULL);
@@ -551,6 +551,9 @@ int role_allow_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			goto cleanup;
 		}
 		diff->role_allow_diffs->num_modified++;
+	} else {
+		role_allow_free(pra);
+		pra = NULL;
 	}
 	retval = 0;
 cleanup:

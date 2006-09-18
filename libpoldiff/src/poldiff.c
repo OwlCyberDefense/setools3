@@ -373,7 +373,7 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 	int error = 0;
 
 	if (!flags)
-		return 0; /* noting to do */
+		return 0; /* nothing to do */
 
 	if (!diff) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -396,6 +396,22 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 		}
 	}
 
+	return 0;
+}
+
+int poldiff_is_run(poldiff_t *diff, uint32_t flags)
+{
+	if (!flags)
+		return 1; /* nothing to do */
+
+	if (!diff) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	if ((diff->diff_status & flags) == flags) {
+		return 1;
+	}
 	return 0;
 }
 

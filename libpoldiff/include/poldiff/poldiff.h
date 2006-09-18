@@ -137,6 +137,18 @@ extern void poldiff_destroy(poldiff_t **diff);
 extern int poldiff_run(poldiff_t *diff, uint32_t flags);
 
 /**
+ *  Determine if a particular policy component/rule diff was actually
+ *  run yet or not.
+ *  @param diff The policy difference structure for which to compute
+ *  the differences.
+ *  @param flags Bit-wise or'd set of POLDIFF_DIFF_* from above indicating
+ *  which components/rules diffs were run.
+ *  @return 1 if all indicated diffs were run, 0 if any were not, < 0
+ *  on error.
+ */
+extern int poldiff_is_run(poldiff_t *diff, uint32_t flags);
+
+/**
  *  Get a total of the differences of each form for a given item (or set
  *  of items).
  *  @param diff The policy difference structure from which to get the stats.
