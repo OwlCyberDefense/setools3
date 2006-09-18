@@ -193,7 +193,7 @@ int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		qpol_iterator_t *role_iter;
 
 		user = apol_vector_get_element(user_vector, i);
-		qpol_user_get_role_iter(policy->qh, policy->p, user, &role_iter);
+		qpol_user_get_role_iter(policy->p, user, &role_iter);
 		if (!qpol_iterator_end(role_iter)) {
 			qpol_iterator_destroy(&role_iter);
 			continue;
@@ -286,7 +286,7 @@ int users_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			user = (qpol_user_t*)item->item;
-			qpol_user_get_name(policy->qh, policy->p, user, &user_name);
+			qpol_user_get_name(policy->p, user, &user_name);
 			printf("%s%s", user_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");

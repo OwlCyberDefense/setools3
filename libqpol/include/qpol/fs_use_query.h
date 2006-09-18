@@ -36,7 +36,6 @@ typedef struct qpol_fs_use qpol_fs_use_t;
 
 /**
  *  Get a fs_use statement by file system name.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to get the fs_use statement.
  *  @param name The name of the file system.
  *  @param ocon Pointer in which to store the fs_use statement.
@@ -44,11 +43,10 @@ typedef struct qpol_fs_use qpol_fs_use_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-extern int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon);
+extern int qpol_policy_get_fs_use_by_name(qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon);
 
 /**
  *  Get an iterator for the fs_use statements in a policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator over items of type qpol_fs_use_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy 
@@ -58,11 +56,10 @@ extern int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_fs_use_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the file system name from a fs_use statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the fs_use statement.
  *  @param ocon The fs_use statement from which to get the name.
  *  @param name Pointer to the string in which to store the name.
@@ -70,7 +67,7 @@ extern int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *pol
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_fs_use_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name);
+extern int qpol_fs_use_get_name(qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name);
 
 /* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are 
  * copied from sepol/policydb/services.h.
@@ -84,7 +81,6 @@ extern int qpol_fs_use_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qp
 
 /**
  *  Get the labeling behavior from a fs_use statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the fs_use statement.
  *  @param ocon The fs_use statement from which to get the behavior.
  *  @param behavior Pointer to be set to the value of the labeling behavior.
@@ -92,11 +88,10 @@ extern int qpol_fs_use_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qp
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *behavior will be 0.
  */
-extern int qpol_fs_use_get_behavior(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_t *behavior);
+extern int qpol_fs_use_get_behavior(qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_t *behavior);
 
 /**
  *  Get the context from a fs_use statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the fs_use statement.
  *  @param ocon The fs_use statement from which to get the context.
  *  @param context Pointer in which to store the context.
@@ -105,6 +100,6 @@ extern int qpol_fs_use_get_behavior(qpol_handle_t *handle, qpol_policy_t *policy
  *  errno will be set and *context will be NULL. It is considered an 
  *  error to call this function if behavior is QPOL_FS_USE_PSID.
  */
-extern int qpol_fs_use_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_context_t **context);
+extern int qpol_fs_use_get_context(qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_context_t **context);
 
 #endif /* QPOL_FS_USE_QUERY_H */

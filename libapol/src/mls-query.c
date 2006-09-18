@@ -60,11 +60,11 @@ static int apol_mls_cat_vector_compare(const void *a, const void *b, void *data)
 	apol_policy_t *p = (apol_policy_t *) data;
 	qpol_cat_t *cat2;
 	uint32_t cat_value1, cat_value2;
-	if (qpol_policy_get_cat_by_name(p->qh, p->p, cat2_name, &cat2) < 0) {
+	if (qpol_policy_get_cat_by_name(p->p, cat2_name, &cat2) < 0) {
 		return 0;
 	}
-	if (qpol_cat_get_value(p->qh, p->p, cat1, &cat_value1) < 0 ||
-	    qpol_cat_get_value(p->qh, p->p, cat2, &cat_value2) < 0) {
+	if (qpol_cat_get_value(p->p, cat1, &cat_value1) < 0 ||
+	    qpol_cat_get_value(p->p, cat2, &cat_value2) < 0) {
 		return 0;
 	}
 	return (cat_value2 - cat_value1);
@@ -95,8 +95,8 @@ static int apol_mls_level_validate(apol_policy_t *p,
 		ERR(p, "%s", strerror(EINVAL));
 		return -1;
 	}
-	if (qpol_policy_get_level_by_name(p->qh, p->p, level->sens, &level_datum) < 0 ||
-	    qpol_level_get_cat_iter(p->qh, p->p, level_datum, &iter) < 0) {
+	if (qpol_policy_get_level_by_name(p->p, level->sens, &level_datum) < 0 ||
+	    qpol_level_get_cat_iter(p->p, level_datum, &iter) < 0) {
 		return -1;
 	}
 	if ((cat_vector = apol_vector_create_from_iter(iter)) == NULL) {
@@ -204,7 +204,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 		}
 	}
 
-	if (qpol_policy_get_level_by_name(p->qh, p->p, tokens[0], &sens)) {
+	if (qpol_policy_get_level_by_name(p->p, tokens[0], &sens)) {
 		error = errno;
 		goto err;
 	}
@@ -218,21 +218,21 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 			next++;
 
 			/* get end points of cat range */
-			if (qpol_policy_get_cat_by_name(p->qh, p->p, tokens[i], &cat1)) {
+			if (qpol_policy_get_cat_by_name(p->p, tokens[i], &cat1)) {
 				error = errno;
 				goto err;
 			}
-			if (qpol_policy_get_cat_by_name(p->qh, p->p, next, &cat2)) {
+			if (qpol_policy_get_cat_by_name(p->p, next, &cat2)) {
 				error = errno;
 				goto err;
 			}
 
 			/* get end point values*/
-			if (qpol_cat_get_value(p->qh, p->p, cat1, &val1)) {
+			if (qpol_cat_get_value(p->p, cat1, &val1)) {
 				error = errno;
 				goto err;
 			}
-			if (qpol_cat_get_value(p->qh, p->p, cat2, &val2)) {
+			if (qpol_cat_get_value(p->p, cat2, &val2)) {
 				error = errno;
 				goto err;
 			}
@@ -244,7 +244,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 				error = errno;
 				goto err;
 			}
-			if (qpol_policy_get_cat_iter(p->qh, p->p, &iter)) {
+			if (qpol_policy_get_cat_iter(p->p, &iter)) {
 				error = errno;
 				goto err;
 			}
@@ -253,18 +253,18 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 					error = errno;
 					goto err;
 				}
-				if (qpol_cat_get_isalias(p->qh, p->p, tmp_cat, &tmp_isalias)) {
+				if (qpol_cat_get_isalias(p->p, tmp_cat, &tmp_isalias)) {
 					error = errno;
 					goto err;
 				}
 				if (tmp_isalias)
 					continue;
-				if (qpol_cat_get_value(p->qh, p->p, tmp_cat, &tmp_val)) {
+				if (qpol_cat_get_value(p->p, tmp_cat, &tmp_val)) {
 					error = errno;
 					goto err;
 				}
 				if (tmp_val > val1 && tmp_val < val2) {
-					if (qpol_cat_get_name(p->qh, p->p, tmp_cat, &tmp)) {
+					if (qpol_cat_get_name(p->p, tmp_cat, &tmp)) {
 						error = errno;
 						goto err;
 					}
@@ -279,7 +279,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 				goto err;
 			}
 		} else {
-			if (qpol_policy_get_cat_by_name(p->qh, p->p, tokens[i], &cat1)) {
+			if (qpol_policy_get_cat_by_name(p->p, tokens[i], &cat1)) {
 				error = errno;
 				goto err;
 			}
@@ -328,7 +328,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t *p, qp
 		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
-	if (qpol_mls_level_get_sens_name(p->qh, p->p, qpol_level, &tmp)) {
+	if (qpol_mls_level_get_sens_name(p->p, qpol_level, &tmp)) {
 		error = errno;
 		goto err;
 	}
@@ -338,7 +338,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t *p, qp
 		goto err;
 	}
 
-	if (qpol_mls_level_get_cat_iter(p->qh, p->p, qpol_level, &iter)) {
+	if (qpol_mls_level_get_cat_iter(p->p, qpol_level, &iter)) {
 		error = errno;
 		goto err;
 	}
@@ -348,7 +348,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t *p, qp
 			error = errno;
 			goto err;
 		}
-		if (qpol_cat_get_name(p->qh, p->p, tmp_cat, &tmp)) {
+		if (qpol_cat_get_name(p->p, tmp_cat, &tmp)) {
 			error = errno;
 			goto err;
 		}
@@ -385,7 +385,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t *p, 
 		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
-	if (qpol_level_get_name(p->qh, p->p, qpol_level, &tmp)) {
+	if (qpol_level_get_name(p->p, qpol_level, &tmp)) {
 		error = errno;
 		goto err;
 	}
@@ -395,7 +395,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t *p, 
 		goto err;
 	}
 
-	if (qpol_level_get_cat_iter(p->qh, p->p, qpol_level, &iter)) {
+	if (qpol_level_get_cat_iter(p->p, qpol_level, &iter)) {
 		error = errno;
 		goto err;
 	}
@@ -405,7 +405,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t *p, 
 			error = errno;
 			goto err;
 		}
-		if (qpol_cat_get_name(p->qh, p->p, tmp_cat, &tmp)) {
+		if (qpol_cat_get_name(p->p, tmp_cat, &tmp)) {
 			error = errno;
 			goto err;
 		}
@@ -478,14 +478,14 @@ int apol_mls_level_compare(apol_policy_t *p, apol_mls_level_t *l1, apol_mls_leve
 	if (l2 == NULL) {
 		return APOL_MLS_EQ;
 	}
-	if (qpol_policy_get_level_by_name(p->qh, p->p, l1->sens, &level_datum1) < 0 ||
-	    qpol_policy_get_level_by_name(p->qh, p->p, l2->sens, &level_datum2) < 0) {
+	if (qpol_policy_get_level_by_name(p->p, l1->sens, &level_datum1) < 0 ||
+	    qpol_policy_get_level_by_name(p->p, l2->sens, &level_datum2) < 0) {
 		return -1;
 	}
 
 	/* compare the level's senstitivity value */
-	if (qpol_level_get_value(p->qh, p->p, level_datum1, (uint32_t *) (&level1_sens)) < 0 ||
-	    qpol_level_get_value(p->qh, p->p, level_datum2, (uint32_t *) (&level2_sens)) < 0) {
+	if (qpol_level_get_value(p->p, level_datum1, (uint32_t *) (&level1_sens)) < 0 ||
+	    qpol_level_get_value(p->p, level_datum2, (uint32_t *) (&level2_sens)) < 0) {
 		return -1;
 	}
 	sens_cmp = level1_sens - level2_sens;
@@ -566,21 +566,21 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 	for (i = 1; i < n_cats; i++) { /* we've already appended the first category */
 		/* get the value of cats[cur] */
 		cat_name = (char *)apol_vector_get_element(cats, cur);
-		if (qpol_policy_get_cat_by_name(p->qh, p->p, cat_name, &cur_cat))
+		if (qpol_policy_get_cat_by_name(p->p, cat_name, &cur_cat))
 			goto cleanup;
-		if (qpol_cat_get_value(p->qh, p->p, cur_cat, &cur_cat_val))
+		if (qpol_cat_get_value(p->p, cur_cat, &cur_cat_val))
 			goto cleanup;
 
 		/* get the value of cats[i] */
 		cat_name = (char *)apol_vector_get_element(cats, i);
-		if (qpol_policy_get_cat_by_name(p->qh, p->p, cat_name, &next_cat))
+		if (qpol_policy_get_cat_by_name(p->p, cat_name, &next_cat))
 			goto cleanup;
-		if (qpol_cat_get_value(p->qh, p->p, next_cat, &next_cat_val))
+		if (qpol_cat_get_value(p->p, next_cat, &next_cat_val))
 			goto cleanup;
 
 		if (next_cat_val == cur_cat_val + 1) {
 			if (i + 1 == n_cats) { /* last category is next; append "." */
-				if (qpol_cat_get_name(p->qh, p->p, next_cat, &name))
+				if (qpol_cat_get_name(p->p, next_cat, &name))
 					goto cleanup;
 				if (apol_str_append(&rt, &sz, ".") ||
 				    apol_str_append(&rt, &sz, name)) {
@@ -591,14 +591,14 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 			} else {
 				qpol_cat_t *far_cat = NULL;  /* category 2 in front of cur */
 				cat_name = (char *)apol_vector_get_element(cats, i+1);
-				if (qpol_policy_get_cat_by_name(p->qh, p->p, cat_name, &far_cat))
+				if (qpol_policy_get_cat_by_name(p->p, cat_name, &far_cat))
 					goto cleanup;
-				if (qpol_cat_get_value(p->qh, p->p, far_cat, &far_cat_val))
+				if (qpol_cat_get_value(p->p, far_cat, &far_cat_val))
 					goto cleanup;
 				if (far_cat_val == cur_cat_val + 2) {
 					cur++;
 				} else {     /* far_cat isn't consecutive wrt cur/next_cat; append it */
-					if (qpol_cat_get_name(p->qh, p->p, next_cat, &name))
+					if (qpol_cat_get_name(p->p, next_cat, &name))
 						goto cleanup;
 					if (apol_str_append(&rt, &sz, ".") ||
 					    apol_str_append(&rt, &sz, name)) {
@@ -609,7 +609,7 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 				}
 			}
 		} else { /* next_cat isn't consecutive to cur_cat; append it */
-			if (qpol_cat_get_name(p->qh, p->p, next_cat, &name))
+			if (qpol_cat_get_name(p->p, next_cat, &name))
 				goto cleanup;
 			if (apol_str_append(&rt, &sz, ", ") ||
 			    apol_str_append(&rt, &sz, name)) {
@@ -634,8 +634,8 @@ int apol_mls_sens_compare(apol_policy_t *p,
 			  const char *sens2)
 {
 	qpol_level_t *level_datum1, *level_datum2;
-	if (qpol_policy_get_level_by_name(p->qh, p->p, sens1, &level_datum1) < 0 ||
-	    qpol_policy_get_level_by_name(p->qh, p->p, sens2, &level_datum2) < 0) {
+	if (qpol_policy_get_level_by_name(p->p, sens1, &level_datum1) < 0 ||
+	    qpol_policy_get_level_by_name(p->p, sens2, &level_datum2) < 0) {
 		return -1;
 	}
 	if (level_datum1 == level_datum2) {
@@ -649,8 +649,8 @@ int apol_mls_cats_compare(apol_policy_t *p,
 			  const char *cat2)
 {
 	qpol_cat_t *qcat1, *qcat2;
-	if (qpol_policy_get_cat_by_name(p->qh, p->p, cat1, &qcat1) < 0 ||
-	    qpol_policy_get_cat_by_name(p->qh, p->p, cat2, &qcat2) < 0) {
+	if (qpol_policy_get_cat_by_name(p->p, cat1, &qcat1) < 0 ||
+	    qpol_policy_get_cat_by_name(p->p, cat2, &qcat2) < 0) {
 		return -1;
 	}
 	if (qcat1 == qcat2) {
@@ -666,12 +666,12 @@ int apol_mls_cat_name_compare(const void *a, const void *b, void *data)
 	apol_policy_t *p = (apol_policy_t *) data;
 	qpol_cat_t *qcat1, *qcat2;
 	uint32_t cat_value1, cat_value2;
-	if (qpol_policy_get_cat_by_name(p->qh, p->p, cat1, &qcat1) < 0 ||
-	    qpol_policy_get_cat_by_name(p->qh, p->p, cat2, &qcat2) < 0) {
+	if (qpol_policy_get_cat_by_name(p->p, cat1, &qcat1) < 0 ||
+	    qpol_policy_get_cat_by_name(p->p, cat2, &qcat2) < 0) {
 		return 0;
 	}
-	if (qpol_cat_get_value(p->qh, p->p, qcat1, &cat_value1) < 0 ||
-	    qpol_cat_get_value(p->qh, p->p, qcat2, &cat_value2) < 0) {
+	if (qpol_cat_get_value(p->p, qcat1, &cat_value1) < 0 ||
+	    qpol_cat_get_value(p->p, qcat2, &cat_value2) < 0) {
 		return 0;
 	}
 	return (cat_value1 - cat_value2);
@@ -703,7 +703,7 @@ apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t *p, qp
 	}
 
 	/* low */
-	if (qpol_mls_range_get_low_level(p->qh, p->p, qpol_range, &tmp) ||
+	if (qpol_mls_range_get_low_level(p->p, qpol_range, &tmp) ||
 	    !(tmp_lvl = apol_mls_level_create_from_qpol_mls_level(p, tmp)) ||
 	    apol_mls_range_set_low(p, apol_range, tmp_lvl)) {
 		error = errno;
@@ -712,7 +712,7 @@ apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t *p, qp
 	tmp_lvl = NULL;
 
 	/* high */
-	if (qpol_mls_range_get_high_level(p->qh, p->p, qpol_range, &tmp) ||
+	if (qpol_mls_range_get_high_level(p->p, qpol_range, &tmp) ||
 	    !(tmp_lvl = apol_mls_level_create_from_qpol_mls_level(p, tmp)) ||
 	    apol_mls_range_set_high(p, apol_range, tmp_lvl)) {
 		error = errno;
@@ -945,7 +945,7 @@ int apol_get_level_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter, *cat_iter = NULL;
 	int retval = -1, append_level;
 	*v = NULL;
-	if (qpol_policy_get_level_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_level_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -956,7 +956,7 @@ int apol_get_level_by_query(apol_policy_t *p,
 		qpol_level_t *level;
 		unsigned char isalias;
 		if (qpol_iterator_get_item(iter, (void **) &level) < 0 ||
-		    qpol_level_get_isalias(p->qh, p->p, level, &isalias) < 0) {
+		    qpol_level_get_isalias(p->p, level, &isalias) < 0) {
 			goto cleanup;
 		}
 		if (isalias) {
@@ -973,7 +973,7 @@ int apol_get_level_by_query(apol_policy_t *p,
 			else if (compval == 0) {
 				continue;
 			}
-			if (qpol_level_get_cat_iter(p->qh, p->p, level, &cat_iter) < 0) {
+			if (qpol_level_get_cat_iter(p->p, level, &cat_iter) < 0) {
 				goto cleanup;
 			}
 			append_level = 0;
@@ -1052,7 +1052,7 @@ int apol_get_cat_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter;
 	int retval = -1;
 	*v = NULL;
-	if (qpol_policy_get_cat_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_cat_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -1063,7 +1063,7 @@ int apol_get_cat_by_query(apol_policy_t *p,
 		qpol_cat_t *cat;
 		unsigned char isalias;
 		if (qpol_iterator_get_item(iter, (void **) &cat) < 0 ||
-		    qpol_cat_get_isalias(p->qh, p->p, cat, &isalias) < 0) {
+		    qpol_cat_get_isalias(p->p, cat, &isalias) < 0) {
 			goto cleanup;
 		}
 		if (isalias) {

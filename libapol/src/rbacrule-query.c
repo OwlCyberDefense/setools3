@@ -68,7 +68,7 @@ int apol_get_role_allow_by_query(apol_policy_t *p,
                         goto cleanup;
                 }
 	}
-	if (qpol_policy_get_role_allow_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_role_allow_iter(p->p, &iter) < 0) {
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -88,7 +88,7 @@ int apol_get_role_allow_by_query(apol_policy_t *p,
 		}
 		else {
 			qpol_role_t *source_role;
-			if (qpol_role_allow_get_source_role(p->qh, p->p, rule, &source_role) < 0) {
+			if (qpol_role_allow_get_source_role(p->p, rule, &source_role) < 0) {
 				goto cleanup;
 			}
 			if (apol_vector_get_index(source_list, source_role, NULL, NULL, &i) == 0) {
@@ -108,7 +108,7 @@ int apol_get_role_allow_by_query(apol_policy_t *p,
 		}
 		else {
 			qpol_role_t *target_role;
-			if (qpol_role_allow_get_target_role(p->qh, p->p, rule, &target_role) < 0) {
+			if (qpol_role_allow_get_target_role(p->p, rule, &target_role) < 0) {
 				goto cleanup;
 			}
 			if (apol_vector_get_index(target_list, target_role, NULL, NULL, &i) == 0) {
@@ -203,12 +203,12 @@ char *apol_role_allow_render(apol_policy_t *policy, qpol_role_allow_t *rule)
 	}
 
 	/* source role */
-	if (qpol_role_allow_get_source_role(policy->qh, policy->p, rule, &role)) {
+	if (qpol_role_allow_get_source_role(policy->p, rule, &role)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (qpol_role_get_name(policy->qh, policy->p, role, &tmp_name)) {
+	if (qpol_role_get_name(policy->p, role, &tmp_name)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -226,12 +226,12 @@ char *apol_role_allow_render(apol_policy_t *policy, qpol_role_allow_t *rule)
 
 
 	/* target role */
-	if (qpol_role_allow_get_target_role(policy->qh, policy->p, rule, &role)) {
+	if (qpol_role_allow_get_target_role(policy->p, rule, &role)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (qpol_role_get_name(policy->qh, policy->p, role, &tmp_name)) {
+	if (qpol_role_get_name(policy->p, role, &tmp_name)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -292,7 +292,7 @@ int apol_get_role_trans_by_query(apol_policy_t *p,
 			goto cleanup;
 		}
 	}
-	if (qpol_policy_get_role_trans_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_role_trans_iter(p->p, &iter) < 0) {
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -312,7 +312,7 @@ int apol_get_role_trans_by_query(apol_policy_t *p,
 		}
 		else {
 			qpol_role_t *source_role;
-			if (qpol_role_trans_get_source_role(p->qh, p->p, rule, &source_role) < 0) {
+			if (qpol_role_trans_get_source_role(p->p, rule, &source_role) < 0) {
 				goto cleanup;
 			}
 			if (apol_vector_get_index(source_list, source_role, NULL, NULL, &i) == 0) {
@@ -332,7 +332,7 @@ int apol_get_role_trans_by_query(apol_policy_t *p,
 		}
 		else {
 			qpol_type_t *target_type;
-			if (qpol_role_trans_get_target_type(p->qh, p->p, rule, &target_type) < 0) {
+			if (qpol_role_trans_get_target_type(p->p, rule, &target_type) < 0) {
 				goto cleanup;
 			}
 			if (apol_vector_get_index(target_list, target_type, NULL, NULL, &i) == 0) {
@@ -348,7 +348,7 @@ int apol_get_role_trans_by_query(apol_policy_t *p,
 		}
 		else {
 			qpol_role_t *default_role;
-			if (qpol_role_trans_get_default_role(p->qh, p->p, rule, &default_role) < 0) {
+			if (qpol_role_trans_get_default_role(p->p, rule, &default_role) < 0) {
 				goto cleanup;
 			}
 			if (apol_vector_get_index(default_list, default_role, NULL, NULL, &i) == 0) {
@@ -456,12 +456,12 @@ char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule)
 	}
 
 	/* source role */
-	if (qpol_role_trans_get_source_role(policy->qh, policy->p, rule, &role)) {
+	if (qpol_role_trans_get_source_role(policy->p, rule, &role)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (qpol_role_get_name(policy->qh, policy->p, role, &tmp_name)) {
+	if (qpol_role_get_name(policy->p, role, &tmp_name)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -479,12 +479,12 @@ char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule)
 
 
 	/* target type */
-	if (qpol_role_trans_get_target_type(policy->qh, policy->p, rule, &type)) {
+	if (qpol_role_trans_get_target_type(policy->p, rule, &type)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+	if (qpol_type_get_name(policy->p, type, &tmp_name)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -501,12 +501,12 @@ char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule)
 	}
 
 	/* default role */
-	if (qpol_role_trans_get_default_role(policy->qh, policy->p, rule, &role)) {
+	if (qpol_role_trans_get_default_role(policy->p, rule, &role)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (qpol_role_get_name(policy->qh, policy->p, role, &tmp_name)) {
+	if (qpol_role_get_name(policy->p, role, &tmp_name)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;

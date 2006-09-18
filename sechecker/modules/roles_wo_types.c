@@ -195,12 +195,12 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		int at_end;
 
 		role = apol_vector_get_element(role_vector, i);
-		qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+		qpol_role_get_name(policy->p, role, &role_name);
 
 		if (!strcmp(role_name, "object_r"))
 			continue;
 
-		qpol_role_get_type_iter(policy->qh, policy->p, role, &type_iter);
+		qpol_role_get_type_iter(policy->p, role, &type_iter);
 		at_end = qpol_iterator_end(type_iter);
 		qpol_iterator_destroy(&type_iter);
 		if (!at_end)
@@ -300,7 +300,7 @@ int roles_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			role = (qpol_role_t*)item->item;
-			qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+			qpol_role_get_name(policy->p, role, &role_name);
 			printf("%s%s", role_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");

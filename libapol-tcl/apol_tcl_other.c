@@ -152,7 +152,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 		return -1;
 	}
 	sens_string = Tcl_GetString(sens_obj);
-	if (qpol_policy_get_level_by_name(policydb->qh, policydb->p,
+	if (qpol_policy_get_level_by_name(policydb->p,
 					     sens_string, &sens) < 0) {
 		/* unknown sensitivity */
 		return 1;
@@ -166,7 +166,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 			return -1;
 		}
 		cat_string = Tcl_GetString(cats_obj);
-		if (qpol_policy_get_cat_by_name(policydb->qh, policydb->p,
+		if (qpol_policy_get_cat_by_name(policydb->p,
 						   cat_string, &cat) < 0) {
 			/* unknown category */
 			return 1;
@@ -478,7 +478,7 @@ static int Apol_GetPolicyType(ClientData clientData, Tcl_Interp *interp, int arg
 	default:
 		result_elem[0] = Tcl_NewStringObj("unknown", -1); break;
 	}
-	if (qpol_policy_is_mls_enabled(policydb->qh, policydb->p)) {
+	if (qpol_policy_is_mls_enabled(policydb->p)) {
 		result_elem[1] = Tcl_NewStringObj("mls", -1);
 	}
 	else {
@@ -523,7 +523,7 @@ static int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp *interp
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if (qpol_policy_get_policy_version(policydb->qh, policydb->p, &version) < 0) {
+	if (qpol_policy_get_policy_version(policydb->p, &version) < 0) {
 		apol_tcl_write_error(interp);
 		return TCL_ERROR;
 	}
@@ -556,7 +556,7 @@ static int append_stats(Tcl_Interp *interp, char *name, size_t size, Tcl_Obj *re
 
 struct policy_stat {
         char *name;
-        int (*iter_func)(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+        int (*iter_func)(qpol_policy_t *policy, qpol_iterator_t **iter);
 };
 
 /**
@@ -606,7 +606,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	for (i = 0; i < sizeof(stats) / sizeof(stats[0]); i++) {
-		if (stats[i].iter_func(policydb->qh, policydb->p, &iter) < 0 ||
+		if (stats[i].iter_func(policydb->p, &iter) < 0 ||
 		    qpol_iterator_get_size(iter, &size) < 0 ||
 		    append_stats(interp, stats[i].name, size, result_obj) < 0) {
 			goto cleanup;
@@ -641,7 +641,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	apol_vector_destroy(&v, NULL);
 
-	if (qpol_policy_get_avrule_iter(policydb->qh, policydb->p,
+	if (qpol_policy_get_avrule_iter(policydb->p,
 					QPOL_RULE_ALLOW, &iter) < 0 ||
 	    qpol_iterator_get_size(iter, &size) < 0 ||
 	    append_stats(interp, "teallow", size, result_obj) < 0) {
@@ -649,7 +649,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	qpol_iterator_destroy(&iter);
 
-	if (qpol_policy_get_avrule_iter(policydb->qh, policydb->p,
+	if (qpol_policy_get_avrule_iter(policydb->p,
 					QPOL_RULE_NEVERALLOW, &iter) < 0 ||
 	    qpol_iterator_get_size(iter, &size) < 0 ||
 	    append_stats(interp, "neverallow", size, result_obj) < 0) {
@@ -657,7 +657,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	qpol_iterator_destroy(&iter);
 
-	if (qpol_policy_get_avrule_iter(policydb->qh, policydb->p,
+	if (qpol_policy_get_avrule_iter(policydb->p,
 					QPOL_RULE_AUDITALLOW, &iter) < 0 ||
 	    qpol_iterator_get_size(iter, &size) < 0 ||
 	    append_stats(interp, "auditallow", size, result_obj) < 0) {
@@ -665,7 +665,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	qpol_iterator_destroy(&iter);
 
-	if (qpol_policy_get_avrule_iter(policydb->qh, policydb->p,
+	if (qpol_policy_get_avrule_iter(policydb->p,
 					QPOL_RULE_DONTAUDIT, &iter) < 0 ||
 	    qpol_iterator_get_size(iter, &size) < 0 ||
 	    append_stats(interp, "dontaudit", size, result_obj) < 0) {
@@ -673,7 +673,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	qpol_iterator_destroy(&iter);
 
-	if (qpol_policy_get_terule_iter(policydb->qh, policydb->p,
+	if (qpol_policy_get_terule_iter(policydb->p,
 					QPOL_RULE_TYPE_TRANS, &iter) < 0 ||
 	    qpol_iterator_get_size(iter, &size) < 0 ||
 	    append_stats(interp, "tetrans", size, result_obj) < 0) {
@@ -681,7 +681,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	qpol_iterator_destroy(&iter);
 
-	if (qpol_policy_get_terule_iter(policydb->qh, policydb->p,
+	if (qpol_policy_get_terule_iter(policydb->p,
 					QPOL_RULE_TYPE_MEMBER, &iter) < 0 ||
 	    qpol_iterator_get_size(iter, &size) < 0 ||
 	    append_stats(interp, "temember", size, result_obj) < 0) {
@@ -689,7 +689,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	qpol_iterator_destroy(&iter);
 
-	if (qpol_policy_get_terule_iter(policydb->qh, policydb->p,
+	if (qpol_policy_get_terule_iter(policydb->p,
 					QPOL_RULE_TYPE_CHANGE, &iter) < 0 ||
 	    qpol_iterator_get_size(iter, &size) < 0 ||
 	    append_stats(interp, "techange", size, result_obj) < 0) {
@@ -1031,7 +1031,7 @@ static int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, 
 		ERR(policydb, "%s", "No permission map currently loaded!");
 		goto cleanup;
 	}
-	if (qpol_policy_get_class_iter(policydb->qh, policydb->p, &class_iter) < 0) {
+	if (qpol_policy_get_class_iter(policydb->p, &class_iter) < 0) {
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
@@ -1040,18 +1040,18 @@ static int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, 
 		char *class_name, *perm_name;
 		Tcl_Obj *class_elem[2], *class_list, *perm_list;
 		if (qpol_iterator_get_item(class_iter, (void **) &c) < 0 ||
-		    qpol_class_get_name(policydb->qh, policydb->p, c, &class_name) < 0) {
+		    qpol_class_get_name(policydb->p, c, &class_name) < 0) {
 			goto cleanup;
 		}
 		if (argc >= 2 && strcmp(argv[1], class_name) != 0) {
 			continue;
 		}
-		if (qpol_class_get_perm_iter(policydb->qh, policydb->p, c, &perm_iter) < 0 ||
-		    qpol_class_get_common(policydb->qh, policydb->p, c, &common) < 0) {
+		if (qpol_class_get_perm_iter(policydb->p, c, &perm_iter) < 0 ||
+		    qpol_class_get_common(policydb->p, c, &common) < 0) {
 			goto cleanup;
 		}
 		if (common != NULL &&
-		    qpol_common_get_perm_iter(policydb->qh, policydb->p, common, &common_iter) < 0) {
+		    qpol_common_get_perm_iter(policydb->p, common, &common_iter) < 0) {
 			goto cleanup;
 		}
 		class_elem[0] = Tcl_NewStringObj(class_name, -1);

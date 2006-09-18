@@ -37,17 +37,11 @@
 #define QPOL_MSG_WARN 2
 #define QPOL_MSG_INFO 3
 
-struct qpol_handle {
-	sepol_handle_t *sh;
-	qpol_handle_callback_fn_t fn;
-	void *varg;
-};
+extern void qpol_handle_msg(qpol_policy_t *policy, int level, const char *fmt, ...);
 
-extern void qpol_handle_msg(struct qpol_handle *handle, int level, const char *fmt, ...);
-
-#define ERR(handle, format, ...) qpol_handle_msg(handle, QPOL_MSG_ERR, format, __VA_ARGS__)
-#define WARN(handle, format, ...) qpol_handle_msg(handle, QPOL_MSG_WARN, format, __VA_ARGS__)
-#define INFO(handle, format, ...) qpol_handle_msg(handle, QPOL_MSG_INFO, format, __VA_ARGS__)
+#define ERR(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_ERR, format, __VA_ARGS__)
+#define WARN(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_WARN, format, __VA_ARGS__)
+#define INFO(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_INFO, format, __VA_ARGS__)
 
 #endif /* QPOL_DEBUG_H */
  

@@ -233,11 +233,11 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	for (i = 0; i < apol_vector_get_size(range_trans_vector); i++) {
 		/* collect information about the rule */
 		rule = apol_vector_get_element(range_trans_vector, i);
-		qpol_range_trans_get_source_type(policy->qh, policy->p, rule, &source);
-		qpol_range_trans_get_target_type(policy->qh, policy->p, rule, &target);
-		qpol_type_get_name(policy->qh, policy->p, source, &source_name);
-		qpol_type_get_name(policy->qh, policy->p, target, &target_name);
-		qpol_range_trans_get_range(policy->qh, policy->p, rule, &qpol_range);
+		qpol_range_trans_get_source_type(policy->p, rule, &source);
+		qpol_range_trans_get_target_type(policy->p, rule, &target);
+		qpol_type_get_name(policy->p, source, &source_name);
+		qpol_type_get_name(policy->p, target, &target_name);
+		qpol_range_trans_get_range(policy->p, rule, &qpol_range);
 		range = apol_mls_range_create_from_qpol_mls_range(policy, qpol_range);
 
 		/* find roles possible for source */
@@ -254,7 +254,7 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		user_query = apol_user_query_create();
 		for (j = 0; j < apol_vector_get_size(role_vector); j++) {
 			role = apol_vector_get_element(role_vector, j);
-			qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+			qpol_role_get_name(policy->p, role, &role_name);
 			apol_user_query_set_role(policy, user_query, role_name);
 			apol_get_user_by_query(policy, user_query, &tmp_v);
 			apol_vector_cat(users_w_roles, tmp_v);

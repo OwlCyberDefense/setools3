@@ -238,34 +238,34 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		}
 
 		/* get source, target, object for Don't Audit rule */
-		if (qpol_avrule_get_source_type(policy->qh, policy->p, rule1, &source)) {
+		if (qpol_avrule_get_source_type(policy->p, rule1, &source)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (qpol_avrule_get_target_type(policy->qh, policy->p, rule1, &target)) {
+		if (qpol_avrule_get_target_type(policy->p, rule1, &target)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (qpol_avrule_get_object_class(policy->qh, policy->p, rule1, &object)) {
+		if (qpol_avrule_get_object_class(policy->p, rule1, &object)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
 
 		/* extract name strings from source, target, object */
-		if (qpol_type_get_name(policy->qh, policy->p, source, &src_name)) {
+		if (qpol_type_get_name(policy->p, source, &src_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (qpol_type_get_name(policy->qh, policy->p, target, &tgt_name)) {
+		if (qpol_type_get_name(policy->p, target, &tgt_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (qpol_class_get_name(policy->qh, policy->p, object, &obj_name)) {
+		if (qpol_class_get_name(policy->p, object, &obj_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
@@ -299,7 +299,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				}
 
 				/* get permission iterators for both rules, and make vectors from them */
-				if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule1, &perm_iter1)) {
+				if (qpol_avrule_get_perm_iter(policy->p, rule1, &perm_iter1)) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto spurious_audit_run_fail;
@@ -311,7 +311,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 					goto spurious_audit_run_fail;
 				}
 
-				if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule2, &perm_iter2)) {
+				if (qpol_avrule_get_perm_iter(policy->p, rule2, &perm_iter2)) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto spurious_audit_run_fail;
@@ -408,33 +408,33 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			goto spurious_audit_run_fail;
 		}
 		/* get first rule's source, target, object class */
-		if (qpol_avrule_get_source_type(policy->qh, policy->p, rule1, &source)) {
+		if (qpol_avrule_get_source_type(policy->p, rule1, &source)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (qpol_avrule_get_target_type(policy->qh, policy->p, rule1, &target)) {
+		if (qpol_avrule_get_target_type(policy->p, rule1, &target)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (qpol_avrule_get_object_class(policy->qh, policy->p, rule1, &object)) {
+		if (qpol_avrule_get_object_class(policy->p, rule1, &object)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
 		/* extract name strings from source, target, object */
-		if (qpol_type_get_name(policy->qh, policy->p, source, &src_name)) {
+		if (qpol_type_get_name(policy->p, source, &src_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (qpol_type_get_name(policy->qh, policy->p, target, &tgt_name)) {
+		if (qpol_type_get_name(policy->p, target, &tgt_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
 		}
-		if (qpol_class_get_name(policy->qh, policy->p, object, &obj_name)) {
+		if (qpol_class_get_name(policy->p, object, &obj_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
@@ -466,7 +466,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			proof->type = SECHK_ITEM_AVRULE;
 
 			/* grab permisisons of auditallow rule, and make text */
-			if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule1, &perm_iter1)) {
+			if (qpol_avrule_get_perm_iter(policy->p, rule1, &perm_iter1)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto spurious_audit_run_fail;
@@ -537,7 +537,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		/* Checking to make sure they have the same permissions */
 
 		/* Make vector of AuditAllow permissions */
-		if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule1, &perm_iter1)) {
+		if (qpol_avrule_get_perm_iter(policy->p, rule1, &perm_iter1)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
@@ -560,7 +560,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				goto spurious_audit_run_fail;
 			}
 
-			if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule2, &perm_iter2)) {
+			if (qpol_avrule_get_perm_iter(policy->p, rule2, &perm_iter2)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto spurious_audit_run_fail;
@@ -751,7 +751,7 @@ int spurious_audit_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			item = apol_vector_get_element(mod->result->items, i);
 			printf("%s\n", apol_avrule_render(policy, (qpol_avrule_t*)item->item));
 
-			qpol_avrule_get_rule_type(policy->qh, policy->p, (qpol_avrule_t*)item->item, &ruletype);
+			qpol_avrule_get_rule_type(policy->p, (qpol_avrule_t*)item->item, &ruletype);
 			if (ruletype == QPOL_RULE_DONTAUDIT) {
 				for (j = 0; j < apol_vector_get_size(item->proof); j++) {
 					proof = apol_vector_get_element(item->proof, j);

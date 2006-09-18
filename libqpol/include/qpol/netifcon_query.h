@@ -35,7 +35,6 @@ typedef struct qpol_netifcon qpol_netifcon_t;
 
 /**
  *  Get a netifcon statement by interface name.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to get the netifcon statement.
  *  @param name The name of the interface.
  *  @param ocon Pointer in which to store the statement returned.
@@ -43,11 +42,10 @@ typedef struct qpol_netifcon qpol_netifcon_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-extern int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon);
+extern int qpol_policy_get_netifcon_by_name(qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon);
 
 /**
  *  Get an iterator for the netifcon statements in a policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator over items of type qpol_netifcon_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy 
@@ -57,11 +55,10 @@ extern int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_netifcon_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the name of the interface from a netifcon statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated wiht the netifcon statement.
  *  @param ocon The netifcon statement from which to get the name.
  *  @param name Pointer in which to store the interface name. The caller
@@ -69,11 +66,10 @@ extern int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *p
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_netifcon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name);
+extern int qpol_netifcon_get_name(qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name);
 
 /**
  *  Get the message context from a netifcon statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the netifcon statement.
  *  @param ocon The netifcon statement from which to get the message context.
  *  @parma context Pointer in which to store the context.
@@ -81,11 +77,10 @@ extern int qpol_netifcon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_netifcon_get_msg_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
+extern int qpol_netifcon_get_msg_con(qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
 
 /**
  *  Get the interface context from a netifcon statement.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the netifcon statement.
  *  @param ocon The netifcon statement from which to get the interface context.
  *  @parma context Pointer in which to store the context.
@@ -93,6 +88,6 @@ extern int qpol_netifcon_get_msg_con(qpol_handle_t *handle, qpol_policy_t *polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_netifcon_get_if_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
+extern int qpol_netifcon_get_if_con(qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
 
 #endif /* QPOL_NETIFCON_QUERY_H */

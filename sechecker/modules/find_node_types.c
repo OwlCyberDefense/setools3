@@ -205,9 +205,9 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		qpol_context_t *context;
 		qpol_type_t *context_type;
 		qpol_nodecon_t *nodecon = apol_vector_get_element(nodecon_vector, i);
-		qpol_nodecon_get_context(policy->qh, policy->p, nodecon, &context);
-		qpol_context_get_type(policy->qh, policy->p, context, &context_type);
-		qpol_type_get_name(policy->qh, policy->p, context_type, &type_name);
+		qpol_nodecon_get_context(policy->p, nodecon, &context);
+		qpol_context_get_type(policy->p, context, &context_type);
+		qpol_type_get_name(policy->p, context_type, &type_name);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -224,7 +224,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 			res_item = apol_vector_get_element(res->items, j);
 			res_type = res_item->item;
-			qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+			qpol_type_get_name(policy->p, res_type, &res_type_name);
 			if (!strcmp(res_type_name, type_name)) item = res_item;
 		}
 		if (!item) {
@@ -259,7 +259,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		qpol_isid_t *isid = NULL;
 
 		buff = NULL;
-		qpol_policy_get_isid_by_name(policy->qh, policy->p, "node", &isid);
+		qpol_policy_get_isid_by_name(policy->p, "node", &isid);
 		if ( isid ) {
 			qpol_context_t *context; 
 			apol_context_t *a_context;
@@ -267,9 +267,9 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			char *context_type_name, *tmp;
 
 			proof = NULL;
-			qpol_isid_get_context(policy->qh, policy->p, isid, &context);
-			qpol_context_get_type(policy->qh, policy->p, context, &context_type);
-			qpol_type_get_name(policy->qh, policy->p, context_type, &context_type_name);
+			qpol_isid_get_context(policy->p, isid, &context);
+			qpol_context_get_type(policy->p, context, &context_type);
+			qpol_type_get_name(policy->p, context_type, &context_type_name);
 			a_context = apol_context_create_from_qpol_context(policy, context);
 
 			if (apol_str_append(&buff, &buff_sz, "sid node ") != 0) {
@@ -384,7 +384,7 @@ int find_node_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = (qpol_type_t *)item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");
@@ -403,7 +403,7 @@ int find_node_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 		for ( j=0;j<num_items;j++) {
 			item = apol_vector_get_element(mod->result->items, j);
 			type = (qpol_type_t *)item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			if ( item ) {
 				printf("%s\n", type_name);
 				for (k=0;k<apol_vector_get_size(item->proof);k++) {

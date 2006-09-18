@@ -35,15 +35,15 @@
 #include <qpol/type_query.h>
 #include "debug.h"
 
-int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_role_t **datum)
+int qpol_policy_get_role_by_name(qpol_policy_t *policy, const char *name, qpol_role_t **datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
 
-	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
+	if (policy == NULL || name == NULL || datum == NULL) {
 		if (datum != NULL)
 			*datum = NULL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -52,7 +52,7 @@ int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	internal_datum = hashtab_search(db->p_roles.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
 		*datum = NULL;
-		ERR(handle, "could not find datum for role %s", name);
+		ERR(policy, "could not find datum for role %s", name);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
@@ -61,16 +61,16 @@ int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_role_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	int error = 0;
 	hash_state_t *hs = NULL;
 
-	if (handle == NULL || policy == NULL || iter == NULL) {
+	if (policy == NULL || iter == NULL) {
 		if (iter != NULL)
 			*iter = NULL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -80,14 +80,14 @@ int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
 	hs->table = &db->p_roles.table;
 	hs->node = (*(hs->table))->htable[0];
 
-	if (qpol_iterator_create(handle, db, (void*)hs, hash_state_get_cur,
+	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur,
 		hash_state_next, hash_state_end, hash_state_size, free, iter)) {
 		free(hs);
 		return STATUS_ERR;
@@ -99,14 +99,14 @@ int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value)
+int qpol_role_get_value(qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value)
 {
 	role_datum_t *internal_datum = NULL;
 
-	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
+	if (policy == NULL || datum == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -117,17 +117,17 @@ int qpol_role_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates)
+int qpol_role_get_dominate_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 	int error;
 	ebitmap_state_t *es = NULL;
 
-	if (handle == NULL || policy == NULL || datum == NULL || dominates == NULL) {
+	if (policy == NULL || datum == NULL || dominates == NULL) {
 		if (dominates != NULL)
 			*dominates = NULL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -137,13 +137,13 @@ int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 
 	if (!(es = calloc(1, sizeof(ebitmap_state_t)))) {
 		error = errno;
-		ERR(handle, "%s", "unable to create iterator state object");
+		ERR(policy, "%s", "unable to create iterator state object");
 		errno = error;
 		return STATUS_ERR;
 	}
 	es->bmap = 	&internal_datum->dominates;
 
-	if (qpol_iterator_create(handle, db, (void*)es, ebitmap_state_get_cur_role,
+	if (qpol_iterator_create(policy, (void*)es, ebitmap_state_get_cur_role,
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size,
 		free, dominates)) {
 		error = errno;
@@ -158,7 +158,7 @@ int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types)
+int qpol_role_get_type_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -166,10 +166,10 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 	int error;
 	ebitmap_state_t *es = NULL;
 
-	if (handle == NULL || policy == NULL || datum == NULL || types == NULL) {
+	if (policy == NULL || datum == NULL || types == NULL) {
 		if (types != NULL)
 			*types = NULL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -179,7 +179,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 
 	if(!(expanded_set = calloc(1, sizeof(ebitmap_t)))) {
 		error = errno;
-		ERR(handle, "%s", "unable to create bitmap");
+		ERR(policy, "%s", "unable to create bitmap");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -187,14 +187,14 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 	if (type_set_expand(&internal_datum->types, expanded_set, db, 1)) {
 		ebitmap_destroy(expanded_set);
 		free(expanded_set);
-		ERR(handle, "error reading type set for role %s", db->p_role_val_to_name[internal_datum->s.value -1]);
+		ERR(policy, "error reading type set for role %s", db->p_role_val_to_name[internal_datum->s.value -1]);
 		errno = EIO;
 		return STATUS_ERR;
 	}
 
 	if (!(es = calloc(1, sizeof(ebitmap_state_t)))) {
 		error = errno;
-		ERR(handle, "%s", "unable to create iterator state object");
+		ERR(policy, "%s", "unable to create iterator state object");
 		ebitmap_destroy(expanded_set);
 		free(expanded_set);
 		errno = error;
@@ -203,7 +203,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 	es->bmap = expanded_set;
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
-	if (qpol_iterator_create(handle, db, (void*)es, ebitmap_state_get_cur_type,
+	if (qpol_iterator_create(policy, (void*)es, ebitmap_state_get_cur_type,
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size,
 		ebitmap_state_destroy, types)) {
 		error = errno;
@@ -218,15 +218,15 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, char **name)
+int qpol_role_get_name(qpol_policy_t *policy, qpol_role_t *datum, char **name)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 
-	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
+	if (policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

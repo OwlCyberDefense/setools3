@@ -35,7 +35,7 @@
 #include "debug.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_portcon_by_port(qpol_handle_t *handle, qpol_policy_t *policy, uint16_t low, uint16_t high, uint8_t protocol, qpol_portcon_t **ocon)
+int qpol_policy_get_portcon_by_port(qpol_policy_t *policy, uint16_t low, uint16_t high, uint8_t protocol, qpol_portcon_t **ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -43,8 +43,8 @@ int qpol_policy_get_portcon_by_port(qpol_handle_t *handle, qpol_policy_t *policy
 	if (ocon != NULL)
 		*ocon = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -60,7 +60,7 @@ int qpol_policy_get_portcon_by_port(qpol_handle_t *handle, qpol_policy_t *policy
 	*ocon = (qpol_portcon_t *)tmp;
 
 	if (*ocon == NULL) {
-		ERR(handle, "could not find portcon statement for %u-%u:%u", low, high, protocol);
+		ERR(policy, "could not find portcon statement for %u-%u:%u", low, high, protocol);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
@@ -68,7 +68,7 @@ int qpol_policy_get_portcon_by_port(qpol_handle_t *handle, qpol_policy_t *policy
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_portcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_portcon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -77,8 +77,8 @@ int qpol_policy_get_portcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	if (iter != NULL) 
 		*iter = NULL;
 
-	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || iter == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -88,14 +88,14 @@ int qpol_policy_get_portcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	os = calloc(1, sizeof(ocon_state_t));
 	if (os == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
 
 	os->head = os->cur = db->ocontexts[OCON_PORT];
 
-	if (qpol_iterator_create(handle, db, (void*)os, ocon_state_get_cur,
+	if (qpol_iterator_create(policy, (void*)os, ocon_state_get_cur,
 		ocon_state_next, ocon_state_end, ocon_state_size, free, iter)) {
 		free(os);
 		return STATUS_ERR;
@@ -104,15 +104,15 @@ int qpol_policy_get_portcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_portcon_get_protocol(qpol_handle_t *handle, qpol_policy_t *policy, qpol_portcon_t *ocon, uint8_t *protocol)
+int qpol_portcon_get_protocol(qpol_policy_t *policy, qpol_portcon_t *ocon, uint8_t *protocol)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (protocol != NULL)
 		*protocol = 0;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || protocol == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || protocol == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -124,15 +124,15 @@ int qpol_portcon_get_protocol(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_portcon_get_low_port(qpol_handle_t *handle, qpol_policy_t *policy, qpol_portcon_t *ocon, uint16_t *port)
+int qpol_portcon_get_low_port(qpol_policy_t *policy, qpol_portcon_t *ocon, uint16_t *port)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (port != NULL)
 		*port = 0;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || port == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || port == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -144,15 +144,15 @@ int qpol_portcon_get_low_port(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_portcon_get_high_port(qpol_handle_t *handle, qpol_policy_t *policy, qpol_portcon_t *ocon, uint16_t *port)
+int qpol_portcon_get_high_port(qpol_policy_t *policy, qpol_portcon_t *ocon, uint16_t *port)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (port != NULL)
 		*port = 0;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || port == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || port == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -164,15 +164,15 @@ int qpol_portcon_get_high_port(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_portcon_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_portcon_t *ocon, qpol_context_t **context)
+int qpol_portcon_get_context(qpol_policy_t *policy, qpol_portcon_t *ocon, qpol_context_t **context)
 {
 	ocontext_t *internal_ocon = NULL;
 
 	if (context != NULL)
 		*context = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || context == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || context == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

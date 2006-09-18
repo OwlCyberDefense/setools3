@@ -93,8 +93,8 @@ static int apol_types_relation_common_attribs(apol_policy_t *p,
 	apol_vector_t *vA = NULL, *vB = NULL;
 	int retval = -1;
 
-	if (qpol_type_get_attr_iter(p->qh, p->p, typeA, &iA) < 0 ||
-	    qpol_type_get_attr_iter(p->qh, p->p, typeB, &iB) < 0) {
+	if (qpol_type_get_attr_iter(p->p, typeA, &iA) < 0 ||
+	    qpol_type_get_attr_iter(p->p, typeB, &iB) < 0) {
 		goto cleanup;
 	}
 	if ((vA = apol_vector_create_from_iter(iA)) == NULL ||
@@ -135,8 +135,8 @@ static int apol_types_relation_common_roles(apol_policy_t *p,
 	apol_vector_t *vA = NULL, *vB = NULL;
 	int retval = -1;
 
-	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
 	if ((rq = apol_role_query_create()) == NULL) {
@@ -185,8 +185,8 @@ static int apol_types_relation_common_users(apol_policy_t *p,
 	qpol_iterator_t *iter = NULL, *riter = NULL;
 	int retval = -1;
 
-	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
 	if ((rq = apol_role_query_create()) == NULL) {
@@ -204,7 +204,7 @@ static int apol_types_relation_common_users(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	if (qpol_policy_get_user_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_user_iter(p->p, &iter) < 0) {
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -214,7 +214,7 @@ static int apol_types_relation_common_users(apol_policy_t *p,
 		if (qpol_iterator_get_item(iter, (void **) &user) < 0) {
 			goto cleanup;
 		}
-		if (qpol_user_get_role_iter(p->qh, p->p, user, &riter) < 0) {
+		if (qpol_user_get_role_iter(p->p, user, &riter) < 0) {
 			goto cleanup;
 		}
 		for ( ; (!inA || !inB) && !qpol_iterator_end(riter); qpol_iterator_next(riter)) {
@@ -315,7 +315,7 @@ static int apol_types_relation_access_append_rule(apol_policy_t *p,
 	size_t i, j;
 	apol_types_relation_access_t *a;
 	int retval = -1;
-	if (qpol_avrule_get_target_type(p->qh, p->p, r, &t) < 0 ||
+	if (qpol_avrule_get_target_type(p->p, r, &t) < 0 ||
 	    (expanded = apol_query_expand_type(p, t)) == NULL) {
 		goto cleanup;
 	}
@@ -372,8 +372,8 @@ static int apol_types_relation_create_access_pools(apol_policy_t *p,
 	size_t i;
 	int retval = -1;
 
-	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
 	if ((aq = apol_avrule_query_create()) == NULL) {
@@ -570,8 +570,8 @@ static int apol_types_relation_allows(apol_policy_t *p,
 	apol_vector_t *v = NULL;
 	int retval = -1;
 
-	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
 	if ((aq = apol_avrule_query_create()) == NULL) {
@@ -626,8 +626,8 @@ static int apol_types_relation_types(apol_policy_t *p,
 	size_t i, j;
 	int retval = -1;
 
-	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
 	if ((r->types = apol_vector_create()) == NULL ||
@@ -643,8 +643,8 @@ static int apol_types_relation_types(apol_policy_t *p,
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		rule = (qpol_terule_t *) apol_vector_get_element(v, i);
-		if (qpol_terule_get_target_type(p->qh, p->p, rule, &target) < 0 ||
-		    qpol_terule_get_default_type(p->qh, p->p, rule, &default_type) < 0 ) {
+		if (qpol_terule_get_target_type(p->p, rule, &target) < 0 ||
+		    qpol_terule_get_default_type(p->p, rule, &default_type) < 0 ) {
 			goto cleanup;
 		}
 		if ((apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0 ||
@@ -664,8 +664,8 @@ static int apol_types_relation_types(apol_policy_t *p,
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		rule = (qpol_terule_t *) apol_vector_get_element(v, i);
-		if (qpol_terule_get_target_type(p->qh, p->p, rule, &target) < 0 ||
-		    qpol_terule_get_default_type(p->qh, p->p, rule, &default_type) < 0 ) {
+		if (qpol_terule_get_target_type(p->p, rule, &target) < 0 ||
+		    qpol_terule_get_default_type(p->p, rule, &default_type) < 0 ) {
 			goto cleanup;
 		}
 		if ((apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0 ||
@@ -749,8 +749,8 @@ static int apol_types_relation_directflow(apol_policy_t *p,
 	apol_infoflow_graph_t *g = NULL;
 	int retval = -1;
 
-	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
 	if ((r->dirflows = apol_vector_create()) == NULL ||
@@ -801,8 +801,8 @@ static int apol_types_relation_transflow(apol_policy_t *p,
 	apol_infoflow_graph_t *g = NULL;
 	int retval = -1;
 
-	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
 	if ((ia = apol_infoflow_analysis_create()) == NULL) {
@@ -920,8 +920,8 @@ static int apol_types_relation_domain(apol_policy_t *p,
 	apol_vector_t *v = NULL;
 	int retval = -1;
 
-	if (qpol_type_get_name(p->qh, p->p, typeA, &nameA) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, typeB, &nameB) < 0) {
+	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 ||
+	    qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
 	if ((dta = apol_domain_trans_analysis_create()) == NULL) {
@@ -989,8 +989,8 @@ int apol_types_relation_analysis_do(apol_policy_t *p,
 	}
 	if (apol_query_get_type(p, tr->typeA, &typeA) < 0 ||
 	    apol_query_get_type(p, tr->typeB, &typeB) < 0 ||
-	    qpol_type_get_isattr(p->qh, p->p, typeA, &isattrA) < 0 ||
-	    qpol_type_get_isattr(p->qh, p->p, typeB, &isattrB) < 0) {
+	    qpol_type_get_isattr(p->p, typeA, &isattrA) < 0 ||
+	    qpol_type_get_isattr(p->p, typeB, &isattrB) < 0) {
 		goto cleanup;
 	}
 	if (isattrA) {

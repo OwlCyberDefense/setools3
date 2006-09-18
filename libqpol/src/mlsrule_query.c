@@ -99,7 +99,7 @@ static size_t range_trans_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_range_trans_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	range_trans_state_t *rs = NULL;
@@ -108,8 +108,8 @@ int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *polic
 	if (iter)
 		*iter = NULL;
 
-	if (!handle || !policy || !iter) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !iter) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -119,12 +119,12 @@ int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *polic
 	rs = calloc(1, sizeof(range_trans_state_t));
 	if (!rs) {
 		error = errno;
-		ERR(handle, "%s", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		errno = error;
 		return STATUS_ERR;
 	}
 
-	if (qpol_iterator_create(handle, db, (void*)rs, range_trans_state_get_cur,
+	if (qpol_iterator_create(policy, (void*)rs, range_trans_state_get_cur,
 		range_trans_state_next, range_trans_state_end, range_trans_state_size,
 		free, iter)) {
 		error = errno;
@@ -137,7 +137,7 @@ int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *polic
 	return STATUS_SUCCESS;
 }
 
-int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **source)
+int qpol_range_trans_get_source_type(qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **source)
 {
 	policydb_t *db = NULL;
 	range_trans_t *rt = NULL;
@@ -146,9 +146,9 @@ int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t *polic
 		*source = NULL;
 	}
 
-	if (!handle || !policy || !rule || !source) {
+	if (!policy || !rule || !source) {
 		errno = EINVAL;
-		ERR(handle, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		return STATUS_ERR;
 	}
 
@@ -160,7 +160,7 @@ int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t *polic
 	return STATUS_SUCCESS;
 }
 
-int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **target)
+int qpol_range_trans_get_target_type(qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_type_t **target)
 {
 	policydb_t *db = NULL;
 	range_trans_t *rt = NULL;
@@ -169,8 +169,8 @@ int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *polic
 		*target = NULL;
 	}
 
-	if (!handle || !policy || !rule || !target) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !target) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -183,7 +183,7 @@ int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *polic
 	return STATUS_SUCCESS;
 }
 
-int qpol_range_trans_get_target_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_class_t **target)
+int qpol_range_trans_get_target_class(qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_class_t **target)
 {
 	policydb_t *db = NULL;
 	range_trans_t *rt = NULL;
@@ -192,8 +192,8 @@ int qpol_range_trans_get_target_class(qpol_handle_t *handle, qpol_policy_t *poli
 		*target = NULL;
 	}
 
-	if (!handle || !policy || !rule || !target) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !target) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -206,7 +206,7 @@ int qpol_range_trans_get_target_class(qpol_handle_t *handle, qpol_policy_t *poli
 	return STATUS_SUCCESS;
 }
 
-int qpol_range_trans_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_mls_range_t **range)
+int qpol_range_trans_get_range(qpol_policy_t *policy, qpol_range_trans_t *rule, qpol_mls_range_t **range)
 {
 	policydb_t *db = NULL;
 	range_trans_t *rt = NULL;
@@ -215,8 +215,8 @@ int qpol_range_trans_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		*range = NULL;
 	}
 
-	if (!handle || !policy || !rule || !range) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (!policy || !rule || !range) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

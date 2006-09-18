@@ -14,7 +14,6 @@
 		qpol_find_default_policy_*;
 		qpol_fs_use_*;
 		qpol_genfscon_*;
-		qpol_handle_destroy;
 		qpol_isid_*;
 		qpol_iterator_end;
 		qpol_iterator_next;

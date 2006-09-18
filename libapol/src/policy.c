@@ -62,7 +62,7 @@ static void apol_handle_default_callback(apol_policy_t *p __attribute__ ((unused
 	fprintf(stderr, "\n");
 }
 
-static void qpol_handle_route_to_callback(void *varg, qpol_handle_t *handle, int level, const char *fmt, va_list ap)
+static void qpol_handle_route_to_callback(void *varg, qpol_policy_t *policy, int level, const char *fmt, va_list ap)
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
 	if (p == NULL) {
@@ -97,7 +97,7 @@ int apol_policy_open(const char *path, apol_policy_t **policy,
 	}
 	(*policy)->msg_callback_arg = callback_arg;
 
-        policy_type = qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy));
+        policy_type = qpol_open_policy_from_file(path, &((*policy)->p), qpol_handle_route_to_callback, (*policy));
         if (policy_type < 0) {
 		ERR(*policy, "Unable to open policy at %s.", path);
 		apol_policy_destroy(policy);
@@ -131,7 +131,7 @@ int apol_policy_open_no_rules(const char *path, apol_policy_t **policy,
 	}
 	(*policy)->msg_callback_arg = callback_arg;
 
-        policy_type = qpol_open_policy_from_file_no_rules(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy));
+        policy_type = qpol_open_policy_from_file_no_rules(path, &((*policy)->p), qpol_handle_route_to_callback, (*policy));
         if (policy_type < 0) {
 		ERR(*policy, "Unable to open policy at %s.", path);
 		apol_policy_destroy(policy);
@@ -145,7 +145,6 @@ void apol_policy_destroy(apol_policy_t **policy)
 {
 	if (policy != NULL && *policy != NULL) {
 		qpol_policy_destroy(&((*policy)->p));
-		qpol_handle_destroy(&((*policy)->qh));
 		apol_permmap_destroy(&(*policy)->pmap);
 		apol_domain_trans_table_destroy(&(*policy)->domain_trans_table);
 		free(*policy);
@@ -158,7 +157,7 @@ int apol_policy_is_mls(apol_policy_t *p)
 	if (p == NULL) {
 		return -1;
 	}
-	return qpol_policy_is_mls_enabled(p->qh, p->p);
+	return qpol_policy_is_mls_enabled(p->p);
 }
 
 int apol_policy_is_binary(apol_policy_t *p)
@@ -170,7 +169,7 @@ char *apol_policy_get_version_type_mls_str(apol_policy_t *p)
 {
 	unsigned int version;
 	char *policy_type, *mls, buf[64];
-	if (qpol_policy_get_policy_version(p->qh, p->p, &version) < 0) {
+	if (qpol_policy_get_policy_version(p->p, &version) < 0) {
 		return NULL;
 	}
 	switch (p->policy_type) {
@@ -181,7 +180,7 @@ char *apol_policy_get_version_type_mls_str(apol_policy_t *p)
 	default:
 		policy_type = "unknown"; break;
 	}
-	if (qpol_policy_is_mls_enabled(p->qh, p->p)) {
+	if (qpol_policy_is_mls_enabled(p->p)) {
 		mls = "mls";
 	}
 	else {

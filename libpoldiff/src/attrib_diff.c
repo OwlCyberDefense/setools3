@@ -250,8 +250,8 @@ static int attrib_name_comp(const void *x, const void *y, void *arg) {
 	qpol_type_t *r2 = (qpol_type_t *) y;
 	apol_policy_t *p = (apol_policy_t *) arg;
 	char *name1, *name2;
-	if (qpol_type_get_name(p->qh, p->p, r1, &name1) < 0 ||
-	    qpol_type_get_name(p->qh, p->p, r2, &name2) < 0) {
+	if (qpol_type_get_name(p->p, r1, &name1) < 0 ||
+	    qpol_type_get_name(p->p, r2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -262,7 +262,7 @@ apol_vector_t *attrib_get_items(poldiff_t *diff, apol_policy_t *policy)
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
 	int error = 0;
-	if (qpol_policy_get_type_iter(policy->qh, policy->p, &iter) < 0) {
+	if (qpol_policy_get_type_iter(policy->p, &iter) < 0) {
 		return NULL;
 	}
 	v = apol_vector_create();
@@ -277,7 +277,7 @@ apol_vector_t *attrib_get_items(poldiff_t *diff, apol_policy_t *policy)
 		unsigned char isattr;
 		qpol_type_t *type;
 		qpol_iterator_get_item(iter, (void**)&type);
-		qpol_type_get_isattr(policy->qh, policy->p, type, &isattr);
+		qpol_type_get_isattr(policy->p, type, &isattr);
 		if (isattr) {
 			apol_vector_append(v, type);
 		}
@@ -292,8 +292,8 @@ int attrib_comp(const void *x, const void *y, poldiff_t *diff)
 	qpol_type_t *r1 = (qpol_type_t *) x;
 	qpol_type_t *r2 = (qpol_type_t *) y;
 	char *name1, *name2;
-	if (qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, r1, &name1) < 0 ||
-	    qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, r2, &name2) < 0) {
+	if (qpol_type_get_name(diff->orig_pol->p, r1, &name1) < 0 ||
+	    qpol_type_get_name(diff->mod_pol->p, r2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -335,9 +335,9 @@ int attrib_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 	poldiff_attrib_t *pr;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, r, &name) < 0) ||
+	     qpol_type_get_name(diff->mod_pol->p, r, &name) < 0) ||
 	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, r, &name) < 0)) {
+	     qpol_type_get_name(diff->orig_pol->p, r, &name) < 0)) {
 		return -1;
 	}
 	pr = make_diff(diff, form, name);
@@ -386,12 +386,12 @@ static apol_vector_t *attrib_get_types(poldiff_t *diff, qpol_type_t *attrib, int
 		goto cleanup;
 	}
 	if (which == POLDIFF_POLICY_ORIG) {
-		if (qpol_type_get_type_iter(diff->orig_pol->qh, diff->orig_pol->p, attrib, &iter) < 0) {
+		if (qpol_type_get_type_iter(diff->orig_pol->p, attrib, &iter) < 0) {
 			goto cleanup;
 		}
 	}
 	else {
-		if (qpol_type_get_type_iter(diff->mod_pol->qh, diff->mod_pol->p, attrib, &iter) < 0) {
+		if (qpol_type_get_type_iter(diff->mod_pol->p, attrib, &iter) < 0) {
 			goto cleanup;
 		}
 	}
@@ -431,7 +431,7 @@ int attrib_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	qpol_type_t *t;
 	size_t i, j;
 	int retval = -1, error = 0;
-	if (qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, r1, &name) < 0 ||
+	if (qpol_type_get_name(diff->orig_pol->p, r1, &name) < 0 ||
 	    (v1 = attrib_get_types(diff, r1, POLDIFF_POLICY_ORIG)) == NULL ||
 	    (v2 = attrib_get_types(diff, r2, POLDIFF_POLICY_MOD)) == NULL) {
 		error = errno;
@@ -501,7 +501,7 @@ int attrib_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			}
 			for (j = 0; j < apol_vector_get_size(reverse_v); j++) {
 				t = (qpol_type_t *) apol_vector_get_element(reverse_v, j);
-				if (qpol_type_get_name(diff->orig_pol->qh, diff->orig_pol->p, t, &name) < 0) {
+				if (qpol_type_get_name(diff->orig_pol->p, t, &name) < 0) {
 					error = errno;
 					goto cleanup;
 				}
@@ -522,7 +522,7 @@ int attrib_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			}
 			for (j = 0; j < apol_vector_get_size(reverse_v); j++) {
 				t = (qpol_type_t *) apol_vector_get_element(reverse_v, j);
-				if (qpol_type_get_name(diff->mod_pol->qh, diff->mod_pol->p, t, &name) < 0) {
+				if (qpol_type_get_name(diff->mod_pol->p, t, &name) < 0) {
 					error = errno;
 					goto cleanup;
 				}

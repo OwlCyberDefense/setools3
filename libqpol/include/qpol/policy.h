@@ -45,14 +45,18 @@
 
 /* forward declaration, full declaration in policy_extend.c */
 struct qpol_extended_image;
+struct qpol_policy;
+
+typedef void (*qpol_callback_fn_t) (void* varg, struct qpol_policy* policy, int level, const char* fmt, va_list va_args);
 
 typedef struct qpol_policy {
 	struct sepol_policydb *p;
+	struct sepol_handle *sh;
+	qpol_callback_fn_t fn;
+	void *varg;
 	int rules_loaded;
 	struct qpol_extended_image *ext;
 } qpol_policy_t;
-typedef struct qpol_handle qpol_handle_t;
-typedef void (*qpol_handle_callback_fn_t) (void* varg, qpol_handle_t* handle, int level, const char* fmt, va_list va_args);
 
 #define QPOL_POLICY_KERNEL_SOURCE 0
 #define QPOL_POLICY_KERNEL_BINARY 1
@@ -63,26 +67,24 @@ typedef void (*qpol_handle_callback_fn_t) (void* varg, qpol_handle_t* handle, in
  *  @param filename The name of the file to open.
  *  @param policy The policy to populate.  The caller should not free
  *  this pointer.
- *  @param handle The policy handle.
  *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
  *  @param varg (Optional) The argument needed by the handle callback.
  *  @return Returns one of QPOL_POLICY_* above on success and < 0 on failure;
  *  if the call fails, errno will be set and *policy will be NULL.
  */
-extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **policy, qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg);
+extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **policy, qpol_callback_fn_t fn, void *varg);
 
 /**
  *  Open a policy from a passed in file path but do not load any rules.
  *  @param filename The name of the file to open.
  *  @param policy The policy to populate.  The caller should not free
  *  this pointer.
- *  @param handle The policy handle.
  *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
  *  @param varg (Optional) The argument needed by the handle callback.
  *  @return Returns one of QPOL_POLICY_* above on success and < 0 on failure;
  *  if the call fails, errno will be set and *policy will be NULL.
  */
-extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy_t **policy, qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg);
+extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy_t **policy, qpol_callback_fn_t fn, void *varg);
 
 /**
  *  Open a policy from a passed in buffer.
@@ -90,14 +92,13 @@ extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy
  *  this pointer.
  *  @param filedata The policy file stored in memory .
  *  @param size The size of filedata
- *  @param handle The handle for the policy
  *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
  *  @param varg (Optional) The argument needed by the handle callback.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL.
  */
 extern int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, int size,
-					qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg);
+					qpol_callback_fn_t fn, void *varg);
 
 /**
  *  Close a policy and deallocate its memory.  Does nothing if it is
@@ -106,13 +107,6 @@ extern int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *file
  *  be set to NULL afterwards.
  */
 extern void qpol_policy_destroy(qpol_policy_t **policy);
-
-/**
- *  Destroy the handle.  Does nothing if it is already NULL.
- *  @param handle Reference to the handle to destroy.  The pointer
- *  will be set to NULL afterwards.
- */
-extern void qpol_handle_destroy(qpol_handle_t **handle);
 
 /**
  *  Find the default policy file given a policy type. 
@@ -134,12 +128,11 @@ extern const char *qpol_find_default_policy_file_strerr(int err);
  *  Re-evaluate all conditionals in the policy updating the state
  *  and setting the appropriate rule list as emabled for each.
  *  This call modifies the policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy for which to re-evaluate the conditionals.
  *  This policy will be modified by this function.
  *  @return 0 on success and < 0 on failure; if the call fails.
  *  errno will be set. On failure, the policy state may be inconsistent.
  */
-extern int qpol_policy_reevaluate_conds(qpol_handle_t *handle, qpol_policy_t *policy);
+extern int qpol_policy_reevaluate_conds(qpol_policy_t *policy);
 
 #endif

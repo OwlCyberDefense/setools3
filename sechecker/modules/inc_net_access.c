@@ -302,7 +302,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 		item = apol_vector_get_element(net_domain_vector, i);
 		net_domain = item->item;
-		qpol_type_get_name(policy->qh, policy->p, net_domain, &net_domain_name);
+		qpol_type_get_name(policy->p, net_domain, &net_domain_name);
 
 		/* Check netif types */
 		for (j=0; j<apol_vector_get_size(netif_vector); j++) {
@@ -311,7 +311,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 			item = apol_vector_get_element(netif_vector, j);
 			netif = item->item;
-			qpol_type_get_name(policy->qh, policy->p, netif, &netif_name);
+			qpol_type_get_name(policy->p, netif, &netif_name);
 
 			avrule_query = apol_avrule_query_create();
 			apol_avrule_query_set_source(policy, avrule_query, net_domain_name, 1);
@@ -349,7 +349,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 					res_item = apol_vector_get_element(res->items, k);
 					res_type = res_item->item;
-					qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+					qpol_type_get_name(policy->p, res_type, &res_type_name);
 					if (!strcmp(res_type_name, net_domain_name)) item = res_item;
 				}
 				if ( !item) {
@@ -386,7 +386,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 			item = apol_vector_get_element(port_vector, j);
 			port = item->item;
-			qpol_type_get_name(policy->qh, policy->p, port, &port_name);
+			qpol_type_get_name(policy->p, port, &port_name);
 
 			avrule_query = apol_avrule_query_create();
 			apol_avrule_query_set_source(policy, avrule_query, net_domain_name, 1);
@@ -426,7 +426,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 					res_item = apol_vector_get_element(res->items, k);
 					res_type = res_item->item;
-					qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+					qpol_type_get_name(policy->p, res_type, &res_type_name);
 					if (!strcmp(res_type_name, net_domain_name)) item = res_item;
 				}
 				if ( !item) {
@@ -462,7 +462,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 			item = apol_vector_get_element(node_vector, j);
 			node = item->item;
-			qpol_type_get_name(policy->qh, policy->p, node, &node_name);
+			qpol_type_get_name(policy->p, node, &node_name);
 
 			avrule_query = apol_avrule_query_create();
 			apol_avrule_query_set_source(policy, avrule_query, net_domain_name, 1);
@@ -501,7 +501,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 					res_item = apol_vector_get_element(res->items, k);
 					res_type = res_item->item;
-					qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+					qpol_type_get_name(policy->p, res_type, &res_type_name);
 					if (!strcmp(res_type_name, net_domain_name)) item = res_item;
 				}
 				if (!item) {
@@ -593,7 +593,7 @@ int inc_net_access_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			item = apol_vector_get_element(mod->result->items, k);
 			if ( item ) {
 				type = item->item;
-				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+				qpol_type_get_name(policy->p, type, &type_name);
 				printf("%s\n", (char*)type_name);
 				for (l=0; l<apol_vector_get_size(item->proof);l++) {
 					/* Change to print possessed elements first - then add needed elements */
@@ -613,7 +613,7 @@ int inc_net_access_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			j++;
 			item  = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}

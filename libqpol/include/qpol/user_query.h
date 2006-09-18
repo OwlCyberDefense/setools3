@@ -36,7 +36,6 @@ typedef struct qpol_user qpol_user_t;
 
 /**
  *  Get the datum for a user by name.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to get the user.
  *  @param name The name of the user; searching is case sensitive.
  *  @param datum Pointer in which to store the user datum; the caller
@@ -44,11 +43,10 @@ typedef struct qpol_user qpol_user_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and and *datum will be NULL.
  */
-extern int qpol_policy_get_user_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_user_t **datum);
+extern int qpol_policy_get_user_by_name(qpol_policy_t *policy, const char *name, qpol_user_t **datum);
 
 /**
  *  Get an iterator for users declared in the policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator of type qpol_user_t* returned; 
  *  the caller is responsible for calling qpol_iterator_destroy to 
@@ -57,23 +55,21 @@ extern int qpol_policy_get_user_by_name(qpol_handle_t *handle, qpol_policy_t *po
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_user_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_user_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the integer value associated with a user. Values range from 1 to
  *  the number of users declared in the policy.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associate with the user.
  *  @param datum The user from which to get the value.
  *  @param value Pointer to the integer to set to value.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and value will be 0.
  */
-extern int qpol_user_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, uint32_t *value);
+extern int qpol_user_get_value(qpol_policy_t *policy, qpol_user_t *datum, uint32_t *value);
 
 /**
  *  Get an iterator for the set of roles assigned to a user.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the user.
  *  @param datum The user from which to get the roles.
  *  @param roles Iterator of type qpol_role_t* returned; 
@@ -83,11 +79,10 @@ extern int qpol_user_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpo
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *roles will be NULL.
  */
-extern int qpol_user_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_iterator_t **roles);
+extern int qpol_user_get_role_iter(qpol_policy_t *policy, qpol_user_t *datum, qpol_iterator_t **roles);
 
 /**
  *  Get the allowed MLS range of a user.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the user.
  *  @param datum The user from which to get the range.
  *  @param range Pointer in which to store the range; the caller
@@ -95,11 +90,10 @@ extern int qpol_user_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy,
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *range will be NULL.
  */
-extern int qpol_user_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_range_t **range);
+extern int qpol_user_get_range(qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_range_t **range);
 
 /**
  *  Get the default level for a user.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the user.
  *  @param datum The user from which to get the level.
  *  @param level Pointer in which to store the level; the caller 
@@ -107,11 +101,10 @@ extern int qpol_user_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpo
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *level will be NULL.
  */
-extern int qpol_user_get_dfltlevel(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_level_t **level);
+extern int qpol_user_get_dfltlevel(qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_level_t **level);
 
 /**
  *  Get the name which identifies a user from its datum.
- *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the user.
  *  @param datum The user for which to get the name.
  *  @param name Pointer in which to store the name; the caller
@@ -119,6 +112,6 @@ extern int qpol_user_get_dfltlevel(qpol_handle_t *handle, qpol_policy_t *policy,
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_user_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, char **name);
+extern int qpol_user_get_name(qpol_policy_t *policy, qpol_user_t *datum, char **name);
 
 #endif /* QPOL_USER_QUERY_H */

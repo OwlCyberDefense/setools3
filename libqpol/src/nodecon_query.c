@@ -39,7 +39,7 @@ struct qpol_nodecon {
 	unsigned char protocol;
 };
 
-int qpol_policy_get_nodecon_by_node(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol, qpol_nodecon_t **ocon)
+int qpol_policy_get_nodecon_by_node(qpol_policy_t *policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol, qpol_nodecon_t **ocon)
 {
 	policydb_t *db = NULL;
 	ocontext_t *tmp = NULL;
@@ -48,8 +48,8 @@ int qpol_policy_get_nodecon_by_node(qpol_handle_t *handle, qpol_policy_t *policy
 	if (ocon != NULL)
 		*ocon = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL){
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL){
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -67,7 +67,7 @@ int qpol_policy_get_nodecon_by_node(qpol_handle_t *handle, qpol_policy_t *policy
 		*ocon = calloc(1, sizeof(qpol_nodecon_t));
 		if (*ocon == NULL) {
 			error = errno;
-			ERR(handle, "%s", strerror(error));
+			ERR(policy, "%s", strerror(error));
 			errno = error;
 			return STATUS_ERR;
 		}
@@ -77,7 +77,7 @@ int qpol_policy_get_nodecon_by_node(qpol_handle_t *handle, qpol_policy_t *policy
 	}
 
 	if(*ocon == NULL) {
-		ERR(handle, "%s", "could not find nodecon statement for node");
+		ERR(policy, "%s", "could not find nodecon statement for node");
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
@@ -187,7 +187,7 @@ static int node_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_nodecon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -197,8 +197,8 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	if (iter != NULL)
 		*iter = NULL;
 
-	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || iter == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -208,7 +208,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	v4os = calloc(1, sizeof(ocon_state_t));
 	if (v4os == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -217,7 +217,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	v6os = calloc(1, sizeof(ocon_state_t));
 	if (v6os == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		free(v4os);
 		errno = error;
 		return STATUS_ERR;
@@ -227,7 +227,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	ns = calloc(1, sizeof(node_state_t));
 	if (ns == NULL) {
 		error = errno;
-		ERR(handle, "%s", strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		free(v4os);
 		free(v6os);
 		errno = error;
@@ -236,7 +236,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	ns->v4state = v4os;
 	ns->v6state = v6os;
 
-	if (qpol_iterator_create(handle, db, (void*)ns, node_state_get_cur,
+	if (qpol_iterator_create(policy, (void*)ns, node_state_get_cur,
 		node_state_next, node_state_end, node_state_size, node_state_free, iter)) {
 		node_state_free(ns);
 		return STATUS_ERR;
@@ -245,15 +245,15 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_addr(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **addr, unsigned char *protocol)
+int qpol_nodecon_get_addr(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **addr, unsigned char *protocol)
 {
 	if (addr != NULL)
 		*addr = NULL;
 	if (protocol != NULL)
 		*protocol = 0;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || addr == NULL || protocol == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || addr == NULL || protocol == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -269,15 +269,15 @@ int qpol_nodecon_get_addr(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nod
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_mask(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **mask, unsigned char *protocol)
+int qpol_nodecon_get_mask(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **mask, unsigned char *protocol)
 {
 	if (mask != NULL)
 		*mask = NULL;
 	if (protocol != NULL)
 		*protocol = 0;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || mask == NULL || protocol == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || mask == NULL || protocol == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -293,13 +293,13 @@ int qpol_nodecon_get_mask(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nod
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_protocol(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, unsigned char *protocol)
+int qpol_nodecon_get_protocol(qpol_policy_t *policy, qpol_nodecon_t *ocon, unsigned char *protocol)
 {
 	if (protocol != NULL)
 		*protocol = 0;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || protocol == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || protocol == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -309,13 +309,13 @@ int qpol_nodecon_get_protocol(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, qpol_context_t **context)
+int qpol_nodecon_get_context(qpol_policy_t *policy, qpol_nodecon_t *ocon, qpol_context_t **context)
 {
 	if (context != NULL)
 		*context = NULL;
 
-	if (handle == NULL || policy == NULL || ocon == NULL || context == NULL) {
-		ERR(handle, "%s", strerror(EINVAL));
+	if (policy == NULL || ocon == NULL || context == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

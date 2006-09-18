@@ -47,7 +47,7 @@ int apol_get_bool_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter;
 	int retval = -1;
 	*v = NULL;
-	if (qpol_policy_get_bool_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_bool_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -62,7 +62,7 @@ int apol_get_bool_by_query(apol_policy_t *p,
 		if (b != NULL) {
 			char *bool_name;
 			int compval;
-			if (qpol_bool_get_name(p->qh, p->p, bool, &bool_name) < 0) {
+			if (qpol_bool_get_name(p->p, bool, &bool_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, bool_name, b->bool_name,

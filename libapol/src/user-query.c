@@ -51,7 +51,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 	apol_mls_range_t *range = NULL;
 	int retval = -1, append_user;
 	*v = NULL;
-	if (qpol_policy_get_user_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_user_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -74,7 +74,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 			apol_mls_level_destroy(&default_level);
 			apol_mls_range_destroy(&range);
 
-			if (qpol_user_get_name(p->qh, p->p, user, &user_name) < 0) {
+			if (qpol_user_get_name(p->p, user, &user_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, user_name, u->user_name,
@@ -85,7 +85,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 			else if (compval == 0) {
 				continue;
 			}
-			if (qpol_user_get_role_iter(p->qh, p->p, user, &role_iter) < 0) {
+			if (qpol_user_get_role_iter(p->p, user, &role_iter) < 0) {
 				goto cleanup;
 			}
 			if (u->role_name != NULL && u->role_name[0] != '\0') {
@@ -94,7 +94,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 					qpol_role_t *role;
 					char *role_name;
 					if (qpol_iterator_get_item(role_iter, (void **) &role) < 0 ||
-					    qpol_role_get_name(p->qh, p->p, role, &role_name) < 0) {
+					    qpol_role_get_name(p->p, role, &role_name) < 0) {
 						goto cleanup;
 					}
 					compval = apol_compare(p, role_name, u->role_name,
@@ -112,7 +112,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 				}
 			}
 			if (apol_policy_is_mls(p)) {
-				if (qpol_user_get_dfltlevel(p->qh, p->p, user, &mls_default_level) < 0 ||
+				if (qpol_user_get_dfltlevel(p->p, user, &mls_default_level) < 0 ||
 				    (default_level = apol_mls_level_create_from_qpol_mls_level(p, mls_default_level)) == NULL) {
 					goto cleanup;
 				}
@@ -126,7 +126,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 					continue;
 				}
 
-				if (qpol_user_get_range(p->qh, p->p, user, &mls_range) < 0 ||
+				if (qpol_user_get_range(p->p, user, &mls_range) < 0 ||
 				    (range = apol_mls_range_create_from_qpol_mls_range(p, mls_range)) == NULL) {
 					goto cleanup;
 				}

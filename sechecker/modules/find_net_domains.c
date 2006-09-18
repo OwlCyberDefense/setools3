@@ -262,8 +262,8 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		char *class_name;
 
 		avrule = apol_vector_get_element(avrule_vector, k);	
-		qpol_avrule_get_object_class(policy->qh, policy->p, avrule, &class);
-		qpol_class_get_name(policy->qh, policy->p, class, &class_name);
+		qpol_avrule_get_object_class(policy->p, avrule, &class);
+		qpol_class_get_name(policy->p, class, &class_name);
 		for (i = 0; i < apol_vector_get_size(datum->net_objs); i++) {
 			char *net_obj_name;
 
@@ -272,8 +272,8 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				qpol_type_t *source;
 				char *source_name;
 
-				qpol_avrule_get_source_type(policy->qh, policy->p, avrule, &source);
-				qpol_type_get_name(policy->qh, policy->p, source, &source_name);
+				qpol_avrule_get_source_type(policy->p, avrule, &source);
+				qpol_type_get_name(policy->p, source, &source_name);
 
 				proof = sechk_proof_new(NULL);
 				if ( !proof ) {
@@ -296,7 +296,7 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 					res_item = apol_vector_get_element(res->items, j);
 					res_type = res_item->item;
-					qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+					qpol_type_get_name(policy->p, res_type, &res_type_name);
 					if (!strcmp(res_type_name, source_name)) item = res_item;
 				}	
 
@@ -394,7 +394,7 @@ int find_net_domains_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			j++;
 			item  = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
@@ -415,7 +415,7 @@ int find_net_domains_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			item = apol_vector_get_element(mod->result->items, k);
 			if ( item ) {
 				type = item->item;
-				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+				qpol_type_get_name(policy->p, type, &type_name);
 				printf("%s\n", (char*)type_name);
 				for (l=0; l<apol_vector_get_size(item->proof);l++) {
 					proof = apol_vector_get_element(item->proof,l);

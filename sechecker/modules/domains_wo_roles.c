@@ -222,7 +222,7 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 		item = apol_vector_get_element(domain_vector, i);
 		domain = item->item;
-		qpol_type_get_name(policy->qh, policy->p, domain, &domain_name);
+		qpol_type_get_name(policy->p, domain, &domain_name);
 
 		apol_role_query_set_type(policy, role_query, domain_name);
 		apol_get_role_by_query(policy, role_query, &role_vector);
@@ -317,7 +317,7 @@ int domains_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = (qpol_type_t*)item->item;
-			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+			qpol_type_get_name(policy->p, type, &type_name);
 			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");

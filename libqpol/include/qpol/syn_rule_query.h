@@ -38,7 +38,6 @@ typedef struct qpol_syn_rule qpol_syn_terule_t;
 
 /**
  *  Get an iterator of the included types in a type set.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the type set.
  *  @param ts Type set from which to get the included types.
  *  @param iter Iterator over items of type qpol_type_t returned.
@@ -49,11 +48,10 @@ typedef struct qpol_syn_rule qpol_syn_terule_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_type_set_get_included_types_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, qpol_iterator_t **iter);
+extern int qpol_type_set_get_included_types_iter(qpol_policy_t *policy, qpol_type_set_t *ts, qpol_iterator_t **iter);
 
 /**
  *  Get an iterator of the subtracted types in a type set.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the type set.
  *  @param ts Type set from which to get the subtracted types.
  *  @param iter Iterator over items of type qpol_type_t returned.
@@ -64,11 +62,10 @@ extern int qpol_type_set_get_included_types_iter(qpol_handle_t *handle, qpol_pol
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_type_set_get_subtracted_types_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, qpol_iterator_t **iter);
+extern int qpol_type_set_get_subtracted_types_iter(qpol_policy_t *policy, qpol_type_set_t *ts, qpol_iterator_t **iter);
 
 /**
  *  Determine if a type set includes '*'.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the type set.
  *  @param ts Type set to check for '*'.
  *  @param is_star Pointer to integer to set.
@@ -76,11 +73,10 @@ extern int qpol_type_set_get_subtracted_types_iter(qpol_handle_t *handle, qpol_p
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_star will be 0.
  */
-extern int qpol_type_set_get_is_star(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_star);
+extern int qpol_type_set_get_is_star(qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_star);
 
 /**
  *  Determine if a type set is complemented (contains '~').
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the type set.
  *  @param ts Type set to check for complement.
  *  @param is_comp Pointer to integer to set.
@@ -88,11 +84,10 @@ extern int qpol_type_set_get_is_star(qpol_handle_t *handle, qpol_policy_t *polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_comp will be 0.
  */
-extern int qpol_type_set_get_is_comp(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_comp);
+extern int qpol_type_set_get_is_comp(qpol_policy_t *policy, qpol_type_set_t *ts, uint32_t *is_comp);
 
 /**
  *  Get the rule type of a syntactic avrule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Avrule from which to get the type.
  *  @param rule_type Pointer to integer to set.
@@ -100,11 +95,10 @@ extern int qpol_type_set_get_is_comp(qpol_handle_t *handle, qpol_policy_t *polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *rule_type will be 0.
  */
-extern int qpol_syn_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *rule_type);
+extern int qpol_syn_avrule_get_rule_type(qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *rule_type);
 
 /**
  *  Get the set of types specified for a syntatic rule's source field.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Avrule from which to get the source type set.
  *  @param source_set Type set returned; the caller <b>should not</b>
@@ -112,11 +106,10 @@ extern int qpol_syn_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *p
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source_set will be NULL.
  */
-extern int qpol_syn_avrule_get_source_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_type_set_t **source_set);
+extern int qpol_syn_avrule_get_source_type_set(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_type_set_t **source_set);
 
 /**
  *  Get the set of types specified for a syntactic rule's target field.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Avrule from which to get the target type set.
  *  @param target_set Type set returned; the caller <b>should not</b>
@@ -124,11 +117,10 @@ extern int qpol_syn_avrule_get_source_type_set(qpol_handle_t *handle, qpol_polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target_set will be NULL.
  */
-extern int qpol_syn_avrule_get_target_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_type_set_t **target_set);
+extern int qpol_syn_avrule_get_target_type_set(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_type_set_t **target_set);
 
 /**
  *  Determine if a syntactic rule includes the self flag in the target set.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Avrule to check for the self flag.
  *  @param is_self Pointer to the integer to set; if the rule includes self,
@@ -136,11 +128,10 @@ extern int qpol_syn_avrule_get_target_type_set(qpol_handle_t *handle, qpol_polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_self will be 0.
  */
-extern int qpol_syn_avrule_get_is_target_self(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_self);
+extern int qpol_syn_avrule_get_is_target_self(qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_self);
 
 /**
  *  Get an iterator over all classes specified in a syntactic rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule from which to get the classes.
  *  @param classes Iterator over items of type qpol_class_t* returned.
@@ -151,11 +142,10 @@ extern int qpol_syn_avrule_get_is_target_self(qpol_handle_t *handle, qpol_policy
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *classes will be NULL.
  */
-extern int qpol_syn_avrule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_iterator_t **classes);
+extern int qpol_syn_avrule_get_class_iter(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_iterator_t **classes);
 
 /**
  *  Get an iterator over all permissions specified in a syntactic rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the
  *  @param rule The rule from which to get the permissions.
  *  @param perms Iterator over items of type char* returned.
@@ -166,23 +156,21 @@ extern int qpol_syn_avrule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-extern int qpol_syn_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_iterator_t **perms);
+extern int qpol_syn_avrule_get_perm_iter(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_iterator_t **perms);
 
 /**
  *  Get the line number of a syntactic rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule
  *  @param rule The rule for which to get the line number.
  *  @param lineno Pointer to set to the line number.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-extern int qpol_syn_avrule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, unsigned long *lineno);
+extern int qpol_syn_avrule_get_lineno(qpol_policy_t *policy, qpol_syn_avrule_t *rule, unsigned long *lineno);
 
 /**
  *  If the syntactic rule is within a conditional, then get that
  *  conditional and assign it to cond.  Otherwise assign to cond NULL.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule for which to get the conditional.
  *  @param cond Reference pointer to this rule's conditional
@@ -190,12 +178,11 @@ extern int qpol_syn_avrule_get_lineno(qpol_handle_t *handle, qpol_policy_t *poli
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-extern int qpol_syn_avrule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_cond_t **cond);
+extern int qpol_syn_avrule_get_cond(qpol_policy_t *policy, qpol_syn_avrule_t *rule, qpol_cond_t **cond);
 
 /**
  *  Determine if the syntactic rule is enabled.  Unconditional rules
  *  are always enabled.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule for which to get the conditional.
  *  @param is_enabled Integer in which to store the result: set to 1
@@ -203,11 +190,10 @@ extern int qpol_syn_avrule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-extern int qpol_syn_avrule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_enabled);
+extern int qpol_syn_avrule_get_is_enabled(qpol_policy_t *policy, qpol_syn_avrule_t *rule, uint32_t *is_enabled);
 
 /**
  *  Get the rule type of a syntactic terule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Terule from which to get the type.
  *  @param rule_type Pointer to integer to set.
@@ -215,11 +201,10 @@ extern int qpol_syn_avrule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *rule_type will be 0.
  */
-extern int qpol_syn_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *rule_type);
+extern int qpol_syn_terule_get_rule_type(qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *rule_type);
 
 /**
  *  Bet the set of types specified for a syntactic rule's source field.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Terule from which to get the source type set.
  *  @param source_set Type set returned; the caller <b>shoule not</b>
@@ -227,11 +212,10 @@ extern int qpol_syn_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *p
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source_set will be NULL.
  */
-extern int qpol_syn_terule_get_source_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **source_set);
+extern int qpol_syn_terule_get_source_type_set(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **source_set);
 
 /**
  *  Get the set of types specified for a syntactic rule's target field.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Terule from which to get the target types et.
  *  @param target_set Type set returned; ther caller <b>should not</b>
@@ -239,11 +223,10 @@ extern int qpol_syn_terule_get_source_type_set(qpol_handle_t *handle, qpol_polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target_set will be NULL.
  */
-extern int qpol_syn_terule_get_target_type_set(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **target_set);
+extern int qpol_syn_terule_get_target_type_set(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_type_set_t **target_set);
 
 /**
  *  Get an iterator over all classes specified in a syntactic rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule from which to get the classes.
  *  @param classes Iterator over items of type qpol_class_t* returned.
@@ -254,37 +237,34 @@ extern int qpol_syn_terule_get_target_type_set(qpol_handle_t *handle, qpol_polic
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *classes will be NULL.
  */
-extern int qpol_syn_terule_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_iterator_t **classes);
+extern int qpol_syn_terule_get_class_iter(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_iterator_t **classes);
 
 /* forward declaration */
 struct qpol_type;
 
 /**
  *  Get the default type of a syntactic terule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule Terule from which to et the default type.
  *  @param dflt Reference pointer to the type to return.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dflt will be NULL.
  */
-extern int qpol_syn_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, struct qpol_type **dflt);
+extern int qpol_syn_terule_get_default_type(qpol_policy_t *policy, qpol_syn_terule_t *rule, struct qpol_type **dflt);
 
 /**
  *  Get the line number of a syntactic rule.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule for which to get the line number.
  *  @param lineno Pointer to set to the line number.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-extern int qpol_syn_terule_get_lineno(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, unsigned long *lineno);
+extern int qpol_syn_terule_get_lineno(qpol_policy_t *policy, qpol_syn_terule_t *rule, unsigned long *lineno);
 
 /**
  *  If the syntactic rule is within a conditional, then get that
  *  conditional and assign it to cond.  Otherwise assign to cond NULL.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule for which to get the conditional.
  *  @param cond Reference pointer to this rule's conditional
@@ -292,12 +272,11 @@ extern int qpol_syn_terule_get_lineno(qpol_handle_t *handle, qpol_policy_t *poli
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-extern int qpol_syn_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond);
+extern int qpol_syn_terule_get_cond(qpol_policy_t *policy, qpol_syn_terule_t *rule, qpol_cond_t **cond);
 
 /**
  *  Determine if the syntactic rule is enabled.  Unconditional rules
  *  are always enabled.
- *  @param handle Error handler for the policy database.
  *  @param policy Policy associated with the rule.
  *  @param rule The rule for which to get the conditional.
  *  @param is_enabled Integer in which to store the result: set to 1
@@ -305,6 +284,6 @@ extern int qpol_syn_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-extern int qpol_syn_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *is_enabled);
+extern int qpol_syn_terule_get_is_enabled(qpol_policy_t *policy, qpol_syn_terule_t *rule, uint32_t *is_enabled);
 
 #endif /* QPOL_SYN_RULE_QUERY_H */

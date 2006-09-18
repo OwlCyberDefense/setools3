@@ -57,7 +57,7 @@ struct qpol_iterator {
 	void (*free_fn)(void*x);
 };
 
-int qpol_iterator_create(qpol_handle_t *handle, policydb_t *policy, void *state,
+int qpol_iterator_create(qpol_policy_t *policy, void *state,
 	void *(*get_cur)(qpol_iterator_t *iter),
 	int (*next)(qpol_iterator_t *iter),
 	int (*end)(qpol_iterator_t *iter),
@@ -70,9 +70,9 @@ int qpol_iterator_create(qpol_handle_t *handle, policydb_t *policy, void *state,
 	if (iter != NULL)
 		*iter = NULL;
 
-	if (handle == NULL || policy == NULL || state == NULL || iter == NULL ||
+	if (policy == NULL || state == NULL || iter == NULL ||
 		get_cur == NULL || next == NULL || end == NULL || size == NULL) {
-		ERR(handle, "%s",strerror(EINVAL));
+		ERR(policy, "%s",strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -80,12 +80,12 @@ int qpol_iterator_create(qpol_handle_t *handle, policydb_t *policy, void *state,
 	*iter = calloc(1, sizeof(struct qpol_iterator));
 	if (*iter == NULL) {
 		error = errno;
-		ERR(handle, "%s",strerror(ENOMEM));
+		ERR(policy, "%s",strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
 
-	(*iter)->policy = policy;
+	(*iter)->policy = &policy->p->p;
 	(*iter)->state = state;
 	(*iter)->get_cur = get_cur;
 	(*iter)->next = next;
@@ -581,9 +581,9 @@ void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter)
 	/* shallow copy is safe here */
 	sp.p = *db;
 	qp.p = &sp;
+	qp.fn = NULL;
 
-	/* handle passed in as 1, but should never fail as the name is retrieved from the list into which we are looking */
-	qpol_policy_get_cat_by_name((qpol_handle_t*)1, &qp, db->p_cat_val_to_name[es->cur], &cat);
+	qpol_policy_get_cat_by_name(&qp, db->p_cat_val_to_name[es->cur], &cat);
 
 	return cat;
 }

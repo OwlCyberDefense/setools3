@@ -54,7 +54,7 @@ int apol_get_constraint_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	int retval = -1;
 	*v = NULL;
-	if (qpol_policy_get_constraint_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_constraint_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -70,8 +70,8 @@ int apol_get_constraint_by_query(apol_policy_t *p,
 			qpol_class_t *class_datum;
 			char *class_name;
 			int compval;
-			if (qpol_constraint_get_class(p->qh, p->p, constraint, &class_datum) < 0 ||
-			    qpol_class_get_name(p->qh, p->p, class_datum, &class_name) < 0) {
+			if (qpol_constraint_get_class(p->p, constraint, &class_datum) < 0 ||
+			    qpol_class_get_name(p->p, class_datum, &class_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, class_name, c->class_name,
@@ -84,7 +84,7 @@ int apol_get_constraint_by_query(apol_policy_t *p,
 				continue;
 			}
 
-			if (qpol_constraint_get_perm_iter(p->qh, p->p, constraint, &perm_iter) < 0) {
+			if (qpol_constraint_get_perm_iter(p->p, constraint, &perm_iter) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare_iter(p, perm_iter, c->perm_name,
@@ -155,7 +155,7 @@ int apol_get_validatetrans_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
 	*v = NULL;
-	if (qpol_policy_get_validatetrans_iter(p->qh, p->p, &iter) < 0) {
+	if (qpol_policy_get_validatetrans_iter(p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -171,8 +171,8 @@ int apol_get_validatetrans_by_query(apol_policy_t *p,
 			qpol_class_t *class_datum;
 			char *class_name;
 			int compval;
-			if (qpol_validatetrans_get_class(p->qh, p->p, validatetrans, &class_datum) < 0 ||
-			    qpol_class_get_name(p->qh, p->p, class_datum, &class_name) < 0) {
+			if (qpol_validatetrans_get_class(p->p, validatetrans, &class_datum) < 0 ||
+			    qpol_class_get_name(p->p, class_datum, &class_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, class_name, vt->class_name,

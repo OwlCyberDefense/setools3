@@ -242,7 +242,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 
 		item = apol_vector_get_element(domain_vector, i);
 		domain = item->item;
-		qpol_type_get_name(policy->qh, policy->p, domain, &domain_name);
+		qpol_type_get_name(policy->p, domain, &domain_name);
 		apol_domain_trans_analysis_set_start_type(policy, domain_trans, domain_name);
 		apol_domain_trans_analysis_set_direction(policy, domain_trans, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
 		apol_domain_trans_analysis_set_valid(policy, domain_trans, APOL_DOMAIN_TRANS_SEARCH_BOTH);
@@ -264,9 +264,9 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 			start = apol_domain_trans_result_get_start_type(dtr);
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
-			qpol_type_get_name(policy->qh, policy->p, start, &start_name);
-			qpol_type_get_name(policy->qh, policy->p, end, &end_name);
-			qpol_type_get_name(policy->qh, policy->p, ep, &ep_name);
+			qpol_type_get_name(policy->p, start, &start_name);
+			qpol_type_get_name(policy->p, end, &end_name);
+			qpol_type_get_name(policy->p, ep, &ep_name);
 
 			result = apol_domain_trans_table_verify_trans(policy, start, ep, end);
 			if ( !result ) {
@@ -276,7 +276,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					char *role_name;
 
 					role = apol_vector_get_element(role_vector, k);
-					qpol_role_get_name(policy->qh, policy->p, role, &role_name);
+					qpol_role_get_name(policy->p, role, &role_name);
 					if ( apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end) ) {
 						apol_user_query_set_role(policy, user_query, role_name);
 						apol_get_user_by_query(policy, user_query, &user_vector);
@@ -296,10 +296,10 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 						char *default_role_name;
 
 						role_trans = apol_vector_get_element(rbac_vector, k);
-						qpol_role_trans_get_source_role(policy->qh, policy->p, role_trans, &source_role);
-						qpol_role_trans_get_default_role(policy->qh, policy->p, role_trans, &default_role);
-						qpol_role_get_name(policy->qh, policy->p, source_role, &source_role_name);
-						qpol_role_get_name(policy->qh, policy->p, default_role, &default_role_name);
+						qpol_role_trans_get_source_role(policy->p, role_trans, &source_role);
+						qpol_role_trans_get_default_role(policy->p, role_trans, &default_role);
+						qpol_role_get_name(policy->p, source_role, &source_role_name);
+						qpol_role_get_name(policy->p, default_role, &default_role_name);
 
 						if ( apol_role_has_type(policy, source_role, start) &&
 								apol_role_has_type(policy, default_role, end) ) {
@@ -521,9 +521,9 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			start = apol_domain_trans_result_get_start_type(dtr);
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
-			qpol_type_get_name(policy->qh, policy->p, start, &start_name);
-			qpol_type_get_name(policy->qh, policy->p, end, &end_name);
-			qpol_type_get_name(policy->qh, policy->p, ep, &ep_name);
+			qpol_type_get_name(policy->p, start, &start_name);
+			qpol_type_get_name(policy->p, end, &end_name);
+			qpol_type_get_name(policy->p, ep, &ep_name);
 			printf("%s -> %s\tentrypoint: %s\n", start_name, end_name, ep_name);
 		}
 		printf("\n");
@@ -545,9 +545,9 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			start = apol_domain_trans_result_get_start_type(dtr);
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
-			qpol_type_get_name(policy->qh, policy->p, start, &start_name);
-			qpol_type_get_name(policy->qh, policy->p, end, &end_name);
-			qpol_type_get_name(policy->qh, policy->p, ep, &ep_name);
+			qpol_type_get_name(policy->p, start, &start_name);
+			qpol_type_get_name(policy->p, end, &end_name);
+			qpol_type_get_name(policy->p, ep, &ep_name);
 			printf("%s -> %s\tentrypoint: %s\n\tMissing:\n", start_name, end_name, ep_name);
 			for (j=0;j<apol_vector_get_size(item->proof);j++) {
 				sechk_proof_t *proof;
