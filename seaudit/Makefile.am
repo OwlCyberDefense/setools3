@@ -1,5 +1,6 @@
 setoolsdir = @setoolsdir@
-bin_PROGRAMS = seaudit seaudit_report
+bin_PROGRAMS = seaudit_report
+sbin_PROGRAMS = seaudit
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @GTK_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ \
