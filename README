@@ -19,7 +19,8 @@ TABLE OF CONTENTS
   3.2. command-line tools
   3.3. analysis libraries
 4. Obtaining SETools
-5. Copyright License
+5. Reporting Bugs
+6. Copyright License
 
 
 1. Overview
@@ -401,7 +402,15 @@ SETools.  Debian maintains the dpkg "setools" in section admin,
 priority optional.
 
 
-5. Copyright License
+5. Reporting Bugs
+-----------------
+
+If you found a bug, have a suggestion, or otherwise would like to
+comment upon SETools, please email setools-bugs@tresys.com.  We will
+respond to you as soon as possible.
+
+
+6. Copyright License
 --------------------
 
 The intent is to allow free use of this source code under the GNU
