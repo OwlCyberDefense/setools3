@@ -523,14 +523,9 @@ void run_diff_clicked(void)
 		gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
 }
 
-void sediff_menu_on_oclass_asc_clicked(GtkMenuItem *menuitem, gpointer user_data)
+void sediff_menu_on_default_sort_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
-	sediff_results_sort_current(sediff_app, SORT_CLASS, SORT_ASCEND);
-}
-
-void sediff_menu_on_oclass_des_clicked(GtkMenuItem *menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_CLASS, SORT_DESCEND);
+	sediff_results_sort_current(sediff_app, SORT_DEFAULT, SORT_ASCEND);
 }
 
 void sediff_menu_on_src_type_asc_clicked(GtkMenuItem *menuitem, gpointer user_data)
@@ -551,6 +546,26 @@ void sediff_menu_on_tgt_type_asc_clicked(GtkMenuItem *menuitem, gpointer user_da
 void sediff_menu_on_tgt_type_des_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
 	sediff_results_sort_current(sediff_app, SORT_TARGET, SORT_DESCEND);
+}
+
+void sediff_menu_on_oclass_asc_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_results_sort_current(sediff_app, SORT_CLASS, SORT_ASCEND);
+}
+
+void sediff_menu_on_oclass_des_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_results_sort_current(sediff_app, SORT_CLASS, SORT_DESCEND);
+}
+
+void sediff_menu_on_cond_asc_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_results_sort_current(sediff_app, SORT_COND, SORT_ASCEND);
+}
+
+void sediff_menu_on_cond_des_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_results_sort_current(sediff_app, SORT_COND, SORT_DESCEND);
 }
 
 void sediff_menu_on_find_clicked(GtkMenuItem *menuitem, gpointer user_data)
