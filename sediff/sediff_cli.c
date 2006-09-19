@@ -52,7 +52,6 @@ static struct option const longopts[] =
 	{"terules", no_argument, NULL, 'T'},
 	{"roleallows", no_argument, NULL, 'A'},
 	{"roletrans", no_argument, NULL, 'R'},
-	{"conds", no_argument, NULL, 'C'},
 	{"stats", no_argument, NULL, 's'},
 	{"gui", no_argument, NULL, 'X'},
 	{"quiet", no_argument, NULL, 'q'},
@@ -81,8 +80,7 @@ static void usage(const char *prog_name, int brief)
 			"  -b, --booleans    boolean definitions and default values\n"
 			"  -T, --terules     type enforcement rules\n"
 			"  -R, --roletrans   role transition rules\n"
-			"  -A, --roleallows  role allow rules\n"
-			"  -C, --conds       conditionals and their rules\n\n"
+			"  -A, --roleallows  role allow rules\n\n"
 			"  -q, --quiet       only print different definitions\n"
 			"  -s, --stats       print only statistics\n"
 			"  -h, --help        display this help and exit\n"
@@ -777,78 +775,6 @@ static void print_role_trans_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-/* TODO template print x function
-static void print_XXX_diffs(poldiff_t *diff, int stats_only)
-{
-	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
-	char *str = NULL;
-	const poldiff_XXX_t *item = NULL;
-
-	if (!diff)
-		return;
-
-	poldiff_get_stats(diff, POLDIFF_DIFF_XXX, stats);
-	printf("XXX (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
-	if (stats_only)
-		return;
-	v = poldiff_get_XXX_vector(diff);
-	if (!v)
-		return;
-	printf("   Added XXX: %zd\n", stats[0]);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		item = apol_vector_get_element(v, i);
-		if (!item)
-			return;
-		if (poldiff_XXX_get_form(item) == POLDIFF_FORM_ADDED) {
-			str = poldiff_XXX_to_string(diff, item);
-			if (!str)
-				return;
-			print_diff_string(str, 1);
-			printf("\n");
-			free(str);
-			str = NULL;
-		}
-	}
-
-	printf("   Removed XXX: %zd\n", stats[1]);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		item = apol_vector_get_element(v, i);
-		if (!item)
-			return;
-		if (poldiff_XXX_get_form(item) == POLDIFF_FORM_REMOVED) {
-			str = poldiff_XXX_to_string(diff, item);
-			if (!str)
-				return;
-			print_diff_string(str, 1);
-			printf("\n");
-			free(str);
-			str = NULL;
-		}
-	}
-
-	printf("   Modified XXX: %zd\n", stats[2]);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		item = apol_vector_get_element(v, i);
-		if (!item)
-			return;
-		if (poldiff_XXX_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			str = poldiff_XXX_to_string(diff, item);
-			if (!str)
-				return;
-			print_diff_string(str, 1);
-			printf("\n");
-			free(str);
-			str = NULL;
-		}
-	}
-
-	printf("\n");
-
-	return;
-	}
- */
-
 /** compare the names for two poldiff_type_t objects.
  * used to sort items prior to display. */
 static int type_name_cmp(const void *a, const void *b, void *user_data)
@@ -1053,9 +979,6 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 	if (flags & POLDIFF_DIFF_ROLE_TRANS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLE_TRANS))) {
 		print_role_trans_diffs(diff, stats);
 	}
-	if (flags & POLDIFF_DIFF_CONDS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_CONDS))) {
-		printf("TODO: Conds\n\n");
-	}
 }
 
 int main (int argc, char **argv)
@@ -1067,7 +990,7 @@ int main (int argc, char **argv)
 	poldiff_t *diff = NULL;
 	size_t total = 0;
 
-	while ((optc = getopt_long(argc, argv, "ctarubTARCsXqhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "ctarubTARsXqhv", longopts, NULL)) != -1) {
 		switch (optc) {
 			case 0:
 				break;
@@ -1097,9 +1020,6 @@ int main (int argc, char **argv)
 				break;
 			case 'R':
 				flags |= POLDIFF_DIFF_ROLE_TRANS;
-				break;
-			case 'C':
-				flags |= POLDIFF_DIFF_CONDS;
 				break;
 			case 's':
 				stats = 1;
@@ -1192,3 +1112,4 @@ err:
 	poldiff_destroy(&diff);
 	return 1;
 }
+

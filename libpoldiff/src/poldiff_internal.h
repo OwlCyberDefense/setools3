@@ -47,7 +47,6 @@ struct poldiff_attrib_summary;
 struct poldiff_role_summary;
 struct poldiff_user_summary;
 struct poldiff_bool_summary;
-struct poldiff_cond_summary;
 /*struct poldiff_sens_summary;*/
 /*struct poldiff_cat_summary;*/
 struct poldiff_rule_summary;
@@ -62,7 +61,6 @@ struct poldiff {
 	poldiff_handle_fn_t fn;
 	void *handle_arg;
 	uint32_t diff_status; /* set of POLDIF_DIFF_* for diffs run */
-	/* symbol maps ? */
 	struct poldiff_class_summary *class_diffs;
 	struct poldiff_common_summary *common_diffs;
 	struct poldiff_type_summary *type_diffs;
@@ -70,7 +68,6 @@ struct poldiff {
 	struct poldiff_role_summary *role_diffs;
 	struct poldiff_user_summary *user_diffs;
 	struct poldiff_bool_summary *bool_diffs;
-	struct poldiff_cond_summary *cond_diffs;
 /*	struct poldiff_sens_summary *sens_diffs;*/
 /*	struct poldiff_cat_summary *cat_diffs;*/
 	struct poldiff_rule_summary *rule_diffs;
