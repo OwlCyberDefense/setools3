@@ -243,49 +243,43 @@ else
       use_selinux=yes
 fi
 
-if test ${use_selinux} = "yes"; then
-   dnl ** find libselinux and libsepol
+dnl ** find libselinux and libsepol
 
-   AC_ARG_WITH(sepol-devel,
-               AC_HELP_STRING([--with-sepol-devel],
-                              [prefix where sepol development files are installed]),
-               sepol_devel="$withval",
-               sepol_devel="/usr")
-   AC_ARG_WITH(selinux-devel,
-               AC_HELP_STRING([--with-selinux-devel],
-                              [prefix where SELinux development files are installed]),
-               selinux_devel="$withval",
-               selinux_devel="/usr")
-   sepol_devel_incdir="${sepol_devel}/include"
-   sepol_devel_libdir="${sepol_devel}/lib"
-   selinux_devel_incdir="${selinux_devel}/include"
-   selinux_devel_libdir="${selinux_devel}/lib"
-   AC_MSG_CHECKING([for sepol/sepol.h])
-   selinux_save_CFLAGS="${CFLAGS}"
-   SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
-   CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir} ${SELINUX_LIB_FLAG} ${CFLAGS}"
-   AC_TRY_RUN([#include <sepol/sepol.h>
-   #include <stdlib.h>
-   int main(void) { exit(0); }],
-       AC_MSG_RESULT(yes),
-       AC_MSG_ERROR([could not find sepol headers - make sure libsepol-devel is installed]))
-   AC_CHECK_LIB(sepol,sepol_policydb_read,,
-                AC_MSG_ERROR([could not find libsepol - make sure it is installed]))
-   AC_MSG_CHECKING([for selinux/selinux.h])
-   AC_TRY_RUN([#include <selinux/selinux.h>
-   #include <stdlib.h>
-   int main(void) { exit(0); }],
-       AC_MSG_RESULT(yes),
-       AC_MSG_ERROR([could not find selinux headers - make sure libselinux-devel is installed]))
-   AC_CHECK_LIB(selinux, selinux_policy_root,,
-        AC_MSG_ERROR([could not find libselinux - make sure it is installed]),
-        -lsepol)
-   CFLAGS="${selinux_save_CFLAGS}"
-else
-   sepol_devel_incdir="/usr/include"
-   selinux_devel_incdir="/usr/include"
-   SELINUX_LIB_FLAG="-lselinux -lsepol"
-fi
+AC_ARG_WITH(sepol-devel,
+            AC_HELP_STRING([--with-sepol-devel],
+                           [prefix where sepol development files are installed]),
+            sepol_devel="$withval",
+            sepol_devel="/usr")
+AC_ARG_WITH(selinux-devel,
+            AC_HELP_STRING([--with-selinux-devel],
+                           [prefix where SELinux development files are installed]),
+            selinux_devel="$withval",
+            selinux_devel="/usr")
+sepol_devel_incdir="${sepol_devel}/include"
+sepol_devel_libdir="${sepol_devel}/lib"
+selinux_devel_incdir="${selinux_devel}/include"
+selinux_devel_libdir="${selinux_devel}/lib"
+AC_MSG_CHECKING([for sepol/sepol.h])
+selinux_save_CFLAGS="${CFLAGS}"
+SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
+CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir} ${SELINUX_LIB_FLAG} ${CFLAGS}"
+AC_TRY_RUN([#include <sepol/sepol.h>
+            #include <stdlib.h>
+            int main(void) { exit(0); }],
+           AC_MSG_RESULT(yes),
+           AC_MSG_ERROR([could not find sepol headers - make sure libsepol-devel is installed]))
+AC_CHECK_LIB(sepol,sepol_policydb_read,,
+             AC_MSG_ERROR([could not find libsepol - make sure it is installed]))
+AC_MSG_CHECKING([for selinux/selinux.h])
+AC_TRY_RUN([#include <selinux/selinux.h>
+            #include <stdlib.h>
+            int main(void) { exit(0); }],
+           AC_MSG_RESULT(yes),
+           AC_MSG_ERROR([could not find selinux headers - make sure libselinux-devel is installed]))
+AC_CHECK_LIB(selinux, selinux_policy_root,,
+AC_MSG_ERROR([could not find libselinux - make sure it is installed]),
+             -lsepol)
+CFLAGS="${selinux_save_CFLAGS}"
 
 AC_ARG_ENABLE(sefs,
               AC_HELP_STRING([--enable-sefs],
@@ -310,12 +304,16 @@ AC_ARG_ENABLE(sepol-src,
               sepol_srcdir="$enableval",
               sepol_srcdir="")
 if test "x${sepol_srcdir}" = "x"; then
-   sepol_srcdir='/usr/lib'
+   sepol_srcdir=${sepol_devel_libdir}
 else
    AC_MSG_CHECKING([for compatible sepol source tree])
-   version_sepol_major=$(cut -d. -f1 < ${sepol_srcdir}/VERSION)
-   version_sepol_minor=$(cut -d. -f2 < ${sepol_srcdir}/VERSION)
-   version_sepol_patch=$(cut -d. -f3 < ${sepol_srcdir}/VERSION)
+   sepol_version=${sepol_srcdir}/VERSION
+   if test ! -r $sepol_version; then
+      AC_MSG_ERROR([could not open libsepol/VERSION file])
+   fi
+   version_sepol_major=$(cut -d. -f1 < ${sepol_version})
+   version_sepol_minor=$(cut -d. -f2 < ${sepol_version})
+   version_sepol_patch=$(cut -d. -f3 < ${sepol_version})
    version_ok=""
    if test $version_sepol_major -gt $version_min_sepol_major; then
       version_ok=1
