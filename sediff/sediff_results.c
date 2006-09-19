@@ -548,6 +548,14 @@ static int sediff_results_avsort_comp(const void *a, const void *b, void *data)
 		s2 = poldiff_avrule_get_object_class(a2);
 		break;
 	}
+	case SORT_COND: {
+		qpol_cond_t *q1, *q2;
+		apol_policy_t *p1, *p2;
+		poldiff_avrule_get_cond(opts->diff, a1, &q1, &p1);
+		poldiff_avrule_get_cond(opts->diff, a2, &q2, &p2);
+		return opts->direction * ((int) q1 - (int) q2);
+		break;
+	}
 	default: {
 		/* shouldn't get here */
 		assert(0);
@@ -600,6 +608,14 @@ static int sediff_results_tesort_comp(const void *a, const void *b, void *data)
 	case SORT_CLASS: {
 		s1 = poldiff_terule_get_object_class(a1);
 		s2 = poldiff_terule_get_object_class(a2);
+		break;
+	}
+	case SORT_COND: {
+		qpol_cond_t *q1, *q2;
+		apol_policy_t *p1, *p2;
+		poldiff_terule_get_cond(opts->diff, a1, &q1, &p1);
+		poldiff_terule_get_cond(opts->diff, a2, &q2, &p2);
+		return opts->direction * ((int) q1 - (int) q2);
 		break;
 	}
 	default: {
