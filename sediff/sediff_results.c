@@ -716,7 +716,6 @@ void sediff_results_update_stats(sediff_app_t *app)
 	size_t avrule_stats[5] = {0,0,0,0,0};
 	size_t rallow_stats[5] = {0,0,0,0,0};
 	size_t rtrans_stats[5] = {0,0,0,0,0};
-	size_t cond_stats[5]   = {0,0,0,0,0};
 
 	poldiff_get_stats(app->diff, POLDIFF_DIFF_CLASSES, class_stats);
 	poldiff_get_stats(app->diff, POLDIFF_DIFF_COMMONS, common_stats);
@@ -729,7 +728,6 @@ void sediff_results_update_stats(sediff_app_t *app)
 	poldiff_get_stats(app->diff, POLDIFF_DIFF_AVRULES, avrule_stats);
 	poldiff_get_stats(app->diff, POLDIFF_DIFF_ROLE_ALLOWS, rallow_stats);
 	poldiff_get_stats(app->diff, POLDIFF_DIFF_ROLE_TRANS, rtrans_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_CONDS, cond_stats);
 
 	g_string_printf(string,"Classes %d "
 			"Commons %d Types: %d Attribs: %d Roles: %d Users: %d Bools: %d "
