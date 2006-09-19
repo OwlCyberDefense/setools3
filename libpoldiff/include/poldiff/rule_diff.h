@@ -30,6 +30,7 @@
 
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
+#include <qpol/policy_query.h>
 
 /******************** avrules diff ********************/
 
@@ -122,6 +123,23 @@ extern const char *poldiff_avrule_get_target_type(const poldiff_avrule_t *avrule
  *  @return A string for the class.  <b>Do not free() this string.</b>
  */
 extern const char *poldiff_avrule_get_object_class(const poldiff_avrule_t *avrule);
+
+/**
+ *  Get the conditional expression from an av rule diff.  Note that
+ *  this really returns a qpol_cond_t and an apol_policy_t, which may
+ *  then be used in other routines such as apol_cond_expr_render().
+ *
+ *  @param diff Difference structure from which the rule originated.
+ *  @param avrule The av rule from which to get the conditional.
+ *  @param cond Reference to the rule's conditional pointer, or NULL
+ *  if the rule is not conditional.  The caller must not free() this
+ *  pointer.
+ *  @param p Reference to the policy from which the conditional
+ *  originated, or NULL if the rule is not conditional.  The caller
+ *  must not destroy this pointer.
+ */
+extern void poldiff_avrule_get_cond(const poldiff_t *diff, const poldiff_avrule_t *avrule,
+				    qpol_cond_t **cond, apol_policy_t **p);
 
 /**
  *  Get a vector of permissions unmodified by the av rule.  If the
@@ -261,13 +279,22 @@ extern const char *poldiff_terule_get_target_type(const poldiff_terule_t *terule
 extern const char *poldiff_terule_get_object_class(const poldiff_terule_t *terule);
 
 /**
- *  Get the object class from a te rule diff.
+ *  Get the conditional expression from a te rule diff.  Note that
+ *  this really returns a qpol_cond_t and an apol_policy_t, which may
+ *  then be used in other routines such as apol_cond_expr_render().
  *
- *  @param terule The te rule from which to get the class.
- *
- *  @return A string for the class.  <b>Do not free() this string.</b>
+ *  @param diff The policy difference structure from which to get the
+ *  stats.
+ *  @param terule The te rule from which to get the conditional.
+ *  @param cond Reference to the rule's conditional pointer, or NULL
+ *  if the rule is not conditional.  The caller must not free() this
+ *  pointer.
+ *  @param p Reference to the policy from which the conditional
+ *  originated, or NULL if the rule is not conditional.  The caller
+ *  must not destroy this pointer.
  */
-extern const char *poldiff_terule_get_object_class(const poldiff_terule_t *terule);
+extern void poldiff_terule_get_cond(const poldiff_t *diff, const poldiff_terule_t *terule,
+				    qpol_cond_t **cond, apol_policy_t **p);
 
 /**
  *  Get the original default type for this type rule.  Note that if

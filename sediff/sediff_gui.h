@@ -88,6 +88,7 @@ typedef struct sediff_item_record {
 #define SORT_SOURCE 1
 #define SORT_TARGET 2
 #define SORT_CLASS 3
+#define SORT_COND 4
 #define SORT_ASCEND 1
 #define SORT_DESCEND -1
 

@@ -348,6 +348,25 @@ const char *poldiff_avrule_get_object_class(const poldiff_avrule_t *avrule)
 	return avrule->cls;
 }
 
+void poldiff_avrule_get_cond(const poldiff_t *diff, const poldiff_avrule_t *avrule,
+			     qpol_cond_t **cond, apol_policy_t **p)
+{
+	if (diff == NULL || avrule == NULL || cond == NULL || p == NULL) {
+		errno = EINVAL;
+		return;
+	}
+	*cond = avrule->cond;
+	if (*cond == NULL) {
+		*p = NULL;
+	}
+	else if (avrule->form == POLDIFF_FORM_ADDED || avrule->form == POLDIFF_FORM_ADD_TYPE) {
+		*p = diff->mod_pol;
+	}
+	else {
+		*p = diff->orig_pol;
+	}
+}
+
 apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t *avrule)
 {
 	if (avrule == NULL) {
@@ -594,6 +613,25 @@ const char *poldiff_terule_get_object_class(const poldiff_terule_t *terule)
 		return 0;
 	}
 	return terule->cls;
+}
+
+void poldiff_terule_get_cond(const poldiff_t *diff, const poldiff_terule_t *terule,
+			     qpol_cond_t **cond, apol_policy_t **p)
+{
+	if (diff == NULL || terule == NULL || cond == NULL || p == NULL) {
+		errno = EINVAL;
+		return;
+	}
+	*cond = terule->cond;
+	if (*cond == NULL) {
+		*p = NULL;
+	}
+	else if (terule->form == POLDIFF_FORM_ADDED || terule->form == POLDIFF_FORM_ADD_TYPE) {
+		*p = diff->mod_pol;
+	}
+	else {
+		*p = diff->orig_pol;
+	}
 }
 
 const char *poldiff_terule_get_original_target(const poldiff_terule_t *terule)
