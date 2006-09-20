@@ -105,6 +105,7 @@ static poldiff_type_remap_entry_t *poldiff_type_remap_entry_create(poldiff_t *di
 		poldiff_type_remap_entry_free(e);
 		return NULL;
 	}
+	diff->remapped = 1;
 	return e;
 }
 
@@ -182,6 +183,7 @@ int poldiff_type_remap_create(poldiff_t *diff,
 		goto cleanup;
 	}
 	retval = 0;
+	diff->remapped = 1;
  cleanup:
 	if (retval < 0) {
 		poldiff_type_remap_entry_free(entry);
@@ -215,6 +217,7 @@ void poldiff_type_remap_entry_remove(poldiff_t *diff,
 		return;
 	}
 	apol_vector_remove(diff->type_map->remap, idx);
+	diff->remapped = 1;
 }
 
 apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t *diff,
@@ -628,6 +631,7 @@ void poldiff_type_remap_flush(poldiff_t *diff)
 	apol_vector_destroy(&(diff->type_map->remap), poldiff_type_remap_entry_free);
 	/* no error checking below */
 	diff->type_map->remap = apol_vector_create();
+	diff->remapped = 1;
 }
 
 /**
@@ -970,6 +974,7 @@ int type_map_infer(poldiff_t *diff)
         type_remap_vector_dump(diff);
 
 	retval = 0;
+	diff->remapped = 1;
  cleanup:
 	apol_vector_destroy(&ov, NULL);
 	apol_vector_destroy(&mv, NULL);

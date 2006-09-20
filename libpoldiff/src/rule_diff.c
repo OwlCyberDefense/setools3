@@ -711,6 +711,29 @@ void rule_destroy(poldiff_rule_summary_t **rs)
 	}
 }
 
+
+int rule_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	rule_destroy(&diff->rule_diffs);
+	diff->rule_diffs = rule_create();
+	if (diff->rule_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * Build the BST for classes, permissions, and booleans.  This
  * effectively provides a partial mapping of rules from one policy to

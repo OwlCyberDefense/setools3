@@ -177,6 +177,28 @@ void bool_destroy(poldiff_bool_summary_t **bs)
 	}
 }
 
+int bool_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	bool_destroy(&diff->bool_diffs);
+	diff->bool_diffs = bool_create();
+	if (diff->bool_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * Comparison function for two bools from the same policy.
  */
