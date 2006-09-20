@@ -521,17 +521,55 @@ static int sediff_file_mmap(const char *file, char **file_data, size_t *size, ap
 	return 0;
 }
 
+struct load_policy_datum {
+	const char *file;
+	const char *which_pol;
+	apol_policy_t *p;
+	sediff_app_t *app;
+};
+
+static gpointer sediff_load_policy_runner(gpointer data)
+{
+	struct load_policy_datum *l = data;
+	GString *string;
+	int rt;
+	unsigned int p_ver;
+	sediff_progress_update(l->app, "Reading policy.");
+	rt = apol_policy_open(l->file, &l->p, sediff_progress_apol_handle_func, l->app);
+	if (rt != 0) {
+		string = g_string_new("");
+		g_string_printf(string, "Problem opening policy file: %s", l->file);
+		sediff_progress_abort(l->app, string->str);
+		g_string_free(string, TRUE);
+		return NULL;
+	}
+	qpol_policy_get_policy_version(l->p->p, &p_ver);
+	if (p_ver < 12) {
+		string = g_string_new("");
+		g_string_printf(string, "%s: Unsupported version: Supported versions are Source (12 and higher), Binary (15 and higher).", l->which_pol);
+		sediff_progress_abort(l->app, string->str);
+		g_string_free(string, TRUE);
+		return NULL;
+	}
+	if (apol_policy_is_binary(l->p) && p_ver < 15) {
+		string = g_string_new("");
+		g_string_printf(string, "%s: Binary policies are only supported for version 15 or higher.", l->which_pol);
+		sediff_progress_abort(l->app, string->str);
+		g_string_free(string, TRUE);
+		return NULL;
+	}
+	sediff_progress_done(l->app);
+	return NULL;
+}
+
+
 /* opens p1 and p2, populates policy text buffers */
 int sediff_load_policies(const char *p1_file, const char *p2_file)
 {
 	GtkTextView *p1_textview, *p2_textview, *stats1, *stats2;
-	GString *string = g_string_new("");
 	GdkCursor *cursor = NULL;
 	GtkNotebook *notebook1, *notebook2;
-	int rt;
-	apol_policy_t *p1 = NULL;
-	apol_policy_t *p2 = NULL;
-	unsigned int p1_ver, p2_ver;
+        struct load_policy_datum l;
 
 	/* set the cursor to a hourglass */
 	cursor = gdk_cursor_new(GDK_WATCH);
@@ -545,47 +583,27 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 
 	/* attempt to open the policies */
 	sediff_progress_show(sediff_app, "Loading Policy 1");
-	rt = apol_policy_open(p1_file, &p1, sediff_progress_apol_handle_func, sediff_app);
-	if (rt != 0) {
-		g_string_printf(string,"Problem opening first policy file: %s",p1_file);
-		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
+	l.file = p1_file;
+	l.which_pol = "Policy 1";
+	l.app = sediff_app;
+	g_thread_create(sediff_load_policy_runner, &l, FALSE, NULL);
+	if (sediff_progress_wait(sediff_app) < 0) {
 		goto err;
 	}
-	qpol_policy_get_policy_version(p1->p, &p1_ver);
-	if (p1_ver < 12) {
-		g_string_printf(string,"Policy 1:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).");
-		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
-		goto err;
-	}
-	if (apol_policy_is_binary(p1) && p1_ver < 15) {
-		g_string_printf(string,"Policy 1:  Binary policies are only supported for version 15 or higher.");
-		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
-		goto err;
-	}
-
+	sediff_app->orig_pol = l.p;
 	sediff_progress_show(sediff_app, "Loading Policy 2");
-	rt = apol_policy_open(p2_file, &p2, sediff_progress_apol_handle_func, sediff_app);
-	if (rt != 0) {
-		g_string_printf(string,"Problem opening second policy file: %s",p2_file);
-		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
+	l.file = p2_file;
+	l.which_pol = "Policy 2";
+	g_thread_create(sediff_load_policy_runner, &l, FALSE, NULL);
+	if (sediff_progress_wait(sediff_app) < 0) {
 		goto err;
 	}
-	qpol_policy_get_policy_version(p2->p, &p2_ver);
-	if (p2_ver < 12 ) {
-		g_string_printf(string,"Policy 2:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).");
-		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
-		goto err;
-	}
-	if (apol_policy_is_binary(p2) && p2_ver < 15) {
-		g_string_printf(string,"Policy 2:  Binary policies are only supported for version 15 or higer.");
-		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
-		goto err;
-	}
+	sediff_app->mod_pol = l.p;
 
 	sediff_app->p1_sfd.name = g_string_new(p1_file);
 	sediff_app->p2_sfd.name = g_string_new(p2_file);
-	sediff_file_mmap(p1_file, &(sediff_app->p1_sfd.data), &(sediff_app->p1_sfd.size), p1);
-	sediff_file_mmap(p2_file, &(sediff_app->p2_sfd.data), &(sediff_app->p2_sfd.size), p2);
+	sediff_file_mmap(p1_file, &(sediff_app->p1_sfd.data), &(sediff_app->p1_sfd.size), sediff_app->orig_pol);
+	sediff_file_mmap(p2_file, &(sediff_app->p2_sfd.data), &(sediff_app->p2_sfd.size), sediff_app->mod_pol);
 
 	/* Grab the 2 policy textviews */
 	p1_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
@@ -609,12 +627,10 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 			 G_CALLBACK(sediff_on_policy2_notebook_event_after), notebook2);
 
 	/* populate the 2 stat buffers */
-	sediff_policy_stats_textview_populate(p1, stats1, p1_file);
-	sediff_policy_stats_textview_populate(p2, stats2, p2_file);
+	sediff_policy_stats_textview_populate(sediff_app->orig_pol, stats1, p1_file);
+	sediff_policy_stats_textview_populate(sediff_app->mod_pol, stats2, p2_file);
 
 	sediff_reset_policy_notebooks();
-	sediff_app->orig_pol = p1;
-	sediff_app->mod_pol = p2;
         sediff_app->diff = poldiff_create(sediff_app->orig_pol,
                                           sediff_app->mod_pol,
                                           sediff_progress_poldiff_handle_func,
@@ -696,25 +712,24 @@ void sediff_open_dialog_on_open_and_diff_button_clicked(GtkButton *button, gpoin
 
 	if (sediff_open_dialog_open_and_load_policies() < 0)
 		return;
-	/* set the cursor to a hand */
-	cursor = gdk_cursor_new(GDK_WATCH);
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);
-	gdk_cursor_unref(cursor);
-	gdk_flush();
-
-	run_diff_clicked();
-
-	/* load is done set cursor back to a ptr */
-	cursor = gdk_cursor_new(GDK_LEFT_PTR);
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);
-	gdk_cursor_unref(cursor);
-	gdk_flush();
 
 	/* destroy the no longer needed dialog widget */
 	gtk_widget_destroy(gtk_widget_get_toplevel(GTK_WIDGET(button)));
 	sediff_app->open_dlg = NULL;
 	g_object_unref(G_OBJECT(sediff_app->open_dlg_xml));
 	sediff_app->open_dlg_xml = NULL;
+
+	/* set the cursor to a hand */
+	cursor = gdk_cursor_new(GDK_WATCH);
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
+
+	run_diff_clicked();
+
+	/* load is done set cursor back to a ptr */
+	cursor = gdk_cursor_new(GDK_LEFT_PTR);
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
+	gdk_cursor_unref(cursor);
+	gdk_flush();
 }
 
 void sediff_open_dialog_on_open_button_clicked(GtkButton *button, gpointer user_data)

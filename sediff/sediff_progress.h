@@ -32,8 +32,14 @@ typedef struct sediff_progress sediff_progress_t;
 
 void sediff_progress_show(sediff_app_t *app, const char *title);
 void sediff_progress_hide(sediff_app_t *app);
+void sediff_progress_message(sediff_app_t *app, const char * title, const char *message);
 void sediff_progress_destroy(sediff_app_t *app);
-void sediff_progress_message(sediff_app_t *app, const char *title, const char *message);
+
+/* the rest of these are for multi-threaded progress dialog */
+int sediff_progress_wait(sediff_app_t *app);
+void sediff_progress_done(sediff_app_t *app);
+void sediff_progress_abort(sediff_app_t *app, const char *s);
+void sediff_progress_update(sediff_app_t *app, const char *message);
 void sediff_progress_poldiff_handle_func(void *arg, poldiff_t *diff, int level, const char *fmt, va_list va_args);
 void sediff_progress_apol_handle_func(apol_policy_t *p, int level, const char *fmt, va_list argp);
 

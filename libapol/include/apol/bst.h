@@ -111,8 +111,7 @@ extern int apol_bst_get_element(const apol_bst_t *b, void *elem,
  *  do not insert it again.
  *
  *  @param b The BST to which to add the element.
- *  @param elem The element to add.  This function performs no checking
- *  on this element other than a check for NULL.
+ *  @param elem The element to add.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater (the function given in apol_bst_create()).
  *
@@ -132,8 +131,7 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data);
  *  @param b The BST to which to add the element.
  *  @param elem Reference to an element to add.  If the element is
  *  new, then the pointer remains unchanged.  Otherwise set the
- *  reference to the element already within the tree.  This function
- *  performs no checking on this element other than a check for NULL.
+ *  reference to the element already within the tree.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater (the function given in apol_bst_create()).
  *  @param fr If the element already exists and this is non-NULL, then
