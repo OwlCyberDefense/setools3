@@ -307,6 +307,29 @@ apol_vector_t *type_get_items(poldiff_t *diff, apol_policy_t *policy)
 	return v;
 }
 
+
+int type_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	type_summary_destroy(&diff->type_diffs);
+	diff->type_diffs = type_summary_create();
+	if (diff->type_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * Compare two type map values
  * @param x The first type to compare, a (uint32_t) value

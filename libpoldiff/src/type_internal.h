@@ -49,6 +49,15 @@ poldiff_type_summary_t *type_summary_create(void);
 void type_summary_destroy(poldiff_type_summary_t **type);
 
 /**
+ * Reset the state of all type differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int type_reset(poldiff_t *diff);
+
+/**
  * Get a vector of all type (type qpol_type_t) from the
  * given policy, sorted by name.
  *

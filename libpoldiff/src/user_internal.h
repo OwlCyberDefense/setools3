@@ -47,6 +47,15 @@ poldiff_user_summary_t *user_create(void);
 void user_destroy(poldiff_user_summary_t **us);
 
 /**
+ * Reset the state of all user differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int user_reset(poldiff_t *diff);
+
+/**
  * Get a vector of all users from the given policy, sorted by name.
  *
  * @param diff Policy diff error handler.

@@ -75,8 +75,8 @@ struct poldiff {
 	struct poldiff_role_trans_summary *role_trans_diffs;
 /*	struct poldiff_range_trans_summary *range_trans_diffs;*/
 	/* and so forth if we want ocon_diffs */
-
 	type_map_t *type_map;
+	int remapped; /* set if type mapping was changed since last run */
 };
 
 /**
@@ -119,6 +119,15 @@ typedef poldiff_form_e (*poldiff_item_get_form_fn_t)(const void *item);
  *  it is expected to set errno.
  */
 typedef char *(*poldiff_item_to_string_fn_t)(poldiff_t *diff, const void *item);
+
+/**
+ *  Callbackfunction signature for resetting the diff results for an item.
+ *  called when mapping of the symbols used by the diff change.
+ *  @param diff The policy difference structure containing the diffs to reset.
+ *  @return 0 on success and < 0 on error; if the call fails,
+ *  it is expected to set errno.
+ */
+typedef int (*poldiff_reset_fn_t)(poldiff_t *diff);
 
 /**
  *  Callback function signature for getting a vector of all unique

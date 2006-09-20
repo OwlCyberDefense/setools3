@@ -47,6 +47,15 @@ poldiff_rule_summary_t *rule_create(void);
  */
 void rule_destroy(poldiff_rule_summary_t **rs);
 
+/**
+ * Reset the state of all TE and AV rule differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int rule_reset(poldiff_t *diff);
+
 /******************** avrule diffs ********************/
 
 /**

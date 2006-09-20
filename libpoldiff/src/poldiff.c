@@ -41,6 +41,7 @@ typedef struct poldiff_item_record {
 	poldiff_get_result_items_fn_t get_results;
 	poldiff_item_get_form_fn_t get_form;
 	poldiff_item_to_string_fn_t to_string;
+	poldiff_reset_fn_t reset;
 	poldiff_get_items_fn_t get_items;
 	poldiff_free_item_fn_t free_item;
 	poldiff_item_comp_fn_t comp;
@@ -56,6 +57,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_avrule_vector,
 		poldiff_avrule_get_form,
 		poldiff_avrule_to_string,
+		rule_reset,
 		avrule_get_items,
 		avrule_free_item,
 		avrule_comp,
@@ -69,6 +71,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_class_vector,
 		poldiff_class_get_form,
 		poldiff_class_to_string,
+		class_reset,
 		class_get_items,
 		NULL,
 		class_comp,
@@ -82,6 +85,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_bool_vector,
 		poldiff_bool_get_form,
 		poldiff_bool_to_string,
+		bool_reset,
 		bool_get_items,
 		NULL,
 		bool_comp,
@@ -95,6 +99,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_common_vector,
 		poldiff_common_get_form,
 		poldiff_common_to_string,
+		common_reset,
 		common_get_items,
 		NULL,
 		common_comp,
@@ -108,6 +113,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_role_allow_vector,
 		poldiff_role_allow_get_form,
 		poldiff_role_allow_to_string,
+		role_allow_reset,
 		role_allow_get_items,
 		role_allow_free_item,
 		role_allow_comp,
@@ -121,6 +127,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_role_trans_vector,
 		poldiff_role_trans_get_form,
 		poldiff_role_trans_to_string,
+		role_trans_reset,
 		role_trans_get_items,
 		role_trans_free_item,
 		role_trans_comp,
@@ -134,6 +141,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_role_vector,
 		poldiff_role_get_form,
 		poldiff_role_to_string,
+		role_reset,
 		role_get_items,
 		NULL,
 		role_comp,
@@ -147,6 +155,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_user_vector,
 		poldiff_user_get_form,
 		poldiff_user_to_string,
+		user_reset,
 		user_get_items,
 		NULL,
 		user_comp,
@@ -160,6 +169,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_terule_vector,
 		poldiff_terule_get_form,
 		poldiff_terule_to_string,
+		rule_reset,
 		terule_get_items,
 		terule_free_item,
 		terule_comp,
@@ -173,6 +183,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_type_vector,
 		poldiff_type_get_form,
 		poldiff_type_to_string,
+		type_reset,
 		type_get_items,
 		NULL,
 		type_comp,
@@ -186,6 +197,7 @@ static const poldiff_item_record_t item_records[] = {
 		poldiff_get_attrib_vector,
 		poldiff_attrib_get_form,
 		poldiff_attrib_to_string,
+		attrib_reset,
 		attrib_get_items,
 		NULL,
 		attrib_comp,
@@ -228,7 +240,6 @@ poldiff_t *poldiff_create(apol_policy_t *orig_policy, apol_policy_t *mod_policy,
 		return NULL;
 	}
 
-	//TODO: allocate and initialize fields here
 	if ((diff->rule_diffs = rule_create()) == NULL ||
 	    (diff->bool_diffs = bool_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
@@ -255,7 +266,6 @@ void poldiff_destroy(poldiff_t **diff)
 	apol_policy_destroy(&(*diff)->orig_pol);
 	apol_policy_destroy(&(*diff)->mod_pol);
 	type_map_destroy(&(*diff)->type_map);
-	//TODO: free stuff here
 	rule_destroy(&(*diff)->rule_diffs);
 	bool_destroy(&(*diff)->bool_diffs);
 	class_destroy(&(*diff)->class_diffs);
@@ -370,7 +380,6 @@ err:
 int poldiff_run(poldiff_t *diff, uint32_t flags)
 {
 	size_t i, num_items;
-	int error = 0;
 
 	if (!flags)
 		return 0; /* nothing to do */
@@ -380,17 +389,28 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 		errno = EINVAL;
 		return -1;
 	}
+
+	num_items = sizeof(item_records)/sizeof(poldiff_item_record_t);
+	if (diff->remapped) {
+		for (i = 0; i < num_items; i++) {
+			if (item_records[i].flag_bit & POLDIFF_DIFF_REMAPPED) {
+				INFO(diff, "Resetting %s diff.", item_records[i].item_name);
+				if (item_records[i].reset(diff))
+					return -1;
+			}
+		}
+		diff->diff_status &= ~(POLDIFF_DIFF_REMAPPED);
+	}
+	
 	if (type_map_build(diff)) {
 		return -1;
 	}
 
-	num_items = sizeof(item_records)/sizeof(poldiff_item_record_t);
 	for (i = 0; i < num_items; i++) {
 		/* item requested but not yet run */
 		if ((flags & item_records[i].flag_bit) && !(item_records[i].flag_bit & diff->diff_status)) {
 			INFO(diff, "Running %s diff.", item_records[i].item_name);
 			if (poldiff_do_item_diff(diff, &(item_records[i]))) {
-				error = errno;
 				return -1;
 			}
 		}
