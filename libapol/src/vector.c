@@ -233,7 +233,7 @@ int apol_vector_get_index(const apol_vector_t *v, void *elem,
 
 int apol_vector_append(apol_vector_t *v, void *elem)
 {
-	if (!v || !elem) {
+	if (!v) {
 		errno = EINVAL;
 		return -1;
 	}

@@ -24,6 +24,7 @@
  */
 
 #include "sediff_progress.h"
+#include "utilgui.h"
 
 #include <gtk/gtk.h>
 #include <glib.h>
@@ -32,6 +33,10 @@
 struct sediff_progress {
 	GtkWidget *progress;
 	GtkWidget *label1, *label2;
+	char *s;
+	int done;
+	GCond *cond;
+	GMutex *mutex;
 };
 
 void sediff_progress_show(sediff_app_t *app, const char *title)
@@ -59,6 +64,8 @@ void sediff_progress_show(sediff_app_t *app, const char *title)
 		cursor = gdk_cursor_new(GDK_WATCH);
 		gdk_window_set_cursor(p->progress->window, cursor);
 		gdk_cursor_unref(cursor);
+		p->cond = g_cond_new();
+		p->mutex = g_mutex_new();
 	}
 	else {
 		p = app->progress;
@@ -68,6 +75,7 @@ void sediff_progress_show(sediff_app_t *app, const char *title)
 		gtk_window_deiconify(GTK_WINDOW(p->progress));
 	}
 	gtk_window_set_title(GTK_WINDOW(p->progress), title);
+	p->done = 0;
 }
 
 void sediff_progress_hide(sediff_app_t *app)
@@ -75,6 +83,14 @@ void sediff_progress_hide(sediff_app_t *app)
 	if (app != NULL && app->progress != NULL) {
 		gtk_widget_hide(app->progress->progress);
 	}
+}
+
+void sediff_progress_message(sediff_app_t *app, const char *title, const char *message)
+{
+	sediff_progress_show(app, title);
+	gtk_label_set_text(GTK_LABEL(app->progress->label2), message);
+	while (gtk_events_pending ())
+		gtk_main_iteration ();
 }
 
 void sediff_progress_destroy(sediff_app_t *app)
@@ -85,22 +101,67 @@ void sediff_progress_destroy(sediff_app_t *app)
 	}
 }
 
+int sediff_progress_wait(sediff_app_t *app)
+{
+	sediff_progress_t *p = app->progress;
+	GTimeVal wait_time = {0, 100000};
+	g_mutex_lock(p->mutex);
+	while (!p->done) {
+		g_cond_timed_wait(p->cond, p->mutex, &wait_time);
+		if (p->done == 0 && p->s != NULL) {
+			gtk_label_set_text(GTK_LABEL(app->progress->label2), p->s);
+			free(p->s);
+			p->s = NULL;
+		}
+		while (gtk_events_pending ())
+			gtk_main_iteration ();
+	}
+	g_mutex_unlock(p->mutex);
+	if (p->done < 0) {
+		message_display(app->window, GTK_MESSAGE_ERROR, p->s);
+		free(p->s);
+		p->s = NULL;
+		return p->done;
+	}
+	p->done = 0;
+	return 0;
+}
+
+void sediff_progress_done(sediff_app_t *app)
+{
+	sediff_progress_t *p = app->progress;
+	g_mutex_lock(p->mutex);
+	p->done = 1;
+	g_cond_signal(app->progress->cond);
+	g_mutex_unlock(app->progress->mutex);
+}
+
+void sediff_progress_abort(sediff_app_t *app, const char *s)
+{
+	sediff_progress_t *p = app->progress;
+	g_mutex_lock(p->mutex);
+	p->s = g_strdup(s);
+	p->done = -1;
+	g_cond_signal(app->progress->cond);
+	g_mutex_unlock(app->progress->mutex);
+}
+
 static void sediff_progress_update_label(sediff_app_t *app, const char *fmt, va_list va_args)
 {
 	gchar *s = NULL;
 	g_vasprintf(&s, fmt, va_args);
-	gtk_label_set_text(GTK_LABEL(app->progress->label2), s);
-	free(s);
-	while (gtk_events_pending ())
-		gtk_main_iteration ();
+	g_mutex_lock(app->progress->mutex);
+	app->progress->s = s;
+	g_cond_signal(app->progress->cond);
+	g_mutex_unlock(app->progress->mutex);
 }
 
-void sediff_progress_message(sediff_app_t *app, const char *title, const char *message)
+void sediff_progress_update(sediff_app_t *app, const char *message)
 {
-	sediff_progress_show(app, title);
-	gtk_label_set_text(GTK_LABEL(app->progress->label2), message);
-	while (gtk_events_pending ())
-		gtk_main_iteration ();
+	g_mutex_lock(app->progress->mutex);
+	app->progress->s = g_strdup(message);
+	g_cond_signal(app->progress->cond);
+	g_mutex_unlock(app->progress->mutex);
 }
 
 void sediff_progress_poldiff_handle_func(void *arg, poldiff_t *diff, int level, const char *fmt, va_list va_args)

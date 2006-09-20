@@ -210,9 +210,6 @@ static void sediff_populate_key_buffer(void)
 	g_string_printf(string," Changed(*):\n  Items changed\n  in policy 2.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str,
 						 -1, "changed-tag", NULL);
-	g_string_printf(string," T:\n  A TRUE\n  conditional \n  TE rule.\n\n F:\n  A FALSE\n  conditional\n  TE rule.\n");
-	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str,
-						 -1, "mono-tag", NULL);
 	g_string_free(string, TRUE);
 }
 
@@ -479,10 +476,27 @@ static gboolean sediff_populate_main_window()
 	return FALSE;
 }
 
+struct run_datum {
+	sediff_app_t *app;
+	uint32_t run_flags;
+};
+
+static gpointer sediff_run_diff_runner(gpointer data)
+{
+	struct run_datum *r = data;
+	if (poldiff_run(r->app->diff, r->run_flags) < 0) {
+		sediff_progress_abort(r->app, "Error running diff.");
+	}
+	else {
+		sediff_progress_done(r->app);
+	}
+	return NULL;
+}
+
 void run_diff_clicked(void)
 {
 	GdkCursor *cursor = NULL;
-	uint32_t run_flags;
+	struct run_datum r;
 
 	sediff_initialize_diff();
 
@@ -491,8 +505,6 @@ void run_diff_clicked(void)
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
 	gdk_cursor_unref(cursor);
 	gdk_flush();
-
-	sediff_progress_show(sediff_app, "Running Diff");
 
 	/* make sure we clear everything out before we run the diff */
 	while (gtk_events_pending ())
@@ -504,7 +516,7 @@ void run_diff_clicked(void)
                 */
 	}
 
-	run_flags = POLDIFF_DIFF_ALL;
+	r.run_flags = POLDIFF_DIFF_ALL;
 	if (apol_policy_is_binary(sediff_app->orig_pol) ||
 	    apol_policy_is_binary(sediff_app->mod_pol)) {
 		message_display(sediff_app->window,
@@ -512,9 +524,13 @@ void run_diff_clicked(void)
 				"Attribute diffs are not supported for binary policies.");
 		while (gtk_events_pending ())
 			gtk_main_iteration ();
-		run_flags &= ~POLDIFF_DIFF_ATTRIBS;
+		r.run_flags &= ~POLDIFF_DIFF_ATTRIBS;
 	}
-	poldiff_run(sediff_app->diff, run_flags);
+
+	sediff_progress_show(sediff_app, "Running Diff");
+	r.app = sediff_app;
+	g_thread_create(sediff_run_diff_runner, &r, FALSE, NULL);
+	sediff_progress_wait(sediff_app);
 	sediff_populate_main_window();
 
 	sediff_progress_hide(sediff_app);
@@ -964,9 +980,8 @@ int main(int argc, char **argv)
 	delay_data.run_diff = FALSE;
 	GtkNotebook *notebook = NULL;
 
-#ifdef G_THREADS_ENABLED
-	if (!g_thread_supported ()) g_thread_init (NULL);
-#endif
+	if (!g_thread_supported ())
+		g_thread_init (NULL);
 
 	while ((optc = getopt_long (argc, argv, "hvd", longopts, NULL)) != -1)  {
 		switch (optc) {

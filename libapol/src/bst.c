@@ -190,7 +190,7 @@ int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data,
 {
 	bst_node_t *node, *new_node;
         int compval;
-	if (!b || !elem || !(*elem)) {
+	if (!b || !elem) {
 		errno = EINVAL;
 		return -1;
 	}

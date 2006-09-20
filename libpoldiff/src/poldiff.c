@@ -400,8 +400,9 @@ int poldiff_run(poldiff_t *diff, uint32_t flags)
 			}
 		}
 		diff->diff_status &= ~(POLDIFF_DIFF_REMAPPED);
+		diff->remapped = 0;
 	}
-	
+
 	if (type_map_build(diff)) {
 		return -1;
 	}

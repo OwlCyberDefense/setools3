@@ -349,7 +349,7 @@ const char *poldiff_avrule_get_object_class(const poldiff_avrule_t *avrule)
 }
 
 void poldiff_avrule_get_cond(const poldiff_t *diff, const poldiff_avrule_t *avrule,
-			     qpol_cond_t **cond, apol_policy_t **p)
+			     qpol_cond_t **cond, uint32_t *which_list, apol_policy_t **p)
 {
 	if (diff == NULL || avrule == NULL || cond == NULL || p == NULL) {
 		errno = EINVAL;
@@ -357,12 +357,15 @@ void poldiff_avrule_get_cond(const poldiff_t *diff, const poldiff_avrule_t *avru
 	}
 	*cond = avrule->cond;
 	if (*cond == NULL) {
+		*which_list = 1;
 		*p = NULL;
 	}
 	else if (avrule->form == POLDIFF_FORM_ADDED || avrule->form == POLDIFF_FORM_ADD_TYPE) {
+		*which_list = avrule->branch;
 		*p = diff->mod_pol;
 	}
 	else {
+		*which_list = avrule->branch;
 		*p = diff->orig_pol;
 	}
 }
@@ -616,7 +619,7 @@ const char *poldiff_terule_get_object_class(const poldiff_terule_t *terule)
 }
 
 void poldiff_terule_get_cond(const poldiff_t *diff, const poldiff_terule_t *terule,
-			     qpol_cond_t **cond, apol_policy_t **p)
+			     qpol_cond_t **cond, uint32_t *which_list, apol_policy_t **p)
 {
 	if (diff == NULL || terule == NULL || cond == NULL || p == NULL) {
 		errno = EINVAL;
@@ -624,12 +627,15 @@ void poldiff_terule_get_cond(const poldiff_t *diff, const poldiff_terule_t *teru
 	}
 	*cond = terule->cond;
 	if (*cond == NULL) {
+		*which_list = 1;
 		*p = NULL;
 	}
 	else if (terule->form == POLDIFF_FORM_ADDED || terule->form == POLDIFF_FORM_ADD_TYPE) {
+		*which_list = terule->branch;
 		*p = diff->mod_pol;
 	}
 	else {
+		*which_list = terule->branch;
 		*p = diff->orig_pol;
 	}
 }
@@ -912,7 +918,6 @@ static int avrule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 	size_t i, j;
 	size_t num_bools = 0;
 	char *bool_name, *pseudo_bool, *t;
-	int orig_states[5];
 	int retval = -1, error = 0, compval;
 	if (qpol_cond_get_expr_node_iter(p->p, cond, &iter) < 0) {
 		error = errno;
@@ -972,14 +977,6 @@ static int avrule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 		}
 	}
 
-	/* store old boolean states prior to change */
-	for (i = 0; i < num_bools; i++) {
-		if (qpol_bool_get_state(p->p, bools[i], orig_states + i) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-	}
-
 	/* now compute the truth table for the booleans */
 	key->bool_val = 0;
 	for (i = 0; i < 32; i++) {
@@ -996,13 +993,6 @@ static int avrule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 		key->bool_val = (key->bool_val << 1) | truthiness;
 	}
 
-	/* restore old boolean states */
-	for (i = 0; i < num_bools; i++) {
-		if (qpol_bool_set_state_no_eval(p->p, bools[i], orig_states[i]) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-	}
 	key->cond = cond;
 	retval = 0;
  cleanup:
@@ -1218,6 +1208,8 @@ static int avrule_expand(poldiff_t *diff, apol_policy_t *p, qpol_avrule_t *rule,
 
 apol_vector_t *avrule_get_items(poldiff_t *diff, apol_policy_t *policy)
 {
+	apol_vector_t *bools = NULL, *bool_states = NULL;
+	size_t i;
 	apol_bst_t *b = NULL;
 	apol_vector_t *v = NULL;
 	qpol_iterator_t *iter = NULL;
@@ -1228,6 +1220,30 @@ apol_vector_t *avrule_get_items(poldiff_t *diff, apol_policy_t *policy)
 		error = errno;
 		goto cleanup;
 	}
+
+        /* store original boolean values */
+        if (apol_get_bool_by_query(policy, NULL, &bools) < 0) {
+                error = errno;
+                goto cleanup;
+        }
+        if ((bool_states = apol_vector_create_with_capacity(apol_vector_get_size(bools))) == NULL) {
+                error = errno;
+		ERR(diff, "%s", strerror(error));
+                goto cleanup;
+        }
+        for (i = 0; i < apol_vector_get_size(bools); i++) {
+                qpol_bool_t *bool = apol_vector_get_element(bools, i);
+                int state;
+                if (qpol_bool_get_state(policy->p, bool, &state) < 0) {
+                        error = errno;
+                        goto cleanup;
+                }
+		if (apol_vector_append(bool_states, (void *) state) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+        }
 	if ((b = apol_bst_create(avrule_bst_comp)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -1253,6 +1269,14 @@ apol_vector_t *avrule_get_items(poldiff_t *diff, apol_policy_t *policy)
 	}
 	retval = 0;
  cleanup:
+        /* restore boolean states */
+	for (i = 0; i < apol_vector_get_size(bools); i++) {
+		qpol_bool_t *bool = apol_vector_get_element(bools, i);
+		int state = (int) apol_vector_get_element(bool_states, i);
+		qpol_bool_set_state(policy->p, bool, state);
+	}
+	apol_vector_destroy(&bools, NULL);
+	apol_vector_destroy(&bool_states, NULL);
 	apol_bst_destroy(&b, NULL);
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
@@ -1659,7 +1683,6 @@ static int terule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 	size_t i, j;
 	size_t num_bools = 0;
 	char *bool_name, *pseudo_bool, *t;
-	int orig_states[5];
 	int retval = -1, error = 0, compval;
 	if (qpol_cond_get_expr_node_iter(p->p, cond, &iter) < 0) {
 		error = errno;
@@ -1719,14 +1742,6 @@ static int terule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 		}
 	}
 
-	/* store old boolean states prior to change */
-	for (i = 0; i < num_bools; i++) {
-		if (qpol_bool_get_state(p->p, bools[i], orig_states + i) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-	}
-
 	/* now compute the truth table for the booleans */
 	key->bool_val = 0;
 	for (i = 0; i < 32; i++) {
@@ -1743,13 +1758,6 @@ static int terule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 		key->bool_val = (key->bool_val << 1) | truthiness;
 	}
 
-	/* restore old boolean states */
-	for (i = 0; i < num_bools; i++) {
-		if (qpol_bool_set_state_no_eval(p->p, bools[i], orig_states[i]) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-	}
 	key->cond = cond;
 	retval = 0;
  cleanup:
@@ -1915,6 +1923,8 @@ static int terule_expand(poldiff_t *diff, apol_policy_t *p, qpol_terule_t *rule,
 
 apol_vector_t *terule_get_items(poldiff_t *diff, apol_policy_t *policy)
 {
+	apol_vector_t *bools = NULL, *bool_states = NULL;
+	size_t i;
 	apol_bst_t *b = NULL;
 	apol_vector_t *v = NULL;
 	qpol_iterator_t *iter = NULL;
@@ -1925,6 +1935,30 @@ apol_vector_t *terule_get_items(poldiff_t *diff, apol_policy_t *policy)
 		error = errno;
 		goto cleanup;
 	}
+
+	/* store original boolean values */
+        if (apol_get_bool_by_query(policy, NULL, &bools) < 0) {
+                error = errno;
+                goto cleanup;
+        }
+        if ((bool_states = apol_vector_create_with_capacity(apol_vector_get_size(bools))) == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		goto cleanup;
+	}
+        for (i = 0; i < apol_vector_get_size(bools); i++) {
+                qpol_bool_t *bool = apol_vector_get_element(bools, i);
+                int state;
+                if (qpol_bool_get_state(policy->p, bool, &state) < 0) {
+                        error = errno;
+                        goto cleanup;
+                }
+		if (apol_vector_append(bool_states, (void *) state) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+        }
 	if ((b = apol_bst_create(terule_bst_comp)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -1950,6 +1984,12 @@ apol_vector_t *terule_get_items(poldiff_t *diff, apol_policy_t *policy)
 	}
 	retval = 0;
  cleanup:
+        /* restore boolean states */
+	for (i = 0; i < apol_vector_get_size(bools); i++) {
+		qpol_bool_t *bool = apol_vector_get_element(bools, i);
+		int state = (int) apol_vector_get_element(bool_states, i);
+		qpol_bool_set_state(policy->p, bool, state);
+	}
 	apol_bst_destroy(&b, NULL);
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {

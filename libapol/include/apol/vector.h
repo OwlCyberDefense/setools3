@@ -189,9 +189,8 @@ extern int apol_vector_get_index(const apol_vector_t *v, void *elem,
  *  Add an element to the end of a vector.
  *
  *  @param v The vector to which to add the element.
- *  @param elem The element to add. This function performs no checking
- *  on this element other than a check for NULL.  Once added the
- *  element will be the last element in the vector.
+ *  @param elem The element to add.  Once added the element will be
+ *  the last element in the vector.
  *
  *  @return 0 on success and < 0 on failure.  If the call fails, errno
  *  will be set and v will be unchanged.
