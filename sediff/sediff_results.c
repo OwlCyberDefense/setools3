@@ -145,6 +145,7 @@ void sediff_results_clear(sediff_app_t *app)
 			if (r->te_buffers[i]) {
 				g_object_unref (G_OBJECT(r->te_buffers[i]));
 				r->te_buffers[i] = NULL;
+				r->te_buffered[i] = 0;
 			}
 		}
 	}
@@ -410,6 +411,7 @@ static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
 		}
 
 		sediff_progress_message(app, "Rendering Rules", "Rendering Rules - this may take a while.");
+
 		sediff_results_print_item_header(app, tb, item_record, form);
 		gtk_text_buffer_get_end_iter(tb, &iter);
 
@@ -553,9 +555,13 @@ static int sediff_results_avsort_comp(const void *a, const void *b, void *data)
 	case SORT_COND: {
 		qpol_cond_t *q1, *q2;
 		apol_policy_t *p1, *p2;
-		poldiff_avrule_get_cond(opts->diff, a1, &q1, &p1);
-		poldiff_avrule_get_cond(opts->diff, a2, &q2, &p2);
-		return opts->direction * ((int) q1 - (int) q2);
+		uint32_t w1, w2;
+		poldiff_avrule_get_cond(opts->diff, a1, &q1, &w1, &p1);
+		poldiff_avrule_get_cond(opts->diff, a2, &q2, &w2, &p2);
+		if (q1 != q2) {
+			return opts->direction * ((int) q1 - (int) q2);
+		}
+		return opts->direction * (w1 - w2);
 		break;
 	}
 	default: {
@@ -615,9 +621,13 @@ static int sediff_results_tesort_comp(const void *a, const void *b, void *data)
 	case SORT_COND: {
 		qpol_cond_t *q1, *q2;
 		apol_policy_t *p1, *p2;
-		poldiff_terule_get_cond(opts->diff, a1, &q1, &p1);
-		poldiff_terule_get_cond(opts->diff, a2, &q2, &p2);
-		return opts->direction * ((int) q1 - (int) q2);
+		uint32_t w1, w2;
+		poldiff_terule_get_cond(opts->diff, a1, &q1, &w1, &p1);
+		poldiff_terule_get_cond(opts->diff, a2, &q2, &w2, &p2);
+		if (q1 != q2) {
+			return opts->direction * ((int) q1 - (int) q2);
+		}
+		return opts->direction * (w1 - w2);
 		break;
 	}
 	default: {

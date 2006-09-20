@@ -134,12 +134,15 @@ extern const char *poldiff_avrule_get_object_class(const poldiff_avrule_t *avrul
  *  @param cond Reference to the rule's conditional pointer, or NULL
  *  if the rule is not conditional.  The caller must not free() this
  *  pointer.
+ *  @param which_list Reference to which list the rule belongs, either
+ *  1 if in the true branch, 0 if in false.  If the rule is not
+ *  conditional then this value will be set to 1.
  *  @param p Reference to the policy from which the conditional
  *  originated, or NULL if the rule is not conditional.  The caller
  *  must not destroy this pointer.
  */
 extern void poldiff_avrule_get_cond(const poldiff_t *diff, const poldiff_avrule_t *avrule,
-				    qpol_cond_t **cond, apol_policy_t **p);
+				    qpol_cond_t **cond, uint32_t *which_list, apol_policy_t **p);
 
 /**
  *  Get a vector of permissions unmodified by the av rule.  If the
@@ -289,12 +292,15 @@ extern const char *poldiff_terule_get_object_class(const poldiff_terule_t *terul
  *  @param cond Reference to the rule's conditional pointer, or NULL
  *  if the rule is not conditional.  The caller must not free() this
  *  pointer.
+ *  @param which_list Reference to which list the rule belongs, either
+ *  1 if in the true branch, 0 if in false.  If the rule is not
+ *  conditional then this value will be set to 1.
  *  @param p Reference to the policy from which the conditional
  *  originated, or NULL if the rule is not conditional.  The caller
  *  must not destroy this pointer.
  */
 extern void poldiff_terule_get_cond(const poldiff_t *diff, const poldiff_terule_t *terule,
-				    qpol_cond_t **cond, apol_policy_t **p);
+				    qpol_cond_t **cond, uint32_t *which_list, apol_policy_t **p);
 
 /**
  *  Get the original default type for this type rule.  Note that if
