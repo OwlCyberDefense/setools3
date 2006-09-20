@@ -242,6 +242,29 @@ void role_destroy(poldiff_role_summary_t **rs)
 	}
 }
 
+
+int role_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	role_destroy(&diff->role_diffs);
+	diff->role_diffs = role_create();
+	if (diff->role_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * Comparison function for two roles from the same policy.
  */

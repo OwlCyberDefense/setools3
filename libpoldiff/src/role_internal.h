@@ -47,6 +47,16 @@ poldiff_role_summary_t *role_create(void);
 void role_destroy(poldiff_role_summary_t **us);
 
 /**
+ * Reset the state of all role differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int role_reset(poldiff_t *diff);
+
+
+/**
  * Get a vector of all roles from the given policy, sorted by name.
  *
  * @param diff Policy diff error handler.

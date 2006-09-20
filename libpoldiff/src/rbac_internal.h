@@ -49,6 +49,15 @@ poldiff_role_allow_summary_t *role_allow_create(void);
 void role_allow_destroy(poldiff_role_allow_summary_t **ras);
 
 /**
+ * Reset the state of all role allow rule differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int role_allow_reset(poldiff_t *diff);
+
+/**
  * Get a vector of all role allow rules from the given policy,
  * sorted by source name.
  *
@@ -130,6 +139,15 @@ poldiff_role_trans_summary_t *role_trans_create(void);
  * will be set to NULL afterwards.
  */
 void role_trans_destroy(poldiff_role_trans_summary_t **rts);
+
+/**
+ * Reset the state of all role_transition rule differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int role_trans_reset(poldiff_t *diff);
 
 /**
  * Get a vector of all role_transition rules from the given policy,

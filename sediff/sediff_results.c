@@ -30,6 +30,8 @@
 #include "sediff_results.h"
 #include "utilgui.h"
 
+#include <qpol/cond_query.h>
+
 #include <assert.h>
 #include <string.h>
 

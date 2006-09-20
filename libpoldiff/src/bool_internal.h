@@ -48,6 +48,15 @@ poldiff_bool_summary_t *bool_create(void);
 void bool_destroy(poldiff_bool_summary_t **bs);
 
 /**
+ * Reset the state of all boolean differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int bool_reset(poldiff_t *diff);
+
+/**
  * Get a vector of all bools from the given policy, sorted by name.
  *
  * @param diff Policy diff error handler.

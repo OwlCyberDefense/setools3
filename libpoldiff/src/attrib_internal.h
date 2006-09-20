@@ -47,6 +47,15 @@ poldiff_attrib_summary_t *attrib_summary_create(void);
 void attrib_summary_destroy(poldiff_attrib_summary_t **us);
 
 /**
+ * Reset the state of all attribute differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int attrib_reset(poldiff_t *diff);
+
+/**
  * Get a vector of all attribs from the given policy, sorted by name.
  *
  * @param diff Policy diff error handler.

@@ -245,6 +245,28 @@ void class_destroy(poldiff_class_summary_t **cs)
 	}
 }
 
+int class_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	class_destroy(&diff->class_diffs);
+	diff->class_diffs = class_create();
+	if (diff->class_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * Comparison function for two classes from the same policy.
  */
@@ -736,6 +758,28 @@ void common_destroy(poldiff_common_summary_t **cs)
 		free(*cs);
 		*cs = NULL;
 	}
+}
+
+int common_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	common_destroy(&diff->common_diffs);
+	diff->common_diffs = common_create();
+	if (diff->common_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
 }
 
 /**

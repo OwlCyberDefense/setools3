@@ -242,6 +242,29 @@ void user_destroy(poldiff_user_summary_t **us)
 	}
 }
 
+
+int user_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	user_destroy(&diff->user_diffs);
+	diff->user_diffs = user_create();
+	if (diff->user_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * Comparison function for two users from the same policy.
  */

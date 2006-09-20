@@ -49,6 +49,15 @@ poldiff_class_summary_t *class_create(void);
 void class_destroy(poldiff_class_summary_t **cs);
 
 /**
+ * Reset the state of all class differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int class_reset(poldiff_t *diff);
+
+/**
  * Get a vector of all object classes (type qpol_class_t) from the
  * given policy, sorted by name.
  *
@@ -125,6 +134,15 @@ poldiff_common_summary_t *common_create(void);
  * will be set to NULL afterwards.
  */
 void common_destroy(poldiff_common_summary_t **cs);
+
+/**
+ * Reset the state of all common differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+int common_reset(poldiff_t *diff);
 
 /**
  * Get a vector of all common classes (type qpol_common_t) from the

@@ -242,6 +242,28 @@ void attrib_summary_destroy(poldiff_attrib_summary_t **rs)
 	}
 }
 
+int attrib_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	attrib_summary_destroy(&diff->attrib_diffs);
+	diff->attrib_diffs = attrib_summary_create();
+	if (diff->attrib_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * Comparison function for two attribs from the same policy.
  */

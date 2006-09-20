@@ -399,6 +399,28 @@ int role_allow_comp(const void *x, const void *y, poldiff_t *diff __attribute__(
 	return strcmp(p1->source_role, p2->source_role);
 }
 
+int role_allow_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	role_allow_destroy(&diff->role_allow_diffs);
+	diff->role_allow_diffs = role_allow_create();
+	if (diff->role_allow_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  *  Allocate and return a new role allow rule difference object.
  *
@@ -701,6 +723,28 @@ void role_trans_destroy(poldiff_role_trans_summary_t **rts)
 		free(*rts);
 		*rts = NULL;
 	}
+}
+
+int role_trans_reset(poldiff_t *diff)
+{
+	int error = 0;
+
+	if (diff == NULL) {
+		ERR(diff, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	role_trans_destroy(&diff->role_trans_diffs);
+	diff->role_trans_diffs = role_trans_create();
+	if (diff->role_trans_diffs == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
+	return 0;
 }
 
 typedef struct pseudo_role_trans {
