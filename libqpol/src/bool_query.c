@@ -32,7 +32,7 @@
 #include <sepol/policydb/expand.h>
 #include "iterator_internal.h"
 #include <qpol/bool_query.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 int qpol_policy_get_bool_by_name(qpol_policy_t *policy, const char *name, qpol_bool_t **datum)
 {

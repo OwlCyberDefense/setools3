@@ -30,7 +30,7 @@
 #include <qpol/constraint_query.h>
 #include <qpol/iterator.h>
 #include <qpol/class_perm_query.h>
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 
 #include <sepol/policydb/policydb.h>

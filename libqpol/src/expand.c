@@ -28,7 +28,7 @@
 #include <sepol/policydb/expand.h>
 #include <sepol/policydb.h>
 #include <stdlib.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_datum_t datum, void *ptr)
 {

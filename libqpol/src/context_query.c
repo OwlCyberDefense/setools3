@@ -34,7 +34,7 @@
 #include <qpol/mls_query.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/context.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 int qpol_context_get_user(qpol_policy_t *policy, qpol_context_t *context, qpol_user_t **user)
 {

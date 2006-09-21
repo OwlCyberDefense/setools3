@@ -32,7 +32,7 @@
 #include <sepol/policydb/expand.h>
 #include "iterator_internal.h"
 #include <qpol/mls_query.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 /* level */
 int qpol_policy_get_level_by_name(qpol_policy_t *policy, const char *name, qpol_level_t **datum)

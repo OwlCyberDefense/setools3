@@ -39,7 +39,7 @@
 #include <sepol/policydb/util.h>
 #include <sepol/policydb.h>
 
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 
 /**

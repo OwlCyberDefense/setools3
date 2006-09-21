@@ -32,7 +32,7 @@
 #include <sepol/policydb/expand.h>
 #include "iterator_internal.h"
 #include <qpol/policy_query.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 /* generic information about policydb*/
 int qpol_policy_is_mls_enabled(qpol_policy_t *policy)

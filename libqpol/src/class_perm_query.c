@@ -34,7 +34,7 @@
 #include <sepol/policydb/expand.h>
 #include "iterator_internal.h"
 #include <qpol/class_perm_query.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 /* perms */
 typedef struct perm_hash_state {

@@ -26,7 +26,7 @@
 
 #include <config.h>
 
-#include "debug.h"
+#include "qpol_internal.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -1062,6 +1062,7 @@ void qpol_policy_destroy(qpol_policy_t **policy)
 	}
 	else if (*policy != NULL) {
 		sepol_policydb_free((*policy)->p);
+		sepol_handle_destroy((*policy)->sh);
 		qpol_extended_image_destroy(&((*policy)->ext));
 		free(*policy);
 		*policy = NULL;

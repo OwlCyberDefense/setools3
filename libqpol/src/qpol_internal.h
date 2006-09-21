@@ -37,6 +37,18 @@
 #define QPOL_MSG_WARN 2
 #define QPOL_MSG_INFO 3
 
+/* forward declaration, full declaration in policy_extend.c */
+struct qpol_extended_image;
+
+struct qpol_policy {
+	struct sepol_policydb *p;
+	struct sepol_handle *sh;
+	qpol_callback_fn_t fn;
+	void *varg;
+	int rules_loaded;
+	struct qpol_extended_image *ext;
+};
+
 extern void qpol_handle_msg(qpol_policy_t *policy, int level, const char *fmt, ...);
 
 #define ERR(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_ERR, format, __VA_ARGS__)

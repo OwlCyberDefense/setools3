@@ -31,7 +31,7 @@
 #include <qpol/context_query.h>
 #include <qpol/netifcon_query.h>
 #include <sepol/policydb/policydb.h>
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 
 int qpol_policy_get_netifcon_by_name(qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon)

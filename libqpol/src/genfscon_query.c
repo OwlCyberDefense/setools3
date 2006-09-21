@@ -31,7 +31,7 @@
 #include <qpol/context_query.h>
 #include <qpol/genfscon_query.h>
 #include <sepol/policydb/policydb.h>
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 
 struct qpol_genfscon {
