@@ -21,7 +21,6 @@ libqpol_a_SOURCES = \
 	cond_query.c \
 	constraint_query.c \
 	context_query.c \
-	debug.h \
 	expand.c \
 	fs_use_query.c \
 	genfscon_query.c \
@@ -39,6 +38,7 @@ libqpol_a_SOURCES = \
 	policy_parse.h \
 	policy_query.c \
 	portcon_query.c \
+	qpol_internal.h \
 	queue.c \
 	queue.h \
 	rbacrule_query.c \
