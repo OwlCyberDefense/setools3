@@ -599,7 +599,7 @@ static int qpol_syn_rule_table_insert_entry(
  */
 static int qpol_syn_rule_table_insert_sepol_avrule(qpol_policy_t *policy, qpol_syn_rule_table_t *table, avrule_t *rule, cond_node_t *cond, int branch)
 {
-	int error = 0, created = 0;
+	int error = 0;
 	qpol_syn_rule_key_t key = {0,0,0,0,NULL};
 	struct qpol_syn_rule *new_rule = NULL;
 	ebitmap_t source_types, source_types2, target_types, target_types2;
