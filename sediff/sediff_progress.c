@@ -45,7 +45,7 @@ void sediff_progress_show(sediff_app_t *app, const char *title)
 	if (app->progress == NULL) {
 		GtkWidget *vbox;
 		GdkCursor *cursor;
-		p = g_malloc(sizeof(sediff_progress_t));
+		p = g_malloc0(sizeof(sediff_progress_t));
 		app->progress = p;
 		p->progress = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		gtk_window_set_modal(GTK_WINDOW(p->progress), TRUE);
