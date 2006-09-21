@@ -51,6 +51,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -60,6 +61,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -89,10 +91,12 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	/* assign dependencies */
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains")) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "inc_dom_trans")) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -100,32 +104,38 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = unreachable_doms_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = unreachable_doms_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -134,16 +144,19 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = unreachable_doms_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -161,16 +174,19 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
 	datum = unreachable_doms_data_new();
 	if (!datum) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	mod->data = datum;
@@ -179,15 +195,18 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	ctx_file_path = selinux_default_context_path();
 	if ( !(datum->ctx_vector = apol_vector_create()) ) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	if (!ctx_file_path) {
 		ERR(policy, "%s", "Unable to find default contexts file");
+		errno = ENOENT;
 		return -1;
 	} else {
 		retv = parse_default_contexts(ctx_file_path, &datum->ctx_vector, policy);
 		if (!retv) {
 			ERR(policy, "%s", "Unable to parse default contexts file");
+			errno = EIO;
 			return -1;
 		}
 	}
@@ -218,13 +237,16 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	apol_user_query_t *user_query = NULL;
 	apol_role_trans_query_t *role_trans_query = NULL;
 	apol_domain_trans_analysis_t *dta = NULL;
+	int error = 0;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -236,29 +258,35 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 
 	if ( !(dta = apol_domain_trans_analysis_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 
 	if ( !(user_query = apol_user_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
 	if ( !(role_trans_query = apol_role_trans_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
 	}
@@ -272,6 +300,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	find_domains_res = sechk_lib_get_module_result("find_domains", mod->parent_lib);
 	if (!find_domains_res) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results for module find_domains");
 		goto unreachable_doms_run_fail;
 	}
@@ -279,6 +308,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	inc_dom_trans_res = sechk_lib_get_module_result("inc_dom_trans", mod->parent_lib);
 	if (!inc_dom_trans_res) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results for module inc_dom_trans");
 		goto unreachable_doms_run_fail;
 	}
@@ -302,6 +332,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		apol_domain_trans_analysis_set_direction(policy, dta, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
 		retv = apol_domain_trans_analysis_do(policy, dta, &rev_dtr_vector);
 		if (retv < 0) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto unreachable_doms_run_fail;
 		}
@@ -328,6 +359,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
@@ -335,28 +367,33 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				item->item = (void *)end_type;
 				item->test_result = 1;
 				if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 			}
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			proof->type = SECHK_ITEM_TYPE;
 			proof->text = strdup("There is insufficient TE policy for a transition to this domain to occur");
 			if (!proof->text) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
@@ -379,6 +416,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		apol_domain_trans_analysis_set_direction(policy, dta, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
 		retv = apol_domain_trans_analysis_do(policy, dta, &rev_dtr_vector);
 		if (retv) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto unreachable_doms_run_fail;
 		}
@@ -471,6 +509,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
@@ -478,28 +517,33 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				item->item = (void *)dom;
 				item->test_result = 1;
 				if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 			}
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			proof->type = SECHK_ITEM_TYPE;
 			proof->text = strdup("There is insufficient TE policy for a transition to this domain to occur");
 			if (!proof->text) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto unreachable_doms_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto unreachable_doms_run_fail;
 			}
@@ -517,6 +561,7 @@ unreachable_doms_run_fail:
 		sechk_proof_free(proof);
 	if (item)
 		sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -539,10 +584,12 @@ int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -552,6 +599,7 @@ int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -618,7 +666,7 @@ unreachable_doms_data_t *unreachable_doms_data_new(void)
 /* Parses default_contexts and adds source domains to datum->ctx_list */
 bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vector, apol_policy_t *policy)
 {
-	int str_sz, i, charno;
+	int str_sz, i, charno, error = 0;
 	FILE *ctx_file;
 	char *line = NULL, *src_role = NULL, *src_dom = NULL, *dst_role = NULL, *dst_dom = NULL;
 	size_t retv, line_len = 0;
@@ -627,6 +675,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 	printf("Using default contexts: %s\n", ctx_file_path);
 	ctx_file = fopen(ctx_file_path, "r");
 	if (!ctx_file) {
+		error = errno;
 		ERR(policy, "Opening default contexts file %s", ctx_file_path);
 		goto parse_default_contexts_fail;
 	}
@@ -637,6 +686,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 			if (feof(ctx_file)) {
 				break;
 			} else {
+				error = errno;
 				ERR(policy, "%s", "Reading default contexts file");
 				goto parse_default_contexts_fail;
 			}
@@ -649,6 +699,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* source role */
 		src_role = malloc(str_sz);
 		if (!src_role) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
@@ -667,6 +718,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* source type */
 		src_dom = malloc(str_sz);
 		if (!src_dom) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
@@ -693,6 +745,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* dest role */
 		dst_role = malloc(str_sz);
 		if (!dst_role) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
@@ -711,6 +764,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 		/* dest type */
 		dst_dom = malloc(str_sz);
 		if (!dst_dom) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
@@ -732,6 +786,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 			if ( qpol_policy_get_type_by_name(policy->p, src_dom, &type) ) {
 		 */
 		if ( apol_vector_append(*ctx_vector, (void *)strdup(src_dom)) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
@@ -753,6 +808,7 @@ parse_default_contexts_fail:
 		free(dst_role);
 	if (dst_dom)
 		free(dst_dom);
+	errno = error;
 	return FALSE;
 }
 

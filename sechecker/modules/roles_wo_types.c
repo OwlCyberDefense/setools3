@@ -43,6 +43,7 @@ int roles_wo_types_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -52,6 +53,7 @@ int roles_wo_types_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -74,32 +76,38 @@ int roles_wo_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = roles_wo_types_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = roles_wo_types_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -108,16 +116,19 @@ int roles_wo_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = roles_wo_types_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -131,10 +142,12 @@ int roles_wo_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Ivalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -154,13 +167,16 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	size_t i;
 	apol_vector_t *role_vector;
 	qpol_iterator_t *type_iter = NULL;
+	int error = 0;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Ivalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -171,20 +187,24 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ROLE;
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_types_run_fail;
 	}
 
 	if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_types_run_fail;
 	}
@@ -208,6 +228,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
 		}
@@ -216,6 +237,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		sprintf(proof->text, "role %s has no types", role_name);
 		item = sechk_item_new(NULL);
 		if (!item) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
 		}
@@ -224,20 +246,24 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		proof->type = SECHK_ITEM_ROLE;
 		proof->text = strdup("This role is not assigned to any user.");
 		if (!proof->text) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
 		}
 		if ( !item->proof ) {
 			if ( !(item->proof = apol_vector_create()) ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto roles_wo_types_run_fail;
 			}
 		}
 		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
 		}
 		if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
 		}
@@ -251,6 +277,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 roles_wo_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -266,10 +293,12 @@ int roles_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -281,6 +310,7 @@ int roles_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 

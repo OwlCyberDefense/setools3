@@ -44,6 +44,7 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -53,6 +54,7 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -75,6 +77,7 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 	/* assign requirements */
 	if ( apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source")) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -82,32 +85,38 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = attribs_wo_rules_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = attribs_wo_rules_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -116,32 +125,38 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = attribs_wo_rules_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_rules_get_list;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -155,10 +170,12 @@ int attribs_wo_rules_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -187,14 +204,16 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	qpol_iterator_t *constraint_iter;
 	qpol_iterator_t *node_iter = NULL;
 	qpol_iterator_t *name_iter = NULL;
-	int found = 0;
+	int found = 0, error = 0;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -205,28 +224,34 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_rules_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ATTRIB;
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_rules_run_fail;
 	}
 
 	if ( !(avrule_query = apol_avrule_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_rules_run_fail;
 	}
 	if ( !(terule_query = apol_terule_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_rules_run_fail;
 	}
 	if ( !(role_query = apol_role_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_rules_run_fail;
 	}
@@ -337,6 +362,7 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		/* if we get here then the attrib was not found anywhere in a rule so add it */
 		item = sechk_item_new(NULL);
 		if (!item) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_rules_run_fail;
 		}
@@ -344,26 +370,31 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		item->item = (void *)attr;
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_rules_run_fail;
 		}
 		proof->type = SECHK_ITEM_ATTRIB;
 		proof->text = strdup("attribute was not used in any rules.");
 		if (!proof->text) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_rules_run_fail;
 		}
 		if ( !item->proof ) {
 			if ( !(item->proof = apol_vector_create()) ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto attribs_wo_rules_run_fail;
 			}
 		}
 		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_rules_run_fail;
 		}
 		if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_rules_run_fail;
 		}
@@ -379,6 +410,7 @@ int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 attribs_wo_rules_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -395,10 +427,12 @@ int attribs_wo_rules_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -407,6 +441,7 @@ int attribs_wo_rules_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (!mod->result) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -463,14 +498,17 @@ int attribs_wo_rules_get_list(sechk_module_t *mod, apol_policy_t *policy __attri
 
 	if (!mod || !arg) {
 		ERR(NULL, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(NULL, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 	if (!mod->result) {
 		ERR(NULL, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 

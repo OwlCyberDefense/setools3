@@ -43,6 +43,7 @@ int inc_net_access_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -52,6 +53,7 @@ int inc_net_access_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -88,22 +90,27 @@ int inc_net_access_register(sechk_lib_t *lib)
 	/* assign dependencies */      
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_net_domains")) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_netif_types")) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_port_types")) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_node_types")) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_assoc_types")) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -111,32 +118,38 @@ int inc_net_access_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_net_access_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_net_access_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -145,16 +158,19 @@ int inc_net_access_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_net_access_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -170,17 +186,20 @@ int inc_net_access_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	inc_net_access_data_t *datum = NULL;
 
 	if (!mod || !policy) {
-		ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
 	datum = inc_net_access_data_new();
 	if (!datum) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -207,7 +226,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	sechk_name_value_t *dep = NULL;
 	sechk_mod_fn_t run_fn = NULL;
 	size_t i = 0, j = 0, k = 0;
-	int buff_sz;
+	int buff_sz, error = 0;
 	char *buff = NULL;
 	apol_vector_t *net_domain_vector;
 	apol_vector_t *netif_vector;
@@ -219,10 +238,12 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -234,15 +255,18 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_net_access_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_net_access_run_fail;
 	}
@@ -258,6 +282,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	/* Net Domains */
 	net_domain_res = sechk_lib_get_module_result("find_net_domains", mod->parent_lib);
 	if (!net_domain_res) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results for module find_net_domains");
 		goto inc_net_access_run_fail;
 	}
@@ -266,6 +291,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	/* Netif Types */
 	netif_res = sechk_lib_get_module_result("find_netif_types", mod->parent_lib);
 	if (!netif_res) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results for module find_netif_types");
 		goto inc_net_access_run_fail;
 	}
@@ -274,6 +300,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	/* Port Types */
 	port_res = sechk_lib_get_module_result("find_port_types", mod->parent_lib);
 	if (!port_res) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results for module find_port_types");
 		goto inc_net_access_run_fail;
 	}
@@ -282,6 +309,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	/* Node Type */
 	node_res = sechk_lib_get_module_result("find_node_types", mod->parent_lib);
 	if (!node_res) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results for module find_node_types");
 		goto inc_net_access_run_fail;
 	}
@@ -290,6 +318,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	/* Assoc Types */
 	assoc_type_res = sechk_lib_get_module_result("find_assoc_types", mod->parent_lib);
 	if (!assoc_type_res) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results for module find_assoc_types");
 		goto inc_net_access_run_fail;
 	}
@@ -333,12 +362,14 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				buff_sz = 1+strlen(netif_name)+strlen("Domain has no send or receive permissions for netif ");
 				buff = (char *)calloc(buff_sz, sizeof(char));
 				if (!buff) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
 				snprintf(buff, buff_sz, "Domain has no send or receive permissions for netif %s\n", netif_name);
 				proof->text = strdup(buff);
 				if (!proof->text) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
@@ -355,23 +386,27 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				if ( !item) {
 					item = sechk_item_new(NULL);
 					if (!item) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_net_access_run_fail;
 					}
 					item->test_result = 1;
 					item->item = (void *)net_domain;
 					if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_net_access_run_fail;
 					}
 				}
 				if ( !item->proof ) {
 					if ( !(item->proof = apol_vector_create()) ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_net_access_run_fail;
 					}
 				}
 				if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
@@ -410,6 +445,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				buff_sz = 1+strlen(port_name)+strlen("Domain has no send or receive permissions for port ");
 				buff = (char *)calloc(buff_sz, sizeof(char));
 				if (!buff) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
@@ -432,23 +468,27 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				if ( !item) {
 					item = sechk_item_new(NULL);
 					if (!item) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_net_access_run_fail;
 					}
 					item->test_result = 1;
 					item->item = (void *)net_domain;
 					if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_net_access_run_fail;
 					}
 				}
 				if ( !item->proof ) {
 					if ( !(item->proof = apol_vector_create()) ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_net_access_run_fail;
 					}
 				}
 				if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
@@ -485,12 +525,14 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				buff_sz = 1+strlen(node_name)+strlen("Domain has no send or receive permissions for node ");
 				buff = (char *)calloc(buff_sz, sizeof(char));
 				if (!buff) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
 				snprintf(buff, buff_sz, "Domain has no send or receive permissions for node %s\n", node_name);
 				proof->text = strdup(buff);
 				if (!proof->text) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
@@ -513,17 +555,20 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 					item->test_result = 1;
 					item->item = (void *)net_domain;
 					if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_net_access_run_fail;
 					}
 				}
 				if ( !item->proof ) {
 					if ( !(item->proof = apol_vector_create()) ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_net_access_run_fail;
 					}
 				}
 				if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
@@ -540,6 +585,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 inc_net_access_run_fail:
 	apol_avrule_query_destroy(&avrule_query);
 	sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -563,10 +609,12 @@ int inc_net_access_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -576,6 +624,7 @@ int inc_net_access_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -631,4 +680,3 @@ inc_net_access_data_t *inc_net_access_data_new(void)
 
 	return datum;
 }
-

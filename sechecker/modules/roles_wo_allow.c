@@ -43,6 +43,7 @@ int roles_wo_allow_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -52,6 +53,7 @@ int roles_wo_allow_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -75,32 +77,38 @@ int roles_wo_allow_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = roles_wo_allow_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = roles_wo_allow_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -109,32 +117,38 @@ int roles_wo_allow_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = roles_wo_allow_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = roles_wo_allow_get_list;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -148,10 +162,12 @@ int roles_wo_allow_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -172,13 +188,16 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	apol_vector_t *role_vector;
 	apol_vector_t *role_allow_vector;
 	apol_role_allow_query_t *role_allow_query = NULL;
+	int error = 0;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -189,25 +208,30 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ROLE;
 
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
 	}
 
 	if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
 	}
 	if ((role_allow_query = apol_role_allow_query_create()) == NULL) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
 	}
@@ -233,6 +257,7 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_allow_run_fail;
 		}
@@ -240,21 +265,25 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		proof->text = "Role has no allow.\n";
 		item = sechk_item_new(NULL);
 		if (!item) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_allow_run_fail;
 		}
 		item->item = (void *)role;
 		if ( !item->proof ) {
 			if ( !(item->proof = apol_vector_create()) ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto roles_wo_allow_run_fail;
 			}
 		}
 		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_allow_run_fail;
 		}
 		if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_allow_run_fail;
 		}
@@ -272,6 +301,7 @@ roles_wo_allow_run_fail:
 	apol_role_allow_query_destroy(&role_allow_query);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -287,10 +317,12 @@ int roles_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -299,6 +331,7 @@ int roles_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -335,14 +368,17 @@ int roles_wo_allow_get_list(sechk_module_t *mod, apol_policy_t *policy __attribu
 
 	if (!mod || !arg) {
 		ERR(NULL, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(NULL, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 	if (!mod->result) {
 		ERR(NULL, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 

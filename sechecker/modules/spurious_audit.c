@@ -45,7 +45,8 @@ int spurious_audit_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		ERR(NULL, "%s", "no library");	
+		ERR(NULL, "%s", "no library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -85,11 +86,13 @@ int spurious_audit_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(lib->policy, "%s", strerror(errno));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = spurious_audit_init;
@@ -98,11 +101,13 @@ int spurious_audit_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(lib->policy, "%s", strerror(errno));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = spurious_audit_run;
@@ -113,11 +118,13 @@ int spurious_audit_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(lib->policy, "%s", strerror(errno));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = spurious_audit_print;
@@ -182,6 +189,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "%s%s%s","wrong module (", mod->name, ")");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -199,7 +207,6 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		error = errno;
-
 		ERR(policy, "%s", strerror(error));
 		goto spurious_audit_run_fail;
 	}
@@ -611,7 +618,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			proof->type = SECHK_ITEM_AVRULE;
 
 			/* the next series of if statements prints the following:
-missing: allow <src_name> <tgt_name> : <obj_name> { perms }; */
+			missing: allow <src_name> <tgt_name> : <obj_name> { perms }; */
 			tmp_counter = 0;
 			for (j = 0; j < apol_vector_get_size(perm_vector1); j++)
 			{

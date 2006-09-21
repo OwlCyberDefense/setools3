@@ -42,6 +42,7 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -51,6 +52,7 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -77,32 +79,38 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = domains_wo_roles_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = domains_wo_roles_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -111,16 +119,19 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = domains_wo_roles_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -134,10 +145,12 @@ int domains_wo_roles_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -163,10 +176,12 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -177,10 +192,12 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto domains_wo_roles_run_fail;
 	}
@@ -193,17 +210,20 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	run_fn = sechk_lib_get_module_function("find_domains", SECHK_MOD_FN_RUN, mod->parent_lib);
 	if (!run_fn) {
+		error = errno;
 		ERR(policy, "%s", "Unable to find run function for module find_domains");
 		goto domains_wo_roles_run_fail;
 	}
 
 	retv = run_fn((mod_ptr = sechk_lib_get_module("find_domains", mod->parent_lib)), policy, NULL);
 	if (retv) {
+		error = errno;
 		ERR(policy, "%s", "Unable to run module find_domains");
 		goto domains_wo_roles_run_fail;
 	}
 
 	if ( !(find_domains_res = sechk_lib_get_module_result("find_domains", mod->parent_lib)) ) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results for module find_domains");
 		goto domains_wo_roles_run_fail;
 	}
@@ -230,33 +250,39 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto domains_wo_roles_run_fail;
 		}
 		proof->type = SECHK_ITEM_ROLE;
 		proof->text = strdup("Domain has no role.\n");
 		if ( !proof->text ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto domains_wo_roles_run_fail;
 
 		}
 		item = sechk_item_new(NULL);
 		if (!item) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto domains_wo_roles_run_fail;
 		}
 		item->item = (void *)domain;
 		if ( !item->proof ) {
 			if ( !(item->proof = apol_vector_create()) ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto domains_wo_roles_run_fail;
 			}
 		}
 		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			error = errno;
 			ERR(NULL, "%s", strerror(ENOMEM));
 			goto domains_wo_roles_run_fail;
 		}
 		if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+			error = errno;
 			ERR(NULL, "%s", strerror(ENOMEM));
 			goto domains_wo_roles_run_fail;
 		}
@@ -269,6 +295,7 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 domains_wo_roles_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -284,10 +311,12 @@ int domains_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -296,6 +325,7 @@ int domains_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
