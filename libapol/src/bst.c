@@ -1,7 +1,8 @@
 /**
  *  @file bst.c
- *  Contains the implementation of a generic binary search tree (not
- *  even an AVL).
+ *  Contains the implementation of a generic binary search tree.  The
+ *  tree is implemented as a red-black tree, as inspired by Julienne
+ *  Walker (http://eternallyconfuzzled.com/tuts/redblack.html).
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -32,7 +33,8 @@
 
 typedef struct bst_node {
 	void *elem;
-	struct bst_node *left, *right;
+	int is_red;
+	struct bst_node *child[2];
 } bst_node_t;
 
 /**
@@ -71,8 +73,8 @@ static void bst_node_free(bst_node_t *node, apol_bst_free_func *fr)
 		if (fr != NULL) {
 			fr(node->elem);
 		}
-		bst_node_free(node->left, fr);
-		bst_node_free(node->right, fr);
+		bst_node_free(node->child[0], fr);
+		bst_node_free(node->child[1], fr);
 		free(node);
 	}
 }
@@ -100,13 +102,13 @@ static int bst_node_to_vector(bst_node_t *node, apol_vector_t *v) {
 	if (node == NULL) {
 		return 0;
 	}
-	if ((retval = bst_node_to_vector(node->left, v)) < 0) {
+	if ((retval = bst_node_to_vector(node->child[0], v)) < 0) {
 		return retval;
 	}
 	if ((retval = apol_vector_append(v, node->elem)) < 0) {
 		return retval;
 	}
-	return bst_node_to_vector(node->right, v);
+	return bst_node_to_vector(node->child[1], v);
 }
 
 apol_vector_t *apol_bst_get_vector(const struct apol_bst *b)
@@ -171,10 +173,10 @@ int apol_bst_get_element(const apol_bst_t *b, void *elem,
 			return 0;
 		}
 		else if (compval > 0) {
-			node = node->left;
+			node = node->child[0];
 		}
 		else {
-			node = node->right;
+			node = node->child[1];
 		}
 	}
 	return -1;
@@ -185,31 +187,72 @@ int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
 	return apol_bst_insert_and_get(b, &elem, data, NULL);
 }
 
-int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data,
-			    apol_bst_free_func *fr)
+/**
+ * Allocate and return a new BST node, with data set to elem and color
+ * to red.  Also increment the tree's size.
+ *
+ * @param b BST size to increment.
+ * @param elem Value for the node.
+ *
+ * @return Allocated BST node, which the caller must insert, or NULL
+ * on error.
+ */
+static bst_node_t *bst_node_make(apol_bst_t *b, void *elem)
 {
-	bst_node_t *node, *new_node;
-        int compval;
-	if (!b || !elem) {
-		errno = EINVAL;
-		return -1;
+	bst_node_t *new_node;
+	if ((new_node = calloc(1, sizeof(*new_node))) == NULL) {
+		return NULL;
 	}
-	if (b->head == NULL) {
-		if ((new_node = calloc(1, sizeof(*node))) == NULL) {
-			return -1;
+	new_node->elem = elem;
+	new_node->is_red = 1;
+	b->size++;
+	return new_node;
+}
+
+/**
+ * Determines if a node is red or not.
+ *
+ * @param node Node to check.  If NULL then treat the node as black.
+ *
+ * @return 0 if the node is black, 1 if red.
+ */
+static int bst_node_is_red(bst_node_t *node)
+{
+	return node != NULL && node->is_red;
+}
+
+static bst_node_t *bst_rotate_single(bst_node_t *root, int dir)
+{
+	bst_node_t *save = root->child[!dir];
+	root->child[!dir] = save->child[dir];
+	save->child[dir] = root;
+	root->is_red = 1;
+	save->is_red = 0;
+	return save;
+}
+
+static bst_node_t *bst_rotate_double(bst_node_t *root, int dir)
+{
+	root->child[!dir] = bst_rotate_single(root->child[!dir], !dir);
+	return bst_rotate_single(root, dir);
+}
+
+static bst_node_t *bst_insert_recursive(apol_bst_t *b, bst_node_t *root, void **elem, void *data, apol_bst_free_func *fr, int *uniq)
+{
+	int compval, dir;
+	if (root == NULL) {
+		if ((root = bst_node_make(b, *elem)) == NULL) {
+			*uniq = -1;
+			return NULL;
 		}
-		new_node->elem = *elem;
-		b->head = new_node;
-		b->size++;
-		return 0;
+		*uniq = 1;
 	}
-	node = b->head;
-	while (node != NULL) {
+	else {
 		if (b->cmp != NULL) {
-			compval = b->cmp(node->elem, *elem, data);
+			compval = b->cmp(root->elem, *elem, data);
 		}
 		else {
-			char *p1 = (char *) node->elem;
+			char *p1 = (char *) root->elem;
 			char *p2 = (char *) (*elem);
 			if (p1 < p2) {
 				compval = -1;
@@ -226,36 +269,55 @@ int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data,
 			if (fr != NULL) {
 				fr(*elem);
 			}
-			*elem = node->elem;
-			return 1;
+			*elem = root->elem;
+			*uniq = 0;
+			return root;
 		}
 		else if (compval > 0) {
-			if (node->left == NULL) {
-				if ((new_node = calloc(1, sizeof(*node))) == NULL) {
-					return -1;
-				}
-				new_node->elem = *elem;
-				node->left = new_node;
-				b->size++;
-				return 0;
-			}
-			node = node->left;
+			dir = 0;
 		}
 		else {
-			if (node->right == NULL) {
-				if ((new_node = calloc(1, sizeof(*node))) == NULL) {
-					return -1;
-				}
-				new_node->elem = *elem;
-				node->right = new_node;
-				b->size++;
-				return 0;
+			dir = 1;
+		}
+		root->child[dir] = bst_insert_recursive(b, root->child[dir], elem, data, fr, uniq);
+		if (*uniq != 1) {
+			return root;
+		}
+
+		/* rebalance tree */
+		if (bst_node_is_red(root->child[dir])) {
+			if (bst_node_is_red(root->child[!dir])) {
+				/* recolor myself and children.  note
+				   that this can't be reached if a
+				   child is NULL */
+				root->is_red = 1;
+				root->child[0]->is_red = 0;
+				root->child[1]->is_red = 0;
 			}
-			node = node->right;
+			else {
+				if (bst_node_is_red(root->child[dir]->child[dir])) {
+					root = bst_rotate_single(root, !dir);
+				}
+				else if (bst_node_is_red(root->child[dir]->child[!dir])) {
+					root = bst_rotate_double(root, !dir);
+				}
+			}
 		}
 	}
-	/* should never get here */
-	errno = EBADRQC;
-	assert(0);
-	return -1;
+	return root;
+}
+
+int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data,
+			    apol_bst_free_func *fr)
+{
+	int retval;
+	if (!b || !elem) {
+		errno = EINVAL;
+		return -1;
+	}
+	b->head = bst_insert_recursive(b, b->head, elem, data, fr, &retval);
+	if (retval >= 0) {
+		b->head->is_red = 0;
+	}
+	return retval;
 }
