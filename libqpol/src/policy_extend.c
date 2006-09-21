@@ -547,6 +547,7 @@ static int qpol_syn_rule_table_insert_entry(
 	int error = 0;
 	qpol_syn_rule_node_t *table_node = NULL;
 	qpol_syn_rule_list_t *list_entry = NULL;
+	qpol_syn_rule_key_t *tmp_key = NULL;
 
 	if (!(list_entry = calloc(1, sizeof(qpol_syn_rule_list_t)))) {
 		error = errno;
@@ -558,18 +559,24 @@ static int qpol_syn_rule_table_insert_entry(
 
 	table_node = qpol_syn_rule_table_find_node_by_key(table, key);
 	if (table_node) {
-		free(key);
 		list_entry->next = table_node->rules;
 		table_node->rules = list_entry;
 	} else {
 		if (!(table_node = calloc(1, sizeof(qpol_syn_rule_node_t)))) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
-			free(key);
 			free(list_entry);
 			return -1;
 		}
-		table_node->key = key;
+		if (!(tmp_key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			qpol_syn_rule_node_destroy(&table_node);
+			errno = error;
+			return -1;
+		}
+		*tmp_key = *key; /* shallow copy */
+		table_node->key = tmp_key;
 		table_node->rules = list_entry;
 		table_node->next = table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)];
 		table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)] = table_node;
@@ -593,20 +600,12 @@ static int qpol_syn_rule_table_insert_entry(
 static int qpol_syn_rule_table_insert_sepol_avrule(qpol_policy_t *policy, qpol_syn_rule_table_t *table, avrule_t *rule, cond_node_t *cond, int branch)
 {
 	int error = 0, created = 0;
-	qpol_syn_rule_key_t *key = NULL;
+	qpol_syn_rule_key_t key = {0,0,0,0,NULL};
 	struct qpol_syn_rule *new_rule = NULL;
 	ebitmap_t source_types, source_types2, target_types, target_types2;
 	ebitmap_node_t *snode = NULL, *tnode = NULL;
 	unsigned int i, j;
 	class_perm_node_t *class_node = NULL;
-	cond_node_t *tmp_cond = NULL;
-
-	if (!policy || !policy->ext ||
-		!policy->ext->syn_rule_master_list || !table || !rule) {
-		ERR(policy, "%s",  strerror(EINVAL));
-		errno = EINVAL;
-		return -1;
-	}
 
 	if (!(new_rule = calloc(1, sizeof(struct qpol_syn_rule)))) {
 		error = errno;
@@ -643,61 +642,25 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_policy_t *policy, qpol_s
 			continue;
 		if (rule->flags & RULE_SELF) {
 			for (class_node = rule->perms; class_node; class_node = class_node->next) {
-				if (!(key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
-					error = errno;
-					ERR(policy, "%s", strerror(error));
+				key.rule_type = rule->specified;
+				key.source_val = key.target_val = i + 1;
+				key.class_val = class_node->class;
+				key.cond = cond;
+				if (qpol_syn_rule_table_insert_entry(policy, table, &key, new_rule))
 					goto err;
-				}
-				key->rule_type = rule->specified;
-				key->source_val = key->target_val = i + 1;
-				key->class_val = class_node->class;
-				if (cond) {
-					tmp_cond = cond_node_find(&policy->p->p, cond, policy->p->p.cond_list, &created);
-					if (created || !tmp_cond) {
-						cond_node_destroy(tmp_cond);
-						error = EIO;
-						ERR(policy, "%s", "Inconsistent conditional records");
-						assert(0);
-						goto err;
-					}
-					key->cond = tmp_cond;
-				} else {
-					key->cond = NULL;
-				}
-				if (qpol_syn_rule_table_insert_entry(policy, table, key, new_rule))
-					goto err;
-				key = NULL;
 			}
 		}
 		ebitmap_for_each_bit(&target_types, tnode, j) {
 			if (!ebitmap_get_bit(&target_types, j))
 				continue;
 			for (class_node = rule->perms; class_node; class_node = class_node->next) {
-				if (!(key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
-					error = errno;
-					ERR(policy, "%s", strerror(error));
+				key.rule_type = rule->specified;
+				key.source_val = i + 1;
+				key.target_val = j + 1;
+				key.class_val = class_node->class;
+				key.cond = cond;
+				if (qpol_syn_rule_table_insert_entry(policy, table, &key, new_rule))
 					goto err;
-				}
-				key->rule_type = rule->specified;
-				key->source_val = i + 1;
-				key->target_val = j + 1;
-				key->class_val = class_node->class;
-				if (cond) {
-					tmp_cond = cond_node_find(&policy->p->p, cond, policy->p->p.cond_list, &created);
-					if (created || !tmp_cond) {
-						cond_node_destroy(tmp_cond);
-						error = EIO;
-						ERR(policy, "%s", "Inconsistent conditional records");
-						assert(0);
-						goto err;
-					}
-					key->cond = tmp_cond;
-				} else {
-					key->cond = NULL;
-				}
-				if (qpol_syn_rule_table_insert_entry(policy, table, key, new_rule))
-					goto err;
-				key = NULL;
 			}
 		}
 	}
