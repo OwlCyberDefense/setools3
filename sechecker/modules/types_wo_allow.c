@@ -42,7 +42,8 @@ int types_wo_allow_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		ERR(NULL, "%s", "Mo library");
+		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -52,6 +53,7 @@ int types_wo_allow_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -77,32 +79,38 @@ int types_wo_allow_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = types_wo_allow_init;
 	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = types_wo_allow_run;
 	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -111,32 +119,38 @@ int types_wo_allow_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = types_wo_allow_print;
 	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = types_wo_allow_get_list;
 	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -150,10 +164,12 @@ int types_wo_allow_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -175,13 +191,16 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	apol_vector_t *type_vector;
 	apol_vector_t *avrule_vector;
 	apol_avrule_query_t *avrule_query = NULL;
+	int error = 0;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -192,31 +211,37 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto types_wo_allow_run_fail;
 	}
 	res->item_type  = SECHK_ITEM_TYPE;
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto types_wo_allow_run_fail;
 	}
 
 	if ( !(type_vector = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto types_wo_allow_run_fail;
 	}
 
 	if ( !(avrule_query = apol_avrule_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto types_wo_allow_run_fail;
 	}
 
 
 	if ( apol_get_type_by_query(policy, NULL, &type_vector) < 0 ) {
+		error = errno;
 		goto types_wo_allow_run_fail;
 	}
 
@@ -264,6 +289,7 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		/* not used anywhere*/
 		item = sechk_item_new(NULL);
 		if (!item) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto types_wo_allow_run_fail;
 		}
@@ -271,26 +297,31 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		item->item = (void *)type;
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto types_wo_allow_run_fail;
 		}
 		proof->type = SECHK_ITEM_TYPE;
 		proof->text = strdup("This type does not appear in any allow rules.");
 		if (!proof->text) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto types_wo_allow_run_fail;
 		}
 		if ( !item->proof ) {
 			if ( !(item->proof = apol_vector_create()) ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto types_wo_allow_run_fail;
 			}
 		}
 		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto types_wo_allow_run_fail;
 		}
 		if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto types_wo_allow_run_fail;
 		}
@@ -306,6 +337,7 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 types_wo_allow_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -321,10 +353,12 @@ int types_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -333,6 +367,7 @@ int types_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -369,14 +404,17 @@ int types_wo_allow_get_list(sechk_module_t *mod, apol_policy_t *policy __attribu
 
 	if (!mod || !arg) {
 		ERR(NULL, "%s", "Invalid parameters"); 
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(NULL, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 	if (!mod->result) {
 		ERR(NULL, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 

@@ -44,12 +44,14 @@ int find_file_types_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -87,11 +89,13 @@ int find_file_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_file_types_init;
@@ -100,11 +104,13 @@ int find_file_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_file_types_run;
@@ -115,11 +121,13 @@ int find_file_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_file_types_print;
@@ -128,11 +136,13 @@ int find_file_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_file_types_get_list;
@@ -153,20 +163,24 @@ int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
 	datum = find_file_types_data_new();
 	if (!datum) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	if ( !(datum->file_type_attribs = apol_vector_create()) ) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	mod->data = datum;
@@ -182,6 +196,7 @@ int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				qpol_type_get_name(policy->p, attr, &file_attrib);
 				if ( apol_vector_append( datum->file_type_attribs,(void*) file_attrib ) < 0 ) {
 					ERR(policy, "%s", strerror(ENOMEM));
+					errno = ENOMEM;
 					return -1;
 				}
 			}
@@ -204,7 +219,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	apol_vector_t *terule_vector = NULL;
 	size_t i, j, x, retv;
 	char *buff = NULL;
-	int buff_sz;
+	int buff_sz, error = 0;
 
 	/* NEW */
 	int num_fc_entries = 0;
@@ -213,10 +228,12 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -227,6 +244,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -234,10 +252,12 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	res->item_type = SECHK_ITEM_TYPE;
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_file_types_run_fail;
 	}
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_file_types_run_fail;
 	}
@@ -246,17 +266,24 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	if (mod->parent_lib->fc_entries) {
 		if (mod->parent_lib->fc_path) {
 			retv = sefs_fc_entry_parse_file_contexts(policy, mod->parent_lib->fc_path, &fc_entry_vector);
-			if (retv)
+			if (retv) {
+				error = errno;
 				ERR(policy, "%s", "Unable to parse file contexts file");
-			else
+				goto find_file_types_run_fail;
+			} else {
 				num_fc_entries = apol_vector_get_size(fc_entry_vector);
-		} else
+			}
+		} else {
+			error = ENOENT;
 			ERR(policy, "%s", "Unable to find file contexts file");
+			goto find_file_types_run_fail;
+		}
 	}
 #endif
 
 	/* Get an iterator for the types */
 	if (apol_get_type_by_query(policy, NULL, &type_vector) < 0) {
+		error = errno;
 		ERR(policy, "%s", "Unable to retrieve types");
 		return -1;
 	}
@@ -268,6 +295,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		qpol_type_get_name(policy->p, type, &type_name);
 
 		if ( qpol_type_get_attr_iter(policy->p, type, &file_attr_iter) < 0 ) {
+			error = errno;
 			ERR(policy, "Could not get attributes for %s\n", type_name);
 			goto find_file_types_run_fail;
 		}
@@ -286,6 +314,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 				if (!strcmp(attr_name, file_type_attrib)) {
 					proof = sechk_proof_new(NULL);
 					if (!proof) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
@@ -295,6 +324,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 					if (!item) {
 						item = sechk_item_new(NULL);
 						if (!item) {
+							error = errno;
 							ERR(policy, "%s", strerror(ENOMEM));
 							goto find_file_types_run_fail;
 						}
@@ -302,11 +332,13 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 					}
 					if ( !item->proof ) {
 						if ( !(item->proof = apol_vector_create()) ) {
+							error = errno;
 							ERR(policy, "%s", strerror(ENOMEM));
 							goto find_file_types_run_fail;
 						}
 					}
 					if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
@@ -317,6 +349,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 		/* rule src check filesystem associate */
 		if ( !(avrule_query = apol_avrule_query_create()) ) {
+			error = errno;
 			ERR(policy, "%s", "Could not retrieve AV rules");
 			goto find_file_types_run_fail;
 		}
@@ -330,6 +363,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			if ( avrule ) {
 				proof = sechk_proof_new(NULL);
 				if (!proof) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_file_types_run_fail;
 				}
@@ -339,6 +373,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 				if (!item) {
 					item = sechk_item_new(NULL);
 					if (!item) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
@@ -346,12 +381,14 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 				}
 				if ( !item->proof ) {
 					if ( !(item->proof = apol_vector_create()) ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
 				}
 				item->test_result = 1;
 				if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_file_types_run_fail;
 				}
@@ -362,6 +399,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 		/* type rule check file object */
 		if ( !(terule_query = apol_terule_query_create()) ) {
+			error = errno;
 			ERR(policy, "%s", "Could not retrieve TE rules");
 			goto find_file_types_run_fail;
 		}
@@ -378,6 +416,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			if (strcmp(class_name,"process")) {
 				proof = sechk_proof_new(NULL);
 				if (!proof) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_file_types_run_fail;
 				}
@@ -387,6 +426,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 				if (!item) {
 					item = sechk_item_new(NULL);
 					if (!item) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
@@ -394,12 +434,14 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 				}
 				if ( !item->proof ) {
 					if ( !(item->proof = apol_vector_create()) ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
 				}
 				item->test_result = 1;
 				if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_file_types_run_fail;
 				}
@@ -491,6 +533,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 					}
 					proof = sechk_proof_new(NULL);
 					if (!proof) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
@@ -500,6 +543,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 					if (!item) {
 						item = sechk_item_new(NULL);
 						if (!item) {
+							error = errno;
 							ERR(policy, "%s", strerror(ENOMEM));
 							goto find_file_types_run_fail;
 						}
@@ -507,11 +551,13 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 					}
 					if ( !item->proof ) {
 						if ( !(item->proof = apol_vector_create()) ) {
+							error = errno;
 							ERR(policy, "%s", strerror(ENOMEM));
 							goto find_file_types_run_fail;
 						}
 					}
 					if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
 					}
@@ -523,6 +569,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		if (item) {
 			item->item = type;
 			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_file_types_run_fail;
 			}
@@ -541,6 +588,7 @@ find_file_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
+	errno = error;
 	return -1;
 }
 
@@ -566,10 +614,12 @@ int find_file_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -578,6 +628,7 @@ int find_file_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 

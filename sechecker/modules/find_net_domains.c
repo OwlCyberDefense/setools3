@@ -47,6 +47,7 @@ int find_net_domains_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -56,6 +57,7 @@ int find_net_domains_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -92,32 +94,38 @@ int find_net_domains_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_net_domains_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_net_domains_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -126,32 +134,38 @@ int find_net_domains_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_net_domains_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_net_domains_get_list;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -169,21 +183,25 @@ int find_net_domains_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
 	datum = find_net_domains_data_new();
 	if (!datum) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	if (!(datum->net_objs = apol_vector_create()) ) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -194,6 +212,7 @@ int find_net_domains_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 		if (!strcmp(opt->name, "net_obj")) {
 			if ( apol_vector_append(datum->net_objs, (void*) opt->value ) < 0 ) {
 				ERR(policy, "%s", strerror(ENOMEM));
+				errno = ENOMEM;
 				return -1;
 			}
 		}
@@ -216,16 +235,18 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j = 0, k=0;
+	int i = 0, j = 0, k=0, error = 0;
 	apol_vector_t *avrule_vector;
 	apol_avrule_query_t *avrule_query = NULL;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -237,20 +258,24 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_net_domains_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
 	if (!(res->items = apol_vector_create())) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_net_domains_run_fail;
 	}
 
 	if (!(avrule_query = apol_avrule_query_create())) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_net_domains_run_fail;
 	}
@@ -277,6 +302,7 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 				proof = sechk_proof_new(NULL);
 				if ( !proof ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_net_domains_run_fail;
 				}
@@ -284,6 +310,7 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				proof->elem = avrule;
 				proof->text = strdup(apol_avrule_render(policy, avrule));
 				if ( !proof->text ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_net_domains_run_fail;
 				}
@@ -303,23 +330,27 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				if ( !item) {
 					item = sechk_item_new(NULL);
 					if (!item) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_net_domains_run_fail;
 					}
 					item->test_result = 1;
 					item->item = (void *)source;
 					if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_net_domains_run_fail;
 					}
 				}
 				if ( !item->proof ) {
 					if ( !(item->proof = apol_vector_create()) ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_net_domains_run_fail;
 					}
 				}
 				if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_net_domains_run_fail;
 				}
@@ -336,6 +367,7 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 find_net_domains_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -361,10 +393,12 @@ int find_net_domains_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -374,6 +408,7 @@ int find_net_domains_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -430,22 +465,22 @@ int find_net_domains_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 	return 0;
 }
 
-int find_net_domains_get_list(sechk_module_t *mod, apol_policy_t *policy __attribute__((unused)), void *arg)
+int find_net_domains_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg)
 {
 	apol_vector_t **v = arg;
 
 	if (!mod || !arg) {
-		ERR(NULL, "%s", strerror(EINVAL));
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(NULL, "Wrong module (%s)", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		errno = EINVAL;
 		return -1;
 	}
 	if (!mod->result) {
-		ERR(NULL, "%s", "Module has not been run");
+		ERR(policy, "%s", "Module has not been run");
 		errno = EINVAL;
 		return -1;
 	}
@@ -472,4 +507,3 @@ find_net_domains_data_t *find_net_domains_data_new(void)
 
 	return datum;
 }
-

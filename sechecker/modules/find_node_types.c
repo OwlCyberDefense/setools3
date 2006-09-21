@@ -44,12 +44,14 @@ int find_node_types_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Unknown module");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -77,11 +79,13 @@ int find_node_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_node_types_init;
@@ -90,11 +94,13 @@ int find_node_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_node_types_run;
@@ -105,11 +111,13 @@ int find_node_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_node_types_print;
@@ -118,11 +126,13 @@ int find_node_types_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = find_node_types_get_list;
@@ -139,10 +149,12 @@ int find_node_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -165,13 +177,16 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	char *buff = NULL;
 	size_t i, buff_sz = 0;
 	apol_vector_t *nodecon_vector = NULL;
+	int error = 0;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -182,20 +197,24 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_node_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
 	if (!(res->items = apol_vector_create())) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_node_types_run_fail;		
 	}
 
 	if (apol_get_nodecon_by_query(policy, NULL, &nodecon_vector) < 0) {
+		error = errno;
 		goto find_node_types_run_fail;
 	}
 
@@ -211,6 +230,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto find_node_types_run_fail;
 		}
@@ -230,23 +250,27 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		if (!item) {
 			item = sechk_item_new(NULL);
 			if (!item) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 			item->test_result = 1;
 			item->item = (void *)context_type;
 			if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 		} 
 		if (!item->proof) { 
 			if ( !(item->proof = apol_vector_create()) ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 		}
 		if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto find_node_types_run_fail;
 		}
@@ -273,6 +297,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			a_context = apol_context_create_from_qpol_context(policy, context);
 
 			if (apol_str_append(&buff, &buff_sz, "sid node ") != 0) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				apol_context_destroy(&a_context);
 				goto find_node_types_run_fail;
@@ -280,6 +305,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 			tmp = apol_context_render(policy, a_context);
 			if (apol_str_append(&buff, &buff_sz, tmp) != 0) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				apol_context_destroy(&a_context);
 				free(tmp);
@@ -292,6 +318,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			if (!item) {
 				item = sechk_item_new(NULL);
 				if (!item) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_node_types_run_fail;
 				}
@@ -300,6 +327,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
@@ -311,15 +339,18 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			item->item = (void *)context_type;
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_node_types_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
@@ -335,6 +366,7 @@ find_node_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
+	errno = error;
 	return -1;
 }
 
@@ -350,10 +382,12 @@ int find_node_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 
 	if (!mod || !policy){
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -363,6 +397,7 @@ int find_node_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -425,14 +460,17 @@ int find_node_types_get_list(sechk_module_t *mod, apol_policy_t *policy __attrib
 
 	if (!mod || !arg) {
 		ERR(NULL, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(NULL, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 	if (!mod->result) {
 		ERR(NULL, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -440,4 +478,3 @@ int find_node_types_get_list(sechk_module_t *mod, apol_policy_t *policy __attrib
 
 	return 0;
 }
-
