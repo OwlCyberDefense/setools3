@@ -68,6 +68,7 @@ if test "x${enable_debug}" = xyes; then
     POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=$(top_builddir)/libpoldiff/src'
     AC_MSG_RESULT(yes)
 else
+    AC_DEFINE(NDEBUG, 1, [disable calls to assert()])
     DEBUGCFLAGS="-fno-strict-aliasing"
     DEBUGLDFLAGS=""
     if test ${use_shared} = yes; then

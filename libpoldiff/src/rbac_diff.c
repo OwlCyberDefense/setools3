@@ -629,7 +629,7 @@ extern char *poldiff_role_trans_to_string(poldiff_t *diff, const void *role_tran
 			}
 		case POLDIFF_FORM_MODIFIED:
 			{
-				if (asprintf(&s, "* role_transition %s %s { -%s +%s };", rt->source_role, rt->target_type, rt->orig_default, rt->mod_default) < 0)
+				if (asprintf(&s, "* role_transition %s %s { +%s -%s };", rt->source_role, rt->target_type, rt->mod_default, rt->orig_default) < 0)
 					break;
 				return s;
 			}
