@@ -31,7 +31,7 @@
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/util.h>
 #include <sepol/policydb/conditional.h>
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 #include "syn_rule_internal.h"
 #include <errno.h>

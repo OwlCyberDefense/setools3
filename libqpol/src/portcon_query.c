@@ -32,7 +32,7 @@
 #include <qpol/context_query.h>
 #include <qpol/portcon_query.h>
 #include <sepol/policydb/policydb.h>
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 
 int qpol_policy_get_portcon_by_port(qpol_policy_t *policy, uint16_t low, uint16_t high, uint8_t protocol, qpol_portcon_t **ocon)

@@ -31,7 +31,7 @@
 #include <sepol/policydb/avtab.h>
 #include <sepol/policydb/util.h>
 #include <stdlib.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 int qpol_policy_get_terule_iter(qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter)
 {

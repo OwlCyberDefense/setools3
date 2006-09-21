@@ -32,7 +32,7 @@
 #include <sepol/policydb/avtab.h>
 #include <sepol/policydb/util.h>
 #include <stdlib.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 typedef struct range_trans_state {
 	range_trans_t *head;
