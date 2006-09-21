@@ -31,7 +31,7 @@
 #include <qpol/terule_query.h>
 #include <qpol/iterator.h>
 #include "iterator_internal.h"
-#include "debug.h"
+#include "qpol_internal.h"
 
 #include <sepol/policydb/conditional.h>
 

@@ -32,7 +32,7 @@
 #include <qpol/context_query.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/context.h>
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 
 int qpol_policy_get_fs_use_by_name(qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon)

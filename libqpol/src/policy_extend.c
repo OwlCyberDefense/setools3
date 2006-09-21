@@ -41,7 +41,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 #include "syn_rule_internal.h"
 

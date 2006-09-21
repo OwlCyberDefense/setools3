@@ -34,7 +34,7 @@
 #include <qpol/user_query.h>
 #include <qpol/role_query.h>
 #include <qpol/mls_query.h>
-#include "debug.h"
+#include "qpol_internal.h"
 
 
 int qpol_policy_get_user_by_name(qpol_policy_t *policy, const char *name, qpol_user_t **datum)

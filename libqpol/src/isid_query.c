@@ -31,7 +31,7 @@
 #include <qpol/context_query.h>
 #include <qpol/isid_query.h>
 #include <sepol/policydb/policydb.h>
-#include "debug.h"
+#include "qpol_internal.h"
 #include "iterator_internal.h"
 
 int qpol_policy_get_isid_by_name(qpol_policy_t *policy, const char *name, qpol_isid_t **ocon)

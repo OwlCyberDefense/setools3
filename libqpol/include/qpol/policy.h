@@ -43,20 +43,8 @@
 #define QPOL_TYPE_BINARY	1
 #define QPOL_TYPE_SOURCE	2
 
-/* forward declaration, full declaration in policy_extend.c */
-struct qpol_extended_image;
-struct qpol_policy;
-
+typedef struct qpol_policy qpol_policy_t;
 typedef void (*qpol_callback_fn_t) (void* varg, struct qpol_policy* policy, int level, const char* fmt, va_list va_args);
-
-typedef struct qpol_policy {
-	struct sepol_policydb *p;
-	struct sepol_handle *sh;
-	qpol_callback_fn_t fn;
-	void *varg;
-	int rules_loaded;
-	struct qpol_extended_image *ext;
-} qpol_policy_t;
 
 #define QPOL_POLICY_KERNEL_SOURCE 0
 #define QPOL_POLICY_KERNEL_BINARY 1
