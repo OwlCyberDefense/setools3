@@ -294,14 +294,14 @@ static void sediff_results_print_item_header(sediff_app_t *app, GtkTextBuffer *t
 	gtk_text_buffer_get_end_iter(tb, &iter);
 	poldiff_get_stats(app->diff, record->bit_pos, stats);
 	if (record->has_add_type) {
-		g_string_printf(string, "%s (%zd Added, %zd Added New Type, %zd Removed, %zd Removed Missing Type, %zd Changed)\n",
+		g_string_printf(string, "%s (%zd Added, %zd Added New Type, %zd Removed, %zd Removed Missing Type, %zd Changed)\n\n",
 				record->label,
 				stats[0], stats[3],
 				stats[1], stats[4],
 				stats[2]);
 	}
 	else {
-		g_string_printf(string, "%s (%zd Added, %zd Removed, %zd Changed)\n",
+		g_string_printf(string, "%s (%zd Added, %zd Removed, %zd Changed)\n\n",
 				record->label,
 				stats[0],
 				stats[1],
@@ -311,27 +311,27 @@ static void sediff_results_print_item_header(sediff_app_t *app, GtkTextBuffer *t
 
 	switch (form) {
 	case POLDIFF_FORM_ADDED: {
-		g_string_printf(string, "\tAdded %s: %zd\n", record->label, stats[0]);
+		g_string_printf(string, "Added %s: %zd\n", record->label, stats[0]);
 		s = "added-header";
 		break;
 	}
 	case POLDIFF_FORM_ADD_TYPE: {
-		g_string_printf(string, "\tAdded %s because of new type: %zd\n", record->label, stats[3]);
+		g_string_printf(string, "Added %s because of new type: %zd\n", record->label, stats[3]);
 		s = "added-header";
 		break;
 	}
 	case POLDIFF_FORM_REMOVED: {
-		g_string_printf(string, "\tRemoved %s: %zd\n", record->label, stats[1]);
+		g_string_printf(string, "Removed %s: %zd\n", record->label, stats[1]);
 		s = "removed-header";
 		break;
 	}
 	case POLDIFF_FORM_REMOVE_TYPE: {
-		g_string_printf(string, "\tRemoved %s because of missing type: %zd\n", record->label, stats[4]);
+		g_string_printf(string, "Removed %s because of missing type: %zd\n", record->label, stats[4]);
 		s = "removed-header";
 		break;
 	}
 	case POLDIFF_FORM_MODIFIED: {
-		g_string_printf(string, "\tModified %s: %zd\n", record->label, stats[2]);
+		g_string_printf(string, "Modified %s: %zd\n", record->label, stats[2]);
 		s = "modified-header";
 		break;
 	}
@@ -370,7 +370,7 @@ static void sediff_results_select_simple(sediff_app_t *app, GtkTextView *view,
 			elem = apol_vector_get_element(v, i);
 			if (item_record->get_form(elem) == form) {
 				s = item_record->get_string(app->diff, elem);
-				sediff_results_print_string(tb, &iter, s, 2);
+				sediff_results_print_string(tb, &iter, s, 1);
 				free(s);
 				gtk_text_buffer_insert(tb, &iter, "\n", -1);
 			}
@@ -420,7 +420,7 @@ static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
 			elem = apol_vector_get_element(v, i);
 			if (poldiff_avrule_get_form(elem) == form) {
 				s = poldiff_avrule_to_string(app->diff, elem);
-				sediff_results_print_string(tb, &iter, s, 2);
+				sediff_results_print_string(tb, &iter, s, 1);
 				free(s);
 				gtk_text_buffer_insert(tb, &iter, "\n", -1);
 			}
@@ -431,7 +431,7 @@ static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
 			elem = apol_vector_get_element(v, i);
 			if (poldiff_terule_get_form(elem) == form) {
 				s = poldiff_terule_to_string(app->diff, elem);
-				sediff_results_print_string(tb, &iter, s, 2);
+				sediff_results_print_string(tb, &iter, s, 1);
 				free(s);
 				gtk_text_buffer_insert(tb, &iter, "\n", -1);
 			}
@@ -708,7 +708,7 @@ void sediff_results_sort_current(sediff_app_t *app, int field, int direction)
 	for (i = 0; i < apol_vector_get_size(av); i++) {
 		elem = apol_vector_get_element(av, i);
 		s = poldiff_avrule_to_string(app->diff, elem);
-		sediff_results_print_string(tb, &iter, s, 2);
+		sediff_results_print_string(tb, &iter, s, 1);
 		free(s);
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
 	}
@@ -716,7 +716,7 @@ void sediff_results_sort_current(sediff_app_t *app, int field, int direction)
 	for (i = 0; i < apol_vector_get_size(te); i++) {
 		elem = apol_vector_get_element(te, i);
 		s = poldiff_terule_to_string(app->diff, elem);
-		sediff_results_print_string(tb, &iter, s, 2);
+		sediff_results_print_string(tb, &iter, s, 1);
 		free(s);
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
 	}

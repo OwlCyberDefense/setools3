@@ -96,8 +96,10 @@ typedef struct pseudo_avrule {
 	uint32_t source, target;
 	/** pointer into the class_bst BST */
 	char *cls;
-	/** vector of pointers into the perm_bst BST (char *) */
-	apol_vector_t *perms;
+	/** array of pointers into the perm_bst BST */
+	/* (use an array here to save space) */
+	char **perms;
+	size_t num_perms;
 	/** array of pointers into the bool_bst BST */
 	char *bools[5];
 	uint32_t bool_val;
@@ -1001,6 +1003,34 @@ static int avrule_build_cond(poldiff_t *diff, apol_policy_t *p, qpol_cond_t *con
 }
 
 /**
+ * Bubble sort the permissions within a pseudo-avrule, sorted by
+ * pointer value.  (Bubble-sort is fine because the number of
+ * permissions will usually be less than 10.)  Then uniquify the list.
+ *
+ * @param key Rule whose permissions to sort.
+ */
+static void sort_and_uniquify_perms(pseudo_avrule_t *key)
+{
+	size_t i, j;
+	char *t;
+	for (i = key->num_perms; i > 1; i--) {
+		for (j = 1; j < i; j++) {
+			if (key->perms[j - 1] > key->perms[j]) {
+				t = key->perms[j];
+				key->perms[j] = key->perms[j - 1];
+				key->perms[j - 1] = t;
+			}
+		}
+	}
+	for (i = 1; i < key->num_perms; i++) {
+		if (key->perms[i] == key->perms[i - 1]) {
+			memmove(key->perms + i, key->perms + i + 1, key->num_perms - i - 1);
+			key->num_perms--;
+		}
+	}
+}
+
+/**
  * Given a rule, construct a new pseudo-avrule and insert it into the
  * BST if not already there.
  *
@@ -1020,7 +1050,7 @@ static int avrule_add_to_bst(poldiff_t *diff, apol_policy_t *p,
 	pseudo_avrule_t *key, *inserted_key;
 	qpol_class_t *obj_class;
 	qpol_iterator_t *perm_iter = NULL;
-	char *class_name, *perm_name, *pseudo_perm;
+	char *class_name, *perm_name, *pseudo_perm, **t;
 	size_t num_perms;
 	qpol_cond_t *cond;
 	int retval = -1, error = 0, compval;
@@ -1063,18 +1093,18 @@ static int avrule_add_to_bst(poldiff_t *diff, apol_policy_t *p,
 	}
 	inserted_key = key;
 	key = NULL;
+
 	/* append and uniquify this rule's permissions */
-	if (inserted_key->perms == NULL) {
-		if (qpol_iterator_get_size(perm_iter, &num_perms) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-		if ((inserted_key->perms = apol_vector_create_with_capacity(num_perms)) == NULL) {
-			error = errno;
-			ERR(diff, "%s", strerror(error));
-			goto cleanup;
-		}
+	if (qpol_iterator_get_size(perm_iter, &num_perms) < 0) {
+		error = errno;
+		goto cleanup;
 	}
+	if ((t = realloc(inserted_key->perms, (inserted_key->num_perms + num_perms) * sizeof(*t))) == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		goto cleanup;
+	}
+	inserted_key->perms = t;
 	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
 		if (qpol_iterator_get_item(perm_iter, (void *) &perm_name) < 0) {
 			error = errno;
@@ -1088,13 +1118,9 @@ static int avrule_add_to_bst(poldiff_t *diff, apol_policy_t *p,
 			goto cleanup;
 		}
 		free(perm_name);
-		if (apol_vector_append(inserted_key->perms, pseudo_perm) < 0) {
-			error = errno;
-			ERR(diff, "%s", strerror(error));
-			goto cleanup;
-		}
-	}
-	apol_vector_sort_uniquify(inserted_key->perms, NULL, NULL, NULL);
+                inserted_key->perms[(inserted_key->num_perms)++] = pseudo_perm;
+        }
+	sort_and_uniquify_perms(inserted_key);
 	retval = 0;
  cleanup:
 	qpol_iterator_destroy(&perm_iter);
@@ -1273,8 +1299,9 @@ apol_vector_t *avrule_get_items(poldiff_t *diff, apol_policy_t *policy)
 	for (i = 0; i < apol_vector_get_size(bools); i++) {
 		qpol_bool_t *bool = apol_vector_get_element(bools, i);
 		int state = (int) apol_vector_get_element(bool_states, i);
-		qpol_bool_set_state(policy->p, bool, state);
+		qpol_bool_set_state_no_eval(policy->p, bool, state);
 	}
+	qpol_policy_reevaluate_conds(policy->p);
 	apol_vector_destroy(&bools, NULL);
 	apol_vector_destroy(&bool_states, NULL);
 	apol_bst_destroy(&b, NULL);
@@ -1291,7 +1318,7 @@ void avrule_free_item(void *item)
 {
 	pseudo_avrule_t *a = (pseudo_avrule_t *) item;
 	if (item != NULL) {
-		apol_vector_destroy(&a->perms, NULL);
+		free(a->perms);
 		free(a);
 	}
 }
@@ -1376,6 +1403,7 @@ int avrule_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 	pseudo_avrule_t *rule = (pseudo_avrule_t *) item;
 	poldiff_avrule_t *pa = NULL;
 	apol_vector_t *v1, *v2;
+	size_t i;
 	int retval = -1, error = errno;
 
 	/* check if form should really become ADD_TYPE / REMOVE_TYPE,
@@ -1406,10 +1434,17 @@ int avrule_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 	if (pa == NULL) {
 		return -1;
 	}
-        if ((pa->unmodified_perms = apol_vector_create_from_vector(rule->perms)) == NULL) {
+	if ((pa->unmodified_perms = apol_vector_create_with_capacity(rule->num_perms)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
+	}
+	for (i = 0; i < rule->num_perms; i++) {
+		if (apol_vector_append(pa->unmodified_perms, rule->perms[i]) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
 	}
 
 	if (apol_vector_append(diff->rule_diffs->diffs_av, pa) < 0) {
@@ -1463,11 +1498,11 @@ int avrule_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-	for (i = j = 0; i < apol_vector_get_size(r1->perms); ) {
-		if (j >= apol_vector_get_size(r2->perms))
+	for (i = j = 0; i < r1->num_perms; ) {
+		if (j >= r2->num_perms)
 			break;
-		perm1 = (char *) apol_vector_get_element(r1->perms, i);
-		perm2 = (char *) apol_vector_get_element(r2->perms, j);
+		perm1 = r1->perms[i];
+		perm2 = r2->perms[j];
 		if (perm2 > perm1) {
 			if (apol_vector_append(removed_perms, perm1) < 0) {
 				error = errno;
@@ -1495,16 +1530,16 @@ int avrule_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		}
 	}
 
-	for ( ; i < apol_vector_get_size(r1->perms); i++) {
-		perm1 = (char *) apol_vector_get_element(r1->perms, i);
+	for ( ; i < r1->num_perms; i++) {
+		perm1 = r1->perms[i];
 		if (apol_vector_append(removed_perms, perm1) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
 	}
-	for ( ; j < apol_vector_get_size(r2->perms); j++) {
-		perm2 = (char *) apol_vector_get_element(r2->perms, j);
+	for ( ; j < r2->num_perms; j++) {
+		perm2 = r2->perms[j];
 		if (apol_vector_append(added_perms, perm2) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
@@ -1988,8 +2023,9 @@ apol_vector_t *terule_get_items(poldiff_t *diff, apol_policy_t *policy)
 	for (i = 0; i < apol_vector_get_size(bools); i++) {
 		qpol_bool_t *bool = apol_vector_get_element(bools, i);
 		int state = (int) apol_vector_get_element(bool_states, i);
-		qpol_bool_set_state(policy->p, bool, state);
+		qpol_bool_set_state_no_eval(policy->p, bool, state);
 	}
+	qpol_policy_reevaluate_conds(policy->p);
 	apol_bst_destroy(&b, NULL);
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
