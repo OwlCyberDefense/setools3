@@ -43,6 +43,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -52,6 +53,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -82,32 +84,38 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -116,16 +124,19 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -139,10 +150,12 @@ int inc_dom_trans_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid paramaters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -167,14 +180,16 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 	apol_user_query_t *user_query = NULL;
 	apol_role_trans_query_t *role_trans_query = NULL;
 	char *buff = NULL;
-	int buff_sz;
+	int buff_sz, error = 0;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -185,50 +200,61 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = EINVAL;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
 
 	if ( apol_policy_domain_trans_table_build(policy) < 0 ) {
+		error = errno;
 		ERR(policy, "%s", "Unable to build domain transition table");
 		goto inc_dom_trans_run_fail;
 	}
 
 	if ( !(domain_trans = apol_domain_trans_analysis_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
 
 	if ( !(user_query = apol_user_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
 
 	if ( !(role_trans_query = apol_role_trans_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
 
 	run_fn = sechk_lib_get_module_function("find_domains", SECHK_MOD_FN_RUN, mod->parent_lib);
-	if (!run_fn)
+	if (!run_fn) {
+		error = errno;
 		goto inc_dom_trans_run_fail;
+	}
 
 	retv = run_fn((mod_ptr = sechk_lib_get_module("find_domains", mod->parent_lib)), policy, NULL);
 	if (retv) {
+		error = errno;
 		ERR(policy, "%s", "Unable to find module find_domains");
 		goto inc_dom_trans_run_fail;
 	}
 
 	if (!(find_domains_res = sechk_lib_get_module_result("find_domains", mod->parent_lib))) {
+		error = errno;
 		ERR(policy, "%s", "Unable to get results from module find_domains");
 		goto inc_dom_trans_run_fail;
 	}
@@ -318,12 +344,14 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 				if ( !ok ) {
 					item = sechk_item_new(NULL);
 					if ( !item ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					item->test_result = 1;
 					item->item = (void *)dtr;
 					if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
@@ -332,16 +360,19 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 			else  {
 				item = sechk_item_new(NULL);
 				if ( !item ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
 				item->test_result = 1;
 				item->item = (void *)dtr;
 				if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
 				if ( !(item->proof = apol_vector_create()) ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
@@ -353,16 +384,19 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					buff_sz = 10 + strlen("allow  : process transition;") + strlen(start_name) + strlen(end_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
 					if ( !buff ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "allow %s %s : process transition;", start_name, end_name);
 					proof->text = strdup(buff);
 					if ( !proof->text) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
@@ -375,16 +409,19 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					buff_sz = 10 + strlen("allow  : file execute;") + strlen(start_name) + strlen(ep_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
 					if ( !buff ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "allow %s %s : file execute;", start_name, ep_name);
 					proof->text = strdup(buff);
 					if ( !proof->text) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
@@ -397,16 +434,19 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					buff_sz = 10 + strlen("allow  : file entrypoint;") + strlen(end_name) + strlen(ep_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
 					if ( !buff ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "allow %s %s : file entrypoint;", end_name, ep_name);
 					proof->text = strdup(buff);
 					if ( !proof->text) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
@@ -419,16 +459,19 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					buff_sz = 10 + strlen("type_transition  :process ;") + strlen(start_name) + strlen(end_name) + strlen(ep_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
 					if ( !buff ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "type_transition %s %s : process %s;", start_name, ep_name, end_name);
 					proof->text = strdup(buff);
 					if ( !proof->text) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
@@ -441,16 +484,19 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					buff_sz = 10 + strlen("allow  self : process setexec;") + strlen(start_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
 					if ( !buff ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "allow %s self : process setexec;", start_name);
 					proof->text = strdup(buff);
 					if ( !proof->text) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
@@ -467,6 +513,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 
 inc_dom_trans_run_fail:
 	sechk_item_free(item);
+	errno = error;
 	return -1;
 }
 
@@ -480,10 +527,12 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -492,6 +541,7 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 

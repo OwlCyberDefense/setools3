@@ -43,6 +43,7 @@ int inc_mount_register(sechk_lib_t *lib)
 
 	if (!lib) {
 		ERR(NULL, "%s", "no library");
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -52,6 +53,7 @@ int inc_mount_register(sechk_lib_t *lib)
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		ERR(NULL, "%s", "Module unknown");
+		errno = EINVAL;
 		return -1;
 	}
 	mod->parent_lib = lib;
@@ -79,32 +81,38 @@ int inc_mount_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_mount_init;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_mount_run;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -113,16 +121,19 @@ int inc_mount_register(sechk_lib_t *lib)
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->fn = inc_mount_print;
 	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -136,10 +147,12 @@ int inc_mount_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attri
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -159,7 +172,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 	sechk_proof_t *proof = NULL;
 	size_t i, j;
 	bool_t both = FALSE;
-	int buff_sz;
+	int buff_sz, error = 0;
 	char *buff = NULL, *tmp = NULL;
 	apol_vector_t *mount_vector;
 	apol_vector_t *mounton_vector;
@@ -168,10 +181,12 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -182,25 +197,30 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_mount_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
 	if ( !(res->items = apol_vector_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_mount_run_fail;
 	}
 
 	if (!(mount_avrule_query = apol_avrule_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_mount_run_fail;
 	}
 
 	if (!(mounton_avrule_query = apol_avrule_query_create()) ) {
+		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_mount_run_fail;
 	}
@@ -249,6 +269,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 		if (!both) {
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
@@ -259,6 +280,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 				strlen(mount_source_name)+strlen(mount_target_name) + strlen(" : dir mounton;\n");
 			buff = (char *)calloc(buff_sz, sizeof(char));
 			if ( !buff ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
@@ -266,6 +288,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 					mount_source_name, mount_target_name);
 			proof->text = strdup(buff);
 			if (!proof->text) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
@@ -274,21 +297,25 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			buff = tmp = NULL;
 			item = sechk_item_new(NULL);
 			if (!item) {
+				error = errno;
 				ERR(NULL, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
 			item->item = (void *)mount_source;
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_mount_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
 			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
@@ -329,6 +356,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 		if ( !both ) {
 			proof = sechk_proof_new(NULL);
 			if (!proof) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
@@ -339,6 +367,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 				strlen(mounton_target_name) + strlen(" : filesystem mount;\n");
 			buff = (char *)calloc(buff_sz, sizeof(char));
 			if ( !buff ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
@@ -346,6 +375,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 					mounton_source_name, mounton_target_name);
 			proof->text = strdup(buff);
 			if ( !proof->text ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
@@ -354,21 +384,25 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			buff = tmp = NULL;
 			item = sechk_item_new(NULL);
 			if (!item) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
 			item->item = (void *)mounton_source;
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
+					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_mount_run_fail;
 				}
 			}
 			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
 			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
@@ -393,6 +427,7 @@ inc_mount_run_fail:
 	sechk_item_free(item);
 	free(tmp);
 	free(buff);
+	errno = error;
 	return -1;
 }
 
@@ -408,11 +443,13 @@ int inc_mount_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attr
 	char *type_name;
 
 	if (!mod || !policy) {
-		ERR(policy, "%s", "Invalid parameters");
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
 		ERR(policy, "Wrong module (%s)", mod->name);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -421,6 +458,7 @@ int inc_mount_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attr
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
+		errno = EINVAL;
 		return -1;
 	}
 
