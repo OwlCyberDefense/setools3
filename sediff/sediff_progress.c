@@ -108,7 +108,7 @@ int sediff_progress_wait(sediff_app_t *app)
 	g_mutex_lock(p->mutex);
 	while (!p->done) {
 		g_cond_timed_wait(p->cond, p->mutex, &wait_time);
-		if (p->done == 0 && p->s != NULL) {
+		if (p->s != NULL) {
 			gtk_label_set_text(GTK_LABEL(app->progress->label2), p->s);
 			free(p->s);
 			p->s = NULL;
@@ -118,9 +118,8 @@ int sediff_progress_wait(sediff_app_t *app)
 	}
 	g_mutex_unlock(p->mutex);
 	if (p->done < 0) {
-		message_display(app->window, GTK_MESSAGE_ERROR, p->s);
-		free(p->s);
-		p->s = NULL;
+		message_display(app->window, GTK_MESSAGE_ERROR,
+				GTK_LABEL(app->progress->label2)->label);
 		return p->done;
 	}
 	p->done = 0;
@@ -140,7 +139,9 @@ void sediff_progress_abort(sediff_app_t *app, const char *s)
 {
 	sediff_progress_t *p = app->progress;
 	g_mutex_lock(p->mutex);
-	p->s = g_strdup(s);
+	if (s != NULL) {
+		p->s = g_strdup(s);
+	}
 	p->done = -1;
 	g_cond_signal(app->progress->cond);
 	g_mutex_unlock(app->progress->mutex);
