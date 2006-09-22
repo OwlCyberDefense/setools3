@@ -524,8 +524,8 @@ static int sediff_file_mmap(const char *file, char **file_data, size_t *size, ap
 struct load_policy_datum {
 	const char *file;
 	const char *which_pol;
-	apol_policy_t *p;
 	sediff_app_t *app;
+	apol_policy_t *p;
 };
 
 static gpointer sediff_load_policy_runner(gpointer data)
@@ -586,6 +586,7 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 	l.file = p1_file;
 	l.which_pol = "Policy 1";
 	l.app = sediff_app;
+	l.p = NULL;
 	g_thread_create(sediff_load_policy_runner, &l, FALSE, NULL);
 	if (sediff_progress_wait(sediff_app) < 0) {
 		goto err;
@@ -594,6 +595,8 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 	sediff_progress_show(sediff_app, "Loading Policy 2");
 	l.file = p2_file;
 	l.which_pol = "Policy 2";
+	l.app = sediff_app;
+	l.p = NULL;
 	g_thread_create(sediff_load_policy_runner, &l, FALSE, NULL);
 	if (sediff_progress_wait(sediff_app) < 0) {
 		goto err;

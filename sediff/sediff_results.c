@@ -45,6 +45,10 @@ struct sediff_results {
 
 extern sediff_item_record_t sediff_items[];
 
+static gboolean sediff_results_line_event(GtkTextTag *tag, GObject *event_object,
+					  GdkEvent *event, const GtkTextIter *iter,
+					  gpointer user_data);
+
 void sediff_results_create(sediff_app_t *app)
 {
 	sediff_results_t *r;
@@ -73,6 +77,7 @@ void sediff_results_create(sediff_app_t *app)
 		/* recreate the results buffer -- it could have been
 		 * destroyed by sediff_results_clear() */
 		GtkTextTagTable *tag_table;
+		GtkTextTag *tag;
 		r->main_buffer = gtk_text_buffer_new(NULL);
 		tag_table = gtk_text_buffer_get_tag_table(r->main_buffer);
 		for (i = 0; i < 5; i++) {
@@ -111,6 +116,20 @@ void sediff_results_create(sediff_app_t *app)
 					   "family", "monospace",
 					   "foreground", "dark blue",
 					   NULL);
+		tag = gtk_text_buffer_create_tag(r->main_buffer, "line-p1",
+						 "family", "monospace",
+						 "foreground", "blue",
+						 "underline", PANGO_UNDERLINE_SINGLE,
+						 NULL);
+		g_signal_connect_after(G_OBJECT(tag), "event",
+				       GTK_SIGNAL_FUNC(sediff_results_line_event), "orig");
+		tag = gtk_text_buffer_create_tag(r->main_buffer, "line-p2",
+						 "family", "monospace",
+						 "foreground", "blue",
+						 "underline", PANGO_UNDERLINE_SINGLE,
+						 NULL);
+		g_signal_connect_after(G_OBJECT(tag), "event",
+				       GTK_SIGNAL_FUNC(sediff_results_line_event), "mod");
 	}
 
 	textview = GTK_TEXT_VIEW((glade_xml_get_widget(app->window_xml, "sediff_results_txt_view")));
@@ -379,151 +398,6 @@ static void sediff_results_select_simple(sediff_app_t *app, GtkTextView *view,
 
 }
 
-static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
-					sediff_item_record_t *item_record, poldiff_form_e form)
-{
-	sediff_results_t *r = app->results;
-	GtkTextBuffer *tb;
-
-	if (form == POLDIFF_FORM_NONE) {
-		tb = r->main_buffer;
-		gtk_text_view_set_buffer(view, tb);
-		sediff_clear_text_buffer(tb);
-		sediff_results_print_summary(app, tb, item_record);
-	}
-	else {
-		GtkTextIter iter;
-		GtkWidget *w;
-		apol_vector_t *v;
-		size_t i;
-		void *elem;
-		char *s = NULL;
-
-		/* enable sort TE rules menu */
-		w = glade_xml_get_widget(app->window_xml, "sediff_sort_menu");
-		g_assert(w);
-
-		gtk_widget_set_sensitive(w, TRUE);
-		tb = r->te_buffers[form - 1];
-		gtk_text_view_set_buffer(view, tb);
-		if (r->te_buffered[form - 1]) {
-			return;
-		}
-
-		sediff_progress_message(app, "Rendering Rules", "Rendering Rules - this may take a while.");
-
-		sediff_results_print_item_header(app, tb, item_record, form);
-		gtk_text_buffer_get_end_iter(tb, &iter);
-
-		v = poldiff_get_avrule_vector(app->diff);
-		for (i = 0; i < apol_vector_get_size(v); i++) {
-			elem = apol_vector_get_element(v, i);
-			if (poldiff_avrule_get_form(elem) == form) {
-				s = poldiff_avrule_to_string(app->diff, elem);
-				sediff_results_print_string(tb, &iter, s, 1);
-				free(s);
-				gtk_text_buffer_insert(tb, &iter, "\n", -1);
-			}
-		}
-
-		v = poldiff_get_terule_vector(app->diff);
-		for (i = 0; i < apol_vector_get_size(v); i++) {
-			elem = apol_vector_get_element(v, i);
-			if (poldiff_terule_get_form(elem) == form) {
-				s = poldiff_terule_to_string(app->diff, elem);
-				sediff_results_print_string(tb, &iter, s, 1);
-				free(s);
-				gtk_text_buffer_insert(tb, &iter, "\n", -1);
-			}
-		}
-
-		r->te_buffered[form - 1] = 1;
-		sediff_progress_hide(app);
-	}
-}
-
-void sediff_results_select(sediff_app_t *app, uint32_t diffbit, poldiff_form_e form)
-{
-	sediff_results_t *r = app->results;
-	GtkTextView *textview1;
-	GtkTextBuffer *tb;
-	GtkTextMark *mark;
-	GdkRectangle rect;
-	GtkTextIter iter;
-	GtkWidget *w;
-	size_t i, new_buffer;
-	sediff_item_record_t *item_record = NULL;
-
-	if (app->diff == NULL) {
-		/* diff not run yet, so don't display anything */
-		return;
-	}
-
-	/* grab the text buffers for our text views */
-	textview1 = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_results_txt_view"));
-	g_assert(textview1);
-	gtk_text_view_set_editable(GTK_TEXT_VIEW(textview1), FALSE);
-	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview1), FALSE);
-
-	/* save view position */
-	gtk_text_view_get_visible_rect(textview1, &rect);
-	gtk_text_view_get_iter_at_location(textview1, &iter, rect.x, rect.y);
-	r->saved_offsets[r->current_buffer] = gtk_text_iter_get_offset(&iter);
-
-	/* disable sort TE rules menu */
-	w = glade_xml_get_widget(app->window_xml, "sediff_sort_menu");
-	g_assert(w);
-	gtk_widget_set_sensitive(w, FALSE);
-
-	if (diffbit == POLDIFF_DIFF_SUMMARY) {
-		sediff_results_select_summary(app, textview1);
-		new_buffer = 0;
-	}
-	else {
-		/* find associated item record */
-		for (i = 0; sediff_items[i].label != NULL; i++) {
-			if (sediff_items[i].bit_pos == diffbit) {
-				item_record = sediff_items + i;
-				break;
-			}
-		}
-		assert(item_record != NULL);
-
-		switch (diffbit) {
-		case POLDIFF_DIFF_CLASSES:
-		case POLDIFF_DIFF_COMMONS:
-		case POLDIFF_DIFF_TYPES:
-		case POLDIFF_DIFF_ATTRIBS:
-		case POLDIFF_DIFF_ROLES:
-		case POLDIFF_DIFF_USERS:
-		case POLDIFF_DIFF_BOOLS:
-		case POLDIFF_DIFF_ROLE_ALLOWS:
-		case POLDIFF_DIFF_ROLE_TRANS: {
-			sediff_results_select_simple(app, textview1, item_record, form);
-			break;
-		}
-		case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES): {
-			sediff_results_select_rules(app, textview1, item_record, form);
-			break;
-		}
-		}
-
-		/* add 1 to i because the first 6 slots are taken by
-		 * the overall diff summary */
-		new_buffer = (i + 1) * 6 + form;
-	}
-
-	/* restore saved location.  use marks to ensure that we go to
-	 * this position even if it hasn't been drawn. */
-	tb = gtk_text_view_get_buffer(textview1);
-	gtk_text_buffer_get_start_iter(tb, &iter);
-	gtk_text_iter_set_offset(&iter, r->saved_offsets[new_buffer]);
-	mark = gtk_text_buffer_create_mark(tb, "location-mark", &iter, FALSE);
-	gtk_text_view_scroll_to_mark(textview1, mark, 0.0, TRUE, 0.0, 0.0);
-	gtk_text_buffer_delete_mark(tb, mark);
-	r->current_buffer = new_buffer;
-}
-
 struct sort_opts {
         poldiff_t *diff;
         int field;
@@ -662,6 +536,205 @@ static apol_vector_t *sediff_results_tesort(poldiff_t *diff, poldiff_form_e form
 	return v;
 }
 
+static void sediff_results_print_linenos(GtkTextBuffer *tb, GtkTextIter *iter,
+					 apol_vector_t *linenos, const gchar *tag, GString *string)
+{
+	size_t i;
+	unsigned long lineno;
+	gtk_text_buffer_insert(tb, iter, "  [", -1);
+	for (i = 0; i < apol_vector_get_size(linenos); i++) {
+		lineno = (unsigned long) apol_vector_get_element(linenos, i);
+		if (i > 0) {
+			gtk_text_buffer_insert(tb, iter, ", ", -1);
+		}
+                g_string_printf(string, "%lu", lineno);
+		gtk_text_buffer_insert_with_tags_by_name(tb, iter, string->str, -1, tag, NULL);
+	}
+	gtk_text_buffer_insert(tb, iter, "]", -1);
+}
+
+static void sediff_results_print_rules(sediff_app_t *app, GtkTextBuffer *tb,
+				       sediff_item_record_t *item_record,
+				       poldiff_form_e form,
+				       apol_vector_t *av, apol_vector_t *te)
+{
+	GtkTextIter iter;
+	size_t i;
+	void *elem;
+	char *s;
+	apol_vector_t *syn_linenos;
+	GString *string = g_string_new("");
+
+	sediff_results_print_item_header(app, tb, item_record, form);
+	gtk_text_buffer_get_end_iter(tb, &iter);
+
+	for (i = 0; i < apol_vector_get_size(av); i++) {
+		elem = apol_vector_get_element(av, i);
+		if ((s = poldiff_avrule_to_string(app->diff, elem)) == NULL) {
+			message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
+			g_string_free(string, TRUE);
+			return;
+		}
+		sediff_results_print_string(tb, &iter, s, 1);
+		free(s);
+		if ((syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+			sediff_results_print_linenos(tb, &iter, syn_linenos, "line-p1", string);
+		}
+		if ((syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+			sediff_results_print_linenos(tb, &iter, syn_linenos, "line-p2", string);
+		}
+		gtk_text_buffer_insert(tb, &iter, "\n", -1);
+	}
+
+	for (i = 0; i < apol_vector_get_size(te); i++) {
+		elem = apol_vector_get_element(te, i);
+		if ((s = poldiff_terule_to_string(app->diff, elem)) == NULL) {
+			message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
+			g_string_free(string, TRUE);
+			return;
+		}
+		sediff_results_print_string(tb, &iter, s, 1);
+		free(s);
+		if ((syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+			sediff_results_print_linenos(tb, &iter, syn_linenos, "line-p1", string);
+		}
+		if ((syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+			sediff_results_print_linenos(tb, &iter, syn_linenos, "line-p2", string);
+		}
+		gtk_text_buffer_insert(tb, &iter, "\n", -1);
+	}
+
+	app->results->te_buffered[form - 1] = 1;
+	g_string_free(string, TRUE);
+}
+
+
+static void sediff_results_select_rules(sediff_app_t *app, GtkTextView *view,
+					sediff_item_record_t *item_record, poldiff_form_e form)
+{
+	sediff_results_t *r = app->results;
+	GtkTextBuffer *tb;
+
+	if (form == POLDIFF_FORM_NONE) {
+		tb = r->main_buffer;
+		gtk_text_view_set_buffer(view, tb);
+		sediff_clear_text_buffer(tb);
+		sediff_results_print_summary(app, tb, item_record);
+	}
+	else {
+		GtkWidget *w;
+		apol_vector_t *av = NULL, *te = NULL;
+
+		/* enable sort TE rules menu */
+		w = glade_xml_get_widget(app->window_xml, "sediff_sort_menu");
+		g_assert(w);
+
+		gtk_widget_set_sensitive(w, TRUE);
+		tb = r->te_buffers[form - 1];
+		gtk_text_view_set_buffer(view, tb);
+		if (r->te_buffered[form - 1]) {
+			return;
+		}
+
+		sediff_progress_message(app, "Rendering Rules", "Rendering Rules - this may take a while.");
+
+		if ((av = sediff_results_avsort(app->diff, form, SORT_DEFAULT, 0)) == NULL ||
+		    (te = sediff_results_tesort(app->diff, form, SORT_DEFAULT, 0)) == NULL) {
+			message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
+			apol_vector_destroy(&av, NULL);
+			apol_vector_destroy(&te, NULL);
+			sediff_progress_hide(app);
+			return;
+		}
+		sediff_results_print_rules(app, tb, item_record, form, av, te);
+		apol_vector_destroy(&av, NULL);
+		apol_vector_destroy(&te, NULL);
+		sediff_progress_hide(app);
+	}
+}
+
+void sediff_results_select(sediff_app_t *app, uint32_t diffbit, poldiff_form_e form)
+{
+	sediff_results_t *r = app->results;
+	GtkTextView *textview1;
+	GtkTextBuffer *tb;
+	GtkTextMark *mark;
+	GdkRectangle rect;
+	GtkTextIter iter;
+	GtkWidget *w;
+	size_t i, new_buffer;
+	sediff_item_record_t *item_record = NULL;
+
+	if (app->diff == NULL) {
+		/* diff not run yet, so don't display anything */
+		return;
+	}
+
+	/* grab the text buffers for our text views */
+	textview1 = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_results_txt_view"));
+	g_assert(textview1);
+	gtk_text_view_set_editable(GTK_TEXT_VIEW(textview1), FALSE);
+	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview1), FALSE);
+
+	/* save view position */
+	gtk_text_view_get_visible_rect(textview1, &rect);
+	gtk_text_view_get_iter_at_location(textview1, &iter, rect.x, rect.y);
+	r->saved_offsets[r->current_buffer] = gtk_text_iter_get_offset(&iter);
+
+	/* disable sort TE rules menu */
+	w = glade_xml_get_widget(app->window_xml, "sediff_sort_menu");
+	g_assert(w);
+	gtk_widget_set_sensitive(w, FALSE);
+
+	if (diffbit == POLDIFF_DIFF_SUMMARY) {
+		sediff_results_select_summary(app, textview1);
+		new_buffer = 0;
+	}
+	else {
+		/* find associated item record */
+		for (i = 0; sediff_items[i].label != NULL; i++) {
+			if (sediff_items[i].bit_pos == diffbit) {
+				item_record = sediff_items + i;
+				break;
+			}
+		}
+		assert(item_record != NULL);
+
+		switch (diffbit) {
+		case POLDIFF_DIFF_CLASSES:
+		case POLDIFF_DIFF_COMMONS:
+		case POLDIFF_DIFF_TYPES:
+		case POLDIFF_DIFF_ATTRIBS:
+		case POLDIFF_DIFF_ROLES:
+		case POLDIFF_DIFF_USERS:
+		case POLDIFF_DIFF_BOOLS:
+		case POLDIFF_DIFF_ROLE_ALLOWS:
+		case POLDIFF_DIFF_ROLE_TRANS: {
+			sediff_results_select_simple(app, textview1, item_record, form);
+			break;
+		}
+		case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES): {
+			sediff_results_select_rules(app, textview1, item_record, form);
+			break;
+		}
+		}
+
+		/* add 1 to i because the first 6 slots are taken by
+		 * the overall diff summary */
+		new_buffer = (i + 1) * 6 + form;
+	}
+
+	/* restore saved location.  use marks to ensure that we go to
+	 * this position even if it hasn't been drawn. */
+	tb = gtk_text_view_get_buffer(textview1);
+	gtk_text_buffer_get_start_iter(tb, &iter);
+	gtk_text_iter_set_offset(&iter, r->saved_offsets[new_buffer]);
+	mark = gtk_text_buffer_create_mark(tb, "location-mark", &iter, FALSE);
+	gtk_text_view_scroll_to_mark(textview1, mark, 0.0, TRUE, 0.0, 0.0);
+	gtk_text_buffer_delete_mark(tb, mark);
+	r->current_buffer = new_buffer;
+}
+
 void sediff_results_sort_current(sediff_app_t *app, int field, int direction)
 {
         uint32_t diffbit;
@@ -669,10 +742,7 @@ void sediff_results_sort_current(sediff_app_t *app, int field, int direction)
         sediff_item_record_t *item_record;
         size_t i;
         GtkTextBuffer *tb;
-        GtkTextIter iter;
         apol_vector_t *av = NULL, *te = NULL;
-        void *elem;
-        char *s;
 
 	/* get the current row so we know what to sort */
 	if (sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(app->tree_view), &diffbit, &form) == 0) {
@@ -701,28 +771,7 @@ void sediff_results_sort_current(sediff_app_t *app, int field, int direction)
 
 	tb = app->results->te_buffers[form - 1];
 	sediff_clear_text_buffer(tb);
-
-	sediff_results_print_item_header(app, tb, item_record, form);
-	gtk_text_buffer_get_end_iter(tb, &iter);
-
-	for (i = 0; i < apol_vector_get_size(av); i++) {
-		elem = apol_vector_get_element(av, i);
-		s = poldiff_avrule_to_string(app->diff, elem);
-		sediff_results_print_string(tb, &iter, s, 1);
-		free(s);
-		gtk_text_buffer_insert(tb, &iter, "\n", -1);
-	}
-
-	for (i = 0; i < apol_vector_get_size(te); i++) {
-		elem = apol_vector_get_element(te, i);
-		s = poldiff_terule_to_string(app->diff, elem);
-		sediff_results_print_string(tb, &iter, s, 1);
-		free(s);
-		gtk_text_buffer_insert(tb, &iter, "\n", -1);
-	}
-
-	app->results->te_buffered[form - 1] = 1;
-
+	sediff_results_print_rules(app, tb, item_record, form, av, te);
 	apol_vector_destroy(&av, NULL);
 	apol_vector_destroy(&te, NULL);
 	sediff_progress_hide(app);
@@ -778,173 +827,86 @@ void sediff_results_update_stats(sediff_app_t *app)
 }
 
 
-#if 0
-static void sediff_callback_signal_emit_1(gpointer data, gpointer user_data)
-{
-	registered_callback_t *callback = (registered_callback_t *)data;
-	unsigned int type = *(unsigned int*)user_data;
-	if (callback->type == type) {
-		gpointer data = &callback->user_data;
-		g_idle_add_full(G_PRIORITY_HIGH_IDLE+10, callback->function, &data, NULL);
-	}
-	return;
-}
-
-/* the signal emit function executes each function registered with
- * sediff_callback_register() */
-static void sediff_callback_signal_emit(unsigned int type)
-{
-	g_list_foreach(sediff_app->callbacks, &sediff_callback_signal_emit_1, &type);
-	return;
-}
-
-/*
- * switches the currently displayed text buffer
+/* Set the cursor to a hand when user scrolls over a line number in
+ * when displaying te diff.
  */
-static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy_option)
+gboolean sediff_results_on_text_view_motion(GtkWidget *widget,
+					    GdkEventMotion *event,
+					    gpointer user_data)
 {
-	GtkTextAttributes *attr;
-	gint size;
-	PangoTabArray *tabs;
-/*
-	GtkTextIter end;
-	GtkTextTag *link1_tag;
-	GtkTextTag *link2_tag;
-	GtkTextTagTable *table;
-*/
-	GString *string = g_string_new("");
-	int rt;
-	GtkWidget *widget = NULL;
+	GtkTextBuffer *buffer;
+	GtkTextView *textview;
+	GdkCursor *cursor;
 	GtkTextIter iter;
-	GtkTextMark *mark;
-	GtkTextBuffer *txt;
-	GdkRectangle rect;
+	GSList *tags, *tagp;
+	gint x, ex, ey, y;
+	int hovering = 0;
 
-		case OPT_TE_RULES:
-			sediff_clear_text_buffer(sediff_app->main_buffer);
-			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_TE_RULES);
-			gtk_text_view_set_buffer(textview, sediff_app->main_buffer);
+	textview = GTK_TEXT_VIEW(widget);
+
+	if (event->is_hint) {
+		gdk_window_get_pointer(event->window, &ex, &ey, NULL);
+	}
+	else {
+		ex = event->x;
+		ey = event->y;
+	}
+
+	gtk_text_view_window_to_buffer_coords(textview, GTK_TEXT_WINDOW_WIDGET,
+					       ex, ey, &x, &y);
+	buffer = gtk_text_view_get_buffer(textview);
+	gtk_text_view_get_iter_at_location(textview, &iter, x, y);
+	tags = gtk_text_iter_get_tags(&iter);
+	for (tagp = tags;  tagp != NULL; tagp = tagp->next) {
+		if (strncmp(GTK_TEXT_TAG(tagp->data)->name, "line", 4) == 0) {
+			hovering = TRUE;
 			break;
-		case OPT_TE_RULES_ADD:
-			if (sediff_app->te_add_buffer == NULL)
-				sediff_lazy_load_large_buffer(OPT_TE_RULES_ADD, TRUE);
-			table = gtk_text_buffer_get_tag_table(sediff_app->te_add_buffer);
-			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
-			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
-			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
-			}
-			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
-			}
-			gtk_text_view_set_buffer(textview,sediff_app->te_add_buffer);
-			gtk_widget_set_sensitive(widget, TRUE);
-			break;
-		case OPT_TE_RULES_REM:
-			if (sediff_app->te_rem_buffer == NULL)
-				sediff_lazy_load_large_buffer(OPT_TE_RULES_REM, TRUE);
-			table = gtk_text_buffer_get_tag_table(sediff_app->te_rem_buffer);
-			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
-			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
-			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
-			}
-			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
-			}
-			gtk_text_view_set_buffer(textview,sediff_app->te_rem_buffer);
-			gtk_widget_set_sensitive(widget, TRUE);
-			break;
-		case OPT_TE_RULES_MOD:
-			if (sediff_app->te_mod_buffer == NULL)
-				sediff_lazy_load_large_buffer(OPT_TE_RULES_MOD, TRUE);
-			table = gtk_text_buffer_get_tag_table(sediff_app->te_mod_buffer);
-			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
-			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
-			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
-			}
-			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
-			}
-			gtk_text_view_set_buffer(textview,sediff_app->te_mod_buffer);
-			gtk_widget_set_sensitive(widget, TRUE);
-			break;
-		case OPT_TE_RULES_ADD_TYPE:
-			if (sediff_app->te_add_type_buffer == NULL)
-				sediff_lazy_load_large_buffer(OPT_TE_RULES_ADD_TYPE, TRUE);
-			table = gtk_text_buffer_get_tag_table(sediff_app->te_add_type_buffer);
-			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
-			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
-			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
-			}
-			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
-			}
-			gtk_text_view_set_buffer(textview,sediff_app->te_add_type_buffer);
-			gtk_widget_set_sensitive(widget, TRUE);
-			break;
-		case OPT_TE_RULES_REM_TYPE:
-			if (sediff_app->te_rem_type_buffer == NULL)
-				sediff_lazy_load_large_buffer(OPT_TE_RULES_REM_TYPE, TRUE);
-			table = gtk_text_buffer_get_tag_table(sediff_app->te_rem_type_buffer);
-			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
-			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
-			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
-			}
-			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event),
-						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
-				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion",
-							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
-			}
-			gtk_text_view_set_buffer(textview,sediff_app->te_rem_type_buffer);
-			gtk_widget_set_sensitive(widget, TRUE);
-			break;
-*/
-		default:
-			fprintf(stderr, "Invalid list item %d!", option);
-			break;
-		};
+		}
+	}
+
+	if (hovering) {
+		cursor = gdk_cursor_new(GDK_HAND2);
+		gdk_window_set_cursor(event->window, cursor);
+		gdk_cursor_unref(cursor);
+		gdk_flush();
+	}
+	else {
+		gdk_window_set_cursor(event->window, NULL);
+	}
+	g_slist_free(tags);
+	return FALSE;
 }
 
-#endif
+static gboolean sediff_results_line_event(GtkTextTag *tag, GObject *event_object,
+					  GdkEvent *event, const GtkTextIter *iter,
+					  gpointer user_data)
+{
+	int offset, which_pol;
+	unsigned long line;
+	GtkTextIter *start, *end;
+	if (event->type == GDK_BUTTON_PRESS) {
+		start = gtk_text_iter_copy(iter);
+		offset = gtk_text_iter_get_line_offset(start);
+
+		/* testing a new way */
+		while (!gtk_text_iter_starts_word(start))
+			gtk_text_iter_backward_char(start);
+		end = gtk_text_iter_copy(start);
+		while (!gtk_text_iter_ends_word(end))
+			gtk_text_iter_forward_char(end);
+
+		/* the line # in policy starts with 1, in the buffer it
+		   starts at 0 */
+		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
+                if (strcmp((char *) user_data, "orig") == 0) {
+                        which_pol = 0;
+                }
+                else {
+                        which_pol = 1;
+                }
+
+		sediff_main_notebook_raise_policy_tab_goto_line(line, which_pol);
+		return TRUE;
+	}
+	return FALSE;
+}
