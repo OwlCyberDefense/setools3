@@ -531,15 +531,14 @@ static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(qpol_syn_rule_
  *  syn rule table.  Note that this function takes ownership of the
  *  key.
  *
- *  @param polciy Policy associated with the rule.
+ *  @param policy Policy associated with the rule.
  *  @param table The table to which to add the rule.
  *  @param key Hashtable key for rule lookup.
  *  @param rule The rule to add.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and the table may be in an inconsistent state.
  */
-static int qpol_syn_rule_table_insert_entry(
-					    qpol_policy_t *policy,
+static int qpol_syn_rule_table_insert_entry(qpol_policy_t *policy,
 					    qpol_syn_rule_table_t *table,
 					    qpol_syn_rule_key_t *key,
 					    struct qpol_syn_rule *rule)
@@ -587,7 +586,7 @@ static int qpol_syn_rule_table_insert_entry(
 
 /**
  *  Add a syntactic rule (sepol's avrule_t) to the syntactic rule table.
- *  @param polciy Policy associated with the rule.
+ *  @param policy Policy associated with the rule.
  *  @param table The table to which to add the rule.
  *  @param rule The rule to add.
  *  @param cond The conditional associated with the rule (NULL if
@@ -688,11 +687,11 @@ err:
  */
 static int qpol_policy_build_syn_rule_table(qpol_policy_t *policy)
 {
-	int error = 0;
+	int error = 0, created = 0;
 	avrule_block_t *cur_block = NULL;
 	avrule_decl_t *decl = NULL;
 	avrule_t *cur_rule = NULL;
-	cond_node_t *cur_cond = NULL;
+	cond_node_t *cur_cond = NULL, *remapped_cond;
 
 	if (!policy) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -773,14 +772,24 @@ static int qpol_policy_build_syn_rule_table(qpol_policy_t *policy)
 			}
 		}
 		for (cur_cond = decl->cond_list; cur_cond; cur_cond = cur_cond->next) {
+			/* convert the cond within an avrule_decl to
+			 * the expanded cond */
+			remapped_cond = cond_node_find(&policy->p->p, cur_cond, policy->p->p.cond_list, &created);
+			if (created || !remapped_cond) {
+				cond_node_destroy(remapped_cond);
+				error = EIO;
+				ERR(policy, "%s", "Inconsistent conditional records");
+				assert(0);
+				goto err;
+			}
 			for (cur_rule = cur_cond->avtrue_list; cur_rule; cur_rule = cur_rule->next) {
-				if (qpol_syn_rule_table_insert_sepol_avrule(policy, policy->ext->syn_rule_table, cur_rule, cur_cond, 0)) {
+				if (qpol_syn_rule_table_insert_sepol_avrule(policy, policy->ext->syn_rule_table, cur_rule, remapped_cond, 0)) {
 					error = errno;
 					goto err;
 				}
 			}
 			for (cur_rule = cur_cond->avfalse_list; cur_rule; cur_rule = cur_rule->next) {
-				if (qpol_syn_rule_table_insert_sepol_avrule(policy, policy->ext->syn_rule_table, cur_rule, cur_cond, 1)) {
+				if (qpol_syn_rule_table_insert_sepol_avrule(policy, policy->ext->syn_rule_table, cur_rule, remapped_cond, 1)) {
 					error = errno;
 					goto err;
 				}
@@ -1116,7 +1125,7 @@ int qpol_terule_get_syn_terule_iter(qpol_policy_t *policy, struct qpol_terule *r
 	srs->node = qpol_syn_rule_table_find_node_by_key(policy->ext->syn_rule_table, key);
 	if (!srs->node) {
 		ERR(policy, "%s", "Unable to locate syntactic rules for semantic te rule");
-		errno = ENOENT;
+		error = ENOENT;
 		goto err;
 	}
 	srs->cur = srs->node->rules;

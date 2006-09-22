@@ -161,7 +161,7 @@ extern apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t
 
 /**
  *  Get a vector of permissions added to the av rule.  Note that this
- *  vector will be non-empty only if the form is
+ *  vector will be non-NULL and non-empty only if the form is
  *  POLDIFF_FORM_MODIFIED.
  *
  *  @param avrule The av rule diff from which to get the permissions
@@ -176,7 +176,7 @@ extern apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t *avr
 
 /**
  *  Get a vector of permissions removed from the av rule.  Note that
- *  this vector will be non-empty only if the form is
+ *  this vector will be non-NULL and non-empty only if the form is
  *  POLDIFF_FORM_MODIFIED.
  *
  *  @param avrule The av rule diff from which to get the permissions
@@ -188,6 +188,34 @@ extern apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t *avr
  *  destroy this vector.
  */
 extern apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t *avrule);
+
+/**
+ *  Get a vector of line numbers (of type unsigned long) for this av
+ *  rule difference from the original policy.  Note that if the form
+ *  is POLDIFF_FORM_ADDED or POLDIFF_FORM_ADD_TYPE then this will
+ *  return NULL.  Also, if the original policy is a binary policy then
+ *  this returns NULL.
+ *
+ *  @param avrule The av rule diff from which to get line numbers.
+ *
+ *  @return A vector of line numbers (type unsigned long) for the rule
+ *  in the original policy, or NULL if no numbers are available.
+ */
+extern apol_vector_t *poldiff_avrule_get_orig_line_numbers(const poldiff_avrule_t *avrule);
+
+/**
+ *  Get a vector of line numbers (of type unsigned long) for this av
+ *  rule difference from the modified policy.  Note that if the form
+ *  is POLDIFF_FORM_REMOVED or POLDIFF_FORM_REMOVE_TYPE then this will
+ *  return NULL.  Also, if the modified policy is a binary policy then
+ *  this returns NULL.
+ *
+ *  @param avrule The av rule diff from which to get line numbers.
+ *
+ *  @return A vector of line numbers (type unsigned long) for the rule
+ *  in the modified policy, or NULL if no numbers are available.
+ */
+extern apol_vector_t *poldiff_avrule_get_mod_line_numbers(const poldiff_avrule_t *avrule);
 
 /******************** terules diff ********************/
 
@@ -327,5 +355,33 @@ extern const char *poldiff_terule_get_original_default(const poldiff_terule_t *t
  *  upon error then return NULL.  <b>Do not free() this string.</b>
  */
 extern const char *poldiff_terule_get_modified_default(const poldiff_terule_t *terule);
+
+/**
+ *  Get a vector of line numbers (of type unsigned long) for this te
+ *  rule difference from the original policy.  Note that if the form
+ *  is POLDIFF_FORM_ADDED or POLDIFF_FORM_ADD_TYPE then this will
+ *  return NULL.  Also, if the original policy is a binary policy then
+ *  this returns NULL.
+ *
+ *  @param terule The te rule diff from which to get line numbers.
+ *
+ *  @return A vector of line numbers (type unsigned long) for the rule
+ *  in the original policy, or NULL if no numbers are available.
+ */
+extern apol_vector_t *poldiff_terule_get_orig_line_numbers(const poldiff_terule_t *terule);
+
+/**
+ *  Get a vector of line numbers (of type unsigned long) for this te
+ *  rule difference from the modified policy.  Note that if the form
+ *  is POLDIFF_FORM_REMOVED or POLDIFF_FORM_REMOVE_TYPE then this will
+ *  return NULL.  Also, if the modified policy is a binary policy then
+ *  this returns NULL.
+ *
+ *  @param terule The te rule diff from which to get line numbers.
+ *
+ *  @return A vector of line numbers (type unsigned long) for the rule
+ *  in the modified policy, or NULL if no numbers are available.
+ */
+extern apol_vector_t *poldiff_terule_get_mod_line_numbers(const poldiff_terule_t *terule);
 
 #endif /* POLDIFF_RULE_DIFF_H */

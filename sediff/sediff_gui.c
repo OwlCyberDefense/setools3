@@ -485,7 +485,7 @@ static gpointer sediff_run_diff_runner(gpointer data)
 {
 	struct run_datum *r = data;
 	if (poldiff_run(r->app->diff, r->run_flags) < 0) {
-		sediff_progress_abort(r->app, "Error running diff.");
+		sediff_progress_abort(r->app, NULL);
 	}
 	else {
 		sediff_progress_done(r->app);
@@ -830,6 +830,76 @@ static void sediff_policy_notebook_on_switch_page(GtkNotebook *notebook, GtkNote
 	else
 		sediff_policy_file_textview_populate(sfd, txt, sediff_app->mod_pol);
 	sediff_progress_hide(sediff_app);
+	return;
+}
+
+/* raise the correct policy tab on the gui, and go to the line clicked
+ * by the user */
+void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line,
+						     int whichview)
+{
+	GtkNotebook *main_notebook, *tab_notebook;
+	GtkTextBuffer *buffer;
+	GtkTextIter iter,end_iter;
+	GtkTextView *text_view = NULL;
+	GtkTextTagTable *table = NULL;
+	GtkTextMark *mark = NULL;
+	GtkLabel *lbl = NULL;
+	GString *string = g_string_new("");
+
+	main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
+	g_assert(main_notebook);
+
+	if (whichview == 0) {
+		gtk_notebook_set_current_page(main_notebook, 1);
+		text_view = (GtkTextView *)(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text"));
+		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook1"));
+		g_assert(tab_notebook);
+		gtk_notebook_set_current_page(tab_notebook, 1);
+	}
+	else {
+		gtk_notebook_set_current_page(main_notebook, 2);
+		text_view = (GtkTextView *)(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text"));
+		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
+		g_assert(tab_notebook);
+		gtk_notebook_set_current_page(tab_notebook, 1);
+	}
+
+	/* when moving the buffer we must use marks to scroll because
+	   goto_line if called before the line height has been
+	   calculated can produce undesired results, in our case we
+	   get no scrolling at all */
+buffer = gtk_text_view_get_buffer(text_view);
+	g_assert(buffer);
+
+	table = gtk_text_buffer_get_tag_table(buffer);
+	gtk_text_buffer_get_start_iter(buffer, &iter);
+	gtk_text_iter_set_line(&iter, line);
+	gtk_text_buffer_get_start_iter(buffer, &end_iter);
+	gtk_text_iter_set_line(&end_iter, line);
+	while (!gtk_text_iter_ends_line(&end_iter))
+		gtk_text_iter_forward_char(&end_iter);
+
+	mark = gtk_text_buffer_create_mark(buffer, "line-position", &iter, TRUE);
+	assert(mark);
+
+	gtk_text_view_scroll_to_mark(text_view, mark, 0.0, TRUE, 0.0, 0.5);
+
+	/* destroying the mark and recreating is faster than doing a
+	   move on a mark that still exists, so we always destroy it
+	   once we're done */
+	gtk_text_buffer_delete_mark(buffer, mark);
+	gtk_text_view_set_cursor_visible(text_view, TRUE);
+	gtk_text_buffer_place_cursor(buffer, &iter);
+	gtk_text_buffer_select_range(buffer, &iter, &end_iter);
+
+	gtk_container_set_focus_child(GTK_CONTAINER(tab_notebook),
+		GTK_WIDGET(text_view));
+
+	g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter)+1);
+	lbl = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
+	gtk_label_set_text(lbl, string->str);
+	g_string_free(string, TRUE);
 	return;
 }
 
