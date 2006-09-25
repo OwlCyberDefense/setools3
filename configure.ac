@@ -201,7 +201,7 @@ EOF
             bwidget_ver=1.8
             ;;
        1)
-            AC_MSG_ERROR([failed; try using --disable-bwidget-check flag])
+            AC_MSG_ERROR([failed.  Try using --disable-bwidget-check flag if compiling in a non-graphical environment.])
             ;;
        17)
             AC_MSG_RESULT([1.7])
