@@ -149,6 +149,9 @@ void apol_vector_destroy(apol_vector_t **v, apol_vector_free_func *fr)
 		}
 	}
 	free((*v)->array);
+	(*v)->array = NULL;  /* this will catch instances when there
+				are multpile pointers to the same
+				vector object */
 	free(*v);
 	*v = NULL;
 }

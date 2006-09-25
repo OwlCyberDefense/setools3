@@ -203,12 +203,6 @@ static void sediff_results_print_summary(sediff_app_t *app, GtkTextBuffer *tb, s
 	g_string_free(string, TRUE);
 }
 
-static void results_print_flush(GtkTextBuffer *tb, GtkTextIter *iter, const char *s, size_t start, size_t end, const gchar *tag) {
-	if (start <= end) {
-		gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, tag, NULL);
-	}
-}
-
 static void sediff_results_select_summary(sediff_app_t *app, GtkTextView *view)
 {
 	sediff_results_t *r = app->results;
@@ -240,68 +234,6 @@ static void sediff_results_select_summary(sediff_app_t *app, GtkTextView *view)
                 gtk_text_buffer_get_end_iter(tb, &iter);
 	}
 	g_string_free(string, TRUE);
-}
-
-static void sediff_results_print_string(GtkTextBuffer *tb, GtkTextIter *iter,
-					const char *s, unsigned int indent_level) {
-	const char *c = s;
-	unsigned int i;
-	size_t start = 0, end = 0;
-	static const char *indent = "\t";
-	const gchar *default_tag = NULL, *current_tag = NULL;
-	for (i = 0; i < indent_level; i++) {
-		gtk_text_buffer_insert(tb, iter, indent, -1);
-	}
-	for (; *c; c++, end++) {
-		switch (*c) {
-		case '+': {
-			results_print_flush(tb, iter, s, start, end - 1, current_tag);
-			start = end;
-			current_tag = "added";
-			if (default_tag == NULL) {
-				default_tag = current_tag;
-			}
-			break;
-		}
-		case '-': {
-			results_print_flush(tb, iter, s, start, end - 1, current_tag);
-			start = end;
-			current_tag = "removed";
-			if (default_tag == NULL) {
-				default_tag = current_tag;
-			}
-			break;
-		}
-		case '*': {
-			results_print_flush(tb, iter, s, start, end - 1, current_tag);
-			start = end;
-			current_tag = "modified";
-			if (default_tag == NULL) {
-				default_tag = current_tag;
-			}
-			break;
-		}
-		case '\n': {
-			if (*(c + 1) != '\0') {
-				results_print_flush(tb, iter, s, start, end, current_tag);
-				start = end + 1;
-				for (i = 0; i < indent_level; i++) {
-					gtk_text_buffer_insert(tb, iter, indent, -1);
-				}
-			}
-			break;
-		}
-		case ' ': {
-			if (current_tag != default_tag) {
-				results_print_flush(tb, iter, s, start, end, current_tag);
-				start = end + 1;
-				current_tag = default_tag;
-			}
-			break;
-		}
-		}
-	}
-	results_print_flush(tb, iter, s, start, end - 1, current_tag);
 }
 
 static void sediff_results_print_item_header(sediff_app_t *app, GtkTextBuffer *tb, sediff_item_record_t *record, poldiff_form_e form) {
@@ -360,6 +292,59 @@ static void sediff_results_print_item_header(sediff_app_t *app, GtkTextBuffer *t
 	}
 	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, s, NULL);
 	g_string_free(string, TRUE);
+}
+
+static void sediff_results_print_string(GtkTextBuffer *tb, GtkTextIter *iter,
+					const char *s, unsigned int indent_level) {
+	const char *c = s;
+	unsigned int i;
+	size_t start = 0, end = 0;
+	static const char *indent = "\t";
+	const gchar *current_tag = NULL;
+	for (i = 0; i < indent_level; i++) {
+		gtk_text_buffer_insert(tb, iter, indent, -1);
+	}
+	for (; *c; c++, end++) {
+		switch (*c) {
+		case '+': {
+			if (end > 0) {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+			}
+			start = end;
+			current_tag = "added";
+			break;
+		}
+		case '-': {
+			if (end > 0) {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+			}
+			start = end;
+			current_tag = "removed";
+			break;
+		}
+		case '*': {
+			if (end > 0) {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+			}
+			start = end;
+			current_tag = "modified";
+			break;
+		}
+		case '\n': {
+			if (*(c + 1) != '\0') {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag, NULL);
+				for (i = 0; i < indent_level; i++) {
+					gtk_text_buffer_insert(tb, iter, indent, -1);
+				}
+				start = end + 1;
+			}
+			break;
+		}
+		}
+	}
+        if (start < end) {
+                gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+        }
 }
 
 static void sediff_results_select_simple(sediff_app_t *app, GtkTextView *view,
@@ -535,6 +520,71 @@ static apol_vector_t *sediff_results_tesort(poldiff_t *diff, poldiff_form_e form
 	}
 	return v;
 }
+
+#if 0
+static void sediff_results_print_string(GtkTextBuffer *tb, GtkTextIter *iter,
+					const char *s, unsigned int indent_level) {
+	const char *c = s;
+	unsigned int i;
+	size_t start = 0, end = 0;
+	static const char *indent = "\t";
+	const gchar *default_tag = NULL, *current_tag = NULL;
+	for (i = 0; i < indent_level; i++) {
+		gtk_text_buffer_insert(tb, iter, indent, -1);
+	}
+	for (; *c; c++, end++) {
+		switch (*c) {
+		case '+': {
+			results_print_flush(tb, iter, s, start, end - 1, current_tag);
+			start = end;
+			current_tag = "added";
+			if (default_tag == NULL) {
+				default_tag = current_tag;
+			}
+			break;
+		}
+		case '-': {
+			results_print_flush(tb, iter, s, start, end - 1, current_tag);
+			start = end;
+			current_tag = "removed";
+			if (default_tag == NULL) {
+				default_tag = current_tag;
+			}
+			break;
+		}
+		case '*': {
+			results_print_flush(tb, iter, s, start, end - 1, current_tag);
+			start = end;
+			current_tag = "modified";
+			if (default_tag == NULL) {
+				default_tag = current_tag;
+			}
+			break;
+		}
+		case '\n': {
+			if (*(c + 1) != '\0') {
+				results_print_flush(tb, iter, s, start, end, current_tag);
+				start = end + 1;
+				for (i = 0; i < indent_level; i++) {
+					gtk_text_buffer_insert(tb, iter, indent, -1);
+				}
+			}
+			break;
+		}
+		case ' ': {
+			if (current_tag != default_tag) {
+				results_print_flush(tb, iter, s, start, end, current_tag);
+				start = end + 1;
+				current_tag = default_tag;
+			}
+			break;
+		}
+		}
+	}
+	results_print_flush(tb, iter, s, start, end - 1, current_tag);
+}
+
+#endif
 
 static void sediff_results_print_linenos(GtkTextBuffer *tb, GtkTextIter *iter,
 					 apol_vector_t *linenos, const gchar *tag, GString *string)

@@ -84,6 +84,9 @@ void apol_bst_destroy(apol_bst_t **b, apol_bst_free_func *fr)
 	if (!b || !(*b))
 		return;
 	bst_node_free((*b)->head, fr);
+	(*b)->head = NULL;  /* this will catch instances when there
+			       are multpile pointers to the same
+			       BST object */
 	free(*b);
 	*b = NULL;
 }
