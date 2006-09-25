@@ -29,7 +29,7 @@ sediff_SOURCES = sediff_cli.c
 
 sediffx_SOURCES = \
 	sediff_find_window.c sediff_find_window.h \
-	sediff_rename_types.c sediff_rename_types.h \
+	sediff_remap_types.c sediff_remap_types.h \
 	sediff_treemodel.c sediff_treemodel.h \
 	utilgui.c utilgui.h \
 	sediff_policy_open.c sediff_policy_open.h \
