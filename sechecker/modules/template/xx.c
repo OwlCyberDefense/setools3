@@ -1,35 +1,52 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: jmowery@tresys.com
+/**
+ *  @file xx.c
+ *  Implementation of the xx module.
  *
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 /* NOTE: TODO This is a module template, which includes all the necessary
  * infrastructure to implement a basic SEChecker module. To use this template
  * first replace all instances of the string xx with the name of the module,
- * then edit or complete all sections marked TODO as instructed. Do not forget
- * to add a block to the config file and to place the register function in
- * the register_list files (see these files for further instruction) */
+ * then edit or complete all sections marked TODO as instructed. */
+
+#include <config.h>
 
 #include "sechecker.h"
-#include "policy.h"
+#include <apol/policy.h>
 #include "xx.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
-/* This string is the name of the module and should match the stem
- * of the file name; it should also match the prefix of all functions
- * defined in this module and the private data storage structure */
+/* This string is the name of the module and should match the stem of the file
+ * name; it should also match the prefix of all functions defined in this
+ * module and the private data storage structure */
 static const char *const mod_name = "xx";
 
 /* The register function registers all of a module's functions
- * with the library.  You should not need to edit this function
- * unless you are adding additional functions you need other modules
- * to call. See the note at the bottom of this function to do so. */
+ * with the library. TODO: Edit the description fields to include all
+ * options, requirements, and dependencies. Also provide a brief summary
+ * of the steps performed in this module's checks. If you are adding
+ * additional functions you need other modules to call, see the note at
+ * the bottom of this function to do so. */
 int xx_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
@@ -37,34 +54,35 @@ int xx_register(sechk_lib_t *lib)
 	sechk_name_value_t *nv = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+		ERR(NULL, "No library");
+		errno = EINVAL;
 		return -1;
 	}
 
-	/* Modules are declared by the config file and their name and options
-	 * are stored in the module array.  The name is looked up to determine
-	 * where to store the function structures */
+	/* Modules are declared by the register list file and their name and options
+	 * are stored in the module vector of the library. The name is looked up to
+	 * determine where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown \"%s\"\n", mod_name);
+		ERR(lib->policy, "Module unknown \"%s\"", mod_name);
 		errno = ENOENT;
 		return -1;
 	}
 
 	mod->parent_lib = lib;
-	
+
 	/* TODO: assign the descriptions */
 	mod->brief_description = "";
 	mod->detailed_description =
-"--------------------------------------------------------------------------------\n"
-"TODO: detailed description for this module.\n";
+		"--------------------------------------------------------------------------------\n"
+		"TODO: detailed description for this module.\n";
 	mod->opt_description = 
-"  Module requirements:\n"
-"    none\n"
-"  Module dependencies:\n"
-"    none\n"
-"  Module options:\n"
-"    none\n";
+		"  Module requirements:\n"
+		"    none\n"
+		"  Module dependencies:\n"
+		"    none\n"
+		"  Module options:\n"
+		"    none\n";
 	mod->severity = "TODO: set proper severity";
 
 	/* TODO: assign default options (remove if none)
@@ -86,67 +104,51 @@ int xx_register(sechk_lib_t *lib)
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		ERR(lib->policy, "Error: %s\n", strerror(errno));
+		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
-	fn_struct->fn = &xx_init;
+	fn_struct->fn = xx_init;
 	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		ERR(lib->policy, "Error: %s\n", strerror(errno));
+		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
-	fn_struct->fn = &xx_init;
+	fn_struct->fn = xx_run;
 	apol_vector_append(mod->functions, (void*)fn_struct);
+
+	/* TODO: if the module does not have a private data structure
+	 * set this function pointer to NULL */
+	mod->data_free = xx_data_free;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		ERR(lib->policy, "Error: %s\n", strerror(errno));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
-	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
-	}
-	fn_struct->fn = &xx_init;
-	apol_vector_append(mod->functions, (void*)fn_struct);
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(lib->policy, "Error: %s\n", strerror(errno));
+		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(lib->policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
 		return -1;
 	}
-	fn_struct->fn = &xx_init;
-	apol_vector_append(mod->functions, (void*)fn_struct);
-
-	fn_struct = sechk_fn_new();
-	if (!fn_struct) {
-		ERR(lib->policy, "Error: %s\n", strerror(errno));
-		return -1;
-	}
-	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
-	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
-	}
-	fn_struct->fn = &xx_init;
+	fn_struct->fn = xx_print;
 	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	/* TODO: (optional) add any other functions needed here,
@@ -155,12 +157,10 @@ int xx_register(sechk_lib_t *lib)
 	return 0;
 }
 
-/* The init function creates the module's private data storage object
- * and initializes its values based on the options parsed in the config
- * file.
- * Add any option processing logic as indicated below.
+/* The init function creates the module's private data storage object and
+ * initializes its values.  Add any option processing logic as indicated below.
  * TODO: add options processing logic */
-int xx_init(sechk_module_t *mod, apol_policy_t *policy)
+int xx_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	sechk_name_value_t *opt = NULL;
 	xx_data_t *datum = NULL;
@@ -168,16 +168,18 @@ int xx_init(sechk_module_t *mod, apol_policy_t *policy)
 	size_t i = 0;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)\n", mod->name);
 		errno = EINVAL;
 		return -1;
 	}
 
+	/* If the module doesnot have a privte data sturcture replace the following
+	 * block with "mod->data = NULL" */
 	datum = xx_data_new();
 	if (!datum) {
 		error = errno;
@@ -212,7 +214,7 @@ int xx_init(sechk_module_t *mod, apol_policy_t *policy)
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found
  * TODO: add check logic */
-int xx_run(sechk_module_t *mod, apol_policy_t *policy)
+int xx_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	xx_data_t *datum;
 	sechk_result_t *res = NULL;
@@ -224,12 +226,12 @@ int xx_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* TODO: define any aditional variables needed */
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -241,14 +243,14 @@ int xx_run(sechk_module_t *mod, apol_policy_t *policy)
 	res = sechk_result_new();
 	if (!res) {
 		error = errno;
-		ERR(policy, "Error: %s\n", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		errno = error;
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		error = errno;
-		ERR(policy, "Error: %s\n", strerror(error));
+		ERR(policy, "%s", strerror(error));
 		goto xx_run_fail;
 	}
 	/* TODO: set res->item_type to indicate which array the item_id indexes
@@ -261,8 +263,8 @@ int xx_run(sechk_module_t *mod, apol_policy_t *policy)
 
 	mod->result = res;
 
-	/* If module finds something that would be considered a fail 
-	 * on the policy return 1 here */
+	/* If module finds something that would be considered a failure
+	 * of the policy return 1 here */
 	if (apol_vector_get_size(res->items) > 0)
 		return 1;
 
@@ -272,7 +274,7 @@ xx_run_fail:
 	/* TODO: free any other memory allocated during check logic */
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }
@@ -291,17 +293,15 @@ void xx_data_free(void *data)
 	free(data);
 }
 
-/* The print output function generates the text and prints the
- * results to stdout. The outline below prints
- * the standard format of a report section. Some modules may
- * not have results in a format that can be represented by this
- * outline and will need a different specification. It is
- * required that each of the flags for output components be
- * tested in this function (stats, list, proof, detailed, and brief)
- * TODO: fill in the indicated information in the report fields
- * as indicated below. Some alteration may be necessary for
- * checks that perform different analyses */
-int xx_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+/* The print function generates the text and prints the results to stdout. The
+ * outline below prints the standard format of a report section. Some modules
+ * may not have results in a format that can be represented by this outline and
+ * will need a different specification. It is required that each of the flags
+ * for output components be tested in this function (stats, list, proof,
+ * detailed, and brief) TODO: fill in the indicated information in the report
+ * fields as indicated below. Some alteration may be necessary for checks that
+ * perform different analyses */
+int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	xx_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -310,25 +310,25 @@ int xx_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	size_t i = 0, j = 0;
 
 	if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		ERR(policy, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		errno = EINVAL;
 		return -1;
 	}
-	
+
 	datum = (xx_data_t*)mod->data;
 	outformat = mod->outputformat;
 
 	if (!mod->result) {
-		ERR(policy, "Error: module %s has not been run\n", mod->name);
+		ERR(policy, "Module %s has not been run", mod->name);
 		errno = EINVAL;
 		return -1;
 	}
-	
+
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
@@ -341,10 +341,9 @@ int xx_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		printf("Found %zd .\n", apol_vector_get_size(mod->result->items));
 		/* TODO: any additional generated statistics */
 	}
-	/* The list report component is a display of all items
-	 * found without any supporting proof. The default method
-	 * is to display a comma separated list four items to a line
-	 * this may need to be changed for longer items.
+	/* The list report component is a display of all items found without any
+	 * supporting proof. The default method is to display a comma separated list
+	 * four items to a line this may need to be changed for longer items.
 	 * TODO: you will need to enter the string representation of
 	 * each item as the second parameter in the printf statement
 	 * in place of the empty string.
@@ -354,25 +353,21 @@ int xx_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
 			item = apol_vector_get_element(mod->result->items, i);
 			i++;
-			 /* TODO: (optional) change the number below to
-			  * print more or less than 4 items per line */
+			/* TODO: (optional) change the number below to
+			 * print more or less than 4 items per line */
 			i %= 4;
 			/* TODO: second parameter: item name */
 			printf("%s%s", "", (i ? ", " : "\n")); 
 		}
 		printf("\n");
 	}
-	/* The proof report component is a display of a list of items
-	 * with an indented list of proof statements supporting the result
-	 * of the check for that item (e.g. rules with a given type)
-	 * this field also lists the computed severity of each item
-	 * (see sechk_item_sev in sechecker.c for details on calculation)
-	 * items are printed on a line either with (or, if long, such as a
-	 * rule, followed by) the severity. Each proof element is then
+	/* The proof report component is a display of a list of items with an
+	 * indented list of proof statements supporting the result of the check for
+	 * that item (e.g. rules with a given type).  Each proof element is then
 	 * displayed in an indented list one per line below it.
 	 * TODO: the name of the item should be entered below.
-	 * NOTE: certain checks may need to further modify this
-	 * report component if the results cannot be presented in this format */
+	 * NOTE: certain checks may need to further modify this report component if
+	 * the results cannot be presented in this format */
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
 		for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
@@ -390,27 +385,8 @@ int xx_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	return 0;
 }
 
-/* The get_result function returns a pointer to the results
- * structure for this check to be used in another check.
- * You should not need to modify this function. */
-sechk_result_t *xx_get_result(sechk_module_t *mod) 
-{
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		errno = EINVAL;
-		return NULL;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		ERR(mod->parent_lib->policy, "Error: wrong module (%s)\n", mod->name);
-		return NULL;
-	}
-
-	return mod->result;
-}
-
-/* The xx_data_new function allocates and returns an
- * initialized private data storage structure for this
- * module. 
+/* The xx_data_new function allocates and returns an initialized private data
+ * storage structure for this module. 
  * TODO: initialize any non-zero/non-null data (if needed) below */
 xx_data_t *xx_data_new(void)
 {
