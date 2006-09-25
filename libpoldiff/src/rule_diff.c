@@ -1080,7 +1080,7 @@ static void sort_and_uniquify_perms(pseudo_avrule_t *key)
 	}
 	for (i = 1; i < key->num_perms; i++) {
 		if (key->perms[i] == key->perms[i - 1]) {
-			memmove(key->perms + i, key->perms + i + 1, key->num_perms - i - 1);
+			memmove(key->perms + i, key->perms + i + 1, (key->num_perms - i - 1) * sizeof(key->perms[0]));
 			key->num_perms--;
 		}
 	}
