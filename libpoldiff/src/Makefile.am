@@ -46,4 +46,4 @@ mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libpoldiff.so $(poldiffso_DATA)
 
 uninstall-local:
-	-rm -rf $(poldiffsodir)/libpoldiff.so
+	-rm -rf $(DESTDIR)$(poldiffsodir)/libpoldiff.so
