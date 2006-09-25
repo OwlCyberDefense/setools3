@@ -302,9 +302,9 @@ static void sediff_destroy(void)
 		munmap(sediff_app->p1_sfd.data, sediff_app->p1_sfd.size);
 	if (sediff_app->p2_sfd.data)
 		munmap(sediff_app->p2_sfd.data, sediff_app->p2_sfd.size);
-	if (sediff_app->rename_types_window) {
-		sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
-		free(sediff_app->rename_types_window);
+	if (sediff_app->remap_types_window) {
+		sediff_remap_types_window_unref_members(sediff_app->remap_types_window);
+		free(sediff_app->remap_types_window);
 	}
 	poldiff_destroy(&sediff_app->diff);
 
@@ -510,12 +510,6 @@ void run_diff_clicked(void)
 	while (gtk_events_pending ())
 		gtk_main_iteration ();
 
-	if (sediff_app->rename_types_window) {
-                /* FIX ME
-                   renamed_types = sediff_app->rename_types_window->renamed_types;
-                */
-	}
-
 	r.run_flags = POLDIFF_DIFF_ALL;
 	if (apol_policy_is_binary(sediff_app->orig_pol) ||
 	    apol_policy_is_binary(sediff_app->mod_pol)) {
@@ -670,22 +664,22 @@ void sediff_toolbar_on_rundiff_button_clicked(GtkButton *button, gpointer user_d
 	run_diff_clicked();
 }
 
-static void sediff_rename_types_window_show()
+static void sediff_remap_types_window_show()
 {
-	if (sediff_app->rename_types_window == NULL)
-		sediff_app->rename_types_window = sediff_rename_types_window_new(sediff_app);
-	g_assert(sediff_app->rename_types_window);
-	sediff_rename_types_window_display(sediff_app->rename_types_window);
+	if (sediff_app->remap_types_window == NULL)
+		sediff_app->remap_types_window = sediff_remap_types_window_new(sediff_app);
+	g_assert(sediff_app->remap_types_window);
+	sediff_remap_types_window_display(sediff_app->remap_types_window);
 }
 
-void sediff_menu_on_renametypes_clicked(GtkMenuItem *menuitem, gpointer user_data)
+void sediff_menu_on_remaptypes_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
-	sediff_rename_types_window_show();
+	sediff_remap_types_window_show();
 }
 
-void sediff_toolbar_on_renametypes_button_clicked(GtkToolButton *button, gpointer user_data)
+void sediff_toolbar_on_remaptypes_button_clicked(GtkToolButton *button, gpointer user_data)
 {
-	sediff_rename_types_window_show();
+	sediff_remap_types_window_show();
 }
 
 void sediff_toolbar_on_open_button_clicked(GtkToolButton *button, gpointer user_data)
@@ -924,7 +918,7 @@ void sediff_initialize_policies(void)
 	sediff_app->p1_sfd.name = NULL;
 	sediff_app->p2_sfd.name = NULL;
 
-	sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
+	sediff_remap_types_window_unref_members(sediff_app->remap_types_window);
 
 	/* Grab the 2 policy textviews */
 	textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");

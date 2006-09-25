@@ -27,7 +27,7 @@
 #define SEDIFF_GUI_H
 
 #include "sediff_treemodel.h"
-#include "sediff_rename_types.h"
+#include "sediff_remap_types.h"
 #include "sediff_find_window.h"
 #include <poldiff/poldiff.h>
 #include <gtk/gtk.h>
@@ -37,7 +37,7 @@
 
 #define MAIN_WINDOW_ID	       "sediff_main_window"
 #define OPEN_DIALOG_ID	       "sediff_policies_dialog"
-#define RENAME_TYPES_DIALOG_ID "sediff_rename_types_dialog"
+#define REMAP_TYPES_DIALOG_ID "sediff_remap_types_dialog"
 #define FIND_DIALOG_ID       "sediff_find_dialog"
 #define FIND_FORWARD_ID      "sediff_find_forward"
 #define FIND_ENTRY_ID        "sediff_find_text_entry"
@@ -69,7 +69,7 @@ typedef struct sediff_app {
 	sediff_file_data_t p2_sfd;        /* file info for policy 2 */
 	apol_policy_t *orig_pol, *mod_pol;
 	poldiff_t *diff;
-	struct sediff_rename_types *rename_types_window; /* the renamed types window reference */
+	struct sediff_remap_types *remap_types_window; /* the remapped types window reference */
 	struct sediff_find_window *find_window;          /* the find window reference */
 	int tv_curr_buf;         /* the buffer currently displayed for the treeview */
 } sediff_app_t;
