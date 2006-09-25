@@ -81,4 +81,4 @@ mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so $(qpolso_DATA)
 
 uninstall-local:
-	-rm -rf $(qpolsodir)/libqpol.so
+	-rm -rf $(DESTDIR)$(qpolsodir)/libqpol.so
