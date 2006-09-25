@@ -177,11 +177,11 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="menu_rename_types">
+		    <widget class="GtkImageMenuItem" id="menu_remap_types">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">Rename _Types</property>
+		      <property name="label" translatable="yes">Remap _Types</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="sediff_menu_on_renametypes_clicked" last_modification_time="Mon, 13 Jun 2005 12:32:07 GMT"/>
+		      <signal name="activate" handler="sediff_menu_on_remaptypes_clicked" last_modification_time="Mon, 13 Jun 2005 12:32:07 GMT"/>
 		      <accelerator key="T" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
@@ -524,15 +524,15 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkToolButton" id="toolbutton_rename_types">
+	    <widget class="GtkToolButton" id="toolbutton_remap_types">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Rename _Types</property>
+	      <property name="label" translatable="yes">Remap _Types</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-preferences</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">False</property>
-	      <signal name="clicked" handler="sediff_toolbar_on_renametypes_button_clicked" last_modification_time="Mon, 13 Jun 2005 11:42:17 GMT"/>
+	      <signal name="clicked" handler="sediff_toolbar_on_remaptypes_button_clicked" last_modification_time="Mon, 13 Jun 2005 11:42:17 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
@@ -1591,11 +1591,11 @@
   </child>
 </widget>
 
-<widget class="GtkWindow" id="sediff_rename_types_dialog">
+<widget class="GtkWindow" id="sediff_remap_types_dialog">
   <property name="width_request">640</property>
   <property name="height_request">480</property>
   <property name="visible">True</property>
-  <property name="title" translatable="yes">Rename Types</property>
+  <property name="title" translatable="yes">Remap Types</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">True</property>
@@ -1651,7 +1651,7 @@
 		      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 		      <child>
-			<widget class="GtkTreeView" id="sediff_renamed_types_treeview">
+			<widget class="GtkTreeView" id="sediff_remapped_types_treeview">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="headers_visible">True</property>
@@ -1679,7 +1679,7 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkButton" id="sediff_rename_types_remove_button">
+			<widget class="GtkButton" id="sediff_remap_types_remove_button">
 			  <property name="visible">True</property>
 			  <property name="can_default">True</property>
 			  <property name="can_focus">True</property>
@@ -1704,7 +1704,7 @@
 	  <child>
 	    <widget class="GtkLabel" id="label25">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Renamed types</property>
+	      <property name="label" translatable="yes">Remap types</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">True</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1790,7 +1790,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCombo" id="sediff_rename_types_combo1">
+			<widget class="GtkCombo" id="sediff_remap_types_combo1">
 			  <property name="visible">True</property>
 			  <property name="value_in_list">True</property>
 			  <property name="allow_empty">True</property>
@@ -1799,7 +1799,7 @@
 			  <property name="enable_arrows_always">True</property>
 
 			  <child internal-child="entry">
-			    <widget class="GtkEntry" id="sediff_rename_types_entry1">
+			    <widget class="GtkEntry" id="sediff_remap_types_entry1">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">False</property>
@@ -1866,7 +1866,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCombo" id="sediff_rename_types_combo2">
+			<widget class="GtkCombo" id="sediff_remap_types_combo2">
 			  <property name="visible">True</property>
 			  <property name="value_in_list">True</property>
 			  <property name="allow_empty">True</property>
@@ -1875,7 +1875,7 @@
 			  <property name="enable_arrows_always">True</property>
 
 			  <child internal-child="entry">
-			    <widget class="GtkEntry" id="sediff_rename_types_entry2">
+			    <widget class="GtkEntry" id="sediff_remap_types_entry2">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">False</property>
@@ -1917,7 +1917,7 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkButton" id="sediff_rename_types_add_button">
+			<widget class="GtkButton" id="sediff_remap_types_add_button">
 			  <property name="width_request">72</property>
 			  <property name="height_request">30</property>
 			  <property name="visible">True</property>
@@ -1944,7 +1944,7 @@
 	  <child>
 	    <widget class="GtkLabel" id="label23">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Add a new type rename</property>
+	      <property name="label" translatable="yes">Add a new type remap</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">True</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1979,7 +1979,7 @@
 	  <property name="spacing">0</property>
 
 	  <child>
-	    <widget class="GtkButton" id="sediff_rename_types_close_button">
+	    <widget class="GtkButton" id="sediff_remap_types_close_button">
 	      <property name="visible">True</property>
 	      <property name="can_default">True</property>
 	      <property name="can_focus">True</property>
