@@ -19,6 +19,10 @@ sediff:
 
   * New diffing algorithm yields significant speed improvements.
         
+sechecker:
+
+  * Updated module format and template for ease of extension
+
 =======================================================
 May 1, 2006, Version 2.4
 
