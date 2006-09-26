@@ -472,7 +472,8 @@ int type_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 }
 
 /**
- * Given an type, return a vector of its attributes (in the form of strings).
+ * Given an type, return a vector of its attributes (in the form of
+ * strings).
  *
  * @param diff Policy diff error handler.
  * @param p Policy from which the type came.
@@ -496,7 +497,9 @@ static apol_vector_t *type_get_attrib_names(poldiff_t *diff, apol_policy_t *p, u
 		ERR(diff, "%s", strerror(errno));
 		return NULL;
 	}
-	/* get the qpol_type_t objects for the specified type value and policy */
+
+	/* get the qpol_type_t objects for the specified type value
+	   and policy */
 	v = type_map_lookup_reverse(diff, type, (diff->orig_pol == p ? POLDIFF_POLICY_ORIG : POLDIFF_POLICY_MOD));
 	if (apol_vector_get_size(v) == 0) {
 		assert(FALSE);
@@ -545,6 +548,12 @@ int type_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	int retval = -1, error = 0, compval;
 
 	assert(tval1 == tval2);
+	/* can't do a deep diff of type if either policy is binary
+	 * because the attribute names are bogus */
+	if (apol_policy_is_binary(diff->orig_pol) ||
+	    apol_policy_is_binary(diff->mod_pol)) {
+		return 0;
+	}
 	v1 = type_get_attrib_names(diff, diff->orig_pol, tval1);
 	v2 = type_get_attrib_names(diff, diff->mod_pol, tval2);
 	apol_vector_sort(v1, apol_str_strcmp, NULL);
