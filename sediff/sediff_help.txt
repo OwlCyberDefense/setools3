@@ -1,32 +1,34 @@
 Semantic Policy Difference Tool for Security Enhanced Linux
 sediff, Graphical User Interface version 3.0
-September 1, 2006
+October 1, 2006
 selinux@tresys.com
 
+
 Overview:
-=========
-Sediff is a policy analysis tool that parses two given policy files
-and compares them showing a list of the differences.  It can compare
-source and/or binary policies.  It can also compare different versions
-of policy.  For source policies, versions 12 and higher of SELinux
-policies are supported.  For binary policies, versions 15 and higher
-are supported.
+---------
+The sediff and sediffx programs are policy analysis tools that parse
+two given policy files and compares them showing a list of the
+differences; the former is a command-line only program while the
+latter is a GTK+ application.  They can compare source and/or binary
+policies and can also compare different versions of policy.  For
+source policies, versions 12 and higher of SELinux policies are
+supported.  For binary policies, versions 15 and higher are supported.
 
 Limitations:
-============
-Sediff currently compares only the following policy elements:
-        + object classes and permissions
-        + types and attributes
-        + roles
-        + users
-        + booleans
-        + type enforcement rules (allow, type_transitions, etc.)
-        + role allow rules
-        
-Other elements will be added as the core libraries support them.
+------------
+The programs currently compare the following policy elements:
+  - object classes and permissions
+  - types and attributes
+  - roles
+  - users
+  - booleans
+  - type enforcement rules (allow, type_transitions, etc.)
+  - role allow rules
+  - role transition rules
+
 
 What is a Semantic Diff?
-========================
+------------------------
 The challenge with comparing two policies is that a straightforward
 textual comparison is of little value.  What one needs is the ability
 to determine semantically how two policies differ.  For example, one
@@ -34,169 +36,177 @@ could not simply grep for allow rules with a given type, and then
 compare them to a similar list from another policy.  Many factors
 affect the semantic meaning of the rules.  For example, multiple rules
 can allow differing sets of permissions.  Attributes can allow
-permission to/from a type.
+permissions to/from a type.  What was a type in one policy could
+become an alias in another.
 
-What sediff does is analyze each policy semantically.  In this way, it
-resolves any conflicts and determines whether there is a substantial
-differences.  This approach also allows binary and source policies to
-be compared, as well as different versions of policies.
+What sediff (and sediffx) does is analyze each policy semantically.
+We define "semantically" as how the kernel security server uses a
+policy to make enforcement decisions.  This approach also allows
+binary and source policies to be compared, as well as different
+versions of policies.
 
 NOTE: The one semantic assumption sediff makes is that when an
 identifier (e.g., a type name) has the same string value in each
 policy, then it represents the same semantic meaning in both policies.
 
-Sediff Commands:
-================
-Sediff can be run from command line or as a GUI.  For command line
-help, run "sediff --help".  To start the GUI (the primary focus of
-this help file), use the following command:
-        sediffx [policy1 policy2]
 
-Understanding Sediff's Results: 
-===============================
-After differing two policies, the GUI shows the policy areas compared
-in the left hand frame.  Besides each policy area is a number
-representing the total number of differences in that area.  As a
-general rule, for each policy area the right-hand window shows the
-detailed results.
+sediff Commands:
+----------------
+The tools may be run from the command line or in a graphical
+environment.  For command line.  Use sediff (see "sediff --help") for
+the command line and sediffx ("sediffx --help") for the graphical
+interface.  We recommond using sediffx as that it gives additional
+details about policy differences; the remainder of this document
+focuses on sediffx.
+
+
+Understanding sediffx's Results: 
+--------------------------------
+
+After calculating differences between two policies, the GUI shows the
+policy areas compared in the left hand frame.  Besides each policy
+area is a number representing the total number of differences in that
+area.  As a general rule, for each policy area the right-hand window
+shows the detailed results.
 
 NOTE: All differences are shown from the perspective of the first
-policy given (i.e., original policy).  There are three types of
-differences shown:
+policy given (i.e., "original policy") to the second ("modified
+policy").  There are three types of differences shown:
 
-    + Added (+): A policy component was added by the second policy
-      (in modified policy but not original policy)
+  - Added (+): A policy component was added by the second policy (in
+    modified policy but not original policy).
 
-    + Removed (-): A policy component was removed by the second
-      policy (in original policy but not modified policy)
+  - Removed (-): A policy component was removed by the second policy
+    (in original policy but not modified policy).
 
-    + Changed (*): A policy component was present in both policies,
-      but somehow changed by the modified policy.
-        
+  - Modified (*): A policy component was present in both policies, but
+    is different in the modified policy.
+
 
 Supported Policy Areas Differences:
-===================================
+-----------------------------------
 Below is an explanation of the difference for each supported policy
 area:
 
-   Classes and Permissions:
-   ------------------------
-   This area examines three aspects of a policy: class definitions,
-   common permission definitions, and permissions:
-   
-     Classes:
-     --------
-     Classes can be added, removed, or changed.  Changed means that
-     the permissions associated with the classes have changed
-     between the two policies.
-        
-     Common Permissions:
-     -------------------
-     Common permissions are compared much like classes.  They can be
-     added, removed or changed, where change means that the
-     permissions associated with the common permission has changed.
-        
-   Types:
-   ------
-   Types can be added, removed, or changed.  Change means that the
-   attributes associated with a type are different between the two
-   policies.  Attributes can be added or removed from a type.
+  Classes:
+  --------
+  Classes can be added, removed, or modified.  Modified means that
+  the list of permissions associated with aclass is different.
 
-   Attributes:
-   -----------
-   Attributes are compared like types.  They can be added, removed,
-   or changed.  Change means that the type associated with the
-   attributes are different (types can be added or removed from the
-   attribute).
+  Commons:
+  --------
+  Commons are compared much like classes.  They too may be added,
+  removed, or modified.
 
-   Roles:
-   ------
-   Roles can be added, removed, or changed.  Change means that the
-   types associated with a role are different between the two
-   policies.  Types can be added or removed from a role.
-   
-   Users: 
-   ------
-   Users can be added, removed, or changed.  Changed means that the
-   roles associated with a user are different between the two
-   policies.  Roles can be added or removed from a user.
-  
-   Booleans:
-   ---------
-   Booleans can be added, removed, or changed.  If you compare a
-   version 15 or earlier policy with a version 16 or later policy,
-   all the booleans will be added or removed (booleans came in
-   version 16).  Change means that the default value is different
-   between the two policies.
+  Types:
+  ------
+  Types can be added, removed, or modified.  Modified means that the
+  attributes associated with a type are different between the two
+  policies.  Because attribute names do not exist within binary
+  policies, if either the original or modified policy is a binary then
+  the 'modified' check will be skipped.
 
-   TE Rules: 
-   ---------
-   The TE rules areas covers the "meat" of a policy.  This area
-   includes AV rules (allow, audit_allow, and dont_audit) and Type
-   rules (type_transitions and type_change).  The rule comparison is
-   truly semantic.  All issues of redundancy and duplication, as
-   well as indirect access through attributes are resolved.  All
-   rules are keyed by the "source-target-class" (STC) triple.  In
-   addition, conditional rules are distinguished from
-   non-conditional rules.  Thus, for example, two rules with the
-   same STC will not be compared if one is non-conditional and the
-   other is conditional, or if both are conditional but conditioned
-   on two different conditional expressions.  For conditional rules,
-   the conditional expression is compared to ensure that conditional
-   rules are meaningfully compared.  In the results pane,
-   conditional rules are indicated by a "T" or "F" (representing the
-   TRUE or FALSE list of a conditional expressions), as well as a
-   rendering of its associated conditional expression.
-   
-   NOTE: For conditional rules, the default and current values of
-   the booleans are ignored.  Conditional expressions are compared
-   as if the booleans are all the same.
-   
-   Rules can be added, removed, or changed.  Added means the STC
-   triple for that rule is not present in the original policy but in
-   the modified one.  Removed means the STC triple is present in the
-   original but not modified policy.  For AV rules, change means
-   that the permissions for the rule are different between the
-   policies.  For Type rules, change means that the default type is
-   different between the policies.
-   
-   When source policies are compared, hyper-linked line numbers are
-   shown that take you to the source ".conf" file where the rule is
-   defined.  If there are more than one source rules that contribute
-   to a STC triple for a given rule, then all source rules are
-   linked.
+  Attributes:
+  -----------
+  Attributes are compared like types.  They can be added, removed,
+  or modified.  Modified means that the types associated with the
+  attributes are different (types can be added or removed from the
+  attribute).  As before, if either policy is a binary then attributes
+  will not be checked.
 
-   RBAC Rules:
-   -----------
-   RBAC includes role allow and role_transition rules.  Currently
-   role_transition rules are not supported in sediff.  Role allow
-   rules determine if a role is allowed to transition (either
-   explicitly or through a role_transition) to another.  Diffing a
-   role allow involves taking the source role and checking to see if
-   there are corresponding rules in the other policy.  If there is
-   no rule with this source in the first policy it is an add.
-   Likewise if there is none in the second policy it is a remove.
-   If role allows with the same source exist in both policies then
-   the target roles are shown as a change.
-   
-   Conditional Expressions:
-   ------------------------
-   While conditional expressions are compared when analyzing
-   conditional TE rules as described above, sediff does not
-   currently support comparing conditional expressions directly.
+  Roles:
+  ------
+  Roles can be added, removed, or modified.  Modified means that the
+  types associated with a role are different between the two policies.
+  Types can be added or removed from a role.
+
+  Users:
+  ------
+  Users can be added, removed, or modified.  Modified means that the
+  roles associated with a user are different between the two
+  policies.  Roles can be added or removed from a user.
+
+  Booleans:
+  ---------
+  Booleans can be added, removed, or modified.  If you compare a
+  version 15 or earlier policy with a version 16 or later policy, all
+  the booleans will be added or removed (booleans came in version 16).
+  Modified means that the default value is different between the two
+  policies.
+
+  TE Rules:
+  ---------
+  The TE rules areas covers the "meat" of a policy.  This area
+  includes AV rules (allow, neverallow auditallow, and dontaudit) and
+  Type rules (type_transition, type_change, and type_member).  The
+  rule comparison is truly semantic.  All issues of redundancy and
+  duplication, as well as indirect access through attributes are
+  resolved.  All rules are keyed by the "source-target-class" (STC)
+  triple.  In addition, conditional rules are distinguished from
+  non-conditional rules.  Thus, for example, two rules with the same
+  STC will not be compared if one is non-conditional and the other is
+  conditional, or if both are conditional but conditioned on two
+  different conditional expressions.  For conditional rules, the
+  conditional expression is compared to ensure that conditional rules
+  are meaningfully compared.  In the results pane, conditional rules
+  are displayed with their associated conditional expression and if
+  the rule was in conditional's TRUE or FALSE branch.
+
+  NOTE: For conditional rules, the default and current values of
+  the booleans are ignored.  Conditional expressions are compared
+  as if the booleans were all the same.
+
+  Rules can be added, removed, or modified.  Added means the STC
+  triple for that rule is not present in the original policy but in
+  the modified one.  Removed means the STC triple is present in the
+  original but not modified policy.  For AV rules, modified means that
+  the permissions for the rule are different between the policies.
+  For Type rules, modified means that the default type is different
+  between the policies.
+
+  When source policies are compared, hyperlinked line numbers are
+  shown that take you to the source ".conf" file where the rule was
+  defined.  If there were more than one source rules that contributed
+  to a STC triple for a given rule, then all source rules are linked.
+
+  RBAC Rules:
+  -----------
+  RBAC includes role allow and role_transition rules.  Role allow
+  rules determine if a role is allowed to transition to another role.
+  Diffing a role allow involves taking the source role and checking to
+  see if there are corresponding rules in the other policy.  If there
+  is no rule with this source in the first policy it is an add.
+  Likewise if there is none in the second policy it is a remove.  If
+  role allows with the same source exist in both policies then the
+  target roles are shown as a modified.  Role transitions are handled
+  similarly to type_transitions; if the default role is different then
+  the statement is marked as modified.
 
 
 Policy Tabs:
-============
+------------
 Each policy has a tab on the main window labeled Policy #: followed by
 the policy file name.  Under each of these tabs are a policy
 statistics tab and a source tab.
 
-   Policy Statistics Tab:
-   ----------------------
-   The policy statistics tab displays the statistics of that policy.
+  Policy Statistics Tab:
+  ----------------------
+  The policy statistics tab displays the statistics of that policy.
     
-   Source Tab:
-   -----------
-   If the policy is a source policy, this tab displays the source of
-   that policy.
+  Source Tab:
+  -----------
+  If the policy is a source policy, this tab displays the source of
+  that policy.
+
+
+Remapping Types:
+----------------
+The sediff algorithm implicitly treats a type with the same name
+across both policies as the same semantic item.  This includes a name
+that was a type in one policy but became an alias in the other.  There
+may be instances where the operator has special knowledge of the
+remaining unmapped types.  In this case, he may use sediffx's "Remap
+Types" dialog to explicitly remap types.  From the main interface,
+select "Remap Types" from the Tools menu to open a dialog box.  From
+here, he may add additional remappings between types.  Note that
+sediffx will only list types that have not been implicitly remapped.
