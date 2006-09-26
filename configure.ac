@@ -283,8 +283,8 @@ AC_MSG_ERROR([could not find libselinux - make sure it is installed]),
 CFLAGS="${selinux_save_CFLAGS}"
 
 AC_ARG_ENABLE(sefs,
-              AC_HELP_STRING([--enable-sefs],
-                             [allow file system analyses (default) (requires SELinux development files)]),
+              AC_HELP_STRING([--disable-sefs],
+                             [disallow file system analyses (requires SELinux development files) (default is ENABLE)]),
               sefs="$enableval",
               sefs="yes")
 AC_MSG_CHECKING([for file system analyses])
