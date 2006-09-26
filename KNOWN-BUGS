@@ -3,7 +3,7 @@ Tresys Technology
 setools@tresys.com, http://oss.tresys.com/setools
 
 
-September 1, 2006
+October 1, 2006
 
 
 CURRENT BUGS AND ISSUES
@@ -14,20 +14,17 @@ find to setools-bugs@tresys.com.
 
 APOL
    
-1. There is a bug in the text search feature. The text widgets' search
-   command does not handle a '-' as the first character in the string.
-   
-2. Double clicking on listbox items may not display popup windows in
+1. Double clicking on listbox items may not display popup windows in
    certain window managers.  You must right-click on the item in order
    to display popup windows.  This is due to Tk's event buffer and is
    not fixable.  (Ref: http://tinyurl.com/ltmuh)
    
-3. The use of some fonts may cause widgets in the GUI to be obscured.
+2. The use of some fonts may cause widgets in the GUI to be obscured.
    If you experience this problem, you may edit the fonts in the .apol
    file in your home directory.  Apol is designed to fit on a 1024x768
    display; users will have problems with resolutions less than this.
    
-4. Apol will correctly load policies with aliases, but the alias names
+3. Apol will correctly load policies with aliases, but the alias names
    will be lost (the root type name is used instead).  Therefore,
    aliases are not displayed and queries should not use them as
    parameters.
@@ -64,4 +61,4 @@ Desktop environments:
 
 These tools will likely have some bugs of which we are currently
 unaware.  Please report any new bugs or comments to
-setools-bugs@tresys.com.  Thank you for using setools!
+setools-bugs@tresys.com.  Thank you for using SETools!

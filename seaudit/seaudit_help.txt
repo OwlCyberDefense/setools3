@@ -1,70 +1,71 @@
 Audit Log Analysis Tool for Security Enhanced Linux
 seaudit, version 3.0
-September 1, 2006
+October 1, 2006
 selinux@tresys.com
 
 Overview:
 ---------
 This file contains basic help information for using seaudit, an audit
-log analysis tool for Security Enhanced Linux (SE Linux) audit
-messages.  Please report any bugs to selinux@tresys.com.
+log analysis tool for Security Enhanced Linux (SELinux) audit
+messages.  Please report any bugs to setools-bugs@tresys.com.
 
-The tool does not need to be installed on an SE Linux system; it will
+The tool does not need to be installed on an SELinux system; it will
 work in any Linux machine.  The tool parses a given syslog and
 extracts all load policy messages, AVC messages and change of boolean
 messages from conditional policies.
 
 The tool has the following main functions:
-     1) Browse and sort SE Linux audit messages.
-     2) Filter an audit log based on fields in the messages.
-     3) Query the policy based on data from a given audit message.
-     4) Export SE Linux audit messages to a file.
-     5) Generate reports in HTML or plain-text format from an
-        entire log or an seaudit view.
+  1) Browse and sort SELinux audit messages.
+  2) Filter an audit log based on fields in the messages.
+  3) Query the policy based on data from a given audit message.
+  4) Export SELinux audit messages to a file.
+  5) Generate reports in HTML or plain-text format from an entire log
+     or an seaudit view.
 
 
 Log and Policy Files:
---------------------
-Seaudit accepts the following command line arguments to open files at
-startup.  Zero, one, or both arguments will be accepted.
-	-l[FILE], --log[=FILE]	       open log file named FILE
-	-p[FILE], --policy[=FILE]      open policy file named FILE
+---------------------
+The seaudit program accepts the following command line arguments to
+open files at startup.  Zero, one, or both arguments will be accepted.
 
-Seaudit provides you with the option of opening either a source or
+  -l[FILE], --log[=FILE]       open log file named FILE
+  -p[FILE], --policy[=FILE]    open policy file named FILE
+
+The program provides you with the option of opening either a source or
 binary policy file.  If you do not specify a policy to open at the
-command line, seaudit will attempt to use the system default source
-policy location (e.g., /etc/security/selinux/src/policy/policy.conf).
-If this file is unavailable, seaudit will attempt to open the system
-default binary policy instead.
+command line, seaudit will attempt to use the default policy location,
+as specified during configuration time (e.g., ./configure
+--with-default-policy).
 
 Note that seaudit does not require you to open a policy file; in this
-case your functionality will be limited.  For example, you will not be
-able to use the query policy features of the tool.  If a policy file
-is opened it must be syntactically correct (i.e., it must not generate
-errors when run through checkpolicy).  Only one policy file and one
-audit log can be open at a time, so if you open another one of these
-files the current one will be closed.
+case its functionality will be limited.  For example, you will not be
+able to use the query policy features of the tool.  Only one policy
+file and one audit log can be open at a time, so if you open another
+one of these files the current one will be closed.
 
 If you get a warning when opening a log file that says: "Warning! One
 or more invalid messages found in audit log.", this means that one or
-more of the SE Linux audit messages either was missing a standard
+more of the SELinux audit messages either was missing a standard
 message field (e.g., time, hostname, access type, etc.) or:
-    1) A message had an unrecognized time stamp.
-    2) An AVC message did not contain permissions.
-    3) An AVC message was not labeled as denied or granted.
-    4) A load policy message was not in the correct form, (i.e.,
-       missing a line or a data field).
-    5) A boolean message did not contain a list of booleans.
+
+  1) A message had an unrecognized time stamp.
+  2) An AVC message did not contain permissions.
+  3) An AVC message was not labeled as denied or granted.
+  4) A load policy message was not in the correct form, (i.e., missing
+     a line or a data field).
+  5) A boolean message did not contain a list of booleans.
     
-Seaudit will still attempt to display the remaining data from the SE
-Linux audit message in question along with all the other SE Linux
-messages in the log, only if one of the following substrings is found
-within the message:
-    "avc:" - indicates an access denied or granted message
-    "security:" - indicates a load policy message
-    "committed booleans" - indicates a committed boolean(s) message.
-Otherwise, these messages will not be extracted from the SE Linux
-audit log.
+The seaudit program will still attempt to display the remaining data
+from the SELinux audit message in question along with all the other
+SELinux messages in the log, but only if one of the following
+substrings is found within the message:
+
+  "avc:" - indicates an access denied or granted message
+  "security:" - indicates a load policy message
+  "committed booleans" - indicates a committed boolean(s) message.
+
+Otherwise, these messages will not be extracted from the SELinux audit
+log.
 
 Menus:
 ------
@@ -81,12 +82,12 @@ The VIEW menu allows you to display multiple views of a log.  The
 default view is created automatically once an audit log is opened.
 Additional views can be created by selecting View->New under the VIEW
 menu (or by pressing Ctrl + T).  Each tab can be sorted and filtered
-independently.  The 'Save' and 'Save As..' menu items allow you to
+independently.  The 'Save' and 'Save As...' menu items allow you to
 save the settings for the view to a file and the 'Export View' menu
 item allows you yo export an entire view (i.e., the audit messages
 contained in the view) to a file.  Alternatively, you can use the
 'Export Selected Messages' menu item to export only selected messages
-to a file, instead of the entire view.  Lastly, this menu provides the
+to a file instead of the entire view.  This menu also provides the
 option of viewing an entire audit message within a separate textbox
 window as it is rendered in the actual audit log.  If multiple audit
 messages are selected, seaudit will use the top-most selected audit
@@ -97,9 +98,9 @@ below) or query the policy (See Query Policy below).
 
 Additionally, right-clicking on an audit message entry will display a
 pop-up menu that allows you to:
-	- View the entire message within a seperate textbox.
-	- Query the policy using the message.
-	- Export all selected messages to a file.
+  - View the entire message within a seperate textbox.
+  - Query the policy using the message.
+  - Export all selected messages to a file.
 
 The REPORT menu allows you to create report files in HTML or
 plain-text format using an entire audit log or an seaudit view. (See
@@ -110,8 +111,8 @@ Sorting:
 By default the messages are sorted in chronological order.  To sort by
 a particular field click on the column heading.  The only column that
 you cannot sort on is the 'Other' column.  Only one level of sorting
-can be performed at this time. See Known Bugs below for additional
-sorting limitations.
+can be performed at this time.  The file KNOWN-BUGS describes a
+particular instance where the sort order may be misleading.
 
 Log Monitoring: 
 ---------------
@@ -126,7 +127,7 @@ dialog.  If new messages are found they are displayed according to the
 filter and sorting selections for the current view.
 
 Query Policy:
-------------- 
+-------------
 The 'Query Policy' button opens a new dialog box that contains two
 tabs.  The first tab, 'Query Policy', allows you to enter search
 criteria similar to that in apol's TE Rules query.  If you have an
@@ -142,21 +143,21 @@ search.  The search finds rules that have either the provided type
 or any of the type's attributes in the appropriate field.
 
 Clicking on 'Query Policy' displays a list of all rules fitting your
-criteria.  If the policy file you have opened is NOT a binary policy,
-then this list will contain hyperlinks to take you to the appropriate
-line in the policy.conf tab.  Otherwise, hyperlinks will not be
-provided.  Double-clicking on a message is another way to get to the
-query policy dialog box that is populated with the data.
+criteria.  If the policy file you have opened is a source policy, then
+this list will contain hyperlinks to take you to the appropriate line
+in the policy.conf tab.  Otherwise for a binary policy, hyperlinks
+will not be provided.  Double-clicking on a message is another way to
+get to the query policy dialog box that is populated with the data.
 
 The second tab, 'policy.conf', provides a convenient display of the
 raw policy.conf source file and is only available when opening a
-policy.conf file.
+source policy file.
 
 For more extensive policy searches and analysis, use our companion 
 policy analysis tool, apol.
 
-Log Views: 
------------ 
+Log Views:
+----------
 The 'Modify View' button opens a dialog box that allows you to modify
 a list of filters for the current view of the audit log.  At the top
 of the dialog box is a dropdown menu that has four different ways to
@@ -183,11 +184,12 @@ view.
 When you click on the 'Apply' button it will apply the filters for the
 associated view.
 
+
 Create|Edit Filters Within A View: 
 ----------------------------------
 To add a new filter, first select the view for which the filter is
 needed by clicking on the corresponding tab.  Then, click on the
-'Modify View' button near the top of the main window. You are now
+'Modify View' button near the top of the main window.  You are now
 presented with a View window which contains a list of filters for the
 view that was selected.  Now click on the 'Add' button to create a new
 filter.  You are now presented with a window in which you can edit the
@@ -198,14 +200,14 @@ The 'Context' tab allows you to enter values for part or all of the
 source and target context, as well as the object class.  Only exact
 matches and/or globbed expressions (see Globbing Expressions below)
 are accepted for fields on this tab; no regular expressions are
-permitted. You can either enter the values manually with a comma
-between entries or click on the button (i.e., Types:) and get another
+permitted.  You can either enter the values manually with a comma
+between entries or click on the button (i.e., Types) and get another
 dialog that has a list of all valid entries.  This list can be
 populated by values from the log, the policy, or the union of the log
-and policy, by selecting the appropriate radiobutton specification.
+and policy, by selecting the appropriate radiobutton.
 
 The 'Other' tab allows you to filter by networking criteria (i.e., IP
-address, port and/or interface).  The IP addresses requires an exact
+address, port and/or interface).  The IP addresses require an exact
 match or a regular expression; however, Port and Interface are by
 exact match only.  You can also filter by executable, path, and/or
 hostname from this tab.  These fields accept either an exact match or
@@ -225,6 +227,7 @@ just close the window once you are done editing the filter.
 Clicking on the 'Clear Values' button at the bottom of either tab
 clears the values in the current tab only.
 
+
 Globbing Expressions:
 ---------------------
 Using globbed expressions allows one to construct more flexible search
@@ -238,13 +241,13 @@ String containing the characters '?' and '*' are said to contain
 wildcard characters.  While, both are considered wildcards they allow
 for different functionality.
 
-    (a) The '?' character matches any charcter.
+  (a) The '?' character matches any charcter.
 
-	example: ?at matches the strings aat, bat, cat, etc.
+      example: ?at matches the strings aat, bat, cat, etc.
 
-    (b) The '*' matches any string.
+  (b) The '*' matches any string.
 
-	example: sys* matches the strings system, sysadmin, etc.
+      example: sys* matches the strings system, sysadmin, etc.
 
 (2) Character Classes
 
@@ -254,7 +257,7 @@ is used to begin a character class and the ']' character is used to
 end the class.  The characters in the string contained between the two
 brackets comprise the character class, which can NOT be empty.
 	
-	example: e[abz]x matches the strings eax, ebx, ezx
+      example: e[abz]x matches the strings eax, ebx, ezx
 
 (3) Ranges
 
@@ -265,8 +268,8 @@ where the character to the left of the '-' is the beginning and the
 character to the right of the '-' is the end.  Multiple ranges can be
 used within the same character class.
 	
-	example: a[b-e]f matches the strings abf, acf, adf, aef
-	example: 1[2-36-8]9 matches the strings 129, 139, 169, 179, 189
+      example: a[b-e]f matches the strings abf, acf, adf, aef
+      example: 1[2-36-8]9 matches the strings 129, 139, 169, 179, 189
 
 (4) Complementation
 
@@ -276,25 +279,27 @@ character after '[' when one desires to use a complementation.  When
 using complementations the complement of the string enclosed in the
 brackets after the '!' character is used.
 
-	example: a[!b-y]z matches all three-character strings starting
-		 with a followed by any character not occuring between
-		 b and y (inclusive), and ending in z
+      example: a[!b-y]z matches all three-character strings starting
+               with a followed by any character not occuring between b
+               and y (inclusive), and ending in z
 
-	example: a[!c-ik-y]z matches all three-character string
-		 starting with a followed by any character not
-		 occuring between c and i (inclusive) or between k and
-		 y (inclusive), and ending in z
+      example: a[!c-ik-y]z matches all three-character string starting
+               with a followed by any character not occuring between c
+               and i (inclusive) or between k and y (inclusive), and
+               ending in z
 
 
 *** CAUTION ***
-SEAudit intersperses the use of regular expressions versus globbed
-expressions. So for example, the 'Edit Filter' dialog may allow only
-regular expressions for certain criteria, whereas for other criteria,
-it may only allow exact matches or the use of a globbed expression.
-The 'Query Policy' dialog only allows the use of regular expressions
-or an exact match for search criteria, not globbed expressions.
-Additionally, note that all characters used in globbing expressions
-are case sensitive.
+
+The seaudit program intersperses the use of regular expressions versus
+globbed expressions.  So for example, the 'Edit Filter' dialog may
+allow only regular expressions for certain criteria, whereas for other
+criteria, it may only allow exact matches or the use of a globbed
+expression.  The 'Query Policy' dialog only allows the use of regular
+expressions or an exact match for search criteria, not globbed
+expressions.  Additionally, note that all characters used in globbing
+expressions are case sensitive.
+
 
 Status Bar:
 -----------
@@ -305,6 +310,7 @@ number of log messages displayed "/" the total number of SE Linux
 messages in the audit log.  The next label shows the span of the dates
 in the audit log and the right-most label shows the status of the
 real-time log monitor.
+
 
 Creating Reports:
 -----------------
@@ -331,7 +337,7 @@ configuration file to use for creating the report.  If the stylesheet
 or the configuration file is not specified, seaudit will attempt to
 use the appropriate system default files.  If a report configuration
 file cannot be located at this point, an error will be generated.  All
-settings will be saved when this dialog is destroyed. The values for
+settings will be saved when this dialog is destroyed.  The values for
 the entryboxes, however, are updated once the user has clicked the
 'Create Report' button; otherwise, the default values are maintained.
 You may change the default values for the stylesheet and configuration
@@ -347,9 +353,5 @@ report, as well as create custom sections in the report through the
 use of saved seaudit view files.  Review the default
 seaudit-report.conf file that comes packaged with your setools
 distribution for more information.  This file can be located in the
-seaudit subdirectory or within the standard /usr/share/setools
-directory.
-
-Known Bugs:
------------
-See setools/KNOWN-BUGS for a list of current bugs.
+shared data directory where seaudit was installed, typically
+/usr/local/share/setools-<version>.
