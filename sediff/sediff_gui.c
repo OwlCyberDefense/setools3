@@ -204,10 +204,10 @@ static void sediff_populate_key_buffer(void)
 
 	g_string_printf(string," Added(+):\n  Items added\n  in policy 2.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, -1, "added-tag", NULL);
-	g_string_printf(string," Removed(-):\n  Items removed\n  in policy 2.\n\n");
+	g_string_printf(string," Removed(-):\n  Items removed\n  from policy 1.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str,
 						 -1, "removed-tag", NULL);
-	g_string_printf(string," Changed(*):\n  Items changed\n  in policy 2.\n\n");
+	g_string_printf(string," Modified(*):\n  Items modified\n  from policy 1\n  to policy 2.");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str,
 						 -1, "changed-tag", NULL);
 	g_string_free(string, TRUE);

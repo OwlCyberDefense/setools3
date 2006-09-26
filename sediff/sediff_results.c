@@ -521,77 +521,79 @@ static apol_vector_t *sediff_results_tesort(poldiff_t *diff, poldiff_form_e form
 	return v;
 }
 
-#if 0
-static void sediff_results_print_string(GtkTextBuffer *tb, GtkTextIter *iter,
-					const char *s, unsigned int indent_level) {
+/**
+ * Print a modified rule.  Note that this differs from the more
+ * general sediff_results_print_string() because:
+ *
+ * <ul>
+ *   <li>there are inline '+' and '-' markers
+ *   <li>for source policies, hyperlink permission names to their
+ *       line(s) within the policy
+ * </ul>
+ */
+static void sediff_results_print_rule_modified(GtkTextBuffer *tb, GtkTextIter *iter,
+					       const char *s, unsigned int indent_level) {
 	const char *c = s;
 	unsigned int i;
 	size_t start = 0, end = 0;
 	static const char *indent = "\t";
-	const gchar *default_tag = NULL, *current_tag = NULL;
+	const gchar *current_tag = "modified";
 	for (i = 0; i < indent_level; i++) {
 		gtk_text_buffer_insert(tb, iter, indent, -1);
 	}
 	for (; *c; c++, end++) {
 		switch (*c) {
 		case '+': {
-			results_print_flush(tb, iter, s, start, end - 1, current_tag);
+			if (end > 0) {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+			}
 			start = end;
 			current_tag = "added";
-			if (default_tag == NULL) {
-				default_tag = current_tag;
-			}
 			break;
 		}
 		case '-': {
-			results_print_flush(tb, iter, s, start, end - 1, current_tag);
+			if (end > 0) {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+			}
 			start = end;
 			current_tag = "removed";
-			if (default_tag == NULL) {
-				default_tag = current_tag;
-			}
-			break;
-		}
-		case '*': {
-			results_print_flush(tb, iter, s, start, end - 1, current_tag);
-			start = end;
-			current_tag = "modified";
-			if (default_tag == NULL) {
-				default_tag = current_tag;
-			}
 			break;
 		}
 		case '\n': {
 			if (*(c + 1) != '\0') {
-				results_print_flush(tb, iter, s, start, end, current_tag);
-				start = end + 1;
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag, NULL);
 				for (i = 0; i < indent_level; i++) {
 					gtk_text_buffer_insert(tb, iter, indent, -1);
 				}
+				start = end + 1;
 			}
 			break;
 		}
 		case ' ': {
-			if (current_tag != default_tag) {
-				results_print_flush(tb, iter, s, start, end, current_tag);
+			if (current_tag != "modified") {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag, NULL);
 				start = end + 1;
-				current_tag = default_tag;
+				current_tag = "modified";
 			}
 			break;
 		}
 		}
 	}
-	results_print_flush(tb, iter, s, start, end - 1, current_tag);
+        if (start < end) {
+                gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+        }
 }
 
-#endif
-
 static void sediff_results_print_linenos(GtkTextBuffer *tb, GtkTextIter *iter,
+					 const gchar *prefix,
 					 apol_vector_t *linenos, const gchar *tag, GString *string)
 {
 	size_t i;
 	unsigned long lineno;
 	gtk_text_buffer_insert(tb, iter, "  [", -1);
+	if (prefix != NULL) {
+		gtk_text_buffer_insert(tb, iter, prefix, -1);
+	}
 	for (i = 0; i < apol_vector_get_size(linenos); i++) {
 		lineno = (unsigned long) apol_vector_get_element(linenos, i);
 		if (i > 0) {
@@ -625,14 +627,25 @@ static void sediff_results_print_rules(sediff_app_t *app, GtkTextBuffer *tb,
 			g_string_free(string, TRUE);
 			return;
 		}
-		sediff_results_print_string(tb, &iter, s, 1);
+		if (form != POLDIFF_FORM_MODIFIED) {
+			sediff_results_print_string(tb, &iter, s, 1);
+			if ((syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p1", string);
+			}
+			if ((syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p2", string);
+			}
+		}
+		else {
+			sediff_results_print_rule_modified(tb, &iter, s, 1);
+			if ((syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				sediff_results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-p1", string);
+			}
+			if ((syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				sediff_results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-p2", string);
+			}
+		}
 		free(s);
-		if ((syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-			sediff_results_print_linenos(tb, &iter, syn_linenos, "line-p1", string);
-		}
-		if ((syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-			sediff_results_print_linenos(tb, &iter, syn_linenos, "line-p2", string);
-		}
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
 	}
 
@@ -643,14 +656,25 @@ static void sediff_results_print_rules(sediff_app_t *app, GtkTextBuffer *tb,
 			g_string_free(string, TRUE);
 			return;
 		}
-		sediff_results_print_string(tb, &iter, s, 1);
+		if (form != POLDIFF_FORM_MODIFIED) {
+			sediff_results_print_string(tb, &iter, s, 1);
+			if ((syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p1", string);
+			}
+			if ((syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p2", string);
+			}
+		}
+		else {
+			sediff_results_print_rule_modified(tb, &iter, s, 1);
+			if ((syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				sediff_results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-p1", string);
+			}
+			if ((syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				sediff_results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-p2", string);
+			}
+		}
 		free(s);
-		if ((syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-			sediff_results_print_linenos(tb, &iter, syn_linenos, "line-p1", string);
-		}
-		if ((syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-			sediff_results_print_linenos(tb, &iter, syn_linenos, "line-p2", string);
-		}
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
 	}
 
