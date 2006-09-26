@@ -149,11 +149,11 @@ to `configure'.  Here is a list of notable options:
       disable parts of SETools.  Use this flag to disable the
       build-time check.
 
-  --enable-sefs
+  --disable-sefs
       In some situations SETools will be deployed on systems not
       running SELinux.  For example, sediff does not need an
-      SELinux-enabled kernel to operate.  Disable sefs support (via
-      --disable-sefs) if this situation applies.
+      SELinux-enabled kernel to operate.  Disable sefs support if
+      this situation applies.
 
   --enable-sepol-src=PATH
       Use this flag when compiling against a development version of
