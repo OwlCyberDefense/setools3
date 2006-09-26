@@ -80,6 +80,8 @@ struct diff_tree {
 
 extern sediff_item_record_t sediff_items[];
 
+extern sediff_app_t *sediff_app;
+
 static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 {
 	GtkTreeStore *treestore;
@@ -150,13 +152,19 @@ static GtkTreeModel *sediff_create_and_fill_model (poldiff_t *diff)
 					   SEDIFF_FORM_COLUMN, POLDIFF_FORM_REMOVE_TYPE,
 					   -1);
 		}
-		gtk_tree_store_append(treestore, &childiter, &topiter);
-		g_string_printf(s, "Modified %zd", stats[2]);
-		gtk_tree_store_set(treestore, &childiter,
-				   SEDIFF_LABEL_COLUMN, s->str,
-				   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
-				   SEDIFF_FORM_COLUMN, POLDIFF_FORM_MODIFIED,
-				   -1);
+		if (sediff_items[i].bit_pos != POLDIFF_DIFF_TYPES ||
+		    (!apol_policy_is_binary(sediff_app->orig_pol) &&
+		     !apol_policy_is_binary(sediff_app->mod_pol))) {
+			/* can't show the modified types if either
+			 * policy is a binary */
+			gtk_tree_store_append(treestore, &childiter, &topiter);
+			g_string_printf(s, "Modified %zd", stats[2]);
+			gtk_tree_store_set(treestore, &childiter,
+					   SEDIFF_LABEL_COLUMN, s->str,
+					   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
+					   SEDIFF_FORM_COLUMN, POLDIFF_FORM_MODIFIED,
+					   -1);
+		}
 	}
 
 	g_string_free(s,TRUE);
