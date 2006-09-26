@@ -53,7 +53,7 @@ defined as follows:
 1) "high": the module-results indicate an identifiable security risk
    in the selinux policy
 
-2) "med":  the module-results indicate an flaw in the selinux policy
+2) "med":  the module-results indicate a flaw in the selinux policy
    that changes the manner in which the policy is enforced, however
    does not present an identifiable security risk.
 
