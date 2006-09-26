@@ -1,5 +1,11 @@
 setools 3.0
 
+setools:
+
+  * Moved entire project to autoconf build system.  This will detect
+    dependencies correctly and mak. it easier to integrate with Linux
+    distributions and their packaging systems.
+
 setools libraries:
 
   * Rewrite of back-end of setools to use libsepol data structures.
@@ -13,15 +19,20 @@ setools libraries:
 apol:
 
   * Rework Tk interface to fit on 1024x768 displays.
+
   * Indirect matching of attributes now works with rule searches.
 
 sediff:
 
   * New diffing algorithm yields significant speed improvements.
+
+  * Can now diff neverallow and role_transition statements.
+
+  * Streamlined results display - should be easier to read.
         
 sechecker:
 
-  * Updated module format and template for ease of extension
+  * Updated module format and template for ease of extension.
 
 =======================================================
 May 1, 2006, Version 2.4
