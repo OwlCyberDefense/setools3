@@ -151,14 +151,14 @@ destructor:
 
   poldiff_type_summary_t *type_create(void);
   void type_destroy(poldiff_type_summary_t **ts);
-  
+
 As a convenience to developers, one should only need to #include the
 protected poldiff_internal.h to pick up all diff modules.  Modify
 libpoldiff/src/poldiff_internal.h in the vicinity of line 31:
 
   #include "type_internal.h"
 
-  Finally, modify libpoldiff/src/Makefile.am by adding an entry for
+Finally, modify libpoldiff/src/Makefile.am by adding an entry for
 type_internal.h.
 
 3c. Implementing Functions
@@ -262,8 +262,8 @@ another, it is more convenient to convert those pointers to
 "pseudo-type values", which are represented as uint32_ts.  These new
 values handle the type mappings between policies.  Whenever a
 difference is found, convert those pseudo-type values back to those
-component qpol_type_t pointers.  With type splits and type joins, it
-a single pseudo-type value may map to multiple qpol_type_t pointers.
+component qpol_type_t pointers.  With type splits and type joins, a
+single pseudo-type value may map to multiple qpol_type_t pointers.
 
 First look at type_get_items().  Its job is to return a sorted list of
 unique items.  Write it like this:
@@ -280,7 +280,7 @@ unique items.  Write it like this:
     }
 
 type_map_lookup() needs a third parameter that says from which policy
-the type originated.  Use these lines to calculating the parameter:
+the type originated.  Use these lines to calculate the parameter:
 
    if (policy == diff->orig_pol)
        which_pol = POLDIFF_POLICY_ORIG;
@@ -312,14 +312,15 @@ uint32_ts.  For example:
                                                     POLDIFF_POLICY_ORIG);
         apol_vector_t *added_attribs, *removed_attribs;
         let vector a1 = union of all permissions for all types in vector v1
-        let vector a2 = union of all permissions for all types in vector a1
+        let vector a2 = union of all permissions for all types in vector v2
         sort and uniquify a1
         sort and uniquify a2
         for all permissions in a1 not in a2,
             append to removed_attribs those permissions
         for all permissions in a2 not in a1,
             append to added_attribs those attribs
-        foreach type in v1,
+        if removed_attribs is not empty or added_attribs is not empty,
+        then foreach type in v1,
             create a new poldiff_type_t
             set the poldiff_type_t's name to the type's name
             set the form to POLDIFF_FORM_MODIFIED
@@ -340,7 +341,7 @@ uint32_ts.  For example:
             v = type_map_lookup(diff, t, POLDIFF_POLICY_ORIG);
         else
             v = type_map_lookup(diff, t, POLDIFF_POLICY_MOD);
-        foreach type in v1,
+        foreach type in v,
             create a new poldiff_type_t
             set the poldiff_type_t's name to the type's name
             set the form to form

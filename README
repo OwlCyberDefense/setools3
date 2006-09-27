@@ -330,7 +330,7 @@ are in their own directories.
       seaudit view files.  This tool can effectively be used as a
       plugin to other audit log analysis tools, such as the Logwatch
       daemon.
-    
+
  sediff:
       Command-line interface to libpoldiff.  Use sediff to load two
       SELinux policies, find differences between them, and then show
@@ -375,7 +375,7 @@ compatibility beginning with the SETools 3.0 release.
       stores them into a SQLite3 database.  Routines exist to create
       and execute SQL queries into the database.  This library also
       has functions to parse the system's default file_contexts.
-    
+
   libpoldiff:
       Accept two SELinux policies and finds differences between them.
       Its main users are sediff and sediffx.
