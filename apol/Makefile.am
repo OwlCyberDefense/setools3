@@ -5,7 +5,7 @@ bin_PROGRAMS = apol
 dist_setools_SCRIPTS = apol.tcl
 
 dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
-	infoflow_help.txt obj_perms_help.txt types_relation_help.txt \
+	infoflow_help.txt types_relation_help.txt \
 	perm_maps/apol_perm_mapping_ver12 \
 	perm_maps/apol_perm_mapping_ver15 \
 	perm_maps/apol_perm_mapping_ver16 \
