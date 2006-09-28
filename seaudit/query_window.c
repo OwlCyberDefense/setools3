@@ -292,6 +292,15 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 	return 0;
 }
 
+void on_close_button_clicked(GtkButton *button, gpointer user_data)
+{ 
+        GladeXML *xml = (GladeXML*)user_data;
+        GtkWidget *widget;
+
+	widget = glade_xml_get_widget(xml, "query_window");
+	gtk_widget_hide(widget);
+}
+
 void on_query_policy_button_clicked(GtkButton *button, GladeXML *xml)
 {
 	GtkEntry *src_entry, *tgt_entry, *obj_entry;
@@ -640,6 +649,9 @@ int query_window_create(int *tree_item_idx)
 	g_assert(combo);
 	g_signal_connect(GTK_COMBO(combo)->list, "event-after", G_CALLBACK(on_event_after), combo);
 
+	glade_xml_signal_connect_data(xml, "on_close_button_clicked", 
+			G_CALLBACK(on_close_button_clicked),
+			xml);
 	glade_xml_signal_connect_data(xml, "on_query_policy_button_clicked",
 			G_CALLBACK(on_query_policy_button_clicked),
 			xml);
