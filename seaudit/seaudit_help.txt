@@ -11,7 +11,7 @@ messages.  Please report any bugs to setools-bugs@tresys.com.
 
 The tool does not need to be installed on an SELinux system; it will
 work in any Linux machine.  The tool parses a given syslog and
-extracts all load policy messages, AVC messages and change of boolean
+extracts all load policy messages, AVC messages and change of Boolean
 messages from conditional policies.
 
 The tool has the following main functions:
@@ -26,7 +26,7 @@ The tool has the following main functions:
 Log and Policy Files:
 ---------------------
 The seaudit program accepts the following command line arguments to
-open files at startup.  Zero, one, or both arguments will be accepted.
+open files at start-up.  Zero, one, or both arguments will be accepted.
 
   -l[FILE], --log[=FILE]       open log file named FILE
   -p[FILE], --policy[=FILE]    open policy file named FILE
@@ -53,16 +53,16 @@ message field (e.g., time, hostname, access type, etc.) or:
   3) An AVC message was not labeled as denied or granted.
   4) A load policy message was not in the correct form, (i.e., missing
      a line or a data field).
-  5) A boolean message did not contain a list of booleans.
+  5) A Boolean message did not contain a list of Booleans.
     
 The seaudit program will still attempt to display the remaining data
 from the SELinux audit message in question along with all the other
 SELinux messages in the log, but only if one of the following
-substrings is found within the message:
+sub-strings is found within the message:
 
   "avc:" - indicates an access denied or granted message
   "security:" - indicates a load policy message
-  "committed booleans" - indicates a committed boolean(s) message.
+  "committed Booleans" - indicates a committed Boolean(s) message.
 
 Otherwise, these messages will not be extracted from the SELinux audit
 log.
@@ -75,7 +75,7 @@ menu also allows you to change certain preferences including your
 default log and policy files.  You can also set which columns (audit
 log data fields) you would like present when you view an audit log, as
 well as specify whether you would like seaudit to enable real-time log
-monitoring on startup.  All of these settings will be saved and
+monitoring on start-up.  All of these settings will be saved and
 reloaded each time seaudit is started.
 
 The VIEW menu allows you to display multiple views of a log.  The
@@ -88,7 +88,7 @@ item allows you yo export an entire view (i.e., the audit messages
 contained in the view) to a file.  Alternatively, you can use the
 'Export Selected Messages' menu item to export only selected messages
 to a file instead of the entire view.  This menu also provides the
-option of viewing an entire audit message within a separate textbox
+option of viewing an entire audit message within a separate text box
 window as it is rendered in the actual audit log.  If multiple audit
 messages are selected, seaudit will use the top-most selected audit
 message in the current view.
@@ -98,7 +98,7 @@ below) or query the policy (See Query Policy below).
 
 Additionally, right-clicking on an audit message entry will display a
 pop-up menu that allows you to:
-  - View the entire message within a seperate textbox.
+  - View the entire message within a separate text box.
   - Query the policy using the message.
   - Export all selected messages to a file.
 
@@ -134,11 +134,11 @@ criteria similar to that in apol's TE Rules query.  If you have an
 audit message highlighted when you click on this button, the search
 criteria are filled in based on the message.  Otherwise, all the
 criteria are blank.  You may enter regular expressions into the
-source/target type dropdown boxes.  You may type a direct match for an
+source/target type drop-down boxes.  You may type a direct match for an
 object into the object class box.  You may also scroll down and pick a
-particular entry from the dropdown box.
+particular entry from the drop-down box.
 
-The "Include Indirect Matches" checkbox alters the meaning of the
+The "Include Indirect Matches" check box alters the meaning of the
 search.  The search finds rules that have either the provided type
 or any of the type's attributes in the appropriate field.
 
@@ -160,7 +160,7 @@ Log Views:
 ----------
 The 'Modify View' button opens a dialog box that allows you to modify
 a list of filters for the current view of the audit log.  At the top
-of the dialog box is a dropdown menu that has four different ways to
+of the dialog box is a drop-down menu that has four different ways to
 apply the list of filters.  You may choose to either show or hide log
 entries that match any or all of the filters in the current filter
 set.  The View window presents you with the option to add new filters,
@@ -204,7 +204,7 @@ permitted.  You can either enter the values manually with a comma
 between entries or click on the button (i.e., Types) and get another
 dialog that has a list of all valid entries.  This list can be
 populated by values from the log, the policy, or the union of the log
-and policy, by selecting the appropriate radiobutton.
+and policy, by selecting the appropriate radio button.
 
 The 'Other' tab allows you to filter by networking criteria (i.e., IP
 address, port and/or interface).  The IP addresses require an exact
@@ -241,7 +241,7 @@ String containing the characters '?' and '*' are said to contain
 wildcard characters.  While, both are considered wildcards they allow
 for different functionality.
 
-  (a) The '?' character matches any charcter.
+  (a) The '?' character matches any character.
 
       example: ?at matches the strings aat, bat, cat, etc.
 
@@ -280,11 +280,11 @@ using complementations the complement of the string enclosed in the
 brackets after the '!' character is used.
 
       example: a[!b-y]z matches all three-character strings starting
-               with a followed by any character not occuring between b
+               with a followed by any character not occurring between b
                and y (inclusive), and ending in z
 
       example: a[!c-ik-y]z matches all three-character string starting
-               with a followed by any character not occuring between c
+               with a followed by any character not occurring between c
                and i (inclusive) or between k and y (inclusive), and
                ending in z
 
@@ -326,21 +326,21 @@ entire audit report or to use the messages displayed in the current
 log view as input to the report.  Also, there is an option for
 including malformed messages within the report (see the previous 'Log
 and Policy Files' heading for what makes up a malformed message in
-seaudit).  This option is only enabled when the radiobutton for using
+seaudit).  This option is only enabled when the radio button for using
 the entire audit log is selected.
 
-The output frame contains radiobuttons for specifying the format of
-the report (i.e., HTML or plain-text).  Additionally, an entrybox is
-provided in this frame for specifying a stylesheet to use when
-creating an HTML report.  There also is an entrybox for specifying the
-configuration file to use for creating the report.  If the stylesheet
+The output frame contains radio buttons for specifying the format of
+the report (i.e., HTML or plain-text).  Additionally, an entry box is
+provided in this frame for specifying a style sheet to use when
+creating an HTML report.  There also is an entry box for specifying the
+configuration file to use for creating the report.  If the style sheet
 or the configuration file is not specified, seaudit will attempt to
 use the appropriate system default files.  If a report configuration
 file cannot be located at this point, an error will be generated.  All
 settings will be saved when this dialog is destroyed.  The values for
-the entryboxes, however, are updated once the user has clicked the
+the entry boxes, however, are updated once the user has clicked the
 'Create Report' button; otherwise, the default values are maintained.
-You may change the default values for the stylesheet and configuration
+You may change the default values for the style sheet and configuration
 file from the Preferences dialog, which is accessible from the File
 menu.
 

@@ -44,16 +44,16 @@ Modules:
 A module encapsulates a single check on the policy.  Modules can be
 data driven by information specified in a profile, however each module
 will work using default values if no profile is used.  See the help
-for the specific module(s) to determine what data may be overriden in
+for the specific module(s) to determine what data may be overridden in
 a profile.
 
 Each module has a specified severity (high, med, low).  These are
 defined as follows:
 
 1) "high": the module-results indicate an identifiable security risk
-   in the selinux policy
+   in the SELinux policy
 
-2) "med":  the module-results indicate a flaw in the selinux policy
+2) "med":  the module-results indicate a flaw in the SELinux policy
    that changes the manner in which the policy is enforced, however
    does not present an identifiable security risk.
 
