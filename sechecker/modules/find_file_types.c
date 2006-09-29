@@ -190,16 +190,17 @@ int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		if (!strcmp(opt->name, "file_type_attribute")) {
 			apol_attr_query_set_attr(policy, attr_query, opt->value);
 			apol_get_attr_by_query(policy, attr_query, &attr_vector);
-			for (j=0;j<apol_vector_get_size(attr_vector);j++) {
+			for (j = 0; j < apol_vector_get_size(attr_vector); j++) {
 				char *file_attrib;
 				attr = apol_vector_get_element(attr_vector, j);
 				qpol_type_get_name(policy->p, attr, &file_attrib);
-				if ( apol_vector_append( datum->file_type_attribs,(void*) file_attrib ) < 0 ) {
+				if (apol_vector_append(datum->file_type_attribs, (void*)file_attrib) < 0) {
 					ERR(policy, "%s", strerror(ENOMEM));
 					errno = ENOMEM;
 					return -1;
 				}
 			}
+			apol_vector_destroy(&attr_vector, NULL);
 		}
 	}
 	apol_attr_query_destroy(&attr_query);
@@ -217,7 +218,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	apol_terule_query_t *terule_query = NULL;
 	apol_vector_t *avrule_vector = NULL;
 	apol_vector_t *terule_vector = NULL;
-	size_t i, j, x, retv;
+	size_t i, j, x;
 	char *buff = NULL;
 	int buff_sz, error = 0;
 
@@ -265,14 +266,8 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 #ifdef LIBSEFS
 	if (mod->parent_lib->fc_entries) {
 		if (mod->parent_lib->fc_path) {
-			retv = sefs_fc_entry_parse_file_contexts(policy, mod->parent_lib->fc_path, &fc_entry_vector);
-			if (retv) {
-				error = errno;
-				ERR(policy, "%s", "Unable to parse file contexts file");
-				goto find_file_types_run_fail;
-			} else {
-				num_fc_entries = apol_vector_get_size(fc_entry_vector);
-			}
+			fc_entry_vector = mod->parent_lib->fc_entries;
+			num_fc_entries = apol_vector_get_size(fc_entry_vector);
 		} else {
 			error = ENOENT;
 			ERR(policy, "%s", "Unable to find file contexts file");
@@ -539,7 +534,8 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 					}
 					proof->type = SECHK_ITEM_FCENT;
 					proof->elem = fc_entry;
-					proof->text = strdup(buff);
+					proof->text = buff;
+					buff = NULL;
 					if (!item) {
 						item = sechk_item_new(NULL);
 						if (!item) {
@@ -578,6 +574,7 @@ int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		type = NULL;
 		type_name = NULL;
 	}
+	apol_vector_destroy(&type_vector, NULL);
 
 	/* results are valid at this point */
 	mod->result = res;
@@ -588,6 +585,8 @@ find_file_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
+	apol_vector_destroy(&type_vector, NULL);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }
@@ -597,7 +596,7 @@ void find_file_types_data_free(void *data)
 	find_file_types_data_t *datum = (find_file_types_data_t*)data;
 
 	if (datum) {
-		free(datum->file_type_attribs);
+		apol_vector_destroy(&datum->file_type_attribs, NULL);
 	}
 	free(data);
 }

@@ -261,6 +261,7 @@ int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 users_wo_roles_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

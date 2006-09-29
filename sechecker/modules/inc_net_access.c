@@ -366,8 +366,10 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
 				}
-				snprintf(buff, buff_sz, "Domain has no send or receive permissions for netif %s\n", netif_name);
+				snprintf(buff, buff_sz, "Domain has no send or receive permissions for netif %s", netif_name);
 				proof->text = strdup(buff);
+				free(buff);
+				buff = NULL;
 				if (!proof->text) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
@@ -451,6 +453,8 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				}
 				snprintf(buff, buff_sz, "Domain has no send or receive permissions for port %s\n", port_name);
 				proof->text = strdup(buff);
+				free(buff);
+				buff = NULL;
 				if (!proof->text) {
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_net_access_run_fail;
@@ -531,6 +535,8 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				}
 				snprintf(buff, buff_sz, "Domain has no send or receive permissions for node %s\n", node_name);
 				proof->text = strdup(buff);
+				free(buff);
+				buff = NULL;
 				if (!proof->text) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
@@ -585,6 +591,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 inc_net_access_run_fail:
 	apol_avrule_query_destroy(&avrule_query);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

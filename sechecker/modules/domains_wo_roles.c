@@ -246,7 +246,11 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 		apol_role_query_set_type(policy, role_query, domain_name);
 		apol_get_role_by_query(policy, role_query, &role_vector);
-		if ( apol_vector_get_size(role_vector) > 0 ) continue;
+		if (apol_vector_get_size(role_vector) > 0) {
+			apol_vector_destroy(&role_vector, NULL);
+			continue;
+		}
+		apol_vector_destroy(&role_vector, NULL);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -295,6 +299,7 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 domains_wo_roles_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

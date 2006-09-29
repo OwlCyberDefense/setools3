@@ -368,6 +368,7 @@ find_netif_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

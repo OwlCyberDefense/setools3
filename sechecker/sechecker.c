@@ -442,7 +442,7 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 			errno = error;
 			return -1;
 		} else {
-			lib->fc_path = strdup(default_fc_path);
+			lib->fc_path = default_fc_path;
 		}
 		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 			fprintf(stderr,"Using file contexts: %s\n",lib->fc_path);
@@ -458,7 +458,6 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 			lib->fc_path = strdup(fcfilelocation);
 		}
 	}
-	free(default_fc_path);
 
 	return 0;
 }
@@ -1125,6 +1124,13 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 		return 0;
 	}
 
+	if (!(new_opts = apol_vector_create())) {
+		error = errno;
+		ERR(module->parent_lib->policy, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+
 	/* add all options of a different name to a new vector to replace the old */
 	for (i = 0; i < apol_vector_get_size(module->options); i++) {
 		nv = apol_vector_get_element(module->options, i);
@@ -1143,6 +1149,7 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 		}
 	}
 
+	sechk_name_value_free(needle);
 	apol_vector_destroy(&module->options, sechk_name_value_free);
 	module->options = new_opts;
 
@@ -1150,6 +1157,7 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 
 err:
 	sechk_name_value_free(tmp);
+	sechk_name_value_free(needle);
 	apol_vector_destroy(&new_opts, sechk_name_value_free);
 	errno = error;
 	return -1;

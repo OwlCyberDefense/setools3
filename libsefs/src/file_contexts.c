@@ -52,6 +52,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 	size_t line_len = 0;
 	int i = 0, error = 0, retv, j;
 	FILE *fc_file = NULL;
+	sefs_fc_entry_t *fc_entry = NULL;
 
 	if (!contexts)
 		*contexts = NULL;
@@ -73,7 +74,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 	}
 	/* Create a fc entry and fill with data from the policy */
 	while (!feof(fc_file)) {
-		sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t *)calloc(1, sizeof(sefs_fc_entry_t));
+		fc_entry = (sefs_fc_entry_t *)calloc(1, sizeof(sefs_fc_entry_t));
 		tmp = NULL;
 		if (!(*contexts)) {
 			error = errno;
@@ -110,7 +111,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 			continue;
 		}
 
-		if ( !(fc_entry->path = strdup(tmp)) ) {
+		if (!(fc_entry->path = strdup(tmp))) {
 			error = errno;
 			ERR(p, "%s", strerror(error));
 			goto failure;
@@ -234,7 +235,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 			/* Get data on the type from the policy file
 			 * and save it in the context */
 			fc_entry->context->type = NULL;
-			if ( !(fc_entry->context->type = strdup(tmp)) ) {
+			if (!(fc_entry->context->type = strdup(tmp))) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto failure;
@@ -245,12 +246,15 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 		free(line);
 		line = NULL;
 		i++;
-		if ( apol_vector_append(*contexts, (void *)fc_entry ) < 0 ) {
+		if (apol_vector_append(*contexts, (void *)fc_entry) < 0) {
 			error = errno;
 			ERR(p, "%s", strerror(error));
 			goto failure;
 		}
+		fc_entry = NULL;
 	}
+	free(fc_entry); /* free uninitialized one created just before eof */
+	free(line);
 	fclose(fc_file);
 	return 0;
 failure:

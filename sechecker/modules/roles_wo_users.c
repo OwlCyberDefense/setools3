@@ -307,6 +307,7 @@ roles_wo_users_run_fail:
 	apol_user_query_destroy(&user_query);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

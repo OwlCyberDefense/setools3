@@ -489,6 +489,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				}
 			}
 		}
+	apol_vector_destroy(&rev_dtr_vector, apol_domain_trans_result_free);
 
 		/* if we haven't found a valid transition to this type, check default ctxs */
 		if (!found_valid_trans && !in_def_ctx(dom_name, datum)) {
@@ -557,10 +558,9 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	return 0;
 
 unreachable_doms_run_fail:
-	if (proof)
-		sechk_proof_free(proof);
-	if (item)
-		sechk_item_free(item);
+	sechk_proof_free(proof);
+	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }
@@ -568,6 +568,12 @@ unreachable_doms_run_fail:
 /* The free function frees the private data of a module */
 void unreachable_doms_data_free(void *data)
 {
+	unreachable_doms_data_t *d = data;
+	if (!data)
+		return;
+
+	free(d->ctx_file_path);
+	apol_vector_destroy(&d->ctx_vector, free);
 	free(data);
 }
 
@@ -782,32 +788,28 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 			i++;
 		}
 
-		/*
-			if ( qpol_policy_get_type_by_name(policy->p, src_dom, &type) ) {
-		 */
 		if ( apol_vector_append(*ctx_vector, (void *)strdup(src_dom)) < 0 ) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
 		}
-		/*
-			}
-		 */
+		free(line);
+		line = NULL;
+		free(src_role);
+		free(src_dom);
+		free(dst_role);
+		free(dst_dom);
 	}
+	free(line);
+	fclose(ctx_file);
+	return TRUE;
+parse_default_contexts_fail:
+	fclose(ctx_file);
+	free(line);
 	free(src_role);
 	free(src_dom);
 	free(dst_role);
 	free(dst_dom);
-	return TRUE;
-parse_default_contexts_fail:
-	if (src_role)
-		free(src_dom);
-	if (src_dom)
-		free(src_dom);
-	if (dst_role)
-		free(dst_role);
-	if (dst_dom)
-		free(dst_dom);
 	errno = error;
 	return FALSE;
 }
@@ -845,8 +847,12 @@ bool_t in_isid_ctx(char *type_name, apol_policy_t *policy)
 		qpol_isid_get_context(policy->p, isid, &context);
 		qpol_context_get_type(policy->p, context, &context_type);
 		qpol_type_get_name(policy->p, context_type, &context_type_name);
-		if ( !strcmp(type_name, context_type_name) ) return TRUE;
+		if (!strcmp(type_name, context_type_name)) {
+			apol_vector_destroy(&isid_vector, NULL);
+			return TRUE;
+		}
 	}
+	apol_vector_destroy(&isid_vector, NULL);
 	return FALSE;
 }
 
