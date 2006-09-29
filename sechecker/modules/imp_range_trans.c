@@ -83,11 +83,6 @@ int imp_range_trans_register(sechk_lib_t *lib)
 		"  Module options:\n"
 		"    none\n";
 	mod->severity = SECHK_SEV_MED;
-	/* assign requirements */
-	mod->requirements = NULL;
-
-	/* assign dependencies */
-	mod->dependencies = NULL;
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -448,6 +443,7 @@ imp_range_trans_run_fail:
 	apol_vector_destroy(&users_w_range, NULL);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

@@ -171,9 +171,9 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i, j;
-	bool_t both = FALSE;
-	int buff_sz, error = 0;
-	char *buff = NULL, *tmp = NULL;
+	bool_t both = FALSE, add_proof = FALSE;
+	int error = 0;
+	char *tmp = NULL;
 	apol_vector_t *mount_vector;
 	apol_vector_t *mounton_vector;
 	apol_avrule_query_t *mount_avrule_query = NULL;
@@ -237,20 +237,21 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 	apol_avrule_query_append_perm(policy, mounton_avrule_query, "mounton");
 	apol_get_avrule_by_query(policy, mounton_avrule_query, &mounton_vector);
 
-	for ( i=0; i<apol_vector_get_size(mount_vector); i++) {
+	for (i = 0; i < apol_vector_get_size(mount_vector); i++) {
 		qpol_avrule_t *mount_rule;
 		qpol_type_t *mount_source;
 		qpol_type_t *mount_target;
 		char *mount_source_name, *mount_target_name;
 
 		both = FALSE;
+		add_proof = TRUE;
 		mount_rule = apol_vector_get_element(mount_vector, i);
 		qpol_avrule_get_source_type(policy->p, mount_rule, &mount_source);
 		qpol_avrule_get_target_type(policy->p, mount_rule, &mount_target);
 		qpol_type_get_name(policy->p, mount_source, &mount_source_name);
 		qpol_type_get_name(policy->p, mount_target, &mount_target_name);
 
-		for ( j = 0; j<apol_vector_get_size(mounton_vector); j++) {
+		for (j = 0; j < apol_vector_get_size(mounton_vector); j++) {
 			qpol_avrule_t *mounton_rule;
 			qpol_type_t *mounton_source;
 			qpol_type_t *mounton_target;
@@ -275,51 +276,57 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			}
 			proof->type = SECHK_ITEM_AVRULE;
 			proof->elem = mount_rule;
-			buff = NULL;
-			buff_sz = 6 + strlen((tmp = apol_avrule_render(policy, mount_rule)))+strlen("\tMissing:\n\tallow ") +
-				strlen(mount_source_name)+strlen(mount_target_name) + strlen(" : dir mounton;\n");
-			buff = (char *)calloc(buff_sz, sizeof(char));
-			if ( !buff ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
-			}
-			snprintf(buff, buff_sz, "%s\n\tMissing:\n\tallow %s %s : dir mounton;\n", tmp,
-					mount_source_name, mount_target_name);
-			proof->text = strdup(buff);
+			tmp = apol_avrule_render(policy, mount_rule);
+			asprintf(&proof->text, "Have Rule:\n\t\t%s\n\tMissing:\n\t\tallow %s %s : dir mounton ;\n", 
+					tmp, mount_source_name, mount_target_name);
+			free(tmp);
 			if (!proof->text) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto inc_mount_run_fail;
 			}
-			free(buff);
-			free(tmp);
-			buff = tmp = NULL;
-			item = sechk_item_new(NULL);
-			if (!item) {
-				error = errno;
-				ERR(NULL, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
+			for (j = 0; j < apol_vector_get_size(res->items); j++) {
+				sechk_item_t *res_item;
+				qpol_type_t *res_type;
+				char *res_type_name;
+
+				res_item = apol_vector_get_element(res->items, j);
+				res_type = res_item->item;
+				qpol_type_get_name(policy->p, res_type, &res_type_name);
+				if (!strcmp(mount_source_name, res_type_name) || !strcmp(mount_target_name, res_type_name)) 
+					add_proof = FALSE;	
 			}
-			item->item = (void *)mount_source;
-			if ( !item->proof ) {
-				if ( !(item->proof = apol_vector_create()) ) {
+			if (add_proof) {
+				if (!item) {
+					item = sechk_item_new(NULL);
+					if (!item) {
+						error = errno;
+						ERR(NULL, "%s", strerror(ENOMEM));
+						goto inc_mount_run_fail;
+					}
+					item->item = (void *)mount_source;
+				}
+				if ( !item->proof ) {
+					if ( !(item->proof = apol_vector_create()) ) {
+						error = errno;
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto inc_mount_run_fail;
+					}
+				}
+				if (apol_vector_append(item->proof, (void*)proof) < 0) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_mount_run_fail;
 				}
+				if (apol_vector_append(res->items, (void*)item) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(ENOMEM));
+					goto inc_mount_run_fail;
+				}
+				item = NULL;
+				proof = NULL;
 			}
-			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
-			}
-			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
-			}
-			item = NULL;
+			sechk_proof_free(proof);
 			proof = NULL;
 		}
 	}
@@ -331,6 +338,7 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 		char *mounton_source_name, *mounton_target_name;
 
 		both = FALSE;
+		add_proof = TRUE;
 		mounton_rule = apol_vector_get_element(mounton_vector, i);
 		qpol_avrule_get_source_type(policy->p, mounton_rule, &mounton_source);
 		qpol_avrule_get_target_type(policy->p, mounton_rule, &mounton_target);
@@ -349,7 +357,6 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			qpol_type_get_name(policy->p, mount_source, &mount_source_name);
 			qpol_type_get_name(policy->p, mount_target, &mount_target_name);
 
-			/* Check to see if they match */
 			if ( !strcmp(mount_source_name, mounton_source_name) &&
 					!strcmp(mount_target_name, mounton_target_name)) both = TRUE;
 		}
@@ -362,51 +369,52 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 			}
 			proof->type = SECHK_ITEM_AVRULE;
 			proof->elem = mounton_rule;
-			buff = NULL;
-			buff_sz = 6 + strlen((tmp = apol_avrule_render(policy, mounton_rule)))+strlen("\tMissing:\n\t\tallow ")+strlen(mounton_source_name)+
-				strlen(mounton_target_name) + strlen(" : filesystem mount;\n");
-			buff = (char *)calloc(buff_sz, sizeof(char));
-			if ( !buff ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
-			}
-			snprintf(buff, buff_sz, "%s\n\tMissing:\n\t\tallow %s %s : filesystem mount;\n", tmp,
-					mounton_source_name, mounton_target_name);
-			proof->text = strdup(buff);
-			if ( !proof->text ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
-			}
+			tmp = apol_avrule_render(policy, mounton_rule);
+			asprintf(&proof->text, "Have Rule:\n\t\t%s\n\tMissing:\n\t\tallow %s %s : filesystem mount ;\n", 
+					tmp, mounton_source_name, mounton_target_name);
 			free(tmp);
-			free(buff);
-			buff = tmp = NULL;
-			item = sechk_item_new(NULL);
-			if (!item) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
+			for (j = 0; j < apol_vector_get_size(res->items); j++) {
+				sechk_item_t *res_item;
+				qpol_type_t *res_type;
+				char *res_type_name;
+
+				res_item = apol_vector_get_element(res->items, j);
+				res_type = res_item->item;
+				qpol_type_get_name(policy->p, res_type, &res_type_name);
+				if (!strcmp(mounton_source_name, res_type_name) || !strcmp(mounton_target_name, res_type_name))
+					add_proof = FALSE;
 			}
-			item->item = (void *)mounton_source;
-			if ( !item->proof ) {
-				if ( !(item->proof = apol_vector_create()) ) {
+			if (add_proof) {
+				if (!item) {
+					item = sechk_item_new(NULL);
+					if (!item) {
+						error = errno;
+						ERR(NULL, "%s", strerror(ENOMEM));
+						goto inc_mount_run_fail;
+					}
+					item->item = (void *)mounton_source;
+				}
+				if (!item->proof) {
+					if (!(item->proof = apol_vector_create())) {
+						error = errno;
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto inc_mount_run_fail;
+					}
+				}
+				if (apol_vector_append(item->proof, (void*)proof) < 0) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_mount_run_fail;
 				}
+				if (apol_vector_append(res->items, (void*)item) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(ENOMEM));
+					goto inc_mount_run_fail;
+				}
+				item = NULL;
+				proof = NULL;
 			}
-			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
-			}
-			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto inc_mount_run_fail;
-			}
-			item = NULL;
+			sechk_proof_free(proof);
 			proof = NULL;
 		}
 	}
@@ -426,7 +434,7 @@ inc_mount_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(tmp);
-	free(buff);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

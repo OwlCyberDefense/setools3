@@ -75,7 +75,7 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 		"   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	if ( apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source")) < 0 ) {
+	if (apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source")) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -95,7 +95,7 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = attribs_wo_types_init;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -114,7 +114,7 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = attribs_wo_types_run;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -135,7 +135,7 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = attribs_wo_types_print;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -154,7 +154,7 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = attribs_wo_types_get_list;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -225,14 +225,14 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		goto attribs_wo_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ATTRIB;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_types_run_fail;
 	}
 
 	apol_get_attr_by_query(policy, NULL, &attr_vector);
-	for ( i = 0; i < apol_vector_get_size(attr_vector); i++ ) {
+	for ( i = 0; i < apol_vector_get_size(attr_vector); i++) {
 		qpol_type_t *attr;
 		char *attr_name;
 		int at_end;
@@ -242,7 +242,7 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		qpol_type_get_type_iter(policy->p, attr, &types);
 		at_end = qpol_iterator_end(types);
 		qpol_iterator_destroy(&types);
-		if ( !at_end ) continue;
+		if (!at_end) continue;
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -251,7 +251,7 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			goto attribs_wo_types_run_fail;
 		}
 		proof->type = SECHK_ITEM_ATTRIB;
-		proof->text = (char*)calloc(strlen("attribute has no types")+strlen(attr_name)+1, sizeof(char));
+		proof->text = (char*)calloc(strlen("attribute  has no types")+strlen(attr_name)+1, sizeof(char));
 		sprintf(proof->text, "attribute %s has no types", attr_name);
 		item = sechk_item_new(NULL);
 		if (!item) {
@@ -259,8 +259,8 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_types_run_fail;
 		}
-		if ( !item->proof ) {
-			if ( !(item->proof = apol_vector_create()) ) {
+		if (!item->proof) {
+			if (!(item->proof = apol_vector_create())) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto attribs_wo_types_run_fail;
@@ -268,12 +268,12 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		}
 		item->item = (void *)attr;
 		item->test_result = 1;
-		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+		if (apol_vector_append(item->proof, (void*)proof) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_types_run_fail;
 		}
-		if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+		if (apol_vector_append(res->items, (void *)item) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto attribs_wo_types_run_fail;
@@ -288,6 +288,7 @@ int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 attribs_wo_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }
@@ -350,15 +351,15 @@ int attribs_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
-		for (k=0;k<num_items;k++) {
+		for (k = 0; k < num_items; k++) {
 			item = apol_vector_get_element(mod->result->items, k);
-			if ( item ) {
+			if (item) {
 				type = item->item;
 				qpol_type_get_name(policy->p, type, &type_name);
 				printf("%s\n", type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof,l);
-					if ( proof )
+					if (proof)
 						printf("\t%s\n", proof->text);
 				}
 			}

@@ -321,6 +321,7 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 domain_and_file_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }
