@@ -399,11 +399,12 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 					goto spurious_audit_run_fail;
 				}
 			}
-			apol_vector_append(res->items, (void*) item);
+			if (item)
+				apol_vector_append(res->items, (void*) item);
 
 			item = NULL;
-			apol_vector_destroy(&allow_rules, NULL);
 		}
+		apol_vector_destroy(&allow_rules, NULL);
 	}
 	apol_vector_destroy(&dontaudit_rules, NULL);
 
@@ -538,7 +539,8 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 					goto spurious_audit_run_fail;
 				}
 			}
-			apol_vector_append(res->items, (void*) item);
+			if (item)
+				apol_vector_append(res->items, (void*) item);
 			item = NULL;
 			continue;
 		}
