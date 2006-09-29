@@ -618,7 +618,7 @@ int sechk_lib_check_module_dependencies(sechk_lib_t *lib)
 				test = FALSE;
 				test = sechk_lib_check_dependency(nv, lib);
 				if (!test) {
-					ERR(lib->policy, "Error: dependency %s not found for %s\n", nv->name, mod->name);
+					ERR(lib->policy, "Dependency %s not found for %s.", nv->name, mod->name);
 					free(processed);
 					errno = ENOENT;
 					return -1;
@@ -668,7 +668,7 @@ int sechk_lib_check_module_requirements(sechk_lib_t *lib)
 					return -1;
 				} else {
 					/* otherwise we just disable this module and keep testing */
-					ERR(lib->policy, "Error: requirements not met for %s\n", mod->name);
+					ERR(lib->policy, "Requirements not met for %s.", mod->name);
 					mod->selected = FALSE;
 					retv = -1;
 					break;
@@ -737,7 +737,7 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 		assert(mod->name);
 		run_fn = sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_RUN, lib);
 		if (!run_fn) {
-			ERR(lib->policy, "Error: could not run module %s\n", mod->name);
+			ERR(lib->policy, "Could not run module %s.", mod->name);
 			errno = ENOTSUP;
 			return -1;
 		}
@@ -747,7 +747,7 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 			/* module failure */
 			/* only put output failures if we are not in quiet mode */
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))
-				ERR(lib->policy, "Error: module %s failed\n", mod->name);
+				ERR(lib->policy, "Module %s failed.", mod->name);
 			rc = -1;
 		} else if (retv > 0) {
 			/* a module looking for policy errors has found one
@@ -792,7 +792,7 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib)
 		printf("\nModule name: %s\tSeverity: %s\n%s\n", mod->name, mod->severity, mod->detailed_description);
 		print_fn = sechk_lib_get_module_function(mod->name, SECHK_MOD_FN_PRINT, lib);
 		if (!print_fn) {
-			ERR(lib->policy, "Error: could not get print function for module %s\n", mod->name);
+			ERR(lib->policy, "Could not get print function for module %s.", mod->name);
 			errno = ENOTSUP;
 			return -1;
 		}
@@ -1113,7 +1113,7 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 
 	if (!(needle = sechk_name_value_new(option, NULL))) {
 		error = errno;
-		ERR(module->parent_lib->policy, "Error clearing option %s: %s", option, strerror(error));
+		ERR(module->parent_lib->policy, "Clearing option %s: %s.", option, strerror(error));
 		errno = error;
 		return -1;
 	}
@@ -1137,12 +1137,12 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 		if (strcmp(nv->name, needle->name)) {
 			if (!(tmp = sechk_name_value_new(nv->name, nv->value))) {
 				error = errno;
-				ERR(module->parent_lib->policy, "Error clearing option %s: %s", option, strerror(error));
+				WARN(module->parent_lib->policy, "Clearing option %s: %s.", option, strerror(error));
 				goto err;
 			}
 			if (apol_vector_append(new_opts, (void*)tmp)) {
 				error = errno;
-				ERR(module->parent_lib->policy, "Error clearing option %s: %s", option, strerror(error));
+				WARN(module->parent_lib->policy, "Clearing option %s: %s.", option, strerror(error));
 				goto err;
 			}
 			tmp = NULL; /* avoid double free */
