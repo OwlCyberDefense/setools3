@@ -102,6 +102,9 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 		fprintf(stderr, "Error: SEChecker profile contains invalid XML. Aborting.\n");
 		goto exit_err;
 	}
+	xmlFreeValidCtxt(ctxt);
+	xmlFreeDoc(xml);
+	xmlFreeDtd(dtd);
 
 	while (1) {
 		ret = xmlTextReaderRead(reader);
@@ -226,9 +229,11 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				goto exit_err;
 			}
 			nv->value = strdup((char*)value);
+			free(value);
+			value=NULL;
 			/* add the nv pair to the module options */
 			apol_vector_append(current_module->options, (void*)nv);
-
+			nv = NULL;
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OUTPUT_TAG) == 1) {
 			if (!current_module) {
 				fprintf(stderr, "Error: 'output' specified outside the scope of a module.\n");

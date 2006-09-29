@@ -94,7 +94,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_init;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -113,7 +113,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_run;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -134,7 +134,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_print;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -177,10 +177,13 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 	sechk_result_t *find_domains_res = NULL;
 	apol_domain_trans_analysis_t *domain_trans = NULL;
 	apol_vector_t *domain_vector = NULL, *role_vector = NULL, *user_vector = NULL, *rbac_vector = NULL;
+	apol_vector_t *domain_trans_vector;
 	apol_user_query_t *user_query = NULL;
 	apol_role_trans_query_t *role_trans_query = NULL;
 	char *buff = NULL;
 	int buff_sz, error = 0;
+	qpol_type_t *domain = NULL;
+	char *domain_name = NULL;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -210,31 +213,31 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 		goto inc_dom_trans_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
 
-	if ( apol_policy_domain_trans_table_build(policy) < 0 ) {
+	if (apol_policy_domain_trans_table_build(policy) < 0) {
 		error = errno;
 		ERR(policy, "%s", "Unable to build domain transition table");
 		goto inc_dom_trans_run_fail;
 	}
 
-	if ( !(domain_trans = apol_domain_trans_analysis_create()) ) {
+	if (!(domain_trans = apol_domain_trans_analysis_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
 
-	if ( !(user_query = apol_user_query_create()) ) {
+	if (!(user_query = apol_user_query_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
 
-	if ( !(role_trans_query = apol_role_trans_query_create()) ) {
+	if (!(role_trans_query = apol_role_trans_query_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
@@ -261,11 +264,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 
 	domain_vector = (apol_vector_t *)find_domains_res->items;
 
-	for (i=0;i<apol_vector_get_size(domain_vector);i++) {
-		qpol_type_t *domain = NULL;
-		char *domain_name = NULL;
-		apol_vector_t *domain_trans_vector;
-
+	for (i = 0; i < apol_vector_get_size(domain_vector); i++) {
 		item = apol_vector_get_element(domain_vector, i);
 		domain = item->item;
 		qpol_type_get_name(policy->p, domain, &domain_name);
@@ -274,7 +273,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 		apol_domain_trans_analysis_set_valid(policy, domain_trans, APOL_DOMAIN_TRANS_SEARCH_BOTH);
 		apol_domain_trans_analysis_do(policy, domain_trans, &domain_trans_vector);
 
-		for (j=0;j<apol_vector_get_size(domain_trans_vector);j++) {
+		for (j = 0; j < apol_vector_get_size(domain_trans_vector); j++) {
 			apol_domain_trans_result_t *dtr;
 			qpol_type_t *start;
 			qpol_type_t *ep;
@@ -295,26 +294,28 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 			qpol_type_get_name(policy->p, ep, &ep_name);
 
 			result = apol_domain_trans_table_verify_trans(policy, start, ep, end);
-			if ( !result ) {
+			if (!result) {
 				apol_get_role_by_query(policy, NULL, &role_vector);
-				for (k=0; (k<apol_vector_get_size(role_vector)) && !ok; k++) {
+				for (k = 0; (k < apol_vector_get_size(role_vector)) && !ok; k++) {
 					qpol_role_t *role;
 					char *role_name;
 
 					role = apol_vector_get_element(role_vector, k);
 					qpol_role_get_name(policy->p, role, &role_name);
-					if ( apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end) ) {
+					if (apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end)) {
 						apol_user_query_set_role(policy, user_query, role_name);
 						apol_get_user_by_query(policy, user_query, &user_vector);
-						if ( apol_vector_get_size(user_vector) > 0 ) {
+						if (apol_vector_get_size(user_vector) > 0) {
 							ok = TRUE;
 						}
+						apol_vector_destroy(&user_vector, NULL);
 					}
 				}
+				apol_vector_destroy(&role_vector, NULL);
 				if (!ok) {
 					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
 					apol_get_role_trans_by_query(policy, role_trans_query, &rbac_vector);
-					for ( k = 0; ( k < apol_vector_get_size(rbac_vector)) && !ok ; k++ ) {
+					for (k = 0; (k < apol_vector_get_size(rbac_vector)) && !ok; k++) {
 						qpol_role_trans_t *role_trans;
 						qpol_role_t *source_role;
 						qpol_role_t *default_role;
@@ -327,30 +328,33 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 						qpol_role_get_name(policy->p, source_role, &source_role_name);
 						qpol_role_get_name(policy->p, default_role, &default_role_name);
 
-						if ( apol_role_has_type(policy, source_role, start) &&
-								apol_role_has_type(policy, default_role, end) ) {
+						if (apol_role_has_type(policy, source_role, start) &&
+								apol_role_has_type(policy, default_role, end)) {
 							apol_user_query_set_role(policy, user_query, source_role_name);
 							apol_get_user_by_query(policy, user_query, &user_vector);
-							if ( apol_vector_get_size(user_vector) > 0 ) {
+							if (apol_vector_get_size(user_vector) > 0) {
+								apol_vector_destroy(&user_vector, NULL);
 								apol_user_query_set_role(policy, user_query, default_role_name);
 								apol_get_user_by_query(policy, user_query, &user_vector);
-								if ( apol_vector_get_size(user_vector) > 0 ) {
+								if (apol_vector_get_size(user_vector) > 0) {
 									ok = TRUE;
 								}
 							}
+							apol_vector_destroy(&user_vector, NULL);
 						}
 					}
+					apol_vector_destroy(&rbac_vector, NULL);
 				}
-				if ( !ok ) {
+				if (!ok) {
 					item = sechk_item_new(NULL);
-					if ( !item ) {
+					if (!item) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					item->test_result = 1;
 					item->item = (void *)dtr;
-					if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+					if (apol_vector_append(res->items, (void *)item) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
@@ -359,143 +363,153 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 			}
 			else  {
 				item = sechk_item_new(NULL);
-				if ( !item ) {
+				if (!item) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
 				item->test_result = 1;
 				item->item = (void *)dtr;
-				if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+				if (apol_vector_append(res->items, (void *)item) < 0) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
-				if ( !(item->proof = apol_vector_create()) ) {
+				if (!(item->proof = apol_vector_create())) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
 
-				if ( result & APOL_DOMAIN_TRANS_RULE_PROC_TRANS ) {
+				if (result & APOL_DOMAIN_TRANS_RULE_PROC_TRANS) {
 					proof = sechk_proof_new(NULL);
 					proof->type = SECHK_ITEM_OTHER;
 					buff = NULL;
 					buff_sz = 10 + strlen("allow  : process transition;") + strlen(start_name) + strlen(end_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
-					if ( !buff ) {
+					if (!buff) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "allow %s %s : process transition;", start_name, end_name);
 					proof->text = strdup(buff);
-					if ( !proof->text) {
+					free(buff);
+					buff = NULL;
+					if (!proof->text) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
-					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					if (apol_vector_append(item->proof, (void *)proof) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 				}
 
-				if ( result & APOL_DOMAIN_TRANS_RULE_EXEC ) {
+				if (result & APOL_DOMAIN_TRANS_RULE_EXEC) {
 					proof = sechk_proof_new(NULL);
 					proof->type = SECHK_ITEM_OTHER;
 					buff = NULL;
 					buff_sz = 10 + strlen("allow  : file execute;") + strlen(start_name) + strlen(ep_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
-					if ( !buff ) {
+					if (!buff) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "allow %s %s : file execute;", start_name, ep_name);
 					proof->text = strdup(buff);
-					if ( !proof->text) {
+					free(buff);
+					buff = NULL;
+					if (!proof->text) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
-					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					if (apol_vector_append(item->proof, (void *)proof) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 				}
 
-				if ( result & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT ) {
+				if (result & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT) {
 					proof = sechk_proof_new(NULL);
 					proof->type = SECHK_ITEM_OTHER;
 					buff = NULL;
 					buff_sz = 10 + strlen("allow  : file entrypoint;") + strlen(end_name) + strlen(ep_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
-					if ( !buff ) {
+					if (!buff) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "allow %s %s : file entrypoint;", end_name, ep_name);
 					proof->text = strdup(buff);
-					if ( !proof->text) {
+					free(buff);
+					buff = NULL;
+					if (!proof->text) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
-					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					if (apol_vector_append(item->proof, (void *)proof) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 				}
 
-				if ( result & APOL_DOMAIN_TRANS_RULE_TYPE_TRANS ) {
+				if (result & APOL_DOMAIN_TRANS_RULE_TYPE_TRANS) {
 					proof = sechk_proof_new(NULL);
 					proof->type = SECHK_ITEM_OTHER;
 					buff = NULL;
 					buff_sz = 10 + strlen("type_transition  :process ;") + strlen(start_name) + strlen(end_name) + strlen(ep_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
-					if ( !buff ) {
+					if (!buff) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "type_transition %s %s : process %s;", start_name, ep_name, end_name);
 					proof->text = strdup(buff);
-					if ( !proof->text) {
+					free(buff);
+					buff = NULL;
+					if (!proof->text) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
-					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					if (apol_vector_append(item->proof, (void *)proof) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 				}
 
-				if ( result & APOL_DOMAIN_TRANS_RULE_SETEXEC ) {
+				if (result & APOL_DOMAIN_TRANS_RULE_SETEXEC) {
 					proof = sechk_proof_new(NULL);
 					proof->type = SECHK_ITEM_OTHER;
 					buff = NULL;
 					buff_sz = 10 + strlen("allow  self : process setexec;") + strlen(start_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
-					if ( !buff ) {
+					if (!buff) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					snprintf(buff, buff_sz, "allow %s self : process setexec;", start_name);
 					proof->text = strdup(buff);
-					if ( !proof->text) {
+					free(buff);
+					buff = NULL;
+					if (!proof->text) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
-					if (apol_vector_append(item->proof, (void *)proof) < 0 ) {
+					if (apol_vector_append(item->proof, (void *)proof) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
@@ -503,6 +517,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 				}
 			}
 		}
+		apol_vector_destroy(&domain_trans_vector, apol_domain_trans_result_free);
 	}
 
 	mod->result = res;
@@ -513,6 +528,9 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 
 inc_dom_trans_run_fail:
 	sechk_item_free(item);
+	apol_vector_destroy(&user_vector, NULL);
+	apol_vector_destroy(&domain_trans_vector, apol_domain_trans_result_free);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }
@@ -603,7 +621,7 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 				sechk_proof_t *proof;
 
 				proof = apol_vector_get_element(item->proof, j);
-				if ( proof ) {
+				if (proof) {
 					printf("\t%s\n", proof->text);
 				}
 			}

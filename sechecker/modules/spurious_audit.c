@@ -164,8 +164,10 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	sechk_proof_t *proof = NULL;
 	int error, rule_found;
 	apol_avrule_query_t *query = 0;
-	apol_vector_t *allow_rules, *auditallow_rules, *dontaudit_rules,
-					  *perm_vector1, *perm_vector2, *perm_intersection;
+	apol_vector_t *allow_rules = NULL, *auditallow_rules = NULL;
+	apol_vector_t *dontaudit_rules = NULL, *perm_vector1 = NULL;
+	apol_vector_t *perm_vector2 = NULL, *perm_intersection = NULL;
+	apol_vector_t *tmp_v = NULL;
 	size_t i, j, k, l, tmp_counter;
 	qpol_avrule_t *rule1, *rule2;
 	qpol_type_t *source, *target;
@@ -296,7 +298,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		if (apol_vector_get_size(allow_rules) != 0) {
 			/* Bad News: Allow && Don't Audit */
 			for (j = 0; j < apol_vector_get_size(allow_rules); j++)
-			{	
+			{
 				/* get second (Allow) rule */
 				rule2 = (qpol_avrule_t *) apol_vector_get_element(allow_rules, j);
 				if (!rule2) {
@@ -388,6 +390,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				qpol_iterator_destroy(&perm_iter1);
 				qpol_iterator_destroy(&perm_iter2);
 			}
+			apol_vector_destroy(&allow_rules, NULL);
 			if (!res->items) {
 				res->items = apol_vector_create();
 				if (!res->items) {
@@ -583,11 +586,13 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			}
 
 			/* concatenate permissions from this rule, check for errors, all in one go */
-			if (apol_vector_cat(perm_vector2, apol_vector_create_from_iter(perm_iter2))) {
+			if (apol_vector_cat(perm_vector2, (tmp_v = apol_vector_create_from_iter(perm_iter2)))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
+				apol_vector_destroy(&tmp_v, NULL);
 				goto spurious_audit_run_fail;
 			}
+			apol_vector_destroy(&tmp_v, NULL);
 		}
 
 		/* Find intersection of permission, put into a vector */
@@ -699,6 +704,7 @@ spurious_audit_run_fail:
 	apol_avrule_query_destroy(&query);
 	free(tmp);
 	tmp = NULL;
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }
@@ -712,6 +718,7 @@ int spurious_audit_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0;
 	uint32_t ruletype;
+	char *tmp;
 
 	if (!mod || !policy) {
 		ERR(NULL, "%s", strerror(EINVAL));
@@ -745,7 +752,8 @@ int spurious_audit_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		printf("\n");
 		for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
 			item = apol_vector_get_element(mod->result->items, i);
-			printf("%s\n", apol_avrule_render(policy, (qpol_avrule_t*)item->item)); 
+			printf("%s\n", (tmp = apol_avrule_render(policy, (qpol_avrule_t*)item->item))); 
+			free(tmp);
 		}
 		printf("\n");
 	}
@@ -756,7 +764,7 @@ int spurious_audit_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		printf("\n");
 		for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
 			item = apol_vector_get_element(mod->result->items, i);
-			printf("%s\n", apol_avrule_render(policy, (qpol_avrule_t*)item->item));
+			printf("%s\n", (tmp = apol_avrule_render(policy, (qpol_avrule_t*)item->item)));
 
 			qpol_avrule_get_rule_type(policy->p, (qpol_avrule_t*)item->item, &ruletype);
 			if (ruletype == QPOL_RULE_DONTAUDIT) {

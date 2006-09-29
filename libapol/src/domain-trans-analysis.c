@@ -186,15 +186,26 @@ static apol_domain_trans_t *apol_domain_trans_new()
 	return new_trans;
 }
 
+static void apol_domain_trans_rule_free(void *r)
+{
+	apol_domain_trans_rule_t *rule = r;
+
+	if (!r)
+		return;
+
+	apol_vector_destroy(&rule->rules, NULL);
+	free(r);
+}
+
 static void apol_domain_trans_dom_node_free(apol_domain_trans_dom_node_t *node)
 {
 	if (!node)
 		return;
 
-	apol_vector_destroy(&node->proc_trans_rules, free);
-	apol_vector_destroy(&node->ep_rules, free);
-	apol_vector_destroy(&node->setexec_rules, free);
-	apol_vector_destroy(&node->type_trans_rules, free);
+	apol_vector_destroy(&node->proc_trans_rules, apol_domain_trans_rule_free);
+	apol_vector_destroy(&node->ep_rules, apol_domain_trans_rule_free);
+	apol_vector_destroy(&node->setexec_rules, apol_domain_trans_rule_free);
+	apol_vector_destroy(&node->type_trans_rules, apol_domain_trans_rule_free);
 }
 
 static void apol_domain_trans_exec_node_free(apol_domain_trans_exec_node_t *node)
@@ -202,8 +213,8 @@ static void apol_domain_trans_exec_node_free(apol_domain_trans_exec_node_t *node
 	if (!node)
 		return;
 
-	apol_vector_destroy(&node->exec_rules, free);
-	apol_vector_destroy(&node->ep_rules, free);
+	apol_vector_destroy(&node->exec_rules, apol_domain_trans_rule_free);
+	apol_vector_destroy(&node->ep_rules, apol_domain_trans_rule_free);
 }
 
 static void apol_domain_trans_destroy(apol_domain_trans_t **trans)

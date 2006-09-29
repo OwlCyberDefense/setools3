@@ -262,7 +262,7 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			goto roles_wo_allow_run_fail;
 		}
 		proof->type = SECHK_ITEM_ROLE;
-		proof->text = "Role has no allow.\n";
+		proof->text = strdup("Role has no allow.\n");
 		item = sechk_item_new(NULL);
 		if (!item) {
 			error = errno;
@@ -298,9 +298,12 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	return 0;
 
 roles_wo_allow_run_fail:
+	apol_vector_destroy(&role_vector, NULL);	
+	apol_vector_destroy(&role_allow_vector,NULL);
 	apol_role_allow_query_destroy(&role_allow_query);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

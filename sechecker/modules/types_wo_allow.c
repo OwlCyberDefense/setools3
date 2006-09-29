@@ -221,31 +221,25 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		goto types_wo_allow_run_fail;
 	}
 	res->item_type  = SECHK_ITEM_TYPE;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto types_wo_allow_run_fail;
 	}
 
-	if ( !(type_vector = apol_vector_create()) ) {
-		error = errno;
-		ERR(policy, "%s", strerror(ENOMEM));
-		goto types_wo_allow_run_fail;
-	}
-
-	if ( !(avrule_query = apol_avrule_query_create()) ) {
+	if (!(avrule_query = apol_avrule_query_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto types_wo_allow_run_fail;
 	}
 
 
-	if ( apol_get_type_by_query(policy, NULL, &type_vector) < 0 ) {
+	if (apol_get_type_by_query(policy, NULL, &type_vector) < 0) {
 		error = errno;
 		goto types_wo_allow_run_fail;
 	}
 
-	for ( i = 0 ; i < apol_vector_get_size(type_vector) ; i++ ) {
+	for (i = 0 ; i < apol_vector_get_size(type_vector) ; i++) {
 		qpol_type_t *type;
 		char *type_name;
 		size_t j;
@@ -266,6 +260,7 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			if ( rule_type == QPOL_RULE_ALLOW ) 
 				used = TRUE;
 		}
+		apol_vector_destroy(&avrule_vector, NULL);
 		if ( used )
 			continue;
 
@@ -273,7 +268,7 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		apol_avrule_query_set_source(policy, avrule_query, NULL, 0);
 		apol_avrule_query_set_target(policy, avrule_query, type_name, 1);
 		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
-		for (j=0;j<apol_vector_get_size(avrule_vector);j++) {
+		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			size_t rule_type;
 			qpol_avrule_t *rule;
 
@@ -282,6 +277,7 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			if ( rule_type == QPOL_RULE_ALLOW ) 
 				used = TRUE;
 		}
+		apol_vector_destroy(&avrule_vector, NULL);
 		apol_avrule_query_set_target(policy, avrule_query, NULL, 0);
 		if ( used )
 			continue;
@@ -335,8 +331,11 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	return 0;
 
 types_wo_allow_run_fail:
+	apol_vector_destroy(&type_vector, NULL);
+	apol_vector_destroy(&avrule_vector, NULL);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

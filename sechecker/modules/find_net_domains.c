@@ -87,6 +87,7 @@ int find_net_domains_register(sechk_lib_t *lib)
 	/* assign default options */
 	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "netif"));
 	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "tcp_socket"));
+	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "udp_socket"));
 	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "node"));
 	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "association"));
 
@@ -308,7 +309,7 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				}
 				proof->type = SECHK_ITEM_AVRULE;
 				proof->elem = avrule;
-				proof->text = strdup(apol_avrule_render(policy, avrule));
+				proof->text = apol_avrule_render(policy, avrule);
 				if ( !proof->text ) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
@@ -367,6 +368,7 @@ int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 find_net_domains_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
+	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
 }

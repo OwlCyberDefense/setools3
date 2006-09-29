@@ -186,13 +186,15 @@ int find_domains_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 				char *domain_attrib;
 				attr = apol_vector_get_element(attr_vector, j);
 				qpol_type_get_name(policy->p, attr, &domain_attrib);
-				if ( apol_vector_append( datum->domain_attribs,(void*) domain_attrib ) < 0 ) {
+				if (apol_vector_append(datum->domain_attribs, (void*)domain_attrib) < 0) {
+					apol_vector_destroy(&attr_vector, NULL);
 					ERR(policy, "%s", strerror(ENOMEM));
 					errno = ENOMEM;
 					return -1;
 
 				}
 			}
+			apol_vector_destroy(&attr_vector, NULL);
 		}
 	}
 	apol_attr_query_destroy(&attr_query);
@@ -521,7 +523,7 @@ void find_domains_data_free(void *data)
 	find_domains_data_t *datum = (find_domains_data_t*)data;
 
 	if (datum) {
-		free(datum->domain_attribs);
+		apol_vector_destroy(&datum->domain_attribs, NULL);
 	}
 	free(data);
 }
