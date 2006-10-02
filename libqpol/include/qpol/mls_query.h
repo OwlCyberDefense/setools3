@@ -29,7 +29,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 
