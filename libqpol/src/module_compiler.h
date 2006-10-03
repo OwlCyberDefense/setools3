@@ -61,6 +61,8 @@ int require_type(int pass);
 int require_attribute(int pass);
 int require_user(int pass);
 int require_bool(int pass);
+int require_sens(int pass);
+int require_cat(int pass);
 
 /* Check if an identifier is within the scope of the current
  * declaration or any of its parents.  Return 1 if it is, 0 if not.

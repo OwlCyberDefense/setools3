@@ -851,10 +851,8 @@ require_decl_def        : ROLE        { $$ = require_role; }
                         | ATTRIBUTE   { $$ = require_attribute; }
                         | USER        { $$ = require_user; }
                         | BOOL        { $$ = require_bool; }
-/* MLS-enabled modules are not implemented at this time.
                         | SENSITIVITY { $$ = require_sens; }
                         | CATEGORY    { $$ = require_cat; }
-*/
                         ;
 require_id_list         : identifier
                         { if ($<require_func>0 (pass)) return -1; }
@@ -1339,7 +1337,7 @@ static int define_sens(void)
 		yyerror("out of memory");
 		goto bad;
 	}
-	memset(level, 0, sizeof(mls_level_t));
+	mls_level_init(level);
 	level->sens = 0;	/* actual value set in define_dominance */
 	ebitmap_init(&level->cat);	/* actual value set in define_level */
 
@@ -1348,7 +1346,7 @@ static int define_sens(void)
 		yyerror("out of memory");
 		goto bad;
 	}
-	memset(datum, 0, sizeof(level_datum_t));
+	level_datum_init(datum);
 	datum->isalias = FALSE;
 	datum->level = level;
 
@@ -1385,7 +1383,7 @@ static int define_sens(void)
 			yyerror("out of memory");
 			goto bad_alias;
 		}
-		memset(aliasdatum, 0, sizeof(level_datum_t));
+		level_datum_init(aliasdatum);
 		aliasdatum->isalias = TRUE;
 		aliasdatum->level = level;
 
@@ -1422,15 +1420,19 @@ static int define_sens(void)
 		free(id);
 	if (level)
 		free(level);
-	if (datum)
+	if (datum) {
+		level_datum_destroy(datum);
 		free(datum);
+	}
 	return -1;
 
       bad_alias:
 	if (id)
 		free(id);
-	if (aliasdatum)
+	if (aliasdatum) {
+		level_datum_destroy(aliasdatum);
 		free(aliasdatum);
+	}
 	return -1;
 }
 
@@ -1518,7 +1520,7 @@ static int define_category(void)
 		yyerror("out of memory");
 		goto bad;
 	}
-	memset(datum, 0, sizeof(cat_datum_t));
+	cat_datum_init(datum);
 	datum->isalias = FALSE;
 
 	ret = declare_symbol(SYM_CATS, id, datum, &value, &value);
@@ -1555,7 +1557,7 @@ static int define_category(void)
 			yyerror("out of memory");
 			goto bad_alias;
 		}
-		memset(aliasdatum, 0, sizeof(cat_datum_t));
+		cat_datum_init(aliasdatum);
 		aliasdatum->isalias = TRUE;
 		aliasdatum->s.value = datum->s.value;
 
@@ -1592,15 +1594,19 @@ static int define_category(void)
       bad:
 	if (id)
 		free(id);
-	if (datum)
+	if (datum) {
+		cat_datum_destroy(datum);
 		free(datum);
+	}
 	return -1;
 
       bad_alias:
 	if (id)
 		free(id);
-	if (aliasdatum)
+	if (aliasdatum) {
+		cat_datum_destroy(aliasdatum);
 		free(aliasdatum);
+	}
 	return -1;
 }
 
