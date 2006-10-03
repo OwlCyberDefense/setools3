@@ -119,7 +119,10 @@ int apol_get_range_trans_by_query(apol_policy_t *p,
 		    (range = apol_mls_range_create_from_qpol_mls_range(p, mls_range)) == NULL) {
 			goto cleanup;
 		}
-		compval = apol_mls_range_compare(p, range, r->range, r->flags);
+		if (r)
+			compval = apol_mls_range_compare(p, range, r->range, r->flags);
+		else
+			compval = 1;
 		apol_mls_range_destroy(&range);
 		if (compval < 0) {
 			goto cleanup;

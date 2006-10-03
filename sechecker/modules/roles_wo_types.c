@@ -233,8 +233,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			goto roles_wo_types_run_fail;
 		}
 		proof->type = SECHK_ITEM_ROLE;
-		proof->text = (char*)calloc(strlen("role has no types")+strlen(role_name)+1, sizeof(char));
-		sprintf(proof->text, "role %s has no types", role_name);
+		asprintf(&proof->text, "role %s has no types", role_name);
 		item = sechk_item_new(NULL);
 		if (!item) {
 			error = errno;
@@ -243,26 +242,19 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		}
 		item->item = (void *)role;
 		item->test_result = 1;
-		proof->type = SECHK_ITEM_ROLE;
-		proof->text = strdup("This role is not assigned to any user.");
-		if (!proof->text) {
-			error = errno;
-			ERR(policy, "%s", strerror(ENOMEM));
-			goto roles_wo_types_run_fail;
-		}
-		if ( !item->proof ) {
-			if ( !(item->proof = apol_vector_create()) ) {
+		if (!item->proof) {
+			if (!(item->proof = apol_vector_create())) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto roles_wo_types_run_fail;
 			}
 		}
-		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+		if (apol_vector_append(item->proof, (void*)proof) < 0 ) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
 		}
-		if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+		if (apol_vector_append(res->items, (void*)item) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
