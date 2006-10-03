@@ -944,6 +944,122 @@ int require_bool(int pass)
 	}
 }
 
+int require_sens(int pass)
+{
+	char *id = queue_remove(id_queue);
+	level_datum_t *level = NULL;
+	int retval;
+	if (pass == 2) {
+		free(id);
+		return 0;
+	}
+	if (!id) {
+		yyerror("no sensitivity name");
+		return -1;
+	}
+	level = malloc(sizeof(level_datum_t));
+	if (!level) {
+		free(id);
+		yyerror("Out of memory!");
+		return -1;
+	}
+	level_datum_init(level);
+	level->level = malloc(sizeof(mls_level_t));
+	if (!level->level) {
+		free(id);
+		level_datum_destroy(level);
+		free(level);
+		yyerror("Out of memory!");
+		return -1;
+	}
+	mls_level_init(level->level);
+	retval = require_symbol(SYM_LEVELS, id, (hashtab_datum_t *) level,
+				&level->level->sens, &level->level->sens);
+	if (retval != 0) {
+		free(id);
+		mls_level_destroy(level->level);
+		free(level->level);
+		level_datum_destroy(level);
+		free(level);
+	}
+	switch (retval) {
+	case -3:{
+			yyerror("Out of memory!");
+			return -1;
+		}
+	case -2:{
+			yyerror("duplicate declaration of sensitivity");
+			return -1;
+		}
+	case -1:{
+			yyerror("could not require sensitivity here");
+			return -1;
+		}
+	case 0:{
+			return 0;
+		}
+	case 1:{
+			return 0;	/* sensitivity already required */
+		}
+	default:{
+			assert(0);	/* should never get here */
+		}
+	}
+}
+
+int require_cat(int pass)
+{
+	char *id = queue_remove(id_queue);
+	cat_datum_t *cat = NULL;
+	int retval;
+	if (pass == 2) {
+		free(id);
+		return 0;
+	}
+	if (!id) {
+		yyerror("no category name");
+		return -1;
+	}
+	cat = malloc(sizeof(cat_datum_t));
+	if (!cat) {
+		free(id);
+		yyerror("Out of memory!");
+		return -1;
+	}
+	cat_datum_init(cat);
+
+	retval = require_symbol(SYM_CATS, id, (hashtab_datum_t *) cat,
+				&cat->s.value, &cat->s.value);
+	if (retval != 0) {
+		free(id);
+		cat_datum_destroy(cat);
+		free(cat);
+	}
+	switch (retval) {
+	case -3:{
+			yyerror("Out of memory!");
+			return -1;
+		}
+	case -2:{
+			yyerror("duplicate declaration of category");
+			return -1;
+		}
+	case -1:{
+			yyerror("could not require category here");
+			return -1;
+		}
+	case 0:{
+			return 0;
+		}
+	case 1:{
+			return 0;	/* category already required */
+		}
+	default:{
+			assert(0);	/* should never get here */
+		}
+	}
+}
+
 static int is_scope_in_stack(scope_datum_t * scope, scope_stack_t * stack)
 {
 	int i;
