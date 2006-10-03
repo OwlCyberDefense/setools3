@@ -1225,22 +1225,24 @@ void seaudit_on_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	int rt;
 	char *dir;
 
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	/* set this window to be transient to main window and center it on it */
-	gtk_window_set_transient_for(GTK_WINDOW(window), seaudit_app->window->window);
-	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
-
+	window = gtk_dialog_new_with_buttons("seaudit Help",
+					     GTK_WINDOW(seaudit_app->window->window),
+					     GTK_DIALOG_DESTROY_WITH_PARENT,
+					     GTK_STOCK_CLOSE,
+					     GTK_RESPONSE_NONE,
+					     NULL);
+	g_signal_connect_swapped(window, "response", G_CALLBACK(gtk_widget_destroy), window);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	text_view = gtk_text_view_new();
-	gtk_window_set_title(GTK_WINDOW(window), "seAudit Help");
-	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
-	gtk_container_add(GTK_CONTAINER(window), scroll);
+	gtk_window_set_default_size(GTK_WINDOW(window), 500, 300);
+	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(window)->vbox), scroll);
 	gtk_container_add(GTK_CONTAINER(scroll), text_view);
+	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view),GTK_WRAP_WORD);
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));	
 	dir = apol_file_find("seaudit_help.txt");
 	if (!dir) {
 		string = g_string_new("");
-		g_string_assign(string, "Can not find help file");
+		g_string_assign(string, "Cannot find help file");
 		message_display(seaudit_app->window->window, GTK_MESSAGE_ERROR, string->str);
 		g_string_free(string, TRUE);
 		return;
@@ -1257,6 +1259,7 @@ void seaudit_on_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	}
 	gtk_text_buffer_set_text(buffer, help_text, len);
 	gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
 	gtk_widget_show(text_view);
 	gtk_widget_show(scroll);
 	gtk_widget_show(window);
@@ -1545,6 +1548,6 @@ static void seaudit_update_title_bar(void *user_data)
 	} else {
 		snprintf(policy_str, STR_SIZE, "[Policy file: No Policy]");
 	}
-	snprintf(str, STR_SIZE, "seAudit - %s %s", log_str, policy_str);	
+	snprintf(str, STR_SIZE, "seaudit - %s %s", log_str, policy_str);
 	gtk_window_set_title(seaudit_app->window->window, (gchar*) str);
 }

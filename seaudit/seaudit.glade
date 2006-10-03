@@ -6,7 +6,7 @@
 
 <widget class="GtkWindow" id="TopWindow">
   <property name="visible">True</property>
-  <property name="title" translatable="yes">seAudit</property>
+  <property name="title" translatable="yes">seaudit</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>
@@ -483,7 +483,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="AboutSeaudit">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">About seAudit</property>
+		      <property name="label" translatable="yes">About</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="seaudit_on_about_seaudit_activate" last_modification_time="Fri, 23 Jan 2004 18:06:10 GMT"/>
 
