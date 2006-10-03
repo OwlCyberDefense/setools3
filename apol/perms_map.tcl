@@ -155,7 +155,7 @@ proc Apol_Perms_Map::createEditDialog {} {
     # delay setting the labels' text until [refresh_edit_dialog], to
     # see if anything is unmapped
 
-    $edit_dialog add -text "Save and Load Changes" -command Apol_Perms_Map::save
+    $edit_dialog add -text "Save and Load Changes" -command Apol_Perms_Map::save -width -1
     $edit_dialog add -text "Save As..." -command Apol_Perms_Map::saveAs
     $edit_dialog add -text "Save As User Default" -command Apol_Perms_Map::saveAsDefault
     $edit_dialog add -text "Exit" -command Apol_Perms_Map::exitDialog
