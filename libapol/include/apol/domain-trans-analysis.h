@@ -338,19 +338,19 @@ extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_tran
 #define APOL_DOMAIN_TRANS_RULE_SETEXEC          0x20
 
 /**
- *  Verify that a transition using the given three types is valid in
- *  the given policy. If not valid, return a value indicating the
- *  missing rules.  A valid transition requires a process transition,
- *  an entrypoint, and an execute rule. If the policy is version 15 or
- *  later it also requires either a setexec rule or a type_transition
- *  rule.  The value APOL_DOMAIN_TRANS_RULE_EXEC_NO_TRANS is not used
- *  by this function.
+ *  Verify that a transition using the given three types is valid in the given
+ *  policy. If not valid, return a value indicating the missing rules. If any
+ *  type is NULL, rules that would contain that type are considered missing. A
+ *  valid transition requires a process transition, an entrypoint, and an
+ *  execute rule. If the policy is version 15 or later it also requires either
+ *  a setexec rule or a type_transition rule.  The value
+ *  APOL_DOMAIN_TRANS_RULE_EXEC_NO_TRANS is not used by this function.
  *
  *  @param policy The policy containing the domain transition table to
- *  consult.
- *  @param start_dom The starting domain of the transition.
- *  @param ep_type The entrypoint of the transition.
- *  @param end_dom The ending domain of the transition.
+ *  consult. Must be non-NULL.
+ *  @param start_dom The starting domain of the transition. May be NULL.
+ *  @param ep_type The entrypoint of the transition. May be NULL.
+ *  @param end_dom The ending domain of the transition. May be NULL.
  *
  *  @return 0 if the transition is valid, < 0 on error, or a bit-wise
  *  or'ed set of APOL_DOMAIN_TRANS_RULE_* from above (always > 0)
