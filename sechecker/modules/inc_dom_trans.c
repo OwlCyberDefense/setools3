@@ -169,7 +169,7 @@ int inc_dom_trans_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
 {
 	sechk_result_t *res = NULL;
-	sechk_item_t *item = NULL;
+	sechk_item_t *item = NULL, *tmp_item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i, j, k, retv;
 	sechk_module_t *mod_ptr = NULL;
@@ -212,7 +212,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
 	}
-	res->item_type = SECHK_ITEM_TYPE;
+	res->item_type = SECHK_ITEM_DTR;
 	if (!(res->items = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
@@ -265,8 +265,8 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 	domain_vector = (apol_vector_t *)find_domains_res->items;
 
 	for (i = 0; i < apol_vector_get_size(domain_vector); i++) {
-		item = apol_vector_get_element(domain_vector, i);
-		domain = item->item;
+		tmp_item = apol_vector_get_element(domain_vector, i);
+		domain = tmp_item->item;
 		qpol_type_get_name(policy->p, domain, &domain_name);
 		apol_domain_trans_analysis_set_start_type(policy, domain_trans, domain_name);
 		apol_domain_trans_analysis_set_direction(policy, domain_trans, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
@@ -274,7 +274,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 		apol_domain_trans_analysis_do(policy, domain_trans, &domain_trans_vector);
 
 		for (j = 0; j < apol_vector_get_size(domain_trans_vector); j++) {
-			apol_domain_trans_result_t *dtr;
+			apol_domain_trans_result_t *dtr = NULL;
 			qpol_type_t *start;
 			qpol_type_t *ep;
 			qpol_type_t *end;
@@ -289,9 +289,18 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 			start = apol_domain_trans_result_get_start_type(dtr);
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
-			qpol_type_get_name(policy->p, start, &start_name);
-			qpol_type_get_name(policy->p, end, &end_name);
-			qpol_type_get_name(policy->p, ep, &ep_name);
+			if (start)
+				qpol_type_get_name(policy->p, start, &start_name);
+			else
+				start_name = "<start_type>";
+			if (end)
+				qpol_type_get_name(policy->p, end, &end_name);
+			else
+				end_name = "<end_type>";
+			if (ep)
+				qpol_type_get_name(policy->p, ep, &ep_name);
+			else
+				ep_name = "<entrypoint_type>";
 
 			result = apol_domain_trans_table_verify_trans(policy, start, ep, end);
 			if (!result) {
@@ -346,30 +355,29 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					apol_vector_destroy(&rbac_vector, NULL);
 				}
 				if (!ok) {
-					item = sechk_item_new(NULL);
+					item = sechk_item_new(apol_domain_trans_result_free);
 					if (!item) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					item->test_result = 1;
-					item->item = (void *)dtr;
+					item->item = (void *)apol_domain_trans_result_create_from_result(dtr);
 					if (apol_vector_append(res->items, (void *)item) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 				}
-			}
-			else  {
-				item = sechk_item_new(NULL);
+			} else  {
+				item = sechk_item_new(apol_domain_trans_result_free);
 				if (!item) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
 				item->test_result = 1;
-				item->item = (void *)dtr;
+				item->item = (void *)apol_domain_trans_result_create_from_result(dtr);
 				if (apol_vector_append(res->items, (void *)item) < 0) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
@@ -589,9 +597,19 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			start = apol_domain_trans_result_get_start_type(dtr);
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
-			qpol_type_get_name(policy->p, start, &start_name);
-			qpol_type_get_name(policy->p, end, &end_name);
-			qpol_type_get_name(policy->p, ep, &ep_name);
+			if (start)
+				qpol_type_get_name(policy->p, start, &start_name);
+			else
+				start_name = "<start_type>";
+			if (end)
+				qpol_type_get_name(policy->p, end, &end_name);
+			else
+				end_name = "<end_type>";
+			if (ep)
+				qpol_type_get_name(policy->p, ep, &ep_name);
+			else
+				ep_name = "<entrypoint_type>";
+
 			printf("%s -> %s\tentrypoint: %s\n", start_name, end_name, ep_name);
 		}
 		printf("\n");
@@ -613,9 +631,19 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			start = apol_domain_trans_result_get_start_type(dtr);
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
-			qpol_type_get_name(policy->p, start, &start_name);
-			qpol_type_get_name(policy->p, end, &end_name);
-			qpol_type_get_name(policy->p, ep, &ep_name);
+			if (start)
+				qpol_type_get_name(policy->p, start, &start_name);
+			else
+				start_name = "<start_type>";
+			if (end)
+				qpol_type_get_name(policy->p, end, &end_name);
+			else
+				end_name = "<end_type>";
+			if (ep)
+				qpol_type_get_name(policy->p, ep, &ep_name);
+			else
+				ep_name = "<entrypoint_type>";
+
 			printf("%s -> %s\tentrypoint: %s\n\tMissing:\n", start_name, end_name, ep_name);
 			for (j=0;j<apol_vector_get_size(item->proof);j++) {
 				sechk_proof_t *proof;

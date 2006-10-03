@@ -1920,10 +1920,26 @@ int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *sta
 	unsigned int policy_version = 0;
 	apol_domain_trans_rule_t *rule = NULL;
 
-	if (!policy || !start_dom || !ep_type || !end_dom) {
+	if (!policy) {
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
+	}
+
+	qpol_policy_get_policy_version(policy->p, &policy_version);
+
+	if (!start_dom || !ep_type || !end_dom) {
+		missing_rules = APOL_DOMAIN_TRANS_RULE_TYPE_TRANS;
+		if (!start_dom) {
+			missing_rules |= (APOL_DOMAIN_TRANS_RULE_PROC_TRANS|APOL_DOMAIN_TRANS_RULE_EXEC);
+			if (policy_version >= 15)
+				missing_rules |= APOL_DOMAIN_TRANS_RULE_SETEXEC;
+		}
+		if (!ep_type)
+			missing_rules |= (APOL_DOMAIN_TRANS_RULE_EXEC|APOL_DOMAIN_TRANS_RULE_ENTRYPOINT);
+		if (!end_dom)
+			missing_rules |= (APOL_DOMAIN_TRANS_RULE_PROC_TRANS|APOL_DOMAIN_TRANS_RULE_ENTRYPOINT);
+		return missing_rules;
 	}
 
 	/* build table if not already present */
@@ -1933,7 +1949,6 @@ int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *sta
 	}
 
 	table = policy->domain_trans_table;
-	qpol_policy_get_policy_version(policy->p, &policy_version);
 
 	qpol_type_get_value(policy->p, start_dom, &start_val);
 	qpol_type_get_value(policy->p, ep_type, &ep_val);

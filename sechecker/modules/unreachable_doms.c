@@ -325,6 +325,8 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		item = apol_vector_get_element(idt_vector, i);
 		dtr = item->item;
 		end_type = apol_domain_trans_result_get_end_type(dtr);
+		if (!end_type)
+			continue;
 		qpol_type_get_name(policy->p, end_type, &end_name);
 
 		apol_domain_trans_table_reset(policy);
@@ -346,7 +348,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				break;
 
 			item = NULL;
-			for (j=0;j<apol_vector_get_size(res->items);j++) {
+			for (j = 0; j < apol_vector_get_size(res->items); j++) {
 				sechk_item_t *res_item;
 				qpol_type_t *res_type;
 				char *res_type_name;
@@ -398,6 +400,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				goto unreachable_doms_run_fail;
 			}
 		}
+		apol_vector_destroy(&rev_dtr_vector, apol_domain_trans_result_free);
 	}
 
 
@@ -489,7 +492,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				}
 			}
 		}
-	apol_vector_destroy(&rev_dtr_vector, apol_domain_trans_result_free);
+		apol_vector_destroy(&rev_dtr_vector, apol_domain_trans_result_free);
 
 		/* if we haven't found a valid transition to this type, check default ctxs */
 		if (!found_valid_trans && !in_def_ctx(dom_name, datum)) {
