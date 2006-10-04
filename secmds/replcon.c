@@ -751,7 +751,7 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 		class_id = SEFS_FIFO_FILE;
 		break;
 	default:
-		class_id = SEFS_ALL_FILES;
+		class_id = -1;
 		break;
 	}
 

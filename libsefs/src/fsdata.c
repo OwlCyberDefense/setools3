@@ -797,9 +797,8 @@ static int avl_type_compare(void *user_data, const void *key, int idx)
 static int avl_add_type(void *user_data, const void *key, int idx)
 {
 	fsdata = (sefs_filesystem_data_t *)user_data;
-	char *path = (char*)key;
 
-	assert(fsdata != NULL && path != NULL);
+	assert(fsdata != NULL && key != NULL);
 
 	fsdata->types[idx].name = (char *)key;
 	fsdata->types[idx].num_inodes=0;
@@ -1231,7 +1230,7 @@ char **sefs_get_valid_object_classes(int *size)
 		fprintf(stderr, "out of memory\n");
 		return NULL;
 	}
-	for (i = 0; i < SEFS_NUM_OBJECT_CLASSES; i++) {
+	for (i = 0; i < SEFS_NUM_OBJECT_CLASSES - 1; i++) {
 		num_objs_on_line++;
 		if ((local_list[i] = (char *)malloc((strlen(sefs_object_classes[i])+1) * sizeof(char))) == NULL){
 			sefs_double_array_destroy(local_list,i);
