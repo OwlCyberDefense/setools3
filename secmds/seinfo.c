@@ -1431,7 +1431,7 @@ int main (int argc, char **argv)
 static void print_type_attrs(FILE *fp, qpol_type_t *type_datum, apol_policy_t *policydb, const int expand)
 {
 	qpol_iterator_t *iter = NULL;
-	unsigned char isattr;
+	unsigned char isattr, isalias;
 	char *type_name = NULL, *attr_name = NULL;
 	qpol_type_t *attr_datum = NULL;
 
@@ -1439,8 +1439,10 @@ static void print_type_attrs(FILE *fp, qpol_type_t *type_datum, apol_policy_t *p
 		goto cleanup;
 	if (qpol_type_get_isattr(policydb->p, type_datum, &isattr))
 		goto cleanup;
+	if (qpol_type_get_isalias(policydb->p, type_datum, &isalias))
+		goto cleanup;
 
-	if (!isattr) {
+	if (!isattr && !isalias) {
 		fprintf(fp, "   %s\n", type_name);
 		if (expand) {     /* Print this type's attributes */
 			if (qpol_type_get_attr_iter(policydb->p, type_datum, &iter))
