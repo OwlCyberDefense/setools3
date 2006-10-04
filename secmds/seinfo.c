@@ -101,21 +101,21 @@ void usage(const char *program_name, int brief)
 	}
 	fputs("\n\
 Print requested information about an SELinux policy.\n\
-  -c[NAME], --classes[=NAME]       print a list of object classes\n\
-  -t[NAME], --types[=NAME]         print a list of types identifiers\n\
-  -a[NAME], --attribs[=NAME]       print a list of type attributes\n\
-  -r[NAME], --roles[=NAME]         print a list of roles\n\
-  -u[NAME], --users[=NAME]         print a list of users\n\
-  -b[NAME], --boolean[=NAME]       print a lits of conditional boolens\n\
-  -S[NAME], --sensitivities[=NAME] print a list of sensitivities\n\
-  -C[NAME], --categories[=NAME]    print a list of categories\n\
-  -f[TYPE], --fs_use[=TYPE]        print a list of fs_use statements\n\
-  -g[TYPE], --genfscon[=TYPE]      print a list of genfscon statements\n\
-  -n[NAME], --netifcon[=NAME]      print a list of netif contexts\n\
-  -o[ADDR], --nodecon[=ADDR]       print a list of node contexts\n\
-  -p[NUM],  --portcon[=NUM]        print a list of port contexts\n\
+  -c[NAME], --classes[=NAME]       print object classes\n\
+  -t[NAME], --types[=NAME]         print types (no aliases or attributes)\n\
+  -a[NAME], --attribs[=NAME]       print type attributes\n\
+  -r[NAME], --roles[=NAME]         print roles\n\
+  -u[NAME], --users[=NAME]         print users\n\
+  -b[NAME], --boolean[=NAME]       print conditional boolens\n\
+  -S[NAME], --sensitivities[=NAME] print sensitivities\n\
+  -C[NAME], --categories[=NAME]    print categories\n\
+  -f[TYPE], --fs_use[=TYPE]        print fs_use statements\n\
+  -g[TYPE], --genfscon[=TYPE]      print genfscon statements\n\
+  -n[NAME], --netifcon[=NAME]      print netif contexts\n\
+  -o[ADDR], --nodecon[=ADDR]       print node contexts\n\
+  -p[PORT], --portcon[=PORT]       print port contexts\n\
   -lPROTO,  --protocol=PROTO       specify a protocol for portcons\n\
-  -i[NAME], --initialsid[=NAME]    print a list of initial SIDs\n\
+  -i[NAME], --initialsid[=NAME]    print initial SIDs\n\
   -A, --all                        print all of the above\n\
   -x, --expand                     show additional info for -ctarbuSCiA options\n\
   -s, --stats                      print useful policy statistics\n\
@@ -470,32 +470,24 @@ cleanup:
 static int print_types(FILE *fp, const char *name, int expand, apol_policy_t *policydb)
 {
 	int retval = -1;
-	bool_t binary = FALSE;
-	unsigned int n_types = 0;
 	qpol_type_t *type_datum = NULL;
 	qpol_iterator_t *iter = NULL;
-	size_t iter_sz;
+	apol_vector_t *type_vector = NULL;
+	size_t vector_sz;
 
 	if(name != NULL) {
 		if (qpol_policy_get_type_by_name(policydb->p, name, &type_datum))
 			goto cleanup;
 	}
-	else {
-		if (apol_policy_is_binary(policydb))
-			binary = TRUE;
-	}
 
 	/* Find the number of types in the policy */
-	if (qpol_policy_get_type_iter(policydb->p, &iter))
+	if (apol_get_type_by_query(policydb, NULL, &type_vector))
 		goto cleanup;
-	if (qpol_iterator_get_size(iter, &iter_sz))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
-	n_types = (unsigned int)iter_sz;
+	vector_sz = apol_vector_get_size(type_vector);
+	apol_vector_destroy(&type_vector, NULL);
 
-	if(name == NULL) {
-		/* use num_types(policy)-1 to factor out the pseudo type "self" if not binary*/
-		fprintf(fp, "\nTypes: %d\n", binary ? n_types - 1 : n_types);
+	if (name == NULL) {
+		fprintf(fp, "\nTypes: %zd\n", vector_sz);
 	}
 
 	/* if name was provided, only print that name */
@@ -1120,23 +1112,16 @@ static int print_portcon(FILE *fp, const char *num, const char *protocol, apol_p
 	size_t n_portcons;
 	char *tmp = NULL;
 
-	if (num && protocol) {
-		if (!strcmp(protocol, "tcp")) {
+	if (protocol) {
+		if (!strcmp(protocol, "tcp"))
 			proto = IPPROTO_TCP;
-		} else if (!strcmp(protocol, "udp")) {
+		else if (!strcmp(protocol, "udp"))
 			proto = IPPROTO_UDP;
-		} else {
-			ERR(policydb, "Unable to get portcon by port and protocol: bad protocol %s.", protocol);
-			goto cleanup;
-		}
-
-		if (qpol_policy_get_portcon_by_port(policydb->p,
-		    (uint16_t)atoi(num), (uint16_t)atoi(num), proto, &portcon)) {
-			ERR(policydb, "No portcon statement for port number %d.", atoi(num));
+		else {
+			ERR(policydb, "Unable to get portcon by protocol: bad protocol %s.", protocol);
 			goto cleanup;
 		}
 	}
-
 	if (qpol_policy_get_portcon_iter(policydb->p, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_portcons))
@@ -1153,13 +1138,15 @@ static int print_portcon(FILE *fp, const char *num, const char *protocol, apol_p
 			goto cleanup;
 		if (qpol_portcon_get_protocol(policydb->p, portcon, &ocon_proto))
 			goto cleanup;
-
-		if (num && protocol) {
-			if (atoi(num) >= low_port && atoi(num) <= high_port && ocon_proto == proto )
-				fprintf(fp, "   %s\n", (tmp = apol_portcon_render(policydb, portcon)));
-		} else {
-			fprintf(fp, "   %s\n", (tmp = apol_portcon_render(policydb, portcon)));
+		if (num) {
+			if (atoi(num) < low_port || atoi(num) > high_port)
+				continue;
 		}
+		if (protocol) {
+			if (ocon_proto != proto)
+				continue;
+		}
+		fprintf(fp, "	%s\n", (tmp = apol_portcon_render(policydb, portcon)));
 		free(tmp);
 		tmp = NULL;
 	}
@@ -1348,9 +1335,9 @@ int main (int argc, char **argv)
 		}
 	}
 
-	/* If searching for a portcon, need to specify protocol as well as port */
-	if (port_num && !protocol) {
-		fprintf(stderr, "If you are searching for a particular portcon, you must also specify a protocol with -l.\n");
+	/* check for naked -l */
+	if (protocol && !(port || all)) {
+		fprintf(stderr, "The -l flag requires either -p or -A.\n");
 		exit(1);
 	}
 	/* if no options, then show stats */
@@ -1378,7 +1365,7 @@ int main (int argc, char **argv)
 	}
 
 	/* attempt to open the policy */
-	if (stats) {
+	if (stats || all) {
 		if (apol_policy_open(policy_file, &policydb, NULL, NULL)) {
 			perror("Error opening policy");
 			free(policy_file);
@@ -1819,6 +1806,7 @@ static int qpol_cat_datum_compare(const void *datum1, const void *datum2, void *
 
 exit_err:
 	assert(0);
+	return 0;
 }
 
 /**
@@ -1856,4 +1844,5 @@ static int qpol_level_datum_compare(const void *datum1, const void *datum2, void
 
 exit_err:
 	assert(0);
+	return 0;
 }
