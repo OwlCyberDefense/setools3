@@ -91,7 +91,7 @@ Print requested information about an SELinux policy.\n\
 Valid object classes include:\n\
 ",stdout);
 	array = sefs_get_valid_object_classes(&size);
-	sefs_double_array_print(array,size-1); /* don't print "all_files" it is not used here */
+	sefs_double_array_print(array,size);
 	sefs_double_array_destroy(array,size);
 	return;
 }
