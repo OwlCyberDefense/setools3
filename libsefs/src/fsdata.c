@@ -1240,7 +1240,7 @@ char **sefs_get_valid_object_classes(int *size)
 		strncpy(local_list[i],sefs_object_classes[i],strlen(sefs_object_classes[i]));
 		local_list[i][strlen(sefs_object_classes[i])] = '\0';
 	}
-	*size = SEFS_NUM_OBJECT_CLASSES;
+	*size = SEFS_NUM_OBJECT_CLASSES - 1;
 	return local_list;
 }
 
