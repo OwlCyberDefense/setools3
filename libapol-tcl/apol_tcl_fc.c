@@ -58,7 +58,7 @@ static int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, 
 #else
 	sefs_filesystem_db_t fsdata_local;
 	int rt;
-	if (argc != 2) {
+	if (argc != 3) {
 		Tcl_SetResult(interp, "Need a database filename and a start directory.", TCL_STATIC);
 		return TCL_ERROR;
 	}
