@@ -245,82 +245,69 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 	variable b1_create_dlg
 	variable b2_create_dlg
 	
-	set w $create_fc_dlg
-	destroy $w
-	toplevel $w 
-	wm title $w "Create Index File"
-	wm protocol $w WM_DELETE_WINDOW " "
-    	wm withdraw $w
-    	
-    	set t_frame [frame $w.t_frame]
-    	set f1 [frame $t_frame.f1]
-    	set f2 [frame $t_frame.f2]
-    	set f3 [frame $t_frame.f3]
-    	set lbl_fn 	[Label $f1.lbl_fn -justify left -text "Save file:"]
-    	set lbl_dir 	[Label $f1.lbl_dir -justify left -text "Directory to index:"]
-	set entry_dir 	[entry $f2.entry_path -width 30 -bg white]
-	set browse_dir 	[button $f3.button1 -text "Browse" -width 8 -command {
-		set txt [$Apol_File_Contexts::entry_dir get]
-		if {[string is space $txt]} {
-			set txt "/"
-		} elseif {![file isdirectory $txt]} {
-			set txt [file dirname $txt]
-		} 
-		set dir_n [tk_chooseDirectory \
-			-title "Select Directory to Index..." \
-			-parent $Apol_File_Contexts::create_fc_dlg \
-			-initialdir $txt]
-		if {$dir_n != ""} {
-			$Apol_File_Contexts::entry_dir delete 0 end
-			$Apol_File_Contexts::entry_dir insert end $dir_n
-		}	
-	}]
-	set entry_fn 	[entry $f2.entry_fn -width 30 -bg white]
-	set browse_fn 	[button $f3.button2 -text "Browse" -width 8 -command {
-		set txt [$Apol_File_Contexts::entry_fn get]
-		if {[string is space $txt]} {
-			set dir_name "/"
-			set init_file "/"
-		} elseif {![file isdirectory $txt]} {
-			set dir_name [file dirname $txt]
-			set init_file $txt
-		} else {
-			set dir_name $txt
-			set init_file ""
-		}
-		set file_n [tk_getSaveFile \
+    set d [Dialog .filecontexts_create -title "Create Index File" \
+               -default 0 -cancel 1 -modal local -parent . -separator 1]
+    set create_fc_dlg $d
+
+    set f [$d getframe]
+
+    set lbl_fn [label $f.lbl_fn -justify left -anchor w -text "Save file:"]
+    set entry_fn [entry $f.entry_fn -width 30 -bg white]
+    set browse_fn [button $f.button2 -text "Browse" -width 8 -command {
+        set txt [$Apol_File_Contexts::entry_fn get]
+        if {[string is space $txt]} {
+            set dir_name "/"
+            set init_file "/"
+        } elseif {![file isdirectory $txt]} {
+            set dir_name [file dirname $txt]
+            set init_file $txt
+        } else {
+            set dir_name $txt
+            set init_file ""
+        }
+        set file_n [tk_getSaveFile \
 			-title "Select File to Save..." \
 			-parent $Apol_File_Contexts::create_fc_dlg \
 			-initialdir $dir_name \
 			-initialfile $init_file]
-		if {$file_n != ""} {
-			$Apol_File_Contexts::entry_fn delete 0 end
-			$Apol_File_Contexts::entry_fn insert end $file_n
-		}	
-	}]
-	$entry_dir insert end "/"
-	
-	set b_frame [frame $w.b_frame]
-     	set b1_create_dlg [button $b_frame.create -text Create \
-     		-command {Apol_File_Contexts::create_fc_db $Apol_File_Contexts::create_fc_dlg} \
-     		-width 10]
-     	set b2_create_dlg [button $b_frame.close1 -text Cancel \
-     		-command {catch {
-     			destroy $Apol_File_Contexts::create_fc_dlg; grab release $Apol_File_Contexts::create_fc_dlg}} \
-     		-width 10]
-     	
-     	pack $b_frame -side bottom -expand yes -anchor center
-     	pack $t_frame -side top -fill both -expand yes
-     	pack $f1 $f2 $f3 -side left -anchor nw -padx 5 -pady 5
-     	pack $b1_create_dlg $b2_create_dlg -side left -anchor nw -padx 5 -pady 5 
-	pack $lbl_fn $lbl_dir -anchor nw -side top -pady 6
-	pack $entry_fn $entry_dir -anchor nw -side top -expand yes -pady 5
-	pack $browse_fn $browse_dir -anchor nw -side top -expand yes -pady 3
-     
- 	wm geometry $w +50+50
- 	wm deiconify $w
- 	grab $w
- 	wm protocol $w WM_DELETE_WINDOW "destroy $w"
+        if {$file_n != ""} {
+            $Apol_File_Contexts::entry_fn delete 0 end
+            $Apol_File_Contexts::entry_fn insert end $file_n
+        }
+    }]
+
+    set lbl_dir [label $f.lbl_dir -justify left -anchor w -text "Directory to index:"]
+    set entry_dir [entry $f.entry_path -width 30 -bg white]
+    set browse_dir [button $f.button1 -text "Browse" -width 8 -command {
+        set txt [$Apol_File_Contexts::entry_dir get]
+        if {[string is space $txt]} {
+            set txt "/"
+        } elseif {![file isdirectory $txt]} {
+            set txt [file dirname $txt]
+        }
+        set dir_n [tk_chooseDirectory \
+                       -title "Select Directory to Index..." \
+                       -parent $Apol_File_Contexts::create_fc_dlg \
+                       -initialdir $txt]
+        if {$dir_n != ""} {
+            $Apol_File_Contexts::entry_dir delete 0 end
+            $Apol_File_Contexts::entry_dir insert end $dir_n
+        }
+    }]
+    $entry_dir insert end "/"
+
+    grid $lbl_fn $entry_fn $browse_fn -padx 4 -pady 2 -sticky ew
+    grid $lbl_dir $entry_dir $browse_dir -padx 4 -pady 2 -sticky ew
+    grid columnconfigure $f 0 -weight 0 -pad 4
+    grid columnconfigure $f 1 -weight 1
+    grid columnconfigure $f 2 -weight 0
+
+    $d add -text "Create" \
+            -command [list Apol_File_Contexts::create_fc_db $d]
+    $d add -text "Cancel"
+
+    $d draw
+    destroy $d
 }
 
 # ------------------------------------------------------------------------------
@@ -350,15 +337,16 @@ proc Apol_File_Contexts::create_and_load_fc_db {fname dir_str} {
 proc Apol_File_Contexts::create_fc_db {dlg} {
 	variable entry_dir
 	variable entry_fn
-	variable b1_create_dlg
-	variable b2_create_dlg
     variable opts
 	
-	# Disable the buttons to prevent multiple clicking from causing tk errors.
-	$b1_create_dlg configure -state disabled
-	$b2_create_dlg configure -state disabled
 	set fname [$entry_fn get]
 	set dir_str [$entry_dir get]
+    if {$fname == {} || $dir_str == {}} {
+        tk_messageBox -icon error -type ok -title "Error" \
+            -message "Both a filename and starting directory are needed."
+        raise $dlg
+        return
+    }
 
     set opts(progressMsg) "Creating index file.. .This may take a while."
     set opts(progressVal) -1
@@ -374,13 +362,10 @@ proc Apol_File_Contexts::create_fc_db {dlg} {
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" \
 			-message "$err\nSee stderr for more information."
-		$b1_create_dlg configure -state normal
-		$b2_create_dlg configure -state normal
             raise $dlg
 		return
 	} 
-	destroy $dlg
-	grab release $dlg
+    $dlg enddialog 0
 }
 
 # ------------------------------------------------------------------------------
