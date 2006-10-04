@@ -53,6 +53,8 @@
 #define SEFS_BLK_FILE	16
 #define	SEFS_SOCK_FILE	32
 #define SEFS_FIFO_FILE	64
+/** @deprecated SEFS_ALL_FILES will be dropped in a future release.
+ * Do not use. */ 
 #define SEFS_ALL_FILES	(SEFS_NORM_FILE | SEFS_DIR | SEFS_LNK_FILE | SEFS_CHR_FILE | SEFS_BLK_FILE | SEFS_SOCK_FILE | SEFS_FIFO_FILE)
 
 #define SEFS_TYPES	1
