@@ -718,9 +718,10 @@ int replcon_is_valid_context_format(const char *ctx_str)
  *
  * @param info A reference to a replcon info object
  * @param str A string containing an object class
+ * @param allow_all_files If non-zero, then str may be 'all_files'.
  * @return 0 on success, < 0 on error
  */
-int replcon_info_add_object_class(replcon_info_t *info, const char *str)
+int replcon_info_add_object_class(replcon_info_t *info, const char *str, const int allow_all_files)
 {
 	sefs_classes_t class_id;
 
@@ -756,7 +757,8 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 	}
 
 	/* Check the object class */
-	if (class_id == -1) {
+	if (class_id == -1 ||
+	    (class_id == SEFS_ALL_FILES && !allow_all_files)) {
 		fprintf(stderr, "Error: invalid object class \'%s\'\n", optarg);
 		return -1;
 	}
@@ -1291,7 +1293,7 @@ replcon_parse_command_line(int argc, char **argv)
 			break;
 		case 'o':
 			if (replcon_info_add_object_class
-			    (&replcon_info, optarg)) {
+			    (&replcon_info, optarg, 0)) {
 				fprintf(stderr,
 					"Unable to add object class.\n");
 				goto err;
@@ -1365,7 +1367,7 @@ replcon_parse_command_line(int argc, char **argv)
 	}
 	/* If no object class was specified revert to the default of all files */
 	if (replcon_info.num_classes == 0) {
-		if (replcon_info_add_object_class(&replcon_info, "all_files")) {
+		if (replcon_info_add_object_class(&replcon_info, "all_files", 1)) {
 			fprintf(stderr, "Unable to add default object class.\n");
 			goto err;
 		}
