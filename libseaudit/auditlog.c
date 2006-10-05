@@ -1,4 +1,3 @@
-
 /* Copyright (C) 2003 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
@@ -8,9 +7,9 @@
  *         Jeremy Stitz <jstitz@tresys.com>
  *
  * Date: October 1, 2003
- * 
+ *
  * This file contains the implementation of message.h
- * 
+ *
  * auditlog.c
  */
 
@@ -24,7 +23,7 @@
 const char *audit_log_field_strs[] = { "msg_field",
 				       "exe_field",
 				       "path_field",
-				       "dev_field", 
+				       "dev_field",
 				       "src_usr_field",
 				       "src_role_field",
 				       "src_type_field",
@@ -38,7 +37,7 @@ const char *audit_log_field_strs[] = { "msg_field",
 				       "audit_header_field",
 				       "pid_field",
 				       "src_sid_field",
-				       "tgt_sid_field", 
+				       "tgt_sid_field",
 				       "comm_field",
 				       "netif_field",
 				       "key_field",
@@ -59,7 +58,7 @@ const char *audit_log_field_strs[] = { "msg_field",
 				       "policy_usrs_field",
 				       "policy_roles_field",
 				       "policy_types_field",
-				       "policy_classes_field", 
+				       "policy_classes_field",
 				       "policy_rules_field",
 				       "policy_binary_field",
 				       "boolean_num_field",
@@ -69,7 +68,7 @@ const char *audit_log_field_strs[] = { "msg_field",
                                        "host_field" };
 
 int audit_log_add_malformed_msg(char *line, audit_log_t **log) {
-	
+
 	assert(line != NULL && log != NULL && *log != NULL);
 
 	if ((*log)->malformed_msgs == NULL) {
@@ -86,7 +85,7 @@ int audit_log_add_malformed_msg(char *line, audit_log_t **log) {
 		return -1;
 	}
 
-	return 0;	
+	return 0;
 }
 
 int audit_log_field_strs_get_index(const char *str)
@@ -107,18 +106,18 @@ const char* libseaudit_get_version(void)
 
 /*
  * dynamically create the audit log structure. */
-audit_log_t* audit_log_create(void) 
+audit_log_t* audit_log_create(void)
 {
 	audit_log_t *new;
 	new = (audit_log_t*)malloc(sizeof(audit_log_t));
-	if (new == NULL) 
+	if (new == NULL)
 		goto bad;
 	memset(new, 0, sizeof(audit_log_t));
-	if (!(new->msg_list = apol_vector_create()) ) 
+	if (!(new->msg_list = apol_vector_create()) )
 		goto bad;
 
 	/* New member to hold malformed messages as a list of strings */
-	if ( !(new->malformed_msgs = apol_vector_create()) ) 
+	if ( !(new->malformed_msgs = apol_vector_create()) )
 		goto bad;
 
 	/* Create vectors for types/users/roles/classes found in log */
@@ -134,9 +133,9 @@ audit_log_t* audit_log_create(void)
 	if ( !(new->types = apol_vector_create()) )
 		goto bad;
 
-	if ( !(new->hosts = apol_vector_create()) ) 
+	if ( !(new->hosts = apol_vector_create()) )
 		goto bad;
-	apol_vector_append(new->hosts, (void **)"");
+	apol_vector_append(new->hosts, (void **) strdup(""));
 
 	if ( !(new->bools = apol_vector_create()) )
 		goto bad;
@@ -149,17 +148,17 @@ bad:
 	ERR(NULL, "%s", strerror(ENOMEM));
 	if (new) {
 		if (new->msg_list)
-			apol_vector_destroy(&new->msg_list, NULL);	
+			apol_vector_destroy(&new->msg_list, NULL);
 		if (new->classes)
-			apol_vector_destroy(&new->classes, NULL);	
+			apol_vector_destroy(&new->classes, NULL);
 		if (new->users)
-			apol_vector_destroy(&new->users, NULL);	
+			apol_vector_destroy(&new->users, NULL);
 		if (new->roles)
-			apol_vector_destroy(&new->roles, NULL);	
+			apol_vector_destroy(&new->roles, NULL);
 		if (new->types)
-			apol_vector_destroy(&new->types, NULL);	
+			apol_vector_destroy(&new->types, NULL);
 		if (new->malformed_msgs)
-			apol_vector_destroy(&new->malformed_msgs, NULL);	
+			apol_vector_destroy(&new->malformed_msgs, NULL);
 		free(new);
 	}
 	return NULL;
@@ -168,7 +167,7 @@ bad:
 static msg_t* msg_create(void)
 {
 	msg_t *new = NULL;
-	
+
 	new = (msg_t*)malloc(sizeof(msg_t));
 	if (new == NULL) {
 		ERR(NULL, "%s", strerror(ENOMEM));
@@ -275,9 +274,9 @@ void audit_log_destroy(audit_log_t *tmp)
 
 	if (tmp->msg_list)
 		apol_vector_destroy(&tmp->msg_list, NULL);
-	if (tmp->malformed_msgs) 
+	if (tmp->malformed_msgs)
 		apol_vector_destroy(&tmp->malformed_msgs, NULL);
-	if (tmp->users) 
+	if (tmp->users)
 		apol_vector_destroy(&tmp->users, NULL);
 	if (tmp->classes)
 		apol_vector_destroy(&tmp->classes, NULL);
@@ -363,21 +362,21 @@ void msg_destroy(msg_t* tmp)
 	if (tmp->date_stamp)
 		free(tmp->date_stamp);
 	switch (tmp->msg_type) {
- 	case AVC_MSG:
-	 	avc_msg_destroy((avc_msg_t*)tmp->msg_data.avc_msg);
+	case AVC_MSG:
+		avc_msg_destroy((avc_msg_t*)tmp->msg_data.avc_msg);
 		break;
- 	case LOAD_POLICY_MSG:
- 		load_policy_msg_destroy((load_policy_msg_t*)tmp->msg_data.load_policy_msg);
- 		break;
+	case LOAD_POLICY_MSG:
+		load_policy_msg_destroy((load_policy_msg_t*)tmp->msg_data.load_policy_msg);
+		break;
 	case BOOLEAN_MSG:
 	        boolean_msg_destroy((boolean_msg_t*)tmp->msg_data.boolean_msg);
 	        break;
 	default:
 		/* this probably means that that we were called from *create funcs above */
 		break;
- 	}
- 	free(tmp);
- 	return;
+	}
+	free(tmp);
+	return;
 }
 
 /*
@@ -386,7 +385,7 @@ void msg_destroy(msg_t* tmp)
 void audit_log_set_log_type(audit_log_t *log, int logtype)
 {
 	if (!log || (logtype != AUDITLOG_SYSLOG && logtype != AUDITLOG_AUDITD))
-		return;	
+		return;
 	log->logtype = logtype;
 }
 
@@ -422,7 +421,7 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 		case TYPE_VECTOR:
 			for (i = 0; i < apol_vector_get_size(log->types); i++) {
 				if (!strcmp(string, (char*)apol_vector_get_element(log->types, i))) {
-					*id = i; 
+					*id = i;
 					return i;
 				}
 			}
@@ -487,9 +486,9 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 				}
 			}
 			apol_vector_append(log->bools, (void **)strdup(string));
-			*id = apol_vector_get_size(log->bools)-1; 
+			*id = apol_vector_get_size(log->bools)-1;
 	}
-	return 0; 
+	return 0;
 }
 
 /*
@@ -551,7 +550,7 @@ int audit_log_get_str_idx(audit_log_t *log, const char *str, int which)
 			}
 			break;
 	}
-        return -1; 
+        return -1;
 }
 
 /*
@@ -582,18 +581,18 @@ const char* audit_log_get_str(audit_log_t *log, int idx, int which)
 		case BOOL_VECTOR:
 			return apol_vector_get_element(log->bools, idx);
 			break;
-	}		
-       	return NULL; 
+	}
+	return NULL;
 }
 
 /*
- * add a message to the audit log database.  user must first dynamically create the 
+ * add a message to the audit log database.  user must first dynamically create the
  * message and audit log keeps the pointer. */
 int audit_log_add_msg(audit_log_t *log, msg_t *msg)
 {
 	if (log == NULL || msg == NULL)
 		return -1;
-	
+
 	if ( apol_vector_append(log->msg_list, (void *) msg) < 0 ) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1;
@@ -645,7 +644,7 @@ static void avc_msg_print(msg_t *msg, FILE *file)
 	if (d->faddr)
 		fprintf(file,"faddr=%s ", msg->msg_data.avc_msg->faddr);
 	if (d->daddr)
-		fprintf(file,"daddr=%s ", msg->msg_data.avc_msg->daddr);  
+		fprintf(file,"daddr=%s ", msg->msg_data.avc_msg->daddr);
 	if (d->saddr)
 		fprintf(file,"saddr=%s ", msg->msg_data.avc_msg->saddr);
 }
