@@ -73,24 +73,26 @@ static int avc_msg_is_token_new_audit_header(char *token)
 
 static unsigned int get_line(FILE *audit_file, char **dest)
 {
-	char *line = NULL, c = '\0';
+	char *line = NULL, *s, c = '\0';
 	int length = 0, i = 0;
 
 	assert(audit_file != NULL && dest != NULL);
+	*dest = NULL;
 	while ((c = fgetc(audit_file)) != EOF) {
 		if (i < length - 1) {
 			line[i] = c;
 		} else {
 			length += MEMORY_BLOCK_MAX_SIZE;
-			if ((line = (char*) realloc(line, length * sizeof(char))) == NULL){
+			if ((s = (char*) realloc(line, length * sizeof(char))) == NULL){
 				return PARSE_RET_MEMORY_ERROR;
 			}
+			line = s;
 			line[i] = c;
 		}
 
 		if (c == '\n') {
 			line[i+1] = '\0';
-			*dest = *(&line);
+			*dest = line;
 			return PARSE_RET_SUCCESS;
 		}
 		i++;
@@ -102,11 +104,12 @@ static unsigned int get_line(FILE *audit_file, char **dest)
 			*dest = *(&line);
 		} else {
 			length += MEMORY_BLOCK_MAX_SIZE;
-			if ((line = (char*) realloc(line, length * sizeof(char))) == NULL){
+			if ((s = (char*) realloc(line, length * sizeof(char))) == NULL){
 				return PARSE_RET_MEMORY_ERROR;
 			}
+			line = s;
 			line[i] = '\0';
-			*dest = *(&line);
+			*dest = line;
 		}
 	}
 
@@ -260,7 +263,7 @@ static unsigned int avc_msg_insert_syscall_info(char *token, msg_t *msg)
 
 	time_str = token + header_len;
 	/* Parse seconds.nanoseconds:serial */
-	while ((fields[i] = strsep(&time_str, ".:")) != NULL && i < PARSE_NUM_SYSCALL_FIELDS) {
+	while (i < PARSE_NUM_SYSCALL_FIELDS && (fields[i] = strsep(&time_str, ".:")) != NULL) {
 		i++;
 	}
 
@@ -863,7 +866,7 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 	assert(tokens != NULL && msg != NULL && log != NULL && num_tokens > 0);
 
 	/* Check for new auditd log format */
-	if (strstr(*(&tokens[position]), AUDITD_MSG)) {
+	if (strstr(tokens[position], AUDITD_MSG)) {
 		position++;
 		if (position >= num_tokens)
 			return PARSE_RET_INVALID_MSG_WARN;
@@ -872,8 +875,8 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 	}
 
 	/* Insert the audit header if it exists */
-	if (avc_msg_is_token_new_audit_header(*(&tokens[position]))) {
-		tmp_ret |= avc_msg_insert_syscall_info(*(&tokens[position]), msg);
+	if (avc_msg_is_token_new_audit_header(tokens[position])) {
+		tmp_ret |= avc_msg_insert_syscall_info(tokens[position], msg);
 		if (tmp_ret & PARSE_RET_SUCCESS) {
 			position++;
 			if (position >= num_tokens)
@@ -883,7 +886,7 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 		/* Reset our bitmask */
 		tmp_ret = 0;
 	} else {
-		tmp_ret |= insert_standard_msg_header(*(&tokens), msg, log, &position, num_tokens);
+		tmp_ret |= insert_standard_msg_header(tokens, msg, log, &position, num_tokens);
 		if (tmp_ret & PARSE_RET_MEMORY_ERROR)
 			return PARSE_RET_MEMORY_ERROR;
 		else if (tmp_ret & PARSE_REACHED_END_OF_MSG)
@@ -897,7 +900,7 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 		/* Reset our bitmask */
 		tmp_ret = 0;
 
-		if (!strstr(*(&tokens[position]), "kernel")) {
+		if (!strstr(tokens[position], "kernel")) {
 			ret |= PARSE_RET_INVALID_MSG_WARN;
 			/* Hold the position */
 		} else {
@@ -911,8 +914,8 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 		 * audit header might be present. So, here we check again for the
 		 * audit message.
 		 */
-		if (avc_msg_is_token_new_audit_header(*(&tokens[position]))) {
-			tmp_ret |= avc_msg_insert_syscall_info(*(&tokens[position]), msg);
+		if (avc_msg_is_token_new_audit_header(tokens[position])) {
+			tmp_ret |= avc_msg_insert_syscall_info(tokens[position], msg);
 			if (tmp_ret & PARSE_RET_SUCCESS) {
 				position += 2;
 				if (position >= num_tokens)
@@ -926,7 +929,7 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 	}
 
 	/* Make sure the following token is the string "avc:" */
-	if (strcmp(*(&tokens[position]), "avc:") != 0) {
+	if (strcmp(tokens[position], "avc:") != 0) {
 		ret |= PARSE_RET_INVALID_MSG_WARN;
 		/* Hold the position */
 	} else {
@@ -936,7 +939,7 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 	}
 
 	/* Insert denied or granted */
-	tmp_ret |= avc_msg_insert_access_type(*(&tokens[position]), msg);
+	tmp_ret |= avc_msg_insert_access_type(tokens[position], msg);
 	if (tmp_ret & PARSE_RET_SUCCESS) {
 		position++;
 		if (position >= num_tokens)
@@ -1298,7 +1301,7 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
         while ((tmp = strsep(&tokens, " ")) != NULL) {
 		if (strcmp(tmp, "") && !apol_str_is_only_white_space(tmp)) {
 			if ((fields_ptr = (char**)realloc(fields, (num_tokens + 1) * sizeof(char*))) == NULL) {
-				free_field_tokens(*(&fields), num_tokens);
+				free_field_tokens(fields, num_tokens);
 				free(tokens_start);
 				return PARSE_RET_MEMORY_ERROR;
 			}
@@ -1306,7 +1309,7 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 			num_tokens++;
 			if((fields[idx] = (char*)malloc((strlen(tmp) + 1) * sizeof(char))) == NULL) {
 				/* Free all tokens up to the previous token, which is number of tokens - 1. */
-				free_field_tokens(*(&fields), num_tokens - 1);
+				free_field_tokens(fields, num_tokens - 1);
 				free(tokens_start);
 				return PARSE_RET_MEMORY_ERROR;
 			}
