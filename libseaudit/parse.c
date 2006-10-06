@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -173,7 +173,7 @@ static unsigned int avc_msg_insert_perms(char **tokens, msg_t *msg, audit_log_t 
 
 	for (i = 0 ; i < num_perms ; i++) {
 		audit_log_add_perm(log, tokens[i + start_pos], &id);
-		apol_vector_append(msg->msg_data.avc_msg->perms, (void **)id);
+		apol_vector_append(msg->msg_data.avc_msg->perms, (char *) audit_log_get_str(log, id, PERM_VECTOR));
 	}
 	return PARSE_RET_SUCCESS;
 }

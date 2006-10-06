@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -272,24 +272,15 @@ void audit_log_destroy(audit_log_t *tmp)
 	if (tmp == NULL)
 		return;
 
-	if (tmp->msg_list)
-		apol_vector_destroy(&tmp->msg_list, NULL);
-	if (tmp->malformed_msgs)
-		apol_vector_destroy(&tmp->malformed_msgs, NULL);
-	if (tmp->users)
-		apol_vector_destroy(&tmp->users, NULL);
-	if (tmp->classes)
-		apol_vector_destroy(&tmp->classes, NULL);
-	if (tmp->roles)
-		apol_vector_destroy(&tmp->roles, NULL);
-	if (tmp->types)
-		apol_vector_destroy(&tmp->types, NULL);
-	if (tmp->bools)
-		apol_vector_destroy(&tmp->bools, NULL);
-	if (tmp->hosts)
-		apol_vector_destroy(&tmp->hosts, NULL);
-	if (tmp->perms)
-		apol_vector_destroy(&tmp->perms, NULL);
+	apol_vector_destroy(&tmp->msg_list, NULL);
+	apol_vector_destroy(&tmp->malformed_msgs, NULL);
+	apol_vector_destroy(&tmp->users, NULL);
+	apol_vector_destroy(&tmp->classes, NULL);
+	apol_vector_destroy(&tmp->roles, NULL);
+	apol_vector_destroy(&tmp->types, NULL);
+	apol_vector_destroy(&tmp->bools, NULL);
+	apol_vector_destroy(&tmp->hosts, NULL);
+	apol_vector_destroy(&tmp->perms, NULL);
 	free(tmp);
 }
 
@@ -299,32 +290,19 @@ static void avc_msg_destroy(avc_msg_t* tmp)
 {
 	if (tmp == NULL)
 		return;
-	if (tmp->exe)
-		free(tmp->exe);
-	if (tmp->path)
-		free(tmp->path);
-	if (tmp->dev)
-		free(tmp->dev);
-	if (tmp->perms)
-		free(tmp->perms);
-	if (tmp->comm)
-		free(tmp->comm);
-	if (tmp->netif)
-		free(tmp->netif);
-	if (tmp->laddr)
-		free(tmp->laddr);
-	if (tmp->faddr)
-		free(tmp->faddr);
-	if (tmp->daddr)
-		free(tmp->daddr);
-	if (tmp->saddr)
-		free(tmp->saddr);
-	if (tmp->name)
-		free(tmp->name);
-	if (tmp->ipaddr)
-		free(tmp->ipaddr);
+	free(tmp->exe);
+	free(tmp->path);
+	free(tmp->dev);
+	free(tmp->perms);
+	free(tmp->comm);
+	free(tmp->netif);
+	free(tmp->laddr);
+	free(tmp->faddr);
+	free(tmp->daddr);
+	free(tmp->saddr);
+	free(tmp->name);
+	free(tmp->ipaddr);
 	free(tmp);
-	return;
 }
 
 /*
@@ -333,23 +311,17 @@ static void load_policy_msg_destroy(load_policy_msg_t* tmp)
 {
 	if (tmp == NULL)
 		return;
-	if (tmp->binary)
-	  free(tmp->binary);
-
+	free(tmp->binary);
 	free(tmp);
-	return;
 }
 
 static void boolean_msg_destroy(boolean_msg_t* tmp)
 {
         if (tmp == NULL)
                 return;
-        if (tmp->booleans)
-                free (tmp->booleans);
-        if (tmp->values)
-                free (tmp->values);
+	free(tmp->booleans);
+	free(tmp->values);
 	free(tmp);
-        return;
 }
 
 
@@ -359,8 +331,7 @@ void msg_destroy(msg_t* tmp)
 {
 	if (tmp == NULL)
 		return;
-	if (tmp->date_stamp)
-		free(tmp->date_stamp);
+	free(tmp->date_stamp);
 	switch (tmp->msg_type) {
 	case AVC_MSG:
 		avc_msg_destroy((avc_msg_t*)tmp->msg_data.avc_msg);
@@ -376,7 +347,6 @@ void msg_destroy(msg_t* tmp)
 		break;
 	}
 	free(tmp);
-	return;
 }
 
 /*
@@ -425,7 +395,7 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 					return i;
 				}
 			}
-			apol_vector_append(log->types, (void **)strdup(string));
+			apol_vector_append(log->types, strdup(string));
 			*id = apol_vector_get_size(log->types)-1;
 			break;
 		case USER_VECTOR:
@@ -435,7 +405,7 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 					return i;
 				}
 			}
-			apol_vector_append(log->users, (void **)strdup(string));
+			apol_vector_append(log->users, strdup(string));
 			*id = apol_vector_get_size(log->users)-1;
 			break;
 		case ROLE_VECTOR:
@@ -455,7 +425,7 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 					return i;
 				}
 			}
-			apol_vector_append(log->classes, (void **)strdup(string));
+			apol_vector_append(log->classes, strdup(string));
 			*id = apol_vector_get_size(log->classes)-1;
 			break;
 		case PERM_VECTOR:
@@ -465,7 +435,7 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 					return i;
 				}
 			}
-			apol_vector_append(log->perms, (void **)strdup(string));
+			apol_vector_append(log->perms, strdup(string));
 			*id = apol_vector_get_size(log->perms)-1;
 			break;
 		case HOST_VECTOR:
@@ -475,7 +445,7 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 					return i;
 				}
 			}
-			apol_vector_append(log->hosts, (void **)strdup(string));
+			apol_vector_append(log->hosts, strdup(string));
 			*id = apol_vector_get_size(log->hosts)-1;
 			break;
 		case BOOL_VECTOR:
@@ -485,8 +455,13 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 					return i;
 				}
 			}
-			apol_vector_append(log->bools, (void **)strdup(string));
+			apol_vector_append(log->bools, strdup(string));
 			*id = apol_vector_get_size(log->bools)-1;
+			break;
+	default:
+		/* shouldn't get here */
+		assert(0);
+		return -1;
 	}
 	return 0;
 }
