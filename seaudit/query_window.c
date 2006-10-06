@@ -574,25 +574,10 @@ void on_list_selection_changed(GtkList *list, GtkWidget *widget, gpointer data)
 
 }
 
-void on_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data)
-{
-	GString *str;
-
-	if (event->selection.type ==  GDK_BUTTON_RELEASE) {
-		str = g_string_new("");
-		g_string_assign(str, gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(user_data)->entry)));
-		g_string_prepend(str, "^");
-		g_string_append(str, "$");
-		gtk_entry_set_text(GTK_ENTRY(GTK_COMBO(user_data)->entry), str->str);
-		g_string_free(str, TRUE);
-	}
-	return;
-}
-
 int query_window_create(int *tree_item_idx)
 {
 	GladeXML *xml;
-	GtkWidget *text, *button, *combo;
+	GtkWidget *text, *button;
 	GtkWindow *window;
 	GString *path;
 	GtkNotebook *notebook;
@@ -617,14 +602,6 @@ int query_window_create(int *tree_item_idx)
 	g_assert(window);
 	gtk_window_set_transient_for(window, seaudit_app->window->window);
 	gtk_window_set_position(window, GTK_WIN_POS_CENTER_ON_PARENT);
-
-	/* connect functions to display selection as regular expression */
-	combo = glade_xml_get_widget(xml, "src_combo");
-	g_assert(combo);
-	g_signal_connect(GTK_COMBO(combo)->list, "event-after", G_CALLBACK(on_event_after), combo);
-	combo = glade_xml_get_widget(xml, "tgt_combo");
-	g_assert(combo);
-	g_signal_connect(GTK_COMBO(combo)->list, "event-after", G_CALLBACK(on_event_after), combo);
 
 	glade_xml_signal_connect_data(xml, "on_close_button_clicked",
 			G_CALLBACK(on_close_button_clicked),
