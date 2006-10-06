@@ -1,13 +1,13 @@
-/* Copyright (C) 2003-2004 Tresys Technology, LLC
+/* Copyright (C) 2003-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
-/* 
+/*
  * Author: Kevin Carr kcarr@tresys.com
  *         Karl MacMillan <kmacmillan@tresys.com>
  *         Jeremy Stitz <jstitz@tresys.com>
  *
  * Date: October 1, 2003
- * 
+ *
  * This file contains the data structure definitions for storing
  * audit logs.
  *
@@ -29,29 +29,29 @@
 	#define LIBSEAUDIT_VERSION_STRING "UNKNOWN"
 #endif
 
-/* define the types of logs that we understand here, this will 
+/* define the types of logs that we understand here, this will
    be assigned to the logtype of the audit_log_t */
 #define AUDITLOG_SYSLOG 0
 #define AUDITLOG_AUDITD 1
 
-/* 
+/*
  * msg_type_t defines the different types of audit messages this library will
- * handle.  AVC_MSG is a standard 'allowed' or 'denied' type message.  
+ * handle.  AVC_MSG is a standard 'allowed' or 'denied' type message.
  * LOAD_POLICY_MSG is the message that results when a policy is loaded into the
- * system  BOOLEAN_MSG is the message that results when changing booleans in a 
- * conditional policy. Message types are put in alphabetical order to make 
+ * system  BOOLEAN_MSG is the message that results when changing booleans in a
+ * conditional policy. Message types are put in alphabetical order to make
  * msg_field_compare() in sort.c easier.
  */
 #define BOOLEAN_MSG     0x00000001
-#define AVC_MSG 	0x00000002
+#define AVC_MSG		0x00000002
 #define	LOAD_POLICY_MSG 0x00000004
 
 
 /* defines for the fields in the message types */
-#define AVC_MSG_FIELD 		0
-#define AVC_EXE_FIELD 		1
-#define AVC_PATH_FIELD 		2
-#define AVC_DEV_FIELD 		3
+#define AVC_MSG_FIELD		0
+#define AVC_EXE_FIELD		1
+#define AVC_PATH_FIELD		2
+#define AVC_DEV_FIELD		3
 #define AVC_SRC_USER_FIELD	4
 #define AVC_SRC_ROLE_FIELD	5
 #define AVC_SRC_TYPE_FIELD	6
@@ -106,9 +106,9 @@
 #define MSG_MAX_NFIELDS AVC_NUM_FIELDS
 #define NUM_FIELDS		49
 
-extern const char *audit_log_field_strs[NUM_FIELDS]; 
+extern const char *audit_log_field_strs[NUM_FIELDS];
 int audit_log_field_strs_get_index(const char *str);
-				       	       
+
 enum avc_msg_class_t {
 	AVC_AUDIT_DATA_NO_VALUE,
 	AVC_AUDIT_DATA_IPC,
@@ -135,10 +135,10 @@ typedef struct avc_msg {
 	char *saddr;
 	char *name;
         char *ipaddr;
-        time_t tm_stmp_sec; 		/* audit header timestamp (seconds) */
-        long tm_stmp_nano;  		/* audit header timestamp (nanoseconds) */
-        unsigned int serial; 		/* audit header serial number */
-        apol_vector_t *perms;	     /* object permissions */
+        time_t tm_stmp_sec;		/* audit header timestamp (seconds) */
+        long tm_stmp_nano;		/* audit header timestamp (nanoseconds) */
+        unsigned int serial;		/* audit header serial number */
+        apol_vector_t *perms;	     /* vector of pointers into audit_log->perms (hence char *) */
 	int msg;             /* message ie. AVC_DENIED or AVC_GRANTED */
 	int key;
 	bool_t is_key;
@@ -157,10 +157,10 @@ typedef struct avc_msg {
 	int tgt_role;
 	int tgt_type;
 	bool_t is_tgt_con;
-	int obj_class;     
+	int obj_class;
 	bool_t is_obj_class;
         unsigned int src_sid; /* source sid */
-	bool_t is_src_sid;    
+	bool_t is_src_sid;
 	unsigned int tgt_sid; /* target sid */
 	bool_t is_tgt_sid;
 	unsigned int pid;     /* process ID of the subject */
@@ -169,7 +169,7 @@ typedef struct avc_msg {
 	bool_t is_inode;
 } avc_msg_t;
 
-/* 
+/*
  * load_policy_msg contains all fields unique to the loaded policy message.
  */
 typedef struct load_policy_msg {
@@ -194,7 +194,7 @@ typedef struct boolean_msg {
 
 
 /*
- * msg_t is the type for all audit log messages.  It will contain either 
+ * msg_t is the type for all audit log messages.  It will contain either
  * avc_msg_t OR load_policy_msg_t OR boolean_msg_t.
  */
 typedef struct msg {
@@ -204,7 +204,7 @@ typedef struct msg {
 	union {
 		avc_msg_t *avc_msg;                 /* if msg_type = AVC_MSG */
 		load_policy_msg_t *load_policy_msg; /* if msg_type = LOAD_POLICY_MSG */
-       	        boolean_msg_t *boolean_msg;         /* if msg_type = BOOLEAN_MSG */ 
+	        boolean_msg_t *boolean_msg;         /* if msg_type = BOOLEAN_MSG */
 	} msg_data;
 } msg_t;
 
@@ -237,9 +237,9 @@ typedef struct audit_log {
 	int num_allow_msgs;
 	int num_deny_msgs;
 	apol_vector_t *malformed_msgs;
-	apol_vector_t *types; 
+	apol_vector_t *types;
 	apol_vector_t *classes;
-	apol_vector_t *roles; 
+	apol_vector_t *roles;
 	apol_vector_t *users;
 	apol_vector_t *perms;
 	apol_vector_t *hosts;
@@ -282,7 +282,6 @@ enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 #define audit_log_get_user_idx(log, str) audit_log_get_str_idx(log, str, USER_VECTOR)
 #define audit_log_get_role_idx(log, str) audit_log_get_str_idx(log, str, ROLE_VECTOR)
 #define audit_log_get_obj_idx(log, str)  audit_log_get_str_idx(log, str, OBJ_VECTOR)
-#define audit_log_get_perm_idx(log, str) audit_log_get_str_idx(log, str, PERM_VECTOR)
 #define audit_log_get_host_idx(log, str) audit_log_get_str_idx(log, str, HOST_VECTOR)
 #define audit_log_get_bool_idx(log, str) audit_log_get_str_idx(log, str, BOOL_VECTOR)
 
@@ -290,7 +289,6 @@ enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 #define audit_log_get_user(log, idx) audit_log_get_str(log, idx, USER_VECTOR)
 #define audit_log_get_role(log, idx) audit_log_get_str(log, idx, ROLE_VECTOR)
 #define audit_log_get_obj(log, idx)  audit_log_get_str(log, idx, OBJ_VECTOR)
-#define audit_log_get_perm(log, idx) audit_log_get_str(log, idx, PERM_VECTOR)
 #define audit_log_get_host(log, idx) audit_log_get_str(log, idx, HOST_VECTOR)
 #define audit_log_get_bool(log, idx) audit_log_get_str(log, idx, BOOL_VECTOR)
 

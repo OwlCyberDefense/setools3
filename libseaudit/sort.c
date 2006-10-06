@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -144,7 +144,7 @@ int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
 
 	for (i = 0; i < view->num_fltr_msgs; i++) {
 		(*new_order)[i] = sort_data[i].offset;
-	}	
+	}
 
 	rc = 0;
 out:
@@ -161,7 +161,7 @@ int msg_compare(const void *a, const void *b)
 
 	msg_a = ((sort_data_t*)a)->msg;
 	msg_b = ((sort_data_t*)b)->msg;
-	
+
 	for (cur = current_list; cur != NULL; cur = cur->next) {
 		ret = cur->sort(msg_a, msg_b);
 		if (reverse_sort) {
@@ -199,8 +199,8 @@ static int perm_compare(const msg_t *a, const msg_t *b)
 	if (a->msg_type < b->msg_type)
 		return -1;
 	if (apol_vector_get_size(msg_get_avc_data(a)->perms) > 0 && apol_vector_get_size(msg_get_avc_data(b)->perms) > 0) {
-		return strcmp(audit_log_get_perm(audit_log, (int)apol_vector_get_element(msg_get_avc_data(a)->perms, 0)), 
-			      audit_log_get_perm(audit_log, (int)apol_vector_get_element(msg_get_avc_data(b)->perms, 0)));
+		return strcmp(apol_vector_get_element(msg_get_avc_data(a)->perms, 0),
+			      apol_vector_get_element(msg_get_avc_data(b)->perms, 0));
 	}
 	/* If one of the messages does not contain permissions, then always return a NONMATCH value. */
 	return 1;
@@ -228,7 +228,7 @@ int date_time_compare(struct tm *t1, struct tm *t2)
 		return 1;
 	else if (t1->tm_mon < t2->tm_mon)
 		return -1;
-	
+
 	if (t1->tm_mday > t2->tm_mday)
 		return 1;
 	else if (t1->tm_mday < t2->tm_mday)
@@ -238,7 +238,7 @@ int date_time_compare(struct tm *t1, struct tm *t2)
 		return 1;
 	else if (t1->tm_hour < t2->tm_hour)
 		return -1;
-	
+
 	if (t1->tm_min > t2->tm_min)
 		return 1;
 	else if (t1->tm_min < t2->tm_min)
@@ -529,7 +529,7 @@ sort_action_node_t *msg_sort_action_create(void)
 	}
 	node->msg_types = AVC_MSG | LOAD_POLICY_MSG | BOOLEAN_MSG;
 	node->sort = &msg_field_compare;
-	return node;	
+	return node;
 }
 
 sort_action_node_t *host_sort_action_create(void)
@@ -541,7 +541,7 @@ sort_action_node_t *host_sort_action_create(void)
 	}
 	node->msg_types = AVC_MSG | LOAD_POLICY_MSG | BOOLEAN_MSG;
 	node->sort = &host_field_compare;
-	return node;	
+	return node;
 }
 
 sort_action_node_t *perm_sort_action_create(void)

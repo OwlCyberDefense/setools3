@@ -45,7 +45,7 @@
 		    <widget class="GtkImageMenuItem" id="LogFileOpen">
 		      <property name="visible">True</property>
 		      <property name="tooltip" translatable="yes">Open a new log</property>
-		      <property name="label" translatable="yes">Open log</property>
+		      <property name="label" translatable="yes">Open Log</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="seaudit_on_LogFileOpen_activate" last_modification_time="Fri, 23 Jan 2004 18:08:36 GMT"/>
 		      <accelerator key="L" modifiers="GDK_CONTROL_MASK" signal="activate"/>
@@ -68,7 +68,7 @@
 		    <widget class="GtkMenuItem" id="OpenRecentLog">
 		      <property name="visible">True</property>
 		      <property name="tooltip" translatable="yes">Open a new log from the recent files list</property>
-		      <property name="label" translatable="yes">Open recent</property>
+		      <property name="label" translatable="yes">Open Recent Log</property>
 		      <property name="use_underline">True</property>
 		    </widget>
 		  </child>
@@ -83,7 +83,7 @@
 		    <widget class="GtkImageMenuItem" id="PolicyFileOpen">
 		      <property name="visible">True</property>
 		      <property name="tooltip" translatable="yes">Open a new policy</property>
-		      <property name="label" translatable="yes">Open policy</property>
+		      <property name="label" translatable="yes">Open Policy</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="seaudit_on_PolicyFileOpen_activate" last_modification_time="Fri, 23 Jan 2004 18:08:36 GMT"/>
 		      <accelerator key="P" modifiers="GDK_CONTROL_MASK" signal="activate"/>
@@ -106,7 +106,7 @@
 		    <widget class="GtkMenuItem" id="OpenRecentPolicy">
 		      <property name="visible">True</property>
 		      <property name="tooltip" translatable="yes">Open a new policy from the recent files list</property>
-		      <property name="label" translatable="yes">Open recent</property>
+		      <property name="label" translatable="yes">Open Recent Policy</property>
 		      <property name="use_underline">True</property>
 		    </widget>
 		  </child>
@@ -404,7 +404,7 @@
 		      <property name="visible">True</property>
 		      <property name="sensitive">False</property>
 		      <property name="tooltip" translatable="yes">Query the policy for TE rules</property>
-		      <property name="label" translatable="yes">Query policy</property>
+		      <property name="label" translatable="yes">Query Policy</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="seaudit_on_top_window_query_button_clicked" last_modification_time="Fri, 23 Jan 2004 18:13:21 GMT"/>
 		      <accelerator key="Q" modifiers="GDK_CONTROL_MASK" signal="activate"/>

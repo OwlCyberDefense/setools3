@@ -138,9 +138,11 @@ source/target type drop-down boxes.  You may type a direct match for an
 object into the object class box.  You may also scroll down and pick a
 particular entry from the drop-down box.
 
-The "Include Indirect Matches" check box alters the meaning of the
-search.  The search finds rules that have either the provided type
-or any of the type's attributes in the appropriate field.
+The 'Only show direct matches' checkbox alters the meaning of the
+search.  By default the search finds rules that have either the
+provided type or any of the type's attributes in the appropriate
+field.  If this checkbox is enabled then the search will only find
+that type; it ignores the type's attributes.
 
 Clicking on 'Query Policy' displays a list of all rules fitting your
 criteria.  If the policy file you have opened is a source policy, then
