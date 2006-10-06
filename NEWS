@@ -3,7 +3,7 @@ setools 3.0
 setools:
 
   * Moved entire project to autoconf build system.  This will detect
-    dependencies correctly and mak. it easier to integrate with Linux
+    dependencies correctly and make it easier to integrate with Linux
     distributions and their packaging systems.
 
 setools libraries:
@@ -15,6 +15,10 @@ setools libraries:
     convention and are fully documented.  This will prove helpful for
     third-party developers integrating setools into their own
     projects.
+
+  * For policies version 15 or greater, domain transition anlysis now
+    takes into consideration setexec permission and/or type_transition
+    rules.
 
 apol:
 

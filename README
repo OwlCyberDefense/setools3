@@ -271,6 +271,8 @@ The main emphasis of SETools is the graphical analysis tools.
       the policy based on audit messages, as well as export audit log
       messages to a file.  It can also create reports in HTML or
       plain-text format using an entire audit log or an seaudit view.
+      Note that this program is installed in $(PREFIX)/sbin because
+      its main function is to analyze /var/log/messages.
 
   sediffx:
       A GTK+ frontend to libpoldiff.  Use sediffx to open two SELinux
