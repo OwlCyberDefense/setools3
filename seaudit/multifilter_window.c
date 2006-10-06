@@ -118,8 +118,6 @@ void multifilter_window_display(multifilter_window_t *window, GtkWindow *parent)
 	/* however to have it "appear" to be centered we have to hide and then show */
 	gtk_window_set_transient_for(window->window, parent);
 	gtk_window_set_position(window->window, GTK_WIN_POS_CENTER_ON_PARENT);
-	gtk_widget_hide(GTK_WIDGET(window->window));
-	gtk_window_present(window->window);
 
 	widget = glade_xml_get_widget(window->xml, "NameEntry");
 	g_assert(widget);
