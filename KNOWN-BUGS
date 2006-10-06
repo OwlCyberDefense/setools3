@@ -29,10 +29,10 @@ APOL
    aliases are not displayed and queries should not use them as
    parameters.
 
-4. Certain older source policies will not load if complimented type 
-   sets are used outside of neverallow rules. This is due to apol using
-   a similar parser to checkpolicy, which nolonger accepts this use of
-   the compliment operator (~).
+4. Certain older source policies will not load if complemented type 
+   sets are used outside of neverallow rules.  This is due to apol using
+   a similar parser to checkpolicy, which no longer accepts this use of
+   the complement operator (~).
 
 SEAUDIT
 
