@@ -320,7 +320,7 @@ proc Apol_Perms_Map::saveAs {} {
 proc Apol_Perms_Map::saveAsDefault {} {
     variable user_default_pmap_name
     variable opts
-    savePermMap $user_default_pmap_nam "User Default Permission Map"
+    savePermMap $user_default_pmap_name "User Default Permission Map"
 }
 
 proc Apol_Perms_Map::exitDialog {} {
