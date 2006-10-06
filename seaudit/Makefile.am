@@ -40,6 +40,11 @@ seaudit_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
                        $(top_builddir)/libapol/src/libapol.so \
                        $(top_builddir)/libqpol/src/libqpol.so
 
+# dot_seaudit should probably be configured by configure.ac
+dot_seaudit: dot_seaudit.in Makefile
+	cat $< | \
+	sed -e 's|\@setoolsdir\@|$(setoolsdir)|g' > $@
+
 seaudit_report_SOURCES = seaudit-report.c report.c report.h
 seaudit_report_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
                               $(top_builddir)/libapol/src/libapol.so \
@@ -50,7 +55,8 @@ LOGWATCH_GROUP = $(logwatch)/conf/logfiles
 LOGWATCH_SERVICE = $(logwatch)/conf/services
 LOGWATCH_FILTER = $(logwatch)/scripts/services
 
-dist_noinst_DATA = seaudit-report-group.conf \
+dist_noinst_DATA = dot_seaudit.in \
+	seaudit-report-group.conf \
         seaudit-report-service.conf \
         seaudit-report-service
 
@@ -72,3 +78,5 @@ $(top_builddir)/libsefs/src/libsefs.so:
 	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)
 
 .PHONY: install-logwatch
+
+CLEANFILES = dot_seaudit
