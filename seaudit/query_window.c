@@ -232,7 +232,7 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 
 	GtkWindow *window;
 	GtkWidget *widget;
-	int i, indirect = 0;
+	int i, direct = 1;
 	apol_vector_t *avrule_vector = NULL;
 	apol_avrule_query_t *avrule_query = NULL;
 
@@ -240,19 +240,21 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 	avrule_query = apol_avrule_query_create();
 	apol_avrule_query_set_rules(seaudit_app->cur_policy, avrule_query, QPOL_RULE_ALLOW);
 
-	widget = glade_xml_get_widget(xml, "SrcTypeIndirectCheck");
+	widget = glade_xml_get_widget(xml, "SrcTypeDirectCheck");
 	g_assert(widget);
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) ) indirect = 1;
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) )
+		direct = 0;
 	if (strcmp(src_type->str, "") != 0) {
-		apol_avrule_query_set_source(seaudit_app->cur_policy, avrule_query, src_type->str, indirect);
+		apol_avrule_query_set_source(seaudit_app->cur_policy, avrule_query, src_type->str, direct);
 		apol_avrule_query_set_regex(seaudit_app->cur_policy, avrule_query, 1);
 	}
-	indirect = 0;
-	widget = glade_xml_get_widget(xml, "TgtTypeIndirectCheck");
+	direct = 1;
+	widget = glade_xml_get_widget(xml, "TgtTypeDirectCheck");
 	g_assert(widget);
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) ) indirect = 1;
+	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) )
+                direct = 0;
 	if (strcmp(tgt_type->str, "") != 0) {
-		apol_avrule_query_set_target(seaudit_app->cur_policy, avrule_query, tgt_type->str, indirect);
+		apol_avrule_query_set_target(seaudit_app->cur_policy, avrule_query, tgt_type->str, direct);
 		apol_avrule_query_set_regex(seaudit_app->cur_policy, avrule_query, 1);
 	}
 
@@ -293,7 +295,7 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 }
 
 void on_close_button_clicked(GtkButton *button, gpointer user_data)
-{ 
+{
         GladeXML *xml = (GladeXML*)user_data;
         GtkWidget *widget;
 
@@ -384,12 +386,12 @@ void on_tgt_type_check_button_toggled(GtkToggleButton *button, gpointer user_dat
 	if (gtk_toggle_button_get_active(button)) {
 		widget = glade_xml_get_widget(xml, "tgt_combo");
 		gtk_widget_set_sensitive(widget, TRUE);
-		widget = glade_xml_get_widget(xml, "TgtTypeIndirectCheck");
+		widget = glade_xml_get_widget(xml, "TgtTypeDirectCheck");
 		gtk_widget_set_sensitive(widget, TRUE);
 	} else {
 		widget = glade_xml_get_widget(xml, "tgt_combo");
 		gtk_widget_set_sensitive(widget, FALSE);
-		widget = glade_xml_get_widget(xml, "TgtTypeIndirectCheck");
+		widget = glade_xml_get_widget(xml, "TgtTypeDirectCheck");
 		gtk_widget_set_sensitive(widget, FALSE);
 	}
 }
@@ -402,12 +404,12 @@ void on_src_type_check_button_toggled(GtkToggleButton *button, gpointer user_dat
 	if (gtk_toggle_button_get_active(button)) {
 		widget = glade_xml_get_widget(xml, "src_combo");
 		gtk_widget_set_sensitive(widget, TRUE);
-		widget = glade_xml_get_widget(xml, "SrcTypeIndirectCheck");
+		widget = glade_xml_get_widget(xml, "SrcTypeDirectCheck");
 		gtk_widget_set_sensitive(widget, TRUE);
 	} else {
 		widget = glade_xml_get_widget(xml, "src_combo");
 		gtk_widget_set_sensitive(widget, FALSE);
-		widget = glade_xml_get_widget(xml, "SrcTypeIndirectCheck");
+		widget = glade_xml_get_widget(xml, "SrcTypeDirectCheck");
 		gtk_widget_set_sensitive(widget, FALSE);
 	}
 }
@@ -470,7 +472,6 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 	GtkWidget *src_type_combo, *tgt_type_combo, *obj_class_combo;
 	GtkWidget *src_entry, *tgt_entry, *obj_entry;
 	gboolean selected;
-	GString *str;
 	msg_t *msg = NULL;
 	avc_msg_t *avc_msg = NULL;
 	int fltr_msg_idx, msg_list_idx;
@@ -536,26 +537,6 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 	} else {
 		g_assert(fltr_msg_idx >= 0);
 		avc_msg = msg->msg_data.avc_msg;
-	}
-
-	if (selected) {
-		str = g_string_new("");
-		g_string_assign(str, audit_log_get_type(seaudit_app->cur_log, avc_msg->src_type));
-		g_string_prepend(str, "^");
-		g_string_append(str, "$");
-		gtk_entry_set_text(GTK_ENTRY(src_entry), str->str);
-		g_string_assign(str, audit_log_get_type(seaudit_app->cur_log, avc_msg->tgt_type));
-		g_string_prepend(str, "^");
-		g_string_append(str, "$");
-		gtk_entry_set_text(GTK_ENTRY(tgt_entry), str->str);
-		gtk_entry_set_text(GTK_ENTRY(obj_entry), audit_log_get_obj(seaudit_app->cur_log, avc_msg->obj_class));
-		g_string_free(str, TRUE);
-
-		/* Free selected rows list */
-		if (glist) {
-			g_list_foreach(glist, (GFunc)gtk_tree_path_free, NULL);
-			g_list_free(glist);
-		}
 	}
 
 	return;
@@ -634,12 +615,8 @@ int query_window_create(int *tree_item_idx)
 	g_string_free(path, TRUE);
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
 	g_assert(window);
-	/* set this window to be transient on the main window, so that when it pops up it gets centered on it */
-	/* however to have it "appear" to be we have to hide and then show */
 	gtk_window_set_transient_for(window, seaudit_app->window->window);
 	gtk_window_set_position(window, GTK_WIN_POS_CENTER_ON_PARENT);
-	gtk_widget_hide(GTK_WIDGET(window));
-	gtk_window_present(window);
 
 	/* connect functions to display selection as regular expression */
 	combo = glade_xml_get_widget(xml, "src_combo");
@@ -649,7 +626,7 @@ int query_window_create(int *tree_item_idx)
 	g_assert(combo);
 	g_signal_connect(GTK_COMBO(combo)->list, "event-after", G_CALLBACK(on_event_after), combo);
 
-	glade_xml_signal_connect_data(xml, "on_close_button_clicked", 
+	glade_xml_signal_connect_data(xml, "on_close_button_clicked",
 			G_CALLBACK(on_close_button_clicked),
 			xml);
 	glade_xml_signal_connect_data(xml, "on_query_policy_button_clicked",

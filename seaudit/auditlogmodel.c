@@ -2,7 +2,7 @@
  * see file 'COPYING' for use and warranty information */
 
 /*
- * Author: Karl MacMillan <kmacmillan@tresys.com> 
+ * Author: Karl MacMillan <kmacmillan@tresys.com>
  *         Kevin Carr <kcarr@tresys.com>
  *         Jeremy Stitz <jstitz@tresys.com>
  */
@@ -90,7 +90,7 @@ GType seaudit_log_view_store_get_type(void)
 		g_type_add_interface_static(store_type,
 					    GTK_TYPE_TREE_MODEL,
 					    &tree_model_info);
-		
+
 		g_type_add_interface_static (store_type,
 					     GTK_TYPE_TREE_SORTABLE,
 					     &sortable_info);
@@ -117,7 +117,7 @@ static void log_view_store_tree_model_init(GtkTreeModelIface *iface)
 	iface->get_iter = log_view_store_get_iter;
 	iface->get_path = log_view_store_get_path;
 	iface->get_value = log_view_store_get_value;
-  	iface->iter_next = log_view_store_iter_next;
+	iface->iter_next = log_view_store_iter_next;
 	iface->iter_children = log_view_store_iter_children;
 	iface->iter_has_child = log_view_store_iter_has_child;
 	iface->iter_n_children = log_view_store_iter_n_children;
@@ -214,7 +214,7 @@ static void set_utf8_return_value(GValue *value, const char *str)
 {
 	if (str != NULL && g_utf8_validate(str, -1, NULL))
 		g_value_set_string(value, str);
-	else 
+	else
 		g_value_set_string(value, "");
 }
 
@@ -252,7 +252,7 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		/* check to see if we have been given a valid year, if so display, otherwise no year displayed */
 		if (msg->date_stamp->tm_year == 0)
 			strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S", msg->date_stamp);
-		else 
+		else
 			strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S %Y", msg->date_stamp);
 		set_utf8_return_value(value, date);
 		return;
@@ -280,7 +280,7 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 					string = g_string_append(string, cur_bool);
 					if (!string)
 					        return;
-	
+
 					g_string_append_printf(string, ":%d", boolean_msg->values[j]);
 				}
 				set_utf8_return_value(value, string->str);
@@ -359,11 +359,11 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		break;
 	case AVC_PERM_FIELD:
 		if (apol_vector_get_size(cur_msg->perms) > 0) {
-			string = g_string_new(audit_log_get_perm(store->log_view->my_log, (int)apol_vector_get_element(cur_msg->perms, 0)));
+			string = g_string_new((char *) apol_vector_get_element(cur_msg->perms, 0));
 			if (!string)
 				return;
 			for (j = 1; j < apol_vector_get_size(cur_msg->perms); j++) {
-				cur_perm = audit_log_get_perm(store->log_view->my_log, (int)apol_vector_get_element(cur_msg->perms, j));
+				cur_perm = apol_vector_get_element(cur_msg->perms, j);
 				string = g_string_append(string, ",");
 				if (!string)
 					return;
@@ -423,7 +423,7 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		if (cur_msg->is_key)
 			g_string_append_printf(string, "key=%d ", cur_msg->key);
 		if (cur_msg->is_capability)
-			g_string_append_printf(string, "capability=%d ", cur_msg->capability);	
+			g_string_append_printf(string, "capability=%d ", cur_msg->capability);
 		if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
 			g_string_append_printf(string, "timestamp=%lu.%03lu ", cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano);
 			g_string_append_printf(string, "serial=%u ", cur_msg->serial);
@@ -482,7 +482,7 @@ static gboolean log_view_store_iter_has_child(GtkTreeModel *tree_model, GtkTreeI
 static gint log_view_store_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter *iter)
 {
 	SEAuditLogViewStore *store;
-	
+
 	g_return_val_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(tree_model), -1);
 	store = (SEAuditLogViewStore*)tree_model;
 	if (!store->log_view)
@@ -538,7 +538,7 @@ static void seaudit_log_view_store_sort(SEAuditLogViewStore *store)
 		return;
 	if (!store->log_view->my_log)
 		return;
-	
+
 	if (store->order == GTK_SORT_DESCENDING)
 		reverse = 1;
 
@@ -607,7 +607,7 @@ static void seaudit_log_view_store_set_sort_column_id(GtkTreeSortable *sortable,
 			return;
 		break;
 	case AVC_MSG_FIELD:
-	  	if (audit_log_view_append_sort(store->log_view, msg_sort_action_create()))
+		if (audit_log_view_append_sort(store->log_view, msg_sort_action_create()))
 			return;
 		break;
 	case AVC_EXE_FIELD:
@@ -655,7 +655,7 @@ static void seaudit_log_view_store_set_sort_column_id(GtkTreeSortable *sortable,
 			return;
 		break;
 	case AVC_PERM_FIELD:
-	  	if (audit_log_view_append_sort(store->log_view, perm_sort_action_create()))
+		if (audit_log_view_append_sort(store->log_view, perm_sort_action_create()))
 			return;
 		break;
 	case AVC_INODE_FIELD:
@@ -703,7 +703,7 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 	GtkTreeIter iter;
 	gint sortId;
 	gboolean sorted;
-	
+
 	if (!store->log_view)
 		return;
 
@@ -730,7 +730,7 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 	iter.stamp = store->stamp;
 	for (i = num_kept; i < new_sz; i++) {
 		iter.user_data = GINT_TO_POINTER(i);
-	       	path = gtk_tree_path_new();
+		path = gtk_tree_path_new();
 		path = log_view_store_get_path(GTK_TREE_MODEL(store), &iter);
 		gtk_tree_model_row_inserted(GTK_TREE_MODEL(store), path, &iter);
 		gtk_tree_path_free(path);
@@ -740,7 +740,7 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 	}
 	if (sorted)
 		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), sortId, store->order);
-	else 
+	else
 		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), DATE_FIELD, GTK_SORT_ASCENDING);
 	log_filtered_signal_emit(); /* To Do: need to pass store to signal emit */
 	return;
@@ -751,7 +751,7 @@ void seaudit_log_view_store_close_log(SEAuditLogViewStore *store)
 	GtkTreeIter iter;
 	GtkTreePath *path;
 	int i;
-	
+
 	if (!store || !store->log_view)
 		return;
 	iter.stamp = store->stamp;
