@@ -515,7 +515,7 @@ static int perform_ra_query(apol_policy_t *policy, options_t *opt, apol_vector_t
 		return -1;
 	}
 
-	if (!opt->role_allow) {
+	if (!opt->role_allow && !opt->all) {
 		*v = NULL;
 		return 0; /* no search to do */
 	}
@@ -592,7 +592,7 @@ static int perform_rt_query(apol_policy_t *policy, options_t *opt, apol_vector_t
 		return -1;
 	}
 
-	if (!opt->role_trans) {
+	if (!opt->role_trans && !opt->all) {
 		*v = NULL;
 		return 0; /* no search to do */
 	}
@@ -670,7 +670,7 @@ static int perform_range_query(apol_policy_t *policy, options_t *opt, apol_vecto
 		return -1;
 	}
 
-	if (!opt->rtrans) {
+	if (!opt->rtrans && !opt->all) {
 		*v = NULL;
 		return 0; /* no search to do */
 	}
