@@ -62,7 +62,7 @@ int domain_and_file_register(sechk_lib_t *lib)
 		"requires that less restrictive access be granted to these types.\n";
 	mod->opt_description = 
 		"Module requirements:\n"
-		"   none\n"
+		"   policy source\n"
 		"Module dependencies:\n"
 		"   find_domains module\n"
 		"   find_file_types module\n"
@@ -316,6 +316,8 @@ int domain_and_file_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 	mod->result = res;
 
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 domain_and_file_run_fail:

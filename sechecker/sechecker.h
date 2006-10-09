@@ -102,7 +102,7 @@ typedef enum sechk_item_type {
 	SECHK_ITEM_STR,        /* char* generic string */
 	SECHK_ITEM_DTR,        /* apol_domain_trans_result_t */
 	SECHK_ITEM_OTHER,      /* void* data is something else (module specific) */
-	SECHK_ITEM_NONE        /* there is no proof only text */
+	SECHK_ITEM_NONE        /* there is no proof element only text */
 } sechk_item_type_e;
 
 /** Module results proof element: This represents a single reason for the

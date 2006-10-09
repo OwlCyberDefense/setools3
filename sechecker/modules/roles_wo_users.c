@@ -299,6 +299,8 @@ int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	apol_user_query_destroy(&user_query);
 	mod->result = res;
 
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 roles_wo_users_run_fail:

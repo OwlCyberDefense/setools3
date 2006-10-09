@@ -71,8 +71,8 @@ int spurious_audit_register(sechk_lib_t *lib)
 		"\n"
 		"   1) there is an allow rule with the same key and permissions for a dontaudit\n"
 		"      rule\n"
-		"   2) there is an auditallow rule without an allow rule with a key and\n"
-		"      permission that does not appear in an allow rule.\n";
+		"   2) there is an auditallow rule without an allow rule with the same key or\n"
+		"      with permissions that do not appear in an allow rule with the same key.\n";
 	mod->opt_description = 
 		"  Module requirements:\n"
 		"    none\n"
@@ -500,7 +500,7 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 					goto spurious_audit_run_fail;
 				}
 				if (j != (apol_vector_get_size(perm_vector1) - 1)) {
-					if (apol_str_append(&(proof->text), &tmp_counter, ", ")) {
+					if (apol_str_append(&(proof->text), &tmp_counter, " ")) {
 						error = errno;
 						ERR(policy, "%s", strerror(error));
 						goto spurious_audit_run_fail;
@@ -631,15 +631,15 @@ int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			for (j = 0; j < apol_vector_get_size(perm_vector1); j++)
 			{
 				string1 = (char*) apol_vector_get_element(perm_vector1, j);
-				if (!apol_vector_get_index(perm_intersection, (void*)string1,
-							apol_str_strcmp, NULL, &l))
+				if (apol_vector_get_index(perm_intersection, (void*)string1,
+							apol_str_strcmp, NULL, &l) < 0)
 				{
 					if (apol_str_append(&(proof->text), &tmp_counter, string1)) {
 						error = errno;
 						ERR(policy, "%s", strerror(error));
 						goto spurious_audit_run_fail;
 					}
-					if (apol_str_append(&(proof->text), &tmp_counter, ", "))
+					if (apol_str_append(&(proof->text), &tmp_counter, " "))
 					{
 						error = errno;
 						ERR(policy, "%s", strerror(error));

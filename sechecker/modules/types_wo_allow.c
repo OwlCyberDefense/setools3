@@ -328,6 +328,8 @@ int types_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 	mod->result = res;
 
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 types_wo_allow_run_fail:
@@ -346,7 +348,8 @@ int types_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0, j=0, num_items;
+	sechk_proof_t *proof = NULL;
+	int i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
 	char *type_name;
 
@@ -382,7 +385,7 @@ int types_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
-	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
+	if (outformat & (SECHK_OUT_LIST)) {
 		printf("\n");
 		for (i = 0; i < num_items; i++) {
 			j++;
@@ -394,6 +397,27 @@ int types_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		}
 		printf("\n");
 	}
+
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\n");
+		for (k = 0; k < num_items; k++) {
+			item = apol_vector_get_element(mod->result->items, k);
+			if (item) {
+				type = item->item;
+				qpol_type_get_name(policy->p, type, &type_name);
+				printf("%s\n", type_name);
+				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
+					proof = apol_vector_get_element(item->proof,l);
+					if (proof)
+						printf("\t%s\n", proof->text);
+				}
+			}
+		}
+		printf("\n");
+	}
+	type = NULL;
+	type_name = NULL;
+
 	return 0;
 }
 

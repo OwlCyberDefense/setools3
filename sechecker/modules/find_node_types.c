@@ -213,12 +213,89 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		goto find_node_types_run_fail;		
 	}
 
+	/* search initial SIDs */
+	qpol_isid_t *isid = NULL;
+
+	buff = NULL;
+	qpol_policy_get_isid_by_name(policy->p, "node", &isid);
+	if ( isid ) {
+		qpol_context_t *context; 
+		apol_context_t *a_context;
+		qpol_type_t *context_type;
+		char *context_type_name, *tmp;
+
+		proof = NULL;
+		qpol_isid_get_context(policy->p, isid, &context);
+		qpol_context_get_type(policy->p, context, &context_type);
+		qpol_type_get_name(policy->p, context_type, &context_type_name);
+		a_context = apol_context_create_from_qpol_context(policy, context);
+
+		if (apol_str_append(&buff, &buff_sz, "sid node ") != 0) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			apol_context_destroy(&a_context);
+			goto find_node_types_run_fail;
+		}
+
+		tmp = apol_context_render(policy, a_context);
+		if (apol_str_append(&buff, &buff_sz, tmp) != 0) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			apol_context_destroy(&a_context);
+			free(tmp);
+			goto find_node_types_run_fail;
+		}
+		apol_context_destroy(&a_context);
+		free(tmp);
+		tmp = NULL;
+
+		if (!item) {
+			item = sechk_item_new(NULL);
+			if (!item) {
+				error = errno;
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_node_types_run_fail;
+			}
+			item->test_result = 1;
+		}
+
+		proof = sechk_proof_new(NULL);
+		if (!proof) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_node_types_run_fail;
+		}
+
+		proof->type = SECHK_ITEM_ISID;
+		proof->elem = isid;
+		proof->text = buff;
+
+		item->item = (void *)context_type;
+		if ( !item->proof ) {
+			if ( !(item->proof = apol_vector_create()) ) {
+				error = errno;
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_node_types_run_fail;
+			}
+		}
+		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_node_types_run_fail;
+		}
+		if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_node_types_run_fail;
+		}
+	}
+
 	if (apol_get_nodecon_by_query(policy, NULL, &nodecon_vector) < 0) {
 		error = errno;
 		goto find_node_types_run_fail;
 	}
 
-	for (i = 0; i<apol_vector_get_size(nodecon_vector); i++) {
+	for (i = 0; i < apol_vector_get_size(nodecon_vector); i++) {
 		char *type_name;
 		int j;
 		qpol_context_t *context;
@@ -234,7 +311,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto find_node_types_run_fail;
 		}
-		proof->type = SECHK_ITEM_TYPE;
+		proof->type = SECHK_ITEM_NONE;
 		proof->text = apol_nodecon_render(policy, nodecon);
 
 		for (j=0;j<apol_vector_get_size(res->items);j++) {
@@ -263,13 +340,13 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			}
 		} 
 		if (!item->proof) { 
-			if ( !(item->proof = apol_vector_create()) ) {
+			if (!(item->proof = apol_vector_create())) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
 			}
 		}
-		if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+		if (apol_vector_append(item->proof, (void *)proof) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto find_node_types_run_fail;
@@ -277,85 +354,6 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		item = NULL;
 	}
 	apol_vector_destroy(&nodecon_vector, free);
-
-	/* if we are provided a source policy, search initial SIDs */
-	if (policy) {
-		qpol_isid_t *isid = NULL;
-
-		buff = NULL;
-		qpol_policy_get_isid_by_name(policy->p, "node", &isid);
-		if ( isid ) {
-			qpol_context_t *context; 
-			apol_context_t *a_context;
-			qpol_type_t *context_type;
-			char *context_type_name, *tmp;
-
-			proof = NULL;
-			qpol_isid_get_context(policy->p, isid, &context);
-			qpol_context_get_type(policy->p, context, &context_type);
-			qpol_type_get_name(policy->p, context_type, &context_type_name);
-			a_context = apol_context_create_from_qpol_context(policy, context);
-
-			if (apol_str_append(&buff, &buff_sz, "sid node ") != 0) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				apol_context_destroy(&a_context);
-				goto find_node_types_run_fail;
-			}
-
-			tmp = apol_context_render(policy, a_context);
-			if (apol_str_append(&buff, &buff_sz, tmp) != 0) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				apol_context_destroy(&a_context);
-				free(tmp);
-				goto find_node_types_run_fail;
-			}
-			apol_context_destroy(&a_context);
-			free(tmp);
-			tmp = NULL;
-
-			if (!item) {
-				item = sechk_item_new(NULL);
-				if (!item) {
-					error = errno;
-					ERR(policy, "%s", strerror(ENOMEM));
-					goto find_node_types_run_fail;
-				}
-				item->test_result = 1;
-			}
-
-			proof = sechk_proof_new(NULL);
-			if (!proof) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_node_types_run_fail;
-			}
-
-			proof->type = SECHK_ITEM_ISID;
-			proof->elem = isid;
-			proof->text = buff;
-
-			item->item = (void *)context_type;
-			if ( !item->proof ) {
-				if ( !(item->proof = apol_vector_create()) ) {
-					error = errno;
-					ERR(policy, "%s", strerror(ENOMEM));
-					goto find_node_types_run_fail;
-				}
-			}
-			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_node_types_run_fail;
-			}
-			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_node_types_run_fail;
-			}
-		}
-	}
 
 	mod->result = res;
 
