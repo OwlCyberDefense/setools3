@@ -182,7 +182,7 @@ proc Apol_Analysis_directflow::loadQuery {channel} {
         regexp -line -- {^(\S+)( (.+))?} $line -> key --> value
         switch -- $key {
             classes:selected {
-                set classes_exc $value
+                set classes $value
             }
             default {
                 set vals($key) $value

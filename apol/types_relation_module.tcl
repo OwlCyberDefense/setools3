@@ -518,7 +518,7 @@ proc Apol_Analysis_tra::renderTypeRules {tree rules} {
 proc Apol_Analysis_tra::showTypeRules {res data} {
     $res.tb insert end "Type transition/change rules ([llength $data]):\n\n" title
     foreach r $data {
-         Apol_Widget::appendSearchResultTERule $res 2 $r
+         Apol_Widget::appendSearchResultTERules $res 2 $r
     }
 }
 

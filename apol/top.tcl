@@ -1,7 +1,7 @@
 # Copyright (C) 2001-2006 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget 
 
 ##############################################################
@@ -1440,7 +1440,7 @@ proc ApolTop::closePolicy {} {
 	set filename ""
 	variable policy_mls_type ""
 	
-	wm title . "SE Linux Policy Analysis"
+	wm title . "SELinux Policy Analysis"
 
     variable tab_names
     foreach tab $tab_names {
@@ -1639,7 +1639,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
     destroy .apol_policy_open
     if {$retval} {
         tk_messageBox -icon error -type ok -title "Open Policy" \
-            -message "The selected file does not appear to be a valid SE Linux Policy.\n\n$err"
+            -message "The selected file does not appear to be a valid SELinux Policy.\n\n$err"
         return
     }
 
@@ -1663,7 +1663,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
     }
     set policy_is_open 1
     variable filename $file
-    wm title . "SE Linux Policy Analysis - $file"
+    wm title . "SELinux Policy Analysis - $file"
 }
 
 proc ApolTop::doOpenIdle {} {
@@ -1797,8 +1797,8 @@ proc ApolTop::main {} {
 	# Load the apol package into the interpreter
 	set rt [catch {package require apol} err]
 	if {$rt != 0 } {
-		tk_messageBox -icon error -type ok -title "Missing SE Linux package" -message \
-			"Missing the SE Linux package.  This script will not\n\
+		tk_messageBox -icon error -type ok -title "Missing SELinux package" -message \
+			"Missing the SELinux package.  This script will not\n\
 			work correctly using the generic TK wish program.  You\n\
 			must either use the apol executable or the awish\n\
 			interpreter."
@@ -1806,7 +1806,7 @@ proc ApolTop::main {} {
 	}
 
 	wm withdraw .
-	wm title . "SE Linux Policy Analysis"
+	wm title . "SELinux Policy Analysis"
     wm protocol . WM_DELETE_WINDOW ApolTop::apolExit
 	
 	set rt [catch {ApolTop::check_libsefs} err]
