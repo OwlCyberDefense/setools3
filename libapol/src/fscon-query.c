@@ -312,9 +312,12 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 		if (f != NULL) {
 			char *fs;
 			uint32_t behavior;
-			qpol_context_t *context;
+			qpol_context_t *context = NULL;
 			if (qpol_fs_use_get_name(p->p, fs_use, &fs) < 0 ||
-			    qpol_fs_use_get_behavior(p->p, fs_use, &behavior) < 0 ||
+			    qpol_fs_use_get_behavior(p->p, fs_use, &behavior) < 0) {
+				goto cleanup;
+			}
+			if (behavior != QPOL_FS_USE_PSID &&
 			    qpol_fs_use_get_context(p->p, fs_use, &context) < 0) {
 				goto cleanup;
 			}

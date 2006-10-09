@@ -276,4 +276,3 @@ int qpol_avrule_get_which_list(qpol_policy_t *policy, qpol_avrule_t *rule, uint3
 
 	return STATUS_SUCCESS;
 }
-
