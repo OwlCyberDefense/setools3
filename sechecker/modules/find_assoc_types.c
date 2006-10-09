@@ -62,7 +62,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
 		"This module finds types with an unlabeled initial sid. \n";
 	mod->opt_description = 
 		"  Module requirements:\n"
-		"    none\n"
+		"    policy source\n"
 		"  Module dependencies:\n"
 		"    none\n"
 		"  Module options:\n"
@@ -296,8 +296,6 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	mod->result = res;
 
-	if (apol_vector_get_size(res->items) > 0)
-		return 1;
 	return 0;
 
 find_assoc_types_run_fail:

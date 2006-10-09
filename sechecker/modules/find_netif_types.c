@@ -202,11 +202,86 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_netif_types_run_fail;
 	}
-	res->item_type = SECHK_ITEM_NETIFCON;
+	res->item_type = SECHK_ITEM_TYPE;
 	if ( !(res->items = apol_vector_create()) ) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_netif_types_run_fail;	
+	}
+
+	/* search initial SIDs */
+	qpol_isid_t *isid = NULL;
+
+	buff = NULL;
+	qpol_policy_get_isid_by_name(policy->p, "netif", &isid);
+	if (isid) {
+		qpol_context_t *context;
+		apol_context_t *a_context;
+		qpol_type_t *context_type;
+		char *context_type_name, *tmp;
+
+		proof = NULL;
+		qpol_isid_get_context(policy->p, isid, &context);
+		qpol_context_get_type(policy->p, context, &context_type);
+		qpol_type_get_name(policy->p, context_type, &context_type_name);
+		a_context = apol_context_create_from_qpol_context(policy, context);
+
+		if (apol_str_append(&buff, &buff_sz, "sid netif ") != 0) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			apol_context_destroy(&a_context);
+			goto find_netif_types_run_fail;
+		}
+
+		tmp = apol_context_render(policy, a_context);
+		if (apol_str_append(&buff, &buff_sz, tmp) != 0 ) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			free(tmp);
+			apol_context_destroy(&a_context);
+			goto find_netif_types_run_fail;
+		}
+		apol_context_destroy(&a_context);
+		free(tmp);
+		tmp = NULL;
+
+		item = sechk_item_new(NULL);
+		if (!item) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_netif_types_run_fail;
+		}
+		item->test_result = 1;
+
+		proof = sechk_proof_new(NULL);
+		if (!proof) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_netif_types_run_fail;
+		}
+
+		proof->type = SECHK_ITEM_ISID;
+		proof->elem = isid;
+		proof->text = buff;
+
+		item->item = (void *)context_type;
+		if ( !item->proof ) {
+			if ( !(item->proof = apol_vector_create()) ) {
+				error = errno;
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_netif_types_run_fail;
+			}
+		}
+		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_netif_types_run_fail;
+		}
+		if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+			error = errno;
+			ERR(policy, "%s", strerror(ENOMEM));
+			goto find_netif_types_run_fail;
+		}
 	}
 
 	if ( apol_get_netifcon_by_query(policy, NULL, &netifcon_vector) < 0 ) {
@@ -214,7 +289,7 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		goto find_netif_types_run_fail;
 	}
 
-	for (i=0;i<apol_vector_get_size(netifcon_vector);i++) {
+	for (i = 0; i < apol_vector_get_size(netifcon_vector); i++) {
 		char *msg_con_name = NULL;
 		char *if_con_name = NULL;	
 		qpol_netifcon_t *netifcon = NULL;
@@ -233,16 +308,17 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		qpol_type_get_name(policy->p, if_type, &if_con_name);
 
 		proof = sechk_proof_new(NULL);
-		if ( !proof ) {
+		if (!proof) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto find_netif_types_run_fail;
 		}
 		proof->type = SECHK_ITEM_NETIFCON;
+		proof->elem = netifcon;
 		proof->text = apol_netifcon_render(policy, netifcon);
 		item = NULL;
 
-		for (j=0;j<apol_vector_get_size(res->items);j++) {
+		for (j = 0; j < apol_vector_get_size(res->items); j++) {
 			sechk_item_t *res_item = NULL;
 			qpol_type_t *res_type;
 			char *res_type_name;
@@ -253,7 +329,7 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			if (!strcmp(res_type_name, if_con_name)) item = res_item;
 		}
 
-		if ( !item) {
+		if (!item) {
 			item = sechk_item_new(NULL);
 			if (!item) {
 				error = errno;
@@ -283,82 +359,6 @@ int find_netif_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		item = NULL;
 	}
 	apol_vector_destroy(&netifcon_vector,NULL);
-
-	/* if we are provided a source policy, search initial SIDs */
-	if (policy) {
-		qpol_isid_t *isid = NULL;
-
-		buff = NULL;
-		qpol_policy_get_isid_by_name(policy->p, "netif", &isid);
-		if ( isid ) {
-			qpol_context_t *context;
-			apol_context_t *a_context;
-			qpol_type_t *context_type;
-			char *context_type_name, *tmp;
-
-			proof = NULL;
-			qpol_isid_get_context(policy->p, isid, &context);
-			qpol_context_get_type(policy->p, context, &context_type);
-			qpol_type_get_name(policy->p, context_type, &context_type_name);
-			a_context = apol_context_create_from_qpol_context(policy, context);
-
-			if (apol_str_append(&buff, &buff_sz, "sid netif ") != 0) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				apol_context_destroy(&a_context);
-				goto find_netif_types_run_fail;
-			}
-
-			tmp = apol_context_render(policy, a_context);
-			if (apol_str_append(&buff, &buff_sz, tmp) != 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				free(tmp);
-				apol_context_destroy(&a_context);
-				goto find_netif_types_run_fail;
-			}
-			apol_context_destroy(&a_context);
-			free(tmp);
-			tmp = NULL;
-
-			item = sechk_item_new(NULL);
-			if (!item) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_netif_types_run_fail;
-			}
-			item->test_result = 1;
-
-			proof = sechk_proof_new(NULL);
-			if (!proof) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_netif_types_run_fail;
-			}
-
-			proof->type = SECHK_ITEM_NETIFCON;
-			proof->text = buff;
-
-			item->item = (void *)context_type;
-			if ( !item->proof ) {
-				if ( !(item->proof = apol_vector_create()) ) {
-					error = errno;
-					ERR(policy, "%s", strerror(ENOMEM));
-					goto find_netif_types_run_fail;
-				}
-			}
-			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_netif_types_run_fail;
-			}
-			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_netif_types_run_fail;
-			}
-		}
-	}
 
 	mod->result = res;
 

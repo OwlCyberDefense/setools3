@@ -264,6 +264,8 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 	mod->result = res;
 
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 roles_wo_types_run_fail:

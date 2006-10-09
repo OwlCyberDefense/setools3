@@ -71,7 +71,7 @@ int find_file_types_register(sechk_lib_t *lib)
 		"   4) it is specified in a context in the file_contexts file\n";
 	mod->opt_description =
 		"Module requirements:\n"
-		"   none\n"
+		"   policy source\n"
 		"Module dependencies:\n"
 		"   none\n"
 		"Module options:\n"

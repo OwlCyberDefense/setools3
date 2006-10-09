@@ -273,7 +273,7 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		
 		/* find users with the transition range */
 		user_query = apol_user_query_create();
-		apol_user_query_set_range(policy, user_query, range, APOL_QUERY_SUPER);
+		apol_user_query_set_range(policy, user_query, range, APOL_QUERY_SUB);
 		apol_get_user_by_query(policy, user_query, &users_w_range);
 		apol_user_query_destroy(&user_query);
 
