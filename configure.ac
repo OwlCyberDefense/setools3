@@ -268,17 +268,17 @@ AC_TRY_RUN([#include <sepol/sepol.h>
             #include <stdlib.h>
             int main(void) { exit(0); }],
            AC_MSG_RESULT(yes),
-           AC_MSG_ERROR([could not find sepol headers - make sure libsepol-devel is installed]))
+           AC_MSG_ERROR([could not find sepol headers at $sepol_devel_incdir - make sure libsepol-devel is installed]))
 AC_CHECK_LIB(sepol,sepol_policydb_read,,
-             AC_MSG_ERROR([could not find libsepol - make sure it is installed]))
+             AC_MSG_ERROR([could not find libsepol at $sepol_devel_libdir]))
 AC_MSG_CHECKING([for selinux/selinux.h])
 AC_TRY_RUN([#include <selinux/selinux.h>
             #include <stdlib.h>
             int main(void) { exit(0); }],
            AC_MSG_RESULT(yes),
-           AC_MSG_ERROR([could not find selinux headers - make sure libselinux-devel is installed]))
+           AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
 AC_CHECK_LIB(selinux, selinux_policy_root,,
-AC_MSG_ERROR([could not find libselinux - make sure it is installed]),
+AC_MSG_ERROR([could not find libselinux at $selinux_devel_libdir]),
              -lsepol)
 CFLAGS="${selinux_save_CFLAGS}"
 
@@ -310,7 +310,7 @@ else
    AC_MSG_CHECKING([for compatible sepol source tree])
    sepol_version=${sepol_srcdir}/VERSION
    if test ! -r $sepol_version; then
-      AC_MSG_ERROR([could not open libsepol/VERSION file])
+      AC_MSG_ERROR([could not read $sepol_version])
    fi
    version_sepol_major=$(cut -d. -f1 < ${sepol_version})
    version_sepol_minor=$(cut -d. -f2 < ${sepol_version})
@@ -328,7 +328,8 @@ else
    fi
    if test -z $version_ok; then
       version_min_sepol="${version_min_sepol_major}.${version_min_sepol_minor}.${version_min_sepol_patch}"
-      AC_MSG_ERROR([setools requires sepol version $version_min_sepol or greater])
+      version_found_sepol="${version_sepol_major}.${version_sepol_minor}.${version_sepol_patch}"
+      AC_MSG_ERROR([setools requires sepol version $version_min_sepol or greater (found $version_found_sepol)])
    fi
    sepol_srcdir="${sepol_srcdir}/src"
    sepol_src_save_CFLAGS="${CFLAGS}"
