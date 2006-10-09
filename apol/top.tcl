@@ -139,10 +139,10 @@ proc ApolTop::get_toplevel_dialog {} {
 }
 
 proc ApolTop::is_binary_policy {} {
-	if {$ApolTop::policy_type == "binary"} {
-		return 1
-	}
-	return 0
+    if {[is_policy_open] && $ApolTop::policy_type == "binary"} {
+        return 1
+    }
+    return 0
 }
 
 proc ApolTop::is_mls_policy {} {
@@ -1548,49 +1548,42 @@ proc ApolTop::set_mls_tabs_state {new_state} {
 }
 
 proc ApolTop::set_initial_open_policy_state {} {
-	set rt [catch {set version_num [apol_GetPolicyVersionNumber]} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-
-	if {$version_num < 16} {
-		ApolTop::enable_disable_conditional_widgets 0
-	} 
-	
-	if {[ApolTop::is_binary_policy]} {
-		if {$version_num >= 20 } {
-			if {$ApolTop::show_fake_attrib_warning != 0} {
-				set fake_attrib_warn .fakeattribDlg
-				Dialog $fake_attrib_warn -modal local -parent . \
-					-title "Warning - Attribute Names"
-				set message_text "Warning: Apol has created fake attribute names because
+    set version_num [apol_GetPolicyVersionNumber]
+    if {$version_num < 16} {
+        ApolTop::enable_disable_conditional_widgets 0
+    } 
+    if {[ApolTop::is_binary_policy]} {
+        if {$version_num >= 20} {
+            if {$ApolTop::show_fake_attrib_warning != 0} {
+                set fake_attrib_warn .fakeattribDlg
+                Dialog $fake_attrib_warn -modal local -parent . \
+                    -title "Warning - Attribute Names"
+                set message_text "Warning: Apol has created fake attribute names because
 the names are not preserved in the binary policy format."
-				set fake_attrib_label [label $fake_attrib_warn.l -text $message_text]
-				set fake_attrib_ok [button $fake_attrib_warn.b_ok -text "OK" \
+                set fake_attrib_label [label $fake_attrib_warn.l -text $message_text]
+                set fake_attrib_ok [button $fake_attrib_warn.b_ok -text "OK" \
 					-command "destroy $fake_attrib_warn"]
-				set fake_attrib_show [checkbutton $fake_attrib_warn.show_cb \
-					-text "Show this message again next time." \
-					-variable ApolTop::show_fake_attrib_warning]
-				$fake_attrib_show select
-				pack $fake_attrib_label -side top -padx 10 -pady 10
-				pack $fake_attrib_show -side top -pady 10
-				pack $fake_attrib_ok -side top -padx 10 -pady 10
-				$fake_attrib_warn draw
-			}
-		}
-		ApolTop::disable_non_binary_tabs
-   	}
-	if {![is_mls_policy]} {
-		set_mls_tabs_state disabled
-	}
+                set fake_attrib_show [checkbutton $fake_attrib_warn.show_cb \
+                                          -text "Show this message again next time." \
+                                          -variable ApolTop::show_fake_attrib_warning]
+                $fake_attrib_show select
+                pack $fake_attrib_label -side top -padx 10 -pady 10
+                pack $fake_attrib_show -side top -pady 10
+                pack $fake_attrib_ok -side top -padx 10 -pady 10
+                $fake_attrib_warn draw
+            }
+        }
+        ApolTop::disable_non_binary_tabs
+    }
+    if {![is_mls_policy]} {
+        set_mls_tabs_state disabled
+    }
 
-	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]  
-	# Enable perm map menu items since a policy is now open.
-	$ApolTop::mainframe setmenustate Perm_Map_Tag normal
-	$ApolTop::mainframe setmenustate Disable_Summary normal
-	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
-	
-   	return 0
+    ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]  
+    # Enable perm map menu items since a policy is now open.
+    $ApolTop::mainframe setmenustate Perm_Map_Tag normal
+    $ApolTop::mainframe setmenustate Disable_Summary normal
+    $ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
 }
  
 # Do the work to open a policy file:  file is file name, and
@@ -1601,7 +1594,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
     variable policy_version_string
     variable policy_type
     variable policy_mls_type
-    variable policy_is_open	
+    variable policy_is_open
 
     ApolTop::closePolicy
 
@@ -1649,11 +1642,14 @@ proc ApolTop::openPolicyFile {file recent_flag} {
     }
     foreach {policy_type policy_mls_type} [apol_GetPolicyType] {break}
     ApolTop::showPolicyStats
+    set policy_is_open 1
     if {[catch {open_apol_modules $file} err]} {
+        set policy_is_open 0
         tk_messageBox -icon error -type ok -title "Open Policy" -message $err
         return
     }
     if {[catch {set_initial_open_policy_state} err]} {
+        set policy_is_open 0
         tk_messageBox -icon error -type ok -title "Open Policy" -message $err
         return
     }
@@ -1661,7 +1657,6 @@ proc ApolTop::openPolicyFile {file recent_flag} {
     if {$recent_flag == 1} {
         addRecent $file
     }
-    set policy_is_open 1
     variable filename $file
     wm title . "SELinux Policy Analysis - $file"
 }
