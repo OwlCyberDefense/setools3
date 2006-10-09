@@ -82,7 +82,7 @@ The following are not strictly required but highly recommended:
   glib-1.2
   gtk+-2.0
   libglade-2.0
-These packages are needed to build SETools's graphical tools.  
+These packages are needed to build SETools's graphical tools.
 
 Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is
 part of the tcllib package and is often not present in Linux
@@ -208,10 +208,10 @@ Of course, `configure' accepts other usual flags such as --prefix.
 2.4. using development version of SELinux
 -----------------------------------------
 
-As SELinux is rapidly evolving project, you may wish to use a version
-of libsepol.so that is newer than the one installed to /usr/lib.  To
-support different versions of libsepol, SETools can be configured to
-compile against a specific version of libsepol using the
+As that SELinux is rapidly evolving project, you may wish to use a
+version of libsepol.so that is newer than the one installed to
+/usr/lib.  To support different versions of libsepol, SETools can be
+configured to compile against a specific version of libsepol using the
 --enable-sepol-src flag.  For example, suppose you have a SELinux SVN
 checkout and compilation like the following:
 
@@ -358,7 +358,7 @@ secmds subdirectory; the rest are in their own directories.
       A tool to load two SELinux policies, find differences between
       them, and then show those results.  The tool provides a
       command-line interface to libpoldiff.
- 
+
 
 3.3. analysis libraries
 -----------------------
