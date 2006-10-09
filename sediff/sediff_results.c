@@ -288,6 +288,7 @@ static void sediff_results_print_item_header(sediff_app_t *app, GtkTextBuffer *t
 	}
 	default: {
 		assert(0);
+		s = NULL;
 	}
 	}
 	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, s, NULL);
@@ -426,6 +427,7 @@ static int sediff_results_avsort_comp(const void *a, const void *b, void *data)
 	default: {
 		/* shouldn't get here */
 		assert(0);
+		return 0;
 	}
 	}
 	return opts->direction * strcmp(s1, s2);
@@ -492,6 +494,7 @@ static int sediff_results_tesort_comp(const void *a, const void *b, void *data)
 	default: {
 		/* shouldn't get here */
 		assert(0);
+		return 0;
 	}
 	}
 	return opts->direction * strcmp(s1, s2);
@@ -813,7 +816,7 @@ void sediff_results_sort_current(sediff_app_t *app, int field, int direction)
 {
         uint32_t diffbit;
         poldiff_form_e form;
-        sediff_item_record_t *item_record;
+        sediff_item_record_t *item_record = NULL;
         size_t i;
         GtkTextBuffer *tb;
         apol_vector_t *av = NULL, *te = NULL;
