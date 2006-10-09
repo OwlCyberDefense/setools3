@@ -64,7 +64,7 @@ int find_domains_register(sechk_lib_t *lib)
 		"   4) it is associated with a role other than object_r\n";
 	mod->opt_description =
 		"Module requirements:\n"
-		"   none\n"
+		"   policy source\n"
 		"Module dependencies:\n"
 		"   none\n"
 		"Module options:\n"

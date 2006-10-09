@@ -66,9 +66,9 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 		"considered in this check.\n";
 	mod->opt_description =
 		"Module requirements:\n"
-		"   none\n"
+		"   policy source\n"
 		"Module dependencies:\n"
-		"   none\n"
+		"   find_domains\n"
 		"Module options:\n"
 		"   none\n";
 	mod->severity = SECHK_SEV_MED;
@@ -258,7 +258,7 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto domains_wo_roles_run_fail;
 		}
-		proof->type = SECHK_ITEM_ROLE;
+		proof->type = SECHK_ITEM_NONE;
 		proof->text = strdup("Domain has no role.\n");
 		if ( !proof->text ) {
 			error = errno;
@@ -294,6 +294,8 @@ int domains_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	apol_role_query_destroy(&role_query);
 	mod->result = res;
 
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 domains_wo_roles_run_fail:
@@ -310,7 +312,8 @@ int domains_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	size_t i = 0, j = 0, num_items;
+	sechk_proof_t *proof = NULL;
+	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
 	char *type_name;
 
@@ -345,7 +348,7 @@ int domains_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
-	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
+	if (outformat & (SECHK_OUT_LIST)) {
 		printf("\n");
 		for (i=0;i<num_items;i++) {
 			j++;
@@ -357,6 +360,26 @@ int domains_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 		}
 		printf("\n");
 	}
+
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\n");
+		for (k = 0; k < num_items; k++) {
+			item = apol_vector_get_element(mod->result->items, k);
+			if (item) {
+				type = item->item;
+				qpol_type_get_name(policy->p, type, &type_name);
+				printf("%s\n", type_name);
+				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
+					proof = apol_vector_get_element(item->proof,l);
+					if (proof)
+						printf("\t%s\n", proof->text);
+				}
+			}
+		}
+		printf("\n");
+	}
+	type = NULL;
+	type_name = NULL;
 
 	return 0;
 }

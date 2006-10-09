@@ -239,12 +239,12 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	/* set the minimum severity */
-	if (minsev && sechk_lib_set_minsev(minsev, lib) < 0)
-		goto exit_err;
-
 	/* initialize the policy */
 	if (sechk_lib_load_policy(polpath, lib) < 0)
+		goto exit_err;
+
+	/* set the minimum severity */
+	if (minsev && sechk_lib_set_minsev(minsev, lib) < 0)
 		goto exit_err;
 
 #ifdef LIBSEFS

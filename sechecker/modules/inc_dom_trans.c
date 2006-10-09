@@ -532,6 +532,9 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 	apol_domain_trans_analysis_destroy(&domain_trans);
 	apol_user_query_destroy(&user_query);
 	apol_role_trans_query_destroy(&role_trans_query);
+
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 inc_dom_trans_run_fail:

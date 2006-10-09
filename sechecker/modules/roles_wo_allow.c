@@ -295,6 +295,8 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 	apol_role_allow_query_destroy(&role_allow_query);
 	mod->result = res;
 
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 roles_wo_allow_run_fail:
