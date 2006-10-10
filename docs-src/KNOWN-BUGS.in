@@ -1,0 +1,59 @@
+SELinux Tools (setools), version RELEASE_VERSION
+by Tresys Technology, LLC
+(selinux@tresys.com, www.tresys.com/selinux)
+
+MOD_DATE
+
+
+CURRENT BUGS AND ISSUES
+
+This file contains a description of the bugs of which we are currently 
+aware. There are undoubtedly more; please report any new bugs you may 
+find to selinux@tresys.com.
+
+APOL
+   
+1. There is a bug in the text search feature. The text widgets' 
+   search command does not handle a '-' as the first character in the 
+   string. 
+   
+2. Double clicking on listbox items may not display popup windows in 
+   certain window managers, such as Gnome or Ximian. For example, 
+   double-clicking an attribute in the [policy components]/types tab 
+   does not display the types for that attribute. You must right-
+   click on the item in order to display popup windows. This is a 
+   Tcl/Tk bug and has been submitted to 
+   http://sourceforge.net/projects/tcllib.
+   
+3. The use of some fonts may cause widgets in the GUI to be obscured. 
+   If you experience this problem, you may edit the fonts in the 
+   .apol file in your home directory. Apol may also obscure widgets  
+   from the screen on resolutions less than 1024x768.
+   
+4. Apol will correctly load policies with aliases, but the alias 
+   names will be lost (the root type name is used instead). 
+   Therefore, aliases are not displayed and queries cannot use them 
+   as parameters.
+   
+SEAUDIT
+
+1. Sorting by date will not work correctly if your audit log spans 
+   through a new calendar year.  For example, if your audit log 
+   includes entries from December 2003 and January 2004, when you sort 
+   by date January 2004 will come before December 2003 entire.  This 
+   is because audit logs do not include a year so we assign the same 
+   year to all dates.
+
+
+TESTING INFORMATION
+
+Operating Systems: Fedora Core 4 and 5, RHEL 4
+SELinux version: 2.6
+SELinux Policy versions: 12, 15, 16, 17, 18, 19 and 20 (with MLS support for versions 19 and 20)
+TCL/TK version: 8.4
+BWidget version: 1.7
+Desktops: Gnome, KDE
+
+These tools will likely have some bugs of which we are currently unaware.  
+Please report any new bugs or comments to selinux@tresys.com.  Thank you 
+for using setools!

@@ -1,0 +1,88 @@
+SELinux Policy Checker Tool Help File
+sechecker, version 1.1
+May 01, 2006
+selinux@tresys.com
+
+This file contains the basic help information for using sechecker,
+version 1.1.  This version of sechecker allows you to run 
+a series of policy checks (modules) on a policy.  Sechecker is designed
+to be extensible and configurable so that developers can easily add new
+policy checks and configure them to run in batches with different options.
+
+Each module analyzes a policy.  If you do not specify a policy on the 
+command line, the tool use the system policy by default.  In addition, Some 
+checks will require the file_contexts file in order to run correctly.  If 
+you do not specify the file_contexts file the tool will use the system 
+file_contexts file by default.
+
+Checks can be run one at a time on the command line (by specifying a
+module) or in a batch (by specifying a profile).  You can create a 
+custom profile to configure a batch of modules with the options that you 
+commonly use.
+
+The return value of sechecker indicates whether a check failed on the policy.  
+Therefore sechecker may be used in shell scripts or makefiles to do 
+conditional branching.  
+
+
+Report Output:
+-------------
+Sechecker generates a report with the output of each module that was 
+run.  The report includes an explanation of each module, the modules'
+severity, and the modules' results.  There are three output options to
+specify what gets included in the report.
+
+1.) quiet - don't print the report
+2.) short - print the list of results for each module
+3.) verbose - print the list of results for each module and the list of 
+    proofs for each result
+
+
+Modules:
+-------
+A module encapsulates a single check on the policy.  Modules can be
+data driven by information specified in a profile, however each module 
+will work using default values if no profile is used.  See the help for
+the specific module(s) to determine what data may be overriden in a 
+profile.  
+
+Each module has a specified severity (high, med, low).  These are
+defined as follows:
+
+1) "high": the module-results indicate an identifiable security risk in 
+   the selinux policy
+
+2) "med":  the module-results indicate an flaw in the selinux policy that 
+   changes the manner in which the policy is enforced, however does not 
+   present an identifiable security risk.
+
+3) "low":  the module-results indicate a flaw in the policy that does not 
+   effect the manner in which the policy is enforced, but is considered to 
+   be improper.
+
+
+
+Profiles:
+--------
+There are three profiles that are installed with the sechecker program.  
+The three profiles are described below.
+
+1.) development: this profile includes several policy checks of low and
+    med severity.  The checks are common tasks that a policy developer will
+    consider helpful for writing good policy.
+
+2.) analysis: this profile includes several policy checks of med and low
+    severity that are of higher computational complexity than the development
+    profile and not meant to be used very often by policy developers.
+
+3.) all: this profile runs all the known modules.
+
+Profiles can be create to run any set of modules with different options.  The
+profile can specify the output format for each module.
+
+Other Options:
+-------------
+You can specify a minimum module severity to report.  If the minimum severity
+is "med", and the "all" profile is used all the modules that are "med" or "high"
+will be run and the results for those modules will be reported by sechecker.  
+The "low" severity modules listed in the profile will be ignored.

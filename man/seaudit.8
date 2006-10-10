@@ -1,0 +1,30 @@
+.TH seaudit 8
+.SH NAME
+seaudit \- SELinux graphical audit log analysis tool
+.SH SYNOPSIS
+.B seaudit
+[OPTIONS] 
+.SH Description
+This manual page describes the
+.B seaudit
+command.
+.PP
+.B seaudit
+allows the user to view and filter the contents of a log file.
+.B seaudit
+supports the syslog and auditd log formats and provides queries to inspect the SELinux policy based on log messages.
+.SH OPTIONS
+.IP "-l FILE, --log FILE"
+open log file named FILE
+.IP "-p FILE, --policy FILE"
+open policy file named FILE
+.IP "-h, --help"
+display this help and exit
+.IP "-v, --version"
+display version information
+.SH AUTHOR
+This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+.SH COPYRIGHT
+Copyright(C) 2006 Tresys Technology, LLC
+.SH SEE ALSO
+seaudit-report(8), logwatch(8)

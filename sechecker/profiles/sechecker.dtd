@@ -1,0 +1,19 @@
+<!ELEMENT item EMPTY>
+<!ATTLIST item value NMTOKEN #REQUIRED>
+
+<!ELEMENT module (output, option?)>
+<!ATTLIST module name ID #REQUIRED>
+
+<!ELEMENT option (item+)>
+<!ATTLIST option name NMTOKEN #REQUIRED>
+
+<!ELEMENT output EMPTY>
+<!ATTLIST output value (quiet|short|verbose|none) #REQUIRED> 
+
+<!ELEMENT profile (module+)>
+
+<!ELEMENT sechecker (profile)>
+<!ATTLIST sechecker version NMTOKEN #REQUIRED>
+
+
+

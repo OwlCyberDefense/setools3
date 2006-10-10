@@ -1,0 +1,62 @@
+.TH seinfo 1
+.SH NAME
+seinfo \- SELinux policy query tool
+.SH SYNOPSIS
+.B seinfo
+[OPTIONS] [POLICY_FILE]
+.SH DESCRIPTION
+This man page describes the
+.B seinfo
+command.
+.PP
+.B seinfo
+allows the user to query a SELinux policy.
+.SH OPTIONS
+.IP "-c[NAME], --classes[=NAME]"
+print a list of object classes
+.IP "-t[NAME], --types[=NAME]"
+print a list of types identifiers
+.IP "-a[NAME], --attribs[=NAME]"
+print a list of type attributes
+.IP "-r[NAME], --roles[=NAME]"
+print a list of roles
+.IP "-u[NAME], --users[=NAME]"
+print a list of users
+.IP "-b[NAME], --boolean[=NAME]"
+print a list of conditional booleans
+.IP "-S[NAME], --sensitivities[=NAME]"
+print a list of sensitivities
+.IP "-C[NAME], --categories[=NAME]"
+print a list of categories
+.IP "-f[TYPE], --fs_use[=TYPE]"
+print a list of fs_use statements
+.IP "-g[TYPE], --genfscon[=TYPE]"
+print a list of genfscon statements
+.IP "-n[NAME], --netifcon[=NAME]"
+print a list of netif contexts
+.IP "-o[ADDR], --nodecon[=ADDR]"
+print a list of node contexts
+.IP "-p[NUM],  --portcon[=NUM]"
+print a list of port contexts
+.IP "-i[NAME], --initialsid[=NAME]"
+print a list of initial SIDs
+.IP "-A, --all"
+print all of the above
+.IP "-x, --expand"
+show additional info for -ctarbuSCiA options
+.IP "-s, --stats"
+print useful policy statistics
+.IP "-h, --help"
+display this help and exit
+.IP "-v, --version"
+output version information and exit
+.SH INFORMATION
+For -ctaruSCfgnopi options, if NAME is provided, then only show info for NAME.  Specifying a name is most useful when used with the -x option.  If no option is provided, display useful policy statistics (-s).
+.PP
+The default source policy, or if that is unavailable the default binary policy, will be opened if no policy file name is provided.
+.SH AUTHOR
+This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+.SH COPYRIGHT
+Copyright(C) 2006 Tresys Technology, LLC
+.SH SEE ALSO
+sesearch(1), apol(1)

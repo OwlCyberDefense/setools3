@@ -1,0 +1,98 @@
+.TH sechecker 1
+.SH NAME
+sechecker \- SELinux policy checking tool
+.SH SYNOPSIS
+.B sechecker
+[OPTIONS] -m module                 Run module
+.PP
+.B sechecker
+[OPTIONS] -p profile                Run profile
+.PP
+.B sechecker
+[OPTIONS] -m module -p profile      Run module with profile
+.SH Description
+This manual page describes the
+.B sechecker
+command.
+.PP
+.B sechecker
+allows the user to perform predefined modular checks on a SELinux policy.  Profiles exist to group modules together and allow modification of module settings (see below).
+.SH OPTIONS
+.IP "-l, --list"
+print a list of profiles and modules
+.IP "-q, --quiet"
+suppress output
+.IP "-s, --short"
+print short output
+.IP "-v, --verbose"
+print verbose output
+.IP "--version"
+print version and exit
+.IP "--fcfile=<file>"
+file_contexts file
+.IP "--policy=<file>"
+policy file
+.IP "-h[mod], --help[=module]"
+print general help or help for a module
+.IP "-m <mod>, --module=<mod>"
+module name
+.IP "-p <prof>, --profile=<prof>"
+profile name or path
+.IP "--min-sev=<low|med|high>"
+the minimum severity to report
+.SH PROFILE OPTIONS
+Profiles are used to group modules together, to specify the output format for each module in the report, and to provide the ability to override the modules' default options.  Each profile is a well-formed XML document, as specified by the DTD installed with sechecker.  An example profile follows:
+
+<sechecker version="1.1">
+.PD 0
+.PP
+	<profile>
+.PP
+		<module name="find_domains">
+.PP
+			<output value="quiet"/>
+.PP
+			<option name="domain_attribute">
+.PP
+				<item value="domain"/>
+.PP
+				<item value="user_domain"/>
+.PP
+				...
+.PP
+			</option>
+.PP
+		</module>
+.PP
+		...
+.PP
+	</profile>
+.PP
+</sechecker>
+.PP
+
+The example profile specifies the output property for the find_domains module.  The valid output values for each module are specified below:
+
+.IP "verbose:"
+prints each result in the report with an accompanying proof
+
+.IP "short:"
+prints a list of results without an accompanying proof
+
+.IP "none:"
+does not print output in the report, however module errors will be printed
+
+.IP "quiet:"
+does not print output in the report and does not print errors, (this is usefull for utility modules for which the calling module handles the errors)
+
+.PP
+The example profile also overrides the default value for the "domain_attribute" option in the find_domains module. 
+
+.SH AUTHOR
+This manual page was written by Kevin Carr <kcarr@tresys.com> and Jeremy Mowery <jmowery@tresys.com>.  
+
+.SH COPYRIGHT
+Copyright(C) 2006 Tresys Technology, LLC
+
+.SH SEE ALSO
+apol(1)

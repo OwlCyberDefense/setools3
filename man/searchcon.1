@@ -1,0 +1,51 @@
+.TH searchcon 1
+.SH NAME
+searchcon \- SELinux file context search tool for indexes
+.SH SYNOPSIS
+.B searchcon
+<index file> [OPTIONS]
+.SH DESCRIPTION
+This manual page describes the
+.BR searchcon
+command.
+.PP
+.B searchcon
+allows the user to search file context indexes created by the
+.BR indexcon 
+command.
+.SH OPTIONS
+.IP "-t type, --type=typename"
+The name of the type to search for
+.IP "-u user, --user=username"
+The name of the user to search for
+.IP "-m range, --mls-range=range"
+MLS range to search for
+.IP "-p path, --path=pathname"
+The path or path fragment to search for
+.IP "-o object, --object=class"
+The name of the object class to search for
+.IP "-r, --regex"
+Search using regular expressions
+.IP "-l, --list"
+List types in the snapshot
+.IP "-h, --help"
+Display help information and exit
+.IP "-v, --version"
+Display version information and exit
+.SH INFORMATION
+Valid object classes are
+.PP
+file,
+dir,
+lnk_file,
+chr_file,
+blk_file,
+sock_file,
+fifo_file,
+all_files
+.SH AUTHOR
+This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+.SH COPYRIGHT
+Copyright(C) 2006 Tresys Technology, LLC
+.SH SEE ALSO
+findcon(1), replcon(1), searchcon(1), indexcon(1)
