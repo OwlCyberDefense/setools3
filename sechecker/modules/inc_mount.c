@@ -62,8 +62,9 @@ int inc_mount_register(sechk_lib_t *lib)
 	mod->brief_description = "domains with partial mount permissions";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds domains that have incomplete mount permissions.  In order for \n"
-		"a mount operation to be allowed by the policy the follow rules must be present: \n"
+		"This module finds domains that have incomplete mount permissions.\n"
+		"In order for a mount operation to be allowed by the policy the following rules\n"
+		"must be present: \n"
 		"\n"
 		"   1.) allow somedomain_d sometype_t : filesystem  { mount };\n"
 		"   2.) allow somedomain_d sometype_t : dir { mounton };\n"
@@ -424,6 +425,9 @@ int inc_mount_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attrib
 	mod->result = res;
 	apol_avrule_query_destroy(&mount_avrule_query);
 	apol_avrule_query_destroy(&mounton_avrule_query);
+
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 inc_mount_run_fail:
