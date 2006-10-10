@@ -71,9 +71,9 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		"   4) (optional) a type transition rules specifying these three types\n";
 	mod->opt_description =
 		"Module requirements:\n"
-		"   none\n"
+		"   policy source\n"
 		"Module dependencies:\n"
-		"   none\n"
+		"   find_domains\n"
 		"Module options:\n"
 		"   none\n";
 	mod->severity = SECHK_SEV_MED;
