@@ -1,7 +1,7 @@
 /* Copyright (C) 2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
-/* 
+/*
  * Author: Kevin Carr <kcarr@tresys.com>
  * Date: February 06, 2004
  *
@@ -50,7 +50,7 @@ void seaudit_filter_destroy(seaudit_filter_t *seaudit_filter)
 		criteria = apol_vector_get_element(criteria_vector, i);
 		seaudit_criteria_destroy(criteria);
 	}
-	apol_vector_destroy(&criteria_vector, 0);	
+	apol_vector_destroy(&criteria_vector, 0);
 }
 
 void seaudit_filter_set_match(seaudit_filter_t *seaudit_filter, enum seaudit_filter_match_t match)
@@ -115,12 +115,12 @@ bool_t seaudit_filter_does_message_match(seaudit_filter_t *filter, msg_t *messag
 		if (message->msg_type & criteria->msg_types) {
 			if (!criteria->criteria_act(message, criteria, log)) {
 				match = FALSE;
-				if (filter->match == SEAUDIT_FILTER_MATCH_ALL) 
+				if (filter->match == SEAUDIT_FILTER_MATCH_ALL)
 					return FALSE;
 			} else {
 				if (filter->match == SEAUDIT_FILTER_MATCH_ANY)
 					return TRUE;
-			}       
+			}
 		} else {
 			match = FALSE;
 			if (filter->match == SEAUDIT_FILTER_MATCH_ALL)
@@ -138,7 +138,7 @@ bool_t seaudit_filter_does_message_match(seaudit_filter_t *filter, msg_t *messag
 apol_vector_t *seaudit_filter_get_list(seaudit_filter_t *filter)
 {
 	apol_vector_t *criterias;
-	
+
 	if (!(criterias = apol_vector_create())) {
 		return NULL;
 	}
@@ -157,7 +157,7 @@ apol_vector_t *seaudit_filter_get_list(seaudit_filter_t *filter)
 	apol_vector_append(criterias, (void *)filter->ipaddr_criteria);
 	apol_vector_append(criterias, (void *)filter->ports_criteria);
 	apol_vector_append(criterias, (void *)filter->host_criteria);
-	apol_vector_append(criterias, (void *)filter->date_time_criteria);	
+	apol_vector_append(criterias, (void *)filter->date_time_criteria);
 	return criterias;
 }
 
@@ -172,11 +172,11 @@ int seaudit_filter_save_to_file(seaudit_filter_t *filter, const char *filename)
 	if (!file)
 		return -1;
 	fprintf(file, XML_VER);
-	fprintf(file, "<view xmlns=\"http://www.tresys.com/setools/seaudit/%s/\">\n", 
+	fprintf(file, "<view xmlns=\"http://oss.tresys.com/projects/setools/seaudit-%s/\">\n",
 		FILTER_FILE_FORMAT_VERSION);
 	seaudit_filter_append_to_file(filter, file, 1);
 	fprintf(file, "</view>\n");
-	fclose(file);	
+	fclose(file);
 	return 0;
 }
 
@@ -195,7 +195,7 @@ void seaudit_filter_append_to_file(seaudit_filter_t *filter, FILE *file, int tab
 	escaped = xmlURIEscapeStr(str_xml, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(file, "\t");
-	fprintf(file, "<filter name=\"%s\" match=\"%s\">\n", escaped, 
+	fprintf(file, "<filter name=\"%s\" match=\"%s\">\n", escaped,
 		filter->match == SEAUDIT_FILTER_MATCH_ALL? "all" : "any");
 	free(escaped);
 	free(str_xml);
@@ -216,5 +216,5 @@ void seaudit_filter_append_to_file(seaudit_filter_t *filter, FILE *file, int tab
 			seaudit_criteria_print(criteria, file, tabs+2);
 	}
 	apol_vector_destroy(&criteria_vector, 0);
-	fprintf(file, "\t</filter>\n"); 
+	fprintf(file, "\t</filter>\n");
 }

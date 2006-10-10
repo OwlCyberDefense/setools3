@@ -1,6 +1,6 @@
 SETools - Policy analysis tools for SELinux (C) 2001-2006
 Tresys Technology
-setools@tresys.com, http://oss.tresys.com/setools
+setools@tresys.com, http://oss.tresys.com/projects/setools
 
 Principal Design:
 
@@ -11,11 +11,13 @@ Jason Tang
 
 With:
 
+Jeff Bankert
 Alessandro Ferrucci
 Ryan Jordan
 Karl MacMillan
 Frank Mayer
 Don Patterson
+Karen Vance
 Brandon Whalen
 Meggan Whalen
 Randy Wicks
