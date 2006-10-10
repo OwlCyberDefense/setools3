@@ -161,11 +161,12 @@ int apol_get_terule_by_query(apol_policy_t *p,
 			}
 		}
 
-		if (!match_target) {
+		if (!source_as_any && !match_target) {
 			continue;
 		}
 
-		if (default_list == NULL || (source_as_any && match_source)) {
+		if (default_list == NULL ||
+		    (source_as_any && match_source) || (source_as_any && match_target)) {
 			match_default = 1;
 		}
 		else {
@@ -178,7 +179,11 @@ int apol_get_terule_by_query(apol_policy_t *p,
 			}
 		}
 
-		if (!match_default) {
+		if (!source_as_any && !match_default) {
+			continue;
+		}
+		/* at least one thing must match if source_as_any was given */
+		if (source_as_any && (!match_source && !match_target && !match_default)) {
 			continue;
 		}
 
