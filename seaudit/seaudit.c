@@ -1192,7 +1192,7 @@ void seaudit_on_about_seaudit_activate(GtkWidget *widget, GdkEvent *event, gpoin
 
 	str = g_string_new("");
 	g_string_assign(str, "Audit Log Analysis Tool for Security \nEnhanced Linux");
-        g_string_append(str, "\n\nCopyright (c) 2003-2006\nTresys Technology, LLC\nwww.tresys.com/selinux");
+        g_string_append(str, "\n\nCopyright (c) 2003-2006\nTresys Technology, LLC\nhttp://oss.tresys.com/projects/setools");
 	g_string_append(str, "\n\nGUI version ");
 	g_string_append(str, VERSION);
 	g_string_append(str, "\nlibseaudit version ");
