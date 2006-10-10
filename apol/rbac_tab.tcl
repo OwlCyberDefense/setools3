@@ -17,7 +17,7 @@ namespace eval Apol_RBAC {
 
 proc Apol_RBAC::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
-    ApolTop::textSearch $widgets(results) $str $case_Insensitive $regExpr $srch_Direction
+    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
 proc Apol_RBAC::set_Focus_to_Text {} {

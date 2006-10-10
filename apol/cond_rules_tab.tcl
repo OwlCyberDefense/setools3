@@ -95,7 +95,7 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
 #
 proc Apol_Cond_Rules::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
-    ApolTop::textSearch $widgets(results) $str $case_Insensitive $regExpr $srch_Direction
+    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
 ################################################################
