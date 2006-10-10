@@ -36,8 +36,8 @@ policy syntax to allow one to analyze current and old policies.  As of
 this version, we believe the tools are compatible with all policy
 versions from version 12 to the current version 20.
 
-See setools/ChangeLog for a list of new features in this release.  See
-setools/KNOWN_BUGS for a list of current bugs.
+See ChangeLog for a list of new features in this release.  See
+KNOWN_BUGS for a list of current bugs.
 
 
 1. MENUS:  
@@ -204,7 +204,7 @@ based on a set of search criteria you select.
        your query results will include all rules that meet the search
        criteria, INCLUDING those rules that have been disabled by a
        conditional expression.
-		
+
        Typically a search for a particular type also returns rules
        that employ any of that type's attributes.  Likewise, a search
        for an attribute returns rules that use any of that attribute's
@@ -231,7 +231,7 @@ based on a set of search criteria you select.
        selected, then only permissions related to selected objects are
        shown.  "Common to selected classes" instead only shows
        permissions that all selected classes have.
-	
+
   In the Results Tab for a given search, all rules that meet the
   search criteria will be displayed.  In addition, if the policy that
   is opened is a policy source file, a hyperlink for each rule is
@@ -253,17 +253,17 @@ based on a set of search criteria you select.
   criteria to a file (see MENU section above).
 
   3b. CONDITIONAL EXPRESSIONS TAB:
-	
+
   This tab allows you to search conditional expressions within the
   policy, as well as view the rules within these conditional
   expressions.  Please note that conditional expressions are displayed
   in Reverse Polish Notation.
-			
+
   By default, all conditionals are displayed, however you can search
   conditional expressions that use a specific boolean variable, as
   well as choose whether to use a regular expression.  The current
   state of each rule is provided by means of a tag within the results:
-	
+
       [Enabled] - indicates the rule is enabled
       [Disabled] - indicates the rule is disabled	
 
@@ -285,7 +285,7 @@ based on a set of search criteria you select.
   contain the entered range, or find rules which have ranges that are
   within the entered range.
 
-  
+
 4. FILE CONTEXTS TAB
 
 This tab is only available if apol has been built with libselinux
@@ -335,7 +335,7 @@ allows you to save/load any query criteria to a file (see MENU section
 above).
 
   5a. DOMAIN TRANSITION ANALYSIS
-	
+
   The Domain Transition analysis module allows you to specify a
   transition direction for the analysis.  The 2 directions provided
   are:
@@ -361,7 +361,7 @@ above).
 	       and permissions are included in the query.  Selecting
 	       an object class from the listbox widget will display
 	       all permissions for that object class.
-		
+
                A specific example where this advanced feature would be
                useful is when one is seeking to find transitions from
                'user_t' to domains with write access to files in the
@@ -371,7 +371,7 @@ above).
                  - Using the Access Filters dialog, select the
 		   'shadow_t' object type, 'file' object class, and
 		   'write' permission.
-	
+
       REVERSE: As its name implies, the Reverse Domain Transition
                (RDT) analysis is the reverse of the FDT analysis. The
                RDT takes a starting TARGET domain and presents a tree
