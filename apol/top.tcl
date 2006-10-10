@@ -1427,7 +1427,7 @@ proc ApolTop::aboutBox {} {
      
      set lib_ver [apol_GetVersion]
      tk_messageBox -icon info -type ok -title "About SELinux Policy Analysis Tool" -message \
-	"Security Policy Analysis Tool for Security Enhanced Linux \n\nCopyright (c) $copyright_date\nTresys Technology, LLC\nwww.tresys.com/selinux\n\nGUI Version ($gui_ver)\nLib Version ($lib_ver)"
+	"Security Policy Analysis Tool for Security Enhanced Linux \n\nCopyright (c) $copyright_date\nTresys Technology, LLC\http://oss.tresys.com/projects/setools\n\nGUI Version ($gui_ver)\nLib Version ($lib_ver)"
      return
 }
 

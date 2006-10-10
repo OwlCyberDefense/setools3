@@ -1,6 +1,6 @@
 SETools - Policy analysis tools for SELinux (C) 2001-2006
 Tresys Technology
-setools@tresys.com, http://oss.tresys.com/setools
+setools@tresys.com, http://oss.tresys.com/projects/setools
 
 
 TABLE OF CONTENTS
@@ -208,7 +208,7 @@ Of course, `configure' accepts other usual flags such as --prefix.
 2.4. using development version of SELinux
 -----------------------------------------
 
-As that SELinux is rapidly evolving project, you may wish to use a
+As SELinux is a rapidly evolving project, you may wish to use a
 version of libsepol.so that is newer than the one installed to
 /usr/lib.  To support different versions of libsepol, SETools can be
 configured to compile against a specific version of libsepol using the
