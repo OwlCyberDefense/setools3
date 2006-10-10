@@ -758,7 +758,7 @@ void sediff_menu_on_about_clicked(GtkMenuItem *menuitem, gpointer user_data)
 
 	str = g_string_new("");
 	g_string_assign(str, "Policy Semantic Diff Tool for Security Enhanced Linux");
-        g_string_append(str, "\n\n" COPYRIGHT_INFO "\nwww.tresys.com/selinux");
+        g_string_append(str, "\n\n" COPYRIGHT_INFO "\nhttp://oss.tresys.com/projects/setools");
 	g_string_append(str, "\n\nGUI version ");
 	g_string_append(str, VERSION);
 	g_string_append(str, "\nlibapol version ");
