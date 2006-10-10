@@ -49,9 +49,23 @@ proc Apol_Analysis::set_Focus_to_Text { tab } {
 }
 
 proc Apol_Analysis::goto_line { line_num } {
+    variable widgets
+    variable tabs
+    set curid [$widgets(results) raise]
+    if {$curid != {}} {
+        $tabs($curid:module)::gotoLine [$widgets(results) getframe $curid] \
+            $line_num
+    }
 }
 
 proc Apol_Analysis::search { str case_Insensitive regExpr srch_Direction } {
+    variable widgets
+    variable tabs
+    set curid [$widgets(results) raise]
+    if {$curid != {}} {
+        $tabs($curid:module)::search [$widgets(results) getframe $curid] \
+            $str $case_Insensitive $regExpr $srch_Direction
+    }
 }
 
 proc Apol_Analysis::save_query_options {file_channel query_file} {
@@ -239,6 +253,7 @@ proc Apol_Analysis::analyze {which_button} {
 
     ApolTop::resetBusyCursor
     destroy .analysis_busy
+    focus -force .
 
     if {$retval != {}} {
         tk_messageBox -icon error -type ok -title Error -message "Error while performing analysis:\n\n$retval"

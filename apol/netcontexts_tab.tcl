@@ -46,9 +46,6 @@ proc Apol_NetContexts::close {} {
 proc Apol_NetContexts::initializeVars {} {
     variable vals
     array set vals {
-        items {}
-        context_type portcon
-
         portcon:items {}
         portcon:proto_enable 0    portcon:proto {}
         portcon:port_enable 0     portcon:port 0
@@ -67,6 +64,9 @@ proc Apol_NetContexts::initializeVars {} {
         nodecon:ipv4_mask2 255      nodecon:ipv4_mask3 255
         nodecon:ipv6_addr_enable 0  nodecon:ipv6_addr ::
         nodecon:ipv6_mask_enable 0  nodecon:ipv6_mask ::
+
+        items {}
+        context_type portcon
     }
 }
 

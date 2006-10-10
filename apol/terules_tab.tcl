@@ -917,7 +917,6 @@ proc Apol_TE::search_terules {whichButton} {
 
     set tabs(searches_done) -1
     set tabs(searches_text) "Searching for TE Rules..."
-    set last_focus [focus -lastfor .]
     ProgressDlg .terules_busy -title "TE Rules Search" \
         -type normal -stop {} -separator 1 -parent . -maximum 2 \
         -textvariable Apol_TE::tabs(searches_text) -width 32 \
@@ -933,8 +932,8 @@ proc Apol_TE::search_terules {whichButton} {
     if {$retval} {
         ApolTop::resetBusyCursor
         destroy .terules_busy
-        focus $last_focus
         tk_messageBox -icon error -type ok -title Error -message "Error searching TE rules:\n$results"
+        focus -force .
     } else {
         set tabs(searches_text) "Collecting results..."
         update idletasks
@@ -962,7 +961,7 @@ proc Apol_TE::search_terules {whichButton} {
         Apol_Widget::appendSearchResultHeader $sr $header
         ApolTop::resetBusyCursor
         destroy .terules_busy
-        focus $last_focus
+        focus -force .
     }
 
     if {[$widgets(results) pages] != {} || $retval == 0} {
