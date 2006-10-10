@@ -232,30 +232,29 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 
 	GtkWindow *window;
 	GtkWidget *widget;
-	int i, direct = 1;
+	int i, indirect = 1;
 	apol_vector_t *avrule_vector = NULL;
 	apol_avrule_query_t *avrule_query = NULL;
 
 	/* setup the query struct */
 	avrule_query = apol_avrule_query_create();
+	apol_avrule_query_set_regex(seaudit_app->cur_policy, avrule_query, 1);
 	apol_avrule_query_set_rules(seaudit_app->cur_policy, avrule_query, QPOL_RULE_ALLOW);
 
 	widget = glade_xml_get_widget(xml, "SrcTypeDirectCheck");
 	g_assert(widget);
 	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) )
-		direct = 0;
+		indirect = 0;
 	if (strcmp(src_type->str, "") != 0) {
-		apol_avrule_query_set_source(seaudit_app->cur_policy, avrule_query, src_type->str, direct);
-		apol_avrule_query_set_regex(seaudit_app->cur_policy, avrule_query, 1);
+		apol_avrule_query_set_source(seaudit_app->cur_policy, avrule_query, src_type->str, indirect);
 	}
-	direct = 1;
+	indirect = 1;
 	widget = glade_xml_get_widget(xml, "TgtTypeDirectCheck");
 	g_assert(widget);
 	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) )
-                direct = 0;
+                indirect = 0;
 	if (strcmp(tgt_type->str, "") != 0) {
-		apol_avrule_query_set_target(seaudit_app->cur_policy, avrule_query, tgt_type->str, direct);
-		apol_avrule_query_set_regex(seaudit_app->cur_policy, avrule_query, 1);
+		apol_avrule_query_set_target(seaudit_app->cur_policy, avrule_query, tgt_type->str, indirect);
 	}
 
 	/* get the object class index.
