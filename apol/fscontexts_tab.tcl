@@ -44,8 +44,6 @@ proc Apol_FSContexts::close {} {
 proc Apol_FSContexts::initializeVars {} {
     variable vals
     array set vals {
-        items {}
-        context_type genfscon
         genfscon:items {}
         genfscon:fs_enable 0     genfscon:fs {}
         genfscon:path_enable 0   genfscon:path {}
@@ -53,6 +51,9 @@ proc Apol_FSContexts::initializeVars {} {
         fsuse:items {}
         fsuse:type_enable 0  fsuse:type {}
         fsuse:fs_enable 0    fsuse:fs {}
+
+        items {}
+        context_type genfscon
     }
 }
 

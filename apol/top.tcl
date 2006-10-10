@@ -49,17 +49,14 @@ namespace eval ApolTop {
         variable top_width             1000
         variable top_height            700
 	variable libsefs		0
-	
+
 	# Top-level dialog widgets
 	variable helpDlg
 	set helpDlg .apol_helpDlg
-	variable searchDlg
-	set searchDlg .searchDlg
-	variable goto_Dialog
-	set goto_Dialog .goto_Dialog
-	variable options_Dialog
-	set options_Dialog .options_Dialog
-	
+	variable searchDlg .apol_find_dialog
+	variable goto_Dialog .apol_goto_dialog
+	variable options_Dialog .apol_options_dialog
+
 	######################
 	# Other global widgets
 	variable mainframe
@@ -73,10 +70,10 @@ namespace eval ApolTop {
 	variable rules_nb
 
     variable mls_tabs {}  ;# list of notebook tabs that are only for MLS
-	
+
 	# Search-related variables
 	variable searchString		""
-	variable case_Insensitive	0
+	variable case_sensitive 0
 	variable regExpr 		0
 	variable srch_Direction		"down"
 	variable policy_is_open		0
@@ -335,75 +332,56 @@ proc ApolTop::set_Focus_to_Text { tab } {
 # srch_Direction	What direction to search in the text. (-forward or -backward)
 #
 proc ApolTop::textSearch { w str case_Insensitive regExpr srch_Direction } {
-	if {$str == ""} {
-		return 0
-	}
-			
-	# Local variables to hold search options. Initialized to space characters. 
-	set case_opt " "
-	set regExpr_opt " "
-	set direction_opt " "
+    if {$str == {}} {
+        return
+    }
+
+    set case_opt {}
+    set regExpr_opt {}
+    set direction_opt {}
 	
-	# Setting search options.
-	if { $case_Insensitive } {
-		set case_opt "-nocase"
-	}
-	if { $regExpr } {
-		set regExpr_opt "-regexp"
-	}
-	if { $srch_Direction == "down" } {
-		set direction_opt "-forward"
-		# Get the current insert position. 
-		set cur_srch_pos [$w index insert]
-	} else {
-		set direction_opt "-backward"
-		# Get the first character index of the current selection.
-		set cur_srch_pos [lindex [$w tag ranges sel] 0]
-	}
-	
-	if { $cur_srch_pos == "" } {
-		set cur_srch_pos "1.0"
-	}
-	
-	# Remove any selection tags.
-	$w tag remove sel 0.0 end
-		
-	# Set the command string and strip out any space characters (meaning that an option was not selected).
-	# BUG NOTE: Currently, there is a bug with text widgets' search command. It does not
-	# handle a '-' as the first character in the string. 
-	set cmd "$w search -count cur_srch_pos_length $case_opt $regExpr_opt $direction_opt"
-	set rt [catch {set cur_srch_pos [eval $cmd {"$str"} $cur_srch_pos] } err]
-	
-	# Catch any error performing the search command and display error message to user.
-	if { $rt != 0 } {
-		tk_messageBox -parent $ApolTop::searchDlg -icon error -type ok -title "Search Error" -message \
-				"$err"
-		return -1
-	}
-	
-	# Prompt the user if a match was not found.	
-	if { $cur_srch_pos == "" } {
-		# NOTE: Use vwait command.to block the application if the event hasn't completed.
-		# This is because when Return button is hit multiple times a TCL/TK bug is being
-		# thrown:can't read "::tk::FocusGrab(...)
-		# The problem is that tkMessageBox summarily destroys the old window -
-		# which screws up SetFocusGrab's private variables because SetFocusGrab isn't reentrant.
-		set ApolTop::tk_msgBox_Wait  \
-			[tk_messageBox -parent $ApolTop::searchDlg -icon warning -type ok -title "Search Failed" -message \
-					"Search string not found!"]
-		vwait ApolTop::tk_msgBox_Wait
-	} else {	
-		# Set the insert position in the text widget. 
-		# If the direction is down, set the mark to index of the END character in the match.
-		# If the direction is up, set the mark to the index of the FIRST character in the match.
-		$w mark set insert "$cur_srch_pos + $cur_srch_pos_length char"
-		$w tag add sel $cur_srch_pos "$cur_srch_pos + $cur_srch_pos_length char"
-		
-		# Adjust the view in the window.
-		$w see $cur_srch_pos
-	}
-	
-	return 0
+    if {$case_Insensitive} {
+        set case_opt "-nocase"
+    }
+    if {$regExpr} {
+        set regExpr_opt "-regexp"
+    }
+    if { $srch_Direction == "down" } {
+        set direction_opt "-forward"
+        # Get the current insert position. 
+        set cur_srch_pos [$w index insert]
+    } else {
+        set direction_opt "-backward"
+        # Get the first character index of the current selection.
+        set cur_srch_pos [lindex [$w tag ranges sel] 0]
+    }
+    if { $cur_srch_pos == "" } {
+        set cur_srch_pos "1.0"
+    }
+
+    $w tag remove sel 0.0 end
+    set cur_srch_pos [eval [list $w search -count cur_srch_pos_length] $case_opt $regExpr_opt $direction_opt [list -- $str $cur_srch_pos]]
+
+    # Prompt the user if a match was not found.	
+    if {$cur_srch_pos == {}} {
+        # NOTE: Use vwait command.to block the application if the event hasn't completed.
+        # This is because when Return button is hit multiple times a TCL/TK bug is being
+        # thrown:can't read "::tk::FocusGrab(...)
+        # The problem is that tkMessageBox summarily destroys the old window -
+        # which screws up SetFocusGrab's private variables because SetFocusGrab isn't reentrant.
+        set ApolTop::tk_msgBox_Wait  \
+            [tk_messageBox -parent $ApolTop::searchDlg -icon warning -type ok -title "Search Failed" -message \
+                 "Search string not found."]
+        vwait ApolTop::tk_msgBox_Wait
+    } else {
+        # Set the insert position in the text widget. 
+        # If the direction is down, set the mark to index of the END character in the match.
+        # If the direction is up, set the mark to the index of the FIRST character in the match.
+        $w mark set insert "$cur_srch_pos + $cur_srch_pos_length char"
+        $w tag add sel $cur_srch_pos "$cur_srch_pos + $cur_srch_pos_length char"
+        # Adjust the view in the window.
+        $w see $cur_srch_pos
+    }
 }
 
 ##############################################################
@@ -412,7 +390,7 @@ proc ApolTop::textSearch { w str case_Insensitive regExpr srch_Direction } {
 # 
 proc ApolTop::search {} {
 	variable searchString
-	variable case_Insensitive	
+	variable case_sensitive	
 	variable regExpr 		
 	variable srch_Direction
 	variable notebook
@@ -423,23 +401,28 @@ proc ApolTop::search {} {
 	variable policy_conf_tab	
 	variable analysis_tab	
 	variable file_contexts_tab
-	
+
+    if {$case_sensitive} {
+        set insens 0
+    } else {
+        set insens 1
+    }
 	set raised_tab [$notebook raise]	
 	switch -- $raised_tab \
     		$policy_conf_tab {
-    			${policy_conf_tab}::search $searchString $case_Insensitive $regExpr $srch_Direction
+    			${policy_conf_tab}::search $searchString $insens $regExpr $srch_Direction
     		} \
     		$analysis_tab {
-    			${analysis_tab}::search $searchString $case_Insensitive $regExpr $srch_Direction
+    			${analysis_tab}::search $searchString $insens $regExpr $srch_Direction
     		} \
     		$rules_tab {
-    			[$rules_nb raise]::search $searchString $case_Insensitive $regExpr $srch_Direction
+    			[$rules_nb raise]::search $searchString $insens $regExpr $srch_Direction
     		} \
     		$components_tab {
-    			[$components_nb raise]::search $searchString $case_Insensitive $regExpr $srch_Direction
+    			[$components_nb raise]::search $searchString $insens $regExpr $srch_Direction
     		} \
     		$file_contexts_tab {
-    			${file_contexts_tab}::search $searchString $case_Insensitive $regExpr $srch_Direction
+    			${file_contexts_tab}::search $searchString $insens $regExpr $srch_Direction
     		} \
     		default {
     			puts "Invalid raised tab!"
@@ -600,114 +583,77 @@ proc ApolTop::save_query_info {} {
     	return 0
 }
 
-##############################################################
-# ::display_searchDlg
-#  	- Display the search dialog
-# 
-proc ApolTop::display_searchDlg {} {
-	variable searchDlg
-	variable searchDlg_entryBox
-	global tcl_platform
-	
-	if { [$ApolTop::notebook raise] == $ApolTop::analysis_tab } {
-		return
-	}
-	# Checking to see if window already exists. If so, it is destroyed.
-	if { [winfo exists $searchDlg] } {
-		raise $searchDlg
-		focus $searchDlg_entryBox
-		$searchDlg_entryBox selection range 0 end
-		return
-	}
-	
-	# Create the toplevel dialog window and set its' properties.
-	toplevel $searchDlg
-	wm protocol $searchDlg WM_DELETE_WINDOW " "
-	wm withdraw $searchDlg
-	wm title $searchDlg "Find"
-	
-	if {$tcl_platform(platform) == "windows"} {
-		wm resizable $ApolTop::searchDlg 0 0
-	} else {
-		bind $ApolTop::searchDlg <Configure> { wm geometry $ApolTop::searchDlg {} }
-	}
-    
-	# Display results window
-	set sbox [frame $searchDlg.sbox]
-	set lframe [frame $searchDlg.lframe]
-	set rframe [frame $searchDlg.rframe]
-	set lframe_top [frame $lframe.lframe_top]
-	set lframe_bot [frame $lframe.lframe_bot]
-	set lframe_bot_left [frame $lframe_bot.lframe_bot_left]
-	set lframe_bot_right [frame $lframe_bot.lframe_bot_right]
-	
-	set lbl_entry [label $lframe_top.lbl_entry -text "Find What:"]
-	set searchDlg_entryBox [entry $lframe_top.searchDlg_entryBox -bg white -textvariable ApolTop::searchString ]
-	set b_findNext [button $rframe.b_findNext -text "Find Next" \
-		      -command { ApolTop::search }]
-	set b_cancel [button $rframe.b_cancel -text "Cancel" \
-		      -command "destroy $searchDlg"]
-	set cb_case [checkbutton $lframe_bot_left.cb_case -text "Case Insensitive" -variable ApolTop::case_Insensitive]
-	set cb_regExpr [checkbutton $lframe_bot_left.cb_regExpr -text "Regular Expressions" -variable ApolTop::regExpr]
-	set directionBox [TitleFrame $lframe_bot_right.directionBox -text "Direction" ]
-	set dir_up [radiobutton [$directionBox getframe].dir_up -text "Up" -variable ApolTop::srch_Direction \
-			 -value up ]
-    	set dir_down [radiobutton [$directionBox getframe].dir_down -text "Down" -variable ApolTop::srch_Direction \
-			 -value down ]
-	
-	# Placing display widgets
-	pack $sbox -expand yes -fill both -padx 5 -pady 5
-	pack $lframe -expand yes -fill both -padx 5 -pady 5 -side left
-	pack $rframe -expand yes -fill both -padx 5 -pady 5 -side right
-	pack $lframe_top -expand yes -fill both -padx 5 -pady 5 -side top
-	pack $lframe_bot -expand yes -fill both -padx 5 -pady 5 -side bottom
-	pack $lframe_bot_left -expand yes -fill both -padx 5 -pady 5 -side left 
-	pack $lframe_bot_right -expand yes -fill both -padx 5 -pady 5 -side right
-	pack $lbl_entry -expand yes -fill both -side left 
-	pack $searchDlg_entryBox -expand yes -fill both -side right
-	pack $b_findNext $b_cancel -side top -expand yes -fill x
-	pack $cb_case $cb_regExpr -expand yes -side top -anchor nw
-	pack $directionBox -side left -expand yes -fill both
-	pack $dir_up $dir_down -side left -anchor center 
-	
-	# Place a toplevel at a particular position
-	#::tk::PlaceWindow $searchDlg widget center
-	wm deiconify $searchDlg
-	focus $searchDlg_entryBox 
-	$searchDlg_entryBox selection range 0 end
-	bind $ApolTop::searchDlg <Return> { ApolTop::search }
-	wm protocol $searchDlg WM_DELETE_WINDOW "destroy $searchDlg"
-	return 0
-}	
+proc ApolTop::displayFindDialog {} {
+    variable searchDlg
+    variable searchDlg_entryBox
+
+    if {[winfo exists $searchDlg]} {
+        raise $searchDlg
+        focus $searchDlg_entryBox
+        $searchDlg_entryBox selection range 0 end
+        return
+    }
+
+    Dialog $searchDlg -title "Find" -separator 0 -parent . \
+        -side right -default 0 -cancel 1 -modal none -homogeneous 1
+    set top_frame [frame [$searchDlg getframe].top]
+    set bottom_frame [frame [$searchDlg getframe].bottom]
+    pack $top_frame -expand 1 -fill both -padx 10 -pady 5
+    pack $bottom_frame -expand 0 -fill both -padx 10 -pady 5
+
+    set entry_label [label $top_frame.l -text "Find:" -anchor e]
+    set searchDlg_entryBox [entry $top_frame.e -bg white \
+                                -textvariable ApolTop::searchString -width 16]
+    pack $entry_label -side left -expand 0 -padx 10
+    pack $searchDlg_entryBox -side left -expand 1 -fill x
+
+    set options_frame [frame $bottom_frame.opts]
+    pack $options_frame -side left -padx 5
+    set options_case [checkbutton $options_frame.case -text "Match case" \
+                          -variable ApolTop::case_sensitive]
+    set options_regex [checkbutton $options_frame.regex -text "Regular expression" \
+                           -variable ApolTop::regExpr]
+    pack $options_case -anchor w
+    pack $options_regex -anchor w
+
+    set dir_frame [TitleFrame $bottom_frame.dir -text Direction]
+    pack $dir_frame -side left
+    set dir_up [radiobutton [$dir_frame getframe].up -text Up \
+                    -variable ApolTop::srch_Direction -value up]
+    set dir_down [radiobutton [$dir_frame getframe].down -text Down \
+                    -variable ApolTop::srch_Direction -value down]
+    pack $dir_up $dir_down -side left
+
+    $searchDlg add -text "Find Next" -command ApolTop::search
+    $searchDlg add -text "Cancel" -command [list destroy $searchDlg]
+
+    $searchDlg_entryBox selection range 0 end
+    focus $searchDlg_entryBox
+    $searchDlg draw
+    wm resizable $searchDlg 0 0
+}
 
 ########################################################################
 # ::goto_line
 #  	- goes to indicated line in text box
 # 
 proc ApolTop::goto_line { line_num textBox } {
-	variable notebook
-	
-	if {[string is integer -strict $line_num] != 1} {
-		tk_messageBox -icon error \
-			-type ok  \
-			-title "Invalid line number" \
-			-message "$line_num is not a valid line number"
-		return 0
-	}
+    if {[string is integer -strict $line_num] != 1} {
+        tk_messageBox -icon error \
+            -type ok  \
+            -title "Invalid Line Number" \
+            -message "$line_num is not a valid line number."
+    } else {
 	# Remove any selection tags.
 	$textBox tag remove sel 0.0 end
 	$textBox mark set insert ${line_num}.0 
 	$textBox see ${line_num}.0 
 	$textBox tag add sel $line_num.0 $line_num.end
-	focus -force $textBox
-	
-	return 0
+	focus $textBox
+    }
 }
 
-##############################################################
-# ::call_tabs_goto_line_cmd
-#  	-  
-proc ApolTop::call_tabs_goto_line_cmd { } {
+proc ApolTop::goto {dialog} {
 	variable goto_line_num
 	variable notebook
 	variable components_nb
@@ -718,6 +664,11 @@ proc ApolTop::call_tabs_goto_line_cmd { } {
 	variable analysis_tab		
 	variable file_contexts_tab
 	
+    if {[string is integer -strict $goto_line_num] != 1} {
+        tk_messageBox -icon error -type ok -parent $dialog \
+            -title "Invalid Line Number" \
+            -message "$goto_line_num is not a valid line number."
+    } else {
 	set raised_tab [$notebook raise]	
 	switch -- $raised_tab \
     		$policy_conf_tab {
@@ -737,56 +688,38 @@ proc ApolTop::call_tabs_goto_line_cmd { } {
     		} \
     		default {
     			return -code error
-    		}  
-    	
-	return 0
+    		}
+        destroy $dialog
+    }
 }
 
-##############################################################
-# ::display_goto_line_Dlg
-#  	-  
-proc ApolTop::display_goto_line_Dlg { } {
-	variable notebook
-	variable goto_Dialog
-	variable gotoDlg_entryBox
-	global tcl_platform
-	
-	if { [$ApolTop::notebook raise] == $ApolTop::analysis_tab } {
-		return
-	}
-	# create dialog
-    	if { [winfo exists $goto_Dialog] } {
-    		raise $goto_Dialog
-    		focus $gotoDlg_entryBox
-    		return 0
-    	}
-    	toplevel $goto_Dialog
-   	wm protocol $goto_Dialog WM_DELETE_WINDOW " "
-    	wm withdraw $goto_Dialog
-    	wm title $goto_Dialog "Goto"
-    	
-    	if {$tcl_platform(platform) == "windows"} {
-		wm resizable $ApolTop::goto_Dialog 0 0
-	} else {
-		bind $ApolTop::goto_Dialog <Configure> { wm geometry $ApolTop::goto_Dialog {} }
-	}
-	# Clear the previous line number
-	set ApolTop::goto_line_num ""
-	set gotoDlg_entryBox [entry $goto_Dialog.gotoDlg_entryBox -textvariable ApolTop::goto_line_num -width 10 ]
-	set lbl_goto  [label $goto_Dialog.lbl_goto -text "Goto:"]
-	set b_ok      [button $goto_Dialog.ok -text "OK" -width 6 -command { ApolTop::call_tabs_goto_line_cmd; destroy $ApolTop::goto_Dialog}]
-	set b_cancel  [button $goto_Dialog.cancel -text "Cancel" -width 6 -command { destroy $ApolTop::goto_Dialog }]
-	
-	pack $lbl_goto $gotoDlg_entryBox -side left -padx 5 -pady 5 -anchor nw
-	pack $b_ok $b_cancel -side left -padx 5 -pady 5 -anchor ne
-	
-	# Place a toplevel at a particular position
-    	#::tk::PlaceWindow $goto_Dialog widget center
-	wm deiconify $goto_Dialog
-	focus $gotoDlg_entryBox
-	bind $ApolTop::goto_Dialog <Return> { ApolTop::call_tabs_goto_line_cmd; destroy $ApolTop::goto_Dialog }
-	wm protocol $goto_Dialog WM_DELETE_WINDOW "destroy $goto_Dialog"
-	return 0
+proc ApolTop::displayGotoDialog {} {
+    variable goto_Dialog
+    variable gotoDlg_entryBox
+
+    if {[winfo exists $goto_Dialog]} {
+        raise $goto_Dialog
+        focus $gotoDlg_entryBox
+        $gotoDlg_entryBox selection range 0 end
+        return
+    }
+
+    Dialog $goto_Dialog -title "Goto Line" -separator 0 -parent . \
+        -default 0 -cancel 1 -modal none -homogeneous 1
+    set top_frame [$goto_Dialog getframe]
+    set entry_label [label $top_frame.l -text "Goto Line:" -anchor e]
+    set gotoDlg_entryBox [entry $top_frame.e -bg white \
+                              -textvariable ApolTop::goto_line_num -width 10]
+    pack $entry_label -side left -padx 5 -pady 5
+    pack $gotoDlg_entryBox -side left -padx 5 -pady 5 -expand 1 -fill x
+
+    $goto_Dialog add -text "OK" -command [list ApolTop::goto $goto_Dialog]
+    $goto_Dialog add -text "Cancel" -command [list destroy $goto_Dialog]
+
+    $gotoDlg_entryBox selection range 0 end
+    focus $gotoDlg_entryBox
+    $goto_Dialog draw
+    wm resizable $goto_Dialog 0 0
 }
 
 proc ApolTop::check_libsefs {} {
@@ -798,73 +731,66 @@ proc ApolTop::create { } {
 	variable mainframe  
 	variable components_nb
 	variable rules_nb
-       
-	# Menu description
-	set descmenu {
+
+    # Menu description
+    set descmenu {
 	"&File" {} file 0 {
-	    {command "&Open..." {} "Open a new policy"  {}  -command ApolTop::openPolicy}
-	    {command "&Close" {} "Close an opened polocy"  {} -command ApolTop::closePolicy}
+	    {command "&Open..." {} "Open a new policy" {Ctrl o} -command ApolTop::openPolicy}
+	    {command "&Close" {} "Close current polocy" {Ctrl w} -command ApolTop::closePolicy}
 	    {separator}
-	    {command "E&xit" {} "Exit policy analysis tool" {} -command ApolTop::apolExit}
+	    {command "&Quit" {} "Quit policy analysis tool" {Ctrl q} -command ApolTop::apolExit}
 	    {separator}
-	    {cascad "&Recent files" {} recent 0 {}}
-	
+	    {cascade "&Recent Files" {} recent 0 {}}
 	}
 	"&Search" {} search 0 {      
-	    {command "&Find...                    (C-s)" {Disable_SearchMenu_Tag} "Find"  \
-	    	{} -command ApolTop::display_searchDlg }
-	    {command "&Goto Line...           (C-g)" {Disable_SearchMenu_Tag} "Goto Line"  \
-	    	{} -command ApolTop::display_goto_line_Dlg }
+	    {command "&Find..." {Disable_SearchMenu_Tag} "Find text in current buffer" {Ctrl f} -command ApolTop::displayFindDialog}
+	    {command "&Goto Line..." {Disable_SearchMenu_Tag} "Goto a line in current buffer" {Ctrl g} -command ApolTop::displayGotoDialog}
 	}
 	"&Query" {} query 0 {
-	    {command "&Load query..." {Disable_LoadQuery_Tag} "Load query"  \
-	    	{} -command "ApolTop::load_query_info" }
-	    {command "&Save query..." {Disable_SaveQuery_Tag} "Save query"  \
-	    	{} -command "ApolTop::save_query_info" }
+	    {command "&Load Query..." {Disable_LoadQuery_Tag} "Load query criteria " {} -command ApolTop::load_query_info}
+	    {command "&Save Query..." {Disable_SaveQuery_Tag} "Save current query criteria" {} -command ApolTop::save_query_info}
 	    {separator}
-	    {command "&Policy Summary" {Disable_Summary} "Display summary statics" {} -command ApolTop::popupPolicyStats }
+	    {command "&Policy Summary" {Disable_Summary} "Display summary statistics" {} -command ApolTop::popupPolicyStats}
 	}
 	"&Advanced" all options 0 {
-	    {cascad "&Permission Mappings" {Perm_Map_Tag} pmap_menu 0 {}}
-	    #{cascad "&File Context Indexing" {FC_Index_Tag} fc_index_menu 0 {}}
+	    {cascade "&Permission Mappings" {Perm_Map_Tag} pmap_menu 0 {
+                {command "Load Default Perm Map" {} "Load the default permission map" {} -command ApolTop::load_default_perm_map_Dlg}
+                {command "Load Perm Map from File" {} "Load a permission map from a file" {} -command ApolTop::load_perm_map_fileDlg}
+                {separator}
+                {command "Edit Perm Map... (Not loaded)" {} "Edit currently loaded permission map" {} -command Apol_Perms_Map::editPermMappings}
+            }}
         }
 	"&Help" {} helpmenu 0 {
-	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
-	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "domaintrans_help.txt"}}
-	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "infoflow_help.txt"}}
-	    #{command "&Information Flow Assertion Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Assertion Analysis Help" "flow_assertion_help.txt"}}
-	    {command "&Direct Relabel Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Relabel Analysis Help" "file_relabel_help.txt"}}
-	    {command "&Types Relationship Summary Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Types Relationship Summary Analysis Help" "types_relation_help.txt"}}
+	    {command "&General Help" {} "Show help on using apol" {} -command {ApolTop::helpDlg Help apol_help.txt}}
+	    {command "&Domain Transition Analysis" {} "Show help on domain transitions" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" domaintrans_help.txt}}
+	    {command "&Information Flow Analysis" {} "Show help on information flows" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" infoflow_help.txt}}
+	    {command "&Direct Relabel Analysis" {} "Show help on file relabeling" {} -command {ApolTop::helpDlg "Relabel Analysis Help" file_relabel_help.txt}}
+	    {command "&Types Relationship Summary Analysis" {} "Show help on types relationships" {} -command {ApolTop::helpDlg "Types Relationship Summary Analysis Help" types_relation_help.txt}}
 	    {separator}
-	    {command "&About" {all option} "Show about box" {} -command ApolTop::aboutBox}
+	    {command "&About" {} "Show copyright information" {} -command ApolTop::aboutBox}
 	}
-	}
-	
+    }
+
 	set mainframe [MainFrame .mainframe -menu $descmenu -textvariable ApolTop::status]
-	[$mainframe getmenu pmap_menu] insert 0 command -label "Edit Perm Map... (Not loaded)" -command "Apol_Perms_Map::editPermMappings"
-	[$mainframe getmenu pmap_menu] insert 0 separator
-	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from File..." -command "ApolTop::load_perm_map_fileDlg"
-	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Default Perm Map" -command "ApolTop::load_default_perm_map_Dlg"
-	
+
 	#[$mainframe getmenu fc_index_menu] insert 0 command -label "Load Index... (Not loaded)" -command "ApolTop::load_fc_index_file"
 	#[$mainframe getmenu fc_index_menu] insert 0 command -label "Create Index" -command "ApolTop::create_fc_index_file"
-		
+
 	$mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
 	$mainframe addindicator -textvariable ApolTop::policy_stats_summary -width 88
 	$mainframe addindicator -textvariable ApolTop::policy_version_string -width 28
-	
+
 	# Disable menu items since a policy is not yet loaded.
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
 	$ApolTop::mainframe setmenustate Perm_Map_Tag disabled
-	$ApolTop::mainframe setmenustate FC_Index_Tag normal
 	$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
-		
+
 	# NoteBook creation
 	set frame    [$mainframe getframe]
 	set notebook [NoteBook $frame.nb]
-	
+
 	# Create Top-level tab frames	
 	set components_frame [$notebook insert end $ApolTop::components_tab -text "Policy Components"]
 	set rules_frame [$notebook insert end $ApolTop::rules_tab -text "Policy Rules"]
@@ -874,7 +800,7 @@ proc ApolTop::create { } {
 	}
 	Apol_Analysis::create $notebook
 	Apol_PolicyConf::create $notebook
-	
+
 	# Create subordinate tab frames
 	set components_nb [NoteBook $components_frame.components_nb]
 	set rules_nb [NoteBook $rules_frame.rules_nb]
@@ -904,21 +830,18 @@ proc ApolTop::create { } {
 	pack $components_nb -fill both -expand yes -padx 4 -pady 4
 	$components_nb raise [$components_nb page 0]
 	$components_nb bindtabs <Button-1> { ApolTop::set_Focus_to_Text }
-	
+
 	$rules_nb compute_size
 	pack $rules_nb -fill both -expand yes -padx 4 -pady 4
 	$rules_nb raise [$rules_nb page 0]
 	$rules_nb bindtabs <Button-1> { ApolTop::set_Focus_to_Text }
-	
-	bind . <Control-f> {ApolTop::display_searchDlg}
-	bind . <Control-g> {ApolTop::display_goto_line_Dlg}
-	
+
 	$notebook compute_size
 	pack $notebook -fill both -expand yes -padx 4 -pady 4
 	$notebook raise [$notebook page 0]
 	$notebook bindtabs <Button-1> { ApolTop::set_Focus_to_Text }	
 	pack $mainframe -fill both -expand yes
-	
+
 	return 0
 }
 
@@ -1427,7 +1350,7 @@ proc ApolTop::aboutBox {} {
      
      set lib_ver [apol_GetVersion]
      tk_messageBox -icon info -type ok -title "About SELinux Policy Analysis Tool" -message \
-	"Security Policy Analysis Tool for Security Enhanced Linux \n\nCopyright (c) $copyright_date\nTresys Technology, LLC\http://oss.tresys.com/projects/setools\n\nGUI Version ($gui_ver)\nLib Version ($lib_ver)"
+	"Security Policy Analysis Tool for Security Enhanced Linux \n\nCopyright (c) $copyright_date\nTresys Technology, LLC\nhttp://oss.tresys.com/projects/setools\n\nGUI Version ($gui_ver)\nLib Version ($lib_ver)"
      return
 }
 
