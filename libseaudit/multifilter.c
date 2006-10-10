@@ -1,7 +1,7 @@
 /* Copyright (C) 2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
-/* 
+/*
  * Author: Kevin Carr <kcarr@tresys.com>
  * Date: February 06, 2004
  *
@@ -103,7 +103,7 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 	case PARSING_PATH:
 	case PARSING_NETIF:
 	case PARSING_IPADDR:
-	case PARSING_PORTS:		
+	case PARSING_PORTS:
 	case PARSING_DATE_TIME:
 	case PARSING_HOST:
 		if (!data->parsing_item)
@@ -119,7 +119,7 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 
 static void my_parse_startElement(void *user_data, const xmlChar *name, const xmlChar **attrs)
 {
-	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;	
+	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;
 	char *unescaped;
 
 	if (!seaudit_multifilter_parser_is_valid_name(name))
@@ -137,12 +137,12 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 		if (!attrs[4] || !attrs[4]) /* match= */
 			return;
 		if (xmlStrcmp(attrs[4], (unsigned char*)"match") == 0)
-			seaudit_multifilter_set_match(data->multifilter, 
+			seaudit_multifilter_set_match(data->multifilter,
 						      (strcmp((char *)attrs[5], "all") == 0)? SEAUDIT_FILTER_MATCH_ALL : SEAUDIT_FILTER_MATCH_ANY);
 		if (!attrs[6] || !attrs[7]) /* show= */
 			return;
 		if (xmlStrcmp(attrs[6],(unsigned char*) "show") == 0)
-			seaudit_multifilter_set_show_matches(data->multifilter, 
+			seaudit_multifilter_set_show_matches(data->multifilter,
 							     (strcmp((char *)attrs[7], "true") == 0)? TRUE : FALSE);
 		data->is_multi = TRUE;
 	} else if (xmlStrcmp(name, (unsigned char*)"filter") == 0) {
@@ -160,7 +160,7 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 		if (xmlStrcmp(attrs[2], (unsigned char*)"match") == 0) {
 			if (xmlStrcmp(attrs[3],(unsigned char*) "all") == 0)
 				data->cur_filter->match = SEAUDIT_FILTER_MATCH_ALL;
-			else 
+			else
 				data->cur_filter->match = SEAUDIT_FILTER_MATCH_ANY;
 		}
 
@@ -215,7 +215,7 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;
 	struct tm *t1, *t2;
 	int i;
-	
+
 	t1 = (struct tm*)calloc(1, sizeof(struct tm));
 	t2 = (struct tm*)calloc(1, sizeof(struct tm));
 
@@ -234,7 +234,7 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 		data->parsing_item = FALSE;
 		return;
 	}
-	
+
 	if (xmlStrcmp(name, (unsigned char*)"filter") == 0) {
 		seaudit_multifilter_add_filter(data->multifilter, data->cur_filter);
 		data->cur_filter = NULL;
@@ -252,7 +252,7 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 			break;
 		case PARSING_TGT_TYPES:
 			data->cur_filter->tgt_type_criteria = tgt_type_criteria_create(data->strs, data->num_strs);
-			seaudit_multifilter_parser_data_free(data);		
+			seaudit_multifilter_parser_data_free(data);
 			data->state = PARSING_NONE;
 			break;
 		case PARSING_SRC_ROLES:
@@ -325,9 +325,9 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 		case PARSING_DATE_TIME:
 			/* here we have the elements */
 			if (data->strs[0])
-				strptime(data->strs[0], "%a %b %d %T %Y", t1);								
+				strptime(data->strs[0], "%a %b %d %T %Y", t1);
 			if (data->strs[1])
-				strptime(data->strs[1], "%a %b %d %T %Y", t2);					
+				strptime(data->strs[1], "%a %b %d %T %Y", t2);
 			if (data->strs[2])
 				i = atoi(data->strs[2]);
 			data->cur_filter->date_time_criteria = date_time_criteria_create(t1, t2, i);
@@ -383,7 +383,7 @@ void seaudit_multifilter_destroy(seaudit_multifilter_t *multifilter)
 		seaudit_filter_destroy(filter);
 	}
 	free(multifilter->filters);
-	
+
 	if (multifilter->name)
 		free(multifilter->name);
 }
@@ -443,7 +443,7 @@ static bool_t seaudit_multifilter_does_message_match(seaudit_multifilter_t *mult
 
 	if (!multifilter->filters)
 		return TRUE;
-		
+
 	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) {
 		filter = apol_vector_get_element(multifilter->filters, i);
 
@@ -461,7 +461,7 @@ static bool_t seaudit_multifilter_does_message_match(seaudit_multifilter_t *mult
 
 bool_t seaudit_multifilter_should_message_show(seaudit_multifilter_t *multifilter, msg_t *message, audit_log_t *log)
 {
-	bool_t matches; 
+	bool_t matches;
 
 	matches = seaudit_multifilter_does_message_match(multifilter, message, log);
 	return matches == multifilter->show;
@@ -489,13 +489,13 @@ int seaudit_multifilter_load_from_file(seaudit_multifilter_t **multifilter, bool
 		*multifilter = NULL;
 		if (err)
 			return err;
-		else 
+		else
 			return 1; /* invalid file */
 	}
 
 	*is_multi = parse_data.is_multi;
 	*multifilter = parse_data.multifilter;
-	
+
 	return 0;
 }
 
@@ -513,11 +513,11 @@ int seaudit_multifilter_save_to_file(seaudit_multifilter_t *multifilter, const c
 		return -1;
 
 	fprintf(file, XML_VER);
-	fprintf(file, "<view xmlns=\"http://www.tresys.com/setools/seaudit/%s/\" name=\"%s\" match=\"%s\" show=\"%s\">\n", 
-		FILTER_FILE_FORMAT_VERSION, multifilter->name, 
+	fprintf(file, "<view xmlns=\"http://oss.tresys.com/projects/setools/seaudit-%s/\" name=\"%s\" match=\"%s\" show=\"%s\">\n",
+		FILTER_FILE_FORMAT_VERSION, multifilter->name,
 		multifilter->match == SEAUDIT_FILTER_MATCH_ALL? "all" : "any",
 		multifilter->show == TRUE? "true" : "false");
-	
+
 	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) {
 		filter = apol_vector_get_element(multifilter->filters, i);
 		seaudit_filter_append_to_file(filter, file, 1);

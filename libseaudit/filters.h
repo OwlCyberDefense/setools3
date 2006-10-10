@@ -1,7 +1,7 @@
 /* Copyright (C) 2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
-/* 
+/*
  * Author: Kevin Carr <kcarr@tresys.com>
  * Date: February 06, 2004
  *

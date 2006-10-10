@@ -19,7 +19,7 @@ The tool has the following main functions:
   2) Filter an audit log based on fields in the messages.
   3) Query the policy based on data from a given audit message.
   4) Export SELinux audit messages to a file.
-  5) Generate reports in HTML or plain-text format from an entire log
+  5) Generate reports in HTML or plain text format from an entire log
      or an seaudit view.
 
 
@@ -103,7 +103,7 @@ pop-up menu that allows you to:
   - Export all selected messages to a file.
 
 The REPORT menu allows you to create report files in HTML or
-plain-text format using an entire audit log or an seaudit view. (See
+plain text format using an entire audit log or an seaudit view. (See
 Creating Reports below).
 
 Sorting:
@@ -317,7 +317,7 @@ real-time log monitor.
 Creating Reports:
 -----------------
 The REPORT menu allows you to create report files in HTML or
-plain-text format using an entire audit log or an seaudit view.
+plain text format using an entire audit log or an seaudit view.
 Selecting the 'Create Report' menu item displays a dialog for making
 configurations to the report and then saving the report to a file.
 There are two frames, one for specifying the input to the report and
@@ -332,7 +332,7 @@ seaudit).  This option is only enabled when the radio button for using
 the entire audit log is selected.
 
 The output frame contains radio buttons for specifying the format of
-the report (i.e., HTML or plain-text).  Additionally, an entry box is
+the report (i.e., HTML or plain text).  Additionally, an entry box is
 provided in this frame for specifying a style sheet to use when
 creating an HTML report.  There also is an entry box for specifying the
 configuration file to use for creating the report.  If the style sheet
