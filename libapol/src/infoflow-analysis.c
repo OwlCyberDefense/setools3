@@ -581,8 +581,8 @@ static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t *p
  * @param p Policy to which look up classes and permissions.
  * @param rule AV rule to check.
  * @param types Vector of qpol_type_t, of which both the source and
- * target types must be members..  If NULL or empty then allow all
- * types
+ * target types must be members.  If NULL or empty then allow all
+ * types.
  *
  * @return 1 if rule matches, 0 if not, < 0 on error.
  */
@@ -728,15 +728,8 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_avrule_t *rule;
-		uint32_t is_enabled;
 		if (qpol_iterator_get_item(iter, (void **) &rule) < 0) {
 			goto cleanup;
-		}
-		if (qpol_avrule_get_is_enabled(p->p, rule, &is_enabled) < 0) {
-			goto cleanup;
-		}
-		if (!is_enabled) {
-			continue;
 		}
 		compval = apol_infoflow_graph_check_types(p, rule, types);
 		if (compval < 0) {
