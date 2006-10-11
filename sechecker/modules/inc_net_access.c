@@ -334,7 +334,7 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		qpol_type_get_name(policy->p, net_domain, &net_domain_name);
 
 		/* Check netif types */
-		for (j=0; j<apol_vector_get_size(netif_vector); j++) {
+		for (j = 0; j < apol_vector_get_size(netif_vector); j++) {
 			qpol_type_t *netif = NULL;
 			char *netif_name = NULL;
 
@@ -586,6 +586,8 @@ int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 	mod->result = res;
 
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 inc_net_access_run_fail:

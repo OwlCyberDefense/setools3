@@ -432,6 +432,8 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	apol_vector_destroy(&range_trans_vector, NULL);
 	mod->result = res;
 
+	if (apol_vector_get_size(res->items))
+		return 1;
 	return 0;
 
 imp_range_trans_run_fail:
