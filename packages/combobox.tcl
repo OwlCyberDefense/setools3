@@ -1,4 +1,4 @@
-# this file was taken from BWidget CVS
+# this file was taken from BWidget 1.8 release
 
 namespace eval ComboBox {
     Widget::declare ComboBox {
@@ -324,6 +324,13 @@ proc ComboBox::insert { path idx args } {
     } else {
         set values [eval [list linsert $values $idx] $args]
     }
+}
+
+# ----------------------------------------------------------------------------
+#  Command ComboBox::clearvalue
+# ----------------------------------------------------------------------------
+proc ComboBox::clearvalue { path } {
+    Entry::configure $path.e -text ""
 }
 
 # ----------------------------------------------------------------------------
