@@ -153,6 +153,7 @@ proc Apol_Analysis_relabel::updateAnalysis {f} {
 proc Apol_Analysis_relabel::reset {} {
     reinitializeVals
     reinitializeWidgets
+    open
 }
 
 proc Apol_Analysis_relabel::switchTab {query_options} {

@@ -133,6 +133,7 @@ proc Apol_Analysis_transflow::updateAnalysis {f} {
 proc Apol_Analysis_transflow::reset {} {
     reinitializeVals
     reinitializeWidgets
+    open
 }
 
 proc Apol_Analysis_transflow::switchTab {query_options} {
@@ -652,6 +653,7 @@ proc Apol_Analysis_transflow::analyze {} {
     } else {
         set regexp {}
     }
+    set threshold {}
     if {$vals(advanced:enable)} {
         set intermed $vals(intermed:inc_all)
         set classperms {}
@@ -661,11 +663,14 @@ proc Apol_Analysis_transflow::analyze {} {
                 lappend classperms [list $class $perm]
             }
         }
+        if {$vals(classes:threshold_enable)} {
+            set threshold $vals(classes:threshold)
+        }
     } else {
         set intermed {}
         set classperms {}
     }
-    apol_TransInformationFlowAnalysis $vals(dir) $vals(type) $intermed $classperms $regexp
+    apol_TransInformationFlowAnalysis $vals(dir) $vals(type) $intermed $classperms $threshold $regexp
 }
 
 proc Apol_Analysis_transflow::analyzeMore {tree node} {
