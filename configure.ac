@@ -497,16 +497,11 @@ proc tcl_patch_bwidget {} {
     # explicitly pull in old BWidget code before patching
     NoteBook .foo ; destroy .foo
     ComboBox .foo ; destroy .foo
-    proc NoteBook::bindtabs { path event script } {
-        if { \$script != "" } {
-            append script " \\[NoteBook::_get_page_name [list \$path] current 1\\]"
-            \$path.c bind "page" \$event \$script
-        } else {
-            \$path.c bind "page" \$event {}
-        }
-    }
+    MainFrame .foo ; destroy .foo
 EOF
         cat ${ac_top_srcdir}/packages/combobox.tcl >> ./config.tcl
+	cat ${ac_top_srcdir}/packages/mainframe.tcl >> ./config.tcl
+	cat ${ac_top_srcdir}/packages/notebook.tcl >> ./config.tcl
         echo "}" >> ./config.tcl
    else
         echo "" > ./config.tcl
