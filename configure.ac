@@ -209,9 +209,9 @@ EOF
             bwidget_ver=1.7
             ;;
        *)
-            AC_MSG_WARN([not found, using setools's BWidget instead])
+            AC_MSG_WARN([not found, using setools's BWidget 1.8 instead])
             copy_bwidget=yes
-            bwidget_ver=1.7
+            bwidget_ver=1.8
             ;;
     esac
     if test ${copy_bwidget} = yes; then
