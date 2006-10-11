@@ -11,10 +11,10 @@ policy checks and configure them to run in batches with different
 options.
 
 Each module analyzes a policy.  If you do not specify a policy on the
-command line, the tool use the system policy by default.  In addition,
-some checks will require the file_contexts file in order to run
-correctly.  If you do not specify the file_contexts file the tool will
-use the system file_contexts file by default.
+command line, the tool uses the system policy by default.  In
+addition, some checks will require the file_contexts file in order to
+run correctly.  If you do not specify the file_contexts file the tool
+will use the system file_contexts file by default.
 
 Checks can be run one at a time on the command line (by specifying a
 module) or in a batch (by specifying a profile).  You can create a
@@ -40,22 +40,22 @@ specify what gets included in the report.
 
 
 Modules:
--------
+--------
 A module encapsulates a single check on the policy.  Modules can be
-data driven by information specified in a profile, however each module
-will work using default values if no profile is used.  See the help
-for the specific module(s) to determine what data may be overridden in
-a profile.
+data driven by information specified in a profile.  However, each
+module will work using default values if no profile is used.  See the
+help for the specific module(s) to determine what data may be
+overridden in a profile.
 
 Each module has a specified severity (high, med, low).  These are
 defined as follows:
 
-1) "high": the module-results indicate an identifiable security risk
-   in the SELinux policy
+1) "high":  the module-results indicate an identifiable security risk
+   in the SELinux policy.
 
 2) "med":  the module-results indicate a flaw in the SELinux policy
-   that changes the manner in which the policy is enforced, however
-   does not present an identifiable security risk.
+   that changes the manner in which the policy is enforced; however,
+   it does not present an identifiable security risk.
 
 3) "low":  the module-results indicate a flaw in the policy that does
    not effect the manner in which the policy is enforced, but is
@@ -76,15 +76,16 @@ program.  The three profiles are described below.
     development profile and not meant to be used very often by policy
     developers.
 
-3.) all: this profile runs all the known modules.
+3.) all: this profile runs all known modules.
 
-Profiles can be create to run any set of modules with different
+Profiles can be created to run any set of modules with different
 options.  The profile can specify the output format for each module.
+
 
 Other Options:
 --------------
 You can specify a minimum module severity to report.  If the minimum
-severity is "med", and the "all" profile is used all the modules that
-are "med" or "high" will be run and the results for those modules will
-be reported by sechecker.  The "low" severity modules listed in the
+severity is "med" and the "all" profile is used, all modules that are
+"med" or "high" will be run and the results for those modules will be
+reported by sechecker.  The "low" severity modules listed in the
 profile will be ignored.
