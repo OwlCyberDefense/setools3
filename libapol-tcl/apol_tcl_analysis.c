@@ -755,12 +755,13 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
  * Rules are unique identifiers (relative to currently loaded policy).
  * Call [apol_RenderAVRule] to display them.
  *
- * @param argv This fuction takes four parameters:
+ * @param argv This fuction takes six parameters:
  * <ol>
  *   <li>flow direction, one of "to" or "from"
  *   <li>starting type (string)
  *   <li>list of allowable intermediate types, or empty list to accept all
  *   <li>list of allowable class/perm pairs, or an empty list to accept all
+ *   <li>minimum threshold for permission weights, or empty string to accept all
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
  */
@@ -782,8 +783,8 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 6) {
-		ERR(policydb, "%s", "Need a flow direction, starting type, intermediate types, class/perm pairs, and resulting type regex.");
+	if (argc != 7) {
+		ERR(policydb, "%s", "Need a flow direction, starting type, intermediate types, class/perm pairs, weight threshold, and resulting type regex.");
 		goto cleanup;
 	}
 
@@ -806,7 +807,7 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 	if (apol_infoflow_analysis_set_mode(policydb, analysis, APOL_INFOFLOW_MODE_TRANS) < 0 ||
 	    apol_infoflow_analysis_set_dir(policydb, analysis, direction) < 0 ||
 	    apol_infoflow_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
-	    apol_infoflow_analysis_set_result_regex(policydb, analysis, argv[5])) {
+	    apol_infoflow_analysis_set_result_regex(policydb, analysis, argv[6])) {
 		goto cleanup;
 	}
 	if (Tcl_SplitList(interp, argv[3], &num_opts, &intermed_strings) == TCL_ERROR) {
@@ -837,6 +838,14 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 		    (policydb, analysis, Tcl_GetString(cp[0]), Tcl_GetString(cp[1])) < 0) {
 			goto cleanup;
 		}
+	}
+
+	if (argv[5][0] != '\0') {
+		int min_weight;
+		if (Tcl_GetInt(interp, argv[5], &min_weight) == TCL_ERROR) {
+			goto cleanup;
+		}
+		apol_infoflow_analysis_set_min_weight(policydb, analysis, min_weight);
 	}
 
 	if (apol_infoflow_analysis_do(policydb, analysis, &v, &g) < 0) {
