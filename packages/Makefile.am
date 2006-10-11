@@ -1,10 +1,10 @@
 bwidget_destdir = @BWIDGET_DESTDIR@
 
-dist_noinst_DATA = BWidget-1.7.0.tar.gz combobox.tcl mainframe.tcl notebook.tcl Doxyfile
+dist_noinst_DATA = BWidget-1.8.0.tar.bz2 combobox.tcl mainframe.tcl notebook.tcl Doxyfile
 
 install-data-local:
-	tar -zxf BWidget-1.7.0.tar.gz
-	mv BWidget-1.7.0 $(bwidget_destdir)
+	tar jxf BWidget-1.8.0.tar.bz2
+	mv BWidget-1.8.0 $(bwidget_destdir)
 
 uninstall-local:
-	-rm -rf $(bwidget_destdir)/BWidget-1.7.0
+	-rm -rf $(bwidget_destdir)/BWidget-1.8.0
