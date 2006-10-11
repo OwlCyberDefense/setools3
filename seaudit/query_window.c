@@ -131,6 +131,7 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 	char *string = NULL, tbuf[192];
 	char str[STR_SIZE];
 	int i;
+	apol_vector_t *syn_avrule_vector = NULL;
 
 	view = GTK_TEXT_VIEW(glade_xml_get_widget(xml, "query_results"));
 	g_assert(view);
@@ -165,8 +166,14 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 				"family", "monospace", NULL);
 	}
 
-	snprintf(str, STR_SIZE,
-			"Found %d Rule(s) containing ", apol_vector_get_size(av_vector));
+	if (apol_policy_is_binary(seaudit_app->cur_policy))
+		snprintf(str, STR_SIZE,
+				"Found %zd Rule(s) containing ", apol_vector_get_size(av_vector));
+	else {
+		syn_avrule_vector = apol_avrule_list_to_syn_avrules(seaudit_app->cur_policy, av_vector, NULL);
+		snprintf(str, STR_SIZE,
+				"Found %zd Rule(s) containing ", apol_vector_get_size(syn_avrule_vector));
+	}
 	gtk_text_buffer_insert_with_tags_by_name(buffer, &end, str, -1, "summary-tag", NULL);
 
 	if (strcmp(src_type->str, "") != 0) {
@@ -203,8 +210,6 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 		}
 	}
 	else {
-		apol_vector_t *syn_avrule_vector = NULL;
-		syn_avrule_vector = apol_avrule_list_to_syn_avrules(seaudit_app->cur_policy, av_vector, NULL);
 		for (i = 0; i < apol_vector_get_size(syn_avrule_vector); i++) {
 			qpol_syn_avrule_t *rule;
 			unsigned long lineno;
