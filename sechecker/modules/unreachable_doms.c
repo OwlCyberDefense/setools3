@@ -441,7 +441,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 		/* for valid transitions - validate RBAC, and then users */
 		for (j = 0; j < apol_vector_get_size(valid_rev_trans); j++) {
-			dtr = apol_vector_get_element(valid_rev_trans, i);
+			dtr = apol_vector_get_element(valid_rev_trans, j);
 			start_type =  apol_domain_trans_result_get_start_type(dtr);
 			ep_type = apol_domain_trans_result_get_entrypoint_type(dtr);
 			qpol_type_get_name(policy->p, start_type, &tmp_name);
