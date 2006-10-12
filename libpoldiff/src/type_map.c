@@ -772,7 +772,7 @@ static int type_map_prim_aliases_comp(const void *a, const void *b, void *data)
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-	if (apol_vector_get_size(v1) == 0 || apol_vector_get_size(v2)) {
+	if (apol_vector_get_size(v1) == 0 || apol_vector_get_size(v2) == 0) {
 		retval = 1;
 		goto cleanup;
 	}
