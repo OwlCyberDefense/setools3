@@ -1,6 +1,6 @@
 /**
  *  @file unreachable_doms.c
- *  Implementation of the unreachable domains module. 
+ *  Implementation of the unreachable domains module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -34,11 +34,11 @@
 #include <errno.h>
 #include <assert.h>
 
-bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vector, apol_policy_t *policy);
-bool_t in_isid_ctx(char *type_name, apol_policy_t *policy);
-bool_t in_def_ctx(char *type_name, unreachable_doms_data_t *datum);
+static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *ctx_vector, apol_policy_t *policy);
+static bool_t in_isid_ctx(char *type_name, apol_policy_t *policy);
+static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t *datum);
 /* for some reason we have to define this here to remove compile warnings */
-ssize_t getline(char **lineptr, size_t *n, FILE *stream);
+extern ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 
 /* This string is the name  f the module and should match the stem
  * of the file name; it should also match the prefix of all functions
@@ -187,24 +187,27 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	mod->data = datum;
 
 	/* Parse default contexts file */
-	ctx_file_path = selinux_default_context_path();
 	if ( !(datum->ctx_vector = apol_vector_create()) ) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
 	}
+
+#ifdef LIBSELINUX
+	ctx_file_path = selinux_default_context_path();
 	if (!ctx_file_path) {
 		ERR(policy, "%s", "Unable to find default contexts file");
 		errno = ENOENT;
 		return -1;
 	} else {
-		retv = parse_default_contexts(ctx_file_path, &datum->ctx_vector, policy);
+		retv = parse_default_contexts(ctx_file_path, datum->ctx_vector, policy);
 		if (!retv) {
 			ERR(policy, "%s", "Unable to parse default contexts file");
 			errno = EIO;
 			return -1;
 		}
 	}
+#endif
 
 	return 0;
 }
@@ -428,6 +431,10 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		qpol_type_get_name(policy->p, cur_dom, &cur_dom_name);
 		need = KEEP_SEARCHING;
 
+		if (in_def_ctx(cur_dom_name, datum) ||
+		    in_isid_ctx(cur_dom_name, policy))
+			continue;
+
 		/* collect information about roles and transitions to this domain */
 		apol_role_query_set_type(policy, role_q, cur_dom_name);
 		apol_get_role_by_query(policy, role_q, &dom_roles);
@@ -639,7 +646,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 							qpol_type_get_name(policy->p, ep_type, &tmp3);
 						else
 							tmp3 = "<entrypont>";
-						if (asprintf(&proof->text, "Partial transition to %s found:\n\t%s: allow %s %s : process transition;\n\t%s: allow %s %s : file execute;\n\t%s: allow %s %s : file entrypoint;\n\t%s one of:\n\tallow %s self : process setexec;\n\ttype_transition %s %s : process %s;", cur_dom_name, 
+						if (asprintf(&proof->text, "Partial transition to %s found:\n\t%s: allow %s %s : process transition;\n\t%s: allow %s %s : file execute;\n\t%s: allow %s %s : file entrypoint;\n\t%s one of:\n\tallow %s self : process setexec;\n\ttype_transition %s %s : process %s;", cur_dom_name,
 									((trans_missing & APOL_DOMAIN_TRANS_RULE_PROC_TRANS)?"Missing":"Has"), tmp2, cur_dom_name,
 									((trans_missing & APOL_DOMAIN_TRANS_RULE_EXEC)?"Missing":"Has"), tmp2, tmp3,
 									((trans_missing & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT)?"Missing":"Has"), cur_dom_name, tmp3,
@@ -832,8 +839,9 @@ unreachable_doms_data_t *unreachable_doms_data_new(void)
 	return datum;
 }
 
-/* Parses default_contexts and adds source domains to datum->ctx_list */
-bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vector, apol_policy_t *policy)
+/* Parses default_contexts and adds source domains to datum->ctx_list.
+ * The vector will contain newly allocated strings. */
+static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *ctx_vector, apol_policy_t *policy)
 {
 	int str_sz, i, charno, error = 0;
 	FILE *ctx_file;
@@ -951,7 +959,7 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 			i++;
 		}
 
-		if ( apol_vector_append(*ctx_vector, (void *)strdup(src_dom)) < 0 ) {
+		if ( apol_vector_append(ctx_vector, (void *)strdup(src_dom)) < 0 ) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
@@ -967,7 +975,9 @@ bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t **ctx_vec
 	fclose(ctx_file);
 	return TRUE;
 parse_default_contexts_fail:
-	fclose(ctx_file);
+	if (ctx_file != NULL) {
+		fclose(ctx_file);
+	}
 	free(line);
 	free(src_role);
 	free(src_dom);
@@ -978,44 +988,35 @@ parse_default_contexts_fail:
 }
 
 /* Returns true if type_idx is in datum->ctx_list */
-bool_t in_def_ctx(char *type_name, unreachable_doms_data_t *datum)
+static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t *datum)
 {
-	int i;
-
-	for (i = 0; i <apol_vector_get_size(datum->ctx_vector); i++ ) {
-		char *dom_name;
-
-		dom_name = (char *)apol_vector_get_element(datum->ctx_vector, i);
-		if (dom_name && !strcmp(dom_name, type_name)) return TRUE;
+	size_t i;
+	if (apol_vector_get_index(datum->ctx_vector, type_name, apol_str_strcmp, NULL, &i) < 0) {
+		return FALSE;
 	}
-
-	return FALSE;
+	return TRUE;
 }
 
 /* Returns true if type is a type assigned to an isid */
-bool_t in_isid_ctx(char *type_name, apol_policy_t *policy)
+static bool_t in_isid_ctx(char *type_name, apol_policy_t *policy)
 {
-	int i;
-	apol_vector_t *isid_vector;
-
-	apol_get_isid_by_query(policy, NULL, &isid_vector);
-
-	for ( i = 0; i < apol_vector_get_size(isid_vector); i++ ) {
+	qpol_iterator_t *iter = NULL;
+	qpol_policy_get_isid_iter(policy->p, &iter);
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_isid_t *isid;
-		qpol_context_t *context;
+		qpol_context_t *ocon;
 		qpol_type_t *context_type;
 		char *context_type_name;
 
-		isid = apol_vector_get_element(isid_vector, i);
-		qpol_isid_get_context(policy->p, isid, &context);
-		qpol_context_get_type(policy->p, context, &context_type);
+		qpol_iterator_get_item(iter, (void **) &isid);
+		qpol_isid_get_context(policy->p, isid, &ocon);
+		qpol_context_get_type(policy->p, ocon, &context_type);
 		qpol_type_get_name(policy->p, context_type, &context_type_name);
 		if (!strcmp(type_name, context_type_name)) {
-			apol_vector_destroy(&isid_vector, NULL);
+			qpol_iterator_destroy(&iter);
 			return TRUE;
 		}
 	}
-	apol_vector_destroy(&isid_vector, NULL);
+	qpol_iterator_destroy(&iter);
 	return FALSE;
 }
-
