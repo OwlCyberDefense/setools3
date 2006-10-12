@@ -202,7 +202,6 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 		seaudit_log_menu_items_update(FALSE);
 		seaudit_view_entire_selection_update_sensitive(TRUE);
 	}
-
 }
 
 int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
@@ -307,7 +306,7 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 		g_string_append(msg, filename);
 		g_string_append(msg, "!\n");
 		g_string_append(msg, strerror(errno));
-			message_display(seaudit->window->window,
+		message_display(seaudit->window->window,
 				GTK_MESSAGE_ERROR,
 				msg->str);
 		goto dont_load_log;

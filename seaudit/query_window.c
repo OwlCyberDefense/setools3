@@ -476,6 +476,7 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 	GtkWidget *src_type_combo, *tgt_type_combo, *obj_class_combo;
 	GtkWidget *src_entry, *tgt_entry, *obj_entry;
 	gboolean selected;
+	GString *str;
 	msg_t *msg = NULL;
 	avc_msg_t *avc_msg = NULL;
 	int fltr_msg_idx, msg_list_idx;
@@ -543,6 +544,21 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 		avc_msg = msg->msg_data.avc_msg;
 	}
 
+	if (selected) {
+		str = g_string_new("");
+		g_string_assign(str, audit_log_get_type(seaudit_app->cur_log, avc_msg->src_type));
+		gtk_entry_set_text(GTK_ENTRY(src_entry), str->str);
+		g_string_assign(str, audit_log_get_type(seaudit_app->cur_log, avc_msg->tgt_type));
+		gtk_entry_set_text(GTK_ENTRY(tgt_entry), str->str);
+		gtk_entry_set_text(GTK_ENTRY(obj_entry), audit_log_get_obj(seaudit_app->cur_log, avc_msg->obj_class));
+		g_string_free(str, TRUE);
+
+		/* Free selected rows list */
+		if (glist) {
+			g_list_foreach(glist, (GFunc)gtk_tree_path_free, NULL);
+			g_list_free(glist);
+		}
+	}
 	return;
 }
 
