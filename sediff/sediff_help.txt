@@ -7,7 +7,7 @@ selinux@tresys.com
 Overview:
 ---------
 The sediff and sediffx programs are policy analysis tools that parse
-two given policy files and compares them showing a list of the
+two given policy files and compare them showing a list of the
 differences; the former is a command-line only program while the
 latter is a GTK+ application.  They can compare source and/or binary
 policies and can also compare different versions of policy.  For
@@ -17,12 +17,12 @@ supported.  For binary policies, versions 15 and higher are supported.
 Limitations:
 ------------
 The programs currently compare the following policy elements:
-  - object classes and permissions
+  - object classes and common classes
   - types and attributes
   - roles
   - users
   - booleans
-  - type enforcement rules (allow, type_transitions, etc.)
+  - type enforcement rules (allows, type_transitions, etc.)
   - role allow rules
   - role transition rules
 
@@ -50,28 +50,26 @@ identifier (e.g., a type name) has the same string value in each
 policy, then it represents the same semantic meaning in both policies.
 
 
-sediff Commands:
-----------------
+sediff and sediffx Commands:
+----------------------------
 The tools may be run from the command line or in a graphical
-environment.  For command line.  Use sediff (see "sediff --help") for
-the command line and sediffx ("sediffx --help") for the graphical
-interface.  We recommond using sediffx as that it gives additional
-details about policy differences; the remainder of this document
-focuses on sediffx.
+environment.  Use sediff (see "sediff --help") for the command line
+and sediffx ("sediffx --help") for the graphical interface.  We
+recommend using sediffx as that it gives additional details about
+policy differences; the remainder of this document focuses on sediffx.
 
 
 Understanding sediffx's Results: 
 --------------------------------
-
 After calculating differences between two policies, the GUI shows the
-policy areas compared in the left hand frame.  Besides each policy
-area is a number representing the total number of differences in that
-area.  As a general rule, for each policy area the right-hand window
-shows the detailed results.
+policy areas compared in the top-left frame.  Besides each policy
+component is a number representing the total number of differences for
+that component.  As a general rule, for each policy component the
+right-hand window shows the detailed results.
 
 NOTE: All differences are shown from the perspective of the first
 policy given (i.e., "original policy") to the second ("modified
-policy").  There are three types of differences shown:
+policy").  There are five types of differences shown:
 
   - Added (+): A policy component was added by the second policy (in
     modified policy but not original policy).
@@ -82,6 +80,16 @@ policy").  There are three types of differences shown:
   - Modified (*): A policy component was present in both policies, but
     is different in the modified policy.
 
+Where appropriate, two other differences are available:
+
+  - Added because of new type (+): This policy component could not
+    exist in the original policy because that policy does not declare
+    a necessary type.
+
+  - Removed because of missing type (-): This policy component could
+    not exist in the modified policy because that policy no longer
+    declares a necessary type.
+
 
 Supported Policy Areas Differences:
 -----------------------------------
@@ -91,7 +99,7 @@ area:
   Classes:
   --------
   Classes can be added, removed, or modified.  Modified means that
-  the list of permissions associated with aclass is different.
+  the list of permissions associated with a class is different.
 
   Commons:
   --------
@@ -136,10 +144,10 @@ area:
 
   TE Rules:
   ---------
-  The TE rules areas covers the "meat" of a policy.  This area
-  includes AV rules (allow, neverallow auditallow, and dontaudit) and
-  Type rules (type_transition, type_change, and type_member).  The
-  rule comparison is truly semantic.  All issues of redundancy and
+  The TE rules checks cover the majority of a diff.  This includes AV
+  rules (allow, neverallow auditallow, and dontaudit) and Type rules
+  (type_transition, type_change, and type_member).  The rule
+  comparison is truly semantic.  All issues of redundancy and
   duplication, as well as indirect access through attributes are
   resolved.  All rules are keyed by the "source-target-class" (STC)
   triple.  In addition, conditional rules are distinguished from
@@ -154,7 +162,7 @@ area:
 
   NOTE: For conditional rules, the default and current values of
   the booleans are ignored.  Conditional expressions are compared
-  as if the booleans were all the same.
+  as if the booleans were in the same state.
 
   Rules can be added, removed, or modified.  Added means the STC
   triple for that rule is not present in the original policy but in
@@ -186,12 +194,13 @@ area:
 Policy Tabs:
 ------------
 Each policy has a tab on the main window labeled Policy #: followed by
-the policy file name.  Under each of these tabs are a policy
-statistics tab and a source tab.
+the policy file name.  Under these tabs are a policy statistics tab
+and a source tab.
 
   Policy Statistics Tab:
   ----------------------
-  The policy statistics tab displays the statistics of that policy.
+  The policy statistics tab displays a summary of that policy's
+  contents.
     
   Source Tab:
   -----------
@@ -201,12 +210,12 @@ statistics tab and a source tab.
 
 Remapping Types:
 ----------------
-The sediff algorithm implicitly treats a type with the same name
-across both policies as the same semantic item.  This includes a name
-that was a type in one policy but became an alias in the other.  There
-may be instances where the operator has special knowledge of the
-remaining unmapped types.  In this case, he may use sediffx's "Remap
-Types" dialog to explicitly remap types.  From the main interface,
-select "Remap Types" from the Tools menu to open a dialog box.  From
-here, he may add additional remappings between types.  Note that
-sediffx will only list types that have not been implicitly remapped.
+The diff algorithm implicitly treats a type with the same name across
+both policies as the same semantic item.  This includes a name that
+was a type in one policy but became an alias in the other.  There may
+be instances where the operator has special knowledge of the remaining
+unmapped types.  In this case, he may use sediffx's "Remap Types"
+dialog to explicitly remap types.  From the main interface, select
+"Remap Types" from the Tools menu to open a dialog box.  From here, he
+may add additional remappings between types.  Note that sediffx will
+only list types that have not been implicitly remapped.
