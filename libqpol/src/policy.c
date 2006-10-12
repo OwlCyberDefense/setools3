@@ -61,6 +61,7 @@
 #include <qpol/cond_query.h>
 #include <qpol/constraint_query.h>
 #include <qpol/class_perm_query.h>
+#include <qpol/mlsrule_query.h>
 #include <qpol/fs_use_query.h>
 #include "queue.h"
 
@@ -636,8 +637,10 @@ static int infer_policy_version(qpol_policy_t *policy)
 	qpol_class_t *obj_class = NULL;
 	qpol_iterator_t *iter = NULL;
 	qpol_fs_use_t *fsuse = NULL;
+	qpol_range_trans_t *rangetrans = NULL;
 	uint32_t behavior = 0;
 	size_t nvtrans = 0, fsusexattr = 0;
+	char *obj_name = NULL;
 
 	if (!policy) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -669,6 +672,19 @@ static int infer_policy_version(qpol_policy_t *policy)
 	}
 	qpol_iterator_destroy(&iter);
 
+	/* 21 : object classes other than process for range_transitions */
+	qpol_policy_get_range_trans_iter(policy, &iter);
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_iterator_get_item(iter, (void**)&rangetrans);
+		qpol_range_trans_get_target_class(policy, rangetrans, &obj_class);
+		qpol_class_get_name(policy, obj_class, &obj_name);
+		if (strcmp(obj_name, "process")) {
+			db->policyvers = 21;
+			qpol_iterator_destroy(&iter);
+			return STATUS_SUCCESS;
+		}
+	}
+	qpol_iterator_destroy(&iter);
 	/* 19 & 20 : mls and validatetrans statements added */
 	qpol_policy_get_validatetrans_iter(policy, &iter);
 	qpol_iterator_get_size(iter, &nvtrans);
