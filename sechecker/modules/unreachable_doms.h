@@ -1,6 +1,6 @@
 /**
  *  @file unreachable_doms.h
- *  Defines the interface for the unreachable domains module. 
+ *  Defines the interface for the unreachable domains module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -45,7 +45,8 @@
  *  private data of a module. */
 typedef struct unreachable_doms_data {
 	char *ctx_file_path;
-	apol_vector_t *ctx_vector;
+        /* vector of strings, read from default contexts file */
+        apol_vector_t *ctx_vector;
 } unreachable_doms_data_t;
 
 unreachable_doms_data_t *unreachable_doms_data_new(void);
@@ -55,4 +56,3 @@ int unreachable_doms_register(sechk_lib_t *lib);
 int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
 int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
 int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-
