@@ -30,7 +30,7 @@ extern seaudit_t *seaudit_app;
 seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibility[])
 {
 	seaudit_window_t *window;
-	GString *path; 
+	GString *path;
 	char *dir;
 	GtkWidget *vbox;
 
@@ -52,7 +52,7 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	window->xml = glade_xml_new(path->str, NULL, NULL);
 	window->window = GTK_WINDOW(glade_xml_get_widget(window->xml, "TopWindow"));
 	window->notebook = GTK_NOTEBOOK(gtk_notebook_new());
-	g_signal_connect_after(G_OBJECT(window->notebook), "switch-page", 
+	g_signal_connect_after(G_OBJECT(window->notebook), "switch-page",
 			 G_CALLBACK(seaudit_window_on_notebook_switch_page), window);
 	vbox = glade_xml_get_widget(window->xml, "NotebookVBox");
 	gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(window->notebook));
@@ -66,9 +66,9 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 
 static void
 seaudit_window_tree_view_onSelect_ViewEntireMsg(GtkTreeView *treeview,
-                                            	GtkTreePath *path,
-                                            	GtkTreeViewColumn *column,
-                                            	gpointer user_data)
+	GtkTreePath *path,
+	GtkTreeViewColumn *column,
+	gpointer user_data)
 {
 	/* we passed the view as userdata when we connected the signal */
 	seaudit_window_view_entire_message_in_textbox(NULL);
@@ -80,12 +80,12 @@ seaudit_window_popup_menu_on_view_msg(GtkWidget *menuitem, gpointer user_data)
 	int idx = GPOINTER_TO_INT(user_data);
 
 	seaudit_window_view_entire_message_in_textbox(&idx);
-} 
+}
 
 static void seaudit_window_popup_menu_on_query_policy(GtkWidget *menuitem, gpointer user_data)
 {
 	int idx = GPOINTER_TO_INT(user_data);
-	
+
 	query_window_create(&idx);
 }
 
@@ -100,12 +100,12 @@ seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, int *idx)
 {
 	GtkWidget *menu, *menuitem, *menuitem2, *menuitem3;
 	gint data = *idx;
-	
+
 	menu = gtk_menu_new();
 	if (menu == NULL) {
 		fprintf(stderr, "Unable to create menu widget.\n");
 		return;
-	} 
+	}
 	menuitem = gtk_menu_item_new_with_label("View Entire Message");
 	menuitem2 = gtk_menu_item_new_with_label("Query Policy using Message");
 	menuitem3 = gtk_menu_item_new_with_label("Export Messages to File");
@@ -113,20 +113,20 @@ seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, int *idx)
 		fprintf(stderr, "Unable to create menuitem widgets.\n");
 		return;
 	}
-			
+
 	g_signal_connect(menuitem, "activate",
 	             (GCallback) seaudit_window_popup_menu_on_view_msg, GINT_TO_POINTER(data));
 	g_signal_connect(menuitem2, "activate",
 	             (GCallback) seaudit_window_popup_menu_on_query_policy, GINT_TO_POINTER(data));
 	g_signal_connect(menuitem3, "activate",
 	             (GCallback) seaudit_window_popup_menu_on_export_selection, NULL);
-	
+
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem2);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem3);
-	
+
 	gtk_widget_show_all(menu);
-	
+
 	/* Note: event can be NULL here when called from seaudit_window_onPopupMenu;
 	*  gdk_event_get_time() accepts a NULL argument */
 	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
@@ -142,17 +142,17 @@ seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpoin
 	GtkTreeModel *model;
 	GList *glist = NULL;
 	GtkTreeIter iter;
-	int fltr_msg_idx; 
+	int fltr_msg_idx;
 
 	/* single click with the right mouse button? */
-	if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3) {	
-        	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
-        
+	if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3) {
+		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+
 		/* Get tree path for row that was clicked */
 		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
-		                              event->x, 
-		                              event->y,
-		                             &path, NULL, NULL, NULL)) {
+						  event->x,
+						  event->y,
+						  &path, NULL, NULL, NULL)) {
 		        glist = gtk_tree_selection_get_selected_rows(selection, &model);
 			if (glist == NULL) {
 				gtk_tree_path_free(path);
@@ -163,18 +163,18 @@ seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpoin
 				gtk_tree_path_free(path);
 				g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
 				g_list_free (glist);
-				return FALSE;	
+				return FALSE;
 			}
 			fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
-			
+
 			seaudit_window_popup_menu(treeview, event, &fltr_msg_idx);
 			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
 			g_list_free (glist);
-			gtk_tree_path_free(path);	
+			gtk_tree_path_free(path);
 		}
 		return TRUE; /* we handled this */
-	} else if (event->type == GDK_BUTTON_PRESS  &&  event->button == 1) {	
-		/* remember that we don't care about deselection, because you can't 
+	} else if (event->type == GDK_BUTTON_PRESS  &&  event->button == 1) {
+		/* remember that we don't care about deselection, because you can't
 		   deselect rows so something will always be selected unless we reload*/
 		seaudit_view_entire_selection_update_sensitive(FALSE);
 	}
@@ -185,7 +185,7 @@ static gboolean
 seaudit_window_onPopupMenu(GtkWidget *treeview, gpointer userdata)
 {
 	seaudit_window_popup_menu(treeview, NULL, NULL);
-	
+
 	return TRUE; /* we handled this */
 }
 
@@ -203,25 +203,25 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 		return NULL;
 	if (window->window == NULL || window->notebook == NULL || window->xml == NULL)
 		return NULL;
-		
+
 	show_wait_cursor(GTK_WIDGET(window->window));
 	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
 	tree_view = gtk_tree_view_new();
-	
+
 	/* Set selection mode for tree view to multiple selection. */
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view));
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-	
+
 	/* Connect callback to double-click event on tree view item */
 	g_signal_connect(G_OBJECT(tree_view), "row_activated", G_CALLBACK(seaudit_window_tree_view_onSelect_ViewEntireMsg), NULL);
 	/* Connect callback to right-click event on tree view item */
 	g_signal_connect(G_OBJECT(tree_view), "button-press-event", (GCallback) seaudit_window_onButtonPressed, NULL);
 	/* Connect to the "popup-menu" signal, so users can access your context menu without a mouse */
-    	g_signal_connect(G_OBJECT(tree_view), "popup-menu", (GCallback) seaudit_window_onPopupMenu, NULL);
+	g_signal_connect(G_OBJECT(tree_view), "popup-menu", (GCallback) seaudit_window_onPopupMenu, NULL);
 
 	gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
 	seaudit_window_create_list(GTK_TREE_VIEW(tree_view), column_visibility);
-	                  
+
 	if (view_name == NULL) {
 		window->num_untitled_views++;
 		snprintf(tab_title, 24, "Untitled %d", window->num_untitled_views);
@@ -249,7 +249,7 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 	seaudit_filtered_view_set_notebook_index(view, page_index);
 	window->views = g_list_append(window->views, view);
 	gtk_notebook_set_current_page(window->notebook, page_index);
-		
+
 	clear_wait_cursor(GTK_WIDGET(window->window));
 	return view;
 }
@@ -268,7 +268,7 @@ void seaudit_window_open_view(seaudit_window_t *window, audit_log_t *log, bool_t
 	}
 	if (strcmp(multifilter_window->name->str, "") != 0)
 		view = seaudit_window_add_new_view(window, log, column_visibility, multifilter_window->name->str);
-	else 
+	else
 		view = seaudit_window_add_new_view(window, log, column_visibility, NULL);
 
 	seaudit_filtered_view_set_multifilter_window(view, multifilter_window);
@@ -347,7 +347,7 @@ static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn *column, gpoi
 	if (selected_rows == NULL)
 		return;
 	path = selected_rows->data;
-	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(user_data), 
+	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(user_data),
 				     path, NULL, FALSE, 0.0, 0.0);
 }
 
@@ -357,7 +357,7 @@ static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNot
 	GtkTreeSelection *selection;
 
 	seaudit_update_status_bar(seaudit_app);
-	/* if the current page has a selected row then 
+	/* if the current page has a selected row then
 	   make sure the view entire message button is sensitive */
 	if (!window)
 		return;
@@ -380,7 +380,7 @@ static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView *view, const 
 						       int max_width, bool_t visibility[])
 {
 	GtkTreeViewColumn *column;
-	
+
 	column = gtk_tree_view_column_new_with_attributes(name, renderer, "text", field, NULL);
 	gtk_tree_view_append_column(view, column);
 	gtk_tree_view_column_set_clickable (column, TRUE);
@@ -443,7 +443,7 @@ static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[])
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
 	seaudit_window_create_column(view, "Message", renderer, AVC_MSG_FIELD, width, visibility);
-	
+
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "Sep 16 10:51:20");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
@@ -511,7 +511,7 @@ static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[])
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
 	seaudit_window_create_column(view, "Inode", renderer, AVC_INODE_FIELD, width, visibility);
-	
+
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "/home/username/foo");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
