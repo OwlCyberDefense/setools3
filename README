@@ -73,7 +73,7 @@ compilation:
   bison
   pkg-config-0.20
   libselinux-1.30.27 or greater
-  libsepol-1.12.26 or greater
+  libsepol-1.12.27 or greater
   libxml-2.0
 
 The following are not strictly required but highly recommended:

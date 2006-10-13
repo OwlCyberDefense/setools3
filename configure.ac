@@ -23,7 +23,7 @@ setoolsdir='${prefix}/share/setools-3.0'
 
 version_min_sepol_major=1
 version_min_sepol_minor=12
-version_min_sepol_patch=26
+version_min_sepol_patch=27
 
 dnl *** end of tunable values ***
 
