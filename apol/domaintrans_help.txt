@@ -1,0 +1,138 @@
+An overview of domain transition analysis
+apol, version 3.0
+October 1, 2006
+selinux@tresys.com
+
+A key feature of Type Enforcement (TE) security is the ability to
+define domain types with which programs run, use that domain type to
+control access to objects (which are also typed), and strictly control
+the ability of a process to change its domain type.  This last ability
+is known as domain transition.
+
+Apol supports analysis of an SELinux policy to understand the domain
+transitions it allows.  As with all access in SELinux, the ability to
+transition from one domain to another is controlled by 'allow' rules
+in the policy.  Below, we describe how apol performs a domain
+transition analysis.
+
+
+The three types of interest for domain transitions
+--------------------------------------------------
+When discussing domain transition access, there are three different
+types we must consider:
+
+  + SOURCE TYPE: This is the domain type associated with a process
+    that is trying to change (transition) its domain type to another
+    type.
+
+  + TARGET TYPE: This is the domain type to which the source type is
+    trying to transition.
+
+  + FILE TYPE (ENTRYPOINT TYPE): This is a type associated with an
+    executable file object that allows the target type to be entered
+    as part of an execve() system call.
+
+        
+Forward vs. reverse domain transition analysis
+----------------------------------------------
+Apol supports both forward and reverse domain transition analysis.  A
+forward analysis determines all the TARGET types to which the selected
+SOURCE types may transition.  You may also select object classes,
+permissions, and object types to find transitions to domains that have
+specific privileges or that have access to a particular object
+type(s).  A reverse analysis is the opposite; select a TARGET type and
+determine all the SOURCE types that may transition to the target type.
+
+In each case, apol creates a tree structure to show the result.  Drill
+down the tree to follow any given transition path.
+
+
+Criteria for identifying allow domain transitions
+-------------------------------------------------
+In SELinux, three types of access (and hence at least three rules)
+must be allowed by the policy for a domain transition to occur.  These
+three access types form the criteria used by apol to determine allowed
+transitions.
+
+Given an understanding of the three types of interest in a domain
+transition, the criteria for an allowed domain transition are as
+follows.  In the examples below, assume 'user_t' is the source type,
+'passwd_t' is the target type, and 'passwd_exec_t' is the file entry
+point type.
+
+  1. A rule must exist that allows the SOURCE domain type 'transition'
+     access for 'process' object class for the TARGET domain type. For
+     example, the rule:
+
+        allow user_t passwd_t : process transition;
+
+     meets this criterion by allowing the source type (user_t) 'process
+     transition' permission to the target type (passwd_t).
+
+  2. A rule must exist that allows the SOURCE domain type 'execute'
+     access to the FILE ENTRYPOINT type. For example, the rule:
+
+        allow user_t passwd_exec_t : file {read getattr execute};
+
+     meets the criterion by allowing the source type (user_t) 'execute'
+     access to the file entrypoint type (passwd_exec_t).
+
+  3. A rule must exist that allows the TARGET domain type 'entrypoint'
+     access to the FILE ENTRYPOINT type for file objects.  For
+     example, the rule:
+
+        allow passwd_t passwd_exec_t : file entrypoint;
+
+     meets this criterion by allowing the target type (passwd_t) 'file
+     entrypoint' access to the file entrypoint type (passwd_exec_t).
+
+  4. There must be a way for the transition to be specified.  Typically
+     this is accomplished in the policy with a TYPE TRANSITION statement.
+     For example, the statement:
+
+        type_transition user_t password_exec_t : process passwd_t;
+
+     meets this criterion by specifying that when user_t executes
+     a program with the passwd_exec_t type, the default type of the
+     new process is passwd_t.  This is the most common specifier because
+     it does not require the programs to be SELinux-aware.  Alternatively,
+     the program can be made SELinux-aware and the program itself may
+     specify the type of the new process.  For example, the statement:
+
+        allow user_t self : process setexec;
+
+     allows the source type (user_t) to specify the type of new processes
+     when executing programs.  In both the type transition and setexec
+     cases, the types that the source domain may transition to are
+     limited by the previous three criterion.
+
+In the analysis results for a reverse domain transition analysis, apol
+will list all the types that meet the above four criteria.  On the
+other hand, results for a forward domain transition analysis will be
+limited to types that meet the above four criteria and that have the
+specified privileges or access to a particular object type(s).  See
+'General Help' for the Forward DTA Advanced Search Options feature in
+apol.
+
+
+Filtering domain transition results in apol
+-------------------------------------------
+The domain transition analysis interface in apol provides the ability
+to further refine a domain transition query in order to find
+transitions to a specific domain and/or transitions to domains that
+are granted specific access to object types or classes.  Filtering
+results types using regular expressions is enabled for both forward
+and reverse domain transition queries; however, the access filters are
+only enabled for a forward domain transition query.
+
+To enable and use the access filters, select the "Use access filters"
+checkbox and display the Access Filters dialog.  This dialog presents
+listboxes for including object types, object classes, and permissions.
+An access filter may be particulary useful to a user searching for
+transitions to domains that have specific access to an object type
+and/or class.  For example, one could determine whether the type
+user_t is allowed to transition to a domain that can write a file of
+type shadow_t.  To run this query from apol, specify the starting type
+as user_t, go to the Access Filters dialog, select shadow_t in the
+included object types listbox, select 'file' from the object classes
+listbox and then select the 'write' permission.

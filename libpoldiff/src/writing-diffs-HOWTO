@@ -1,0 +1,353 @@
+Writing New Diff Modules for libpoldiff HOWTO
+Septemeber 1, 2006
+
+
+0. Introduction
+
+libpoldiff is a library to be used in conjunction with libapol to find
+"semantic" differences between policies.  For the purposes of this
+HOWTO, the term "semantic" refers to how the SELinux kernel would
+enforce accesses.  If two policies could ever be enforced differently
+then they are defined to be semantically different.
+
+libpoldiff operates by breaking a policy into various 'policy items'.
+Examples of items are users, object classes, and type enforcement
+rules.  These items correspond to flags passed into the sediff
+program.  So as to be extensible, libpoldiff was designed to allow one
+to add new diff modules (and hence additional flags to sediff).  These
+modules should operate independent of each other and without regard to
+ordering of modules.
+
+
+1. Library Overview
+
+libpoldiff implements what we term "the generic diffing algorithm",
+akin to a merge sort.  The algorithm takes two ordered lists of items
+and successively picks the first item from the lists.  If the two
+match, according to the items' comparison function, then they are
+deemed the same.  Otherwise the same ordering used to generate the
+lists may also be used to determine if one was added or removed from
+the policy.
+
+As an example, consider a diff of users for two hypothetical SELinux
+policies, "orig.policy" and "updated.policy".  Within orig.policy are
+users adam_u, charlie_u, and dave_u.  updated.policy has the users adam_u,
+bob_u, and charlie_u.  The first step of the generic diffing algorithm
+is to get the ordered list of items.  Let the ordering algorithm be
+alphabetical order; thus the lists would be:
+
+ orig.policy    -> {adam_u, charlie_u, dave_u}
+ updated.policy -> {adam_u, bob_u, charlie_u}
+
+The algorithm picks the first item from each list and compares them.
+As that "adam_u" is the same as "adam_u", the algorithm accepts them
+as the same and continues.  The next two items are "charlie_u" and
+"bob_u".  The ordering functions finds "bob_u" to be "earlier" than
+"charlie_u" (because it appears earlier alphabetically), "bob_u" is
+marked as item added to updated.policy.  The algorithm keeps
+"charlie_u" from the first policy but advances the pointer for the
+second list.  These "charlie_u" are the same.  The remaining type,
+"dave_u", has no complement in the second list and is thus marked as
+removed.
+
+Of course, finding differences for users is not as simple as comparing
+their names.  In addition one must also examine the roles assigned to
+them as well.  Comparing names was a "shallow diff"; checking roles is
+a "deep diff".  The deep diff must look at all aspects of the two
+items to determine if they are the same, modified,
+modified-by-adding-a-type, or modified-by-removing-a-type.  (At this
+time the users' allowed MLS ranges and default range would also be
+checked.)
+
+To complicate things, consider the aspect of type remapping.  Type
+names may be changed between the policies; they could also be joined
+into a new type and conversely split.  Thus one must be careful how
+the ordered lists of types are generated.  The functions
+type_map_lookup() and type_map_lookup_reverse() will prove essential.
+
+
+2. Reporting Differences
+
+If a difference was found, either via a shallow diff or a deep diff,
+then an "item diff" struct must be created.  If it the difference was
+'added' or 'removed' then libpoldiff's poldiff_do_item_diff() will
+call the item diff creation function.  If instead the difference was
+found within the deep diff comparison function then that function is
+responsible for creating the item diff struct.  The item diff struct
+is used by each item's to_string() function to create a human-readable
+report.
+
+
+3. Complete Walkthrough
+
+The following walkthrough describes the process for writing a diff for
+items between the original and modified policies.  The shallow
+diff is to see if a type in the original policy exists in the modified
+policy, with respect to the type map.  The deep diff determines if the
+types have the same set of attributes.
+
+
+3a. Public Header
+
+Create a new file, libpoldiff/include/poldiff/type_diff.h, to declare
+publicly accessible functions.  At least three functions must exist
+here:
+
+  extern void poldiff_type_get_stats(poldiff_t *diff, size_t stats[5]);
+  extern apol_vector_t *poldiff_get_type_vector(poldiff_t *diff);
+  extern poldiff_form_e *poldiff_type_get_form(const void *type);
+  extern char *poldiff_type_to_string(poldiff_t *diff, const void *type);
+
+(The reason for using a void * in poldiff_type_to_string() will become
+apparant in section 3d.)
+  
+Also in this file, declare an opaque object to hold a single type
+difference:
+
+  typedef struct poldiff_type poldiff_type_t;
+
+Once a user gets a vector of poldiff_type_t objects, via
+poldiff_get_type_vector(), he may want to do a number of things with
+it.  He could print it via poldiff_type_to_string() or get its form;
+or just get the type's name, list of added attributes, or list of
+removed attributes.  Therefore add these three functions to
+type_diff.h:
+
+  extern const char *poldiff_type_get_name(poldiff_type_t *type);
+  extern apol_vector_t *poldiff_type_get_added_attribs(poldiff_type_t *type);
+  extern apol_vector_t *poldiff_type_get_removed_attribs(poldiff_type_t *type);
+
+As a convenience to developers, one should only need to #include the
+public poldiff.h to pick up all diff modules.  Modify
+libpoldiff/include/poldiff/poldiff.h in the vicinity of line 62:
+
+  #include <poldiff/type_diff.h>
+
+Finally, modify libpoldiff/include/poldiff/Makefile.am by adding an
+entry for type_diff.h.
+
+3b. Protected Header
+
+There will be functions accessible only between library files (i.e.,
+protected functions).  To distinguish public functions from those that
+are protected, do not prefix these with 'poldiff_'.  Create a new
+file, libpoldiff/src/type_internal.h, that declares protected
+routines.  libpoldiff requires these four functions to exist:
+
+  apol_vector_t *type_get_items(poldiff_t *diff, apol_policy_t *policy);
+  int type_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);  
+  int type_comp(const void *x, const void *y, poldiff_t *diff);
+  int type_deep_diff(poldiff_t *diff, const void *x, const void *y);
+
+Associated with the computed list of poldiff_type_t objects is a
+summary structure.  Check that libpoldiff/src/poldiff_internal.h has
+declare a 'struct poldiff_type_summary', then add the following line
+to the protected header:
+
+  typedef struct poldiff_type_summary poldiff_type_summary_t;
+
+As with all other poldiff objects, you will need a constructor and a
+destructor:
+
+  poldiff_type_summary_t *type_create(void);
+  void type_destroy(poldiff_type_summary_t **ts);
+
+As a convenience to developers, one should only need to #include the
+protected poldiff_internal.h to pick up all diff modules.  Modify
+libpoldiff/src/poldiff_internal.h in the vicinity of line 31:
+
+  #include "type_internal.h"
+
+Finally, modify libpoldiff/src/Makefile.am by adding an entry for
+type_internal.h.
+
+3c. Implementing Functions
+
+Create a new file, libpoldiff/src/type_diff.c, to implement all
+public, protected, and any necessary private functions.  First declare
+the contents of the structures:
+
+  struct poldiff_type_summary {
+      size_t num_added;
+      size_t num_removed;
+      size_t num_modified;
+      apol_vector_t *diffs;    /* vector of poldiff_type_t */
+  };
+  struct poldiff_type {
+      char *name;
+      poldiff_form_e form;
+      apol_vector_t *added_attribs;    /* vector of char* */
+      apol_vector_t *removed_attribs;  /* vector of char* */
+  };
+
+The public functions are easy to write.
+
+  * poldiff_type_get_stats() fetches the fields
+    diff->type_diffs->num_added, diff->type_diffs->num_removed, and
+    diff->type_diffs->num_modified.
+
+  * poldiff_type_get_form() fetches an individual result's form.  Note
+    that you must first cast the second parameter from void* to a
+    poldiff_type_t*, because this function operates upon items
+    returned by poldiff_get_type_vector().
+
+  * poldiff_type_to_string() returns an allocated string akin to
+    poldiff_user_to_string().  Note that you must first cast the
+    second parameter from void* to a poldiff_type_t*, because this
+    function operates upon items returned by
+    poldiff_get_type_vector().
+
+  * poldiff_get_type_vector() returns diff->type_diffs->diffs.
+
+The rest of the public functions are accessors into a poldiff_type_t
+object.
+
+The protected functions are more difficult.
+
+  * type_create() and type_destroy() affect a poldiff_type_summary_t
+    object.
+
+  * The other protected functions are described in section 3e.
+
+Finally, modify libpoldiff/src/Makefile.am by adding an entry for
+type_diff.c.
+
+3d. Adding Hooks to Diff Module
+
+The main library now needs to create and destroy the
+poldiff_type_summary_t object and to actually diff types.  Make these
+changes to libpoldiff/src/poldiff.c:
+
+  * Create a poldiff_type_summary_t object by calling type_create()
+    within poldiff_create().
+
+  * Destroy the summary by calling type_destroy() within
+    poldiff_destroy().
+
+  * To enforce that all diff modules have the requisite public and
+    protected functions, one must fulfill the requirements as given by
+    a poldiff_item_record, as defined on line 37.  The first three
+    callbacks are satisfied by the first three public functions.  With
+    the exception of poldiff_free_item_fn_t, the remainder are met by
+    protected functions.  (The type diff will not need to free
+    individual items returned by type_get_items(); see section 3e.)
+    Thus add a new record to the item_records[] array like so:
+
+    /* ... */
+    {
+        "type",
+        POLDIFF_DIFF_TYPES,
+        poldiff_type_get_stats,
+        poldiff_get_type_vector,
+        poldiff_type_get_form,
+        poldiff_type_to_string,
+        type_get_items,
+        NULL,
+        type_comp,
+        type_new_diff,
+        type_deep_diff
+    },
+    /* ... */
+
+Finally, for the public functions to be accessible through
+libpoldiff.so, add this line to libpoldiff/src/libpoldiff.map under
+the 'global' category:
+
+  poldiff_type_*;
+
+3e. General Idea for Diffing Types
+
+Rather than comparing qpol_type_t pointers from one pointer to
+another, it is more convenient to convert those pointers to
+"pseudo-type values", which are represented as uint32_ts.  These new
+values handle the type mappings between policies.  Whenever a
+difference is found, convert those pseudo-type values back to those
+component qpol_type_t pointers.  With type splits and type joins, a
+single pseudo-type value may map to multiple qpol_type_t pointers.
+
+First look at type_get_items().  Its job is to return a sorted list of
+unique items.  Write it like this:
+
+    apol_vector_t *type_get_items(poldiff_t *diff, apol_policy_t *policy)
+    {
+        get an iterator of types from the policy
+        allocate a new vector v
+        for each item in the iterator,
+            convert qpol_type_t* to uint32_t via type_map_lookup()
+            append that uint32_t to v
+        sort and unquify v
+        return v
+    }
+
+type_map_lookup() needs a third parameter that says from which policy
+the type originated.  Use these lines to calculate the parameter:
+
+   if (policy == diff->orig_pol)
+       which_pol = POLDIFF_POLICY_ORIG;
+   else
+       which_pol = POLDIFF_POLICY_MOD;
+
+Now that you have a vector of pseudo-type values, all further
+functions will need to be in terms of these values.  libpoldiff will
+pass elements from the type_get_items() vector into your protected
+functions.  In this walkthrough you will thus need to cast all values
+from void* to uint32_t because type_get_items() returned a vector of
+uint32_ts.  For example:
+
+    int type_comp(const void *x, const void *y,
+                  poldiff_t *diff __attribute__((unused)))
+    {
+        uint32_t t1 = (uint32_t) x;
+        uint32_t t2 = (uint32_t) y;
+        return t1 - t2;
+    }   
+
+    int type_deep_diff(poldiff_t *diff, const void *x, const void *y)
+    {
+        uint32_t t1 = (uint32_t) x;
+        uint32_t t2 = (uint32_t) y;
+        apol_vector_t *v1 = type_map_lookup_reverse(diff, t1,
+                                                    POLDIFF_POLICY_ORIG);
+        apol_vector_t *v2 = type_map_lookup_reverse(diff, t2,
+                                                    POLDIFF_POLICY_ORIG);
+        apol_vector_t *added_attribs, *removed_attribs;
+        let vector a1 = union of all permissions for all types in vector v1
+        let vector a2 = union of all permissions for all types in vector v2
+        sort and uniquify a1
+        sort and uniquify a2
+        for all permissions in a1 not in a2,
+            append to removed_attribs those permissions
+        for all permissions in a2 not in a1,
+            append to added_attribs those attribs
+        if removed_attribs is not empty or added_attribs is not empty,
+        then foreach type in v1,
+            create a new poldiff_type_t
+            set the poldiff_type_t's name to the type's name
+            set the form to POLDIFF_FORM_MODIFIED
+            clone added_attribs
+            clone removed_attribs
+            append the poldiff_type_t to diff->type_diffs->diffs
+        if no poldiff_type_t were created
+            return 0
+        else
+            return non-zero
+    }
+
+    int type_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
+    {
+        uint32_t t = (uint32_t) item;
+        apol_vector_t *v;
+        if (form == POLDIFF_FORM_REMOVED)
+            v = type_map_lookup(diff, t, POLDIFF_POLICY_ORIG);
+        else
+            v = type_map_lookup(diff, t, POLDIFF_POLICY_MOD);
+        foreach type in v,
+            create a new poldiff_type_t
+            set the poldiff_type_t's name to the type's name
+            set the form to form
+            append the poldiff_type_t to diff->type_diffs->diffs
+    }
+
+One implementation of creating temporary vectors added_attribs and
+removed_attribs may be found at
+libpoldiff/src/role_diff.c:role_deep_diff().
