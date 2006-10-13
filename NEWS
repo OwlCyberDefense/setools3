@@ -1,19 +1,19 @@
-setools 3.0
+SETools 3.0
 
-setools:
+SETools:
 
   * Moved entire project to autoconf build system.  This will detect
     dependencies correctly and make it easier to integrate with Linux
     distributions and their packaging systems.
 
-setools libraries:
+SETools libraries:
 
-  * Rewrite of back-end of setools to use libsepol data structures.
+  * Rewrite of back-end of SETools to use libsepol data structures.
     Most things should run notably faster.
 
   * All exported library functions have a standarized naming
     convention and are fully documented.  This will prove helpful for
-    third-party developers integrating setools into their own
+    third-party developers integrating SETools into their own
     projects.
 
   * For policies version 15 or greater, domain transition anlysis now
@@ -33,10 +33,11 @@ sediff:
   * Can now diff neverallow and role_transition statements.
 
   * Streamlined results display - should be easier to read.
-        
+
 sechecker:
 
   * Updated module format and template for ease of extension.
+
 
 =======================================================
 May 1, 2006, Version 2.4
