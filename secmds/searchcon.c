@@ -73,9 +73,9 @@ void usage(const char *program_name, int brief)
 		return;
 	}
 	fputs("\n\
-Print requested information about an SELinux policy.\n\
-  -t type,   --type=typename   	   The name of the type to search for\n\
-  -u user,   --user=username   	   The name of the user to search for\n\
+Search a file context index for matching files.\n\
+  -t type,   --type=typename	   The name of the type to search for\n\
+  -u user,   --user=username	   The name of the user to search for\n\
   -m range,  --mls-range=range     MLS range to search for\n\
   -p path,   --path=pathname       The path or path fragment to search for\n\
   -o object, --object=class        The name of the object class to search for\n\
@@ -86,7 +86,7 @@ Print requested information about an SELinux policy.\n\
   -h, --help                       Display this help and exit\n\
   -v, --version                    Output version information and exit\n\
 ", stdout);
-	printf("If the index file does not contain any MLS ranges then the search\nwill return nothing.\n");
+	printf("\nIf the index file does not contain any MLS ranges and -m was given,\nthen the search will return nothing.\n");
 	fputs("\n\
 Valid object classes include:\n\
 ",stdout);
