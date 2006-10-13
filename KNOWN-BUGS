@@ -1,0 +1,68 @@
+SETools version 3.0
+Tresys Technology
+setools@tresys.com, http://oss.tresys.com/projects/setools
+
+
+October 1, 2006
+
+
+CURRENT BUGS AND ISSUES
+
+This file contains a description of the bugs of which we are currently
+aware. There are undoubtedly more; please report any new bugs you may
+find to setools-bugs@tresys.com.
+
+APOL
+   
+1. Double clicking on listbox items may not display popup windows in
+   certain window managers.  You must right-click on the item in order
+   to display popup windows.  This is due to Tk's event buffer and is
+   not fixable.  (Ref: http://tinyurl.com/ltmuh)
+   
+2. The use of some fonts may cause widgets in the GUI to be obscured.
+   If you experience this problem, you may edit the fonts in the .apol
+   file in your home directory.  Apol is designed to fit on a 1024x768
+   display; users will have problems with resolutions less than this.
+   
+3. Apol will correctly load policies with aliases, but the alias names
+   will be lost (the root type name is used instead).  Therefore,
+   aliases are not displayed and queries should not use them as
+   parameters.
+
+4. Certain older source policies will not load if complemented type 
+   sets are used outside of neverallow rules.  This is due to apol using
+   a similar parser to checkpolicy, which no longer accepts this use of
+   the complement operator (~).
+
+SEAUDIT
+
+1. Sorting by date will not work correctly if your audit log spans 
+   through a new calendar year.  For example, if your audit log 
+   includes entries from December 2003 and January 2004, when you sort 
+   by date January 2004 will come before December 2003 entire.  This 
+   is because audit logs do not include a year so we assign the same 
+   year to all dates.
+
+
+TESTING INFORMATION
+
+Operating Systems:
+  Fedora Core 4 and 5, RHEL 4
+  
+SELinux version:
+  2.6
+
+SELinux Policy versions:
+  12, 15, 16, 17, 18, 19, and 20 (with MLS support for versions 19 and 20)
+  Partial support for version 21 (policies will load, but range
+  transition classes are not searchable)
+
+Tcl/Tk versions:
+  8.4.9 and 8.4.12
+
+Desktop environments:
+  Gnome, KDE
+
+These tools will likely have some bugs of which we are currently
+unaware.  Please report any new bugs or comments to
+setools-bugs@tresys.com.  Thank you for using SETools!
