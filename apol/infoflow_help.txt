@@ -63,7 +63,7 @@ would be no other direct information flows from or to either.
 Notice that an information flow can only occur when a subject is
 involved; you cannot have a flow directly between two objects since a
 subject is required to cause action.  In SELinux, processes are
-generally the subject.  There are currently 30 object classes
+generally the subject.  There are currently 58 object classes
 (including processes, which are both subjects and objects).
 
 In apol, the subject is easy to recognize; any type that is used in

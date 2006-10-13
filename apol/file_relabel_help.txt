@@ -66,5 +66,6 @@ Results may be filtered in several ways.  The end types resulting from
 a query may be filtered by regular expression.  The Advanced Filters
 provide the option of selecting which object classes to include in the
 analysis and which types to include as subjects of relabeling
-operations.  Note, excluded subjects are ignored in subject mode
-because only the selected subject type is used as a subject.
+operations.  The subject types filter is disabled in subject mode
+because all types are excluded as subjects except the type specified as
+the required parameter.
