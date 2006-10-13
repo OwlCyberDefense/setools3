@@ -1023,6 +1023,7 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
             -parent $parentDlg
     }
 
+    toggle_perms_toshow {} {} {}
     set unknowns {}
     set vals(cp:perms_selected) {}
     foreach perm $perms_selected {
@@ -1040,11 +1041,6 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
     }
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::save_query_options
-#	- file_channel - file channel identifier of the query file to write to.
-#	- file_name - name of the query file
-# -----------------------------------------------------------------------------
 proc Apol_TE::save_query_options {file_channel query_file} {
     variable vals
     foreach {key value} [array get vals] {
