@@ -73,7 +73,7 @@ point type).
 2. There must be a rule that allows the SOURCE domain type 'execute'
    access to the FILE ENTRYPOINT type. As an example, the rule:
 
-        allow user_t passwd_exec_t: file {read getattr execute};
+        allow user_t passwd_exec_t : file {read getattr execute};
 
    meets the criterion by allowing the source type (user_t) 'execute'
    access to the file entrypoint type (passwd_exec_t).
@@ -85,12 +85,32 @@ point type).
         allow passwd_t passwd_exec_t : file entrypoint;
 
    meets this criterion by allowing the target type (passwd_t) 'file
-   entrypoint' access to the file entrypoint type (pass_exec_t).
-   
+   entrypoint' access to the file entrypoint type (passwd_exec_t).
+
+4. There must be a way for the transition to be specified.  Typically
+   this is accomplished in the policy with a TYPE TRANSITION statement.
+   As an example, the statement:
+
+        type_transition user_t password_exec_t : process passwd_t;
+
+   meets this criterion by specifying that when user_t executes
+   a program with the passwd_exec_t type, the default type of the
+   new process is passwd_t.  This is the most common specifier because
+   it does not require the programs to be SELinux-aware.  Alternatively,
+   the program can be made SELinux-aware and the program itself may
+   specify the type of the new process.  As an example, the statement:
+
+        allow user_t self : process setexec;
+
+   allows the source type (user_t) to specify the type of new processes
+   when executing programs.  In both the type transition and setexec
+   cases, the types that the source domain may transition to are
+   limited by the previous three criterion.
+
 In the analysis results for a reverse domain transition analysis, apol
-will list all the types that meet the above three criteria.  On the
+will list all the types that meet the above four criteria.  On the
 other hand, results for a forward domain transition analysis will be
-limited to types that meet the above three criteria and that have the
+limited to types that meet the above four criteria and that have the
 specified privileges or access to a particular object type(s).  See
 'General Help' for the Forward DTA Advanced Search Options feature in
 apol.
@@ -107,7 +127,7 @@ forward and reverse domain transition queries; however, the access
 filters are only enabled for a forward domain transition query.
 
 To enable and use the access filters, the user needs to select the
-"Use access filters" checkbutton at which point, he can display the
+"Use access filters" checkbox at which point, he can display the
 Access Filters dialog.  This dialog presents listboxes for including
 object types, object classes, and permissions.  An access filter may
 be particulary useful to a user if he or she is searching for
