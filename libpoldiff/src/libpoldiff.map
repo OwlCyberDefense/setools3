@@ -1,0 +1,21 @@
+{
+	global:
+                poldiff_create;
+                poldiff_destroy;
+                poldiff_run;
+                poldiff_is_run;
+                poldiff_type_rename_append;
+                poldiff_get_*;
+                poldiff_avrule_*;
+                poldiff_bool_*;
+                poldiff_class_*;
+                poldiff_common_*;
+                poldiff_role_*;      
+                poldiff_role_allow_*;      
+                poldiff_role_trans_*;      
+                poldiff_user_*;
+                poldiff_terule_*;
+                poldiff_type_*;
+                poldiff_attrib_*;
+	local: *;
+};

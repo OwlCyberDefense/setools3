@@ -1,0 +1,56 @@
+An overview of types relationship summary analysis
+apol, version 3.0
+October 1, 2006
+selinux@tresys.com
+
+
+Understanding types relationship summary analysis
+-------------------------------------------------
+The types relationship summary analysis in apol is a convenience
+mechanism to allow a user to quickly do several queries and analyses
+already in present in apol to understand the relationship between two
+types.  It is meant to quickly display the relationship between two
+types and therefore doesn't include all of the options present in the
+standard queries and analyses.  The analyses are grouped into two
+categories: Basic and Analysis.
+
+
+Basic
+-----
+The basic group includes several rule searches that can be performed
+using the Policy Rules tab.
+
+  Common Attributes: the attributes common to both types.
+
+  Common Roles: the roles to which both types are assigned.
+
+  Common Users: the users allowed associate with roles to which both
+  types are assigned.
+
+  Similar Access to Resources: object types to which both types have
+  some access.
+
+  Dissimilar Access to Resources: object types to which one type has
+  some access but the other type has none.
+
+  TE Allow Rules: rules that provide direct access between both types.
+
+  Type Transition / Change Rules: type_* rules that allow transitions
+  between both types.
+
+
+Analysis
+--------
+The analysis group includes several other analyses that can be
+performed using the Analysis tab.
+
+  Direct Flows Between A and B: direct information flow analysis between
+  the two types.
+
+  Transitive Flows A->B: transitive information flows from type A to B.
+
+  Transitive Flows B->A: transitive information flows from type B to A.
+
+  Domain Transitions A->B: domain transitions allowed from type A to B.
+
+  Domain Transitions B->A: domain transitions allowed from type B to A.

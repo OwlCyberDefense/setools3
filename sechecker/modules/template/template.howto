@@ -1,0 +1,13 @@
+Instructions for using the template to add new modules
+========================================================
+1. copy the xx.c and xx.h files to the modules directory
+2. rename the files and replace the text xx with the 
+   module name in both files
+3. add the register function for your module xx_register
+   to the register_list.h  and register_list.c entries
+4. add options and any requirements or dependencies to
+   the decription in the register function
+5. fill out TODO sections of the template with logic for
+   your module
+6. recompile
+ 

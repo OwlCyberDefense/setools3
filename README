@@ -1,0 +1,441 @@
+SETools - Policy analysis tools for SELinux (C) 2001-2006
+Tresys Technology
+setools@tresys.com, http://oss.tresys.com/projects/setools
+
+
+TABLE OF CONTENTS
+-----------------
+
+1. Overview
+2. Installation
+  2.1. compiling from official distribution
+  2.2. compiling from SVN checkout
+  2.3. configure flags
+  2.4. using development version of SELinux
+  2.5. Logwatch support
+  2.6. doxygen support
+3. Features
+  3.1. graphical tools
+  3.2. command-line tools
+  3.3. analysis libraries
+4. Obtaining SETools
+5. Reporting bugs
+6. Copyright license
+
+
+1. Overview
+-----------
+
+This file describes SETools, developed by Tresys Technology.  SETools
+is a collection of graphical tools, command-line tools, and libraries
+designed to facilitate SELinux policy analysis.  Although SETools is
+primarily targeted for Red Hat-based systems, it should also work for
+Gentoo and Debian distributions.  See the file KNOWN-BUGS for testing
+information.
+
+SETools includes the following graphical tools, command-line tools,
+and libraries:
+
+  apol          Tcl/Tk-based policy analysis tool
+  awish         customized wish interpreter
+  libapol       policy analysis library
+  libapol-tcl   bindings between apol and libapol
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    seaudit support library
+  libsefs       SELinux filesystem database library
+  seaudit       audit log analysis tools: seaudit and seaudit-report
+  sechecker     SELinux policy checking tool
+  secmds        command line tools: seinfo, sesearch, findcon,
+                replcon, indexcon, and searchcon
+  sediff        semantic policy difference tools: sediff and sediffx
+
+Each of these components is in a subdirectory under the top-level
+source directory, along with supporting pieces in the following
+directories:
+
+  man           manual pages for SETools commands
+  packages      miscellaneous support for external packages
+
+In addition the top-level source directory contains various pieces of
+documentation.  Please consult the file KNOWN-BUGS in this directory
+prior to filing any bug reports.
+
+  
+2. Installation
+---------------
+
+SETools uses the GNU build system to configure, compile, and install.
+As such it contains a configure script that will verify its
+dependencies.  SETools requires the following development packages for
+compilation:
+  flex
+  bison
+  pkg-config-0.20
+  libselinux-1.30.27 or greater
+  libsepol-1.12.27 or greater
+  libxml-2.0
+
+The following are not strictly required but highly recommended:
+  tcl-8.4.9-devel or greater
+  tk-8.4.9-devel or greater
+  glib-1.2
+  gtk+-2.0
+  libglade-2.0
+These packages are needed to build SETools's graphical tools.
+
+Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is
+part of the tcllib package and is often not present in Linux
+distributions; the toolkit may be freely downloaded at
+http://tcllib.sourceforge.net.  The supplied configure script attempts
+to detect the version of BWidget installed.  If it is not found then
+SETools will use the prepackaged one found within the 'packages'
+subdirectory.  In some situations the toolkit will not be
+automatically found; if you are sure that BWidget is present then
+specify --disable-bwidget-check to the configure script.
+
+
+2.1. compiling from official distribution
+-----------------------------------------
+
+The official, stable source distribution is available from
+http://oss.tresys.com/projects/setools/.  Untar and uncompress the
+distribution, and perform the following.
+
+  $ cd setools-3.0
+  $ ./configure
+  $ make
+  $ make install
+
+This will put the binaries in /usr/local/bin, data files in
+/usr/local/share/setool-3.0, and libraries in /usr/local/lib.
+Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
+$LD_LIBRARY_PATH everything should now work.
+
+
+2.2. compiling from SVN checkout
+--------------------------------
+
+If you prefer the bleeding edge of SETools development, you could
+instead obtain the development version of SETools from the Subversion
+repository (see Section 4).
+
+  $ cd setools
+  $ autoreconf
+  $ ./configure
+  $ make
+  $ make install
+
+You will need a recent version of autoconf to create the configure
+script.  SETools was written using autoconf-2.60, although
+autoconf-2.59 also seems to work correctly albeit with a build
+warning.
+
+As SETools uses the GNU build system, other make targets are
+available.  `make install-strip' will strip unneeded symbols from
+installed binaries.  `make uninstall' removes files written by an
+earlier install.
+
+
+2.3. configure flags
+--------------------
+
+You can customize your SETools build using the flags given to
+`configure'.  Notable options include:
+
+  --enable-debug
+      All code will be compiled using static libraries and the gcc
+      flags '-g3 -gdwarf-2 -O0'.  This flag is useful for tracking
+      down issues.
+
+  --disable-gui
+      Build only the command-line tools: seinfo, sesearch, findcon,
+      indexcon, replcon, searchcon, sechecker, and sediff.
+
+  --disable-bwidget-check
+      Assume that BWidget 1.8 is installed on the system.  The
+      configure script normally tries to launch a Tcl script that
+      loads BWidget, which requires a running X session.  Use this
+      flag if you are compiling in a non-X environment.
+
+  --disable-selinux-check
+      Disable the build-time check for SELinux.  In rare
+      circumstances the build computer will not have SELinux
+      running, resulting in 'configure' producing a warning and
+      disable parts of SETools.  By specifying this flag,
+      'configure' will not disable parts of SETools.
+
+  --disable-sefs
+      Disable sefs support.  Use this flag if SETools will be
+      deployed on systems not running SELinux.  For example, sediff
+      does not need an SELinux-enabled kernel to operate.
+
+  --enable-sepol-src=PATH
+      Look for libsepol source files in PATH.  Use this flag when
+      compiling against a development version of SELinux (see
+      Section 2.4).  Note that if --enable-sepol-src and
+      --with-sepol-devel are both specified then this flag takes
+      precedence.
+
+  --with-tcl=PATH
+      Look for Tcl development files in PATH.  Debian users will
+      need to specify this flag, as Tcl 8.4 is typically located at
+      /usr/lib/tcl8.4.
+
+  --with-tk=PATH
+      Look for Tk development files in PATH.  Debian users will need
+      to specify this flag, as Tk 8.4 is typically located at
+      /usr/lib/tk8.4.
+
+  --with-sepol-devel=PATH
+      Look for libsepol header files in PATH/include and library in
+      PATH/lib.  Note that if --enable-sepol-src and
+      --with-sepol-devel are both specified then --enable-sepol-src
+      takes precedence.
+
+  --with-selinux-devel=PATH
+      Look for libselinux header files in PATH/include and library
+      in PATH/lib.
+
+  --with-default-policy=PATH
+      Explicitly use PATH as the default SELinux policy source file,
+      instead of inferring its location based upon the return value
+      of selinux_policy_root().
+
+Of course, `configure' accepts other usual flags such as --prefix.
+
+
+2.4. using development version of SELinux
+-----------------------------------------
+
+As SELinux is a rapidly evolving project, you may wish to use a
+version of libsepol.so that is newer than the one installed to
+/usr/lib.  To support different versions of libsepol, SETools can be
+configured to compile against a specific version of libsepol using the
+--enable-sepol-src flag.  For example, suppose you have a SELinux SVN
+checkout and compilation like the following:
+
+  $ cd /home/gburdell
+  $ svn co https://svn.sourceforge.net/svnroot/selinux/trunk selinux
+  $ cd selinux/libsepol
+  $ make
+
+You can compile SETools against this particular copy of libsepol:
+
+  $ cd /home/gburdell/setools
+  $ ./configure --enable-sepol-src=/home/gburdell/selinux/libsepol
+
+Note that --enable-sepol-src will override the flag
+--with-sepol-devel.
+
+
+2.5. Logwatch support
+---------------------
+
+Integrating SETools with Logwatch can provide an effective IDS
+solution by automating customized audit reports and having them
+emailed to a specific recipient(s) for further analysis.  You can
+integrate SETools into Logwatch using the seaudit-report plugin by
+specifying the `make install-logwatch' target.  This target installs
+the configuration necessary for having seaudit-report run as a
+Logwatch service.  The configuration files are part of the SETools
+source distribution, located in the seaudit subdirectory, and include:
+
+  seaudit-report-group.conf:
+      logfile group configuration file
+
+  seaudit-report-service.conf:
+      service filter config file
+
+  seaudit-report-service:
+      service filter script
+
+Make sure the Logwatch program is installed before proceeding with
+using this install target.
+
+
+2.6. doxygen support
+--------------------
+
+All externally exported library functions include doxygen-style tags
+in the documentation.  To produce your own HTML outputs when writing
+third-party tools, use the doxygen configuration file located in
+packages/Doxyfile; it directs generated output to /tmp/setools.  From
+the top-level source directory do:
+
+  $ doxygen packages/Doxyfile
+
+
+3. Features
+-----------
+
+SETools encompasses a number of tools, both graphical and command
+line, and libraries.  Many of the programs have help files accessible
+during runtime.
+
+
+3.1. graphical tools
+--------------------
+
+The main emphasis of SETools is the graphical analysis tools.
+
+  apol:
+      A Tcl/Tk graphical analysis tool.  Use it to open a SELinux
+      policy, examine the policy's components and rules, and perform
+      various types of analyses.
+
+  awish:
+      A customized wish interpreter built against SETools libraries.
+      It is used to test features of apol.
+
+  seaudit:
+      A GTK+ graphical audit log analysis tool for SELinux.  This
+      tool allows users to sort and filter the system's audit log,
+      query the policy based on audit messages, and export audit log
+      messages to a file.  The tool can also create reports in HTML
+      or plaintext format using an entire audit log or an seaudit
+      view.  Note that this program is installed in $(PREFIX)/sbin
+      because its main function is to analyze /var/log/messages.
+
+  sediffx:
+      A GTK+ graphical tool to semantically compare two policies.
+      Use sediffx to open two SELinux policies, find differences
+      between them, and then show those results.
+
+
+3.2. command-line tools
+-----------------------
+
+Some tools in the SETools suite may be run in a non-windowing
+environment.  The first six tools listed below are located in the
+secmds subdirectory; the rest are in their own directories.
+
+  seinfo:
+      A tool to quickly get a list of components from a SELinux
+      policy.
+
+  sesearch:
+      A tool to search rules (allow, type_transition, etc.) within a
+      SELinux policy.
+
+  findcon:
+      A tool to search the system's filesystem for files matching a
+      certain search string.  The search string can specify complete
+      security contexts, partial contexts, and shell globbing-style
+      wildcards.
+
+  replcon:
+      A tool to search the filesystem, replacing a matched file's
+      context with a different one.
+
+  indexcon:
+      A tool to create a SQLite3 database that indexes the security
+      contexts of a SELinux filesystem.
+
+  searchcon:
+      A tool to query a database created by indexcon for specific
+      pathnames and/or for pathnames whose label contains a
+      particular type name and/or user name.
+
+  sechecker:
+      A tool for performing modular checks on an SELinux policy.
+      Sechecker supports configuration profiles to specify multiple
+      modules and generates a report of potential issues within a
+      policy.
+
+  seaudit-report:
+      A tool for generating reports on SELinux audit messages in
+      plaintext or HTML format.  Reports generated by this tool can
+      be configured to include standard report sections such as
+      policy load messages, enforcement toggles messages, policy
+      boolean messages, etc.  A key feature of the tool is that
+      reports can be further customized through the use of saved
+      seaudit view files.  The tool can effectively be used as a
+      plugin to other audit log analysis tools, such as the Logwatch
+      daemon.
+
+ sediff:
+      A tool to load two SELinux policies, find differences between
+      them, and then show those results.  The tool provides a
+      command-line interface to libpoldiff.
+
+
+3.3. analysis libraries
+-----------------------
+
+The SETools support libraries (libapol, libpoldiff, libqpol,
+libseaudit, and libsefs) are available for use in third-party
+applications.  Although they are not officially supported (and thus
+subject to change between SETools releases), we will do our best to
+maintain compatibility beginning with SETools version 3.0.
+
+  libqpol:
+      Abstract the internals of an SELinux policy behind a
+      consistent interface, such that changes to the policy
+      representation (as governed by libsepol) do not affect
+      analysis tools.
+
+  libapol:
+      Work with libqpol to perform higher-order analyses of a
+      policy.  A typical sequence for an analysis tool is:
+          open a policy via apol_policy_open()
+          execute some query via apol/policy-query.h
+          obtain detailed results via qpol/policy_query.h
+          close the policy via apol_policy_destroy()
+
+  libapol-tcl:
+      Glue code that provides bindings between apol (a Tcl/Tk
+      application) and libapol/libqpol.  The functions within are
+      not meant to be used by any other program.
+
+  libseaudit:
+      Parse and store SELinux audit messages.  Its chief user is the
+      seaudit tool.
+
+  libsefs:
+      Create a snapshot of SELinux filesystem security contexts and
+      stores them into a SQLite3 database.  Routines exist to create
+      and execute SQL queries into the database.  This library also
+      has functions to parse the system's default file_contexts.
+
+  libpoldiff:
+      Accept two SELinux policies and finds differences between
+      them.  Its main users are sediff and sediffx.
+    
+
+4. Obtaining SETools
+--------------------
+
+Official releases of SETools may be freely downloaded from Tresys's
+OSS website, http://oss.tresys.com/projects/setools.
+
+SETools source code is maintained within a Subversion repository.
+From the command line do:
+
+  $ svn co http://oss.tresys.com/repos/setools/trunk/setools
+
+You may also browse the SVN repository at
+http://oss.tresys.com/projects/setools/browser.
+
+Binary releases of SETools are available for your favorite Linux
+packaging system.  Red Hat releases RPM builds regularly; use
+rpmfind.net to find it.  Gentoo users have an ebuild script for
+SETools.  Debian maintains the dpkg "setools" in section admin,
+priority optional.
+
+
+5. Reporting bugs
+-----------------
+
+If you found a bug, have a suggestion, or otherwise would like to
+comment upon SETools, please email setools-bugs@tresys.com.  We will
+respond to you as soon as possible.
+
+
+6. Copyright license
+--------------------
+
+The intent is to allow free use of this source code under the GNU
+General Public License (see COPYING).  All source code is copyright
+protected and freely distributed under the GNU GPL (see COPYING).
+Absolutely no warranty is provided or implied (see COPYING).

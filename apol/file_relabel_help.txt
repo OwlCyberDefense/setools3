@@ -1,0 +1,71 @@
+An overview of direct file relabel analysis
+apol, version 3.0
+October 1, 2006
+selinux@tresys.com
+
+
+Understanding file relabel analysis
+-----------------------------------
+The permission to relabel objects in a mandatory access control system
+is an important privilege.  In SELinux, this privilege is controlled
+by the relabelto and relabelfrom permissions.  Understanding the net
+effect of these policy rules is complex because it requires the
+examination of multiple rules potentially spanning dozens of files.
+To be able to successfully relabel an object, a subject must be able
+to:
+
+        - relabelfrom the starting type
+        - relabelto at least one other type
+
+For example, consider the following rules:
+
+        allow sysadm_t filea_t : file relabelfrom;
+        allow sysadm_t { fileb_t filec_t } : file relabelto;
+
+If these rules are the only relabel rules present in the policy,
+sysadm_t would be allowed to relabel files of type filea_t to fileb_t
+or filec_t.  Both a relabelfrom and a relabelto rule for a single
+subject must be present for a relabel to be possible.
+
+Determining the potential ending types to which a starting type can be
+relabeled requires examining all subjects for relabel rules from the
+starting type to one or more ending types.  Determining the relabel
+privileges of a subject type requires examining all of the relabel
+rules containing the subject type.  The direct file relabel analysis
+in apol automates both of these analyses.
+
+
+Using direct file relabel analysis in apol
+------------------------------------------
+Direct file relabel analysis is designed to facilitate querying a
+policy for both potential changes to object labels and relabel
+privileges granted to a subject.  These two modes are respectively
+called Object Mode and Subject Mode.
+
+
+Object Mode
+-----------
+In Object Mode, the user specifies a starting or ending type and
+either to, from or both.  When To is selected, all types to which the
+starting type can be relabeled will be displayed.  When From is
+selected, all types from which the ending type can be relabeled will
+be displayed.  If both options are selected, the analysis performs
+both.
+
+
+Subject Mode
+------------
+In Subject Mode, the user specifies only a subject type.  Two lists of
+types will be displayed corresponding to all of the types to which the
+subject can relabel and from which the subject can relabel.
+
+
+Optional result filters
+-----------------------
+Results may be filtered in several ways.  The end types resulting from
+a query may be filtered by regular expression.  Advanced Filters
+provide the option of selecting which object classes to include in the
+analysis and which types to include as subjects of relabeling
+operations.  The subject types filter is disabled in subject mode
+because all types are excluded as subjects except the type specified as
+the required parameter.
