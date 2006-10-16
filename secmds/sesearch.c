@@ -107,7 +107,7 @@ Search Type Enforcement rules in an SELinux policy.\n\
   --allow                 search for allow rules\n\
   --neverallow            search for neverallow rules\n\
   --audit                 search for auditallow and dontaudit rules\n\
-  --type                  search for type_trans and type_change rules\n\
+  --type                  search for type_trans, type_member, and type_change\n\
   --rangetrans            search for range transition rules\n\
   --role_allow            search for role allow rules\n\
   --role_trans            search for role transition rules\n\
