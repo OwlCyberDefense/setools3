@@ -1,5 +1,7 @@
 2006-10-17  J. Tang  <jtang@tresys.com>
 
+	* seaudit-report binary was mistakenly called "seaudit_report"
+
 	* Updated man pages to match programs' help files.
 
 2006-10-13  J. Tang  <jtang@tresys.com>

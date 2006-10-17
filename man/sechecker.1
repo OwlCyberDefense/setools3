@@ -3,13 +3,13 @@
 sechecker \- SELinux policy checking tool
 .SH SYNOPSIS
 .B sechecker
-[OPTIONS] -m module                 Run module
+[OPTIONS] -m module
 .PP
 .B sechecker
-[OPTIONS] -p profile                Run profile
+[OPTIONS] -p profile
 .PP
 .B sechecker
-[OPTIONS] -m module -p profile      Run module with profile
+[OPTIONS] -m module -p profile
 .SH Description
 This manual page describes the
 .B sechecker
@@ -18,6 +18,10 @@ command.
 .B sechecker
 allows the user to perform predefined modular checks on a SELinux policy.  Profiles exist to group modules together and allow modification of module settings (see below).
 .SH OPTIONS
+.IP "-m module, --module=module"
+run module
+.IP "-p profile"
+run profile
 .IP "-l, --list"
 print a list of profiles and modules
 .IP "-q, --quiet"
@@ -32,12 +36,8 @@ print version and exit
 file_contexts file
 .IP "--policy=<file>"
 policy file
-.IP "-h[mod], --help[=module]"
+.IP "-h[module], --help[=module]"
 print general help or help for a module
-.IP "-m <mod>, --module=<mod>"
-module name
-.IP "-p <prof>, --profile=<prof>"
-profile name or path
 .IP "--min-sev=<low|med|high>"
 the minimum severity to report
 .SH PROFILE OPTIONS
@@ -83,7 +83,7 @@ prints a list of results without an accompanying proof
 does not print output in the report, however module errors will be printed
 
 .IP "quiet:"
-does not print output in the report and does not print errors, (this is usefull for utility modules for which the calling module handles the errors)
+does not print output in the report and does not print errors (this is useful for utility modules for which the calling module handles the errors)
 
 .PP
 The example profile also overrides the default value for the "domain_attribute" option in the find_domains module. 
