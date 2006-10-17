@@ -63,7 +63,7 @@ static struct option const longopts[] =
 static void usage(const char *prog_name, int brief)
 {
 	printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
-	printf("Usage: %s [OPTIONS] POLICY1 POLICY2\n", prog_name);
+	printf("Usage: %s [OPTIONS] ORIGINAL_POLICY MODIFIED_POLICY\n", prog_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", prog_name);
 		return;
@@ -1112,4 +1112,3 @@ err:
 	poldiff_destroy(&diff);
 	return 1;
 }
-

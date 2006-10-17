@@ -106,7 +106,7 @@ Print requested information about an SELinux policy.\n\
   -a[NAME], --attribs[=NAME]       print type attributes\n\
   -r[NAME], --roles[=NAME]         print roles\n\
   -u[NAME], --users[=NAME]         print users\n\
-  -b[NAME], --boolean[=NAME]       print conditional boolens\n\
+  -b[NAME], --boolean[=NAME]       print conditional booleans\n\
   -S[NAME], --sensitivities[=NAME] print sensitivities\n\
   -C[NAME], --categories[=NAME]    print categories\n\
   -f[TYPE], --fs_use[=TYPE]        print fs_use statements\n\

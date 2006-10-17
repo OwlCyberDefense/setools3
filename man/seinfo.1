@@ -15,7 +15,7 @@ allows the user to query a SELinux policy.
 .IP "-c[NAME], --classes[=NAME]"
 print a list of object classes
 .IP "-t[NAME], --types[=NAME]"
-print a list of types identifiers
+print a list of types (no aliases or attributes)
 .IP "-a[NAME], --attribs[=NAME]"
 print a list of type attributes
 .IP "-r[NAME], --roles[=NAME]"
@@ -36,8 +36,10 @@ print a list of genfscon statements
 print a list of netif contexts
 .IP "-o[ADDR], --nodecon[=ADDR]"
 print a list of node contexts
-.IP "-p[NUM],  --portcon[=NUM]"
+.IP "-p[PORT],  --portcon[=PORT]"
 print a list of port contexts
+.IP "-lPROTO,  --protocol=PROTO"
+pecify a protocol for portcons
 .IP "-i[NAME], --initialsid[=NAME]"
 print a list of initial SIDs
 .IP "-A, --all"
@@ -51,7 +53,13 @@ display this help and exit
 .IP "-v, --version"
 output version information and exit
 .SH INFORMATION
-For -ctaruSCfgnopi options, if NAME is provided, then only show info for NAME.  Specifying a name is most useful when used with the -x option.  If no option is provided, display useful policy statistics (-s).
+For -ctaruSCfgnopi options, if NAME is provided, then only show info
+for NAME.  Specifying a name is most useful when used with the -x
+option.  If no option is provided, display useful policy statistics
+(-s).
+.PP
+If \fB\-l\fR is given without \fB\-p\fR or \fB\-A\fR then it will be
+ignored.
 .PP
 The default source policy, or if that is unavailable the default binary policy, will be opened if no policy file name is provided.
 .SH AUTHOR

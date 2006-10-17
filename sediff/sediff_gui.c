@@ -103,20 +103,21 @@ static void usage(const char *program_name, int brief)
 {
 	printf("%s (sediffx ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: %s [-h|-v]\n", program_name);
-	printf("Usage: %s [-d] [POLICY1 POLICY2]\n",program_name);
+	printf("Usage: %s [-d] [ORIGINAL_POLICY MODIFIED_POLICY]\n",program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
 	fputs("\n\
-Semantically differentiate two policies.  The policies can be either source\n \
-or binary policy files, version 15 or later.  By default, all supported\n \
-policy elements are examined.  The following diff options are available:\n \
+Semantically differentiate two policies.  The policies can be either\n\
+source or binary policy files, version 15 or later.  All supported\n\
+policy elements are examined.  The following diff options are\n\
+available:\n\
 ", stdout);
 	fputs("\n\
   -h, --help       display this help and exit\n\
   -v, --version    output version information and exit\n\
-  -d, --diff-now   diff the policies immediately\n\n\
+  -d, --diff-now   load policies and diff immediately\n\n\
 ", stdout);
 	return;
 }
