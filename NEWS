@@ -11,12 +11,12 @@ SETools libraries:
   * Rewrite of back-end of SETools to use libsepol data structures.
     Most things should run notably faster.
 
-  * All exported library functions have a standarized naming
+  * All exported library functions have a standardized naming
     convention and are fully documented.  This will prove helpful for
     third-party developers integrating SETools into their own
     projects.
 
-  * For policies version 15 or greater, domain transition anlysis now
+  * For policies version 15 or greater, domain transition analysis now
     takes into consideration setexec permission and/or type_transition
     rules.
 
