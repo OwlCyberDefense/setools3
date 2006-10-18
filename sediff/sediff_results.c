@@ -308,27 +308,33 @@ static void sediff_results_print_string(GtkTextBuffer *tb, GtkTextIter *iter,
 	for (; *c; c++, end++) {
 		switch (*c) {
 		case '+': {
-			if (end > 0) {
-				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+			if (*(c + 1) == ' ') {
+				if (end > 0) {
+					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+				}
+				start = end;
+				current_tag = "added";
+				break;
 			}
-			start = end;
-			current_tag = "added";
-			break;
 		}
 		case '-': {
-			if (end > 0) {
-				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+			if (*(c + 1) == ' ') {
+				if (end > 0) {
+					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+				}
+				start = end;
+				current_tag = "removed";
 			}
-			start = end;
-			current_tag = "removed";
 			break;
 		}
 		case '*': {
-			if (end > 0) {
-				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+			if (*(c + 1) == ' ') {
+				if (end > 0) {
+					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+				}
+				start = end;
+				current_tag = "modified";
 			}
-			start = end;
-			current_tag = "modified";
 			break;
 		}
 		case '\n': {
