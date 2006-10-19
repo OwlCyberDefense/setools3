@@ -42,11 +42,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>    /* needed for portcon's protocol */
 
-/* The following should be defined in the make environment */
-#ifndef LIBAPOL_VERSION_STRING
-	#define LIBAPOL_VERSION_STRING "UNKNOWN"
-#endif
-
 const char* libapol_get_version(void)
 {
 	return LIBAPOL_VERSION_STRING;

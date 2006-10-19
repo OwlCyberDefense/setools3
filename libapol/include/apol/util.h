@@ -45,7 +45,7 @@
 typedef unsigned char bool_t;
 
 /**
- * Return an inmutable string describing this library's version.
+ * Return an immutable string describing this library's version.
  *
  * @return String describing this library.
  */

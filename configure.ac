@@ -17,7 +17,8 @@ libpoldiff_soname=libpoldiff.so.1
 libsefs_version=3.0.0
 libsefs_soname=libsefs.so.3
 
-libseaudit_version=3.0.0
+libseaudit_version=3.1.0
+libseaudit_soname=libseaudit.so.3
 
 setoolsdir='${prefix}/share/setools-3.0'
 
@@ -480,12 +481,16 @@ AC_SUBST(libpoldiff_version)
 AC_SUBST(libpoldiff_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
+AC_SUBST(libseaudit_version)
+AC_SUBST(libseaudit_soname)
 AC_SUBST(setoolsdir)
 AC_SUBST(selinux_policy_dir)
 AC_SUBST(selinux_default_policy)
 AC_SUBST(profile_install_dir)
 
 AC_DEFINE_UNQUOTED(LIBAPOL_VERSION_STRING, "${libapol_version}", [libapol version])
+AC_DEFINE_UNQUOTED(LIBQPOL_VERSION_STRING, "${libqpol_version}", [libqpol version])
+AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
 
 # for older version of BWidget, overcome bug in NoteBook::bindtabs and
