@@ -18,7 +18,8 @@ libpoldiff_a_SOURCES = \
 	type_diff.c type_internal.h \
 	attrib_diff.c attrib_internal.h \
 	poldiff_internal.h \
-	type_map.c type_map_internal.h
+	type_map.c type_map_internal.h \
+	util.c
 
 libpoldiff_a_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so
 

@@ -490,6 +490,7 @@ AC_SUBST(profile_install_dir)
 
 AC_DEFINE_UNQUOTED(LIBAPOL_VERSION_STRING, "${libapol_version}", [libapol version])
 AC_DEFINE_UNQUOTED(LIBQPOL_VERSION_STRING, "${libqpol_version}", [libqpol version])
+AC_DEFINE_UNQUOTED(LIBPOLDIFF_VERSION_STRING, "${libpoldiff_version}", [libpoldiff version])
 AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
 
