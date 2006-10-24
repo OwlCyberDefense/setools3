@@ -1,6 +1,6 @@
 /**
  *  @file poldiff.c
- *  Public Interface for computing a semantic policy difference.
+ *  Implementation for computing a semantic policy difference.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com

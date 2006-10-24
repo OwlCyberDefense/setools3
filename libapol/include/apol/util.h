@@ -257,7 +257,7 @@ extern int apol_str_append(char **tgt, size_t *tgt_sz, const char *str);
 extern int apol_str_is_only_white_space(const char *str);
 
 /**
- * Wrapper around strcmp for use in vector comparison functions.
+ * Wrapper around strcmp for use in vector and BST comparison functions.
  *
  * @param a String to compare.
  * @param b The other string to compare.

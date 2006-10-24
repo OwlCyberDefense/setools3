@@ -1,3 +1,7 @@
+2006-10-24  J. Tang  <jtang@tresys.com>
+
+	* exclude the sqlite files from the Doxygen configuration
+
 2006-10-19  J. Tang  <jtang@tresys.com>
 
 	* added lib<foo>_get_version() functions to libqpol, libpoldiff,
