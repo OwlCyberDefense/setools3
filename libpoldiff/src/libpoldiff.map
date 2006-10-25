@@ -18,5 +18,6 @@
                 poldiff_type_*;
                 poldiff_attrib_*;
                 libpoldiff_get_version;
+                poldiff_enable_line_numbers;
 	local: *;
 };

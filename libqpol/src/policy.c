@@ -205,6 +205,7 @@ static int read_source_policy(qpol_policy_t *qpolicy, char *progname, int load_r
 	policydbp = &qpolicy->p->p;
 	mlspol = policydbp->mls;
 
+	INFO(qpolicy, "%s", "Parsing policy. (Step 1 of 5)");
 	init_scanner();
 	init_parser(1, load_rules);
 	if (yyparse() || policydb_errors) {
@@ -817,7 +818,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ca
 		}
 
 		/* link the source */
-		INFO(*policy, "%s", "Linking source policy.");
+		INFO(*policy, "%s", "Linking source policy. (Step 2 of 5)");
 		if (sepol_link_modules((*policy)->sh, (*policy)->p, NULL, 0, 0)) {
 			error = EIO;
 			goto err;
@@ -959,7 +960,7 @@ int qpol_open_policy_from_file_no_rules(const char *path, qpol_policy_t **policy
 		}
 
 		/* link the source */
-		INFO(*policy, "%s", "Linking source policy.");
+		INFO(*policy, "%s", "Linking source policy. (Step 2 of 5)");
 		if (sepol_link_modules((*policy)->sh, (*policy)->p, NULL, 0, 0)) {
 			error = EIO;
 			goto err;
@@ -1045,7 +1046,7 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 		exit(1);
 
 	/* link the source */
-	INFO(*policy, "%s", "Linking source policy.");
+	INFO(*policy, "%s", "Linking source policy. (Step 2 of 5)");
 	if (sepol_link_modules((*policy)->sh, (*policy)->p, NULL, 0, 0)) {
 		error = EIO;
 		goto err;

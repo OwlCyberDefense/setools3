@@ -922,6 +922,12 @@ int main (int argc, char **argv)
 		apol_policy_destroy(&policy);
 		exit(1);
 	}
+	if (cmd_opts.lineno && !apol_policy_is_binary(policy)) {
+		if (qpol_policy_build_syn_rule_table(policy->p)) {
+			apol_policy_destroy(&policy);
+			exit(1);
+		}
+	}
 
 	if (perform_av_query(policy, &cmd_opts, &v)) {
 		rt = 1;

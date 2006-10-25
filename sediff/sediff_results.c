@@ -629,6 +629,9 @@ static void sediff_results_print_rules(sediff_app_t *app, GtkTextBuffer *tb,
 	sediff_results_print_item_header(app, tb, item_record, form);
 	gtk_text_buffer_get_end_iter(tb, &iter);
 
+	if (apol_vector_get_size(av) + apol_vector_get_size(te) > 0) {
+		poldiff_enable_line_numbers(app->diff);
+	}
 	for (i = 0; i < apol_vector_get_size(av); i++) {
 		elem = apol_vector_get_element(av, i);
 		if ((s = poldiff_avrule_to_string(app->diff, elem)) == NULL) {

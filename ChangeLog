@@ -1,3 +1,11 @@
+2006-10-25 J. Mowery <jmowery@tresys.com>
+
+	* numbered steps for loading
+
+	* loading syntactic rule table is now off by default
+
+	* updated tools requiring line numbers to build syntactic table as needed
+
 2006-10-24  J. Tang  <jtang@tresys.com>
 
 	* exclude the sqlite files from the Doxygen configuration

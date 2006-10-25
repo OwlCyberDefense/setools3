@@ -60,7 +60,7 @@ int qpol_expand_module(qpol_policy_t *base)
 	policydb_t *db;
 	int rt;
 
-	INFO(base, "%s", "Expanding policy.");
+	INFO(base, "%s", "Expanding policy. (Step 3 of 5)");
 	if (base == NULL) {
 		ERR(base, "%s", strerror(EINVAL));
 		errno = EINVAL;

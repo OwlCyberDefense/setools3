@@ -32,6 +32,16 @@
 #include <poldiff/poldiff.h>
 #include <qpol/policy_query.h>
 
+/**
+ *  Enable line numbers for all rule differences.
+ *
+ *  @param diff The policy difference structure.
+ *
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and the difference structure should be destroyed.
+ */
+extern int poldiff_enable_line_numbers(poldiff_t *diff);
+
 /******************** avrules diff ********************/
 
 typedef struct poldiff_avrule poldiff_avrule_t;

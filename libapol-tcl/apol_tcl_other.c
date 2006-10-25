@@ -429,6 +429,13 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, 
 		Tcl_SetObjResult(interp, result_obj);
 		return TCL_ERROR;
 	}
+	/* if not binary load syntactic rules so that line numbers may be accessed */
+	if (!apol_policy_is_binary(policydb) && qpol_policy_build_syn_rule_table(policydb->p)) {
+		Tcl_Obj *result_obj = Tcl_NewStringObj("Error loading syntactic rules: ", -1);
+		Tcl_AppendToObj(result_obj, strerror(errno), -1);
+		Tcl_SetObjResult(interp, result_obj);
+		return TCL_ERROR;
+	}
 	return TCL_OK;
 }
 

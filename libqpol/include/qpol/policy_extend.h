@@ -45,6 +45,15 @@ extern int qpol_policy_extend(qpol_policy_t *policy);
 
 extern void qpol_extended_image_destroy(qpol_extended_image_t **ext);
 
+/**
+ *  Build the table of syntactic rules for a policy.
+ *  @param policy The policy for which to build the table.
+ *  This policy will be modified by this call.
+ *  @return 0 on success and < 0 on error; if the call fails,
+ *  errno will be set.
+ */
+extern int qpol_policy_build_syn_rule_table(qpol_policy_t *policy);
+
 /* forward declarations: see avrule_query.h and terule_query.h */
 struct qpol_avrule;
 struct qpol_terule;
