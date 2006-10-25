@@ -1,3 +1,9 @@
+2006-10-25  J. Tang  <jtang@tresys.com>
+
+	* seaudit-report Logwatch script will look for
+	$(bindir)/seaudit-report, rather than the hard-coded
+	/usr/bin/seaudit-report
+
 2006-10-25 J. Mowery <jmowery@tresys.com>
 
 	* numbered steps for loading

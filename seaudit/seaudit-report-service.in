@@ -2,7 +2,7 @@
 # shell script to run seaudit-report on STDIN
 #
 
-SEAUDITREPORT=/usr/bin/seaudit-report
+SEAUDITREPORT=@bindir@
 OPTS="--stdin --malformed"
 
 echo "Date Range: $LOGWATCH_DATE_RANGE"
@@ -22,5 +22,3 @@ fi
 
 # All done, exit ok
 exit 0
-
-

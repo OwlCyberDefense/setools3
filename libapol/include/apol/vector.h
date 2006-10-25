@@ -239,7 +239,7 @@ extern int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src);
  *  @param v Vector containing element.
  *  @param idx Index to the element to remove.
  *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and dest's contents will be reverted.
+ *  errno will be set and v's contents will be reverted.
  */
 extern int apol_vector_remove(apol_vector_t *v, const size_t idx);
 
