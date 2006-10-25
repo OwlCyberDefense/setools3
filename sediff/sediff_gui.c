@@ -498,6 +498,7 @@ void run_diff_clicked(void)
 {
 	GdkCursor *cursor = NULL;
 	struct run_datum r;
+	GtkWidget *dialog;
 
 	sediff_initialize_diff();
 
@@ -514,9 +515,10 @@ void run_diff_clicked(void)
 	r.run_flags = POLDIFF_DIFF_ALL;
 	if (apol_policy_is_binary(sediff_app->orig_pol) ||
 	    apol_policy_is_binary(sediff_app->mod_pol)) {
-		message_display(sediff_app->window,
-				GTK_MESSAGE_INFO,
-				"Attribute diffs are not supported for binary policies.");
+		dialog = gtk_message_dialog_new(sediff_app->window, GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "Attribute diffs are not supported for binary policies.");
+		g_signal_connect_swapped(dialog, "response", G_CALLBACK (gtk_widget_destroy), dialog);
+		gtk_widget_show(dialog);
 		while (gtk_events_pending ())
 			gtk_main_iteration ();
 		r.run_flags &= ~POLDIFF_DIFF_ATTRIBS;
