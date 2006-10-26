@@ -33,7 +33,9 @@
 #include <qpol/policy_query.h>
 
 /**
- *  Enable line numbers for all rule differences.
+ *  Enable line numbers for all rule differences. If not called, line numbers
+ *  will not be available when displaying differences. This function is
+ *  safe to call multiple times and will have no effect after the first time.
  *
  *  @param diff The policy difference structure.
  *
@@ -200,11 +202,12 @@ extern apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t *avr
 extern apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t *avrule);
 
 /**
- *  Get a vector of line numbers (of type unsigned long) for this av
- *  rule difference from the original policy.  Note that if the form
- *  is POLDIFF_FORM_ADDED or POLDIFF_FORM_ADD_TYPE then this will
- *  return NULL.  Also, if the original policy is a binary policy then
- *  this returns NULL.
+ *  Get a vector of line numbers (of type unsigned long) for this av rule
+ *  difference from the original policy.  Note that if the form is
+ *  POLDIFF_FORM_ADDED or POLDIFF_FORM_ADD_TYPE then this will return NULL.
+ *  Also, if the original policy is a binary policy or line numbers are not yet
+ *  enabled then this returns NULL.
+ *  @see poldiff_enable_line_numbers() to enable line numbers.
  *
  *  @param avrule The av rule diff from which to get line numbers.
  *
@@ -214,11 +217,12 @@ extern apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t *a
 extern apol_vector_t *poldiff_avrule_get_orig_line_numbers(const poldiff_avrule_t *avrule);
 
 /**
- *  Get a vector of line numbers (of type unsigned long) for this av
- *  rule difference from the modified policy.  Note that if the form
- *  is POLDIFF_FORM_REMOVED or POLDIFF_FORM_REMOVE_TYPE then this will
- *  return NULL.  Also, if the modified policy is a binary policy then
- *  this returns NULL.
+ *  Get a vector of line numbers (of type unsigned long) for this av rule
+ *  difference from the modified policy.  Note that if the form is
+ *  POLDIFF_FORM_REMOVED or POLDIFF_FORM_REMOVE_TYPE then this will return
+ *  NULL.  Also, if the modified policy is a binary policy  or line numbers are
+ *  not yet enabled then this returns NULL.
+ *  @see poldiff_enable_line_numbers() to enable line numbers.
  *
  *  @param avrule The av rule diff from which to get line numbers.
  *
@@ -367,11 +371,12 @@ extern const char *poldiff_terule_get_original_default(const poldiff_terule_t *t
 extern const char *poldiff_terule_get_modified_default(const poldiff_terule_t *terule);
 
 /**
- *  Get a vector of line numbers (of type unsigned long) for this te
- *  rule difference from the original policy.  Note that if the form
- *  is POLDIFF_FORM_ADDED or POLDIFF_FORM_ADD_TYPE then this will
- *  return NULL.  Also, if the original policy is a binary policy then
- *  this returns NULL.
+ *  Get a vector of line numbers (of type unsigned long) for this te rule
+ *  difference from the original policy.  Note that if the form is
+ *  POLDIFF_FORM_ADDED or POLDIFF_FORM_ADD_TYPE then this will return NULL.
+ *  Also, if the original policy is a binary policy or line numbers are not yet
+ *  enabled then this returns NULL.
+ *  @see poldiff_enable_line_numbers() to enable line numbers.
  *
  *  @param terule The te rule diff from which to get line numbers.
  *
@@ -381,11 +386,12 @@ extern const char *poldiff_terule_get_modified_default(const poldiff_terule_t *t
 extern apol_vector_t *poldiff_terule_get_orig_line_numbers(const poldiff_terule_t *terule);
 
 /**
- *  Get a vector of line numbers (of type unsigned long) for this te
- *  rule difference from the modified policy.  Note that if the form
- *  is POLDIFF_FORM_REMOVED or POLDIFF_FORM_REMOVE_TYPE then this will
- *  return NULL.  Also, if the modified policy is a binary policy then
- *  this returns NULL.
+ *  Get a vector of line numbers (of type unsigned long) for this te rule
+ *  difference from the modified policy.  Note that if the form is
+ *  POLDIFF_FORM_REMOVED or POLDIFF_FORM_REMOVE_TYPE then this will return
+ *  NULL.  Also, if the modified policy is a binary policy or line numbers are
+ *  not yet enabled then this returns NULL.
+ *  @see poldiff_enable_line_numbers() to enable line numbers.
  *
  *  @param terule The te rule diff from which to get line numbers.
  *
