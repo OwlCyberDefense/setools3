@@ -132,7 +132,7 @@ static int qpol_policy_build_attrs_from_map(qpol_policy_t *policy)
 		if (db->type_val_to_struct[i] != NULL) {
 			continue; /* datum already exists? */
 		}
-		snprintf(buff, 9, "@ttr%04d", i+1);
+		snprintf(buff, 9, "@ttr%04zd", i+1);
 		tmp_name = strdup(buff);
 		if (!tmp_name) {
 			error = errno;
@@ -223,7 +223,7 @@ static int qpol_policy_fill_attr_holes(qpol_policy_t *policy)
 	for (i = 0; i < db->p_types.nprim; i++) {
 		if (db->type_val_to_struct[i])
 			continue;
-		snprintf(buff, 9, "@ttr%04d", i+1);
+		snprintf(buff, 9, "@ttr%04zd", i+1);
 		tmp_name = strdup(buff);
 		if (!tmp_name) {
 			error = errno;
