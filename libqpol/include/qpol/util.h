@@ -31,6 +31,6 @@
  *
  * @return String describing this library.
  */
-extern const char* libqpol_get_version(void);
+extern const char *libqpol_get_version(void);
 
 #endif

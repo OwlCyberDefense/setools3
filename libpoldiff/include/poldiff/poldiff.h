@@ -33,7 +33,7 @@
 #include <stdint.h>
 
 typedef struct poldiff poldiff_t;
-typedef void (*poldiff_handle_fn_t)(void *arg, poldiff_t *diff, int level, const char *fmt, va_list va_args);
+typedef void (*poldiff_handle_fn_t) (void *arg, poldiff_t * diff, int level, const char *fmt, va_list va_args);
 
 /**
  *  Form of a difference. This enumeration describes the kind of change
@@ -45,7 +45,8 @@ typedef void (*poldiff_handle_fn_t)(void *arg, poldiff_t *diff, int level, const
  *  type being added or removed; these forms differentiate these cases
  *  from those of added/removed rules where the types exist in both policies.
  */
-typedef enum poldiff_form {
+typedef enum poldiff_form
+{
 	/** only for error conditions */
 	POLDIFF_FORM_NONE,
 	/** item was added - only in policy 2 */
@@ -112,17 +113,15 @@ typedef enum poldiff_form {
  *  The caller is responsible for calling poldiff_destroy() to free
  *  memory used by this structure.
  */
-extern poldiff_t *poldiff_create(apol_policy_t *orig_policy,
-				 apol_policy_t *mod_policy,
-				 poldiff_handle_fn_t fn,
-				 void *callback_arg);
+extern poldiff_t *poldiff_create(apol_policy_t * orig_policy,
+				 apol_policy_t * mod_policy, poldiff_handle_fn_t fn, void *callback_arg);
 
 /**
  *  Free all memory used by a policy difference structure and set it to NULL.
  *  @param diff Reference pointer to the difference structure to destroy.
  *  This pointer will be set to NULL. (If already NULL, function is a no-op.)
  */
-extern void poldiff_destroy(poldiff_t **diff);
+extern void poldiff_destroy(poldiff_t ** diff);
 
 /**
  *  Run the difference algorithm for the selected policy components/rules.
@@ -135,7 +134,7 @@ extern void poldiff_destroy(poldiff_t **diff);
  *  be set and the only defined operation on the difference structure is
  *  poldiff_destroy().
  */
-extern int poldiff_run(poldiff_t *diff, uint32_t flags);
+extern int poldiff_run(poldiff_t * diff, uint32_t flags);
 
 /**
  *  Determine if a particular policy component/rule diff was actually
@@ -147,7 +146,7 @@ extern int poldiff_run(poldiff_t *diff, uint32_t flags);
  *  @return 1 if all indicated diffs were run, 0 if any were not, < 0
  *  on error.
  */
-extern int poldiff_is_run(poldiff_t *diff, uint32_t flags);
+extern int poldiff_is_run(poldiff_t * diff, uint32_t flags);
 
 /**
  *  Get a total of the differences of each form for a given item (or set
@@ -163,6 +162,6 @@ extern int poldiff_is_run(poldiff_t *diff, uint32_t flags);
  *  number of POLDIFF_FORM_REMOVE_TYPE.
  *  @return 0 on success an < 0 on error; if the call fails, errno will be set.
  */
-extern int poldiff_get_stats(poldiff_t *diff, uint32_t flags, size_t stats[5]);
+extern int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5]);
 
-#endif /* POLDIFF_POLDIFF_H */
+#endif				       /* POLDIFF_POLDIFF_H */

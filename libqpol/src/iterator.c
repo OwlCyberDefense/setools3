@@ -47,32 +47,30 @@
  * iterator used to return lists of components.
  *
  */
-struct qpol_iterator {
+struct qpol_iterator
+{
 	policydb_t *policy;
 	void *state;
-	void *(*get_cur)(qpol_iterator_t *iter);
-	int (*next)(qpol_iterator_t *iter);
-	int (*end)(qpol_iterator_t *iter);
-	size_t (*size)(qpol_iterator_t *iter);
-	void (*free_fn)(void*x);
+	void *(*get_cur) (qpol_iterator_t * iter);
+	int (*next) (qpol_iterator_t * iter);
+	int (*end) (qpol_iterator_t * iter);
+	 size_t(*size) (qpol_iterator_t * iter);
+	void (*free_fn) (void *x);
 };
 
-int qpol_iterator_create(qpol_policy_t *policy, void *state,
-	void *(*get_cur)(qpol_iterator_t *iter),
-	int (*next)(qpol_iterator_t *iter),
-	int (*end)(qpol_iterator_t *iter),
-	size_t (*size)(qpol_iterator_t *iter),
-	void (*free_fn)(void *x),
-	qpol_iterator_t **iter)
+int qpol_iterator_create(qpol_policy_t * policy, void *state,
+			 void *(*get_cur) (qpol_iterator_t * iter),
+			 int (*next) (qpol_iterator_t * iter),
+			 int (*end) (qpol_iterator_t * iter),
+			 size_t(*size) (qpol_iterator_t * iter), void (*free_fn) (void *x), qpol_iterator_t ** iter)
 {
 	int error = 0;
 
 	if (iter != NULL)
 		*iter = NULL;
 
-	if (policy == NULL || state == NULL || iter == NULL ||
-		get_cur == NULL || next == NULL || end == NULL || size == NULL) {
-		ERR(policy, "%s",strerror(EINVAL));
+	if (policy == NULL || state == NULL || iter == NULL || get_cur == NULL || next == NULL || end == NULL || size == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -80,7 +78,7 @@ int qpol_iterator_create(qpol_policy_t *policy, void *state,
 	*iter = calloc(1, sizeof(struct qpol_iterator));
 	if (*iter == NULL) {
 		error = errno;
-		ERR(policy, "%s",strerror(ENOMEM));
+		ERR(policy, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -96,7 +94,8 @@ int qpol_iterator_create(qpol_policy_t *policy, void *state,
 	return STATUS_SUCCESS;
 }
 
-void *qpol_iterator_state(qpol_iterator_t *iter) {
+void *qpol_iterator_state(qpol_iterator_t * iter)
+{
 	if (iter == NULL || iter->state == NULL) {
 		errno = EINVAL;
 		return NULL;
@@ -105,7 +104,8 @@ void *qpol_iterator_state(qpol_iterator_t *iter) {
 	return iter->state;
 }
 
-policydb_t *qpol_iterator_policy(qpol_iterator_t *iter) {
+policydb_t *qpol_iterator_policy(qpol_iterator_t * iter)
+{
 	if (iter == NULL || iter->policy == NULL) {
 		errno = EINVAL;
 		return NULL;
@@ -114,7 +114,7 @@ policydb_t *qpol_iterator_policy(qpol_iterator_t *iter) {
 	return iter->policy;
 }
 
-void *hash_state_get_cur(qpol_iterator_t *iter)
+void *hash_state_get_cur(qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -123,12 +123,12 @@ void *hash_state_get_cur(qpol_iterator_t *iter)
 		return NULL;
 	}
 
-	hs = (hash_state_t*)iter->state;
+	hs = (hash_state_t *) iter->state;
 
 	return hs->node->datum;
 }
 
-void *hash_state_get_cur_key(qpol_iterator_t *iter)
+void *hash_state_get_cur_key(qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -137,12 +137,12 @@ void *hash_state_get_cur_key(qpol_iterator_t *iter)
 		return NULL;
 	}
 
-	hs = (hash_state_t*)iter->state;
+	hs = (hash_state_t *) iter->state;
 
 	return hs->node->key;
 }
 
-void *ocon_state_get_cur(qpol_iterator_t *iter)
+void *ocon_state_get_cur(qpol_iterator_t * iter)
 {
 	ocon_state_t *os = NULL;
 
@@ -151,12 +151,12 @@ void *ocon_state_get_cur(qpol_iterator_t *iter)
 		return NULL;
 	}
 
-	os = (ocon_state_t*)iter->state;
+	os = (ocon_state_t *) iter->state;
 
 	return os->cur;
 }
 
-void *avtab_state_get_cur(qpol_iterator_t *iter)
+void *avtab_state_get_cur(qpol_iterator_t * iter)
 {
 	avtab_state_t *state;
 
@@ -164,11 +164,11 @@ void *avtab_state_get_cur(qpol_iterator_t *iter)
 		errno = EINVAL;
 		return NULL;
 	}
-	state = (avtab_state_t*)iter->state;
+	state = (avtab_state_t *) iter->state;
 	return state->node;
 }
 
-int hash_state_next(qpol_iterator_t *iter)
+int hash_state_next(qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -177,7 +177,7 @@ int hash_state_next(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	hs = (hash_state_t*)iter->state;
+	hs = (hash_state_t *) iter->state;
 
 	if (hs->table == NULL || *(hs->table) == NULL || hs->bucket >= (*(hs->table))->size) {
 		errno = ERANGE;
@@ -200,7 +200,7 @@ int hash_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int ebitmap_state_next(qpol_iterator_t *iter)
+int ebitmap_state_next(qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
 
@@ -209,7 +209,7 @@ int ebitmap_state_next(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	es = (ebitmap_state_t*)iter->state;
+	es = (ebitmap_state_t *) iter->state;
 
 	if (es->cur >= es->bmap->highbit) {
 		errno = ERANGE;
@@ -223,7 +223,7 @@ int ebitmap_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int ocon_state_next(qpol_iterator_t *iter)
+int ocon_state_next(qpol_iterator_t * iter)
 {
 	ocon_state_t *os = NULL;
 
@@ -232,7 +232,7 @@ int ocon_state_next(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	os = (ocon_state_t*)iter->state;
+	os = (ocon_state_t *) iter->state;
 
 	if (os->cur == NULL) {
 		errno = ERANGE;
@@ -244,7 +244,7 @@ int ocon_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int avtab_state_next(qpol_iterator_t *iter)
+int avtab_state_next(qpol_iterator_t * iter)
 {
 	avtab_t *avtab;
 	avtab_state_t *state;
@@ -285,12 +285,12 @@ int avtab_state_next(qpol_iterator_t *iter)
 				}
 			} while (state->bucket < AVTAB_SIZE);
 		}
-	} while (state->bucket < AVTAB_SIZE && state->node ? !(state->rule_type_mask & state->node->key.specified):0);
+	} while (state->bucket < AVTAB_SIZE && state->node ? !(state->rule_type_mask & state->node->key.specified) : 0);
 
 	return STATUS_SUCCESS;
 }
 
-int hash_state_end(qpol_iterator_t *iter)
+int hash_state_end(qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -299,7 +299,7 @@ int hash_state_end(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	hs = (hash_state_t*)iter->state;
+	hs = (hash_state_t *) iter->state;
 
 	if (hs->table == NULL || *(hs->table) == NULL || (*(hs->table))->nel == 0 || hs->bucket >= (*(hs->table))->size)
 		return 1;
@@ -307,7 +307,7 @@ int hash_state_end(qpol_iterator_t *iter)
 	return 0;
 }
 
-int ebitmap_state_end(qpol_iterator_t *iter)
+int ebitmap_state_end(qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
 
@@ -316,7 +316,7 @@ int ebitmap_state_end(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	es = (ebitmap_state_t*)iter->state;
+	es = (ebitmap_state_t *) iter->state;
 
 	if (es->cur >= es->bmap->highbit)
 		return 1;
@@ -324,7 +324,7 @@ int ebitmap_state_end(qpol_iterator_t *iter)
 	return 0;
 }
 
-int ocon_state_end(qpol_iterator_t *iter)
+int ocon_state_end(qpol_iterator_t * iter)
 {
 	ocon_state_t *os = NULL;
 
@@ -333,7 +333,7 @@ int ocon_state_end(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	os = (ocon_state_t*)iter->state;
+	os = (ocon_state_t *) iter->state;
 
 	if (os->cur == NULL)
 		return 1;
@@ -341,7 +341,7 @@ int ocon_state_end(qpol_iterator_t *iter)
 	return 0;
 }
 
-int avtab_state_end(qpol_iterator_t *iter)
+int avtab_state_end(qpol_iterator_t * iter)
 {
 	avtab_state_t *state;
 	avtab_t *avtab;
@@ -357,7 +357,7 @@ int avtab_state_end(qpol_iterator_t *iter)
 	return 0;
 }
 
-size_t hash_state_size(qpol_iterator_t *iter)
+size_t hash_state_size(qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -366,12 +366,12 @@ size_t hash_state_size(qpol_iterator_t *iter)
 		return 0;
 	}
 
-	hs = (hash_state_t*)iter->state;
+	hs = (hash_state_t *) iter->state;
 
 	return (*(hs->table))->nel;
 }
 
-size_t ebitmap_state_size(qpol_iterator_t *iter)
+size_t ebitmap_state_size(qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
 	size_t count = 0, bit = 0;
@@ -382,7 +382,7 @@ size_t ebitmap_state_size(qpol_iterator_t *iter)
 		return 0;
 	}
 
-	es = (ebitmap_state_t*)iter->state;
+	es = (ebitmap_state_t *) iter->state;
 
 	ebitmap_for_each_bit(es->bmap, node, bit) {
 		count += ebitmap_get_bit(es->bmap, bit);
@@ -391,7 +391,7 @@ size_t ebitmap_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-size_t ocon_state_size(qpol_iterator_t *iter)
+size_t ocon_state_size(qpol_iterator_t * iter)
 {
 	ocon_state_t *os = NULL;
 	size_t count = 0;
@@ -402,7 +402,7 @@ size_t ocon_state_size(qpol_iterator_t *iter)
 		return 0;
 	}
 
-	os = (ocon_state_t*)iter->state;
+	os = (ocon_state_t *) iter->state;
 
 	for (ocon = os->head; ocon; ocon = ocon->next)
 		count++;
@@ -410,7 +410,7 @@ size_t ocon_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-size_t avtab_state_size(qpol_iterator_t *iter)
+size_t avtab_state_size(qpol_iterator_t * iter)
 {
 	avtab_state_t *state;
 	avtab_t *avtab;
@@ -445,7 +445,7 @@ size_t avtab_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-void qpol_iterator_destroy(qpol_iterator_t **iter)
+void qpol_iterator_destroy(qpol_iterator_t ** iter)
 {
 	if (iter == NULL || *iter == NULL)
 		return;
@@ -457,7 +457,7 @@ void qpol_iterator_destroy(qpol_iterator_t **iter)
 	*iter = NULL;
 }
 
-int qpol_iterator_get_item(qpol_iterator_t *iter, void **item)
+int qpol_iterator_get_item(qpol_iterator_t * iter, void **item)
 {
 	if (item != NULL)
 		*item = NULL;
@@ -474,7 +474,7 @@ int qpol_iterator_get_item(qpol_iterator_t *iter, void **item)
 	return STATUS_SUCCESS;
 }
 
-int qpol_iterator_next(qpol_iterator_t *iter)
+int qpol_iterator_next(qpol_iterator_t * iter)
 {
 	if (iter == NULL || iter->next == NULL) {
 		errno = EINVAL;
@@ -484,7 +484,7 @@ int qpol_iterator_next(qpol_iterator_t *iter)
 	return iter->next(iter);
 }
 
-int qpol_iterator_end(qpol_iterator_t *iter)
+int qpol_iterator_end(qpol_iterator_t * iter)
 {
 	if (iter == NULL || iter->end == NULL) {
 		errno = EINVAL;
@@ -494,7 +494,7 @@ int qpol_iterator_end(qpol_iterator_t *iter)
 	return iter->end(iter);
 }
 
-int qpol_iterator_get_size(qpol_iterator_t *iter, size_t *size)
+int qpol_iterator_get_size(qpol_iterator_t * iter, size_t * size)
 {
 	if (size != NULL)
 		*size = 0;
@@ -509,7 +509,7 @@ int qpol_iterator_get_size(qpol_iterator_t *iter, size_t *size)
 	return STATUS_SUCCESS;
 }
 
-void *ebitmap_state_get_cur_type(qpol_iterator_t *iter)
+void *ebitmap_state_get_cur_type(qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
 	policydb_t *db = NULL;
@@ -532,7 +532,7 @@ void *ebitmap_state_get_cur_type(qpol_iterator_t *iter)
 	return db->type_val_to_struct[es->cur];
 }
 
-void *ebitmap_state_get_cur_role(qpol_iterator_t *iter)
+void *ebitmap_state_get_cur_role(qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
 	policydb_t *db = NULL;
@@ -555,7 +555,7 @@ void *ebitmap_state_get_cur_role(qpol_iterator_t *iter)
 	return db->role_val_to_struct[es->cur];
 }
 
-void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter)
+void *ebitmap_state_get_cur_cat(qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
 	policydb_t *db = NULL;
@@ -590,7 +590,7 @@ void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter)
 
 void ebitmap_state_destroy(void *es)
 {
-	ebitmap_state_t *ies = (ebitmap_state_t*)es;
+	ebitmap_state_t *ies = (ebitmap_state_t *) es;
 
 	if (!es)
 		return;
@@ -600,23 +600,22 @@ void ebitmap_state_destroy(void *es)
 	free(ies);
 }
 
-int perm_state_end(qpol_iterator_t *iter)
+int perm_state_end(qpol_iterator_t * iter)
 {
 	perm_state_t *ps = NULL;
 	policydb_t *db = NULL;
 	unsigned int perm_max = 0;
 
-	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL ||
-		(db = qpol_iterator_policy(iter)) == NULL) {
+	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL || (db = qpol_iterator_policy(iter)) == NULL) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
 	/* permission max is number of permissions in the class which includes
 	 * the number of permissions in its common if it inherits one */
-	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim;
+	perm_max = db->class_val_to_struct[ps->obj_class_val - 1]->permissions.nprim;
 	if (perm_max > 32) {
-		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
+		errno = EDOM;	       /* perms set mask is a uint32_t cannot use more than 32 bits */
 		return STATUS_ERR;
 	}
 
@@ -626,7 +625,7 @@ int perm_state_end(qpol_iterator_t *iter)
 	return 0;
 }
 
-void *perm_state_get_cur(qpol_iterator_t *iter)
+void *perm_state_get_cur(qpol_iterator_t * iter)
 {
 	policydb_t *db = NULL;
 	class_datum_t *obj_class = NULL;
@@ -636,8 +635,7 @@ void *perm_state_get_cur(qpol_iterator_t *iter)
 	char *tmp = NULL;
 
 	if (iter == NULL || (db = qpol_iterator_policy(iter)) == NULL ||
-		(ps = (perm_state_t*)qpol_iterator_state(iter)) == NULL ||
-		perm_state_end(iter)) {
+	    (ps = (perm_state_t *) qpol_iterator_state(iter)) == NULL || perm_state_end(iter)) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -649,21 +647,21 @@ void *perm_state_get_cur(qpol_iterator_t *iter)
 	 * the number of permissions in its common if it inherits one */
 	perm_max = obj_class->permissions.nprim;
 	if (perm_max > 32) {
-		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
+		errno = EDOM;	       /* perms set mask is a uint32_t cannot use more than 32 bits */
 		return NULL;
 	}
 	if (ps->cur >= perm_max) {
 		errno = ERANGE;
 		return NULL;
 	}
-	if (!(ps->perm_set & 1<<(ps->cur))) { /* perm bit not set? */
+	if (!(ps->perm_set & 1 << (ps->cur))) {	/* perm bit not set? */
 		errno = EINVAL;
 		return NULL;
 	}
 
-	tmp = sepol_av_to_string(db, ps->obj_class_val, (sepol_access_vector_t) 1<<(ps->cur));
+	tmp = sepol_av_to_string(db, ps->obj_class_val, (sepol_access_vector_t) 1 << (ps->cur));
 	if (tmp) {
-		tmp++; /*sepol_av_to_string prepends a ' ' to the name */
+		tmp++;		       /*sepol_av_to_string prepends a ' ' to the name */
 		return strdup(tmp);
 	} else {
 		errno = EINVAL;
@@ -671,24 +669,23 @@ void *perm_state_get_cur(qpol_iterator_t *iter)
 	}
 }
 
-int perm_state_next(qpol_iterator_t *iter)
+int perm_state_next(qpol_iterator_t * iter)
 {
 	perm_state_t *ps = NULL;
 	policydb_t *db = NULL;
 	unsigned int perm_max = 0;
 
 	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL ||
-		(db = qpol_iterator_policy(iter)) == NULL ||
-		perm_state_end(iter)) {
+	    (db = qpol_iterator_policy(iter)) == NULL || perm_state_end(iter)) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
 	/* permission max is number of permissions in the class which includes
 	 * the number of permissions in its common if it inherits one */
-	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim;
+	perm_max = db->class_val_to_struct[ps->obj_class_val - 1]->permissions.nprim;
 	if (perm_max > 32) {
-		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
+		errno = EDOM;	       /* perms set mask is a uint32_t cannot use more than 32 bits */
 		return STATUS_ERR;
 	}
 
@@ -704,7 +701,7 @@ int perm_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-size_t perm_state_size(qpol_iterator_t *iter)
+size_t perm_state_size(qpol_iterator_t * iter)
 {
 	perm_state_t *ps = NULL;
 	policydb_t *db = NULL;
@@ -712,22 +709,21 @@ size_t perm_state_size(qpol_iterator_t *iter)
 	size_t i, count = 0;
 
 	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL ||
-		(db = qpol_iterator_policy(iter)) == NULL ||
-		perm_state_end(iter)) {
+	    (db = qpol_iterator_policy(iter)) == NULL || perm_state_end(iter)) {
 		errno = EINVAL;
-		return 0; /* as a size_t 0 is error */
+		return 0;	       /* as a size_t 0 is error */
 	}
 
 	/* permission max is number of permissions in the class which includes
 	 * the number of permissions in its common if it inherits one */
-	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim;
+	perm_max = db->class_val_to_struct[ps->obj_class_val - 1]->permissions.nprim;
 	if (perm_max > 32) {
-		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
-		return 0; /* as a size_t 0 is error */
+		errno = EDOM;	       /* perms set mask is a uint32_t cannot use more than 32 bits */
+		return 0;	       /* as a size_t 0 is error */
 	}
 
 	for (i = 0; i < perm_max; i++) {
-		if ( ps->perm_set & 1<<i)
+		if (ps->perm_set & 1 << i)
 			count++;
 	}
 

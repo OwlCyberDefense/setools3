@@ -32,10 +32,10 @@
 /* Many libapol queries act upon MLS contexts.  Use these defines to
  * specify set operations upon contexts.
  */
-#define APOL_QUERY_SUB	 0x02	  /* query is subset of rule range */
-#define APOL_QUERY_SUPER 0x04	  /* query is superset of rule range */
+#define APOL_QUERY_SUB	 0x02	       /* query is subset of rule range */
+#define APOL_QUERY_SUPER 0x04	       /* query is superset of rule range */
 #define APOL_QUERY_EXACT (APOL_QUERY_SUB|APOL_QUERY_SUPER)
-#define APOL_QUERY_INTERSECT 0x08 /* query overlaps any part of rule range */
+#define APOL_QUERY_INTERSECT 0x08      /* query overlaps any part of rule range */
 #define APOL_QUERY_FLAGS \
 	(APOL_QUERY_SUB | APOL_QUERY_SUPER | APOL_QUERY_EXACT | \
 	 APOL_QUERY_INTERSECT)

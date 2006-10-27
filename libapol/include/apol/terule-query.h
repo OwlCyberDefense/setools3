@@ -48,9 +48,7 @@ typedef struct apol_terule_query apol_terule_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_terule_by_query(apol_policy_t *p,
-				    apol_terule_query_t *t,
-				    apol_vector_t **v);
+extern int apol_get_terule_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_vector_t ** v);
 
 /**
  * Allocate and return a new terule query structure.  All fields are
@@ -69,7 +67,7 @@ extern apol_terule_query_t *apol_terule_query_create(void);
  *
  * @param t Reference to a terule query structure to destroy.
  */
-extern void apol_terule_query_destroy(apol_terule_query_t **t);
+extern void apol_terule_query_destroy(apol_terule_query_t ** t);
 
 /**
  * Set a terule query to search only certain type enforcement rules
@@ -84,8 +82,7 @@ extern void apol_terule_query_destroy(apol_terule_query_t **t);
  *
  * @return Always 0.
  */
-extern int apol_terule_query_set_rules(apol_policy_t *p,
-				       apol_terule_query_t *t, unsigned int rules);
+extern int apol_terule_query_set_rules(apol_policy_t * p, apol_terule_query_t * t, unsigned int rules);
 
 /**
  * Set a terule query to return rules whose source symbol matches
@@ -104,10 +101,7 @@ extern int apol_terule_query_set_rules(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_terule_query_set_source(apol_policy_t *p,
-					apol_terule_query_t *t,
-					const char *symbol,
-					int is_indirect);
+extern int apol_terule_query_set_source(apol_policy_t * p, apol_terule_query_t * t, const char *symbol, int is_indirect);
 
 /**
  * Set a terule query to return rules whose target symbol matches
@@ -126,10 +120,7 @@ extern int apol_terule_query_set_source(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_terule_query_set_target(apol_policy_t *p,
-					apol_terule_query_t *t,
-					const char *symbol,
-					int is_indirect);
+extern int apol_terule_query_set_target(apol_policy_t * p, apol_terule_query_t * t, const char *symbol, int is_indirect);
 
 /**
  * Set a terule query to return rules with this default type.  The
@@ -142,9 +133,7 @@ extern int apol_terule_query_set_target(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_terule_query_set_default(apol_policy_t *p,
-					 apol_terule_query_t *t,
-					 const char *type);
+extern int apol_terule_query_set_default(apol_policy_t * p, apol_terule_query_t * t, const char *type);
 
 /**
  * Set at terule query to return rules with this object (non-common)
@@ -158,9 +147,7 @@ extern int apol_terule_query_set_default(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_terule_query_append_class(apol_policy_t *p,
-					  apol_terule_query_t *t,
-					  const char *obj_class);
+extern int apol_terule_query_append_class(apol_policy_t * p, apol_terule_query_t * t, const char *obj_class);
 
 /**
  * Set a terule query to return rules that are in conditionals and
@@ -174,9 +161,7 @@ extern int apol_terule_query_append_class(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_terule_query_set_bool(apol_policy_t *p,
-				      apol_terule_query_t *t,
-				      const char *bool_name);
+extern int apol_terule_query_set_bool(apol_policy_t * p, apol_terule_query_t * t, const char *bool_name);
 
 /**
  * Set a terule query to search only enabled rules within the policy.
@@ -190,8 +175,7 @@ extern int apol_terule_query_set_bool(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_terule_query_set_enabled(apol_policy_t *p,
-					 apol_terule_query_t *t, int is_enabled);
+extern int apol_terule_query_set_enabled(apol_policy_t * p, apol_terule_query_t * t, int is_enabled);
 
 /**
  * Set a terule query to treat the source symbol as any.  That is, use
@@ -205,8 +189,7 @@ extern int apol_terule_query_set_enabled(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_terule_query_set_source_any(apol_policy_t *p,
-					    apol_terule_query_t *t, int is_any);
+extern int apol_terule_query_set_source_any(apol_policy_t * p, apol_terule_query_t * t, int is_any);
 
 /**
  * Set a terule query to use regular expression searching for source
@@ -220,8 +203,7 @@ extern int apol_terule_query_set_source_any(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_terule_query_set_regex(apol_policy_t *p,
-				       apol_terule_query_t *t, int is_regex);
+extern int apol_terule_query_set_regex(apol_policy_t * p, apol_terule_query_t * t, int is_regex);
 
 /**
  * Given a single terule, return a newly allocated vector of
@@ -235,8 +217,7 @@ extern int apol_terule_query_set_regex(apol_policy_t *p,
  * caller is responsible for calling apol_vector_destroy() afterwards,
  * passing NULL as the second parameter.
  */
-extern apol_vector_t *apol_terule_to_syn_terules(apol_policy_t *p,
-						 qpol_terule_t *rule);
+extern apol_vector_t *apol_terule_to_syn_terules(apol_policy_t * p, qpol_terule_t * rule);
 
 /**
  * Given a vector of terules (qpol_terule_t pointers), return a newly
@@ -252,8 +233,7 @@ extern apol_vector_t *apol_terule_to_syn_terules(apol_policy_t *p,
  * caller is responsible for calling apol_vector_destroy() afterwards,
  * passing NULL as the second parameter.
  */
-extern apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t *p,
-						      apol_vector_t *rules);
+extern apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t * p, apol_vector_t * rules);
 
 /**
  *  Render a terule to a string.
@@ -265,7 +245,7 @@ extern apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t *p,
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
-extern char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule);
+extern char *apol_terule_render(apol_policy_t * policy, qpol_terule_t * rule);
 
 /**
  *  Render a syntactic terule to a string.
@@ -277,6 +257,6 @@ extern char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule);
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
 */
-extern char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule);
+extern char *apol_syn_terule_render(apol_policy_t * policy, qpol_syn_terule_t * rule);
 
 #endif

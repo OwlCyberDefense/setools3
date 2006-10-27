@@ -43,16 +43,17 @@
 
 /* The unreachable_doms_data structure is used to hold the check specific
  *  private data of a module. */
-typedef struct unreachable_doms_data {
+typedef struct unreachable_doms_data
+{
 	char *ctx_file_path;
-        /* vector of strings, read from default contexts file */
-        apol_vector_t *ctx_vector;
+	/* vector of strings, read from default contexts file */
+	apol_vector_t *ctx_vector;
 } unreachable_doms_data_t;
 
 unreachable_doms_data_t *unreachable_doms_data_new(void);
 void unreachable_doms_data_free(void *data);
 
-int unreachable_doms_register(sechk_lib_t *lib);
-int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int unreachable_doms_register(sechk_lib_t * lib);
+int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int unreachable_doms_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);

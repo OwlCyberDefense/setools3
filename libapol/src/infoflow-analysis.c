@@ -50,13 +50,14 @@
 typedef struct apol_infoflow_node apol_infoflow_node_t;
 typedef struct apol_infoflow_edge apol_infoflow_edge_t;
 
-struct apol_infoflow_graph {
+struct apol_infoflow_graph
+{
 	/** vector of apol_infoflow_node_t */
 	apol_vector_t *nodes;
 	/** vector of apol_infoflow_edge_t */
 	apol_vector_t *edges;
-        unsigned int mode, direction;
-        regex_t *regex;
+	unsigned int mode, direction;
+	regex_t *regex;
 
 	/** vector of apol_infoflow_node_t, used for random restarts
 	 * for further transitive analysis */
@@ -70,7 +71,8 @@ struct apol_infoflow_graph {
 #endif
 };
 
-struct apol_infoflow_node {
+struct apol_infoflow_node
+{
 	qpol_type_t *type;
 	qpol_class_t *obj_class;
 	/** one of APOL_INFOFLOW_NODE_SOURCE or APOL_INFOFLOW_NODE_TARGET */
@@ -84,7 +86,8 @@ struct apol_infoflow_node {
 	int distance;
 };
 
-struct apol_infoflow_edge {
+struct apol_infoflow_edge
+{
 	/** vector of qpol_avrule_t, pointing into the policy */
 	apol_vector_t *rules;
 	/** pointer into a node within the graph */
@@ -106,20 +109,21 @@ struct apol_infoflow_edge {
  * you want to not appear in the results.  end_types lists the types
  * that you do want to appear.
  */
-struct apol_infoflow_analysis {
+struct apol_infoflow_analysis
+{
 	unsigned int mode, direction;
 	char *type, *result;
 	apol_vector_t *intermed, *class_perms;
 	int min_weight;
 };
 
-
 /**
  * The results of running an infoflow, either direct or transitive, is
  * a path from start_type to end_type.  The path consists of a vector
  * of intermediate steps.
  */
-struct apol_infoflow_result {
+struct apol_infoflow_result
+{
 	qpol_type_t *start_type, *end_type;
 	/** vector of apol_infoflow_step_t */
 	apol_vector_t *steps;
@@ -135,7 +139,8 @@ struct apol_infoflow_result {
  * original result's start_type.  Likewise the end_types will be the
  * same.
  */
-struct apol_infoflow_step {
+struct apol_infoflow_step
+{
 	qpol_type_t *start_type, *end_type;
 	/** vector of qpol_avrule_t */
 	apol_vector_t *rules;
@@ -166,12 +171,12 @@ static void apol_infoflow_step_free(void *step)
  *
  * @param g Transitive infoflow graph.
  */
-static void apol_infoflow_srand(apol_infoflow_graph_t *g)
+static void apol_infoflow_srand(apol_infoflow_graph_t * g)
 {
 #ifdef HAVE_RAND_R
-	g->seed = (int) time(NULL);
+	g->seed = (int)time(NULL);
 #else
-	srand((int) time(NULL));
+	srand((int)time(NULL));
 #endif
 }
 
@@ -185,7 +190,7 @@ static void apol_infoflow_srand(apol_infoflow_graph_t *g)
  *
  * @return Integer between 0 and RAND_MAX.
  */
-static int apol_infoflow_rand(apol_infoflow_graph_t *g)
+static int apol_infoflow_rand(apol_infoflow_graph_t * g)
 {
 #ifdef HAVE_RAND_R
 	return rand_r(&g->seed);
@@ -215,7 +220,8 @@ static void apol_infoflow_node_free(void *data)
 	}
 }
 
-struct apol_infoflow_node_key {
+struct apol_infoflow_node_key
+{
 	qpol_type_t *type;
 	qpol_class_t *obj_class;
 	int node_type;
@@ -234,10 +240,8 @@ struct apol_infoflow_node_key {
 static int apol_infoflow_node_compare(const void *a, const void *b __attribute__ ((unused)), void *data)
 {
 	apol_infoflow_node_t *node = (apol_infoflow_node_t *) a;
-	struct apol_infoflow_node_key *key = (struct apol_infoflow_node_key *) data;
-	if (node->type == key->type &&
-	    node->obj_class == key->obj_class &&
-	    node->node_type == key->node_type) {
+	struct apol_infoflow_node_key *key = (struct apol_infoflow_node_key *)data;
+	if (node->type == key->type && node->obj_class == key->obj_class && node->node_type == key->node_type) {
 		return 0;
 	}
 	return -1;
@@ -258,13 +262,11 @@ static int apol_infoflow_node_compare(const void *a, const void *b __attribute__
  * @return Pointer an allocated node within the infoflow graph, or
  * NULL upon error.
  */
-static apol_infoflow_node_t *apol_infoflow_graph_create_node(apol_policy_t *p,
-							     apol_infoflow_graph_t *g,
-							     qpol_type_t *type,
-							     qpol_class_t *obj_class,
-							     int node_type)
+static apol_infoflow_node_t *apol_infoflow_graph_create_node(apol_policy_t * p,
+							     apol_infoflow_graph_t * g,
+							     qpol_type_t * type, qpol_class_t * obj_class, int node_type)
 {
-	struct apol_infoflow_node_key key = {type, obj_class, node_type};
+	struct apol_infoflow_node_key key = { type, obj_class, node_type };
 	size_t i;
 	apol_infoflow_node_t *node = NULL;
 	if (apol_vector_get_index(g->nodes, NULL, apol_infoflow_node_compare, &key, &i) == 0) {
@@ -273,8 +275,7 @@ static apol_infoflow_node_t *apol_infoflow_graph_create_node(apol_policy_t *p,
 	}
 	if ((node = calloc(1, sizeof(*node))) == NULL ||
 	    (node->in_edges = apol_vector_create()) == NULL ||
-	    (node->out_edges = apol_vector_create()) == NULL ||
-            apol_vector_append(g->nodes, node) < 0) {
+	    (node->out_edges = apol_vector_create()) == NULL || apol_vector_append(g->nodes, node) < 0) {
 		apol_infoflow_node_free(node);
 		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
@@ -303,7 +304,8 @@ static void apol_infoflow_edge_free(void *data)
 	}
 }
 
-struct apol_infoflow_edge_key {
+struct apol_infoflow_edge_key
+{
 	apol_infoflow_node_t *start_node, *end_node;
 };
 
@@ -320,7 +322,7 @@ struct apol_infoflow_edge_key {
 static int apol_infoflow_edge_compare(const void *a, const void *b __attribute__ ((unused)), void *data)
 {
 	apol_infoflow_edge_t *edge = (apol_infoflow_edge_t *) a;
-	struct apol_infoflow_edge_key *key = (struct apol_infoflow_edge_key *) data;
+	struct apol_infoflow_edge_key *key = (struct apol_infoflow_edge_key *)data;
 	if (key->start_node != NULL && edge->start_node != key->start_node) {
 		return -1;
 	}
@@ -344,13 +346,12 @@ static int apol_infoflow_edge_compare(const void *a, const void *b __attribute__
  * @return Pointer an allocated node within the infoflow graph, or
  * NULL upon error.
  */
-static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t *p,
-							     apol_infoflow_graph_t *g,
-							     apol_infoflow_node_t *start_node,
-							     apol_infoflow_node_t *end_node,
-							     int len)
+static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t * p,
+							     apol_infoflow_graph_t * g,
+							     apol_infoflow_node_t * start_node,
+							     apol_infoflow_node_t * end_node, int len)
 {
-	struct apol_infoflow_edge_key key = {NULL, end_node};
+	struct apol_infoflow_edge_key key = { NULL, end_node };
 	size_t i;
 	apol_infoflow_edge_t *edge = NULL;
 	if (apol_vector_get_index(start_node->out_edges, NULL, apol_infoflow_edge_compare, &key, &i) == 0) {
@@ -361,8 +362,7 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t *p,
 		return edge;
 	}
 	if ((edge = calloc(1, sizeof(*edge))) == NULL ||
-	    (edge->rules = apol_vector_create()) == NULL ||
-	    apol_vector_append(g->edges, edge) < 0) {
+	    (edge->rules = apol_vector_create()) == NULL || apol_vector_append(g->edges, edge) < 0) {
 		apol_infoflow_edge_free(edge);
 		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
@@ -370,8 +370,7 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t *p,
 	edge->start_node = start_node;
 	edge->end_node = end_node;
 	edge->length = len;
-	if (apol_vector_append(start_node->out_edges, edge) < 0 ||
-	    apol_vector_append(end_node->in_edges, edge) < 0) {
+	if (apol_vector_append(start_node->out_edges, edge) < 0 || apol_vector_append(end_node->in_edges, edge) < 0) {
 		/* don't free the edge -- it is owned by the graph */
 		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
@@ -402,13 +401,9 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_graph_connect_nodes(apol_policy_t *p,
-					     apol_infoflow_graph_t *g,
-					     qpol_avrule_t *rule,
-					     int found_read,
-					     int read_len,
-					     int found_write,
-					     int write_len)
+static int apol_infoflow_graph_connect_nodes(apol_policy_t * p,
+					     apol_infoflow_graph_t * g,
+					     qpol_avrule_t * rule, int found_read, int read_len, int found_write, int write_len)
 {
 	qpol_type_t *src_type, *tgt_type;
 	qpol_class_t *obj_class;
@@ -417,8 +412,7 @@ static int apol_infoflow_graph_connect_nodes(apol_policy_t *p,
 	int retval = -1;
 
 	if (qpol_avrule_get_source_type(p->p, rule, &src_type) < 0 ||
-	    qpol_avrule_get_target_type(p->p, rule, &tgt_type) < 0 ||
-            qpol_avrule_get_object_class(p->p, rule, &obj_class) < 0) {
+	    qpol_avrule_get_target_type(p->p, rule, &tgt_type) < 0 || qpol_avrule_get_object_class(p->p, rule, &obj_class) < 0) {
 		goto cleanup;
 	}
 
@@ -447,7 +441,7 @@ static int apol_infoflow_graph_connect_nodes(apol_policy_t *p,
 		}
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -464,10 +458,7 @@ static int apol_infoflow_graph_connect_nodes(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
-					     apol_infoflow_graph_t *g,
-					     qpol_avrule_t *rule,
-					     int max_len)
+static int apol_infoflow_graph_create_avrule(apol_policy_t * p, apol_infoflow_graph_t * g, qpol_avrule_t * rule, int max_len)
 {
 	qpol_class_t *obj_class;
 	qpol_iterator_t *perm_iter = NULL;
@@ -476,16 +467,15 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
 	int read_len = INT_MAX, write_len = INT_MAX;
 	int retval = -1;
 	if (qpol_avrule_get_object_class(p->p, rule, &obj_class) < 0 ||
-	    qpol_class_get_name(p->p, obj_class, &obj_class_name) < 0 ||
-	    qpol_avrule_get_perm_iter(p->p, rule, &perm_iter) < 0) {
+	    qpol_class_get_name(p->p, obj_class, &obj_class_name) < 0 || qpol_avrule_get_perm_iter(p->p, rule, &perm_iter) < 0) {
 		goto cleanup;
 	}
 
 	/* find read or write flows for each object class/perm pair */
-	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+	for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
 		int perm_map, perm_weight, len;
 
-		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		if (qpol_iterator_get_item(perm_iter, (void **)&perm_name) < 0) {
 			goto cleanup;
 		}
 		if (apol_permmap_get(p, obj_class_name, perm_name, &perm_map, &perm_weight) < 0) {
@@ -499,8 +489,7 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
 		len = APOL_PERMMAP_MAX_WEIGHT - perm_weight + 1;
 		if (len < APOL_PERMMAP_MIN_WEIGHT) {
 			len = APOL_PERMMAP_MIN_WEIGHT;
-		}
-		else if (len > APOL_PERMMAP_MAX_WEIGHT) {
+		} else if (len > APOL_PERMMAP_MAX_WEIGHT) {
 			len = APOL_PERMMAP_MAX_WEIGHT;
 		}
 		if (perm_map & APOL_PERMMAP_READ) {
@@ -527,7 +516,7 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&perm_iter);
 	return retval;
 }
@@ -542,8 +531,8 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
  *
  * @return Vector of qpol_type_t pointers, or NULL on error.
  */
-static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t *p,
-								apol_vector_t *v) {
+static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t * p, apol_vector_t * v)
+{
 	apol_vector_t *types = NULL, *expanded_types = NULL;
 	size_t i;
 	char *s;
@@ -553,7 +542,7 @@ static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t *p
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		s = (char *) apol_vector_get_element(v, i);
+		s = (char *)apol_vector_get_element(v, i);
 		expanded_types = apol_query_create_candidate_type_list(p, s, 0, 1);
 		if (expanded_types == NULL) {
 			goto cleanup;
@@ -566,7 +555,7 @@ static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t *p
 	}
 	apol_vector_sort_uniquify(types, NULL, NULL, NULL);
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&expanded_types, NULL);
 	if (retval != 0) {
 		apol_vector_destroy(&types, NULL);
@@ -586,9 +575,7 @@ static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t *p
  *
  * @return 1 if rule matches, 0 if not, < 0 on error.
  */
-static int apol_infoflow_graph_check_types(apol_policy_t *p,
-					   qpol_avrule_t *rule,
-					   apol_vector_t *types)
+static int apol_infoflow_graph_check_types(apol_policy_t * p, qpol_avrule_t * rule, apol_vector_t * types)
 {
 	qpol_type_t *source, *target;
 	size_t i;
@@ -597,17 +584,15 @@ static int apol_infoflow_graph_check_types(apol_policy_t *p,
 		retval = 1;
 		goto cleanup;
 	}
-	if (qpol_avrule_get_source_type(p->p, rule, &source) < 0 ||
-	    qpol_avrule_get_target_type(p->p, rule, &target) < 0) {
+	if (qpol_avrule_get_source_type(p->p, rule, &source) < 0 || qpol_avrule_get_target_type(p->p, rule, &target) < 0) {
 		goto cleanup;
 	}
-	if (apol_vector_get_index(types, source, NULL, NULL, &i) < 0 ||
-	    apol_vector_get_index(types, target, NULL, NULL, &i) < 0) {
+	if (apol_vector_get_index(types, source, NULL, NULL, &i) < 0 || apol_vector_get_index(types, target, NULL, NULL, &i) < 0) {
 		retval = 0;
 		goto cleanup;
 	}
 	retval = 1;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -624,9 +609,7 @@ static int apol_infoflow_graph_check_types(apol_policy_t *p,
  *
  * @return 1 if rule matches, 0 if not, < 0 on error.
  */
-static int apol_infoflow_graph_check_class_perms(apol_policy_t *p,
-						 qpol_avrule_t *rule,
-						 apol_vector_t *class_perms)
+static int apol_infoflow_graph_check_class_perms(apol_policy_t * p, qpol_avrule_t * rule, apol_vector_t * class_perms)
 {
 	qpol_class_t *obj_class;
 	char *obj_name, *perm;
@@ -640,8 +623,7 @@ static int apol_infoflow_graph_check_class_perms(apol_policy_t *p,
 		retval = 1;
 		goto cleanup;
 	}
-	if (qpol_avrule_get_object_class(p->p, rule, &obj_class) < 0 ||
-	    qpol_class_get_name(p->p, obj_class, &obj_name) < 0) {
+	if (qpol_avrule_get_object_class(p->p, rule, &obj_class) < 0 || qpol_class_get_name(p->p, obj_class, &obj_name) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(class_perms); i++) {
@@ -652,14 +634,14 @@ static int apol_infoflow_graph_check_class_perms(apol_policy_t *p,
 		}
 	}
 	if (i >= apol_vector_get_size(class_perms)) {
-		retval = 0;  /* no matching class */
+		retval = 0;	       /* no matching class */
 		goto cleanup;
 	}
-        if (qpol_avrule_get_perm_iter(p->p, rule, &iter) < 0) {
+	if (qpol_avrule_get_perm_iter(p->p, rule, &iter) < 0) {
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &perm) < 0) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&perm) < 0) {
 			goto cleanup;
 		}
 		if (apol_vector_get_index(obj_perm_v, perm, apol_str_strcmp, NULL, &i) == 0) {
@@ -669,8 +651,8 @@ static int apol_infoflow_graph_check_class_perms(apol_policy_t *p,
 		}
 		free(perm);
 	}
-	retval = 0;  /* no matching perm */
- cleanup:
+	retval = 0;		       /* no matching perm */
+      cleanup:
 	qpol_iterator_destroy(&iter);
 	return retval;
 }
@@ -688,9 +670,7 @@ static int apol_infoflow_graph_check_class_perms(apol_policy_t *p,
  * @return 0 if the graph was created, < 0 on error.  Upon error *g
  * will be set to NULL.
  */
-static int apol_infoflow_graph_create(apol_policy_t *p,
-				      apol_infoflow_analysis_t *ia,
-				      apol_infoflow_graph_t **g)
+static int apol_infoflow_graph_create(apol_policy_t * p, apol_infoflow_analysis_t * ia, apol_infoflow_graph_t ** g)
 {
 	apol_vector_t *types = NULL;
 	qpol_iterator_t *iter = NULL;
@@ -708,16 +688,14 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 	}
 
 	if ((*g = calloc(1, sizeof(**g))) == NULL ||
-	    ((*g)->nodes = apol_vector_create()) == NULL ||
-	    ((*g)->edges = apol_vector_create()) == NULL) {
+	    ((*g)->nodes = apol_vector_create()) == NULL || ((*g)->edges = apol_vector_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	(*g)->mode = ia->mode;
 	(*g)->direction = ia->direction;
 	if (ia->result != NULL && ia->result[0] != '\0') {
-		if (((*g)->regex = malloc(sizeof(regex_t))) == NULL ||
-		    regcomp((*g)->regex, ia->result, REG_EXTENDED | REG_NOSUB)) {
+		if (((*g)->regex = malloc(sizeof(regex_t))) == NULL || regcomp((*g)->regex, ia->result, REG_EXTENDED | REG_NOSUB)) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -726,23 +704,21 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 		goto cleanup;
 	}
 
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_avrule_t *rule;
-		if (qpol_iterator_get_item(iter, (void **) &rule) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&rule) < 0) {
 			goto cleanup;
 		}
 		compval = apol_infoflow_graph_check_types(p, rule, types);
 		if (compval < 0) {
 			goto cleanup;
-		}
-		else if (compval == 0) {
+		} else if (compval == 0) {
 			continue;
 		}
 		compval = apol_infoflow_graph_check_class_perms(p, rule, ia->class_perms);
 		if (compval < 0) {
 			goto cleanup;
-		}
-		else if (compval == 0) {
+		} else if (compval == 0) {
 			continue;
 		}
 		if (apol_infoflow_graph_create_avrule(p, *g, rule, max_len) < 0) {
@@ -751,7 +727,7 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&types, NULL);
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
@@ -761,7 +737,7 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 	return retval;
 }
 
-void apol_infoflow_graph_destroy(apol_infoflow_graph_t **flow)
+void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** flow)
 {
 	if (*flow != NULL) {
 		apol_vector_destroy(&(*flow)->nodes, apol_infoflow_node_free);
@@ -788,10 +764,7 @@ void apol_infoflow_graph_destroy(apol_infoflow_graph_t **flow)
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_graph_get_nodes_for_type(apol_policy_t *p,
-						  apol_infoflow_graph_t *g,
-						  const char *type,
-						  apol_vector_t *v)
+static int apol_infoflow_graph_get_nodes_for_type(apol_policy_t * p, apol_infoflow_graph_t * g, const char *type, apol_vector_t * v)
 {
 	size_t i, j;
 	apol_vector_t *cand_list = NULL;
@@ -802,13 +775,12 @@ static int apol_infoflow_graph_get_nodes_for_type(apol_policy_t *p,
 	for (i = 0; i < apol_vector_get_size(g->nodes); i++) {
 		apol_infoflow_node_t *node;
 		node = (apol_infoflow_node_t *) apol_vector_get_element(g->nodes, i);
-		if (apol_vector_get_index(cand_list, node->type, NULL, NULL, &j) == 0 &&
-		    apol_vector_append(v, node) < 0) {
+		if (apol_vector_get_index(cand_list, node->type, NULL, NULL, &j) == 0 && apol_vector_append(v, node) < 0) {
 			goto cleanup;
 		}
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&cand_list, NULL);
 	return retval;
 }
@@ -826,10 +798,8 @@ static int apol_infoflow_graph_get_nodes_for_type(apol_policy_t *p,
  *
  * @return A usable infoflow result object, or NULL upon error.
  */
-static apol_infoflow_result_t *apol_infoflow_direct_get_result(apol_policy_t *p,
-							       apol_vector_t *v,
-							       qpol_type_t *start_type,
-							       qpol_type_t *end_type)
+static apol_infoflow_result_t *apol_infoflow_direct_get_result(apol_policy_t * p,
+							       apol_vector_t * v, qpol_type_t * start_type, qpol_type_t * end_type)
 {
 	size_t i;
 	apol_infoflow_result_t *r;
@@ -839,9 +809,7 @@ static apol_infoflow_result_t *apol_infoflow_direct_get_result(apol_policy_t *p,
 			return r;
 		}
 	}
-	if ((r = calloc(1, sizeof(*r))) == NULL ||
-	    (r->steps = apol_vector_create()) == NULL ||
-	    apol_vector_append(v, r) < 0) {
+	if ((r = calloc(1, sizeof(*r))) == NULL || (r->steps = apol_vector_create()) == NULL || apol_vector_append(v, r) < 0) {
 		ERR(p, "%s", strerror(ENOMEM));
 		apol_infoflow_result_free(r);
 		return NULL;
@@ -862,16 +830,13 @@ static apol_infoflow_result_t *apol_infoflow_direct_get_result(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_direct_define(apol_policy_t *p,
-				       apol_infoflow_edge_t *edge,
-				       unsigned int direction,
-				       apol_infoflow_result_t *result)
+static int apol_infoflow_direct_define(apol_policy_t * p,
+				       apol_infoflow_edge_t * edge, unsigned int direction, apol_infoflow_result_t * result)
 {
 	apol_infoflow_step_t *step = NULL;
 	if (apol_vector_get_size(result->steps) == 0) {
 		if ((step = calloc(1, sizeof(*step))) == NULL ||
-		    (step->rules = apol_vector_create()) == NULL ||
-		    apol_vector_append(result->steps, step) < 0) {
+		    (step->rules = apol_vector_create()) == NULL || apol_vector_append(result->steps, step) < 0) {
 			apol_infoflow_step_free(step);
 			ERR(p, "%s", strerror(ENOMEM));
 			return -1;
@@ -879,8 +844,7 @@ static int apol_infoflow_direct_define(apol_policy_t *p,
 		step->start_type = result->start_type;
 		step->end_type = result->end_type;
 		step->weight = 0;
-	}
-	else {
+	} else {
 		step = (apol_infoflow_step_t *) apol_vector_get_element(result->steps, 0);
 	}
 	if (apol_vector_cat(step->rules, edge->rules) < 0) {
@@ -905,9 +869,7 @@ static int apol_infoflow_direct_define(apol_policy_t *p,
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-static int apol_infoflow_graph_compare(apol_policy_t *p,
-				       apol_infoflow_graph_t *g,
-				       qpol_type_t *type)
+static int apol_infoflow_graph_compare(apol_policy_t * p, apol_infoflow_graph_t * g, qpol_type_t * type)
 {
 	char *type_name;
 	qpol_iterator_t *alias_iter = NULL;
@@ -925,9 +887,9 @@ static int apol_infoflow_graph_compare(apol_policy_t *p,
 	if (qpol_type_get_alias_iter(p->p, type, &alias_iter) < 0) {
 		return -1;
 	}
-	for ( ; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
+	for (; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
 		char *iter_name;
-		if (qpol_iterator_get_item(alias_iter, (void **) &iter_name) < 0) {
+		if (qpol_iterator_get_item(alias_iter, (void **)&iter_name) < 0) {
 			compval = -1;
 			break;
 		}
@@ -954,17 +916,14 @@ static int apol_infoflow_graph_compare(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_results_check_both(apol_policy_t *p,
-					    apol_vector_t *working_results,
-					    unsigned int direction,
-					    apol_vector_t *results)
+static int apol_infoflow_results_check_both(apol_policy_t * p,
+					    apol_vector_t * working_results, unsigned int direction, apol_vector_t * results)
 {
 	size_t i;
 	apol_infoflow_result_t *r, *new_r;
 	for (i = 0; i < apol_vector_get_size(working_results); i++) {
 		r = (apol_infoflow_result_t *) apol_vector_get_element(working_results, i);
-		if (direction != APOL_INFOFLOW_BOTH ||
-		    r->direction == APOL_INFOFLOW_BOTH) {
+		if (direction != APOL_INFOFLOW_BOTH || r->direction == APOL_INFOFLOW_BOTH) {
 			if ((new_r = calloc(1, sizeof(*new_r))) == NULL) {
 				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
@@ -1001,12 +960,10 @@ static int apol_infoflow_results_check_both(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_analysis_direct_expand(apol_policy_t *p,
-						apol_infoflow_graph_t *g,
-						apol_infoflow_node_t *start_node,
-						apol_infoflow_edge_t *edge,
-						unsigned int flow_dir,
-						apol_vector_t *results)
+static int apol_infoflow_analysis_direct_expand(apol_policy_t * p,
+						apol_infoflow_graph_t * g,
+						apol_infoflow_node_t * start_node,
+						apol_infoflow_edge_t * edge, unsigned int flow_dir, apol_vector_t * results)
 {
 	apol_infoflow_node_t *end_node;
 	unsigned char isattr;
@@ -1017,8 +974,7 @@ static int apol_infoflow_analysis_direct_expand(apol_policy_t *p,
 
 	if (edge->start_node == start_node) {
 		end_node = edge->end_node;
-	}
-	else {
+	} else {
 		end_node = edge->start_node;
 	}
 	if (qpol_type_get_isattr(p->p, end_node->type, &isattr) < 0) {
@@ -1036,19 +992,17 @@ static int apol_infoflow_analysis_direct_expand(apol_policy_t *p,
 	/* always do this loop once, either if end_node is an attribute or not */
 	do {
 		if (isattr) {
-			if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
+			if (qpol_iterator_get_item(iter, (void **)&type) < 0) {
 				goto cleanup;
 			}
 			qpol_iterator_next(iter);
-		}
-		else {
+		} else {
 			type = end_node->type;
 		}
 		compval = apol_infoflow_graph_compare(p, g, type);
 		if (compval < 0) {
 			goto cleanup;
-		}
-		else if (compval == 0) {
+		} else if (compval == 0) {
 			continue;
 		}
 		if ((r = apol_infoflow_direct_get_result(p, results, start_node->type, type)) == NULL ||
@@ -1058,7 +1012,7 @@ static int apol_infoflow_analysis_direct_expand(apol_policy_t *p,
 	} while (isattr && !qpol_iterator_end(iter));
 
 	retval = 0;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&iter);
 	return retval;
 }
@@ -1076,10 +1030,8 @@ static int apol_infoflow_analysis_direct_expand(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_analysis_direct(apol_policy_t *p,
-					 apol_infoflow_graph_t *g,
-					 const char *start_type,
-					 apol_vector_t *results)
+static int apol_infoflow_analysis_direct(apol_policy_t * p,
+					 apol_infoflow_graph_t * g, const char *start_type, apol_vector_t * results)
 {
 	apol_vector_t *nodes = NULL;
 	size_t i, j;
@@ -1088,8 +1040,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 	apol_vector_t *working_results = NULL;
 	int retval = -1;
 
-	if ((nodes = apol_vector_create()) == NULL ||
-	    (working_results = apol_vector_create()) == NULL) {
+	if ((nodes = apol_vector_create()) == NULL || (working_results = apol_vector_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -1097,9 +1048,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 		goto cleanup;
 	}
 
-	if (g->direction == APOL_INFOFLOW_IN ||
-	    g->direction == APOL_INFOFLOW_EITHER ||
-	    g->direction == APOL_INFOFLOW_BOTH) {
+	if (g->direction == APOL_INFOFLOW_IN || g->direction == APOL_INFOFLOW_EITHER || g->direction == APOL_INFOFLOW_BOTH) {
 		for (i = 0; i < apol_vector_get_size(nodes); i++) {
 			node = (apol_infoflow_node_t *) apol_vector_get_element(nodes, i);
 			for (j = 0; j < apol_vector_get_size(node->in_edges); j++) {
@@ -1110,9 +1059,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 			}
 		}
 	}
-	if (g->direction == APOL_INFOFLOW_OUT ||
-	    g->direction == APOL_INFOFLOW_EITHER ||
-	    g->direction == APOL_INFOFLOW_BOTH) {
+	if (g->direction == APOL_INFOFLOW_OUT || g->direction == APOL_INFOFLOW_EITHER || g->direction == APOL_INFOFLOW_BOTH) {
 		for (i = 0; i < apol_vector_get_size(nodes); i++) {
 			node = (apol_infoflow_node_t *) apol_vector_get_element(nodes, i);
 			for (j = 0; j < apol_vector_get_size(node->out_edges); j++) {
@@ -1129,12 +1076,11 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&nodes, NULL);
 	apol_vector_destroy(&working_results, apol_infoflow_result_free);
 	return retval;
 }
-
 
 /*************** infoflow graph transitive analysis routines ***************/
 
@@ -1150,10 +1096,8 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_graph_trans_init(apol_policy_t *p,
-					  apol_infoflow_graph_t *g,
-					  apol_infoflow_node_t *start,
-					  apol_queue_t *q)
+static int apol_infoflow_graph_trans_init(apol_policy_t * p,
+					  apol_infoflow_graph_t * g, apol_infoflow_node_t * start, apol_queue_t * q)
 {
 	size_t i;
 	apol_infoflow_node_t *node;
@@ -1167,8 +1111,7 @@ static int apol_infoflow_graph_trans_init(apol_policy_t *p,
 				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
 			}
-		}
-		else {
+		} else {
 			node->color = APOL_INFOFLOW_COLOR_WHITE;
 			node->distance = INT_MAX;
 		}
@@ -1188,10 +1131,8 @@ static int apol_infoflow_graph_trans_init(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_graph_trans_further_init(apol_policy_t *p,
-						  apol_infoflow_graph_t *g,
-						  apol_infoflow_node_t *start,
-						  apol_queue_t *q)
+static int apol_infoflow_graph_trans_further_init(apol_policy_t * p,
+						  apol_infoflow_graph_t * g, apol_infoflow_node_t * start, apol_queue_t * q)
 {
 	size_t i;
 	apol_infoflow_node_t *node;
@@ -1205,8 +1146,7 @@ static int apol_infoflow_graph_trans_further_init(apol_policy_t *p,
 				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
 			}
-		}
-		else {
+		} else {
 			node->color = APOL_INFOFLOW_COLOR_WHITE;
 			node->distance = -1;
 		}
@@ -1231,11 +1171,9 @@ static int apol_infoflow_graph_trans_further_init(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_trans_path(apol_policy_t *p,
-				    apol_infoflow_graph_t *g,
-				    apol_infoflow_node_t *start_node,
-				    apol_infoflow_node_t *end_node,
-				    apol_vector_t **path)
+static int apol_infoflow_trans_path(apol_policy_t * p,
+				    apol_infoflow_graph_t * g,
+				    apol_infoflow_node_t * start_node, apol_infoflow_node_t * end_node, apol_vector_t ** path)
 {
 	int retval = -1;
 	apol_infoflow_node_t *next_node = end_node;
@@ -1251,15 +1189,14 @@ static int apol_infoflow_trans_path(apol_policy_t *p,
 		if (next_node == start_node) {
 			break;
 		}
-		if (next_node == NULL ||
-		    apol_vector_get_size(*path) >= apol_vector_get_size(g->nodes)) {
+		if (next_node == NULL || apol_vector_get_size(*path) >= apol_vector_get_size(g->nodes)) {
 			ERR(p, "%s", "Infinite loop in trans_path.");
 			goto cleanup;
 		}
 		next_node = next_node->parent;
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(path, NULL);
 	}
@@ -1277,10 +1214,9 @@ static int apol_infoflow_trans_path(apol_policy_t *p,
  *
  * @return Edge connecting node to next_node, or NULL on error.
  */
-static apol_infoflow_edge_t *apol_infoflow_trans_find_edge(apol_policy_t *p,
-							   apol_infoflow_graph_t *g,
-							   apol_infoflow_node_t *node,
-							   apol_infoflow_node_t *next_node)
+static apol_infoflow_edge_t *apol_infoflow_trans_find_edge(apol_policy_t * p,
+							   apol_infoflow_graph_t * g,
+							   apol_infoflow_node_t * node, apol_infoflow_node_t * next_node)
 {
 	apol_vector_t *v;
 	apol_infoflow_edge_t *edge;
@@ -1288,21 +1224,17 @@ static apol_infoflow_edge_t *apol_infoflow_trans_find_edge(apol_policy_t *p,
 
 	if (g->direction == APOL_INFOFLOW_OUT) {
 		v = node->out_edges;
-	}
-	else {
+	} else {
 		v = node->in_edges;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		edge = (apol_infoflow_edge_t *) apol_vector_get_element(v, i);
 		if (g->direction == APOL_INFOFLOW_OUT) {
-			if (edge->start_node == node &&
-			    edge->end_node == next_node) {
+			if (edge->start_node == node && edge->end_node == next_node) {
 				return edge;
 			}
-		}
-		else {
-			if (edge->end_node == node &&
-			    edge->start_node == next_node) {
+		} else {
+			if (edge->end_node == node && edge->start_node == next_node) {
 				return edge;
 			}
 
@@ -1329,11 +1261,9 @@ static apol_infoflow_edge_t *apol_infoflow_trans_find_edge(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_trans_define(apol_policy_t *p,
-                                      apol_infoflow_graph_t *g,
-                                      apol_vector_t *path,
-				      qpol_type_t *end_type,
-                                      apol_infoflow_result_t **result)
+static int apol_infoflow_trans_define(apol_policy_t * p,
+				      apol_infoflow_graph_t * g,
+				      apol_vector_t * path, qpol_type_t * end_type, apol_infoflow_result_t ** result)
 {
 	apol_infoflow_step_t *step = NULL;
 	size_t path_len = apol_vector_get_size(path), i;
@@ -1353,14 +1283,14 @@ static int apol_infoflow_trans_define(apol_policy_t *p,
 	node = (apol_infoflow_node_t *) apol_vector_get_element(path, path_len - 1);
 	(*result)->start_type = node->type;
 	(*result)->direction = g->direction;
-        for (i = path_len - 1; i > 0; i--, node = next_node) {
-                next_node = (apol_infoflow_node_t *) apol_vector_get_element(path, i - 1);
-                edge = apol_infoflow_trans_find_edge(p, g, node, next_node);
-                if (edge == NULL) {
-                        goto cleanup;
-                }
-                length += edge->length;
-                if ((step = calloc(1, sizeof(*step))) == NULL ||
+	for (i = path_len - 1; i > 0; i--, node = next_node) {
+		next_node = (apol_infoflow_node_t *) apol_vector_get_element(path, i - 1);
+		edge = apol_infoflow_trans_find_edge(p, g, node, next_node);
+		if (edge == NULL) {
+			goto cleanup;
+		}
+		length += edge->length;
+		if ((step = calloc(1, sizeof(*step))) == NULL ||
 		    (step->rules = apol_vector_create_from_vector(edge->rules)) == NULL ||
 		    apol_vector_append((*result)->steps, step) < 0) {
 			apol_infoflow_step_free(step);
@@ -1373,7 +1303,7 @@ static int apol_infoflow_trans_define(apol_policy_t *p,
 	}
 	(*result)->length = length;
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_infoflow_result_free(*result);
 		*result = NULL;
@@ -1392,18 +1322,16 @@ static int apol_infoflow_trans_define(apol_policy_t *p,
  *
  * @return 0 if the steps are the same, non-zero if different.
  */
-static int apol_infoflow_trans_step_comp(const void *a,
-					 const void *b,
-					 void *data __attribute__ ((unused)))
+static int apol_infoflow_trans_step_comp(const void *a, const void *b, void *data __attribute__ ((unused)))
 {
-	const apol_infoflow_step_t *step_a = (const apol_infoflow_step_t *) a;
-	const apol_infoflow_step_t *step_b = (const apol_infoflow_step_t *) b;
+	const apol_infoflow_step_t *step_a = (const apol_infoflow_step_t *)a;
+	const apol_infoflow_step_t *step_b = (const apol_infoflow_step_t *)b;
 	size_t i;
 	if (step_a->start_type != step_b->start_type) {
-		return (int) ((char *) step_a->start_type - (char *) step_b->start_type);
+		return (int)((char *)step_a->start_type - (char *)step_b->start_type);
 	}
 	if (step_a->end_type != step_b->end_type) {
-		return (int) ((char *) step_a->end_type - (char *) step_b->end_type);
+		return (int)((char *)step_a->end_type - (char *)step_b->end_type);
 	}
 	return apol_vector_compare(step_a->rules, step_b->rules, NULL, NULL, &i);
 }
@@ -1423,11 +1351,9 @@ static int apol_infoflow_trans_step_comp(const void *a,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_trans_append(apol_policy_t *p,
-				      apol_infoflow_graph_t *g,
-				      apol_vector_t *path,
-				      qpol_type_t *end_type,
-				      apol_vector_t *results)
+static int apol_infoflow_trans_append(apol_policy_t * p,
+				      apol_infoflow_graph_t * g,
+				      apol_vector_t * path, qpol_type_t * end_type, apol_vector_t * results)
 {
 	apol_infoflow_result_t *new_r = NULL, *r;
 	size_t i, j;
@@ -1441,13 +1367,10 @@ static int apol_infoflow_trans_append(apol_policy_t *p,
 	for (i = 0; i < apol_vector_get_size(results); i++) {
 		r = (apol_infoflow_result_t *) apol_vector_get_element(results, i);
 		if (r->end_type != end_type ||
-		    r->direction != new_r->direction ||
-		    apol_vector_get_size(r->steps) != apol_vector_get_size(new_r->steps)) {
+		    r->direction != new_r->direction || apol_vector_get_size(r->steps) != apol_vector_get_size(new_r->steps)) {
 			break;
 		}
-		compval = apol_vector_compare(r->steps, new_r->steps,
-					      apol_infoflow_trans_step_comp, NULL,
-					      &j);
+		compval = apol_vector_compare(r->steps, new_r->steps, apol_infoflow_trans_step_comp, NULL, &j);
 		/* found a dup TODO - make certain all of the object
 		 * class / rules are kept */
 		if (compval == 0) {
@@ -1463,7 +1386,7 @@ static int apol_infoflow_trans_append(apol_policy_t *p,
 		goto cleanup;
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_infoflow_result_free(new_r);
 	}
@@ -1487,16 +1410,15 @@ static int apol_infoflow_trans_append(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_analysis_trans_expand(apol_policy_t *p,
-                                               apol_infoflow_graph_t *g,
-                                               apol_infoflow_node_t *start_node,
-                                               apol_infoflow_node_t *end_node,
-                                               apol_vector_t *results)
+static int apol_infoflow_analysis_trans_expand(apol_policy_t * p,
+					       apol_infoflow_graph_t * g,
+					       apol_infoflow_node_t * start_node,
+					       apol_infoflow_node_t * end_node, apol_vector_t * results)
 {
 	unsigned char isattr;
 	qpol_iterator_t *iter = NULL;
 	qpol_type_t *type;
-        apol_vector_t *path = NULL;
+	apol_vector_t *path = NULL;
 	int retval = -1, compval;
 
 	if (qpol_type_get_isattr(p->p, end_node->type, &isattr) < 0) {
@@ -1514,22 +1436,20 @@ static int apol_infoflow_analysis_trans_expand(apol_policy_t *p,
 	/* always do this loop once, either if end_node is an attribute or not */
 	do {
 		if (isattr) {
-			if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
+			if (qpol_iterator_get_item(iter, (void **)&type) < 0) {
 				goto cleanup;
 			}
 			qpol_iterator_next(iter);
-		}
-		else {
+		} else {
 			type = end_node->type;
 		}
-                if (start_node->type == type) {
-                        continue;
-                }
+		if (start_node->type == type) {
+			continue;
+		}
 		compval = apol_infoflow_graph_compare(p, g, type);
 		if (compval < 0) {
 			goto cleanup;
-		}
-		else if (compval == 0) {
+		} else if (compval == 0) {
 			continue;
 		}
 		if (apol_infoflow_trans_path(p, g, start_node, end_node, &path) < 0 ||
@@ -1540,7 +1460,7 @@ static int apol_infoflow_analysis_trans_expand(apol_policy_t *p,
 	} while (isattr && !qpol_iterator_end(iter));
 
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&path, NULL);
 	qpol_iterator_destroy(&iter);
 	return retval;
@@ -1578,10 +1498,9 @@ static int apol_infoflow_analysis_trans_expand(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
-						      apol_infoflow_graph_t *g,
-						      apol_infoflow_node_t *start,
-						      apol_vector_t *results)
+static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t * p,
+						      apol_infoflow_graph_t * g,
+						      apol_infoflow_node_t * start, apol_vector_t * results)
 {
 	apol_vector_t *edge_list;
 	apol_queue_t *queue = NULL;
@@ -1602,16 +1521,14 @@ static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
 		cur_node->color = APOL_INFOFLOW_COLOR_GREY;
 		if (g->direction == APOL_INFOFLOW_OUT) {
 			edge_list = cur_node->out_edges;
-		}
-		else {
+		} else {
 			edge_list = cur_node->in_edges;
 		}
 		for (i = 0; i < apol_vector_get_size(edge_list); i++) {
 			edge = (apol_infoflow_edge_t *) apol_vector_get_element(edge_list, i);
 			if (g->direction == APOL_INFOFLOW_OUT) {
 				node = edge->end_node;
-			}
-			else {
+			} else {
 				node = edge->start_node;
 			}
 			if (node == start) {
@@ -1632,8 +1549,7 @@ static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
 							ERR(p, "%s", strerror(ENOMEM));
 							goto cleanup;
 						}
-					}
-					else {
+					} else {
 						if (apol_queue_insert(queue, node) < 0) {
 							ERR(p, "%s", strerror(ENOMEM));
 							goto cleanup;
@@ -1657,7 +1573,7 @@ static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_queue_destroy(&queue);
 	return retval;
 }
@@ -1675,10 +1591,8 @@ static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_analysis_trans(apol_policy_t *p,
-					apol_infoflow_graph_t *g,
-					const char *start_type,
-					apol_vector_t *results)
+static int apol_infoflow_analysis_trans(apol_policy_t * p,
+					apol_infoflow_graph_t * g, const char *start_type, apol_vector_t * results)
 {
 	apol_vector_t *start_nodes = NULL;
 	apol_infoflow_node_t *start_node;
@@ -1703,7 +1617,7 @@ static int apol_infoflow_analysis_trans(apol_policy_t *p,
 		}
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&start_nodes, NULL);
 	return retval;
 }
@@ -1721,9 +1635,7 @@ static int apol_infoflow_analysis_trans(apol_policy_t *p,
  * upon error.  The caller must call apol_vector_destroy() upon the
  * returned value.
  */
-static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t *p,
-							  apol_infoflow_graph_t *g,
-							  apol_vector_t *v)
+static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t * v)
 {
 	size_t i, j, size;
 	void **deck = NULL, *tmp;
@@ -1758,7 +1670,7 @@ static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t *p,
 		}
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	free(deck);
 	if (retval != 0) {
 		apol_vector_destroy(&new_v, NULL);
@@ -1766,11 +1678,8 @@ static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t *p,
 	return new_v;
 }
 
-
-static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
-                                                apol_infoflow_graph_t *g,
-                                                apol_infoflow_node_t *start,
-                                                apol_vector_t *results)
+static int apol_infoflow_analysis_trans_further(apol_policy_t * p,
+						apol_infoflow_graph_t * g, apol_infoflow_node_t * start, apol_vector_t * results)
 {
 	apol_vector_t *edge_list = NULL;
 	apol_queue_t *queue = NULL;
@@ -1796,8 +1705,7 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
 		cur_node->color = APOL_INFOFLOW_COLOR_BLACK;
 		if (g->direction == APOL_INFOFLOW_OUT) {
 			edge_list = cur_node->out_edges;
-		}
-		else {
+		} else {
 			edge_list = cur_node->in_edges;
 		}
 		edge_list = apol_infoflow_trans_further_shuffle(p, g, edge_list);
@@ -1808,24 +1716,23 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
 			edge = (apol_infoflow_edge_t *) apol_vector_get_element(edge_list, i);
 			if (g->direction == APOL_INFOFLOW_OUT) {
 				node = edge->end_node;
-			}
-			else {
+			} else {
 				node = edge->start_node;
 			}
-                        if (node->color == APOL_INFOFLOW_COLOR_WHITE) {
-                                node->color = APOL_INFOFLOW_COLOR_GREY;
-                                node->distance = cur_node->distance + 1;
-                                node->parent = cur_node;
-                                if (apol_queue_push(queue, node) < 0) {
-                                        ERR(p, "%s", strerror(ENOMEM));
-                                        goto cleanup;
-                                }
-                        }
+			if (node->color == APOL_INFOFLOW_COLOR_WHITE) {
+				node->color = APOL_INFOFLOW_COLOR_GREY;
+				node->distance = cur_node->distance + 1;
+				node->parent = cur_node;
+				if (apol_queue_push(queue, node) < 0) {
+					ERR(p, "%s", strerror(ENOMEM));
+					goto cleanup;
+				}
+			}
 		}
-                apol_vector_destroy(&edge_list, NULL);
+		apol_vector_destroy(&edge_list, NULL);
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&edge_list, NULL);
 	apol_queue_destroy(&queue);
 	return retval;
@@ -1833,10 +1740,7 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
 
 /******************** infoflow analysis object routines ********************/
 
-int apol_infoflow_analysis_do(apol_policy_t *p,
-			      apol_infoflow_analysis_t *ia,
-			      apol_vector_t **v,
-			      apol_infoflow_graph_t **g)
+int apol_infoflow_analysis_do(apol_policy_t * p, apol_infoflow_analysis_t * ia, apol_vector_t ** v, apol_infoflow_graph_t ** g)
 {
 	int retval = -1;
 	*v = NULL;
@@ -1849,17 +1753,14 @@ int apol_infoflow_analysis_do(apol_policy_t *p,
 		goto cleanup;
 	}
 	retval = apol_infoflow_analysis_do_more(p, *g, ia->type, v);
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_infoflow_graph_destroy(g);
 	}
 	return retval;
 }
 
-int apol_infoflow_analysis_do_more(apol_policy_t *p,
-				   apol_infoflow_graph_t *g,
-				   const char *type,
-				   apol_vector_t **v)
+int apol_infoflow_analysis_do_more(apol_policy_t * p, apol_infoflow_graph_t * g, const char *type, apol_vector_t ** v)
 {
 	qpol_type_t *start_type;
 	int retval = -1;
@@ -1876,30 +1777,26 @@ int apol_infoflow_analysis_do_more(apol_policy_t *p,
 
 	if ((g->mode == APOL_INFOFLOW_MODE_DIRECT &&
 	     apol_infoflow_analysis_direct(p, g, type, *v) < 0) ||
-	    (g->mode == APOL_INFOFLOW_MODE_TRANS &&
-	     apol_infoflow_analysis_trans(p, g, type, *v) < 0)) {
+	    (g->mode == APOL_INFOFLOW_MODE_TRANS && apol_infoflow_analysis_trans(p, g, type, *v) < 0)) {
 		goto cleanup;
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, apol_infoflow_result_free);
 	}
 	return retval;
 }
 
-int apol_infoflow_analysis_trans_further_prepare(apol_policy_t *p,
-						 apol_infoflow_graph_t *g,
-						 const char *start_type,
-						 const char *end_type)
+int apol_infoflow_analysis_trans_further_prepare(apol_policy_t * p,
+						 apol_infoflow_graph_t * g, const char *start_type, const char *end_type)
 {
 	qpol_type_t *stype, *etype;
 	int retval = -1;
 
 	apol_infoflow_srand(g);
-	if (apol_query_get_type(p, start_type, &stype) < 0 ||
-	    apol_query_get_type(p, end_type, &etype) < 0) {
+	if (apol_query_get_type(p, start_type, &stype) < 0 || apol_query_get_type(p, end_type, &etype) < 0) {
 		goto cleanup;
 	}
 	if (g->mode != APOL_INFOFLOW_MODE_TRANS) {
@@ -1908,8 +1805,7 @@ int apol_infoflow_analysis_trans_further_prepare(apol_policy_t *p,
 	}
 	apol_vector_destroy(&g->further_start, NULL);
 	apol_vector_destroy(&g->further_end, NULL);
-	if ((g->further_start = apol_vector_create()) == NULL ||
-	    (g->further_end = apol_vector_create()) == NULL) {
+	if ((g->further_start = apol_vector_create()) == NULL || (g->further_end = apol_vector_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -1919,13 +1815,11 @@ int apol_infoflow_analysis_trans_further_prepare(apol_policy_t *p,
 	}
 	g->current_start = 0;
 	retval = 0;
- cleanup:
+      cleanup:
 	return retval;
 }
 
-int apol_infoflow_analysis_trans_further_next(apol_policy_t *p,
-					      apol_infoflow_graph_t *g,
-					      apol_vector_t *v)
+int apol_infoflow_analysis_trans_further_next(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t * v)
 {
 	apol_infoflow_node_t *start_node;
 	int retval = -1;
@@ -1942,7 +1836,7 @@ int apol_infoflow_analysis_trans_further_next(apol_policy_t *p,
 		g->current_start = 0;
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -1951,7 +1845,7 @@ apol_infoflow_analysis_t *apol_infoflow_analysis_create(void)
 	return calloc(1, sizeof(apol_infoflow_analysis_t));
 }
 
-void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t **ia)
+void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t ** ia)
 {
 	if (*ia != NULL) {
 		free((*ia)->type);
@@ -1963,47 +1857,41 @@ void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t **ia)
 	}
 }
 
-int apol_infoflow_analysis_set_mode(apol_policy_t *p,
-				    apol_infoflow_analysis_t *ia,
-				    unsigned int mode)
+int apol_infoflow_analysis_set_mode(apol_policy_t * p, apol_infoflow_analysis_t * ia, unsigned int mode)
 {
 	switch (mode) {
 	case APOL_INFOFLOW_MODE_DIRECT:
-	case APOL_INFOFLOW_MODE_TRANS: {
-		ia->mode = mode;
-		break;
-	}
-	default: {
-		ERR(p, "%s", strerror(EINVAL));
-		return -1;
-	}
+	case APOL_INFOFLOW_MODE_TRANS:{
+			ia->mode = mode;
+			break;
+		}
+	default:{
+			ERR(p, "%s", strerror(EINVAL));
+			return -1;
+		}
 	}
 	return 0;
 }
 
-int apol_infoflow_analysis_set_dir(apol_policy_t *p,
-				   apol_infoflow_analysis_t *ia,
-				   unsigned int dir)
+int apol_infoflow_analysis_set_dir(apol_policy_t * p, apol_infoflow_analysis_t * ia, unsigned int dir)
 {
 	switch (dir) {
 	case APOL_INFOFLOW_IN:
 	case APOL_INFOFLOW_OUT:
 	case APOL_INFOFLOW_BOTH:
-	case APOL_INFOFLOW_EITHER: {
-		ia->direction = dir;
-		break;
-	}
-	default: {
-		ERR(p, "%s", strerror(EINVAL));
-		return -1;
-	}
+	case APOL_INFOFLOW_EITHER:{
+			ia->direction = dir;
+			break;
+		}
+	default:{
+			ERR(p, "%s", strerror(EINVAL));
+			return -1;
+		}
 	}
 	return 0;
 }
 
-int apol_infoflow_analysis_set_type(apol_policy_t *p,
-				    apol_infoflow_analysis_t *ia,
-				    const char *name)
+int apol_infoflow_analysis_set_type(apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *name)
 {
 	if (name == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -2014,28 +1902,24 @@ int apol_infoflow_analysis_set_type(apol_policy_t *p,
 
 static int compare_class_perm_by_class_name(const void *in_op, const void *class_name, void *unused __attribute__ ((unused)))
 {
-	const apol_obj_perm_t *op = (const apol_obj_perm_t*)in_op;
-	const char *name = (const char*)class_name;
+	const apol_obj_perm_t *op = (const apol_obj_perm_t *)in_op;
+	const char *name = (const char *)class_name;
 
 	return strcmp(apol_obj_perm_get_obj_name(op), name);
 }
 
-int apol_infoflow_analysis_append_intermediate(apol_policy_t *policy,
-					       apol_infoflow_analysis_t *ia,
-					       const char *type)
+int apol_infoflow_analysis_append_intermediate(apol_policy_t * policy, apol_infoflow_analysis_t * ia, const char *type)
 {
 	char *tmp = NULL;
 	if (type == NULL) {
 		apol_vector_destroy(&ia->intermed, free);
 		return 0;
 	}
-	if (ia->intermed == NULL &&
-	    (ia->intermed = apol_vector_create()) == NULL) {
+	if (ia->intermed == NULL && (ia->intermed = apol_vector_create()) == NULL) {
 		ERR(policy, "Error appending type to analysis: %s", strerror(ENOMEM));
 		return -1;
 	}
-	if ((tmp = strdup(type)) == NULL ||
-	    apol_vector_append(ia->intermed, tmp) < 0) {
+	if ((tmp = strdup(type)) == NULL || apol_vector_append(ia->intermed, tmp) < 0) {
 		free(tmp);
 		ERR(policy, "Error appending type to analysis: %s", strerror(ENOMEM));
 		return -1;
@@ -2043,10 +1927,8 @@ int apol_infoflow_analysis_append_intermediate(apol_policy_t *policy,
 	return 0;
 }
 
-int apol_infoflow_analysis_append_class_perm(apol_policy_t *p,
-                                             apol_infoflow_analysis_t *ia,
-                                             const char *class_name,
-                                             const char *perm_name)
+int apol_infoflow_analysis_append_class_perm(apol_policy_t * p,
+					     apol_infoflow_analysis_t * ia, const char *class_name, const char *perm_name)
 {
 	apol_obj_perm_t *op = NULL;
 	size_t i;
@@ -2056,31 +1938,27 @@ int apol_infoflow_analysis_append_class_perm(apol_policy_t *p,
 		return 0;
 	}
 
-	if (ia->class_perms == NULL &&
-	    (ia->class_perms = apol_vector_create()) == NULL) {
+	if (ia->class_perms == NULL && (ia->class_perms = apol_vector_create()) == NULL) {
 		ERR(p, "Error adding class and permission to analysis: %s", strerror(ENOMEM));
 		return -1;
 	}
 
-	if (apol_vector_get_index(ia->class_perms, (void*)class_name, compare_class_perm_by_class_name, NULL, &i) < 0) {
+	if (apol_vector_get_index(ia->class_perms, (void *)class_name, compare_class_perm_by_class_name, NULL, &i) < 0) {
 		if (perm_name) {
 			if ((op = apol_obj_perm_create()) == NULL) {
 				ERR(p, "Error adding class and permission to analysis: %s", strerror(ENOMEM));
 				return -1;
 			}
 			if (apol_obj_perm_set_obj_name(op, class_name) ||
-			    apol_obj_perm_append_perm(op, perm_name) ||
-			    apol_vector_append(ia->class_perms, op)) {
+			    apol_obj_perm_append_perm(op, perm_name) || apol_vector_append(ia->class_perms, op)) {
 				ERR(p, "Error adding class and permission to analysis: %s", strerror(ENOMEM));
 				apol_obj_perm_free(op);
 				return -1;
 			}
+		} else {
+			return 0;      /* nothing to clear; done */
 		}
-		else {
-			return 0; /* nothing to clear; done */
-		}
-	}
-	else {
+	} else {
 		op = apol_vector_get_element(ia->class_perms, i);
 		if (apol_obj_perm_append_perm(op, perm_name)) {
 			ERR(p, "Error adding class and permission to analysis: %s", strerror(ENOMEM));
@@ -2090,32 +1968,26 @@ int apol_infoflow_analysis_append_class_perm(apol_policy_t *p,
 	return 0;
 }
 
-int apol_infoflow_analysis_set_min_weight(apol_policy_t *p,
-					  apol_infoflow_analysis_t *ia,
-					  int min_weight)
+int apol_infoflow_analysis_set_min_weight(apol_policy_t * p, apol_infoflow_analysis_t * ia, int min_weight)
 {
 	if (min_weight <= 0) {
 		ia->min_weight = 0;
-	}
-	else if (min_weight >= APOL_PERMMAP_MAX_WEIGHT) {
+	} else if (min_weight >= APOL_PERMMAP_MAX_WEIGHT) {
 		ia->min_weight = APOL_PERMMAP_MAX_WEIGHT;
-	}
-	else {
+	} else {
 		ia->min_weight = min_weight;
 	}
 	return 0;
 }
 
-int apol_infoflow_analysis_set_result_regex(apol_policy_t *p,
-					    apol_infoflow_analysis_t *ia,
-					    const char *result)
+int apol_infoflow_analysis_set_result_regex(apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *result)
 {
 	return apol_query_set(p, &ia->result, NULL, result);
 }
 
 /*************** functions to access infoflow results ***************/
 
-apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_infoflow_result_t *result)
+apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_infoflow_result_t * result)
 {
 	apol_infoflow_result_t *new_r = NULL;
 	apol_infoflow_step_t *step, *new_step;
@@ -2143,7 +2015,7 @@ apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_infoflow_re
 		new_step->weight = step->weight;
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_infoflow_result_free(new_r);
 		return NULL;
@@ -2160,47 +2032,47 @@ void apol_infoflow_result_free(void *result)
 	}
 }
 
-unsigned int apol_infoflow_result_get_dir(apol_infoflow_result_t *result)
+unsigned int apol_infoflow_result_get_dir(apol_infoflow_result_t * result)
 {
 	return result->direction;
 }
 
-qpol_type_t *apol_infoflow_result_get_start_type(apol_infoflow_result_t *result)
+qpol_type_t *apol_infoflow_result_get_start_type(apol_infoflow_result_t * result)
 {
 	return result->start_type;
 }
 
-qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t *result)
+qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t * result)
 {
 	return result->end_type;
 }
 
-unsigned int apol_infoflow_result_get_length(apol_infoflow_result_t *result)
+unsigned int apol_infoflow_result_get_length(apol_infoflow_result_t * result)
 {
 	return result->length;
 }
 
-apol_vector_t *apol_infoflow_result_get_steps(apol_infoflow_result_t *result)
+apol_vector_t *apol_infoflow_result_get_steps(apol_infoflow_result_t * result)
 {
 	return result->steps;
 }
 
-qpol_type_t *apol_infoflow_step_get_start_type(apol_infoflow_step_t *step)
+qpol_type_t *apol_infoflow_step_get_start_type(apol_infoflow_step_t * step)
 {
 	return step->start_type;
 }
 
-qpol_type_t *apol_infoflow_step_get_end_type(apol_infoflow_step_t *step)
+qpol_type_t *apol_infoflow_step_get_end_type(apol_infoflow_step_t * step)
 {
 	return step->end_type;
 }
 
-int apol_infoflow_step_get_weight(apol_infoflow_step_t *step)
+int apol_infoflow_step_get_weight(apol_infoflow_step_t * step)
 {
 	return step->weight;
 }
 
-apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t *step)
+apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t * step)
 {
 	return step->rules;
 }

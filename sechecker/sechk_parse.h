@@ -1,6 +1,6 @@
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
- 
+
 /*
  * Author: jmowery@tresys.com
  *
@@ -27,8 +27,7 @@
 
 #define sechk_lib_parse_profile(path, lib)     sechk_lib_parse_xml_file(path, lib)
 
-int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib);
-int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib);
-
+int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t * lib);
+int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t * lib);
 
 #endif

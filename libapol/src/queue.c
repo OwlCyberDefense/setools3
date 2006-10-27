@@ -12,8 +12,7 @@
 #include <stdlib.h>
 #include "queue.h"
 
-apol_queue_t *
-apol_queue_create(void)
+apol_queue_t *apol_queue_create(void)
 {
 	apol_queue_t *q;
 
@@ -26,7 +25,7 @@ apol_queue_create(void)
 	return q;
 }
 
-int apol_queue_insert(apol_queue_t *q, void *element)
+int apol_queue_insert(apol_queue_t * q, void *element)
 {
 	apol_queue_node_t *newnode;
 
@@ -50,10 +49,9 @@ int apol_queue_insert(apol_queue_t *q, void *element)
 	return 0;
 }
 
-int apol_queue_push(apol_queue_t *q, void *element)
+int apol_queue_push(apol_queue_t * q, void *element)
 {
 	apol_queue_node_t *newnode;
-
 
 	if (!q)
 		return -1;
@@ -75,8 +73,7 @@ int apol_queue_push(apol_queue_t *q, void *element)
 	return 0;
 }
 
-void *
-apol_queue_remove(apol_queue_t *q)
+void *apol_queue_remove(apol_queue_t * q)
 {
 	apol_queue_node_t *node;
 	void *element;
@@ -98,8 +95,7 @@ apol_queue_remove(apol_queue_t *q)
 	return element;
 }
 
-void *
-apol_queue_head(apol_queue_t *q)
+void *apol_queue_head(apol_queue_t * q)
 {
 	if (!q)
 		return NULL;
@@ -110,7 +106,7 @@ apol_queue_head(apol_queue_t *q)
 	return q->head->element;
 }
 
-void apol_queue_destroy(apol_queue_t **q)
+void apol_queue_destroy(apol_queue_t ** q)
 {
 	apol_queue_node_t *p, *temp;
 

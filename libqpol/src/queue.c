@@ -144,9 +144,7 @@ int queue_map(queue_t q, int (*f) (queue_element_t, void *), void *vp)
 	return 0;
 }
 
-void queue_map_remove_on_error(queue_t q,
-			       int (*f) (queue_element_t, void *),
-			       void (*g) (queue_element_t, void *), void *vp)
+void queue_map_remove_on_error(queue_t q, int (*f) (queue_element_t, void *), void (*g) (queue_element_t, void *), void *vp)
 {
 	queue_node_ptr_t p, last, temp;
 	int ret;

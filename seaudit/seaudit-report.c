@@ -61,12 +61,12 @@ void seaudit_report_info_usage(const char *program_name, bool_t brief)
 	printf("Example stylesheet is at %s/%s.\n", APOL_INSTALL_DIR, STYLESHEET_FILE);
 }
 
-static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudit_report_t *report_info) {
+static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudit_report_t * report_info)
+{
 	int optc, i;
 
 	/* get option arguments */
-	while ((optc =
-		getopt_long(argc, argv, "o:c:t:msvh", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "o:c:t:msvh", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -106,8 +106,7 @@ static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudi
 			break;
 		case 'v':
 			/* display version */
-			printf("\n%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO,
-					VERSION);
+			printf("\n%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 			seaudit_report_destroy(report_info);
 			exit(0);
 		case 'h':
@@ -138,8 +137,7 @@ static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudi
 
 	/* Ensure that logfiles were not specified in addition to the standard-in option */
 	if ((report_info->num_logfiles > 0) && report_info->stdin) {
-		fprintf(stderr,
-			"Warning: Command line filename(s) will be ignored. Reading from stdin.\n");
+		fprintf(stderr, "Warning: Command line filename(s) will be ignored. Reading from stdin.\n");
 	}
 
 	if ((!report_info->stdin) && (report_info->num_logfiles == 0 || (argc == optind))) {
@@ -150,12 +148,12 @@ static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudi
 
 	return;
 
-err:
+      err:
 	seaudit_report_destroy(report_info);
 	exit(-1);
 }
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
 	seaudit_report_t *report_info;
 

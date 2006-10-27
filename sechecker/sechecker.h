@@ -58,7 +58,7 @@
 #define SECHK_OUT_SHORT   (SECHK_OUT_STATS|SECHK_OUT_LIST)
 #define SECHK_OUT_VERBOSE (SECHK_OUT_STATS|SECHK_OUT_PROOF)
 
-typedef void (*free_fn_t)(void *x);
+typedef void (*free_fn_t) (void *x);
 
 /* severity categories */
 #define SECHK_SEV_NONE "none"
@@ -67,61 +67,64 @@ typedef void (*free_fn_t)(void *x);
 #define SECHK_SEV_HIGH "high"
 
 /** item and proof element types to denote casting of the void pointer */
-typedef enum sechk_item_type {
-	SECHK_ITEM_CLASS,      /* qpol_class_t */
-	SECHK_ITEM_COMMON,     /* qpol_common_t */
-	SECHK_ITEM_PERM,       /* char * representing the permission name */
-	SECHK_ITEM_CONSTR,     /* qpol_constraint_t */
-	SECHK_ITEM_VTRANS,     /* qpol_validatetrans_t */
-	SECHK_ITEM_QLEVEL,     /* qpol_level_t */
-	SECHK_ITEM_CAT,        /* qpol_cat_t */
-	SECHK_ITEM_QMLSLEVEL,  /* qpol_mls_level_t */
-	SECHK_ITEM_QMLSRANGE,  /* qpol_mls_range_t */
-	SECHK_ITEM_AMLSLEVEL,  /* apol_mls_level_t */
-	SECHK_ITEM_AMLSRANGE,  /* apol_mls_range_t */
-	SECHK_ITEM_TYPE,       /* qpol_type_t */
-	SECHK_ITEM_ATTRIB,     /* qpol_type_t but is an atribute not a type */
-	SECHK_ITEM_ROLE,       /* qpol_role_t */
-	SECHK_ITEM_USER,       /* qpol_user_t */
-	SECHK_ITEM_COND,       /* qpol_cond_t */
-	SECHK_ITEM_AVRULE,     /* qpol_avrule_t */
-	SECHK_ITEM_TERULE,     /* qpol_terule_t */
-	SECHK_ITEM_RALLOW,     /* qpol_role_allow_t */
-	SECHK_ITEM_RTRAMS,     /* qpol_role_trans_t */
-	SECHK_ITEM_RANGETRANS, /* qpol_range_trans_t */
-	SECHK_ITEM_BOOL,       /* qpol_bool_t */
-	SECHK_ITEM_FSUSE,      /* qpol_fs_use_t */
-	SECHK_ITEM_GENFSCON,   /* qpol_genfscon_t */
-	SECHK_ITEM_ISID,       /* qpol_isid_t */
-	SECHK_ITEM_NETIFCON,   /* qpol_netifcon_t */
-	SECHK_ITEM_NODECON,    /* qpol_nodecon_t */
-	SECHK_ITEM_PORTCON,    /* qpol_portcon_t */
-	SECHK_ITEM_CONTEXT,    /* qpol_context_t */
+typedef enum sechk_item_type
+{
+	SECHK_ITEM_CLASS,	       /* qpol_class_t */
+	SECHK_ITEM_COMMON,	       /* qpol_common_t */
+	SECHK_ITEM_PERM,	       /* char * representing the permission name */
+	SECHK_ITEM_CONSTR,	       /* qpol_constraint_t */
+	SECHK_ITEM_VTRANS,	       /* qpol_validatetrans_t */
+	SECHK_ITEM_QLEVEL,	       /* qpol_level_t */
+	SECHK_ITEM_CAT,		       /* qpol_cat_t */
+	SECHK_ITEM_QMLSLEVEL,	       /* qpol_mls_level_t */
+	SECHK_ITEM_QMLSRANGE,	       /* qpol_mls_range_t */
+	SECHK_ITEM_AMLSLEVEL,	       /* apol_mls_level_t */
+	SECHK_ITEM_AMLSRANGE,	       /* apol_mls_range_t */
+	SECHK_ITEM_TYPE,	       /* qpol_type_t */
+	SECHK_ITEM_ATTRIB,	       /* qpol_type_t but is an atribute not a type */
+	SECHK_ITEM_ROLE,	       /* qpol_role_t */
+	SECHK_ITEM_USER,	       /* qpol_user_t */
+	SECHK_ITEM_COND,	       /* qpol_cond_t */
+	SECHK_ITEM_AVRULE,	       /* qpol_avrule_t */
+	SECHK_ITEM_TERULE,	       /* qpol_terule_t */
+	SECHK_ITEM_RALLOW,	       /* qpol_role_allow_t */
+	SECHK_ITEM_RTRAMS,	       /* qpol_role_trans_t */
+	SECHK_ITEM_RANGETRANS,	       /* qpol_range_trans_t */
+	SECHK_ITEM_BOOL,	       /* qpol_bool_t */
+	SECHK_ITEM_FSUSE,	       /* qpol_fs_use_t */
+	SECHK_ITEM_GENFSCON,	       /* qpol_genfscon_t */
+	SECHK_ITEM_ISID,	       /* qpol_isid_t */
+	SECHK_ITEM_NETIFCON,	       /* qpol_netifcon_t */
+	SECHK_ITEM_NODECON,	       /* qpol_nodecon_t */
+	SECHK_ITEM_PORTCON,	       /* qpol_portcon_t */
+	SECHK_ITEM_CONTEXT,	       /* qpol_context_t */
 	/* add more here as needed */
-	SECHK_ITEM_FCENT,      /* sefs_fc_entry_t */
-	SECHK_ITEM_STR,        /* char* generic string */
-	SECHK_ITEM_DTR,        /* apol_domain_trans_result_t */
-	SECHK_ITEM_OTHER,      /* void* data is something else (module specific) */
-	SECHK_ITEM_NONE        /* there is no proof element only text */
+	SECHK_ITEM_FCENT,	       /* sefs_fc_entry_t */
+	SECHK_ITEM_STR,		       /* char* generic string */
+	SECHK_ITEM_DTR,		       /* apol_domain_trans_result_t */
+	SECHK_ITEM_OTHER,	       /* void* data is something else (module specific) */
+	SECHK_ITEM_NONE		       /* there is no proof element only text */
 } sechk_item_type_e;
 
 /** Module results proof element: This represents a single reason for the
  *  inclusion of an item in the results. */
-typedef struct sechk_proof {
+typedef struct sechk_proof
+{
 	/** Component, rule, or other object relative to the policy */
 	void *elem;
 	/** The type of element stored by this proof */
 	sechk_item_type_e type;
 	/** Description of proof for prining the report */
 	char *text;
-	xmlChar *xml_out;       /* currently unused but retained for future use */
+	xmlChar *xml_out;	       /* currently unused but retained for future use */
 	/** Function to call if elem should be free()'d or NULL */
 	free_fn_t elem_free_fn;
 } sechk_proof_t;
 
 /** Module results item: 
  *  This represents an item for which results were found. */
-typedef struct sechk_item {
+typedef struct sechk_item
+{
 	/** The policy item */
 	void *item;
 	/** Test result code for this item. This field is reserved for use 
@@ -137,7 +140,8 @@ typedef struct sechk_item {
 /** Module results: This represents the results generated by a module's
  *  run function. This structure is used both to generate the report and
  *  to comunicate with other modules that depend on the generating module. */
-typedef struct sechk_result {
+typedef struct sechk_result
+{
 	/** Name of the module that created the results. */
 	char *test_name;
 	/** The type of policy item processed by the module. */
@@ -148,7 +152,8 @@ typedef struct sechk_result {
 
 /** Generic name value pair:
  *  Used for storing options, dependencies and requirements. */
-typedef struct sechk_name_value {
+typedef struct sechk_name_value
+{
 	char *name;
 	char *value;
 } sechk_name_value_t;
@@ -156,7 +161,8 @@ typedef struct sechk_name_value {
 /** Module library:
  *  This structure tracks all modules that SEChecker can run,
  *  the policy, and other policy related data. */
-typedef struct sechk_lib {
+typedef struct sechk_lib
+{
 	/** Vector of the modules (of type sechk_module_t) */
 	apol_vector_t *modules;
 	/** The policy to analyze when running modules */
@@ -179,7 +185,8 @@ typedef struct sechk_lib {
 	const char *minsev;
 } sechk_lib_t;
 
-typedef struct sechk_module {
+typedef struct sechk_module
+{
 	/** Unique module name */
 	char *name;
 	/** Brief description of the module */
@@ -196,7 +203,7 @@ typedef struct sechk_module {
 	apol_vector_t *options;
 	/** Vector (of type sechk_name_value_t) containing all conditions required
 	 *  by the module such as policy version or type. See profile documentation
-	 *  for a complete listing of possible requirements. */ 
+	 *  for a complete listing of possible requirements. */
 	apol_vector_t *requirements;
 	/** Vector (of type sechk_name_value_t) containing a list of modules
 	 *  which need to run before this module may access their results. */
@@ -229,7 +236,7 @@ typedef struct sechk_module {
  *  @return 0 on success and < 0 on failure; if the call fails, errno will be
  *  set and the library should be destroyed.
  */
-typedef int (*sechk_register_fn_t)(sechk_lib_t *lib);
+typedef int (*sechk_register_fn_t) (sechk_lib_t * lib);
 
 /**
  *  Function signature for functions registed by a module.
@@ -242,7 +249,7 @@ typedef int (*sechk_register_fn_t)(sechk_lib_t *lib);
  *  it is expected to set errno. Special: a run function is permitted
  *  to return > 0 upon finding results; only the run function may return > 0.
  */
-typedef int (*sechk_mod_fn_t)(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+typedef int (*sechk_mod_fn_t) (sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 /* Module function names */
 #define SECHK_MOD_FN_INIT    "init"
@@ -251,7 +258,8 @@ typedef int (*sechk_mod_fn_t)(sechk_module_t *mod, apol_policy_t *policy, void *
 
 /** Registered function container: used to allow the library and modules
  *  to request functions of a specific name. */
-typedef struct sechk_fn {
+typedef struct sechk_fn
+{
 	/** Name of the function without any module prefix */
 	char *name;
 	/** The function. */
@@ -260,7 +268,8 @@ typedef struct sechk_fn {
 
 /** Module name registration structure: used when the library tries to
  *  discover all known modules. */
-typedef struct sechk_module_name_reg {
+typedef struct sechk_module_name_reg
+{
 	/** The name of the module. */
 	char *name;
 	/** The register function for this module. */
@@ -269,7 +278,8 @@ typedef struct sechk_module_name_reg {
 
 /** Profile name registration structure; used when the library tries to
  *  discover all known installed profiles. */
-typedef struct sechk_profile_name_reg {
+typedef struct sechk_profile_name_reg
+{
 	/** Name of the profile. */
 	char *name;
 	/** Path of the profile file. */
@@ -357,7 +367,7 @@ sechk_proof_t *sechk_proof_new(free_fn_t fn);
  *
  *  @param The library to destroy.
  */
-void sechk_lib_destroy(sechk_lib_t **lib);
+void sechk_lib_destroy(sechk_lib_t ** lib);
 
 /**
  *  Free all memory used by a module function structure.
@@ -371,7 +381,7 @@ void sechk_fn_free(void *fn_struct);
  *
  *  @param res The result structure to destroy.
  */
-void sechk_result_destroy(sechk_result_t **res);
+void sechk_result_destroy(sechk_result_t ** res);
 
 /**
  *  Free all memory used by a result item.
@@ -411,7 +421,7 @@ void sechk_name_value_free(void *nv);
  *  @return 0 on success or < 0 on error; if the call fails, errno will be
  *  set and the library should be destroyed.
  */
-int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sechk_lib_t *lib);
+int sechk_lib_register_modules(const sechk_module_name_reg_t * register_fns, sechk_lib_t * lib);
 
 /**
  *  Check that the dependencies of all selected modules can be met.
@@ -423,7 +433,7 @@ int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sech
  *  @return 0 on success and < 0 on error; if the call fails,
  *  errno will be set.
  */
-int sechk_lib_check_module_dependencies(sechk_lib_t *lib);
+int sechk_lib_check_module_dependencies(sechk_lib_t * lib);
 
 /**
  *  Check that the requirements of all selected modules are met.  If the
@@ -438,7 +448,7 @@ int sechk_lib_check_module_dependencies(sechk_lib_t *lib);
  *  @return 0 on success and < 0 on error; if the call fails,
  *  errno will be set.
  */
-int sechk_lib_check_module_requirements(sechk_lib_t *lib);
+int sechk_lib_check_module_requirements(sechk_lib_t * lib);
 
 /**
  *  Initialize all selected modules. <b>This function should only be called
@@ -450,7 +460,7 @@ int sechk_lib_check_module_requirements(sechk_lib_t *lib);
  *  @return 0 on success and < 0 on failure; if the call fails, errno will be
  *  set and the library should be destroyed.
  */
-int sechk_lib_init_modules(sechk_lib_t *lib);
+int sechk_lib_init_modules(sechk_lib_t * lib);
 
 /**
  *  Run all selected modules. The modules must have been initialized.
@@ -460,7 +470,7 @@ int sechk_lib_init_modules(sechk_lib_t *lib);
  *  @return 0 on success or < 0 on error. Note that in quiet mode this
  *  function is considered to fail if a module finds results.
  */
-int sechk_lib_run_modules(sechk_lib_t *lib);
+int sechk_lib_run_modules(sechk_lib_t * lib);
 
 /**
  *  Print a report of all selected modules' results to stdout.
@@ -470,7 +480,7 @@ int sechk_lib_run_modules(sechk_lib_t *lib);
  *
  *  @return 0 on success and < 0 on error.
  */
-int sechk_lib_print_modules_report(sechk_lib_t *lib);
+int sechk_lib_print_modules_report(sechk_lib_t * lib);
 
 /* module accessors */
 
@@ -482,7 +492,7 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib);
  *
  *  @return A pointer to the module or NULL if not found.
  */
-sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t *lib);
+sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t * lib);
 
 /**
  *  Get a pointer to a function registered for a module.
@@ -494,7 +504,7 @@ sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t 
  *  @return A pointer to the requested function, or NULL if either the module
  *  or the function cannot be found.
  */
-sechk_mod_fn_t sechk_lib_get_module_function(const char *module_name, const char *function_name, const sechk_lib_t *lib);
+sechk_mod_fn_t sechk_lib_get_module_function(const char *module_name, const char *function_name, const sechk_lib_t * lib);
 
 /**
  *  Get the results of a module. If the module has not been run, it will be run
@@ -507,7 +517,7 @@ sechk_mod_fn_t sechk_lib_get_module_function(const char *module_name, const char
  *  was not previously run and it fails when run by this function, NULL
  *  will be returned. If the call fails, errno will be set.
  */
-sechk_result_t *sechk_lib_get_module_result(const char *module_name, const sechk_lib_t *lib);
+sechk_result_t *sechk_lib_get_module_result(const char *module_name, const sechk_lib_t * lib);
 
 /* library utility functions */
 
@@ -520,7 +530,7 @@ sechk_result_t *sechk_lib_get_module_result(const char *module_name, const sechk
  *
  *  @return 0 on success and < 0 on failure.
  */
-int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib);
+int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t * lib);
 #ifdef LIBSEFS
 
 /**
@@ -533,7 +543,7 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib);
  *
  *  @return 0 on success and < 0 on failure.
  */
-int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib);
+int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib);
 #endif
 
 /**
@@ -546,7 +556,7 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib);
  *  @return 0 on success and < 0 on failure; if the call fails errno will be
  *  set and the library should be destroyed.
  */
-int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib);
+int sechk_lib_load_profile(const char *prof_name, sechk_lib_t * lib);
 
 /**
  *  Clear an option of all previous values.
@@ -557,7 +567,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib);
  *  @return 0 on success or < 0 on failure; if the call fails,
  *  errno will be set, and the module should be freed.
  */
-int sechk_lib_module_clear_option(sechk_module_t *module, char *option);
+int sechk_lib_module_clear_option(sechk_module_t * module, char *option);
 
 /**
  *  Check that the library can meet a single requirement.
@@ -568,7 +578,7 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option);
  *  @return 1 if the requirement is met, and 0 if it is either unmet or
  *  if the library is unable to determine.
  */
-bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib);
+bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib);
 
 /**
  *  Check that the library can meet a single module dependency.
@@ -579,7 +589,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib);
  *  @return 1 if the dependency exists, and 0 if it either does not or
  *  if the library is unable to determine.
  */
-bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib);
+bool_t sechk_lib_check_dependency(sechk_name_value_t * dep, sechk_lib_t * lib);
 
 /**
  *  Set the default output format for the library.
@@ -590,7 +600,7 @@ bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib);
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set.
  */
-int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib);
+int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t * lib);
 
 /**
  *  Set the minimum severity level of the library.
@@ -602,7 +612,7 @@ int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib);
  *  @return 0 on success and < 0 on failure; if the call fials,
  *  errno will be set.
  */
-int sechk_lib_set_minsev(const char *sev, sechk_lib_t *lib);
+int sechk_lib_set_minsev(const char *sev, sechk_lib_t * lib);
 
 /**
  *  Get the index of a module in the library by name.
@@ -613,7 +623,7 @@ int sechk_lib_set_minsev(const char *sev, sechk_lib_t *lib);
  *  @return index of the module or -1 if it was not found.
  *  If not found, errno will be set.
  */
-int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib);
+int sechk_lib_get_module_idx(const char *name, sechk_lib_t * lib);
 
 /* other utility functions */
 
@@ -625,7 +635,7 @@ int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib);
  *  @return a copy of the proof or NULL on error. If the call fails,
  *  errno will be set.
  */
-sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig);
+sechk_proof_t *sechk_proof_copy(sechk_proof_t * orig);
 
 /** 
  *  Callback for vector comparison of proof elements.
@@ -643,5 +653,4 @@ sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig);
  */
 int sechk_proof_with_element_compare(const void *in_proof, const void *elem, void *unused);
 
-#endif /* SECHECKER_H */
-
+#endif				       /* SECHECKER_H */

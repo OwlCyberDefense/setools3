@@ -21,7 +21,7 @@
 *  You should have received a copy of the GNU Lesser General Public
 *  License along with this library; if not, write to the Free Software
 *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/ 
+*/
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -34,7 +34,7 @@
 #include "qpol_internal.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_isid_by_name(qpol_policy_t *policy, const char *name, qpol_isid_t **ocon)
+int qpol_policy_get_isid_by_name(qpol_policy_t * policy, const char *name, qpol_isid_t ** ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -54,7 +54,7 @@ int qpol_policy_get_isid_by_name(qpol_policy_t *policy, const char *name, qpol_i
 			break;
 	}
 
-	*ocon = (qpol_isid_t *)tmp;
+	*ocon = (qpol_isid_t *) tmp;
 
 	if (*ocon == NULL) {
 		ERR(policy, "could not find initial SID statement for %s", name);
@@ -65,13 +65,13 @@ int qpol_policy_get_isid_by_name(qpol_policy_t *policy, const char *name, qpol_i
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_isid_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_isid_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	ocon_state_t *os = NULL;
 	int error = 0;
 
-	if (iter != NULL) 
+	if (iter != NULL)
 		*iter = NULL;
 
 	if (policy == NULL || iter == NULL) {
@@ -81,7 +81,6 @@ int qpol_policy_get_isid_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	}
 
 	db = &policy->p->p;
-
 
 	os = calloc(1, sizeof(ocon_state_t));
 	if (os == NULL) {
@@ -93,15 +92,15 @@ int qpol_policy_get_isid_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 
 	os->head = os->cur = db->ocontexts[OCON_ISID];
 
-	if (qpol_iterator_create(policy, (void*)os, ocon_state_get_cur,
-		ocon_state_next, ocon_state_end, ocon_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)os, ocon_state_get_cur,
+				 ocon_state_next, ocon_state_end, ocon_state_size, free, iter)) {
 		free(os);
 		return STATUS_ERR;
 	}
 	return STATUS_SUCCESS;
 }
 
-int qpol_isid_get_name(qpol_policy_t *policy, qpol_isid_t *ocon, char **name)
+int qpol_isid_get_name(qpol_policy_t * policy, qpol_isid_t * ocon, char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -114,13 +113,13 @@ int qpol_isid_get_name(qpol_policy_t *policy, qpol_isid_t *ocon, char **name)
 		return STATUS_ERR;
 	}
 
-	internal_ocon = (ocontext_t*)ocon;
+	internal_ocon = (ocontext_t *) ocon;
 	*name = internal_ocon->u.name;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_isid_get_context(qpol_policy_t *policy, qpol_isid_t *ocon, qpol_context_t **context)
+int qpol_isid_get_context(qpol_policy_t * policy, qpol_isid_t * ocon, qpol_context_t ** context)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -133,9 +132,8 @@ int qpol_isid_get_context(qpol_policy_t *policy, qpol_isid_t *ocon, qpol_context
 		return STATUS_ERR;
 	}
 
-	internal_ocon = (ocontext_t*)ocon;
-	*context = (qpol_context_t*)&(internal_ocon->context[0]);
+	internal_ocon = (ocontext_t *) ocon;
+	*context = (qpol_context_t *) & (internal_ocon->context[0]);
 
 	return STATUS_SUCCESS;
 }
-

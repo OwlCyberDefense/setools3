@@ -46,7 +46,7 @@
 
 static const char *const mod_name = "imp_range_trans";
 
-int imp_range_trans_register(sechk_lib_t *lib)
+int imp_range_trans_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -70,18 +70,13 @@ int imp_range_trans_register(sechk_lib_t *lib)
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
 		"This module finds impossible range transitions in a policy.\n"
-		"A range transition is possible if and only if all of the following conditions\n" 
+		"A range transition is possible if and only if all of the following conditions\n"
 		"are satisfied:\n"
 		"   1) there exist TE rules allowing the range transition to occur\n"
 		"   2) there exist RBAC rules allowing the range transition to occur\n"
 		"   3) at least one user must be able to transition to the target MLS range\n";
-	mod->opt_description = 
-		"  Module requirements:\n"
-		"    none\n"
-		"  Module dependencies:\n"
-		"    none\n"
-		"  Module options:\n"
-		"    none\n";
+	mod->opt_description =
+		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_MED;
 
 	/* register functions */
@@ -98,10 +93,10 @@ int imp_range_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = imp_range_trans_init;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
-		return - 1;
+		return -1;
 	}
 
 	fn_struct = sechk_fn_new();
@@ -117,10 +112,10 @@ int imp_range_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = imp_range_trans_run;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
-		return - 1;
+		return -1;
 	}
 
 	mod->data_free = NULL;
@@ -138,10 +133,10 @@ int imp_range_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = imp_range_trans_print;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
-		return - 1;
+		return -1;
 	}
 
 	return 0;
@@ -150,7 +145,7 @@ int imp_range_trans_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int imp_range_trans_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int imp_range_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -176,7 +171,7 @@ int imp_range_trans_init(sechk_module_t *mod, apol_policy_t *policy, void *arg _
  *  -1 System error
  *   0 The module "succeeded" - no negative results found
  *   1 The module "failed"    - some negative results found */
-int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -232,7 +227,7 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		goto imp_range_trans_run_fail;
 	}
 
-	if (apol_get_range_trans_by_query(policy, NULL, &range_trans_vector) < 0 ) {
+	if (apol_get_range_trans_by_query(policy, NULL, &range_trans_vector) < 0) {
 		error = errno;
 		ERR(policy, "%s", "Unable to retrieve range transitions");
 		goto imp_range_trans_run_fail;
@@ -249,7 +244,7 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		range = apol_mls_range_create_from_qpol_mls_range(policy, qpol_range);
 
 		/* find roles possible for source */
-		role_query = apol_role_query_create();		
+		role_query = apol_role_query_create();
 		apol_role_query_set_type(policy, role_query, source_name);
 		apol_get_role_by_query(policy, role_query, &role_vector);
 		apol_role_query_destroy(&role_query);
@@ -270,7 +265,7 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		}
 		apol_vector_sort_uniquify(users_w_roles, NULL, NULL, NULL);
 		apol_user_query_destroy(&user_query);
-		
+
 		/* find users with the transition range */
 		user_query = apol_user_query_create();
 		apol_user_query_set_range(policy, user_query, range, APOL_QUERY_SUB);
@@ -379,13 +374,13 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			}
 			proof->type = SECHK_ITEM_NONE;
 			if (!apol_vector_get_size(role_vector)) {
-				proof->text =  strdup("No role also means no user");
+				proof->text = strdup("No role also means no user");
 			} else if (!apol_vector_get_size(users_w_roles)) {
 				asprintf(&proof->text, "No users associated with roles for %s", source_name);
 			} else if (!apol_vector_get_size(users_w_range)) {
-				proof->text =  strdup("No user has access to specified MLS range");
+				proof->text = strdup("No user has access to specified MLS range");
 			} else {
-				proof->text =  strdup("No user meets MLS and RBAC requirements.");
+				proof->text = strdup("No user meets MLS and RBAC requirements.");
 			}
 			if (!proof->text) {
 				error = errno;
@@ -421,7 +416,7 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		apol_vector_destroy(&users_w_range, NULL);
 
 		if (item) {
-			if (apol_vector_append(res->items, (void*)item) < 0) {
+			if (apol_vector_append(res->items, (void *)item) < 0) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto imp_range_trans_run_fail;
@@ -436,7 +431,7 @@ int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		return 1;
 	return 0;
 
-imp_range_trans_run_fail:
+      imp_range_trans_run_fail:
 	apol_vector_destroy(&range_trans_vector, NULL);
 	apol_vector_destroy(&role_vector, NULL);
 	apol_vector_destroy(&rule_vector, NULL);
@@ -452,16 +447,16 @@ imp_range_trans_run_fail:
 
 /* The print output function generates the text and prints the
  * results to stdout. */
-int imp_range_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused))) 
+int imp_range_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	qpol_range_trans_t *rt;
 	char *tmp;
-	int i = 0, k=0, j=0, num_items;
+	int i = 0, k = 0, j = 0, num_items;
 
-	if (!mod || !policy){
+	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
 		errno = EINVAL;
 		return -1;
@@ -482,7 +477,7 @@ int imp_range_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	}
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i impossible range transitions.\n", num_items);
@@ -516,4 +511,3 @@ int imp_range_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 
 	return 0;
 }
-

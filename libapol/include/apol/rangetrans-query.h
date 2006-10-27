@@ -48,9 +48,7 @@ typedef struct apol_range_trans_query apol_range_trans_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_range_trans_by_query(apol_policy_t *p,
-					 apol_range_trans_query_t *r,
-					 apol_vector_t **v);
+extern int apol_get_range_trans_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v);
 
 /**
  * Allocate and return a new range trans query structure.  All fields
@@ -70,7 +68,7 @@ extern apol_range_trans_query_t *apol_range_trans_query_create(void);
  *
  * @param r Reference to a range trans query structure to destroy.
  */
-extern void apol_range_trans_query_destroy(apol_range_trans_query_t **r);
+extern void apol_range_trans_query_destroy(apol_range_trans_query_t ** r);
 
 /**
  * Set a range trans query to return rules whose source symbol matches
@@ -89,10 +87,7 @@ extern void apol_range_trans_query_destroy(apol_range_trans_query_t **r);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_range_trans_query_set_source(apol_policy_t *p,
-					     apol_range_trans_query_t *r,
-					     const char *symbol,
-					     int is_indirect);
+extern int apol_range_trans_query_set_source(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol, int is_indirect);
 
 /**
  * Set a range trans query to return rules whose target symbol matches
@@ -111,10 +106,7 @@ extern int apol_range_trans_query_set_source(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_range_trans_query_set_target(apol_policy_t *p,
-					     apol_range_trans_query_t *r,
-					     const char *symbol,
-					     int is_indirect);
+extern int apol_range_trans_query_set_target(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol, int is_indirect);
 
 /**
  * Set a range trans query to return only users matching a MLS range.
@@ -131,10 +123,8 @@ extern int apol_range_trans_query_set_target(apol_policy_t *p,
  *
  * @return Always returns 0.
  */
-extern int apol_range_trans_query_set_range(apol_policy_t *p,
-					    apol_range_trans_query_t *r,
-					    apol_mls_range_t *range,
-					    unsigned int range_match);
+extern int apol_range_trans_query_set_range(apol_policy_t * p,
+					    apol_range_trans_query_t * r, apol_mls_range_t * range, unsigned int range_match);
 
 /**
  * Set a range trans query to treat the source symbol as any.  That
@@ -148,9 +138,7 @@ extern int apol_range_trans_query_set_range(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_range_trans_query_set_source_any(apol_policy_t *p,
-						 apol_range_trans_query_t *r,
-						 int is_any);
+extern int apol_range_trans_query_set_source_any(apol_policy_t * p, apol_range_trans_query_t * r, int is_any);
 
 /**
  * Set a range trans query to use regular expression searching for
@@ -164,9 +152,7 @@ extern int apol_range_trans_query_set_source_any(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_range_trans_query_set_regex(apol_policy_t *p,
-					    apol_range_trans_query_t *t,
-					    int is_regex);
+extern int apol_range_trans_query_set_regex(apol_policy_t * p, apol_range_trans_query_t * t, int is_regex);
 
 /**
  *  Render a range transition to a string.
@@ -178,7 +164,6 @@ extern int apol_range_trans_query_set_regex(apol_policy_t *p,
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
-extern char *apol_range_trans_render(apol_policy_t *policy,
-				     qpol_range_trans_t *rule);
+extern char *apol_range_trans_render(apol_policy_t * policy, qpol_range_trans_t * rule);
 
 #endif

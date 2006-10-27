@@ -46,7 +46,7 @@ typedef struct poldiff_class poldiff_class_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_class_get_stats(poldiff_t *diff, size_t stats[5]);
+extern void poldiff_class_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of class differences from the class difference
@@ -59,7 +59,7 @@ extern void poldiff_class_get_stats(poldiff_t *diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_class_vector(poldiff_t *diff);
+extern apol_vector_t *poldiff_get_class_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -72,7 +72,7 @@ extern apol_vector_t *poldiff_get_class_vector(poldiff_t *diff);
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-extern char *poldiff_class_to_string(poldiff_t *diff, const void *cls);
+extern char *poldiff_class_to_string(poldiff_t * diff, const void *cls);
 
 /**
  *  Get the name of the class from a class diff.
@@ -83,7 +83,7 @@ extern char *poldiff_class_to_string(poldiff_t *diff, const void *cls);
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_class_get_name(const poldiff_class_t *cls);
+extern const char *poldiff_class_get_name(const poldiff_class_t * cls);
 
 /**
  *  Get the form of difference from a class diff.
@@ -105,7 +105,7 @@ extern poldiff_form_e poldiff_class_get_form(const void *cls);
  *  were added the size of the returned vector will be 0.  The caller
  *  must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_class_get_added_perms(const poldiff_class_t *cls);
+extern apol_vector_t *poldiff_class_get_added_perms(const poldiff_class_t * cls);
 
 /**
  *  Get a vector of permissions removed from the class.
@@ -117,8 +117,7 @@ extern apol_vector_t *poldiff_class_get_added_perms(const poldiff_class_t *cls);
  *  were removed the size of the returned vector will be 0.  The
  *  caller must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_class_get_removed_perms(const poldiff_class_t *cls);
-
+extern apol_vector_t *poldiff_class_get_removed_perms(const poldiff_class_t * cls);
 
 /******************** common classes ********************/
 
@@ -136,7 +135,7 @@ typedef struct poldiff_common poldiff_common_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_common_get_stats(poldiff_t *diff, size_t stats[5]);
+extern void poldiff_common_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of commons differences from the commons difference
@@ -149,7 +148,7 @@ extern void poldiff_common_get_stats(poldiff_t *diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_common_vector(poldiff_t *diff);
+extern apol_vector_t *poldiff_get_common_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -163,7 +162,7 @@ extern apol_vector_t *poldiff_get_common_vector(poldiff_t *diff);
  *  is responsible for free()ing this string.  On error, return NULL
  *  and set errno.
  */
-extern char *poldiff_common_to_string(poldiff_t *diff, const void *common);
+extern char *poldiff_common_to_string(poldiff_t * diff, const void *common);
 
 /**
  *  Get the name of the common from a common diff.
@@ -174,7 +173,7 @@ extern char *poldiff_common_to_string(poldiff_t *diff, const void *common);
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_common_get_name(const poldiff_common_t *common);
+extern const char *poldiff_common_get_name(const poldiff_common_t * common);
 
 /**
  *  Get the form of difference from a common diff.
@@ -197,7 +196,7 @@ extern poldiff_form_e poldiff_common_get_form(const void *common);
  *  were added the size of the returned vector will be 0.  The caller
  *  must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_common_get_added_perms(const poldiff_common_t *common);
+extern apol_vector_t *poldiff_common_get_added_perms(const poldiff_common_t * common);
 
 /**
  *  Get a vector of permissions removed from the common.
@@ -210,6 +209,6 @@ extern apol_vector_t *poldiff_common_get_added_perms(const poldiff_common_t *com
  *  were removed the size of the returned vector will be 0.  The
  *  caller must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_common_get_removed_perms(const poldiff_common_t *common);
+extern apol_vector_t *poldiff_common_get_removed_perms(const poldiff_common_t * common);
 
-#endif /* POLDIFF_CLASS_DIFF_H */
+#endif				       /* POLDIFF_CLASS_DIFF_H */

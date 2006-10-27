@@ -25,7 +25,7 @@
 #define AVCMSG " avc: "
 #define LOADMSG " security: "
 #define SYSCALL_STRING "audit("
-#define ALT_SYSCALL_STRING "msg=audit("  /* should contain SYSCALL_STRING */
+#define ALT_SYSCALL_STRING "msg=audit("	/* should contain SYSCALL_STRING */
 #define BOOLMSG "committed booleans"
 #define AUDITD_MSG "type="
 #define PARSE_AVC_MSG 1
@@ -47,7 +47,7 @@
 #define LOAD_POLICY_MSG_BOOLS_FIELD   5
 #define LOAD_POLICY_MSG_NUM_POLICY_COMPONENTS 6
 
-static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *audit_file, msg_t **msg);
+static unsigned int get_tokens(char *line, int msgtype, audit_log_t * log, FILE * audit_file, msg_t ** msg);
 
 static int is_selinux(char *line)
 {
@@ -71,7 +71,7 @@ static int avc_msg_is_token_new_audit_header(char *token)
 		return FALSE;
 }
 
-static unsigned int get_line(FILE *audit_file, char **dest)
+static unsigned int get_line(FILE * audit_file, char **dest)
 {
 	char *line = NULL, *s, c = '\0';
 	int length = 0, i = 0;
@@ -83,7 +83,7 @@ static unsigned int get_line(FILE *audit_file, char **dest)
 			line[i] = c;
 		} else {
 			length += MEMORY_BLOCK_MAX_SIZE;
-			if ((s = (char*) realloc(line, length * sizeof(char))) == NULL){
+			if ((s = (char *)realloc(line, length * sizeof(char))) == NULL) {
 				return PARSE_RET_MEMORY_ERROR;
 			}
 			line = s;
@@ -91,20 +91,20 @@ static unsigned int get_line(FILE *audit_file, char **dest)
 		}
 
 		if (c == '\n') {
-			line[i+1] = '\0';
+			line[i + 1] = '\0';
 			*dest = line;
 			return PARSE_RET_SUCCESS;
 		}
 		i++;
 	}
 
-	if (i > 0){
-		if (i < length - 1){
+	if (i > 0) {
+		if (i < length - 1) {
 			line[i] = '\0';
 			*dest = *(&line);
 		} else {
 			length += MEMORY_BLOCK_MAX_SIZE;
-			if ((s = (char*) realloc(line, length * sizeof(char))) == NULL){
+			if ((s = (char *)realloc(line, length * sizeof(char))) == NULL) {
 				return PARSE_RET_MEMORY_ERROR;
 			}
 			line = s;
@@ -116,7 +116,6 @@ static unsigned int get_line(FILE *audit_file, char **dest)
 	return PARSE_RET_SUCCESS;
 }
 
-
 static int avc_msg_is_prefix(char *token, char *prefix, char **result)
 {
 	bool_t is_match = TRUE;
@@ -127,8 +126,8 @@ static int avc_msg_is_prefix(char *token, char *prefix, char **result)
 	if (strlen(token) < length)
 		return FALSE;
 
-	for (i = 0; i < length; i++){
-		if (token[i] != prefix[i]){
+	for (i = 0; i < length; i++) {
+		if (token[i] != prefix[i]) {
 			is_match = FALSE;
 			break;
 		}
@@ -141,7 +140,7 @@ static int avc_msg_is_prefix(char *token, char *prefix, char **result)
 	return TRUE;
 }
 
-static unsigned int avc_msg_insert_perms(char **tokens, msg_t *msg, audit_log_t *log, int *position, int num_tokens)
+static unsigned int avc_msg_insert_perms(char **tokens, msg_t * msg, audit_log_t * log, int *position, int num_tokens)
 {
 	int i = 0, id, num_perms = 0, start_pos;
 
@@ -171,15 +170,14 @@ static unsigned int avc_msg_insert_perms(char **tokens, msg_t *msg, audit_log_t 
 		return PARSE_RET_MEMORY_ERROR;
 	}
 
-	for (i = 0 ; i < num_perms ; i++) {
+	for (i = 0; i < num_perms; i++) {
 		audit_log_add_perm(log, tokens[i + start_pos], &id);
-		apol_vector_append(msg->msg_data.avc_msg->perms, (char *) audit_log_get_str(log, id, PERM_VECTOR));
+		apol_vector_append(msg->msg_data.avc_msg->perms, (char *)audit_log_get_str(log, id, PERM_VECTOR));
 	}
 	return PARSE_RET_SUCCESS;
 }
 
-
-static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int num_tokens)
+static unsigned int insert_time(char **tokens, msg_t * msg, int *position, int num_tokens)
 {
 	char *t = NULL;
 	int i, length = 0;
@@ -192,7 +190,7 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 
 	/* Increase size for terminating string char and whitespace within. */
 	length += 1 + (NUM_TIME_COMPONENTS - 1);
-	if ((t = (char*) malloc(length * (sizeof(char)))) == NULL)
+	if ((t = (char *)malloc(length * (sizeof(char)))) == NULL)
 		return PARSE_RET_MEMORY_ERROR;
 
 	if (*position == num_tokens)
@@ -204,14 +202,14 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 		return PARSE_REACHED_END_OF_MSG;
 
 	t = strcat(t, tokens[*position]);
-	t = strcat(t, " " );
+	t = strcat(t, " ");
 	(*position)++;
 	if (*position == num_tokens)
 		return PARSE_REACHED_END_OF_MSG;
 	t = strcat(t, tokens[*position]);
 
 	if (!msg->date_stamp) {
-		if ((msg->date_stamp = (struct tm*) malloc(sizeof(struct tm))) == NULL)
+		if ((msg->date_stamp = (struct tm *)malloc(sizeof(struct tm))) == NULL)
 			return PARSE_RET_MEMORY_ERROR;
 		memset(msg->date_stamp, 0, sizeof(sizeof(struct tm)));
 	}
@@ -222,8 +220,8 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 	} else {
 		free(t);
 		/* set year to 1900 since we know no valid
-		 logs were generated then this will tell us that
-		 the msg does not really have a year*/
+		 * logs were generated then this will tell us that
+		 * the msg does not really have a year */
 		msg->date_stamp->tm_isdst = 0;
 		msg->date_stamp->tm_year = 0;
 		return PARSE_RET_SUCCESS;
@@ -231,7 +229,7 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 
 }
 
-static unsigned int avc_msg_insert_syscall_info(char *token, msg_t *msg)
+static unsigned int avc_msg_insert_syscall_info(char *token, msg_t * msg)
 {
 	int length, header_len = 0, i = 0;
 	char *fields[PARSE_NUM_SYSCALL_FIELDS];
@@ -277,14 +275,14 @@ static unsigned int avc_msg_insert_syscall_info(char *token, msg_t *msg)
 	msg->msg_data.avc_msg->serial = atoi(fields[2]);
 
 	if (!msg->date_stamp) {
-		if ((msg->date_stamp = (struct tm*) malloc(sizeof(struct tm))) == NULL)
+		if ((msg->date_stamp = (struct tm *)malloc(sizeof(struct tm))) == NULL)
 			return PARSE_RET_MEMORY_ERROR;
 	}
 	localtime_r(&temp, msg->date_stamp);
 	return PARSE_RET_SUCCESS;
 }
 
-static unsigned int avc_msg_insert_access_type(char *token, msg_t *msg)
+static unsigned int avc_msg_insert_access_type(char *token, msg_t * msg)
 {
 	assert(token != NULL && msg != NULL);
 	if (strcmp(token, "granted") == 0) {
@@ -297,7 +295,7 @@ static unsigned int avc_msg_insert_access_type(char *token, msg_t *msg)
 		return PARSE_RET_INVALID_MSG_WARN;
 }
 
-static int avc_msg_insert_capability(msg_t *msg, char **tmp)
+static int avc_msg_insert_capability(msg_t * msg, char **tmp)
 {
 	assert(msg != NULL && tmp != NULL && *tmp != NULL);
 	msg->msg_data.avc_msg->capability = atoi(*tmp);
@@ -306,7 +304,7 @@ static int avc_msg_insert_capability(msg_t *msg, char **tmp)
 	return MSG_INSERT_SUCCESS;
 }
 
-static int avc_msg_insert_ino(msg_t *msg, char **tmp)
+static int avc_msg_insert_ino(msg_t * msg, char **tmp)
 {
 	assert(msg != NULL && tmp != NULL && *tmp != NULL);
 	msg->msg_data.avc_msg->inode = atoi(*tmp);
@@ -314,7 +312,7 @@ static int avc_msg_insert_ino(msg_t *msg, char **tmp)
 	return MSG_INSERT_SUCCESS;
 }
 
-static int avc_msg_insert_key(msg_t *msg, char **tmp)
+static int avc_msg_insert_key(msg_t * msg, char **tmp)
 {
 	assert(msg != NULL && tmp != NULL && *tmp != NULL);
 	msg->msg_data.avc_msg->key = atoi(*tmp);
@@ -322,7 +320,7 @@ static int avc_msg_insert_key(msg_t *msg, char **tmp)
 	return MSG_INSERT_SUCCESS;
 }
 
-static int avc_msg_insert_tclass(msg_t *msg, char **tmp, audit_log_t *log)
+static int avc_msg_insert_tclass(msg_t * msg, char **tmp, audit_log_t * log)
 {
 	int id;
 	assert(msg != NULL && tmp != NULL && *tmp != NULL && log != NULL);
@@ -339,19 +337,19 @@ static int parse_context(char *token, char *user, char *role, char *type)
 	int i = 0;
 	char *fields[PARSE_NUM_CONTEXT_FIELDS];
 	assert(token != NULL);
-	while (i < PARSE_NUM_CONTEXT_FIELDS && (fields[i] = strsep(&token,":")) != NULL){
+	while (i < PARSE_NUM_CONTEXT_FIELDS && (fields[i] = strsep(&token, ":")) != NULL) {
 		i++;
 	}
 	if (i != PARSE_NUM_CONTEXT_FIELDS)
 		return -1;
-	strcpy(user,fields[0]);
-	strcpy(role,fields[1]);
-	strcpy(type,fields[2]);
+	strcpy(user, fields[0]);
+	strcpy(role, fields[1]);
+	strcpy(type, fields[2]);
 	return PARSE_RET_SUCCESS;
 
 }
 
-static int avc_msg_insert_tcon(msg_t *msg, char **tmp, audit_log_t *log)
+static int avc_msg_insert_tcon(msg_t * msg, char **tmp, audit_log_t * log)
 {
 	char *user = NULL, *role = NULL, *type = NULL;
 	int length, id = -1;
@@ -359,47 +357,47 @@ static int avc_msg_insert_tcon(msg_t *msg, char **tmp, audit_log_t *log)
 	assert(msg != NULL && tmp != NULL && *tmp != NULL && log != NULL);
 	if (*tmp != NULL) {
 		length = strlen(*tmp) + 1;
-		if ((user = (char*) malloc(length * (sizeof(char)))) == NULL)
+		if ((user = (char *)malloc(length * (sizeof(char)))) == NULL)
 			return MSG_MEMORY_ERROR;
-		if ((role = (char*) malloc(length * (sizeof(char)))) == NULL){
+		if ((role = (char *)malloc(length * (sizeof(char)))) == NULL) {
 			free(user);
 			return MSG_MEMORY_ERROR;
 		}
-		if ((type = (char*) malloc(length * (sizeof(char)))) == NULL){
+		if ((type = (char *)malloc(length * (sizeof(char)))) == NULL) {
 			free(user);
 			free(role);
 			return MSG_MEMORY_ERROR;
 		}
-		if (parse_context(*tmp, user, role, type) != PARSE_RET_SUCCESS){
+		if (parse_context(*tmp, user, role, type) != PARSE_RET_SUCCESS) {
 			free(user);
 			free(role);
 			free(type);
 			return AVC_MSG_INSERT_INVALID_CONTEXT;
 		}
 
-               if (audit_log_add_user(log, user, &id) == -1){
-                        free(user);
-                        free(role);
-                        free(type);
-                        return MSG_MEMORY_ERROR;
-                }
-                msg->msg_data.avc_msg->tgt_user = id;
+		if (audit_log_add_user(log, user, &id) == -1) {
+			free(user);
+			free(role);
+			free(type);
+			return MSG_MEMORY_ERROR;
+		}
+		msg->msg_data.avc_msg->tgt_user = id;
 
-                if (audit_log_add_role(log, role, &id) == -1){
-                        free(user);
-                        free(role);
-                        free(type);
-                        return MSG_MEMORY_ERROR;
-                }
-                msg->msg_data.avc_msg->tgt_role = id;
+		if (audit_log_add_role(log, role, &id) == -1) {
+			free(user);
+			free(role);
+			free(type);
+			return MSG_MEMORY_ERROR;
+		}
+		msg->msg_data.avc_msg->tgt_role = id;
 
-                if (audit_log_add_type(log, type, &id) == -1){
-                        free(user);
-                        free(role);
-                        free(type);
-                        return MSG_MEMORY_ERROR;
-                }
-                msg->msg_data.avc_msg->tgt_type = id;
+		if (audit_log_add_type(log, type, &id) == -1) {
+			free(user);
+			free(role);
+			free(type);
+			return MSG_MEMORY_ERROR;
+		}
+		msg->msg_data.avc_msg->tgt_type = id;
 
 		msg->msg_data.avc_msg->is_tgt_con = TRUE;
 
@@ -411,7 +409,7 @@ static int avc_msg_insert_tcon(msg_t *msg, char **tmp, audit_log_t *log)
 		return PARSE_NOT_MATCH;
 }
 
-static int avc_msg_insert_scon(msg_t *msg, char **tmp, audit_log_t *log)
+static int avc_msg_insert_scon(msg_t * msg, char **tmp, audit_log_t * log)
 {
 	char *user = NULL, *role = NULL, *type = NULL;
 	int length, id = -1;
@@ -419,13 +417,13 @@ static int avc_msg_insert_scon(msg_t *msg, char **tmp, audit_log_t *log)
 	assert(msg != NULL && tmp != NULL && *tmp != NULL && log != NULL);
 	if (*tmp != NULL) {
 		length = strlen(*tmp) + 1;
-		if ((user = (char*) malloc(length * (sizeof(char)))) == NULL)
+		if ((user = (char *)malloc(length * (sizeof(char)))) == NULL)
 			return MSG_MEMORY_ERROR;
-		if ((role = (char*) malloc(length * (sizeof(char)))) == NULL){
+		if ((role = (char *)malloc(length * (sizeof(char)))) == NULL) {
 			free(user);
 			return MSG_MEMORY_ERROR;
 		}
-		if ((type = (char*) malloc(length * (sizeof(char)))) == NULL){
+		if ((type = (char *)malloc(length * (sizeof(char)))) == NULL) {
 			free(user);
 			free(role);
 			return MSG_MEMORY_ERROR;
@@ -437,30 +435,30 @@ static int avc_msg_insert_scon(msg_t *msg, char **tmp, audit_log_t *log)
 			free(type);
 			return AVC_MSG_INSERT_INVALID_CONTEXT;
 		}
-               if (audit_log_add_user(log, user, &id) == -1){
-                        free(user);
-                        free(role);
-                        free(type);
-                        return MSG_MEMORY_ERROR;
-                }
+		if (audit_log_add_user(log, user, &id) == -1) {
+			free(user);
+			free(role);
+			free(type);
+			return MSG_MEMORY_ERROR;
+		}
 
-                msg->msg_data.avc_msg->src_user = id;
+		msg->msg_data.avc_msg->src_user = id;
 
-                if (audit_log_add_role(log, role, &id) == -1) {
-                        free(user);
-                        free(role);
-                        free(type);
-                        return MSG_MEMORY_ERROR;
-                }
-                msg->msg_data.avc_msg->src_role = id;
+		if (audit_log_add_role(log, role, &id) == -1) {
+			free(user);
+			free(role);
+			free(type);
+			return MSG_MEMORY_ERROR;
+		}
+		msg->msg_data.avc_msg->src_role = id;
 
-                if (audit_log_add_type(log, type, &id) == -1){
-                        free(user);
-                        free(role);
-                        free(type);
-                        return MSG_MEMORY_ERROR;
-                }
-                msg->msg_data.avc_msg->src_type = id;
+		if (audit_log_add_type(log, type, &id) == -1) {
+			free(user);
+			free(role);
+			free(type);
+			return MSG_MEMORY_ERROR;
+		}
+		msg->msg_data.avc_msg->src_type = id;
 
 		msg->msg_data.avc_msg->is_src_con = TRUE;
 
@@ -475,7 +473,7 @@ static int avc_msg_insert_scon(msg_t *msg, char **tmp, audit_log_t *log)
 static int avc_msg_insert_string(char **dest, char **src)
 {
 	assert(dest != NULL && src != NULL && *src != NULL);
-	if ((*dest = (char*) malloc((strlen(*src) + 1) *sizeof(char))) == NULL)
+	if ((*dest = (char *)malloc((strlen(*src) + 1) * sizeof(char))) == NULL)
 		return MSG_MEMORY_ERROR;
 	strcpy(*dest, *src);
 
@@ -490,9 +488,9 @@ static int avc_msg_remove_quotes_insert_string(char **dest, char **src)
 	assert(dest != NULL && src != NULL && *src != NULL);
 	l = strlen(*src) - 1;
 	/* see if there are any quotes to begin with
-	   if there aren't just run insert string */
+	 * if there aren't just run insert string */
 	if ((*src)[0] == '"' && (*src)[l] == '"') {
-		if ((*dest = (char*)calloc((strlen(*src) + 1), sizeof(char))) == NULL)
+		if ((*dest = (char *)calloc((strlen(*src) + 1), sizeof(char))) == NULL)
 			return MSG_MEMORY_ERROR;
 		j = 0;
 		for (i = 0; i < strlen(*src); i++) {
@@ -508,19 +506,19 @@ static int avc_msg_remove_quotes_insert_string(char **dest, char **src)
 
 }
 
-static unsigned int insert_hostname(audit_log_t *log, char **tokens, msg_t *msg, int *position, int num_tokens)
+static unsigned int insert_hostname(audit_log_t * log, char **tokens, msg_t * msg, int *position, int num_tokens)
 {
 	int id = -1;
 	assert(log != NULL && tokens != NULL && msg != NULL && *position >= 0);
 
 	/* Make sure this is not the kernel string identifier, which may indicate that the hostname is empty. */
 	if (strstr(tokens[*position], "kernel")) {
-                msg->host = 0;
-                return PARSE_RET_INVALID_MSG_WARN;
-        } else {
+		msg->host = 0;
+		return PARSE_RET_INVALID_MSG_WARN;
+	} else {
 		audit_log_add_host(log, tokens[*position], &id);
-                msg->host = id;
-                return PARSE_RET_SUCCESS;
+		msg->host = id;
+		return PARSE_RET_SUCCESS;
 	}
 }
 
@@ -551,8 +549,8 @@ static int avc_msg_is_valid_additional_field(char *orig_token)
 
 	while (strsep(&token, "=") != NULL) {
 		count++;
-        }
-        free(token_copy);
+	}
+	free(token_copy);
 
 	if (count == 2)
 		return TRUE;
@@ -567,16 +565,16 @@ static int avc_msg_reformat_path_field_string(char *new_token, char *start_token
 
 	assert(new_token != NULL && start_token != NULL);
 	if (*path_str == NULL) {
-		if ((*path_str = (char*) malloc((strlen(start_token) + 1) * sizeof(char))) == NULL) {
+		if ((*path_str = (char *)malloc((strlen(start_token) + 1) * sizeof(char))) == NULL) {
 			return MSG_MEMORY_ERROR;
 		}
 		/* Append the start token */
-	strcpy(*path_str, start_token);
+		strcpy(*path_str, start_token);
 	}
 
 	/* Add 2 to concatenate the whitespace char and the terminating string char. */
 	length = strlen(*path_str) + strlen(new_token) + 2;
-	if ((*path_str = (char*) realloc(*path_str, length * sizeof(char))) == NULL) {
+	if ((*path_str = (char *)realloc(*path_str, length * sizeof(char))) == NULL) {
 		return MSG_MEMORY_ERROR;;
 	}
 	*path_str = strcat(*path_str, " ");
@@ -585,7 +583,8 @@ static int avc_msg_reformat_path_field_string(char *new_token, char *start_token
 	return MSG_INSERT_SUCCESS;
 }
 
-static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *msg, audit_log_t *log, int *position, int num_tokens)
+static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t * msg, audit_log_t * log, int *position,
+							 int num_tokens)
 {
 	int i = 0, is_valid, end_fname_idx = 0;
 	char *field_value = NULL, *path_str = NULL;
@@ -603,19 +602,19 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			found[AVC_PID_FIELD] = avc_msg_insert_uint(&msg->msg_data.avc_msg->pid, &field_value);
 			msg->msg_data.avc_msg->is_pid = TRUE;
 			if (found[AVC_PID_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_EXE_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "exe=", &field_value) != FALSE) {
 			found[AVC_EXE_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->exe, &field_value);
 			if (found[AVC_EXE_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_COMM_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "comm=", &field_value) != FALSE) {
 			found[AVC_COMM_FIELD] = avc_msg_remove_quotes_insert_string(&msg->msg_data.avc_msg->comm, &field_value);
 			if (found[AVC_COMM_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 		if (found[AVC_PATH_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "path=", &field_value) != FALSE) {
 			/* Gather all tokens located after the path=XXXX token until we encounter a valid additional field.
@@ -630,7 +629,8 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 				if (is_valid)
 					break;
 
-				if (avc_msg_reformat_path_field_string(*(&tokens[end_fname_idx]), *(&tokens[i]), &path_str) == MSG_MEMORY_ERROR) {
+				if (avc_msg_reformat_path_field_string(*(&tokens[end_fname_idx]), *(&tokens[i]), &path_str) ==
+				    MSG_MEMORY_ERROR) {
 					return PARSE_RET_MEMORY_ERROR;
 				}
 				end_fname_idx++;
@@ -644,7 +644,7 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			} else
 				found[AVC_PATH_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->path, &field_value);
 
-			if (found[AVC_PATH_FIELD] == PARSE_RET_MEMORY_ERROR){
+			if (found[AVC_PATH_FIELD] == PARSE_RET_MEMORY_ERROR) {
 				return PARSE_RET_MEMORY_ERROR;
 			}
 		}
@@ -652,20 +652,19 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 		if (found[AVC_NAME_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "name=", &field_value) != FALSE) {
 			found[AVC_NAME_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->name, &field_value);
 			if (found[AVC_NAME_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
-
 
 		if (found[AVC_DEV_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "dev=", &field_value) != FALSE) {
 			found[AVC_DEV_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->dev, &field_value);
 			if (found[AVC_DEV_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_SADDR_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "saddr=", &field_value) != FALSE) {
 			found[AVC_SADDR_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->saddr, &field_value);
 			if (found[AVC_SADDR_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_SOURCE_FIELD] == PARSE_NOT_MATCH &&
@@ -673,19 +672,19 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 		     avc_msg_is_prefix(*(&tokens[i]), "src=", &field_value) != FALSE)) {
 			found[AVC_SOURCE_FIELD] = avc_msg_insert_int(&msg->msg_data.avc_msg->source, &field_value);
 			if (found[AVC_SOURCE_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_DADDR_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "daddr=", &field_value) != FALSE) {
 			found[AVC_DADDR_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->daddr, &field_value);
 			if (found[AVC_DADDR_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_DEST_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "dest=", &field_value) != FALSE) {
 			found[AVC_DEST_FIELD] = avc_msg_insert_int(&msg->msg_data.avc_msg->dest, &field_value);
 			if (found[AVC_DEST_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_NETIF_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "netif=", &field_value) != FALSE) {
@@ -693,13 +692,13 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			if (found[AVC_NETIF_FIELD] == PARSE_RET_SUCCESS)
 				msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_NET;
 			if (found[AVC_NETIF_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_LADDR_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "laddr=", &field_value) != FALSE) {
 			found[AVC_LADDR_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->laddr, &field_value);
 			if (found[AVC_LADDR_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_LPORT_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "lport=", &field_value) != FALSE) {
@@ -707,19 +706,19 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			if (found[AVC_LPORT_FIELD] == PARSE_RET_SUCCESS)
 				msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_NET;
 			else if (found[AVC_LPORT_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_FADDR_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "faddr=", &field_value) != FALSE) {
 			found[AVC_FADDR_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->faddr, &field_value);
 			if (found[AVC_FADDR_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_FPORT_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "fport=", &field_value) != FALSE) {
 			found[AVC_FPORT_FIELD] = avc_msg_insert_int(&msg->msg_data.avc_msg->fport, &field_value);
 			if (found[AVC_FPORT_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_PORT_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "port=", &field_value) != FALSE) {
@@ -727,21 +726,21 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			if (found[AVC_PORT_FIELD] == PARSE_RET_SUCCESS)
 				msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_NET;
 			else if (found[AVC_PORT_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_SRC_SID_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "ssid=", &field_value) != FALSE) {
 			found[AVC_SRC_SID_FIELD] = avc_msg_insert_uint(&msg->msg_data.avc_msg->src_sid, &field_value);
 			msg->msg_data.avc_msg->is_src_sid = TRUE;
 			if (found[AVC_SRC_SID_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_TGT_SID_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "tsid=", &field_value) != FALSE) {
-			found[AVC_TGT_SID_FIELD] = avc_msg_insert_uint(&msg->msg_data.avc_msg->tgt_sid , &field_value);
+			found[AVC_TGT_SID_FIELD] = avc_msg_insert_uint(&msg->msg_data.avc_msg->tgt_sid, &field_value);
 			msg->msg_data.avc_msg->is_tgt_sid = TRUE;
 			if (found[AVC_TGT_SID_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_CAPABILITY_FIELD] == PARSE_NOT_MATCH &&
@@ -750,7 +749,7 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			if (found[AVC_CAPABILITY_FIELD] == PARSE_RET_SUCCESS)
 				msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_CAP;
 			else if (found[AVC_CAPABILITY_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_KEY_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "key=", &field_value) != FALSE) {
@@ -758,47 +757,51 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			if (found[AVC_KEY_FIELD] == PARSE_RET_SUCCESS)
 				msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_IPC;
 			else if (found[AVC_KEY_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
 		if (found[AVC_INODE_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "ino=", &field_value) != FALSE) {
 			found[AVC_INODE_FIELD] = avc_msg_insert_ino(msg, &field_value);
 			if (found[AVC_INODE_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
-		if (found[AVC_IPADDR_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "ipaddr=", &field_value) != FALSE) {
+		if (found[AVC_IPADDR_FIELD] == PARSE_NOT_MATCH
+		    && avc_msg_is_prefix(*(&tokens[i]), "ipaddr=", &field_value) != FALSE) {
 			found[AVC_IPADDR_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->ipaddr, &field_value);
 			if (found[AVC_IPADDR_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
-		if (found[AVC_SRC_USER_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "scontext=", &field_value) != FALSE){
+		if (found[AVC_SRC_USER_FIELD] == PARSE_NOT_MATCH
+		    && avc_msg_is_prefix(*(&tokens[i]), "scontext=", &field_value) != FALSE) {
 			found[AVC_SRC_USER_FIELD] = avc_msg_insert_scon(msg, &field_value, log);
 			if (found[AVC_SRC_USER_FIELD] == AVC_MSG_INSERT_INVALID_CONTEXT) {
 				msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_MALFORMED;
 				return_val |= PARSE_RET_INVALID_MSG_WARN;
 			}
 			if (found[AVC_SRC_USER_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
-		if (found[AVC_TGT_USER_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "tcontext=", &field_value) != FALSE){
+		if (found[AVC_TGT_USER_FIELD] == PARSE_NOT_MATCH
+		    && avc_msg_is_prefix(*(&tokens[i]), "tcontext=", &field_value) != FALSE) {
 			found[AVC_TGT_USER_FIELD] = avc_msg_insert_tcon(msg, &field_value, log);
 			if (found[AVC_SRC_USER_FIELD] == AVC_MSG_INSERT_INVALID_CONTEXT) {
 				msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_MALFORMED;
 				return_val |= PARSE_RET_INVALID_MSG_WARN;
 			}
 			if (found[AVC_TGT_USER_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
 
-		if (found[AVC_OBJ_CLASS_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "tclass=", &field_value) != FALSE){
+		if (found[AVC_OBJ_CLASS_FIELD] == PARSE_NOT_MATCH
+		    && avc_msg_is_prefix(*(&tokens[i]), "tclass=", &field_value) != FALSE) {
 			found[AVC_OBJ_CLASS_FIELD] = avc_msg_insert_tclass(msg, &field_value, log);
 			if (found[AVC_OBJ_CLASS_FIELD] == PARSE_RET_MEMORY_ERROR)
-			    return PARSE_RET_MEMORY_ERROR;
+				return PARSE_RET_MEMORY_ERROR;
 		}
-		if (field_value == NULL){
+		if (field_value == NULL) {
 			msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_MALFORMED;
 			return_val |= PARSE_RET_INVALID_MSG_WARN;
 		}
@@ -806,17 +809,17 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 		(*position)++;
 	}
 
-	if (found[AVC_SRC_SID_FIELD] == PARSE_NOT_MATCH && found[AVC_SRC_USER_FIELD] == PARSE_NOT_MATCH){
+	if (found[AVC_SRC_SID_FIELD] == PARSE_NOT_MATCH && found[AVC_SRC_USER_FIELD] == PARSE_NOT_MATCH) {
 		msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_MALFORMED;
 		return PARSE_RET_INVALID_MSG_WARN;
 	}
 
-	if (found[AVC_TGT_SID_FIELD] == PARSE_NOT_MATCH && found[AVC_TGT_USER_FIELD] == PARSE_NOT_MATCH){
+	if (found[AVC_TGT_SID_FIELD] == PARSE_NOT_MATCH && found[AVC_TGT_USER_FIELD] == PARSE_NOT_MATCH) {
 		msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_MALFORMED;
 		return PARSE_RET_INVALID_MSG_WARN;
 	}
 
-	if (found[AVC_OBJ_CLASS_FIELD] == PARSE_NOT_MATCH){
+	if (found[AVC_OBJ_CLASS_FIELD] == PARSE_NOT_MATCH) {
 		msg->msg_data.avc_msg->avc_type = AVC_AUDIT_DATA_MALFORMED;
 		return PARSE_RET_INVALID_MSG_WARN;
 	}
@@ -824,7 +827,7 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 	return return_val;
 }
 
-static unsigned int insert_standard_msg_header(char **tokens, msg_t *msg, audit_log_t *log, int *position, int num_tokens)
+static unsigned int insert_standard_msg_header(char **tokens, msg_t * msg, audit_log_t * log, int *position, int num_tokens)
 {
 	unsigned int ret = 0, tmp_rt = 0;
 
@@ -858,7 +861,7 @@ static unsigned int insert_standard_msg_header(char **tokens, msg_t *msg, audit_
 	return ret;
 }
 
-static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_log_t *log, int num_tokens)
+static unsigned int avc_msg_insert_field_data(char **tokens, msg_t * msg, audit_log_t * log, int num_tokens)
 {
 	int position = 0;
 	unsigned int ret = 0, tmp_ret = 0;
@@ -986,19 +989,19 @@ static int load_policy_msg_is_old_load_policy_string(char **tokens, int *tmp_pos
 	char *tmp = NULL;
 
 	assert(tokens != NULL && *tmp_position >= 0);
-	for (i = 0 ; i < 4 ; i++) {
+	for (i = 0; i < 4; i++) {
 		if ((*tmp_position + i) == num_tokens)
 			return FALSE;
 		length += strlen(tokens[(*tmp_position) + i]);
 	}
 
-	if ((tmp = (char*) malloc((length + 1) * sizeof(char))) == NULL) {
+	if ((tmp = (char *)malloc((length + 1) * sizeof(char))) == NULL) {
 		return MSG_MEMORY_ERROR;
 	}
 	/* Must inititialize the string before we can concatenate. */
 	tmp[0] = '\0';
 
-	for (i = 0; i < 4; i++){
+	for (i = 0; i < 4; i++) {
 		tmp = strcat(tmp, tokens[*tmp_position]);
 		(*tmp_position)++;
 	}
@@ -1012,8 +1015,7 @@ static int load_policy_msg_is_old_load_policy_string(char **tokens, int *tmp_pos
 		return FALSE;
 }
 
-static void load_policy_msg_get_policy_components(char **tokens, bool_t *found_bools, msg_t **msg,
-					         int position, int num_tokens)
+static void load_policy_msg_get_policy_components(char **tokens, bool_t * found_bools, msg_t ** msg, int position, int num_tokens)
 {
 	assert(tokens != NULL);
 	if ((*msg)->msg_data.load_policy_msg->classes == 0 && strstr(tokens[position], "classes")) {
@@ -1037,8 +1039,8 @@ static void load_policy_msg_get_policy_components(char **tokens, bool_t *found_b
 	}
 }
 
-static unsigned int load_policy_msg_insert_field_data(char **tokens, msg_t **msg, FILE *audit_file,
-						      audit_log_t *log, int num_tokens)
+static unsigned int load_policy_msg_insert_field_data(char **tokens, msg_t ** msg, FILE * audit_file,
+						      audit_log_t * log, int num_tokens)
 {
 	int i, length = 0, position = 0, tmp_position, rt;
 	unsigned int ret = 0, tmp_ret = 0;
@@ -1100,7 +1102,7 @@ static unsigned int load_policy_msg_insert_field_data(char **tokens, msg_t **msg
 			return PARSE_RET_INVALID_MSG_WARN;
 		length = strlen(tokens[position]) + 1;
 
-		if (((*msg)->msg_data.load_policy_msg->binary = (char*) malloc(length * sizeof(char))) == NULL) {
+		if (((*msg)->msg_data.load_policy_msg->binary = (char *)malloc(length * sizeof(char))) == NULL) {
 			return PARSE_RET_MEMORY_ERROR;
 		}
 		strcpy((*msg)->msg_data.load_policy_msg->binary, tokens[position]);
@@ -1113,19 +1115,18 @@ static unsigned int load_policy_msg_insert_field_data(char **tokens, msg_t **msg
 
 		/* This is rather limiting, but for now we assume that the classes and rules objects signal the end
 		 * of the policy components. So, if we have grabbed these components, then we return SUCCESS flag. */
-		if (found[LOAD_POLICY_MSG_CLASSES_FIELD] && found[LOAD_POLICY_MSG_RULES_FIELD]){
+		if (found[LOAD_POLICY_MSG_CLASSES_FIELD] && found[LOAD_POLICY_MSG_RULES_FIELD]) {
 			/* Should have already parsed users, roles and types. If not, return INVALID flag. */
 			if (((*msg)->msg_data.load_policy_msg->users >= 0 &&
-			    (*msg)->msg_data.load_policy_msg->roles >= 0 &&
-			    (*msg)->msg_data.load_policy_msg->types >= 0) ||
-			    (*msg)->msg_data.load_policy_msg->bools >= 0) {
+			     (*msg)->msg_data.load_policy_msg->roles >= 0 &&
+			     (*msg)->msg_data.load_policy_msg->types >= 0) || (*msg)->msg_data.load_policy_msg->bools >= 0) {
 				ret |= PARSE_RET_SUCCESS;
 			} else {
 				ret |= PARSE_RET_INVALID_MSG_WARN;
 			}
 		} else if (!((*msg)->msg_data.load_policy_msg->classes && (*msg)->msg_data.load_policy_msg->rules &&
-		    (*msg)->msg_data.load_policy_msg->users && (*msg)->msg_data.load_policy_msg->roles &&
-		    (*msg)->msg_data.load_policy_msg->types)){
+			     (*msg)->msg_data.load_policy_msg->users && (*msg)->msg_data.load_policy_msg->roles &&
+			     (*msg)->msg_data.load_policy_msg->types)) {
 			/* Check to see if we have gathered ALL policy components. If not, we need to load the next line. */
 			ret |= LOAD_POLICY_NEXT_LINE;
 		}
@@ -1134,39 +1135,39 @@ static unsigned int load_policy_msg_insert_field_data(char **tokens, msg_t **msg
 	return ret;
 }
 
-static unsigned int boolean_msg_insert_bool(char *token, int *bool, bool_t *val, audit_log_t *log)
+static unsigned int boolean_msg_insert_bool(char *token, int *bool, bool_t * val, audit_log_t * log)
 {
-        int len;
+	int len;
 
-        len = strlen(token);
+	len = strlen(token);
 
 	/* Strip off ending comma */
-        if (token[len - 1] == ','){
-                token[len - 1] = '\0';
-                len--;
-        }
+	if (token[len - 1] == ',') {
+		token[len - 1] = '\0';
+		len--;
+	}
 
-        if (token[len - 2] != ':')
-                return PARSE_RET_INVALID_MSG_WARN;
+	if (token[len - 2] != ':')
+		return PARSE_RET_INVALID_MSG_WARN;
 
-        if (token[len - 1] == '0')
-                *val = FALSE;
-        else if (token[len - 1] == '1')
-                *val = TRUE;
-        else
-                return PARSE_RET_INVALID_MSG_WARN;
+	if (token[len - 1] == '0')
+		*val = FALSE;
+	else if (token[len - 1] == '1')
+		*val = TRUE;
+	else
+		return PARSE_RET_INVALID_MSG_WARN;
 
-        token[len - 2] = '\0';
+	token[len - 2] = '\0';
 
-        if (audit_log_add_bool(log, token, bool) == -1)
-                return PARSE_RET_MEMORY_ERROR;
+	if (audit_log_add_bool(log, token, bool) == -1)
+		return PARSE_RET_MEMORY_ERROR;
 
-        return PARSE_RET_SUCCESS;
+	return PARSE_RET_SUCCESS;
 }
 
-static unsigned int boolean_msg_insert_field_data(char **tokens, msg_t **msg, audit_log_t *log, int num_tokens)
+static unsigned int boolean_msg_insert_field_data(char **tokens, msg_t ** msg, audit_log_t * log, int num_tokens)
 {
-        int i, num_bools = 0, num_bools_valid = 0, bool, start_bools_pos;
+	int i, num_bools = 0, num_bools_valid = 0, bool, start_bools_pos;
 	int *booleans = NULL, position = 0, bool_idx = 0;
 	unsigned int ret = 0, tmp_ret = 0;
 	bool_t *values = NULL, val = FALSE;
@@ -1194,29 +1195,29 @@ static unsigned int boolean_msg_insert_field_data(char **tokens, msg_t **msg, au
 		if (position == num_tokens)
 			return PARSE_RET_INVALID_MSG_WARN;
 	}
-	if(strcmp(tokens[position], "security:")) {
-	        ret |= PARSE_RET_INVALID_MSG_WARN;
+	if (strcmp(tokens[position], "security:")) {
+		ret |= PARSE_RET_INVALID_MSG_WARN;
 	} else {
 		position++;
 		if (position == num_tokens)
 			return PARSE_RET_INVALID_MSG_WARN;
 	}
-	if(strcmp(tokens[position], "committed")) {
-	        ret |= PARSE_RET_INVALID_MSG_WARN;
+	if (strcmp(tokens[position], "committed")) {
+		ret |= PARSE_RET_INVALID_MSG_WARN;
 	} else {
 		position++;
 		if (position == num_tokens)
 			return PARSE_RET_INVALID_MSG_WARN;
 	}
-	if(strcmp(tokens[position], "booleans")) {
-	        ret |= PARSE_RET_INVALID_MSG_WARN;
+	if (strcmp(tokens[position], "booleans")) {
+		ret |= PARSE_RET_INVALID_MSG_WARN;
 	} else {
 		position++;
 		if (position == num_tokens)
 			return PARSE_RET_INVALID_MSG_WARN;
 	}
-	if(strcmp(tokens[position], "{")) {
-	        ret |= PARSE_RET_INVALID_MSG_WARN;
+	if (strcmp(tokens[position], "{")) {
+		ret |= PARSE_RET_INVALID_MSG_WARN;
 	} else {
 		position++;
 		if (position == num_tokens)
@@ -1235,27 +1236,27 @@ static unsigned int boolean_msg_insert_field_data(char **tokens, msg_t **msg, au
 		ret |= PARSE_RET_INVALID_MSG_WARN;
 	}
 
-	if (num_bools == 0){
-	         return PARSE_RET_INVALID_MSG_WARN;
+	if (num_bools == 0) {
+		return PARSE_RET_INVALID_MSG_WARN;
 	}
 
-	if ((booleans = (int*) malloc(num_bools * sizeof(int))) == NULL) {
+	if ((booleans = (int *)malloc(num_bools * sizeof(int))) == NULL) {
 		return PARSE_RET_MEMORY_ERROR;
 	}
-	if ((values = (bool_t*) malloc(num_bools * sizeof(bool_t))) == NULL) {
-	        free(booleans);
+	if ((values = (bool_t *) malloc(num_bools * sizeof(bool_t))) == NULL) {
+		free(booleans);
 		return PARSE_RET_MEMORY_ERROR;
 	}
 
-	for (i = 0; i < num_bools; i++){
+	for (i = 0; i < num_bools; i++) {
 		tmp_ret |= boolean_msg_insert_bool(tokens[i + start_bools_pos], &bool, &val, log);
-		if (tmp_ret & PARSE_RET_MEMORY_ERROR){
-		        free(booleans);
-		        free(values);
-		        return PARSE_RET_MEMORY_ERROR;
+		if (tmp_ret & PARSE_RET_MEMORY_ERROR) {
+			free(booleans);
+			free(values);
+			return PARSE_RET_MEMORY_ERROR;
 		} else if (tmp_ret & PARSE_RET_INVALID_MSG_WARN) {
 			ret |= PARSE_RET_INVALID_MSG_WARN;
-		        continue;
+			continue;
 		}
 		booleans[bool_idx] = bool;
 		values[bool_idx] = val;
@@ -1270,7 +1271,7 @@ static unsigned int boolean_msg_insert_field_data(char **tokens, msg_t **msg, au
 		(*msg)->msg_data.boolean_msg->values = values;
 	}
 
-        return (ret | PARSE_RET_SUCCESS);
+	return (ret | PARSE_RET_SUCCESS);
 }
 
 static int free_field_tokens(char **fields, int num_tokens)
@@ -1286,7 +1287,7 @@ static int free_field_tokens(char **fields, int num_tokens)
 	return 0;
 }
 
-static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *audit_file, msg_t **msg)
+static unsigned int get_tokens(char *line, int msgtype, audit_log_t * log, FILE * audit_file, msg_t ** msg)
 {
 	char *tokens = NULL, *tmp = NULL, **fields = NULL, **fields_ptr = NULL;
 	char *tokens_start = NULL;
@@ -1298,16 +1299,16 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 		return PARSE_RET_MEMORY_ERROR;
 	tokens = tokens_start;
 	/* Tokenize line while ignoring any adjacent whitespace chars. */
-        while ((tmp = strsep(&tokens, " ")) != NULL) {
+	while ((tmp = strsep(&tokens, " ")) != NULL) {
 		if (strcmp(tmp, "") && !apol_str_is_only_white_space(tmp)) {
-			if ((fields_ptr = (char**)realloc(fields, (num_tokens + 1) * sizeof(char*))) == NULL) {
+			if ((fields_ptr = (char **)realloc(fields, (num_tokens + 1) * sizeof(char *))) == NULL) {
 				free_field_tokens(fields, num_tokens);
 				free(tokens_start);
 				return PARSE_RET_MEMORY_ERROR;
 			}
 			fields = fields_ptr;
 			num_tokens++;
-			if((fields[idx] = (char*)malloc((strlen(tmp) + 1) * sizeof(char))) == NULL) {
+			if ((fields[idx] = (char *)malloc((strlen(tmp) + 1) * sizeof(char))) == NULL) {
 				/* Free all tokens up to the previous token, which is number of tokens - 1. */
 				free_field_tokens(fields, num_tokens - 1);
 				free(tokens_start);
@@ -1316,7 +1317,7 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 			strcpy(fields[idx], tmp);
 			idx++;
 		}
-        }
+	}
 	free(tokens_start);
 	if (num_tokens <= 0)
 		return PARSE_REACHED_END_OF_MSG;
@@ -1331,7 +1332,7 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 			free_field_tokens(*(&fields), num_tokens);
 			return PARSE_RET_MEMORY_ERROR;
 		} else {
-			if (audit_log_add_msg(log, *msg) == -1){
+			if (audit_log_add_msg(log, *msg) == -1) {
 				free_field_tokens(*(&fields), num_tokens);
 				return PARSE_RET_MEMORY_ERROR;
 			}
@@ -1372,20 +1373,20 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 		if (*msg == NULL)
 			*msg = boolean_msg_create();
 
-	        ret |= boolean_msg_insert_field_data(fields, msg, log, num_tokens);
+		ret |= boolean_msg_insert_field_data(fields, msg, log, num_tokens);
 		if (ret & PARSE_RET_MEMORY_ERROR) {
 			msg_destroy(*msg);
 			*msg = NULL;
 			free_field_tokens(*(&fields), num_tokens);
 			return PARSE_RET_MEMORY_ERROR;
 		} else {
-			if (audit_log_add_msg(log, *msg) == -1){
+			if (audit_log_add_msg(log, *msg) == -1) {
 				free_field_tokens(*(&fields), num_tokens);
 				return PARSE_RET_MEMORY_ERROR;
 			}
 			log->num_bool_msgs++;
 			*msg = NULL;
-	        }
+		}
 	} else {
 		fprintf(stderr, "Invalid message type provided: %d\n", msgtype);
 	}
@@ -1394,7 +1395,7 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 	return ret;
 }
 
-unsigned int parse_audit(FILE *syslog, audit_log_t *log)
+unsigned int parse_audit(FILE * syslog, audit_log_t * log)
 {
 	FILE *audit_file = syslog;
 	msg_t *msg = NULL;

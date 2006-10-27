@@ -33,19 +33,22 @@
 #include <errno.h>
 #include <string.h>
 
-struct apol_class_query {
+struct apol_class_query
+{
 	char *class_name, *common_name;
 	unsigned int flags;
 	regex_t *class_regex, *common_regex;
 };
 
-struct apol_common_query {
+struct apol_common_query
+{
 	char *common_name;
 	unsigned int flags;
 	regex_t *regex;
 };
 
-struct apol_perm_query {
+struct apol_perm_query
+{
 	char *perm_name;
 	unsigned int flags;
 	regex_t *regex;
@@ -53,9 +56,7 @@ struct apol_perm_query {
 
 /******************** class queries ********************/
 
-int apol_get_class_by_query(apol_policy_t *p,
-			    apol_class_query_t *c,
-			    apol_vector_t **v)
+int apol_get_class_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	int retval = -1, append_class;
@@ -67,9 +68,9 @@ int apol_get_class_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_class_t *class_datum;
-		if (qpol_iterator_get_item(iter, (void **) &class_datum) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&class_datum) < 0) {
 			goto cleanup;
 		}
 		append_class = 1;
@@ -80,34 +81,27 @@ int apol_get_class_by_query(apol_policy_t *p,
 			if (qpol_class_get_name(p->p, class_datum, &class_name) < 0) {
 				goto cleanup;
 			}
-			compval = apol_compare(p, class_name, c->class_name,
-					       c->flags, &(c->class_regex));
+			compval = apol_compare(p, class_name, c->class_name, c->flags, &(c->class_regex));
 			if (compval < 0) {
 				goto cleanup;
-			}
-			else if (compval == 0) {
+			} else if (compval == 0) {
 				continue;
 			}
-			if (qpol_class_get_common(p->p,
-							 class_datum, &common_datum) < 0) {
+			if (qpol_class_get_common(p->p, class_datum, &common_datum) < 0) {
 				goto cleanup;
 			}
 			if (common_datum == NULL) {
 				if (c->common_name != NULL && c->common_name[0] != '\0') {
 					continue;
 				}
-			}
-			else {
-				if (qpol_common_get_name(p->p,
-								common_datum, &common_name) < 0) {
+			} else {
+				if (qpol_common_get_name(p->p, common_datum, &common_name) < 0) {
 					goto cleanup;
 				}
-				compval = apol_compare(p, common_name, c->common_name,
-						       c->flags, &(c->common_regex));
+				compval = apol_compare(p, common_name, c->common_name, c->flags, &(c->common_regex));
 				if (compval < 0) {
 					goto cleanup;
-				}
-				else if (compval == 0) {
+				} else if (compval == 0) {
 					continue;
 				}
 			}
@@ -119,7 +113,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -133,7 +127,7 @@ apol_class_query_t *apol_class_query_create(void)
 	return calloc(1, sizeof(apol_class_query_t));
 }
 
-void apol_class_query_destroy(apol_class_query_t **c)
+void apol_class_query_destroy(apol_class_query_t ** c)
 {
 	if (*c != NULL) {
 		free((*c)->class_name);
@@ -145,27 +139,24 @@ void apol_class_query_destroy(apol_class_query_t **c)
 	}
 }
 
-int apol_class_query_set_class(apol_policy_t *p, apol_class_query_t *c, const char *name)
+int apol_class_query_set_class(apol_policy_t * p, apol_class_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->class_name, &c->class_regex, name);
 }
 
-int apol_class_query_set_common(apol_policy_t *p, apol_class_query_t *c, const char *name)
+int apol_class_query_set_common(apol_policy_t * p, apol_class_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->common_name, &c->common_regex, name);
 }
 
-int apol_class_query_set_regex(apol_policy_t *p, apol_class_query_t *c, int is_regex)
+int apol_class_query_set_regex(apol_policy_t * p, apol_class_query_t * c, int is_regex)
 {
 	return apol_query_set_regex(p, &c->flags, is_regex);
 }
 
-
 /******************** common queries ********************/
 
-int apol_get_common_by_query(apol_policy_t *p,
-			     apol_common_query_t *c,
-			     apol_vector_t **v)
+int apol_get_common_by_query(apol_policy_t * p, apol_common_query_t * c, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
@@ -177,9 +168,9 @@ int apol_get_common_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_common_t *common_datum;
-		if (qpol_iterator_get_item(iter, (void **) &common_datum) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&common_datum) < 0) {
 			goto cleanup;
 		}
 		if (c != NULL) {
@@ -188,12 +179,10 @@ int apol_get_common_by_query(apol_policy_t *p,
 			if (qpol_common_get_name(p->p, common_datum, &common_name) < 0) {
 				goto cleanup;
 			}
-			compval = apol_compare(p, common_name, c->common_name,
-					       c->flags, &(c->regex));
+			compval = apol_compare(p, common_name, c->common_name, c->flags, &(c->regex));
 			if (compval < 0) {
 				goto cleanup;
-			}
-			else if (compval == 0) {
+			} else if (compval == 0) {
 				continue;
 			}
 		}
@@ -204,7 +193,7 @@ int apol_get_common_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -217,7 +206,7 @@ apol_common_query_t *apol_common_query_create(void)
 	return calloc(1, sizeof(apol_common_query_t));
 }
 
-void apol_common_query_destroy(apol_common_query_t **c)
+void apol_common_query_destroy(apol_common_query_t ** c)
 {
 	if (*c != NULL) {
 		free((*c)->common_name);
@@ -227,57 +216,49 @@ void apol_common_query_destroy(apol_common_query_t **c)
 	}
 }
 
-int apol_common_query_set_common(apol_policy_t *p, apol_common_query_t *c, const char *name)
+int apol_common_query_set_common(apol_policy_t * p, apol_common_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->common_name, &c->regex, name);
 }
 
-int apol_common_query_set_regex(apol_policy_t *p, apol_common_query_t *c, int is_regex)
+int apol_common_query_set_regex(apol_policy_t * p, apol_common_query_t * c, int is_regex)
 {
 	return apol_query_set_regex(p, &c->flags, is_regex);
 }
 
-
 /******************** permission queries ********************/
 
-int apol_get_perm_by_query(apol_policy_t *p,
-			   apol_perm_query_t *pq,
-			   apol_vector_t **v)
+int apol_get_perm_by_query(apol_policy_t * p, apol_perm_query_t * pq, apol_vector_t ** v)
 {
 	qpol_iterator_t *class_iter = NULL, *common_iter = NULL, *perm_iter = NULL;
 	int retval = -1, compval;
 	char *perm_name;
 	*v = NULL;
-	if (qpol_policy_get_class_iter(p->p, &class_iter) < 0 ||
-	    qpol_policy_get_common_iter(p->p, &common_iter) < 0) {
+	if (qpol_policy_get_class_iter(p->p, &class_iter) < 0 || qpol_policy_get_common_iter(p->p, &common_iter) < 0) {
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+	for (; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
 		qpol_class_t *class_datum;
-		if (qpol_iterator_get_item(class_iter, (void **) &class_datum) < 0 ||
+		if (qpol_iterator_get_item(class_iter, (void **)&class_datum) < 0 ||
 		    qpol_class_get_perm_iter(p->p, class_datum, &perm_iter) < 0) {
 			goto cleanup;
 		}
-		for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
-			if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+			if (qpol_iterator_get_item(perm_iter, (void **)&perm_name) < 0) {
 				goto cleanup;
 			}
 			if (pq == NULL) {
 				compval = 1;
-			}
-			else {
-				compval = apol_compare(p, perm_name, pq->perm_name,
-						       pq->flags, &(pq->regex));
+			} else {
+				compval = apol_compare(p, perm_name, pq->perm_name, pq->flags, &(pq->regex));
 			}
 			if (compval < 0) {
 				goto cleanup;
-			}
-			else if (compval == 1 &&
-				 apol_vector_append_unique(*v, perm_name, apol_str_strcmp, NULL) < 0) {
+			} else if (compval == 1 && apol_vector_append_unique(*v, perm_name, apol_str_strcmp, NULL) < 0) {
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -285,28 +266,24 @@ int apol_get_perm_by_query(apol_policy_t *p,
 		qpol_iterator_destroy(&perm_iter);
 	}
 
-	for ( ; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
+	for (; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
 		qpol_common_t *common_datum;
-		if (qpol_iterator_get_item(common_iter, (void **) &common_datum) < 0 ||
+		if (qpol_iterator_get_item(common_iter, (void **)&common_datum) < 0 ||
 		    qpol_common_get_perm_iter(p->p, common_datum, &perm_iter) < 0) {
 			goto cleanup;
 		}
-		for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
-			if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+			if (qpol_iterator_get_item(perm_iter, (void **)&perm_name) < 0) {
 				goto cleanup;
 			}
 			if (pq == NULL) {
 				compval = 1;
-			}
-			else {
-				compval = apol_compare(p, perm_name, pq->perm_name,
-						       pq->flags, &(pq->regex));
+			} else {
+				compval = apol_compare(p, perm_name, pq->perm_name, pq->flags, &(pq->regex));
 			}
 			if (compval < 0) {
 				goto cleanup;
-			}
-			else if (compval == 1 &&
-				 apol_vector_append_unique(*v, perm_name, apol_str_strcmp, NULL) < 0) {
+			} else if (compval == 1 && apol_vector_append_unique(*v, perm_name, apol_str_strcmp, NULL) < 0) {
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -315,7 +292,7 @@ int apol_get_perm_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -330,7 +307,7 @@ apol_perm_query_t *apol_perm_query_create(void)
 	return calloc(1, sizeof(apol_perm_query_t));
 }
 
-void apol_perm_query_destroy(apol_perm_query_t **pq)
+void apol_perm_query_destroy(apol_perm_query_t ** pq)
 {
 	if (*pq != NULL) {
 		free((*pq)->perm_name);
@@ -340,12 +317,12 @@ void apol_perm_query_destroy(apol_perm_query_t **pq)
 	}
 }
 
-int apol_perm_query_set_perm(apol_policy_t *p, apol_perm_query_t *pq, const char *name)
+int apol_perm_query_set_perm(apol_policy_t * p, apol_perm_query_t * pq, const char *name)
 {
 	return apol_query_set(p, &pq->perm_name, &pq->regex, name);
 }
 
-int apol_perm_query_set_regex(apol_policy_t *p, apol_perm_query_t *pq, int is_regex)
+int apol_perm_query_set_regex(apol_policy_t * p, apol_perm_query_t * pq, int is_regex)
 {
 	return apol_query_set_regex(p, &pq->flags, is_regex);
 }

@@ -51,7 +51,7 @@ typedef struct apol_domain_trans_table apol_domain_trans_table_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and the table will be destroyed.
  */
-extern int apol_policy_domain_trans_table_build(apol_policy_t *policy);
+extern int apol_policy_domain_trans_table_build(apol_policy_t * policy);
 
 /**
  *  Reset the state of the domain transition table in a policy.  This
@@ -65,13 +65,13 @@ extern int apol_policy_domain_trans_table_build(apol_policy_t *policy);
  *  @param polciy Policy containing the table for which the state
  *  should be reset.
  */
-extern void apol_domain_trans_table_reset(apol_policy_t *policy);
+extern void apol_domain_trans_table_reset(apol_policy_t * policy);
 
 /**
  *  Destroy the domain transition table freeing all memory used.
  *  @param table Reference pointer to the table to be destroyed.
  */
-extern void apol_domain_trans_table_destroy(apol_domain_trans_table_t **table);
+extern void apol_domain_trans_table_destroy(apol_domain_trans_table_t ** table);
 
 /*************** functions to do domain transition anslysis ***************/
 
@@ -91,7 +91,7 @@ extern apol_domain_trans_analysis_t *apol_domain_trans_analysis_create(void);
  *  the analysis is already NULL.
  *  @param dta Reference to a domain transition analysis structure to destroy.
  */
-extern void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t **dta);
+extern void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t ** dta);
 
 /**
  *  Set the direction of the transitions with respect to the start type.
@@ -103,7 +103,8 @@ extern void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t **dt
  *  @return 0 on success, and < 0 on error; if the call fails,
  *  errno will be set and dta will be unchanged.
  */
-extern int apol_domain_trans_analysis_set_direction(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, unsigned char direction);
+extern int apol_domain_trans_analysis_set_direction(apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+						    unsigned char direction);
 
 /**
  *  Set the analysis to search for transitions based upon whether they
@@ -116,7 +117,7 @@ extern int apol_domain_trans_analysis_set_direction(apol_policy_t *policy, apol_
  *  @return 0 on success, and < 0 on error; if the call fails,
  *  errno will be set and dta will be unchanged.
  */
-extern int apol_domain_trans_analysis_set_valid(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, unsigned char valid);
+extern int apol_domain_trans_analysis_set_valid(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, unsigned char valid);
 
 /**
  *  Set the analysis to begin searching using a given type. This function
@@ -129,7 +130,8 @@ extern int apol_domain_trans_analysis_set_valid(apol_policy_t *policy, apol_doma
  *  @return 0 on success, and < 0 on error; if the call fails,
  *  errno will be set and dta will be unchanged.
  */
-extern int apol_domain_trans_analysis_set_start_type(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *type_name);
+extern int apol_domain_trans_analysis_set_start_type(apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+						     const char *type_name);
 
 /**
  *  Set the analysis to return only types matching a regular expression.
@@ -141,7 +143,8 @@ extern int apol_domain_trans_analysis_set_start_type(apol_policy_t *policy, apol
  *  @return 0 on success, and < 0 on failure; if the call fails,
  *  errno will be set.
  */
-extern int apol_domain_trans_analysis_set_result_regex(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *regex);
+extern int apol_domain_trans_analysis_set_result_regex(apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+						       const char *regex);
 
 /**
  *  Set the analysis to return only types having access (via allow
@@ -158,7 +161,8 @@ extern int apol_domain_trans_analysis_set_result_regex(apol_policy_t *policy, ap
  *  @return 0 on success, and < 0 on error; if the call fails,
  *  errno will be set and dta will be unchanged.
  */
-extern int apol_domain_trans_analysis_append_access_type(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *type_name);
+extern int apol_domain_trans_analysis_append_access_type(apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+							 const char *type_name);
 
 /**
  *  Set the analysis to return only types having access (via allow
@@ -181,7 +185,8 @@ extern int apol_domain_trans_analysis_append_access_type(apol_policy_t *policy, 
  *  @return 0 on success, and < 0 on error; if the call fails,
  *  errno will be set and dta will be unchanged.
  */
-extern int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *class_name, const char *perm_name);
+extern int apol_domain_trans_analysis_append_class_perm(apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+							const char *class_name, const char *perm_name);
 
 /**
  *  Execute a domain transition analysis against a particular policy.
@@ -195,7 +200,7 @@ extern int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, a
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *results will be NULL.
  */
-extern int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, apol_vector_t **results);
+extern int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, apol_vector_t ** results);
 
 /***************** functions for accessing results ************************/
 
@@ -209,7 +214,7 @@ extern int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_tran
  *
  * @return A clone of the passed in result node, or NULL upon error.
  */
-extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_domain_trans_result_t *result);
+extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_domain_trans_result_t * result);
 
 /**
  *  Free all memory associated with a domain transition result, including
@@ -226,7 +231,7 @@ extern void apol_domain_trans_result_free(void *dtr);
  *  @param dtr Domain transition result node.
  *  @return Pointer to the start type of the transition.
  */
-extern qpol_type_t *apol_domain_trans_result_get_start_type(apol_domain_trans_result_t *dtr);
+extern qpol_type_t *apol_domain_trans_result_get_start_type(apol_domain_trans_result_t * dtr);
 
 /**
  *  Return the entrypoint type of the transition in an
@@ -236,7 +241,7 @@ extern qpol_type_t *apol_domain_trans_result_get_start_type(apol_domain_trans_re
  *  @param dtr Domain transition result node.
  *  @return Pointer to the entrypoint type of the transition.
  */
-extern qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_trans_result_t *dtr);
+extern qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_trans_result_t * dtr);
 
 /**
  *  Return the end type of the transition in an apol_domain_trans_result
@@ -246,7 +251,7 @@ extern qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_tra
  *  @param dtr Domain transition result node.
  *  @return Pointer to the start type of the transition.
  */
-extern qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_result_t *dtr);
+extern qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_result_t * dtr);
 
 /**
  *  Return the vector of process transition rules (qpol_avrule_t
@@ -257,7 +262,7 @@ extern qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_resu
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
  */
-extern apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_trans_result_t *dtr);
+extern apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_trans_result_t * dtr);
 
 /**
  *  Return the vector of file entrypoint rules (qpol_avrule_t
@@ -268,7 +273,7 @@ extern apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
  */
-extern apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_trans_result_t *dtr);
+extern apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_trans_result_t * dtr);
 
 /**
  *  Return the vector of file execute rules (qpol_avrule_t pointers)
@@ -279,7 +284,7 @@ extern apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
  */
-extern apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_result_t *dtr);
+extern apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_result_t * dtr);
 
 /**
  *  Return the vector of process setexec rules (qpol_avrule_t
@@ -292,7 +297,7 @@ extern apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
  */
-extern apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_trans_result_t *dtr);
+extern apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_trans_result_t * dtr);
 
 /**
  *  Return the vector of type_transition rules (qpol_terule_t
@@ -305,14 +310,14 @@ extern apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_tra
  *  @return Vector of qpol_terule_t relative to the policy originally
  *  used to generate the results.
  */
-extern apol_vector_t *apol_domain_trans_result_get_type_trans_rules(apol_domain_trans_result_t *dtr);
+extern apol_vector_t *apol_domain_trans_result_get_type_trans_rules(apol_domain_trans_result_t * dtr);
 
 /**
  *  Determine if the transition in an apol_domain_trans_result node is valid.
  *  @param dtr Domain transition result node.
  *  @return 0 if invalid and non-zero if valid. If dtr is NULL, returns 0.
  */
-extern int apol_domain_trans_result_is_trans_valid(apol_domain_trans_result_t *dtr);
+extern int apol_domain_trans_result_is_trans_valid(apol_domain_trans_result_t * dtr);
 
 /**
  *  Return the vector of access rules which satisfied the access
@@ -326,7 +331,7 @@ extern int apol_domain_trans_result_is_trans_valid(apol_domain_trans_result_t *d
  *  @return Pointer to a vector of rules relative to the policy originally
  *  used to generate the results.
  */
-extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_result_t *dtr);
+extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_result_t * dtr);
 
 /************************ utility functions *******************************/
 /* define the following for rule type */
@@ -356,6 +361,7 @@ extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_tran
  *  or'ed set of APOL_DOMAIN_TRANS_RULE_* from above (always > 0)
  *  representing the rules missing from the transition.
  */
-extern int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *start_dom, qpol_type_t *ep_type, qpol_type_t *end_dom);
+extern int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * start_dom, qpol_type_t * ep_type,
+						qpol_type_t * end_dom);
 
-#endif /* APOL_DOMAIN_TRANS_ANALYSIS_H */
+#endif				       /* APOL_DOMAIN_TRANS_ANALYSIS_H */

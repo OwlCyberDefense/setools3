@@ -43,7 +43,7 @@ typedef struct poldiff_role poldiff_role_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_role_get_stats(poldiff_t *diff, size_t stats[5]);
+extern void poldiff_role_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of role differences from the role difference
@@ -56,7 +56,7 @@ extern void poldiff_role_get_stats(poldiff_t *diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_role_vector(poldiff_t *diff);
+extern apol_vector_t *poldiff_get_role_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -69,7 +69,7 @@ extern apol_vector_t *poldiff_get_role_vector(poldiff_t *diff);
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-extern char *poldiff_role_to_string(poldiff_t *diff, const void *role);
+extern char *poldiff_role_to_string(poldiff_t * diff, const void *role);
 
 /**
  *  Get the name of the role from a role diff.
@@ -80,7 +80,7 @@ extern char *poldiff_role_to_string(poldiff_t *diff, const void *role);
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_role_get_name(const poldiff_role_t *role);
+extern const char *poldiff_role_get_name(const poldiff_role_t * role);
 
 /**
  *  Get the form of difference from a role diff.
@@ -102,7 +102,7 @@ extern poldiff_form_e poldiff_role_get_form(const void *role);
  *  of the returned vector will be 0.  The caller must not destroy
  *  this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_role_get_added_types(const poldiff_role_t *role);
+extern apol_vector_t *poldiff_role_get_added_types(const poldiff_role_t * role);
 
 /**
  *  Get a vector of types removed from the role.
@@ -114,6 +114,6 @@ extern apol_vector_t *poldiff_role_get_added_types(const poldiff_role_t *role);
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_role_get_removed_types(const poldiff_role_t *role);
+extern apol_vector_t *poldiff_role_get_removed_types(const poldiff_role_t * role);
 
-#endif /* POLDIFF_ROLE_DIFF_H */
+#endif				       /* POLDIFF_ROLE_DIFF_H */

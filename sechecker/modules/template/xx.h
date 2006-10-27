@@ -36,7 +36,8 @@
  * TODO: Add any members you need to perform the check or if the module is not
  * going to need private data remove this declaration and the data_new() and
  * data_free() functions */
-typedef struct xx_data {
+typedef struct xx_data
+{
 	/* TODO: define members of this data structure
 	 * for module's private data */
 } xx_data_t;
@@ -49,7 +50,7 @@ void xx_data_free(void *data);
 /* The register function places the needed information about the module in the
  * library, including description fields and the functions available. TODO: be
  * sure to add an entry for this function in the register_list files. */
-int xx_register(sechk_lib_t *lib);
+int xx_register(sechk_lib_t * lib);
 
 /* Module functions:
  * The following three functions (init, run, and print) must exist for all
@@ -57,9 +58,9 @@ int xx_register(sechk_lib_t *lib);
  * this means that all modules and their functions are in the same namespace.
  * Be sure to choose a unique name for each module and to set the module name
  * prefix xx everywhere */
-int xx_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int xx_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int xx_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int xx_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int xx_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 /* TODO: (optional) Declare any other functions needed by other modules here.
  * The prototype of the function must be int xx_fn(sechk_module_t *mod,
@@ -69,4 +70,3 @@ int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
  * NOTE: While SEChecker is build statically, it is intended that no module
  * directly call a function from another but instead use get_module_function()
  * to get the desired function from the library. */
-

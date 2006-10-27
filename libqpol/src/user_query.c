@@ -36,8 +36,7 @@
 #include <qpol/mls_query.h>
 #include "qpol_internal.h"
 
-
-int qpol_policy_get_user_by_name(qpol_policy_t *policy, const char *name, qpol_user_t **datum)
+int qpol_policy_get_user_by_name(qpol_policy_t * policy, const char *name, qpol_user_t ** datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -58,12 +57,12 @@ int qpol_policy_get_user_by_name(qpol_policy_t *policy, const char *name, qpol_u
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
-	*datum = (qpol_user_t*)internal_datum;
+	*datum = (qpol_user_t *) internal_datum;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_user_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_user_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	hash_state_t *hs = NULL;
@@ -89,8 +88,8 @@ int qpol_policy_get_user_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	hs->table = &db->p_users.table;
 	hs->node = (*(hs->table))->htable[0];
 
-	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur,
-		hash_state_next, hash_state_end, hash_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)hs, hash_state_get_cur,
+				 hash_state_next, hash_state_end, hash_state_size, free, iter)) {
 		free(hs);
 		return STATUS_ERR;
 	}
@@ -101,7 +100,7 @@ int qpol_policy_get_user_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_value(qpol_policy_t *policy, qpol_user_t *datum, uint32_t *value)
+int qpol_user_get_value(qpol_policy_t * policy, qpol_user_t * datum, uint32_t * value)
 {
 	user_datum_t *internal_datum;
 
@@ -113,19 +112,19 @@ int qpol_user_get_value(qpol_policy_t *policy, qpol_user_t *datum, uint32_t *val
 		return STATUS_ERR;
 	}
 
-	internal_datum = (user_datum_t*)datum;
+	internal_datum = (user_datum_t *) datum;
 	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_role_iter(qpol_policy_t *policy, qpol_user_t *datum, qpol_iterator_t **roles)
+int qpol_user_get_role_iter(qpol_policy_t * policy, qpol_user_t * datum, qpol_iterator_t ** roles)
 {
 	user_datum_t *internal_datum = NULL;
 	int error = 0;
 	ebitmap_state_t *es = NULL;
 
-	if (policy == NULL || datum == NULL || roles == NULL){
+	if (policy == NULL || datum == NULL || roles == NULL) {
 		if (roles != NULL)
 			*roles = NULL;
 		ERR(policy, "%s", strerror(EINVAL));
@@ -133,7 +132,7 @@ int qpol_user_get_role_iter(qpol_policy_t *policy, qpol_user_t *datum, qpol_iter
 		return STATUS_ERR;
 	}
 
-	internal_datum = (user_datum_t*)datum;
+	internal_datum = (user_datum_t *) datum;
 
 	es = calloc(1, sizeof(ebitmap_state_t));
 	if (es == NULL) {
@@ -147,7 +146,7 @@ int qpol_user_get_role_iter(qpol_policy_t *policy, qpol_user_t *datum, qpol_iter
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
 	if (qpol_iterator_create(policy, es, ebitmap_state_get_cur_role,
-		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, roles)) {
+				 ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, roles)) {
 		free(es);
 		return STATUS_ERR;
 	}
@@ -158,7 +157,7 @@ int qpol_user_get_role_iter(qpol_policy_t *policy, qpol_user_t *datum, qpol_iter
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_range(qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_range_t **range)
+int qpol_user_get_range(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_range_t ** range)
 {
 	user_datum_t *internal_datum = NULL;
 
@@ -170,13 +169,13 @@ int qpol_user_get_range(qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_rang
 		return STATUS_ERR;
 	}
 
-	internal_datum = (user_datum_t*)datum;
-	*range = (qpol_mls_range_t*)&internal_datum->exp_range;
+	internal_datum = (user_datum_t *) datum;
+	*range = (qpol_mls_range_t *) & internal_datum->exp_range;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_dfltlevel(qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_level_t **level)
+int qpol_user_get_dfltlevel(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_level_t ** level)
 {
 	user_datum_t *internal_datum = NULL;
 
@@ -188,13 +187,13 @@ int qpol_user_get_dfltlevel(qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_
 		return STATUS_ERR;
 	}
 
-	internal_datum = (user_datum_t*)datum;
-	*level = (qpol_mls_level_t*)&internal_datum->exp_dfltlevel;
+	internal_datum = (user_datum_t *) datum;
+	*level = (qpol_mls_level_t *) & internal_datum->exp_dfltlevel;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_name(qpol_policy_t *policy, qpol_user_t *datum, char **name)
+int qpol_user_get_name(qpol_policy_t * policy, qpol_user_t * datum, char **name)
 {
 	user_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -208,7 +207,7 @@ int qpol_user_get_name(qpol_policy_t *policy, qpol_user_t *datum, char **name)
 	}
 
 	db = &policy->p->p;
-	internal_datum = (user_datum_t*)datum;
+	internal_datum = (user_datum_t *) datum;
 
 	*name = db->p_user_val_to_name[internal_datum->s.value - 1];
 

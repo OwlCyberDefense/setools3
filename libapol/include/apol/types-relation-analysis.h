@@ -66,9 +66,8 @@ typedef struct apol_types_relation_access apol_types_relation_access_t;
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_types_relation_analysis_do(apol_policy_t *p,
-					   apol_types_relation_analysis_t *tr,
-					   apol_types_relation_result_t **r);
+extern int apol_types_relation_analysis_do(apol_policy_t * p,
+					   apol_types_relation_analysis_t * tr, apol_types_relation_result_t ** r);
 
 /**
  * Allocate and return a new two types relationship analysis
@@ -90,7 +89,7 @@ extern apol_types_relation_analysis_t *apol_types_relation_analysis_create(void)
  * @param tr Reference to a types relation analysis structure to
  * destroy.
  */
-extern void apol_types_relation_analysis_destroy(apol_types_relation_analysis_t **tr);
+extern void apol_types_relation_analysis_destroy(apol_types_relation_analysis_t ** tr);
 
 /**
  * Set a types relation analysis to begin analysis from this first
@@ -102,9 +101,7 @@ extern void apol_types_relation_analysis_destroy(apol_types_relation_analysis_t 
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_types_relation_analysis_set_first_type(apol_policy_t *p,
-						       apol_types_relation_analysis_t *tr,
-						       const char *name);
+extern int apol_types_relation_analysis_set_first_type(apol_policy_t * p, apol_types_relation_analysis_t * tr, const char *name);
 
 /**
  * Set a types relation analysis to begin analysis from this other
@@ -116,9 +113,7 @@ extern int apol_types_relation_analysis_set_first_type(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_types_relation_analysis_set_other_type(apol_policy_t *p,
-						       apol_types_relation_analysis_t *tr,
-						       const char *name);
+extern int apol_types_relation_analysis_set_other_type(apol_policy_t * p, apol_types_relation_analysis_t * tr, const char *name);
 
 /**
  * Set a types relation analysis to run the specified
@@ -133,9 +128,7 @@ extern int apol_types_relation_analysis_set_other_type(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_types_relation_analysis_set_analyses(apol_policy_t *p,
-						     apol_types_relation_analysis_t *tr,
-						     unsigned int analyses);
+extern int apol_types_relation_analysis_set_analyses(apol_policy_t * p, apol_types_relation_analysis_t * tr, unsigned int analyses);
 
 /*************** functions to access types relation results ***************/
 
@@ -147,7 +140,7 @@ extern int apol_types_relation_analysis_set_analyses(apol_policy_t *p,
  * @param result Reference to a types relation result structure to
  * destroy.
  */
-extern void apol_types_relation_result_destroy(apol_types_relation_result_t **result);
+extern void apol_types_relation_result_destroy(apol_types_relation_result_t ** result);
 
 /**
  * Return the vector of attributes common to the two types.  This is a
@@ -161,7 +154,7 @@ extern void apol_types_relation_result_destroy(apol_types_relation_result_t **re
  * @return Vector of common attributes, or NULL if analysis was not
  * run.
  */
-extern apol_vector_t *apol_types_relation_result_get_attributes(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_attributes(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of roles common to the two types.  This is a
@@ -173,7 +166,7 @@ extern apol_vector_t *apol_types_relation_result_get_attributes(apol_types_relat
  *
  * @return Vector of common roles, or NULL if analysis was not run.
  */
-extern apol_vector_t *apol_types_relation_result_get_roles(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_roles(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of users common to the two types.  This is a
@@ -185,7 +178,7 @@ extern apol_vector_t *apol_types_relation_result_get_roles(apol_types_relation_r
  *
  * @return Vector of common users, or NULL if analysis was not run.
  */
-extern apol_vector_t *apol_types_relation_result_get_users(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_users(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of accesses similar to the two types.  This is a
@@ -201,7 +194,7 @@ extern apol_vector_t *apol_types_relation_result_get_users(apol_types_relation_r
  *
  * @return Vector of similar accesses, or NULL if analysis was not run.
  */
-extern apol_vector_t *apol_types_relation_result_get_similar_first(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_similar_first(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of accesses similar to the two types.  This is a
@@ -217,7 +210,7 @@ extern apol_vector_t *apol_types_relation_result_get_similar_first(apol_types_re
  *
  * @return Vector of similar accesses, or NULL if analysis was not run.
  */
-extern apol_vector_t *apol_types_relation_result_get_similar_other(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_similar_other(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of accesses dissimilar for the first type (i.e.,
@@ -233,7 +226,7 @@ extern apol_vector_t *apol_types_relation_result_get_similar_other(apol_types_re
  * @return Vector of dissimilar accesses, or NULL if analysis was not
  * run.
  */
-extern apol_vector_t *apol_types_relation_result_get_dissimilar_first(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_dissimilar_first(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of accesses dissimilar for the other type (i.e.,
@@ -249,7 +242,7 @@ extern apol_vector_t *apol_types_relation_result_get_dissimilar_first(apol_types
  * @return Vector of dissimilar accesses, or NULL if analysis was not
  * run.
  */
-extern apol_vector_t *apol_types_relation_result_get_dissimilar_other(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_dissimilar_other(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of allow rules involving both types (allow one
@@ -262,7 +255,7 @@ extern apol_vector_t *apol_types_relation_result_get_dissimilar_other(apol_types
  *
  * @return Vector of allow rules, or NULL if analysis was not run.
  */
-extern apol_vector_t *apol_types_relation_result_get_allowrules(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_allowrules(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of type transition / type change rules involving
@@ -276,7 +269,7 @@ extern apol_vector_t *apol_types_relation_result_get_allowrules(apol_types_relat
  * @return Vector of type enforcement rules, or NULL if analysis was
  * not run.
  */
-extern apol_vector_t *apol_types_relation_result_get_typerules(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_typerules(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of apol_infoflow_result_t pointers corresponding
@@ -291,7 +284,7 @@ extern apol_vector_t *apol_types_relation_result_get_typerules(apol_types_relati
  * @return Vector of infoflow results, or NULL if analysis was not
  * run.
  */
-extern apol_vector_t *apol_types_relation_result_get_directflows(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_directflows(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of apol_infoflow_result_t pointers corresponding
@@ -306,7 +299,7 @@ extern apol_vector_t *apol_types_relation_result_get_directflows(apol_types_rela
  * @return Vector of infoflow results, or NULL if analysis was not
  * run.
  */
-extern apol_vector_t *apol_types_relation_result_get_transflowsAB(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_transflowsAB(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of apol_infoflow_result_t pointers corresponding
@@ -321,7 +314,7 @@ extern apol_vector_t *apol_types_relation_result_get_transflowsAB(apol_types_rel
  * @return Vector of infoflow results, or NULL if analysis was not
  * run.
  */
-extern apol_vector_t *apol_types_relation_result_get_transflowsBA(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_transflowsBA(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of apol_domain_trans_result_t pointers
@@ -336,7 +329,7 @@ extern apol_vector_t *apol_types_relation_result_get_transflowsBA(apol_types_rel
  * @return Vector of domain transition results, or NULL if analysis
  * was not run.
  */
-extern apol_vector_t *apol_types_relation_result_get_domainsAB(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_domainsAB(apol_types_relation_result_t * result);
 
 /**
  * Return the vector of apol_domain_trans_result_t pointers
@@ -351,7 +344,7 @@ extern apol_vector_t *apol_types_relation_result_get_domainsAB(apol_types_relati
  * @return Vector of domain transition results, or NULL if analysis
  * was not run.
  */
-extern apol_vector_t *apol_types_relation_result_get_domainsBA(apol_types_relation_result_t *result);
+extern apol_vector_t *apol_types_relation_result_get_domainsBA(apol_types_relation_result_t * result);
 
 /**
  * Given a types relation access node, return the type stored within.
@@ -360,7 +353,7 @@ extern apol_vector_t *apol_types_relation_result_get_domainsBA(apol_types_relati
  *
  * @return Pointer to the type stored within.
  */
-extern qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t *a);
+extern qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t * a);
 
 /**
  * Given a types relation access node, return the vector of
@@ -371,6 +364,6 @@ extern qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_acce
  * @return Pointer to the vector of rules.  The caller <b>must not</b>
  * destroy this vector.
  */
-extern apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t *a);
+extern apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t * a);
 
 #endif

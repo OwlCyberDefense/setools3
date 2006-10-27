@@ -32,7 +32,8 @@
 
 #include <errno.h>
 
-struct apol_user_query {
+struct apol_user_query
+{
 	char *user_name, *role_name;
 	apol_mls_level_t *default_level;
 	apol_mls_range_t *range;
@@ -42,9 +43,7 @@ struct apol_user_query {
 
 /******************** user queries ********************/
 
-int apol_get_user_by_query(apol_policy_t *p,
-			   apol_user_query_t *u,
-			   apol_vector_t **v)
+int apol_get_user_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *role_iter = NULL;
 	apol_mls_level_t *default_level = NULL;
@@ -58,9 +57,9 @@ int apol_get_user_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_user_t *user;
-		if (qpol_iterator_get_item(iter, (void **) &user) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&user) < 0) {
 			goto cleanup;
 		}
 		append_user = 1;
@@ -77,12 +76,10 @@ int apol_get_user_by_query(apol_policy_t *p,
 			if (qpol_user_get_name(p->p, user, &user_name) < 0) {
 				goto cleanup;
 			}
-			compval = apol_compare(p, user_name, u->user_name,
-					       u->flags, &(u->user_regex));
+			compval = apol_compare(p, user_name, u->user_name, u->flags, &(u->user_regex));
 			if (compval < 0) {
 				goto cleanup;
-			}
-			else if (compval == 0) {
+			} else if (compval == 0) {
 				continue;
 			}
 			if (qpol_user_get_role_iter(p->p, user, &role_iter) < 0) {
@@ -90,19 +87,17 @@ int apol_get_user_by_query(apol_policy_t *p,
 			}
 			if (u->role_name != NULL && u->role_name[0] != '\0') {
 				append_user = 0;
-				for ( ; !qpol_iterator_end(role_iter); qpol_iterator_next(role_iter)) {
+				for (; !qpol_iterator_end(role_iter); qpol_iterator_next(role_iter)) {
 					qpol_role_t *role;
 					char *role_name;
-					if (qpol_iterator_get_item(role_iter, (void **) &role) < 0 ||
+					if (qpol_iterator_get_item(role_iter, (void **)&role) < 0 ||
 					    qpol_role_get_name(p->p, role, &role_name) < 0) {
 						goto cleanup;
 					}
-					compval = apol_compare(p, role_name, u->role_name,
-							       u->flags, &(u->role_regex));
+					compval = apol_compare(p, role_name, u->role_name, u->flags, &(u->role_regex));
 					if (compval < 0) {
 						goto cleanup;
-					}
-					else if (compval == 1) {
+					} else if (compval == 1) {
 						append_user = 1;
 						break;
 					}
@@ -116,13 +111,11 @@ int apol_get_user_by_query(apol_policy_t *p,
 				    (default_level = apol_mls_level_create_from_qpol_mls_level(p, mls_default_level)) == NULL) {
 					goto cleanup;
 				}
-				compval = apol_mls_level_compare(p, default_level,
-								 u->default_level);
+				compval = apol_mls_level_compare(p, default_level, u->default_level);
 				apol_mls_level_destroy(&default_level);
 				if (compval < 0) {
 					goto cleanup;
-				}
-				else if (compval != APOL_MLS_EQ) {
+				} else if (compval != APOL_MLS_EQ) {
 					continue;
 				}
 
@@ -130,14 +123,11 @@ int apol_get_user_by_query(apol_policy_t *p,
 				    (range = apol_mls_range_create_from_qpol_mls_range(p, mls_range)) == NULL) {
 					goto cleanup;
 				}
-				compval = apol_mls_range_compare(p,
-								 range, u->range,
-								 u->flags);
+				compval = apol_mls_range_compare(p, range, u->range, u->flags);
 				apol_mls_range_destroy(&range);
 				if (compval < 0) {
 					goto cleanup;
-				}
-				else if (compval == 0) {
+				} else if (compval == 0) {
 					continue;
 				}
 			}
@@ -148,7 +138,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 		}
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -164,7 +154,7 @@ apol_user_query_t *apol_user_query_create(void)
 	return calloc(1, sizeof(apol_user_query_t));
 }
 
-void apol_user_query_destroy(apol_user_query_t **u)
+void apol_user_query_destroy(apol_user_query_t ** u)
 {
 	if (*u != NULL) {
 		free((*u)->user_name);
@@ -178,28 +168,24 @@ void apol_user_query_destroy(apol_user_query_t **u)
 	}
 }
 
-int apol_user_query_set_user(apol_policy_t *p, apol_user_query_t *u, const char *name)
+int apol_user_query_set_user(apol_policy_t * p, apol_user_query_t * u, const char *name)
 {
 	return apol_query_set(p, &u->user_name, &u->user_regex, name);
 }
 
-int apol_user_query_set_role(apol_policy_t *p, apol_user_query_t *u, const char *role)
+int apol_user_query_set_role(apol_policy_t * p, apol_user_query_t * u, const char *role)
 {
 	return apol_query_set(p, &u->role_name, &u->role_regex, role);
 }
 
-int apol_user_query_set_default_level(apol_policy_t *p __attribute__ ((unused)),
-				      apol_user_query_t *u,
-				      apol_mls_level_t *level)
+int apol_user_query_set_default_level(apol_policy_t * p __attribute__ ((unused)), apol_user_query_t * u, apol_mls_level_t * level)
 {
 	u->default_level = level;
 	return 0;
 }
 
-int apol_user_query_set_range(apol_policy_t *p __attribute__ ((unused)),
-			      apol_user_query_t *u,
-			      apol_mls_range_t *range,
-			      unsigned int range_match)
+int apol_user_query_set_range(apol_policy_t * p __attribute__ ((unused)),
+			      apol_user_query_t * u, apol_mls_range_t * range, unsigned int range_match)
 {
 	if (u->range != NULL) {
 		apol_mls_range_destroy(&u->range);
@@ -209,7 +195,7 @@ int apol_user_query_set_range(apol_policy_t *p __attribute__ ((unused)),
 	return 0;
 }
 
-int apol_user_query_set_regex(apol_policy_t *p, apol_user_query_t *u, int is_regex)
+int apol_user_query_set_regex(apol_policy_t * p, apol_user_query_t * u, int is_regex)
 {
 	return apol_query_set_regex(p, &u->flags, is_regex);
 }

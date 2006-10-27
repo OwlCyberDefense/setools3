@@ -34,29 +34,34 @@
 #include <qpol/policy.h>
 #include <stddef.h>
 
-typedef struct hash_state {
+typedef struct hash_state
+{
 	unsigned int bucket;
 	hashtab_node_t *node;
 	hashtab_t *table;
 } hash_state_t;
 
-typedef struct ebitmap_state {
+typedef struct ebitmap_state
+{
 	ebitmap_t *bmap;
 	size_t cur;
 } ebitmap_state_t;
 
-typedef struct ocon_state {
+typedef struct ocon_state
+{
 	ocontext_t *head;
 	ocontext_t *cur;
 } ocon_state_t;
 
-typedef struct perm_state {
+typedef struct perm_state
+{
 	uint32_t perm_set;
 	uint32_t obj_class_val;
 	uint8_t cur;
 } perm_state_t;
 
-typedef struct avtab_state {
+typedef struct avtab_state
+{
 	uint32_t rule_type_mask;
 	avtab_t *ucond_tab;
 	avtab_t *cond_tab;
@@ -67,43 +72,41 @@ typedef struct avtab_state {
 	unsigned which;
 } avtab_state_t;
 
-int qpol_iterator_create(qpol_policy_t *policy, void *state,
-	void *(*get_cur)(qpol_iterator_t *iter),
-	int (*next)(qpol_iterator_t *iter),
-	int (*end)(qpol_iterator_t *iter),
-	size_t (*size)(qpol_iterator_t *iter),
-	void (*free_fn)(void *x),
-	qpol_iterator_t **iter);
+int qpol_iterator_create(qpol_policy_t * policy, void *state,
+			 void *(*get_cur) (qpol_iterator_t * iter),
+			 int (*next) (qpol_iterator_t * iter),
+			 int (*end) (qpol_iterator_t * iter),
+			 size_t(*size) (qpol_iterator_t * iter), void (*free_fn) (void *x), qpol_iterator_t ** iter);
 
-void *qpol_iterator_state(qpol_iterator_t *iter);
-policydb_t *qpol_iterator_policy(qpol_iterator_t *iter);
+void *qpol_iterator_state(qpol_iterator_t * iter);
+policydb_t *qpol_iterator_policy(qpol_iterator_t * iter);
 
-void *hash_state_get_cur(qpol_iterator_t *iter);
-void *hash_state_get_cur_key(qpol_iterator_t *iter);
-void *ebitmap_state_get_cur_type(qpol_iterator_t *iter);
-void *ebitmap_state_get_cur_role(qpol_iterator_t *iter);
-void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter);
-void *ocon_state_get_cur(qpol_iterator_t *iter);
-void *perm_state_get_cur(qpol_iterator_t *iter);
-void *avtab_state_get_cur(qpol_iterator_t *iter);
+void *hash_state_get_cur(qpol_iterator_t * iter);
+void *hash_state_get_cur_key(qpol_iterator_t * iter);
+void *ebitmap_state_get_cur_type(qpol_iterator_t * iter);
+void *ebitmap_state_get_cur_role(qpol_iterator_t * iter);
+void *ebitmap_state_get_cur_cat(qpol_iterator_t * iter);
+void *ocon_state_get_cur(qpol_iterator_t * iter);
+void *perm_state_get_cur(qpol_iterator_t * iter);
+void *avtab_state_get_cur(qpol_iterator_t * iter);
 
-int hash_state_next(qpol_iterator_t *iter);
-int ebitmap_state_next(qpol_iterator_t *iter);
-int ocon_state_next(qpol_iterator_t *iter);
-int perm_state_next(qpol_iterator_t *iter);
-int avtab_state_next(qpol_iterator_t *iter);
+int hash_state_next(qpol_iterator_t * iter);
+int ebitmap_state_next(qpol_iterator_t * iter);
+int ocon_state_next(qpol_iterator_t * iter);
+int perm_state_next(qpol_iterator_t * iter);
+int avtab_state_next(qpol_iterator_t * iter);
 
-int hash_state_end(qpol_iterator_t *iter);
-int ebitmap_state_end(qpol_iterator_t *iter);
-int ocon_state_end(qpol_iterator_t *iter);
-int perm_state_end(qpol_iterator_t *iter);
-int avtab_state_end(qpol_iterator_t *iter);
+int hash_state_end(qpol_iterator_t * iter);
+int ebitmap_state_end(qpol_iterator_t * iter);
+int ocon_state_end(qpol_iterator_t * iter);
+int perm_state_end(qpol_iterator_t * iter);
+int avtab_state_end(qpol_iterator_t * iter);
 
-size_t hash_state_size(qpol_iterator_t *iter);
-size_t ebitmap_state_size(qpol_iterator_t *iter);
-size_t ocon_state_size(qpol_iterator_t *iter);
-size_t perm_state_size(qpol_iterator_t *iter);
-size_t avtab_state_size(qpol_iterator_t *iter);
+size_t hash_state_size(qpol_iterator_t * iter);
+size_t ebitmap_state_size(qpol_iterator_t * iter);
+size_t ocon_state_size(qpol_iterator_t * iter);
+size_t perm_state_size(qpol_iterator_t * iter);
+size_t avtab_state_size(qpol_iterator_t * iter);
 
 void ebitmap_state_destroy(void *es);
-#endif /* QPOL_ITERATOR_INTERNAL_H */
+#endif				       /* QPOL_ITERATOR_INTERNAL_H */

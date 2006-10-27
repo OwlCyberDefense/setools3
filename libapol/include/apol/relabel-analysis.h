@@ -56,9 +56,7 @@ typedef struct apol_relabel_result_pair apol_relabel_result_pair_t;
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_relabel_analysis_do(apol_policy_t *p,
-				    apol_relabel_analysis_t *r,
-				    apol_vector_t **v);
+extern int apol_relabel_analysis_do(apol_policy_t * p, apol_relabel_analysis_t * r, apol_vector_t ** v);
 
 /**
  * Allocate and return a new relabel analysis structure.  All fields
@@ -78,7 +76,7 @@ extern apol_relabel_analysis_t *apol_relabel_analysis_create(void);
  *
  * @param r Reference to a relabel analysis structure to destroy.
  */
-extern void apol_relabel_analysis_destroy(apol_relabel_analysis_t **r);
+extern void apol_relabel_analysis_destroy(apol_relabel_analysis_t ** r);
 
 /**
  * Set a relabel analysis to search in a specific direction.  This
@@ -94,9 +92,7 @@ extern void apol_relabel_analysis_destroy(apol_relabel_analysis_t **r);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_relabel_analysis_set_dir(apol_policy_t *p,
-					 apol_relabel_analysis_t *r,
-					 unsigned int dir);
+extern int apol_relabel_analysis_set_dir(apol_policy_t * p, apol_relabel_analysis_t * r, unsigned int dir);
 
 /**
  * Set a relabel analysis to begin searching using a given type.  This
@@ -108,9 +104,7 @@ extern int apol_relabel_analysis_set_dir(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_relabel_analysis_set_type(apol_policy_t *p,
-					  apol_relabel_analysis_t *r,
-					  const char *name);
+extern int apol_relabel_analysis_set_type(apol_policy_t * p, apol_relabel_analysis_t * r, const char *name);
 
 /**
  * Set a relabel analysis to return rules with this object
@@ -126,9 +120,7 @@ extern int apol_relabel_analysis_set_type(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_relabel_analysis_append_class(apol_policy_t *p,
-					      apol_relabel_analysis_t *r,
-					      const char *obj_class);
+extern int apol_relabel_analysis_append_class(apol_policy_t * p, apol_relabel_analysis_t * r, const char *obj_class);
 
 /**
  * Set a relabel analysis to return rules with this subject as their
@@ -145,9 +137,7 @@ extern int apol_relabel_analysis_append_class(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_relabel_analysis_append_subject(apol_policy_t *p,
-						apol_relabel_analysis_t *r,
-						const char *subject);
+extern int apol_relabel_analysis_append_subject(apol_policy_t * p, apol_relabel_analysis_t * r, const char *subject);
 
 /**
  * Set a relabel analysis to return only types matching a regular
@@ -160,9 +150,7 @@ extern int apol_relabel_analysis_append_subject(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_relabel_analysis_set_result_regex(apol_policy_t *p,
-						  apol_relabel_analysis_t *r,
-						  const char *result);
+extern int apol_relabel_analysis_set_result_regex(apol_policy_t * p, apol_relabel_analysis_t * r, const char *result);
 
 /******************** functions to access relabel results ********************/
 
@@ -185,7 +173,7 @@ extern void apol_relabel_result_free(void *result);
  * @return Pointer to a vector of rule pairs, relative to the policy
  * originally used to generate the relabelling result.
  */
-extern apol_vector_t *apol_relabel_result_get_to(apol_relabel_result_t *r);
+extern apol_vector_t *apol_relabel_result_get_to(apol_relabel_result_t * r);
 
 /**
  * Return the relabelfrom vector embedded within an
@@ -198,7 +186,7 @@ extern apol_vector_t *apol_relabel_result_get_to(apol_relabel_result_t *r);
  * @return Pointer to a vector of rule pairs, relative to the policy
  * originally used to generate the relabelling result.
  */
-extern apol_vector_t *apol_relabel_result_get_from(apol_relabel_result_t *r);
+extern apol_vector_t *apol_relabel_result_get_from(apol_relabel_result_t * r);
 
 /**
  * Return the relabelboth vector embedded within an
@@ -211,7 +199,7 @@ extern apol_vector_t *apol_relabel_result_get_from(apol_relabel_result_t *r);
  * @return Pointer to a vector of rule pairs, relative to the policy
  * originally used to generate the relabelling result.
  */
-extern apol_vector_t *apol_relabel_result_get_both(apol_relabel_result_t *r);
+extern apol_vector_t *apol_relabel_result_get_both(apol_relabel_result_t * r);
 
 /**
  * Return the resulting type for an apol_relabel_result node.
@@ -220,7 +208,7 @@ extern apol_vector_t *apol_relabel_result_get_both(apol_relabel_result_t *r);
  *
  * @return Pointer to a result type.
  */
-extern qpol_type_t *apol_relabel_result_get_result_type(apol_relabel_result_t *r);
+extern qpol_type_t *apol_relabel_result_get_result_type(apol_relabel_result_t * r);
 
 /**
  * Return the first rule from an apol_relabel_result_pair object.
@@ -237,7 +225,7 @@ extern qpol_type_t *apol_relabel_result_get_result_type(apol_relabel_result_t *r
  *
  * @return Rule affecting the starting type/subject.
  */
-extern qpol_avrule_t *apol_relabel_result_pair_get_ruleA(apol_relabel_result_pair_t *p);
+extern qpol_avrule_t *apol_relabel_result_pair_get_ruleA(apol_relabel_result_pair_t * p);
 
 /**
  * Return the other rule from an apol_relabel_result_pair object.
@@ -253,7 +241,7 @@ extern qpol_avrule_t *apol_relabel_result_pair_get_ruleA(apol_relabel_result_pai
  * @return Rule affecting the resulting type/subject (for object mode)
  * or NULL (for subject mode).
  */
-extern qpol_avrule_t *apol_relabel_result_pair_get_ruleB(apol_relabel_result_pair_t *p);
+extern qpol_avrule_t *apol_relabel_result_pair_get_ruleB(apol_relabel_result_pair_t * p);
 
 /**
  * Return the intermediate type for an apol_relabel_result_pair
@@ -269,6 +257,6 @@ extern qpol_avrule_t *apol_relabel_result_pair_get_ruleB(apol_relabel_result_pai
  * @return Intermediate type for relabel result (for object mode) or
  * NULL (for subject mode).
  */
-extern qpol_type_t *apol_relabel_result_pair_get_intermediate_type(apol_relabel_result_pair_t *p);
+extern qpol_type_t *apol_relabel_result_pair_get_intermediate_type(apol_relabel_result_pair_t * p);
 
 #endif

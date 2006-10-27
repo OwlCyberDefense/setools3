@@ -39,7 +39,7 @@ typedef struct qpol_iterator qpol_iterator_t;
  *  memory used by the iterator and the iterator itself. On returning
  *  *iter will be NULL.
  */
-extern void qpol_iterator_destroy(qpol_iterator_t **iter);
+extern void qpol_iterator_destroy(qpol_iterator_t ** iter);
 
 /**
  *  Get the item at the current position of the iterator.
@@ -52,7 +52,7 @@ extern void qpol_iterator_destroy(qpol_iterator_t **iter);
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *item will be NULL.
  */
-extern int qpol_iterator_get_item(qpol_iterator_t *iter, void **item);
+extern int qpol_iterator_get_item(qpol_iterator_t * iter, void **item);
 
 /**
  *  Advance the iterator to the next item.
@@ -61,7 +61,7 @@ extern int qpol_iterator_get_item(qpol_iterator_t *iter, void **item);
  *  iterator that is at the end fails (and returns < 0). If the call fails,
  *  errno will be set.
  */
-extern int qpol_iterator_next(qpol_iterator_t *iter);
+extern int qpol_iterator_next(qpol_iterator_t * iter);
 
 /**
  *  Determine if an iterator is at the end.
@@ -71,7 +71,7 @@ extern int qpol_iterator_next(qpol_iterator_t *iter);
  *  zero in any other case. If there is an error determining if
  *  the iterator is at the end then non-zero will be returned.
  */
-extern int qpol_iterator_end(qpol_iterator_t *iter);
+extern int qpol_iterator_end(qpol_iterator_t * iter);
 
 /**
  *  Get the total number of items in the list traversed by the iterator.
@@ -81,6 +81,6 @@ extern int qpol_iterator_end(qpol_iterator_t *iter);
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *size will be 0.
  */
-extern int qpol_iterator_get_size(qpol_iterator_t *iter, size_t *size);
+extern int qpol_iterator_get_size(qpol_iterator_t * iter, size_t * size);
 
-#endif /* QPOL_ITERATOR */
+#endif				       /* QPOL_ITERATOR */

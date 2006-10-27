@@ -34,13 +34,14 @@
 #include <errno.h>
 #include <tcl.h>
 
-int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj **obj) {
+int apol_level_to_tcl_obj(Tcl_Interp * interp, apol_mls_level_t * level, Tcl_Obj ** obj)
+{
 	Tcl_Obj *level_elem[2], *cats_obj;
 	size_t i;
 	level_elem[0] = Tcl_NewStringObj(level->sens, -1);
 	level_elem[1] = Tcl_NewListObj(0, NULL);
 	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
-		cats_obj = Tcl_NewStringObj((char *) apol_vector_get_element(level->cats, i), -1);
+		cats_obj = Tcl_NewStringObj((char *)apol_vector_get_element(level->cats, i), -1);
 		if (Tcl_ListObjAppendElement(interp, level_elem[1], cats_obj) == TCL_ERROR) {
 			return -1;
 		}
@@ -62,11 +63,9 @@ int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj *
  * second element is a unique identifier to the conditional
  * expression.
  */
-static int qpol_avrule_to_tcl_list(Tcl_Interp *interp,
-				   qpol_avrule_t *avrule,
-				   Tcl_Obj **obj)
+static int qpol_avrule_to_tcl_list(Tcl_Interp * interp, qpol_avrule_t * avrule, Tcl_Obj ** obj)
 {
-        uint32_t rule_type, is_enabled;
+	uint32_t rule_type, is_enabled;
 	const char *rule_string;
 	qpol_type_t *source, *target;
 	qpol_class_t *obj_class;
@@ -97,10 +96,10 @@ static int qpol_avrule_to_tcl_list(Tcl_Interp *interp,
 	avrule_elem[2] = Tcl_NewStringObj(target_name, -1);
 	avrule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
 	avrule_elem[4] = Tcl_NewListObj(0, NULL);
-	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+	for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
 		char *perm_name;
 		Tcl_Obj *perm_obj;
-		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		if (qpol_iterator_get_item(perm_iter, (void **)&perm_name) < 0) {
 			goto cleanup;
 		}
 		perm_obj = Tcl_NewStringObj(perm_name, -1);
@@ -115,15 +114,14 @@ static int qpol_avrule_to_tcl_list(Tcl_Interp *interp,
 	}
 	if (cond == NULL) {
 		avrule_elem[5] = Tcl_NewListObj(0, NULL);
-	}
-	else {
+	} else {
 		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
-		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		cond_elem[1] = Tcl_NewStringObj("", -1);	/* FIX ME! */
 		avrule_elem[5] = Tcl_NewListObj(2, cond_elem);
 	}
 	*obj = Tcl_NewListObj(6, avrule_elem);
-        retval = TCL_OK;
- cleanup:
+	retval = TCL_OK;
+      cleanup:
 	qpol_iterator_destroy(&perm_iter);
 	return retval;
 }
@@ -141,9 +139,7 @@ static int qpol_avrule_to_tcl_list(Tcl_Interp *interp,
  * second element is a unique identifier to the conditional
  * expression.
  */
-static int qpol_terule_to_tcl_list(Tcl_Interp *interp,
-				   qpol_terule_t *terule,
-				   Tcl_Obj **obj)
+static int qpol_terule_to_tcl_list(Tcl_Interp * interp, qpol_terule_t * terule, Tcl_Obj ** obj)
 {
 	uint32_t rule_type, is_enabled;
 	const char *rule_string;
@@ -182,15 +178,14 @@ static int qpol_terule_to_tcl_list(Tcl_Interp *interp,
 	}
 	if (cond == NULL) {
 		terule_elem[5] = Tcl_NewListObj(0, NULL);
-	}
-	else {
+	} else {
 		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
-		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		cond_elem[1] = Tcl_NewStringObj("", -1);	/* FIX ME! */
 		terule_elem[5] = Tcl_NewListObj(2, cond_elem);
 	}
 	*obj = Tcl_NewListObj(6, terule_elem);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -210,10 +205,7 @@ static int qpol_terule_to_tcl_list(Tcl_Interp *interp,
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-static int qpol_type_set_to_tcl_list(Tcl_Interp *interp,
-				     qpol_type_set_t *ts,
-				     uint32_t is_self,
-				     Tcl_Obj **obj)
+static int qpol_type_set_to_tcl_list(Tcl_Interp * interp, qpol_type_set_t * ts, uint32_t is_self, Tcl_Obj ** obj)
 {
 	uint32_t is_star, is_comp;
 	qpol_iterator_t *inc_iter = NULL, *sub_iter = NULL;
@@ -240,9 +232,8 @@ static int qpol_type_set_to_tcl_list(Tcl_Interp *interp,
 			goto cleanup;
 		}
 	}
-	for ( ; !qpol_iterator_end(inc_iter); qpol_iterator_next(inc_iter)) {
-		if (qpol_iterator_get_item(inc_iter, (void **) &type) < 0 ||
-		    qpol_type_get_name(policydb->p, type, &type_name) < 0) {
+	for (; !qpol_iterator_end(inc_iter); qpol_iterator_next(inc_iter)) {
+		if (qpol_iterator_get_item(inc_iter, (void **)&type) < 0 || qpol_type_get_name(policydb->p, type, &type_name) < 0) {
 			goto cleanup;
 		}
 		o = Tcl_NewStringObj(type_name, -1);
@@ -250,13 +241,12 @@ static int qpol_type_set_to_tcl_list(Tcl_Interp *interp,
 			goto cleanup;
 		}
 	}
-	for ( ; !qpol_iterator_end(sub_iter); qpol_iterator_next(sub_iter)) {
-		if (qpol_iterator_get_item(sub_iter, (void **) &type) < 0 ||
-		    qpol_type_get_name(policydb->p, type, &type_name) < 0) {
+	for (; !qpol_iterator_end(sub_iter); qpol_iterator_next(sub_iter)) {
+		if (qpol_iterator_get_item(sub_iter, (void **)&type) < 0 || qpol_type_get_name(policydb->p, type, &type_name) < 0) {
 			goto cleanup;
 		}
 		o = Tcl_NewStringObj("-", -1);
-		Tcl_AppendStringsToObj(o, type_name, (char *) NULL);
+		Tcl_AppendStringsToObj(o, type_name, (char *)NULL);
 		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
 			goto cleanup;
 		}
@@ -268,7 +258,7 @@ static int qpol_type_set_to_tcl_list(Tcl_Interp *interp,
 		}
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&inc_iter);
 	qpol_iterator_destroy(&sub_iter);
 	return retval;
@@ -287,9 +277,7 @@ static int qpol_type_set_to_tcl_list(Tcl_Interp *interp,
  * "disabled", and the second element is a unique identifier to the
  * conditional expression.
  */
-static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
-				      qpol_syn_avrule_t *avrule,
-				      Tcl_Obj **obj)
+static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp * interp, qpol_syn_avrule_t * avrule, Tcl_Obj ** obj)
 {
 	uint32_t rule_type, is_self;
 	qpol_type_set_t *source_set, *target_set;
@@ -326,8 +314,8 @@ static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	avrule_elem[3] = Tcl_NewListObj(0, NULL);
-	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
-		if (qpol_iterator_get_item(class_iter, (void **) &obj_class) < 0 ||
+	for (; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+		if (qpol_iterator_get_item(class_iter, (void **)&obj_class) < 0 ||
 		    qpol_class_get_name(policydb->p, obj_class, &obj_class_name) < 0) {
 			goto cleanup;
 		}
@@ -337,8 +325,8 @@ static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
 		}
 	}
 	avrule_elem[4] = Tcl_NewListObj(0, NULL);
-	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
-		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+	for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+		if (qpol_iterator_get_item(perm_iter, (void **)&perm_name) < 0) {
 			goto cleanup;
 		}
 		o = Tcl_NewStringObj(perm_name, -1);
@@ -346,19 +334,18 @@ static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
 			goto cleanup;
 		}
 	}
-	avrule_elem[5] = Tcl_NewLongObj((long) lineno);
+	avrule_elem[5] = Tcl_NewLongObj((long)lineno);
 	if (cond == NULL) {
 		avrule_elem[6] = Tcl_NewListObj(0, NULL);
-	}
-	else {
+	} else {
 		Tcl_Obj *cond_elem[2];
 		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
-		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		cond_elem[1] = Tcl_NewStringObj("", -1);	/* FIX ME! */
 		avrule_elem[6] = Tcl_NewListObj(2, cond_elem);
 	}
 	*obj = Tcl_NewListObj(7, avrule_elem);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&class_iter);
 	qpol_iterator_destroy(&perm_iter);
 	return retval;
@@ -377,9 +364,7 @@ static int qpol_syn_avrule_to_tcl_obj(Tcl_Interp *interp,
  * "disabled", and the second element is a unique identifier to the
  * conditional expression.
  */
-static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
-				      qpol_syn_terule_t *terule,
-				      Tcl_Obj **obj)
+static int qpol_syn_terule_to_tcl_obj(Tcl_Interp * interp, qpol_syn_terule_t * terule, Tcl_Obj ** obj)
 {
 	uint32_t rule_type;
 	qpol_type_set_t *source_set, *target_set;
@@ -414,8 +399,8 @@ static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	terule_elem[3] = Tcl_NewListObj(0, NULL);
-	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
-		if (qpol_iterator_get_item(class_iter, (void **) &obj_class) < 0 ||
+	for (; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+		if (qpol_iterator_get_item(class_iter, (void **)&obj_class) < 0 ||
 		    qpol_class_get_name(policydb->p, obj_class, &obj_class_name) < 0) {
 			goto cleanup;
 		}
@@ -428,19 +413,18 @@ static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	terule_elem[4] = Tcl_NewStringObj(default_type_name, -1);
-	terule_elem[5] = Tcl_NewLongObj((long) lineno);
+	terule_elem[5] = Tcl_NewLongObj((long)lineno);
 	if (cond == NULL) {
 		terule_elem[6] = Tcl_NewListObj(0, NULL);
-	}
-	else {
+	} else {
 		Tcl_Obj *cond_elem[2];
 		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
-		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		cond_elem[1] = Tcl_NewStringObj("", -1);	/* FIX ME! */
 		terule_elem[6] = Tcl_NewListObj(2, cond_elem);
 	}
 	*obj = Tcl_NewListObj(7, terule_elem);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&class_iter);
 	return retval;
 }
@@ -455,7 +439,7 @@ static int qpol_syn_terule_to_tcl_obj(Tcl_Interp *interp,
  *
  * @param argv A MLS level.
  */
-static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_RenderLevel(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj;
 	apol_mls_level_t *level = NULL;
@@ -478,8 +462,7 @@ static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc,
 	retval2 = apol_tcl_string_to_level(interp, argv[1], level);
 	if (retval2 < 0) {
 		goto cleanup;
-	}
-	else if (retval2 == 1) {
+	} else if (retval2 == 1) {
 		/* no render possible */
 		retval = TCL_OK;
 		goto cleanup;
@@ -490,7 +473,7 @@ static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc,
 	result_obj = Tcl_NewStringObj(rendered_level, -1);
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	apol_mls_level_destroy(&level);
 	free(rendered_level);
 	if (retval == TCL_ERROR) {
@@ -513,7 +496,7 @@ static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc,
  *   <li>Tcl string representing a context
  * </ol>
  */
-static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_RenderContext(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = NULL;
 	apol_context_t *context = NULL;
@@ -549,7 +532,7 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int arg
 	result_obj = Tcl_NewStringObj(rendered_context, -1);
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	apol_context_destroy(&context);
 	free(rendered_context);
 	if (retval == TCL_ERROR) {
@@ -571,7 +554,7 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int arg
  *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	Tcl_Obj *result_obj = NULL;
 	qpol_avrule_t *avrule;
@@ -591,7 +574,7 @@ static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int objc
 	}
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -608,7 +591,7 @@ static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int objc
  *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRuleType(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderAVRuleType(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_avrule_t *avrule;
 	uint32_t rule_type;
@@ -636,7 +619,7 @@ static int Apol_RenderAVRuleType(ClientData clientData, Tcl_Interp *interp, int 
 	o = Tcl_NewStringObj(rule_string, -1);
 	Tcl_SetObjResult(interp, o);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -653,7 +636,7 @@ static int Apol_RenderAVRuleType(ClientData clientData, Tcl_Interp *interp, int 
  *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_avrule_t *avrule;
 	qpol_type_t *source;
@@ -676,7 +659,7 @@ static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, in
 	}
 	Tcl_SetResult(interp, source_string, TCL_VOLATILE);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -693,7 +676,7 @@ static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, in
  *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_avrule_t *avrule;
 	qpol_type_t *target;
@@ -716,7 +699,7 @@ static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, in
 	}
 	Tcl_SetResult(interp, target_string, TCL_VOLATILE);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -733,7 +716,7 @@ static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, in
  *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_avrule_t *avrule;
 	qpol_class_t *obj_class;
@@ -756,7 +739,7 @@ static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int
 	}
 	Tcl_SetResult(interp, obj_class_string, TCL_VOLATILE);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -773,7 +756,7 @@ static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int
  *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	Tcl_Obj *result_obj = NULL, *perm_obj;
 	qpol_avrule_t *avrule;
@@ -794,9 +777,9 @@ static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int
 		goto cleanup;
 	}
 	result_obj = Tcl_NewListObj(0, NULL);
-	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+	for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
 		char *perm_name;
-		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		if (qpol_iterator_get_item(perm_iter, (void **)&perm_name) < 0) {
 			goto cleanup;
 		}
 		perm_obj = Tcl_NewStringObj(perm_name, -1);
@@ -808,7 +791,7 @@ static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&perm_iter);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
@@ -830,7 +813,7 @@ static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int
  *   <li>Tcl object representing an te rule identifier.
  * </ol>
  */
-static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderTERule(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	Tcl_Obj *result_obj;
 	qpol_terule_t *terule;
@@ -850,7 +833,7 @@ static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int objc
 	}
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -867,7 +850,7 @@ static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int objc
  *   <li>Tcl object representing a te rule identifier.
  * </ol>
  */
-static int Apol_RenderTERuleType(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderTERuleType(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_terule_t *terule;
 	uint32_t rule_type;
@@ -895,7 +878,7 @@ static int Apol_RenderTERuleType(ClientData clientData, Tcl_Interp *interp, int 
 	o = Tcl_NewStringObj(rule_string, -1);
 	Tcl_SetObjResult(interp, o);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -912,7 +895,7 @@ static int Apol_RenderTERuleType(ClientData clientData, Tcl_Interp *interp, int 
  *   <li>Tcl object representing a te rule identifier.
  * </ol>
  */
-static int Apol_RenderTERuleSource(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderTERuleSource(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_terule_t *terule;
 	qpol_type_t *source;
@@ -935,7 +918,7 @@ static int Apol_RenderTERuleSource(ClientData clientData, Tcl_Interp *interp, in
 	}
 	Tcl_SetResult(interp, source_string, TCL_VOLATILE);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -952,7 +935,7 @@ static int Apol_RenderTERuleSource(ClientData clientData, Tcl_Interp *interp, in
  *   <li>Tcl object representing a te rule identifier.
  * </ol>
  */
-static int Apol_RenderTERuleTarget(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderTERuleTarget(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_terule_t *terule;
 	qpol_type_t *target;
@@ -975,7 +958,7 @@ static int Apol_RenderTERuleTarget(ClientData clientData, Tcl_Interp *interp, in
 	}
 	Tcl_SetResult(interp, target_string, TCL_VOLATILE);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -992,7 +975,7 @@ static int Apol_RenderTERuleTarget(ClientData clientData, Tcl_Interp *interp, in
  *   <li>Tcl object representing a te rule identifier.
  * </ol>
  */
-static int Apol_RenderTERuleClass(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderTERuleClass(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_terule_t *terule;
 	qpol_class_t *obj_class;
@@ -1015,7 +998,7 @@ static int Apol_RenderTERuleClass(ClientData clientData, Tcl_Interp *interp, int
 	}
 	Tcl_SetResult(interp, obj_class_string, TCL_VOLATILE);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1032,7 +1015,7 @@ static int Apol_RenderTERuleClass(ClientData clientData, Tcl_Interp *interp, int
  *   <li>Tcl object representing a te rule identifier.
  * </ol>
  */
-static int Apol_RenderTERuleDefault(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderTERuleDefault(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_terule_t *terule;
 	qpol_type_t *default_type;
@@ -1055,7 +1038,7 @@ static int Apol_RenderTERuleDefault(ClientData clientData, Tcl_Interp *interp, i
 	}
 	Tcl_SetResult(interp, default_string, TCL_VOLATILE);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1074,7 +1057,7 @@ static int Apol_RenderTERuleDefault(ClientData clientData, Tcl_Interp *interp, i
  *   <li>Tcl object representing another av rule identifier.
  * </ol>
  */
-static int Apol_RenderAVRuleComp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderAVRuleComp(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_avrule_t *r1, *r2;
 	uint32_t rt1, rt2;
@@ -1092,14 +1075,12 @@ static int Apol_RenderAVRuleComp(ClientData clientData, Tcl_Interp *interp, int 
 		ERR(policydb, "%s", "Need two avrule identifiers.");
 		goto cleanup;
 	}
-	if (tcl_obj_to_qpol_avrule(interp, objv[1], &r1) == TCL_ERROR ||
-	    tcl_obj_to_qpol_avrule(interp, objv[2], &r2) == TCL_ERROR) {
+	if (tcl_obj_to_qpol_avrule(interp, objv[1], &r1) == TCL_ERROR || tcl_obj_to_qpol_avrule(interp, objv[2], &r2) == TCL_ERROR) {
 		goto cleanup;
 	}
 	if (qpol_avrule_get_rule_type(policydb->p, r1, &rt1) < 0 ||
 	    qpol_avrule_get_rule_type(policydb->p, r2, &rt2) < 0 ||
-            (rule_type1 = apol_rule_type_to_str(rt1)) == NULL ||
-	    (rule_type2 = apol_rule_type_to_str(rt2)) == NULL) {
+	    (rule_type1 = apol_rule_type_to_str(rt1)) == NULL || (rule_type2 = apol_rule_type_to_str(rt2)) == NULL) {
 		ERR(policydb, "%s", "Invalid avrule type.");
 		goto cleanup;
 	}
@@ -1109,8 +1090,7 @@ static int Apol_RenderAVRuleComp(ClientData clientData, Tcl_Interp *interp, int 
 	}
 	if (qpol_avrule_get_source_type(policydb->p, r1, &t1) < 0 ||
 	    qpol_avrule_get_source_type(policydb->p, r2, &t2) < 0 ||
-	    qpol_type_get_name(policydb->p, t1, &s1) < 0 ||
-	    qpol_type_get_name(policydb->p, t2, &s2) < 0) {
+	    qpol_type_get_name(policydb->p, t1, &s1) < 0 || qpol_type_get_name(policydb->p, t2, &s2) < 0) {
 		goto cleanup;
 	}
 	if ((compval = strcmp(s1, s2)) != 0) {
@@ -1119,8 +1099,7 @@ static int Apol_RenderAVRuleComp(ClientData clientData, Tcl_Interp *interp, int 
 	}
 	if (qpol_avrule_get_target_type(policydb->p, r1, &t1) < 0 ||
 	    qpol_avrule_get_target_type(policydb->p, r2, &t2) < 0 ||
-	    qpol_type_get_name(policydb->p, t1, &s1) < 0 ||
-	    qpol_type_get_name(policydb->p, t2, &s2) < 0) {
+	    qpol_type_get_name(policydb->p, t1, &s1) < 0 || qpol_type_get_name(policydb->p, t2, &s2) < 0) {
 		goto cleanup;
 	}
 	if ((compval = strcmp(s1, s2)) != 0) {
@@ -1129,14 +1108,13 @@ static int Apol_RenderAVRuleComp(ClientData clientData, Tcl_Interp *interp, int 
 	}
 	if (qpol_avrule_get_object_class(policydb->p, r1, &c1) < 0 ||
 	    qpol_avrule_get_object_class(policydb->p, r2, &c2) < 0 ||
-	    qpol_class_get_name(policydb->p, c1, &s1) < 0 ||
-	    qpol_class_get_name(policydb->p, c2, &s2) < 0) {
+	    qpol_class_get_name(policydb->p, c1, &s1) < 0 || qpol_class_get_name(policydb->p, c2, &s2) < 0) {
 		goto cleanup;
 	}
 	compval = strcmp(s1, s2);
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
 	return TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1155,7 +1133,7 @@ static int Apol_RenderAVRuleComp(ClientData clientData, Tcl_Interp *interp, int 
  *   <li>Tcl object representing another te rule identifier.
  * </ol>
  */
-static int Apol_RenderTERuleComp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderTERuleComp(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	qpol_terule_t *r1, *r2;
 	uint32_t rt1, rt2;
@@ -1173,14 +1151,12 @@ static int Apol_RenderTERuleComp(ClientData clientData, Tcl_Interp *interp, int 
 		ERR(policydb, "%s", "Need two terule identifiers.");
 		goto cleanup;
 	}
-	if (tcl_obj_to_qpol_terule(interp, objv[1], &r1) == TCL_ERROR ||
-	    tcl_obj_to_qpol_terule(interp, objv[2], &r2) == TCL_ERROR) {
+	if (tcl_obj_to_qpol_terule(interp, objv[1], &r1) == TCL_ERROR || tcl_obj_to_qpol_terule(interp, objv[2], &r2) == TCL_ERROR) {
 		goto cleanup;
 	}
 	if (qpol_terule_get_rule_type(policydb->p, r1, &rt1) < 0 ||
 	    qpol_terule_get_rule_type(policydb->p, r2, &rt2) < 0 ||
-	    (rule_type1 = apol_rule_type_to_str(rt1)) == NULL ||
-	    (rule_type2 = apol_rule_type_to_str(rt2)) == NULL) {
+	    (rule_type1 = apol_rule_type_to_str(rt1)) == NULL || (rule_type2 = apol_rule_type_to_str(rt2)) == NULL) {
 		ERR(policydb, "%s", "Invalid terule type.");
 		goto cleanup;
 	}
@@ -1190,8 +1166,7 @@ static int Apol_RenderTERuleComp(ClientData clientData, Tcl_Interp *interp, int 
 	}
 	if (qpol_terule_get_source_type(policydb->p, r1, &t1) < 0 ||
 	    qpol_terule_get_source_type(policydb->p, r2, &t2) < 0 ||
-	    qpol_type_get_name(policydb->p, t1, &s1) < 0 ||
-	    qpol_type_get_name(policydb->p, t2, &s2) < 0) {
+	    qpol_type_get_name(policydb->p, t1, &s1) < 0 || qpol_type_get_name(policydb->p, t2, &s2) < 0) {
 		goto cleanup;
 	}
 	if ((compval = strcmp(s1, s2)) != 0) {
@@ -1200,8 +1175,7 @@ static int Apol_RenderTERuleComp(ClientData clientData, Tcl_Interp *interp, int 
 	}
 	if (qpol_terule_get_target_type(policydb->p, r1, &t1) < 0 ||
 	    qpol_terule_get_target_type(policydb->p, r2, &t2) < 0 ||
-	    qpol_type_get_name(policydb->p, t1, &s1) < 0 ||
-	    qpol_type_get_name(policydb->p, t2, &s2) < 0) {
+	    qpol_type_get_name(policydb->p, t1, &s1) < 0 || qpol_type_get_name(policydb->p, t2, &s2) < 0) {
 		goto cleanup;
 	}
 	if ((compval = strcmp(s1, s2)) != 0) {
@@ -1210,14 +1184,13 @@ static int Apol_RenderTERuleComp(ClientData clientData, Tcl_Interp *interp, int 
 	}
 	if (qpol_terule_get_object_class(policydb->p, r1, &c1) < 0 ||
 	    qpol_terule_get_object_class(policydb->p, r2, &c2) < 0 ||
-	    qpol_class_get_name(policydb->p, c1, &s1) < 0 ||
-	    qpol_class_get_name(policydb->p, c2, &s2) < 0) {
+	    qpol_class_get_name(policydb->p, c1, &s1) < 0 || qpol_class_get_name(policydb->p, c2, &s2) < 0) {
 		goto cleanup;
 	}
 	compval = strcmp(s1, s2);
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(compval));
 	return TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1238,7 +1211,7 @@ static int Apol_RenderTERuleComp(ClientData clientData, Tcl_Interp *interp, int 
  *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderSynAVRule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderSynAVRule(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	Tcl_Obj *result_obj = NULL;
 	qpol_syn_avrule_t *avrule;
@@ -1258,7 +1231,7 @@ static int Apol_RenderSynAVRule(ClientData clientData, Tcl_Interp *interp, int o
 	}
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1279,7 +1252,7 @@ static int Apol_RenderSynAVRule(ClientData clientData, Tcl_Interp *interp, int o
  *   <li>Tcl object representing an av rule identifier.
  * </ol>
  */
-static int Apol_RenderSynTERule(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
+static int Apol_RenderSynTERule(ClientData clientData, Tcl_Interp * interp, int objc, Tcl_Obj * CONST objv[])
 {
 	Tcl_Obj *result_obj = NULL;
 	qpol_syn_terule_t *terule;
@@ -1299,15 +1272,16 @@ static int Apol_RenderSynTERule(ClientData clientData, Tcl_Interp *interp, int o
 	}
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
 	return retval;
 }
 
-int apol_tcl_render_init(Tcl_Interp *interp) {
-        Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
+int apol_tcl_render_init(Tcl_Interp * interp)
+{
+	Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderContext", Apol_RenderContext, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_RenderAVRule", Apol_RenderAVRule, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_RenderAVRuleType", Apol_RenderAVRuleType, NULL, NULL);

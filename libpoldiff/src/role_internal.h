@@ -44,7 +44,7 @@ poldiff_role_summary_t *role_create(void);
  * @param us Reference to a role summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void role_destroy(poldiff_role_summary_t **us);
+void role_destroy(poldiff_role_summary_t ** us);
 
 /**
  * Reset the state of all role differences.
@@ -53,8 +53,7 @@ void role_destroy(poldiff_role_summary_t **us);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int role_reset(poldiff_t *diff);
-
+int role_reset(poldiff_t * diff);
 
 /**
  * Get a vector of all roles from the given policy, sorted by name.
@@ -66,7 +65,7 @@ int role_reset(poldiff_t *diff);
  * responsible for calling apol_vector_destroy() afterwards, passing
  * NULL as the second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *role_get_items(poldiff_t *diff, apol_policy_t *policy);
+apol_vector_t *role_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Compare two qpol_role_t objects, determining if they have the same
@@ -80,7 +79,7 @@ apol_vector_t *role_get_items(poldiff_t *diff, apol_policy_t *policy);
  * @return < 0, 0, or > 0 if role x is respectively less than, equal
  * to, or greater than role y.
  */
-int role_comp(const void *x, const void *y, poldiff_t *diff);
+int role_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -93,7 +92,7 @@ int role_comp(const void *x, const void *y, poldiff_t *diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int role_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
+int role_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two roles for which the compare
@@ -109,6 +108,6 @@ int role_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int role_deep_diff(poldiff_t *diff, const void *x, const void *y);
+int role_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
-#endif /* POLDIFF_ROLE_INTERNAL_H */
+#endif				       /* POLDIFF_ROLE_INTERNAL_H */

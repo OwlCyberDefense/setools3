@@ -30,7 +30,8 @@
 #include <glib.h>
 #include <glib/gprintf.h>
 
-struct sediff_progress {
+struct sediff_progress
+{
 	GtkWidget *progress;
 	GtkWidget *label1, *label2;
 	char *s;
@@ -39,9 +40,9 @@ struct sediff_progress {
 	GMutex *mutex;
 };
 
-void sediff_progress_show(sediff_app_t *app, const char *title)
+void sediff_progress_show(sediff_app_t * app, const char *title)
 {
-        sediff_progress_t *p;
+	sediff_progress_t *p;
 	if (app->progress == NULL) {
 		GtkWidget *vbox;
 		GdkCursor *cursor;
@@ -66,8 +67,7 @@ void sediff_progress_show(sediff_app_t *app, const char *title)
 		gdk_cursor_unref(cursor);
 		p->cond = g_cond_new();
 		p->mutex = g_mutex_new();
-	}
-	else {
+	} else {
 		p = app->progress;
 		gtk_label_set_text(GTK_LABEL(p->label1), title);
 		gtk_label_set_text(GTK_LABEL(p->label2), "");
@@ -78,22 +78,22 @@ void sediff_progress_show(sediff_app_t *app, const char *title)
 	p->done = 0;
 }
 
-void sediff_progress_hide(sediff_app_t *app)
+void sediff_progress_hide(sediff_app_t * app)
 {
 	if (app != NULL && app->progress != NULL) {
 		gtk_widget_hide(app->progress->progress);
 	}
 }
 
-void sediff_progress_message(sediff_app_t *app, const char *title, const char *message)
+void sediff_progress_message(sediff_app_t * app, const char *title, const char *message)
 {
 	sediff_progress_show(app, title);
 	gtk_label_set_text(GTK_LABEL(app->progress->label2), message);
-	while (gtk_events_pending ())
-		gtk_main_iteration ();
+	while (gtk_events_pending())
+		gtk_main_iteration();
 }
 
-void sediff_progress_destroy(sediff_app_t *app)
+void sediff_progress_destroy(sediff_app_t * app)
 {
 	if (app != NULL && app->progress != NULL) {
 		gtk_widget_hide(app->progress->progress);
@@ -101,10 +101,10 @@ void sediff_progress_destroy(sediff_app_t *app)
 	}
 }
 
-int sediff_progress_wait(sediff_app_t *app)
+int sediff_progress_wait(sediff_app_t * app)
 {
 	sediff_progress_t *p = app->progress;
-	GTimeVal wait_time = {0, 100000};
+	GTimeVal wait_time = { 0, 100000 };
 	g_mutex_lock(p->mutex);
 	while (!p->done) {
 		g_cond_timed_wait(p->cond, p->mutex, &wait_time);
@@ -113,20 +113,19 @@ int sediff_progress_wait(sediff_app_t *app)
 			free(p->s);
 			p->s = NULL;
 		}
-		while (gtk_events_pending ())
-			gtk_main_iteration ();
+		while (gtk_events_pending())
+			gtk_main_iteration();
 	}
 	g_mutex_unlock(p->mutex);
 	if (p->done < 0) {
-		message_display(app->window, GTK_MESSAGE_ERROR,
-				GTK_LABEL(app->progress->label2)->label);
+		message_display(app->window, GTK_MESSAGE_ERROR, GTK_LABEL(app->progress->label2)->label);
 		return p->done;
 	}
 	p->done = 0;
 	return 0;
 }
 
-void sediff_progress_done(sediff_app_t *app)
+void sediff_progress_done(sediff_app_t * app)
 {
 	sediff_progress_t *p = app->progress;
 	g_mutex_lock(p->mutex);
@@ -135,7 +134,7 @@ void sediff_progress_done(sediff_app_t *app)
 	g_mutex_unlock(app->progress->mutex);
 }
 
-void sediff_progress_abort(sediff_app_t *app, const char *s)
+void sediff_progress_abort(sediff_app_t * app, const char *s)
 {
 	sediff_progress_t *p = app->progress;
 	g_mutex_lock(p->mutex);
@@ -147,7 +146,7 @@ void sediff_progress_abort(sediff_app_t *app, const char *s)
 	g_mutex_unlock(app->progress->mutex);
 }
 
-static void sediff_progress_update_label(sediff_app_t *app, const char *fmt, va_list va_args)
+static void sediff_progress_update_label(sediff_app_t * app, const char *fmt, va_list va_args)
 {
 	gchar *s = NULL;
 	g_vasprintf(&s, fmt, va_args);
@@ -157,7 +156,7 @@ static void sediff_progress_update_label(sediff_app_t *app, const char *fmt, va_
 	g_mutex_unlock(app->progress->mutex);
 }
 
-void sediff_progress_update(sediff_app_t *app, const char *message)
+void sediff_progress_update(sediff_app_t * app, const char *message)
 {
 	g_mutex_lock(app->progress->mutex);
 	app->progress->s = g_strdup(message);
@@ -165,7 +164,7 @@ void sediff_progress_update(sediff_app_t *app, const char *message)
 	g_mutex_unlock(app->progress->mutex);
 }
 
-void sediff_progress_poldiff_handle_func(void *arg, poldiff_t *diff, int level, const char *fmt, va_list va_args)
+void sediff_progress_poldiff_handle_func(void *arg, poldiff_t * diff, int level, const char *fmt, va_list va_args)
 {
 	sediff_app_t *app = (sediff_app_t *) arg;
 	if (app->progress != NULL) {
@@ -173,7 +172,7 @@ void sediff_progress_poldiff_handle_func(void *arg, poldiff_t *diff, int level, 
 	}
 }
 
-void sediff_progress_apol_handle_func(apol_policy_t *p, int level, const char *fmt, va_list argp)
+void sediff_progress_apol_handle_func(apol_policy_t * p, int level, const char *fmt, va_list argp)
 {
 	if (p != NULL) {
 		sediff_app_t *app = (sediff_app_t *) p->msg_callback_arg;

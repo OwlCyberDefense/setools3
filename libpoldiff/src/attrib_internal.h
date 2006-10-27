@@ -44,7 +44,7 @@ poldiff_attrib_summary_t *attrib_summary_create(void);
  * @param us Reference to a attrib summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void attrib_summary_destroy(poldiff_attrib_summary_t **us);
+void attrib_summary_destroy(poldiff_attrib_summary_t ** us);
 
 /**
  * Reset the state of all attribute differences.
@@ -53,7 +53,7 @@ void attrib_summary_destroy(poldiff_attrib_summary_t **us);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int attrib_reset(poldiff_t *diff);
+int attrib_reset(poldiff_t * diff);
 
 /**
  * Get a vector of all attribs from the given policy, sorted by name.
@@ -65,7 +65,7 @@ int attrib_reset(poldiff_t *diff);
  * responsible for calling apol_vector_destroy() afterwards, passing
  * NULL as the second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *attrib_get_items(poldiff_t *diff, apol_policy_t *policy);
+apol_vector_t *attrib_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Compare two qpol_attrib_t objects, determining if they have the same
@@ -79,7 +79,7 @@ apol_vector_t *attrib_get_items(poldiff_t *diff, apol_policy_t *policy);
  * @return < 0, 0, or > 0 if attrib x is respectively less than, equal
  * to, or greater than attrib y.
  */
-int attrib_comp(const void *x, const void *y, poldiff_t *diff);
+int attrib_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -92,7 +92,7 @@ int attrib_comp(const void *x, const void *y, poldiff_t *diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int attrib_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
+int attrib_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two attribs for which the compare
@@ -108,6 +108,6 @@ int attrib_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int attrib_deep_diff(poldiff_t *diff, const void *x, const void *y);
+int attrib_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
-#endif /* POLDIFF_ATTRIB_INTERNAL_H */
+#endif				       /* POLDIFF_ATTRIB_INTERNAL_H */

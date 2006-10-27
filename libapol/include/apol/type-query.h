@@ -51,9 +51,7 @@ typedef struct apol_attr_query apol_attr_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_type_by_query(apol_policy_t *p,
-				  apol_type_query_t *t,
-				  apol_vector_t **v);
+extern int apol_get_type_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v);
 
 /**
  * Allocate and return a new type query structure.  All fields are
@@ -72,7 +70,7 @@ extern apol_type_query_t *apol_type_query_create(void);
  *
  * @param t Reference to a type query structure to destroy.
  */
-extern void apol_type_query_destroy(apol_type_query_t **t);
+extern void apol_type_query_destroy(apol_type_query_t ** t);
 
 /**
  * Set a type query to return only types that match this name.	The
@@ -86,8 +84,7 @@ extern void apol_type_query_destroy(apol_type_query_t **t);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_type_query_set_type(apol_policy_t *p,
-				    apol_type_query_t *t, const char *name);
+extern int apol_type_query_set_type(apol_policy_t * p, apol_type_query_t * t, const char *name);
 
 /**
  * Set a type query to use regular expression searching for all of its
@@ -100,8 +97,7 @@ extern int apol_type_query_set_type(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_type_query_set_regex(apol_policy_t *p,
-				     apol_type_query_t *t, int is_regex);
+extern int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, int is_regex);
 
 /******************** attribute queries ********************/
 
@@ -120,9 +116,7 @@ extern int apol_type_query_set_regex(apol_policy_t *p,
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_attr_by_query(apol_policy_t *p,
-				  apol_attr_query_t *a,
-				  apol_vector_t **v);
+extern int apol_get_attr_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v);
 
 /**
  * Allocate and return a new attribute query structure.	 All fields
@@ -141,7 +135,7 @@ extern apol_attr_query_t *apol_attr_query_create(void);
  *
  * @param a Reference to an attribute query structure to destroy.
  */
-extern void apol_attr_query_destroy(apol_attr_query_t **a);
+extern void apol_attr_query_destroy(apol_attr_query_t ** a);
 
 /**
  * Set an attribute query to return only attributes that match this
@@ -154,8 +148,7 @@ extern void apol_attr_query_destroy(apol_attr_query_t **a);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_attr_query_set_attr(apol_policy_t *p,
-				    apol_attr_query_t *a, const char *name);
+extern int apol_attr_query_set_attr(apol_policy_t * p, apol_attr_query_t * a, const char *name);
 
 /**
  * Set an attribute query to use regular expression searching for all
@@ -168,7 +161,6 @@ extern int apol_attr_query_set_attr(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_attr_query_set_regex(apol_policy_t *p,
-				     apol_attr_query_t *a, int is_regex);
+extern int apol_attr_query_set_regex(apol_policy_t * p, apol_attr_query_t * a, int is_regex);
 
 #endif

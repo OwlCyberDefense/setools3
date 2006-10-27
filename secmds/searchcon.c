@@ -18,45 +18,44 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 
-static struct option const longopts[] =
-{
-  {"type", required_argument, NULL, 't'},
-  {"user", required_argument, NULL, 'u'},
-  {"mls-range", required_argument, NULL, 'm'},
-  {"path", required_argument, NULL, 'p'},
-  {"list", no_argument, NULL, 'l'},
-  {"regex", no_argument, NULL, 'r'},
-  {"object", required_argument, NULL, 'o'},
-  {"help", no_argument, NULL, 'h'},
-  {"version", no_argument, NULL, 'v'},
-  {NULL, 0, NULL, 0}
+static struct option const longopts[] = {
+	{"type", required_argument, NULL, 't'},
+	{"user", required_argument, NULL, 'u'},
+	{"mls-range", required_argument, NULL, 'm'},
+	{"path", required_argument, NULL, 'p'},
+	{"list", no_argument, NULL, 'l'},
+	{"regex", no_argument, NULL, 'r'},
+	{"object", required_argument, NULL, 'o'},
+	{"help", no_argument, NULL, 'h'},
+	{"version", no_argument, NULL, 'v'},
+	{NULL, 0, NULL, 0}
 };
 
-static void sefs_double_array_print(char **array,int size)
+static void sefs_double_array_print(char **array, int size)
 {
 	int i;
-	for (i=0;i<size;i++){
-		printf("%s\n",array[i]);
+	for (i = 0; i < size; i++) {
+		printf("%s\n", array[i]);
 	}
 
 }
 
-static void sefs_search_keys_ret_print(sefs_search_ret_t *key)
+static void sefs_search_keys_ret_print(sefs_search_ret_t * key)
 {
 	sefs_search_ret_t *curr = NULL;
 
-	/* walk the linked list	 */
+	/* walk the linked list  */
 	curr = key;
 	if (curr == NULL) {
 		printf("No results\n");
 	}
 	while (curr) {
 		if (curr->context)
-			printf("%s\t",curr->context);
+			printf("%s\t", curr->context);
 		if (curr->object_class)
-			printf("%s\t",curr->object_class);
+			printf("%s\t", curr->object_class);
 		if (curr->path)
-			printf("%s",curr->path);
+			printf("%s", curr->path);
 		printf("\n");
 		curr = curr->next;
 	}
@@ -68,7 +67,7 @@ void usage(const char *program_name, int brief)
 	char **array = NULL;
 	printf("%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: %s <index file> [OPTIONS]\n", program_name);
-	if(brief) {
+	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
@@ -89,10 +88,10 @@ Search a file context index for matching files.\n\
 	printf("\nIf the index file does not contain any MLS ranges and -m was given,\nthen the search will return nothing.\n");
 	fputs("\n\
 Valid object classes include:\n\
-",stdout);
+", stdout);
 	array = sefs_get_valid_object_classes(&size);
-	sefs_double_array_print(array,size);
-	sefs_double_array_destroy(array,size);
+	sefs_double_array_print(array, size);
+	sefs_double_array_destroy(array, size);
 	return;
 }
 
@@ -107,10 +106,11 @@ int main(int argc, char **argv, char **envp)
 
 	memset(&search_keys, 0, sizeof(search_keys));
 
-	while ((optc = getopt_long (argc, argv, "t:u:m:p:o:rlhv", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long(argc, argv, "t:u:m:p:o:rlhv", longopts, NULL)) != -1) {
 		switch (optc) {
-		case 't': /* type */
-			if((holder = (const char**)realloc(search_keys.type,sizeof(char *)*(search_keys.num_type+1))) == NULL){
+		case 't':	       /* type */
+			if ((holder =
+			     (const char **)realloc(search_keys.type, sizeof(char *) * (search_keys.num_type + 1))) == NULL) {
 				printf("Out of memory\n");
 				return 1;
 			}
@@ -118,8 +118,9 @@ int main(int argc, char **argv, char **envp)
 			search_keys.type[search_keys.num_type] = optarg;
 			search_keys.num_type++;
 			break;
-		case 'u': /* user */
-			if((holder = (const char**)realloc(search_keys.user,sizeof(char*)*(search_keys.num_user+1))) == NULL){
+		case 'u':	       /* user */
+			if ((holder =
+			     (const char **)realloc(search_keys.user, sizeof(char *) * (search_keys.num_user + 1))) == NULL) {
 				printf("Out of memory\n");
 				return 1;
 			}
@@ -127,8 +128,9 @@ int main(int argc, char **argv, char **envp)
 			search_keys.user[search_keys.num_user] = optarg;
 			search_keys.num_user++;
 			break;
-		case 'm': /* MLS range */
-			if((holder = (const char**)realloc(search_keys.range,sizeof(char*)*(search_keys.num_range+1))) == NULL){
+		case 'm':	       /* MLS range */
+			if ((holder =
+			     (const char **)realloc(search_keys.range, sizeof(char *) * (search_keys.num_range + 1))) == NULL) {
 				printf("Out of memory\n");
 				return 1;
 			}
@@ -136,8 +138,9 @@ int main(int argc, char **argv, char **envp)
 			search_keys.range[search_keys.num_range] = optarg;
 			search_keys.num_range++;
 			break;
-		case 'p': /* path */
-			if((holder = (const char**)realloc(search_keys.path,sizeof(char*)*(search_keys.num_path+1))) == NULL){
+		case 'p':	       /* path */
+			if ((holder =
+			     (const char **)realloc(search_keys.path, sizeof(char *) * (search_keys.num_path + 1))) == NULL) {
 				printf("Out of memory\n");
 				return 1;
 			}
@@ -145,8 +148,10 @@ int main(int argc, char **argv, char **envp)
 			search_keys.path[search_keys.num_path] = optarg;
 			search_keys.num_path++;
 			break;
-		case 'o': /* object */
-			if ((holder = (const char**)realloc(search_keys.object_class,sizeof(char*)*(search_keys.num_object_class+1))) == NULL) {
+		case 'o':	       /* object */
+			if ((holder =
+			     (const char **)realloc(search_keys.object_class,
+						    sizeof(char *) * (search_keys.num_object_class + 1))) == NULL) {
 				printf("Out of memory");
 				return 1;
 			}
@@ -154,19 +159,19 @@ int main(int argc, char **argv, char **envp)
 			search_keys.object_class[search_keys.num_object_class] = optarg;
 			search_keys.num_object_class++;
 			break;
-		case 'l': /* list */
+		case 'l':	       /* list */
 			list = 1;
 			break;
-		case 'r': /* regex */
+		case 'r':	       /* regex */
 			search_keys.do_type_regEx = 1;
 			search_keys.do_user_regEx = 1;
 			search_keys.do_range_regEx = 1;
 			search_keys.do_path_regEx = 1;
 			break;
-		case 'h': /* help */
+		case 'h':	       /* help */
 			usage(argv[0], 0);
 			exit(0);
-		case 'v': /* version */
+		case 'v':	       /* version */
 			printf("\n%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 			exit(0);
 		default:
@@ -180,7 +185,7 @@ int main(int argc, char **argv, char **envp)
 	} else
 		filename = argv[optind];
 
-	if (sefs_filesystem_db_load(&fsdata, filename) == -1 ){
+	if (sefs_filesystem_db_load(&fsdata, filename) == -1) {
 		fprintf(stderr, "sefs_filesystem_data_load failed\n");
 		return -1;
 	}
@@ -190,9 +195,8 @@ int main(int argc, char **argv, char **envp)
 			sefs_double_array_print(list_ret, list_sz);
 			sefs_double_array_destroy(list_ret, list_sz);
 		}
-	}
-	else {
-		sefs_filesystem_db_search(&fsdata,&search_keys);
+	} else {
+		sefs_filesystem_db_search(&fsdata, &search_keys);
 		sefs_search_keys_ret_print(search_keys.search_ret);
 		sefs_search_keys_ret_destroy(search_keys.search_ret);
 	}

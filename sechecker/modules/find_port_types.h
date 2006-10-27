@@ -32,11 +32,10 @@
 #include <apol/context-query.h>
 #include <apol/netcon-query.h>
 
-int find_port_types_register(sechk_lib_t *lib);
-int find_port_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_port_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_port_types_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int find_port_types_register(sechk_lib_t * lib);
+int find_port_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int find_port_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int find_port_types_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #endif
-

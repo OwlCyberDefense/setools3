@@ -23,7 +23,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-
 #ifndef ROLES_WO_USERS
 #define ROLES_WO_USERS
 
@@ -36,11 +35,10 @@
  * NOTE: while using a modular format SEChecker is built
  * statically; this means that all modules and their functions
  * are in the same namespace. */
-int roles_wo_users_register(sechk_lib_t *lib);
-int roles_wo_users_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int roles_wo_users_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int roles_wo_users_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int roles_wo_users_register(sechk_lib_t * lib);
+int roles_wo_users_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int roles_wo_users_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int roles_wo_users_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int roles_wo_users_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #endif
-

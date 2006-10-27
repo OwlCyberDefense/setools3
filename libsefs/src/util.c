@@ -25,7 +25,7 @@
 
 #include <config.h>
 
-const char* libsefs_get_version(void)
+const char *libsefs_get_version(void)
 {
 	return LIBSEFS_VERSION_STRING;
 }

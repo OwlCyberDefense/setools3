@@ -46,7 +46,7 @@ poldiff_class_summary_t *class_create(void);
  * @param cs Reference to a class summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void class_destroy(poldiff_class_summary_t **cs);
+void class_destroy(poldiff_class_summary_t ** cs);
 
 /**
  * Reset the state of all class differences.
@@ -55,7 +55,7 @@ void class_destroy(poldiff_class_summary_t **cs);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int class_reset(poldiff_t *diff);
+int class_reset(poldiff_t * diff);
 
 /**
  * Get a vector of all object classes (type qpol_class_t) from the
@@ -68,7 +68,7 @@ int class_reset(poldiff_t *diff);
  * responsible for calling apol_vector_destroy() afterwards, passing
  * NULL as the second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *class_get_items(poldiff_t *diff, apol_policy_t *policy);
+apol_vector_t *class_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Compare two qpol_class_t objects, determining if they have the same
@@ -82,7 +82,7 @@ apol_vector_t *class_get_items(poldiff_t *diff, apol_policy_t *policy);
  * @return < 0, 0, or > 0 if class x is respectively less than, equal
  * to, or greater than class y.
  */
-int class_comp(const void *x, const void *y, poldiff_t *diff);
+int class_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -95,7 +95,7 @@ int class_comp(const void *x, const void *y, poldiff_t *diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int class_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
+int class_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two classes for which the
@@ -111,7 +111,7 @@ int class_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int class_deep_diff(poldiff_t *diff, const void *x, const void *y);
+int class_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
 /******************** common classes ********************/
 
@@ -133,7 +133,7 @@ poldiff_common_summary_t *common_create(void);
  * @param cs Reference to a common summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void common_destroy(poldiff_common_summary_t **cs);
+void common_destroy(poldiff_common_summary_t ** cs);
 
 /**
  * Reset the state of all common differences.
@@ -142,7 +142,7 @@ void common_destroy(poldiff_common_summary_t **cs);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int common_reset(poldiff_t *diff);
+int common_reset(poldiff_t * diff);
 
 /**
  * Get a vector of all common classes (type qpol_common_t) from the
@@ -155,7 +155,7 @@ int common_reset(poldiff_t *diff);
  * responsible for calling apol_vector_destroy() afterwards, passing
  * NULL as the second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *common_get_items(poldiff_t *diff, apol_policy_t *policy);
+apol_vector_t *common_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Compare two qpol_common_t objects, determining if they have the
@@ -169,7 +169,7 @@ apol_vector_t *common_get_items(poldiff_t *diff, apol_policy_t *policy);
  * @return < 0, 0, or > 0 if common x is respectively less than, equal
  * to, or greater than common y.
  */
-int common_comp(const void *x, const void *y, poldiff_t *diff);
+int common_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -183,7 +183,7 @@ int common_comp(const void *x, const void *y, poldiff_t *diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int common_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
+int common_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two commons for which the
@@ -199,6 +199,6 @@ int common_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int common_deep_diff(poldiff_t *diff, const void *x, const void *y);
+int common_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
-#endif /* POLDIFF_CLASS_INTERNAL_H */
+#endif				       /* POLDIFF_CLASS_INTERNAL_H */

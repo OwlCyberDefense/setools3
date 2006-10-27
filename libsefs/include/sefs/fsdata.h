@@ -54,7 +54,7 @@
 #define	SEFS_SOCK_FILE	32
 #define SEFS_FIFO_FILE	64
 /** @deprecated SEFS_ALL_FILES will be dropped in a future release.
- * Do not use. */ 
+ * Do not use. */
 #define SEFS_ALL_FILES	(SEFS_NORM_FILE | SEFS_DIR | SEFS_LNK_FILE | SEFS_CHR_FILE | SEFS_BLK_FILE | SEFS_SOCK_FILE | SEFS_FIFO_FILE)
 
 #define SEFS_TYPES	1
@@ -65,18 +65,20 @@
 
 typedef int32_t sefs_classes_t;
 
-typedef struct sefs_search_ret {
-	char		      *context;
-	char		      *path;
-	char		      *object_class;
-	struct sefs_search_ret	   *next;
+typedef struct sefs_search_ret
+{
+	char *context;
+	char *path;
+	char *object_class;
+	struct sefs_search_ret *next;
 } sefs_search_ret_t;
 
 /**
  * The caller is in charge of allocating these 2d arrays, and making
  * sure they are deleted when done.
  */
-typedef struct sefs_search_keys {
+typedef struct sefs_search_keys
+{
 	/* this are are search keys */
 	const char **type;
 	const char **user;
@@ -99,10 +101,11 @@ typedef struct sefs_search_keys {
 	int do_range_regEx;
 	int do_path_regEx;
 	/* this is a linked list of returned matches */
-	sefs_search_ret_t      *search_ret;
+	sefs_search_ret_t *search_ret;
 } sefs_search_keys_t;
 
-typedef struct sefs_filesystem_db {
+typedef struct sefs_filesystem_db
+{
 	void *fsdh;
 	void **dbh;
 } sefs_filesystem_db_t;
@@ -119,8 +122,7 @@ typedef struct sefs_filesystem_db {
  *
  * @see http://www.sqlite.org
  */
-extern int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd,
-				   const char *filename);
+extern int sefs_filesystem_db_save(sefs_filesystem_db_t * fsd, const char *filename);
 
 /**
  * Load an sqlite3 database for a file, presumably that written by an
@@ -136,8 +138,7 @@ extern int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd,
  *
  * @return 0 on success, < 0 on error.
  */
-extern int sefs_filesystem_db_load(sefs_filesystem_db_t *fsd,
-                                   const char *filename);
+extern int sefs_filesystem_db_load(sefs_filesystem_db_t * fsd, const char *filename);
 
 /**
  * Close the database referenced by the fsd pointer, and deallocate
@@ -146,7 +147,7 @@ extern int sefs_filesystem_db_load(sefs_filesystem_db_t *fsd,
  *
  * @param fsd Pointer to a structure containing a handle to a database.
  */
-extern void sefs_filesystem_db_close(sefs_filesystem_db_t *fsd);
+extern void sefs_filesystem_db_close(sefs_filesystem_db_t * fsd);
 
 /**
  * Beginning from the given directory and recursing within, populate
@@ -160,8 +161,7 @@ extern void sefs_filesystem_db_close(sefs_filesystem_db_t *fsd);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd,
-				       const char *dir);
+extern int sefs_filesystem_db_populate(sefs_filesystem_db_t * fsd, const char *dir);
 
 /**
  * Given a directory, find all mounted filesystems within that
@@ -187,10 +187,7 @@ extern int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd,
  * @return 0 on success, < 0 on error.
  */
 extern int sefs_filesystem_find_mount_points(const char *dir,
-					     int rw,
-					     sefs_hash_t *hashtab,
-					     char ***mounts,
-					     unsigned int *num_mounts);
+					     int rw, sefs_hash_t * hashtab, char ***mounts, unsigned int *num_mounts);
 
 /**
  * Given a pointer to a database and a pointer to search criteria,
@@ -207,8 +204,7 @@ extern int sefs_filesystem_find_mount_points(const char *dir,
  *
  * @return 0 on success, < 0 on error.
  */
-extern int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,
-				     sefs_search_keys_t *search_keys);
+extern int sefs_filesystem_db_search(sefs_filesystem_db_t * fsd, sefs_search_keys_t * search_keys);
 
 /**
  * Given a database, determine if its entries contain MLS ranges or
@@ -216,7 +212,7 @@ extern int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,
  *
  * @return 1 if the database is MLS, 0 if not, or < 0 on error.
  */
-extern int sefs_filesystem_db_is_mls(sefs_filesystem_db_t *fsd);
+extern int sefs_filesystem_db_is_mls(sefs_filesystem_db_t * fsd);
 
 /**
  * Given a pointer to the start of a linked list of search results,
@@ -226,7 +222,7 @@ extern int sefs_filesystem_db_is_mls(sefs_filesystem_db_t *fsd);
  *
  * @param key Head of a linked list.
  */
-extern void sefs_search_keys_ret_destroy(sefs_search_ret_t *key);
+extern void sefs_search_keys_ret_destroy(sefs_search_ret_t * key);
 
 /**
  * Given a pointer to a database and a type of request, return an
@@ -240,9 +236,7 @@ extern void sefs_search_keys_ret_destroy(sefs_search_ret_t *key);
  * @return Allocated array of strings.  The caller is responsible for
  * free()ing this array as well as the elements within.
  */
-extern char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,
-					   int request_type,
-					   int *count);
+extern char **sefs_filesystem_db_get_known(sefs_filesystem_db_t * fsd, int request_type, int *count);
 
 /**
  * Given an array of strings, free each element within and then the
@@ -288,4 +282,4 @@ extern char **sefs_get_valid_object_classes(int *size);
  */
 extern int sefs_is_valid_object_class(const char *class_name);
 
-#endif /* SEFS_FSDATA_H */
+#endif				       /* SEFS_FSDATA_H */

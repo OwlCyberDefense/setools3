@@ -39,7 +39,7 @@
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-extern int qpol_avrule_to_tcl_obj(Tcl_Interp *interp, qpol_avrule_t *rule, Tcl_Obj **o);
+extern int qpol_avrule_to_tcl_obj(Tcl_Interp * interp, qpol_avrule_t * rule, Tcl_Obj ** o);
 
 /**
  * Given a qpol_terule_t object, create a new Tcl_Obj with that
@@ -52,7 +52,7 @@ extern int qpol_avrule_to_tcl_obj(Tcl_Interp *interp, qpol_avrule_t *rule, Tcl_O
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-extern int qpol_terule_to_tcl_obj(Tcl_Interp *interp, qpol_terule_t *rule, Tcl_Obj **o);
+extern int qpol_terule_to_tcl_obj(Tcl_Interp * interp, qpol_terule_t * rule, Tcl_Obj ** o);
 
 /**
  * Convert an apol vector of qpol_avrule_t pointers to a Tcl
@@ -64,9 +64,7 @@ extern int qpol_terule_to_tcl_obj(Tcl_Interp *interp, qpol_terule_t *rule, Tcl_O
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_vector_avrule_to_tcl_list(Tcl_Interp *interp,
-					  apol_vector_t *v,
-					  Tcl_Obj **obj);
+extern int apol_vector_avrule_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** obj);
 
 /**
  * Convert an apol vector of qpol_terule_t pointers to a Tcl
@@ -78,9 +76,7 @@ extern int apol_vector_avrule_to_tcl_list(Tcl_Interp *interp,
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_vector_terule_to_tcl_list(Tcl_Interp *interp,
-					  apol_vector_t *v,
-					  Tcl_Obj **obj);
+extern int apol_vector_terule_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** obj);
 
 /**
  * Given a Tcl object, retrieve the qpol_avrule_t stored within.  If
@@ -93,7 +89,7 @@ extern int apol_vector_terule_to_tcl_list(Tcl_Interp *interp,
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-extern int tcl_obj_to_qpol_avrule(Tcl_Interp *interp, Tcl_Obj *o, qpol_avrule_t **rule);
+extern int tcl_obj_to_qpol_avrule(Tcl_Interp * interp, Tcl_Obj * o, qpol_avrule_t ** rule);
 
 /**
  * Given a Tcl object, retrieve the qpol_terule_t stored within.  If
@@ -106,7 +102,7 @@ extern int tcl_obj_to_qpol_avrule(Tcl_Interp *interp, Tcl_Obj *o, qpol_avrule_t 
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-extern int tcl_obj_to_qpol_terule(Tcl_Interp *interp, Tcl_Obj *o, qpol_terule_t **rule);
+extern int tcl_obj_to_qpol_terule(Tcl_Interp * interp, Tcl_Obj * o, qpol_terule_t ** rule);
 
 /**
  * Given a Tcl object, retrieve the qpol_syn_avrule_t stored within.
@@ -120,7 +116,7 @@ extern int tcl_obj_to_qpol_terule(Tcl_Interp *interp, Tcl_Obj *o, qpol_terule_t 
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-extern int tcl_obj_to_qpol_syn_avrule(Tcl_Interp *interp, Tcl_Obj *o, qpol_syn_avrule_t **rule);
+extern int tcl_obj_to_qpol_syn_avrule(Tcl_Interp * interp, Tcl_Obj * o, qpol_syn_avrule_t ** rule);
 
 /**
  * Given a Tcl object, retrieve the qpol_syn_terule_t stored within.
@@ -134,8 +130,8 @@ extern int tcl_obj_to_qpol_syn_avrule(Tcl_Interp *interp, Tcl_Obj *o, qpol_syn_a
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-extern int tcl_obj_to_qpol_syn_terule(Tcl_Interp *interp, Tcl_Obj *o, qpol_syn_terule_t **rule);
+extern int tcl_obj_to_qpol_syn_terule(Tcl_Interp * interp, Tcl_Obj * o, qpol_syn_terule_t ** rule);
 
-int apol_tcl_rules_init(Tcl_Interp *interp);
+int apol_tcl_rules_init(Tcl_Interp * interp);
 
 #endif

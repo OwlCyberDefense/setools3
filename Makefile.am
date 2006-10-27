@@ -8,6 +8,8 @@ endif
 
 SUBDIRS = libqpol libapol libpoldiff libsefs libseaudit secmds sechecker sediff man $(MAYBE_GUI) $(MAYBE_BWIDGET)
 
+INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc
+
 EXTRA_DIST = VERSION KNOWN-BUGS
 
 libqpol:
@@ -98,3 +100,6 @@ searchcon: libqpol libapol libsefs
 
 distclean-local:
 	-rm -r config.tcl
+
+indent:
+	find $(top_src_dir) -name '*.[ch]' ! -wholename '*sqlite*' -type f -exec indent $(INDENT_OPTS) '{}' \;

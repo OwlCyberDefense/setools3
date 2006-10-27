@@ -22,7 +22,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -34,7 +34,7 @@
 #include <qpol/bool_query.h>
 #include "qpol_internal.h"
 
-int qpol_policy_get_bool_by_name(qpol_policy_t *policy, const char *name, qpol_bool_t **datum)
+int qpol_policy_get_bool_by_name(qpol_policy_t * policy, const char *name, qpol_bool_t ** datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -46,7 +46,7 @@ int qpol_policy_get_bool_by_name(qpol_policy_t *policy, const char *name, qpol_b
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	
+
 	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_bools.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
@@ -55,12 +55,12 @@ int qpol_policy_get_bool_by_name(qpol_policy_t *policy, const char *name, qpol_b
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
-	*datum = (qpol_bool_t*)internal_datum;
+	*datum = (qpol_bool_t *) internal_datum;
 
-	return STATUS_SUCCESS;	
+	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_bool_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_bool_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	hash_state_t *hs = NULL;
@@ -86,8 +86,8 @@ int qpol_policy_get_bool_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	hs->table = &db->p_bools.table;
 	hs->node = (*(hs->table))->htable[0];
 
-	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur,
-		hash_state_next, hash_state_end, hash_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)hs, hash_state_get_cur,
+				 hash_state_next, hash_state_end, hash_state_size, free, iter)) {
 		free(hs);
 		return STATUS_ERR;
 	}
@@ -98,7 +98,7 @@ int qpol_policy_get_bool_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_get_value(qpol_policy_t *policy, qpol_bool_t *datum, uint32_t *value)
+int qpol_bool_get_value(qpol_policy_t * policy, qpol_bool_t * datum, uint32_t * value)
 {
 	cond_bool_datum_t *internal_datum;
 
@@ -110,13 +110,13 @@ int qpol_bool_get_value(qpol_policy_t *policy, qpol_bool_t *datum, uint32_t *val
 		return STATUS_ERR;
 	}
 
-	internal_datum = (cond_bool_datum_t*)datum;
+	internal_datum = (cond_bool_datum_t *) datum;
 	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_get_state(qpol_policy_t *policy, qpol_bool_t *datum, int *state)
+int qpol_bool_get_state(qpol_policy_t * policy, qpol_bool_t * datum, int *state)
 {
 	cond_bool_datum_t *internal_datum;
 
@@ -128,13 +128,13 @@ int qpol_bool_get_state(qpol_policy_t *policy, qpol_bool_t *datum, int *state)
 		return STATUS_ERR;
 	}
 
-	internal_datum = (cond_bool_datum_t*)datum;
+	internal_datum = (cond_bool_datum_t *) datum;
 	*state = internal_datum->state;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_set_state(qpol_policy_t *policy, qpol_bool_t *datum, int state)
+int qpol_bool_set_state(qpol_policy_t * policy, qpol_bool_t * datum, int state)
 {
 	cond_bool_datum_t *internal_datum;
 
@@ -144,19 +144,18 @@ int qpol_bool_set_state(qpol_policy_t *policy, qpol_bool_t *datum, int state)
 		return STATUS_ERR;
 	}
 
-	internal_datum = (cond_bool_datum_t*)datum;
+	internal_datum = (cond_bool_datum_t *) datum;
 	internal_datum->state = state;
 
 	/* re-evaluate conditionals to update the state of their rules */
-	if (qpol_policy_reevaluate_conds(policy))
-	{
-		return STATUS_ERR; /* errno already set */
+	if (qpol_policy_reevaluate_conds(policy)) {
+		return STATUS_ERR;     /* errno already set */
 	}
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_set_state_no_eval(qpol_policy_t *policy, qpol_bool_t *datum, int state)
+int qpol_bool_set_state_no_eval(qpol_policy_t * policy, qpol_bool_t * datum, int state)
 {
 	cond_bool_datum_t *internal_datum;
 
@@ -166,13 +165,13 @@ int qpol_bool_set_state_no_eval(qpol_policy_t *policy, qpol_bool_t *datum, int s
 		return STATUS_ERR;
 	}
 
-	internal_datum = (cond_bool_datum_t*)datum;
+	internal_datum = (cond_bool_datum_t *) datum;
 	internal_datum->state = state;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_bool_get_name(qpol_policy_t *policy, qpol_bool_t *datum, char **name)
+int qpol_bool_get_name(qpol_policy_t * policy, qpol_bool_t * datum, char **name)
 {
 	cond_bool_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -186,11 +185,9 @@ int qpol_bool_get_name(qpol_policy_t *policy, qpol_bool_t *datum, char **name)
 	}
 
 	db = &policy->p->p;
-	internal_datum = (cond_bool_datum_t*)datum;
+	internal_datum = (cond_bool_datum_t *) datum;
 
 	*name = db->p_bool_val_to_name[internal_datum->s.value - 1];
 
 	return STATUS_SUCCESS;
 }
-
- 

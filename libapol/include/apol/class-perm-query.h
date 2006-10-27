@@ -52,9 +52,7 @@ typedef struct apol_perm_query apol_perm_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_class_by_query(apol_policy_t *p,
-				   apol_class_query_t *c,
-				   apol_vector_t **v);
+extern int apol_get_class_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new class query structure.  All fields are
@@ -73,7 +71,7 @@ extern apol_class_query_t *apol_class_query_create(void);
  *
  * @param c Reference to a class query structure to destroy.
  */
-extern void apol_class_query_destroy(apol_class_query_t **c);
+extern void apol_class_query_destroy(apol_class_query_t ** c);
 
 /**
  * Set a class query to return only object classes that match this
@@ -86,8 +84,7 @@ extern void apol_class_query_destroy(apol_class_query_t **c);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_class_query_set_class(apol_policy_t *p,
-				      apol_class_query_t *c, const char *name);
+extern int apol_class_query_set_class(apol_policy_t * p, apol_class_query_t * c, const char *name);
 
 /**
  * Set a class query to return only object classes that inherit from a
@@ -102,8 +99,7 @@ extern int apol_class_query_set_class(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_class_query_set_common(apol_policy_t *p,
-				       apol_class_query_t *c, const char *name);
+extern int apol_class_query_set_common(apol_policy_t * p, apol_class_query_t * c, const char *name);
 /**
  * Set a class query to use regular expression searching for all of
  * its fields.	Strings will be treated as regexes instead of
@@ -115,8 +111,7 @@ extern int apol_class_query_set_common(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_class_query_set_regex(apol_policy_t *p,
-				      apol_class_query_t *c, int is_regex);
+extern int apol_class_query_set_regex(apol_policy_t * p, apol_class_query_t * c, int is_regex);
 
 /******************** common class queries ********************/
 
@@ -135,9 +130,7 @@ extern int apol_class_query_set_regex(apol_policy_t *p,
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_common_by_query(apol_policy_t *p,
-				    apol_common_query_t *c,
-				    apol_vector_t **v);
+extern int apol_get_common_by_query(apol_policy_t * p, apol_common_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new common query structure.  All fields are
@@ -156,7 +149,7 @@ extern apol_common_query_t *apol_common_query_create(void);
  *
  * @param c Reference to a common query structure to destroy.
  */
-extern void apol_common_query_destroy(apol_common_query_t **c);
+extern void apol_common_query_destroy(apol_common_query_t ** c);
 
 /**
  * Set a common query to return only common classes that match this
@@ -169,8 +162,7 @@ extern void apol_common_query_destroy(apol_common_query_t **c);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_common_query_set_common(apol_policy_t *p,
-					apol_common_query_t *c, const char *name);
+extern int apol_common_query_set_common(apol_policy_t * p, apol_common_query_t * c, const char *name);
 
 /**
  * Set a common query to use regular expression searching for all of
@@ -183,8 +175,7 @@ extern int apol_common_query_set_common(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_common_query_set_regex(apol_policy_t *p,
-				       apol_common_query_t *c, int is_regex);
+extern int apol_common_query_set_regex(apol_policy_t * p, apol_common_query_t * c, int is_regex);
 
 /******************** permission queries ********************/
 
@@ -207,9 +198,7 @@ extern int apol_common_query_set_regex(apol_policy_t *p,
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_perm_by_query(apol_policy_t *p,
-				  apol_perm_query_t *pq,
-				  apol_vector_t **v);
+extern int apol_get_perm_by_query(apol_policy_t * p, apol_perm_query_t * pq, apol_vector_t ** v);
 
 /**
  * Allocate and return a new permission query structure.  All fields
@@ -229,7 +218,7 @@ extern apol_perm_query_t *apol_perm_query_create(void);
  *
  * @param pq Reference to a permission query structure to destroy.
  */
-extern void apol_perm_query_destroy(apol_perm_query_t **pq);
+extern void apol_perm_query_destroy(apol_perm_query_t ** pq);
 
 /**
  * Set a permission query to return only permissions that match this
@@ -242,8 +231,7 @@ extern void apol_perm_query_destroy(apol_perm_query_t **pq);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_perm_query_set_perm(apol_policy_t *p,
-				    apol_perm_query_t *pq, const char *name);
+extern int apol_perm_query_set_perm(apol_policy_t * p, apol_perm_query_t * pq, const char *name);
 
 /**
  * Set a permission query to use regular expression searching for all
@@ -256,7 +244,6 @@ extern int apol_perm_query_set_perm(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_perm_query_set_regex(apol_policy_t *p,
-				     apol_perm_query_t *pq, int is_regex);
+extern int apol_perm_query_set_regex(apol_policy_t * p, apol_perm_query_t * pq, int is_regex);
 
 #endif

@@ -36,7 +36,7 @@ static const char *const mod_name = "users_wo_roles";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int users_wo_roles_register(sechk_lib_t *lib)
+int users_wo_roles_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -67,13 +67,8 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		"however the users cannot login to the system or run any processes.  Since these \n"
 		"users cannot be used on the system, a policy change is recomended to remove the \n"
 		"user or provide some intended access.                                           \n";
-	mod->opt_description = 
-		"  Module requirements:\n"
-		"    none\n"
-		"  Module dependencies:\n"
-		"    none\n"
-		"  Module options:\n"
-		"    none\n";
+	mod->opt_description =
+		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -89,7 +84,7 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = users_wo_roles_init;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -108,7 +103,7 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = users_wo_roles_run;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -129,7 +124,7 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = users_wo_roles_print;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -141,7 +136,7 @@ int users_wo_roles_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int users_wo_roles_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int users_wo_roles_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -163,12 +158,12 @@ int users_wo_roles_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
  * in all relavant item and proof data. */
-int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int users_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	size_t i;	
+	size_t i;
 	apol_vector_t *user_vector;
 	int error = 0;
 
@@ -200,14 +195,14 @@ int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		goto users_wo_roles_run_fail;
 	}
 	res->item_type = SECHK_ITEM_USER;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto users_wo_roles_run_fail;
 	}
 
 	apol_get_user_by_query(policy, NULL, &user_vector);
-	for (i=0;i<apol_vector_get_size(user_vector);i++) {
+	for (i = 0; i < apol_vector_get_size(user_vector); i++) {
 		qpol_user_t *user;
 		qpol_iterator_t *role_iter;
 
@@ -234,19 +229,19 @@ int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 			goto users_wo_roles_run_fail;
 		}
 		item->item = (void *)user;
-		if ( !item->proof ) {
-			if ( !(item->proof = apol_vector_create()) ) {
+		if (!item->proof) {
+			if (!(item->proof = apol_vector_create())) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto users_wo_roles_run_fail;
 			}
 		}
-		if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+		if (apol_vector_append(item->proof, (void *)proof) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto users_wo_roles_run_fail;
 		}
-		if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+		if (apol_vector_append(res->items, (void *)item) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto users_wo_roles_run_fail;
@@ -260,7 +255,7 @@ int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		return 1;
 	return 0;
 
-users_wo_roles_run_fail:
+      users_wo_roles_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_destroy(&res);
@@ -270,7 +265,7 @@ users_wo_roles_run_fail:
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int users_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int users_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -278,7 +273,7 @@ int users_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	qpol_user_t *user;
 	char *user_name;
 
-	if (!mod || !policy){
+	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
 		errno = EINVAL;
 		return -1;
@@ -293,7 +288,7 @@ int users_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
@@ -310,18 +305,17 @@ int users_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
-	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
+	if (outformat & (SECHK_OUT_LIST | SECHK_OUT_PROOF)) {
 		printf("\n");
-		for (i=0;i<num_items;i++) {
+		for (i = 0; i < num_items; i++) {
 			j++;
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
-			user = (qpol_user_t*)item->item;
+			user = (qpol_user_t *) item->item;
 			qpol_user_get_name(policy->p, user, &user_name);
-			printf("%s%s", user_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+			printf("%s%s", user_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
 	return 0;
 }
-

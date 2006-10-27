@@ -37,7 +37,7 @@
 
 typedef struct apol_permmap apol_permmap_t;
 
-#define APOL_PERMMAP_UNMAPPED	0x00	/* defined object/perm, but no map */
+#define APOL_PERMMAP_UNMAPPED	0x00   /* defined object/perm, but no map */
 #define	APOL_PERMMAP_READ	0x01
 #define APOL_PERMMAP_WRITE	0x02
 #define APOL_PERMMAP_BOTH	(APOL_PERMMAP_READ | APOL_PERMMAP_WRITE)
@@ -49,7 +49,7 @@ typedef struct apol_permmap apol_permmap_t;
  *
  * @param p Reference to an apol_permmap_t to destroy.
  */
-extern void apol_permmap_destroy(apol_permmap_t **p);
+extern void apol_permmap_destroy(apol_permmap_t ** p);
 
 /**
  * Read a permission map from a file into a policy.  If there is a
@@ -66,7 +66,7 @@ extern void apol_permmap_destroy(apol_permmap_t **p);
  *
  * @return 0 on success, > 0 on success with warnings, < 0 on error.
  */
-extern int apol_permmap_load(apol_policy_t *p, const char *filename);
+extern int apol_permmap_load(apol_policy_t * p, const char *filename);
 
 /**
  * Write the contents of permission map to a file.  Any existing file
@@ -77,7 +77,7 @@ extern int apol_permmap_load(apol_policy_t *p, const char *filename);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_permmap_save(apol_policy_t *p, const char *filename);
+extern int apol_permmap_save(apol_policy_t * p, const char *filename);
 
 /**
  * Given a class and permission name, look up that permission mapping
@@ -95,9 +95,7 @@ extern int apol_permmap_save(apol_policy_t *p, const char *filename);
  * @return 0 if class and permission were found, < 0 on error or if
  * not found.
  */
-extern int apol_permmap_get(apol_policy_t *p,
-			    const char *class_name, const char *perm_name,
-			    int *map, int *weight);
+extern int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight);
 
 /**
  * Given a class and permission name, set that permission's map and
@@ -114,8 +112,6 @@ extern int apol_permmap_get(apol_policy_t *p,
  * @return 0 if permission map was changed, < 0 on error or if not
  * found.
  */
-extern int apol_permmap_set(apol_policy_t *p,
-			    const char *class_name, const char *perm_name,
-			    int map, int weight);
+extern int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight);
 
-#endif /*APOL_PERMMAP_H*/
+#endif				       /*APOL_PERMMAP_H */

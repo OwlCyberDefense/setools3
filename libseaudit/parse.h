@@ -13,7 +13,6 @@
 #ifndef LIBAUDIT_PARSE_H
 #define LIBAUDIT_PARSE_H
 
-
 #include "auditlog.h"
 #define	PARSE_RET_SUCCESS		0x00000001	/* success, no warnings nor errors */
 #define PARSE_RET_MEMORY_ERROR		0x00000002	/* general error */
@@ -29,19 +28,9 @@
 #define PARSE_SUCCESS_MSG "Parse success!"
 #define PARSE_INVALID_MSG_WARN_MSG "Warning! One or more invalid messages found in audit log.  See help file for more information."
 
-unsigned int parse_audit(FILE *syslog, audit_log_t *log);
+unsigned int parse_audit(FILE * syslog, audit_log_t * log);
 /* parses the file specified by syslog and puts all selinux audit messages into log 
    it is assumed that log will be created before this function
 */
 
-
 #endif
-
-
-
-
-
-
-
-
-

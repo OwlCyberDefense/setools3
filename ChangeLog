@@ -1,3 +1,9 @@
+2006-10-27  J. Mowery <jmowery@tresys.com>
+
+	* added make indent to standardize code indentation style
+
+	* indented all .c and .h files with make indent (except sqlite which it skips)
+
 2006-10-25  J. Tang  <jtang@tresys.com>
 
 	* seaudit-report Logwatch script will look for

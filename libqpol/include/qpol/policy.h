@@ -44,7 +44,7 @@
 #define QPOL_TYPE_SOURCE	2
 
 typedef struct qpol_policy qpol_policy_t;
-typedef void (*qpol_callback_fn_t) (void* varg, struct qpol_policy* policy, int level, const char* fmt, va_list va_args);
+typedef void (*qpol_callback_fn_t) (void *varg, struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
 
 #define QPOL_POLICY_KERNEL_SOURCE 0
 #define QPOL_POLICY_KERNEL_BINARY 1
@@ -60,7 +60,7 @@ typedef void (*qpol_callback_fn_t) (void* varg, struct qpol_policy* policy, int 
  *  @return Returns one of QPOL_POLICY_* above on success and < 0 on failure;
  *  if the call fails, errno will be set and *policy will be NULL.
  */
-extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **policy, qpol_callback_fn_t fn, void *varg);
+extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg);
 
 /**
  *  Open a policy from a passed in file path but do not load any rules.
@@ -72,7 +72,7 @@ extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **poli
  *  @return Returns one of QPOL_POLICY_* above on success and < 0 on failure;
  *  if the call fails, errno will be set and *policy will be NULL.
  */
-extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy_t **policy, qpol_callback_fn_t fn, void *varg);
+extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg);
 
 /**
  *  Open a policy from a passed in buffer.
@@ -85,8 +85,7 @@ extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL.
  */
-extern int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, int size,
-					qpol_callback_fn_t fn, void *varg);
+extern int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, int size, qpol_callback_fn_t fn, void *varg);
 
 /**
  *  Close a policy and deallocate its memory.  Does nothing if it is
@@ -94,7 +93,7 @@ extern int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *file
  *  @param policy Reference to the policy to close.  The pointer will
  *  be set to NULL afterwards.
  */
-extern void qpol_policy_destroy(qpol_policy_t **policy);
+extern void qpol_policy_destroy(qpol_policy_t ** policy);
 
 /**
  *  Find the default policy file given a policy type. 
@@ -121,6 +120,6 @@ extern const char *qpol_find_default_policy_file_strerr(int err);
  *  @return 0 on success and < 0 on failure; if the call fails.
  *  errno will be set. On failure, the policy state may be inconsistent.
  */
-extern int qpol_policy_reevaluate_conds(qpol_policy_t *policy);
+extern int qpol_policy_reevaluate_conds(qpol_policy_t * policy);
 
 #endif

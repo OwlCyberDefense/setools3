@@ -31,11 +31,10 @@
 #include <apol/role-query.h>
 #include <apol/rbacrule-query.h>
 
-int roles_wo_allow_register(sechk_lib_t *lib);
-int roles_wo_allow_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int roles_wo_allow_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int roles_wo_allow_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int roles_wo_allow_register(sechk_lib_t * lib);
+int roles_wo_allow_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int roles_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int roles_wo_allow_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #endif
-

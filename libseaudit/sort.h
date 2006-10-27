@@ -11,22 +11,23 @@
 #include "auditlog_view.h"
 
 struct sort_action_node;
-typedef int (*sort_action_t)(const msg_t *a, const msg_t *b);
+typedef int (*sort_action_t) (const msg_t * a, const msg_t * b);
 
-typedef struct sort_action_node {
+typedef struct sort_action_node
+{
 	int msg_types;
 	sort_action_t sort;
 	struct sort_action_node *prev;
 	struct sort_action_node *next;
 } sort_action_node_t;
 
-void sort_action_list_destroy(sort_action_node_t *cl);
+void sort_action_list_destroy(sort_action_node_t * cl);
 
 /* this is not reentrant! */
-int audit_log_view_sort(audit_log_view_t *log, int **new_order, int reverse);
+int audit_log_view_sort(audit_log_view_t * log, int **new_order, int reverse);
 
-int audit_log_view_append_sort(audit_log_view_t *log, sort_action_node_t *node);
-int audit_log_view_remove_sort(audit_log_view_t *log, sort_action_node_t *node);
+int audit_log_view_append_sort(audit_log_view_t * log, sort_action_node_t * node);
+int audit_log_view_remove_sort(audit_log_view_t * log, sort_action_node_t * node);
 
 /* main sort function for qsort */
 int msg_compare(const void *a, const void *b);
@@ -51,6 +52,5 @@ sort_action_node_t *path_sort_action_create(void);
 sort_action_node_t *dev_sort_action_create(void);
 sort_action_node_t *inode_sort_action_create(void);
 sort_action_node_t *pid_sort_action_create(void);
-
 
 #endif

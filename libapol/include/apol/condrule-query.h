@@ -49,9 +49,7 @@ typedef struct apol_cond_query apol_cond_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_cond_by_query(apol_policy_t *p,
-				  apol_cond_query_t *c,
-				  apol_vector_t **v);
+extern int apol_get_cond_by_query(apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new cond query structure.  All fields are
@@ -71,7 +69,7 @@ extern apol_cond_query_t *apol_cond_query_create(void);
  *
  * @param c Reference to a cond query structure to destroy.
  */
-extern void apol_cond_query_destroy(apol_cond_query_t **c);
+extern void apol_cond_query_destroy(apol_cond_query_t ** c);
 
 /**
  * Set a cond query to search only conditional expressions that use a
@@ -84,8 +82,7 @@ extern void apol_cond_query_destroy(apol_cond_query_t **c);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_cond_query_set_bool(apol_policy_t *p,
-				    apol_cond_query_t *c, const char *name);
+extern int apol_cond_query_set_bool(apol_policy_t * p, apol_cond_query_t * c, const char *name);
 
 /**
  * Set a cond query to use regular expression searching for all of its
@@ -97,8 +94,7 @@ extern int apol_cond_query_set_bool(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_cond_query_set_regex(apol_policy_t *p,
-				     apol_cond_query_t *c, int is_regex);
+extern int apol_cond_query_set_regex(apol_policy_t * p, apol_cond_query_t * c, int is_regex);
 
 /**
  * Given a conditional node, allocate and return a string
@@ -111,6 +107,6 @@ extern int apol_cond_query_set_regex(apol_policy_t *p,
  * expression, or NULL on failure.  The caller is responsible for
  * calling free() on the returned string.
  */
-extern char *apol_cond_expr_render(apol_policy_t *p, qpol_cond_t *cond);
+extern char *apol_cond_expr_render(apol_policy_t * p, qpol_cond_t * cond);
 
 #endif

@@ -35,87 +35,86 @@
 #include <errno.h>
 #include <string.h>
 
-struct apol_portcon_query {
-        int proto;
-        int low, high;
-        apol_context_t *context;
+struct apol_portcon_query
+{
+	int proto;
+	int low, high;
+	apol_context_t *context;
 	unsigned int flags;
 };
 
-struct apol_netifcon_query {
+struct apol_netifcon_query
+{
 	char *dev;
 	apol_context_t *if_context, *msg_context;
 	unsigned int if_flags, msg_flags;
 };
 
-struct apol_nodecon_query {
-        char proto, addr_proto, mask_proto;
-        uint32_t addr[4], mask[4];
+struct apol_nodecon_query
+{
+	char proto, addr_proto, mask_proto;
+	uint32_t addr[4], mask[4];
 	apol_context_t *context;
 	unsigned int flags;
 };
 
 /******************** portcon queries ********************/
 
-int apol_get_portcon_by_query(apol_policy_t *p,
-                              apol_portcon_query_t *po,
-                              apol_vector_t **v)
+int apol_get_portcon_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol_vector_t ** v)
 {
-        qpol_iterator_t *iter;
-        int retval = -1, retval2;
-        *v = NULL;
-        if (qpol_policy_get_portcon_iter(p->p, &iter) < 0) {
-                return -1;
-        }
-        if ((*v = apol_vector_create()) == NULL) {
-                ERR(p, "%s", strerror(ENOMEM));
-                goto cleanup;
-        }
-        for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-                qpol_portcon_t *portcon;
-                if (qpol_iterator_get_item(iter, (void **) &portcon) < 0) {
-                        goto cleanup;
-                }
-                if (po != NULL) {
-                        uint16_t low, high;
-                        uint8_t proto;
-                        qpol_context_t *context;
-                        if (qpol_portcon_get_low_port(p->p,
-                                                       portcon, &low) < 0 ||
-                            qpol_portcon_get_high_port(p->p,
-                                                        portcon, &high) < 0 ||
-                            qpol_portcon_get_protocol(p->p,
-                                                       portcon, &proto) < 0 ||
-                            qpol_portcon_get_context(p->p,
-                                                      portcon, &context) < 0) {
-                                goto cleanup;
-                        }
-                        if ((po->low >= 0 && ((uint16_t) po->low) != low) ||
-                            (po->high >= 0 && ((uint16_t) po->high) != high) ||
-                            (po->proto >= 0 && ((uint8_t) po->proto) != proto)) {
-                                continue;
-                        }
+	qpol_iterator_t *iter;
+	int retval = -1, retval2;
+	*v = NULL;
+	if (qpol_policy_get_portcon_iter(p->p, &iter) < 0) {
+		return -1;
+	}
+	if ((*v = apol_vector_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_portcon_t *portcon;
+		if (qpol_iterator_get_item(iter, (void **)&portcon) < 0) {
+			goto cleanup;
+		}
+		if (po != NULL) {
+			uint16_t low, high;
+			uint8_t proto;
+			qpol_context_t *context;
+			if (qpol_portcon_get_low_port(p->p,
+						      portcon, &low) < 0 ||
+			    qpol_portcon_get_high_port(p->p,
+						       portcon, &high) < 0 ||
+			    qpol_portcon_get_protocol(p->p,
+						      portcon, &proto) < 0 ||
+			    qpol_portcon_get_context(p->p, portcon, &context) < 0) {
+				goto cleanup;
+			}
+			if ((po->low >= 0 && ((uint16_t) po->low) != low) ||
+			    (po->high >= 0 && ((uint16_t) po->high) != high) ||
+			    (po->proto >= 0 && ((uint8_t) po->proto) != proto)) {
+				continue;
+			}
 			retval2 = apol_compare_context(p, context, po->context, po->flags);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				continue;
 			}
-                }
-                if (apol_vector_append(*v, portcon)) {
-                        ERR(p, "%s", strerror(ENOMEM));
-                        goto cleanup;
-                }
-        }
+		}
+		if (apol_vector_append(*v, portcon)) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+	}
 
-        retval = 0;
- cleanup:
-        if (retval != 0) {
-                apol_vector_destroy(v, NULL);
-        }
-        qpol_iterator_destroy(&iter);
-        return retval;
+	retval = 0;
+      cleanup:
+	if (retval != 0) {
+		apol_vector_destroy(v, NULL);
+	}
+	qpol_iterator_destroy(&iter);
+	return retval;
 }
 
 apol_portcon_query_t *apol_portcon_query_create(void)
@@ -128,7 +127,7 @@ apol_portcon_query_t *apol_portcon_query_create(void)
 	return po;
 }
 
-void apol_portcon_query_destroy(apol_portcon_query_t **po)
+void apol_portcon_query_destroy(apol_portcon_query_t ** po)
 {
 	if (*po != NULL) {
 		apol_context_destroy(&((*po)->context));
@@ -137,31 +136,26 @@ void apol_portcon_query_destroy(apol_portcon_query_t **po)
 	}
 }
 
-int apol_portcon_query_set_proto(apol_policy_t *p __attribute__ ((unused)),
-				 apol_portcon_query_t *po, int proto)
+int apol_portcon_query_set_proto(apol_policy_t * p __attribute__ ((unused)), apol_portcon_query_t * po, int proto)
 {
 	po->proto = proto;
 	return 0;
 }
 
-int apol_portcon_query_set_low(apol_policy_t *p __attribute__ ((unused)),
-			       apol_portcon_query_t *po, int low)
+int apol_portcon_query_set_low(apol_policy_t * p __attribute__ ((unused)), apol_portcon_query_t * po, int low)
 {
 	po->low = low;
 	return 0;
 }
 
-int apol_portcon_query_set_high(apol_policy_t *p __attribute__ ((unused)),
-                                apol_portcon_query_t *po, int high)
+int apol_portcon_query_set_high(apol_policy_t * p __attribute__ ((unused)), apol_portcon_query_t * po, int high)
 {
 	po->high = high;
 	return 0;
 }
 
-int apol_portcon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
-				   apol_portcon_query_t *po,
-				   apol_context_t *context,
-				   unsigned int range_match)
+int apol_portcon_query_set_context(apol_policy_t * p __attribute__ ((unused)),
+				   apol_portcon_query_t * po, apol_context_t * context, unsigned int range_match)
 {
 	if (po->context != NULL) {
 		apol_context_destroy(&po->context);
@@ -171,7 +165,7 @@ int apol_portcon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	return 0;
 }
 
-char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon)
+char *apol_portcon_render(apol_policy_t * p, qpol_portcon_t * portcon)
 {
 	char *line = NULL, *retval = NULL;
 	char *buff = NULL;
@@ -181,11 +175,11 @@ char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon)
 	uint16_t low_port, high_port;
 	uint8_t proto;
 
-	const size_t bufflen = 50; /* arbitrary size big enough to hold port no. */
+	const size_t bufflen = 50;     /* arbitrary size big enough to hold port no. */
 	if (!portcon || !p)
 		goto cleanup;
 
-	buff = (char*)calloc(bufflen + 1, sizeof(char));
+	buff = (char *)calloc(bufflen + 1, sizeof(char));
 	if (!buff) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
@@ -222,7 +216,7 @@ char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon)
 	sprintf(line, "portcon %s %s %s", proto_str, buff, context_str);
 
 	retval = line;
- cleanup:
+      cleanup:
 	free(buff);
 	free(context_str);
 	if (retval != line) {
@@ -233,9 +227,7 @@ char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon)
 
 /******************** netifcon queries ********************/
 
-int apol_get_netifcon_by_query(apol_policy_t *p,
-			       apol_netifcon_query_t *n,
-			       apol_vector_t **v)
+int apol_get_netifcon_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
@@ -247,9 +239,9 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_netifcon_t *netifcon;
-		if (qpol_iterator_get_item(iter, (void **) &netifcon) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&netifcon) < 0) {
 			goto cleanup;
 		}
 		if (n != NULL) {
@@ -263,22 +255,19 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 			retval2 = apol_compare(p, name, n->dev, 0, NULL);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				continue;
 			}
 			retval2 = apol_compare_context(p, ifcon, n->if_context, n->if_flags);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				continue;
 			}
 			retval2 = apol_compare_context(p, msgcon, n->msg_context, n->msg_flags);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				continue;
 			}
 		}
@@ -289,7 +278,7 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -302,7 +291,7 @@ apol_netifcon_query_t *apol_netifcon_query_create(void)
 	return calloc(1, sizeof(apol_netifcon_query_t));
 }
 
-void apol_netifcon_query_destroy(apol_netifcon_query_t **n)
+void apol_netifcon_query_destroy(apol_netifcon_query_t ** n)
 {
 	if (*n != NULL) {
 		free((*n)->dev);
@@ -313,17 +302,13 @@ void apol_netifcon_query_destroy(apol_netifcon_query_t **n)
 	}
 }
 
-int apol_netifcon_query_set_device(apol_policy_t *p,
-				   apol_netifcon_query_t *n, const char *dev)
+int apol_netifcon_query_set_device(apol_policy_t * p, apol_netifcon_query_t * n, const char *dev)
 {
 	return apol_query_set(p, &n->dev, NULL, dev);
 }
 
-
-int apol_netifcon_query_set_if_context(apol_policy_t *p __attribute__ ((unused)),
-				       apol_netifcon_query_t *n,
-				       apol_context_t *context,
-				       unsigned int range_match)
+int apol_netifcon_query_set_if_context(apol_policy_t * p __attribute__ ((unused)),
+				       apol_netifcon_query_t * n, apol_context_t * context, unsigned int range_match)
 {
 	if (n->if_context != NULL) {
 		apol_context_destroy(&n->if_context);
@@ -333,10 +318,8 @@ int apol_netifcon_query_set_if_context(apol_policy_t *p __attribute__ ((unused))
 	return 0;
 }
 
-int apol_netifcon_query_set_msg_context(apol_policy_t *p __attribute__ ((unused)),
-					apol_netifcon_query_t *n,
-					apol_context_t *context,
-					unsigned int range_match)
+int apol_netifcon_query_set_msg_context(apol_policy_t * p __attribute__ ((unused)),
+					apol_netifcon_query_t * n, apol_context_t * context, unsigned int range_match)
 {
 	if (n->msg_context != NULL) {
 		apol_context_destroy(&n->msg_context);
@@ -346,7 +329,7 @@ int apol_netifcon_query_set_msg_context(apol_policy_t *p __attribute__ ((unused)
 	return 0;
 }
 
-char *apol_netifcon_render(apol_policy_t *p, qpol_netifcon_t *netifcon)
+char *apol_netifcon_render(apol_policy_t * p, qpol_netifcon_t * netifcon)
 {
 	char *line = NULL, *retval = NULL;
 	char *devcon_str = NULL;
@@ -355,42 +338,40 @@ char *apol_netifcon_render(apol_policy_t *p, qpol_netifcon_t *netifcon)
 	qpol_context_t *ctxt = NULL;
 
 	if (!netifcon || !p)
-                goto cleanup;
+		goto cleanup;
 
 	if (qpol_netifcon_get_if_con(p->p, netifcon, &ctxt))
-                goto cleanup;
+		goto cleanup;
 	devcon_str = apol_qpol_context_render(p, ctxt);
 	if (!devcon_str)
-                goto cleanup;
+		goto cleanup;
 
 	if (qpol_netifcon_get_msg_con(p->p, netifcon, &ctxt))
-                goto cleanup;
+		goto cleanup;
 	pktcon_str = apol_qpol_context_render(p, ctxt);
 	if (!pktcon_str) {
-                goto cleanup;
+		goto cleanup;
 	}
 
 	if (qpol_netifcon_get_name(p->p, netifcon, &iface_str))
 		return NULL;
 	line = (char *)calloc(4 + strlen(iface_str) + strlen(devcon_str) + strlen(pktcon_str) + strlen("netifcon"), sizeof(char));
-        if (!line) {
-                ERR(p, "%s", strerror(ENOMEM));
-                goto cleanup;
-        }
-        sprintf(line, "netifcon %s %s %s", iface_str, devcon_str, pktcon_str);
+	if (!line) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	sprintf(line, "netifcon %s %s %s", iface_str, devcon_str, pktcon_str);
 
-        retval = line;
- cleanup:
-        free(devcon_str);
+	retval = line;
+      cleanup:
+	free(devcon_str);
 	free(pktcon_str);
 	return retval;
 }
 
 /******************** nodecon queries ********************/
 
-int apol_get_nodecon_by_query(apol_policy_t *p,
-			      apol_nodecon_query_t *n,
-			      apol_vector_t **v)
+int apol_get_nodecon_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
@@ -403,8 +384,8 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &nodecon) < 0) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&nodecon) < 0) {
 			goto cleanup;
 		}
 		if (n != NULL) {
@@ -438,8 +419,7 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 			retval2 = apol_compare_context(p, con, n->context, n->flags);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				free(nodecon);
 				continue;
 			}
@@ -451,7 +431,7 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, free);
 		free(nodecon);
@@ -469,7 +449,7 @@ apol_nodecon_query_t *apol_nodecon_query_create(void)
 	return n;
 }
 
-void apol_nodecon_query_destroy(apol_nodecon_query_t **n)
+void apol_nodecon_query_destroy(apol_nodecon_query_t ** n)
 {
 	if (*n != NULL) {
 		apol_context_destroy(&((*n)->context));
@@ -478,74 +458,57 @@ void apol_nodecon_query_destroy(apol_nodecon_query_t **n)
 	}
 }
 
-int apol_nodecon_query_set_proto(apol_policy_t *p,
-				 apol_nodecon_query_t *n, int proto)
+int apol_nodecon_query_set_proto(apol_policy_t * p, apol_nodecon_query_t * n, int proto)
 {
 	if (proto == QPOL_IPV4 || proto == QPOL_IPV6) {
-		n->proto = (char) proto;
-	}
-	else if (proto < 0) {
+		n->proto = (char)proto;
+	} else if (proto < 0) {
 		n->proto = -1;
-	}
-	else {
+	} else {
 		ERR(p, "Invalid protocol value %d.", proto);
 		return -1;
 	}
 	return 0;
 }
 
-int apol_nodecon_query_set_addr(apol_policy_t *p,
-				apol_nodecon_query_t *n,
-				uint32_t *addr,
-				int proto)
+int apol_nodecon_query_set_addr(apol_policy_t * p, apol_nodecon_query_t * n, uint32_t * addr, int proto)
 {
 	if (addr == NULL) {
 		n->addr_proto = -1;
-	}
-	else {
+	} else {
 		if (proto == QPOL_IPV4) {
 			memcpy(n->addr, addr, 1 * sizeof(uint32_t));
-		}
-		else if (proto == QPOL_IPV6) {
+		} else if (proto == QPOL_IPV6) {
 			memcpy(n->addr, addr, 4 * sizeof(uint32_t));
-		}
-		else {
+		} else {
 			ERR(p, "Invalid protocol value %d.", proto);
 			return -1;
 		}
-		n->addr_proto = (char) proto;
+		n->addr_proto = (char)proto;
 	}
 	return 0;
 }
 
-int apol_nodecon_query_set_mask(apol_policy_t *p,
-				apol_nodecon_query_t *n,
-				uint32_t *mask,
-				int proto)
+int apol_nodecon_query_set_mask(apol_policy_t * p, apol_nodecon_query_t * n, uint32_t * mask, int proto)
 {
 	if (mask == NULL) {
 		n->mask_proto = -1;
-	}
-	else {
+	} else {
 		if (proto == QPOL_IPV4) {
 			memcpy(n->mask, mask, 1 * sizeof(uint32_t));
-		}
-		else if (proto == QPOL_IPV6) {
+		} else if (proto == QPOL_IPV6) {
 			memcpy(n->mask, mask, 4 * sizeof(uint32_t));
-		}
-		else {
+		} else {
 			ERR(p, "Invalid protocol value %d.", proto);
 			return -1;
 		}
-		n->mask_proto = (char) proto;
+		n->mask_proto = (char)proto;
 	}
 	return 0;
 }
 
-int apol_nodecon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
-				   apol_nodecon_query_t *n,
-				   apol_context_t *context,
-				   unsigned int range_match)
+int apol_nodecon_query_set_context(apol_policy_t * p __attribute__ ((unused)),
+				   apol_nodecon_query_t * n, apol_context_t * context, unsigned int range_match)
 {
 	if (n->context != NULL) {
 		apol_context_destroy(&n->context);
@@ -555,7 +518,7 @@ int apol_nodecon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	return 0;
 }
 
-char *apol_nodecon_render(apol_policy_t *p, qpol_nodecon_t *nodecon)
+char *apol_nodecon_render(apol_policy_t * p, qpol_nodecon_t * nodecon)
 {
 	char *line = NULL, *retval = NULL;
 	char *context_str = NULL;
@@ -582,8 +545,7 @@ char *apol_nodecon_render(apol_policy_t *p, qpol_nodecon_t *nodecon)
 		}
 		break;
 	case QPOL_IPV6:
-		if ((addr_str = apol_ipv6_addr_render(p, addr)) == NULL ||
-		    (mask_str = apol_ipv6_addr_render(p, mask)) == NULL) {
+		if ((addr_str = apol_ipv6_addr_render(p, addr)) == NULL || (mask_str = apol_ipv6_addr_render(p, mask)) == NULL) {
 			goto cleanup;
 		}
 		break;
@@ -597,7 +559,7 @@ char *apol_nodecon_render(apol_policy_t *p, qpol_nodecon_t *nodecon)
 	if (!context_str)
 		goto cleanup;
 
-	line = (char*)calloc(4 + strlen("nodecon") + strlen(addr_str) + strlen(mask_str) + strlen(context_str), sizeof(char));
+	line = (char *)calloc(4 + strlen("nodecon") + strlen(addr_str) + strlen(mask_str) + strlen(context_str), sizeof(char));
 	if (!line) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
@@ -606,7 +568,7 @@ char *apol_nodecon_render(apol_policy_t *p, qpol_nodecon_t *nodecon)
 	sprintf(line, "nodecon %s %s %s", addr_str, mask_str, context_str);
 
 	retval = line;
- cleanup:
+      cleanup:
 	free(addr_str);
 	free(mask_str);
 	free(context_str);

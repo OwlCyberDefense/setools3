@@ -49,9 +49,7 @@ typedef struct apol_validatetrans_query apol_validatetrans_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_constraint_by_query(apol_policy_t *p,
-					apol_constraint_query_t *c,
-					apol_vector_t **v);
+extern int apol_get_constraint_by_query(apol_policy_t * p, apol_constraint_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new constraint query structure.  All fields
@@ -71,7 +69,7 @@ extern apol_constraint_query_t *apol_constraint_query_create(void);
  *
  * @param c Reference to a constraint query structure to destroy.
  */
-extern void apol_constraint_query_destroy(apol_constraint_query_t **c);
+extern void apol_constraint_query_destroy(apol_constraint_query_t ** c);
 
 /**
  * Set a constraint query to return only constraints that use object
@@ -85,9 +83,7 @@ extern void apol_constraint_query_destroy(apol_constraint_query_t **c);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_constraint_query_set_class(apol_policy_t *p,
-					   apol_constraint_query_t *c,
-					   const char *name);
+extern int apol_constraint_query_set_class(apol_policy_t * p, apol_constraint_query_t * c, const char *name);
 
 /**
  * Set a constraint query to return only constraints that employ
@@ -101,9 +97,7 @@ extern int apol_constraint_query_set_class(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_constraint_query_set_perm(apol_policy_t *p,
-					  apol_constraint_query_t *c,
-					  const char *name);
+extern int apol_constraint_query_set_perm(apol_policy_t * p, apol_constraint_query_t * c, const char *name);
 
 /**
  * Set a constraint query to use regular expression searching for all
@@ -116,9 +110,7 @@ extern int apol_constraint_query_set_perm(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_constraint_query_set_regex(apol_policy_t *p,
-					   apol_constraint_query_t *c,
-					   int is_regex);
+extern int apol_constraint_query_set_regex(apol_policy_t * p, apol_constraint_query_t * c, int is_regex);
 
 /******************** validatetrans queries ********************/
 
@@ -137,9 +129,7 @@ extern int apol_constraint_query_set_regex(apol_policy_t *p,
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_validatetrans_by_query(apol_policy_t *p,
-					   apol_validatetrans_query_t *vt,
-					   apol_vector_t **v);
+extern int apol_get_validatetrans_by_query(apol_policy_t * p, apol_validatetrans_query_t * vt, apol_vector_t ** v);
 
 /**
  * Allocate and return a new validatetrans query structure.  All
@@ -160,7 +150,7 @@ extern apol_validatetrans_query_t *apol_validatetrans_query_create(void);
  *
  * @param vt Reference to a validatetrans query structure to destroy.
  */
-extern void apol_validatetrans_query_destroy(apol_validatetrans_query_t **vt);
+extern void apol_validatetrans_query_destroy(apol_validatetrans_query_t ** vt);
 
 /**
  * Set a validatetrans query to return only validatetrans that use
@@ -174,9 +164,7 @@ extern void apol_validatetrans_query_destroy(apol_validatetrans_query_t **vt);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_validatetrans_query_set_class(apol_policy_t *p,
-					      apol_validatetrans_query_t *vt,
-					      const char *name);
+extern int apol_validatetrans_query_set_class(apol_policy_t * p, apol_validatetrans_query_t * vt, const char *name);
 
 /**
  * Set a validatetrans query to use regular expression searching for
@@ -189,8 +177,6 @@ extern int apol_validatetrans_query_set_class(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_validatetrans_query_set_regex(apol_policy_t *p,
-					      apol_validatetrans_query_t *vt,
-					      int is_regex);
+extern int apol_validatetrans_query_set_regex(apol_policy_t * p, apol_validatetrans_query_t * vt, int is_regex);
 
 #endif

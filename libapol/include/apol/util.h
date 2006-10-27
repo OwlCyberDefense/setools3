@@ -49,7 +49,7 @@ typedef unsigned char bool_t;
  *
  * @return String describing this library.
  */
-extern const char* libapol_get_version(void);
+extern const char *libapol_get_version(void);
 
 /**
  * Given a portcon protocol, return a read-only string that describes
@@ -149,7 +149,7 @@ extern const char *apol_cond_expr_type_to_str(uint32_t expr_type);
  * @return File's path, or NULL if not found.  Caller must free() this
  * string afterwards.
  */
-extern char* apol_file_find(const char *file_name);
+extern char *apol_file_find(const char *file_name);
 
 /**
  * Given a file name for a user configuration, search and return that
@@ -160,7 +160,7 @@ extern char* apol_file_find(const char *file_name);
  * @return File's path, or NULL if not found.  Caller must free() this
  * string afterwards.
  */
-extern char* apol_file_find_user_config(const char *file_name);
+extern char *apol_file_find_user_config(const char *file_name);
 
 /**
  * Given a file name, read the file's contents into a newly allocated
@@ -172,7 +172,7 @@ extern char* apol_file_find_user_config(const char *file_name);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_file_read_to_buffer(const char *fname, char **buf, size_t *len);
+extern int apol_file_read_to_buffer(const char *fname, char **buf, size_t * len);
 /**
  * Given a file pointer into a config file, read and return the value
  * for the given config var.  The caller must free() the returned
@@ -185,7 +185,7 @@ extern int apol_file_read_to_buffer(const char *fname, char **buf, size_t *len);
  * @return A newly allocated string containing the variable's value,
  * or NULL if not found or error.
  */
-extern char *apol_config_get_var(const char *var, FILE *fp);
+extern char *apol_config_get_var(const char *var, FILE * fp);
 
 /**
  * Given a file pointer into a config file, read and return a list of
@@ -203,7 +203,7 @@ extern char *apol_config_get_var(const char *var, FILE *fp);
  * @return A newly allocated array of strings containing the
  * variable's values, or NULL if not found or error.
  */
-extern char **apol_config_get_varlist(const char *var, FILE *file, size_t *list_sz);
+extern char **apol_config_get_varlist(const char *var, FILE * file, size_t * list_sz);
 
 /**
  * Given a list of configuration variables, as returned by
@@ -246,7 +246,7 @@ extern int apol_str_trim(char **str);
  *
  * @return 0 on success, < 0 on error and errno will be set.
  */
-extern int apol_str_append(char **tgt, size_t *tgt_sz, const char *str);
+extern int apol_str_append(char **tgt, size_t * tgt_sz, const char *str);
 
 /**
  * Test whether a given string is only white space.
@@ -267,6 +267,6 @@ extern int apol_str_is_only_white_space(const char *str);
  * to be less than, identical to, or greater than string b
  * respectively.
  */
-extern int apol_str_strcmp(const void *a, const void *b, void *unused __attribute__ ((unused)) );
+extern int apol_str_strcmp(const void *a, const void *b, void *unused __attribute__ ((unused)));
 
 #endif

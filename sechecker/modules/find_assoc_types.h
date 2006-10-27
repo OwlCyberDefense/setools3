@@ -22,7 +22,7 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */ 
+ */
 
 #ifndef FIND_ASSOC_TYPES
 #define FIND_ASSOC_TYPES
@@ -33,10 +33,10 @@
 /* Module functions:
  * Do not change any of these prototypes or you will not be
  * able to run the module in the library */
-int find_assoc_types_register(sechk_lib_t *lib);
-int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_assoc_types_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int find_assoc_types_register(sechk_lib_t * lib);
+int find_assoc_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int find_assoc_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int find_assoc_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int find_assoc_types_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #endif

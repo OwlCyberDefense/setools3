@@ -25,7 +25,7 @@
 
 #include <config.h>
 
-const char* libpoldiff_get_version(void)
+const char *libpoldiff_get_version(void)
 {
-        return LIBPOLDIFF_VERSION_STRING;
+	return LIBPOLDIFF_VERSION_STRING;
 }

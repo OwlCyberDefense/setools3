@@ -46,7 +46,7 @@
 /* libqpol */
 #include <qpol/policy_query.h>
 
-int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apol_vector_t **contexts)
+int sefs_fc_entry_parse_file_contexts(apol_policy_t * p, const char *fc_path, apol_vector_t ** contexts)
 {
 	char *line = NULL, *tmp = NULL;
 	size_t line_len = 0;
@@ -67,14 +67,14 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 		goto failure;
 	}
 
-	if ( !(*contexts = apol_vector_create()) ){
+	if (!(*contexts = apol_vector_create())) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto failure;
 	}
 	/* Create a fc entry and fill with data from the policy */
 	while (!feof(fc_file)) {
-		fc_entry = (sefs_fc_entry_t *)calloc(1, sizeof(sefs_fc_entry_t));
+		fc_entry = (sefs_fc_entry_t *) calloc(1, sizeof(sefs_fc_entry_t));
 		tmp = NULL;
 		if (!(*contexts)) {
 			error = errno;
@@ -120,7 +120,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 		j += (strlen(tmp) + 1);
 
 		if (tmp - line > line_len) {
-			goto failure; /* you have walked off the end */
+			goto failure;  /* you have walked off the end */
 		}
 
 		for (; j < line_len; j++) {
@@ -130,7 +130,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 			}
 		}
 		if (tmp - line > line_len) {
-			goto failure; /* you have walked off the end */
+			goto failure;  /* you have walked off the end */
 		}
 		if (tmp[0] == '-') {
 			switch (tmp[1]) {
@@ -153,7 +153,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 				fc_entry->filetype = SEFS_FILETYPE_LNK;
 				break;
 			case 's':
-				 fc_entry->filetype = SEFS_FILETYPE_SOCK;
+				fc_entry->filetype = SEFS_FILETYPE_SOCK;
 				break;
 			default:
 				error = EINVAL;
@@ -167,14 +167,14 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 			fc_entry->filetype = SEFS_FILETYPE_ANY;
 		}
 
-		for(;j < line_len; j++) {
+		for (; j < line_len; j++) {
 			if (line[j]) {
 				tmp = line + j;
 				break;
 			}
 		}
 		if (tmp - line > line_len) {
-			goto failure; /* you have walked off the end */
+			goto failure;  /* you have walked off the end */
 		}
 
 		if (strcmp(tmp, "<<none>>")) {
@@ -197,7 +197,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 			/* Get data on the user from the policy file
 			 * and save it in the context */
 			fc_entry->context->user = NULL;
-			if ( !(fc_entry->context->user = strdup(tmp)) ) {
+			if (!(fc_entry->context->user = strdup(tmp))) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto failure;
@@ -216,7 +216,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 			/* Get data on the role from the policy file
 			 * and save it in the context */
 			fc_entry->context->role = NULL;
-			if ( !(fc_entry->context->role = strdup(tmp)) ) {
+			if (!(fc_entry->context->role = strdup(tmp))) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto failure;
@@ -253,11 +253,11 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t *p, const char *fc_path, apo
 		}
 		fc_entry = NULL;
 	}
-	free(fc_entry); /* free uninitialized one created just before eof */
+	free(fc_entry);		       /* free uninitialized one created just before eof */
 	free(line);
 	fclose(fc_file);
 	return 0;
-failure:
+      failure:
 	apol_vector_destroy(contexts, sefs_fc_entry_free);
 	free(line);
 	if (fc_file)
@@ -268,7 +268,7 @@ failure:
 
 void sefs_fc_entry_free(void *fc)
 {
-	sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t*)fc;
+	sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t *) fc;
 	if (!fc_entry)
 		return;
 	free(fc_entry->path);

@@ -23,7 +23,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-
 #ifndef USERS_WO_ROLES
 #define USERS_WO_ROLES
 
@@ -31,10 +30,9 @@
 #include <apol/policy.h>
 #include <apol/user-query.h>
 
-int users_wo_roles_register(sechk_lib_t *lib);
-int users_wo_roles_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int users_wo_roles_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+int users_wo_roles_register(sechk_lib_t * lib);
+int users_wo_roles_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int users_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+int users_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #endif
-

@@ -42,7 +42,7 @@ typedef struct qpol_netifcon qpol_netifcon_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-extern int qpol_policy_get_netifcon_by_name(qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon);
+extern int qpol_policy_get_netifcon_by_name(qpol_policy_t * policy, const char *name, qpol_netifcon_t ** ocon);
 
 /**
  *  Get an iterator for the netifcon statements in a policy.
@@ -55,7 +55,7 @@ extern int qpol_policy_get_netifcon_by_name(qpol_policy_t *policy, const char *n
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_netifcon_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_netifcon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the name of the interface from a netifcon statement.
@@ -66,7 +66,7 @@ extern int qpol_policy_get_netifcon_iter(qpol_policy_t *policy, qpol_iterator_t 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_netifcon_get_name(qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name);
+extern int qpol_netifcon_get_name(qpol_policy_t * policy, qpol_netifcon_t * ocon, char **name);
 
 /**
  *  Get the message context from a netifcon statement.
@@ -77,7 +77,7 @@ extern int qpol_netifcon_get_name(qpol_policy_t *policy, qpol_netifcon_t *ocon, 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_netifcon_get_msg_con(qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
+extern int qpol_netifcon_get_msg_con(qpol_policy_t * policy, qpol_netifcon_t * ocon, qpol_context_t ** context);
 
 /**
  *  Get the interface context from a netifcon statement.
@@ -88,6 +88,6 @@ extern int qpol_netifcon_get_msg_con(qpol_policy_t *policy, qpol_netifcon_t *oco
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_netifcon_get_if_con(qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
+extern int qpol_netifcon_get_if_con(qpol_policy_t * policy, qpol_netifcon_t * ocon, qpol_context_t ** context);
 
-#endif /* QPOL_NETIFCON_QUERY_H */
+#endif				       /* QPOL_NETIFCON_QUERY_H */

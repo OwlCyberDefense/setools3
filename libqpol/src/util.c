@@ -25,7 +25,7 @@
 
 #include <config.h>
 
-const char* libqpol_get_version(void)
+const char *libqpol_get_version(void)
 {
 	return LIBQPOL_VERSION_STRING;
 }

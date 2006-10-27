@@ -41,8 +41,7 @@
 #define COPYRIGHT_INFO "Copyright (C) 2004-2006 Tresys Technology, LLC"
 
 /* command line options struct */
-static struct option const longopts[] =
-{
+static struct option const longopts[] = {
 	{"classes", no_argument, NULL, 'c'},
 	{"types", no_argument, NULL, 't'},
 	{"attributes", no_argument, NULL, 'a'},
@@ -64,28 +63,27 @@ static void usage(const char *prog_name, int brief)
 {
 	printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
 	printf("Usage: %s [OPTIONS] ORIGINAL_POLICY MODIFIED_POLICY\n", prog_name);
-	if(brief) {
+	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", prog_name);
 		return;
 	}
 	fputs("\n"
-			"Semantically differentiate two policies.  The policies can be either source\n"
-			"or binary policy files, version 15 or later.  By default, all supported\n"
-			"policy elements are examined.  The following diff options are available:\n"
-			"  -c, --classes     object class and common permission definitions\n"
-			"  -t, --types       type definitions\n"
-			"  -a, --attributes  attribute definitions\n"
-			"  -r, --roles       role definitions\n"
-			"  -u, --users       user definitions\n"
-			"  -b, --booleans    boolean definitions and default values\n"
-			"  -T, --terules     type enforcement rules\n"
-			"  -R, --roletrans   role transition rules\n"
-			"  -A, --roleallows  role allow rules\n\n"
-			"  -q, --quiet       only print different definitions\n"
-			"  -s, --stats       print only statistics\n"
-			"  -h, --help        display this help and exit\n"
-			"  -v, --version     output version information and exit\n\n"
-			, stdout);
+	      "Semantically differentiate two policies.  The policies can be either source\n"
+	      "or binary policy files, version 15 or later.  By default, all supported\n"
+	      "policy elements are examined.  The following diff options are available:\n"
+	      "  -c, --classes     object class and common permission definitions\n"
+	      "  -t, --types       type definitions\n"
+	      "  -a, --attributes  attribute definitions\n"
+	      "  -r, --roles       role definitions\n"
+	      "  -u, --users       user definitions\n"
+	      "  -b, --booleans    boolean definitions and default values\n"
+	      "  -T, --terules     type enforcement rules\n"
+	      "  -R, --roletrans   role transition rules\n"
+	      "  -A, --roleallows  role allow rules\n\n"
+	      "  -q, --quiet       only print different definitions\n"
+	      "  -s, --stats       print only statistics\n"
+	      "  -h, --help        display this help and exit\n"
+	      "  -v, --version     output version information and exit\n\n", stdout);
 	return;
 }
 
@@ -112,10 +110,10 @@ static void print_diff_string(const char *str, unsigned int indent_level)
 	}
 }
 
-static void print_class_diffs(poldiff_t *diff, int stats_only)
+static void print_class_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_class_t *item = NULL;
 
@@ -182,10 +180,10 @@ static void print_class_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_bool_diffs(poldiff_t *diff, int stats_only)
+static void print_bool_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	poldiff_bool_t *item = NULL;
 
@@ -205,7 +203,7 @@ static void print_bool_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_bool_get_form(item) == POLDIFF_FORM_ADDED) {
-			str = poldiff_bool_to_string(diff, (const void*)item);
+			str = poldiff_bool_to_string(diff, (const void *)item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -222,7 +220,7 @@ static void print_bool_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_bool_get_form(item) == POLDIFF_FORM_REMOVED) {
-			str = poldiff_bool_to_string(diff, (const void*)item);
+			str = poldiff_bool_to_string(diff, (const void *)item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -238,7 +236,7 @@ static void print_bool_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_bool_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			str = poldiff_bool_to_string(diff, (const void*)item);
+			str = poldiff_bool_to_string(diff, (const void *)item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -252,10 +250,10 @@ static void print_bool_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_common_diffs(poldiff_t *diff, int stats_only)
+static void print_common_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_common_t *item = NULL;
 
@@ -322,10 +320,10 @@ static void print_common_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_role_diffs(poldiff_t *diff, int stats_only)
+static void print_role_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_role_t *item = NULL;
 
@@ -392,10 +390,10 @@ static void print_role_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_user_diffs(poldiff_t *diff, int stats_only)
+static void print_user_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_user_t *item = NULL;
 
@@ -462,10 +460,10 @@ static void print_user_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_rule_diffs(poldiff_t *diff, int stats_only)
+static void print_rule_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v1 = NULL, *v2 = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_avrule_t *item1 = NULL;
 	const poldiff_terule_t *item2 = NULL;
@@ -475,11 +473,10 @@ static void print_rule_diffs(poldiff_t *diff, int stats_only)
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, stats);
 	printf("TE Rules (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n",
-			stats[0], stats[3], stats[1], stats[4], stats[2]);
+	       stats[0], stats[3], stats[1], stats[4], stats[2]);
 	if (stats_only)
 		return;
-	if ((v1 = poldiff_get_avrule_vector(diff)) == NULL ||
-	    (v2 = poldiff_get_terule_vector(diff)) == NULL) {
+	if ((v1 = poldiff_get_avrule_vector(diff)) == NULL || (v2 = poldiff_get_terule_vector(diff)) == NULL) {
 		return;
 	}
 	printf("   Added TE Rules: %zd\n", stats[0]);
@@ -604,10 +601,10 @@ static void print_rule_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_role_allow_diffs(poldiff_t *diff, int stats_only)
+static void print_role_allow_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_role_allow_t *item = NULL;
 
@@ -674,10 +671,10 @@ static void print_role_allow_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_role_trans_diffs(poldiff_t *diff, int stats_only)
+static void print_role_trans_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_role_trans_t *item = NULL;
 
@@ -685,7 +682,8 @@ static void print_role_trans_diffs(poldiff_t *diff, int stats_only)
 		return;
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_TRANS, stats);
-	printf("Role Transitions (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n", stats[0], stats[3], stats[1], stats[4], stats[2]);
+	printf("Role Transitions (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n", stats[0],
+	       stats[3], stats[1], stats[4], stats[2]);
 	if (stats_only)
 		return;
 	v = poldiff_get_role_trans_vector(diff);
@@ -779,17 +777,17 @@ static void print_role_trans_diffs(poldiff_t *diff, int stats_only)
  * used to sort items prior to display. */
 static int type_name_cmp(const void *a, const void *b, void *user_data)
 {
-	poldiff_type_t *ta = (poldiff_type_t*)a;
-	poldiff_type_t *tb = (poldiff_type_t*)b;
+	poldiff_type_t *ta = (poldiff_type_t *) a;
+	poldiff_type_t *tb = (poldiff_type_t *) b;
 	if (ta == NULL || tb == NULL)
 		return -1;
 	return strcmp(poldiff_type_get_name(ta), poldiff_type_get_name(tb));
 }
 
-static void print_type_diffs(poldiff_t *diff, int stats_only)
+static void print_type_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	poldiff_type_t *item = NULL;
 
@@ -810,7 +808,7 @@ static void print_type_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_type_get_form(item) == POLDIFF_FORM_ADDED) {
-			str = poldiff_type_to_string(diff, (const void*)item);
+			str = poldiff_type_to_string(diff, (const void *)item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -826,7 +824,7 @@ static void print_type_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_type_get_form(item) == POLDIFF_FORM_REMOVED) {
-			str = poldiff_type_to_string(diff, (const void*)item);
+			str = poldiff_type_to_string(diff, (const void *)item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -842,7 +840,7 @@ static void print_type_diffs(poldiff_t *diff, int stats_only)
 		if (!item)
 			return;
 		if (poldiff_type_get_form(item) == POLDIFF_FORM_MODIFIED) {
-			str = poldiff_type_to_string(diff, (const void*)item);
+			str = poldiff_type_to_string(diff, (const void *)item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -857,10 +855,10 @@ static void print_type_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static void print_attrib_diffs(poldiff_t *diff, int stats_only)
+static void print_attrib_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = {0, 0, 0, 0, 0};
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_attrib_t *item = NULL;
 	if (!diff)
@@ -926,11 +924,11 @@ static void print_attrib_diffs(poldiff_t *diff, int stats_only)
 	return;
 }
 
-static size_t get_diff_total(poldiff_t *diff, uint32_t flags)
+static size_t get_diff_total(poldiff_t * diff, uint32_t flags)
 {
 	size_t total = 0;
 	uint32_t i;
-	size_t stats[5] = {0, 0, 0, 0, 0};
+	size_t stats[5] = { 0, 0, 0, 0, 0 };
 
 	if (!diff || !flags)
 		return 0;
@@ -946,7 +944,7 @@ static size_t get_diff_total(poldiff_t *diff, uint32_t flags)
 	return total;
 }
 
-static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
+static void print_diff(poldiff_t * diff, uint32_t flags, int stats, int quiet)
 {
 	if (flags & POLDIFF_DIFF_CLASSES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_CLASSES))) {
 		print_class_diffs(diff, stats);
@@ -969,7 +967,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 	if (flags & POLDIFF_DIFF_BOOLS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_BOOLS))) {
 		print_bool_diffs(diff, stats);
 	}
-	if (flags & (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES) \
+	if (flags & (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES)
 	    && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVRULES))) {
 		print_rule_diffs(diff, stats);
 	}
@@ -981,7 +979,7 @@ static void print_diff(poldiff_t *diff, uint32_t flags, int stats, int quiet)
 	}
 }
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int optc = 0, quiet = 0, stats = 0;
 	uint32_t flags = 0;
@@ -992,54 +990,54 @@ int main (int argc, char **argv)
 
 	while ((optc = getopt_long(argc, argv, "ctarubTARsXqhv", longopts, NULL)) != -1) {
 		switch (optc) {
-			case 0:
-				break;
-			case 'c':
-				flags |= (POLDIFF_DIFF_CLASSES|POLDIFF_DIFF_COMMONS);
-				break;
-			case 't':
-				flags |= POLDIFF_DIFF_TYPES;
-				break;
-			case 'a':
-				flags |= POLDIFF_DIFF_ATTRIBS;
-				break;
-			case 'r':
-				flags |= POLDIFF_DIFF_ROLES;
-				break;
-			case 'u':
-				flags |= POLDIFF_DIFF_USERS;
-				break;
-			case 'b':
-				flags |= POLDIFF_DIFF_BOOLS;
-				break;
-			case 'T':
-				flags |= (POLDIFF_DIFF_AVRULES|POLDIFF_DIFF_TERULES);
-				break;
-			case 'A':
-				flags |= POLDIFF_DIFF_ROLE_ALLOWS;
-				break;
-			case 'R':
-				flags |= POLDIFF_DIFF_ROLE_TRANS;
-				break;
-			case 's':
-				stats = 1;
-				break;
-			case 'X':
-				printf("No GUI yet: %s\n", strerror(ENOTSUP));
-				exit(1);
-				break;
-			case 'q':
-				quiet = 1;
-				break;
-			case 'h':
-				usage(argv[0], 0);
-				exit(0);
-			case 'v':
-				printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
-				exit(0);
-			default:
-				usage(argv[0], 1);
-				exit(1);
+		case 0:
+			break;
+		case 'c':
+			flags |= (POLDIFF_DIFF_CLASSES | POLDIFF_DIFF_COMMONS);
+			break;
+		case 't':
+			flags |= POLDIFF_DIFF_TYPES;
+			break;
+		case 'a':
+			flags |= POLDIFF_DIFF_ATTRIBS;
+			break;
+		case 'r':
+			flags |= POLDIFF_DIFF_ROLES;
+			break;
+		case 'u':
+			flags |= POLDIFF_DIFF_USERS;
+			break;
+		case 'b':
+			flags |= POLDIFF_DIFF_BOOLS;
+			break;
+		case 'T':
+			flags |= (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES);
+			break;
+		case 'A':
+			flags |= POLDIFF_DIFF_ROLE_ALLOWS;
+			break;
+		case 'R':
+			flags |= POLDIFF_DIFF_ROLE_TRANS;
+			break;
+		case 's':
+			stats = 1;
+			break;
+		case 'X':
+			printf("No GUI yet: %s\n", strerror(ENOTSUP));
+			exit(1);
+			break;
+		case 'q':
+			quiet = 1;
+			break;
+		case 'h':
+			usage(argv[0], 0);
+			exit(0);
+		case 'v':
+			printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
+			exit(0);
+		default:
+			usage(argv[0], 1);
+			exit(1);
 		}
 	}
 
@@ -1076,8 +1074,7 @@ int main (int argc, char **argv)
 
 	/* we disable attribute diffs if there is a binary policy because attribute
 	 * names won't make sense */
-	if ((apol_policy_is_binary(orig_policy) || apol_policy_is_binary(mod_policy)) &&
-	    (flags & POLDIFF_DIFF_ATTRIBS)) {
+	if ((apol_policy_is_binary(orig_policy) || apol_policy_is_binary(mod_policy)) && (flags & POLDIFF_DIFF_ATTRIBS)) {
 		flags &= ~POLDIFF_DIFF_ATTRIBS;
 		WARN(NULL, "%s", "Attribute diffs are not supported for binary policies");
 	}
@@ -1098,7 +1095,6 @@ int main (int argc, char **argv)
 
 	total = get_diff_total(diff, flags);
 
-
 	poldiff_destroy(&diff);
 
 	if (total)
@@ -1106,7 +1102,7 @@ int main (int argc, char **argv)
 	else
 		return 0;
 
-err:
+      err:
 	apol_policy_destroy(&orig_policy);
 	apol_policy_destroy(&mod_policy);
 	poldiff_destroy(&diff);

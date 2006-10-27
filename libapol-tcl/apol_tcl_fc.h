@@ -48,6 +48,6 @@ extern sefs_filesystem_db_t *fsdata;
 
 #endif
 
-extern int apol_tcl_fc_init(Tcl_Interp *interp);
+extern int apol_tcl_fc_init(Tcl_Interp * interp);
 
 #endif

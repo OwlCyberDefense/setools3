@@ -26,12 +26,13 @@
 #ifndef QPOL_SYN_RULE_INTERNAL_H
 #define QPOL_SYN_RULE_INTERNAL_H
 
-struct qpol_syn_rule {
+struct qpol_syn_rule
+{
 	avrule_t *rule;
 	cond_node_t *cond;
-        /** 0 if this rule is unconditional or in a conditional's true branch, 1 if in else */
-        int cond_branch;
+	/** 0 if this rule is unconditional or in a conditional's true branch, 1 if in else */
+	int cond_branch;
 /*	char *mod_name; for later use */
 };
 
-#endif /* QPOL_SYN_RULE_INTERNAL_H */
+#endif				       /* QPOL_SYN_RULE_INTERNAL_H */

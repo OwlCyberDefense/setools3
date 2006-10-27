@@ -30,11 +30,11 @@
 
 #include <stdlib.h>
 
-struct apol_vector;  /* declared in apol/vector.h */
+struct apol_vector;		       /* declared in apol/vector.h */
 typedef struct apol_bst apol_bst_t;
 
-typedef int(apol_bst_comp_func)(const void *a, const void *b, void *data);
-typedef void(apol_bst_free_func)(void *elem);
+typedef int (apol_bst_comp_func) (const void *a, const void *b, void *data);
+typedef void (apol_bst_free_func) (void *elem);
 
 /**
  *  Allocate and initialize an empty binary search tree.  The tree
@@ -51,7 +51,7 @@ typedef void(apol_bst_free_func)(void *elem);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_bst_destroy() to free memory used.
  */
-extern apol_bst_t *apol_bst_create(apol_bst_comp_func *cmp);
+extern apol_bst_t *apol_bst_create(apol_bst_comp_func * cmp);
 
 /**
  *  Free a BST and any memory used by it.
@@ -61,7 +61,7 @@ extern apol_bst_t *apol_bst_create(apol_bst_comp_func *cmp);
  *  @param fr Function to call to free the memory used by an element.
  *  If NULL, the elements will not be freed.
  */
-extern void apol_bst_destroy(apol_bst_t **b, apol_bst_free_func *fr);
+extern void apol_bst_destroy(apol_bst_t ** b, apol_bst_free_func * fr);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -88,7 +88,7 @@ extern struct apol_vector *apol_bst_get_vector(const struct apol_bst *b);
  *  @return The number of elements in the BST; if b is NULL, return
  *  0 and set errno.
  */
-extern size_t apol_bst_get_size(const apol_bst_t *v);
+extern size_t apol_bst_get_size(const apol_bst_t * v);
 
 /**
  *  Find an element within a BST and return it.
@@ -103,8 +103,7 @@ extern size_t apol_bst_get_size(const apol_bst_t *v);
  *
  *  @return 0 if element was found, or < 0 if not found.
  */
-extern int apol_bst_get_element(const apol_bst_t *b, void *elem,
-				void *data, void **result);
+extern int apol_bst_get_element(const apol_bst_t * b, void *elem, void *data, void **result);
 
 /**
  *  Insert an element to the BST.  If the element already exists then
@@ -119,7 +118,7 @@ extern int apol_bst_get_element(const apol_bst_t *b, void *elem,
  *  (and thus not inserted).  On failure return < 0, set errno, and b
  *  will be unchanged.
  */
-extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data);
+extern int apol_bst_insert(apol_bst_t * b, void *elem, void *data);
 
 /**
  *  Insert an element into the BST, and then get the element back out.
@@ -142,7 +141,6 @@ extern int apol_bst_insert(apol_bst_t *b, void *elem, void *data);
  *  (and thus not inserted).  On failure return < 0, set errno, and b
  *  will be unchanged.
  */
-extern int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data,
-				   apol_bst_free_func *fr);
+extern int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data, apol_bst_free_func * fr);
 
-#endif /* APOL_BST_H */
+#endif				       /* APOL_BST_H */
