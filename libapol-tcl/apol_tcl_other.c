@@ -48,6 +48,7 @@
 #include "apol_tcl_analysis.h"
 
 #include <qpol/policy.h>
+#include <qpol/policy_extend.h>
 
 apol_policy_t *policydb = NULL;
 

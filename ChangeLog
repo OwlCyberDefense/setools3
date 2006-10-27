@@ -1,3 +1,7 @@
+2006-10-27  J. Tang  <jtang@tresys.com>
+
+	* added apol_str_appendf() (declared in apol/util.h)
+
 2006-10-27  J. Mowery <jmowery@tresys.com>
 
 	* added make indent to standardize code indentation style

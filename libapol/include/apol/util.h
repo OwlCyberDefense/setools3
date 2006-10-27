@@ -240,13 +240,34 @@ extern int apol_str_trim(char **str);
  * string.
  * @param tgt_sz Pointer to number of bytes currently allocated to
  * tgt.  This will be updated with the new string size.  If *tgt is
- * NULL then the existing value is ignored.  (It will still be updated
+ * NULL then this existing value is ignored.  (It will still be updated
  * afterwards).
  * @param str String to append.
  *
- * @return 0 on success, < 0 on error and errno will be set.
+ * @return 0 on success.  On error, return < 0 and set errno; tgt will be
+ * free()d and set to NULL, tgt_sz will be set to 0.
  */
 extern int apol_str_append(char **tgt, size_t * tgt_sz, const char *str);
+
+/**
+ * Append a string to an existing dynamic mutable string, expanding
+ * the target string if necessary.  The string to append is computed
+ * using the format string, as per printf(3).  The caller must free()
+ * the target string.  If tgt is NULL then initially allocate the
+ * resulting string.
+ *
+ * @param tgt Reference to a string to modify, or NULL to create a new
+ * string.
+ * @param tgt_sz Pointer to number of bytes currently allocated to
+ * tgt.  This will be updated with the new string size.  If *tgt is
+ * NULL then the existing value is ignored.  (It will still be updated
+ * afterwards).
+ * @param fmt Format for the string with which append.
+ *
+ * @return 0 on success.  On error, return < 0 and set errno; tgt will be
+ * free()d and set to NULL, tgt_sz will be set to 0. */
+__attribute__ ((format(printf, 3, 4)))
+extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...);
 
 /**
  * Test whether a given string is only white space.

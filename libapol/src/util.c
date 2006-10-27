@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -580,6 +581,60 @@ int apol_str_append(char **tgt, size_t * tgt_sz, const char *str)
 		*tgt = t;
 		*tgt_sz += str_len;
 		strcat(*tgt, str);
+		return 0;
+	}
+}
+
+int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...)
+{
+	va_list ap;
+	int error;
+	if (fmt == NULL || strlen(fmt) == 0)
+		return 0;
+	if (tgt == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	va_start(ap, fmt);
+	/* target is currently empty */
+	if (*tgt == NULL || *tgt_sz == 0) {
+		if (vasprintf(tgt, fmt, ap) < 0) {
+			error = errno;
+			*tgt = NULL;
+			*tgt_sz = 0;
+			va_end(ap);
+			errno = error;
+			return -1;
+		}
+		*tgt_sz = strlen(*tgt);
+		va_end(ap);
+		return 0;
+	} else {
+		/* tgt has some memory */
+		char *t, *u;
+		size_t str_len;
+		if (vasprintf(&t, fmt, ap) < 0) {
+			error = errno;
+			free(*tgt);
+			*tgt_sz = 0;
+			va_end(ap);
+			errno = error;
+			return -1;
+		}
+		va_end(ap);
+		str_len = strlen(t);
+		if ((u = (char *)realloc(*tgt, *tgt_sz + str_len)) == NULL) {
+			error = errno;
+			free(t);
+			free(*tgt);
+			*tgt_sz = 0;
+			errno = error;
+			return -1;
+		}
+		*tgt = u;
+		*tgt_sz += str_len;
+		strcat(*tgt, t);
+		free(t);
 		return 0;
 	}
 }
