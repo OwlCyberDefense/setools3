@@ -606,7 +606,7 @@ int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...)
 			errno = error;
 			return -1;
 		}
-		*tgt_sz = strlen(*tgt);
+		*tgt_sz = strlen(*tgt) + 1;
 		va_end(ap);
 		return 0;
 	} else {
