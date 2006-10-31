@@ -32,32 +32,47 @@
 #include <string.h>
 
 /* private data structure definitions */
+
+/** rule container with meta data */
 typedef struct apol_domain_trans_rule
 {
-	/* relavant type :
+	/** relavant type :
 	 * for domain nodes either the transition target or the entrypoint type (target)
 	 * for exec nodes either the entered or calling domain (source) */
 	qpol_type_t *type;
-	qpol_type_t *dflt;	       /* only for type_transition rules */
-	apol_vector_t *rules;	       /* of qpol_avrule_t or qpol_terule_t */
-	bool_t used;		       /* not used for setexec rules */
-	bool_t has_no_trans;	       /* for exec_rules domain also has execute_no_trans permission */
+	/** default type, only for type_transition rules */
+	qpol_type_t *dflt;
+	/** vector of rules (of type qpol_avrule_t or qpol_terule_t) */
+	apol_vector_t *rules;
+	/** used flag, marks that a rule has previously been returned, not used for setexec rules */
+	bool_t used;
+	/** for exec_rules domain also has execute_no_trans permission */
+	bool_t has_no_trans;
 } apol_domain_trans_rule_t;
 
+/** node representing a domain and all rules contributing to its transitions */
 typedef struct apol_domain_trans_dom_node
 {
-	apol_vector_t *proc_trans_rules;	/* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
-	apol_vector_t *ep_rules;       /* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
-	apol_vector_t *setexec_rules;  /* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
-	apol_vector_t *type_trans_rules;	/* of type apol_domain_trans_rule_t w/ qpol_terule_t */
+	/* vector of allow process transition rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *proc_trans_rules;
+	/* vector of allow file entrypoint rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *ep_rules;
+	/* vector of allow self process setexec rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *setexec_rules;
+	/* vector of type transition rules (of type apol_domain_trans_rule_t w/ qpol_terule_t) */
+	apol_vector_t *type_trans_rules;
 } apol_domain_trans_dom_node_t;
 
+/** node representing an executable type and all rules allowing its use in transitions */
 typedef struct apol_domain_trans_exec_node
 {
-	apol_vector_t *exec_rules;     /* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
-	apol_vector_t *ep_rules;       /* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
+	/* vector of allow file execute rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *exec_rules;
+	/* vector of allow file entrypoint rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *ep_rules;
 } apol_domain_trans_exec_node_t;
 
+/** internal representation of a potential transition */
 typedef struct apol_domain_trans
 {
 	qpol_type_t *start_type;
@@ -68,8 +83,10 @@ typedef struct apol_domain_trans
 	apol_vector_t *exec_rules;
 	apol_vector_t *setexec_rules;
 	apol_vector_t *type_trans_rules;
+	/** flag indicating that the transition is possible */
 	bool_t valid;
-	apol_vector_t *access_rules;   /* used for access filtering, this is only populated on demand */
+	/** used for access filtering, this is only populated on demand */
+	apol_vector_t *access_rules;
 	struct apol_domain_trans *next;
 } apol_domain_trans_t;
 
@@ -96,7 +113,7 @@ struct apol_domain_trans_result
 	apol_vector_t *setexec_rules;
 	apol_vector_t *type_trans_rules;
 	bool_t valid;
-	/* if access filters used list of rules that satisfy
+	/** if access filters used list of rules that satisfy
 	 * the filter criteria (of type qpol_avrule_t) */
 	apol_vector_t *access_rules;
 };
