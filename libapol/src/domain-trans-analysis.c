@@ -53,22 +53,22 @@ typedef struct apol_domain_trans_rule
 /** node representing a domain and all rules contributing to its transitions */
 typedef struct apol_domain_trans_dom_node
 {
-	/* vector of allow process transition rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	/** vector of allow process transition rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
 	apol_vector_t *proc_trans_rules;
-	/* vector of allow file entrypoint rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	/** vector of allow file entrypoint rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
 	apol_vector_t *ep_rules;
-	/* vector of allow self process setexec rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	/** vector of allow self process setexec rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
 	apol_vector_t *setexec_rules;
-	/* vector of type transition rules (of type apol_domain_trans_rule_t w/ qpol_terule_t) */
+	/** vector of type transition rules (of type apol_domain_trans_rule_t w/ qpol_terule_t) */
 	apol_vector_t *type_trans_rules;
 } apol_domain_trans_dom_node_t;
 
 /** node representing an executable type and all rules allowing its use in transitions */
 typedef struct apol_domain_trans_exec_node
 {
-	/* vector of allow file execute rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	/** vector of allow file execute rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
 	apol_vector_t *exec_rules;
-	/* vector of allow file entrypoint rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	/** vector of allow file entrypoint rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
 	apol_vector_t *ep_rules;
 } apol_domain_trans_exec_node_t;
 
