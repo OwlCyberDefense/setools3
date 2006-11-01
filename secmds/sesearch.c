@@ -195,9 +195,16 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		free(tmp);
 	}
 
-	if (apol_get_avrule_by_query(policy, avq, v)) {
-		error = errno;
-		goto err;
+	if (opt->lineno) {
+		if (apol_get_syn_avrule_by_query(policy, avq, v)) {
+			error = errno;
+			goto err;
+		}
+	} else {
+		if (apol_get_avrule_by_query(policy, avq, v)) {
+			error = errno;
+			goto err;
+		}
 	}
 
 	apol_avrule_query_destroy(&avq);
@@ -227,8 +234,7 @@ static void print_syn_av_results(apol_policy_t * policy, options_t * opt, apol_v
 	if (!policy || !v)
 		return;
 
-	if ((syn_list = apol_avrule_list_to_syn_avrules(policy, v, opt->perm_vector)) == NULL)
-		goto cleanup;
+	syn_list = v;
 	if (!(num_rules = apol_vector_get_size(syn_list)))
 		goto cleanup;
 
@@ -266,7 +272,6 @@ static void print_syn_av_results(apol_policy_t * policy, options_t * opt, apol_v
 	}
 
       cleanup:
-	apol_vector_destroy(&syn_list, NULL);
 	free(tmp);
 	free(rule_str);
 	free(expr);
@@ -369,9 +374,16 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 		}
 	}
 
-	if (apol_get_terule_by_query(policy, teq, v)) {
-		error = errno;
-		goto err;
+	if (opt->lineno) {
+		if (apol_get_syn_terule_by_query(policy, teq, v)) {
+			error = errno;
+			goto err;
+		}
+	} else {
+		if (apol_get_terule_by_query(policy, teq, v)) {
+			error = errno;
+			goto err;
+		}
 	}
 
 	apol_terule_query_destroy(&teq);
@@ -399,8 +411,7 @@ static void print_syn_te_results(apol_policy_t * policy, options_t * opt, apol_v
 	if (!policy || !v)
 		return;
 
-	if ((syn_list = apol_terule_list_to_syn_terules(policy, v)) == NULL)
-		goto cleanup;
+	syn_list = v;
 	if (!(num_rules = apol_vector_get_size(syn_list)))
 		goto cleanup;
 
@@ -438,7 +449,6 @@ static void print_syn_te_results(apol_policy_t * policy, options_t * opt, apol_v
 	}
 
       cleanup:
-	apol_vector_destroy(&syn_list, NULL);
 	free(tmp);
 	free(rule_str);
 	free(expr);

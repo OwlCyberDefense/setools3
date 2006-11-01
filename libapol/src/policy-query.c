@@ -306,52 +306,105 @@ static int apol_query_append_type(apol_policy_t * p, apol_vector_t * v, qpol_typ
 	return 0;
 }
 
-apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect)
+apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
+						     unsigned int ta_flag)
 {
 	apol_vector_t *list = apol_vector_create();
 	qpol_type_t *type;
 	regex_t *regex = NULL;
-	qpol_iterator_t *iter = NULL;
-	int retval = -1;
+	qpol_iterator_t *iter = NULL, *alias_iter = NULL;
+	int retval = -1, error = 0;
+	unsigned char isalias, isattr;
+	char *type_name;
+	int compval;
+	size_t i, orig_vector_size;
 
 	if (list == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+		error = EINVAL;
+		ERR(p, "%s", strerror(error));
+		goto cleanup;
+	}
+
+	if (ta_flag == 0 || (ta_flag & ~(APOL_QUERY_CANDIDATE_TYPES | APOL_QUERY_CANDIDATE_ATTRIBUTES))) {
+		error = EINVAL;
+		ERR(p, "%s", strerror(error));
 		goto cleanup;
 	}
 
 	if (!do_regex && apol_query_get_type(p, symbol, &type) == 0) {
 		if (apol_query_append_type(p, list, type) < 0) {
+			error = errno;
 			goto cleanup;
 		}
 	}
 
 	if (do_regex) {
 		if (qpol_policy_get_type_iter(p->p, &iter) < 0) {
+			error = errno;
 			goto cleanup;
 		}
 		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			char *type_name;
-			int compval;
 			if (qpol_iterator_get_item(iter, (void **)&type) < 0 || qpol_type_get_name(p->p, type, &type_name) < 0) {
+				error = errno;
 				goto cleanup;
 			}
 			compval = apol_compare(p, type_name, symbol, APOL_QUERY_REGEX, &regex);
 			if (compval < 0) {
+				error = errno;
 				goto cleanup;
 			}
 			if (compval && apol_query_append_type(p, list, type)) {
+				error = errno;
 				goto cleanup;
 			}
+			if (compval)
+				continue;
+			if (qpol_type_get_alias_iter(p->p, type, &alias_iter) < 0) {
+				error = errno;
+				goto cleanup;
+			}
+			for (; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
+				if (qpol_iterator_get_item(alias_iter, (void **)&type_name) < 0) {
+					error = errno;
+					goto cleanup;
+				}
+				compval = apol_compare(p, type_name, symbol, APOL_QUERY_REGEX, &regex);
+				if (compval < 0) {
+					error = errno;
+					goto cleanup;
+				}
+				if (compval && apol_query_append_type(p, list, type)) {
+					error = errno;
+					goto cleanup;
+				}
+				if (compval)
+					break;
+			}
+			qpol_iterator_destroy(&alias_iter);
 		}
 		qpol_iterator_destroy(&iter);
 	}
 
+	/* prune to match ta_flag */
+	for (i = 0; i < apol_vector_get_size(list); i++) {
+		type = (qpol_type_t *) apol_vector_get_element(list, i);
+		if (qpol_type_get_isattr(p->p, type, &isattr) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+		if ((isattr && !(ta_flag & APOL_QUERY_CANDIDATE_ATTRIBUTES))
+		    || (!isattr && !(ta_flag & APOL_QUERY_CANDIDATE_TYPES))) {
+			apol_vector_remove(list, i);
+			i--;
+		}
+	}
+
 	if (do_indirect) {
-		size_t i, orig_vector_size = apol_vector_get_size(list);
+		orig_vector_size = apol_vector_get_size(list);
 		for (i = 0; i < orig_vector_size; i++) {
-			unsigned char isalias, isattr;
 			type = (qpol_type_t *) apol_vector_get_element(list, i);
 			if (qpol_type_get_isalias(p->p, type, &isalias) < 0 || qpol_type_get_isattr(p->p, type, &isattr) < 0) {
+				error = errno;
 				goto cleanup;
 			}
 			if (isalias) {
@@ -360,13 +413,16 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 			if ((isattr &&
 			     qpol_type_get_type_iter(p->p, type, &iter) < 0) ||
 			    (!isattr && qpol_type_get_attr_iter(p->p, type, &iter) < 0)) {
+				error = errno;
 				goto cleanup;
 			}
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				if (qpol_iterator_get_item(iter, (void **)&type) < 0) {
+					error = errno;
 					goto cleanup;
 				}
 				if (apol_query_append_type(p, list, type)) {
+					error = errno;
 					goto cleanup;
 				}
 			}
@@ -382,9 +438,157 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 		free(regex);
 	}
 	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&alias_iter);
 	if (retval < 0) {
 		apol_vector_destroy(&list, NULL);
 		list = NULL;
+		errno = error;
+	}
+	return list;
+}
+
+apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
+							 unsigned int ta_flag)
+{
+	apol_vector_t *list = apol_vector_create();
+	qpol_type_t *type;
+	regex_t *regex = NULL;
+	qpol_iterator_t *iter = NULL, *alias_iter = NULL;
+	int retval = -1, error = 0;
+	unsigned char isalias, isattr;
+	char *type_name;
+	int compval;
+	size_t i, orig_vector_size;
+
+	if (list == NULL) {
+		error = EINVAL;
+		ERR(p, "%s", strerror(error));
+		goto cleanup;
+	}
+
+	if (!p || apol_policy_is_binary(p)) {
+		error = EINVAL;
+		ERR(p, "%s", strerror(error));
+		goto cleanup;
+	}
+
+	if (ta_flag == 0 || (ta_flag & ~(APOL_QUERY_CANDIDATE_TYPES | APOL_QUERY_CANDIDATE_ATTRIBUTES))) {
+		error = EINVAL;
+		ERR(p, "%s", strerror(error));
+		goto cleanup;
+	}
+
+	if (!do_regex && apol_query_get_type(p, symbol, &type) == 0) {
+		if (apol_query_append_type(p, list, type) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+	}
+
+	if (do_regex) {
+		if (qpol_policy_get_type_iter(p->p, &iter) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+			if (qpol_iterator_get_item(iter, (void **)&type) < 0 || qpol_type_get_name(p->p, type, &type_name) < 0) {
+				error = errno;
+				goto cleanup;
+			}
+			compval = apol_compare(p, type_name, symbol, APOL_QUERY_REGEX, &regex);
+			if (compval < 0) {
+				error = errno;
+				goto cleanup;
+			}
+			if (compval && apol_query_append_type(p, list, type)) {
+				error = errno;
+				goto cleanup;
+			}
+			if (compval)
+				continue;
+			if (qpol_type_get_alias_iter(p->p, type, &alias_iter) < 0) {
+				error = errno;
+				goto cleanup;
+			}
+			for (; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
+				if (qpol_iterator_get_item(alias_iter, (void **)&type_name) < 0) {
+					error = errno;
+					goto cleanup;
+				}
+				compval = apol_compare(p, type_name, symbol, APOL_QUERY_REGEX, &regex);
+				if (compval < 0) {
+					error = errno;
+					goto cleanup;
+				}
+				if (compval && apol_query_append_type(p, list, type)) {
+					error = errno;
+					goto cleanup;
+				}
+				if (compval)
+					break;
+			}
+			qpol_iterator_destroy(&alias_iter);
+		}
+		qpol_iterator_destroy(&iter);
+	}
+
+	/* prune to match ta_flag */
+	for (i = 0; i < apol_vector_get_size(list); i++) {
+		type = (qpol_type_t *) apol_vector_get_element(list, i);
+		if (qpol_type_get_isattr(p->p, type, &isattr) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+		if ((isattr && !(ta_flag & APOL_QUERY_CANDIDATE_ATTRIBUTES))
+		    || (!isattr && !(ta_flag & APOL_QUERY_CANDIDATE_TYPES))) {
+			apol_vector_remove(list, i);
+			i--;
+		}
+	}
+
+	orig_vector_size = apol_vector_get_size(list);
+	for (i = 0; i < orig_vector_size; i++) {
+		type = (qpol_type_t *) apol_vector_get_element(list, i);
+		if (qpol_type_get_isalias(p->p, type, &isalias) < 0 || qpol_type_get_isattr(p->p, type, &isattr) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+		if (isalias) {
+			continue;
+		}
+		if (!do_indirect && !isattr)
+			continue;
+		if ((isattr && qpol_type_get_type_iter(p->p, type, &iter) < 0) ||
+		    (!isattr && qpol_type_get_attr_iter(p->p, type, &iter) < 0)) {
+			error = errno;
+			goto cleanup;
+		}
+		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+			if (qpol_iterator_get_item(iter, (void **)&type) < 0) {
+				error = errno;
+				goto cleanup;
+			}
+			if (apol_query_append_type(p, list, type)) {
+				error = errno;
+				goto cleanup;
+			}
+		}
+		qpol_iterator_destroy(&iter);
+	}
+
+	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
+	retval = 0;
+      cleanup:
+	if (regex != NULL) {
+		regfree(regex);
+		free(regex);
+	}
+	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&alias_iter);
+	if (retval < 0) {
+		apol_vector_destroy(&list, NULL);
+		list = NULL;
+		errno = error;
 	}
 	return list;
 }
@@ -632,4 +836,44 @@ int apol_obj_perm_compare_class(const void *a, const void *b, void *policy)
 	qpol_class_get_value(p->p, objb, &b_val);
 
 	return (int)(a_val - b_val);
+}
+
+int apol_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v)
+{
+	qpol_iterator_t *iter = NULL;
+	qpol_type_t *type = NULL;
+	size_t i;
+	uint32_t comp;
+
+	if (!p || !set) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	if (!v || !apol_vector_get_size(v))
+		return 0;
+
+	if (qpol_type_set_get_is_comp(p->p, set, &comp)) {
+		return -1;
+	}
+	if (comp) {
+		if (qpol_type_set_get_subtracted_types_iter(p->p, set, &iter)) {
+			return -1;
+		}
+	} else {
+		if (qpol_type_set_get_included_types_iter(p->p, set, &iter)) {
+			return -1;
+		}
+	}
+
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_iterator_get_item(iter, (void **)&type);
+		if (!apol_vector_get_index(v, (void *)type, NULL, NULL, &i)) {
+			qpol_iterator_destroy(&iter);
+			return 1;
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+	return 0;
 }

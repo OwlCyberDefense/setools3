@@ -50,6 +50,10 @@
 #define APOL_QUERY_SOURCE_INDIRECT 0x40
 #define APOL_QUERY_TARGET_INDIRECT 0x80
 
+#define APOL_QUERY_CANDIDATE_TYPES 0x01
+#define APOL_QUERY_CANDIDATE_ATTRIBUTES 0x02
+#define APOL_QUERY_CANDIDATE_BOTH (APOL_QUERY_CANDIDATE_TYPES|APOL_QUERY_CANDIDATE_ATTRIBUTES)
+
 /**
  * Destroy a compiled regular expression, setting it to NULL
  * afterwards.	Does nothing if the reference is NULL.
@@ -250,12 +254,41 @@ int apol_query_get_type(apol_policy_t * p, const char *type_name, qpol_type_t **
  * @param do_regex If non-zero, then treat symbol as a regular expression.
  * @param do_indirect If non-zero, expand types to their attributes
  * and attributes to their types.
+ * @param ta_flag Bit-wise or of APOL_QUERY_CANDIDATE_* above indicating 
+ * whether symbol should be matched against type names or attribute names.
  *
  * @return Vector of unique qpol_type_t pointers (relative to policy
  * within p), or NULL upon error.  Caller is responsible for calling
  * apol_vector_destroy() afterwards.
  */
-apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect);
+apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
+						     unsigned int ta_flag);
+
+/**
+ * Given a symbol name (a type, attribute, alias, or a regular
+ * expression string), determine all types/attributes it matches.
+ * Return a vector of qpol_type_t that match.  If regex is enabled,
+ * include all types/attributes that match the expression.  If
+ * indirect is enabled, expand the candidiates within the vector (all
+ * attributes for a type, all types for an attribute), and then
+ * uniquify the vector. The list will include types needed for syntactic
+ * rule searching.
+ *
+ * @param p Policy in which to look up types. <b>Must be a source policy.</b>
+ * @param symbol A string describing one or more type/attribute to
+ * which match.
+ * @param do_regex If non-zero, then treat symbol as a regular expression.
+ * @param do_indirect If non-zero, expand types to their attributes
+ * and attributes to their types.
+ * @param ta_flag Bit-wise or of APOL_QUERY_CANDIDATE_* above indicating 
+ * whether symbol should be matched against type names or attribute names.
+ *
+ * @return Vector of unique qpol_type_t pointers (relative to policy
+ * within p), or NULL upon error.  Caller is responsible for calling
+ * apol_vector_destroy() afterwards.
+ */
+apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
+							 unsigned int ta_flag);
 
 /**
  * Given a symbol name (a role or a regular expression string),
@@ -372,5 +405,15 @@ apol_vector_t *apol_obj_perm_get_perm_vector(const apol_obj_perm_t * op);
  *  to, or greater than that of b respectively.
  */
 int apol_obj_perm_compare_class(const void *a, const void *b, void *policy);
+
+/**
+ *  Determine if a syntactic type set directly uses any of the types in v.
+ *  @param p Policy from which the type set and types come.
+ *  @param set Syntactic type set to check.
+ *  @param v Vector of types (qpol_type_t) to find in set.
+ *  @return 0 if no types in v appear in set, > 0 if at least one type
+ *  was found, and < 0 if an error occurred.
+ */
+int apol_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v);
 
 #endif

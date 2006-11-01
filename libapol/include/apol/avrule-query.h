@@ -51,6 +51,21 @@ typedef struct apol_avrule_query apol_avrule_query_t;
 extern int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
 
 /**
+ * Execute a query against all syntactic access vector rules within the policy.
+ *
+ * @param p Policy within which to look up avrules. <b>Must be a source policy.</b>
+ * @param a Structure containing parameters for query. If this is
+ * NULL then return all avrules.
+ * @param v Reference to a vector of qpol_syn_avrule_t. The vector will be
+ * allocated by this function.  The caller must call apol_vector_destroy()
+ * afterwards, but <b>must not</b> free the elements within it.  This will be
+ * set to NULL upon no results or upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
+
+/**
  * Allocate and return a new avrule query structure.  All fields are
  * initialized, such that running this blank query results in
  * returning all avrules within the policy.  The caller must call
@@ -104,6 +119,20 @@ extern int apol_avrule_query_set_rules(apol_policy_t * p, apol_avrule_query_t * 
 extern int apol_avrule_query_set_source(apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect);
 
 /**
+ * Set an avrule query to return rules whose source symbol is matched as a type
+ * or an attribute. The symbol will match both types and attributes by default.
+ * @see apol_avrule_query_set_source() to set the symbol to match.
+ *
+ * @param p Policy handler, to report errors.
+ * @param a AV rule query to set.
+ * @param component Bit-wise or'ed set of APOL_QUERY_SOURCE_TYPE and 
+ * APOL_QUERY_SOURCE_ATTRIBUTE indicating the type of component to match.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_avrule_query_set_source_component(apol_policy_t * p, apol_avrule_query_t * a, unsigned int component);
+
+/**
  * Set an avrule query to return rules whose target symbol matches
  * symbol.  Symbol may be a type or attribute; if it is an alias then
  * the query will convert it to its primary prior to searching.  If
@@ -121,6 +150,20 @@ extern int apol_avrule_query_set_source(apol_policy_t * p, apol_avrule_query_t *
  * @return 0 on success, negative on error.
  */
 extern int apol_avrule_query_set_target(apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect);
+
+/**
+ * Set an avrule query to return rules whose target symbol is matched as a type
+ * or an attribute. The symbol will match both types and attributes by default.
+ * @see apol_avrule_query_set_target() to set the symbol to match.
+ *
+ * @param p Policy handler, to report errors.
+ * @param a AV rule query to set.
+ * @param component Bit-wise or'ed set of APOL_QUERY_TARGET_TYPE and 
+ * APOL_QUERY_TARGET_ATTRIBUTE indicating the type of component to match.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_avrule_query_set_target_component(apol_policy_t * p, apol_avrule_query_t * a, unsigned int component);
 
 /**
  * Set an avrule query to return rules with this object (non-common)

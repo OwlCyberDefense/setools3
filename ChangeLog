@@ -1,3 +1,11 @@
+2006-11-01  J. Mowery  <jmowery@tresys.com>
+
+	* added ability for avrule and terule queries to search to only types or
+	  only attributes for both source and target fields (separate option for
+	  each field, default is to search both types and attributes).
+
+	* added apol_get_syn_avrule_by_query() and apol_get_syn_terule_by_query()
+
 2006-10-27  J. Tang  <jtang@tresys.com>
 
 	* added apol_str_appendf() (declared in apol/util.h)

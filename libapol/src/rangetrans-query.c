@@ -51,7 +51,8 @@ int apol_get_range_trans_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 		if (r->source != NULL &&
 		    (source_list =
 		     apol_query_create_candidate_type_list(p, r->source, r->flags & APOL_QUERY_REGEX,
-							   r->flags & APOL_QUERY_SOURCE_INDIRECT)) == NULL) {
+							   r->flags & APOL_QUERY_SOURCE_INDIRECT,
+							   APOL_QUERY_CANDIDATE_BOTH)) == NULL) {
 			goto cleanup;
 		}
 		if ((r->flags & APOL_QUERY_SOURCE_AS_ANY) && r->source != NULL) {
@@ -60,7 +61,8 @@ int apol_get_range_trans_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 		} else if (r->target != NULL &&
 			   (target_list =
 			    apol_query_create_candidate_type_list(p, r->target, r->flags & APOL_QUERY_REGEX,
-								  r->flags & APOL_QUERY_TARGET_INDIRECT)) == NULL) {
+								  r->flags & APOL_QUERY_TARGET_INDIRECT,
+								  APOL_QUERY_CANDIDATE_BOTH)) == NULL) {
 			goto cleanup;
 		}
 	}
