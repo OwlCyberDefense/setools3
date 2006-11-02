@@ -402,6 +402,11 @@ int apol_get_syn_terule_by_query(apol_policy_t * p, apol_terule_query_t * t, apo
 		retval = 0;
 		goto cleanup;
 	}
+	/* if not searching by source, target, or default we are done */
+	if (!source_list && !target_list && !default_list) {
+		retval = 0;
+		goto cleanup;
+	}
 
 	if (source_list && !(t->flags & APOL_QUERY_SOURCE_INDIRECT)) {
 		apol_vector_destroy(&source_list, NULL);
