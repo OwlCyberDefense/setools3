@@ -290,4 +290,14 @@ extern int apol_str_is_only_white_space(const char *str);
  */
 extern int apol_str_strcmp(const void *a, const void *b, void *unused __attribute__ ((unused)));
 
+/**
+ * Wrapper around strdup for use in vector and BST cloning functions.
+ *
+ * @param elem String to duplicate.
+ * @param unused Not used. (exists to match expected function signature)
+ *
+ * @return A new string that is a duplicate of elem, or NULL upon error.
+ */
+extern void *apol_str_strdup(const void *elem, void *unused __attribute__ ((unused)));
+
 #endif

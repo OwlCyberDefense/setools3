@@ -92,9 +92,10 @@ apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter)
 	return v;
 }
 
-apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v)
+apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data)
 {
 	apol_vector_t *new_v;
+	size_t i;
 	if (v == NULL) {
 		errno = EINVAL;
 		return NULL;
@@ -102,7 +103,13 @@ apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v)
 	if ((new_v = apol_vector_create_with_capacity(v->capacity)) == NULL) {
 		return NULL;
 	}
-	memcpy(new_v->array, v->array, v->size * sizeof(void *));
+	if (dup == NULL) {
+		memcpy(new_v->array, v->array, v->size * sizeof(void *));
+	} else {
+		for (i = 0; i < v->size; i++) {
+			new_v->array[i] = dup(v->array[i], data);
+		}
+	}
 	new_v->size = v->size;
 	return new_v;
 }

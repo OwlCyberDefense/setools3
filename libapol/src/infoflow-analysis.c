@@ -1291,7 +1291,7 @@ static int apol_infoflow_trans_define(apol_policy_t * p,
 		}
 		length += edge->length;
 		if ((step = calloc(1, sizeof(*step))) == NULL ||
-		    (step->rules = apol_vector_create_from_vector(edge->rules)) == NULL ||
+		    (step->rules = apol_vector_create_from_vector(edge->rules, NULL, NULL)) == NULL ||
 		    apol_vector_append((*result)->steps, step) < 0) {
 			apol_infoflow_step_free(step);
 			ERR(p, "%s", strerror(ENOMEM));
@@ -2005,7 +2005,7 @@ apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_infoflow_re
 	for (i = 0; i < apol_vector_get_size(result->steps); i++) {
 		step = (apol_infoflow_step_t *) apol_vector_get_element(result->steps, i);
 		if ((new_step = calloc(1, sizeof(*new_step))) == NULL ||
-		    (new_step->rules = apol_vector_create_from_vector(step->rules)) == NULL ||
+		    (new_step->rules = apol_vector_create_from_vector(step->rules, NULL, NULL)) == NULL ||
 		    apol_vector_append(new_r->steps, new_step) < 0) {
 			apol_infoflow_step_free(new_step);
 			goto cleanup;

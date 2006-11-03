@@ -538,7 +538,7 @@ char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level)
 	}
 
 	if (level->cats != NULL) {
-		if ((cats = apol_vector_create_from_vector(level->cats)) == NULL) {
+		if ((cats = apol_vector_create_from_vector(level->cats, NULL, NULL)) == NULL) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}

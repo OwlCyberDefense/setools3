@@ -1,3 +1,11 @@
+2006-11-02  J. Tang  <jtang@tresys.com>
+
+	* added apol_str_strdup() (declared in apol/util.h)
+
+	* apol_vector_create_from_vector() takes two additional arguments,
+	so that it can act more like a copy constructor.
+	
+
 2006-11-01  J. Mowery  <jmowery@tresys.com>
 
 	* added ability for avrule and terule queries to search to only types or

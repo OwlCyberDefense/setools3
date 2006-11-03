@@ -422,7 +422,7 @@ int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 		}
 	}
 	if (target_list) {
-		target_types_list = apol_vector_create_from_vector(target_list);
+		target_types_list = apol_vector_create_from_vector(target_list, NULL, NULL);
 		if (!target_types_list) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;

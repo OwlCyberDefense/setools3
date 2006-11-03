@@ -33,6 +33,7 @@ typedef struct apol_vector apol_vector_t;
 
 typedef int (apol_vector_comp_func) (const void *a, const void *b, void *data);
 typedef void (apol_vector_free_func) (void *elem);
+typedef void *(apol_vector_dup_func) (const void *elem, void *data);
 
 /**
  *  Allocate and initialize an empty vector with default start
@@ -76,18 +77,20 @@ extern apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter);
 
 /**
  *  Allocate and return a vector that has been initialized with the
- *  contents of another vector.  <b>This function merely makes a
- *  shallow copy of the vector's contents</b>; any memory ownership
- *  restrictions imposed by the original vector apply to this new
- *  vector as well.
+ *  contents of another vector.
  *
  *  @param v Vector from which to copy.
+ *  @param dup If NULL, then make a shallow copy of the original
+ *  vector's contents.  Otherwise this function will be called upon
+ *  for each element from the original vector; the return value will
+ *  be the value stored in the new vector.
+ *  @param data Arbitrary data to pass as dup's second parameter.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v);
+extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data);
 
 /**
  *  Allocate and return a vector that has been initialized with the

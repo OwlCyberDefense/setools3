@@ -406,7 +406,8 @@ static int apol_types_relation_access_append(apol_policy_t * p, apol_types_relat
 {
 	apol_types_relation_access_t *new_a;
 	int retval = -1;
-	if ((new_a = calloc(1, sizeof(*new_a))) == NULL || (new_a->rules = apol_vector_create_from_vector(a->rules)) == NULL) {
+	if ((new_a = calloc(1, sizeof(*new_a))) == NULL
+	    || (new_a->rules = apol_vector_create_from_vector(a->rules, NULL, NULL)) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
