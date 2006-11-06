@@ -105,6 +105,30 @@ extern int tcl_obj_to_qpol_avrule(Tcl_Interp * interp, Tcl_Obj * o, qpol_avrule_
 extern int tcl_obj_to_qpol_terule(Tcl_Interp * interp, Tcl_Obj * o, qpol_terule_t ** rule);
 
 /**
+ * Convert an apol vector of qpol_syn_avrule_t pointers to a Tcl
+ * representation.
+ *
+ * @param interp Tcl interpreter object.
+ * @param v Apol vector to convert.
+ * @param obj Destination to create Tcl list.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+extern int apol_vector_syn_avrule_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** obj);
+
+/**
+ * Convert an apol vector of qpol_syn_terule_t pointers to a Tcl
+ * representation.
+ *
+ * @param interp Tcl interpreter object.
+ * @param v Apol vector to convert.
+ * @param obj Destination to create Tcl list.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+extern int apol_vector_syn_terule_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** obj);
+
+/**
  * Given a Tcl object, retrieve the qpol_syn_avrule_t stored within.
  * If the object is not already a qpol_syn_avrule_tcl_obj_type,
  * shimmer it to a qpol_syn_avrule_tcl_obj_type before returning the

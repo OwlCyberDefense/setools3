@@ -285,6 +285,36 @@ int tcl_obj_to_qpol_syn_terule(Tcl_Interp * interp, Tcl_Obj * o, qpol_syn_terule
 	return TCL_OK;
 }
 
+int apol_vector_syn_avrule_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** obj)
+{
+	size_t i;
+	*obj = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		qpol_syn_avrule_t *rule = apol_vector_get_element(v, i);
+		Tcl_Obj *o;
+		if (qpol_syn_avrule_to_tcl_obj(interp, rule, &o) == TCL_ERROR
+		    || Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int apol_vector_syn_terule_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** obj)
+{
+	size_t i;
+	*obj = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		qpol_syn_terule_t *rule = apol_vector_get_element(v, i);
+		Tcl_Obj *o;
+		if (qpol_syn_terule_to_tcl_obj(interp, rule, &o) == TCL_ERROR
+		    || Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
 /******************** analysis code below ********************/
 
 /**
@@ -310,6 +340,7 @@ static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, 
 	int i;
 	*sym_name = NULL;
 	*indirect = 0;
+	*type_attr = APOL_QUERY_SYMBOL_IS_TYPE | APOL_QUERY_SYMBOL_IS_ATTRIBUTE;
 	if (*typeset == '\0') {
 		return 0;
 	}
@@ -319,17 +350,16 @@ static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, 
 	    Tcl_ListObjIndex(interp, typeset_obj, 3, &attr_obj) == TCL_ERROR) {
 		return -1;
 	}
-	if (Tcl_GetBooleanFromObj(interp, indirect_obj, indirect) == TCL_ERROR) {
+	if (indirect_obj == NULL || Tcl_GetBooleanFromObj(interp, indirect_obj, indirect) == TCL_ERROR) {
 		return -1;
 	}
-	*type_attr = 0;
-	if (Tcl_GetBooleanFromObj(interp, type_obj, &i) == TCL_ERROR) {
+	if (type_obj == NULL || Tcl_GetBooleanFromObj(interp, type_obj, &i) == TCL_ERROR) {
 		return -1;
 	}
 	if (i) {
 		*type_attr |= APOL_QUERY_SYMBOL_IS_TYPE;
 	}
-	if (Tcl_GetBooleanFromObj(interp, attr_obj, &i) == TCL_ERROR) {
+	if (attr_obj == NULL || Tcl_GetBooleanFromObj(interp, attr_obj, &i) == TCL_ERROR) {
 		return -1;
 	}
 	if (i) {
@@ -351,7 +381,9 @@ static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, 
 /**
  * Perform a rule search upon the currently loaded policy, returning
  * two unsorted lists of rules.  The first list is a list of av rules,
- * the second for te rules.
+ * the second for te rules.  If <tt>syn_search</tt> is given as an
+ * option, then this will be a vector of syntactic rules rather than
+ * semantic rules.
  *
  * @param argv This function takes seven parameters:
  * <ol>
@@ -378,13 +410,16 @@ static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, 
  * Valid strings are:
  * <ul>
  *   <li>only_enabled - search unconditional and those in enabled conditionals
- *   <li>source_any - treat source symbol as criteria for target and default
  *   <li>regex - treat all symbols as regular expression
+ *   <li>source_any - treat source symbol as criteria for target and default
+ *   <li>syn_search - perform syntactic search instead of semantic (default)
  * </ul>
- * For source/target/default types, these are each a list of two parameters:
+ * For source/target/default types, these are each a list of four parameters:
  * <ol>
  *   <li>type/attribute symbol name (or empty string to ignore)
  *   <li>perform indirect matching with this symbol
+ *   <li>if non-zero, then the symbol as a type
+ *   <li>if non-zero, then treat the symbol as an attribute
  * </ol>
  * For classes, the returned rule's class must be within this list.
  * For permissions, the rule must have at least one permission within
@@ -396,7 +431,7 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 	unsigned int avrules = 0, terules = 0;
 	CONST char **rule_strings = NULL, **other_opt_strings = NULL, **class_strings = NULL, **perm_strings = NULL;
 	char *sym_name = NULL;
-	int num_opts, indirect, type_attr;
+	int num_opts, do_syn_search = 0, indirect, type_attr;
 	apol_avrule_query_t *avquery = NULL;
 	apol_terule_query_t *tequery = NULL;
 	apol_vector_t *av = NULL, *te = NULL;
@@ -455,12 +490,14 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 		if (strcmp(s, "only_enabled") == 0) {
 			apol_avrule_query_set_enabled(policydb, avquery, 1);
 			apol_terule_query_set_enabled(policydb, tequery, 1);
-		} else if (strcmp(s, "source_any") == 0) {
-			apol_avrule_query_set_source_any(policydb, avquery, 1);
-			apol_terule_query_set_source_any(policydb, tequery, 1);
 		} else if (strcmp(s, "regex") == 0) {
 			apol_avrule_query_set_regex(policydb, avquery, 1);
 			apol_terule_query_set_regex(policydb, tequery, 1);
+		} else if (strcmp(s, "source_any") == 0) {
+			apol_avrule_query_set_source_any(policydb, avquery, 1);
+			apol_terule_query_set_source_any(policydb, tequery, 1);
+		} else if (strcmp(s, "syn_search") == 0) {
+			do_syn_search = 1;
 		} else {
 			ERR(policydb, "Invalid option %s.", s);
 			goto cleanup;
@@ -469,7 +506,9 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 
 	if (apol_tcl_string_to_typeset(interp, argv[3], &sym_name, &indirect, &type_attr) < 0 ||
 	    apol_avrule_query_set_source(policydb, avquery, sym_name, indirect) < 0 ||
-	    apol_terule_query_set_source(policydb, tequery, sym_name, indirect) < 0) {
+	    apol_avrule_query_set_source_component(policydb, avquery, type_attr) < 0 ||
+	    apol_terule_query_set_source(policydb, tequery, sym_name, indirect) < 0 ||
+	    apol_terule_query_set_source_component(policydb, tequery, type_attr) < 0) {
 		goto cleanup;
 	}
 
@@ -477,7 +516,9 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 	sym_name = NULL;
 	if (apol_tcl_string_to_typeset(interp, argv[4], &sym_name, &indirect, &type_attr) < 0 ||
 	    apol_avrule_query_set_target(policydb, avquery, sym_name, indirect) < 0 ||
-	    apol_terule_query_set_target(policydb, tequery, sym_name, indirect) < 0) {
+	    apol_avrule_query_set_target_component(policydb, avquery, type_attr) < 0 ||
+	    apol_terule_query_set_target(policydb, tequery, sym_name, indirect) < 0 ||
+	    apol_terule_query_set_target_component(policydb, tequery, type_attr) < 0) {
 		goto cleanup;
 	}
 
@@ -510,18 +551,32 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 	}
 
 	if (avrules != 0) {
-		if (apol_get_avrule_by_query(policydb, avquery, &av) < 0 ||
-		    apol_vector_avrule_to_tcl_list(interp, av, rules_elem + 0) < 0) {
-			goto cleanup;
+		if (!do_syn_search) {
+			if (apol_get_avrule_by_query(policydb, avquery, &av) < 0 ||
+			    apol_vector_avrule_to_tcl_list(interp, av, rules_elem + 0) < 0) {
+				goto cleanup;
+			}
+		} else {
+			if (apol_get_syn_avrule_by_query(policydb, avquery, &av) < 0 ||
+			    apol_vector_syn_avrule_to_tcl_list(interp, av, rules_elem + 0) < 0) {
+				goto cleanup;
+			}
 		}
 	} else {
 		rules_elem[0] = Tcl_NewListObj(0, NULL);
 	}
 
 	if (terules != 0) {
-		if (apol_get_terule_by_query(policydb, tequery, &te) < 0 ||
-		    apol_vector_terule_to_tcl_list(interp, te, rules_elem + 1) < 0) {
-			goto cleanup;
+		if (!do_syn_search) {
+			if (apol_get_terule_by_query(policydb, tequery, &te) < 0 ||
+			    apol_vector_terule_to_tcl_list(interp, te, rules_elem + 1) < 0) {
+				goto cleanup;
+			}
+		} else {
+			if (apol_get_syn_terule_by_query(policydb, tequery, &te) < 0 ||
+			    apol_vector_syn_terule_to_tcl_list(interp, te, rules_elem + 1) < 0) {
+				goto cleanup;
+			}
 		}
 	} else {
 		rules_elem[1] = Tcl_NewListObj(0, NULL);

@@ -876,19 +876,19 @@ proc Apol_TE::search_terules {whichButton} {
         if {$vals(ta:source_which) == "either"} {
             set source_any 1
         }
-        set source [list $vals(ta:source_sym) $vals(ta:source_indirect) $vals(ta:source_sym,types) $(ta_source_sym,attribs)]
+        set source [list $vals(ta:source_sym) $vals(ta:source_indirect) $vals(ta:source_sym,types) $vals(ta:source_sym,attribs)]
     } else {
-        set source [list {} 0]
+        set source {}
     }
     if {$enabled(ta:use_target) && $vals(ta:use_target)} {
         set target [list $vals(ta:target_sym) $vals(ta:target_indirect) $vals(ta:target_sym,types) $vals(ta:target_sym,attribs)]
     } else {
-        set target [list {} 0]
+        set target {}
     }
     if {$enabled(ta:use_default) && $vals(ta:use_default)} {
         set default [list $vals(ta:default_sym) 0 $vals(ta:default_sym,types) $vals(ta:default_sym,attribs)]
     } else {
-        set default [list {} 0]
+        set default {}
     }
     if {$enabled(cp:classes)} {
         set classes $vals(cp:classes_selected)
@@ -904,11 +904,14 @@ proc Apol_TE::search_terules {whichButton} {
     if {$vals(oo:enabled)} {
         lappend other_opts "only_enabled"
     }
+    if {$vals(oo:regexp)} {
+        lappend other_opts "regex"
+    }
     if {$source_any} {
         lappend other_opts "source_any"
     }
-    if {$vals(oo:regexp)} {
-        lappend other_opts "regex"
+    if {![ApolTop::is_binary_policy]} {
+        lappend other_opts "syn_search"
     }
 
     foreach x {new update reset} {
@@ -946,8 +949,13 @@ proc Apol_TE::search_terules {whichButton} {
             set sr $tabs($id)
             Apol_Widget::clearSearchResults $sr
         }
-        set numAVs [Apol_Widget::appendSearchResultSynAVRules $sr 0 $avresults $perms tabs(searches_text)]
-        set numTEs [Apol_Widget::appendSearchResultSynTERules $sr 0 $teresults tabs(searches_text)]
+        if {[ApolTop::is_binary_policy]} {
+            set numAVs [Apol_Widget::appendSearchResultAVRules $sr 0 $avresults tabs(searches_text)]
+            set numTEs [Apol_Widget::appendSearchResultTERules $sr 0 $teresults tabs(searches_text)]
+        } else {
+            set numAVs [Apol_Widget::appendSearchResultSynAVRules $sr 0 $avresults tabs(searches_text)]
+            set numTEs [Apol_Widget::appendSearchResultSynTERules $sr 0 $teresults tabs(searches_text)]
+        }
         set num_rules [expr {[lindex $numAVs 0] + [lindex $numTEs 0]}]
         set num_enabled [expr {[lindex $numAVs 1] + [lindex $numTEs 1]}]
         set num_disabled [expr {[lindex $numAVs 2] + [lindex $numTEs 2]}]

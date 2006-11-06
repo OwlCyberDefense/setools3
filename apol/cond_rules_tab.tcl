@@ -82,11 +82,25 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
     set text "conditional expression $cond_number: \[ [join $cond_expr] \]\n"
     append text "\nTRUE list:\n"
     Apol_Widget::appendSearchResultText $widgets(results) $text
-    Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 [lindex $true_list 0] {}
-    Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 [lindex $true_list 1]
+    if {[ApolTop::is_binary_policy]} {
+        Apol_Widget::appendSearchResultAVRules $widgets(results) 4 [lindex $true_list 0]
+        Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $true_list 1]
+    } else {
+        set syn_avrules [apol_GetSynAVRules [lindex $true_list 0] {}]
+        Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 $syn_avrules
+        set syn_terules [apol_GetSynTERules [lindex $true_list 1] {}]
+        Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 $syn_terules
+    }
     Apol_Widget::appendSearchResultText $widgets(results) "\nFALSE list:\n"
-    Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 [lindex $false_list 0] {}
-    Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 [lindex $false_list 1]
+    if {[ApolTop::is_binary_policy]} {
+        Apol_Widget::appendSearchResultAVRules $widgets(results) 4 [lindex $false_list 0]
+        Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $false_list 1]
+    } else {
+        set syn_avrules [apol_GetSynAVRules [lindex $false_list 0] {}]
+        Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 [lindex $false_list 0] {}
+        set syn_terules [apol_GetSynTERules [lindex $false_list 1] {}]
+        Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 $syn_terules
+    }
 }
 
 ################################################################
