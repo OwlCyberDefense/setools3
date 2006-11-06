@@ -5,12 +5,11 @@ sediff \- SELinux policy difference tool
 .B sediff
 [OPTIONS] ORIGINAL_POLICY MODIFIED_POLICY
 .SH DESCRIPTION
-This manual page describes the
-.B sediff
-command.
 .PP
 .B sediff
 allows the user to inspect the semantic differences between two SELinux policy files.
+The policies can be either source or binary policy files, version 15 or later.
+By default, all supported policy elements are examined.
 .SH OPTIONS
 .IP "-c, --classes"
 object class and common permission definitions

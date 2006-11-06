@@ -5,9 +5,6 @@ seinfo \- SELinux policy query tool
 .B seinfo
 [OPTIONS] [POLICY_FILE]
 .SH DESCRIPTION
-This man page describes the
-.B seinfo
-command.
 .PP
 .B seinfo
 allows the user to query a SELinux policy.
@@ -61,7 +58,8 @@ option.  If no option is provided, display useful policy statistics
 If \fB\-l\fR is given without \fB\-p\fR or \fB\-A\fR then it will be
 ignored.
 .PP
-The default source policy, or if that is unavailable the default binary policy, will be opened if no policy file name is provided.
+If no policy file name is provided, the default source policy will be loaded.
+If that is not available, the default binary policy will be loaded.
 .SH AUTHOR
 This manual page was written by Kevin Carr <kcarr@tresys.com>.  
 .SH COPYRIGHT
