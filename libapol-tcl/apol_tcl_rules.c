@@ -288,33 +288,52 @@ int tcl_obj_to_qpol_syn_terule(Tcl_Interp * interp, Tcl_Obj * o, qpol_syn_terule
 /******************** analysis code below ********************/
 
 /**
- * Takes a Tcl typeset list (e.g., "{foo 1}") and splits in into its
- * symbol name and indirect flag.
+ * Takes a Tcl typeset list (e.g., "{foo 1 0 1}") and splits in into
+ * its symbol name, indirect flag, and if the symbol is a type and/or
+ * attribute.
  *
  * @param interp Tcl interpreter object.
  * @param typeset Character string represting a Tcl typeset.
  * @param sym_name Reference to where to write the symbol name.  The
  * caller must free() this value afterwards.
  * @param indirect Reference to where to write indirect flag.
+ * @param type_attr Reference to where to write the type/attribute
+ * selection flag.
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, char **sym_name, int *indirect)
+static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, char **sym_name, int *indirect, int *type_attr)
 {
 	Tcl_Obj *typeset_obj = Tcl_NewStringObj(typeset, -1);
-	Tcl_Obj *name_obj, *indirect_obj;
+	Tcl_Obj *name_obj, *indirect_obj, *type_obj, *attr_obj;
 	char *s;
+	int i;
 	*sym_name = NULL;
 	*indirect = 0;
 	if (*typeset == '\0') {
 		return 0;
 	}
 	if (Tcl_ListObjIndex(interp, typeset_obj, 0, &name_obj) == TCL_ERROR ||
-	    Tcl_ListObjIndex(interp, typeset_obj, 1, &indirect_obj) == TCL_ERROR) {
+	    Tcl_ListObjIndex(interp, typeset_obj, 1, &indirect_obj) == TCL_ERROR ||
+	    Tcl_ListObjIndex(interp, typeset_obj, 2, &type_obj) == TCL_ERROR ||
+	    Tcl_ListObjIndex(interp, typeset_obj, 3, &attr_obj) == TCL_ERROR) {
 		return -1;
 	}
 	if (Tcl_GetBooleanFromObj(interp, indirect_obj, indirect) == TCL_ERROR) {
 		return -1;
+	}
+	*type_attr = 0;
+	if (Tcl_GetBooleanFromObj(interp, type_obj, &i) == TCL_ERROR) {
+		return -1;
+	}
+	if (i) {
+		*type_attr |= APOL_QUERY_SYMBOL_IS_TYPE;
+	}
+	if (Tcl_GetBooleanFromObj(interp, attr_obj, &i) == TCL_ERROR) {
+		return -1;
+	}
+	if (i) {
+		*type_attr |= APOL_QUERY_SYMBOL_IS_ATTRIBUTE;
 	}
 	s = Tcl_GetString(name_obj);
 	if (s[0] == '\0') {
@@ -377,7 +396,7 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 	unsigned int avrules = 0, terules = 0;
 	CONST char **rule_strings = NULL, **other_opt_strings = NULL, **class_strings = NULL, **perm_strings = NULL;
 	char *sym_name = NULL;
-	int num_opts, indirect;
+	int num_opts, indirect, type_attr;
 	apol_avrule_query_t *avquery = NULL;
 	apol_terule_query_t *tequery = NULL;
 	apol_vector_t *av = NULL, *te = NULL;
@@ -448,7 +467,7 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 		}
 	}
 
-	if (apol_tcl_string_to_typeset(interp, argv[3], &sym_name, &indirect) < 0 ||
+	if (apol_tcl_string_to_typeset(interp, argv[3], &sym_name, &indirect, &type_attr) < 0 ||
 	    apol_avrule_query_set_source(policydb, avquery, sym_name, indirect) < 0 ||
 	    apol_terule_query_set_source(policydb, tequery, sym_name, indirect) < 0) {
 		goto cleanup;
@@ -456,7 +475,7 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 
 	free(sym_name);
 	sym_name = NULL;
-	if (apol_tcl_string_to_typeset(interp, argv[4], &sym_name, &indirect) < 0 ||
+	if (apol_tcl_string_to_typeset(interp, argv[4], &sym_name, &indirect, &type_attr) < 0 ||
 	    apol_avrule_query_set_target(policydb, avquery, sym_name, indirect) < 0 ||
 	    apol_terule_query_set_target(policydb, tequery, sym_name, indirect) < 0) {
 		goto cleanup;
@@ -464,7 +483,7 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 
 	free(sym_name);
 	sym_name = NULL;
-	if (apol_tcl_string_to_typeset(interp, argv[5], &sym_name, &indirect) < 0 ||
+	if (apol_tcl_string_to_typeset(interp, argv[5], &sym_name, &indirect, &type_attr) < 0 ||
 	    apol_terule_query_set_default(policydb, tequery, sym_name) < 0) {
 		goto cleanup;
 	}

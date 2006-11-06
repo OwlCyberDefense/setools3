@@ -876,17 +876,17 @@ proc Apol_TE::search_terules {whichButton} {
         if {$vals(ta:source_which) == "either"} {
             set source_any 1
         }
-        set source [list $vals(ta:source_sym) $vals(ta:source_indirect)]
+        set source [list $vals(ta:source_sym) $vals(ta:source_indirect) $vals(ta:source_sym,types) $(ta_source_sym,attribs)]
     } else {
         set source [list {} 0]
     }
     if {$enabled(ta:use_target) && $vals(ta:use_target)} {
-        set target [list $vals(ta:target_sym) $vals(ta:target_indirect)]
+        set target [list $vals(ta:target_sym) $vals(ta:target_indirect) $vals(ta:target_sym,types) $vals(ta:target_sym,attribs)]
     } else {
         set target [list {} 0]
     }
     if {$enabled(ta:use_default) && $vals(ta:use_default)} {
-        set default [list $vals(ta:default_sym) 0]
+        set default [list $vals(ta:default_sym) 0 $vals(ta:default_sym,types) $vals(ta:default_sym,attribs)]
     } else {
         set default [list {} 0]
     }

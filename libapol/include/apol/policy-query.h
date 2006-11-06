@@ -40,10 +40,13 @@
 	(APOL_QUERY_SUB | APOL_QUERY_SUPER | APOL_QUERY_EXACT | \
 	 APOL_QUERY_INTERSECT)
 
-#define APOL_QUERY_SOURCE_TYPE 0x100
-#define APOL_QUERY_SOURCE_ATTRIBUTE 0x200
-#define APOL_QUERY_TARGET_TYPE 0x400
-#define APOL_QUERY_TARGET_ATTRIBUTE 0x800
+/* The AV rule search and TE rule search use these flags when
+ * specifying what kind of symbol is being searched.  Strings are
+ * normally interpreted either as a type or as an attribute; the behavior
+ * can be changed to use only types or only attributes.
+ */
+#define APOL_QUERY_SYMBOL_IS_TYPE 0x01
+#define APOL_QUERY_SYMBOL_IS_ATTRIBUTE 0x02
 
 #include <qpol/policy_query.h>
 

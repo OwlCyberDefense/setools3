@@ -659,5 +659,5 @@ int apol_str_strcmp(const void *a, const void *b, void *unused __attribute__ ((u
 
 void *apol_str_strdup(const void *elem, void *unused __attribute__ ((unused)))
 {
-	return strdup((const char *) elem);
+	return strdup((const char *)elem);
 }

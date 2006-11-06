@@ -53,7 +53,8 @@ extern int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, 
 /**
  * Execute a query against all syntactic access vector rules within the policy.
  *
- * @param p Policy within which to look up avrules. <b>Must be a source policy.</b>
+ * @param p Policy within which to look up avrules. <b>Must be a
+ * source policy.</b>
  * @param a Structure containing parameters for query. If this is
  * NULL then return all avrules.
  * @param v Reference to a vector of qpol_syn_avrule_t. The vector will be
@@ -125,8 +126,9 @@ extern int apol_avrule_query_set_source(apol_policy_t * p, apol_avrule_query_t *
  *
  * @param p Policy handler, to report errors.
  * @param a AV rule query to set.
- * @param component Bit-wise or'ed set of APOL_QUERY_SOURCE_TYPE and 
- * APOL_QUERY_SOURCE_ATTRIBUTE indicating the type of component to match.
+ * @param component Bit-wise or'ed set of APOL_QUERY_SYMBOL_IS_TYPE
+ * and APOL_QUERY_SYMBOL_IS_ATTRIBUTE indicating the type of component
+ * to match.
  *
  * @return 0 on success, negative on error.
  */
@@ -158,8 +160,9 @@ extern int apol_avrule_query_set_target(apol_policy_t * p, apol_avrule_query_t *
  *
  * @param p Policy handler, to report errors.
  * @param a AV rule query to set.
- * @param component Bit-wise or'ed set of APOL_QUERY_TARGET_TYPE and 
- * APOL_QUERY_TARGET_ATTRIBUTE indicating the type of component to match.
+ * @param component Bit-wise or'ed set of APOL_QUERY_SYMBOL_IS_TYPE
+ * and APOL_QUERY_SYMBOL_IS_ATTRIBUTE indicating the type of component
+ * to match.
  *
  * @return 0 on success, negative on error.
  */

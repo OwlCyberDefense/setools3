@@ -325,7 +325,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 		goto cleanup;
 	}
 
-	if (ta_flag == 0 || (ta_flag & ~(APOL_QUERY_CANDIDATE_TYPES | APOL_QUERY_CANDIDATE_ATTRIBUTES))) {
+	if (ta_flag == 0 || (ta_flag & ~APOL_QUERY_SYMBOL_IS_BOTH)) {
 		error = EINVAL;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;
@@ -392,8 +392,8 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 			error = errno;
 			goto cleanup;
 		}
-		if ((isattr && !(ta_flag & APOL_QUERY_CANDIDATE_ATTRIBUTES))
-		    || (!isattr && !(ta_flag & APOL_QUERY_CANDIDATE_TYPES))) {
+		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE))
+		    || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
 			apol_vector_remove(list, i);
 			i--;
 		}
@@ -472,7 +472,7 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 		goto cleanup;
 	}
 
-	if (ta_flag == 0 || (ta_flag & ~(APOL_QUERY_CANDIDATE_TYPES | APOL_QUERY_CANDIDATE_ATTRIBUTES))) {
+	if (ta_flag == 0 || (ta_flag & ~APOL_QUERY_SYMBOL_IS_BOTH)) {
 		error = EINVAL;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;
@@ -539,8 +539,8 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 			error = errno;
 			goto cleanup;
 		}
-		if ((isattr && !(ta_flag & APOL_QUERY_CANDIDATE_ATTRIBUTES))
-		    || (!isattr && !(ta_flag & APOL_QUERY_CANDIDATE_TYPES))) {
+		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE))
+		    || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
 			apol_vector_remove(list, i);
 			i--;
 		}

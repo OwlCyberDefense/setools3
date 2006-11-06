@@ -83,7 +83,7 @@ int apol_get_terule_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_ve
 			if (t->default_type != NULL &&
 			    (default_list =
 			     apol_query_create_candidate_type_list(p, t->default_type, is_regex, 0,
-								   APOL_QUERY_CANDIDATE_TYPES)) == NULL) {
+								   APOL_QUERY_SYMBOL_IS_TYPE)) == NULL) {
 				goto cleanup;
 			}
 		}
@@ -268,7 +268,7 @@ int apol_get_syn_terule_by_query(apol_policy_t * p, apol_terule_query_t * t, apo
 			if (t->default_type != NULL &&
 			    (default_list =
 			     apol_query_create_candidate_type_list(p, t->default_type, is_regex, 0,
-								   APOL_QUERY_CANDIDATE_TYPES)) == NULL) {
+								   APOL_QUERY_SYMBOL_IS_TYPE)) == NULL) {
 				goto cleanup;
 			}
 		}
@@ -524,14 +524,13 @@ int apol_terule_query_set_source(apol_policy_t * p, apol_terule_query_t * t, con
 
 int apol_terule_query_set_source_component(apol_policy_t * p, apol_terule_query_t * t, unsigned int component)
 {
-	if (!t || !(component & (APOL_QUERY_SOURCE_TYPE | APOL_QUERY_SOURCE_ATTRIBUTE))) {
+	if (!t || !(component & APOL_QUERY_SYMBOL_IS_BOTH)) {
 		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
-
-	apol_query_set_flag(p, &t->flags, component & APOL_QUERY_SOURCE_TYPE, APOL_QUERY_SOURCE_TYPE);
-	apol_query_set_flag(p, &t->flags, component & APOL_QUERY_SOURCE_ATTRIBUTE, APOL_QUERY_SOURCE_ATTRIBUTE);
+	apol_query_set_flag(p, &t->flags, component & APOL_QUERY_SYMBOL_IS_TYPE, APOL_QUERY_SOURCE_TYPE);
+	apol_query_set_flag(p, &t->flags, component & APOL_QUERY_SYMBOL_IS_ATTRIBUTE, APOL_QUERY_SOURCE_ATTRIBUTE);
 	return 0;
 }
 
@@ -543,14 +542,13 @@ int apol_terule_query_set_target(apol_policy_t * p, apol_terule_query_t * t, con
 
 int apol_terule_query_set_target_component(apol_policy_t * p, apol_terule_query_t * t, unsigned int component)
 {
-	if (!t || !(component & (APOL_QUERY_TARGET_TYPE | APOL_QUERY_TARGET_ATTRIBUTE))) {
+	if (!t || !(component & APOL_QUERY_SYMBOL_IS_BOTH)) {
 		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
-
-	apol_query_set_flag(p, &t->flags, component & APOL_QUERY_TARGET_TYPE, APOL_QUERY_TARGET_TYPE);
-	apol_query_set_flag(p, &t->flags, component & APOL_QUERY_TARGET_ATTRIBUTE, APOL_QUERY_TARGET_ATTRIBUTE);
+	apol_query_set_flag(p, &t->flags, component & APOL_QUERY_SYMBOL_IS_TYPE, APOL_QUERY_TARGET_TYPE);
+	apol_query_set_flag(p, &t->flags, component & APOL_QUERY_SYMBOL_IS_ATTRIBUTE, APOL_QUERY_TARGET_ATTRIBUTE);
 	return 0;
 }
 

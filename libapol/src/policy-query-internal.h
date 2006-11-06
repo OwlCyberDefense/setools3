@@ -50,9 +50,11 @@
 #define APOL_QUERY_SOURCE_INDIRECT 0x40
 #define APOL_QUERY_TARGET_INDIRECT 0x80
 
-#define APOL_QUERY_CANDIDATE_TYPES 0x01
-#define APOL_QUERY_CANDIDATE_ATTRIBUTES 0x02
-#define APOL_QUERY_CANDIDATE_BOTH (APOL_QUERY_CANDIDATE_TYPES|APOL_QUERY_CANDIDATE_ATTRIBUTES)
+#define APOL_QUERY_SYMBOL_IS_BOTH (APOL_QUERY_SYMBOL_IS_TYPE|APOL_QUERY_SYMBOL_IS_ATTRIBUTE)
+#define APOL_QUERY_SOURCE_TYPE 0x100
+#define APOL_QUERY_SOURCE_ATTRIBUTE 0x200
+#define APOL_QUERY_TARGET_TYPE 0x400
+#define APOL_QUERY_TARGET_ATTRIBUTE 0x800
 
 /**
  * Destroy a compiled regular expression, setting it to NULL
@@ -85,7 +87,7 @@ int apol_query_set(apol_policy_t * p, char **query_name, regex_t ** regex, const
  *
  * @return Always returns 0.
  */
-int apol_query_set_flag(apol_policy_t * p, unsigned int *flags, const int is_regex, int flag_value);
+int apol_query_set_flag(apol_policy_t * p, unsigned int *flags, const int is_flag, int flag_value);
 
 /**
  * Sets the regular expression flag for a query structure.
@@ -254,8 +256,9 @@ int apol_query_get_type(apol_policy_t * p, const char *type_name, qpol_type_t **
  * @param do_regex If non-zero, then treat symbol as a regular expression.
  * @param do_indirect If non-zero, expand types to their attributes
  * and attributes to their types.
- * @param ta_flag Bit-wise or of APOL_QUERY_CANDIDATE_* above indicating 
- * whether symbol should be matched against type names or attribute names.
+ * @param ta_flag Bit-wise or of (APOL_QUERY_SYMBOL_IS_TYPE,
+ * APOL_QUERY_SYMBOL_IS_ATTRIBUTE, APOL_QUERY_SYMBOL_IS_BOTH) whether
+ * symbol should be matched against type names or attribute names.
  *
  * @return Vector of unique qpol_type_t pointers (relative to policy
  * within p), or NULL upon error.  Caller is responsible for calling
@@ -280,8 +283,9 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
  * @param do_regex If non-zero, then treat symbol as a regular expression.
  * @param do_indirect If non-zero, expand types to their attributes
  * and attributes to their types.
- * @param ta_flag Bit-wise or of APOL_QUERY_CANDIDATE_* above indicating 
- * whether symbol should be matched against type names or attribute names.
+ * @param ta_flag Bit-wise or of (APOL_QUERY_SYMBOL_IS_TYPE,
+ * APOL_QUERY_SYMBOL_IS_ATTRIBUTE, APOL_QUERY_SYMBOL_IS_BOTH) whether
+ * symbol should be matched against type names or attribute names.
  *
  * @return Vector of unique qpol_type_t pointers (relative to policy
  * within p), or NULL upon error.  Caller is responsible for calling

@@ -51,10 +51,11 @@ typedef struct apol_terule_query apol_terule_query_t;
 extern int apol_get_terule_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_vector_t ** v);
 
 /**
- * Execute a query against all syntactic type enforcement rules 
+ * Execute a query against all syntactic type enforcement rules
  * within the policy.
  *
- * @param p Policy within which to look up terules. <b>Must be a source policy.</b>
+ * @param p Policy within which to look up terules. <b>Must be a
+ * source policy.</b>
  * @param t Structure containing parameters for query.	If this is
  * NULL then return all terules.
  * @param v Reference to a vector of qpol_syn_terule_t.  The vector
@@ -127,8 +128,9 @@ extern int apol_terule_query_set_source(apol_policy_t * p, apol_terule_query_t *
  *
  * @param p Policy handler, to report errors.
  * @param t TE rule query to set.
- * @param component Bit-wise or'ed set of APOL_QUERY_SOURCE_TYPE and 
- * APOL_QUERY_SOURCE_ATTRIBUTE indicating the type of component to match.
+ * @param component Bit-wise or'ed set of APOL_QUERY_SYMBOL_IS_TYPE
+ * and APOL_QUERY_SYMBOL_IS_ATTRIBUTE indicating the type of component
+ * to match.
  *
  * @return 0 on success, negative on error.
  */
@@ -160,8 +162,9 @@ extern int apol_terule_query_set_target(apol_policy_t * p, apol_terule_query_t *
  *
  * @param p Policy handler, to report errors.
  * @param t TE rule query to set.
- * @param component Bit-wise or'ed set of APOL_QUERY_TARGET_TYPE and 
- * APOL_QUERY_TARGET_ATTRIBUTE indicating the type of component to match.
+ * @param component Bit-wise or'ed set of APOL_QUERY_SYMBOL_IS_TYPE
+ * and APOL_QUERY_SYMBOL_IS_ATTRIBUTE indicating the type of component
+ * to match.
  *
  * @return 0 on success, negative on error.
  */
