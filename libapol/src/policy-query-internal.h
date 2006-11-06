@@ -418,6 +418,6 @@ int apol_obj_perm_compare_class(const void *a, const void *b, void *policy);
  *  @return 0 if no types in v appear in set, > 0 if at least one type
  *  was found, and < 0 if an error occurred.
  */
-int apol_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v);
+int apol_query_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v);
 
 #endif

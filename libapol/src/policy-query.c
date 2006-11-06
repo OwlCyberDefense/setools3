@@ -838,7 +838,7 @@ int apol_obj_perm_compare_class(const void *a, const void *b, void *policy)
 	return (int)(a_val - b_val);
 }
 
-int apol_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v)
+int apol_query_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_type_t *type = NULL;
