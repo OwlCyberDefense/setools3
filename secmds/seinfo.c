@@ -203,7 +203,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 		goto cleanup;
 
 	/* Match all perms */
-	if (apol_get_perm_by_query(policydb, perm_query, &perms))
+	if (apol_perm_get_by_query(policydb, perm_query, &perms))
 		goto cleanup;
 
 	n_perms = apol_vector_get_size(perms);
@@ -215,7 +215,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	type_query = apol_type_query_create();
 	if (!type_query)
 		goto cleanup;
-	if (apol_get_type_by_query(policydb, type_query, &v) < 0)
+	if (apol_type_get_by_query(policydb, type_query, &v) < 0)
 		goto cleanup;
 
 	n_types = apol_vector_get_size(v);
@@ -225,7 +225,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	attr_query = apol_attr_query_create();
 	if (!attr_query)
 		goto cleanup;
-	if (apol_get_attr_by_query(policydb, attr_query, &v) < 0)
+	if (apol_attr_get_by_query(policydb, attr_query, &v) < 0)
 		goto cleanup;
 
 	n_attrs = apol_vector_get_size(v);
@@ -480,7 +480,7 @@ static int print_types(FILE * fp, const char *name, int expand, apol_policy_t * 
 	}
 
 	/* Find the number of types in the policy */
-	if (apol_get_type_by_query(policydb, NULL, &type_vector))
+	if (apol_type_get_by_query(policydb, NULL, &type_vector))
 		goto cleanup;
 	vector_sz = apol_vector_get_size(type_vector);
 	apol_vector_destroy(&type_vector, NULL);
@@ -542,7 +542,7 @@ static int print_attribs(FILE * fp, const char *name, int expand, apol_policy_t 
 			goto cleanup;
 		if (apol_attr_query_set_attr(policydb, attr_query, name))
 			goto cleanup;
-		if (apol_get_attr_by_query(policydb, attr_query, &v))
+		if (apol_attr_get_by_query(policydb, attr_query, &v))
 			goto cleanup;
 		apol_attr_query_destroy(&attr_query);
 		if (apol_vector_get_size(v) == 0) {
@@ -557,7 +557,7 @@ static int print_attribs(FILE * fp, const char *name, int expand, apol_policy_t 
 		attr_query = apol_attr_query_create();
 		if (!attr_query)
 			goto cleanup;
-		if (apol_get_attr_by_query(policydb, attr_query, &v))
+		if (apol_attr_get_by_query(policydb, attr_query, &v))
 			goto cleanup;
 		apol_attr_query_destroy(&attr_query);
 		n_attrs = apol_vector_get_size(v);
@@ -754,7 +754,7 @@ static int print_sens(FILE * fp, const char *name, int expand, apol_policy_t * p
 	}
 	if (apol_level_query_set_sens(policydb, query, name))
 		goto cleanup;
-	if (apol_get_level_by_query(policydb, query, &v))
+	if (apol_level_get_by_query(policydb, query, &v))
 		goto cleanup;
 
 	if (!name)
@@ -818,7 +818,7 @@ static int print_cats(FILE * fp, const char *name, int expand, apol_policy_t * p
 	}
 	if (apol_cat_query_set_cat(policydb, query, name))
 		goto cleanup;
-	if (apol_get_cat_by_query(policydb, query, &v))
+	if (apol_cat_get_by_query(policydb, query, &v))
 		goto cleanup;
 	n_cats = apol_vector_get_size(v);
 	apol_vector_sort(v, &qpol_cat_datum_compare, policydb);
@@ -875,7 +875,7 @@ static int print_fsuse(FILE * fp, const char *type, apol_policy_t * policydb)
 	}
 	if (apol_fs_use_query_set_filesystem(policydb, query, type))
 		goto cleanup;
-	if (apol_get_fs_use_by_query(policydb, query, &v))
+	if (apol_fs_use_get_by_query(policydb, query, &v))
 		goto cleanup;
 
 	if (!type)
@@ -930,7 +930,7 @@ static int print_genfscon(FILE * fp, const char *type, apol_policy_t * policydb)
 
 	if (apol_genfscon_query_set_filesystem(policydb, query, type))
 		goto cleanup;
-	if (apol_get_genfscon_by_query(policydb, query, &v))
+	if (apol_genfscon_get_by_query(policydb, query, &v))
 		goto cleanup;
 
 	if (!type)
@@ -1054,7 +1054,7 @@ static int print_nodecon(FILE * fp, const char *addr, apol_policy_t * policydb)
 			goto cleanup;
 	}
 
-	if (apol_get_nodecon_by_query(policydb, query, &v))
+	if (apol_nodecon_get_by_query(policydb, query, &v))
 		goto cleanup;
 
 	n_nodecons = apol_vector_get_size(v);
@@ -1189,7 +1189,7 @@ static int print_isids(FILE * fp, const char *name, int expand, apol_policy_t * 
 	}
 	if (apol_isid_query_set_name(policydb, query, name))
 		goto cleanup;
-	if (apol_get_isid_by_query(policydb, query, &v))
+	if (apol_isid_get_by_query(policydb, query, &v))
 		goto cleanup;
 	n_isids = apol_vector_get_size(v);
 
@@ -1751,7 +1751,7 @@ static void print_cat_sens(FILE * fp, qpol_cat_t * cat_datum, apol_policy_t * po
 	}
 	if (apol_level_query_set_cat(policydb, query, cat_name))
 		goto cleanup;
-	if (apol_get_level_by_query(policydb, query, &v))
+	if (apol_level_get_by_query(policydb, query, &v))
 		goto cleanup;
 	fprintf(fp, "   %s\n", cat_name);
 

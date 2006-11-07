@@ -201,7 +201,7 @@ int users_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		goto users_wo_roles_run_fail;
 	}
 
-	apol_get_user_by_query(policy, NULL, &user_vector);
+	apol_user_get_by_query(policy, NULL, &user_vector);
 	for (i = 0; i < apol_vector_get_size(user_vector); i++) {
 		qpol_user_t *user;
 		qpol_iterator_t *role_iter;

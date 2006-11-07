@@ -41,6 +41,11 @@ struct apol_range_trans_query
 
 int apol_get_range_trans_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v)
 {
+	return apol_range_trans_get_by_query(p, r, v);
+}
+
+int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v)
+{
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL;
 	apol_mls_range_t *range = NULL;

@@ -184,7 +184,7 @@ int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		opt = apol_vector_get_element(mod->options, i);
 		if (!strcmp(opt->name, "file_type_attribute")) {
 			apol_attr_query_set_attr(policy, attr_query, opt->value);
-			apol_get_attr_by_query(policy, attr_query, &attr_vector);
+			apol_attr_get_by_query(policy, attr_query, &attr_vector);
 			for (j = 0; j < apol_vector_get_size(attr_vector); j++) {
 				char *file_attrib;
 				attr = apol_vector_get_element(attr_vector, j);
@@ -271,7 +271,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 #endif
 
 	/* Get an iterator for the types */
-	if (apol_get_type_by_query(policy, NULL, &type_vector) < 0) {
+	if (apol_type_get_by_query(policy, NULL, &type_vector) < 0) {
 		error = errno;
 		ERR(policy, "%s", "Unable to retrieve types");
 		return -1;
@@ -345,7 +345,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		apol_avrule_query_set_source(policy, avrule_query, type_name, 0);
 		apol_avrule_query_append_class(policy, avrule_query, "filesystem");
 		apol_avrule_query_append_perm(policy, avrule_query, "associate");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (x = 0; x < apol_vector_get_size(avrule_vector); x++) {
 			qpol_avrule_t *avrule;
 			avrule = apol_vector_get_element(avrule_vector, x);
@@ -393,7 +393,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			goto find_file_types_run_fail;
 		}
 		apol_terule_query_set_default(policy, terule_query, type_name);
-		apol_get_terule_by_query(policy, terule_query, &terule_vector);
+		apol_terule_get_by_query(policy, terule_query, &terule_vector);
 		for (x = 0; x < apol_vector_get_size(terule_vector); x++) {
 			qpol_terule_t *terule;
 			qpol_class_t *objclass;

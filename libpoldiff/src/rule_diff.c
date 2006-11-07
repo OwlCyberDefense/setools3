@@ -972,8 +972,8 @@ static int rule_build_bsts(poldiff_t * diff)
 	}
 	for (i = 0; i < 2; i++) {
 		apol_policy_t *p = (i == 0 ? diff->orig_pol : diff->mod_pol);
-		if (apol_get_class_by_query(p, NULL, &classes[i]) < 0 ||
-		    apol_get_perm_by_query(p, NULL, &perms[i]) < 0 || apol_get_bool_by_query(p, NULL, &bools[i]) < 0) {
+		if (apol_class_get_by_query(p, NULL, &classes[i]) < 0 ||
+		    apol_perm_get_by_query(p, NULL, &perms[i]) < 0 || apol_bool_get_by_query(p, NULL, &bools[i]) < 0) {
 			error = errno;
 			goto cleanup;
 		}
@@ -1452,7 +1452,7 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy)
 	}
 
 	/* store original boolean values */
-	if (apol_get_bool_by_query(policy, NULL, &bools) < 0) {
+	if (apol_bool_get_by_query(policy, NULL, &bools) < 0) {
 		error = errno;
 		goto cleanup;
 	}
@@ -2307,7 +2307,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 	}
 
 	/* store original boolean values */
-	if (apol_get_bool_by_query(policy, NULL, &bools) < 0) {
+	if (apol_bool_get_by_query(policy, NULL, &bools) < 0) {
 		error = errno;
 		goto cleanup;
 	}

@@ -454,7 +454,7 @@ static int relabel_analysis_object(apol_policy_t * p,
 			goto cleanup;
 		}
 	}
-	if (apol_get_avrule_by_query(p, a, &a_rules) < 0) {
+	if (apol_avrule_get_by_query(p, a, &a_rules) < 0) {
 		goto cleanup;
 	}
 
@@ -470,7 +470,7 @@ static int relabel_analysis_object(apol_policy_t * p,
 			goto cleanup;
 		}
 	}
-	if (apol_get_avrule_by_query(p, b, &b_rules) < 0) {
+	if (apol_avrule_get_by_query(p, b, &b_rules) < 0) {
 		goto cleanup;
 	}
 
@@ -596,7 +596,7 @@ static int relabel_analysis_subject(apol_policy_t * p, apol_relabel_analysis_t *
 			goto cleanup;
 		}
 	}
-	if (apol_get_avrule_by_query(p, a, &avrules_v) < 0) {
+	if (apol_avrule_get_by_query(p, a, &avrules_v) < 0) {
 		goto cleanup;
 	}
 

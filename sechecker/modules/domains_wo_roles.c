@@ -240,7 +240,7 @@ int domains_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		qpol_type_get_name(policy->p, domain, &domain_name);
 
 		apol_role_query_set_type(policy, role_query, domain_name);
-		apol_get_role_by_query(policy, role_query, &role_vector);
+		apol_role_get_by_query(policy, role_query, &role_vector);
 		if (apol_vector_get_size(role_vector) > 0) {
 			apol_vector_destroy(&role_vector, NULL);
 			continue;

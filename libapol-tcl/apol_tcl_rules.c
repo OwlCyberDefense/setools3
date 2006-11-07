@@ -553,12 +553,12 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 
 	if (avrules != 0) {
 		if (!do_syn_search) {
-			if (apol_get_avrule_by_query(policydb, avquery, &av) < 0 ||
+			if (apol_avrule_get_by_query(policydb, avquery, &av) < 0 ||
 			    apol_vector_avrule_to_tcl_list(interp, av, rules_elem + 0) < 0) {
 				goto cleanup;
 			}
 		} else {
-			if (apol_get_syn_avrule_by_query(policydb, avquery, &av) < 0 ||
+			if (apol_syn_avrule_get_by_query(policydb, avquery, &av) < 0 ||
 			    apol_vector_syn_avrule_to_tcl_list(interp, av, rules_elem + 0) < 0) {
 				goto cleanup;
 			}
@@ -569,12 +569,12 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 
 	if (terules != 0) {
 		if (!do_syn_search) {
-			if (apol_get_terule_by_query(policydb, tequery, &te) < 0 ||
+			if (apol_terule_get_by_query(policydb, tequery, &te) < 0 ||
 			    apol_vector_terule_to_tcl_list(interp, te, rules_elem + 1) < 0) {
 				goto cleanup;
 			}
 		} else {
-			if (apol_get_syn_terule_by_query(policydb, tequery, &te) < 0 ||
+			if (apol_syn_terule_get_by_query(policydb, tequery, &te) < 0 ||
 			    apol_vector_syn_terule_to_tcl_list(interp, te, rules_elem + 1) < 0) {
 				goto cleanup;
 			}
@@ -830,7 +830,7 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp * inter
 		goto cleanup;
 	}
 
-	if (apol_get_cond_by_query(policydb, query, &v) < 0) {
+	if (apol_cond_get_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1032,7 +1032,7 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp * interp, int 
 		    apol_role_allow_query_set_target(policydb, raquery, argv[4]) < 0) {
 			goto cleanup;
 		}
-		if (apol_get_role_allow_by_query(policydb, raquery, &rav) < 0) {
+		if (apol_role_allow_get_by_query(policydb, raquery, &rav) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(rav); i++) {
@@ -1049,7 +1049,7 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp * interp, int 
 		    apol_role_trans_query_set_default(policydb, rtquery, argv[5]) < 0) {
 			goto cleanup;
 		}
-		if (apol_get_role_trans_by_query(policydb, rtquery, &rav) < 0) {
+		if (apol_role_trans_get_by_query(policydb, rtquery, &rav) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(rav); i++) {
@@ -1192,7 +1192,7 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp
 		}
 	}
 
-	if (apol_get_range_trans_by_query(policydb, query, &v) < 0) {
+	if (apol_range_trans_get_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {

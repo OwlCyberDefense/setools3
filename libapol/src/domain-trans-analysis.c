@@ -146,10 +146,10 @@ static apol_domain_trans_table_t *apol_domain_trans_table_new(apol_policy_t * po
 		goto cleanup;
 	}
 
-	apol_get_type_by_query(policy, NULL, &v);
+	apol_type_get_by_query(policy, NULL, &v);
 	size += apol_vector_get_size(v);
 	apol_vector_destroy(&v, NULL);
-	apol_get_attr_by_query(policy, NULL, &v);
+	apol_attr_get_by_query(policy, NULL, &v);
 	size += apol_vector_get_size(v);
 	apol_vector_destroy(&v, NULL);
 
@@ -1209,7 +1209,7 @@ static int apol_domain_trans_filter_access(apol_domain_trans_t ** trans, apol_ve
 					tmp = apol_vector_get_element(apol_obj_perm_get_perm_vector(op), k);
 					apol_avrule_query_append_perm(policy, avq, tmp);
 				}
-				apol_get_avrule_by_query(policy, avq, &v);
+				apol_avrule_get_by_query(policy, avq, &v);
 				apol_vector_cat(cur->access_rules, v);
 				apol_vector_destroy(&v, NULL);
 			}
@@ -1278,7 +1278,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 	apol_avrule_query_set_rules(policy, avq, QPOL_RULE_ALLOW);
 	apol_avrule_query_append_class(policy, avq, "process");
 	apol_avrule_query_append_perm(policy, avq, "transition");
-	apol_get_avrule_by_query(policy, avq, &v);
+	apol_avrule_get_by_query(policy, avq, &v);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		avrule = apol_vector_get_element(v, i);
 		if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_PROC_TRANS, (void *)avrule)) {
@@ -1290,7 +1290,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 	if (policy_version >= 15) {
 		apol_avrule_query_append_perm(policy, avq, NULL);
 		apol_avrule_query_append_perm(policy, avq, "setexec");
-		apol_get_avrule_by_query(policy, avq, &v);
+		apol_avrule_get_by_query(policy, avq, &v);
 		for (i = 0; i < apol_vector_get_size(v); i++) {
 			avrule = apol_vector_get_element(v, i);
 			if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_SETEXEC, (void *)avrule)) {
@@ -1304,7 +1304,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 	apol_avrule_query_append_perm(policy, avq, NULL);
 
 	apol_avrule_query_append_class(policy, avq, "file");
-	apol_get_avrule_by_query(policy, avq, &v);
+	apol_avrule_get_by_query(policy, avq, &v);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		avrule = apol_vector_get_element(v, i);
 		if (qpol_avrule_get_perm_iter(policy->p, avrule, &iter)) {
@@ -1338,7 +1338,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 	teq = apol_terule_query_create();
 	apol_terule_query_set_rules(policy, teq, QPOL_RULE_TYPE_TRANS);
 	apol_terule_query_append_class(policy, teq, "process");
-	apol_get_terule_by_query(policy, teq, &v);
+	apol_terule_get_by_query(policy, teq, &v);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		terule = apol_vector_get_element(v, i);
 		if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_TYPE_TRANS, (void *)terule)) {

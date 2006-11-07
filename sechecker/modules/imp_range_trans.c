@@ -227,7 +227,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		goto imp_range_trans_run_fail;
 	}
 
-	if (apol_get_range_trans_by_query(policy, NULL, &range_trans_vector) < 0) {
+	if (apol_range_trans_get_by_query(policy, NULL, &range_trans_vector) < 0) {
 		error = errno;
 		ERR(policy, "%s", "Unable to retrieve range transitions");
 		goto imp_range_trans_run_fail;
@@ -246,7 +246,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		/* find roles possible for source */
 		role_query = apol_role_query_create();
 		apol_role_query_set_type(policy, role_query, source_name);
-		apol_get_role_by_query(policy, role_query, &role_vector);
+		apol_role_get_by_query(policy, role_query, &role_vector);
 		apol_role_query_destroy(&role_query);
 
 		/* find users with the possible roles */
@@ -259,7 +259,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			role = apol_vector_get_element(role_vector, j);
 			qpol_role_get_name(policy->p, role, &role_name);
 			apol_user_query_set_role(policy, user_query, role_name);
-			apol_get_user_by_query(policy, user_query, &tmp_v);
+			apol_user_get_by_query(policy, user_query, &tmp_v);
 			apol_vector_cat(users_w_roles, tmp_v);
 			apol_vector_destroy(&tmp_v, NULL);
 		}
@@ -269,7 +269,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		/* find users with the transition range */
 		user_query = apol_user_query_create();
 		apol_user_query_set_range(policy, user_query, range, APOL_QUERY_SUB);
-		apol_get_user_by_query(policy, user_query, &users_w_range);
+		apol_user_get_by_query(policy, user_query, &users_w_range);
 		apol_user_query_destroy(&user_query);
 
 		/* find intersection of user sets */
@@ -282,7 +282,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		apol_avrule_query_set_target(policy, avrule_query, target_name, 1);
 		apol_avrule_query_append_class(policy, avrule_query, "file");
 		apol_avrule_query_append_perm(policy, avrule_query, "execute");
-		apol_get_avrule_by_query(policy, avrule_query, &rule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &rule_vector);
 		apol_avrule_query_destroy(&avrule_query);
 
 		/* check avrules */

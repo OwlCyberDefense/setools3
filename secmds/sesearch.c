@@ -196,12 +196,12 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 	}
 
 	if (opt->lineno) {
-		if (apol_get_syn_avrule_by_query(policy, avq, v)) {
+		if (apol_syn_avrule_get_by_query(policy, avq, v)) {
 			error = errno;
 			goto err;
 		}
 	} else {
-		if (apol_get_avrule_by_query(policy, avq, v)) {
+		if (apol_avrule_get_by_query(policy, avq, v)) {
 			error = errno;
 			goto err;
 		}
@@ -375,12 +375,12 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 	}
 
 	if (opt->lineno) {
-		if (apol_get_syn_terule_by_query(policy, teq, v)) {
+		if (apol_syn_terule_get_by_query(policy, teq, v)) {
 			error = errno;
 			goto err;
 		}
 	} else {
-		if (apol_get_terule_by_query(policy, teq, v)) {
+		if (apol_terule_get_by_query(policy, teq, v)) {
 			error = errno;
 			goto err;
 		}
@@ -548,7 +548,7 @@ static int perform_ra_query(apol_policy_t * policy, options_t * opt, apol_vector
 			goto err;
 		}
 
-	if (apol_get_role_allow_by_query(policy, raq, v)) {
+	if (apol_role_allow_get_by_query(policy, raq, v)) {
 		error = errno;
 		goto err;
 	}
@@ -626,7 +626,7 @@ static int perform_rt_query(apol_policy_t * policy, options_t * opt, apol_vector
 		}
 	}
 
-	if (apol_get_role_trans_by_query(policy, rtq, v)) {
+	if (apol_role_trans_get_by_query(policy, rtq, v)) {
 		error = errno;
 		goto err;
 	}
@@ -704,7 +704,7 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 		}
 	}
 
-	if (apol_get_range_trans_by_query(policy, rtq, v)) {
+	if (apol_range_trans_get_by_query(policy, rtq, v)) {
 		error = errno;
 		goto err;
 	}

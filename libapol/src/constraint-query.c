@@ -51,6 +51,11 @@ struct apol_validatetrans_query
 
 int apol_get_constraint_by_query(apol_policy_t * p, apol_constraint_query_t * c, apol_vector_t ** v)
 {
+	return apol_constraint_get_by_query(p, c, v);
+}
+
+int apol_constraint_get_by_query(apol_policy_t * p, apol_constraint_query_t * c, apol_vector_t ** v)
+{
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	int retval = -1;
 	*v = NULL;
@@ -145,6 +150,11 @@ int apol_constraint_query_set_regex(apol_policy_t * p, apol_constraint_query_t *
 /******************** validatetrans queries ********************/
 
 int apol_get_validatetrans_by_query(apol_policy_t * p, apol_validatetrans_query_t * vt, apol_vector_t ** v)
+{
+	return apol_validatetrans_get_by_query(p, vt, v);
+}
+
+int apol_validatetrans_get_by_query(apol_policy_t * p, apol_validatetrans_query_t * vt, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;

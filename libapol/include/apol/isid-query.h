@@ -38,6 +38,9 @@ typedef struct apol_isid_query apol_isid_query_t;
 /**
  * Execute a query against all initial SIDs within the policy.	The
  * returned isids will be unordered.
+ * @depricated This function has been renamed apol_isid_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
  *
  * @param p Policy within which to look up initial SIDs.
  * @param i Structure containing parameters for query.	If this is
@@ -50,7 +53,24 @@ typedef struct apol_isid_query apol_isid_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_isid_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v);
+extern int apol_get_isid_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v) __attribute__ ((deprecated));
+
+/**
+ * Execute a query against all initial SIDs within the policy.	The
+ * returned isids will be unordered.
+ *
+ * @param p Policy within which to look up initial SIDs.
+ * @param i Structure containing parameters for query.	If this is
+ * NULL then return all isids.
+ * @param v Reference to a vector of qpol_isid_t.  The vector will be
+ * allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v);
 
 /**
  * Allocate and return a new isid query structure. All fields are

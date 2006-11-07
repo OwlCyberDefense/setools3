@@ -251,7 +251,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto attribs_wo_rules_run_fail;
 	}
 
-	apol_get_attr_by_query(policy, NULL, &attr_vector);
+	apol_attr_get_by_query(policy, NULL, &attr_vector);
 	for (i = 0; i < apol_vector_get_size(attr_vector); i++) {
 		qpol_type_t *attr;
 		char *attr_name;
@@ -260,7 +260,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 		/* access rules */
 		apol_avrule_query_set_source(policy, avrule_query, attr_name, 0);
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		if (apol_vector_get_size(avrule_vector) > 0) {
 			apol_vector_destroy(&avrule_vector, NULL);
 			continue;
@@ -269,7 +269,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 		apol_avrule_query_set_source(policy, avrule_query, NULL, 0);
 		apol_avrule_query_set_target(policy, avrule_query, attr_name, 0);
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		if (apol_vector_get_size(avrule_vector) > 0) {
 			apol_vector_destroy(&avrule_vector, NULL);
 			continue;
@@ -279,7 +279,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 		/* type rules */
 		apol_terule_query_set_source(policy, terule_query, attr_name, 0);
-		apol_get_terule_by_query(policy, terule_query, &terule_vector);
+		apol_terule_get_by_query(policy, terule_query, &terule_vector);
 		if (apol_vector_get_size(terule_vector) > 0) {
 			apol_vector_destroy(&terule_vector, NULL);
 			continue;
@@ -288,7 +288,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 		apol_terule_query_set_source(policy, terule_query, NULL, 0);
 		apol_terule_query_set_target(policy, terule_query, attr_name, 0);
-		apol_get_terule_by_query(policy, terule_query, &terule_vector);
+		apol_terule_get_by_query(policy, terule_query, &terule_vector);
 		if (apol_vector_get_size(terule_vector) > 0) {
 			apol_vector_destroy(&terule_vector, NULL);
 			continue;
@@ -298,7 +298,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 		/* role trans */
 		apol_role_query_set_type(policy, role_query, attr_name);
-		apol_get_role_by_query(policy, role_query, &role_vector);
+		apol_role_get_by_query(policy, role_query, &role_vector);
 		if (apol_vector_get_size(role_vector) > 0) {
 			apol_vector_destroy(&role_vector, NULL);
 			continue;

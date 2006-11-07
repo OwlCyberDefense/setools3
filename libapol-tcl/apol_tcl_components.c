@@ -158,7 +158,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp * interp, int argc, C
 				goto cleanup;
 			}
 		}
-		if (apol_get_type_by_query(policydb, query, &v) < 0) {
+		if (apol_type_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -284,7 +284,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp * interp, int argc,
 				goto cleanup;
 			}
 		}
-		if (apol_get_attr_by_query(policydb, query, &v) < 0) {
+		if (apol_attr_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -412,7 +412,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp * interp, int argc,
 				goto cleanup;
 			}
 		}
-		if (apol_get_class_by_query(policydb, query, &v) < 0) {
+		if (apol_class_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -473,7 +473,7 @@ static int append_common_to_list(Tcl_Interp * interp, qpol_common_t * common_dat
 	common_elem[2] = Tcl_NewListObj(0, NULL);
 	if ((query = apol_class_query_create()) == NULL ||
 	    apol_class_query_set_common(policydb, query, common_name) < 0 ||
-	    apol_get_class_by_query(policydb, query, &classes) < 0) {
+	    apol_class_get_by_query(policydb, query, &classes) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(classes); i++) {
@@ -556,7 +556,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp * interp, int argc,
 				goto cleanup;
 			}
 		}
-		if (apol_get_common_by_query(policydb, query, &v) < 0) {
+		if (apol_common_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -680,7 +680,7 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp * interp, int argc, C
 			goto cleanup;
 		}
 	}
-	if (apol_get_perm_by_query(policydb, query, &v) < 0) {
+	if (apol_perm_get_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -821,7 +821,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp * interp, int argc, C
 				goto cleanup;
 			}
 		}
-		if (apol_get_role_by_query(policydb, query, &v) < 0) {
+		if (apol_role_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1009,7 +1009,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp * interp, int argc, C
 				goto cleanup;
 			}
 		}
-		if (apol_get_user_by_query(policydb, query, &v) < 0) {
+		if (apol_user_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1110,7 +1110,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp * interp, int argc, C
 				goto cleanup;
 			}
 		}
-		if (apol_get_bool_by_query(policydb, query, &v) < 0) {
+		if (apol_bool_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1295,7 +1295,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp * interp, int argc, 
 				goto cleanup;
 			}
 		}
-		if (apol_get_level_by_query(policydb, query, &v) < 0) {
+		if (apol_level_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1355,7 +1355,7 @@ static int append_cat_to_list(Tcl_Interp * interp, qpol_cat_t * cat_datum, Tcl_O
 	}
 	cat_elem[2] = Tcl_NewListObj(0, NULL);
 	if ((query = apol_level_query_create()) == NULL ||
-	    apol_level_query_set_cat(policydb, query, cat_name) < 0 || apol_get_level_by_query(policydb, query, &levels) < 0) {
+	    apol_level_query_set_cat(policydb, query, cat_name) < 0 || apol_level_get_by_query(policydb, query, &levels) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(levels); i++) {
@@ -1441,7 +1441,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp * interp, int argc, CO
 				goto cleanup;
 			}
 		}
-		if (apol_get_cat_by_query(policydb, query, &v) < 0) {
+		if (apol_cat_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		apol_cat_query_destroy(&query);
@@ -1599,7 +1599,7 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp * interp, int a
 		}
 		context = NULL;
 	}
-	if (apol_get_isid_by_query(policydb, query, &v) < 0) {
+	if (apol_isid_get_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1766,7 +1766,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp * interp, int argc
 		}
 		context = NULL;
 	}
-	if (apol_get_portcon_by_query(policydb, query, &v) < 0) {
+	if (apol_portcon_get_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1912,7 +1912,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp * interp, int arg
 			}
 			msg_context = NULL;
 		}
-		if (apol_get_netifcon_by_query(policydb, query, &v) < 0) {
+		if (apol_netifcon_get_by_query(policydb, query, &v) < 0) {
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -2093,7 +2093,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp * interp, int argc
 		}
 		context = NULL;
 	}
-	if (apol_get_nodecon_by_query(policydb, query, &v) < 0) {
+	if (apol_nodecon_get_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -2236,7 +2236,7 @@ static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp * interp, int arg
 		}
 		context = NULL;
 	}
-	if (apol_get_genfscon_by_query(policydb, query, &v) < 0) {
+	if (apol_genfscon_get_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -2381,7 +2381,7 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp * interp, int argc, 
 		}
 		context = NULL;
 	}
-	if (apol_get_fs_use_by_query(policydb, query, &v) < 0) {
+	if (apol_fs_use_get_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {

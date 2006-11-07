@@ -229,7 +229,7 @@ int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context)
 		}
 		if (apol_user_query_set_user(p, user_query, context->user) < 0 ||
 		    (context->role != NULL && apol_user_query_set_role(p, user_query, context->role) < 0) ||
-		    apol_get_user_by_query(p, user_query, &user_v) < 0) {
+		    apol_user_get_by_query(p, user_query, &user_v) < 0) {
 			goto cleanup;
 		}
 		if (apol_vector_get_size(user_v) == 0) {
@@ -243,7 +243,7 @@ int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context)
 		}
 		if (apol_role_query_set_role(p, role_query, context->role) < 0 ||
 		    (context->type != NULL && apol_role_query_set_type(p, role_query, context->type) < 0) ||
-		    apol_get_role_by_query(p, role_query, &role_v) < 0) {
+		    apol_role_get_by_query(p, role_query, &role_v) < 0) {
 			goto cleanup;
 		}
 		if (apol_vector_get_size(role_v) == 0) {

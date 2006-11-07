@@ -1405,7 +1405,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_query_set_target(policy, avrule_query, net_domain_name, 1);
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
 		apol_avrule_query_append_class(policy, avrule_query, "sock_file");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
@@ -1428,7 +1428,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		/* find any self tcp_socket perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
 		apol_avrule_query_append_class(policy, avrule_query, "tcp_socket");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
@@ -1451,7 +1451,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		/* find any self udp_socket perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
 		apol_avrule_query_append_class(policy, avrule_query, "udp_socket");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
@@ -1475,7 +1475,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_query_set_target(policy, avrule_query, NULL, 0);
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
 		apol_avrule_query_append_class(policy, avrule_query, "netif");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
@@ -1506,7 +1506,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		/* find any node_t node perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
 		apol_avrule_query_append_class(policy, avrule_query, "node");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
@@ -1537,7 +1537,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		/* find any port_t tcp_socket perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
 		apol_avrule_query_append_class(policy, avrule_query, "tcp_socket");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
@@ -1565,7 +1565,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		/* find any port_t udp_socket perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
 		apol_avrule_query_append_class(policy, avrule_query, "udp_socket");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
@@ -1593,7 +1593,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		/* find any assoc_t association perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
 		apol_avrule_query_append_class(policy, avrule_query, "association");
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);

@@ -224,13 +224,13 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 	apol_avrule_query_set_rules(policy, mount_avrule_query, QPOL_RULE_ALLOW);
 	apol_avrule_query_append_class(policy, mount_avrule_query, "filesystem");
 	apol_avrule_query_append_perm(policy, mount_avrule_query, "mount");
-	apol_get_avrule_by_query(policy, mount_avrule_query, &mount_vector);
+	apol_avrule_get_by_query(policy, mount_avrule_query, &mount_vector);
 
 	/* Get avrules for dir mounton */
 	apol_avrule_query_set_rules(policy, mounton_avrule_query, QPOL_RULE_ALLOW);
 	apol_avrule_query_append_class(policy, mounton_avrule_query, "dir");
 	apol_avrule_query_append_perm(policy, mounton_avrule_query, "mounton");
-	apol_get_avrule_by_query(policy, mounton_avrule_query, &mounton_vector);
+	apol_avrule_get_by_query(policy, mounton_avrule_query, &mounton_vector);
 
 	for (i = 0; i < apol_vector_get_size(mount_vector); i++) {
 		qpol_avrule_t *mount_rule;

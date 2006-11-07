@@ -198,7 +198,7 @@ int roles_wo_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		goto roles_wo_types_run_fail;
 	}
 
-	if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
+	if (apol_role_get_by_query(policy, NULL, &role_vector) < 0) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_types_run_fail;

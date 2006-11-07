@@ -225,7 +225,7 @@ int attribs_wo_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto attribs_wo_types_run_fail;
 	}
 
-	apol_get_attr_by_query(policy, NULL, &attr_vector);
+	apol_attr_get_by_query(policy, NULL, &attr_vector);
 	for (i = 0; i < apol_vector_get_size(attr_vector); i++) {
 		qpol_type_t *attr;
 		char *attr_name;

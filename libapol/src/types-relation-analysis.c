@@ -141,8 +141,8 @@ static int apol_types_relation_common_roles(apol_policy_t * p,
 		goto cleanup;
 	}
 	if (apol_role_query_set_type(p, rq, nameA) < 0 ||
-	    apol_get_role_by_query(p, rq, &vA) < 0 ||
-	    apol_role_query_set_type(p, rq, nameB) < 0 || apol_get_role_by_query(p, rq, &vB) < 0) {
+	    apol_role_get_by_query(p, rq, &vA) < 0 ||
+	    apol_role_query_set_type(p, rq, nameB) < 0 || apol_role_get_by_query(p, rq, &vB) < 0) {
 		goto cleanup;
 	}
 	if ((r->roles = apol_vector_create_from_intersection(vA, vB, NULL, NULL)) == NULL) {
@@ -187,8 +187,8 @@ static int apol_types_relation_common_users(apol_policy_t * p,
 		goto cleanup;
 	}
 	if (apol_role_query_set_type(p, rq, nameA) < 0 ||
-	    apol_get_role_by_query(p, rq, &vA) < 0 ||
-	    apol_role_query_set_type(p, rq, nameB) < 0 || apol_get_role_by_query(p, rq, &vB) < 0) {
+	    apol_role_get_by_query(p, rq, &vA) < 0 ||
+	    apol_role_query_set_type(p, rq, nameB) < 0 || apol_role_get_by_query(p, rq, &vB) < 0) {
 		goto cleanup;
 	}
 
@@ -366,8 +366,8 @@ static int apol_types_relation_create_access_pools(apol_policy_t * p,
 	}
 	if (apol_avrule_query_set_rules(p, aq, QPOL_RULE_ALLOW) < 0 ||
 	    apol_avrule_query_set_source(p, aq, nameA, 1) < 0 ||
-	    apol_get_avrule_by_query(p, aq, &vA) < 0 ||
-	    apol_avrule_query_set_source(p, aq, nameB, 1) < 0 || apol_get_avrule_by_query(p, aq, &vB) < 0) {
+	    apol_avrule_get_by_query(p, aq, &vA) < 0 ||
+	    apol_avrule_query_set_source(p, aq, nameB, 1) < 0 || apol_avrule_get_by_query(p, aq, &vB) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(vA); i++) {
@@ -547,11 +547,11 @@ static int apol_types_relation_allows(apol_policy_t * p, qpol_type_t * typeA, qp
 	}
 	if (apol_avrule_query_set_rules(p, aq, QPOL_RULE_ALLOW) < 0 ||
 	    apol_avrule_query_set_source(p, aq, nameA, 1) < 0 ||
-	    apol_avrule_query_set_target(p, aq, nameB, 1) < 0 || apol_get_avrule_by_query(p, aq, &r->allows) < 0) {
+	    apol_avrule_query_set_target(p, aq, nameB, 1) < 0 || apol_avrule_get_by_query(p, aq, &r->allows) < 0) {
 		goto cleanup;
 	}
 	if (apol_avrule_query_set_source(p, aq, nameB, 1) < 0 ||
-	    apol_avrule_query_set_target(p, aq, nameA, 1) < 0 || apol_get_avrule_by_query(p, aq, &v) < 0) {
+	    apol_avrule_query_set_target(p, aq, nameA, 1) < 0 || apol_avrule_get_by_query(p, aq, &v) < 0) {
 		goto cleanup;
 	}
 	if (apol_vector_cat(r->allows, v) < 0) {
@@ -597,7 +597,7 @@ static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpo
 	}
 	if (apol_terule_query_set_rules(p, tq, QPOL_RULE_TYPE_TRANS | QPOL_RULE_TYPE_CHANGE) < 0 ||
 	    apol_terule_query_set_source(p, tq, nameA, 1) < 0 ||
-	    apol_get_terule_by_query(p, tq, &v) < 0 ||
+	    apol_terule_get_by_query(p, tq, &v) < 0 ||
 	    (candidate_types = apol_query_create_candidate_type_list(p, nameB, 0, 1, APOL_QUERY_SYMBOL_IS_BOTH)) == NULL) {
 		goto cleanup;
 	}
@@ -618,7 +618,7 @@ static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpo
 	apol_vector_destroy(&v, NULL);
 	apol_vector_destroy(&candidate_types, NULL);
 	if (apol_terule_query_set_source(p, tq, nameB, 1) < 0 ||
-	    apol_get_terule_by_query(p, tq, &v) < 0 ||
+	    apol_terule_get_by_query(p, tq, &v) < 0 ||
 	    (candidate_types = apol_query_create_candidate_type_list(p, nameA, 0, 1, APOL_QUERY_SYMBOL_IS_BOTH)) == NULL) {
 		goto cleanup;
 	}

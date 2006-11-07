@@ -274,7 +274,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto find_net_domains_run_fail;
 	}
 	apol_avrule_query_set_rules(policy, avrule_query, QPOL_RULE_ALLOW);
-	apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+	apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 	for (k = 0; k < apol_vector_get_size(avrule_vector); k++) {
 		qpol_avrule_t *avrule;
 		qpol_class_t *class;

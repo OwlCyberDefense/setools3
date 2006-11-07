@@ -266,7 +266,7 @@ static int do_policy_query(GString * src_type, GString * tgt_type, GString * obj
 	}
 
 	/* initialize the results structure */
-	i = apol_get_avrule_by_query(seaudit_app->cur_policy, avrule_query, &avrule_vector);
+	i = apol_avrule_get_by_query(seaudit_app->cur_policy, avrule_query, &avrule_vector);
 
 	if (i < 0) {
 		window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
@@ -425,7 +425,7 @@ static void query_window_populate_combo_boxes(GtkWidget * src_type_combo, GtkWid
 	apol_vector_t *class_vector = NULL;
 	int i;
 
-	apol_get_type_by_query(seaudit_app->cur_policy, NULL, &type_vector);
+	apol_type_get_by_query(seaudit_app->cur_policy, NULL, &type_vector);
 	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
 		qpol_type_t *type = NULL;
 		char *type_name = NULL;
@@ -440,7 +440,7 @@ static void query_window_populate_combo_boxes(GtkWidget * src_type_combo, GtkWid
 	g_list_free(items);
 	items = NULL;
 
-	apol_get_class_by_query(seaudit_app->cur_policy, NULL, &class_vector);
+	apol_class_get_by_query(seaudit_app->cur_policy, NULL, &class_vector);
 	for (i = 0; i < apol_vector_get_size(class_vector); i++) {
 		qpol_class_t *class = NULL;
 		char *class_name = NULL;

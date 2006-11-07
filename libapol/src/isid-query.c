@@ -43,6 +43,11 @@ struct apol_isid_query
 
 int apol_get_isid_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v)
 {
+	return apol_isid_get_by_query(p, i, v);
+}
+
+int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v)
+{
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
 	qpol_isid_t *isid = NULL;

@@ -432,7 +432,7 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 	apol_vector_t *class_vector;
 	qpol_class_t *class = NULL;
 
-	apol_get_class_by_query(seaudit_app->cur_policy, NULL, &class_vector);
+	apol_class_get_by_query(seaudit_app->cur_policy, NULL, &class_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
@@ -473,7 +473,7 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 	apol_vector_t *role_vector;
 	qpol_role_t *role_type;
 
-	apol_get_role_by_query(seaudit_app->cur_policy, NULL, &role_vector);
+	apol_role_get_by_query(seaudit_app->cur_policy, NULL, &role_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
@@ -513,7 +513,7 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 	qpol_user_t *user;
 	char *user_name;
 
-	apol_get_user_by_query(seaudit_app->cur_policy, NULL, &user_vector);
+	apol_user_get_by_query(seaudit_app->cur_policy, NULL, &user_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
@@ -553,7 +553,7 @@ static void filters_select_items_set_types_list_stores_default_values(filters_se
 	qpol_type_t *type;
 	char *type_name;
 
-	apol_get_type_by_query(seaudit_app->cur_policy, NULL, &type_vector);
+	apol_type_get_by_query(seaudit_app->cur_policy, NULL, &type_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:

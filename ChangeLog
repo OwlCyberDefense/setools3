@@ -1,3 +1,9 @@
+2006-11-07  J. Mowery <jmowery@tresys.com>
+
+	* renamed apol_get_*_by_query() to apol_*_get_by_query to match
+	  naming conventions of other functions. Old versions were retained and
+	  marked as deprecated.
+
 2006-11-02  J. Tang  <jtang@tresys.com>
 
 	* added apol_str_strdup() (declared in apol/util.h)

@@ -41,6 +41,11 @@ struct apol_cond_query
 
 int apol_get_cond_by_query(apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v)
 {
+	return apol_cond_get_by_query(p, c, v);
+}
+
+int apol_cond_get_by_query(apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v)
+{
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
 	*v = NULL;

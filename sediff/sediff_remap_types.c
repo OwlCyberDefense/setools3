@@ -267,7 +267,7 @@ static int sediff_remap_types_window_init(sediff_remap_types_t * remap_types_win
 
 	/* populate data into the combo boxes */
 	items = g_list_alloc();
-	apol_get_type_by_query(remap_types_window->sediff_app->orig_pol, NULL, &type_vector);
+	apol_type_get_by_query(remap_types_window->sediff_app->orig_pol, NULL, &type_vector);
 	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
 		qpol_type_t *type = NULL, *t = NULL;
 		char *type_name;
@@ -285,7 +285,7 @@ static int sediff_remap_types_window_init(sediff_remap_types_t * remap_types_win
 	g_list_free(items);
 
 	items = g_list_alloc();
-	apol_get_type_by_query(remap_types_window->sediff_app->mod_pol, NULL, &type_vector);
+	apol_type_get_by_query(remap_types_window->sediff_app->mod_pol, NULL, &type_vector);
 	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
 		qpol_type_t *type = NULL, *t = NULL;
 		char *type_name;

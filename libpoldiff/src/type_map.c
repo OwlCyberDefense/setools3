@@ -423,7 +423,7 @@ int type_map_build(poldiff_t * diff)
 	apol_vector_destroy(&map->pseudo_to_orig, NULL);
 	apol_vector_destroy(&map->pseudo_to_mod, NULL);
 
-	if (apol_get_type_by_query(diff->orig_pol, NULL, &ov) < 0 || apol_get_type_by_query(diff->mod_pol, NULL, &mv) < 0) {
+	if (apol_type_get_by_query(diff->orig_pol, NULL, &ov) < 0 || apol_type_get_by_query(diff->mod_pol, NULL, &mv) < 0) {
 		error = errno;
 		goto cleanup;
 	}
@@ -822,7 +822,7 @@ int type_map_infer(poldiff_t * diff)
 		goto cleanup;
 	}
 	INFO(diff, "%s", "Inferring type remap.");
-	if (apol_get_type_by_query(diff->orig_pol, NULL, &ov) < 0 || apol_get_type_by_query(diff->mod_pol, NULL, &mv) < 0) {
+	if (apol_type_get_by_query(diff->orig_pol, NULL, &ov) < 0 || apol_type_get_by_query(diff->mod_pol, NULL, &mv) < 0) {
 		error = errno;
 		goto cleanup;
 	}

@@ -136,15 +136,15 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 	gtk_text_buffer_insert(txt, &iter, contents, -1);
 	g_free(contents);
 
-	apol_get_class_by_query(p, NULL, &vec);
+	apol_class_get_by_query(p, NULL, &vec);
 	num_classes = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 
-	apol_get_common_by_query(p, NULL, &vec);
+	apol_common_get_by_query(p, NULL, &vec);
 	num_commons = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 
-	apol_get_perm_by_query(p, NULL, &vec);
+	apol_perm_get_by_query(p, NULL, &vec);
 	num_perms = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 
@@ -155,11 +155,11 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 	gtk_text_buffer_insert(txt, &iter, contents, -1);
 	g_free(contents);
 
-	apol_get_type_by_query(p, NULL, &vec);
+	apol_type_get_by_query(p, NULL, &vec);
 	num_types = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 
-	apol_get_attr_by_query(p, NULL, &vec);
+	apol_attr_get_by_query(p, NULL, &vec);
 	num_attribs = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 
@@ -205,7 +205,7 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 	gtk_text_buffer_insert(txt, &iter, contents, -1);
 	g_free(contents);
 
-	apol_get_role_by_query(p, NULL, &vec);
+	apol_role_get_by_query(p, NULL, &vec);
 	num_roles = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 
@@ -224,11 +224,11 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 	gtk_text_buffer_insert(txt, &iter, contents, -1);
 	g_free(contents);
 
-	apol_get_user_by_query(p, NULL, &vec);
+	apol_user_get_by_query(p, NULL, &vec);
 	num_users = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 
-	apol_get_bool_by_query(p, NULL, &vec);
+	apol_bool_get_by_query(p, NULL, &vec);
 	num_bools = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec, NULL);
 

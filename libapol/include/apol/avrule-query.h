@@ -36,6 +36,9 @@ typedef struct apol_avrule_query apol_avrule_query_t;
 
 /**
  * Execute a query against all access vector rules within the policy.
+ * @deprecated This function has been renamed apol_avrule_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
  *
  * @param p Policy within which to look up avrules.
  * @param a Structure containing parameters for query.	If this is
@@ -48,7 +51,43 @@ typedef struct apol_avrule_query apol_avrule_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
+extern int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v) __attribute__ ((deprecated));
+
+/**
+ * Execute a query against all access vector rules within the policy.
+ *
+ * @param p Policy within which to look up avrules.
+ * @param a Structure containing parameters for query.	If this is
+ * NULL then return all avrules.
+ * @param v Reference to a vector of qpol_avrule_t.  The vector
+ * will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
+
+/**
+ * Execute a query against all syntactic access vector rules within the policy.
+ * @deprecated This function has been renamed apol_syn_avrule_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
+ *
+ * @param p Policy within which to look up avrules. <b>Must be a
+ * source policy.</b>
+ * @param a Structure containing parameters for query. If this is
+ * NULL then return all avrules.
+ * @param v Reference to a vector of qpol_syn_avrule_t. The vector will be
+ * allocated by this function.  The caller must call apol_vector_destroy()
+ * afterwards, but <b>must not</b> free the elements within it.  This will be
+ * set to NULL upon no results or upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
+	__attribute__ ((deprecated));
 
 /**
  * Execute a query against all syntactic access vector rules within the policy.
@@ -64,7 +103,7 @@ extern int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, 
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
+extern int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
 
 /**
  * Allocate and return a new avrule query structure.  All fields are

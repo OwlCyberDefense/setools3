@@ -49,6 +49,11 @@ struct apol_role_trans_query
 
 int apol_get_role_allow_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v)
 {
+	return apol_role_allow_get_by_query(p, r, v);
+}
+
+int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v)
+{
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL;
 	int retval = -1, source_as_any = 0;
@@ -252,6 +257,11 @@ char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule)
 /******************** role_transition queries ********************/
 
 int apol_get_role_trans_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v)
+{
+	return apol_role_trans_get_by_query(p, r, v);
+}
+
+int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL, *default_list = NULL;

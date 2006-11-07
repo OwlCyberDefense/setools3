@@ -300,7 +300,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 
 			result = apol_domain_trans_table_verify_trans(policy, start, ep, end);
 			if (!result) {
-				apol_get_role_by_query(policy, NULL, &role_vector);
+				apol_role_get_by_query(policy, NULL, &role_vector);
 				for (k = 0; (k < apol_vector_get_size(role_vector)) && !ok; k++) {
 					qpol_role_t *role;
 					char *role_name;
@@ -309,7 +309,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 					qpol_role_get_name(policy->p, role, &role_name);
 					if (apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end)) {
 						apol_user_query_set_role(policy, user_query, role_name);
-						apol_get_user_by_query(policy, user_query, &user_vector);
+						apol_user_get_by_query(policy, user_query, &user_vector);
 						if (apol_vector_get_size(user_vector) > 0) {
 							ok = TRUE;
 						}
@@ -319,7 +319,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 				apol_vector_destroy(&role_vector, NULL);
 				if (!ok) {
 					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
-					apol_get_role_trans_by_query(policy, role_trans_query, &rbac_vector);
+					apol_role_trans_get_by_query(policy, role_trans_query, &rbac_vector);
 					for (k = 0; (k < apol_vector_get_size(rbac_vector)) && !ok; k++) {
 						qpol_role_trans_t *role_trans;
 						qpol_role_t *source_role;
@@ -336,11 +336,11 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 						if (apol_role_has_type(policy, source_role, start) &&
 						    apol_role_has_type(policy, default_role, end)) {
 							apol_user_query_set_role(policy, user_query, source_role_name);
-							apol_get_user_by_query(policy, user_query, &user_vector);
+							apol_user_get_by_query(policy, user_query, &user_vector);
 							if (apol_vector_get_size(user_vector) > 0) {
 								apol_vector_destroy(&user_vector, NULL);
 								apol_user_query_set_role(policy, user_query, default_role_name);
-								apol_get_user_by_query(policy, user_query, &user_vector);
+								apol_user_get_by_query(policy, user_query, &user_vector);
 								if (apol_vector_get_size(user_vector) > 0) {
 									ok = TRUE;
 								}

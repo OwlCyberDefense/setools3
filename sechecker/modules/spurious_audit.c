@@ -215,14 +215,14 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	}
 
 	apol_avrule_query_set_rules(policy, query, QPOL_RULE_AUDITALLOW);
-	if (apol_get_avrule_by_query(policy, query, &auditallow_rules)) {
+	if (apol_avrule_get_by_query(policy, query, &auditallow_rules)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto spurious_audit_run_fail;
 	}
 
 	apol_avrule_query_set_rules(policy, query, QPOL_RULE_DONTAUDIT);
-	if (apol_get_avrule_by_query(policy, query, &dontaudit_rules)) {
+	if (apol_avrule_get_by_query(policy, query, &dontaudit_rules)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto spurious_audit_run_fail;
@@ -280,7 +280,7 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_query_append_class(policy, query, obj_name);
 
 		/* get vector of matching ALLOW rules */
-		if (apol_get_avrule_by_query(policy, query, &allow_rules)) {
+		if (apol_avrule_get_by_query(policy, query, &allow_rules)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;
@@ -444,7 +444,7 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_query_set_target(policy, query, tgt_name, 1);
 		apol_avrule_query_append_class(policy, query, obj_name);
 
-		if (apol_get_avrule_by_query(policy, query, &allow_rules)) {
+		if (apol_avrule_get_by_query(policy, query, &allow_rules)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto spurious_audit_run_fail;

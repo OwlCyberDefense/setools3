@@ -219,7 +219,7 @@ int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		goto roles_wo_allow_run_fail;
 	}
 
-	if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
+	if (apol_role_get_by_query(policy, NULL, &role_vector) < 0) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
@@ -242,7 +242,7 @@ int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 
 		apol_role_allow_query_set_source(policy, role_allow_query, role_name);
 		apol_role_allow_query_set_source_any(policy, role_allow_query, 1);
-		apol_get_role_allow_by_query(policy, role_allow_query, &role_allow_vector);
+		apol_role_allow_get_by_query(policy, role_allow_query, &role_allow_vector);
 		if (apol_vector_get_size(role_allow_vector) > 0) {
 			apol_vector_destroy(&role_allow_vector, NULL);
 			continue;

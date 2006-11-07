@@ -177,7 +177,7 @@ int find_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 		opt = apol_vector_get_element(mod->options, i);
 		if (!strcmp(opt->name, "domain_attribute")) {
 			apol_attr_query_set_attr(policy, attr_query, opt->value);
-			apol_get_attr_by_query(policy, attr_query, &attr_vector);
+			apol_attr_get_by_query(policy, attr_query, &attr_vector);
 			for (j = 0; j < apol_vector_get_size(attr_vector); j++) {
 				char *domain_attrib;
 				attr = apol_vector_get_element(attr_vector, j);
@@ -249,7 +249,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 		goto find_domains_run_fail;
 	}
 
-	if (apol_get_type_by_query(policy, NULL, &domain_vector) < 0) {
+	if (apol_type_get_by_query(policy, NULL, &domain_vector) < 0) {
 		goto find_domains_run_fail;
 	}
 
@@ -326,7 +326,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 			goto find_domains_run_fail;
 		}
 		apol_avrule_query_set_source(policy, avrule_query, type_name, 0);
-		if (apol_get_avrule_by_query(policy, avrule_query, &avrule_vector) < 0) {
+		if (apol_avrule_get_by_query(policy, avrule_query, &avrule_vector) < 0) {
 			error = errno;
 			ERR(policy, "%s", "Unable to retrieve AV rules");
 			goto find_domains_run_fail;
@@ -382,7 +382,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 		}
 		apol_terule_query_set_default(policy, terule_query, type_name);
 		apol_terule_query_append_class(policy, terule_query, "process");
-		if (apol_get_terule_by_query(policy, terule_query, &terule_vector) < 0) {
+		if (apol_terule_get_by_query(policy, terule_query, &terule_vector) < 0) {
 			error = errno;
 			ERR(policy, "%s", "Unable to retrieve TE rules");
 			goto find_domains_run_fail;
@@ -435,7 +435,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 			goto find_domains_run_fail;
 		}
 		apol_role_query_set_type(policy, role_query, type_name);
-		apol_get_role_by_query(policy, role_query, &role_vector);
+		apol_role_get_by_query(policy, role_query, &role_vector);
 		for (j = 0; j < apol_vector_get_size(role_vector); j++) {
 			qpol_role_t *role;
 			char *role_name;

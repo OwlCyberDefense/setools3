@@ -260,7 +260,7 @@ static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles,
 			*which_sr = role;
 		qpol_role_get_name(policy->p, role, &name);
 		apol_user_query_set_role(policy, uq, name);
-		apol_get_user_by_query(policy, uq, &user_v);
+		apol_user_get_by_query(policy, uq, &user_v);
 		for (j = 0; j < apol_vector_get_size(user_v); j++) {
 			user = apol_vector_get_element(user_v, j);
 			qpol_user_get_role_iter(policy->p, user, &iter);
@@ -433,7 +433,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 		/* collect information about roles and transitions to this domain */
 		apol_role_query_set_type(policy, role_q, cur_dom_name);
-		apol_get_role_by_query(policy, role_q, &dom_roles);
+		apol_role_get_by_query(policy, role_q, &dom_roles);
 		apol_domain_trans_table_reset(policy);
 		apol_domain_trans_analysis_set_start_type(policy, dta, cur_dom_name);
 		apol_domain_trans_analysis_set_valid(policy, dta, APOL_DOMAIN_TRANS_SEARCH_VALID);
@@ -449,7 +449,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			ep_type = apol_domain_trans_result_get_entrypoint_type(dtr);
 			qpol_type_get_name(policy->p, start_type, &tmp_name);
 			apol_role_query_set_type(policy, role_q, tmp_name);
-			apol_get_role_by_query(policy, role_q, &start_roles);
+			apol_role_get_by_query(policy, role_q, &start_roles);
 			intersect_roles = apol_vector_create_from_intersection(dom_roles, start_roles, NULL, NULL);
 			if (apol_vector_get_size(intersect_roles) > 0) {
 				/* find user with role in intersect */
@@ -458,7 +458,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 					last_role = apol_vector_get_element(intersect_roles, k);
 					qpol_role_get_name(policy->p, last_role, &tmp_name);
 					apol_user_query_set_role(policy, user_q, tmp_name);
-					apol_get_user_by_query(policy, user_q, &tmp_users);
+					apol_user_get_by_query(policy, user_q, &tmp_users);
 					if (apol_vector_cat(role_users, tmp_users)) {
 						error = errno;
 						ERR(policy, "%s", strerror(error));
@@ -477,7 +477,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			/* look for role_transitions */
 			qpol_type_get_name(policy->p, ep_type, &tmp_name);
 			apol_role_trans_query_set_target(policy, rtq, tmp_name, 1);
-			apol_get_role_trans_by_query(policy, rtq, &role_trans_vector);
+			apol_role_trans_get_by_query(policy, rtq, &role_trans_vector);
 			for (k = 0; need != DONE && k < apol_vector_get_size(role_trans_vector); k++) {
 				role_trans = apol_vector_get_element(role_trans_vector, k);
 				qpol_role_trans_get_source_role(policy->p, role_trans, &src_role);
@@ -490,7 +490,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 					apol_role_allow_query_set_source(policy, raq, tmp_name);
 					qpol_role_get_name(policy->p, dflt_role, &tmp_name);
 					apol_role_allow_query_set_target(policy, raq, tmp_name);
-					apol_get_role_allow_by_query(policy, raq, &role_allow_vector);
+					apol_role_allow_get_by_query(policy, raq, &role_allow_vector);
 					if (apol_vector_get_size(role_allow_vector) > 0) {
 						need = DONE;
 					} else {
@@ -541,7 +541,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 				last_role = apol_vector_get_element(dom_roles, j);
 				qpol_role_get_name(policy->p, last_role, &tmp_name);
 				apol_user_query_set_role(policy, user_q, tmp_name);
-				apol_get_user_by_query(policy, user_q, &tmp_users);
+				apol_user_get_by_query(policy, user_q, &tmp_users);
 				apol_vector_cat(role_users, tmp_users);
 				apol_vector_destroy(&tmp_users, NULL);
 			}

@@ -228,7 +228,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		goto types_wo_allow_run_fail;
 	}
 
-	if (apol_get_type_by_query(policy, NULL, &type_vector) < 0) {
+	if (apol_type_get_by_query(policy, NULL, &type_vector) < 0) {
 		error = errno;
 		goto types_wo_allow_run_fail;
 	}
@@ -244,7 +244,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 
 		/* Check source for allow type */
 		apol_avrule_query_set_source(policy, avrule_query, type_name, 1);
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			size_t rule_type;
 			qpol_avrule_t *rule;
@@ -261,7 +261,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		/* Check target for allow type */
 		apol_avrule_query_set_source(policy, avrule_query, NULL, 0);
 		apol_avrule_query_set_target(policy, avrule_query, type_name, 1);
-		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			size_t rule_type;
 			qpol_avrule_t *rule;

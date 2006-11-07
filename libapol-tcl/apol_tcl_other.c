@@ -614,19 +614,19 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp * interp, int argc, C
 		ERR(policydb, "%s", strerror(ENOMEM));
 	}
 
-	if (apol_get_type_by_query(policydb, type_query, &v) < 0 ||
+	if (apol_type_get_by_query(policydb, type_query, &v) < 0 ||
 	    append_stats(interp, "types", apol_vector_get_size(v), result_obj) < 0) {
 		goto cleanup;
 	}
 	apol_vector_destroy(&v, NULL);
 
-	if (apol_get_attr_by_query(policydb, attr_query, &v) < 0 ||
+	if (apol_attr_get_by_query(policydb, attr_query, &v) < 0 ||
 	    append_stats(interp, "attribs", apol_vector_get_size(v), result_obj) < 0) {
 		goto cleanup;
 	}
 	apol_vector_destroy(&v, NULL);
 
-	if (apol_get_perm_by_query(policydb, perm_query, &v) < 0 ||
+	if (apol_perm_get_by_query(policydb, perm_query, &v) < 0 ||
 	    append_stats(interp, "perms", apol_vector_get_size(v), result_obj) < 0) {
 		goto cleanup;
 	}

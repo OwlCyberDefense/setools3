@@ -186,6 +186,11 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 
 int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
 {
+	return apol_avrule_get_by_query(p, a, v);
+}
+
+int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
+{
 	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL, *perm_list = NULL;
 	int retval = -1, source_as_any = 0, is_regex = 0;
 	char *bool_name = NULL;
@@ -254,6 +259,11 @@ int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_ve
 }
 
 int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
+{
+	return apol_syn_avrule_get_by_query(p, a, v);
+}
+
+int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL, *perm_list = NULL, *syn_v = NULL;

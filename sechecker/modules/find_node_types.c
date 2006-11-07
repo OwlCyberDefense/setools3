@@ -285,7 +285,7 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 	}
 
-	if (apol_get_nodecon_by_query(policy, NULL, &nodecon_vector) < 0) {
+	if (apol_nodecon_get_by_query(policy, NULL, &nodecon_vector) < 0) {
 		error = errno;
 		goto find_node_types_run_fail;
 	}

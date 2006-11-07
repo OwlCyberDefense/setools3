@@ -224,7 +224,7 @@ int roles_wo_users_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		goto roles_wo_users_run_fail;
 	}
 
-	if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
+	if (apol_role_get_by_query(policy, NULL, &role_vector) < 0) {
 		error = errno;
 		ERR(policy, "%s", "Unable to retrieve roles");
 		return -1;
@@ -241,7 +241,7 @@ int roles_wo_users_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			continue;
 
 		apol_user_query_set_role(policy, user_query, role_name);
-		apol_get_user_by_query(policy, user_query, &user_vector);
+		apol_user_get_by_query(policy, user_query, &user_vector);
 		if (apol_vector_get_size(user_vector) > 0) {
 			apol_vector_destroy(&user_vector, NULL);
 			continue;

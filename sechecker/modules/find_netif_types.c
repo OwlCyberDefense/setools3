@@ -279,7 +279,7 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		}
 	}
 
-	if (apol_get_netifcon_by_query(policy, NULL, &netifcon_vector) < 0) {
+	if (apol_netifcon_get_by_query(policy, NULL, &netifcon_vector) < 0) {
 		error = errno;
 		goto find_netif_types_run_fail;
 	}

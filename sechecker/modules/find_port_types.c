@@ -312,7 +312,7 @@ int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 	}
 
-	if (apol_get_portcon_by_query(policy, NULL, &portcon_vector) < 0) {
+	if (apol_portcon_get_by_query(policy, NULL, &portcon_vector) < 0) {
 		error = errno;
 		goto find_port_types_run_fail;
 	}

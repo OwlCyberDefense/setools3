@@ -41,6 +41,9 @@ typedef struct apol_nodecon_query apol_nodecon_query_t;
 /**
  * Execute a query against all portcons within the policy.  The
  * returned portcons will be unordered.
+ * @deprecated This function has been renamed apol_portcon_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
  *
  * @param p Policy within which to look up portcons.
  * @param po Structure containing parameters for query.	 If this is
@@ -53,7 +56,24 @@ typedef struct apol_nodecon_query apol_nodecon_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_portcon_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol_vector_t ** v);
+extern int apol_get_portcon_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol_vector_t ** v) __attribute__ ((deprecated));
+
+/**
+ * Execute a query against all portcons within the policy.  The
+ * returned portcons will be unordered.
+ *
+ * @param p Policy within which to look up portcons.
+ * @param po Structure containing parameters for query.	 If this is
+ * NULL then return all portcons.
+ * @param v Reference to a vector of qpol_portcon_t.  The vector will
+ * be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_portcon_get_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol_vector_t ** v);
 
 /**
  * Allocate and return a new portcon query structure. All fields are
@@ -146,6 +166,9 @@ extern char *apol_portcon_render(apol_policy_t * p, qpol_portcon_t * portcon);
 /**
  * Execute a query against all netifcons within the policy.  The
  * returned netifcons will be unordered.
+ * @deprecated This function has been renamed apol_netifcon_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
  *
  * @param p Policy within which to look up netifcons.
  * @param n Structure containing parameters for query.	If this is
@@ -158,7 +181,25 @@ extern char *apol_portcon_render(apol_policy_t * p, qpol_portcon_t * portcon);
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_netifcon_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apol_vector_t ** v);
+extern int apol_get_netifcon_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apol_vector_t ** v)
+	__attribute__ ((deprecated));
+
+/**
+ * Execute a query against all netifcons within the policy.  The
+ * returned netifcons will be unordered.
+ *
+ * @param p Policy within which to look up netifcons.
+ * @param n Structure containing parameters for query.	If this is
+ * NULL then return all netifcons.
+ * @param v Reference to a vector of qpol_netifcon_t.  The vector will
+ * be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_netifcon_get_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apol_vector_t ** v);
 
 /**
  * Allocate and return a new netifcon query structure.	All fields are
@@ -244,6 +285,9 @@ extern char *apol_netifcon_render(apol_policy_t * p, qpol_netifcon_t * netifcon)
 /**
  * Execute a query against all nodecons within the policy.  The
  * returned nodecons will be unordered.
+ * @deprecated This function has been renamed apol_nodecon_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
  *
  * @param p Policy within which to look up nodecons.
  * @param n Structure containing parameters for query.	If this is
@@ -256,7 +300,24 @@ extern char *apol_netifcon_render(apol_policy_t * p, qpol_netifcon_t * netifcon)
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_nodecon_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_vector_t ** v);
+extern int apol_get_nodecon_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_vector_t ** v) __attribute__ ((deprecated));
+
+/**
+ * Execute a query against all nodecons within the policy.  The
+ * returned nodecons will be unordered.
+ *
+ * @param p Policy within which to look up nodecons.
+ * @param n Structure containing parameters for query.	If this is
+ * NULL then return all nodecons.
+ * @param v Reference to a vector of qpol_nodecon_t.  The vector will
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, <b>passing free() as the second
+ * parameter</b>.  This will be set to NULL upon no results or upon
+ * error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_nodecon_get_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_vector_t ** v);
 
 /**
  * Allocate and return a new nodecon query structure.  All fields are

@@ -43,6 +43,11 @@ struct apol_role_query
 
 int apol_get_role_by_query(apol_policy_t * p, apol_role_query_t * r, apol_vector_t ** v)
 {
+	return apol_role_get_by_query(p, r, v);
+}
+
+int apol_role_get_by_query(apol_policy_t * p, apol_role_query_t * r, apol_vector_t ** v)
+{
 	qpol_iterator_t *iter = NULL, *type_iter = NULL;
 	int retval = -1, append_role;
 	*v = NULL;
