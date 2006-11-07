@@ -340,10 +340,11 @@ static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, 
 	int i;
 	*sym_name = NULL;
 	*indirect = 0;
-	*type_attr = APOL_QUERY_SYMBOL_IS_TYPE | APOL_QUERY_SYMBOL_IS_ATTRIBUTE;
 	if (*typeset == '\0') {
+		*type_attr = APOL_QUERY_SYMBOL_IS_TYPE | APOL_QUERY_SYMBOL_IS_ATTRIBUTE;
 		return 0;
 	}
+	*type_attr = 0;
 	if (Tcl_ListObjIndex(interp, typeset_obj, 0, &name_obj) == TCL_ERROR ||
 	    Tcl_ListObjIndex(interp, typeset_obj, 1, &indirect_obj) == TCL_ERROR ||
 	    Tcl_ListObjIndex(interp, typeset_obj, 2, &type_obj) == TCL_ERROR ||

@@ -60,8 +60,9 @@ struct apol_terule_query
  *  If NULL, all rules will be considered (including unconditional rules).
  *  @return 0 on success and < 0 on failure.
  */
-static int rule_select(apol_policy_t *p, apol_vector_t *v, uint32_t rule_type, unsigned int flags,
-apol_vector_t *source_list, apol_vector_t *target_list, apol_vector_t *class_list, apol_vector_t *default_list, const char *bool_name)
+static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type, unsigned int flags,
+		       apol_vector_t * source_list, apol_vector_t * target_list, apol_vector_t * class_list,
+		       apol_vector_t * default_list, const char *bool_name)
 {
 	qpol_iterator_t *iter = NULL;
 	int only_enabled = flags & APOL_QUERY_ONLY_ENABLED;
@@ -179,7 +180,7 @@ apol_vector_t *source_list, apol_vector_t *target_list, apol_vector_t *class_lis
 
 	retv = 0;
 
-cleanup:
+      cleanup:
 	apol_regex_destroy(&bool_regex);
 	qpol_iterator_destroy(&iter);
 	return retv;
