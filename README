@@ -412,7 +412,7 @@ OSS website, http://oss.tresys.com/projects/setools.
 SETools source code is maintained within a Subversion repository.
 From the command line do:
 
-  $ svn co http://oss.tresys.com/repos/setools/trunk/setools
+  $ svn co http://oss.tresys.com/repos/setools/trunk/ setools
 
 You may also browse the SVN repository at
 http://oss.tresys.com/projects/setools/browser.
