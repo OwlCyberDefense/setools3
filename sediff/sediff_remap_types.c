@@ -174,12 +174,13 @@ static void sediff_remap_types_window_on_add_button_clicked(GtkButton * button, 
 	sediff_remap_types_t *remap_types_window;
 	apol_vector_t *orig, *mod;
 	qpol_type_t *orig_type, *mod_type;
-	qpol_policy_t *oq = apol_policy_get_qpol(remap_types_window->sediff_app->orig_pol);
-	qpol_policy_t *mq = apol_policy_get_qpol(remap_types_window->sediff_app->mod_pol);
+	qpol_policy_t *oq, *mq;
 
 	/* cast user_data */
 	remap_types_window = (sediff_remap_types_t *) user_data;
 	g_assert(remap_types_window);
+	oq = apol_policy_get_qpol(remap_types_window->sediff_app->orig_pol);
+	mq = apol_policy_get_qpol(remap_types_window->sediff_app->mod_pol);
 
 	/* validate the gui data is entered properly */
 	p1_entry = GTK_ENTRY(glade_xml_get_widget(remap_types_window->xml, "sediff_remap_types_entry1"));
