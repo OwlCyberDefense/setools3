@@ -1442,7 +1442,7 @@ static int avrule_expand(poldiff_t * diff, apol_policy_t * p, qpol_avrule_t * ru
 apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	apol_vector_t *bools = NULL, *bool_states = NULL;
-	size_t i;
+	size_t i, num_rules, j;
 	apol_bst_t *b = NULL;
 	apol_vector_t *v = NULL;
 	qpol_iterator_t *iter = NULL;
@@ -1489,10 +1489,15 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy)
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	qpol_iterator_get_size(iter, &num_rules);
+	for (j = 0; !qpol_iterator_end(iter); qpol_iterator_next(iter), j++) {
 		if (qpol_iterator_get_item(iter, (void **)&rule) < 0 || avrule_expand(diff, policy, rule, b) < 0) {
 			error = errno;
 			goto cleanup;
+		}
+		if (!(j % 1024)) {
+			int percent = 50 * j / num_rules + (policy == diff->mod_pol ? 50 : 0);
+			INFO(diff, "Computing AV rule difference: %02d%%", percent);
 		}
 	}
 	if ((v = apol_bst_get_vector(b)) == NULL) {
@@ -1607,51 +1612,6 @@ static poldiff_avrule_t *make_avdiff(poldiff_t * diff, poldiff_form_e form, pseu
 	return pa;
 }
 
-/**
- * Given a single pseudo avrule, write to vector v all line numbers
- * from which the pseudo rule originated.
- *
- * @param diff Policy difference struct, for error reporting.
- * @param p Policy containing syntactic rules.
- * @param rule Pseudo rule containing qpol_avrule_t pointers.
- * @param v Destination vector to write.
- *
- * @return 0 on success, < 0 on error.
- */
-static int pseudo_avrule_to_linenos(poldiff_t * diff, apol_policy_t * p, pseudo_avrule_t * rule, apol_vector_t * v)
-{
-	size_t i;
-	qpol_iterator_t *syn_iter = NULL;
-	qpol_policy_t *q = apol_policy_get_qpol(p);
-	int error = 0;
-	for (i = 0; i < rule->num_rules; i++) {
-		if (qpol_avrule_get_syn_avrule_iter(q, rule->rules[i], &syn_iter) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-		for (; !qpol_iterator_end(syn_iter); qpol_iterator_next(syn_iter)) {
-			qpol_syn_avrule_t *syn_rule;
-			unsigned long lineno;
-			if (qpol_iterator_get_item(syn_iter, (void **)&syn_rule) < 0 ||
-			    qpol_syn_avrule_get_lineno(q, syn_rule, &lineno) < 0) {
-				error = errno;
-				goto cleanup;
-			}
-			if (apol_vector_append(v, (void *)lineno) < 0) {
-				error = errno;
-				ERR(diff, "%s", strerror(error));
-				goto cleanup;
-			}
-		}
-		qpol_iterator_destroy(&syn_iter);
-	}
-	apol_vector_sort_uniquify(v, NULL, NULL, NULL);
-      cleanup:
-	qpol_iterator_destroy(&syn_iter);
-	errno = error;
-	return error;
-}
-
 int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	pseudo_avrule_t *rule = (pseudo_avrule_t *) item;
@@ -1716,10 +1676,6 @@ int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 			pa->mod_linenos = v1;
 		} else {
 			pa->orig_linenos = v1;
-		}
-		if (pseudo_avrule_to_linenos(diff, p, rule, v1) < 0) {
-			error = errno;
-			goto cleanup;
 		}
 
 		/* copy rule pointers for delayed line number claculation */
@@ -1862,10 +1818,6 @@ int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
-			if (pseudo_avrule_to_linenos(diff, diff->orig_pol, r1, pa->orig_linenos) < 0) {
-				error = errno;
-				goto cleanup;
-			}
 
 			/* copy rule pointers for delayed line number claculation */
 			pa->num_orig_rules = r1->num_rules;
@@ -1881,10 +1833,6 @@ int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			if ((pa->mod_linenos = apol_vector_create()) == NULL) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
-				goto cleanup;
-			}
-			if (pseudo_avrule_to_linenos(diff, diff->mod_pol, r2, pa->mod_linenos) < 0) {
-				error = errno;
 				goto cleanup;
 			}
 
@@ -2300,7 +2248,7 @@ static int terule_expand(poldiff_t * diff, apol_policy_t * p, qpol_terule_t * ru
 apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	apol_vector_t *bools = NULL, *bool_states = NULL;
-	size_t i;
+	size_t i, num_rules, j;
 	apol_bst_t *b = NULL;
 	apol_vector_t *v = NULL;
 	qpol_iterator_t *iter = NULL;
@@ -2345,10 +2293,15 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	qpol_iterator_get_size(iter, &num_rules);
+	for (j = 0; !qpol_iterator_end(iter); qpol_iterator_next(iter), j++) {
 		if (qpol_iterator_get_item(iter, (void **)&rule) < 0 || terule_expand(diff, policy, rule, b) < 0) {
 			error = errno;
 			goto cleanup;
+		}
+		if (!(j % 1024)) {
+			int percent = 50 * j / num_rules + (policy == diff->mod_pol ? 50 : 0);
+			INFO(diff, "Computing TE rule difference: %02d%%", percent);
 		}
 	}
 	if ((v = apol_bst_get_vector(b)) == NULL) {
@@ -2453,52 +2406,6 @@ static poldiff_terule_t *make_tediff(poldiff_t * diff, poldiff_form_e form, pseu
 	return pt;
 }
 
-/**
- * Given a single pseudo terule, write to vector v all line numbers
- * from which the pseudo rule originated.
- *
- * @param diff Policy difference struct, for error reporting.
- * @param p Policy containing syntactic rules.
- * @param rule Pseudo rule containing qpol_terule_t pointers.
- * @param v Destination vector to write.
- *
- * @return 0 on success, < 0 on error.
- */
-static int pseudo_terule_to_linenos(poldiff_t * diff, apol_policy_t * p, pseudo_terule_t * rule, apol_vector_t * v)
-{
-	size_t i;
-	qpol_iterator_t *syn_iter = NULL;
-	qpol_policy_t *q = apol_policy_get_qpol(p);
-	int error = 0;
-
-	for (i = 0; i < rule->num_rules; i++) {
-		if (qpol_terule_get_syn_terule_iter(q, rule->rules[i], &syn_iter) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-		for (; !qpol_iterator_end(syn_iter); qpol_iterator_next(syn_iter)) {
-			qpol_syn_terule_t *syn_rule;
-			unsigned long lineno;
-			if (qpol_iterator_get_item(syn_iter, (void **)&syn_rule) < 0 ||
-			    qpol_syn_terule_get_lineno(q, syn_rule, &lineno) < 0) {
-				error = errno;
-				goto cleanup;
-			}
-			if (apol_vector_append(v, (void *)lineno) < 0) {
-				error = errno;
-				ERR(diff, "%s", strerror(error));
-				goto cleanup;
-			}
-		}
-		qpol_iterator_destroy(&syn_iter);
-	}
-	apol_vector_sort_uniquify(v, NULL, NULL, NULL);
-      cleanup:
-	qpol_iterator_destroy(&syn_iter);
-	errno = error;
-	return error;
-}
-
 int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	pseudo_terule_t *rule = (pseudo_terule_t *) item;
@@ -2566,10 +2473,6 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 			pt->mod_linenos = v1;
 		} else {
 			pt->orig_linenos = v1;
-		}
-		if (pseudo_terule_to_linenos(diff, p, rule, v1) < 0) {
-			error = errno;
-			goto cleanup;
 		}
 
 		/* copy rule pointers for delayed line number claculation */
@@ -2662,10 +2565,6 @@ int terule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
-			if (pseudo_terule_to_linenos(diff, diff->orig_pol, r1, pt->orig_linenos) < 0) {
-				error = errno;
-				goto cleanup;
-			}
 
 			/* copy rule pointers for delayed line number claculation */
 			pt->num_orig_rules = r1->num_rules;
@@ -2681,10 +2580,6 @@ int terule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			if ((pt->mod_linenos = apol_vector_create()) == NULL) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
-				goto cleanup;
-			}
-			if (pseudo_terule_to_linenos(diff, diff->mod_pol, r2, pt->mod_linenos) < 0) {
-				error = errno;
 				goto cleanup;
 			}
 
