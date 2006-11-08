@@ -124,7 +124,7 @@ extern int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, i
 /**
  * Execute a query against all attributes within the policy.  The
  * results will only contain attributes, not types nor aliases.
- * @deprecated This function has been renamed apol_attribute_get_by_query().
+ * @deprecated This function has been renamed apol_attr_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *
