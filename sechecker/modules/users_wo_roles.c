@@ -1,6 +1,6 @@
 /**
  *  @file user_wo_roles.c
- *  Implementation of the users without roles module. 
+ *  Implementation of the users without roles module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -207,7 +207,7 @@ int users_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		qpol_iterator_t *role_iter;
 
 		user = apol_vector_get_element(user_vector, i);
-		qpol_user_get_role_iter(policy->p, user, &role_iter);
+		qpol_user_get_role_iter(apol_policy_get_qpol(policy), user, &role_iter);
 		if (!qpol_iterator_end(role_iter)) {
 			qpol_iterator_destroy(&role_iter);
 			continue;
@@ -312,7 +312,7 @@ int users_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			user = (qpol_user_t *) item->item;
-			qpol_user_get_name(policy->p, user, &user_name);
+			qpol_user_get_name(apol_policy_get_qpol(policy), user, &user_name);
 			printf("%s%s", user_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");

@@ -36,8 +36,12 @@
 #include <apol/policy-query.h>
 
 /** Global SELinux policy (either read from source or from binary
- *  policy file, defined in apol_tcl_other.c. */
+ *  policy file), defined in apol_tcl_other.c. */
 extern apol_policy_t *policydb;
+
+/** Global SELinux policy's qpol structure; this is derived from
+ *  policydb and is defined in apol_tcl_other.c. */
+extern qpol_policy_t *qpolicydb;
 
 /**
  * Initializes the libapol-tcl library and registers all of the

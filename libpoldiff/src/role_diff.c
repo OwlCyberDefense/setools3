@@ -272,8 +272,9 @@ static int role_name_comp(const void *x, const void *y, void *arg)
 	qpol_role_t *r1 = (qpol_role_t *) x;
 	qpol_role_t *r2 = (qpol_role_t *) y;
 	apol_policy_t *p = (apol_policy_t *) arg;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	char *name1, *name2;
-	if (qpol_role_get_name(p->p, r1, &name1) < 0 || qpol_role_get_name(p->p, r2, &name2) < 0) {
+	if (qpol_role_get_name(q, r1, &name1) < 0 || qpol_role_get_name(q, r2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -283,8 +284,9 @@ apol_vector_t *role_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
-	if (qpol_policy_get_role_iter(policy->p, &iter) < 0) {
+	if (qpol_policy_get_role_iter(q, &iter) < 0) {
 		return NULL;
 	}
 	v = apol_vector_create_from_iter(iter);
@@ -305,7 +307,7 @@ int role_comp(const void *x, const void *y, poldiff_t * diff)
 	qpol_role_t *r1 = (qpol_role_t *) x;
 	qpol_role_t *r2 = (qpol_role_t *) y;
 	char *name1, *name2;
-	if (qpol_role_get_name(diff->orig_pol->p, r1, &name1) < 0 || qpol_role_get_name(diff->mod_pol->p, r2, &name2) < 0) {
+	if (qpol_role_get_name(diff->orig_qpol, r1, &name1) < 0 || qpol_role_get_name(diff->mod_qpol, r2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -347,9 +349,9 @@ int role_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	poldiff_role_t *pr;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_role_get_name(diff->mod_pol->p, r, &name) < 0) ||
+	     qpol_role_get_name(diff->mod_qpol, r, &name) < 0) ||
 	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_role_get_name(diff->orig_pol->p, r, &name) < 0)) {
+	     qpol_role_get_name(diff->orig_qpol, r, &name) < 0)) {
 		return -1;
 	}
 	pr = make_diff(diff, form, name);
@@ -397,11 +399,11 @@ static apol_vector_t *role_get_types(poldiff_t * diff, qpol_role_t * role, int w
 		goto cleanup;
 	}
 	if (which == POLDIFF_POLICY_ORIG) {
-		if (qpol_role_get_type_iter(diff->orig_pol->p, role, &iter) < 0) {
+		if (qpol_role_get_type_iter(diff->orig_qpol, role, &iter) < 0) {
 			goto cleanup;
 		}
 	} else {
-		if (qpol_role_get_type_iter(diff->mod_pol->p, role, &iter) < 0) {
+		if (qpol_role_get_type_iter(diff->mod_qpol, role, &iter) < 0) {
 			goto cleanup;
 		}
 	}
@@ -441,7 +443,7 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	size_t i, j;
 	int retval = -1, error = 0;
 
-	if (qpol_role_get_name(diff->orig_pol->p, r1, &name) < 0 ||
+	if (qpol_role_get_name(diff->orig_qpol, r1, &name) < 0 ||
 	    (v1 = role_get_types(diff, r1, POLDIFF_POLICY_ORIG)) == NULL ||
 	    (v2 = role_get_types(diff, r2, POLDIFF_POLICY_MOD)) == NULL) {
 		error = errno;
@@ -507,7 +509,7 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			}
 			for (j = 0; j < apol_vector_get_size(reverse_v); j++) {
 				t = (qpol_type_t *) apol_vector_get_element(reverse_v, j);
-				if (qpol_type_get_name(diff->orig_pol->p, t, &name) < 0) {
+				if (qpol_type_get_name(diff->orig_qpol, t, &name) < 0) {
 					error = errno;
 					goto cleanup;
 				}
@@ -527,7 +529,7 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			}
 			for (j = 0; j < apol_vector_get_size(reverse_v); j++) {
 				t = (qpol_type_t *) apol_vector_get_element(reverse_v, j);
-				if (qpol_type_get_name(diff->mod_pol->p, t, &name) < 0) {
+				if (qpol_type_get_name(diff->mod_qpol, t, &name) < 0) {
 					error = errno;
 					goto cleanup;
 				}

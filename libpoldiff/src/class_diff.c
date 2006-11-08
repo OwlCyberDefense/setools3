@@ -275,8 +275,9 @@ static int class_name_comp(const void *x, const void *y, void *arg)
 	qpol_class_t *c1 = (qpol_class_t *) x;
 	qpol_class_t *c2 = (qpol_class_t *) y;
 	apol_policy_t *p = (apol_policy_t *) arg;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	char *name1, *name2;
-	if (qpol_class_get_name(p->p, c1, &name1) < 0 || qpol_class_get_name(p->p, c2, &name2) < 0) {
+	if (qpol_class_get_name(q, c1, &name1) < 0 || qpol_class_get_name(q, c2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -286,8 +287,9 @@ apol_vector_t *class_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
-	if (qpol_policy_get_class_iter(policy->p, &iter) < 0) {
+	if (qpol_policy_get_class_iter(q, &iter) < 0) {
 		return NULL;
 	}
 	v = apol_vector_create_from_iter(iter);
@@ -308,7 +310,7 @@ int class_comp(const void *x, const void *y, poldiff_t * diff)
 	qpol_class_t *c1 = (qpol_class_t *) x;
 	qpol_class_t *c2 = (qpol_class_t *) y;
 	char *name1, *name2;
-	if (qpol_class_get_name(diff->orig_pol->p, c1, &name1) < 0 || qpol_class_get_name(diff->mod_pol->p, c2, &name2) < 0) {
+	if (qpol_class_get_name(diff->orig_qpol, c1, &name1) < 0 || qpol_class_get_name(diff->mod_qpol, c2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -350,9 +352,9 @@ int class_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	poldiff_class_t *pc;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_class_get_name(diff->mod_pol->p, c, &name) < 0) ||
+	     qpol_class_get_name(diff->mod_qpol, c, &name) < 0) ||
 	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_class_get_name(diff->orig_pol->p, c, &name) < 0)) {
+	     qpol_class_get_name(diff->orig_qpol, c, &name) < 0)) {
 		return -1;
 	}
 	pc = make_diff(diff, form, name);
@@ -393,13 +395,14 @@ static apol_vector_t *class_get_perms(poldiff_t * diff, apol_policy_t * p, qpol_
 	qpol_iterator_t *perm_iter = NULL, *common_iter = NULL;
 	char *perm;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1;
 
 	if ((v = apol_vector_create()) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
-	if (qpol_class_get_common(p->p, class, &common) < 0 || qpol_class_get_perm_iter(p->p, class, &perm_iter) < 0) {
+	if (qpol_class_get_common(q, class, &common) < 0 || qpol_class_get_perm_iter(q, class, &perm_iter) < 0) {
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
@@ -412,7 +415,7 @@ static apol_vector_t *class_get_perms(poldiff_t * diff, apol_policy_t * p, qpol_
 		}
 	}
 	if (common != NULL) {
-		if (qpol_common_get_perm_iter(p->p, common, &common_iter) < 0) {
+		if (qpol_common_get_perm_iter(q, common, &common_iter) < 0) {
 			goto cleanup;
 		}
 		for (; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
@@ -447,7 +450,7 @@ int class_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	size_t i, j;
 	int retval = -1, error = 0, compval;
 
-	if (qpol_class_get_name(diff->orig_pol->p, c1, &name) < 0 ||
+	if (qpol_class_get_name(diff->orig_qpol, c1, &name) < 0 ||
 	    (v1 = class_get_perms(diff, diff->orig_pol, c1)) == NULL || (v2 = class_get_perms(diff, diff->mod_pol, c2)) == NULL) {
 		error = errno;
 		goto cleanup;
@@ -779,8 +782,9 @@ static int common_name_comp(const void *x, const void *y, void *arg)
 	qpol_common_t *c1 = (qpol_common_t *) x;
 	qpol_common_t *c2 = (qpol_common_t *) y;
 	apol_policy_t *p = (apol_policy_t *) arg;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	char *name1, *name2;
-	if (qpol_common_get_name(p->p, c1, &name1) < 0 || qpol_common_get_name(p->p, c2, &name2) < 0) {
+	if (qpol_common_get_name(q, c1, &name1) < 0 || qpol_common_get_name(q, c2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -790,8 +794,9 @@ apol_vector_t *common_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
-	if (qpol_policy_get_common_iter(policy->p, &iter) < 0) {
+	if (qpol_policy_get_common_iter(q, &iter) < 0) {
 		return NULL;
 	}
 	v = apol_vector_create_from_iter(iter);
@@ -812,7 +817,7 @@ int common_comp(const void *x, const void *y, poldiff_t * diff)
 	qpol_common_t *c1 = (qpol_common_t *) x;
 	qpol_common_t *c2 = (qpol_common_t *) y;
 	char *name1, *name2;
-	if (qpol_common_get_name(diff->orig_pol->p, c1, &name1) < 0 || qpol_common_get_name(diff->mod_pol->p, c2, &name2) < 0) {
+	if (qpol_common_get_name(diff->orig_qpol, c1, &name1) < 0 || qpol_common_get_name(diff->mod_qpol, c2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -854,9 +859,9 @@ int common_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	poldiff_common_t *pc;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_common_get_name(diff->mod_pol->p, c, &name) < 0) ||
+	     qpol_common_get_name(diff->mod_qpol, c, &name) < 0) ||
 	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_common_get_name(diff->orig_pol->p, c, &name) < 0)) {
+	     qpol_common_get_name(diff->orig_qpol, c, &name) < 0)) {
 		return -1;
 	}
 	pc = make_common_diff(diff, form, name);
@@ -895,13 +900,14 @@ static apol_vector_t *common_get_perms(poldiff_t * diff, apol_policy_t * p, qpol
 	qpol_iterator_t *perm_iter = NULL;
 	char *perm;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1;
 
 	if ((v = apol_vector_create()) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
-	if (qpol_common_get_perm_iter(p->p, common, &perm_iter) < 0) {
+	if (qpol_common_get_perm_iter(q, common, &perm_iter) < 0) {
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
@@ -934,7 +940,7 @@ int common_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	size_t i, j;
 	int retval = -1, error = 0, compval;
 
-	if (qpol_common_get_name(diff->orig_pol->p, c1, &name) < 0 ||
+	if (qpol_common_get_name(diff->orig_qpol, c1, &name) < 0 ||
 	    (v1 = common_get_perms(diff, diff->orig_pol, c1)) == NULL || (v2 = common_get_perms(diff, diff->mod_pol, c2)) == NULL) {
 		error = errno;
 		goto cleanup;

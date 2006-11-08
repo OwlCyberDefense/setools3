@@ -208,8 +208,9 @@ static int bool_name_comp(const void *x, const void *y, void *arg)
 	qpol_bool_t *c1 = (qpol_bool_t *) x;
 	qpol_bool_t *c2 = (qpol_bool_t *) y;
 	apol_policy_t *p = (apol_policy_t *) arg;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	char *name1, *name2;
-	if (qpol_bool_get_name(p->p, c1, &name1) < 0 || qpol_bool_get_name(p->p, c2, &name2) < 0) {
+	if (qpol_bool_get_name(q, c1, &name1) < 0 || qpol_bool_get_name(q, c2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -219,8 +220,9 @@ apol_vector_t *bool_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
-	if (qpol_policy_get_bool_iter(policy->p, &iter) < 0) {
+	if (qpol_policy_get_bool_iter(q, &iter) < 0) {
 		return NULL;
 	}
 	v = apol_vector_create_from_iter(iter);
@@ -241,7 +243,7 @@ int bool_comp(const void *x, const void *y, poldiff_t * diff)
 	qpol_bool_t *c1 = (qpol_bool_t *) x;
 	qpol_bool_t *c2 = (qpol_bool_t *) y;
 	char *name1, *name2;
-	if (qpol_bool_get_name(diff->orig_pol->p, c1, &name1) < 0 || qpol_bool_get_name(diff->mod_pol->p, c2, &name2) < 0) {
+	if (qpol_bool_get_name(diff->orig_qpol, c1, &name1) < 0 || qpol_bool_get_name(diff->mod_qpol, c2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -280,9 +282,9 @@ int bool_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	poldiff_bool_t *pb;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_bool_get_name(diff->mod_pol->p, c, &name) < 0) ||
+	     qpol_bool_get_name(diff->mod_qpol, c, &name) < 0) ||
 	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_bool_get_name(diff->orig_pol->p, c, &name) < 0)) {
+	     qpol_bool_get_name(diff->orig_qpol, c, &name) < 0)) {
 		return -1;
 	}
 	pb = make_diff(diff, form, name);
@@ -312,8 +314,8 @@ int bool_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	poldiff_bool_t *b = NULL;
 	int retval = -1, error = 0;
 
-	if (qpol_bool_get_name(diff->orig_pol->p, b1, &name) < 0 ||
-	    qpol_bool_get_state(diff->orig_pol->p, b1, &s1) < 0 || qpol_bool_get_state(diff->mod_pol->p, b2, &s2) < 0) {
+	if (qpol_bool_get_name(diff->orig_qpol, b1, &name) < 0 ||
+	    qpol_bool_get_state(diff->orig_qpol, b1, &s1) < 0 || qpol_bool_get_state(diff->mod_qpol, b2, &s2) < 0) {
 		error = errno;
 		goto cleanup;
 	}

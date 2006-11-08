@@ -24,9 +24,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <config.h>
+#include "policy-query-internal.h"
 
-#include <apol/policy.h>
 #include <apol/perm-map.h>
 #include <apol/domain-trans-analysis.h>
 
@@ -38,7 +37,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void apol_handle_default_callback(apol_policy_t * p __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
+static void apol_handle_default_callback(void *varg __attribute__ ((unused)), apol_policy_t * p
+					 __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
 	case APOL_MSG_INFO:
@@ -66,13 +66,13 @@ static void qpol_handle_route_to_callback(void *varg, qpol_policy_t * policy, in
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
 	if (p == NULL) {
-		apol_handle_default_callback(NULL, level, fmt, ap);
+		apol_handle_default_callback(NULL, NULL, level, fmt, ap);
 	} else if (p->msg_callback != NULL) {
-		p->msg_callback(p, level, fmt, ap);
+		p->msg_callback(p->msg_callback_arg, p, level, fmt, ap);
 	}
 }
 
-int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *callback_arg)
+int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *varg)
 {
 	int policy_type;
 	if (!path || !policy) {
@@ -92,7 +92,7 @@ int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn
 	} else {
 		(*policy)->msg_callback = apol_handle_default_callback;
 	}
-	(*policy)->msg_callback_arg = callback_arg;
+	(*policy)->msg_callback_arg = varg;
 
 	policy_type = qpol_open_policy_from_file(path, &((*policy)->p), qpol_handle_route_to_callback, (*policy));
 	if (policy_type < 0) {
@@ -140,11 +140,29 @@ void apol_policy_destroy(apol_policy_t ** policy)
 {
 	if (policy != NULL && *policy != NULL) {
 		qpol_policy_destroy(&((*policy)->p));
-		apol_permmap_destroy(&(*policy)->pmap);
+		permmap_destroy(&(*policy)->pmap);
 		apol_domain_trans_table_destroy(&(*policy)->domain_trans_table);
 		free(*policy);
 		*policy = NULL;
 	}
+}
+
+int apol_policy_get_policy_type(apol_policy_t * policy)
+{
+	if (policy == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return policy->policy_type;
+}
+
+qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy)
+{
+	if (policy == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return policy->p;
 }
 
 int apol_policy_is_mls(apol_policy_t * p)
@@ -194,9 +212,9 @@ void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 	if (p == NULL) {
-		apol_handle_default_callback(NULL, level, fmt, ap);
+		apol_handle_default_callback(NULL, NULL, level, fmt, ap);
 	} else if (p->msg_callback != NULL) {
-		p->msg_callback(p, level, fmt, ap);
+		p->msg_callback(p->msg_callback_arg, p, level, fmt, ap);
 	}
 	va_end(ap);
 }

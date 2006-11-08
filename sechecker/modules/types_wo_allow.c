@@ -1,6 +1,6 @@
 /**
  *  @file types_wo_allow.c
- *  Implementation of the types without allow rules module. 
+ *  Implementation of the types without allow rules module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -186,6 +186,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	apol_vector_t *type_vector;
 	apol_vector_t *avrule_vector;
 	apol_avrule_query_t *avrule_query = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
 
 	if (!mod || !policy) {
@@ -240,7 +241,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 
 		used = FALSE;
 		type = apol_vector_get_element(type_vector, i);
-		qpol_type_get_name(policy->p, type, &type_name);
+		qpol_type_get_name(q, type, &type_name);
 
 		/* Check source for allow type */
 		apol_avrule_query_set_source(policy, avrule_query, type_name, 1);
@@ -250,7 +251,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			qpol_avrule_t *rule;
 
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_rule_type(policy->p, rule, &rule_type);
+			qpol_avrule_get_rule_type(q, rule, &rule_type);
 			if (rule_type == QPOL_RULE_ALLOW)
 				used = TRUE;
 		}
@@ -267,7 +268,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			qpol_avrule_t *rule;
 
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_rule_type(policy->p, rule, &rule_type);
+			qpol_avrule_get_rule_type(q, rule, &rule_type);
 			if (rule_type == QPOL_RULE_ALLOW)
 				used = TRUE;
 		}
@@ -345,6 +346,7 @@ int types_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	sechk_proof_t *proof = NULL;
 	int i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
 	if (!mod || !policy) {
@@ -385,7 +387,7 @@ int types_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			j++;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
+			qpol_type_get_name(q, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
@@ -398,7 +400,7 @@ int types_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			item = apol_vector_get_element(mod->result->items, k);
 			if (item) {
 				type = item->item;
-				qpol_type_get_name(policy->p, type, &type_name);
+				qpol_type_get_name(q, type, &type_name);
 				printf("%s\n", type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof, l);

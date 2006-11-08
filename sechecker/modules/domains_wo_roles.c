@@ -1,6 +1,6 @@
 /**
  *  @file domain_wo_roles.c
- *  Implementation of the domains without roles module. 
+ *  Implementation of the domains without roles module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -166,6 +166,7 @@ int domains_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	sechk_mod_fn_t run_fn = NULL;
 	apol_vector_t *domain_vector;
 	apol_vector_t *role_vector;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	apol_role_query_t *role_query = NULL;
 	sechk_result_t *find_domains_res = NULL;
 
@@ -237,7 +238,7 @@ int domains_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 		item = apol_vector_get_element(domain_vector, i);
 		domain = item->item;
-		qpol_type_get_name(policy->p, domain, &domain_name);
+		qpol_type_get_name(q, domain, &domain_name);
 
 		apol_role_query_set_type(policy, role_query, domain_name);
 		apol_role_get_by_query(policy, role_query, &role_vector);
@@ -310,6 +311,7 @@ int domains_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
 	if (!mod || !policy) {
@@ -350,7 +352,7 @@ int domains_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = (qpol_type_t *) item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
+			qpol_type_get_name(q, type, &type_name);
 			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");
@@ -362,7 +364,7 @@ int domains_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 			item = apol_vector_get_element(mod->result->items, k);
 			if (item) {
 				type = item->item;
-				qpol_type_get_name(policy->p, type, &type_name);
+				qpol_type_get_name(q, type, &type_name);
 				printf("%s\n", type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof, l);

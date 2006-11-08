@@ -328,8 +328,9 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 	qpol_role_t *sr = NULL, *tr = NULL;
 	char *sr_name = NULL, *tr_name = NULL;
 	qpol_role_allow_t *qra = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 
-	if (qpol_policy_get_role_allow_iter(policy->p, &iter) < 0) {
+	if (qpol_policy_get_role_allow_iter(q, &iter) < 0) {
 		return NULL;
 	}
 
@@ -352,13 +353,13 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 			ERR(diff, "%s", strerror(error));
 			goto err;
 		}
-		if (qpol_role_allow_get_source_role(policy->p, qra, &sr) || qpol_role_get_name(policy->p, sr, &sr_name)) {
+		if (qpol_role_allow_get_source_role(q, qra, &sr) || qpol_role_get_name(q, sr, &sr_name)) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto err;
 		}
 		sr = NULL;
-		if (qpol_role_allow_get_target_role(policy->p, qra, &tr) || qpol_role_get_name(policy->p, tr, &tr_name)) {
+		if (qpol_role_allow_get_target_role(q, qra, &tr) || qpol_role_get_name(q, tr, &tr_name)) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto err;
@@ -781,9 +782,9 @@ static const char *get_valid_name(poldiff_t * diff, uint32_t pseudo_val)
 	}
 	t = apol_vector_get_element(v, 0);
 	if (pol == POLDIFF_POLICY_ORIG)
-		qpol_type_get_name(diff->orig_pol->p, t, &name);
+		qpol_type_get_name(diff->orig_qpol, t, &name);
 	else
-		qpol_type_get_name(diff->mod_pol->p, t, &name);
+		qpol_type_get_name(diff->mod_qpol, t, &name);
 	return name;
 }
 
@@ -826,11 +827,12 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 	char *tmp_name = NULL;
 	qpol_role_t *tmp_role = NULL;
 	qpol_type_t *tmp_type = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0, which_pol;
 	unsigned char isattr = 0;
 
 	which_pol = (policy == diff->orig_pol ? POLDIFF_POLICY_ORIG : POLDIFF_POLICY_MOD);
-	if (qpol_policy_get_role_trans_iter(policy->p, &iter)) {
+	if (qpol_policy_get_role_trans_iter(q, &iter)) {
 		error = errno;
 		goto err;
 	}
@@ -847,13 +849,13 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 			ERR(diff, "%s", strerror(error));
 			goto err;
 		}
-		if (qpol_role_trans_get_target_type(policy->p, qrt, &tmp_type) < 0) {
+		if (qpol_role_trans_get_target_type(q, qrt, &tmp_type) < 0) {
 			error = errno;
 			goto err;
 		}
-		qpol_type_get_isattr(policy->p, tmp_type, &isattr);
+		qpol_type_get_isattr(q, tmp_type, &isattr);
 		if (isattr) {
-			qpol_type_get_type_iter(policy->p, tmp_type, &attr_types);
+			qpol_type_get_type_iter(q, tmp_type, &attr_types);
 			for (; !qpol_iterator_end(attr_types); qpol_iterator_next(attr_types)) {
 				qpol_iterator_get_item(attr_types, (void **)&tmp_type);
 				if (!(tmp_prt = calloc(1, sizeof(*tmp_prt)))) {
@@ -862,11 +864,11 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 					goto err;
 				}
 				tmp_prt->pseudo_target = type_map_lookup(diff, tmp_type, which_pol);
-				qpol_role_trans_get_source_role(policy->p, qrt, &tmp_role);
-				qpol_role_get_name(policy->p, tmp_role, &tmp_name);
+				qpol_role_trans_get_source_role(q, qrt, &tmp_role);
+				qpol_role_get_name(q, tmp_role, &tmp_name);
 				tmp_prt->source_role = tmp_name;
-				qpol_role_trans_get_default_role(policy->p, qrt, &tmp_role);
-				qpol_role_get_name(policy->p, tmp_role, &tmp_name);
+				qpol_role_trans_get_default_role(q, qrt, &tmp_role);
+				qpol_role_get_name(q, tmp_role, &tmp_name);
 				tmp_prt->default_role = tmp_name;
 				if (apol_vector_append(v, tmp_prt)) {
 					error = errno;
@@ -883,11 +885,11 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 				goto err;
 			}
 			tmp_prt->pseudo_target = type_map_lookup(diff, tmp_type, which_pol);
-			qpol_role_trans_get_source_role(policy->p, qrt, &tmp_role);
-			qpol_role_get_name(policy->p, tmp_role, &tmp_name);
+			qpol_role_trans_get_source_role(q, qrt, &tmp_role);
+			qpol_role_get_name(q, tmp_role, &tmp_name);
 			tmp_prt->source_role = tmp_name;
-			qpol_role_trans_get_default_role(policy->p, qrt, &tmp_role);
-			qpol_role_get_name(policy->p, tmp_role, &tmp_name);
+			qpol_role_trans_get_default_role(q, qrt, &tmp_role);
+			qpol_role_get_name(q, tmp_role, &tmp_name);
 			tmp_prt->default_role = tmp_name;
 			if (apol_vector_append(v, tmp_prt)) {
 				error = errno;
@@ -1007,13 +1009,13 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	case POLDIFF_FORM_ADDED:
 	case POLDIFF_FORM_ADD_TYPE:
 		{
-			qpol_type_get_name(diff->mod_pol->p, tgt, &tgt_name);
+			qpol_type_get_name(diff->mod_qpol, tgt, &tgt_name);
 			break;
 		}
 	case POLDIFF_FORM_REMOVED:
 	case POLDIFF_FORM_REMOVE_TYPE:
 		{
-			qpol_type_get_name(diff->orig_pol->p, tgt, &tgt_name);
+			qpol_type_get_name(diff->orig_qpol, tgt, &tgt_name);
 			break;
 		}
 	case POLDIFF_FORM_MODIFIED:
@@ -1121,7 +1123,7 @@ int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 		errno = error;
 		return -1;
 	}
-	qpol_type_get_name(diff->orig_pol->p, tgt_type, &tgt);
+	qpol_type_get_name(diff->orig_qpol, tgt_type, &tgt);
 	rt = make_rt_diff(diff, POLDIFF_FORM_MODIFIED, prt1->source_role, tgt);
 	if (!rt)
 		return -1;	       /* errors already reported */

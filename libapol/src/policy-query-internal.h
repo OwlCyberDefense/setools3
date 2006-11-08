@@ -40,6 +40,27 @@
 #include <stdlib.h>
 #include <qpol/policy_query.h>
 
+/* forward declaration. the definition resides within perm-map.c */
+struct apol_permmap;
+
+/* forward declaration. the definition resides within domain-trans-analysis.c */
+struct apol_domain_trans_table;
+
+/* declared in perm-map.c */
+typedef struct apol_permmap apol_permmap_t;
+
+struct apol_policy
+{
+	qpol_policy_t *p;
+	apol_callback_fn_t msg_callback;
+	void *msg_callback_arg;
+	int policy_type;
+	/** permission mapping for this policy; mappings loaded as needed */
+	struct apol_permmap *pmap;
+	/** for domain trans analysis; table built as needed */
+	struct apol_domain_trans_table *domain_trans_table;
+};
+
 /** Every query allows the treatment of strings as regular expressions
  *  instead.  Within the query structure are flags; if the first bit
  *  is set then use regex matching instead. */
@@ -419,5 +440,13 @@ int apol_obj_perm_compare_class(const void *a, const void *b, void *policy);
  *  was found, and < 0 if an error occurred.
  */
 int apol_query_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v);
+
+/**
+ * Deallocate all space associated with a particular policy's permmap,
+ * including the pointer itself.  Afterwards set the pointer to NULL.
+ *
+ * @param p Reference to an apol_permmap_t to destroy.
+ */
+void permmap_destroy(apol_permmap_t ** p);
 
 #endif

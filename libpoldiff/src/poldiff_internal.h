@@ -57,11 +57,18 @@ struct poldiff_role_trans_summary;
 
 struct poldiff
 {
-	apol_policy_t *orig_pol;       /* The "original" policy */
-	apol_policy_t *mod_pol;	       /* The "modified" policy */
+	/** The "original" policy */
+	apol_policy_t *orig_pol;
+	/** The "modified" policy */
+	apol_policy_t *mod_pol;
+	/** pointer to original's qpol policy within orig_pol */
+	qpol_policy_t *orig_qpol;
+	/** pointer to modified's qpol policy within mod_pol */
+	qpol_policy_t *mod_qpol;
 	poldiff_handle_fn_t fn;
 	void *handle_arg;
-	uint32_t diff_status;	       /* set of POLDIF_DIFF_* for diffs run */
+	/** set of POLDIF_DIFF_* for diffs run */
+	uint32_t diff_status;
 	struct poldiff_class_summary *class_diffs;
 	struct poldiff_common_summary *common_diffs;
 	struct poldiff_type_summary *type_diffs;
@@ -77,7 +84,8 @@ struct poldiff
 /*	struct poldiff_range_trans_summary *range_trans_diffs;*/
 	/* and so forth if we want ocon_diffs */
 	type_map_t *type_map;
-	int remapped;		       /* set if type mapping was changed since last run */
+	/** set if type mapping was changed since last run */
+	int remapped;
 };
 
 /**

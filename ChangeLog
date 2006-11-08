@@ -1,3 +1,14 @@
+2006-11-08  J. Tang  <jtang@tresys.com>
+
+	* apol_permmap_t is now a hidden declaration.
+	apol_permmap_destroy() has been removed.  (It should never have
+	been publicly visible.)
+
+	* apol_policy_t is now an opaque structure.  Added accessors such
+	as apol_policy_get_qpol() to retrieve some of those fields.  This
+	also means that the apol callback function changed, so as to be
+	similar to qpol's callback.
+
 2006-11-07  J. Mowery <jmowery@tresys.com>
 
 	* renamed apol_get_*_by_query() to apol_*_get_by_query to match
@@ -10,7 +21,7 @@
 
 	* apol_vector_create_from_vector() takes two additional arguments,
 	so that it can act more like a copy constructor.
-	
+
 
 2006-11-01  J. Mowery  <jmowery@tresys.com>
 

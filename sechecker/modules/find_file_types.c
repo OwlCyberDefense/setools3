@@ -154,6 +154,7 @@ int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	apol_vector_t *attr_vector = NULL;
 	apol_attr_query_t *attr_query = apol_attr_query_create();
 	qpol_type_t *attr = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	size_t i = 0, j = 0;
 
 	if (!mod || !policy) {
@@ -188,7 +189,7 @@ int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			for (j = 0; j < apol_vector_get_size(attr_vector); j++) {
 				char *file_attrib;
 				attr = apol_vector_get_element(attr_vector, j);
-				qpol_type_get_name(policy->p, attr, &file_attrib);
+				qpol_type_get_name(q, attr, &file_attrib);
 				if (apol_vector_append(datum->file_type_attribs, (void *)file_attrib) < 0) {
 					ERR(policy, "%s", strerror(ENOMEM));
 					errno = ENOMEM;
@@ -213,6 +214,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	apol_terule_query_t *terule_query = NULL;
 	apol_vector_t *avrule_vector = NULL;
 	apol_vector_t *terule_vector = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	size_t i, j, x;
 	char *buff = NULL;
 	int buff_sz, error = 0;
@@ -281,9 +283,9 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		qpol_iterator_t *file_attr_iter;
 
 		qpol_type_t *type = apol_vector_get_element(type_vector, i);
-		qpol_type_get_name(policy->p, type, &type_name);
+		qpol_type_get_name(q, type, &type_name);
 
-		if (qpol_type_get_attr_iter(policy->p, type, &file_attr_iter) < 0) {
+		if (qpol_type_get_attr_iter(q, type, &file_attr_iter) < 0) {
 			error = errno;
 			ERR(policy, "Could not get attributes for %s\n", type_name);
 			goto find_file_types_run_fail;
@@ -295,7 +297,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			int nfta;
 
 			qpol_iterator_get_item(file_attr_iter, (void **)&attr);
-			qpol_type_get_name(policy->p, attr, &attr_name);
+			qpol_type_get_name(q, attr, &attr_name);
 			for (nfta = 0; nfta < apol_vector_get_size(datum->file_type_attribs); nfta++) {
 				char *file_type_attrib;
 
@@ -400,8 +402,8 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			char *class_name;
 
 			terule = apol_vector_get_element(terule_vector, x);
-			qpol_terule_get_object_class(policy->p, terule, &objclass);
-			qpol_class_get_name(policy->p, objclass, &class_name);
+			qpol_terule_get_object_class(q, terule, &objclass);
+			qpol_class_get_name(q, objclass, &class_name);
 			if (strcmp(class_name, "process")) {
 				proof = sechk_proof_new(NULL);
 				if (!proof) {
@@ -605,6 +607,7 @@ int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, l = 0, num_items = 0;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
 	if (!mod || !policy) {
@@ -642,7 +645,7 @@ int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 			j++;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
+			qpol_type_get_name(q, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
@@ -655,7 +658,7 @@ int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 			item = apol_vector_get_element(mod->result->items, k);
 			if (item) {
 				type = item->item;
-				qpol_type_get_name(policy->p, type, &type_name);
+				qpol_type_get_name(q, type, &type_name);
 				printf("%s\n", (char *)type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof, l);

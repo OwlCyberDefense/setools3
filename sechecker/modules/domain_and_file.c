@@ -1,6 +1,6 @@
 /**
  *  @file domain_and_file.c
- *  Implementation of the domain and file type module. 
+ *  Implementation of the domain and file type module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -163,6 +163,7 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	sechk_name_value_t *dep = NULL;
 	apol_vector_t *domain_vector;
 	apol_vector_t *type_vector;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
 
 	if (!mod || !policy) {
@@ -232,7 +233,7 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 
 		type_item = apol_vector_get_element(type_vector, i);
 		type = type_item->item;
-		qpol_type_get_name(policy->p, type, &type_name);
+		qpol_type_get_name(q, type, &type_name);
 		for (j = 0; j < apol_vector_get_size(domain_vector); j++) {
 			sechk_item_t *domain_item;
 			qpol_type_t *domain;
@@ -240,7 +241,7 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 
 			domain_item = apol_vector_get_element(domain_vector, j);
 			domain = domain_item->item;
-			qpol_type_get_name(policy->p, domain, &domain_name);
+			qpol_type_get_name(q, domain, &domain_name);
 			if (!strcmp(domain_name, type_name)) {
 				item = sechk_item_new(NULL);
 				if (!item) {
@@ -335,6 +336,7 @@ int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
 	if (!mod || !policy) {
@@ -370,7 +372,7 @@ int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = (qpol_type_t *) item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
+			qpol_type_get_name(q, type, &type_name);
 			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");
@@ -382,7 +384,7 @@ int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 			item = apol_vector_get_element(mod->result->items, k);
 			if (item) {
 				type = item->item;
-				qpol_type_get_name(policy->p, type, &type_name);
+				qpol_type_get_name(q, type, &type_name);
 				printf("%s\n", (char *)type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof, l);

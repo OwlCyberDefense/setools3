@@ -174,6 +174,8 @@ static void sediff_remap_types_window_on_add_button_clicked(GtkButton * button, 
 	sediff_remap_types_t *remap_types_window;
 	apol_vector_t *orig, *mod;
 	qpol_type_t *orig_type, *mod_type;
+	qpol_policy_t *oq = apol_policy_get_qpol(remap_types_window->sediff_app->orig_pol);
+	qpol_policy_t *mq = apol_policy_get_qpol(remap_types_window->sediff_app->mod_pol);
 
 	/* cast user_data */
 	remap_types_window = (sediff_remap_types_t *) user_data;
@@ -196,8 +198,8 @@ static void sediff_remap_types_window_on_add_button_clicked(GtkButton * button, 
 		return;
 	}
 
-	qpol_policy_get_type_by_name(remap_types_window->sediff_app->orig_pol->p, p1_str, &orig_type);
-	qpol_policy_get_type_by_name(remap_types_window->sediff_app->mod_pol->p, p2_str, &mod_type);
+	qpol_policy_get_type_by_name(oq, p1_str, &orig_type);
+	qpol_policy_get_type_by_name(mq, p2_str, &mod_type);
 
 	orig = apol_vector_create();
 	mod = apol_vector_create();
@@ -219,6 +221,8 @@ static int sediff_remap_types_window_init(sediff_remap_types_t * remap_types_win
 	int i;
 	char *dir = NULL;
 	apol_vector_t *type_vector;
+	qpol_policy_t *oq = apol_policy_get_qpol(remap_types_window->sediff_app->orig_pol);
+	qpol_policy_t *mq = apol_policy_get_qpol(remap_types_window->sediff_app->mod_pol);
 
 	if (remap_types_window == NULL)
 		return -1;
@@ -273,9 +277,9 @@ static int sediff_remap_types_window_init(sediff_remap_types_t * remap_types_win
 		char *type_name;
 
 		type = apol_vector_get_element(type_vector, i);
-		qpol_type_get_name(remap_types_window->sediff_app->orig_pol->p, type, &type_name);
+		qpol_type_get_name(oq, type, &type_name);
 		g_assert(type_name != NULL);
-		qpol_policy_get_type_by_name(remap_types_window->sediff_app->mod_pol->p, type_name, &t);
+		qpol_policy_get_type_by_name(mq, type_name, &t);
 		if (!t)
 			items = g_list_append(items, type_name);
 	}
@@ -291,9 +295,9 @@ static int sediff_remap_types_window_init(sediff_remap_types_t * remap_types_win
 		char *type_name;
 
 		type = apol_vector_get_element(type_vector, i);
-		qpol_type_get_name(remap_types_window->sediff_app->mod_pol->p, type, &type_name);
+		qpol_type_get_name(mq, type, &type_name);
 		g_assert(type_name != NULL);
-		qpol_policy_get_type_by_name(remap_types_window->sediff_app->orig_pol->p, type_name, &t);
+		qpol_policy_get_type_by_name(oq, type_name, &t);
 		if (!t)
 			items = g_list_append(items, type_name);
 	}

@@ -172,10 +172,10 @@ void sediff_progress_poldiff_handle_func(void *arg, poldiff_t * diff, int level,
 	}
 }
 
-void sediff_progress_apol_handle_func(apol_policy_t * p, int level, const char *fmt, va_list argp)
+void sediff_progress_apol_handle_func(void *varg, apol_policy_t * p, int level, const char *fmt, va_list argp)
 {
 	if (p != NULL) {
-		sediff_app_t *app = (sediff_app_t *) p->msg_callback_arg;
+		sediff_app_t *app = (sediff_app_t *) varg;
 		if (app->progress != NULL) {
 			sediff_progress_update_label(app, fmt, argp);
 		}

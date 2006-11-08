@@ -1,6 +1,6 @@
 /**
  *  @file roles_wo_users.h
- *  Defines the interface for the roles without users module. 
+ *  Defines the interface for the roles without users module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -171,7 +171,7 @@ int roles_wo_users_init(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 }
 
 /* The run function performs the check. This function runs only once
- * even if called multiple times. This function allocates the result 
+ * even if called multiple times. This function allocates the result
  * structure and fills in all relavant item and proof data. */
 int roles_wo_users_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
@@ -235,7 +235,7 @@ int roles_wo_users_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		char *role_name;
 
 		role = apol_vector_get_element(role_vector, i);
-		qpol_role_get_name(policy->p, role, &role_name);
+		qpol_role_get_name(apol_policy_get_qpol(policy), role, &role_name);
 
 		if (!strcmp(role_name, "object_r"))
 			continue;
@@ -357,7 +357,7 @@ int roles_wo_users_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			role = (qpol_role_t *) item->item;
-			qpol_role_get_name(policy->p, role, &role_name);
+			qpol_role_get_name(apol_policy_get_qpol(policy), role, &role_name);
 			printf("%s%s", role_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");

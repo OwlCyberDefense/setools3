@@ -1,6 +1,6 @@
 /**
  *  @file find_netif_types.c
- *  Implementation of the netif types utility module. 
+ *  Implementation of the netif types utility module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -155,11 +155,11 @@ int find_netif_types_init(sechk_module_t * mod, apol_policy_t * policy, void *ar
 /* The run function performs the check. This function runs only once
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
- * in all relavant item and proof data. 
+ * in all relavant item and proof data.
  * Return Values:
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
- *   1 The module "failed" 		- some negative results found */
+ *   1 The module "failed"	- some negative results found */
 int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_result_t *res = NULL;
@@ -168,6 +168,7 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	char *buff = NULL;
 	size_t i, buff_sz = 0;
 	apol_vector_t *netifcon_vector;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
 
 	if (!mod || !policy) {
@@ -208,7 +209,7 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	qpol_isid_t *isid = NULL;
 
 	buff = NULL;
-	qpol_policy_get_isid_by_name(policy->p, "netif", &isid);
+	qpol_policy_get_isid_by_name(q, "netif", &isid);
 	if (isid) {
 		qpol_context_t *context;
 		apol_context_t *a_context;
@@ -216,9 +217,9 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		char *context_type_name, *tmp;
 
 		proof = NULL;
-		qpol_isid_get_context(policy->p, isid, &context);
-		qpol_context_get_type(policy->p, context, &context_type);
-		qpol_type_get_name(policy->p, context_type, &context_type_name);
+		qpol_isid_get_context(q, isid, &context);
+		qpol_context_get_type(q, context, &context_type);
+		qpol_type_get_name(q, context_type, &context_type_name);
 		a_context = apol_context_create_from_qpol_context(policy, context);
 
 		if (apol_str_append(&buff, &buff_sz, "sid netif ") != 0) {
@@ -295,12 +296,12 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		int j = 0;
 
 		netifcon = apol_vector_get_element(netifcon_vector, i);
-		qpol_netifcon_get_msg_con(policy->p, netifcon, &msg_con);
-		qpol_netifcon_get_if_con(policy->p, netifcon, &if_con);
-		qpol_context_get_type(policy->p, msg_con, &msg_type);
-		qpol_context_get_type(policy->p, if_con, &if_type);
-		qpol_type_get_name(policy->p, msg_type, &msg_con_name);
-		qpol_type_get_name(policy->p, if_type, &if_con_name);
+		qpol_netifcon_get_msg_con(q, netifcon, &msg_con);
+		qpol_netifcon_get_if_con(q, netifcon, &if_con);
+		qpol_context_get_type(q, msg_con, &msg_type);
+		qpol_context_get_type(q, if_con, &if_type);
+		qpol_type_get_name(q, msg_type, &msg_con_name);
+		qpol_type_get_name(q, if_type, &if_con_name);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -320,7 +321,7 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 			res_item = apol_vector_get_element(res->items, j);
 			res_type = (qpol_type_t *) res_item->item;
-			qpol_type_get_name(policy->p, res_type, &res_type_name);
+			qpol_type_get_name(q, res_type, &res_type_name);
 			if (!strcmp(res_type_name, if_con_name))
 				item = res_item;
 		}
@@ -383,6 +384,7 @@ int find_netif_types_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	sechk_proof_t *proof = NULL;
 	int i = 0, j = 0, k = 0, num_items = 0;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
 	if (!mod || !policy) {
@@ -424,7 +426,7 @@ int find_netif_types_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = (qpol_type_t *) item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
+			qpol_type_get_name(q, type, &type_name);
 			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");
@@ -443,7 +445,7 @@ int find_netif_types_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 		for (j = 0; j < num_items; j++) {
 			item = apol_vector_get_element(mod->result->items, j);
 			type = (qpol_type_t *) item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
+			qpol_type_get_name(q, type, &type_name);
 			if (item) {
 				printf("%s\n", type_name);
 				for (k = 0; k < apol_vector_get_size(item->proof); k++) {

@@ -1,6 +1,6 @@
 /**
  *  @file inc_net_access.h
- *  Defines the interface for the incomplete network access module. 
+ *  Defines the interface for the incomplete network access module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -1314,11 +1314,11 @@ static char *generate_common_only_proof_text(const char *domain, net_state_t * s
 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result
- * structure and fills in all relavant item and proof data. 
+ * structure and fills in all relavant item and proof data.
  * Return Values:
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
- *   1 The module "failed" 		- some negative results found */
+ *   1 The module "failed"	- some negative results found */
 int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_result_t *res = NULL;
@@ -1335,6 +1335,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	char *net_domain_name = NULL, *perm_name = NULL, *tgt_name = NULL;
 	qpol_avrule_t *rule = NULL;
 	qpol_iterator_t *iter = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	net_state_t *state = NULL;
 
 	if (!mod || !policy) {
@@ -1397,7 +1398,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	for (i = 0; i < apol_vector_get_size(net_domain_vector); i++) {
 		tmp_item = apol_vector_get_element(net_domain_vector, i);
 		net_domain = tmp_item->item;
-		qpol_type_get_name(policy->p, net_domain, &net_domain_name);
+		qpol_type_get_name(q, net_domain, &net_domain_name);
 		state = net_state_create();
 
 		/* find any self sock_file perms */
@@ -1408,7 +1409,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
+			qpol_avrule_get_perm_iter(q, rule, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				qpol_iterator_get_item(iter, (void **)(&perm_name));
 				if (!strcmp(perm_name, "read")) {
@@ -1431,7 +1432,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
+			qpol_avrule_get_perm_iter(q, rule, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				qpol_iterator_get_item(iter, (void **)(&perm_name));
 				if (!strcmp(perm_name, "read")) {
@@ -1454,7 +1455,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
+			qpol_avrule_get_perm_iter(q, rule, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				qpol_iterator_get_item(iter, (void **)(&perm_name));
 				if (!strcmp(perm_name, "read")) {
@@ -1478,9 +1479,9 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
-			qpol_type_get_name(policy->p, tmp_type, &tgt_name);
-			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
+			qpol_avrule_get_target_type(q, rule, &tmp_type);
+			qpol_type_get_name(q, tmp_type, &tgt_name);
+			qpol_avrule_get_perm_iter(q, rule, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				qpol_iterator_get_item(iter, (void **)(&perm_name));
 				if (!strcmp(perm_name, "tcp_send")) {
@@ -1509,9 +1510,9 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
-			qpol_type_get_name(policy->p, tmp_type, &tgt_name);
-			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
+			qpol_avrule_get_target_type(q, rule, &tmp_type);
+			qpol_type_get_name(q, tmp_type, &tgt_name);
+			qpol_avrule_get_perm_iter(q, rule, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				qpol_iterator_get_item(iter, (void **)(&perm_name));
 				if (!strcmp(perm_name, "tcp_send")) {
@@ -1540,12 +1541,12 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
-			qpol_type_get_name(policy->p, tmp_type, &tgt_name);
+			qpol_avrule_get_target_type(q, rule, &tmp_type);
+			qpol_type_get_name(q, tmp_type, &tgt_name);
 			/* skip self */
 			if (!strcmp(net_domain_name, tgt_name))
 				continue;
-			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
+			qpol_avrule_get_perm_iter(q, rule, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				qpol_iterator_get_item(iter, (void **)(&perm_name));
 				if (!strcmp(perm_name, "send_msg")) {
@@ -1568,12 +1569,12 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
-			qpol_type_get_name(policy->p, tmp_type, &tgt_name);
+			qpol_avrule_get_target_type(q, rule, &tmp_type);
+			qpol_type_get_name(q, tmp_type, &tgt_name);
 			/* skip self */
 			if (!strcmp(net_domain_name, tgt_name))
 				continue;
-			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
+			qpol_avrule_get_perm_iter(q, rule, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				qpol_iterator_get_item(iter, (void **)(&perm_name));
 				if (!strcmp(perm_name, "send_msg")) {
@@ -1596,9 +1597,9 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
 			rule = apol_vector_get_element(avrule_vector, j);
-			qpol_avrule_get_target_type(policy->p, rule, &tmp_type);
-			qpol_type_get_name(policy->p, tmp_type, &tgt_name);
-			qpol_avrule_get_perm_iter(policy->p, rule, &iter);
+			qpol_avrule_get_target_type(q, rule, &tmp_type);
+			qpol_type_get_name(q, tmp_type, &tgt_name);
+			qpol_avrule_get_perm_iter(q, rule, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 				qpol_iterator_get_item(iter, (void **)(&perm_name));
 				if (!strcmp(perm_name, "sendto")) {
@@ -1808,6 +1809,7 @@ int inc_net_access_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	sechk_proof_t *proof = NULL;
 	int i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
 	if (!mod || !policy) {
@@ -1844,7 +1846,7 @@ int inc_net_access_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			item = apol_vector_get_element(mod->result->items, k);
 			if (item) {
 				type = item->item;
-				qpol_type_get_name(policy->p, type, &type_name);
+				qpol_type_get_name(q, type, &type_name);
 				printf("%s\n", (char *)type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof, l);
@@ -1863,7 +1865,7 @@ int inc_net_access_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			j++;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
+			qpol_type_get_name(q, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}

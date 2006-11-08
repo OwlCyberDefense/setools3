@@ -856,7 +856,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 			pol_ver = 0;
 
 		unsigned int ver;
-		if (qpol_policy_get_policy_version(lib->policy->p, &ver) < 0) {
+		if (qpol_policy_get_policy_version(apol_policy_get_qpol(lib->policy), &ver) < 0) {
 			ERR(lib->policy, "%s", "Unable to get policy version.");
 			return FALSE;
 		}
@@ -882,7 +882,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 		return FALSE;
 #endif
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
-		if (!qpol_policy_is_mls_enabled(lib->policy->p)) {
+		if (!qpol_policy_is_mls_enabled(apol_policy_get_qpol(lib->policy))) {
 			/* as long as we're not in quiet mode print output */
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				fprintf(stderr, "Error: module requires MLS policy\n");

@@ -1,6 +1,6 @@
 /**
  *  @file imp_range_trans.c
- *  Implementation of the impossible range_transition module. 
+ *  Implementation of the impossible range_transition module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -166,7 +166,7 @@ int imp_range_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg
 /* The run function performs the check. This function runs only once
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
- * in all relavant item and proof data. 
+ * in all relavant item and proof data.
  * Return Values:
  *  -1 System error
  *   0 The module "succeeded" - no negative results found
@@ -190,6 +190,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	apol_avrule_query_t *avrule_query = NULL;
 	apol_mls_range_t *range;
 	qpol_mls_range_t *qpol_range;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
 
 	if (!mod || !policy) {
@@ -236,11 +237,11 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	for (i = 0; i < apol_vector_get_size(range_trans_vector); i++) {
 		/* collect information about the rule */
 		rule = apol_vector_get_element(range_trans_vector, i);
-		qpol_range_trans_get_source_type(policy->p, rule, &source);
-		qpol_range_trans_get_target_type(policy->p, rule, &target);
-		qpol_type_get_name(policy->p, source, &source_name);
-		qpol_type_get_name(policy->p, target, &target_name);
-		qpol_range_trans_get_range(policy->p, rule, &qpol_range);
+		qpol_range_trans_get_source_type(q, rule, &source);
+		qpol_range_trans_get_target_type(q, rule, &target);
+		qpol_type_get_name(q, source, &source_name);
+		qpol_type_get_name(q, target, &target_name);
+		qpol_range_trans_get_range(q, rule, &qpol_range);
 		range = apol_mls_range_create_from_qpol_mls_range(policy, qpol_range);
 
 		/* find roles possible for source */
@@ -257,7 +258,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		user_query = apol_user_query_create();
 		for (j = 0; j < apol_vector_get_size(role_vector); j++) {
 			role = apol_vector_get_element(role_vector, j);
-			qpol_role_get_name(policy->p, role, &role_name);
+			qpol_role_get_name(q, role, &role_name);
 			apol_user_query_set_role(policy, user_query, role_name);
 			apol_user_get_by_query(policy, user_query, &tmp_v);
 			apol_vector_cat(users_w_roles, tmp_v);

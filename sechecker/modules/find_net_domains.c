@@ -1,6 +1,6 @@
 /**
  *  @file find_net_domains.c
- *  Implementation of the network domain utility module. 
+ *  Implementation of the network domain utility module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -218,11 +218,11 @@ int find_net_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *ar
 /* The run function performs the check. This function runs only once
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
- * in all relavant item and proof data. 
+ * in all relavant item and proof data.
  * Return Values:
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
- *   1 The module "failed" 		- some negative results found */
+ *   1 The module "failed"	- some negative results found */
 int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	find_net_domains_data_t *datum;
@@ -232,6 +232,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	int i = 0, j = 0, k = 0, error = 0;
 	apol_vector_t *avrule_vector;
 	apol_avrule_query_t *avrule_query = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -281,8 +282,8 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		char *class_name;
 
 		avrule = apol_vector_get_element(avrule_vector, k);
-		qpol_avrule_get_object_class(policy->p, avrule, &class);
-		qpol_class_get_name(policy->p, class, &class_name);
+		qpol_avrule_get_object_class(q, avrule, &class);
+		qpol_class_get_name(q, class, &class_name);
 		for (i = 0; i < apol_vector_get_size(datum->net_objs); i++) {
 			char *net_obj_name;
 
@@ -291,8 +292,8 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 				qpol_type_t *source;
 				char *source_name;
 
-				qpol_avrule_get_source_type(policy->p, avrule, &source);
-				qpol_type_get_name(policy->p, source, &source_name);
+				qpol_avrule_get_source_type(q, avrule, &source);
+				qpol_type_get_name(q, source, &source_name);
 
 				proof = sechk_proof_new(NULL);
 				if (!proof) {
@@ -317,7 +318,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 					res_item = apol_vector_get_element(res->items, j);
 					res_type = res_item->item;
-					qpol_type_get_name(policy->p, res_type, &res_type_name);
+					qpol_type_get_name(q, res_type, &res_type_name);
 					if (!strcmp(res_type_name, source_name))
 						item = res_item;
 				}
@@ -385,6 +386,7 @@ int find_net_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	sechk_proof_t *proof = NULL;
 	int i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
 	if (!mod || !policy) {
@@ -425,7 +427,7 @@ int find_net_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 			j++;
 			item = apol_vector_get_element(mod->result->items, i);
 			type = item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
+			qpol_type_get_name(q, type, &type_name);
 			j %= 4;
 			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
@@ -446,7 +448,7 @@ int find_net_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 			item = apol_vector_get_element(mod->result->items, k);
 			if (item) {
 				type = item->item;
-				qpol_type_get_name(policy->p, type, &type_name);
+				qpol_type_get_name(q, type, &type_name);
 				printf("%s\n", (char *)type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
 					proof = apol_vector_get_element(item->proof, l);

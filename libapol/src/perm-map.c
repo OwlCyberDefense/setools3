@@ -24,13 +24,9 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <config.h>
+#include "policy-query-internal.h"
 
 #include <apol/perm-map.h>
-#include <apol/vector.h>
-#include <apol/util.h>
-
-#include <qpol/policy_query.h>
 
 #include <errno.h>
 #include <stdio.h>
@@ -148,8 +144,7 @@ static apol_permmap_perm_t *apol_permmap_perm_create(const char *name, unsigned 
  * @param p Policy from which to create permission map.
  *
  * @return A newly allocated map, or NULL on error.  The caller is
- * responsible for deallocating this pointer via
- * apol_permmap_destroy().
+ * responsible for deallocating this pointer via permmap_destroy().
  */
 static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
 {
@@ -237,14 +232,14 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
 	qpol_iterator_destroy(&perm_iter);
 	qpol_iterator_destroy(&common_iter);
 	if (retval < 0) {
-		apol_permmap_destroy(&t);
+		permmap_destroy(&t);
 	}
 	return t;
 }
 
-void apol_permmap_destroy(apol_permmap_t ** p)
+void permmap_destroy(apol_permmap_t ** p)
 {
-	if (*p == NULL)
+	if (p == NULL || *p == NULL)
 		return;
 	apol_vector_destroy(&(*p)->classes, apol_permmap_class_free);
 	free(*p);
@@ -539,7 +534,7 @@ int apol_permmap_load(apol_policy_t * p, const char *filename)
 	if (p == NULL || filename == NULL) {
 		goto cleanup;
 	}
-	apol_permmap_destroy(&p->pmap);
+	permmap_destroy(&p->pmap);
 	if ((p->pmap = apol_permmap_create_from_policy(p)) == NULL) {
 		goto cleanup;
 	}

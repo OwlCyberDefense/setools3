@@ -35,21 +35,11 @@
 #define APOL_PERMMAP_MAX_WEIGHT 10
 #define APOL_PERMMAP_MIN_WEIGHT 1
 
-typedef struct apol_permmap apol_permmap_t;
-
 #define APOL_PERMMAP_UNMAPPED	0x00   /* defined object/perm, but no map */
 #define	APOL_PERMMAP_READ	0x01
 #define APOL_PERMMAP_WRITE	0x02
 #define APOL_PERMMAP_BOTH	(APOL_PERMMAP_READ | APOL_PERMMAP_WRITE)
 #define APOL_PERMMAP_NONE	0x10
-
-/**
- * Deallocate all space associated with a permmap, including the
- * pointer itself.  Afterwards set the pointer to NULL.
- *
- * @param p Reference to an apol_permmap_t to destroy.
- */
-extern void apol_permmap_destroy(apol_permmap_t ** p);
 
 /**
  * Read a permission map from a file into a policy.  If there is a
@@ -58,8 +48,7 @@ extern void apol_permmap_destroy(apol_permmap_t ** p);
  * string and send it to the error handler stored within the policy.
  *
  * If a permission map was already loaded, then it will be first
- * destroyed.  The caller is responsible for callaing
- * apol_permmap_destroy() upon the policy's pmap afterwards.
+ * destroyed.
  *
  * @param p Policy to which store permission map.
  * @param filename Name of file containing permission map.

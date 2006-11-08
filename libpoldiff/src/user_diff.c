@@ -272,8 +272,9 @@ static int user_name_comp(const void *x, const void *y, void *arg)
 	qpol_user_t *u1 = (qpol_user_t *) x;
 	qpol_user_t *u2 = (qpol_user_t *) y;
 	apol_policy_t *p = (apol_policy_t *) arg;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	char *name1, *name2;
-	if (qpol_user_get_name(p->p, u1, &name1) < 0 || qpol_user_get_name(p->p, u2, &name2) < 0) {
+	if (qpol_user_get_name(q, u1, &name1) < 0 || qpol_user_get_name(q, u2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -283,8 +284,9 @@ apol_vector_t *user_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
-	if (qpol_policy_get_user_iter(policy->p, &iter) < 0) {
+	if (qpol_policy_get_user_iter(q, &iter) < 0) {
 		return NULL;
 	}
 	v = apol_vector_create_from_iter(iter);
@@ -305,7 +307,7 @@ int user_comp(const void *x, const void *y, poldiff_t * diff)
 	qpol_user_t *u1 = (qpol_user_t *) x;
 	qpol_user_t *u2 = (qpol_user_t *) y;
 	char *name1, *name2;
-	if (qpol_user_get_name(diff->orig_pol->p, u1, &name1) < 0 || qpol_user_get_name(diff->mod_pol->p, u2, &name2) < 0) {
+	if (qpol_user_get_name(diff->orig_qpol, u1, &name1) < 0 || qpol_user_get_name(diff->mod_qpol, u2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -347,9 +349,9 @@ int user_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	poldiff_user_t *pu;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_user_get_name(diff->mod_pol->p, u, &name) < 0) ||
+	     qpol_user_get_name(diff->mod_qpol, u, &name) < 0) ||
 	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_user_get_name(diff->orig_pol->p, u, &name) < 0)) {
+	     qpol_user_get_name(diff->orig_qpol, u, &name) < 0)) {
 		return -1;
 	}
 	pu = make_diff(diff, form, name);
@@ -389,17 +391,18 @@ static apol_vector_t *user_get_roles(poldiff_t * diff, apol_policy_t * p, qpol_u
 	qpol_role_t *role;
 	char *role_name;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1, error = 0;
 
 	if ((v = apol_vector_create()) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
-	if (qpol_user_get_role_iter(p->p, user, &iter) < 0) {
+	if (qpol_user_get_role_iter(q, user, &iter) < 0) {
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **)&role) < 0 || qpol_role_get_name(p->p, role, &role_name)) {
+		if (qpol_iterator_get_item(iter, (void **)&role) < 0 || qpol_role_get_name(q, role, &role_name)) {
 			error = errno;
 			goto cleanup;
 		}
@@ -431,7 +434,7 @@ int user_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	size_t i, j;
 	int retval = -1, error = 0, compval;
 
-	if (qpol_user_get_name(diff->orig_pol->p, u1, &name) < 0 ||
+	if (qpol_user_get_name(diff->orig_qpol, u1, &name) < 0 ||
 	    (v1 = user_get_roles(diff, diff->orig_pol, u1)) == NULL || (v2 = user_get_roles(diff, diff->mod_pol, u2)) == NULL) {
 		error = errno;
 		goto cleanup;

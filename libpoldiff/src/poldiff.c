@@ -225,6 +225,8 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	}
 	diff->orig_pol = orig_policy;
 	diff->mod_pol = mod_policy;
+	diff->orig_qpol = apol_policy_get_qpol(diff->orig_pol);
+	diff->mod_qpol = apol_policy_get_qpol(diff->mod_pol);
 	diff->fn = fn;
 	diff->handle_arg = callback_arg;
 	if ((diff->type_map = type_map_create()) == NULL) {

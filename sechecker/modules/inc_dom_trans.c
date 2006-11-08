@@ -1,6 +1,6 @@
 /**
  *  @file inc_dom_trans.h
- *  Defines the interface for the incomplete domain transition module. 
+ *  Defines the interface for the incomplete domain transition module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -179,6 +179,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 	char *buff = NULL;
 	int buff_sz, error = 0;
 	qpol_type_t *domain = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *domain_name = NULL;
 
 	if (!mod || !policy) {
@@ -263,7 +264,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 	for (i = 0; i < apol_vector_get_size(domain_vector); i++) {
 		tmp_item = apol_vector_get_element(domain_vector, i);
 		domain = tmp_item->item;
-		qpol_type_get_name(policy->p, domain, &domain_name);
+		qpol_type_get_name(q, domain, &domain_name);
 		apol_domain_trans_analysis_set_start_type(policy, domain_trans, domain_name);
 		apol_domain_trans_analysis_set_direction(policy, domain_trans, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
 		apol_domain_trans_analysis_set_valid(policy, domain_trans, APOL_DOMAIN_TRANS_SEARCH_BOTH);
@@ -286,15 +287,15 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
 			if (start)
-				qpol_type_get_name(policy->p, start, &start_name);
+				qpol_type_get_name(q, start, &start_name);
 			else
 				start_name = "<start_type>";
 			if (end)
-				qpol_type_get_name(policy->p, end, &end_name);
+				qpol_type_get_name(q, end, &end_name);
 			else
 				end_name = "<end_type>";
 			if (ep)
-				qpol_type_get_name(policy->p, ep, &ep_name);
+				qpol_type_get_name(q, ep, &ep_name);
 			else
 				ep_name = "<entrypoint_type>";
 
@@ -306,7 +307,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 					char *role_name;
 
 					role = apol_vector_get_element(role_vector, k);
-					qpol_role_get_name(policy->p, role, &role_name);
+					qpol_role_get_name(q, role, &role_name);
 					if (apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end)) {
 						apol_user_query_set_role(policy, user_query, role_name);
 						apol_user_get_by_query(policy, user_query, &user_vector);
@@ -328,10 +329,10 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 						char *default_role_name;
 
 						role_trans = apol_vector_get_element(rbac_vector, k);
-						qpol_role_trans_get_source_role(policy->p, role_trans, &source_role);
-						qpol_role_trans_get_default_role(policy->p, role_trans, &default_role);
-						qpol_role_get_name(policy->p, source_role, &source_role_name);
-						qpol_role_get_name(policy->p, default_role, &default_role_name);
+						qpol_role_trans_get_source_role(q, role_trans, &source_role);
+						qpol_role_trans_get_default_role(q, role_trans, &default_role);
+						qpol_role_get_name(q, source_role, &source_role_name);
+						qpol_role_get_name(q, default_role, &default_role_name);
 
 						if (apol_role_has_type(policy, source_role, start) &&
 						    apol_role_has_type(policy, default_role, end)) {
@@ -552,6 +553,7 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int i = 0, j = 0, num_items;
 
 	if (!mod || !policy) {
@@ -601,15 +603,15 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
 			if (start)
-				qpol_type_get_name(policy->p, start, &start_name);
+				qpol_type_get_name(q, start, &start_name);
 			else
 				start_name = "<start_type>";
 			if (end)
-				qpol_type_get_name(policy->p, end, &end_name);
+				qpol_type_get_name(q, end, &end_name);
 			else
 				end_name = "<end_type>";
 			if (ep)
-				qpol_type_get_name(policy->p, ep, &ep_name);
+				qpol_type_get_name(q, ep, &ep_name);
 			else
 				ep_name = "<entrypoint_type>";
 
@@ -635,15 +637,15 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
 			if (start)
-				qpol_type_get_name(policy->p, start, &start_name);
+				qpol_type_get_name(q, start, &start_name);
 			else
 				start_name = "<start_type>";
 			if (end)
-				qpol_type_get_name(policy->p, end, &end_name);
+				qpol_type_get_name(q, end, &end_name);
 			else
 				end_name = "<end_type>";
 			if (ep)
-				qpol_type_get_name(policy->p, ep, &ep_name);
+				qpol_type_get_name(q, ep, &ep_name);
 			else
 				ep_name = "<entrypoint_type>";
 
