@@ -69,8 +69,8 @@ void poldiff_class_get_stats(poldiff_t * diff, size_t stats[5])
 char *poldiff_class_to_string(poldiff_t * diff, const void *cls)
 {
 	poldiff_class_t *c = (poldiff_class_t *) cls;
-	size_t num_added, num_removed, len, i;
-	char *s = NULL, *t = NULL, *perm;
+	size_t num_added, num_removed, len = 0, i;
+	char *s = NULL, *perm;
 	if (diff == NULL || cls == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -80,73 +80,47 @@ char *poldiff_class_to_string(poldiff_t * diff, const void *cls)
 	num_removed = apol_vector_get_size(c->removed_perms);
 	switch (c->form) {
 	case POLDIFF_FORM_ADDED:{
-			if (asprintf(&s, "+ %s", c->name) < 0) {
-				s = NULL;
+			if (apol_str_appendf(&s, &len, "+ %s", c->name) < 0) {
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_REMOVED:{
-			if (asprintf(&s, "- %s", c->name) < 0) {
-				s = NULL;
+			if (apol_str_appendf(&s, &len, "- %s", c->name) < 0) {
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_MODIFIED:{
-			if (asprintf(&s, "* %s (", c->name) < 0) {
+			if (apol_str_appendf(&s, &len, "* %s (", c->name) < 0) {
 				s = NULL;
 				break;
 			}
-			len = strlen(s);
 			if (num_added > 0) {
-				if (asprintf(&t, "%d Added Permissions", num_added) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "%d Added Permissions", num_added) < 0) {
 					break;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					break;
-				}
-				free(t);
-				t = NULL;
 			}
 			if (num_removed > 0) {
-				if (asprintf(&t, "%s%d Removed Permissions", (num_added > 0 ? ", " : ""), num_removed) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "%s%d Removed Permissions", (num_added > 0 ? ", " : ""), num_removed)
+				    < 0) {
 					break;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					break;
-				}
-				free(t);
-				t = NULL;
 			}
 			if (apol_str_append(&s, &len, ")\n") < 0) {
 				break;
 			}
 			for (i = 0; i < apol_vector_get_size(c->added_perms); i++) {
 				perm = (char *)apol_vector_get_element(c->added_perms, i);
-				if (asprintf(&t, "\t+ %s\n", perm) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "\t+ %s\n", perm) < 0) {
 					goto err;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					goto err;
-				}
-				free(t);
-				t = NULL;
 			}
 			for (i = 0; i < apol_vector_get_size(c->removed_perms); i++) {
 				perm = (char *)apol_vector_get_element(c->removed_perms, i);
-				if (asprintf(&t, "\t- %s\n", perm) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "\t- %s\n", perm) < 0) {
 					goto err;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					goto err;
-				}
-				free(t);
-				t = NULL;
 			}
 			return s;
 		}
@@ -159,7 +133,6 @@ char *poldiff_class_to_string(poldiff_t * diff, const void *cls)
       err:
 	/* if this is reached then an error occurred */
 	free(s);
-	free(t);
 	ERR(diff, "%s", strerror(ENOMEM));
 	errno = ENOMEM;
 	return NULL;
@@ -576,8 +549,8 @@ void poldiff_common_get_stats(poldiff_t * diff, size_t stats[5])
 char *poldiff_common_to_string(poldiff_t * diff, const void *cls)
 {
 	poldiff_common_t *c = (poldiff_common_t *) cls;
-	size_t num_added, num_removed, len, i;
-	char *s = NULL, *t = NULL, *perm;
+	size_t num_added, num_removed, len = 0, i;
+	char *s = NULL, *perm;
 	if (diff == NULL || cls == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -587,73 +560,49 @@ char *poldiff_common_to_string(poldiff_t * diff, const void *cls)
 	num_removed = apol_vector_get_size(c->removed_perms);
 	switch (c->form) {
 	case POLDIFF_FORM_ADDED:{
-			if (asprintf(&s, "+ %s", c->name) < 0) {
+			if (apol_str_appendf(&s, &len, "+ %s", c->name) < 0) {
 				s = NULL;
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_REMOVED:{
-			if (asprintf(&s, "- %s", c->name) < 0) {
+			if (apol_str_appendf(&s, &len, "- %s", c->name) < 0) {
 				s = NULL;
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_MODIFIED:{
-			if (asprintf(&s, "* %s (", c->name) < 0) {
+			if (apol_str_appendf(&s, &len, "* %s (", c->name) < 0) {
 				s = NULL;
 				break;
 			}
-			len = strlen(s);
 			if (num_added > 0) {
-				if (asprintf(&t, "%d Added Permissions", num_added) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "%d Added Permissions", num_added) < 0) {
 					break;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					break;
-				}
-				free(t);
-				t = NULL;
 			}
 			if (num_removed > 0) {
-				if (asprintf(&t, "%s%d Removed Permissions", (num_added > 0 ? ", " : ""), num_removed) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "%s%d Removed Permissions", (num_added > 0 ? ", " : ""), num_removed)
+				    < 0) {
 					break;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					break;
-				}
-				free(t);
-				t = NULL;
 			}
 			if (apol_str_append(&s, &len, ")\n") < 0) {
 				break;
 			}
 			for (i = 0; i < apol_vector_get_size(c->added_perms); i++) {
 				perm = (char *)apol_vector_get_element(c->added_perms, i);
-				if (asprintf(&t, "\t+ %s\n", perm) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "\t+ %s\n", perm) < 0) {
 					goto err;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					goto err;
-				}
-				free(t);
-				t = NULL;
 			}
 			for (i = 0; i < apol_vector_get_size(c->removed_perms); i++) {
 				perm = (char *)apol_vector_get_element(c->removed_perms, i);
-				if (asprintf(&t, "\t- %s\n", perm) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "\t- %s\n", perm) < 0) {
 					goto err;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					goto err;
-				}
-				free(t);
-				t = NULL;
 			}
 			return s;
 		}
@@ -666,7 +615,6 @@ char *poldiff_common_to_string(poldiff_t * diff, const void *cls)
       err:
 	/* if this is reached then an error occurred */
 	free(s);
-	free(t);
 	ERR(diff, "%s", strerror(ENOMEM));
 	errno = ENOMEM;
 	return NULL;

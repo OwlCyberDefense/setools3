@@ -66,8 +66,8 @@ void poldiff_user_get_stats(poldiff_t * diff, size_t stats[5])
 char *poldiff_user_to_string(poldiff_t * diff, const void *user)
 {
 	poldiff_user_t *u = (poldiff_user_t *) user;
-	size_t num_added, num_removed, len, i;
-	char *s = NULL, *t = NULL, *role;
+	size_t num_added, num_removed, len = 0, i;
+	char *s = NULL, *role;
 	if (diff == NULL || user == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -77,73 +77,45 @@ char *poldiff_user_to_string(poldiff_t * diff, const void *user)
 	num_removed = apol_vector_get_size(u->removed_roles);
 	switch (u->form) {
 	case POLDIFF_FORM_ADDED:{
-			if (asprintf(&s, "+ %s", u->name) < 0) {
-				s = NULL;
+			if (apol_str_appendf(&s, &len, "+ %s", u->name) < 0) {
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_REMOVED:{
-			if (asprintf(&s, "- %s", u->name) < 0) {
-				s = NULL;
+			if (apol_str_appendf(&s, &len, "- %s", u->name) < 0) {
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_MODIFIED:{
-			if (asprintf(&s, "* %s (", u->name) < 0) {
-				s = NULL;
+			if (apol_str_appendf(&s, &len, "* %s (", u->name) < 0) {
 				break;
 			}
-			len = strlen(s);
 			if (num_added > 0) {
-				if (asprintf(&t, "%d Added Roles", num_added) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "%d Added Roles", num_added) < 0) {
 					break;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					break;
-				}
-				free(t);
-				t = NULL;
 			}
 			if (num_removed > 0) {
-				if (asprintf(&t, "%s%d Removed Roles", (num_added > 0 ? ", " : ""), num_removed) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "%s%d Removed Roles", (num_added > 0 ? ", " : ""), num_removed) < 0) {
 					break;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					break;
-				}
-				free(t);
-				t = NULL;
 			}
 			if (apol_str_append(&s, &len, ")\n") < 0) {
 				break;
 			}
 			for (i = 0; i < apol_vector_get_size(u->added_roles); i++) {
 				role = (char *)apol_vector_get_element(u->added_roles, i);
-				if (asprintf(&t, "\t+ %s\n", role) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "\t+ %s\n", role) < 0) {
 					goto err;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					goto err;
-				}
-				free(t);
-				t = NULL;
 			}
 			for (i = 0; i < apol_vector_get_size(u->removed_roles); i++) {
 				role = (char *)apol_vector_get_element(u->removed_roles, i);
-				if (asprintf(&t, "\t- %s\n", role) < 0) {
-					t = NULL;
+				if (apol_str_appendf(&s, &len, "\t- %s\n", role) < 0) {
 					goto err;
 				}
-				if (apol_str_append(&s, &len, t) < 0) {
-					goto err;
-				}
-				free(t);
-				t = NULL;
 			}
 			return s;
 		}
@@ -156,7 +128,6 @@ char *poldiff_user_to_string(poldiff_t * diff, const void *user)
       err:
 	/* if this is reached then an error occurred */
 	free(s);
-	free(t);
 	ERR(diff, "%s", strerror(ENOMEM));
 	errno = ENOMEM;
 	return NULL;

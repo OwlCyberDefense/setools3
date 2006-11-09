@@ -67,8 +67,8 @@ void poldiff_bool_get_stats(poldiff_t * diff, size_t stats[5])
 char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean)
 {
 	poldiff_bool_t *b = (poldiff_bool_t *) boolean;
-	size_t len;
-	char *s = NULL, *t = NULL;
+	size_t len = 0;
+	char *s = NULL;
 	if (diff == NULL || boolean == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -76,36 +76,22 @@ char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean)
 	}
 	switch (b->form) {
 	case POLDIFF_FORM_ADDED:{
-			if (asprintf(&s, "+ %s", b->name) < 0) {
-				s = NULL;
+			if (apol_str_appendf(&s, &len, "+ %s", b->name) < 0) {
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_REMOVED:{
-			if (asprintf(&s, "- %s", b->name) < 0) {
-				s = NULL;
+			if (apol_str_appendf(&s, &len, "- %s", b->name) < 0) {
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_MODIFIED:{
-			if (asprintf(&s, "* %s (", b->name) < 0) {
-				s = NULL;
+			if (apol_str_appendf
+			    (&s, &len, "* %s (changed from %s)", b->name, (b->state ? "FALSE to TRUE" : "TRUE to FALSE")) < 0) {
 				break;
 			}
-			len = strlen(s);
-			if (asprintf(&t, "changed from %s", (b->state ? "FALSE to TRUE" : "TRUE to FALSE")) < 0) {
-				t = NULL;
-				break;
-			}
-			if (apol_str_append(&s, &len, t) < 0) {
-				break;
-			}
-			free(t);
-			t = NULL;
-			if (apol_str_append(&s, &len, ")") < 0)
-				break;
 			return s;
 		}
 	default:{

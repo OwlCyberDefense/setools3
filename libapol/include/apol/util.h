@@ -262,12 +262,17 @@ extern int apol_str_append(char **tgt, size_t * tgt_sz, const char *str);
  * tgt.  This will be updated with the new string size.  If *tgt is
  * NULL then the existing value is ignored.  (It will still be updated
  * afterwards).
- * @param fmt Format for the string with which append.
+ * @param fmt Format for the string with which append, as per
+ * printf(3).
  *
  * @return 0 on success.  On error, return < 0 and set errno; tgt will be
- * free()d and set to NULL, tgt_sz will be set to 0. */
-__attribute__ ((format(printf, 3, 4)))
+ * free()d and set to NULL, tgt_sz will be set to 0.
+ */
 extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...);
+
+/* declaration duplicated below to satisfy doxygen */
+extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...)
+	__attribute__ ((format(printf, 3, 4)));
 
 /**
  * Test whether a given string is only white space.
