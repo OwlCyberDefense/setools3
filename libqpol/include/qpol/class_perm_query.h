@@ -27,6 +27,10 @@
 #ifndef QPOL_CLASS_PERM_QUERY_H
 #define QPOL_CLASS_PERM_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -194,5 +198,9 @@ extern int qpol_common_get_perm_iter(qpol_policy_t * policy, qpol_common_t * com
  *  errno will be set and *name will be NULL.
  */
 extern int qpol_common_get_name(qpol_policy_t * policy, qpol_common_t * common, char **name);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_CLASS_PERM_QUERY_H */

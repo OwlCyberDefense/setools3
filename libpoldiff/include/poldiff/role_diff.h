@@ -26,6 +26,10 @@
 #ifndef POLDIFF_ROLE_DIFF_H
 #define POLDIFF_ROLE_DIFF_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
@@ -115,5 +119,9 @@ extern apol_vector_t *poldiff_role_get_added_types(const poldiff_role_t * role);
  *  destroy this vector.  On error, errno will be set.
  */
 extern apol_vector_t *poldiff_role_get_removed_types(const poldiff_role_t * role);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_ROLE_DIFF_H */

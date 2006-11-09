@@ -27,6 +27,10 @@
 #ifndef QPOL_POLICY_EXTEND_H
 #define QPOL_POLICY_EXTEND_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/iterator.h>
 
@@ -85,5 +89,9 @@ extern int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_a
  *  errno will be set and *iter will be NULL.
  */
 extern int qpol_terule_get_syn_terule_iter(qpol_policy_t * policy, struct qpol_terule *rule, qpol_iterator_t ** iter);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_POLICY_EXTEND_H */

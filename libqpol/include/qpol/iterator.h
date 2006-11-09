@@ -28,6 +28,10 @@
 #ifndef QPOL_ITERATOR_H
 #define QPOL_ITERATOR_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 
 struct qpol_iterator;
@@ -82,5 +86,9 @@ extern int qpol_iterator_end(qpol_iterator_t * iter);
  *  errno will be set and *size will be 0.
  */
 extern int qpol_iterator_get_size(qpol_iterator_t * iter, size_t * size);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_ITERATOR */

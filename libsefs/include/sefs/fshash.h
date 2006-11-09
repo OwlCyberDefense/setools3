@@ -28,6 +28,10 @@
 #ifndef SEFS_FS_HASH_H
 #define SEFS_FS_HASH_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 typedef struct sefs_hash sefs_hash_t;
 
 /**
@@ -70,5 +74,9 @@ extern int sefs_hash_find(sefs_hash_t * hashtab, const char *key);
  * @return hashtab Hash table to destroy.
  */
 extern void sefs_hash_destroy(sefs_hash_t * hashtab);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* SEFS_FS_HASH_H */

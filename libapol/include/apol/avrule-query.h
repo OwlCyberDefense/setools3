@@ -28,6 +28,10 @@
 #ifndef APOL_AVRULE_QUERY_H
 #define APOL_AVRULE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -359,5 +363,9 @@ extern char *apol_avrule_render(apol_policy_t * policy, qpol_avrule_t * rule);
  *  for calling free() on the returned string.
 */
 extern char *apol_syn_avrule_render(apol_policy_t * policy, qpol_syn_avrule_t * rule);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

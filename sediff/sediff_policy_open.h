@@ -24,10 +24,18 @@
 #ifndef SEDIFF_POLICY_OPEN_H
 #define SEDIFF_POLICY_OPEN_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView * textview, const char *filename);
 int sediff_policy_file_textview_populate(sediff_file_data_t * sfd, GtkTextView * textview, apol_policy_t * policy);
 void sediff_set_open_policies_gui_state(gboolean open);
 void sediff_open_button_clicked(void);
 int sediff_load_policies(const char *p1_file, const char *p2_file);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

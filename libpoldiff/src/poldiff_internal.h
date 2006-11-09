@@ -26,6 +26,10 @@
 #ifndef POLDIFF_POLDIFF_INTERNAL_H
 #define POLDIFF_POLDIFF_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <poldiff/poldiff.h>
 
 #include "bool_internal.h"
@@ -235,5 +239,9 @@ extern void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...);
 #define ERR(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_ERR, format, __VA_ARGS__)
 #define WARN(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_WARN, format, __VA_ARGS__)
 #define INFO(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_INFO, format, __VA_ARGS__)
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_POLDIFF_INTERNAL_H */

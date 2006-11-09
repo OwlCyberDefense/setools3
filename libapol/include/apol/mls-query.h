@@ -27,6 +27,10 @@
 #ifndef APOL_MLS_QUERY_H
 #define APOL_MLS_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -521,5 +525,9 @@ extern int apol_cat_query_set_cat(apol_policy_t * p, apol_cat_query_t * c, const
  * @return Always 0.
  */
 extern int apol_cat_query_set_regex(apol_policy_t * p, apol_cat_query_t * c, int is_regex);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_MLS_QUERY_H */

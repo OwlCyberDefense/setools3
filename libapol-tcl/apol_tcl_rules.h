@@ -26,6 +26,10 @@
 #ifndef APOL_TCL_RULES_H
 #define APOL_TCL_RULES_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <tcl.h>
 
 /**
@@ -157,5 +161,9 @@ extern int tcl_obj_to_qpol_syn_avrule(Tcl_Interp * interp, Tcl_Obj * o, qpol_syn
 extern int tcl_obj_to_qpol_syn_terule(Tcl_Interp * interp, Tcl_Obj * o, qpol_syn_terule_t ** rule);
 
 int apol_tcl_rules_init(Tcl_Interp * interp);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

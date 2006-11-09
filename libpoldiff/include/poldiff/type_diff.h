@@ -26,6 +26,10 @@
 #ifndef POLDIFF_TYPE_DIFF_H
 #define POLDIFF_TYPE_DIFF_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
@@ -119,5 +123,9 @@ extern apol_vector_t *poldiff_type_get_added_attribs(const poldiff_type_t * type
  *  caller must not destroy this vector.  On error, errno will be set.
  */
 extern apol_vector_t *poldiff_type_get_removed_attribs(const poldiff_type_t * type);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_TYPE_DIFF_H */

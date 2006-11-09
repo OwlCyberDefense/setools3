@@ -26,6 +26,10 @@
 #ifndef SECHECKER_H
 #define SECHECKER_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <config.h>
 
 #include <apol/policy.h>
@@ -652,5 +656,9 @@ sechk_proof_t *sechk_proof_copy(sechk_proof_t * orig);
  *  comparison element supplied.
  */
 int sechk_proof_with_element_compare(const void *in_proof, const void *elem, void *unused);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* SECHECKER_H */

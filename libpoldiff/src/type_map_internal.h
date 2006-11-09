@@ -27,6 +27,10 @@
 #ifndef POLDIFF_TYPE_MAP_INTERNAL_H
 #define POLDIFF_TYPE_MAP_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/vector.h>
 #include <qpol/policy_query.h>
 
@@ -144,5 +148,9 @@ uint32_t type_map_lookup(poldiff_t * diff, qpol_type_t * type, int which_pol);
  *  errno will be set.
  */
 apol_vector_t *type_map_lookup_reverse(poldiff_t * diff, uint32_t val, int which_pol);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_TYPE_MAP_INTERNAL_H */

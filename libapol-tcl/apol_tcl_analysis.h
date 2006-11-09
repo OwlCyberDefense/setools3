@@ -28,6 +28,14 @@
 #ifndef APOL_TCL_ANALYSIS_H
 #define APOL_TCL_ANALYSIS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 extern int apol_tcl_analysis_init(Tcl_Interp * interp);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

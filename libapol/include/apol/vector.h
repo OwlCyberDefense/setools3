@@ -26,6 +26,10 @@
 #ifndef APOL_VECTOR_H
 #define APOL_VECTOR_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <qpol/iterator.h>
 
@@ -300,5 +304,9 @@ extern void apol_vector_sort(apol_vector_t * v, apol_vector_comp_func * cmp, voi
  *  element.  If NULL, those excess elements will not be freed.
  */
 extern void apol_vector_sort_uniquify(apol_vector_t * v, apol_vector_comp_func * cmp, void *data, apol_vector_free_func * fr);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_VECTOR_H */

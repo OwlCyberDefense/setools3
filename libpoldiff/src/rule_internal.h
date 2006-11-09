@@ -26,6 +26,10 @@
 #ifndef POLDIFF_RULE_INTERNAL_H
 #define POLDIFF_RULE_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 typedef struct poldiff_rule_summary poldiff_rule_summary_t;
 
 /**
@@ -193,5 +197,9 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
  * and leave the policy difference structure unchanged.
  */
 int terule_deep_diff(poldiff_t * diff, const void *x, const void *y);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_RULE_INTERNAL_H */

@@ -26,6 +26,10 @@
 #ifndef SEDIFF_GUI_H
 #define SEDIFF_GUI_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sediff_treemodel.h"
 #include "sediff_remap_types.h"
 #include "sediff_find_window.h"
@@ -103,5 +107,9 @@ void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, int whi
 void sediff_initialize_diff(void);
 void sediff_initialize_policies(void);
 void run_diff_clicked(void);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

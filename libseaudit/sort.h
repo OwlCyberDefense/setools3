@@ -8,6 +8,10 @@
 #ifndef LIBAUDIT_SORT_H
 #define LIBAUDIT_SORT_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "auditlog_view.h"
 
 struct sort_action_node;
@@ -52,5 +56,9 @@ sort_action_node_t *path_sort_action_create(void);
 sort_action_node_t *dev_sort_action_create(void);
 sort_action_node_t *inode_sort_action_create(void);
 sort_action_node_t *pid_sort_action_create(void);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

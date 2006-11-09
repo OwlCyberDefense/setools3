@@ -14,6 +14,10 @@
 #ifndef LIBSEAUDIT_FILTER_H
 #define LIBSEAUDIT_FILTER_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/util.h>
 #include <apol/vector.h>
 #include "filter_criteria.h"
@@ -60,5 +64,9 @@ bool_t seaudit_filter_does_message_match(seaudit_filter_t * filter, msg_t * mess
 int seaudit_filter_save_to_file(seaudit_filter_t * filter, const char *filename);
 void seaudit_filter_append_to_file(seaudit_filter_t * filter, FILE * file, int tabs);
 apol_vector_t *seaudit_filter_get_list(seaudit_filter_t * filter);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

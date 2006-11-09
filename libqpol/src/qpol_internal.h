@@ -23,8 +23,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef QPOL_DEBUG_H
-#define QPOL_DEBUG_H
+#ifndef QPOL_INTERNAL_H
+#define QPOL_INTERNAL_H
+
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
 #include <sepol/handle.h>
 #include <qpol/policy.h>
@@ -56,4 +60,8 @@ extern void qpol_handle_msg(qpol_policy_t * policy, int level, const char *fmt, 
 #define WARN(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_WARN, format, __VA_ARGS__)
 #define INFO(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_INFO, format, __VA_ARGS__)
 
-#endif				       /* QPOL_DEBUG_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* QPOL_INTERNAL_H */

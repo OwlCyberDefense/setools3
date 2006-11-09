@@ -14,6 +14,10 @@
 #ifndef LIBSEAUDIT_MULTIFILTER_H
 #define LIBSEAUDIT_MULTIFILTER_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "filters.h"
 #include <apol/util.h>
 #include <apol/vector.h>
@@ -38,5 +42,9 @@ void seaudit_multifilter_make_dirty_filters(seaudit_multifilter_t * multifilter)
 bool_t seaudit_multifilter_should_message_show(seaudit_multifilter_t * multifilter, msg_t * message, audit_log_t * log);
 int seaudit_multifilter_save_to_file(seaudit_multifilter_t * multifilter, const char *filename);
 int seaudit_multifilter_load_from_file(seaudit_multifilter_t ** multifilter, bool_t * is_multi, const char *filename);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

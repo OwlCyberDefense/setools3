@@ -26,6 +26,10 @@
 #ifndef APOL_USER_QUERY_H
 #define APOL_USER_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include "mls-query.h"
@@ -157,5 +161,9 @@ extern int apol_user_query_set_range(apol_policy_t * p, apol_user_query_t * u, a
  * @return Always 0.
  */
 extern int apol_user_query_set_regex(apol_policy_t * p, apol_user_query_t * u, int is_regex);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_USER_QUERY_H */

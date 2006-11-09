@@ -24,6 +24,10 @@
 #ifndef SEDIFF_PROGRESS_H
 #define SEDIFF_PROGRESS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sediff_gui.h"
 #include <apol/policy.h>
 #include <poldiff/poldiff.h>
@@ -42,5 +46,9 @@ void sediff_progress_abort(sediff_app_t * app, const char *s);
 void sediff_progress_update(sediff_app_t * app, const char *message);
 void sediff_progress_poldiff_handle_func(void *arg, poldiff_t * diff, int level, const char *fmt, va_list va_args);
 void sediff_progress_apol_handle_func(void *varg, apol_policy_t * p, int level, const char *fmt, va_list argp);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

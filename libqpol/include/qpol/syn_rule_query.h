@@ -27,6 +27,10 @@
 #ifndef QPOL_SYN_RULE_QUERY_H
 #define QPOL_SYN_RULE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/cond_query.h>
 #include <qpol/iterator.h>
@@ -285,5 +289,9 @@ extern int qpol_syn_terule_get_cond(qpol_policy_t * policy, qpol_syn_terule_t * 
  *  errno will be set and *lineno will be 0.
  */
 extern int qpol_syn_terule_get_is_enabled(qpol_policy_t * policy, qpol_syn_terule_t * rule, uint32_t * is_enabled);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_SYN_RULE_QUERY_H */

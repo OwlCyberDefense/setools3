@@ -29,6 +29,10 @@
 #ifndef APOL_POLICY_QUERY_INTERNAL_H
 #define APOL_POLICY_QUERY_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <config.h>
 
 #include <apol/policy.h>
@@ -448,5 +452,9 @@ int apol_query_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t *
  * @param p Reference to an apol_permmap_t to destroy.
  */
 void permmap_destroy(apol_permmap_t ** p);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

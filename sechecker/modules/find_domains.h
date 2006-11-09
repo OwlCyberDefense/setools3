@@ -26,6 +26,10 @@
 #ifndef FIND_DOMAINS
 #define FIND_DOMAINS
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/type-query.h>
@@ -47,5 +51,9 @@ int find_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int find_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int find_domains_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

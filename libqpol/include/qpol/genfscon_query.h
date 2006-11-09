@@ -26,6 +26,10 @@
 #ifndef QPOL_OCON_QUERY_H
 #define QPOL_OCON_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -114,5 +118,9 @@ extern int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * gen
  *  errno will be set and *context will be NULL.
  */
 extern int qpol_genfscon_get_context(qpol_policy_t * policy, qpol_genfscon_t * genfscon, qpol_context_t ** context);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_OCON_QUERY_H */

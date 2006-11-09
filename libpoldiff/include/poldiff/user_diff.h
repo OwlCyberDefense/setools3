@@ -26,6 +26,10 @@
 #ifndef POLDIFF_USER_DIFF_H
 #define POLDIFF_USER_DIFF_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
@@ -115,5 +119,9 @@ extern apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t * user);
  *  destroy this vector.  On error, errno will be set.
  */
 extern apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t * user);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_USER_DIFF_H */

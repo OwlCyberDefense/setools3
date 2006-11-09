@@ -28,6 +28,10 @@
 #ifndef QPOL_ITERATOR_INTERNAL_H
 #define QPOL_ITERATOR_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/avtab.h>
 #include <qpol/iterator.h>
@@ -109,4 +113,8 @@ size_t perm_state_size(qpol_iterator_t * iter);
 size_t avtab_state_size(qpol_iterator_t * iter);
 
 void ebitmap_state_destroy(void *es);
+#ifdef	__cplusplus
+}
+#endif
+
 #endif				       /* QPOL_ITERATOR_INTERNAL_H */

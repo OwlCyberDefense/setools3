@@ -26,6 +26,10 @@
 #ifndef QPOL_SYN_RULE_INTERNAL_H
 #define QPOL_SYN_RULE_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 struct qpol_syn_rule
 {
 	avrule_t *rule;
@@ -34,5 +38,9 @@ struct qpol_syn_rule
 	int cond_branch;
 /*	char *mod_name; for later use */
 };
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_SYN_RULE_INTERNAL_H */

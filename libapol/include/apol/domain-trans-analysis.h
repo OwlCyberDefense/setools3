@@ -27,6 +27,10 @@
 #ifndef APOL_DOMAIN_TRANS_ANALYSIS_H
 #define APOL_DOMAIN_TRANS_ANALYSIS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -363,5 +367,9 @@ extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_tran
  */
 extern int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * start_dom, qpol_type_t * ep_type,
 						qpol_type_t * end_dom);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_DOMAIN_TRANS_ANALYSIS_H */

@@ -26,6 +26,10 @@
 #ifndef QPOL_CONTEXT_QUERY_H
 #define QPOL_CONTEXT_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/policy.h>
@@ -79,5 +83,9 @@ extern int qpol_context_get_type(qpol_policy_t * policy, qpol_context_t * contex
  *  errno will be set and *range will be NULL.
  */
 extern int qpol_context_get_range(qpol_policy_t * policy, qpol_context_t * context, qpol_mls_range_t ** range);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_CONTEXT_QUERY_H */

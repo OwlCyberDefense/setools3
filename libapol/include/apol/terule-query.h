@@ -28,6 +28,10 @@
 #ifndef APOL_TERULE_QUERY_H
 #define APOL_TERULE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -347,5 +351,9 @@ extern char *apol_terule_render(apol_policy_t * policy, qpol_terule_t * rule);
  *  for calling free() on the returned string.
 */
 extern char *apol_syn_terule_render(apol_policy_t * policy, qpol_syn_terule_t * rule);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

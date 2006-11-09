@@ -27,6 +27,10 @@
 #ifndef QPOL_CONSTRAINT_QUERY_H
 #define QPOL_CONSTRAINT_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/iterator.h>
 #include <qpol/class_perm_query.h>
@@ -241,5 +245,9 @@ extern int qpol_class_get_constraint_iter(qpol_policy_t * policy, qpol_class_t *
  *  errno will be set and *vtrans will be NULL.
  */
 extern int qpol_class_get_validatetrans_iter(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_iterator_t ** vtrans);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_CONSTRAINT_QUERY_H */

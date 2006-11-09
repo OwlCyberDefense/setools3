@@ -30,8 +30,9 @@
 #ifndef APOL_POLICY_H
 #define APOL_POLICY_H
 
-/* temporary declaration until everything gets converted */
-typedef struct policy policy_t;
+#ifdef	__cplusplus
+extern "C" {
+#endif
 
 #include <stdarg.h>
 #include <qpol/policy.h>
@@ -163,5 +164,9 @@ extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
  * passing it a format string and arguments.
  */
 #define INFO(p, format, ...) apol_handle_msg(p, APOL_MSG_INFO, format, __VA_ARGS__)
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

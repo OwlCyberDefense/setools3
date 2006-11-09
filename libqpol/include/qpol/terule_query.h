@@ -26,6 +26,10 @@
 #ifndef QPOL_TERULE_QUERY_H
 #define QPOL_TERULE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/cond_query.h>
 #include <qpol/policy_query.h>
@@ -143,5 +147,9 @@ extern int qpol_terule_get_is_enabled(qpol_policy_t * policy, qpol_terule_t * ru
  *  errno will be set and *which_list will be 0.
  */
 extern int qpol_terule_get_which_list(qpol_policy_t * policy, qpol_terule_t * rule, uint32_t * which_list);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

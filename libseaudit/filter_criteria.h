@@ -14,6 +14,10 @@
 #ifndef LIBSEAUDIT_CRITERIA_H
 #define LIBSEAUDIT_CRITERIA_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <time.h>
 #include "auditlog.h"
 
@@ -84,5 +88,9 @@ int msg_criteria_get_val(seaudit_criteria_t * criteria);
 
 /* destroy a criteria */
 void seaudit_criteria_destroy(seaudit_criteria_t * ftr);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

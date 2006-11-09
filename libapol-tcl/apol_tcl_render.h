@@ -28,6 +28,10 @@
 #ifndef APOL_TCL_RENDER_H
 #define APOL_TCL_RENDER_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 /**
  * Converts an apol_mls_level_t to a Tcl representation:
  * <code>
@@ -43,5 +47,9 @@
 extern int apol_level_to_tcl_obj(Tcl_Interp * interp, apol_mls_level_t * level, Tcl_Obj ** obj);
 
 extern int apol_tcl_render_init(Tcl_Interp * interp);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

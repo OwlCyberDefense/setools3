@@ -30,6 +30,10 @@
 #ifndef APOL_PERMMAP_H
 #define APOL_PERMMAP_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 
 #define APOL_PERMMAP_MAX_WEIGHT 10
@@ -102,5 +106,9 @@ extern int apol_permmap_get(apol_policy_t * p, const char *class_name, const cha
  * found.
  */
 extern int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /*APOL_PERMMAP_H */

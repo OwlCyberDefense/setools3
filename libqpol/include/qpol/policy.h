@@ -27,6 +27,10 @@
 #ifndef QPOL_POLICY_H
 #define QPOL_POLICY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stdarg.h>
 
 /* * Return codes for qpol_find_default_policy_file() function. */
@@ -121,5 +125,9 @@ extern const char *qpol_find_default_policy_file_strerr(int err);
  *  errno will be set. On failure, the policy state may be inconsistent.
  */
 extern int qpol_policy_reevaluate_conds(qpol_policy_t * policy);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

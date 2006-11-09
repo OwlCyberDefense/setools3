@@ -26,6 +26,10 @@
 #ifndef ATTRIBS_WO_RULES
 #define ATTRIBS_WO_RULES
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/role-query.h>
@@ -50,5 +54,9 @@ int attribs_wo_rules_print(sechk_module_t * mod, apol_policy_t * policy, void *a
  * to get the desired function from the library. */
 
 int attribs_wo_rules_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

@@ -25,6 +25,10 @@
 #ifndef SEDIFF_FIND_WINDOW_H
 #define SEDIFF_FIND_WINDOW_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sediff_gui.h"
 #include <glade/glade.h>
 #include <gtk/gtk.h>
@@ -47,5 +51,9 @@ void sediff_find_window_display(sediff_find_window_t * find_window);
 /* reset the idx used by find window to start searches, must do this whenever
    changing the textview displayed to the user */
 void sediff_find_window_reset_idx(sediff_find_window_t * find_window);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

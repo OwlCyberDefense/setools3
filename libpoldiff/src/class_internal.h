@@ -26,6 +26,10 @@
 #ifndef POLDIFF_CLASS_INTERNAL_H
 #define POLDIFF_CLASS_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 /******************** object classes ********************/
 
 typedef struct poldiff_class_summary poldiff_class_summary_t;
@@ -200,5 +204,9 @@ int common_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
  * and leave the policy difference structure unchanged.
  */
 int common_deep_diff(poldiff_t * diff, const void *x, const void *y);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_CLASS_INTERNAL_H */

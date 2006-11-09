@@ -27,6 +27,10 @@
 #ifndef APOL_CLASS_PERM_QUERY_H
 #define APOL_CLASS_PERM_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -309,5 +313,9 @@ extern int apol_perm_query_set_perm(apol_policy_t * p, apol_perm_query_t * pq, c
  * @return Always 0.
  */
 extern int apol_perm_query_set_regex(apol_policy_t * p, apol_perm_query_t * pq, int is_regex);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

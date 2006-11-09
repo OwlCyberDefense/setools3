@@ -27,11 +27,19 @@
 #ifndef UTILGUI_H
 #define UTILGUI_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 void get_dialog_response(GtkDialog * dialog, gint id, gpointer response);
 void show_wait_cursor(GtkWidget * widget);
 void clear_wait_cursor(GtkWidget * widget);
 void message_display(GtkWindow * parent, GtkMessageType msg_type, const char *msg);
 GString *get_filename_from_user(GtkWindow * parent, const char *title, const gchar * startfilename);
 gint get_user_response_to_message(GtkWindow * window, const char *message);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

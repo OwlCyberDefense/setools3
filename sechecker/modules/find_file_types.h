@@ -27,6 +27,10 @@
 #ifndef FIND_FILE_TYPES
 #define FIND_FILE_TYPES
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/type-query.h>
@@ -47,5 +51,9 @@ int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg
 int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int find_file_types_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

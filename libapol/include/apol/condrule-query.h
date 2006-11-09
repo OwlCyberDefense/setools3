@@ -28,6 +28,10 @@
 #ifndef APOL_CONDRULE_QUERY_H
 #define APOL_CONDRULE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -128,5 +132,9 @@ extern int apol_cond_query_set_regex(apol_policy_t * p, apol_cond_query_t * c, i
  * calling free() on the returned string.
  */
 extern char *apol_cond_expr_render(apol_policy_t * p, qpol_cond_t * cond);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

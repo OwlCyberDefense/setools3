@@ -9,6 +9,10 @@
 #ifndef RULES_EXP_NOTHING
 #define RULES_EXP_NOTHING
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 
 /* The rules_exp_nothing_data structure is used to hold the check specific
@@ -37,5 +41,9 @@ sechk_result_t *rules_exp_nothing_get_result(sechk_module_t * mod);
 /* The following function is used to allocate and initialize
  * the private data storage structure for this module */
 rules_exp_nothing_data_t *rules_exp_nothing_data_new(void);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

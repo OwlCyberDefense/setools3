@@ -27,6 +27,10 @@
 #ifndef APOL_RELABEL_ANALYSIS_H
 #define APOL_RELABEL_ANALYSIS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -258,5 +262,9 @@ extern qpol_avrule_t *apol_relabel_result_pair_get_ruleB(apol_relabel_result_pai
  * NULL (for subject mode).
  */
 extern qpol_type_t *apol_relabel_result_pair_get_intermediate_type(apol_relabel_result_pair_t * p);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

@@ -17,6 +17,10 @@
 #ifndef LIBAUDIT_AUDITLOG_H
 #define LIBAUDIT_AUDITLOG_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <config.h>
 #include <time.h>
 #include <apol/util.h>
@@ -298,5 +302,9 @@ enum avc_msg_class_t which_avc_msg_class(msg_t * msg);
 #define audit_log_get_bool(log, idx) audit_log_get_str(log, idx, BOOL_VECTOR)
 
 const char *libseaudit_get_version(void);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

@@ -31,6 +31,10 @@
 #ifndef APOL_RENDER_H
 #define APOL_RENDER_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "mls-query.h"
 #include "vector.h"
@@ -71,5 +75,9 @@ extern char *apol_ipv6_addr_render(apol_policy_t * p, uint32_t addr[4]);
  * NULL on error.
  */
 extern char *apol_qpol_context_render(apol_policy_t * p, qpol_context_t * context);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

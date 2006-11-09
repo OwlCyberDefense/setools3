@@ -26,6 +26,10 @@
 #ifndef APOL_FSCON_QUERY_H
 #define APOL_FSCON_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
@@ -280,5 +284,9 @@ extern int apol_fs_use_query_set_context(apol_policy_t * p,
  * NULL on error.
  */
 extern char *apol_fs_use_render(apol_policy_t * p, qpol_fs_use_t * fsuse);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_FSCON_QUERY_H */

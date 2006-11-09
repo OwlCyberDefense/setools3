@@ -27,6 +27,10 @@
 #ifndef POLDIFF_TYPE_MAP_H
 #define POLDIFF_TYPE_MAP_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <poldiff/poldiff.h>
 #include <apol/vector.h>
 
@@ -127,5 +131,9 @@ extern int poldiff_type_remap_entry_get_is_enabled(poldiff_type_remap_entry_t * 
  *  @param enabled 0 to disable this entry, non-zero to enable it.
  */
 extern void poldiff_type_remap_entry_set_enabled(poldiff_type_remap_entry_t * entry, int enabled);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_TYPE_MAP_H */

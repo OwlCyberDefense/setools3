@@ -26,6 +26,10 @@
 #ifndef POLDIFF_TYPE_INTERNAL_H
 #define POLDIFF_TYPE_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 /******************** types ********************/
 
 typedef struct poldiff_type_summary poldiff_type_summary_t;
@@ -112,5 +116,9 @@ int type_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
  * and leave the policy difference structure unchanged.
  */
 int type_deep_diff(poldiff_t * diff, const void *x, const void *y);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_TYPE_INTERNAL_H */

@@ -26,6 +26,10 @@
 #ifndef APOL_ISID_QUERY_H
 #define APOL_ISID_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
@@ -120,5 +124,9 @@ extern int apol_isid_query_set_name(apol_policy_t * p, apol_isid_query_t * i, co
  */
 extern int apol_isid_query_set_context(apol_policy_t * p,
 				       apol_isid_query_t * i, apol_context_t * context, unsigned int range_match);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_ISID_QUERY_H */

@@ -28,6 +28,10 @@
 #ifndef APOL_INFOFLOW_ANALYSIS_H
 #define APOL_INFOFLOW_ANALYSIS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -385,5 +389,9 @@ extern int apol_infoflow_step_get_weight(apol_infoflow_step_t * step);
  * used to generate the results.
  */
 extern apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t * step);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

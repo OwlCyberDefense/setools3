@@ -26,6 +26,10 @@
 #ifndef DOMAIN_AND_FILE
 #define DOMAIN_AND_FILE
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 
@@ -33,5 +37,9 @@ int domain_and_file_register(sechk_lib_t * lib);
 int domain_and_file_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

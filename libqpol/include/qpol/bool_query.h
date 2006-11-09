@@ -26,6 +26,10 @@
 #ifndef QPOL_BOOL_QUERY_H
 #define QPOL_BOOL_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/policy.h>
@@ -114,5 +118,9 @@ extern int qpol_bool_set_state_no_eval(qpol_policy_t * policy, qpol_bool_t * dat
  *  errno will be set and *name will be NULL. 
  */
 extern int qpol_bool_get_name(qpol_policy_t * policy, qpol_bool_t * datum, char **name);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_BOOL_QUERY_H */

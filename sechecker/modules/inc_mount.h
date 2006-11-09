@@ -26,6 +26,10 @@
 #ifndef INC_MOUNT
 #define INC_MOUNT
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/avrule-query.h>
@@ -41,5 +45,9 @@ int inc_mount_register(sechk_lib_t * lib);
 int inc_mount_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int inc_mount_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

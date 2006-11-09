@@ -26,6 +26,10 @@
 #ifndef QPOL_PORTCON_QUERY_H
 #define QPOL_PORTCON_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <netinet/in.h>
@@ -104,5 +108,9 @@ extern int qpol_portcon_get_high_port(qpol_policy_t * policy, qpol_portcon_t * o
  *  errno will be set and *context will be NULL.
  */
 extern int qpol_portcon_get_context(qpol_policy_t * policy, qpol_portcon_t * ocon, qpol_context_t ** context);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_PORTCON_QUERY_H */

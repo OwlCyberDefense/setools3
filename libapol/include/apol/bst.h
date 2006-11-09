@@ -28,6 +28,10 @@
 #ifndef APOL_BST_H
 #define APOL_BST_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 
 struct apol_vector;		       /* declared in apol/vector.h */
@@ -142,5 +146,9 @@ extern int apol_bst_insert(apol_bst_t * b, void *elem, void *data);
  *  will be unchanged.
  */
 extern int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data, apol_bst_free_func * fr);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_BST_H */

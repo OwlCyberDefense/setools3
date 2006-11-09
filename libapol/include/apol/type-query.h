@@ -27,6 +27,10 @@
 #ifndef APOL_TYPE_QUERY_H
 #define APOL_TYPE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -202,5 +206,9 @@ extern int apol_attr_query_set_attr(apol_policy_t * p, apol_attr_query_t * a, co
  * @return Always 0.
  */
 extern int apol_attr_query_set_regex(apol_policy_t * p, apol_attr_query_t * a, int is_regex);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

@@ -27,6 +27,10 @@
 #ifndef QPOL_COND_QUERY_H
 #define QPOL_COND_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/bool_query.h>
 #include <qpol/iterator.h>
@@ -181,5 +185,9 @@ extern int qpol_cond_expr_node_get_expr_type(qpol_policy_t * policy, qpol_cond_e
  *  errno will be set and *cond_bool will be NULL.
  */
 extern int qpol_cond_expr_node_get_bool(qpol_policy_t * policy, qpol_cond_expr_node_t * node, qpol_bool_t ** cond_bool);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_COND_QUERY_H */

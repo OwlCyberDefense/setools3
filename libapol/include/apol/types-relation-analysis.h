@@ -27,6 +27,10 @@
 #ifndef APOL_TYPES_RELATION_ANALYSIS_H
 #define APOL_TYPES_RELATION_ANALYSIS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -365,5 +369,9 @@ extern qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_acce
  * destroy this vector.
  */
 extern apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t * a);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

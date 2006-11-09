@@ -26,6 +26,10 @@
 #ifndef APOL_CONTEXT_QUERY_H
 #define APOL_CONTEXT_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "mls-query.h"
 #include <qpol/policy_query.h>
@@ -178,5 +182,9 @@ extern int apol_context_validate_partial(apol_policy_t * p, apol_context_t * con
  * NULL on error.
  */
 extern char *apol_context_render(apol_policy_t * p, apol_context_t * context);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_CONTEXT_QUERY_H */

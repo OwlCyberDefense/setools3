@@ -26,6 +26,10 @@
 #ifndef QPOL_TYPE_QUERY_H
 #define QPOL_TYPE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -145,5 +149,9 @@ extern int qpol_type_get_name(qpol_policy_t * policy, qpol_type_t * datum, char 
  *  errno will be set and *aliases will be NULL.
  */
 extern int qpol_type_get_alias_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** aliases);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_TYPE_QUERY_H */

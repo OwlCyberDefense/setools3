@@ -26,11 +26,19 @@
 #ifndef SEFS_UTIL_H
 #define SEFS_UTIL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 /**
  * Return an immutable string describing this library's version.
  *
  * @return String describing this library.
  */
 extern const char *libsefs_get_version(void);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

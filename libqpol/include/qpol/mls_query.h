@@ -27,6 +27,10 @@
 #ifndef QPOL_MLS_QUERY_H
 #define QPOL_MLS_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -244,5 +248,9 @@ extern int qpol_mls_level_get_sens_name(qpol_policy_t * policy, qpol_mls_level_t
  *  errno will be set and *cats will be NULL.
  */
 extern int qpol_mls_level_get_cat_iter(qpol_policy_t * policy, qpol_mls_level_t * level, qpol_iterator_t ** cats);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_MLS_QUERY_H */

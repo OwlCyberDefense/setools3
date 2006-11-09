@@ -17,6 +17,10 @@
 #ifndef MODULE_COMPILER_H
 #define MODULE_COMPILER_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <sepol/policydb/hashtab.h>
 
 /* Called when checkpolicy begins to parse a policy -- either at the
@@ -102,5 +106,9 @@ int begin_optional_else(int pass);
  * stack and return 0.  If not then send an error to yyerror and
  * return -1. */
 int end_avrule_block(int pass);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

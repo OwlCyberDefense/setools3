@@ -27,6 +27,10 @@
 #ifndef POLDIFF_RBAC_DIFF_H
 #define POLDIFF_RBAC_DIFF_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
@@ -218,5 +222,9 @@ extern const char *poldiff_role_trans_get_original_default(const poldiff_role_tr
  *  string.
  */
 extern const char *poldiff_role_trans_get_modified_default(const poldiff_role_trans_t * role_trans);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_RBAC_DIFF_H */

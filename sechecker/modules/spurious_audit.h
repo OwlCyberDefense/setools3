@@ -35,6 +35,10 @@
 #ifndef SPURIOUS_AUDIT
 #define SPURIOUS_AUDIT
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 
@@ -48,5 +52,9 @@ int spurious_audit_register(sechk_lib_t * lib);
 int spurious_audit_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int spurious_audit_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

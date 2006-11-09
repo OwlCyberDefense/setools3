@@ -27,6 +27,10 @@
 #ifndef SEFS_FSDATA_H
 #define SEFS_FSDATA_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <sefs/fshash.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -281,5 +285,9 @@ extern char **sefs_get_valid_object_classes(int *size);
  * @see sefs_get_valid_object_classes()
  */
 extern int sefs_is_valid_object_class(const char *class_name);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* SEFS_FSDATA_H */

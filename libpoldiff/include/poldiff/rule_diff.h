@@ -28,6 +28,10 @@
 #ifndef POLDIFF_RULE_DIFF_H
 #define POLDIFF_RULE_DIFF_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 #include <qpol/policy_query.h>
@@ -399,5 +403,9 @@ extern apol_vector_t *poldiff_terule_get_orig_line_numbers(const poldiff_terule_
  *  in the modified policy, or NULL if no numbers are available.
  */
 extern apol_vector_t *poldiff_terule_get_mod_line_numbers(const poldiff_terule_t * terule);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_RULE_DIFF_H */

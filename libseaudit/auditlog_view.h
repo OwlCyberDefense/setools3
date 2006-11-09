@@ -18,6 +18,10 @@
 #ifndef LIBSEAUDIT_AUDITLOG_VIEW_H
 #define LIBSEAUDIT_AUDITLOG_VIEW_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 typedef struct filter_info
 {
 	int orig_indx;
@@ -41,5 +45,9 @@ void audit_log_view_set_log(audit_log_view_t * view, audit_log_t * log);
 void audit_log_view_purge_fltr_msgs(audit_log_view_t * view);
 int audit_log_view_do_filter(audit_log_view_t * log, int **deleted, int *num_deleted);
 void audit_log_view_set_multifilter(audit_log_view_t * view, seaudit_multifilter_t * multifilter);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

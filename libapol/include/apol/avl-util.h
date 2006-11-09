@@ -32,6 +32,10 @@
 #ifndef APOL_AVL_UTIL_H
 #define APOL_AVL_UTIL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 typedef int (*apol_avl_compare_t) (void *user_data, const void *a, int idx);
 typedef int (*apol_avl_grow_t) (void *user_data, int sz);
 typedef int (*apol_avl_add_t) (void *user_data, const void *key, int idx);
@@ -107,5 +111,10 @@ extern void apol_avl_free(apol_avl_tree_t * tree);
  * if the key was now to the tree.
  */
 extern int apol_avl_insert(apol_avl_tree_t * tree, void *key, int *newidx);
+
+#ifdef	__cplusplus
+}
+#endif
+
 
 #endif				       /* APOL_AVL_UTIL_H */

@@ -27,6 +27,10 @@
 #ifndef APOL_RANGETRANS_QUERY_H
 #define APOL_RANGETRANS_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -186,5 +190,9 @@ extern int apol_range_trans_query_set_regex(apol_policy_t * p, apol_range_trans_
  *  for calling free() on the returned string.
  */
 extern char *apol_range_trans_render(apol_policy_t * policy, qpol_range_trans_t * rule);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

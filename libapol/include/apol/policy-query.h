@@ -29,6 +29,10 @@
 #ifndef APOL_POLICY_QUERY_H
 #define APOL_POLICY_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 /* Many libapol queries act upon MLS contexts.  Use these defines to
  * specify set operations upon contexts.
  */
@@ -72,5 +76,9 @@
 #include "infoflow-analysis.h"
 #include "relabel-analysis.h"
 #include "types-relation-analysis.h"
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

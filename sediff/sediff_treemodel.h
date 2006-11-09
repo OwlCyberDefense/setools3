@@ -25,6 +25,10 @@
 #ifndef SEDIFF_TREE_MODEL_H
 #define SEDIFF_TREE_MODEL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <gtk/gtk.h>
 #include <poldiff/poldiff.h>
 
@@ -58,4 +62,8 @@ GtkWidget *sediff_create_view_and_model(poldiff_t * diff);
  * remain unchanged).
  */
 int sediff_get_current_treeview_selected_row(GtkTreeView * tree_view, uint32_t * diffbit, poldiff_form_e * form);
+#ifdef	__cplusplus
+}
+#endif
+
 #endif

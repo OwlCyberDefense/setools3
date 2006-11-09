@@ -27,6 +27,10 @@
 #ifndef APOL_NETCON_QUERY_H
 #define APOL_NETCON_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
@@ -414,5 +418,9 @@ extern int apol_nodecon_query_set_context(apol_policy_t * p,
  * NULL on error.
  */
 extern char *apol_nodecon_render(apol_policy_t * p, qpol_nodecon_t * nodecon);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_NETCON_QUERY_H */

@@ -27,6 +27,10 @@
 #ifndef APOL_UTIL_H
 #define APOL_UTIL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <config.h>
 
 #include <stdint.h>
@@ -304,5 +308,9 @@ extern int apol_str_strcmp(const void *a, const void *b, void *unused __attribut
  * @return A new string that is a duplicate of elem, or NULL upon error.
  */
 extern void *apol_str_strdup(const void *elem, void *unused __attribute__ ((unused)));
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

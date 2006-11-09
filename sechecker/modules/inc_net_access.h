@@ -27,6 +27,10 @@
 #ifndef INC_NET_ACCESS_H
 #define INC_NET_ACCESS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/avrule-query.h>
@@ -38,5 +42,9 @@ int inc_net_access_register(sechk_lib_t * lib);
 int inc_net_access_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int inc_net_access_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

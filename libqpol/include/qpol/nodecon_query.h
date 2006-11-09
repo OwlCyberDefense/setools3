@@ -26,6 +26,10 @@
 #ifndef QPOL_NODECON_QUERY_H
 #define QPOL_NODECON_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -116,5 +120,9 @@ int qpol_nodecon_get_protocol(qpol_policy_t * policy, qpol_nodecon_t * ocon, uns
  *  errno will be set and *context will be NULL.
  */
 extern int qpol_nodecon_get_context(qpol_policy_t * policy, qpol_nodecon_t * ocon, qpol_context_t ** context);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_NODECON_QUERY_H */

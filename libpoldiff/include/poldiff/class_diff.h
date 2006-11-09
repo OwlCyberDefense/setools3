@@ -27,6 +27,10 @@
 #ifndef POLDIFF_CLASS_DIFF_H
 #define POLDIFF_CLASS_DIFF_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
@@ -210,5 +214,9 @@ extern apol_vector_t *poldiff_common_get_added_perms(const poldiff_common_t * co
  *  caller must not destroy this vector.  On error, errno will be set.
  */
 extern apol_vector_t *poldiff_common_get_removed_perms(const poldiff_common_t * common);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_CLASS_DIFF_H */

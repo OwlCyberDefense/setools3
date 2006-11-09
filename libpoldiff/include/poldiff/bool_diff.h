@@ -27,6 +27,10 @@
 #ifndef POLDIFF_BOOL_DIFF_H
 #define POLDIFF_BOOL_DIFF_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
@@ -136,5 +140,9 @@ extern const char *poldiff_bool_get_name(const poldiff_bool_t * boolean);
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
 extern poldiff_form_e poldiff_bool_get_form(const void *boolean);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_BOOL_DIFF_H */

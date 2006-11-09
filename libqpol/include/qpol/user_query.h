@@ -26,6 +26,10 @@
 #ifndef QPOL_USER_QUERY_H
 #define QPOL_USER_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -113,5 +117,9 @@ extern int qpol_user_get_dfltlevel(qpol_policy_t * policy, qpol_user_t * datum, 
  *  errno will be set and *name will be NULL.
  */
 extern int qpol_user_get_name(qpol_policy_t * policy, qpol_user_t * datum, char **name);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_USER_QUERY_H */

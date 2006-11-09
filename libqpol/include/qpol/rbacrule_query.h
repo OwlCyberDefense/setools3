@@ -26,6 +26,10 @@
 #ifndef QPOL_RBACRULE_QUERY
 #define QPOL_RBACRULE_QUERY
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/policy_query.h>
 #include <qpol/iterator.h>
@@ -113,5 +117,9 @@ extern int qpol_role_trans_get_target_type(qpol_policy_t * policy, qpol_role_tra
  *  errno will be set and *dflt will be NULL.
  */
 extern int qpol_role_trans_get_default_role(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_role_t ** dflt);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_RBACRULE_QUERY */

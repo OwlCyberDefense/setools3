@@ -26,6 +26,10 @@
 #ifndef APOL_ROLE_QUERY_H
 #define APOL_ROLE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -135,5 +139,9 @@ extern int apol_role_query_set_regex(apol_policy_t * p, apol_role_query_t * r, i
  * @return 1 if the type is included in the role, 0 if it's not, < 0 on error
 */
 extern int apol_role_has_type(apol_policy_t * p, qpol_role_t * r, qpol_type_t * t);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_ROLE_QUERY_H */

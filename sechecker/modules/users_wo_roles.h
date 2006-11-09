@@ -26,6 +26,10 @@
 #ifndef USERS_WO_ROLES
 #define USERS_WO_ROLES
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/user-query.h>
@@ -34,5 +38,9 @@ int users_wo_roles_register(sechk_lib_t * lib);
 int users_wo_roles_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int users_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int users_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

@@ -27,6 +27,10 @@
 #ifndef APOL_CONSTRAINT_QUERY_H
 #define APOL_CONSTRAINT_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 
@@ -219,5 +223,9 @@ extern int apol_validatetrans_query_set_class(apol_policy_t * p, apol_validatetr
  * @return Always 0.
  */
 extern int apol_validatetrans_query_set_regex(apol_policy_t * p, apol_validatetrans_query_t * vt, int is_regex);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

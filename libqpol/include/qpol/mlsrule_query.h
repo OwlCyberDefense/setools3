@@ -27,6 +27,10 @@
 #ifndef QPOL_MLSRULE_QUERY_H
 #define QPOL_MLSRULE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/policy_query.h>
 
@@ -88,5 +92,9 @@ extern int qpol_range_trans_get_target_class(qpol_policy_t * policy, qpol_range_
  *  errno will be set and *range will be NULL.
  */
 extern int qpol_range_trans_get_range(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_mls_range_t ** range);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_MLSRULE_QUERY_H */

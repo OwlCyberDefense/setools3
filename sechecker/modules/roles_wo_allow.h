@@ -26,6 +26,10 @@
 #ifndef ROLES_WO_ALLOW
 #define ROLES_WO_ALLOW
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/role-query.h>
@@ -36,5 +40,9 @@ int roles_wo_allow_init(sechk_module_t * mod, apol_policy_t * policy, void *arg)
 int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int roles_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int roles_wo_allow_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

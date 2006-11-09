@@ -27,6 +27,10 @@
 #ifndef SEFS_FILE_CONTEXTS_H
 #define SEFS_FILE_CONTEXTS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 /* libapol */
 #include <apol/policy.h>
 #include <apol/vector.h>
@@ -100,5 +104,9 @@ extern void sefs_fc_entry_free(void *fc);
  * returned and *path will be set to NULL.
  */
 extern int sefs_fc_find_default_file_contexts(char **path);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* SEFS_FILE_CONTEXTS_H */

@@ -26,6 +26,10 @@
 #ifndef POLDIFF_POLDIFF_H
 #define POLDIFF_POLDIFF_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <apol/policy.h>
 #include <apol/policy-query.h>
 #include <apol/vector.h>
@@ -163,5 +167,9 @@ extern int poldiff_is_run(poldiff_t * diff, uint32_t flags);
  *  @return 0 on success an < 0 on error; if the call fails, errno will be set.
  */
 extern int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5]);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_POLDIFF_H */

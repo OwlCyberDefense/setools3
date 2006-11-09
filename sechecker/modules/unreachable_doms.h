@@ -24,6 +24,13 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifndef UNREACHABLE_DOMS
+#define UNREACHABLE_DOMS
+
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/user-query.h>
@@ -57,3 +64,9 @@ int unreachable_doms_register(sechk_lib_t * lib);
 int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 int unreachable_doms_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
+
+#endif /* UNREACHABLE_DOMS */

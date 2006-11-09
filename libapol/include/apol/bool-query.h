@@ -26,6 +26,10 @@
 #ifndef APOL_BOOL_QUERY_H
 #define APOL_BOOL_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -113,5 +117,9 @@ extern int apol_bool_query_set_bool(apol_policy_t * p, apol_bool_query_t * b, co
  * @return Always 0.
  */
 extern int apol_bool_query_set_regex(apol_policy_t * p, apol_bool_query_t * b, int is_regex);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* APOL_BOOL_QUERY_H */

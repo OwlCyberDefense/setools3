@@ -26,6 +26,10 @@
 #ifndef QPOL_ISID_QUERY_H
 #define QPOL_ISID_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -78,5 +82,9 @@ extern int qpol_isid_get_name(qpol_policy_t * policy, qpol_isid_t * ocon, char *
  *  errno will be set and *context will be NULL.
  */
 extern int qpol_isid_get_context(qpol_policy_t * policy, qpol_isid_t * ocon, qpol_context_t ** context);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_ISID_QUERY_H */

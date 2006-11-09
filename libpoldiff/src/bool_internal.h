@@ -27,6 +27,10 @@
 #ifndef POLDIFF_BOOL_INTERNAL_H
 #define POLDIFF_BOOL_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 typedef struct poldiff_bool_summary poldiff_bool_summary_t;
 
 /**
@@ -110,5 +114,9 @@ int bool_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
  * and leave the policy difference structure unchanged.
  */
 int bool_deep_diff(poldiff_t * diff, const void *x, const void *y);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* POLDIFF_BOOL_INTERNAL_H */

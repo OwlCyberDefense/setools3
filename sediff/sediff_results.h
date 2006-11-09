@@ -24,6 +24,10 @@
 #ifndef SEDIFF_RESULTS_H
 #define SEDIFF_RESULTS_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include "sediff_gui.h"
 
 typedef struct sediff_results sediff_results_t;
@@ -33,5 +37,9 @@ void sediff_results_clear(sediff_app_t * app);
 void sediff_results_select(sediff_app_t * app, uint32_t diffbit, poldiff_form_e form);
 void sediff_results_sort_current(sediff_app_t * app, int field, int direction);
 void sediff_results_update_stats(sediff_app_t * app);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

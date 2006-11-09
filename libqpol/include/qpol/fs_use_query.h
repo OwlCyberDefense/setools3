@@ -26,6 +26,10 @@
 #ifndef QPOL_FS_USE_QUERY_H
 #define QPOL_FS_USE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -101,5 +105,9 @@ extern int qpol_fs_use_get_behavior(qpol_policy_t * policy, qpol_fs_use_t * ocon
  *  error to call this function if behavior is QPOL_FS_USE_PSID.
  */
 extern int qpol_fs_use_get_context(qpol_policy_t * policy, qpol_fs_use_t * ocon, qpol_context_t ** context);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif				       /* QPOL_FS_USE_QUERY_H */
