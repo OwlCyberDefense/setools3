@@ -26,7 +26,9 @@ indexcon_CFLAGS = $(AM_CFLAGS) @SEFS_CFLAGS@
 indexcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
 indexcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
 
-nodist_EXTRA_findcon_SOURCES = findcon.c
+nodist_findcon_SOURCES = findcon.c
+BUILT_SOURCES = findcon.c
+CLEANFILES = findcon.c
 findcon_CFLAGS = $(AM_CFLAGS) @SEFS_CFLAGS@ -DFINDCON
 findcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
 findcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
@@ -44,7 +46,6 @@ searchcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
 findcon.c: replcon.c
 	$(LN_S) $< $@
 
-
 $(top_builddir)/libapol/libapol-tcl.a:
 	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
 
@@ -57,5 +58,3 @@ $(top_builddir)/libqpol/src/libqpol.so:
 $(top_builddir)/libsefs/src/libsefs.so:
 	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)
 
-clean-local:
-	-rm -f findcon.c
