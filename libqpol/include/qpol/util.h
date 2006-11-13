@@ -27,7 +27,8 @@
 #define QPOL_UTIL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -35,7 +36,7 @@ extern "C" {
  *
  * @return String describing this library.
  */
-extern const char *libqpol_get_version(void);
+	extern const char *libqpol_get_version(void);
 
 #ifdef	__cplusplus
 }

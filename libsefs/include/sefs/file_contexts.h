@@ -28,7 +28,8 @@
 #define SEFS_FILE_CONTEXTS_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* libapol */
@@ -51,22 +52,22 @@ extern "C" {
 #define SEFS_FILETYPE_ANY  14	       /* any type */
 
 /* general file contexts structure */
-typedef struct sefs_security_context
-{
-	char *user;
-	char *role;
-	char *type;
-	char *range;
-} sefs_security_con_t;
+	typedef struct sefs_security_context
+	{
+		char *user;
+		char *role;
+		char *type;
+		char *range;
+	} sefs_security_con_t;
 
-typedef struct sefs_fc_entry
-{
+	typedef struct sefs_fc_entry
+	{
 	/** path for genfs_context or a regexp for file_context */
-	char *path;
-	/* type of file, block, char, etc.  See SEFS_FILETYPE_* defines. */
-	int filetype;
-	sefs_security_con_t *context;
-} sefs_fc_entry_t;
+		char *path;
+		/* type of file, block, char, etc.  See SEFS_FILETYPE_* defines. */
+		int filetype;
+		sefs_security_con_t *context;
+	} sefs_fc_entry_t;
 
 /**
  * Given the path to a file_contexts file, open and parse the file.
@@ -82,7 +83,7 @@ typedef struct sefs_fc_entry
  *
  * @return 0 on success, < 0 on error.
  */
-extern int sefs_fc_entry_parse_file_contexts(apol_policy_t * policy, const char *fc_path, apol_vector_t ** contexts);
+	extern int sefs_fc_entry_parse_file_contexts(apol_policy_t * policy, const char *fc_path, apol_vector_t ** contexts);
 
 /**
  * Free all space associated with a file context entry, including the
@@ -90,7 +91,7 @@ extern int sefs_fc_entry_parse_file_contexts(apol_policy_t * policy, const char 
  *
  * @param fc fc_entry to free.
  */
-extern void sefs_fc_entry_free(void *fc);
+	extern void sefs_fc_entry_free(void *fc);
 
 /**
  * Write to the referenced string the pathname of the file_contexts
@@ -103,7 +104,7 @@ extern void sefs_fc_entry_free(void *fc);
  * @return 0 if a valid path was written.  On error, < 0 will be
  * returned and *path will be set to NULL.
  */
-extern int sefs_fc_find_default_file_contexts(char **path);
+	extern int sefs_fc_find_default_file_contexts(char **path);
 
 #ifdef	__cplusplus
 }

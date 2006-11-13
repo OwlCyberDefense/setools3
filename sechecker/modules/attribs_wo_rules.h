@@ -27,7 +27,8 @@
 #define ATTRIBS_WO_RULES
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "sechecker.h"
@@ -43,17 +44,17 @@ extern "C" {
  * NOTE: while using a modular format SEChecker is built
  * statically; this means that all modules and their functions
  * are in the same namespace. */
-int attribs_wo_rules_register(sechk_lib_t * lib);
-int attribs_wo_rules_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int attribs_wo_rules_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int attribs_wo_rules_register(sechk_lib_t * lib);
+	int attribs_wo_rules_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int attribs_wo_rules_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 /* NOTE: While SEChecker is build statically, it is
  * intended that no module directly call a function
  * from another but instead use get_module_function()
  * to get the desired function from the library. */
 
-int attribs_wo_rules_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int attribs_wo_rules_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #ifdef	__cplusplus
 }

@@ -27,7 +27,8 @@
 #define QPOL_BOOL_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stddef.h>
@@ -35,7 +36,7 @@ extern "C" {
 #include <qpol/policy.h>
 #include <qpol/iterator.h>
 
-typedef struct qpol_bool qpol_bool_t;
+	typedef struct qpol_bool qpol_bool_t;
 
 /** 
  *  Get the datum for a conditional boolean by name.
@@ -46,7 +47,7 @@ typedef struct qpol_bool qpol_bool_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-extern int qpol_policy_get_bool_by_name(qpol_policy_t * policy, const char *name, qpol_bool_t ** datum);
+	extern int qpol_policy_get_bool_by_name(qpol_policy_t * policy, const char *name, qpol_bool_t ** datum);
 
 /** 
  *  Get an iterator for conditional booleans in the policy.
@@ -58,7 +59,7 @@ extern int qpol_policy_get_bool_by_name(qpol_policy_t * policy, const char *name
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_bool_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_bool_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /** 
  *  Get the integer value associated with a boolean. Values range from 1 to 
@@ -69,7 +70,7 @@ extern int qpol_policy_get_bool_iter(qpol_policy_t * policy, qpol_iterator_t ** 
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-extern int qpol_bool_get_value(qpol_policy_t * policy, qpol_bool_t * datum, uint32_t * value);
+	extern int qpol_bool_get_value(qpol_policy_t * policy, qpol_bool_t * datum, uint32_t * value);
 
 /** 
  *  Get the state of a boolean.
@@ -80,7 +81,7 @@ extern int qpol_bool_get_value(qpol_policy_t * policy, qpol_bool_t * datum, uint
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *state will set to 0 (false).
  */
-extern int qpol_bool_get_state(qpol_policy_t * policy, qpol_bool_t * datum, int *state);
+	extern int qpol_bool_get_state(qpol_policy_t * policy, qpol_bool_t * datum, int *state);
 
 /** 
  *  Set the state of a boolean and update the state of all conditionals
@@ -92,7 +93,7 @@ extern int qpol_bool_get_state(qpol_policy_t * policy, qpol_bool_t * datum, int 
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set.
  */
-extern int qpol_bool_set_state(qpol_policy_t * policy, qpol_bool_t * datum, int state);
+	extern int qpol_bool_set_state(qpol_policy_t * policy, qpol_bool_t * datum, int state);
 
 /** 
  *  Set the state of a boolean but do not update the state of all conditionals
@@ -106,7 +107,7 @@ extern int qpol_bool_set_state(qpol_policy_t * policy, qpol_bool_t * datum, int 
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set.
  */
-extern int qpol_bool_set_state_no_eval(qpol_policy_t * policy, qpol_bool_t * datum, int state);
+	extern int qpol_bool_set_state_no_eval(qpol_policy_t * policy, qpol_bool_t * datum, int state);
 
 /**
  *  Get the name which identifies a boolean from its datum.
@@ -117,7 +118,7 @@ extern int qpol_bool_set_state_no_eval(qpol_policy_t * policy, qpol_bool_t * dat
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL. 
  */
-extern int qpol_bool_get_name(qpol_policy_t * policy, qpol_bool_t * datum, char **name);
+	extern int qpol_bool_get_name(qpol_policy_t * policy, qpol_bool_t * datum, char **name);
 
 #ifdef	__cplusplus
 }

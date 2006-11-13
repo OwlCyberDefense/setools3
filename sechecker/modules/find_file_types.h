@@ -28,7 +28,8 @@
 #define FIND_FILE_TYPES
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "sechecker.h"
@@ -37,20 +38,20 @@ extern "C" {
 #include <apol/avrule-query.h>
 #include <apol/terule-query.h>
 
-typedef struct find_file_types_data
-{
-	apol_vector_t *file_type_attribs;
-	int num_file_type_attribs;
-} find_file_types_data_t;
+	typedef struct find_file_types_data
+	{
+		apol_vector_t *file_type_attribs;
+		int num_file_type_attribs;
+	} find_file_types_data_t;
 
-void find_file_types_data_free(void *data);
-find_file_types_data_t *find_file_types_data_new(void);
+	void find_file_types_data_free(void *data);
+	find_file_types_data_t *find_file_types_data_new(void);
 
-int find_file_types_register(sechk_lib_t * lib);
-int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int find_file_types_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_file_types_register(sechk_lib_t * lib);
+	int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_file_types_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #ifdef	__cplusplus
 }

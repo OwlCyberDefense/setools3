@@ -28,15 +28,16 @@
 #define QPOL_COND_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <qpol/policy.h>
 #include <qpol/bool_query.h>
 #include <qpol/iterator.h>
 
-typedef struct qpol_cond qpol_cond_t;
-typedef struct qpol_cond_expr_node qpol_cond_expr_node_t;
+	typedef struct qpol_cond qpol_cond_t;
+	typedef struct qpol_cond_expr_node qpol_cond_expr_node_t;
 
 /**
  *  Get an iterator over all conditionals in a policy.
@@ -50,7 +51,7 @@ typedef struct qpol_cond_expr_node qpol_cond_expr_node_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_cond_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_cond_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator over the nodes in a conditional expression.
@@ -65,7 +66,7 @@ extern int qpol_policy_get_cond_iter(qpol_policy_t * policy, qpol_iterator_t ** 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_cond_get_expr_node_iter(qpol_policy_t * policy, qpol_cond_t * cond, qpol_iterator_t ** iter);
+	extern int qpol_cond_get_expr_node_iter(qpol_policy_t * policy, qpol_cond_t * cond, qpol_iterator_t ** iter);
 
 /* flags for conditional rules */
 #define QPOL_COND_RULE_LIST    0x00000001
@@ -86,7 +87,8 @@ extern int qpol_cond_get_expr_node_iter(qpol_policy_t * policy, qpol_cond_t * co
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_cond_get_av_true_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter);
+	extern int qpol_cond_get_av_true_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask,
+					      qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator over all type rules in a conditional's true list
@@ -103,7 +105,8 @@ extern int qpol_cond_get_av_true_iter(qpol_policy_t * policy, qpol_cond_t * cond
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_cond_get_te_true_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter);
+	extern int qpol_cond_get_te_true_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask,
+					      qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator over all av rules in a conditional's false list
@@ -120,8 +123,8 @@ extern int qpol_cond_get_te_true_iter(qpol_policy_t * policy, qpol_cond_t * cond
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_cond_get_av_false_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask,
-				       qpol_iterator_t ** iter);
+	extern int qpol_cond_get_av_false_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask,
+					       qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator over all type rules in a conditional's false list
@@ -138,8 +141,8 @@ extern int qpol_cond_get_av_false_iter(qpol_policy_t * policy, qpol_cond_t * con
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_cond_get_te_false_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask,
-				       qpol_iterator_t ** iter);
+	extern int qpol_cond_get_te_false_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask,
+					       qpol_iterator_t ** iter);
 
 /**
  *  Evaluate the expression of a conditional using current boolean values
@@ -151,7 +154,7 @@ extern int qpol_cond_get_te_false_iter(qpol_policy_t * policy, qpol_cond_t * con
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_true will be 0.
  */
-extern int qpol_cond_eval(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t * is_true);
+	extern int qpol_cond_eval(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t * is_true);
 
 /* values identical to conditional.h in sepol */
 #define QPOL_COND_EXPR_BOOL	1      /* plain bool */
@@ -171,7 +174,7 @@ extern int qpol_cond_eval(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t *
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *expr_type will be 0.
  */
-extern int qpol_cond_expr_node_get_expr_type(qpol_policy_t * policy, qpol_cond_expr_node_t * node, uint32_t * expr_type);
+	extern int qpol_cond_expr_node_get_expr_type(qpol_policy_t * policy, qpol_cond_expr_node_t * node, uint32_t * expr_type);
 
 /**
  *  Get the boolean used in an expression node.  This is only valid
@@ -184,7 +187,7 @@ extern int qpol_cond_expr_node_get_expr_type(qpol_policy_t * policy, qpol_cond_e
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *cond_bool will be NULL.
  */
-extern int qpol_cond_expr_node_get_bool(qpol_policy_t * policy, qpol_cond_expr_node_t * node, qpol_bool_t ** cond_bool);
+	extern int qpol_cond_expr_node_get_bool(qpol_policy_t * policy, qpol_cond_expr_node_t * node, qpol_bool_t ** cond_bool);
 
 #ifdef	__cplusplus
 }

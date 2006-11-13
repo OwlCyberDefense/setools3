@@ -27,7 +27,8 @@
 #define APOL_USER_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "policy.h"
@@ -35,7 +36,7 @@ extern "C" {
 #include "mls-query.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_user_query apol_user_query_t;
+	typedef struct apol_user_query apol_user_query_t;
 
 /******************** user queries ********************/
 
@@ -56,7 +57,8 @@ typedef struct apol_user_query apol_user_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_user_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v) __attribute__ ((deprecated));
+	extern int apol_get_user_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all users within the policy.
@@ -72,7 +74,7 @@ extern int apol_get_user_by_query(apol_policy_t * p, apol_user_query_t * u, apol
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_user_get_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v);
+	extern int apol_user_get_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v);
 
 /**
  * Allocate and return a new user query structure.  All fields are
@@ -82,7 +84,7 @@ extern int apol_user_get_by_query(apol_policy_t * p, apol_user_query_t * u, apol
  *
  * @return An initialized user query structure, or NULL upon error.
  */
-extern apol_user_query_t *apol_user_query_create(void);
+	extern apol_user_query_t *apol_user_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced user query,
@@ -91,7 +93,7 @@ extern apol_user_query_t *apol_user_query_create(void);
  *
  * @param u Reference to a user query structure to destroy.
  */
-extern void apol_user_query_destroy(apol_user_query_t ** u);
+	extern void apol_user_query_destroy(apol_user_query_t ** u);
 
 /**
  * Set a user query to return only users that match this name.	This
@@ -104,7 +106,7 @@ extern void apol_user_query_destroy(apol_user_query_t ** u);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_user_query_set_user(apol_policy_t * p, apol_user_query_t * u, const char *name);
+	extern int apol_user_query_set_user(apol_policy_t * p, apol_user_query_t * u, const char *name);
 
 /**
  * Set a user query to return only users containing this role.	This
@@ -117,7 +119,7 @@ extern int apol_user_query_set_user(apol_policy_t * p, apol_user_query_t * u, co
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_user_query_set_role(apol_policy_t * p, apol_user_query_t * u, const char *role);
+	extern int apol_user_query_set_role(apol_policy_t * p, apol_user_query_t * u, const char *role);
 
 /**
  * Set a user query to return only users containing this default
@@ -131,7 +133,7 @@ extern int apol_user_query_set_role(apol_policy_t * p, apol_user_query_t * u, co
  *
  * @return Always returns 0.
  */
-extern int apol_user_query_set_default_level(apol_policy_t * p, apol_user_query_t * u, apol_mls_level_t * level);
+	extern int apol_user_query_set_default_level(apol_policy_t * p, apol_user_query_t * u, apol_mls_level_t * level);
 
 /**
  * Set a user query to return only users matching a MLS range.	This
@@ -148,7 +150,8 @@ extern int apol_user_query_set_default_level(apol_policy_t * p, apol_user_query_
  *
  * @return Always returns 0.
  */
-extern int apol_user_query_set_range(apol_policy_t * p, apol_user_query_t * u, apol_mls_range_t * range, unsigned int range_match);
+	extern int apol_user_query_set_range(apol_policy_t * p, apol_user_query_t * u, apol_mls_range_t * range,
+					     unsigned int range_match);
 
 /**
  * Set a user query to use regular expression searching for all of its
@@ -160,7 +163,7 @@ extern int apol_user_query_set_range(apol_policy_t * p, apol_user_query_t * u, a
  *
  * @return Always 0.
  */
-extern int apol_user_query_set_regex(apol_policy_t * p, apol_user_query_t * u, int is_regex);
+	extern int apol_user_query_set_regex(apol_policy_t * p, apol_user_query_t * u, int is_regex);
 
 #ifdef	__cplusplus
 }

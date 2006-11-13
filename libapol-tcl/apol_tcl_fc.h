@@ -43,16 +43,17 @@
 #define APOL_TCL_FC_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #ifdef LIBSEFS
 #include <sefs/fsdata.h>
-extern sefs_filesystem_db_t *fsdata;
+	extern sefs_filesystem_db_t *fsdata;
 
 #endif
 
-extern int apol_tcl_fc_init(Tcl_Interp * interp);
+	extern int apol_tcl_fc_init(Tcl_Interp * interp);
 
 #ifdef	__cplusplus
 }

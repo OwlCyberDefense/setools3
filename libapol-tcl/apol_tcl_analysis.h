@@ -29,10 +29,11 @@
 #define APOL_TCL_ANALYSIS_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern int apol_tcl_analysis_init(Tcl_Interp * interp);
+	extern int apol_tcl_analysis_init(Tcl_Interp * interp);
 
 #ifdef	__cplusplus
 }

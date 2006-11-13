@@ -29,10 +29,11 @@
 #define SEFS_FS_HASH_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef struct sefs_hash sefs_hash_t;
+	typedef struct sefs_hash sefs_hash_t;
 
 /**
  * Allocate and return a new hash table with the given number of
@@ -44,7 +45,7 @@ typedef struct sefs_hash sefs_hash_t;
  * caller must call sefs_hash_destroy() upon the returned value
  * afterwards.
  */
-extern sefs_hash_t *sefs_hash_new(int size);
+	extern sefs_hash_t *sefs_hash_new(int size);
 
 /**
  * Insert a key into the hash table, if it is not already there.  This
@@ -55,7 +56,7 @@ extern sefs_hash_t *sefs_hash_new(int size);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int sefs_hash_insert(sefs_hash_t * hashtab, const char *key);
+	extern int sefs_hash_insert(sefs_hash_t * hashtab, const char *key);
 
 /**
  * Search for a particular key within the hash table.
@@ -65,7 +66,7 @@ extern int sefs_hash_insert(sefs_hash_t * hashtab, const char *key);
  *
  * @return 1 if the key was found, 0 if not, < 0 on error.
  */
-extern int sefs_hash_find(sefs_hash_t * hashtab, const char *key);
+	extern int sefs_hash_find(sefs_hash_t * hashtab, const char *key);
 
 /**
  * Deallocate all space associated with the given hash table,
@@ -73,7 +74,7 @@ extern int sefs_hash_find(sefs_hash_t * hashtab, const char *key);
  *
  * @return hashtab Hash table to destroy.
  */
-extern void sefs_hash_destroy(sefs_hash_t * hashtab);
+	extern void sefs_hash_destroy(sefs_hash_t * hashtab);
 
 #ifdef	__cplusplus
 }

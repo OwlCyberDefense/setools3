@@ -26,7 +26,8 @@
 #define SEDIFF_TREE_MODEL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <gtk/gtk.h>
@@ -37,15 +38,15 @@ extern "C" {
 #define POLDIFF_DIFF_SUMMARY  0
 
 /* The data columns that we export via the tree model interface */
-enum
-{
-	SEDIFF_LABEL_COLUMN = 0,
-	SEDIFF_DIFFBIT_COLUMN,
-	SEDIFF_FORM_COLUMN,
-	SEDIFF_NUM_COLUMNS
-};
+	enum
+	{
+		SEDIFF_LABEL_COLUMN = 0,
+		SEDIFF_DIFFBIT_COLUMN,
+		SEDIFF_FORM_COLUMN,
+		SEDIFF_NUM_COLUMNS
+	};
 
-GtkWidget *sediff_create_view_and_model(poldiff_t * diff);
+	GtkWidget *sediff_create_view_and_model(poldiff_t * diff);
 
 /**
  * Return the currently selected row for the tree view.  Write to
@@ -61,7 +62,7 @@ GtkWidget *sediff_create_view_and_model(poldiff_t * diff);
  * @return 1 if something is selected, 0 or not (and diffbit and form
  * remain unchanged).
  */
-int sediff_get_current_treeview_selected_row(GtkTreeView * tree_view, uint32_t * diffbit, poldiff_form_e * form);
+	int sediff_get_current_treeview_selected_row(GtkTreeView * tree_view, uint32_t * diffbit, poldiff_form_e * form);
 #ifdef	__cplusplus
 }
 #endif

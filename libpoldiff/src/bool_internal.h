@@ -28,10 +28,11 @@
 #define POLDIFF_BOOL_INTERNAL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef struct poldiff_bool_summary poldiff_bool_summary_t;
+	typedef struct poldiff_bool_summary poldiff_bool_summary_t;
 
 /**
  * Allocate and return a new poldiff_bool_summary_t object.
@@ -39,7 +40,7 @@ typedef struct poldiff_bool_summary poldiff_bool_summary_t;
  * @return A new bool summary.  The caller must call bool_destroy()
  * afterwards.  On error, return NULL and set errno.
  */
-poldiff_bool_summary_t *bool_create(void);
+	poldiff_bool_summary_t *bool_create(void);
 
 /**
  * Deallocate all space associated with a poldiff_bool_summary_t
@@ -49,7 +50,7 @@ poldiff_bool_summary_t *bool_create(void);
  * @param bs Reference to a bool summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void bool_destroy(poldiff_bool_summary_t ** bs);
+	void bool_destroy(poldiff_bool_summary_t ** bs);
 
 /**
  * Reset the state of all boolean differences.
@@ -58,7 +59,7 @@ void bool_destroy(poldiff_bool_summary_t ** bs);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int bool_reset(poldiff_t * diff);
+	int bool_reset(poldiff_t * diff);
 
 /**
  * Get a vector of all bools from the given policy, sorted by name.
@@ -70,7 +71,7 @@ int bool_reset(poldiff_t * diff);
  * responsible for calling apol_vector_destroy() afterwards, passing
  * NULL as the second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *bool_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *bool_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Compare two qpol_bool_t objects, determining if they have the same
@@ -84,7 +85,7 @@ apol_vector_t *bool_get_items(poldiff_t * diff, apol_policy_t * policy);
  * @return < 0, 0, or > 0 if bool x is respectively less than, equal
  * to, or greater than bool y.
  */
-int bool_comp(const void *x, const void *y, poldiff_t * diff);
+	int bool_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -97,7 +98,7 @@ int bool_comp(const void *x, const void *y, poldiff_t * diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int bool_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int bool_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two bools for which the
@@ -113,7 +114,7 @@ int bool_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int bool_deep_diff(poldiff_t * diff, const void *x, const void *y);
+	int bool_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
 #ifdef	__cplusplus
 }

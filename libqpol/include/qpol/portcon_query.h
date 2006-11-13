@@ -27,7 +27,8 @@
 #define QPOL_PORTCON_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stddef.h>
@@ -36,7 +37,7 @@ extern "C" {
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 
-typedef struct qpol_portcon qpol_portcon_t;
+	typedef struct qpol_portcon qpol_portcon_t;
 
 /**
  *  Get a single portcon statement by port range and protocol.
@@ -51,8 +52,8 @@ typedef struct qpol_portcon qpol_portcon_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-extern int qpol_policy_get_portcon_by_port(qpol_policy_t * policy, uint16_t low, uint16_t high, uint8_t protocol,
-					   qpol_portcon_t ** ocon);
+	extern int qpol_policy_get_portcon_by_port(qpol_policy_t * policy, uint16_t low, uint16_t high, uint8_t protocol,
+						   qpol_portcon_t ** ocon);
 
 /**
  *  Get an iterator for the portcon statements in a policy.
@@ -65,7 +66,7 @@ extern int qpol_policy_get_portcon_by_port(qpol_policy_t * policy, uint16_t low,
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_portcon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_portcon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the protocol from a portcon statement.
@@ -76,7 +77,7 @@ extern int qpol_policy_get_portcon_iter(qpol_policy_t * policy, qpol_iterator_t 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *protocol will be 0;
  */
-extern int qpol_portcon_get_protocol(qpol_policy_t * policy, qpol_portcon_t * ocon, uint8_t * protocol);
+	extern int qpol_portcon_get_protocol(qpol_policy_t * policy, qpol_portcon_t * ocon, uint8_t * protocol);
 
 /**
  *  Get the low port from a portcon statement.
@@ -86,7 +87,7 @@ extern int qpol_portcon_get_protocol(qpol_policy_t * policy, qpol_portcon_t * oc
  *  @return 0 on success < 0 on failure; if the call fails,
  *  errno will be set and *port will be 0.
  */
-extern int qpol_portcon_get_low_port(qpol_policy_t * policy, qpol_portcon_t * ocon, uint16_t * port);
+	extern int qpol_portcon_get_low_port(qpol_policy_t * policy, qpol_portcon_t * ocon, uint16_t * port);
 
 /**
  *  Get the high port from a portcon statement.
@@ -96,7 +97,7 @@ extern int qpol_portcon_get_low_port(qpol_policy_t * policy, qpol_portcon_t * oc
  *  @return 0 on success < 0 on failure; if the call fails,
  *  errno will be set and *port will be 0.
  */
-extern int qpol_portcon_get_high_port(qpol_policy_t * policy, qpol_portcon_t * ocon, uint16_t * port);
+	extern int qpol_portcon_get_high_port(qpol_policy_t * policy, qpol_portcon_t * ocon, uint16_t * port);
 
 /**
  *  Get the context from a portcon statement.
@@ -107,7 +108,7 @@ extern int qpol_portcon_get_high_port(qpol_policy_t * policy, qpol_portcon_t * o
  *  @return 0 on success < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_portcon_get_context(qpol_policy_t * policy, qpol_portcon_t * ocon, qpol_context_t ** context);
+	extern int qpol_portcon_get_context(qpol_policy_t * policy, qpol_portcon_t * ocon, qpol_context_t ** context);
 
 #ifdef	__cplusplus
 }

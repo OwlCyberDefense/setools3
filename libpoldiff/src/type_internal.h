@@ -27,12 +27,13 @@
 #define POLDIFF_TYPE_INTERNAL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /******************** types ********************/
 
-typedef struct poldiff_type_summary poldiff_type_summary_t;
+	typedef struct poldiff_type_summary poldiff_type_summary_t;
 
 /**
  * Allocate and return a new poldiff_type_summary_t object.
@@ -40,7 +41,7 @@ typedef struct poldiff_type_summary poldiff_type_summary_t;
  * @return A new type summary.  The caller must call type_destroy()
  * afterwards.  On error, return NULL and set errno.
  */
-poldiff_type_summary_t *type_summary_create(void);
+	poldiff_type_summary_t *type_summary_create(void);
 
 /**
  * Deallocate all space associated with a poldiff_type_summary_t
@@ -50,7 +51,7 @@ poldiff_type_summary_t *type_summary_create(void);
  * @param type Reference to a type summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void type_summary_destroy(poldiff_type_summary_t ** type);
+	void type_summary_destroy(poldiff_type_summary_t ** type);
 
 /**
  * Reset the state of all type differences.
@@ -59,7 +60,7 @@ void type_summary_destroy(poldiff_type_summary_t ** type);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int type_reset(poldiff_t * diff);
+	int type_reset(poldiff_t * diff);
 
 /**
  * Get a vector of all type (type qpol_type_t) from the
@@ -72,7 +73,7 @@ int type_reset(poldiff_t * diff);
  * responsible for calling apol_vector_destroy() afterwards, passing
  * NULL as the second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *type_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *type_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Compare two qpol_type_t objects, determining if they have the same
@@ -86,7 +87,7 @@ apol_vector_t *type_get_items(poldiff_t * diff, apol_policy_t * policy);
  * @return < 0, 0, or > 0 if type x is respectively less than, equal
  * to, or greater than type y.
  */
-int type_comp(const void *x, const void *y, poldiff_t * diff);
+	int type_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -99,7 +100,7 @@ int type_comp(const void *x, const void *y, poldiff_t * diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int type_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int type_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two types for which the
@@ -115,7 +116,7 @@ int type_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int type_deep_diff(poldiff_t * diff, const void *x, const void *y);
+	int type_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
 #ifdef	__cplusplus
 }

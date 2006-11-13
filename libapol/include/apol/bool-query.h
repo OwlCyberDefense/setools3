@@ -27,14 +27,15 @@
 #define APOL_BOOL_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_bool_query apol_bool_query_t;
+	typedef struct apol_bool_query apol_bool_query_t;
 
 /******************** booleans queries ********************/
 
@@ -55,7 +56,8 @@ typedef struct apol_bool_query apol_bool_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_bool_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v) __attribute__ ((deprecated));
+	extern int apol_get_bool_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all booleans within the policy.
@@ -71,7 +73,7 @@ extern int apol_get_bool_by_query(apol_policy_t * p, apol_bool_query_t * b, apol
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v);
+	extern int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v);
 
 /**
  * Allocate and return a new boolean query structure.  All fields are
@@ -81,7 +83,7 @@ extern int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol
  *
  * @return An initialized boolean query structure, or NULL upon error.
  */
-extern apol_bool_query_t *apol_bool_query_create(void);
+	extern apol_bool_query_t *apol_bool_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced boolean query,
@@ -90,7 +92,7 @@ extern apol_bool_query_t *apol_bool_query_create(void);
  *
  * @param b Reference to a boolean query structure to destroy.
  */
-extern void apol_bool_query_destroy(apol_bool_query_t ** b);
+	extern void apol_bool_query_destroy(apol_bool_query_t ** b);
 
 /**
  * Set a boolean query to return only booleans that match this name.
@@ -103,7 +105,7 @@ extern void apol_bool_query_destroy(apol_bool_query_t ** b);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_bool_query_set_bool(apol_policy_t * p, apol_bool_query_t * b, const char *name);
+	extern int apol_bool_query_set_bool(apol_policy_t * p, apol_bool_query_t * b, const char *name);
 
 /**
  * Set a boolean query to use regular expression searching for all of
@@ -116,7 +118,7 @@ extern int apol_bool_query_set_bool(apol_policy_t * p, apol_bool_query_t * b, co
  *
  * @return Always 0.
  */
-extern int apol_bool_query_set_regex(apol_policy_t * p, apol_bool_query_t * b, int is_regex);
+	extern int apol_bool_query_set_regex(apol_policy_t * p, apol_bool_query_t * b, int is_regex);
 
 #ifdef	__cplusplus
 }

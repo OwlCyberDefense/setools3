@@ -28,7 +28,8 @@
 #define QPOL_CLASS_PERM_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stddef.h>
@@ -36,8 +37,8 @@ extern "C" {
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 
-typedef struct qpol_class qpol_class_t;
-typedef struct qpol_common qpol_common_t;
+	typedef struct qpol_class qpol_class_t;
+	typedef struct qpol_common qpol_common_t;
 
 /* perms */
 /**
@@ -52,7 +53,7 @@ typedef struct qpol_common qpol_common_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *classes will be NULL;
  */
-extern int qpol_perm_get_class_iter(qpol_policy_t * policy, const char *perm, qpol_iterator_t ** classes);
+	extern int qpol_perm_get_class_iter(qpol_policy_t * policy, const char *perm, qpol_iterator_t ** classes);
 
 /**
  *  Get an iterator over the set of commons which contain a permission
@@ -66,7 +67,7 @@ extern int qpol_perm_get_class_iter(qpol_policy_t * policy, const char *perm, qp
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *commons will be NULL;
  */
-extern int qpol_perm_get_common_iter(qpol_policy_t * policy, const char *perm, qpol_iterator_t ** commons);
+	extern int qpol_perm_get_common_iter(qpol_policy_t * policy, const char *perm, qpol_iterator_t ** commons);
 
 /* classes */
 /**
@@ -78,7 +79,7 @@ extern int qpol_perm_get_common_iter(qpol_policy_t * policy, const char *perm, q
  *  @return Returns 0 for success and < 0 for failure; if the call fails,
  *  errno will be set and *obj_class will be NULL;
  */
-extern int qpol_policy_get_class_by_name(qpol_policy_t * policy, const char *name, qpol_class_t ** obj_class);
+	extern int qpol_policy_get_class_by_name(qpol_policy_t * policy, const char *name, qpol_class_t ** obj_class);
 
 /**
  *  Get an iterator for object classes in the policy.
@@ -90,7 +91,7 @@ extern int qpol_policy_get_class_by_name(qpol_policy_t * policy, const char *nam
  *  @return Returns 0 for success and < 0 for failure; if the call fails,
  *  errno will be set and *iter will be NULL.
 */
-extern int qpol_policy_get_class_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_class_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /** 
  *  Get the integer value associated with a class. Values range from 1 to 
@@ -101,7 +102,7 @@ extern int qpol_policy_get_class_iter(qpol_policy_t * policy, qpol_iterator_t **
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-extern int qpol_class_get_value(qpol_policy_t * policy, qpol_class_t * obj_class, uint32_t * value);
+	extern int qpol_class_get_value(qpol_policy_t * policy, qpol_class_t * obj_class, uint32_t * value);
 
 /** 
  *  Get the common used by a class.
@@ -113,7 +114,7 @@ extern int qpol_class_get_value(qpol_policy_t * policy, qpol_class_t * obj_class
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *common will be NULL. 
  */
-extern int qpol_class_get_common(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_common_t ** common);
+	extern int qpol_class_get_common(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_common_t ** common);
 
 /**
  *  Get an iterator for the set of (unique) permissions for a class.
@@ -127,7 +128,7 @@ extern int qpol_class_get_common(qpol_policy_t * policy, qpol_class_t * obj_clas
  *  @return Returns 0 for success and < 0 for failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-extern int qpol_class_get_perm_iter(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_iterator_t ** perms);
+	extern int qpol_class_get_perm_iter(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_iterator_t ** perms);
 
 /**
  *  Get the name which identifies a class.
@@ -138,7 +139,7 @@ extern int qpol_class_get_perm_iter(qpol_policy_t * policy, qpol_class_t * obj_c
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL. 
  */
-extern int qpol_class_get_name(qpol_policy_t * policy, qpol_class_t * obj_class, char **name);
+	extern int qpol_class_get_name(qpol_policy_t * policy, qpol_class_t * obj_class, char **name);
 
 /* commons */
 /**
@@ -150,7 +151,7 @@ extern int qpol_class_get_name(qpol_policy_t * policy, qpol_class_t * obj_class,
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *common will be NULL.
  */
-extern int qpol_policy_get_common_by_name(qpol_policy_t * policy, const char *name, qpol_common_t ** common);
+	extern int qpol_policy_get_common_by_name(qpol_policy_t * policy, const char *name, qpol_common_t ** common);
 
 /**
  *  Get an iterator for commons in the policy
@@ -162,7 +163,7 @@ extern int qpol_policy_get_common_by_name(qpol_policy_t * policy, const char *na
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_common_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_common_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the integer value associated with a common. Values range from 1 to
@@ -173,7 +174,7 @@ extern int qpol_policy_get_common_iter(qpol_policy_t * policy, qpol_iterator_t *
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-extern int qpol_common_get_value(qpol_policy_t * policy, qpol_common_t * common, uint32_t * value);
+	extern int qpol_common_get_value(qpol_policy_t * policy, qpol_common_t * common, uint32_t * value);
 
 /**
  *  Get an iterator for the permissions included in a common.
@@ -186,7 +187,7 @@ extern int qpol_common_get_value(qpol_policy_t * policy, qpol_common_t * common,
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-extern int qpol_common_get_perm_iter(qpol_policy_t * policy, qpol_common_t * common, qpol_iterator_t ** perms);
+	extern int qpol_common_get_perm_iter(qpol_policy_t * policy, qpol_common_t * common, qpol_iterator_t ** perms);
 
 /**
  *  Get the name which identifies a common.
@@ -197,7 +198,7 @@ extern int qpol_common_get_perm_iter(qpol_policy_t * policy, qpol_common_t * com
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_common_get_name(qpol_policy_t * policy, qpol_common_t * common, char **name);
+	extern int qpol_common_get_name(qpol_policy_t * policy, qpol_common_t * common, char **name);
 
 #ifdef	__cplusplus
 }

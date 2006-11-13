@@ -28,13 +28,14 @@
 #define POLDIFF_TYPE_MAP_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <poldiff/poldiff.h>
 #include <apol/vector.h>
 
-typedef struct poldiff_type_remap_entry poldiff_type_remap_entry_t;
+	typedef struct poldiff_type_remap_entry poldiff_type_remap_entry_t;
 
 /**
  *  Note that a type(s) from the original policy should be remapped in
@@ -59,7 +60,7 @@ typedef struct poldiff_type_remap_entry poldiff_type_remap_entry_t;
  *  @return 0 on success or < 0 on error; if the call fails, errno
  *  will be set and the poldiff object remains unchanged.
  */
-extern int poldiff_type_remap_create(poldiff_t * diff, apol_vector_t * orig_names, apol_vector_t * mod_names);
+	extern int poldiff_type_remap_create(poldiff_t * diff, apol_vector_t * orig_names, apol_vector_t * mod_names);
 
 /**
  *  Get a vector of all identified type remap entries.  The caller may
@@ -72,7 +73,7 @@ extern int poldiff_type_remap_create(poldiff_t * diff, apol_vector_t * orig_name
  *  @return Vector of poldiff_type_remap_entry_t objects.  The caller
  *  should not destroy this vector.
  */
-extern apol_vector_t *poldiff_type_remap_get_entries(poldiff_t * diff);
+	extern apol_vector_t *poldiff_type_remap_get_entries(poldiff_t * diff);
 
 /**
  *  Remove a poldiff_type_remap_entry object.  This function will
@@ -82,7 +83,7 @@ extern apol_vector_t *poldiff_type_remap_get_entries(poldiff_t * diff);
  *  remaps.
  *  @param entry Type remap entry to remove and destroy.
  */
-extern void poldiff_type_remap_entry_remove(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
+	extern void poldiff_type_remap_entry_remove(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
 /**
  *  Allocate and return a vector of type names (char *) corresponding
@@ -97,7 +98,7 @@ extern void poldiff_type_remap_entry_remove(poldiff_t * diff, poldiff_type_remap
  *  calling apol_vector_destroy() afterwards, passing NULL as the
  *  second parameter.  Upon error return NULL and set errno.
  */
-extern apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
+	extern apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
 /**
  *  Allocate and return a vector of type names (char *) corresponding
@@ -112,7 +113,7 @@ extern apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t * di
  *  calling apol_vector_destroy() afterwards, passing NULL as the
  *  second parameter.  Upon error return NULL and set errno.
  */
-extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
+	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
 /**
  *  Given a poldiff_type_remap_entry_t object, determine if it is
@@ -122,7 +123,7 @@ extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * di
  *
  *  @return 1 if it is enabled, 0 if not, < 0 on error.
  */
-extern int poldiff_type_remap_entry_get_is_enabled(poldiff_type_remap_entry_t * entry);
+	extern int poldiff_type_remap_entry_get_is_enabled(poldiff_type_remap_entry_t * entry);
 
 /**
  *  Enable or disable a poldiff_type_remap_entry_t object.
@@ -130,7 +131,7 @@ extern int poldiff_type_remap_entry_get_is_enabled(poldiff_type_remap_entry_t * 
  *  @param entry Remap entry from which to set its enabled status.
  *  @param enabled 0 to disable this entry, non-zero to enable it.
  */
-extern void poldiff_type_remap_entry_set_enabled(poldiff_type_remap_entry_t * entry, int enabled);
+	extern void poldiff_type_remap_entry_set_enabled(poldiff_type_remap_entry_t * entry, int enabled);
 
 #ifdef	__cplusplus
 }

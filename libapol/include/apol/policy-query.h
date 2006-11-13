@@ -30,7 +30,8 @@
 #define APOL_POLICY_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Many libapol queries act upon MLS contexts.  Use these defines to

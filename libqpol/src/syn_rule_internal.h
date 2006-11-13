@@ -27,17 +27,18 @@
 #define QPOL_SYN_RULE_INTERNAL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-struct qpol_syn_rule
-{
-	avrule_t *rule;
-	cond_node_t *cond;
+	struct qpol_syn_rule
+	{
+		avrule_t *rule;
+		cond_node_t *cond;
 	/** 0 if this rule is unconditional or in a conditional's true branch, 1 if in else */
-	int cond_branch;
+		int cond_branch;
 /*	char *mod_name; for later use */
-};
+	};
 
 #ifdef	__cplusplus
 }

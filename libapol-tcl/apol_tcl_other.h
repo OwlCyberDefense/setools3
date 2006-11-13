@@ -29,7 +29,8 @@
 #define APOL_TCL_OTHER_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <tcl.h>
@@ -41,17 +42,17 @@ extern "C" {
 
 /** Global SELinux policy (either read from source or from binary
  *  policy file), defined in apol_tcl_other.c. */
-extern apol_policy_t *policydb;
+	extern apol_policy_t *policydb;
 
 /** Global SELinux policy's qpol structure; this is derived from
  *  policydb and is defined in apol_tcl_other.c. */
-extern qpol_policy_t *qpolicydb;
+	extern qpol_policy_t *qpolicydb;
 
 /**
  * Initializes the libapol-tcl library and registers all of the
  * libapol-tcl commands.
  */
-extern int apol_tcl_init(Tcl_Interp * interp);
+	extern int apol_tcl_init(Tcl_Interp * interp);
 
 /**
  * Determines the location of the main apol Tcl file, and assigns it
@@ -62,7 +63,7 @@ extern int apol_tcl_init(Tcl_Interp * interp);
  *
  * @return TCL_OK if apol.tcl was found, TCL_ERROR if not.
  */
-extern int apol_tcl_get_startup_script(Tcl_Interp * interp, char *name);
+	extern int apol_tcl_get_startup_script(Tcl_Interp * interp, char *name);
 
 /**
  * If the callback arg embedded within the global apol policy is not
@@ -72,13 +73,13 @@ extern int apol_tcl_get_startup_script(Tcl_Interp * interp, char *name);
  *
  * @param interp Tcl interpreter object.
  */
-void apol_tcl_write_error(Tcl_Interp * interp);
+	void apol_tcl_write_error(Tcl_Interp * interp);
 
 /**
  * Clears and resets the callback arg string within the global apol
  * policy structure, if it is present.
  */
-void apol_tcl_clear_error(void);
+	void apol_tcl_clear_error(void);
 
 /**
  * Given a string representing a Tcl level object, fill the passed
@@ -94,7 +95,7 @@ void apol_tcl_clear_error(void);
  * @return 0 if level converted, 1 if an identifier is not known
  * according to the policy, <0 on error.
  */
-extern int apol_tcl_string_to_level(Tcl_Interp * interp, const char *level_string, apol_mls_level_t * level);
+	extern int apol_tcl_string_to_level(Tcl_Interp * interp, const char *level_string, apol_mls_level_t * level);
 
 /**
  * Given a string representing a Tcl range object, fill the passed
@@ -113,7 +114,7 @@ extern int apol_tcl_string_to_level(Tcl_Interp * interp, const char *level_strin
  * @return 0 if range converted, 1 if an identifier is not known
  * according to the policy, <0 on error.
  */
-extern int apol_tcl_string_to_range(Tcl_Interp * interp, const char *range_string, apol_mls_range_t * range);
+	extern int apol_tcl_string_to_range(Tcl_Interp * interp, const char *range_string, apol_mls_range_t * range);
 
 /**
  * Given a Tcl string representing a range type ("exact", "subset",
@@ -126,7 +127,7 @@ extern int apol_tcl_string_to_range(Tcl_Interp * interp, const char *range_strin
  * range.
  * @return 0 on success, < 0 if the string is invalid.
  */
-int apol_tcl_string_to_range_match(Tcl_Interp * interp, const char *range_match_string, unsigned int *flags);
+	int apol_tcl_string_to_range_match(Tcl_Interp * interp, const char *range_match_string, unsigned int *flags);
 
 /**
  * Given a string representing a Tcl context object, fill the passed
@@ -145,7 +146,7 @@ int apol_tcl_string_to_range_match(Tcl_Interp * interp, const char *range_match_
  * @return 0 if context converted, 1 if an identifier is not known
  * according to the policy, <0 on error.
  */
-extern int apol_tcl_string_to_context(Tcl_Interp * interp, const char *context_string, apol_context_t * context);
+	extern int apol_tcl_string_to_context(Tcl_Interp * interp, const char *context_string, apol_context_t * context);
 
 #ifdef	__cplusplus
 }

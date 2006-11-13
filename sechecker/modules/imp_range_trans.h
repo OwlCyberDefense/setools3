@@ -28,7 +28,8 @@
 #define IMP_RANGE_TRANS
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "sechecker.h"
@@ -40,14 +41,13 @@ extern "C" {
 #include <apol/domain-trans-analysis.h>
 #include <apol/policy-query.h>
 
-int imp_range_trans_register(sechk_lib_t * lib);
-int imp_range_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int imp_range_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int imp_range_trans_register(sechk_lib_t * lib);
+	int imp_range_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int imp_range_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #ifdef	__cplusplus
 }
 #endif
 
-#endif /* IMP_RANGE_TRANS */
-
+#endif				       /* IMP_RANGE_TRANS */

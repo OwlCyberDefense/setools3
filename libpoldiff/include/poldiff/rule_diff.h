@@ -29,7 +29,8 @@
 #define POLDIFF_RULE_DIFF_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <apol/vector.h>
@@ -46,11 +47,11 @@ extern "C" {
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and the difference structure should be destroyed.
  */
-extern int poldiff_enable_line_numbers(poldiff_t * diff);
+	extern int poldiff_enable_line_numbers(poldiff_t * diff);
 
 /******************** avrules diff ********************/
 
-typedef struct poldiff_avrule poldiff_avrule_t;
+	typedef struct poldiff_avrule poldiff_avrule_t;
 
 /**
  *  Get an array of statistics for the number of differences of each
@@ -64,7 +65,7 @@ typedef struct poldiff_avrule poldiff_avrule_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_avrule_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_avrule_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of av rule differences from the av rule difference
@@ -77,7 +78,7 @@ extern void poldiff_avrule_get_stats(poldiff_t * diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector returned.
  *  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_avrule_vector(poldiff_t * diff);
+	extern apol_vector_t *poldiff_get_avrule_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -91,7 +92,7 @@ extern apol_vector_t *poldiff_get_avrule_vector(poldiff_t * diff);
  *  is responsible for free()ing this string.  On error, return NULL
  *  and set errno.
  */
-extern char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule);
+	extern char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule);
 
 /**
  *  Get the form of difference from an av rule diff.
@@ -101,7 +102,7 @@ extern char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.
  */
-extern poldiff_form_e poldiff_avrule_get_form(const void *avrule);
+	extern poldiff_form_e poldiff_avrule_get_form(const void *avrule);
 
 /**
  *  Get the type of rule this is from an av rule diff.
@@ -111,7 +112,7 @@ extern poldiff_form_e poldiff_avrule_get_form(const void *avrule);
  *  @return One of QPOL_RULE_ALLOW etc, suitable for printing via
  *  apol_rule_type_to_str().
  */
-extern uint32_t poldiff_avrule_get_rule_type(const poldiff_avrule_t * avrule);
+	extern uint32_t poldiff_avrule_get_rule_type(const poldiff_avrule_t * avrule);
 
 /**
  *  Get the source type from an av rule diff.
@@ -120,7 +121,7 @@ extern uint32_t poldiff_avrule_get_rule_type(const poldiff_avrule_t * avrule);
  *
  *  @return A string for the type.  <b>Do not free() this string.</b>
  */
-extern const char *poldiff_avrule_get_source_type(const poldiff_avrule_t * avrule);
+	extern const char *poldiff_avrule_get_source_type(const poldiff_avrule_t * avrule);
 
 /**
  *  Get the target type from an av rule diff.
@@ -129,7 +130,7 @@ extern const char *poldiff_avrule_get_source_type(const poldiff_avrule_t * avrul
  *
  *  @return A string for the type.  <b>Do not free() this string.</b>
  */
-extern const char *poldiff_avrule_get_target_type(const poldiff_avrule_t * avrule);
+	extern const char *poldiff_avrule_get_target_type(const poldiff_avrule_t * avrule);
 
 /**
  *  Get the object class from an av rule diff.
@@ -138,7 +139,7 @@ extern const char *poldiff_avrule_get_target_type(const poldiff_avrule_t * avrul
  *
  *  @return A string for the class.  <b>Do not free() this string.</b>
  */
-extern const char *poldiff_avrule_get_object_class(const poldiff_avrule_t * avrule);
+	extern const char *poldiff_avrule_get_object_class(const poldiff_avrule_t * avrule);
 
 /**
  *  Get the conditional expression from an av rule diff.  Note that
@@ -157,8 +158,8 @@ extern const char *poldiff_avrule_get_object_class(const poldiff_avrule_t * avru
  *  originated, or NULL if the rule is not conditional.  The caller
  *  must not destroy this pointer.
  */
-extern void poldiff_avrule_get_cond(const poldiff_t * diff, const poldiff_avrule_t * avrule,
-				    qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p);
+	extern void poldiff_avrule_get_cond(const poldiff_t * diff, const poldiff_avrule_t * avrule,
+					    qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p);
 
 /**
  *  Get a vector of permissions unmodified by the av rule.  If the
@@ -173,7 +174,7 @@ extern void poldiff_avrule_get_cond(const poldiff_t * diff, const poldiff_avrule
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.
  */
-extern apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule);
+	extern apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule);
 
 /**
  *  Get a vector of permissions added to the av rule.  Note that this
@@ -188,7 +189,7 @@ extern apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.
  */
-extern apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule);
+	extern apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule);
 
 /**
  *  Get a vector of permissions removed from the av rule.  Note that
@@ -203,7 +204,7 @@ extern apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * av
  *  the size of the returned vector will be 0.  The caller must not
  *  destroy this vector.
  */
-extern apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t * avrule);
+	extern apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t * avrule);
 
 /**
  *  Get a vector of line numbers (of type unsigned long) for this av rule
@@ -218,7 +219,7 @@ extern apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t * 
  *  @return A vector of line numbers (type unsigned long) for the rule
  *  in the original policy, or NULL if no numbers are available.
  */
-extern apol_vector_t *poldiff_avrule_get_orig_line_numbers(const poldiff_avrule_t * avrule);
+	extern apol_vector_t *poldiff_avrule_get_orig_line_numbers(const poldiff_avrule_t * avrule);
 
 /**
  *  Get a vector of line numbers (of type unsigned long) for this av rule
@@ -233,11 +234,11 @@ extern apol_vector_t *poldiff_avrule_get_orig_line_numbers(const poldiff_avrule_
  *  @return A vector of line numbers (type unsigned long) for the rule
  *  in the modified policy, or NULL if no numbers are available.
  */
-extern apol_vector_t *poldiff_avrule_get_mod_line_numbers(const poldiff_avrule_t * avrule);
+	extern apol_vector_t *poldiff_avrule_get_mod_line_numbers(const poldiff_avrule_t * avrule);
 
 /******************** terules diff ********************/
 
-typedef struct poldiff_terule poldiff_terule_t;
+	typedef struct poldiff_terule poldiff_terule_t;
 
 /**
  *  Get an array of statistics for the number of differences of each
@@ -251,7 +252,7 @@ typedef struct poldiff_terule poldiff_terule_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_terule_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_terule_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of te rule differences from the te rule difference
@@ -264,7 +265,7 @@ extern void poldiff_terule_get_stats(poldiff_t * diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector returned.
  *  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_terule_vector(poldiff_t * diff);
+	extern apol_vector_t *poldiff_get_terule_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -278,7 +279,7 @@ extern apol_vector_t *poldiff_get_terule_vector(poldiff_t * diff);
  *  is responsible for free()ing this string.  On error, return NULL
  *  and set errno.
  */
-extern char *poldiff_terule_to_string(poldiff_t * diff, const void *terule);
+	extern char *poldiff_terule_to_string(poldiff_t * diff, const void *terule);
 
 /**
  *  Get the form of difference from a te rule diff.
@@ -288,7 +289,7 @@ extern char *poldiff_terule_to_string(poldiff_t * diff, const void *terule);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.
  */
-extern poldiff_form_e poldiff_terule_get_form(const void *terule);
+	extern poldiff_form_e poldiff_terule_get_form(const void *terule);
 
 /**
  *  Get the type of rule this is from a te rule diff.
@@ -298,7 +299,7 @@ extern poldiff_form_e poldiff_terule_get_form(const void *terule);
  *  @return One of QPOL_RULE_TYPE_TRANS etc, suitable for printing via
  *  apol_rule_type_to_str().
  */
-extern uint32_t poldiff_terule_get_rule_type(const poldiff_terule_t * terule);
+	extern uint32_t poldiff_terule_get_rule_type(const poldiff_terule_t * terule);
 
 /**
  *  Get the source type from a te rule diff.
@@ -307,7 +308,7 @@ extern uint32_t poldiff_terule_get_rule_type(const poldiff_terule_t * terule);
  *
  *  @return A string for the type.  <b>Do not free() this string.</b>
  */
-extern const char *poldiff_terule_get_source_type(const poldiff_terule_t * terule);
+	extern const char *poldiff_terule_get_source_type(const poldiff_terule_t * terule);
 
 /**
  *  Get the target type from a te rule diff.
@@ -316,7 +317,7 @@ extern const char *poldiff_terule_get_source_type(const poldiff_terule_t * terul
  *
  *  @return A string for the type.  <b>Do not free() this string.</b>
  */
-extern const char *poldiff_terule_get_target_type(const poldiff_terule_t * terule);
+	extern const char *poldiff_terule_get_target_type(const poldiff_terule_t * terule);
 
 /**
  *  Get the object class from a te rule diff.
@@ -325,7 +326,7 @@ extern const char *poldiff_terule_get_target_type(const poldiff_terule_t * terul
  *
  *  @return A string for the class.  <b>Do not free() this string.</b>
  */
-extern const char *poldiff_terule_get_object_class(const poldiff_terule_t * terule);
+	extern const char *poldiff_terule_get_object_class(const poldiff_terule_t * terule);
 
 /**
  *  Get the conditional expression from a te rule diff.  Note that
@@ -345,8 +346,8 @@ extern const char *poldiff_terule_get_object_class(const poldiff_terule_t * teru
  *  originated, or NULL if the rule is not conditional.  The caller
  *  must not destroy this pointer.
  */
-extern void poldiff_terule_get_cond(const poldiff_t * diff, const poldiff_terule_t * terule,
-				    qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p);
+	extern void poldiff_terule_get_cond(const poldiff_t * diff, const poldiff_terule_t * terule,
+					    qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p);
 
 /**
  *  Get the original default type for this type rule.  Note that if
@@ -359,7 +360,7 @@ extern void poldiff_terule_get_cond(const poldiff_t * diff, const poldiff_terule
  *  @return Original default type.  If there was no original type or
  *  upon error then return NULL.  <b>Do not free() this string.</b>
  */
-extern const char *poldiff_terule_get_original_default(const poldiff_terule_t * terule);
+	extern const char *poldiff_terule_get_original_default(const poldiff_terule_t * terule);
 
 /**
  *  Get the modified default type for this type rule.  Note that if
@@ -372,7 +373,7 @@ extern const char *poldiff_terule_get_original_default(const poldiff_terule_t * 
  *  @return Modified default type.  If there was no modified type or
  *  upon error then return NULL.  <b>Do not free() this string.</b>
  */
-extern const char *poldiff_terule_get_modified_default(const poldiff_terule_t * terule);
+	extern const char *poldiff_terule_get_modified_default(const poldiff_terule_t * terule);
 
 /**
  *  Get a vector of line numbers (of type unsigned long) for this te rule
@@ -387,7 +388,7 @@ extern const char *poldiff_terule_get_modified_default(const poldiff_terule_t * 
  *  @return A vector of line numbers (type unsigned long) for the rule
  *  in the original policy, or NULL if no numbers are available.
  */
-extern apol_vector_t *poldiff_terule_get_orig_line_numbers(const poldiff_terule_t * terule);
+	extern apol_vector_t *poldiff_terule_get_orig_line_numbers(const poldiff_terule_t * terule);
 
 /**
  *  Get a vector of line numbers (of type unsigned long) for this te rule
@@ -402,7 +403,7 @@ extern apol_vector_t *poldiff_terule_get_orig_line_numbers(const poldiff_terule_
  *  @return A vector of line numbers (type unsigned long) for the rule
  *  in the modified policy, or NULL if no numbers are available.
  */
-extern apol_vector_t *poldiff_terule_get_mod_line_numbers(const poldiff_terule_t * terule);
+	extern apol_vector_t *poldiff_terule_get_mod_line_numbers(const poldiff_terule_t * terule);
 
 #ifdef	__cplusplus
 }

@@ -27,17 +27,18 @@
 #define APOL_VECTOR_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stdlib.h>
 #include <qpol/iterator.h>
 
-typedef struct apol_vector apol_vector_t;
+	typedef struct apol_vector apol_vector_t;
 
-typedef int (apol_vector_comp_func) (const void *a, const void *b, void *data);
-typedef void (apol_vector_free_func) (void *elem);
-typedef void *(apol_vector_dup_func) (const void *elem, void *data);
+	typedef int (apol_vector_comp_func) (const void *a, const void *b, void *data);
+	typedef void (apol_vector_free_func) (void *elem);
+	typedef void *(apol_vector_dup_func) (const void *elem, void *data);
 
 /**
  *  Allocate and initialize an empty vector with default start
@@ -47,7 +48,7 @@ typedef void *(apol_vector_dup_func) (const void *elem, void *data);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-extern apol_vector_t *apol_vector_create(void);
+	extern apol_vector_t *apol_vector_create(void);
 
 /**
  *  Allocate and initialize an empty vector with starting capacity of
@@ -60,7 +61,7 @@ extern apol_vector_t *apol_vector_create(void);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-extern apol_vector_t *apol_vector_create_with_capacity(size_t cap);
+	extern apol_vector_t *apol_vector_create_with_capacity(size_t cap);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -77,7 +78,7 @@ extern apol_vector_t *apol_vector_create_with_capacity(size_t cap);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-extern apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter);
+	extern apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -94,7 +95,7 @@ extern apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data);
+	extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -120,8 +121,9 @@ extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, ap
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t * v1,
-							   const apol_vector_t * v2, apol_vector_comp_func * cmp, void *data);
+	extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t * v1,
+								   const apol_vector_t * v2, apol_vector_comp_func * cmp,
+								   void *data);
 
 /**
  *  Free a vector and any memory used by it.
@@ -131,7 +133,7 @@ extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *
  *  @param fr Function to call to free the memory used by an element.
  *  If NULL, the elements will not be freed.
  */
-extern void apol_vector_destroy(apol_vector_t ** v, apol_vector_free_func * fr);
+	extern void apol_vector_destroy(apol_vector_t ** v, apol_vector_free_func * fr);
 
 /**
  *  Get the number of elements in the vector.
@@ -142,7 +144,7 @@ extern void apol_vector_destroy(apol_vector_t ** v, apol_vector_free_func * fr);
  *  @return The number of elements in the vector; if v is NULL,
  *  returns 0.
  */
-extern size_t apol_vector_get_size(const apol_vector_t * v);
+	extern size_t apol_vector_get_size(const apol_vector_t * v);
 
 /**
  *  Get the current capacity of the vector.
@@ -154,7 +156,7 @@ extern size_t apol_vector_get_size(const apol_vector_t * v);
  *  equal to the number of elements in the vector.  If v is NULL,
  *  returns 0.
  */
-extern size_t apol_vector_get_capacity(const apol_vector_t * v);
+	extern size_t apol_vector_get_capacity(const apol_vector_t * v);
 
 /**
  *  Get the element at the requested index.
@@ -165,7 +167,7 @@ extern size_t apol_vector_get_capacity(const apol_vector_t * v);
  *  @return A pointer to the element requested.  If v is NULL or idx is
  *  out of range, returns NULL and sets errno.
  */
-extern void *apol_vector_get_element(const apol_vector_t * v, size_t idx);
+	extern void *apol_vector_get_element(const apol_vector_t * v, size_t idx);
 
 /**
  *  Find an element within a vector, returning its index within the vector.
@@ -187,7 +189,7 @@ extern void *apol_vector_get_element(const apol_vector_t * v, size_t idx);
  *
  *  @return 0 if element was found, or < 0 if not found.
  */
-extern int apol_vector_get_index(const apol_vector_t * v, void *elem, apol_vector_comp_func * cmp, void *data, size_t * i);
+	extern int apol_vector_get_index(const apol_vector_t * v, void *elem, apol_vector_comp_func * cmp, void *data, size_t * i);
 
 /**
  *  Add an element to the end of a vector.
@@ -199,7 +201,7 @@ extern int apol_vector_get_index(const apol_vector_t * v, void *elem, apol_vecto
  *  @return 0 on success and < 0 on failure.  If the call fails, errno
  *  will be set and v will be unchanged.
  */
-extern int apol_vector_append(apol_vector_t * v, void *elem);
+	extern int apol_vector_append(apol_vector_t * v, void *elem);
 
 /**
  *  Add an element to the end of a vector unless that element is equal
@@ -221,7 +223,7 @@ extern int apol_vector_append(apol_vector_t * v, void *elem);
  *  already exists in the vector.  If the call fails or the element
  *  already exists errno will be set.
  */
-extern int apol_vector_append_unique(apol_vector_t * v, void *elem, apol_vector_comp_func * cmp, void *data);
+	extern int apol_vector_append_unique(apol_vector_t * v, void *elem, apol_vector_comp_func * cmp, void *data);
 
 /**
  *  Concatenate two vectors.  Appends all elements of src to dest.
@@ -232,7 +234,7 @@ extern int apol_vector_append_unique(apol_vector_t * v, void *elem, apol_vector_
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and dest's contents will be reverted.
  */
-extern int apol_vector_cat(apol_vector_t * dest, const apol_vector_t * src);
+	extern int apol_vector_cat(apol_vector_t * dest, const apol_vector_t * src);
 
 /**
  *  Remove an element from a vector, and renumber all subsequent
@@ -244,7 +246,7 @@ extern int apol_vector_cat(apol_vector_t * dest, const apol_vector_t * src);
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and v's contents will be reverted.
  */
-extern int apol_vector_remove(apol_vector_t * v, const size_t idx);
+	extern int apol_vector_remove(apol_vector_t * v, const size_t idx);
 
 /**
  *  Compares two vectors, determining if one is different than
@@ -269,7 +271,7 @@ extern int apol_vector_remove(apol_vector_t * v, const size_t idx);
  *  @return < 0 if vector A is less than B, > 0 if A is greater than
  *  B, or 0 if equivalent.
  */
-extern int apol_vector_compare(apol_vector_t * a, apol_vector_t * b, apol_vector_comp_func * cmp, void *data, size_t * i);
+	extern int apol_vector_compare(apol_vector_t * a, apol_vector_t * b, apol_vector_comp_func * cmp, void *data, size_t * i);
 
 /**
  *  Sort the vector's elements within place, using an unstable sorting
@@ -285,7 +287,7 @@ extern int apol_vector_compare(apol_vector_t * a, apol_vector_t * b, apol_vector
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
  */
-extern void apol_vector_sort(apol_vector_t * v, apol_vector_comp_func * cmp, void *data);
+	extern void apol_vector_sort(apol_vector_t * v, apol_vector_comp_func * cmp, void *data);
 
 /**
  *  Sort the vector's elements within place (see apol_vector_sort()),
@@ -303,7 +305,8 @@ extern void apol_vector_sort(apol_vector_t * v, apol_vector_comp_func * cmp, voi
  *  @param fr Function to call to free the memory used by a non-unique
  *  element.  If NULL, those excess elements will not be freed.
  */
-extern void apol_vector_sort_uniquify(apol_vector_t * v, apol_vector_comp_func * cmp, void *data, apol_vector_free_func * fr);
+	extern void apol_vector_sort_uniquify(apol_vector_t * v, apol_vector_comp_func * cmp, void *data,
+					      apol_vector_free_func * fr);
 
 #ifdef	__cplusplus
 }

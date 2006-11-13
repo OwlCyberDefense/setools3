@@ -28,7 +28,8 @@
 #define QPOL_EXPAND_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <qpol/policy.h>
@@ -40,7 +41,7 @@ extern "C" {
  * @param base the module to expand.
  * @return 0 on success, -1 on error.
  */
-int qpol_expand_module(qpol_policy_t * base);
+	int qpol_expand_module(qpol_policy_t * base);
 
 #ifdef	__cplusplus
 }

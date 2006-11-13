@@ -28,11 +28,12 @@
 #define POLDIFF_RBAC_INTERNAL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef struct poldiff_role_allow_summary poldiff_role_allow_summary_t;
-typedef struct poldiff_role_trans_summary poldiff_role_trans_summary_t;
+	typedef struct poldiff_role_allow_summary poldiff_role_allow_summary_t;
+	typedef struct poldiff_role_trans_summary poldiff_role_trans_summary_t;
 
 /**
  * Allocate and return a new poldiff_role_allow_summary_t object.
@@ -40,7 +41,7 @@ typedef struct poldiff_role_trans_summary poldiff_role_trans_summary_t;
  * @return A new role allow summary.  The caller must call role_allow_destroy()
  * afterwards.  On error, return NULL and set errno.
  */
-poldiff_role_allow_summary_t *role_allow_create(void);
+	poldiff_role_allow_summary_t *role_allow_create(void);
 
 /**
  * Deallocate all space associated with a poldiff_role_allow_summary_t
@@ -50,7 +51,7 @@ poldiff_role_allow_summary_t *role_allow_create(void);
  * @param ras Reference to a role allow summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void role_allow_destroy(poldiff_role_allow_summary_t ** ras);
+	void role_allow_destroy(poldiff_role_allow_summary_t ** ras);
 
 /**
  * Reset the state of all role allow rule differences.
@@ -59,7 +60,7 @@ void role_allow_destroy(poldiff_role_allow_summary_t ** ras);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int role_allow_reset(poldiff_t * diff);
+	int role_allow_reset(poldiff_t * diff);
 
 /**
  * Get a vector of all role allow rules from the given policy,
@@ -73,7 +74,7 @@ int role_allow_reset(poldiff_t * diff);
  * apol_vector_destroy() afterwards, passing NULL as the second parameter. On
  * error, return NULL and set errno.
  */
-apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Free the space used by a pseudo_role_allow_t. Does nothing if the
@@ -81,7 +82,7 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy);
  *
  *@param item Pointer to a pseudo_role_allow_t.
  */
-void role_allow_free_item(void *item);
+	void role_allow_free_item(void *item);
 
 /**
  * Compare two pseudo_role_allow_t objects, determining if they have the same
@@ -95,7 +96,7 @@ void role_allow_free_item(void *item);
  * @return < 0, 0, or > 0 if source role of x is respectively less than, equal
  * to, or greater than source role of y.
  */
-int role_allow_comp(const void *x, const void *y, poldiff_t * diff);
+	int role_allow_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -108,7 +109,7 @@ int role_allow_comp(const void *x, const void *y, poldiff_t * diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int role_allow_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int role_allow_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two role allow rules for which the
@@ -124,7 +125,7 @@ int role_allow_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int role_allow_deep_diff(poldiff_t * diff, const void *x, const void *y);
+	int role_allow_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
 /**
  * Allocate and return a new poldiff_role_trans_summary_t object.
@@ -132,7 +133,7 @@ int role_allow_deep_diff(poldiff_t * diff, const void *x, const void *y);
  * @return A new role transition summary.  The caller must call
  * role_trans_destroy() afterwards.  On error, return NULL and set errno.
  */
-poldiff_role_trans_summary_t *role_trans_create(void);
+	poldiff_role_trans_summary_t *role_trans_create(void);
 
 /**
  * Deallocate all space associated with a poldiff_role_trans_summary_t
@@ -142,7 +143,7 @@ poldiff_role_trans_summary_t *role_trans_create(void);
  * @param rts Reference to a role transition summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void role_trans_destroy(poldiff_role_trans_summary_t ** rts);
+	void role_trans_destroy(poldiff_role_trans_summary_t ** rts);
 
 /**
  * Reset the state of all role_transition rule differences.
@@ -151,7 +152,7 @@ void role_trans_destroy(poldiff_role_trans_summary_t ** rts);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int role_trans_reset(poldiff_t * diff);
+	int role_trans_reset(poldiff_t * diff);
 
 /**
  * Get a vector of all role_transition rules from the given policy,
@@ -165,7 +166,7 @@ int role_trans_reset(poldiff_t * diff);
  * apol_vector_destroy() afterwards, passing NULL as the second parameter. On
  * error, return NULL and set errno.
  */
-apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Free the space used by a pseudo_role_trans_t. Does nothing if the
@@ -173,7 +174,7 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy);
  *
  *@param item Pointer to a pseudo_role_trans_t.
  */
-void role_trans_free_item(void *item);
+	void role_trans_free_item(void *item);
 
 /**
  * Compare two pseudo_role_trans_t objects, determining if they have the same
@@ -187,7 +188,7 @@ void role_trans_free_item(void *item);
  * @return < 0, 0, or > 0 if source role of x is respectively less than, equal
  * to, or greater than source role of y.
  */
-int role_trans_comp(const void *x, const void *y, poldiff_t * diff);
+	int role_trans_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -200,7 +201,7 @@ int role_trans_comp(const void *x, const void *y, poldiff_t * diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two role_transition rules for which the
@@ -216,7 +217,7 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y);
+	int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
 #ifdef	__cplusplus
 }

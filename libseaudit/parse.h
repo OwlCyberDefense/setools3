@@ -14,7 +14,8 @@
 #define LIBAUDIT_PARSE_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "auditlog.h"
@@ -32,7 +33,7 @@ extern "C" {
 #define PARSE_SUCCESS_MSG "Parse success!"
 #define PARSE_INVALID_MSG_WARN_MSG "Warning! One or more invalid messages found in audit log.  See help file for more information."
 
-unsigned int parse_audit(FILE * syslog, audit_log_t * log);
+	unsigned int parse_audit(FILE * syslog, audit_log_t * log);
 /* parses the file specified by syslog and puts all selinux audit messages into log 
    it is assumed that log will be created before this function
 */

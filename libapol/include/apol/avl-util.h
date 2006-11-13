@@ -33,30 +33,31 @@
 #define APOL_AVL_UTIL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef int (*apol_avl_compare_t) (void *user_data, const void *a, int idx);
-typedef int (*apol_avl_grow_t) (void *user_data, int sz);
-typedef int (*apol_avl_add_t) (void *user_data, const void *key, int idx);
+	typedef int (*apol_avl_compare_t) (void *user_data, const void *a, int idx);
+	typedef int (*apol_avl_grow_t) (void *user_data, int sz);
+	typedef int (*apol_avl_add_t) (void *user_data, const void *key, int idx);
 
-typedef struct apol_avl_pointers
-{
-	int left;
-	int right;
-	int height;
-} apol_avl_ptrs_t;
+	typedef struct apol_avl_pointers
+	{
+		int left;
+		int right;
+		int height;
+	} apol_avl_ptrs_t;
 
-typedef struct apol_avl_tree
-{
-	int head;		       /* array idx into associated list */
-	int ptrs_len;		       /* len of the ptrs array */
-	apol_avl_ptrs_t *ptrs;	       /* dynamic array to mirror the associated list */
-	void *user_data;	       /* data passed to the callbacks */
-	apol_avl_compare_t compare;    /* callback to compare two keys */
-	apol_avl_grow_t grow;	       /* callback to request more space */
-	apol_avl_add_t add;	       /* callback to store a new value */
-} apol_avl_tree_t;
+	typedef struct apol_avl_tree
+	{
+		int head;	       /* array idx into associated list */
+		int ptrs_len;	       /* len of the ptrs array */
+		apol_avl_ptrs_t *ptrs; /* dynamic array to mirror the associated list */
+		void *user_data;       /* data passed to the callbacks */
+		apol_avl_compare_t compare;	/* callback to compare two keys */
+		apol_avl_grow_t grow;  /* callback to request more space */
+		apol_avl_add_t add;    /* callback to store a new value */
+	} apol_avl_tree_t;
 
 /**
  * Search for a specific key within the given AVL tree.
@@ -67,7 +68,7 @@ typedef struct apol_avl_tree
  * @return non-negative index of the key, or < 0 if not found or on
  * error.
  */
-extern int apol_avl_get_idx(apol_avl_tree_t * tree, const void *key);
+	extern int apol_avl_get_idx(apol_avl_tree_t * tree, const void *key);
 
 /**
  * Given a pointer to an already allocated tree, initialize its
@@ -83,8 +84,8 @@ extern int apol_avl_get_idx(apol_avl_tree_t * tree, const void *key);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_avl_init(apol_avl_tree_t * tree,
-			 void *user_data, apol_avl_compare_t compare, apol_avl_grow_t grow, apol_avl_add_t add);
+	extern int apol_avl_init(apol_avl_tree_t * tree,
+				 void *user_data, apol_avl_compare_t compare, apol_avl_grow_t grow, apol_avl_add_t add);
 
 /**
  * Deallocate all space for the tree, <b>but not the pointer
@@ -93,7 +94,7 @@ extern int apol_avl_init(apol_avl_tree_t * tree,
  *
  * @param tree Tree to free.
  */
-extern void apol_avl_free(apol_avl_tree_t * tree);
+	extern void apol_avl_free(apol_avl_tree_t * tree);
 
 /**
  * Try to insert a key into the avl tree.  If the key already exists
@@ -110,11 +111,10 @@ extern void apol_avl_free(apol_avl_tree_t * tree);
  * @return -2 if the key already existed, -1 on error, or non-negative
  * if the key was now to the tree.
  */
-extern int apol_avl_insert(apol_avl_tree_t * tree, void *key, int *newidx);
+	extern int apol_avl_insert(apol_avl_tree_t * tree, void *key, int *newidx);
 
 #ifdef	__cplusplus
 }
 #endif
-
 
 #endif				       /* APOL_AVL_UTIL_H */

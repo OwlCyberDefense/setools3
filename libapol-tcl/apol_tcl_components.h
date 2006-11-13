@@ -28,10 +28,11 @@
 #define APOL_TCL_COMPONENTS_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern int apol_tcl_components_init(Tcl_Interp * interp);
+	extern int apol_tcl_components_init(Tcl_Interp * interp);
 
 #ifdef	__cplusplus
 }

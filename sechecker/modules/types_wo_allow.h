@@ -27,7 +27,8 @@
 #define TYPES_WO_ALLOW
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "sechecker.h"
@@ -35,11 +36,11 @@ extern "C" {
 #include <apol/avrule-query.h>
 #include <apol/type-query.h>
 
-int types_wo_allow_register(sechk_lib_t * lib);
-int types_wo_allow_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int types_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int types_wo_allow_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int types_wo_allow_register(sechk_lib_t * lib);
+	int types_wo_allow_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int types_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int types_wo_allow_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #ifdef	__cplusplus
 }

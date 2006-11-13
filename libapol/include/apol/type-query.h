@@ -28,15 +28,16 @@
 #define APOL_TYPE_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_type_query apol_type_query_t;
-typedef struct apol_attr_query apol_attr_query_t;
+	typedef struct apol_type_query apol_type_query_t;
+	typedef struct apol_attr_query apol_attr_query_t;
 
 /******************** type queries ********************/
 
@@ -58,7 +59,8 @@ typedef struct apol_attr_query apol_attr_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_type_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v) __attribute__ ((deprecated));
+	extern int apol_get_type_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all types within the policy.	 The results
@@ -75,7 +77,7 @@ extern int apol_get_type_by_query(apol_policy_t * p, apol_type_query_t * t, apol
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v);
+	extern int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v);
 
 /**
  * Allocate and return a new type query structure.  All fields are
@@ -85,7 +87,7 @@ extern int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol
  *
  * @return An initialized type query structure, or NULL upon error.
  */
-extern apol_type_query_t *apol_type_query_create(void);
+	extern apol_type_query_t *apol_type_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced type query,
@@ -94,7 +96,7 @@ extern apol_type_query_t *apol_type_query_create(void);
  *
  * @param t Reference to a type query structure to destroy.
  */
-extern void apol_type_query_destroy(apol_type_query_t ** t);
+	extern void apol_type_query_destroy(apol_type_query_t ** t);
 
 /**
  * Set a type query to return only types that match this name.	The
@@ -108,7 +110,7 @@ extern void apol_type_query_destroy(apol_type_query_t ** t);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_type_query_set_type(apol_policy_t * p, apol_type_query_t * t, const char *name);
+	extern int apol_type_query_set_type(apol_policy_t * p, apol_type_query_t * t, const char *name);
 
 /**
  * Set a type query to use regular expression searching for all of its
@@ -121,7 +123,7 @@ extern int apol_type_query_set_type(apol_policy_t * p, apol_type_query_t * t, co
  *
  * @return Always 0.
  */
-extern int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, int is_regex);
+	extern int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, int is_regex);
 
 /******************** attribute queries ********************/
 
@@ -143,7 +145,8 @@ extern int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, i
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_attr_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v) __attribute__ ((deprecated));
+	extern int apol_get_attr_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all attributes within the policy.  The
@@ -160,7 +163,7 @@ extern int apol_get_attr_by_query(apol_policy_t * p, apol_attr_query_t * a, apol
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v);
+	extern int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v);
 
 /**
  * Allocate and return a new attribute query structure.	 All fields
@@ -170,7 +173,7 @@ extern int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol
  *
  * @return An initialized attribute query structure, or NULL upon error.
  */
-extern apol_attr_query_t *apol_attr_query_create(void);
+	extern apol_attr_query_t *apol_attr_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced attribute
@@ -179,7 +182,7 @@ extern apol_attr_query_t *apol_attr_query_create(void);
  *
  * @param a Reference to an attribute query structure to destroy.
  */
-extern void apol_attr_query_destroy(apol_attr_query_t ** a);
+	extern void apol_attr_query_destroy(apol_attr_query_t ** a);
 
 /**
  * Set an attribute query to return only attributes that match this
@@ -192,7 +195,7 @@ extern void apol_attr_query_destroy(apol_attr_query_t ** a);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_attr_query_set_attr(apol_policy_t * p, apol_attr_query_t * a, const char *name);
+	extern int apol_attr_query_set_attr(apol_policy_t * p, apol_attr_query_t * a, const char *name);
 
 /**
  * Set an attribute query to use regular expression searching for all
@@ -205,7 +208,7 @@ extern int apol_attr_query_set_attr(apol_policy_t * p, apol_attr_query_t * a, co
  *
  * @return Always 0.
  */
-extern int apol_attr_query_set_regex(apol_policy_t * p, apol_attr_query_t * a, int is_regex);
+	extern int apol_attr_query_set_regex(apol_policy_t * p, apol_attr_query_t * a, int is_regex);
 
 #ifdef	__cplusplus
 }

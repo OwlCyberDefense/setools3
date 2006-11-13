@@ -30,15 +30,16 @@
 #define APOL_RBACRULE_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_role_allow_query apol_role_allow_query_t;
-typedef struct apol_role_trans_query apol_role_trans_query_t;
+	typedef struct apol_role_allow_query apol_role_allow_query_t;
+	typedef struct apol_role_trans_query apol_role_trans_query_t;
 
 /******************** (role) allow queries ********************/
 
@@ -59,8 +60,8 @@ typedef struct apol_role_trans_query apol_role_trans_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_role_allow_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v)
-	__attribute__ ((deprecated));
+	extern int apol_get_role_allow_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all (role) allow rules within the policy.
@@ -76,7 +77,7 @@ extern int apol_get_role_allow_by_query(apol_policy_t * p, apol_role_allow_query
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v);
+	extern int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v);
 
 /**
  * Allocate and return a new role allow query structure.  All fields
@@ -88,7 +89,7 @@ extern int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query
  * @return An initialized role allow query structure, or NULL upon
  * error.
  */
-extern apol_role_allow_query_t *apol_role_allow_query_create(void);
+	extern apol_role_allow_query_t *apol_role_allow_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced role allow
@@ -97,7 +98,7 @@ extern apol_role_allow_query_t *apol_role_allow_query_create(void);
  *
  * @param r Reference to a role allow query structure to destroy.
  */
-extern void apol_role_allow_query_destroy(apol_role_allow_query_t ** r);
+	extern void apol_role_allow_query_destroy(apol_role_allow_query_t ** r);
 
 /**
  * Set a role allow query to return rules with a particular source
@@ -110,7 +111,7 @@ extern void apol_role_allow_query_destroy(apol_role_allow_query_t ** r);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_allow_query_set_source(apol_policy_t * p, apol_role_allow_query_t * r, const char *role);
+	extern int apol_role_allow_query_set_source(apol_policy_t * p, apol_role_allow_query_t * r, const char *role);
 
 /**
  * Set a role allow query to return rules with a particular target
@@ -124,7 +125,7 @@ extern int apol_role_allow_query_set_source(apol_policy_t * p, apol_role_allow_q
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_allow_query_set_target(apol_policy_t * p, apol_role_allow_query_t * r, const char *role);
+	extern int apol_role_allow_query_set_target(apol_policy_t * p, apol_role_allow_query_t * r, const char *role);
 
 /**
  * Set a role allow query to treat the source role as any.  That is,
@@ -138,7 +139,7 @@ extern int apol_role_allow_query_set_target(apol_policy_t * p, apol_role_allow_q
  *
  * @return Always 0.
  */
-extern int apol_role_allow_query_set_source_any(apol_policy_t * p, apol_role_allow_query_t * r, int is_any);
+	extern int apol_role_allow_query_set_source_any(apol_policy_t * p, apol_role_allow_query_t * r, int is_any);
 
 /**
  * Set a role allow query to use regular expression searching for
@@ -151,7 +152,7 @@ extern int apol_role_allow_query_set_source_any(apol_policy_t * p, apol_role_all
  *
  * @return Always 0.
  */
-extern int apol_role_allow_query_set_regex(apol_policy_t * p, apol_role_allow_query_t * r, int is_regex);
+	extern int apol_role_allow_query_set_regex(apol_policy_t * p, apol_role_allow_query_t * r, int is_regex);
 
 /**
  *  Render a role allow rule to a string.
@@ -163,7 +164,7 @@ extern int apol_role_allow_query_set_regex(apol_policy_t * p, apol_role_allow_qu
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
-extern char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule);
+	extern char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule);
 
 /******************** role_transition queries ********************/
 
@@ -185,8 +186,8 @@ extern char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * 
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_role_trans_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v)
-	__attribute__ ((deprecated));
+	extern int apol_get_role_trans_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all role_transition rules within the
@@ -203,7 +204,7 @@ extern int apol_get_role_trans_by_query(apol_policy_t * p, apol_role_trans_query
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v);
+	extern int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v);
 
 /**
  * Allocate and return a new role trans query structure.  All fields
@@ -215,7 +216,7 @@ extern int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query
  * @return An initialized role trans query structure, or NULL upon
  * error.
  */
-extern apol_role_trans_query_t *apol_role_trans_query_create(void);
+	extern apol_role_trans_query_t *apol_role_trans_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced role trans
@@ -224,7 +225,7 @@ extern apol_role_trans_query_t *apol_role_trans_query_create(void);
  *
  * @param r Reference to a role trans query structure to destroy.
  */
-extern void apol_role_trans_query_destroy(apol_role_trans_query_t ** r);
+	extern void apol_role_trans_query_destroy(apol_role_trans_query_t ** r);
 
 /**
  * Set a role trans query to return rules with a particular source
@@ -237,7 +238,7 @@ extern void apol_role_trans_query_destroy(apol_role_trans_query_t ** r);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_trans_query_set_source(apol_policy_t * p, apol_role_trans_query_t * r, const char *role);
+	extern int apol_role_trans_query_set_source(apol_policy_t * p, apol_role_trans_query_t * r, const char *role);
 
 /**
  * Set a role trans query to return rules with a particular target
@@ -256,7 +257,8 @@ extern int apol_role_trans_query_set_source(apol_policy_t * p, apol_role_trans_q
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_trans_query_set_target(apol_policy_t * p, apol_role_trans_query_t * r, const char *symbol, int is_indirect);
+	extern int apol_role_trans_query_set_target(apol_policy_t * p, apol_role_trans_query_t * r, const char *symbol,
+						    int is_indirect);
 
 /**
  * Set a role trans query to return rules with a particular default
@@ -270,7 +272,7 @@ extern int apol_role_trans_query_set_target(apol_policy_t * p, apol_role_trans_q
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_trans_query_set_default(apol_policy_t * p, apol_role_trans_query_t * r, const char *role);
+	extern int apol_role_trans_query_set_default(apol_policy_t * p, apol_role_trans_query_t * r, const char *role);
 
 /**
  * Set a role trans query to treat the source role as any.  That is,
@@ -286,7 +288,7 @@ extern int apol_role_trans_query_set_default(apol_policy_t * p, apol_role_trans_
  *
  * @return Always 0.
  */
-extern int apol_role_trans_query_set_source_any(apol_policy_t * p, apol_role_trans_query_t * r, int is_any);
+	extern int apol_role_trans_query_set_source_any(apol_policy_t * p, apol_role_trans_query_t * r, int is_any);
 
 /**
  * Set a role trans query to use regular expression searching for
@@ -300,7 +302,7 @@ extern int apol_role_trans_query_set_source_any(apol_policy_t * p, apol_role_tra
  *
  * @return Always 0.
  */
-extern int apol_role_trans_query_set_regex(apol_policy_t * p, apol_role_trans_query_t * r, int is_regex);
+	extern int apol_role_trans_query_set_regex(apol_policy_t * p, apol_role_trans_query_t * r, int is_regex);
 
 /**
  *  Render a role_transition rule to a string.
@@ -312,7 +314,7 @@ extern int apol_role_trans_query_set_regex(apol_policy_t * p, apol_role_trans_qu
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
-extern char *apol_role_trans_render(apol_policy_t * policy, qpol_role_trans_t * rule);
+	extern char *apol_role_trans_render(apol_policy_t * policy, qpol_role_trans_t * rule);
 
 #ifdef	__cplusplus
 }

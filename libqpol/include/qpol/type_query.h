@@ -27,7 +27,8 @@
 #define QPOL_TYPE_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stddef.h>
@@ -35,7 +36,7 @@ extern "C" {
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 
-typedef struct qpol_type qpol_type_t;
+	typedef struct qpol_type qpol_type_t;
 
 /**
  *  Get the datum for a type by name.
@@ -46,7 +47,7 @@ typedef struct qpol_type qpol_type_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-extern int qpol_policy_get_type_by_name(qpol_policy_t * policy, const char *name, qpol_type_t ** datum);
+	extern int qpol_policy_get_type_by_name(qpol_policy_t * policy, const char *name, qpol_type_t ** datum);
 
 /**
  *  Get an iterator for types (including attributes and aliases) 
@@ -59,7 +60,7 @@ extern int qpol_policy_get_type_by_name(qpol_policy_t * policy, const char *name
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_type_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_type_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the integer value associated with a type. Values range from 1 
@@ -70,7 +71,7 @@ extern int qpol_policy_get_type_iter(qpol_policy_t * policy, qpol_iterator_t ** 
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and value will be 0.
  */
-extern int qpol_type_get_value(qpol_policy_t * policy, qpol_type_t * datum, uint32_t * value);
+	extern int qpol_type_get_value(qpol_policy_t * policy, qpol_type_t * datum, uint32_t * value);
 
 /**
  *  Determine whether a given type is an alias for another type.
@@ -81,7 +82,7 @@ extern int qpol_type_get_value(qpol_policy_t * policy, qpol_type_t * datum, uint
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *isalias will be 0 (false).
  */
-extern int qpol_type_get_isalias(qpol_policy_t * policy, qpol_type_t * datum, unsigned char *isalias);
+	extern int qpol_type_get_isalias(qpol_policy_t * policy, qpol_type_t * datum, unsigned char *isalias);
 
 /**
  *  Determine whether a given type is an attribute.
@@ -92,7 +93,7 @@ extern int qpol_type_get_isalias(qpol_policy_t * policy, qpol_type_t * datum, un
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *isattr will be 0 (false).
  */
-extern int qpol_type_get_isattr(qpol_policy_t * policy, qpol_type_t * datum, unsigned char *isattr);
+	extern int qpol_type_get_isattr(qpol_policy_t * policy, qpol_type_t * datum, unsigned char *isattr);
 
 /**
  *  Get an iterator for the list of types in an attribute.
@@ -107,7 +108,7 @@ extern int qpol_type_get_isattr(qpol_policy_t * policy, qpol_type_t * datum, uns
  *  *types will be NULL. If the type is not an attribute *types will
  *  be NUll.
  */
-extern int qpol_type_get_type_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** types);
+	extern int qpol_type_get_type_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** types);
 
 /**
  *  Get an iterator for the list of attributes given to a type.
@@ -122,7 +123,7 @@ extern int qpol_type_get_type_iter(qpol_policy_t * policy, qpol_type_t * datum, 
  *  *types will be NULL. If the type is an attribute *types will
  *  be NUll.
  */
-extern int qpol_type_get_attr_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** attrs);
+	extern int qpol_type_get_attr_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** attrs);
 
 /**
  *  Get the name by which a type is identified from its datum.
@@ -134,7 +135,7 @@ extern int qpol_type_get_attr_iter(qpol_policy_t * policy, qpol_type_t * datum, 
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_type_get_name(qpol_policy_t * policy, qpol_type_t * datum, char **name);
+	extern int qpol_type_get_name(qpol_policy_t * policy, qpol_type_t * datum, char **name);
 
 /**
  *  Get an iterator for the list of aliases for a type.
@@ -148,7 +149,7 @@ extern int qpol_type_get_name(qpol_policy_t * policy, qpol_type_t * datum, char 
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *aliases will be NULL.
  */
-extern int qpol_type_get_alias_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** aliases);
+	extern int qpol_type_get_alias_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** aliases);
 
 #ifdef	__cplusplus
 }

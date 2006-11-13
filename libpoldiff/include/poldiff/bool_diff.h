@@ -28,7 +28,8 @@
 #define POLDIFF_BOOL_DIFF_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <apol/vector.h>
@@ -36,7 +37,7 @@ extern "C" {
 
 /************************ booleans **********************/
 
-typedef struct poldiff_bool poldiff_bool_t;
+	typedef struct poldiff_bool poldiff_bool_t;
 
 /**
  *  Get an array of statistics for the number of differences of each
@@ -51,7 +52,7 @@ typedef struct poldiff_bool poldiff_bool_t;
  *  form POLDIFF_FORM_ADD_TYPE, and number of
  *  POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_bool_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_bool_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of bool differences from the boolean difference
@@ -64,7 +65,7 @@ extern void poldiff_bool_get_stats(poldiff_t * diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_bool_vector(poldiff_t * diff);
+	extern apol_vector_t *poldiff_get_bool_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -77,7 +78,7 @@ extern apol_vector_t *poldiff_get_bool_vector(poldiff_t * diff);
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-extern char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean);
+	extern char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean);
 
 /**
  *  Get the number of added bools from a policy difference
@@ -89,7 +90,7 @@ extern char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean);
  *  @return The number of added bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
-extern size_t poldiff_get_num_added_bools(poldiff_t * diff);
+	extern size_t poldiff_get_num_added_bools(poldiff_t * diff);
 
 /**
  *  Get the number of removed bools from a policy difference
@@ -101,7 +102,7 @@ extern size_t poldiff_get_num_added_bools(poldiff_t * diff);
  *  @return The number of removed bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
-extern size_t poldiff_get_num_removed_bools(poldiff_t * diff);
+	extern size_t poldiff_get_num_removed_bools(poldiff_t * diff);
 
 /**
  *  Get the number of modified bools from a policy difference
@@ -113,7 +114,7 @@ extern size_t poldiff_get_num_removed_bools(poldiff_t * diff);
  *  @return The number of modified bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
-extern size_t poldiff_get_num_modified_bools(poldiff_t * diff);
+	extern size_t poldiff_get_num_modified_bools(poldiff_t * diff);
 
 /**
  *  Get the name of the bool from a bool diff.
@@ -126,7 +127,7 @@ extern size_t poldiff_get_num_modified_bools(poldiff_t * diff);
  *  call fails, errno will be set. The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_bool_get_name(const poldiff_bool_t * boolean);
+	extern const char *poldiff_bool_get_name(const poldiff_bool_t * boolean);
 
 /**
  *  Get the form of difference from a bool diff.
@@ -139,7 +140,7 @@ extern const char *poldiff_bool_get_name(const poldiff_bool_t * boolean);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_bool_get_form(const void *boolean);
+	extern poldiff_form_e poldiff_bool_get_form(const void *boolean);
 
 #ifdef	__cplusplus
 }

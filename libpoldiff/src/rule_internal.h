@@ -27,10 +27,11 @@
 #define POLDIFF_RULE_INTERNAL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef struct poldiff_rule_summary poldiff_rule_summary_t;
+	typedef struct poldiff_rule_summary poldiff_rule_summary_t;
 
 /**
  * Allocate and return a new poldiff_rule_summary_t object, used by
@@ -39,7 +40,7 @@ typedef struct poldiff_rule_summary poldiff_rule_summary_t;
  * @return A new rule summary.  The caller must call rule_destroy()
  * afterwards.  On error, return NULL and set errno.
  */
-poldiff_rule_summary_t *rule_create(void);
+	poldiff_rule_summary_t *rule_create(void);
 
 /**
  * Deallocate all space associated with a poldiff_rule_summary_t
@@ -49,7 +50,7 @@ poldiff_rule_summary_t *rule_create(void);
  * @param rs Reference to an rule summary to destroy.  The pointer
  * will be set to NULL afterwards.
  */
-void rule_destroy(poldiff_rule_summary_t ** rs);
+	void rule_destroy(poldiff_rule_summary_t ** rs);
 
 /**
  * Reset the state of all TE and AV rule differences.
@@ -58,7 +59,7 @@ void rule_destroy(poldiff_rule_summary_t ** rs);
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-int rule_reset(poldiff_t * diff);
+	int rule_reset(poldiff_t * diff);
 
 /******************** avrule diffs ********************/
 
@@ -75,7 +76,7 @@ int rule_reset(poldiff_t * diff);
  * apol_vector_destroy() afterwards, passing avrule_free_item() as the
  * second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Free the space used by a pseudo_avrule_t.  Does nothing if the
@@ -83,7 +84,7 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy);
  *
  * @param item Pointer to a pseudo_avrule_t.
  */
-void avrule_free_item(void *item);
+	void avrule_free_item(void *item);
 
 /**
  * Compare two pseudo_avrule_t objects, determining if they have the
@@ -98,7 +99,7 @@ void avrule_free_item(void *item);
  * @return < 0, 0, or > 0 if av rule x is respectively less than,
  * equal to, or greater than av rule y.
  */
-int avrule_comp(const void *x, const void *y, poldiff_t * diff);
+	int avrule_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -111,7 +112,7 @@ int avrule_comp(const void *x, const void *y, poldiff_t * diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two pseudo-av rules for which
@@ -127,7 +128,7 @@ int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y);
+	int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
 /******************** terule diffs ********************/
 
@@ -144,7 +145,7 @@ int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y);
  * apol_vector_destroy() afterwards, passing terule_free_item() as the
  * second parameter.  On error, return NULL and set errno.
  */
-apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy);
 
 /**
  * Free the space used by a pseudo_terule_t.  Does nothing if the
@@ -152,7 +153,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy);
  *
  * @param item Pointer to a pseudo_terule_t.
  */
-void terule_free_item(void *item);
+	void terule_free_item(void *item);
 
 /**
  * Compare two pseudo_terule_t objects, determining if they have the
@@ -167,7 +168,7 @@ void terule_free_item(void *item);
  * @return < 0, 0, or > 0 if te rule x is respectively less than,
  * equal to, or greater than te rule y.
  */
-int terule_comp(const void *x, const void *y, poldiff_t * diff);
+	int terule_comp(const void *x, const void *y, poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -180,7 +181,7 @@ int terule_comp(const void *x, const void *y, poldiff_t * diff);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two pseudo-te rules for which
@@ -196,7 +197,7 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-int terule_deep_diff(poldiff_t * diff, const void *x, const void *y);
+	int terule_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
 #ifdef	__cplusplus
 }

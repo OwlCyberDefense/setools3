@@ -27,7 +27,8 @@
 #define APOL_ISID_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "policy.h"
@@ -35,7 +36,7 @@ extern "C" {
 #include "context-query.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_isid_query apol_isid_query_t;
+	typedef struct apol_isid_query apol_isid_query_t;
 
 /******************** isid queries ********************/
 
@@ -57,7 +58,8 @@ typedef struct apol_isid_query apol_isid_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_isid_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v) __attribute__ ((deprecated));
+	extern int apol_get_isid_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all initial SIDs within the policy.	The
@@ -74,7 +76,7 @@ extern int apol_get_isid_by_query(apol_policy_t * p, apol_isid_query_t * i, apol
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v);
+	extern int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v);
 
 /**
  * Allocate and return a new isid query structure. All fields are
@@ -84,7 +86,7 @@ extern int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol
  *
  * @return An initialized isid query structure, or NULL upon error.
  */
-extern apol_isid_query_t *apol_isid_query_create(void);
+	extern apol_isid_query_t *apol_isid_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced isid query,
@@ -93,7 +95,7 @@ extern apol_isid_query_t *apol_isid_query_create(void);
  *
  * @param i Reference to an isid query structure to destroy.
  */
-extern void apol_isid_query_destroy(apol_isid_query_t ** i);
+	extern void apol_isid_query_destroy(apol_isid_query_t ** i);
 
 /**
  * Set an isid query to return only initial SIDs with this name.
@@ -105,7 +107,7 @@ extern void apol_isid_query_destroy(apol_isid_query_t ** i);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_isid_query_set_name(apol_policy_t * p, apol_isid_query_t * i, const char *name);
+	extern int apol_isid_query_set_name(apol_policy_t * p, apol_isid_query_t * i, const char *name);
 
 /**
  * Set an isid query to return only initial SIDs matching a context.
@@ -122,8 +124,8 @@ extern int apol_isid_query_set_name(apol_policy_t * p, apol_isid_query_t * i, co
  *
  * @return Always returns 0.
  */
-extern int apol_isid_query_set_context(apol_policy_t * p,
-				       apol_isid_query_t * i, apol_context_t * context, unsigned int range_match);
+	extern int apol_isid_query_set_context(apol_policy_t * p,
+					       apol_isid_query_t * i, apol_context_t * context, unsigned int range_match);
 
 #ifdef	__cplusplus
 }

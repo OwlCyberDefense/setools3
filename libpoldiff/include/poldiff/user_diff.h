@@ -27,13 +27,14 @@
 #define POLDIFF_USER_DIFF_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
-typedef struct poldiff_user poldiff_user_t;
+	typedef struct poldiff_user poldiff_user_t;
 
 /**
  *  Get an array of statistics for the number of differences of each
@@ -47,7 +48,7 @@ typedef struct poldiff_user poldiff_user_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_user_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_user_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of user differences from the user difference
@@ -60,7 +61,7 @@ extern void poldiff_user_get_stats(poldiff_t * diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_user_vector(poldiff_t * diff);
+	extern apol_vector_t *poldiff_get_user_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -73,7 +74,7 @@ extern apol_vector_t *poldiff_get_user_vector(poldiff_t * diff);
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-extern char *poldiff_user_to_string(poldiff_t * diff, const void *user);
+	extern char *poldiff_user_to_string(poldiff_t * diff, const void *user);
 
 /**
  *  Get the name of the user from a user diff.
@@ -84,7 +85,7 @@ extern char *poldiff_user_to_string(poldiff_t * diff, const void *user);
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_user_get_name(const poldiff_user_t * user);
+	extern const char *poldiff_user_get_name(const poldiff_user_t * user);
 
 /**
  *  Get the form of difference from a user diff.
@@ -94,7 +95,7 @@ extern const char *poldiff_user_get_name(const poldiff_user_t * user);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_user_get_form(const void *user);
+	extern poldiff_form_e poldiff_user_get_form(const void *user);
 
 /**
  *  Get a vector of roles added to the user.
@@ -106,7 +107,7 @@ extern poldiff_form_e poldiff_user_get_form(const void *user);
  *  of the returned vector will be 0.  The caller must not destroy
  *  this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t * user);
+	extern apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t * user);
 
 /**
  *  Get a vector of roles removed from the user.
@@ -118,7 +119,7 @@ extern apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t * user);
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t * user);
+	extern apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t * user);
 
 #ifdef	__cplusplus
 }

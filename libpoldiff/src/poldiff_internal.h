@@ -27,7 +27,8 @@
 #define POLDIFF_POLDIFF_INTERNAL_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <poldiff/poldiff.h>
@@ -44,53 +45,53 @@ extern "C" {
 #include "type_map_internal.h"
 
 /* forward declarations */
-struct poldiff_class_summary;
-struct poldiff_common_summary;
-struct poldiff_type_summary;
-struct poldiff_attrib_summary;
-struct poldiff_role_summary;
-struct poldiff_user_summary;
-struct poldiff_bool_summary;
+	struct poldiff_class_summary;
+	struct poldiff_common_summary;
+	struct poldiff_type_summary;
+	struct poldiff_attrib_summary;
+	struct poldiff_role_summary;
+	struct poldiff_user_summary;
+	struct poldiff_bool_summary;
 /*struct poldiff_sens_summary;*/
 /*struct poldiff_cat_summary;*/
-struct poldiff_rule_summary;
-struct poldiff_role_allow_summary;
-struct poldiff_role_trans_summary;
+	struct poldiff_rule_summary;
+	struct poldiff_role_allow_summary;
+	struct poldiff_role_trans_summary;
 /*struct range_trans_summary;*/
 /* and so forth for ocon_summary structs */
 
-struct poldiff
-{
+	struct poldiff
+	{
 	/** The "original" policy */
-	apol_policy_t *orig_pol;
+		apol_policy_t *orig_pol;
 	/** The "modified" policy */
-	apol_policy_t *mod_pol;
+		apol_policy_t *mod_pol;
 	/** pointer to original's qpol policy within orig_pol */
-	qpol_policy_t *orig_qpol;
+		qpol_policy_t *orig_qpol;
 	/** pointer to modified's qpol policy within mod_pol */
-	qpol_policy_t *mod_qpol;
-	poldiff_handle_fn_t fn;
-	void *handle_arg;
+		qpol_policy_t *mod_qpol;
+		poldiff_handle_fn_t fn;
+		void *handle_arg;
 	/** set of POLDIF_DIFF_* for diffs run */
-	uint32_t diff_status;
-	struct poldiff_class_summary *class_diffs;
-	struct poldiff_common_summary *common_diffs;
-	struct poldiff_type_summary *type_diffs;
-	struct poldiff_attrib_summary *attrib_diffs;
-	struct poldiff_role_summary *role_diffs;
-	struct poldiff_user_summary *user_diffs;
-	struct poldiff_bool_summary *bool_diffs;
+		uint32_t diff_status;
+		struct poldiff_class_summary *class_diffs;
+		struct poldiff_common_summary *common_diffs;
+		struct poldiff_type_summary *type_diffs;
+		struct poldiff_attrib_summary *attrib_diffs;
+		struct poldiff_role_summary *role_diffs;
+		struct poldiff_user_summary *user_diffs;
+		struct poldiff_bool_summary *bool_diffs;
 /*	struct poldiff_sens_summary *sens_diffs;*/
 /*	struct poldiff_cat_summary *cat_diffs;*/
-	struct poldiff_rule_summary *rule_diffs;
-	struct poldiff_role_allow_summary *role_allow_diffs;
-	struct poldiff_role_trans_summary *role_trans_diffs;
+		struct poldiff_rule_summary *rule_diffs;
+		struct poldiff_role_allow_summary *role_allow_diffs;
+		struct poldiff_role_trans_summary *role_trans_diffs;
 /*	struct poldiff_range_trans_summary *range_trans_diffs;*/
-	/* and so forth if we want ocon_diffs */
-	type_map_t *type_map;
+		/* and so forth if we want ocon_diffs */
+		type_map_t *type_map;
 	/** set if type mapping was changed since last run */
-	int remapped;
-};
+		int remapped;
+	};
 
 /**
  *  Callback function signature for getting an array of statistics for the
@@ -102,7 +103,7 @@ struct poldiff
  *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
  *  number of POLDIFF_FORM_REMOVE_TYPE.
  */
-typedef void (*poldiff_get_item_stats_fn_t) (poldiff_t * diff, size_t stats[5]);
+	typedef void (*poldiff_get_item_stats_fn_t) (poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Callback function signature for getting a vector of all result
@@ -111,7 +112,7 @@ typedef void (*poldiff_get_item_stats_fn_t) (poldiff_t * diff, size_t stats[5]);
  *  @return A vector of result items, which the caller may not modify
  *  or destroy.  Upon error, return NULL and set errno.
  */
-typedef apol_vector_t *(*poldiff_get_result_items_fn_t) (poldiff_t * diff);
+	typedef apol_vector_t *(*poldiff_get_result_items_fn_t) (poldiff_t * diff);
 
 /**
  *  Callback function signature for getting the form of difference for
@@ -120,7 +121,7 @@ typedef apol_vector_t *(*poldiff_get_result_items_fn_t) (poldiff_t * diff);
  *  @param item The item from which to get the form.
  *  @return One of the POLDIFF_FORM_* enumeration.
  */
-typedef poldiff_form_e(*poldiff_item_get_form_fn_t) (const void *item);
+	typedef poldiff_form_e(*poldiff_item_get_form_fn_t) (const void *item);
 
 /**
  *  Callback function signature for obtaining a newly allocated string
@@ -131,7 +132,7 @@ typedef poldiff_form_e(*poldiff_item_get_form_fn_t) (const void *item);
  *  string representation of the item or NULL on error; if the call fails,
  *  it is expected to set errno.
  */
-typedef char *(*poldiff_item_to_string_fn_t) (poldiff_t * diff, const void *item);
+	typedef char *(*poldiff_item_to_string_fn_t) (poldiff_t * diff, const void *item);
 
 /**
  *  Callbackfunction signature for resetting the diff results for an item.
@@ -140,7 +141,7 @@ typedef char *(*poldiff_item_to_string_fn_t) (poldiff_t * diff, const void *item
  *  @return 0 on success and < 0 on error; if the call fails,
  *  it is expected to set errno.
  */
-typedef int (*poldiff_reset_fn_t) (poldiff_t * diff);
+	typedef int (*poldiff_reset_fn_t) (poldiff_t * diff);
 
 /**
  *  Callback function signature for getting a vector of all unique
@@ -153,7 +154,7 @@ typedef int (*poldiff_reset_fn_t) (poldiff_t * diff);
  *  of the appropriate kind on success, or NULL on error;
  *  if the call fails, errno will be set.
  */
-typedef apol_vector_t *(*poldiff_get_items_fn_t) (poldiff_t * diff, apol_policy_t * policy);
+	typedef apol_vector_t *(*poldiff_get_items_fn_t) (poldiff_t * diff, apol_policy_t * policy);
 
 /**
  *  Callback function signature for destroying an element from the
@@ -163,7 +164,7 @@ typedef apol_vector_t *(*poldiff_get_items_fn_t) (poldiff_t * diff, apol_policy_
  *
  *  @param Pointer to an element to free.
  */
-typedef void (*poldiff_free_item_fn_t) (void *elem);
+	typedef void (*poldiff_free_item_fn_t) (void *elem);
 
 /**
  *  Callback funtion signature for quickly comparing two items to
@@ -181,7 +182,7 @@ typedef void (*poldiff_free_item_fn_t) (void *elem);
  *  This must be able to return a defined stable ordering for all items
  *  not semantically equivalent.
  */
-typedef int (*poldiff_item_comp_fn_t) (const void *x, const void *y, poldiff_t * diff);
+	typedef int (*poldiff_item_comp_fn_t) (const void *x, const void *y, poldiff_t * diff);
 
 /**
  *  Callback function signature for creating, initializing and inserting
@@ -194,7 +195,7 @@ typedef int (*poldiff_item_comp_fn_t) (const void *x, const void *y, poldiff_t *
  *  < 0 on error; if the call fails, it is expected to set errno and to
  *  leave the policy difference structure unchanged.
  */
-typedef int (*poldiff_new_diff_fn_t) (poldiff_t * diff, poldiff_form_e form, const void *item);
+	typedef int (*poldiff_new_diff_fn_t) (poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  *  Callback function signature for computing the semantic difference of
@@ -210,7 +211,7 @@ typedef int (*poldiff_new_diff_fn_t) (poldiff_t * diff, poldiff_form_e form, con
  *  < 0 on error; if the call fails, it is expected to set errno and to
  *  leave the policy difference structure unchanged.
  */
-typedef int (*poldiff_deep_diff_fn_t) (poldiff_t * diff, const void *x, const void *y);
+	typedef int (*poldiff_deep_diff_fn_t) (poldiff_t * diff, const void *x, const void *y);
 
 /******************** error handling code below ********************/
 
@@ -229,8 +230,8 @@ typedef int (*poldiff_deep_diff_fn_t) (poldiff_t * diff, const void *x, const vo
  * POLDIFF_MSG_WARN, or POLDIFF_MSG_INFO.
  * @param fmt Format string to print, using syntax of printf(3).
  */
-__attribute__ ((format(printf, 3, 4)))
-extern void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...);
+	__attribute__ ((format(printf, 3, 4)))
+	extern void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...);
 
 #undef ERR
 #undef WARN

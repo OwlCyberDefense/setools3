@@ -27,7 +27,8 @@
 #define FIND_DOMAINS
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "sechecker.h"
@@ -37,20 +38,20 @@ extern "C" {
 #include <apol/terule-query.h>
 #include <apol/avrule-query.h>
 
-typedef struct find_domains_data
-{
-	apol_vector_t *domain_attribs;
-	int num_domain_attribs;
-} find_domains_data_t;
+	typedef struct find_domains_data
+	{
+		apol_vector_t *domain_attribs;
+		int num_domain_attribs;
+	} find_domains_data_t;
 
-void find_domains_data_free(void *data);
-find_domains_data_t *find_domains_data_new(void);
+	void find_domains_data_free(void *data);
+	find_domains_data_t *find_domains_data_new(void);
 
-int find_domains_register(sechk_lib_t * lib);
-int find_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int find_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
-int find_domains_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_domains_register(sechk_lib_t * lib);
+	int find_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_domains_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
 #ifdef	__cplusplus
 }

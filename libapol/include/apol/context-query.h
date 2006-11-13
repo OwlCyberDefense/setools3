@@ -27,18 +27,19 @@
 #define APOL_CONTEXT_QUERY_H
 
 #ifdef	__cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "policy.h"
 #include "mls-query.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_context
-{
-	char *user, *role, *type;
-	apol_mls_range_t *range;
-} apol_context_t;
+	typedef struct apol_context
+	{
+		char *user, *role, *type;
+		apol_mls_range_t *range;
+	} apol_context_t;
 
 /**
  * Allocate and return a new context structure.	 All fields are
@@ -47,7 +48,7 @@ typedef struct apol_context
  *
  * @return An initialized MLS range structure, or NULL upon error.
  */
-extern apol_context_t *apol_context_create(void);
+	extern apol_context_t *apol_context_create(void);
 
 /**
  * Allocate and return a new context structure, initialized from an
@@ -60,7 +61,7 @@ extern apol_context_t *apol_context_create(void);
  *
  * @return An initialized MLS range structure, or NULL upon error.
  */
-extern apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_context_t * context);
+	extern apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_context_t * context);
 
 /**
  * Deallocate all memory associated with a context structure and then
@@ -69,7 +70,7 @@ extern apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, 
  *
  * @param context Reference to a context structure to destroy.
  */
-extern void apol_context_destroy(apol_context_t ** context);
+	extern void apol_context_destroy(apol_context_t ** context);
 
 /**
  * Set the user field of a context structure.  This function
@@ -81,7 +82,7 @@ extern void apol_context_destroy(apol_context_t ** context);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const char *user);
+	extern int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const char *user);
 
 /**
  * Set the role field of a context structure.  This function
@@ -93,7 +94,7 @@ extern int apol_context_set_user(apol_policy_t * p, apol_context_t * context, co
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const char *role);
+	extern int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const char *role);
 
 /**
  * Set the type field of a context structure.  This function
@@ -105,7 +106,7 @@ extern int apol_context_set_role(apol_policy_t * p, apol_context_t * context, co
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const char *type);
+	extern int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const char *type);
 
 /**
  * Set the range field of a context structure.	This function takes
@@ -118,7 +119,7 @@ extern int apol_context_set_type(apol_policy_t * p, apol_context_t * context, co
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range);
+	extern int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range);
 
 /**
  * Compare two contexts, determining if one matches the other.	The
@@ -138,8 +139,8 @@ extern int apol_context_set_range(apol_policy_t * p, apol_context_t * context, a
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-extern int apol_context_compare(apol_policy_t * p,
-				apol_context_t * target, apol_context_t * search, unsigned int range_compare_type);
+	extern int apol_context_compare(apol_policy_t * p,
+					apol_context_t * target, apol_context_t * search, unsigned int range_compare_type);
 
 /**
  * Given a complete context (user, role, type, and range if policy is
@@ -153,7 +154,7 @@ extern int apol_context_compare(apol_policy_t * p,
  *
  * @return 1 If context is legal, 0 if not; -1 on error.
  */
-extern int apol_context_validate(apol_policy_t * p, apol_context_t * context);
+	extern int apol_context_validate(apol_policy_t * p, apol_context_t * context);
 
 /**
  * Given a partial context, determine if it is legal according to the
@@ -168,7 +169,7 @@ extern int apol_context_validate(apol_policy_t * p, apol_context_t * context);
  *
  * @return 1 If context is legal, 0 if not; -1 on error.
  */
-extern int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context);
+	extern int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context);
 
 /**
  * Given a complete context (user, role, type, and range if policy is
@@ -181,7 +182,7 @@ extern int apol_context_validate_partial(apol_policy_t * p, apol_context_t * con
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-extern char *apol_context_render(apol_policy_t * p, apol_context_t * context);
+	extern char *apol_context_render(apol_policy_t * p, apol_context_t * context);
 
 #ifdef	__cplusplus
 }
