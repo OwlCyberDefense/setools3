@@ -102,13 +102,13 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.0
+  $ cd setools-3.0.1
   $ ./configure
   $ make
   $ make install
 
 This will put the binaries in /usr/local/bin, data files in
-/usr/local/share/setool-3.0, and libraries in /usr/local/lib.
+/usr/local/share/setool-3.0.1, and libraries in /usr/local/lib.
 Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
 $LD_LIBRARY_PATH everything should now work.
 
