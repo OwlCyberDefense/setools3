@@ -88,7 +88,7 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
     } else {
         set syn_avrules [apol_GetSynAVRules [lindex $true_list 0] {}]
         Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 $syn_avrules
-        set syn_terules [apol_GetSynTERules [lindex $true_list 1] {}]
+        set syn_terules [apol_GetSynTERules [lindex $true_list 1]]
         Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 $syn_terules
     }
     Apol_Widget::appendSearchResultText $widgets(results) "\nFALSE list:\n"
@@ -97,8 +97,8 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
         Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $false_list 1]
     } else {
         set syn_avrules [apol_GetSynAVRules [lindex $false_list 0] {}]
-        Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 [lindex $false_list 0] {}
-        set syn_terules [apol_GetSynTERules [lindex $false_list 1] {}]
+        Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 $syn_avrules
+        set syn_terules [apol_GetSynTERules [lindex $false_list 1]]
         Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 $syn_terules
     }
 }
