@@ -932,6 +932,7 @@ proc Apol_TE::search_terules {whichButton} {
                            $source $target $default $classes $perms} results]
 
     $widgets(new) configure -state normal
+    $widgets(reset) configure -state normal
     if {$retval} {
         ApolTop::resetBusyCursor
         destroy .terules_busy
