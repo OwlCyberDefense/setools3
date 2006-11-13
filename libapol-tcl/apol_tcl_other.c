@@ -77,31 +77,34 @@ static int is_permmap_loaded = 0;
 static void apol_tcl_route_handle_to_string(void *varg
 					    __attribute__ ((unused)), apol_policy_t * p, int level, const char *fmt, va_list ap)
 {
-	char *s;
+	char *s, *t;
 	if (level == APOL_MSG_INFO && msg_level >= APOL_MSG_INFO) {
+		/* generate an info event */
 		free(message);
 		message = NULL;
 		if (vasprintf(&s, fmt, ap) < 0) {
 			fprintf(stderr, "%s\n", strerror(ENOMEM));
 			return;
-		} else {
-			message = s;
 		}
+		message = s;
+		msg_level = level;
 		Tcl_DoOneEvent(TCL_IDLE_EVENTS | TCL_DONT_WAIT);
 	} else if (message == NULL || level < msg_level) {
+		/* overwrite the existing stored message string with a
+		 * new, higher priority message */
 		free(message);
 		message = NULL;
 		if (vasprintf(&s, fmt, ap) < 0) {
 			fprintf(stderr, "%s\n", strerror(ENOMEM));
 			return;
-		} else {
-			message = s;
 		}
+		message = s;
 		msg_level = level;
 	} else if (level == msg_level) {
-		char *t;
+		/* append to existing error message */
 		if (vasprintf(&s, fmt, ap) < 0) {
 			fprintf(stderr, "%s\n", strerror(ENOMEM));
+			return;
 		}
 		if (asprintf(&t, "%s\n%s", message, s) < 0) {
 			free(s);
