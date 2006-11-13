@@ -116,7 +116,8 @@ Search Type Enforcement rules in an SELinux policy.\n\
 	fputs("\
   -i, --indirect          indirect; also search for the type's attributes\n\
   -n, --noregex           do not use regular expression to match type/attributes\n\
-  -l, --lineno            include line # in policy.conf for each rule.\n\
+  -l, --lineno            search rules syntactically instead of semantically\n\
+			  and include line # in policy.conf for each rule.\n\
 			  This option is ignored if using a binary policy.\n\
   -C, --show_cond         show conditional expression for conditional rules\n\
   -h, --help              display this help and exit\n\
@@ -195,7 +196,7 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		free(tmp);
 	}
 
-	if (opt->lineno) {
+	if (opt->lineno && !apol_policy_is_binary(policy)) {
 		if (apol_syn_avrule_get_by_query(policy, avq, v)) {
 			error = errno;
 			goto err;
@@ -239,7 +240,7 @@ static void print_syn_av_results(apol_policy_t * policy, options_t * opt, apol_v
 	if (!(num_rules = apol_vector_get_size(syn_list)))
 		goto cleanup;
 
-	fprintf(stdout, "Found %zd av rules:\n", num_rules);
+	fprintf(stdout, "Found %zd syntactic av rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
 		rule = apol_vector_get_element(syn_list, i);
@@ -294,7 +295,7 @@ static void print_av_results(apol_policy_t * policy, options_t * opt, apol_vecto
 	if (!(num_rules = apol_vector_get_size(v)))
 		return;
 
-	fprintf(stdout, "Found %zd av rules:\n", num_rules);
+	fprintf(stdout, "Found %zd semantic av rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
 		enable_char = branch_char = ' ';
@@ -375,7 +376,7 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 		}
 	}
 
-	if (opt->lineno) {
+	if (opt->lineno && !apol_policy_is_binary(policy)) {
 		if (apol_syn_terule_get_by_query(policy, teq, v)) {
 			error = errno;
 			goto err;
@@ -417,7 +418,7 @@ static void print_syn_te_results(apol_policy_t * policy, options_t * opt, apol_v
 	if (!(num_rules = apol_vector_get_size(syn_list)))
 		goto cleanup;
 
-	fprintf(stdout, "Found %zd te rules:\n", num_rules);
+	fprintf(stdout, "Found %zd syntactic te rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
 		rule = apol_vector_get_element(syn_list, i);
@@ -472,7 +473,7 @@ static void print_te_results(apol_policy_t * policy, options_t * opt, apol_vecto
 	if (!(num_rules = apol_vector_get_size(v)))
 		goto cleanup;
 
-	fprintf(stdout, "Found %zd te rules:\n", num_rules);
+	fprintf(stdout, "Found %zd semantic te rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
 		enable_char = branch_char = ' ';
