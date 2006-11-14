@@ -508,7 +508,6 @@ proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} 
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set is_binary [ApolTop::is_binary_policy]
-    set rules {}
     if {$varname != {}} {
         upvar $varname progressvar
         set progressvar "Rendering [llength $rules] syntactic type rule(s)..."

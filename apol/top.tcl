@@ -1694,33 +1694,29 @@ proc ApolTop::load_fonts { } {
 }
 
 proc ApolTop::main {} {
-    global tk_version
-    global tk_patchLevel
     variable top_width
     variable top_height
     variable notebook
 
-    # Prevent the application from responding to incoming send requests and sending
-    # outgoing requests. This way any other applications that can connect to our X
-    # server cannot send harmful scripts to our application.
+    # Prevent the application from responding to incoming send
+    # requests and sending outgoing requests. This way any other
+    # applications that can connect to our X server cannot send
+    # harmful scripts to our application.
     rename send {}
 
     # Load BWidget package into the interpreter
     if {[catch {package require BWidget}]} {
         tk_messageBox -icon error -type ok -title "Missing BWidget package" -message \
             "Missing BWidget package.  Ensure that your installed version of Tcl/Tk includes BWidget, which can be found at http://sourceforge.net/projects/tcllib."
-        exit
+        exit -1
     }
 
     # Load the apol package into the interpreter
     set rt [catch {package require apol} err]
     if {$rt != 0 } {
         tk_messageBox -icon error -type ok -title "Missing SELinux package" -message \
-            "Missing the SELinux package.  This script will not\n\
-			work correctly using the generic TK wish program.  You\n\
-			must either use the apol executable or the awish\n\
-			interpreter."
-        exit
+            "Missing the SELinux package.  This script will not work correctly using the generic TK wish program.  You must either use the apol executable or the awish	interpreter."
+        exit -1
     }
 
     wm withdraw .
@@ -1733,7 +1729,8 @@ proc ApolTop::main {} {
         return
     }
 
-    # Read apols' default settings file, gather all font information, create the gui and then load recent files into the menu.
+    # Read apol's default settings file, gather all font information,
+    # create the gui and then load recent files into the menu.
     ApolTop::readInitFile
     ApolTop::load_fonts
     catch {tcl_patch_bwidget}
@@ -1754,12 +1751,9 @@ proc ApolTop::main {} {
     set ApolTop::top_height [$notebook cget -height]
     wm geom . ${top_width}x${top_height}
 
-    update idletasks
     wm deiconify .
     raise .
     focus -force .
-
-    return 0
 }
 
 #######################################################

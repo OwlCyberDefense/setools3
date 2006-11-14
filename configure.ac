@@ -512,7 +512,23 @@ EOF
    else
         echo "" > ./config.tcl
    fi
-]], [bwidget_ver=$bwidget_ver])
+   if test "x${enable_debug}" = xyes; then
+        cat >> ./config.tcl <<EOF
+namespace eval ::tkcon {
+    variable OPT
+    variable PRIV
+    set PRIV(showOnStartup) 0
+    set PRIV(root) .console
+    set PRIV(protocol) {tkcon hide}
+    set OPT(exec) ""
+}
+if {![catch {source tkcon.tcl}]} {
+    package require tkcon
+    bind . <F8> {tkcon show}
+}
+EOF
+   fi
+]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \

@@ -352,15 +352,18 @@ static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, 
 		return -1;
 	}
 	if (indirect_obj == NULL || Tcl_GetBooleanFromObj(interp, indirect_obj, indirect) == TCL_ERROR) {
+		ERR(policydb, "Invalid indirect flag for typeset '%s'.", typeset);
 		return -1;
 	}
 	if (type_obj == NULL || Tcl_GetBooleanFromObj(interp, type_obj, &i) == TCL_ERROR) {
+		ERR(policydb, "Invalid type flag for typeset '%s'.", typeset);
 		return -1;
 	}
 	if (i) {
 		*type_attr |= APOL_QUERY_SYMBOL_IS_TYPE;
 	}
 	if (attr_obj == NULL || Tcl_GetBooleanFromObj(interp, attr_obj, &i) == TCL_ERROR) {
+		ERR(policydb, "Invalid attribute flag for typeset '%s'.", typeset);
 		return -1;
 	}
 	if (i) {
@@ -418,7 +421,7 @@ static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, 
  * For source/target/default types, these are each a list of four parameters:
  * <ol>
  *   <li>type/attribute symbol name (or empty string to ignore)
- *   <li>perform indirect matching with this symbol
+ *   <li>if non-zero, then perform indirect matching with this symbol
  *   <li>if non-zero, then the symbol as a type
  *   <li>if non-zero, then treat the symbol as an attribute
  * </ol>
