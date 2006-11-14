@@ -61,8 +61,9 @@ int find_netif_types_register(sechk_lib_t * lib)
 	mod->brief_description = "utility module";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds all types in a policy treated as a netif type.  A type is     \n"
-		"a netif type if it is the type in a netifcon statement.                         \n";
+		"This module finds all types in a policy treated as a netif type.  A type is\n"
+		"a netif type if it is used in the internace context in a netifcon statement or\n"
+		"the context of the netif initial sid.\n";
 	mod->opt_description =
 		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_NONE;

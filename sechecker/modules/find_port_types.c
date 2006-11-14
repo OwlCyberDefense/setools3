@@ -62,8 +62,9 @@ int find_port_types_register(sechk_lib_t * lib)
 	mod->brief_description = "utility module";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds all types in a policy treated as a port type.  A type is      \n"
-		"considered a port type if it is the type in a portcon statement.\n";
+		"This module finds all types in a policy treated as a port type.  A type is\n"
+		"considered a port type if it is used in the context of a a portcon statement or\n"
+		"the context of the port initial sid.\n";
 	mod->opt_description =
 		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_NONE;

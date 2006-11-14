@@ -64,8 +64,9 @@ int find_node_types_register(sechk_lib_t * lib)
 	mod->brief_description = "utility module";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds all types in a policy treated as a node type.  A type is      \n"
-		"considered a node type if it is the type in a nodecon statement.\n";
+		"This module finds all types in a policy treated as a node type.  A type is\n"
+		"considered a node type if it is used in the context of a nodecon statement or\n"
+		"the context of the node initial sid.\n";
 	mod->opt_description =
 		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_NONE;

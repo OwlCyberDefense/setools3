@@ -62,8 +62,9 @@ int roles_wo_allow_register(sechk_lib_t * lib)
 	mod->brief_description = "roles with no roleallow rules";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds roles defined in the policy that are not used in any roleallow\n"
-		"rules.  It is not possible to transition to or from any role that does not have \n" "any roleallow rules.\n";
+		"This module finds roles defined in the policy that are not used in any role\n"
+		"allow rules.  It is not possible to transition to or from any role that does not\n"
+		"have any role allow rules.\n";
 	mod->opt_description =
 		"Module requirements:\n" "   none\n" "Module dependencies:\n" "   none\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_LOW;

@@ -62,10 +62,10 @@ int types_wo_allow_register(sechk_lib_t * lib)
 	mod->brief_description = "types with no allow rules";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds types defined in the policy that are not used in any allow    \n"
+		"This module finds types defined in the policy that are not used in any allow\n"
 		"rules.  A type that is never granted an allow rule in the policy is a dead type.\n"
-		"This means that all attempted acces to the type will be denied including        \n"
-		"attempts to relabel to a (usable) type.  The type may need to be removed from   \n"
+		"This means that all attempted access to the type will be denied including\n"
+		"attempts to relabel to a (usable) type.  The type may need to be removed from\n"
 		"the policy or some intended access should be granted to the type.\n";
 	mod->opt_description =
 		"Module requirements:\n" "   none\n" "Module dependencies:\n" "   none\n" "Module options:\n" "   none\n";

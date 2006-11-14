@@ -62,11 +62,11 @@ int users_wo_roles_register(sechk_lib_t * lib)
 	mod->brief_description = "users with no roles";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds all the SELinux users in the policy that have no associated   \n"
-		"roles.  Users without roles may appear in the label of a file system object     \n"
-		"however the users cannot login to the system or run any processes.  Since these \n"
-		"users cannot be used on the system, a policy change is recomended to remove the \n"
-		"user or provide some intended access.                                           \n";
+		"This module finds all the SELinux users in the policy that have no associated\n"
+		"roles.  Users without roles may appear in the label of a file system object;\n"
+		"however, these users cannot login to the system or run any process.  Since these\n"
+		"users cannot be used on the system, a policy change is recomended to remove the\n"
+		"users or provide some intended access.\n";
 	mod->opt_description =
 		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_LOW;

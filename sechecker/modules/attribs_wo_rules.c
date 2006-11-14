@@ -63,9 +63,9 @@ int attribs_wo_rules_register(sechk_lib_t * lib)
 	mod->brief_description = "attributes not used in any rule";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds attributes in the policy that are not used in any rules  These\n"
+		"This module finds attributes in the policy that are not used in any rules; These\n"
 		"attributes will get thrown out by the compiler and have no effect on the \n"
-		"security environment however are unnecessary and should be removed.\n";
+		"security environment.  They are unnecessary and should be removed.\n";
 	mod->opt_description =
 		"Module requirements:\n" "   policy source\n" "Module dependencies:\n" "   none\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_LOW;

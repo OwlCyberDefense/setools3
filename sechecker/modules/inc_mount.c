@@ -66,8 +66,8 @@ int inc_mount_register(sechk_lib_t * lib)
 		"In order for a mount operation to be allowed by the policy the following rules\n"
 		"must be present: \n"
 		"\n"
-		"   1.) allow somedomain_d sometype_t : filesystem  { mount };\n"
-		"   2.) allow somedomain_d sometype_t : dir { mounton };\n"
+		"   1) allow somedomain_d sometype_t : filesystem  { mount };\n"
+		"   2) allow somedomain_d sometype_t : dir { mounton };\n"
 		"\n" "This module finds domains that have only one of the rules listed above.\n";
 	mod->opt_description =
 		"Module requirements:\n" "   none\n" "Module dependencies:\n" "   none\n" "Module options:\n" "   none\n";
