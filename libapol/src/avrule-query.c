@@ -395,26 +395,35 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 		qpol_syn_avrule_get_source_type_set(p->p, srule, &stypes);
 		qpol_syn_avrule_get_target_type_set(p->p, srule, &ttypes);
 		qpol_syn_avrule_get_is_target_self(p->p, srule, &is_self);
-		if (source_list) {
+		if (source_list && !(a->flags & APOL_QUERY_SOURCE_INDIRECT)) {
 			uses_source = apol_query_type_set_uses_types_directly(p, stypes, source_list);
 			if (uses_source < 0)
 				goto cleanup;
+		} else if (source_list && a->flags & APOL_QUERY_SOURCE_INDIRECT) {
+			uses_source = 1;
+		} else if (!source_list) {
+			uses_source = 1;
 		}
-		if (target_list) {
+
+		if (target_list
+		    && !((a->flags & APOL_QUERY_TARGET_INDIRECT) || (source_as_any && a->flags & APOL_QUERY_SOURCE_INDIRECT))) {
 			uses_target = apol_query_type_set_uses_types_directly(p, ttypes, target_list);
 			if (uses_target < 0)
 				goto cleanup;
 			if (is_self) {
-				if ((a->flags & APOL_QUERY_TARGET_INDIRECT)
-				    || ((a->flags & APOL_QUERY_SOURCE_INDIRECT) && source_as_any))
-					uses_target |= apol_query_type_set_uses_types_directly(p, stypes, target_list);
-				else
-					uses_target |= apol_query_type_set_uses_types_directly(p, stypes, target_types_list);
+				uses_target |= apol_query_type_set_uses_types_directly(p, stypes, target_types_list);
 				if (uses_target < 0)
 					goto cleanup;
 			}
+		} else if (target_list
+			   && ((a->flags & APOL_QUERY_TARGET_INDIRECT)
+			       || (source_as_any && a->flags & APOL_QUERY_SOURCE_INDIRECT))) {
+			uses_target = 1;
+		} else if (!target_list) {
+			uses_target = 1;
 		}
-		if (!(uses_source || uses_target)) {
+
+		if (!(uses_source && uses_target)) {
 			apol_vector_remove(*v, i);
 			i--;
 		}

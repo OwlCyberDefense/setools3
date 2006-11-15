@@ -391,22 +391,37 @@ int apol_syn_terule_get_by_query(apol_policy_t * p, apol_terule_query_t * t, apo
 		int uses_source = 0, uses_target = 0, uses_default = 0;
 		qpol_syn_terule_get_source_type_set(p->p, srule, &stypes);
 		qpol_syn_terule_get_target_type_set(p->p, srule, &ttypes);
-		if (source_list) {
+		if (source_list && !(t->flags & APOL_QUERY_SOURCE_INDIRECT)) {
 			uses_source = apol_query_type_set_uses_types_directly(p, stypes, source_list);
 			if (uses_source < 0)
 				goto cleanup;
+		} else if (source_list && (t->flags & APOL_QUERY_SOURCE_INDIRECT)) {
+			uses_source = 1;
+		} else if (!source_list) {
+			uses_source = 1;
 		}
-		if (target_list) {
+
+		if (target_list
+		    && !(t->flags & APOL_QUERY_TARGET_INDIRECT || (source_as_any && t->flags & APOL_QUERY_SOURCE_INDIRECT))) {
 			uses_target = apol_query_type_set_uses_types_directly(p, ttypes, target_list);
 			if (uses_target < 0)
 				goto cleanup;
+		} else if (target_list
+			   && (t->flags & APOL_QUERY_TARGET_INDIRECT || (source_as_any && t->flags & APOL_QUERY_SOURCE_INDIRECT))) {
+			uses_target = 1;
+		} else if (!target_list) {
+			uses_target = 1;
 		}
+
 		if (default_list) {
 			qpol_syn_terule_get_default_type(p->p, srule, &dflt);
 			if (!apol_vector_get_index(default_list, (void *)dflt, NULL, NULL, &j))
 				uses_default = 1;
+		} else if (!default_list) {
+			uses_default = 1;
 		}
-		if (!(uses_source || uses_target || uses_default)) {
+
+		if (!(uses_source && uses_target && uses_default)) {
 			apol_vector_remove(*v, i);
 			i--;
 		}
