@@ -425,6 +425,20 @@ if test "x${build_gui}" = xyes; then
   AC_SUBST(GLADE_CFLAGS)
   AC_SUBST(GLADE_LIBS)
 
+  dnl check for gdk-pixbuf
+  AC_MSG_CHECKING([for gdk-pixbuf])
+  PIXBUF_CFLAGS=`pkg-config --cflags gdk-pixbuf-2.0`
+  if test -z "${PIXBUF_CFLAGS}"; then
+     AC_MSG_ERROR([could not find libgdk-pixbuf headers])
+  fi
+  PIXBUF_LIBS=`pkg-config --libs gdk-pixbuf-2.0`
+  if test -z "${PIXBUF_LIBS}"; then
+     AC_MSG_ERROR([could not find libgdk-pixbuf libraries])
+  fi
+  AC_MSG_RESULT([yes])
+  AC_SUBST(PIXBUF_CFLAGS)
+  AC_SUBST(PIXBUF_LIBS)
+
   dnl check for gthread
   AC_MSG_CHECKING([for gthread])
   GTHREAD_CFLAGS=`pkg-config --cflags gthread-2.0`

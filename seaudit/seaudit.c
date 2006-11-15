@@ -25,7 +25,8 @@
 #include <errno.h>
 #include <getopt.h>
 
-/* The following should be defined in the make environment */
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 #ifndef VERSION
 #define VERSION "UNKNOWN"
 #endif
@@ -54,6 +55,34 @@ static void seaudit_log_file_open_from_recent_menu(GtkWidget * widget, gpointer 
 static gboolean seaudit_real_time_update_log(gpointer callback_data);
 static void seaudit_exit_app(void);
 
+static void init_icons(GtkWindow * main_window)
+{
+	const char *icon_names[] = { "seaudit.png", "seaudit-small.png" };
+	GdkPixbuf *icon;
+	char *dir, *path;
+	GList *icon_list = NULL;
+	size_t i;
+	int rt;
+	for (i = 0; i < sizeof(icon_names) / sizeof(icon_names[0]); i++) {
+		if ((dir = apol_file_find(icon_names[i])) == NULL) {
+			continue;
+		}
+		rt = asprintf(&path, "%s/%s", dir, icon_names[i]);
+		free(dir);
+		if (rt < 0) {
+			continue;
+		}
+		icon = gdk_pixbuf_new_from_file(path, NULL);
+		free(path);
+		if (icon == NULL) {
+			continue;
+		}
+		icon_list = g_list_append(icon_list, icon);
+	}
+	gtk_window_set_default_icon_list(icon_list);
+	gtk_window_set_icon_list(main_window, icon_list);
+}
+
 /* seaudit object */
 seaudit_t *seaudit_init(void)
 {
@@ -78,6 +107,7 @@ seaudit_t *seaudit_init(void)
 		free(seaudit);
 		return NULL;
 	}
+	init_icons(seaudit->window->window);
 	seaudit->policy_file = g_string_new("");
 	seaudit->audit_log_file = g_string_new("");
 

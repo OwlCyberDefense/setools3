@@ -415,9 +415,8 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 				if (uses_target < 0)
 					goto cleanup;
 			}
-		} else if (target_list
-			   && ((a->flags & APOL_QUERY_TARGET_INDIRECT)
-			       || (source_as_any && a->flags & APOL_QUERY_SOURCE_INDIRECT))) {
+		} else if (target_list && ((a->flags & APOL_QUERY_TARGET_INDIRECT)
+					   || (source_as_any && a->flags & APOL_QUERY_SOURCE_INDIRECT))) {
 			uses_target = 1;
 		} else if (!target_list) {
 			uses_target = 1;

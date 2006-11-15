@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <sys/mman.h>
 
 #ifndef VERSION
@@ -1002,6 +1003,34 @@ GtkTextView *sediff_get_current_view(sediff_app_t * app)
 
 }
 
+static void init_icons(GtkWindow * main_window)
+{
+	const char *icon_names[] = { "sediffx.png", "sediffx-small.png" };
+	GdkPixbuf *icon;
+	char *dir, *path;
+	GList *icon_list = NULL;
+	size_t i;
+	int rt;
+	for (i = 0; i < sizeof(icon_names) / sizeof(icon_names[0]); i++) {
+		if ((dir = apol_file_find(icon_names[i])) == NULL) {
+			continue;
+		}
+		rt = asprintf(&path, "%s/%s", dir, icon_names[i]);
+		free(dir);
+		if (rt < 0) {
+			continue;
+		}
+		icon = gdk_pixbuf_new_from_file(path, NULL);
+		free(path);
+		if (icon == NULL) {
+			continue;
+		}
+		icon_list = g_list_append(icon_list, icon);
+	}
+	gtk_window_set_default_icon_list(icon_list);
+	gtk_window_set_icon_list(main_window, icon_list);
+}
+
 int main(int argc, char **argv)
 {
 	char *dir = NULL;
@@ -1080,6 +1109,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	sediff_app->window = GTK_WINDOW(glade_xml_get_widget(sediff_app->window_xml, MAIN_WINDOW_ID));
+	init_icons(sediff_app->window);
 	g_signal_connect(G_OBJECT(sediff_app->window), "delete_event", G_CALLBACK(sediff_main_window_on_destroy), sediff_app);
 	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
 	g_assert(notebook);

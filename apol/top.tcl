@@ -1739,6 +1739,10 @@ proc ApolTop::main {} {
     bind . <Button-3> {focus %W}
     ApolTop::create
     ApolTop::load_recent_files
+    set icon_file [file join [apol_GetHelpDir apol.gif] apol.gif]
+    if {![catch {image create photo -file $icon_file} icon]} {
+        wm iconphoto . -default $icon
+    }
 
     #    # Configure the geometry for the window manager
     #    set x  [winfo screenwidth .]
