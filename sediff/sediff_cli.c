@@ -486,7 +486,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -497,7 +498,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -509,7 +511,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -520,7 +523,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -533,7 +537,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -544,7 +549,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -556,7 +562,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -567,7 +574,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -580,7 +588,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
@@ -591,7 +600,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
 			}
-			printf("      %s\n", str);
+			print_diff_string(str, 1);
+			printf("\n");
 			free(str);
 			str = NULL;
 		}
