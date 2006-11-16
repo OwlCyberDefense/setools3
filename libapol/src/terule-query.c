@@ -421,9 +421,8 @@ int apol_syn_terule_get_by_query(apol_policy_t * p, apol_terule_query_t * t, apo
 			uses_default = 1;
 		}
 
-		if (!
-		    ((uses_source && uses_target && uses_default)
-		     || (source_as_any && (uses_source || uses_target || uses_default)))) {
+		if (!((uses_source && uses_target && uses_default)
+		      || (source_as_any && (uses_source || uses_target || uses_default)))) {
 			apol_vector_remove(*v, i);
 			i--;
 		}

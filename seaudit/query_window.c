@@ -166,6 +166,7 @@ static void display_policy_query_results(GladeXML * xml, GString * src_type, GSt
 	if (apol_policy_is_binary(seaudit_app->cur_policy))
 		snprintf(str, STR_SIZE, "Found %zd Rule(s) containing ", apol_vector_get_size(av_vector));
 	else {
+		qpol_policy_build_syn_rule_table(apol_policy_get_qpol(seaudit_app->cur_policy));
 		syn_avrule_vector = apol_avrule_list_to_syn_avrules(seaudit_app->cur_policy, av_vector, NULL);
 		snprintf(str, STR_SIZE, "Found %zd Rule(s) containing ", apol_vector_get_size(syn_avrule_vector));
 	}
