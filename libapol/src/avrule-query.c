@@ -422,7 +422,7 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 			uses_target = 1;
 		}
 
-		if (!(uses_source && uses_target)) {
+		if (!((uses_source && uses_target) || (source_as_any && (uses_source || uses_target)))) {
 			apol_vector_remove(*v, i);
 			i--;
 		}
