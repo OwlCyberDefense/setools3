@@ -988,7 +988,7 @@ int main(int argc, char **argv)
 	poldiff_t *diff = NULL;
 	size_t total = 0;
 
-	while ((optc = getopt_long(argc, argv, "ctarubTARsXqhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "ctarubTARsqhv", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -1022,10 +1022,6 @@ int main(int argc, char **argv)
 		case 's':
 			stats = 1;
 			break;
-		case 'X':
-			printf("No GUI yet: %s\n", strerror(ENOTSUP));
-			exit(1);
-			break;
 		case 'q':
 			quiet = 1;
 			break;
@@ -1044,7 +1040,7 @@ int main(int argc, char **argv)
 	if (!flags)
 		flags = POLDIFF_DIFF_ALL;
 
-	if (argc - optind > 2 || argc - optind < 1) {
+	if (argc - optind != 2)  {
 		usage(argv[0], 1);
 		exit(1);
 	}
@@ -1072,11 +1068,11 @@ int main(int argc, char **argv)
 		}
 	}
 
-	/* we disable attribute diffs if there is a binary policy because attribute
-	 * names won't make sense */
+	/* we disable attribute diffs if there is a binary policy
+	 * because attribute names won't make sense */
 	if ((apol_policy_is_binary(orig_policy) || apol_policy_is_binary(mod_policy)) && (flags & POLDIFF_DIFF_ATTRIBS)) {
 		flags &= ~POLDIFF_DIFF_ATTRIBS;
-		WARN(NULL, "%s", "Attribute diffs are not supported for binary policies");
+		WARN(NULL, "%s", "Attribute diffs are not supported for binary policies.");
 	}
 
 	/* default callback for error handling is sufficient here */
