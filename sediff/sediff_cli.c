@@ -1050,7 +1050,7 @@ int main(int argc, char **argv)
 	if (!flags)
 		flags = POLDIFF_DIFF_ALL;
 
-	if (argc - optind != 2)  {
+	if (argc - optind != 2) {
 		usage(argv[0], 1);
 		exit(1);
 	}

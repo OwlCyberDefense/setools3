@@ -689,23 +689,21 @@ void sediff_menu_on_help_clicked(GtkMenuItem * menuitem, gpointer user_data)
 	int rt;
 	char *dir;
 
-	window = gtk_dialog_new_with_buttons("SEDiff Help",
+	window = gtk_dialog_new_with_buttons("SEDiffx Help",
 					     GTK_WINDOW(sediff_app->window),
-					     GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_CLOSE, GTK_RESPONSE_NONE, NULL);
+					     GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, NULL);
+	gtk_dialog_set_default_response(GTK_DIALOG(window), GTK_RESPONSE_CLOSE);
 	g_signal_connect_swapped(window, "response", G_CALLBACK(gtk_widget_destroy), window);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	text_view = gtk_text_view_new();
-	gtk_window_set_default_size(GTK_WINDOW(window), 480, 320);
+	gtk_window_set_default_size(GTK_WINDOW(window), 520, 320);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(window)->vbox), scroll);
 	gtk_container_add(GTK_CONTAINER(scroll), text_view);
-	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_WORD);
+	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_NONE);
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
 	dir = apol_file_find("sediff_help.txt");
 	if (!dir) {
-		string = g_string_new("");
-		g_string_append(string, "Cannot find help file");
-		message_display(sediff_app->window, GTK_MESSAGE_ERROR, string->str);
-		g_string_free(string, TRUE);
+		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "Cannot find help file.");
 		return;
 	}
 	string = g_string_new(dir);
@@ -714,38 +712,24 @@ void sediff_menu_on_help_clicked(GtkMenuItem * menuitem, gpointer user_data)
 	rt = apol_file_read_to_buffer(string->str, &help_text, &len);
 	g_string_free(string, TRUE);
 	if (rt != 0) {
-		if (help_text)
-			free(help_text);
+		free(help_text);
 		return;
 	}
 	gtk_text_buffer_set_text(buffer, help_text, len);
+	free(help_text);
 	gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
 	gtk_widget_show(text_view);
 	gtk_widget_show(scroll);
-	gtk_widget_show(window);
-	return;
-
+	gtk_dialog_run(GTK_DIALOG(window));
 }
 
 void sediff_menu_on_about_clicked(GtkMenuItem * menuitem, gpointer user_data)
 {
-	GtkWidget *dialog;
-	GString *str;
-
-	str = g_string_new("");
-	g_string_assign(str, "Policy Semantic Diff Tool for Security Enhanced Linux");
-	g_string_append(str, "\n\n" COPYRIGHT_INFO "\nhttp://oss.tresys.com/projects/setools");
-	g_string_append(str, "\n\nGUI version ");
-	g_string_append(str, VERSION);
-	g_string_append(str, "\nlibapol version ");
-	g_string_append(str, libapol_get_version());	/* the libapol version */
-
-	dialog = gtk_message_dialog_new(sediff_app->window,
-					GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, str->str);
-	gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
-	g_string_free(str, TRUE);
+	gtk_show_about_dialog(sediff_app->window,
+			      "comments", "Policy Semantic Difference Tool for Security Enhanced Linux",
+			      "copyright", COPYRIGHT_INFO,
+			      "name", "sediffx", "version", VERSION, "website", "http://oss.tresys.com/projects/setools", NULL);
 }
 
 static void sediff_policy_notebook_on_switch_page(GtkNotebook * notebook, GtkNotebookPage * page, guint pagenum, gpointer user_data)
@@ -1005,7 +989,7 @@ GtkTextView *sediff_get_current_view(sediff_app_t * app)
 
 static void init_icons(GtkWindow * main_window)
 {
-	const char *icon_names[] = { "sediffx.png", "sediffx-small.png" };
+	const char *icon_names[] = { "sediffx-small.png", "sediffx.png" };
 	GdkPixbuf *icon;
 	char *dir, *path;
 	GList *icon_list = NULL;
