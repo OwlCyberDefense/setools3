@@ -336,9 +336,15 @@ replcon_context_t *replcon_context_create_from_security_context(const security_c
 		str = NULL;
 		sz = 0;
 		str = context_range_get(ctxt);
-		if (!str)
-			goto err;
-		apol_str_append(&(rcontext->mls), &sz, str);
+		if (!str) {
+			rcontext->mls = strdup("");
+			if (!rcontext->mls) {
+				fprintf(stderr, "Out of memory.\n");
+				goto err;
+			}
+		} else {
+			apol_str_append(&(rcontext->mls), &sz, str);
+		}
 
 	} else {
 		rcontext->mls = strdup("");
