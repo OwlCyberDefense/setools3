@@ -1450,7 +1450,7 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy)
 		}
 		if (!(j % 1024)) {
 			int percent = 50 * j / num_rules + (policy == diff->mod_pol ? 50 : 0);
-			INFO(diff, "Computing AV rule difference: %02d%%", percent);
+			INFO(diff, "Computing AV rule difference: %02d%% complete", percent);
 		}
 	}
 	if ((v = apol_bst_get_vector(b)) == NULL) {
@@ -2254,7 +2254,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 		}
 		if (!(j % 1024)) {
 			int percent = 50 * j / num_rules + (policy == diff->mod_pol ? 50 : 0);
-			INFO(diff, "Computing TE rule difference: %02d%%", percent);
+			INFO(diff, "Computing TE rule difference: %02d%% complete", percent);
 		}
 	}
 	if ((v = apol_bst_get_vector(b)) == NULL) {
