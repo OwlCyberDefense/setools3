@@ -637,7 +637,6 @@ int sediff_open_dialog_open_and_load_policies()
 
 	GdkCursor *cursor = NULL;
 	int rt;
-	GString *string = NULL;
 
 	/* grab the GtkEntry widgets so we can get their data */
 	p1_entry = (GtkEntry *) glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
@@ -648,15 +647,11 @@ int sediff_open_dialog_open_and_load_policies()
 	p2_file = gtk_entry_get_text(p2_entry);
 
 	if (!g_file_test(p1_file, G_FILE_TEST_EXISTS) || g_file_test(p1_file, G_FILE_TEST_IS_DIR)) {
-		string = g_string_new("Invalid file specified for policy 1!");
-		message_display(sediff_app->window, GTK_MESSAGE_ERROR, string->str);
-		g_string_free(string, TRUE);
+		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "Invalid file specified for policy 1.");
 		return -1;
 	}
 	if (!g_file_test(p2_file, G_FILE_TEST_EXISTS) || g_file_test(p2_file, G_FILE_TEST_IS_DIR)) {
-		string = g_string_new("Invalid file specified for policy 2!");
-		message_display(sediff_app->window, GTK_MESSAGE_ERROR, string->str);
-		g_string_free(string, TRUE);
+		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "Invalid file specified for policy 2.");
 		return -1;
 	}
 
@@ -705,7 +700,9 @@ void sediff_open_dialog_on_open_and_diff_button_clicked(GtkButton * button, gpoi
 
 void sediff_open_dialog_on_open_button_clicked(GtkButton * button, gpointer user_data)
 {
-	sediff_open_dialog_open_and_load_policies();
+	if (sediff_open_dialog_open_and_load_policies() < 0) {
+		return;
+	}
 	gtk_widget_destroy(gtk_widget_get_toplevel(GTK_WIDGET(button)));
 	sediff_app->open_dlg = NULL;
 	g_object_unref(G_OBJECT(sediff_app->open_dlg_xml));
