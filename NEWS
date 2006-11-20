@@ -21,6 +21,10 @@ libapol:
   * avrule and terule queries now have full "syntactic" searching
     features.
 
+apol & sesearch:
+
+  * If loaded policy is source, the new syntactic search algorithm is used.
+
 ==================================================
 
 SETools 3.0
