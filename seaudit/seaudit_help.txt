@@ -69,7 +69,7 @@ All other messages will be ignored.
 
 Menus:
 ------
-Use the FILE menu the load a different audit log or a policy file.
+Use the FILE menu to load a different audit log or a policy file.
 The file menu also allows the user to change preferences including
 default log, default policy file, which columns to present when
 viewing audit logs, and whether seaudit should enable real-time log
@@ -94,7 +94,7 @@ Use the SEARCH menu to filter the audit log (See Log Views below) or
 query the policy (See Query Policy below).
 
 Right-click on an audit message within a view to display a pop-up menu
-that allow the user to:
+that allows the user to:
   - View the entire message within a separate text box,
   - Query the policy using the message, or
   - Export all selected messages to a file.
@@ -108,9 +108,9 @@ Sorting:
 --------
 By default the messages within a view are sorted in chronological
 order.  To sort by a particular field click on the column heading.
-The only column that cannot be sorted upon is the 'Other' column.
-Only one level of sorting can be performed at this time.  The file
-KNOWN-BUGS describes a particular instance where the sort order may be
+The only column that cannot be used for sorting is the 'Other' column.
+Only one level of sorting can be performed.  The file KNOWN-BUGS
+describes a particular instance where the sort order may be
 misleading.
 
 
