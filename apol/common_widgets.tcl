@@ -525,7 +525,7 @@ proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} 
         set source_set [_render_typeset $source_set]
         set target_set [_render_typeset $target_set]
         if {[llength $class] > 1} {
-            set target_set "\{$class\}"
+            set class "\{$class\}"
         }
         lappend text " $source_set $target_set" {}
         lappend text " : $class $default_type;" {}
