@@ -537,13 +537,13 @@ cexpr_prim		: U1 op U2
 			| T1 op T2
 			{ $$ = define_cexpr(CEXPR_ATTR, CEXPR_TYPE, $2);
 			  if ($$ == 0) return -1; }
-			| U1 op { if (insert_separator(1)) return -1; } user_names_push
+			| U1 op { if (insert_separator(1)) return -1; } names_push
 			{ $$ = define_cexpr(CEXPR_NAMES, CEXPR_USER, $2);
 			  if ($$ == 0) return -1; }
-			| U2 op { if (insert_separator(1)) return -1; } user_names_push
+			| U2 op { if (insert_separator(1)) return -1; } names_push
 			{ $$ = define_cexpr(CEXPR_NAMES, (CEXPR_USER | CEXPR_TARGET), $2);
 			  if ($$ == 0) return -1; }
-			| U3 op { if (insert_separator(1)) return -1; } user_names_push
+			| U3 op { if (insert_separator(1)) return -1; } names_push
 			{ $$ = define_cexpr(CEXPR_NAMES, (CEXPR_USER | CEXPR_XTARGET), $2);
 			  if ($$ == 0) return -1; }
 			| R1 op { if (insert_separator(1)) return -1; } names_push
@@ -618,10 +618,7 @@ role_mls_op		: op
 users			: user_def
 			| users user_def
 			;
-user_id			: identifier
-			| user_identifier
-			;
-user_def		: USER user_id ROLES names opt_mls_user ';'
+user_def		: USER identifier ROLES names opt_mls_user ';'
 	                {if (define_user()) return -1;}
 			;
 opt_mls_user		: LEVEL mls_level_def RANGE mls_range_def
@@ -715,7 +712,7 @@ ipv4_addr_def		: number '.' number '.' number '.' number
 			  $$ = addr;
 			}
     			;
-security_context_def	: user_id ':' identifier ':' identifier opt_mls_range_def
+security_context_def	: identifier ':' identifier ':' identifier opt_mls_range_def
 	                ;
 opt_mls_range_def	: ':' mls_range_def
 			|	
@@ -782,23 +779,6 @@ nested_id_element       : identifier | '-' { if (insert_id("-", 0)) return -1; }
                         ;
 identifier		: IDENTIFIER
 			{ if (insert_id(yytext,0)) return -1; }
-			;
-user_identifier		: USER_IDENTIFIER
-			{ if (insert_id(yytext,0)) return -1; }
-			;
-user_identifier_push	: USER_IDENTIFIER
-			{ if (insert_id(yytext, 1)) return -1; }
-			;
-user_identifier_list_push : user_identifier_push
-			| identifier_list_push user_identifier_push
-			| user_identifier_list_push identifier_push
-			| user_identifier_list_push user_identifier_push
-			;
-user_names_push		: names_push
-			| user_identifier_push
-			| '{' user_identifier_list_push '}'
-			| tilde_push user_identifier_push
-			| tilde_push '{' user_identifier_list_push '}'
 			;
 path     		: PATH
 			{ if (insert_id(yytext,0)) return -1; }
@@ -3853,11 +3833,6 @@ static int define_user(void)
 	user_datum_t *usrdatum;
 	level_datum_t *levdatum;
 	int l;
-
-	if (policydbp->policy_type == POLICY_MOD && mlspol) {
-		yyerror("Users cannot be declared in MLS modules");
-		return -1;
-	}
 
 	if (pass == 1) {
 		while ((id = queue_remove(id_queue)))
