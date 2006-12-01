@@ -1,3 +1,15 @@
+2006-12-01  J. Tang  <jtang@tresys.com>
+
+	* Official release of SETools 3.0.1.
+
+2006-11-29  J. Tang  <jtang@tresys.com>
+
+	* synced source parser to libsepol 1.15.2.
+
+2006-11-27  J. Tang  <jtang@tresys.com>
+
+	* added application icons to apol, seaudit, and sediffx
+
 2006-11-09  j. Mowery <jmowery@tresys.com>
 
 	* added __cplusplus guards to all external headers
