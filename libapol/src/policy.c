@@ -1,5 +1,5 @@
 /**
- * @file policy.c
+ * @file
  *
  * Public interface for SELinux policies.
  *

@@ -1,5 +1,5 @@
 /**
- * @file policy.h
+ * @file
  *
  * Public interface for SELinux policies.  This function declares
  * apol_policy_t, a convenience structure that contains all of the

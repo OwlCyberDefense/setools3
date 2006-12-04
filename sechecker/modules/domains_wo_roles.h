@@ -1,5 +1,5 @@
 /**
- *  @file domain_wo_roles.h
+ *  @file domains_wo_roles.h
  *  Defines the interface for the domains without roles module. 
  *
  *  @author Kevin Carr kcarr@tresys.com

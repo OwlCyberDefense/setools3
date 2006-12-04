@@ -1,5 +1,5 @@
 /**
- *  @file inc_dom_trans.h
+ *  @file inc_dom_trans.c
  *  Defines the interface for the incomplete domain transition module.
  *
  *  @author Kevin Carr kcarr@tresys.com

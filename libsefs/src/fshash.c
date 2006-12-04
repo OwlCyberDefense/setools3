@@ -1,5 +1,5 @@
 /**
- * @file fsdata.c
+ * @file fshash.c
  *
  * Implementation of a simple hash table (really a string array).
  *

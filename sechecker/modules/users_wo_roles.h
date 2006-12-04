@@ -1,5 +1,5 @@
 /**
- *  @file user_wo_roles.h
+ *  @file users_wo_roles.h
  *  Defines the interface for the users without roles module. 
  *
  *  @author Kevin Carr kcarr@tresys.com

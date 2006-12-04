@@ -1,5 +1,5 @@
 /**
- *  @file find_port_types.h
+ *  @file find_port_types.c
  *  Implementation of the port types utility module.
  *
  *  @author Kevin Carr kcarr@tresys.com

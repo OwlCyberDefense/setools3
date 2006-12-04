@@ -1,7 +1,9 @@
 /**
- * @file util.c
+ * @file avl-util.c
  *
  * Generic support functions for AVL trees.
+ *
+ * @deprecated Use the BST functions in bst.h instead.
  *
  * @author mayerf@tresys.com
  * @author Karl MacMillan <kmacmillan@tresys.com>

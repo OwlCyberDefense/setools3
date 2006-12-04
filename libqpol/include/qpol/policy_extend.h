@@ -1,5 +1,5 @@
 /**
- *  @file policy-extend.h
+ *  @file policy_extend.h
  *  Public interface for loading and using an extended
  *  policy image. 
  *

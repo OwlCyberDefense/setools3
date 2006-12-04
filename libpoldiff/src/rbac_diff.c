@@ -1,5 +1,5 @@
 /**
- *  @file rbac_diff.h
+ *  @file rbac_diff.c
  *  Implementation for computing a semantic differences in roles allow rules
  *  and role_transition rules.
  *

@@ -1,5 +1,5 @@
 /**
- *  @file find_assoc_types.h
+ *  @file find_assoc_types.c
  *  Implementation of the association types utility module.
  *
  *  @author Kevin Carr kcarr@tresys.com

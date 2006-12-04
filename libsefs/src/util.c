@@ -1,7 +1,7 @@
 /**
- * @file util.c
+ * @file
  *
- * Implementation of utility functions.
+ * Implementation of utility functions for libsefs.
  *
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com

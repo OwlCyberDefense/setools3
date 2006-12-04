@@ -1,5 +1,5 @@
 /**
- *  @file policy.h
+ *  @file
  *  Defines the public interface the QPol policy.
  *
  *  @author Kevin Carr kcarr@tresys.com

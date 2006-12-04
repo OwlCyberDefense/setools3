@@ -1,5 +1,5 @@
 /**
- *  @file user_wo_roles.c
+ *  @file users_wo_roles.c
  *  Implementation of the users without roles module.
  *
  *  @author Kevin Carr kcarr@tresys.com

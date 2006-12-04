@@ -1,5 +1,5 @@
 /**
- *  @file domain_wo_roles.c
+ *  @file domains_wo_roles.c
  *  Implementation of the domains without roles module.
  *
  *  @author Kevin Carr kcarr@tresys.com

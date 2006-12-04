@@ -1,5 +1,5 @@
 /**
- *  @file utilgui.c
+ *  @file
  *  Miscellaneous GTK utility functions.
  *
  *  @author Kevin Carr kcarr@tresys.com

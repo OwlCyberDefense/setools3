@@ -1,5 +1,5 @@
 /**
- *  @file inc_net_access.h
+ *  @file inc_net_access.c
  *  Defines the interface for the incomplete network access module.
  *
  *  @author Kevin Carr kcarr@tresys.com

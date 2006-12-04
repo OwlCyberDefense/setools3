@@ -1,5 +1,5 @@
 /**
- *  @file role_internal.h
+ *  @file attrib_internal.h
  *  Protected Interface for attrib differences.
  *
  *  @author Kevin Carr kcarr@tresys.com

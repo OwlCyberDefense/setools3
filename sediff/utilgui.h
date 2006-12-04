@@ -1,5 +1,5 @@
 /**
- *  @file utilgui.h
+ *  @file
  *  Header for miscellaneous GTK utility functions.
  *
  *  @author Kevin Carr kcarr@tresys.com
