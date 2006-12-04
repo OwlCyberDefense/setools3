@@ -22,7 +22,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -35,7 +35,7 @@
 #include <qpol/type_query.h>
 #include "qpol_internal.h"
 
-int qpol_policy_get_role_by_name(qpol_policy_t *policy, const char *name, qpol_role_t **datum)
+int qpol_policy_get_role_by_name(qpol_policy_t * policy, const char *name, qpol_role_t ** datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -47,7 +47,7 @@ int qpol_policy_get_role_by_name(qpol_policy_t *policy, const char *name, qpol_r
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	
+
 	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_roles.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
@@ -56,12 +56,12 @@ int qpol_policy_get_role_by_name(qpol_policy_t *policy, const char *name, qpol_r
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
-	*datum = (qpol_role_t*)internal_datum;
+	*datum = (qpol_role_t *) internal_datum;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_role_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_role_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -87,8 +87,8 @@ int qpol_policy_get_role_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	hs->table = &db->p_roles.table;
 	hs->node = (*(hs->table))->htable[0];
 
-	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur,
-		hash_state_next, hash_state_end, hash_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)hs, hash_state_get_cur,
+				 hash_state_next, hash_state_end, hash_state_size, free, iter)) {
 		free(hs);
 		return STATUS_ERR;
 	}
@@ -99,7 +99,7 @@ int qpol_policy_get_role_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_value(qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value)
+int qpol_role_get_value(qpol_policy_t * policy, qpol_role_t * datum, uint32_t * value)
 {
 	role_datum_t *internal_datum = NULL;
 
@@ -111,13 +111,13 @@ int qpol_role_get_value(qpol_policy_t *policy, qpol_role_t *datum, uint32_t *val
 		return STATUS_ERR;
 	}
 
-	internal_datum = (role_datum_t*)datum;
+	internal_datum = (role_datum_t *) datum;
 	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_dominate_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates)
+int qpol_role_get_dominate_iter(qpol_policy_t * policy, qpol_role_t * datum, qpol_iterator_t ** dominates)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -132,7 +132,7 @@ int qpol_role_get_dominate_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_
 		return STATUS_ERR;
 	}
 
-	internal_datum = (role_datum_t*)datum;
+	internal_datum = (role_datum_t *) datum;
 	db = &policy->p->p;
 
 	if (!(es = calloc(1, sizeof(ebitmap_state_t)))) {
@@ -141,11 +141,10 @@ int qpol_role_get_dominate_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_
 		errno = error;
 		return STATUS_ERR;
 	}
-	es->bmap = 	&internal_datum->dominates;
+	es->bmap = &internal_datum->dominates;
 
-	if (qpol_iterator_create(policy, (void*)es, ebitmap_state_get_cur_role,
-		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size,
-		free, dominates)) {
+	if (qpol_iterator_create(policy, (void *)es, ebitmap_state_get_cur_role,
+				 ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, dominates)) {
 		error = errno;
 		free(es);
 		errno = error;
@@ -158,7 +157,7 @@ int qpol_role_get_dominate_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_type_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types)
+int qpol_role_get_type_iter(qpol_policy_t * policy, qpol_role_t * datum, qpol_iterator_t ** types)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -174,10 +173,10 @@ int qpol_role_get_type_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iter
 		return STATUS_ERR;
 	}
 
-	internal_datum = (role_datum_t*)datum;
+	internal_datum = (role_datum_t *) datum;
 	db = &policy->p->p;
 
-	if(!(expanded_set = calloc(1, sizeof(ebitmap_t)))) {
+	if (!(expanded_set = calloc(1, sizeof(ebitmap_t)))) {
 		error = errno;
 		ERR(policy, "%s", "unable to create bitmap");
 		errno = error;
@@ -187,7 +186,7 @@ int qpol_role_get_type_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iter
 	if (type_set_expand(&internal_datum->types, expanded_set, db, 1)) {
 		ebitmap_destroy(expanded_set);
 		free(expanded_set);
-		ERR(policy, "error reading type set for role %s", db->p_role_val_to_name[internal_datum->s.value -1]);
+		ERR(policy, "error reading type set for role %s", db->p_role_val_to_name[internal_datum->s.value - 1]);
 		errno = EIO;
 		return STATUS_ERR;
 	}
@@ -203,9 +202,8 @@ int qpol_role_get_type_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iter
 	es->bmap = expanded_set;
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
-	if (qpol_iterator_create(policy, (void*)es, ebitmap_state_get_cur_type,
-		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size,
-		ebitmap_state_destroy, types)) {
+	if (qpol_iterator_create(policy, (void *)es, ebitmap_state_get_cur_type,
+				 ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, ebitmap_state_destroy, types)) {
 		error = errno;
 		ebitmap_state_destroy(es);
 		errno = error;
@@ -218,7 +216,7 @@ int qpol_role_get_type_iter(qpol_policy_t *policy, qpol_role_t *datum, qpol_iter
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_name(qpol_policy_t *policy, qpol_role_t *datum, char **name)
+int qpol_role_get_name(qpol_policy_t * policy, qpol_role_t * datum, char **name)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -232,10 +230,9 @@ int qpol_role_get_name(qpol_policy_t *policy, qpol_role_t *datum, char **name)
 	}
 
 	db = &policy->p->p;
-	internal_datum = (role_datum_t*)datum;
+	internal_datum = (role_datum_t *) datum;
 
 	*name = db->p_role_val_to_name[internal_datum->s.value - 1];
 
 	return STATUS_SUCCESS;
 }
-

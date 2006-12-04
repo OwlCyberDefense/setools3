@@ -1,6 +1,6 @@
 /**
  *  @file roles_wo_types.c
- *  Implementation of the roles without types module. 
+ *  Implementation of the roles without types module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -36,7 +36,7 @@ static const char *const mod_name = "roles_wo_types";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int roles_wo_types_register(sechk_lib_t *lib)
+int roles_wo_types_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -65,12 +65,7 @@ int roles_wo_types_register(sechk_lib_t *lib)
 		"This module finds roles in the policy that have no types.  A role with no types \n"
 		"cannot form a valid context.\n";
 	mod->opt_description =
-		"Module requirements:\n"
-		"   none\n"
-		"Module dependencies:\n"
-		"   none\n"
-		"Module options:\n"
-		"   none\n";
+		"Module requirements:\n" "   none\n" "Module dependencies:\n" "   none\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -86,7 +81,7 @@ int roles_wo_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = roles_wo_types_init;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -105,7 +100,7 @@ int roles_wo_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = roles_wo_types_run;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -126,7 +121,7 @@ int roles_wo_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = roles_wo_types_print;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -138,7 +133,7 @@ int roles_wo_types_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int roles_wo_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int roles_wo_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Ivalid parameters");
@@ -159,7 +154,7 @@ int roles_wo_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result
  * structure and fills in all relavant item and proof data. */
-int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int roles_wo_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -197,13 +192,13 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		goto roles_wo_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ROLE;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_types_run_fail;
 	}
 
-	if (apol_get_role_by_query(policy, NULL, &role_vector) < 0) {
+	if (apol_role_get_by_query(policy, NULL, &role_vector) < 0) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_types_run_fail;
@@ -215,12 +210,12 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		int at_end;
 
 		role = apol_vector_get_element(role_vector, i);
-		qpol_role_get_name(policy->p, role, &role_name);
+		qpol_role_get_name(apol_policy_get_qpol(policy), role, &role_name);
 
 		if (!strcmp(role_name, "object_r"))
 			continue;
 
-		qpol_role_get_type_iter(policy->p, role, &type_iter);
+		qpol_role_get_type_iter(apol_policy_get_qpol(policy), role, &type_iter);
 		at_end = qpol_iterator_end(type_iter);
 		qpol_iterator_destroy(&type_iter);
 		if (!at_end)
@@ -249,12 +244,12 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 				goto roles_wo_types_run_fail;
 			}
 		}
-		if (apol_vector_append(item->proof, (void*)proof) < 0 ) {
+		if (apol_vector_append(item->proof, (void *)proof) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
 		}
-		if (apol_vector_append(res->items, (void*)item) < 0) {
+		if (apol_vector_append(res->items, (void *)item) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto roles_wo_types_run_fail;
@@ -268,7 +263,7 @@ int roles_wo_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 		return 1;
 	return 0;
 
-roles_wo_types_run_fail:
+      roles_wo_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_destroy(&res);
@@ -278,7 +273,7 @@ roles_wo_types_run_fail:
 
 /* The print function generates the text printed in the
  * report and prints it to stdout. */
-int roles_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int roles_wo_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -286,7 +281,7 @@ int roles_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	qpol_role_t *role;
 	char *role_name;
 
-	if (!mod || !policy){
+	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
 		errno = EINVAL;
 		return -1;
@@ -301,7 +296,7 @@ int roles_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	if (!mod->result) {
 		ERR(policy, "%s", "Module has not been run");
@@ -314,23 +309,22 @@ int roles_wo_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		printf("Found %i roles.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
-		printf("\nThe following roles have no associated types.\n");
+		printf("\nThe following roles have no associated types:\n");
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
-	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
+	if (outformat & (SECHK_OUT_LIST | SECHK_OUT_PROOF)) {
 		printf("\n");
-		for (i=0;i<num_items;i++) {
+		for (i = 0; i < num_items; i++) {
 			j++;
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
-			role = (qpol_role_t*)item->item;
-			qpol_role_get_name(policy->p, role, &role_name);
-			printf("%s%s", role_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+			role = (qpol_role_t *) item->item;
+			qpol_role_get_name(apol_policy_get_qpol(policy), role, &role_name);
+			printf("%s%s", role_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
 
 	return 0;
 }
-

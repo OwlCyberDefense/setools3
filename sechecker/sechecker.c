@@ -24,7 +24,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-
 #include "sechecker.h"
 #include "register_list.h"
 #include "sechk_parse.h"
@@ -92,7 +91,7 @@ static int sechk_lib_compare_sev(const char *a, const char *b)
 	return aval < bval ? -1 : 1;
 }
 
-int sechk_lib_set_minsev(const char *minsev, sechk_lib_t *lib)
+int sechk_lib_set_minsev(const char *minsev, sechk_lib_t * lib)
 {
 	if (lib == NULL || lib->policy == NULL || minsev == NULL) {
 		assert(FALSE);
@@ -125,9 +124,8 @@ sechk_module_t *sechk_module_new(void)
 
 	/* create empty vectors */
 	if (!(mod->options = apol_vector_create()) ||
-		!(mod->requirements = apol_vector_create()) ||
-		!(mod->dependencies = apol_vector_create()) ||
-		!(mod->functions = apol_vector_create())) {
+	    !(mod->requirements = apol_vector_create()) ||
+	    !(mod->dependencies = apol_vector_create()) || !(mod->functions = apol_vector_create())) {
 		error = errno;
 		apol_vector_destroy(&mod->options, NULL);
 		apol_vector_destroy(&mod->requirements, NULL);
@@ -151,7 +149,7 @@ sechk_lib_t *sechk_lib_new(void)
 	sechk_module_t *tmp = NULL;
 
 	/* allocate the new sechk_lib_t structure */
-	lib = (sechk_lib_t*)calloc(1, sizeof(sechk_lib_t));
+	lib = (sechk_lib_t *) calloc(1, sizeof(sechk_lib_t));
 	if (!lib) {
 		error = errno;
 		perror("Error creating module library");
@@ -199,17 +197,17 @@ sechk_lib_t *sechk_lib_new(void)
 		perror("Error registering modules");
 		goto exit_err;
 	}
-exit:
+      exit:
 	return lib;
 
-exit_err:
+      exit_err:
 	sechk_lib_destroy(&lib);
 	sechk_module_free(tmp);
 	errno = error;
 	goto exit;
 }
 
-void sechk_lib_destroy(sechk_lib_t **lib)
+void sechk_lib_destroy(sechk_lib_t ** lib)
 {
 	if (lib == NULL || *lib == NULL)
 		return;
@@ -228,7 +226,7 @@ void sechk_lib_destroy(sechk_lib_t **lib)
 
 void sechk_module_free(void *module)
 {
-	sechk_module_t *mod = (sechk_module_t*)module;
+	sechk_module_t *mod = (sechk_module_t *) module;
 
 	if (!module)
 		return;
@@ -251,7 +249,7 @@ void sechk_module_free(void *module)
 
 void sechk_fn_free(void *fn_struct)
 {
-	sechk_fn_t *fn = (sechk_fn_t*)fn_struct;
+	sechk_fn_t *fn = (sechk_fn_t *) fn_struct;
 	if (!fn_struct)
 		return;
 
@@ -262,7 +260,7 @@ void sechk_fn_free(void *fn_struct)
 
 void sechk_name_value_free(void *nv)
 {
-	sechk_name_value_t *in = (sechk_name_value_t*)nv;
+	sechk_name_value_t *in = (sechk_name_value_t *) nv;
 	if (!nv)
 		return;
 
@@ -271,7 +269,7 @@ void sechk_name_value_free(void *nv)
 	free(nv);
 }
 
-void sechk_result_destroy(sechk_result_t **res)
+void sechk_result_destroy(sechk_result_t ** res)
 {
 	if (!res || !(*res))
 		return;
@@ -284,7 +282,7 @@ void sechk_result_destroy(sechk_result_t **res)
 
 void sechk_item_free(void *item)
 {
-	sechk_item_t *it = (sechk_item_t*)item;
+	sechk_item_t *it = (sechk_item_t *) item;
 
 	if (!item)
 		return;
@@ -298,7 +296,7 @@ void sechk_item_free(void *item)
 
 void sechk_proof_free(void *proof)
 {
-	sechk_proof_t *p = (sechk_proof_t*)proof;
+	sechk_proof_t *p = (sechk_proof_t *) proof;
 
 	if (!proof)
 		return;
@@ -315,7 +313,7 @@ void sechk_proof_free(void *proof)
 sechk_fn_t *sechk_fn_new(void)
 {
 	/* no initialization needed here */
-	return (sechk_fn_t*)calloc(1, sizeof(sechk_fn_t));
+	return (sechk_fn_t *) calloc(1, sizeof(sechk_fn_t));
 }
 
 sechk_name_value_t *sechk_name_value_new(const char *name, const char *value)
@@ -323,7 +321,7 @@ sechk_name_value_t *sechk_name_value_new(const char *name, const char *value)
 	sechk_name_value_t *nv;
 	int error;
 
-	nv = (sechk_name_value_t*)calloc(1, sizeof(sechk_name_value_t));
+	nv = (sechk_name_value_t *) calloc(1, sizeof(sechk_name_value_t));
 	if (!nv)
 		return NULL;
 	if (name) {
@@ -343,7 +341,7 @@ sechk_name_value_t *sechk_name_value_new(const char *name, const char *value)
 
 	return nv;
 
-err:
+      err:
 	free(nv->name);
 	free(nv);
 	errno = error;
@@ -353,14 +351,14 @@ err:
 sechk_result_t *sechk_result_new(void)
 {
 	/* initilization to zero is sufficient here */
-	return (sechk_result_t*)calloc(1, sizeof(sechk_result_t));
+	return (sechk_result_t *) calloc(1, sizeof(sechk_result_t));
 }
 
 sechk_item_t *sechk_item_new(free_fn_t fn)
 {
 	sechk_item_t *it = NULL;
 
-	it = (sechk_item_t*)calloc(1, sizeof(sechk_item_t));
+	it = (sechk_item_t *) calloc(1, sizeof(sechk_item_t));
 	if (!it)
 		return NULL;
 	it->item_free_fn = fn;
@@ -371,7 +369,7 @@ sechk_item_t *sechk_item_new(free_fn_t fn)
 sechk_proof_t *sechk_proof_new(free_fn_t fn)
 {
 	sechk_proof_t *proof = NULL;
-	proof = (sechk_proof_t*)calloc(1, sizeof(sechk_proof_t));
+	proof = (sechk_proof_t *) calloc(1, sizeof(sechk_proof_t));
 	if (!proof)
 		return NULL;
 	proof->type = SECHK_ITEM_NONE;
@@ -379,7 +377,7 @@ sechk_proof_t *sechk_proof_new(free_fn_t fn)
 	return proof;
 }
 
-int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
+int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t * lib)
 {
 
 	char *default_policy_path = NULL;
@@ -389,7 +387,7 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 
 	/* if no policy is given, attempt to find default */
 	if (!policyfilelocation) {
-		retv = qpol_find_default_policy_file((QPOL_TYPE_SOURCE|QPOL_TYPE_BINARY), &default_policy_path);
+		retv = qpol_find_default_policy_file((QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY), &default_policy_path);
 		if (retv) {
 			fprintf(stderr, "Error: %s\n", qpol_find_default_policy_file_strerr(retv));
 			return -1;
@@ -401,7 +399,7 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 		}
 		lib->policy_path = strdup(default_policy_path);
 		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
-			fprintf(stderr,"Using policy: %s\n",lib->policy_path);
+			fprintf(stderr, "Using policy: %s\n", lib->policy_path);
 		}
 	} else {
 		retv = apol_policy_open(policyfilelocation, &(lib->policy), NULL, NULL);
@@ -415,7 +413,7 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 }
 
 #ifdef LIBSEFS
-int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
+int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 {
 	int retv = -1, error = 0;
 	char *default_fc_path = NULL;
@@ -433,7 +431,7 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 			error = errno;
 			WARN(lib->policy, "Unable to find default file_contexts file: %s", strerror(error));
 			errno = error;
-			return 0; /* not fatal error until a module requires this to exist */
+			return 0;      /* not fatal error until a module requires this to exist */
 		}
 		retv = sefs_fc_entry_parse_file_contexts(lib->policy, default_fc_path, &(lib->fc_entries));
 		if (retv) {
@@ -445,7 +443,7 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 			lib->fc_path = default_fc_path;
 		}
 		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
-			fprintf(stderr,"Using file contexts: %s\n",lib->fc_path);
+			fprintf(stderr, "Using file contexts: %s\n", lib->fc_path);
 		}
 	} else {
 		retv = sefs_fc_entry_parse_file_contexts(lib->policy, fcfilelocation, &(lib->fc_entries));
@@ -463,7 +461,7 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 }
 #endif
 
-int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sechk_lib_t *lib)
+int sechk_lib_register_modules(const sechk_module_name_reg_t * register_fns, sechk_lib_t * lib)
 {
 	int retv, error = 0;
 	size_t i;
@@ -474,12 +472,14 @@ int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sech
 		return -1;
 	}
 	if (apol_vector_get_size(lib->modules) != sechk_register_list_get_num_modules()) {
-		fprintf(stderr, "Error: the number of registered modules (%d) does not match the number of modules in the configuration file (%d).\n", sechk_register_list_get_num_modules(), apol_vector_get_size(lib->modules));
+		fprintf(stderr,
+			"Error: the number of registered modules (%d) does not match the number of modules in the configuration file (%d).\n",
+			sechk_register_list_get_num_modules(), apol_vector_get_size(lib->modules));
 		errno = EINVAL;
 		return -1;
 	}
 	for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
-		fn = (sechk_register_fn_t)(register_fns[i].fn);
+		fn = (sechk_register_fn_t) (register_fns[i].fn);
 		retv = fn(lib);
 		if (retv) {
 			error = errno;
@@ -492,7 +492,7 @@ int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sech
 	return 0;
 }
 
-sechk_mod_fn_t sechk_lib_get_module_function(const char *module_name, const char *function_name, const sechk_lib_t *lib)
+sechk_mod_fn_t sechk_lib_get_module_function(const char *module_name, const char *function_name, const sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -529,7 +529,7 @@ sechk_mod_fn_t sechk_lib_get_module_function(const char *module_name, const char
 	return fn_struct->fn;
 }
 
-sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t *lib)
+sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t * lib)
 {
 	size_t i;
 	sechk_module_t *mod = NULL;
@@ -552,7 +552,7 @@ sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t 
 	return NULL;
 }
 
-sechk_result_t *sechk_lib_get_module_result(const char *module_name, const sechk_lib_t *lib)
+sechk_result_t *sechk_lib_get_module_result(const char *module_name, const sechk_lib_t * lib)
 {
 	size_t i;
 	sechk_module_t *mod = NULL;
@@ -572,8 +572,8 @@ sechk_result_t *sechk_lib_get_module_result(const char *module_name, const sechk
 			continue;
 		if (!(mod->result)) {
 			if (!(run = sechk_lib_get_module_function(module_name, SECHK_MOD_FN_RUN, lib)) ||
-				run(mod, lib->policy, NULL) < 0) {
-				return NULL; /* run or get function will set errno */
+			    run(mod, lib->policy, NULL) < 0) {
+				return NULL;	/* run or get function will set errno */
 			}
 		}
 		return mod->result;
@@ -583,7 +583,7 @@ sechk_result_t *sechk_lib_get_module_result(const char *module_name, const sechk
 	return NULL;
 }
 
-int sechk_lib_check_module_dependencies(sechk_lib_t *lib)
+int sechk_lib_check_module_dependencies(sechk_lib_t * lib)
 {
 	int idx = 0;
 	size_t i, j;
@@ -597,7 +597,7 @@ int sechk_lib_check_module_dependencies(sechk_lib_t *lib)
 		return -1;
 	}
 
-	processed = (bool_t*)calloc(apol_vector_get_size(lib->modules), sizeof(bool_t));
+	processed = (bool_t *) calloc(apol_vector_get_size(lib->modules), sizeof(bool_t));
 	if (!processed) {
 		perror(NULL);
 		return -1;
@@ -644,7 +644,7 @@ int sechk_lib_check_module_dependencies(sechk_lib_t *lib)
 	return 0;
 }
 
-int sechk_lib_check_module_requirements(sechk_lib_t *lib)
+int sechk_lib_check_module_requirements(sechk_lib_t * lib)
 {
 	int retv = 0;
 	size_t i, j;
@@ -679,7 +679,7 @@ int sechk_lib_check_module_requirements(sechk_lib_t *lib)
 	return retv;
 }
 
-int sechk_lib_init_modules(sechk_lib_t *lib)
+int sechk_lib_init_modules(sechk_lib_t * lib)
 {
 	int retv, error = 0;
 	size_t i;
@@ -709,7 +709,7 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 	return 0;
 }
 
-int sechk_lib_run_modules(sechk_lib_t *lib)
+int sechk_lib_run_modules(sechk_lib_t * lib)
 {
 	int retv, num_selected = 0, rc = 0;
 	size_t i;
@@ -760,7 +760,7 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 	return rc;
 }
 
-int sechk_lib_print_modules_report(sechk_lib_t *lib)
+int sechk_lib_print_modules_report(sechk_lib_t * lib)
 {
 	int retv, num_selected = 0, rc = 0;
 	size_t i;
@@ -806,7 +806,7 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib)
 	return rc;
 }
 
-bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
+bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 {
 	int pol_ver = 0;
 	struct stat stat_buf;
@@ -856,7 +856,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 			pol_ver = 0;
 
 		unsigned int ver;
-		if (qpol_policy_get_policy_version(lib->policy->p, &ver) < 0) {
+		if (qpol_policy_get_policy_version(apol_policy_get_qpol(lib->policy), &ver) < 0) {
 			ERR(lib->policy, "%s", "Unable to get policy version.");
 			return FALSE;
 		}
@@ -866,8 +866,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 				fprintf(stderr, "Error: module requires newer policy version\n");
 			return FALSE;
 		}
-	}
-	else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_SELINUX)) {
+	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_SELINUX)) {
 #ifdef LIBSELINUX
 		if (!is_selinux_enabled()) {
 			/* as long as we're not in quiet mode print output */
@@ -878,11 +877,12 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 #else
 		/* as long as we're not in quiet mode print output */
 		if (lib->outputformat & ~(SECHK_OUT_QUIET))
-			fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
+			fprintf(stderr,
+				"Error: module requires selinux system, but SEChecker was not built to support system checks\n");
 		return FALSE;
 #endif
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
-		if (!qpol_policy_is_mls_enabled(lib->policy->p)) {
+		if (!qpol_policy_is_mls_enabled(apol_policy_get_qpol(lib->policy))) {
 			/* as long as we're not in quiet mode print output */
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				fprintf(stderr, "Error: module requires MLS policy\n");
@@ -899,7 +899,8 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 #else
 		/* as long as we're not in quiet mode print output */
 		if (lib->outputformat & ~(SECHK_OUT_QUIET))
-			fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
+			fprintf(stderr,
+				"Error: module requires selinux system, but SEChecker was not built to support system checks\n");
 		return FALSE;
 #endif
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_DEF_CTX)) {
@@ -911,8 +912,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 		}
 
 		return TRUE;
-	}
-	else {
+	} else {
 		/* as long as we're not in quiet mode print output */
 		if (lib->outputformat & ~(SECHK_OUT_QUIET))
 			fprintf(stderr, "Error: unrecognized requirement\n");
@@ -922,7 +922,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 	return TRUE;
 }
 
-bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib)
+bool_t sechk_lib_check_dependency(sechk_name_value_t * dep, sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 
@@ -948,7 +948,7 @@ bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib)
 	return TRUE;
 }
 
-int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib)
+int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t * lib)
 {
 	int i;
 	sechk_module_t *mod = NULL;
@@ -968,7 +968,7 @@ int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib)
 	return 0;
 }
 
-sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig)
+sechk_proof_t *sechk_proof_copy(sechk_proof_t * orig)
 {
 	sechk_proof_t *copy = NULL;
 
@@ -990,16 +990,16 @@ sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig)
 		errno = ENOMEM;
 		return NULL;
 	}
-	copy->xml_out = NULL; /* TODO: do xml string copy here */
+	copy->xml_out = NULL;	       /* TODO: do xml string copy here */
 
 	return copy;
 }
 
-int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
+int sechk_lib_load_profile(const char *prof_name, sechk_lib_t * lib)
 {
 	const sechk_profile_name_reg_t *profiles;
 	char *profpath = NULL, *prof_filename = NULL, *path = NULL;
-	int num_profiles, retv=-1, error = 0;
+	int num_profiles, retv = -1, error = 0;
 	size_t i;
 	sechk_module_t *mod = NULL;
 
@@ -1019,7 +1019,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 	/* this is a known installed profile, look for it in that directory */
 	if (i < num_profiles) {
 		/* first look in the local subdir using just PROF_SUBDIR/profile */
-		prof_filename = (char *)calloc(strlen(profiles[i].file)+4+strlen(PROF_SUBDIR), sizeof(char));
+		prof_filename = (char *)calloc(strlen(profiles[i].file) + 4 + strlen(PROF_SUBDIR), sizeof(char));
 		if (!prof_filename) {
 			fprintf(stderr, "Error: out of memory\n");
 			errno = ENOMEM;
@@ -1030,7 +1030,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 		if (!path) {
 			free(prof_filename);
 			prof_filename = NULL;
-			prof_filename = (char *)calloc(strlen(PROFILE_INSTALL_DIR)+strlen(profiles[i].file)+4, sizeof(char));
+			prof_filename = (char *)calloc(strlen(PROFILE_INSTALL_DIR) + strlen(profiles[i].file) + 4, sizeof(char));
 			if (!prof_filename) {
 				fprintf(stderr, "Error: out of memory\n");
 				errno = ENOMEM;
@@ -1046,13 +1046,13 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 		}
 
 		/* concatenate path and filename */
-		profpath = (char*)calloc(3 + strlen(path) + strlen(prof_filename), sizeof(char));
+		profpath = (char *)calloc(3 + strlen(path) + strlen(prof_filename), sizeof(char));
 		if (!profpath) {
 			fprintf(stderr, "Error: out of memory\n");
 			error = ENOMEM;
 			goto sechk_load_profile_error;
 		}
-		sprintf(profpath,"%s/%s",path,prof_filename);
+		sprintf(profpath, "%s/%s", path, prof_filename);
 		free(path);
 		free(prof_filename);
 		path = NULL;
@@ -1081,7 +1081,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 	free(path);
 	return 0;
 
-sechk_load_profile_error:
+      sechk_load_profile_error:
 	free(profpath);
 	free(prof_filename);
 	free(path);
@@ -1093,13 +1093,13 @@ static int sechk_option_name_compare(const void *a, const void *b, void *data __
 {
 	sechk_name_value_t *in_a, *in_b;
 
-	in_a = (sechk_name_value_t*)a;
-	in_b = (sechk_name_value_t*)b;
+	in_a = (sechk_name_value_t *) a;
+	in_b = (sechk_name_value_t *) b;
 
 	return strcmp(in_a->name, in_b->name);
 }
 
-int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
+int sechk_lib_module_clear_option(sechk_module_t * module, char *option)
 {
 	apol_vector_t *new_opts = NULL;
 	sechk_name_value_t *needle = NULL, *nv = NULL, *tmp = NULL;
@@ -1140,12 +1140,12 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 				WARN(module->parent_lib->policy, "Clearing option %s: %s.", option, strerror(error));
 				goto err;
 			}
-			if (apol_vector_append(new_opts, (void*)tmp)) {
+			if (apol_vector_append(new_opts, (void *)tmp)) {
 				error = errno;
 				WARN(module->parent_lib->policy, "Clearing option %s: %s.", option, strerror(error));
 				goto err;
 			}
-			tmp = NULL; /* avoid double free */
+			tmp = NULL;    /* avoid double free */
 		}
 	}
 
@@ -1155,7 +1155,7 @@ int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 
 	return 0;
 
-err:
+      err:
 	sechk_name_value_free(tmp);
 	sechk_name_value_free(needle);
 	apol_vector_destroy(&new_opts, sechk_name_value_free);
@@ -1164,7 +1164,7 @@ err:
 }
 
 /* get the index of a module in the library by name */
-int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib)
+int sechk_lib_get_module_idx(const char *name, sechk_lib_t * lib)
 {
 	size_t i;
 	sechk_module_t *mod = NULL;
@@ -1173,7 +1173,7 @@ int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib)
 		errno = EINVAL;
 		return -1;
 	}
-	for (i=0; i < apol_vector_get_size(lib->modules); i++) {
+	for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
 		mod = apol_vector_get_element(lib->modules, i);
 		if (mod->name && !strcmp(name, mod->name))
 			return i;
@@ -1184,7 +1184,7 @@ int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib)
 
 int sechk_proof_with_element_compare(const void *in_proof, const void *elem, void *unused __attribute__ ((unused)))
 {
-	const sechk_proof_t *proof = (const sechk_proof_t*)in_proof;
+	const sechk_proof_t *proof = (const sechk_proof_t *)in_proof;
 
 	if (!proof)
 		return 1;

@@ -28,19 +28,21 @@
 #include "queue.h"
 #include "module_compiler.h"
 
-union stack_item_u {
+union stack_item_u
+{
 	avrule_block_t *avrule;
 	cond_list_t *cond_list;
 };
 
-typedef struct scope_stack {
+typedef struct scope_stack
+{
 	union stack_item_u u;
-	int type;		/* for above union: 1 = avrule block, 2 = conditional */
-	avrule_decl_t *decl;	/* if in an avrule block, which
-				 * declaration is current */
+	int type;		       /* for above union: 1 = avrule block, 2 = conditional */
+	avrule_decl_t *decl;	       /* if in an avrule block, which
+				        * declaration is current */
 	avrule_t *last_avrule;
-	int in_else;		/* if in an avrule block, within ELSE branch */
-	int require_given;	/* 1 if this block had at least one require */
+	int in_else;		       /* if in an avrule block, within ELSE branch */
+	int require_given;	       /* 1 if this block had at least one require */
 	struct scope_stack *parent, *child;
 } scope_stack_t;
 
@@ -63,8 +65,7 @@ int define_policy(int pass, int module_header_given)
 
 	if (module_header_given) {
 		if (policydbp->policy_type != POLICY_MOD) {
-			yyerror
-			    ("Module specification found while not building a policy module.\n");
+			yyerror("Module specification found while not building a policy module.\n");
 			return -1;
 		}
 
@@ -78,30 +79,26 @@ int define_policy(int pass, int module_header_given)
 				return -1;
 			}
 			policydbp->name = id;
-			if ((policydbp->version =
-			     queue_remove(id_queue)) == NULL) {
-				yyerror
-				    ("Expected a module version but none was found.");
+			if ((policydbp->version = queue_remove(id_queue)) == NULL) {
+				yyerror("Expected a module version but none was found.");
 				return -1;
 			}
 		}
 	} else {
 		if (policydbp->policy_type == POLICY_MOD) {
-			yyerror
-			    ("Building a policy module, but no module specification found.\n");
+			yyerror("Building a policy module, but no module specification found.\n");
 			return -1;
 		}
 	}
 	/* the first declaration within the global avrule
-	   block will always have an id of 1 */
+	 * block will always have an id of 1 */
 	next_decl_id = 2;
 
 	/* reset the scoping stack */
 	while (stack_top != NULL) {
 		pop_stack();
 	}
-	if (push_stack(1, policydbp->global, policydbp->global->branch_list) ==
-	    -1) {
+	if (push_stack(1, policydbp->global, policydbp->global->branch_list) == -1) {
 		return -1;
 	}
 	last_block = policydbp->global;
@@ -130,9 +127,7 @@ static int is_declaration_allowed(void)
  * For duplicate declarations return -2.  For all else, including out
  * of memory, return -3.  Note that dest_value and datum_value might
  * not be restricted pointers. */
-int declare_symbol(uint32_t symbol_type,
-		   hashtab_key_t key, hashtab_datum_t datum,
-		   uint32_t * dest_value, uint32_t * datum_value)
+int declare_symbol(uint32_t symbol_type, hashtab_key_t key, hashtab_datum_t datum, uint32_t * dest_value, uint32_t * datum_value)
 {
 	avrule_decl_t *decl = stack_top->decl;
 	int retval;
@@ -141,24 +136,20 @@ int declare_symbol(uint32_t symbol_type,
 	if (!is_declaration_allowed()) {
 		return -1;
 	}
-	retval = symtab_insert(policydbp, symbol_type, key, datum,
-			       SCOPE_DECL, decl->decl_id, dest_value);
+	retval = symtab_insert(policydbp, symbol_type, key, datum, SCOPE_DECL, decl->decl_id, dest_value);
 	if (retval == 1) {
-		symtab_datum_t *s =
-		    (symtab_datum_t *) hashtab_search(policydbp->
-						      symtab[symbol_type].table,
-						      key);
+		symtab_datum_t *s = (symtab_datum_t *) hashtab_search(policydbp->symtab[symbol_type].table,
+								      key);
 		assert(s != NULL);
 		*dest_value = s->value;
 	} else if (retval == -2) {
 		return -2;
 	} else if (retval < 0) {
 		return -3;
-	} else {		/* fall through possible if retval is 0 */
+	} else {		       /* fall through possible if retval is 0 */
 	}
 	if (datum_value != NULL) {
-		if (ebitmap_set_bit(decl->declared.scope + symbol_type,
-				    *datum_value - 1, 1)) {
+		if (ebitmap_set_bit(decl->declared.scope + symbol_type, *datum_value - 1, 1)) {
 			return -3;
 		}
 	}
@@ -183,9 +174,7 @@ role_datum_t *declare_role(void)
 	}
 	role_datum_init(role);
 
-	retval =
-	    declare_symbol(SYM_ROLES, id, (hashtab_datum_t *) role, &value,
-			   &value);
+	retval = declare_symbol(SYM_ROLES, id, (hashtab_datum_t *) role, &value, &value);
 	if (retval == 0) {
 		role->s.value = value;
 		if ((dest_id = strdup(id)) == NULL) {
@@ -210,9 +199,7 @@ role_datum_t *declare_role(void)
 		}
 		dest_role = (role_datum_t *) hashtab_search(roles_tab, dest_id);
 		if (dest_role == NULL) {
-			if ((dest_role =
-			     (role_datum_t *) malloc(sizeof(*dest_role))) ==
-			    NULL) {
+			if ((dest_role = (role_datum_t *) malloc(sizeof(*dest_role))) == NULL) {
 				yyerror("Out of memory!");
 				free(dest_id);
 				return NULL;
@@ -246,8 +233,7 @@ role_datum_t *declare_role(void)
 			return NULL;
 		}
 	case 0:{
-			if (ebitmap_set_bit
-			    (&dest_role->dominates, role->s.value - 1, 1)) {
+			if (ebitmap_set_bit(&dest_role->dominates, role->s.value - 1, 1)) {
 				yyerror("out of memory");
 				return NULL;
 			}
@@ -257,7 +243,7 @@ role_datum_t *declare_role(void)
 			return dest_role;	/* role already declared for this block */
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -275,8 +261,7 @@ type_datum_t *declare_type(unsigned char primary, unsigned char isattr)
 		return NULL;
 	}
 	if (strcmp(id, "self") == 0) {
-		yyerror
-		    ("'self' is a reserved type name and may not be declared.");
+		yyerror("'self' is a reserved type name and may not be declared.");
 		free(id);
 		return NULL;
 	}
@@ -320,7 +305,7 @@ type_datum_t *declare_type(unsigned char primary, unsigned char isattr)
 			return typdatum;
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -343,9 +328,7 @@ user_datum_t *declare_user(void)
 	}
 	user_datum_init(user);
 
-	retval =
-	    declare_symbol(SYM_USERS, id, (hashtab_datum_t *) user, &value,
-			   &value);
+	retval = declare_symbol(SYM_USERS, id, (hashtab_datum_t *) user, &value, &value);
 
 	if (retval == 0) {
 		user->s.value = value;
@@ -371,9 +354,7 @@ user_datum_t *declare_user(void)
 		}
 		dest_user = (user_datum_t *) hashtab_search(users_tab, dest_id);
 		if (dest_user == NULL) {
-			if ((dest_user =
-			     (user_datum_t *) malloc(sizeof(*dest_user))) ==
-			    NULL) {
+			if ((dest_user = (user_datum_t *) malloc(sizeof(*dest_user))) == NULL) {
 				yyerror("Out of memory!");
 				free(dest_id);
 				return NULL;
@@ -413,7 +394,7 @@ user_datum_t *declare_user(void)
 			return dest_user;	/* user already declared for this block */
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -484,9 +465,7 @@ static int is_require_allowed(void)
  * return -3..  Note that dest_value and datum_value might not be
  * restricted pointers.
  */
-int require_symbol(uint32_t symbol_type,
-		   hashtab_key_t key, hashtab_datum_t datum,
-		   uint32_t * dest_value, uint32_t * datum_value)
+int require_symbol(uint32_t symbol_type, hashtab_key_t key, hashtab_datum_t datum, uint32_t * dest_value, uint32_t * datum_value)
 {
 	avrule_decl_t *decl = stack_top->decl;
 	int retval;
@@ -495,13 +474,10 @@ int require_symbol(uint32_t symbol_type,
 	if (!is_require_allowed()) {
 		return -1;
 	}
-	retval = symtab_insert(policydbp, symbol_type, key, datum,
-			       SCOPE_REQ, decl->decl_id, dest_value);
+	retval = symtab_insert(policydbp, symbol_type, key, datum, SCOPE_REQ, decl->decl_id, dest_value);
 	if (retval == 1) {
-		symtab_datum_t *s =
-		    (symtab_datum_t *) hashtab_search(policydbp->
-						      symtab[symbol_type].table,
-						      key);
+		symtab_datum_t *s = (symtab_datum_t *) hashtab_search(policydbp->symtab[symbol_type].table,
+								      key);
 		assert(s != NULL);
 		*dest_value = s->value;
 	} else if (retval == -2) {
@@ -512,17 +488,11 @@ int require_symbol(uint32_t symbol_type,
 			if (symbol_type == SYM_TYPES) {
 				/* check that previous symbol has same
 				 * type/attribute-ness */
-				unsigned char new_isattr =
-				    ((type_datum_t *) datum)->flavor;
-				type_datum_t *old_datum =
-				    (type_datum_t *) hashtab_search(policydbp->
-								    symtab
-								    [SYM_TYPES].
-								    table, key);
+				unsigned char new_isattr = ((type_datum_t *) datum)->flavor;
+				type_datum_t *old_datum = (type_datum_t *) hashtab_search(policydbp->symtab[SYM_TYPES].table, key);
 				assert(old_datum != NULL);
 				unsigned char old_isattr = old_datum->flavor;
-				prev_declaration_ok =
-				    (old_isattr == new_isattr ? 1 : 0);
+				prev_declaration_ok = (old_isattr == new_isattr ? 1 : 0);
 			} else {
 				prev_declaration_ok = 1;
 			}
@@ -540,11 +510,10 @@ int require_symbol(uint32_t symbol_type,
 		}
 	} else if (retval < 0) {
 		return -3;
-	} else {		/* fall through possible if retval is 0 or 1 */
+	} else {		       /* fall through possible if retval is 0 or 1 */
 	}
 	if (datum_value != NULL) {
-		if (ebitmap_set_bit(decl->required.scope + symbol_type,
-				    *datum_value - 1, 1)) {
+		if (ebitmap_set_bit(decl->required.scope + symbol_type, *datum_value - 1, 1)) {
 			return -3;
 		}
 	}
@@ -573,15 +542,13 @@ int add_perm_to_class(uint32_t perm_value, uint32_t class_value)
 		}
 		scope->class_perms_len = class_value;
 	}
-	if (ebitmap_set_bit(scope->class_perms_map + class_value - 1,
-			    perm_value - 1, 1)) {
+	if (ebitmap_set_bit(scope->class_perms_map + class_value - 1, perm_value - 1, 1)) {
 		return -1;
 	}
 	return 0;
 }
 
-static int perm_destroy(hashtab_key_t key, hashtab_datum_t datum, void *p
-			__attribute__ ((unused)))
+static int perm_destroy(hashtab_key_t key, hashtab_datum_t datum, void *p __attribute__ ((unused)))
 {
 	if (key)
 		free(key);
@@ -619,14 +586,11 @@ int require_class(int pass)
 		return -1;
 	}
 
-	if ((datum = calloc(1, sizeof(*datum))) == NULL ||
-	    symtab_init(&datum->permissions, PERM_SYMTAB_SIZE)) {
+	if ((datum = calloc(1, sizeof(*datum))) == NULL || symtab_init(&datum->permissions, PERM_SYMTAB_SIZE)) {
 		yyerror("Out of memory!");
 		goto cleanup;
 	}
-	ret =
-	    require_symbol(SYM_CLASSES, class_id, datum, &datum->s.value,
-			   &datum->s.value);
+	ret = require_symbol(SYM_CLASSES, class_id, datum, &datum->s.value, &datum->s.value);
 	switch (ret) {
 	case -3:{
 			yyerror("Out of memory!");
@@ -656,15 +620,13 @@ int require_class(int pass)
 		}
 	case 1:{
 			class_datum_destroy(datum);
-			datum =
-			    hashtab_search(policydbp->p_classes.table,
-					   class_id);
-			assert(datum);	/* the class datum should have existed */
+			datum = hashtab_search(policydbp->p_classes.table, class_id);
+			assert(datum); /* the class datum should have existed */
 			free(class_id);
 			break;
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 
@@ -675,18 +637,14 @@ int require_class(int pass)
 		/* Is the permission already in the table? */
 		perm = hashtab_search(datum->permissions.table, perm_id);
 		if (!perm && datum->comdatum)
-			perm =
-			    hashtab_search(datum->comdatum->permissions.table,
-					   perm_id);
+			perm = hashtab_search(datum->comdatum->permissions.table, perm_id);
 		if (perm) {
 			/* Yes, drop the name. */
 			free(perm_id);
 		} else {
 			/* No - allocate and insert an entry for it. */
 			if (policydbp->policy_type == POLICY_BASE) {
-				yyerror2
-				    ("Base policy - require of permission %s without prior declaration.",
-				     perm_id);
+				yyerror2("Base policy - require of permission %s without prior declaration.", perm_id);
 				free(perm_id);
 				goto cleanup;
 			}
@@ -697,9 +655,7 @@ int require_class(int pass)
 				goto cleanup;
 			}
 			memset(perm, 0, sizeof(*perm));
-			ret =
-			    hashtab_insert(datum->permissions.table, perm_id,
-					   perm);
+			ret = hashtab_insert(datum->permissions.table, perm_id, perm);
 			if (ret) {
 				yyerror("Out of memory!");
 				free(perm_id);
@@ -742,9 +698,7 @@ int require_role(int pass)
 		return -1;
 	}
 	role_datum_init(role);
-	retval =
-	    require_symbol(SYM_ROLES, id, (hashtab_datum_t *) role,
-			   &role->s.value, &role->s.value);
+	retval = require_symbol(SYM_ROLES, id, (hashtab_datum_t *) role, &role->s.value, &role->s.value);
 	if (retval != 0) {
 		free(id);
 		role_datum_destroy(role);
@@ -765,18 +719,17 @@ int require_role(int pass)
 		}
 	case 0:{
 			/* all roles dominate themselves */
-			if (ebitmap_set_bit
-			    (&role->dominates, role->s.value - 1, 1)) {
+			if (ebitmap_set_bit(&role->dominates, role->s.value - 1, 1)) {
 				yyerror("Out of memory");
 				return -1;
 			}
 			return 0;
 		}
 	case 1:{
-			return 0;	/* role already required */
+			return 0;      /* role already required */
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -802,9 +755,7 @@ static int require_type_or_attribute(int pass, unsigned char isattr)
 	type_datum_init(type);
 	type->primary = 1;
 	type->flavor = isattr ? TYPE_ATTRIB : TYPE_TYPE;
-	retval =
-	    require_symbol(SYM_TYPES, id, (hashtab_datum_t *) type,
-			   &type->s.value, &type->s.value);
+	retval = require_symbol(SYM_TYPES, id, (hashtab_datum_t *) type, &type->s.value, &type->s.value);
 	if (retval != 0) {
 		free(id);
 		free(type);
@@ -826,10 +777,10 @@ static int require_type_or_attribute(int pass, unsigned char isattr)
 			return 0;
 		}
 	case 1:{
-			return 0;	/* type already required */
+			return 0;      /* type already required */
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -863,9 +814,7 @@ int require_user(int pass)
 		return -1;
 	}
 	user_datum_init(user);
-	retval =
-	    require_symbol(SYM_USERS, id, (hashtab_datum_t *) user,
-			   &user->s.value, &user->s.value);
+	retval = require_symbol(SYM_USERS, id, (hashtab_datum_t *) user, &user->s.value, &user->s.value);
 	if (retval != 0) {
 		free(id);
 		user_datum_destroy(user);
@@ -887,10 +836,10 @@ int require_user(int pass)
 			return 0;
 		}
 	case 1:{
-			return 0;	/* user already required */
+			return 0;      /* user already required */
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -913,9 +862,7 @@ int require_bool(int pass)
 		yyerror("Out of memory!");
 		return -1;
 	}
-	retval =
-	    require_symbol(SYM_BOOLS, id, (hashtab_datum_t *) booldatum,
-			   &booldatum->s.value, &booldatum->s.value);
+	retval = require_symbol(SYM_BOOLS, id, (hashtab_datum_t *) booldatum, &booldatum->s.value, &booldatum->s.value);
 	if (retval != 0) {
 		cond_destroy_bool(id, booldatum, NULL);
 	}
@@ -936,10 +883,10 @@ int require_bool(int pass)
 			return 0;
 		}
 	case 1:{
-			return 0;	/* boolean already required */
+			return 0;      /* boolean already required */
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -973,8 +920,7 @@ int require_sens(int pass)
 		return -1;
 	}
 	mls_level_init(level->level);
-	retval = require_symbol(SYM_LEVELS, id, (hashtab_datum_t *) level,
-				&level->level->sens, &level->level->sens);
+	retval = require_symbol(SYM_LEVELS, id, (hashtab_datum_t *) level, &level->level->sens, &level->level->sens);
 	if (retval != 0) {
 		free(id);
 		mls_level_destroy(level->level);
@@ -999,10 +945,10 @@ int require_sens(int pass)
 			return 0;
 		}
 	case 1:{
-			return 0;	/* sensitivity already required */
+			return 0;      /* sensitivity already required */
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -1028,8 +974,7 @@ int require_cat(int pass)
 	}
 	cat_datum_init(cat);
 
-	retval = require_symbol(SYM_CATS, id, (hashtab_datum_t *) cat,
-				&cat->s.value, &cat->s.value);
+	retval = require_symbol(SYM_CATS, id, (hashtab_datum_t *) cat, &cat->s.value, &cat->s.value);
 	if (retval != 0) {
 		free(id);
 		cat_datum_destroy(cat);
@@ -1052,10 +997,10 @@ int require_cat(int pass)
 			return 0;
 		}
 	case 1:{
-			return 0;	/* category already required */
+			return 0;      /* category already required */
 		}
 	default:{
-			assert(0);	/* should never get here */
+			assert(0);     /* should never get here */
 		}
 	}
 }
@@ -1064,7 +1009,7 @@ static int is_scope_in_stack(scope_datum_t * scope, scope_stack_t * stack)
 {
 	int i;
 	if (stack == NULL) {
-		return 0;	/* no matching scope found */
+		return 0;	       /* no matching scope found */
 	}
 	if (stack->type == 1) {
 		avrule_decl_t *decl = stack->decl;
@@ -1084,40 +1029,33 @@ static int is_scope_in_stack(scope_datum_t * scope, scope_stack_t * stack)
 
 int is_id_in_scope(uint32_t symbol_type, hashtab_key_t id)
 {
-	scope_datum_t *scope =
-	    (scope_datum_t *) hashtab_search(policydbp->scope[symbol_type].
-					     table, id);
+	scope_datum_t *scope = (scope_datum_t *) hashtab_search(policydbp->scope[symbol_type].table, id);
 	if (scope == NULL) {
-		return 1;	/* id is not known, so return success */
+		return 1;	       /* id is not known, so return success */
 	}
 	return is_scope_in_stack(scope, stack_top);
 }
 
-static int is_perm_in_scope_index(uint32_t perm_value, uint32_t class_value,
-				  scope_index_t * scope)
+static int is_perm_in_scope_index(uint32_t perm_value, uint32_t class_value, scope_index_t * scope)
 {
 	if (class_value > scope->class_perms_len) {
 		return 1;
 	}
-	if (ebitmap_get_bit(scope->class_perms_map + class_value - 1,
-			    perm_value - 1)) {
+	if (ebitmap_get_bit(scope->class_perms_map + class_value - 1, perm_value - 1)) {
 		return 1;
 	}
 	return 0;
 }
 
-static int is_perm_in_stack(uint32_t perm_value, uint32_t class_value,
-			    scope_stack_t * stack)
+static int is_perm_in_stack(uint32_t perm_value, uint32_t class_value, scope_stack_t * stack)
 {
 	if (stack == NULL) {
-		return 0;	/* no matching scope found */
+		return 0;	       /* no matching scope found */
 	}
 	if (stack->type == 1) {
 		avrule_decl_t *decl = stack->decl;
-		if (is_perm_in_scope_index
-		    (perm_value, class_value, &decl->required)
-		    || is_perm_in_scope_index(perm_value, class_value,
-					      &decl->declared)) {
+		if (is_perm_in_scope_index(perm_value, class_value, &decl->required)
+		    || is_perm_in_scope_index(perm_value, class_value, &decl->declared)) {
 			return 1;
 		}
 	} else {
@@ -1131,20 +1069,17 @@ static int is_perm_in_stack(uint32_t perm_value, uint32_t class_value,
 
 int is_perm_in_scope(hashtab_key_t perm_id, hashtab_key_t class_id)
 {
-	class_datum_t *cladatum =
-	    (class_datum_t *) hashtab_search(policydbp->p_classes.table,
-					     class_id);
+	class_datum_t *cladatum = (class_datum_t *) hashtab_search(policydbp->p_classes.table,
+								   class_id);
 	perm_datum_t *perdatum;
 	if (cladatum == NULL) {
 		return 1;
 	}
-	perdatum = (perm_datum_t *) hashtab_search(cladatum->permissions.table,
-						   perm_id);
+	perdatum = (perm_datum_t *) hashtab_search(cladatum->permissions.table, perm_id);
 	if (perdatum == NULL) {
 		return 1;
 	}
-	return is_perm_in_stack(perdatum->s.value, cladatum->s.value,
-				stack_top);
+	return is_perm_in_stack(perdatum->s.value, cladatum->s.value, stack_top);
 }
 
 cond_list_t *get_current_cond_list(cond_list_t * cond)
@@ -1163,19 +1098,17 @@ void append_cond_list(cond_list_t * cond)
 {
 	cond_list_t *old_cond = get_current_cond_list(cond);
 	avrule_t *tmp;
-	assert(old_cond != NULL);	/* probably out of memory */
+	assert(old_cond != NULL);      /* probably out of memory */
 	if (old_cond->avtrue_list == NULL) {
 		old_cond->avtrue_list = cond->avtrue_list;
 	} else {
-		for (tmp = old_cond->avtrue_list; tmp->next != NULL;
-		     tmp = tmp->next) ;
+		for (tmp = old_cond->avtrue_list; tmp->next != NULL; tmp = tmp->next) ;
 		tmp->next = cond->avtrue_list;
 	}
 	if (old_cond->avfalse_list == NULL) {
 		old_cond->avfalse_list = cond->avfalse_list;
 	} else {
-		for (tmp = old_cond->avfalse_list; tmp->next != NULL;
-		     tmp = tmp->next) ;
+		for (tmp = old_cond->avfalse_list; tmp->next != NULL; tmp = tmp->next) ;
 		tmp->next = cond->avfalse_list;
 	}
 }
@@ -1241,8 +1174,7 @@ int begin_optional(int pass)
 	avrule_decl_t *decl;
 	if (pass == 1) {
 		/* allocate a new avrule block for this optional block */
-		if ((block = avrule_block_create()) == NULL ||
-		    (decl = avrule_decl_create(next_decl_id)) == NULL) {
+		if ((block = avrule_block_create()) == NULL || (decl = avrule_decl_create(next_decl_id)) == NULL) {
 			goto cleanup;
 		}
 		block->flags |= AVRULE_OPTIONAL;
@@ -1251,9 +1183,7 @@ int begin_optional(int pass)
 	} else {
 		/* select the next block from the chain built during pass 1 */
 		block = last_block->next;
-		assert(block != NULL &&
-		       block->branch_list != NULL &&
-		       block->branch_list->decl_id == next_decl_id);
+		assert(block != NULL && block->branch_list != NULL && block->branch_list->decl_id == next_decl_id);
 		decl = block->branch_list;
 	}
 	if (push_stack(1, block, decl) == -1) {
@@ -1290,10 +1220,9 @@ int begin_optional_else(int pass)
 		stack_top->decl->next = decl;
 	} else {
 		/* pick the (hopefully last) declaration of this
-		   avrule block, built from pass 1 */
+		 * avrule block, built from pass 1 */
 		decl = stack_top->decl->next;
-		assert(decl != NULL &&
-		       decl->next == NULL && decl->decl_id == next_decl_id);
+		assert(decl != NULL && decl->next == NULL && decl->decl_id == next_decl_id);
 	}
 	stack_top->in_else = 1;
 	stack_top->decl = decl;
@@ -1322,26 +1251,21 @@ static int copy_requirements(avrule_decl_t * dest, scope_stack_t * stack)
 		}
 		/* now copy class permissions */
 		if (src_scope->class_perms_len > dest_scope->class_perms_len) {
-			ebitmap_t *new_map =
-			    realloc(dest_scope->class_perms_map,
-				    src_scope->class_perms_len *
-				    sizeof(*new_map));
+			ebitmap_t *new_map = realloc(dest_scope->class_perms_map,
+						     src_scope->class_perms_len * sizeof(*new_map));
 			if (new_map == NULL) {
 				yyerror("Out of memory!");
 				return -1;
 			}
 			dest_scope->class_perms_map = new_map;
-			for (i = dest_scope->class_perms_len;
-			     i < src_scope->class_perms_len; i++) {
+			for (i = dest_scope->class_perms_len; i < src_scope->class_perms_len; i++) {
 				ebitmap_init(dest_scope->class_perms_map + i);
 			}
-			dest_scope->class_perms_len =
-			    src_scope->class_perms_len;
+			dest_scope->class_perms_len = src_scope->class_perms_len;
 		}
 		for (i = 0; i < src_scope->class_perms_len; i++) {
 			ebitmap_t *src_bitmap = &src_scope->class_perms_map[i];
-			ebitmap_t *dest_bitmap =
-			    &dest_scope->class_perms_map[i];
+			ebitmap_t *dest_bitmap = &dest_scope->class_perms_map[i];
 			if (ebitmap_union(dest_bitmap, src_bitmap)) {
 				yyerror("Out of memory!");
 				return -1;
@@ -1368,8 +1292,7 @@ int end_avrule_block(int pass)
 		return 0;
 	}
 	if (!stack_top->in_else && !stack_top->require_given) {
-		if (policydbp->policy_type == POLICY_BASE
-		    && stack_top->parent != NULL) {
+		if (policydbp->policy_type == POLICY_BASE && stack_top->parent != NULL) {
 			/* if this is base no require should be in the global block */
 			return 0;
 		} else {

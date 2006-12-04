@@ -10,20 +10,22 @@ This manual page describes the
 command.
 .PP
 .B seaudit-report
-allows the user to generate custom audit log reports from the command line or by integration with the logwatch tool.
+allows the user to generate custom audit log reports from the command line or by integration with the Logwatch tool.
 .SH OPTIONS
-.IP "-s,  --stdin"
+.IP "-s, --stdin"
 Read LOGFILES from standard input.
-.IP "-m,  --malformed"
+.IP "-m, --malformed"
 Include malformed log messages.
-.IP "-o <file>, --output <file>"
+.IP "-oFILE, --output=FILE"
 Output to file.
-.IP "-c <file>, --config <file>"
+.IP "-cFILE, --config=FILE"
 Use alternate config file.
 .IP "--html"
-Set the output to format to HTML. Plain text is the default.
-.IP "--stylesheet <file>"
-HTML style sheet to be used for formatting an HTML report. This option is only used if --html option is also provided.  See /usr/share/setools/seaudit-report.css for example of style sheet source to use.
+Set output format to HTML.  Default is plain text.
+.IP "--stylesheet=FILE"
+HTML stylesheet for formatting HTML report.  This option is ignored if
+--html is not given.  See /usr/local/share/setools/seaudit-report.css
+(or wherever you installed SETools) for an example stylesheet.
 .IP "-v, --version"
 Display version information and exit.
 .IP "-h, --help"
@@ -33,4 +35,4 @@ This manual page was written by Kevin Carr <kcarr@tresys.com>.
 .SH COPYRIGHT
 Copyright(C) 2006 Tresys Technology, LLC
 .SH SEE ALSO
-seaudit(8), logwatch(8)
+seaudit(8)

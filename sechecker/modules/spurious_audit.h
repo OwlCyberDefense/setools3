@@ -26,15 +26,19 @@
 
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
- 
+
 /* 
  * Author: jmowery@tresys.com
  *
  */
 
-
 #ifndef SPURIOUS_AUDIT
 #define SPURIOUS_AUDIT
+
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
 
 #include "sechecker.h"
 #include <apol/policy.h>
@@ -45,10 +49,13 @@
 #define SECHK_SPUR_AU_DA_PART 0x08
 
 /* Module functions: */
-int spurious_audit_register(sechk_lib_t *lib);
-int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int spurious_audit_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+	int spurious_audit_register(sechk_lib_t * lib);
+	int spurious_audit_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int spurious_audit_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
+#ifdef	__cplusplus
+}
 #endif
 
+#endif

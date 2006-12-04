@@ -18,13 +18,12 @@ static gint callback_compare(gconstpointer a, gconstpointer b);
 static void seaudit_callback_signal_emit_1(gpointer data, gpointer user_data);
 static void free_elem_data(gpointer data, gpointer user_data);
 
-
 /* Register a callback on an event signal */
 int seaudit_callback_register(seaudit_callback_t function, void *user_data, unsigned int type)
 {
-	registered_callback_t *callback=NULL;
+	registered_callback_t *callback = NULL;
 
-	callback = (registered_callback_t*)malloc(sizeof(registered_callback_t));
+	callback = (registered_callback_t *) malloc(sizeof(registered_callback_t));
 	if (!callback)
 		return -1;
 	callback->function = function;
@@ -63,7 +62,6 @@ void seaudit_callbacks_free(void)
 	return;
 }
 
-
 /* the signal emit function executes each function registered with 
  * seaudit_callback_register() */
 void seaudit_callback_signal_emit(unsigned int type)
@@ -80,18 +78,18 @@ static gint callback_compare(gconstpointer a, gconstpointer b)
 {
 	/* Order in the list does not matter, we just need to be able to know if
 	 * two items are equal.  So if they are not equal, a is greater that b. */
-	registered_callback_t *ca = (registered_callback_t*)a;
-	registered_callback_t *cb = (registered_callback_t*)b;
-	
+	registered_callback_t *ca = (registered_callback_t *) a;
+	registered_callback_t *cb = (registered_callback_t *) b;
+
 	if (ca->function == cb->function && ca->user_data == cb->user_data && ca->type == cb->type)
 		return 0;
-	else 
+	else
 		return 1;
 }
 
 static void free_elem_data(gpointer data, gpointer user_data)
 {
-	registered_callback_t *callback = (registered_callback_t*)data;
+	registered_callback_t *callback = (registered_callback_t *) data;
 	if (callback)
 		free(callback);
 	return;
@@ -99,8 +97,8 @@ static void free_elem_data(gpointer data, gpointer user_data)
 
 static void seaudit_callback_signal_emit_1(gpointer data, gpointer user_data)
 {
-	registered_callback_t *callback = (registered_callback_t *)data;
-	unsigned int type = *(unsigned int*)user_data;
+	registered_callback_t *callback = (registered_callback_t *) data;
+	unsigned int type = *(unsigned int *)user_data;
 	if (callback->type == type) {
 		callback->function(callback->user_data);
 	}

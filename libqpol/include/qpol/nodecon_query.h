@@ -26,6 +26,11 @@
 #ifndef QPOL_NODECON_QUERY_H
 #define QPOL_NODECON_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -34,7 +39,7 @@
 #define QPOL_IPV4 0
 #define QPOL_IPV6 1
 
-typedef struct qpol_nodecon qpol_nodecon_t;
+	typedef struct qpol_nodecon qpol_nodecon_t;
 
 /**
  *  Get a single nodecon statement by address, mask and protocol.
@@ -48,7 +53,8 @@ typedef struct qpol_nodecon qpol_nodecon_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-extern int qpol_policy_get_nodecon_by_node(qpol_policy_t *policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol, qpol_nodecon_t **ocon);
+	extern int qpol_policy_get_nodecon_by_node(qpol_policy_t * policy, uint32_t addr[4], uint32_t mask[4],
+						   unsigned char protocol, qpol_nodecon_t ** ocon);
 
 /**
  *  Get an iterator for the nodecon statements in a policy.
@@ -62,7 +68,7 @@ extern int qpol_policy_get_nodecon_by_node(qpol_policy_t *policy, uint32_t addr[
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_nodecon_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
+	extern int qpol_policy_get_nodecon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the IP address from a nodecon statement. Sets protocol to indicate
@@ -77,7 +83,7 @@ extern int qpol_policy_get_nodecon_iter(qpol_policy_t *policy, qpol_iterator_t *
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set, addr will be NULL, and protocol will be 0.
  */
-int qpol_nodecon_get_addr(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **addr, unsigned char *protocol);
+	int qpol_nodecon_get_addr(qpol_policy_t * policy, qpol_nodecon_t * ocon, uint32_t ** addr, unsigned char *protocol);
 
 /**
  *  Get the net mask from a nodecon statement. Sets protocol to indicate
@@ -92,7 +98,7 @@ int qpol_nodecon_get_addr(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set, mask will be NULL, and protocol will be 0.
  */
-int qpol_nodecon_get_mask(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **mask, unsigned char *protocol);
+	int qpol_nodecon_get_mask(qpol_policy_t * policy, qpol_nodecon_t * ocon, uint32_t ** mask, unsigned char *protocol);
 
 /**
  *  Get the protocol from a nodecon statement.
@@ -103,7 +109,7 @@ int qpol_nodecon_get_mask(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and protocol will be 0.
  */
-int qpol_nodecon_get_protocol(qpol_policy_t *policy, qpol_nodecon_t *ocon, unsigned char *protocol);
+	int qpol_nodecon_get_protocol(qpol_policy_t * policy, qpol_nodecon_t * ocon, unsigned char *protocol);
 
 /**
  *  Get the context from a nodecon statement.
@@ -114,7 +120,10 @@ int qpol_nodecon_get_protocol(qpol_policy_t *policy, qpol_nodecon_t *ocon, unsig
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_nodecon_get_context(qpol_policy_t *policy, qpol_nodecon_t *ocon, qpol_context_t **context);
+	extern int qpol_nodecon_get_context(qpol_policy_t * policy, qpol_nodecon_t * ocon, qpol_context_t ** context);
 
-#endif /* QPOL_NODECON_QUERY_H */
+#ifdef	__cplusplus
+}
+#endif
 
+#endif				       /* QPOL_NODECON_QUERY_H */

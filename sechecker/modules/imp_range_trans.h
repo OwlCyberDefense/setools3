@@ -24,6 +24,14 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifndef IMP_RANGE_TRANS
+#define IMP_RANGE_TRANS
+
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/role-query.h>
@@ -33,8 +41,13 @@
 #include <apol/domain-trans-analysis.h>
 #include <apol/policy-query.h>
 
-int imp_range_trans_register(sechk_lib_t *lib);
-int imp_range_trans_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int imp_range_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+	int imp_range_trans_register(sechk_lib_t * lib);
+	int imp_range_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int imp_range_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* IMP_RANGE_TRANS */

@@ -26,12 +26,17 @@
 #ifndef POLDIFF_TYPE_DIFF_H
 #define POLDIFF_TYPE_DIFF_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
 /******************** types ********************/
 
-typedef struct poldiff_type poldiff_type_t;
+	typedef struct poldiff_type poldiff_type_t;
 
 /**
  *  Get an array of statistics for the number of differences of each
@@ -45,7 +50,7 @@ typedef struct poldiff_type poldiff_type_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_type_get_stats(poldiff_t *diff, size_t stats[5]);
+	extern void poldiff_type_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of type differences from the type difference
@@ -58,7 +63,7 @@ extern void poldiff_type_get_stats(poldiff_t *diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_type_vector(poldiff_t *diff);
+	extern apol_vector_t *poldiff_get_type_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -71,7 +76,7 @@ extern apol_vector_t *poldiff_get_type_vector(poldiff_t *diff);
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-extern char *poldiff_type_to_string(poldiff_t *diff, const void *type);
+	extern char *poldiff_type_to_string(poldiff_t * diff, const void *type);
 
 /**
  *  Get the name of the type from a type diff.
@@ -82,7 +87,7 @@ extern char *poldiff_type_to_string(poldiff_t *diff, const void *type);
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_type_get_name(const poldiff_type_t *type);
+	extern const char *poldiff_type_get_name(const poldiff_type_t * type);
 
 /**
  *  Get the form of difference from a type diff.
@@ -92,7 +97,7 @@ extern const char *poldiff_type_get_name(const poldiff_type_t *type);
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_type_get_form(const void *type);
+	extern poldiff_form_e poldiff_type_get_form(const void *type);
 
 /**
  *  Get a vector of attributes added to the type.
@@ -105,7 +110,7 @@ extern poldiff_form_e poldiff_type_get_form(const void *type);
  *  were added the size of the returned vector will be 0.  The
  *  caller must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_type_get_added_attribs(const poldiff_type_t *type);
+	extern apol_vector_t *poldiff_type_get_added_attribs(const poldiff_type_t * type);
 
 /**
  *  Get a vector of attributes removed from the type.
@@ -118,7 +123,10 @@ extern apol_vector_t *poldiff_type_get_added_attribs(const poldiff_type_t *type)
  *  were removed the size of the returned vector will be 0.  The
  *  caller must not destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_type_get_removed_attribs(const poldiff_type_t *type);
+	extern apol_vector_t *poldiff_type_get_removed_attribs(const poldiff_type_t * type);
 
+#ifdef	__cplusplus
+}
+#endif
 
-#endif /* POLDIFF_TYPE_DIFF_H */
+#endif				       /* POLDIFF_TYPE_DIFF_H */

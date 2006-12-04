@@ -45,9 +45,11 @@ granted:
 \n    (1) source domain must have process transition permission for
         target domain,
     (2) source domain must have file execute permission for some
-        entrypoint type, and
+        entrypoint type,
     (3) target domain must have file entrypoint permission for the
-        same entrypoint type.
+        same entrypoint type, and,
+    (4) for policies version 15 or later, either a type_transition
+        rule or a setexec permission for the source domain.
 
 \nA reverse domain transition analysis will determine all (source)
 domains that can transition to a given (target) domain.  For a reverse

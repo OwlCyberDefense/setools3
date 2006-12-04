@@ -12,11 +12,11 @@
 #ifndef UTILGUI_H
 #define UTILGUI_H
 
-void get_dialog_response(GtkDialog *dialog, gint id, gpointer response);
-void show_wait_cursor(GtkWidget *widget);
-void clear_wait_cursor(GtkWidget *widget);
-void message_display(GtkWindow *parent, GtkMessageType msg_type, const char *msg);
-GString* get_filename_from_user(const char *title, const gchar *startfilename, GtkWindow *window, gboolean overwrite);
-gint get_user_response_to_message(GtkWindow *window, const char *message);
+void get_dialog_response(GtkDialog * dialog, gint id, gpointer response);
+void show_wait_cursor(GtkWidget * widget);
+void clear_wait_cursor(GtkWidget * widget);
+void message_display(GtkWindow * parent, GtkMessageType msg_type, const char *msg);
+GString *get_filename_from_user(const char *title, const gchar * startfilename, GtkWindow * window, gboolean overwrite);
+gint get_user_response_to_message(GtkWindow * window, const char *message);
 
 #endif

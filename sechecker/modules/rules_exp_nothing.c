@@ -20,7 +20,7 @@ static const char *const mod_name = "rules_exp_nothing";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int rules_exp_nothing_register(sechk_lib_t *lib)
+int rules_exp_nothing_register(sechk_lib_t * lib)
 {
 #if 0
 	sechk_module_t *mod = NULL;
@@ -41,20 +41,15 @@ int rules_exp_nothing_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
-	
+
 	/* assign the descriptions */
 	mod->brief_description = "rules that disappear during expansion";
-	mod->detailed_description = 
-"--------------------------------------------------------------------------------\n"
-"This module finds rules that disappear during expansion.  This can occur if a   \n"
-"rule uses an attribute with no types, or if all types are subtracted from a set.\n";
-	mod->opt_description = 
-"Module requirements:\n"
-"   none\n"
-"Module dependencies:\n"
-"   none\n"
-"Module options:\n"
-"   none\n";
+	mod->detailed_description =
+		"--------------------------------------------------------------------------------\n"
+		"This module finds rules that disappear during expansion.  This can occur if a   \n"
+		"rule uses an attribute with no types, or if all types are subtracted from a set.\n";
+	mod->opt_description =
+		"Module requirements:\n" "   none\n" "Module dependencies:\n" "   none\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_MED;
 	/* assign requirements */
 	mod->requirements = sechk_name_value_new("apol_policy_type", "source");
@@ -140,7 +135,7 @@ int rules_exp_nothing_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int rules_exp_nothing_init(sechk_module_t *mod, apol_policy_t *policy)
+int rules_exp_nothing_init(sechk_module_t * mod, apol_policy_t * policy)
 {
 #if 0
 	sechk_name_value_t *opt = NULL;
@@ -178,7 +173,8 @@ int rules_exp_nothing_init(sechk_module_t *mod, apol_policy_t *policy)
  * array != NULL : array contains list of used attributes 
  *                 if array is subset of empty then only empty attributes used */
 #if 0
-static bool_t rules_exp_nothing_process_list(ta_item_t *list, unsigned char flags, bool_t is_src, int **array, int *size, apol_policy_t *policy)
+static bool_t rules_exp_nothing_process_list(ta_item_t * list, unsigned char flags, bool_t is_src, int **array, int *size,
+					     apol_policy_t * policy)
 {
 	ta_item_t *item = NULL;
 	int retv, i, j, *tmp = NULL, tmp_sz = 0;
@@ -188,20 +184,20 @@ static bool_t rules_exp_nothing_process_list(ta_item_t *list, unsigned char flag
 	int *type_res, type_res_sz;
 
 	if ((is_src && (flags & AVFLAG_SRC_STAR)) || (!is_src && (flags & AVFLAG_TGT_STAR)))
-		return FALSE; 
+		return FALSE;
 
 	*array = type_res = NULL;
 	attr_used = attr_sub = type_used = type_sub = NULL;
 	*size = type_res_sz = 0;
 
-	attr_used = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
-	attr_sub = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
-	type_used = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
-	type_sub = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+	attr_used = (bool_t *) calloc(policy->num_types, sizeof(bool_t));
+	attr_sub = (bool_t *) calloc(policy->num_types, sizeof(bool_t));
+	type_used = (bool_t *) calloc(policy->num_types, sizeof(bool_t));
+	type_sub = (bool_t *) calloc(policy->num_types, sizeof(bool_t));
 
-	if (!attr_used || !attr_sub ||!type_used || !type_sub) {
+	if (!attr_used || !attr_sub || !type_used || !type_sub) {
 		status = FALSE;
-		goto exit;	
+		goto exit;
 	}
 
 	for (item = list; item; item = item->next) {
@@ -209,7 +205,7 @@ static bool_t rules_exp_nothing_process_list(ta_item_t *list, unsigned char flag
 		case IDX_TYPE:
 			type_used[item->idx] = TRUE;
 			break;
-		case (IDX_TYPE|IDX_SUBTRACT):
+		case (IDX_TYPE | IDX_SUBTRACT):
 			type_sub[item->idx] = TRUE;
 			break;
 		case IDX_ATTRIB:
@@ -223,7 +219,7 @@ static bool_t rules_exp_nothing_process_list(ta_item_t *list, unsigned char flag
 				type_used[tmp[j]] = TRUE;
 			}
 			break;
-		case (IDX_ATTRIB|IDX_SUBTRACT):
+		case (IDX_ATTRIB | IDX_SUBTRACT):
 			attr_sub[item->idx] = TRUE;
 			retv = get_attrib_types(item->idx, &tmp_sz, &tmp, policy);
 			if (retv) {
@@ -278,12 +274,12 @@ static bool_t rules_exp_nothing_process_list(ta_item_t *list, unsigned char flag
 		status = TRUE;
 		free(*array);
 		*array = NULL;
-		*size = 0;	
+		*size = 0;
 	} else {
 		status = FALSE;
 	}
 
-exit:
+      exit:
 	free(tmp);
 	free(attr_used);
 	free(attr_sub);
@@ -315,7 +311,7 @@ static bool_t is_subset(int *master, int msz, int *subset, int ssz)
 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. */
-int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
+int rules_exp_nothing_run(sechk_module_t * mod, apol_policy_t * policy)
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -324,13 +320,13 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	sechk_run_fn_t run_fn = NULL;
-	int (*get_list_fn)(sechk_module_t *mod, int **array, int *size);
+	int (*get_list_fn) (sechk_module_t * mod, int **array, int *size);
 	int *attrib_list = NULL, attrib_list_sz = 0, retv;
-	int *src_list_attribs = NULL, src_list_attribs_sz = 0; 
-	int *tgt_list_attribs = NULL, tgt_list_attribs_sz = 0; 
+	int *src_list_attribs = NULL, src_list_attribs_sz = 0;
+	int *tgt_list_attribs = NULL, tgt_list_attribs_sz = 0;
 	sechk_module_t *mod_ptr = NULL;
 	int i, j;
-	char buff[BUF_SZ];  
+	char buff[BUF_SZ];
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -345,7 +341,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (rules_exp_nothing_data_t*)mod->data;
+	datum = (rules_exp_nothing_data_t *) mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -356,14 +352,14 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 		fprintf(stderr, "Error: out of memory\n");
 		goto rules_exp_nothing_run_fail;
 	}
-	res->item_type = SECHK_TYPE_NONE; /* can be multiple types, ignored */
+	res->item_type = SECHK_TYPE_NONE;	/* can be multiple types, ignored */
 
 	run_fn = sechk_lib_get_module_function("attribs_wo_types", SECHK_MOD_FN_RUN, library);
 	if (!run_fn)
 		goto rules_exp_nothing_run_fail;
 	get_list_fn = sechk_lib_get_module_function("attribs_wo_types", "get_list", library);
 	if (!get_list_fn)
-		goto rules_exp_nothing_run_fail;	
+		goto rules_exp_nothing_run_fail;
 
 	retv = run_fn((mod_ptr = sechk_lib_get_module("attribs_wo_types", library)), policy);
 	if (retv < 0) {
@@ -379,7 +375,9 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* access rules */
 	for (j = 0; j < policy->num_av_access; j++) {
 		/* source type field */
-		if (rules_exp_nothing_process_list(policy->av_access[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->av_access[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, src_list_attribs, src_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -392,7 +390,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = src_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in source", policy->attribs[src_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in source",
+						 policy->attribs[src_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -411,7 +410,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule source");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule source");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -429,7 +428,9 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 		}
 
 		/* target type field */
-		if (rules_exp_nothing_process_list(policy->av_access[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->av_access[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				if (!item) {
 					item = sechk_item_new();
@@ -444,7 +445,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = tgt_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in target", policy->attribs[tgt_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in target",
+						 policy->attribs[tgt_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -463,7 +465,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule target");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -487,11 +489,11 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
 			proof->type = SECHK_TYPE_NONE;
-			snprintf(buff, sizeof(buff)-1, "rule uses %d attribute%swhich expand%sto no types", 
-				src_list_attribs_sz + tgt_list_attribs_sz, 
-				/* handle English plurality */
-				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?"s ":" "), 
-				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?" ":"s "));
+			snprintf(buff, sizeof(buff) - 1, "rule uses %d attribute%swhich expand%sto no types",
+				 src_list_attribs_sz + tgt_list_attribs_sz,
+				 /* handle English plurality */
+				 ((src_list_attribs_sz + tgt_list_attribs_sz) > 1 ? "s " : " "),
+				 ((src_list_attribs_sz + tgt_list_attribs_sz) > 1 ? " " : "s "));
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
@@ -522,7 +524,9 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* audit rules */
 	for (j = 0; j < policy->num_av_audit; j++) {
 		/* source type field */
-		if (rules_exp_nothing_process_list(policy->av_audit[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->av_audit[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, src_list_attribs, src_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -535,7 +539,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = src_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in source", policy->attribs[src_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in source",
+						 policy->attribs[src_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -554,7 +559,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule source");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule source");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -572,7 +577,9 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 		}
 
 		/* target type field */
-		if (rules_exp_nothing_process_list(policy->av_audit[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->av_audit[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				if (!item) {
 					item = sechk_item_new();
@@ -587,7 +594,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = tgt_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in target", policy->attribs[tgt_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in target",
+						 policy->attribs[tgt_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -606,7 +614,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule target");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -630,11 +638,11 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
 			proof->type = SECHK_TYPE_NONE;
-			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
-				src_list_attribs_sz + tgt_list_attribs_sz, 
-				/* handle English plurality */
-				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?"s ":" "), 
-				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?" ":"s "));
+			snprintf(buff, sizeof(buff) - 1, "rule uses attribute %d attribute%swhich expand%sto no types",
+				 src_list_attribs_sz + tgt_list_attribs_sz,
+				 /* handle English plurality */
+				 ((src_list_attribs_sz + tgt_list_attribs_sz) > 1 ? "s " : " "),
+				 ((src_list_attribs_sz + tgt_list_attribs_sz) > 1 ? " " : "s "));
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
@@ -661,10 +669,12 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 		tgt_list_attribs = NULL;
 		tgt_list_attribs_sz = 0;
 	}
-	
+
 	for (j = 0; j < policy->num_te_trans; j++) {
 		/* source type field */
-		if (rules_exp_nothing_process_list(policy->te_trans[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->te_trans[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, src_list_attribs, src_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -677,7 +687,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = src_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in source", policy->attribs[src_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in source",
+						 policy->attribs[src_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -696,7 +707,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule source");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule source");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -715,7 +726,9 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 		}
 
 		/* target type field */
-		if (rules_exp_nothing_process_list(policy->te_trans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->te_trans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				if (!item) {
 					item = sechk_item_new();
@@ -730,7 +743,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = tgt_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in target", policy->attribs[tgt_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in target",
+						 policy->attribs[tgt_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -749,7 +763,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule target");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -773,11 +787,11 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
 			proof->type = SECHK_TYPE_NONE;
-			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
-				src_list_attribs_sz + tgt_list_attribs_sz, 
-				/* handle English plurality */
-				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?"s ":" "), 
-				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?" ":"s "));
+			snprintf(buff, sizeof(buff) - 1, "rule uses attribute %d attribute%swhich expand%sto no types",
+				 src_list_attribs_sz + tgt_list_attribs_sz,
+				 /* handle English plurality */
+				 ((src_list_attribs_sz + tgt_list_attribs_sz) > 1 ? "s " : " "),
+				 ((src_list_attribs_sz + tgt_list_attribs_sz) > 1 ? " " : "s "));
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
@@ -809,10 +823,12 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 
 	/* role transitions (rules only have types in target) */
 	src_list_attribs = NULL;
-	src_list_attribs_sz = 0;		
+	src_list_attribs_sz = 0;
 	for (j = 0; j < policy->num_role_trans; j++) {
 		/* target type field */
-		if (rules_exp_nothing_process_list(policy->role_trans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->role_trans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -825,7 +841,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = tgt_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in target", policy->attribs[tgt_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in target",
+						 policy->attribs[tgt_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -844,7 +861,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule target");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -868,11 +885,10 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
 			proof->type = SECHK_TYPE_NONE;
-			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
-				src_list_attribs_sz + tgt_list_attribs_sz, 
-				/* handle English plurality */
-				(tgt_list_attribs_sz > 1?"s ":" "), 
-				(tgt_list_attribs_sz > 1?" ":"s "));
+			snprintf(buff, sizeof(buff) - 1, "rule uses attribute %d attribute%swhich expand%sto no types",
+				 src_list_attribs_sz + tgt_list_attribs_sz,
+				 /* handle English plurality */
+				 (tgt_list_attribs_sz > 1 ? "s " : " "), (tgt_list_attribs_sz > 1 ? " " : "s "));
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
@@ -897,7 +913,9 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 	/* range transition rules (MLS) */
 	for (j = 0; j < policy->num_rangetrans; j++) {
 		/* source type field */
-		if (rules_exp_nothing_process_list(policy->rangetrans[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->rangetrans[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, src_list_attribs, src_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -910,7 +928,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = src_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in source", policy->attribs[src_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in source",
+						 policy->attribs[src_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -929,7 +948,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule source");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule source");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -948,7 +967,9 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 		}
 
 		/* target type field */
-		if (rules_exp_nothing_process_list(policy->rangetrans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
+		if (rules_exp_nothing_process_list
+		    (policy->rangetrans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz,
+		     policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				if (!item) {
 					item = sechk_item_new();
@@ -963,7 +984,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 						goto rules_exp_nothing_run_fail;
 					proof->idx = tgt_list_attribs[i];
 					proof->type = POL_LIST_ATTRIB;
-					snprintf(buff, sizeof(buff)-1, "rule uses attribute %s in target", policy->attribs[tgt_list_attribs[i]].name);
+					snprintf(buff, sizeof(buff) - 1, "rule uses attribute %s in target",
+						 policy->attribs[tgt_list_attribs[i]].name);
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
@@ -982,7 +1004,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 					goto rules_exp_nothing_run_fail;
 				proof->idx = -1;
 				proof->type = SECHK_TYPE_NONE;
-				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				snprintf(buff, sizeof(buff) - 1, "all types subtracted from rule target");
 				proof->text = strdup(buff);
 				if (!proof->text)
 					goto rules_exp_nothing_run_fail;
@@ -1006,11 +1028,11 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
 			proof->type = SECHK_TYPE_NONE;
-			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
-				src_list_attribs_sz + tgt_list_attribs_sz, 
-				/* handle English plurality */
-				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?"s ":" "), 
-				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?" ":"s "));
+			snprintf(buff, sizeof(buff) - 1, "rule uses attribute %d attribute%swhich expand%sto no types",
+				 src_list_attribs_sz + tgt_list_attribs_sz,
+				 /* handle English plurality */
+				 ((src_list_attribs_sz + tgt_list_attribs_sz) > 1 ? "s " : " "),
+				 ((src_list_attribs_sz + tgt_list_attribs_sz) > 1 ? " " : "s "));
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
@@ -1044,7 +1066,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy)
 	return 0;
 
 #if 0
-rules_exp_nothing_run_fail:
+      rules_exp_nothing_run_fail:
 	free(attrib_list);
 	free(src_list_attribs);
 	free(tgt_list_attribs);
@@ -1070,7 +1092,7 @@ void rules_exp_nothing_data_free(void *data)
 		return;
 	}
 
-	datum = (rules_exp_nothing_data_t*)mod->data;
+	datum = (rules_exp_nothing_data_t *) mod->data;
 
 	free(mod->data);
 	mod->data = NULL;
@@ -1079,7 +1101,7 @@ void rules_exp_nothing_data_free(void *data)
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int rules_exp_nothing_print_output(sechk_module_t *mod, apol_policy_t *policy) 
+int rules_exp_nothing_print_output(sechk_module_t * mod, apol_policy_t * policy)
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -1097,7 +1119,7 @@ int rules_exp_nothing_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 
-	datum = (rules_exp_nothing_data_t*)mod->data;
+	datum = (rules_exp_nothing_data_t *) mod->data;
 	outformat = mod->outputformat;
 
 	if (!mod->result) {
@@ -1106,7 +1128,7 @@ int rules_exp_nothing_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	}
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i rules.\n", mod->result->num_items);
@@ -1114,7 +1136,7 @@ int rules_exp_nothing_print_output(sechk_module_t *mod, apol_policy_t *policy)
 			printf("\nRules by type:\n");
 			printf("\n");
 			printf("\tallow:\t\t%7d\t\ttype_transition:%7d\n", datum->num_allow, datum->num_typetrans);
-			printf("\tneverallow:\t%7d\t\ttype_change:\t%7d\n", datum->num_neverallow, datum->num_typechange); 
+			printf("\tneverallow:\t%7d\t\ttype_change:\t%7d\n", datum->num_neverallow, datum->num_typechange);
 			printf("\tauditallow:\t%7d\t\ttype_member:\t%7d\n", datum->num_auditallow, datum->num_typemember);
 			printf("\tdontaudit:\t%7d\t\trole_transition:%7d\n", datum->num_dontaudit, datum->num_roletrans);
 			printf("\trange_transition:%6d\n", datum->num_rangetrans);
@@ -1127,19 +1149,19 @@ int rules_exp_nothing_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		for (item = mod->result->items; item; item = item->next) {
 			switch (item->test_result) {
 			case POL_LIST_AV_ACC:
-				printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 0, policy)); 
+				printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 0, policy));
 				break;
 			case POL_LIST_AV_AU:
-				printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy)); 
+				printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy));
 				break;
 			case POL_LIST_TE_TRANS:
-				printf("%s\n", re_render_tt_rule(!is_binary_policy(policy), item->item_id, policy)); 
+				printf("%s\n", re_render_tt_rule(!is_binary_policy(policy), item->item_id, policy));
 				break;
 			case POL_LIST_ROLE_TRANS:
-				printf("%s\n", re_render_role_trans(!is_binary_policy(policy), item->item_id, policy)); 
+				printf("%s\n", re_render_role_trans(!is_binary_policy(policy), item->item_id, policy));
 				break;
 			case POL_LIST_RANGETRANS:
-				printf("%s\n", re_render_rangetrans(!is_binary_policy(policy), item->item_id, policy)); 
+				printf("%s\n", re_render_rangetrans(!is_binary_policy(policy), item->item_id, policy));
 				break;
 			default:
 				fprintf(stderr, "Error: invalid rule\n");
@@ -1161,19 +1183,19 @@ int rules_exp_nothing_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		for (item = mod->result->items; item; item = item->next) {
 			switch (item->test_result) {
 			case POL_LIST_AV_ACC:
-				printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 0, policy)); 
+				printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 0, policy));
 				break;
 			case POL_LIST_AV_AU:
-				printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy)); 
+				printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy));
 				break;
 			case POL_LIST_TE_TRANS:
-				printf("%s\n", re_render_tt_rule(!is_binary_policy(policy), item->item_id, policy)); 
+				printf("%s\n", re_render_tt_rule(!is_binary_policy(policy), item->item_id, policy));
 				break;
 			case POL_LIST_ROLE_TRANS:
-				printf("%s\n", re_render_role_trans(!is_binary_policy(policy), item->item_id, policy)); 
+				printf("%s\n", re_render_role_trans(!is_binary_policy(policy), item->item_id, policy));
 				break;
 			case POL_LIST_RANGETRANS:
-				printf("%s\n", re_render_rangetrans(!is_binary_policy(policy), item->item_id, policy)); 
+				printf("%s\n", re_render_rangetrans(!is_binary_policy(policy), item->item_id, policy));
 				break;
 			default:
 				fprintf(stderr, "Error: invalid rule\n");
@@ -1185,14 +1207,13 @@ int rules_exp_nothing_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		}
 		printf("\n");
 	}
-
 #endif
 	return 0;
 }
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *rules_exp_nothing_get_result(sechk_module_t *mod) 
+sechk_result_t *rules_exp_nothing_get_result(sechk_module_t * mod)
 {
 #if 0
 
@@ -1219,11 +1240,9 @@ rules_exp_nothing_data_t *rules_exp_nothing_data_new(void)
 	rules_exp_nothing_data_t *datum = NULL;
 
 	/* zero initialize all counters */
-	datum = (rules_exp_nothing_data_t*)calloc(1,sizeof(rules_exp_nothing_data_t));
+	datum = (rules_exp_nothing_data_t *) calloc(1, sizeof(rules_exp_nothing_data_t));
 
 	return datum;
 #endif
 	return NULL;
 }
-
- 

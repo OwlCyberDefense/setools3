@@ -17,40 +17,29 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 
+static void log_view_store_init(SEAuditLogViewStore * store);
+static void log_view_store_class_init(SEAuditLogViewStoreClass * class);
+static void log_view_store_tree_model_init(GtkTreeModelIface * iface);
+static void log_view_store_finalize(GObject * object);
 
-static void log_view_store_init(SEAuditLogViewStore *store);
-static void log_view_store_class_init(SEAuditLogViewStoreClass *class);
-static void log_view_store_tree_model_init(GtkTreeModelIface *iface);
-static void log_view_store_finalize(GObject *object);
-
-static GtkTreeModelFlags log_view_store_get_flags(GtkTreeModel *tree_model);
-static gint log_view_store_get_n_columns(GtkTreeModel *tree_model);
-static GType log_view_store_get_column_type(GtkTreeModel *tree_model, gint index);
-static gboolean log_view_store_get_iter(GtkTreeModel *tree_model, GtkTreeIter *iter,
-				   GtkTreePath *path);
-static GtkTreePath *log_view_store_get_path(GtkTreeModel *tree_model,
-				       GtkTreeIter *iter);
-static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter,
-				gint column, GValue *value);
-static gboolean log_view_store_iter_next(GtkTreeModel *tree_model, GtkTreeIter *iter);
-static gboolean log_view_store_iter_children(GtkTreeModel *tree_model, GtkTreeIter *iter,
-					GtkTreeIter *parent);
-static gboolean log_view_store_iter_has_child(GtkTreeModel *tree_model, GtkTreeIter *iter);
-static gint log_view_store_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter *iter);
-static gboolean log_view_store_iter_nth_child(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent,
-					 gint n);
-static gboolean log_view_store_iter_parent(GtkTreeModel *tree_model, GtkTreeIter *iter,
-				      GtkTreeIter *child);
+static GtkTreeModelFlags log_view_store_get_flags(GtkTreeModel * tree_model);
+static gint log_view_store_get_n_columns(GtkTreeModel * tree_model);
+static GType log_view_store_get_column_type(GtkTreeModel * tree_model, gint index);
+static gboolean log_view_store_get_iter(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreePath * path);
+static GtkTreePath *log_view_store_get_path(GtkTreeModel * tree_model, GtkTreeIter * iter);
+static void log_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter * iter, gint column, GValue * value);
+static gboolean log_view_store_iter_next(GtkTreeModel * tree_model, GtkTreeIter * iter);
+static gboolean log_view_store_iter_children(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreeIter * parent);
+static gboolean log_view_store_iter_has_child(GtkTreeModel * tree_model, GtkTreeIter * iter);
+static gint log_view_store_iter_n_children(GtkTreeModel * tree_model, GtkTreeIter * iter);
+static gboolean log_view_store_iter_nth_child(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreeIter * parent, gint n);
+static gboolean log_view_store_iter_parent(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreeIter * child);
 
 /* sorting */
-static void seaudit_log_view_store_sortable_init(GtkTreeSortableIface *iface);
-static gboolean seaudit_log_view_store_get_sort_column_id(GtkTreeSortable *sortable,
-						     gint *column_id,
-						     GtkSortType *order);
-static void seaudit_log_view_store_set_sort_column_id(GtkTreeSortable *sortable,
-						 gint sort_column_id,
-						 GtkSortType order);
-static gboolean seaudit_log_view_store_has_default_sort_func(GtkTreeSortable *sortable);
+static void seaudit_log_view_store_sortable_init(GtkTreeSortableIface * iface);
+static gboolean seaudit_log_view_store_get_sort_column_id(GtkTreeSortable * sortable, gint * column_id, GtkSortType * order);
+static void seaudit_log_view_store_set_sort_column_id(GtkTreeSortable * sortable, gint sort_column_id, GtkSortType order);
+static gboolean seaudit_log_view_store_has_default_sort_func(GtkTreeSortable * sortable);
 
 static GObjectClass *parent_class = NULL;
 
@@ -58,58 +47,52 @@ GType seaudit_log_view_store_get_type(void)
 {
 	static GType store_type = 0;
 
-	if (!store_type)
-	{
+	if (!store_type) {
 		static const GTypeInfo log_view_store_info = {
 			sizeof(SEAuditLogViewStoreClass),
 			NULL,
 			NULL,
-			(GClassInitFunc)log_view_store_class_init,
+			(GClassInitFunc) log_view_store_class_init,
 			NULL,
 			NULL,
-			sizeof (SEAuditLogViewStore),
+			sizeof(SEAuditLogViewStore),
 			0,
-			(GInstanceInitFunc)log_view_store_init,
+			(GInstanceInitFunc) log_view_store_init,
 		};
 
 		static const GInterfaceInfo tree_model_info = {
-			(GInterfaceInitFunc)log_view_store_tree_model_init,
+			(GInterfaceInitFunc) log_view_store_tree_model_init,
 			NULL,
 			NULL
 		};
 
 		static const GInterfaceInfo sortable_info = {
-			(GInterfaceInitFunc)seaudit_log_view_store_sortable_init,
+			(GInterfaceInitFunc) seaudit_log_view_store_sortable_init,
 			NULL,
 			NULL
 		};
 
-		store_type = g_type_register_static (G_TYPE_OBJECT, "SEAuditLogViewStore",
-						     &log_view_store_info, 0);
+		store_type = g_type_register_static(G_TYPE_OBJECT, "SEAuditLogViewStore", &log_view_store_info, 0);
 
-		g_type_add_interface_static(store_type,
-					    GTK_TYPE_TREE_MODEL,
-					    &tree_model_info);
+		g_type_add_interface_static(store_type, GTK_TYPE_TREE_MODEL, &tree_model_info);
 
-		g_type_add_interface_static (store_type,
-					     GTK_TYPE_TREE_SORTABLE,
-					     &sortable_info);
+		g_type_add_interface_static(store_type, GTK_TYPE_TREE_SORTABLE, &sortable_info);
 	}
 
 	return store_type;
 }
 
-static void log_view_store_class_init(SEAuditLogViewStoreClass *class)
+static void log_view_store_class_init(SEAuditLogViewStoreClass * class)
 {
 	GObjectClass *object_class;
 
-	parent_class = g_type_class_peek_parent (class);
-	object_class = (GObjectClass*) class;
+	parent_class = g_type_class_peek_parent(class);
+	object_class = (GObjectClass *) class;
 
 	object_class->finalize = log_view_store_finalize;
 }
 
-static void log_view_store_tree_model_init(GtkTreeModelIface *iface)
+static void log_view_store_tree_model_init(GtkTreeModelIface * iface)
 {
 	iface->get_flags = log_view_store_get_flags;
 	iface->get_n_columns = log_view_store_get_n_columns;
@@ -125,7 +108,7 @@ static void log_view_store_tree_model_init(GtkTreeModelIface *iface)
 	iface->iter_parent = log_view_store_iter_parent;
 }
 
-static void seaudit_log_view_store_sortable_init(GtkTreeSortableIface *iface)
+static void seaudit_log_view_store_sortable_init(GtkTreeSortableIface * iface)
 {
 	iface->get_sort_column_id = seaudit_log_view_store_get_sort_column_id;
 	iface->set_sort_column_id = seaudit_log_view_store_set_sort_column_id;
@@ -134,7 +117,7 @@ static void seaudit_log_view_store_sortable_init(GtkTreeSortableIface *iface)
 	iface->has_default_sort_func = seaudit_log_view_store_has_default_sort_func;
 }
 
-static void log_view_store_init(SEAuditLogViewStore *store)
+static void log_view_store_init(SEAuditLogViewStore * store)
 {
 	store->log_view = NULL;
 	store->stamp = g_random_int();
@@ -150,41 +133,40 @@ SEAuditLogViewStore *seaudit_log_view_store_create(void)
 	return store;
 }
 
-static void log_view_store_finalize(GObject *object)
+static void log_view_store_finalize(GObject * object)
 {
-	(*parent_class->finalize)(object);
+	(*parent_class->finalize) (object);
 }
 
-static GtkTreeModelFlags log_view_store_get_flags(GtkTreeModel *tree_model)
+static GtkTreeModelFlags log_view_store_get_flags(GtkTreeModel * tree_model)
 {
 	g_return_val_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(tree_model), 0);
 	return GTK_TREE_MODEL_ITERS_PERSIST | GTK_TREE_MODEL_LIST_ONLY;
 }
 
-static gint log_view_store_get_n_columns(GtkTreeModel *tree_model)
+static gint log_view_store_get_n_columns(GtkTreeModel * tree_model)
 {
 	return NUM_FIELDS;
 }
 
-static GType log_view_store_get_column_type(GtkTreeModel *tree_model, gint index)
+static GType log_view_store_get_column_type(GtkTreeModel * tree_model, gint index)
 {
 	g_return_val_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(tree_model), G_TYPE_INVALID);
 	/* everything is a string for now */
 	return G_TYPE_STRING;
 }
 
-static gboolean log_view_store_get_iter(GtkTreeModel *tree_model, GtkTreeIter *iter,
-					GtkTreePath *path)
+static gboolean log_view_store_get_iter(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreePath * path)
 {
 	gint i;
 	SEAuditLogViewStore *store;
 
-	store = (SEAuditLogViewStore*)tree_model;
+	store = (SEAuditLogViewStore *) tree_model;
 	if (store->log_view == NULL)
 		return FALSE;
 
 	g_return_val_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(tree_model), FALSE);
-	g_return_val_if_fail(gtk_tree_path_get_depth (path) > 0, FALSE);
+	g_return_val_if_fail(gtk_tree_path_get_depth(path) > 0, FALSE);
 
 	i = gtk_tree_path_get_indices(path)[0];
 	if (i >= store->log_view->num_fltr_msgs)
@@ -195,13 +177,12 @@ static gboolean log_view_store_get_iter(GtkTreeModel *tree_model, GtkTreeIter *i
 	return TRUE;
 }
 
-static GtkTreePath *log_view_store_get_path(GtkTreeModel *tree_model,
-					    GtkTreeIter *iter)
+static GtkTreePath *log_view_store_get_path(GtkTreeModel * tree_model, GtkTreeIter * iter)
 {
 	GtkTreePath *retval;
 	SEAuditLogViewStore *store;
 
-	store = (SEAuditLogViewStore*)tree_model;
+	store = (SEAuditLogViewStore *) tree_model;
 	g_return_val_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(tree_model), NULL);
 	g_return_val_if_fail(iter->stamp == store->stamp, NULL);
 
@@ -210,7 +191,7 @@ static GtkTreePath *log_view_store_get_path(GtkTreeModel *tree_model,
 	return retval;
 }
 
-static void set_utf8_return_value(GValue *value, const char *str)
+static void set_utf8_return_value(GValue * value, const char *str)
 {
 	if (str != NULL && g_utf8_validate(str, -1, NULL))
 		g_value_set_string(value, str);
@@ -219,8 +200,7 @@ static void set_utf8_return_value(GValue *value, const char *str)
 }
 
 #define DATE_STR_SIZE 256
-static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter,
-				     gint column, GValue *value)
+static void log_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter * iter, gint column, GValue * value)
 {
 	SEAuditLogViewStore *store;
 	int i, j, indx;
@@ -232,7 +212,7 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 	GString *string;
 	msg_t *msg;
 
-	store = (SEAuditLogViewStore*)tree_model;
+	store = (SEAuditLogViewStore *) tree_model;
 	if (!store->log_view)
 		return;
 	if (!store->log_view->my_log)
@@ -262,37 +242,36 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		return;
 	}
 	if (msg->msg_type == BOOLEAN_MSG) {
-	        if(AVC_MSG_FIELD == column) {
-	                set_utf8_return_value(value, "Boolean");
-	                return;
-		} else if (AVC_MISC_FIELD == column ){
+		if (AVC_MSG_FIELD == column) {
+			set_utf8_return_value(value, "Boolean");
+			return;
+		} else if (AVC_MISC_FIELD == column) {
 			boolean_msg = msg->msg_data.boolean_msg;
 			if (boolean_msg->num_bools > 0) {
 				string = g_string_new(audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[0]));
 				if (!string)
-				        return;
+					return;
 				g_string_append_printf(string, ":%d", boolean_msg->values[0]);
 				for (j = 1; j < boolean_msg->num_bools; j++) {
-				        cur_bool = audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[j]);
+					cur_bool = audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[j]);
 					string = g_string_append(string, ",  ");
 					if (!string)
-					      return;
+						return;
 					string = g_string_append(string, cur_bool);
 					if (!string)
-					        return;
+						return;
 
 					g_string_append_printf(string, ":%d", boolean_msg->values[j]);
 				}
 				set_utf8_return_value(value, string->str);
 				g_string_free(string, TRUE);
 			}
-		        return;
+			return;
 		} else {
-		        set_utf8_return_value(value, "");
-		        return;
+			set_utf8_return_value(value, "");
+			return;
 		}
-	}
-	else if (msg->msg_type == LOAD_POLICY_MSG) {
+	} else if (msg->msg_type == LOAD_POLICY_MSG) {
 		if (AVC_MSG_FIELD == column) {
 			set_utf8_return_value(value, "Load");
 			return;
@@ -359,7 +338,7 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		break;
 	case AVC_PERM_FIELD:
 		if (apol_vector_get_size(cur_msg->perms) > 0) {
-			string = g_string_new((char *) apol_vector_get_element(cur_msg->perms, 0));
+			string = g_string_new((char *)apol_vector_get_element(cur_msg->perms, 0));
 			if (!string)
 				return;
 			for (j = 1; j < apol_vector_get_size(cur_msg->perms); j++) {
@@ -399,10 +378,10 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		if (cur_msg->dev)
 			g_string_append_printf(string, "dev=%s ", cur_msg->dev);
 		if (cur_msg->ipaddr)
-		        g_string_append_printf(string, "ipaddr=%s ", cur_msg->ipaddr);
+			g_string_append_printf(string, "ipaddr=%s ", cur_msg->ipaddr);
 		if (cur_msg->laddr)
 			g_string_append_printf(string, "laddr=%s ", cur_msg->laddr);
-		if (cur_msg->lport!=0)
+		if (cur_msg->lport != 0)
 			g_string_append_printf(string, "lport=%d ", cur_msg->lport);
 		if (cur_msg->faddr)
 			g_string_append_printf(string, "faddr=%s ", cur_msg->faddr);
@@ -433,12 +412,12 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 	};
 }
 
-static gboolean log_view_store_iter_next(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gboolean log_view_store_iter_next(GtkTreeModel * tree_model, GtkTreeIter * iter)
 {
 	SEAuditLogViewStore *store;
 	int i;
 
-	store = (SEAuditLogViewStore*)tree_model;
+	store = (SEAuditLogViewStore *) tree_model;
 	if (store->log_view == NULL)
 		return FALSE;
 
@@ -452,16 +431,14 @@ static gboolean log_view_store_iter_next(GtkTreeModel *tree_model, GtkTreeIter *
 	return i < store->log_view->num_fltr_msgs;
 }
 
-
-static gboolean log_view_store_iter_children(GtkTreeModel *tree_model, GtkTreeIter *iter,
-					GtkTreeIter *parent)
+static gboolean log_view_store_iter_children(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreeIter * parent)
 {
 	SEAuditLogViewStore *store;
 
 	if (parent)
 		return FALSE;
 	g_return_val_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(tree_model), FALSE);
-	store = (SEAuditLogViewStore*)tree_model;
+	store = (SEAuditLogViewStore *) tree_model;
 	if (!store->log_view)
 		return FALSE;
 
@@ -474,17 +451,17 @@ static gboolean log_view_store_iter_children(GtkTreeModel *tree_model, GtkTreeIt
 	}
 }
 
-static gboolean log_view_store_iter_has_child(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gboolean log_view_store_iter_has_child(GtkTreeModel * tree_model, GtkTreeIter * iter)
 {
 	return FALSE;
 }
 
-static gint log_view_store_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter *iter)
+static gint log_view_store_iter_n_children(GtkTreeModel * tree_model, GtkTreeIter * iter)
 {
 	SEAuditLogViewStore *store;
 
 	g_return_val_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(tree_model), -1);
-	store = (SEAuditLogViewStore*)tree_model;
+	store = (SEAuditLogViewStore *) tree_model;
 	if (!store->log_view)
 		return 0;
 	if (iter == NULL)
@@ -493,10 +470,9 @@ static gint log_view_store_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter
 	return 0;
 }
 
-static gboolean log_view_store_iter_nth_child(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent,
-					 gint n)
+static gboolean log_view_store_iter_nth_child(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreeIter * parent, gint n)
 {
-	SEAuditLogViewStore *store = (SEAuditLogViewStore*)tree_model;
+	SEAuditLogViewStore *store = (SEAuditLogViewStore *) tree_model;
 	if (!store)
 		return FALSE;
 	if (!store->log_view)
@@ -514,13 +490,12 @@ static gboolean log_view_store_iter_nth_child(GtkTreeModel *tree_model, GtkTreeI
 	}
 }
 
-static gboolean log_view_store_iter_parent(GtkTreeModel *tree_model, GtkTreeIter *iter,
-					   GtkTreeIter *child)
+static gboolean log_view_store_iter_parent(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreeIter * child)
 {
 	return FALSE;
 }
 
-int seaudit_log_view_store_iter_to_idx(SEAuditLogViewStore *store, GtkTreeIter *iter)
+int seaudit_log_view_store_iter_to_idx(SEAuditLogViewStore * store, GtkTreeIter * iter)
 {
 	g_return_val_if_fail(iter->stamp == store->stamp, -1);
 	return GPOINTER_TO_INT(iter->user_data);
@@ -528,7 +503,7 @@ int seaudit_log_view_store_iter_to_idx(SEAuditLogViewStore *store, GtkTreeIter *
 
 /* sortable interface */
 
-static void seaudit_log_view_store_sort(SEAuditLogViewStore *store)
+static void seaudit_log_view_store_sort(SEAuditLogViewStore * store)
 {
 	gint *new_order = NULL;
 	GtkTreePath *path;
@@ -555,11 +530,9 @@ static void seaudit_log_view_store_sort(SEAuditLogViewStore *store)
 	free(new_order);
 }
 
-static gboolean seaudit_log_view_store_get_sort_column_id(GtkTreeSortable *sortable,
-						     gint *sort_column_id,
-						     GtkSortType *order)
+static gboolean seaudit_log_view_store_get_sort_column_id(GtkTreeSortable * sortable, gint * sort_column_id, GtkSortType * order)
 {
-	SEAuditLogViewStore *store = (SEAuditLogViewStore*)sortable;
+	SEAuditLogViewStore *store = (SEAuditLogViewStore *) sortable;
 
 	g_return_val_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(store), FALSE);
 
@@ -573,17 +546,14 @@ static gboolean seaudit_log_view_store_get_sort_column_id(GtkTreeSortable *sorta
 	return TRUE;
 }
 
-static void seaudit_log_view_store_set_sort_column_id(GtkTreeSortable *sortable,
-						 gint sort_column_id,
-						 GtkSortType order)
+static void seaudit_log_view_store_set_sort_column_id(GtkTreeSortable * sortable, gint sort_column_id, GtkSortType order)
 {
-	SEAuditLogViewStore *store = (SEAuditLogViewStore*)sortable;
+	SEAuditLogViewStore *store = (SEAuditLogViewStore *) sortable;
 
 	g_return_if_fail(SEAUDIT_IS_LOG_VIEW_STORE(store));
 	if (store->log_view == NULL)
 		return;
-	if ((store->sort_column_id == sort_column_id) &&
-	    (store->order == order)) {
+	if ((store->sort_column_id == sort_column_id) && (store->order == order)) {
 		/* just sort again */
 		gtk_tree_sortable_sort_column_changed(sortable);
 		seaudit_log_view_store_sort(store);
@@ -675,30 +645,29 @@ static void seaudit_log_view_store_set_sort_column_id(GtkTreeSortable *sortable,
 	seaudit_log_view_store_sort(store);
 }
 
-static gboolean seaudit_log_view_store_has_default_sort_func (GtkTreeSortable *sortable)
+static gboolean seaudit_log_view_store_has_default_sort_func(GtkTreeSortable * sortable)
 {
 	return FALSE;
 }
 
 static int int_compare(const void *aptr, const void *bptr)
 {
-        int *a = (int*)aptr;
-        int *b = (int*)bptr;
+	int *a = (int *)aptr;
+	int *b = (int *)bptr;
 
-        assert(a);
-        assert(b);
+	assert(a);
+	assert(b);
 
-        if (*a < *b)
-                return -1;
-        if (*a > *b)
-                return 1;
-        return 0;
+	if (*a < *b)
+		return -1;
+	if (*a > *b)
+		return 1;
+	return 0;
 }
 
-
-void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
+void seaudit_log_view_store_do_filter(SEAuditLogViewStore * store)
 {
-	int *deleted=NULL, num_deleted, num_kept, old_sz, new_sz, cnt=0, i;
+	int *deleted = NULL, num_deleted, num_kept, old_sz, new_sz, cnt = 0, i;
 	GtkTreePath *path;
 	GtkTreeIter iter;
 	gint sortId;
@@ -716,7 +685,7 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 	for (i = 0; i < num_deleted; i++) {
 		path = gtk_tree_path_new();
 		g_assert(deleted[i] - cnt >= 0);
-		iter.user_data = GINT_TO_POINTER(deleted[i]-cnt);
+		iter.user_data = GINT_TO_POINTER(deleted[i] - cnt);
 		path = log_view_store_get_path(GTK_TREE_MODEL(store), &iter);
 		gtk_tree_model_row_deleted(GTK_TREE_MODEL(store), path);
 		gtk_tree_path_free(path);
@@ -735,18 +704,18 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 		gtk_tree_model_row_inserted(GTK_TREE_MODEL(store), path, &iter);
 		gtk_tree_path_free(path);
 	}
-	if (deleted){
+	if (deleted) {
 		free(deleted);
 	}
 	if (sorted)
 		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), sortId, store->order);
 	else
 		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), DATE_FIELD, GTK_SORT_ASCENDING);
-	log_filtered_signal_emit(); /* To Do: need to pass store to signal emit */
+	log_filtered_signal_emit();    /* To Do: need to pass store to signal emit */
 	return;
 }
 
-void seaudit_log_view_store_close_log(SEAuditLogViewStore *store)
+void seaudit_log_view_store_close_log(SEAuditLogViewStore * store)
 {
 	GtkTreeIter iter;
 	GtkTreePath *path;
@@ -765,7 +734,7 @@ void seaudit_log_view_store_close_log(SEAuditLogViewStore *store)
 	audit_log_view_set_log(store->log_view, NULL);
 }
 
-int seaudit_log_view_store_open_log(SEAuditLogViewStore *store, audit_log_t *new_log)
+int seaudit_log_view_store_open_log(SEAuditLogViewStore * store, audit_log_t * new_log)
 {
 	GtkTreeIter iter;
 	GtkTreePath *path;
@@ -787,7 +756,7 @@ int seaudit_log_view_store_open_log(SEAuditLogViewStore *store, audit_log_t *new
 	return 0;
 }
 
-void seaudit_log_view_store_refresh(SEAuditLogViewStore *store)
+void seaudit_log_view_store_refresh(SEAuditLogViewStore * store)
 {
 	if (store == NULL || store->log_view == NULL)
 		return;

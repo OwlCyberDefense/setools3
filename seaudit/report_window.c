@@ -13,7 +13,7 @@
 #include <assert.h>
 
 /* Initializes the dialog widgets when it is displayed */
-static void initialize(report_window_t *report_window)
+static void initialize(report_window_t * report_window)
 {
 	GtkWidget *widget;
 
@@ -91,7 +91,7 @@ static void initialize(report_window_t *report_window)
 	}
 }
 
-static void hide_window(report_window_t *report_window)
+static void hide_window(report_window_t * report_window)
 {
 	if (report_window->window) {
 		gtk_widget_destroy(GTK_WIDGET(report_window->window));
@@ -99,28 +99,27 @@ static void hide_window(report_window_t *report_window)
 	}
 }
 
-void on_cancel_activate(GtkButton *button, gpointer user_data)
+void on_cancel_activate(GtkButton * button, gpointer user_data)
 {
-	report_window_t *report_window = (report_window_t*)user_data;
+	report_window_t *report_window = (report_window_t *) user_data;
 	hide_window(report_window);
 }
 
-static void on_destroy(GtkWidget *widget, GdkEvent *event, report_window_t *report_window)
+static void on_destroy(GtkWidget * widget, GdkEvent * event, report_window_t * report_window)
 {
 	hide_window(report_window);
 }
 
-static void on_change_log_radio_button(GtkToggleButton *button, gpointer user_data)
+static void on_change_log_radio_button(GtkToggleButton * button, gpointer user_data)
 {
-	report_window_t *report_window = (report_window_t*)user_data;
+	report_window_t *report_window = (report_window_t *) user_data;
 	GtkWidget *widget;
 
 	if (strcmp("radiobutton_entire_log", gtk_widget_get_name(GTK_WIDGET(button))) == 0) {
 		report_window->use_entire_log = TRUE;
 		widget = glade_xml_get_widget(report_window->xml, "check_button_malformed_msgs");
 		gtk_widget_set_sensitive(widget, TRUE);
-	}
-	else if (strcmp("radiobutton_current_view", gtk_widget_get_name(GTK_WIDGET(button))) == 0) {
+	} else if (strcmp("radiobutton_current_view", gtk_widget_get_name(GTK_WIDGET(button))) == 0) {
 		report_window->use_entire_log = FALSE;
 		widget = glade_xml_get_widget(report_window->xml, "check_button_malformed_msgs");
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), FALSE);
@@ -128,9 +127,9 @@ static void on_change_log_radio_button(GtkToggleButton *button, gpointer user_da
 	}
 }
 
-static void on_change_format_radio_button(GtkToggleButton *button, gpointer user_data)
+static void on_change_format_radio_button(GtkToggleButton * button, gpointer user_data)
 {
-	report_window_t *report_window = (report_window_t*)user_data;
+	report_window_t *report_window = (report_window_t *) user_data;
 	GtkWidget *widget;
 
 	if (strcmp("radiobutton_plaintext_format", gtk_widget_get_name(GTK_WIDGET(button))) == 0) {
@@ -152,9 +151,9 @@ static void on_change_format_radio_button(GtkToggleButton *button, gpointer user
 	}
 }
 
-static void on_click_stylesheet_checkbutton(GtkToggleButton *button, gpointer user_data)
+static void on_click_stylesheet_checkbutton(GtkToggleButton * button, gpointer user_data)
 {
-	report_window_t *report_window = (report_window_t*)user_data;
+	report_window_t *report_window = (report_window_t *) user_data;
 	GtkWidget *widget;
 
 	if (gtk_toggle_button_get_active(button)) {
@@ -172,9 +171,9 @@ static void on_click_stylesheet_checkbutton(GtkToggleButton *button, gpointer us
 	}
 }
 
-static void on_create_report_button_clicked(GtkButton *button, gpointer user_data)
+static void on_create_report_button_clicked(GtkButton * button, gpointer user_data)
 {
-	report_window_t *report_window = (report_window_t*)user_data;
+	report_window_t *report_window = (report_window_t *) user_data;
 	GString *filename = NULL;
 	GString *msg;
 	seaudit_filtered_view_t *filtered_view;
@@ -243,9 +242,9 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 	report_window->report_info->log = NULL;
 }
 
-static void on_incl_malformed_check_button_toggled(GtkToggleButton *button, gpointer user_data)
+static void on_incl_malformed_check_button_toggled(GtkToggleButton * button, gpointer user_data)
 {
-	report_window_t *report_window = (report_window_t*)user_data;
+	report_window_t *report_window = (report_window_t *) user_data;
 
 	if (gtk_toggle_button_get_active(button)) {
 		report_window->report_info->malformed = TRUE;
@@ -254,9 +253,9 @@ static void on_incl_malformed_check_button_toggled(GtkToggleButton *button, gpoi
 	}
 }
 
-static void on_browse_report_config_button_clicked(GtkButton *button, gpointer user_data)
+static void on_browse_report_config_button_clicked(GtkButton * button, gpointer user_data)
 {
-	report_window_t *report_window = (report_window_t*)user_data;
+	report_window_t *report_window = (report_window_t *) user_data;
 	GtkEntry *entry;
 	GtkWidget *file_selector;
 	gint response;
@@ -271,8 +270,7 @@ static void on_browse_report_config_button_clicked(GtkButton *button, gpointer u
 	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
 	if (report_window->report_info->configPath != NULL)
 		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), gtk_entry_get_text(GTK_ENTRY(entry)));
-	g_signal_connect(GTK_OBJECT(file_selector), "response",
-			 G_CALLBACK(get_dialog_response), &response);
+	g_signal_connect(GTK_OBJECT(file_selector), "response", G_CALLBACK(get_dialog_response), &response);
 	while (1) {
 		gtk_dialog_run(GTK_DIALOG(file_selector));
 		if (response != GTK_RESPONSE_OK) {
@@ -289,9 +287,9 @@ static void on_browse_report_config_button_clicked(GtkButton *button, gpointer u
 	gtk_widget_destroy(file_selector);
 }
 
-static void on_browse_report_css_button_clicked(GtkButton *button, gpointer user_data)
+static void on_browse_report_css_button_clicked(GtkButton * button, gpointer user_data)
 {
-	report_window_t *report_window = (report_window_t*)user_data;
+	report_window_t *report_window = (report_window_t *) user_data;
 	GtkEntry *entry;
 	GtkWidget *file_selector;
 	gint response;
@@ -305,8 +303,7 @@ static void on_browse_report_css_button_clicked(GtkButton *button, gpointer user
 	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
 	if (report_window->report_info->stylesheet_file != NULL)
 		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), gtk_entry_get_text(GTK_ENTRY(entry)));
-	g_signal_connect(GTK_OBJECT(file_selector), "response",
-			 G_CALLBACK(get_dialog_response), &response);
+	g_signal_connect(GTK_OBJECT(file_selector), "response", G_CALLBACK(get_dialog_response), &response);
 	while (1) {
 		gtk_dialog_run(GTK_DIALOG(file_selector));
 		if (response != GTK_RESPONSE_OK) {
@@ -325,11 +322,11 @@ static void on_browse_report_css_button_clicked(GtkButton *button, gpointer user
 }
 
 /* All arguments are optional; NULL can be passed instead. */
-report_window_t *report_window_create(seaudit_window_t *parent, seaudit_conf_t *seaudit_conf, const char *title)
+report_window_t *report_window_create(seaudit_window_t * parent, seaudit_conf_t * seaudit_conf, const char *title)
 {
 	report_window_t *report_window = NULL;
 
-	report_window = (report_window_t *)malloc(sizeof(report_window_t));
+	report_window = (report_window_t *) malloc(sizeof(report_window_t));
 	if (report_window == NULL) {
 		fprintf(stderr, "Out of memory.");
 		return NULL;
@@ -353,20 +350,20 @@ report_window_t *report_window_create(seaudit_window_t *parent, seaudit_conf_t *
 	/* Set report default config and css file paths from the seaudit_conf file. */
 	if (seaudit_conf != NULL) {
 		if (seaudit_report_add_stylesheet_path(seaudit_conf->default_seaudit_report_css_file,
-				report_window->report_info) != 0)
-					goto err;
+						       report_window->report_info) != 0)
+			goto err;
 		if (seaudit_report_add_configFile_path(seaudit_conf->default_seaudit_report_config_file,
-				report_window->report_info) != 0)
-					goto err;
+						       report_window->report_info) != 0)
+			goto err;
 	}
 
 	return report_window;
-err:
+      err:
 	report_window_destroy(report_window);
 	return NULL;
 }
 
-void report_window_destroy(report_window_t *report_window)
+void report_window_destroy(report_window_t * report_window)
 {
 	if (report_window == NULL)
 		return;
@@ -385,7 +382,7 @@ void report_window_destroy(report_window_t *report_window)
 	free(report_window);
 }
 
-void report_window_display(report_window_t *report_window)
+void report_window_display(report_window_t * report_window)
 {
 	GladeXML *xml;
 	GtkWindow *window;
@@ -401,7 +398,7 @@ void report_window_display(report_window_t *report_window)
 		return;
 	}
 	dir = apol_file_find("report_window.glade");
-	if (!dir){
+	if (!dir) {
 		fprintf(stderr, "Error: Could not find report_window.glade!\n");
 		return;
 	}
@@ -422,20 +419,15 @@ void report_window_display(report_window_t *report_window)
 	report_window->window = window;
 	report_window->xml = xml;
 
-	g_signal_connect(G_OBJECT(window), "delete_event",
-			 G_CALLBACK(on_destroy), report_window);
+	g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(on_destroy), report_window);
 
-	glade_xml_signal_connect_data(xml, "on_radiobutton_log_changed",
-				      G_CALLBACK(on_change_log_radio_button),
-				      report_window);
+	glade_xml_signal_connect_data(xml, "on_radiobutton_log_changed", G_CALLBACK(on_change_log_radio_button), report_window);
 
 	glade_xml_signal_connect_data(xml, "on_radiobutton_format_changed",
-				      G_CALLBACK(on_change_format_radio_button),
-				      report_window);
+				      G_CALLBACK(on_change_format_radio_button), report_window);
 
 	glade_xml_signal_connect_data(xml, "on_checkbutton_use_stylesheet_clicked",
-				      G_CALLBACK(on_click_stylesheet_checkbutton),
-				      report_window);
+				      G_CALLBACK(on_click_stylesheet_checkbutton), report_window);
 
 	widget = glade_xml_get_widget(xml, "browse_config_button");
 	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_browse_report_config_button_clicked), report_window);
@@ -445,7 +437,6 @@ void report_window_display(report_window_t *report_window)
 	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_create_report_button_clicked), report_window);
 	widget = glade_xml_get_widget(xml, "cancel_button");
 	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_cancel_activate), report_window);
-
 
 	widget = glade_xml_get_widget(xml, "check_button_malformed_msgs");
 	gtk_signal_connect(GTK_OBJECT(widget), "toggled", GTK_SIGNAL_FUNC(on_incl_malformed_check_button_toggled), report_window);

@@ -33,13 +33,13 @@
 static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_datum_t datum, void *ptr)
 {
 	type_datum_t *type = NULL, *orig_type;
-	policydb_t *db = (policydb_t *)ptr;
+	policydb_t *db = (policydb_t *) ptr;
 	ebitmap_node_t *node = NULL;
 	uint32_t bit = 0;
 
 	type = (type_datum_t *) datum;
 	/* if this is an attribute go through its list
-	   of types and put in reverse mappings */
+	 * of types and put in reverse mappings */
 	if (type->flavor == TYPE_ATTRIB) {
 		ebitmap_for_each_bit(&type->types, node, bit) {
 			if (ebitmap_node_get_bit(node, bit)) {
@@ -53,14 +53,14 @@ static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_dat
 	return 0;
 }
 
-int qpol_expand_module(qpol_policy_t *base)
+int qpol_expand_module(qpol_policy_t * base)
 {
 	unsigned int i;
 	uint32_t *typemap = NULL;
 	policydb_t *db;
 	int rt;
 
-	INFO(base, "%s", "Expanding policy.");
+	INFO(base, "%s", "Expanding policy. (Step 3 of 5)");
 	if (base == NULL) {
 		ERR(base, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -79,13 +79,13 @@ int qpol_expand_module(qpol_policy_t *base)
 	}
 
 	/* Build the typemap such that we can expand into the same policy */
-	typemap = (uint32_t *)calloc(db->p_types.nprim, sizeof(uint32_t));
+	typemap = (uint32_t *) calloc(db->p_types.nprim, sizeof(uint32_t));
 	if (typemap == NULL) {
 		ERR(base, "%s", strerror(ENOMEM));
 		goto err;
 	}
 	for (i = 0; i < db->p_types.nprim; i++) {
-		typemap[i] = i+1;
+		typemap[i] = i + 1;
 	}
 
 	if (expand_module_avrules(base->sh, db, db, typemap, 0, 1) < 0) {
@@ -93,10 +93,10 @@ int qpol_expand_module(qpol_policy_t *base)
 	}
 	rt = 0;
 
-exit:
+      exit:
 	free(typemap);
 	return rt;
-err:
+      err:
 	rt = -1;
 	errno = EIO;
 	goto exit;

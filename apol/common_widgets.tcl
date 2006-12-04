@@ -409,64 +409,35 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}}
     list [llength $rules] $num_enabled $num_disabled
 }
 
-# Append a list of avrules, as specified by their unique ids, to a
-# search results box.  If the loaded policy is a source policy,
-# instead show all matching syntactic rules, sorted by line number.
-# If showing syntactic rules, only show those whose permissions match
-# a given list, if that list is non-empty.  Otherwise if the policy is
-# binary then sort by string representation.  Returns the number of
-# rules that were appended, number of enabled rules, and number of
-# disabled rules.
-proc Apol_Widget::appendSearchResultSynAVRules {path indent rule_list perm_list {varname {}}} {
+# Append a list of syntactic avrules, as specified by their unique
+# ids, to a search results box.  The rules will be sorted by line
+# number.  Returns the number of rules that were appended, number of
+# enabled rules, and number of disabled rules.
+proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set is_binary [ApolTop::is_binary_policy]
-    set rules {}
     if {$varname != {}} {
         upvar $varname progressvar
-    }
-    if {$is_binary} {
-        if {$varname != {}} {
-            set progressvar "Sorting [llength $rule_list] semantic av rule(s)..."
-            update idletasks
-        }
-        set rules [lsort -command apol_RenderAVRuleComp [lsort -unique $rule_list]]
-        if {$varname != {}} {
-            set progressvar "Rendering [llength $rules] semantic av rule(s)..."
-            update idletasks
-        }
-    } else {
-        if {$varname != {}} {
-            set progressvar "Converting [llength $rule_list] semantic av rule(s)..."
-            update idletasks
-        }
-        set rules [apol_GetSynAVRules $rule_list $perm_list]
-        if {$varname != {}} {
-            set progressvar "Rendering [llength $rules] syntactic av rule(s)..."
-            update idletasks
-        }
+        set progressvar "Rendering [llength $rules] syntactic av rule(s)..."
+        update idletasks
     }
 
     set num_enabled 0
     set num_disabled 0
     foreach r $rules {
         $path.tb insert end [string repeat " " $indent]
-        if {$is_binary} {
-            foreach {rule_type source_set target_set class perms cond_info} [apol_RenderAVRule $r] {break}
-            set text [list "$rule_type $source_set $target_set" {}]
-        } else {
-            foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderSynAVRule $r] {break}
-            set text [list \[ {} \
-                          $line_num linenum \
-                          "\] " {} \
-                          $rule_type {}]
-            set source_set [_render_typeset $source_set]
-            set target_set [_render_typeset $target_set]
-            if {[llength $class] > 1} {
-                set class "\{$class\}"
-            }
-            lappend text " $source_set $target_set" {}
+        foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderSynAVRule $r] {break}
+        set text [list \[ {} \
+                      $line_num linenum \
+                      "\] " {} \
+                      $rule_type {}]
+        set source_set [_render_typeset $source_set]
+        set target_set [_render_typeset $target_set]
+        if {[llength $class] > 1} {
+            set class "\{$class\}"
         }
+        lappend text " $source_set $target_set" {}
         if {[llength $perms] > 1} {
             set perms "\{$perms\}"
         }
@@ -495,7 +466,6 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}}
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set is_binary [ApolTop::is_binary_policy]
-    set rules {}
     if {$varname != {}} {
         upvar $varname progressvar
         set progressvar "Sorting [llength $rule_list] semantic type rule(s)..."
@@ -530,62 +500,34 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}}
     list [llength $rules] $num_enabled $num_disabled
 }
 
-# Append a list of terules, as specified by their unique ids, to a
-# search results box.  If the loaded policy is a source policy,
-# instead show all matching syntactic rules, sorted by line number.
-# Otherwise sort by string representation.  Returns the number of
-# rules that were appended, number of enabled rules, and number of
-# disabled rules.
-proc Apol_Widget::appendSearchResultSynTERules {path indent rule_list {varname {}}} {
+# Append a list of syntactic terules, as specified by their unique
+# ids, to a search results box.  The rules will be sorted by line
+# number.  Returns the number of rules that were appended, number of
+# enabled rules, and number of disabled rules.
+proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set is_binary [ApolTop::is_binary_policy]
-    set rules {}
     if {$varname != {}} {
         upvar $varname progressvar
+        set progressvar "Rendering [llength $rules] syntactic type rule(s)..."
+        update idletasks
     }
-    if {$is_binary} {
-        if {$varname != {}} {
-            set progressvar "Sorting [llength $rule_list] semantic type rule(s)..."
-            update idletasks
-        }
-        set rules [lsort -command apol_RenderTERuleComp [lsort -unique $rule_list]]
-        if {$varname != {}} {
-            set progressvar "Rendering [llength $rules] semantic type rule(s)..."
-            update idletasks
-        }
-    } else {
-        if {$varname != {}} {
-            set progressvar "Converting [llength $rule_list] semantic type rule(s)..."
-            update idletasks
-        }
-        set rules [apol_GetSynTERules $rule_list]
-        if {$varname != {}} {
-            set progressvar "Rendering [llength $rules] syntactic type rule(s)..."
-            update idletasks
-        }
-    }
-
     set num_enabled 0
     set num_disabled 0
     foreach r $rules {
         $path.tb insert end [string repeat " " $indent]
-        if {$is_binary} {
-            foreach {rule_type source_set target_set class default_type cond_info} [apol_RenderTERule $r] {break}
-            set text [list "$rule_type $source_set $target_set" {}]
-        } else {
-            foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderSynTERule $r] {break}
-            set text [list \[ {} \
+        foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderSynTERule $r] {break}
+        set text [list \[ {} \
                       $line_num linenum \
                       "\] " {} \
                       $rule_type {}]
-            set source_set [_render_typeset $source_set]
-            set target_set [_render_typeset $target_set]
-            if {[llength $class] > 1} {
-                set target_set "\{$class\}"
-            }
-            lappend text " $source_set $target_set" {}
+        set source_set [_render_typeset $source_set]
+        set target_set [_render_typeset $target_set]
+        if {[llength $class] > 1} {
+            set class "\{$class\}"
         }
+        lappend text " $source_set $target_set" {}
         lappend text " : $class $default_type;" {}
         eval $path.tb insert end $text
         if {$cond_info != {}} {

@@ -15,7 +15,7 @@ static sort_action_node_t *current_list = NULL;
 static int reverse_sort = 0;
 static audit_log_t *audit_log = NULL;
 
-void sort_action_list_destroy(sort_action_node_t *cl)
+void sort_action_list_destroy(sort_action_node_t * cl)
 {
 	sort_action_node_t *cur, *next;
 
@@ -27,7 +27,7 @@ void sort_action_list_destroy(sort_action_node_t *cl)
 	}
 }
 
-int audit_log_view_append_sort(audit_log_view_t *view, sort_action_node_t *node)
+int audit_log_view_append_sort(audit_log_view_t * view, sort_action_node_t * node)
 {
 	if (!view->sort_actions) {
 		view->sort_actions = node;
@@ -40,7 +40,7 @@ int audit_log_view_append_sort(audit_log_view_t *view, sort_action_node_t *node)
 	return 0;
 }
 
-int audit_log_view_remove_sort(audit_log_view_t *view, sort_action_node_t *node)
+int audit_log_view_remove_sort(audit_log_view_t * view, sort_action_node_t * node)
 {
 	sort_action_node_t *cur;
 
@@ -66,7 +66,8 @@ int audit_log_view_remove_sort(audit_log_view_t *view, sort_action_node_t *node)
 	return 1;
 }
 
-typedef struct sort_data {
+typedef struct sort_data
+{
 	int offset;
 	int msg_indx;
 	msg_t *msg;
@@ -75,7 +76,7 @@ typedef struct sort_data {
 /*
  * Sort an audit log returning the new positions of the items.
  */
-int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
+int audit_log_view_sort(audit_log_view_t * view, int **new_order, int reverse)
 {
 	int i, rc, sort_len, len, indx;
 	sort_data_t *sort_data;
@@ -89,7 +90,7 @@ int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
 		*new_order = NULL;
 		return 0;
 	}
-	sort_data = (sort_data_t*)malloc(sizeof(sort_data_t) * view->num_fltr_msgs);
+	sort_data = (sort_data_t *) malloc(sizeof(sort_data_t) * view->num_fltr_msgs);
 	if (!sort_data)
 		return -1;
 	memset(sort_data, 0, sizeof(sort_data_t) * view->num_fltr_msgs);
@@ -119,7 +120,7 @@ int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
 			sort_data[sort_len].offset = i;
 			indx = view->fltr_msgs[i];
 			sort_data[sort_len].msg_indx = indx;
-			sort_data[sort_len].msg = apol_vector_get_element(view->my_log->msg_list,indx);
+			sort_data[sort_len].msg = apol_vector_get_element(view->my_log->msg_list, indx);
 			sort_len++;
 		}
 	}
@@ -130,13 +131,13 @@ int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
 
 	current_list = view->sort_actions;
 	reverse_sort = reverse;
-	audit_log = view->my_log; /* static */
+	audit_log = view->my_log;      /* static */
 	qsort(sort_data, sort_len, sizeof(sort_data_t), &msg_compare);
 	for (i = 0; i < view->num_fltr_msgs; i++) {
 		view->fltr_msgs[i] = sort_data[i].msg_indx;
 	}
 
-	*new_order = (int*)malloc(sizeof(int) * view->num_fltr_msgs);
+	*new_order = (int *)malloc(sizeof(int) * view->num_fltr_msgs);
 	if (!*new_order) {
 		rc = -1;
 		goto out;
@@ -147,7 +148,7 @@ int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
 	}
 
 	rc = 0;
-out:
+      out:
 	free(sort_data);
 	return rc;
 }
@@ -159,8 +160,8 @@ int msg_compare(const void *a, const void *b)
 	int ret = 0;
 	assert(current_list);
 
-	msg_a = ((sort_data_t*)a)->msg;
-	msg_b = ((sort_data_t*)b)->msg;
+	msg_a = ((sort_data_t *) a)->msg;
+	msg_b = ((sort_data_t *) b)->msg;
 
 	for (cur = current_list; cur != NULL; cur = cur->next) {
 		ret = cur->sort(msg_a, msg_b);
@@ -176,25 +177,25 @@ int msg_compare(const void *a, const void *b)
 	return ret;
 }
 
-static int msg_field_compare(const msg_t *a, const msg_t *b)
+static int msg_field_compare(const msg_t * a, const msg_t * b)
 {
-  /* if message types in auditlog.h are in alpha order then this function doesn't need to change*/
+	/* if message types in auditlog.h are in alpha order then this function doesn't need to change */
 
 	if (a->msg_type < b->msg_type)
-		return -1; /* a=avc msg, b=load policy msg OR a=bool, b=avc|load*/
+		return -1;	       /* a=avc msg, b=load policy msg OR a=bool, b=avc|load */
 	if (a->msg_type == b->msg_type) {
 		if (a->msg_type != AVC_MSG)
-			return 0;  /* a = b and not AVC*/
+			return 0;      /* a = b and not AVC */
 		if (a->msg_data.avc_msg->msg < b->msg_data.avc_msg->msg)
-			return -1; /* a=denied, b=granted */
+			return -1;     /* a=denied, b=granted */
 		if (a->msg_data.avc_msg->msg > b->msg_data.avc_msg->msg)
-			return 1;  /* a=granted, b=denied */
-		return 0; /* a->msg = b->msg*/
+			return 1;      /* a=granted, b=denied */
+		return 0;	       /* a->msg = b->msg */
 	}
-	return 1; /* a=load policy msg, b=avc|bool  msg OR a=avc, b=boolean */
+	return 1;		       /* a=load policy msg, b=avc|bool  msg OR a=avc, b=boolean */
 }
 
-static int perm_compare(const msg_t *a, const msg_t *b)
+static int perm_compare(const msg_t * a, const msg_t * b)
 {
 	if (a->msg_type < b->msg_type)
 		return -1;
@@ -206,7 +207,7 @@ static int perm_compare(const msg_t *a, const msg_t *b)
 	return 1;
 }
 
-static int date_compare(const msg_t *a, const msg_t *b)
+static int date_compare(const msg_t * a, const msg_t * b)
 {
 	return date_time_compare(a->date_stamp, b->date_stamp);
 }
@@ -252,175 +253,175 @@ int date_time_compare(struct tm *t1, struct tm *t2)
 	return 0;
 }
 
-static int host_field_compare(const msg_t *a, const msg_t *b)
+static int host_field_compare(const msg_t * a, const msg_t * b)
 {
-        int i_a, i_b;
-        const char *sa, *sb;
+	int i_a, i_b;
+	const char *sa, *sb;
 
-        i_a = a->host;
-        i_b = b->host;
+	i_a = a->host;
+	i_b = b->host;
 
-        if (i_a < 0)
-                return -1;
-        if (i_b < 0)
-                return 1;
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
 
-        sa = audit_log_get_host(audit_log, i_a);
-        sb = audit_log_get_host(audit_log, i_b);
+	sa = audit_log_get_host(audit_log, i_a);
+	sb = audit_log_get_host(audit_log, i_b);
 
-        assert(sa && sb);
+	assert(sa && sb);
 
-        return strcmp(sa, sb);
+	return strcmp(sa, sb);
 }
 
-static int src_user_compare(const msg_t *a, const msg_t *b)
+static int src_user_compare(const msg_t * a, const msg_t * b)
 {
-        int i_a, i_b;
-        const char *sa, *sb;
+	int i_a, i_b;
+	const char *sa, *sb;
 
-        i_a = msg_get_avc_data(a)->src_user;
-        i_b = msg_get_avc_data(b)->src_user;
+	i_a = msg_get_avc_data(a)->src_user;
+	i_b = msg_get_avc_data(b)->src_user;
 
-        if (i_a < 0)
-                return -1;
-        if (i_b < 0)
-                return 1;
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
 
-        sa = audit_log_get_user(audit_log, i_a);
-        sb = audit_log_get_user(audit_log, i_b);
+	sa = audit_log_get_user(audit_log, i_a);
+	sb = audit_log_get_user(audit_log, i_b);
 
-        assert(sa && sb);
+	assert(sa && sb);
 
-        return strcmp(sa, sb);
+	return strcmp(sa, sb);
 }
 
-static int tgt_user_compare(const msg_t *a, const msg_t *b)
+static int tgt_user_compare(const msg_t * a, const msg_t * b)
 {
-        int i_a, i_b;
-        const char *sa, *sb;
+	int i_a, i_b;
+	const char *sa, *sb;
 
-        i_a = msg_get_avc_data(a)->tgt_user;
-        i_b = msg_get_avc_data(b)->tgt_user;
+	i_a = msg_get_avc_data(a)->tgt_user;
+	i_b = msg_get_avc_data(b)->tgt_user;
 
-        if (i_a < 0)
-                return -1;
-        if (i_b < 0)
-                return 1;
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
 
-        sa = audit_log_get_user(audit_log, i_a);
-        sb = audit_log_get_user(audit_log, i_b);
+	sa = audit_log_get_user(audit_log, i_a);
+	sb = audit_log_get_user(audit_log, i_b);
 
-        assert(sa && sb);
+	assert(sa && sb);
 
-        return strcmp(sa, sb);
+	return strcmp(sa, sb);
 }
 
-static int src_role_compare(const msg_t *a, const msg_t *b)
+static int src_role_compare(const msg_t * a, const msg_t * b)
 {
-        int i_a, i_b;
-        const char *sa, *sb;
+	int i_a, i_b;
+	const char *sa, *sb;
 
-        i_a = msg_get_avc_data(a)->src_role;
-        i_b = msg_get_avc_data(b)->src_role;
+	i_a = msg_get_avc_data(a)->src_role;
+	i_b = msg_get_avc_data(b)->src_role;
 
-        if (i_a < 0)
-                return -1;
-        if (i_b < 0)
-                return 1;
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
 
-        sa = audit_log_get_role(audit_log, i_a);
-        sb = audit_log_get_role(audit_log, i_b);
+	sa = audit_log_get_role(audit_log, i_a);
+	sb = audit_log_get_role(audit_log, i_b);
 
-        assert(sa && sb);
+	assert(sa && sb);
 
-        return strcmp(sa, sb);
+	return strcmp(sa, sb);
 }
 
-static int tgt_role_compare(const msg_t *a, const msg_t *b)
+static int tgt_role_compare(const msg_t * a, const msg_t * b)
 {
-        int i_a, i_b;
-        const char *sa, *sb;
+	int i_a, i_b;
+	const char *sa, *sb;
 
-        i_a = msg_get_avc_data(a)->tgt_role;
-        i_b = msg_get_avc_data(b)->tgt_role;
+	i_a = msg_get_avc_data(a)->tgt_role;
+	i_b = msg_get_avc_data(b)->tgt_role;
 
-        if (i_a < 0)
-                return -1;
-        if (i_b < 0)
-                return 1;
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
 
-        sa = audit_log_get_role(audit_log, i_a);
-        sb = audit_log_get_role(audit_log, i_b);
+	sa = audit_log_get_role(audit_log, i_a);
+	sb = audit_log_get_role(audit_log, i_b);
 
-        assert(sa && sb);
+	assert(sa && sb);
 
-        return strcmp(sa, sb);
+	return strcmp(sa, sb);
 }
 
-static int src_type_compare(const msg_t *a, const msg_t *b)
+static int src_type_compare(const msg_t * a, const msg_t * b)
 {
-        int i_a, i_b;
-        const char *sa, *sb;
+	int i_a, i_b;
+	const char *sa, *sb;
 
-        i_a = msg_get_avc_data(a)->src_type;
-        i_b = msg_get_avc_data(b)->src_type;
+	i_a = msg_get_avc_data(a)->src_type;
+	i_b = msg_get_avc_data(b)->src_type;
 
-        if (i_a < 0)
-                return -1;
-        if (i_b < 0)
-                return 1;
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
 
-        sa = audit_log_get_type(audit_log, i_a);
-        sb = audit_log_get_type(audit_log, i_b);
+	sa = audit_log_get_type(audit_log, i_a);
+	sb = audit_log_get_type(audit_log, i_b);
 
-        assert(sa && sb);
+	assert(sa && sb);
 
-        return strcmp(sa, sb);
+	return strcmp(sa, sb);
 }
 
-static int tgt_type_compare(const msg_t *a, const msg_t *b)
+static int tgt_type_compare(const msg_t * a, const msg_t * b)
 {
-        int i_a, i_b;
-        const char *sa, *sb;
+	int i_a, i_b;
+	const char *sa, *sb;
 
-        i_a = msg_get_avc_data(a)->tgt_type;
-        i_b = msg_get_avc_data(b)->tgt_type;
+	i_a = msg_get_avc_data(a)->tgt_type;
+	i_b = msg_get_avc_data(b)->tgt_type;
 
-        if (i_a < 0)
-                return -1;
-        if (i_b < 0)
-                return 1;
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
 
-        sa = audit_log_get_type(audit_log, i_a);
-        sb = audit_log_get_type(audit_log, i_b);
+	sa = audit_log_get_type(audit_log, i_a);
+	sb = audit_log_get_type(audit_log, i_b);
 
-        assert(sa && sb);
+	assert(sa && sb);
 
-        return strcmp(sa, sb);
+	return strcmp(sa, sb);
 }
 
-static int obj_class_compare(const msg_t *a, const msg_t *b)
+static int obj_class_compare(const msg_t * a, const msg_t * b)
 {
-        int i_a, i_b;
-        const char *sa, *sb;
+	int i_a, i_b;
+	const char *sa, *sb;
 
-        i_a = msg_get_avc_data(a)->obj_class;
-        i_b = msg_get_avc_data(b)->obj_class;
+	i_a = msg_get_avc_data(a)->obj_class;
+	i_b = msg_get_avc_data(b)->obj_class;
 
-        if (i_a < 0)
-                return -1;
-        if (i_b < 0)
-                return 1;
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
 
-        sa = audit_log_get_obj(audit_log, i_a);
-        sb = audit_log_get_obj(audit_log, i_b);
+	sa = audit_log_get_obj(audit_log, i_a);
+	sb = audit_log_get_obj(audit_log, i_b);
 
-        assert(sa && sb);
+	assert(sa && sb);
 
-        return strcmp(sa, sb);
+	return strcmp(sa, sb);
 }
 
-static int exe_compare(const msg_t *a, const msg_t *b)
+static int exe_compare(const msg_t * a, const msg_t * b)
 {
 	char *exe_a, *exe_b;
 	int ret;
@@ -439,7 +440,7 @@ static int exe_compare(const msg_t *a, const msg_t *b)
 		return ret;
 }
 
-static int comm_compare(const msg_t *a, const msg_t *b)
+static int comm_compare(const msg_t * a, const msg_t * b)
 {
 	char *comm_a, *comm_b;
 	int ret;
@@ -458,7 +459,7 @@ static int comm_compare(const msg_t *a, const msg_t *b)
 		return ret;
 }
 
-static int path_compare(const msg_t *a, const msg_t *b)
+static int path_compare(const msg_t * a, const msg_t * b)
 {
 	char *sa, *sb;
 
@@ -472,7 +473,7 @@ static int path_compare(const msg_t *a, const msg_t *b)
 	return strcmp(sa, sb);
 }
 
-static int dev_compare(const msg_t *a, const msg_t *b)
+static int dev_compare(const msg_t * a, const msg_t * b)
 {
 	char *sa, *sb;
 
@@ -486,7 +487,7 @@ static int dev_compare(const msg_t *a, const msg_t *b)
 	return strcmp(sa, sb);
 }
 
-static int inode_compare(const msg_t *a, const msg_t *b)
+static int inode_compare(const msg_t * a, const msg_t * b)
 {
 	if (msg_get_avc_data(a)->inode == msg_get_avc_data(b)->inode) {
 		return 0;
@@ -497,7 +498,7 @@ static int inode_compare(const msg_t *a, const msg_t *b)
 	}
 }
 
-static int pid_compare(const msg_t *a, const msg_t *b)
+static int pid_compare(const msg_t * a, const msg_t * b)
 {
 	if (msg_get_avc_data(a)->pid == msg_get_avc_data(b)->pid) {
 		return 0;
@@ -511,7 +512,7 @@ static int pid_compare(const msg_t *a, const msg_t *b)
 static sort_action_node_t *sort_action_node_create(void)
 {
 	sort_action_node_t *cl;
-	cl = (sort_action_node_t*)malloc(sizeof(sort_action_node_t));
+	cl = (sort_action_node_t *) malloc(sizeof(sort_action_node_t));
 	if (!cl) {
 		fprintf(stderr, "Out of memory\n");
 		return NULL;

@@ -23,7 +23,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -35,7 +35,7 @@
 #include "qpol_internal.h"
 
 /* level */
-int qpol_policy_get_level_by_name(qpol_policy_t *policy, const char *name, qpol_level_t **datum)
+int qpol_policy_get_level_by_name(qpol_policy_t * policy, const char *name, qpol_level_t ** datum)
 {
 	policydb_t *db = NULL;
 	hashtab_datum_t internal_datum = NULL;
@@ -54,12 +54,12 @@ int qpol_policy_get_level_by_name(qpol_policy_t *policy, const char *name, qpol_
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
-	*datum = (qpol_level_t*)internal_datum;
+	*datum = (qpol_level_t *) internal_datum;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_level_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_level_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -85,8 +85,8 @@ int qpol_policy_get_level_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	hs->table = &db->p_levels.table;
 	hs->node = (*(hs->table))->htable[0];
 
-	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur,
-		hash_state_next, hash_state_end, hash_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)hs, hash_state_get_cur,
+				 hash_state_next, hash_state_end, hash_state_size, free, iter)) {
 		free(hs);
 		return STATUS_ERR;
 	}
@@ -97,7 +97,7 @@ int qpol_policy_get_level_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_isalias(qpol_policy_t *policy, qpol_level_t *datum, unsigned char *isalias)
+int qpol_level_get_isalias(qpol_policy_t * policy, qpol_level_t * datum, unsigned char *isalias)
 {
 	level_datum_t *internal_datum;
 
@@ -109,13 +109,13 @@ int qpol_level_get_isalias(qpol_policy_t *policy, qpol_level_t *datum, unsigned 
 		return STATUS_ERR;
 	}
 
-	internal_datum = (level_datum_t*)datum;
+	internal_datum = (level_datum_t *) datum;
 	*isalias = internal_datum->isalias;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_value(qpol_policy_t *policy, qpol_level_t *datum, uint32_t *value)
+int qpol_level_get_value(qpol_policy_t * policy, qpol_level_t * datum, uint32_t * value)
 {
 	level_datum_t *internal_datum = NULL;
 
@@ -127,13 +127,13 @@ int qpol_level_get_value(qpol_policy_t *policy, qpol_level_t *datum, uint32_t *v
 		return STATUS_ERR;
 	}
 
-	internal_datum = (level_datum_t*)datum;
+	internal_datum = (level_datum_t *) datum;
 	*value = internal_datum->level->sens;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_cat_iter(qpol_policy_t *policy, qpol_level_t *datum, qpol_iterator_t **cats)
+int qpol_level_get_cat_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol_iterator_t ** cats)
 {
 	level_datum_t *internal_datum = NULL;
 	ebitmap_state_t *es = NULL;
@@ -147,7 +147,7 @@ int qpol_level_get_cat_iter(qpol_policy_t *policy, qpol_level_t *datum, qpol_ite
 		return STATUS_ERR;
 	}
 
-	internal_datum = (level_datum_t*)datum;
+	internal_datum = (level_datum_t *) datum;
 
 	es = calloc(1, sizeof(ebitmap_state_t));
 	if (es == NULL) {
@@ -161,7 +161,7 @@ int qpol_level_get_cat_iter(qpol_policy_t *policy, qpol_level_t *datum, qpol_ite
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
 	if (qpol_iterator_create(policy, es, ebitmap_state_get_cur_cat,
-		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, cats)) {
+				 ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, cats)) {
 		free(es);
 		return STATUS_ERR;
 	}
@@ -172,12 +172,12 @@ int qpol_level_get_cat_iter(qpol_policy_t *policy, qpol_level_t *datum, qpol_ite
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_name(qpol_policy_t *policy, qpol_level_t *datum, char **name)
+int qpol_level_get_name(qpol_policy_t * policy, qpol_level_t * datum, char **name)
 {
 	level_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 
-	if ( policy == NULL || datum == NULL || name == NULL) {
+	if (policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
 		ERR(policy, "%s", strerror(EINVAL));
@@ -186,21 +186,22 @@ int qpol_level_get_name(qpol_policy_t *policy, qpol_level_t *datum, char **name)
 	}
 
 	db = &policy->p->p;
-	internal_datum = (level_datum_t*)datum;
+	internal_datum = (level_datum_t *) datum;
 
 	*name = db->p_sens_val_to_name[internal_datum->level->sens - 1];
 
 	return STATUS_SUCCESS;
 }
 
-typedef struct level_alias_hash_state {
+typedef struct level_alias_hash_state
+{
 	unsigned int bucket;
 	hashtab_node_t *node;
 	hashtab_t *table;
 	uint32_t val;
 } level_alias_hash_state_t;
 
-static int hash_state_next_level_alias(qpol_iterator_t *iter)
+static int hash_state_next_level_alias(qpol_iterator_t * iter)
 {
 	level_alias_hash_state_t *hs = NULL;
 	level_datum_t *datum = NULL;
@@ -209,7 +210,7 @@ static int hash_state_next_level_alias(qpol_iterator_t *iter)
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	hs = (level_alias_hash_state_t*)qpol_iterator_state(iter);
+	hs = (level_alias_hash_state_t *) qpol_iterator_state(iter);
 	if (hs == NULL) {
 		errno = EINVAL;
 		return STATUS_ERR;
@@ -222,13 +223,13 @@ static int hash_state_next_level_alias(qpol_iterator_t *iter)
 
 	do {
 		hash_state_next(iter);
-		datum = hs->node ? (level_datum_t*)hs->node->datum : NULL;
-	} while (datum != NULL && ( datum->level->sens != hs->val || !datum->isalias) );
+		datum = hs->node ? (level_datum_t *) hs->node->datum : NULL;
+	} while (datum != NULL && (datum->level->sens != hs->val || !datum->isalias));
 
 	return STATUS_SUCCESS;
 }
 
-static void *hash_state_get_cur_alias(qpol_iterator_t *iter)
+static void *hash_state_get_cur_alias(qpol_iterator_t * iter)
 {
 	level_alias_hash_state_t *hs = NULL;
 
@@ -236,7 +237,7 @@ static void *hash_state_get_cur_alias(qpol_iterator_t *iter)
 		errno = EINVAL;
 		return NULL;
 	}
-	hs = (level_alias_hash_state_t*)qpol_iterator_state(iter);
+	hs = (level_alias_hash_state_t *) qpol_iterator_state(iter);
 	if (hs == NULL) {
 		errno = EINVAL;
 		return NULL;
@@ -250,27 +251,27 @@ static void *hash_state_get_cur_alias(qpol_iterator_t *iter)
 	return hs->node->key;
 }
 
-static size_t hash_state_level_alias_size(qpol_iterator_t *iter)
+static size_t hash_state_level_alias_size(qpol_iterator_t * iter)
 {
 	level_alias_hash_state_t *hs = NULL;
-	hashtab_node_t * tmp_node;
-	level_datum_t * tmp_lvl_datum;
+	hashtab_node_t *tmp_node;
+	level_datum_t *tmp_lvl_datum;
 	uint32_t tmp_bucket = 0;
 	size_t count = 0;
 	if (iter == NULL || qpol_iterator_state(iter) == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	hs = (level_alias_hash_state_t*)qpol_iterator_state(iter);
-	if( !hs ){
+	hs = (level_alias_hash_state_t *) qpol_iterator_state(iter);
+	if (!hs) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	for( tmp_bucket = 0; tmp_bucket < (*(hs->table))->size; tmp_bucket++) {
-		for( tmp_node = (*(hs->table))->htable[tmp_bucket]; tmp_node; tmp_node = tmp_node->next) {
-			tmp_lvl_datum = tmp_node ? tmp_node->datum:NULL;
-			if( tmp_lvl_datum ){
-				if(tmp_lvl_datum->isalias && tmp_lvl_datum->level->sens == hs->val)
+	for (tmp_bucket = 0; tmp_bucket < (*(hs->table))->size; tmp_bucket++) {
+		for (tmp_node = (*(hs->table))->htable[tmp_bucket]; tmp_node; tmp_node = tmp_node->next) {
+			tmp_lvl_datum = tmp_node ? tmp_node->datum : NULL;
+			if (tmp_lvl_datum) {
+				if (tmp_lvl_datum->isalias && tmp_lvl_datum->level->sens == hs->val)
 					count++;
 			}
 		}
@@ -278,7 +279,7 @@ static size_t hash_state_level_alias_size(qpol_iterator_t *iter)
 	return count;
 }
 
-int qpol_level_get_alias_iter(qpol_policy_t *policy, qpol_level_t *datum, qpol_iterator_t **aliases)
+int qpol_level_get_alias_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol_iterator_t ** aliases)
 {
 	level_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -294,7 +295,7 @@ int qpol_level_get_alias_iter(qpol_policy_t *policy, qpol_level_t *datum, qpol_i
 	}
 
 	db = &policy->p->p;
-	internal_datum = (level_datum_t*)datum;
+	internal_datum = (level_datum_t *) datum;
 
 	hs = calloc(1, sizeof(level_alias_hash_state_t));
 	if (hs == NULL) {
@@ -307,20 +308,20 @@ int qpol_level_get_alias_iter(qpol_policy_t *policy, qpol_level_t *datum, qpol_i
 	hs->node = (*(hs->table))->htable[0];
 	hs->val = internal_datum->level->sens;
 
-	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur_alias,
-		hash_state_next_level_alias, hash_state_end, hash_state_level_alias_size, free, aliases)) {
+	if (qpol_iterator_create(policy, (void *)hs, hash_state_get_cur_alias,
+				 hash_state_next_level_alias, hash_state_end, hash_state_level_alias_size, free, aliases)) {
 		free(hs);
 		return STATUS_ERR;
 	}
 
-	if (hs->node == NULL ||((level_datum_t*)(hs->node->datum))->level->sens != hs->val)
+	if (hs->node == NULL || ((level_datum_t *) (hs->node->datum))->level->sens != hs->val)
 		hash_state_next_level_alias(*aliases);
 
 	return STATUS_SUCCESS;
 }
 
 /* cat */
-int qpol_policy_get_cat_by_name(qpol_policy_t *policy, const char *name, qpol_cat_t **datum)
+int qpol_policy_get_cat_by_name(qpol_policy_t * policy, const char *name, qpol_cat_t ** datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -332,7 +333,7 @@ int qpol_policy_get_cat_by_name(qpol_policy_t *policy, const char *name, qpol_ca
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	
+
 	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_cats.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
@@ -341,12 +342,12 @@ int qpol_policy_get_cat_by_name(qpol_policy_t *policy, const char *name, qpol_ca
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
-	*datum = (qpol_cat_t*)internal_datum;
+	*datum = (qpol_cat_t *) internal_datum;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_cat_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_cat_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -372,8 +373,8 @@ int qpol_policy_get_cat_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	hs->table = &db->p_cats.table;
 	hs->node = (*(hs->table))->htable[0];
 
-	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur,
-		hash_state_next, hash_state_end, hash_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)hs, hash_state_get_cur,
+				 hash_state_next, hash_state_end, hash_state_size, free, iter)) {
 		free(hs);
 		return STATUS_ERR;
 	}
@@ -384,7 +385,7 @@ int qpol_policy_get_cat_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_value(qpol_policy_t *policy, qpol_cat_t *datum, uint32_t *value)
+int qpol_cat_get_value(qpol_policy_t * policy, qpol_cat_t * datum, uint32_t * value)
 {
 	cat_datum_t *internal_datum = NULL;
 
@@ -396,13 +397,13 @@ int qpol_cat_get_value(qpol_policy_t *policy, qpol_cat_t *datum, uint32_t *value
 		return STATUS_ERR;
 	}
 
-	internal_datum = (cat_datum_t*)datum;
+	internal_datum = (cat_datum_t *) datum;
 	*value = internal_datum->s.value;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_isalias(qpol_policy_t *policy, qpol_cat_t *datum, unsigned char *isalias)
+int qpol_cat_get_isalias(qpol_policy_t * policy, qpol_cat_t * datum, unsigned char *isalias)
 {
 	cat_datum_t *internal_datum;
 
@@ -414,18 +415,18 @@ int qpol_cat_get_isalias(qpol_policy_t *policy, qpol_cat_t *datum, unsigned char
 		return STATUS_ERR;
 	}
 
-	internal_datum = (cat_datum_t*)datum;
+	internal_datum = (cat_datum_t *) datum;
 	*isalias = internal_datum->isalias;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_name(qpol_policy_t *policy, qpol_cat_t *datum, char **name)
+int qpol_cat_get_name(qpol_policy_t * policy, qpol_cat_t * datum, char **name)
 {
 	cat_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 
-	if ( policy == NULL || datum == NULL || name == NULL) {
+	if (policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
 		ERR(policy, "%s", strerror(EINVAL));
@@ -434,14 +435,14 @@ int qpol_cat_get_name(qpol_policy_t *policy, qpol_cat_t *datum, char **name)
 	}
 
 	db = &policy->p->p;
-	internal_datum = (cat_datum_t*)datum;
+	internal_datum = (cat_datum_t *) datum;
 
 	*name = db->p_cat_val_to_name[internal_datum->s.value - 1];
 
 	return STATUS_SUCCESS;
 }
 
-static int hash_state_next_cat_alias(qpol_iterator_t *iter)
+static int hash_state_next_cat_alias(qpol_iterator_t * iter)
 {
 	/* using level alias state datum since data needed is identical */
 	level_alias_hash_state_t *hs = NULL;
@@ -451,7 +452,7 @@ static int hash_state_next_cat_alias(qpol_iterator_t *iter)
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	hs = (level_alias_hash_state_t*)qpol_iterator_state(iter);
+	hs = (level_alias_hash_state_t *) qpol_iterator_state(iter);
 	if (hs == NULL) {
 		errno = EINVAL;
 		return STATUS_ERR;
@@ -464,33 +465,33 @@ static int hash_state_next_cat_alias(qpol_iterator_t *iter)
 
 	do {
 		hash_state_next(iter);
-		datum = hs->node ? (cat_datum_t*)hs->node->datum : NULL;
-	} while (datum != NULL && ( datum->s.value != hs->val || !datum->isalias) );
+		datum = hs->node ? (cat_datum_t *) hs->node->datum : NULL;
+	} while (datum != NULL && (datum->s.value != hs->val || !datum->isalias));
 
 	return STATUS_SUCCESS;
 }
 
-static size_t hash_state_cat_alias_size(qpol_iterator_t *iter)
+static size_t hash_state_cat_alias_size(qpol_iterator_t * iter)
 {
 	level_alias_hash_state_t *hs = NULL;
-	hashtab_node_t * tmp_node;
-	cat_datum_t * tmp_cat_datum;
+	hashtab_node_t *tmp_node;
+	cat_datum_t *tmp_cat_datum;
 	uint32_t tmp_bucket = 0;
 	size_t count = 0;
 	if (iter == NULL || qpol_iterator_state(iter) == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	hs = (level_alias_hash_state_t*)qpol_iterator_state(iter);
-	if( !hs ){
+	hs = (level_alias_hash_state_t *) qpol_iterator_state(iter);
+	if (!hs) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	for( tmp_bucket = 0; tmp_bucket < (*(hs->table))->size; tmp_bucket++) {
-		for( tmp_node = (*(hs->table))->htable[tmp_bucket]; tmp_node; tmp_node = tmp_node->next) {
-			tmp_cat_datum = tmp_node ? tmp_node->datum:NULL;
-			if( tmp_cat_datum ){
-				if(tmp_cat_datum->isalias && tmp_cat_datum->s.value == hs->val)
+	for (tmp_bucket = 0; tmp_bucket < (*(hs->table))->size; tmp_bucket++) {
+		for (tmp_node = (*(hs->table))->htable[tmp_bucket]; tmp_node; tmp_node = tmp_node->next) {
+			tmp_cat_datum = tmp_node ? tmp_node->datum : NULL;
+			if (tmp_cat_datum) {
+				if (tmp_cat_datum->isalias && tmp_cat_datum->s.value == hs->val)
 					count++;
 			}
 		}
@@ -498,7 +499,7 @@ static size_t hash_state_cat_alias_size(qpol_iterator_t *iter)
 	return count;
 }
 
-int qpol_cat_get_alias_iter(qpol_policy_t *policy, qpol_cat_t *datum, qpol_iterator_t **aliases)
+int qpol_cat_get_alias_iter(qpol_policy_t * policy, qpol_cat_t * datum, qpol_iterator_t ** aliases)
 {
 	cat_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -514,7 +515,7 @@ int qpol_cat_get_alias_iter(qpol_policy_t *policy, qpol_cat_t *datum, qpol_itera
 	}
 
 	db = &policy->p->p;
-	internal_datum = (cat_datum_t*)datum;
+	internal_datum = (cat_datum_t *) datum;
 
 	hs = calloc(1, sizeof(level_alias_hash_state_t));
 	if (hs == NULL) {
@@ -527,20 +528,20 @@ int qpol_cat_get_alias_iter(qpol_policy_t *policy, qpol_cat_t *datum, qpol_itera
 	hs->node = (*(hs->table))->htable[0];
 	hs->val = internal_datum->s.value;
 
-	if (qpol_iterator_create(policy, (void*)hs, hash_state_get_cur_alias,
-		hash_state_next_cat_alias, hash_state_end,hash_state_cat_alias_size , free, aliases)) {
+	if (qpol_iterator_create(policy, (void *)hs, hash_state_get_cur_alias,
+				 hash_state_next_cat_alias, hash_state_end, hash_state_cat_alias_size, free, aliases)) {
 		free(hs);
 		return STATUS_ERR;
 	}
 
-	if (hs->node == NULL || ((cat_datum_t*)(hs->node->datum))->s.value != hs->val)
+	if (hs->node == NULL || ((cat_datum_t *) (hs->node->datum))->s.value != hs->val)
 		hash_state_next_cat_alias(*aliases);
 
 	return STATUS_SUCCESS;
 }
 
 /* mls range */
-int qpol_mls_range_get_low_level(qpol_policy_t *policy, qpol_mls_range_t *range, qpol_mls_level_t **level)
+int qpol_mls_range_get_low_level(qpol_policy_t * policy, qpol_mls_range_t * range, qpol_mls_level_t ** level)
 {
 	mls_range_t *internal_range = NULL;
 
@@ -552,13 +553,13 @@ int qpol_mls_range_get_low_level(qpol_policy_t *policy, qpol_mls_range_t *range,
 		return STATUS_ERR;
 	}
 
-	internal_range = (mls_range_t*)range;
-	*level = (qpol_mls_level_t*)&(internal_range->level[0]);
+	internal_range = (mls_range_t *) range;
+	*level = (qpol_mls_level_t *) & (internal_range->level[0]);
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_mls_range_get_high_level(qpol_policy_t *policy, qpol_mls_range_t *range, qpol_mls_level_t **level)
+int qpol_mls_range_get_high_level(qpol_policy_t * policy, qpol_mls_range_t * range, qpol_mls_level_t ** level)
 {
 	mls_range_t *internal_range = NULL;
 
@@ -570,14 +571,14 @@ int qpol_mls_range_get_high_level(qpol_policy_t *policy, qpol_mls_range_t *range
 		return STATUS_ERR;
 	}
 
-	internal_range = (mls_range_t*)range;
-	*level = (qpol_mls_level_t*)&(internal_range->level[1]);
+	internal_range = (mls_range_t *) range;
+	*level = (qpol_mls_level_t *) & (internal_range->level[1]);
 
 	return STATUS_SUCCESS;
 }
 
 /* mls_level */
-int qpol_mls_level_get_sens_name(qpol_policy_t *policy, qpol_mls_level_t *level, char **name)
+int qpol_mls_level_get_sens_name(qpol_policy_t * policy, qpol_mls_level_t * level, char **name)
 {
 	policydb_t *db = NULL;
 	mls_level_t *internal_level = NULL;
@@ -590,7 +591,7 @@ int qpol_mls_level_get_sens_name(qpol_policy_t *policy, qpol_mls_level_t *level,
 		return STATUS_ERR;
 	}
 
-	internal_level = (mls_level_t*)level;
+	internal_level = (mls_level_t *) level;
 	db = &policy->p->p;
 
 	*name = db->p_sens_val_to_name[internal_level->sens - 1];
@@ -598,7 +599,7 @@ int qpol_mls_level_get_sens_name(qpol_policy_t *policy, qpol_mls_level_t *level,
 	return STATUS_SUCCESS;
 }
 
-int qpol_mls_level_get_cat_iter(qpol_policy_t *policy, qpol_mls_level_t *level, qpol_iterator_t **cats)
+int qpol_mls_level_get_cat_iter(qpol_policy_t * policy, qpol_mls_level_t * level, qpol_iterator_t ** cats)
 {
 	mls_level_t *internal_level = NULL;
 	ebitmap_state_t *es = NULL;
@@ -612,7 +613,7 @@ int qpol_mls_level_get_cat_iter(qpol_policy_t *policy, qpol_mls_level_t *level, 
 		return STATUS_ERR;
 	}
 
-	internal_level = (mls_level_t*)level;
+	internal_level = (mls_level_t *) level;
 
 	es = calloc(1, sizeof(ebitmap_state_t));
 	if (es == NULL) {
@@ -626,7 +627,7 @@ int qpol_mls_level_get_cat_iter(qpol_policy_t *policy, qpol_mls_level_t *level, 
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
 	if (qpol_iterator_create(policy, es, ebitmap_state_get_cur_cat,
-		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, cats)) {
+				 ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, cats)) {
 		free(es);
 		return STATUS_ERR;
 	}
@@ -636,5 +637,3 @@ int qpol_mls_level_get_cat_iter(qpol_policy_t *policy, qpol_mls_level_t *level, 
 
 	return STATUS_SUCCESS;
 }
-
- 

@@ -27,6 +27,11 @@
 #ifndef SEFS_FILE_CONTEXTS_H
 #define SEFS_FILE_CONTEXTS_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 /* libapol */
 #include <apol/policy.h>
 #include <apol/vector.h>
@@ -35,33 +40,34 @@
 #include <qpol/policy_query.h>
 
 /* file type IDs, used by sefs_fc_entry::filetype */
-#define SEFS_FILETYPE_NONE 0  /* none */
+#define SEFS_FILETYPE_NONE 0	       /* none */
 /* the following values must correspond to libsepol flask.h */
-#define SEFS_FILETYPE_REG  6  /* Regular file */
-#define SEFS_FILETYPE_DIR  7  /* Directory */
-#define SEFS_FILETYPE_LNK  9  /* Symbolic link */
-#define SEFS_FILETYPE_CHR  10 /* Character device */
-#define SEFS_FILETYPE_BLK  11 /* Block device */
-#define SEFS_FILETYPE_SOCK 12 /* Socket */
-#define SEFS_FILETYPE_FIFO 13 /* FIFO */
-#define SEFS_FILETYPE_ANY  14 /* any type */
+#define SEFS_FILETYPE_REG  6	       /* Regular file */
+#define SEFS_FILETYPE_DIR  7	       /* Directory */
+#define SEFS_FILETYPE_LNK  9	       /* Symbolic link */
+#define SEFS_FILETYPE_CHR  10	       /* Character device */
+#define SEFS_FILETYPE_BLK  11	       /* Block device */
+#define SEFS_FILETYPE_SOCK 12	       /* Socket */
+#define SEFS_FILETYPE_FIFO 13	       /* FIFO */
+#define SEFS_FILETYPE_ANY  14	       /* any type */
 
 /* general file contexts structure */
-typedef struct sefs_security_context {
-        char	*user;
-        char	*role;
-        char	*type;
-        char	*range;
-} sefs_security_con_t;
+	typedef struct sefs_security_context
+	{
+		char *user;
+		char *role;
+		char *type;
+		char *range;
+	} sefs_security_con_t;
 
-typedef struct sefs_fc_entry {
+	typedef struct sefs_fc_entry
+	{
 	/** path for genfs_context or a regexp for file_context */
-	char *path;
-	/* type of file, block, char, etc.  See SEFS_FILETYPE_* defines. */
-	int filetype;
-	sefs_security_con_t *context;
-} sefs_fc_entry_t;
-
+		char *path;
+		/* type of file, block, char, etc.  See SEFS_FILETYPE_* defines. */
+		int filetype;
+		sefs_security_con_t *context;
+	} sefs_fc_entry_t;
 
 /**
  * Given the path to a file_contexts file, open and parse the file.
@@ -77,7 +83,7 @@ typedef struct sefs_fc_entry {
  *
  * @return 0 on success, < 0 on error.
  */
-extern int sefs_fc_entry_parse_file_contexts(apol_policy_t *policy, const char *fc_path, apol_vector_t **contexts);
+	extern int sefs_fc_entry_parse_file_contexts(apol_policy_t * policy, const char *fc_path, apol_vector_t ** contexts);
 
 /**
  * Free all space associated with a file context entry, including the
@@ -85,7 +91,7 @@ extern int sefs_fc_entry_parse_file_contexts(apol_policy_t *policy, const char *
  *
  * @param fc fc_entry to free.
  */
-extern void sefs_fc_entry_free(void *fc);
+	extern void sefs_fc_entry_free(void *fc);
 
 /**
  * Write to the referenced string the pathname of the file_contexts
@@ -98,6 +104,10 @@ extern void sefs_fc_entry_free(void *fc);
  * @return 0 if a valid path was written.  On error, < 0 will be
  * returned and *path will be set to NULL.
  */
-extern int sefs_fc_find_default_file_contexts(char **path);
+	extern int sefs_fc_find_default_file_contexts(char **path);
 
-#endif /* SEFS_FILE_CONTEXTS_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* SEFS_FILE_CONTEXTS_H */

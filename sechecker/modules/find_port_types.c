@@ -1,6 +1,6 @@
 /**
  *  @file find_port_types.h
- *  Implementation of the port types utility module. 
+ *  Implementation of the port types utility module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -35,7 +35,7 @@ static const char *const mod_name = "find_port_types";
 
 /* The register function registers all of a module's functions
  * with the library.  */
-int find_port_types_register(sechk_lib_t *lib)
+int find_port_types_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -62,15 +62,11 @@ int find_port_types_register(sechk_lib_t *lib)
 	mod->brief_description = "utility module";
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
-		"This module finds all types in a policy treated as a port type.  A type is      \n"
-		"considered a port type if it is the type in a portcon statement.\n";
-	mod->opt_description = 
-		"  Module requirements:\n"
-		"    none\n"
-		"  Module dependencies:\n"
-		"    none\n"
-		"  Module options:\n"
-		"    none\n";
+		"This module finds all types in a policy treated as a port type.  A type is\n"
+		"considered a port type if it is used in the context of a a portcon statement or\n"
+		"the context of the port initial sid.\n";
+	mod->opt_description =
+		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_NONE;
 
 	/* register functions */
@@ -87,11 +83,11 @@ int find_port_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = find_port_types_init;
-	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
-	}	
+	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -106,7 +102,7 @@ int find_port_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = find_port_types_run;
-	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -127,7 +123,7 @@ int find_port_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = find_port_types_print;
-	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -146,7 +142,7 @@ int find_port_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_port_types_get_list;
-	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -159,7 +155,7 @@ int find_port_types_register(sechk_lib_t *lib)
  * and initializes its values based on the options parsed in the config
  * file.
  * Add any option processing logic as indicated below. */
-int find_port_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int find_port_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -178,12 +174,12 @@ int find_port_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 /* The run function performs the check. This function runs only once
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
- * in all relavant item and proof data. 
+ * in all relavant item and proof data.
  * Return Values:
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
- *   1 The module "failed" 		- some negative results found */
-int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+ *   1 The module "failed"	- some negative results found */
+int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -191,6 +187,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	char *buff = NULL;
 	size_t buff_sz = 0, i, j;
 	apol_vector_t *portcon_vector;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
 
 	if (!mod || !policy) {
@@ -221,7 +218,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		goto find_port_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if ( !(res->items = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_port_types_run_fail;
@@ -230,17 +227,17 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	/* search initial SIDs */
 	qpol_isid_t *isid = NULL;
 	buff = NULL;
-	qpol_policy_get_isid_by_name(policy->p, "port", &isid);
-	if ( isid ) {
+	qpol_policy_get_isid_by_name(q, "port", &isid);
+	if (isid) {
 		qpol_context_t *context;
 		apol_context_t *a_context;
 		qpol_type_t *context_type;
 		char *context_type_name, *tmp;
 
 		proof = NULL;
-		qpol_isid_get_context(policy->p, isid, &context);
-		qpol_context_get_type(policy->p, context, &context_type);
-		qpol_type_get_name(policy->p, context_type, &context_type_name);
+		qpol_isid_get_context(q, isid, &context);
+		qpol_context_get_type(q, context, &context_type);
+		qpol_type_get_name(q, context_type, &context_type_name);
 		a_context = apol_context_create_from_qpol_context(policy, context);
 
 		if (apol_str_append(&buff, &buff_sz, "sid port ") != 0) {
@@ -251,7 +248,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		}
 
 		tmp = apol_context_render(policy, a_context);
-		if (apol_str_append(&buff, &buff_sz, tmp) != 0 ) {
+		if (apol_str_append(&buff, &buff_sz, tmp) != 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			apol_context_destroy(&a_context);
@@ -281,8 +278,9 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 			res_item = apol_vector_get_element(res->items, j);
 			res_type = res_item->item;
-			qpol_type_get_name(policy->p, res_type, &res_type_name);
-			if (!strcmp(res_type_name, context_type_name)) item = res_item;
+			qpol_type_get_name(q, res_type, &res_type_name);
+			if (!strcmp(res_type_name, context_type_name))
+				item = res_item;
 		}
 
 		/* We have not encountered this type yet */
@@ -295,42 +293,42 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			}
 			item->test_result = 1;
 			item->item = (void *)context_type;
-			if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+			if (apol_vector_append(res->items, (void *)item) < 0) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_port_types_run_fail;
 			}
 		}
 
-		if ( !item->proof ) {
-			if ( !(item->proof = apol_vector_create()) ) {
+		if (!item->proof) {
+			if (!(item->proof = apol_vector_create())) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_port_types_run_fail;
 			}
 		}
-		if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+		if (apol_vector_append(item->proof, (void *)proof) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto find_port_types_run_fail;
 		}
 	}
 
-	if (apol_get_portcon_by_query(policy, NULL, &portcon_vector) < 0) {
+	if (apol_portcon_get_by_query(policy, NULL, &portcon_vector) < 0) {
 		error = errno;
 		goto find_port_types_run_fail;
 	}
 
-	for (i=0;i<apol_vector_get_size(portcon_vector);i++) {
+	for (i = 0; i < apol_vector_get_size(portcon_vector); i++) {
 		char *portcon_name = NULL;
 		qpol_portcon_t *portcon = NULL;
 		qpol_context_t *portcon_context = NULL;
 		qpol_type_t *portcon_type = NULL;
 
 		portcon = apol_vector_get_element(portcon_vector, i);
-		qpol_portcon_get_context(policy->p, portcon, &portcon_context);
-		qpol_context_get_type(policy->p, portcon_context, &portcon_type);
-		qpol_type_get_name(policy->p, portcon_type, &portcon_name);
+		qpol_portcon_get_context(q, portcon, &portcon_context);
+		qpol_context_get_type(q, portcon_context, &portcon_type);
+		qpol_type_get_name(q, portcon_type, &portcon_name);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -344,15 +342,16 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 		item = NULL;
 
 		/* Have we encountered this type before?  If so, use that type. */
-		for (j=0;j<apol_vector_get_size(res->items);j++) {
+		for (j = 0; j < apol_vector_get_size(res->items); j++) {
 			sechk_item_t *res_item = NULL;
 			qpol_type_t *res_type;
 			char *res_type_name;
 
 			res_item = apol_vector_get_element(res->items, j);
 			res_type = res_item->item;
-			qpol_type_get_name(policy->p, res_type, &res_type_name);
-			if (!strcmp(res_type_name, portcon_name)) item = res_item;
+			qpol_type_get_name(q, res_type, &res_type_name);
+			if (!strcmp(res_type_name, portcon_name))
+				item = res_item;
 		}
 
 		/* We have not encountered this type yet */
@@ -364,22 +363,22 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 				goto find_port_types_run_fail;
 			}
 			item->test_result = 1;
-			item->item = (void *)portcon_type;	
-			if ( apol_vector_append(res->items, (void *)item) < 0 ) {
-				error = errno;
-				ERR(policy, "%s", strerror(ENOMEM));
-				goto find_port_types_run_fail;
-			}
-		} 
-
-		if ( !item->proof ) {
-			if ( !(item->proof = apol_vector_create()) ) {
+			item->item = (void *)portcon_type;
+			if (apol_vector_append(res->items, (void *)item) < 0) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_port_types_run_fail;
 			}
 		}
-		if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+
+		if (!item->proof) {
+			if (!(item->proof = apol_vector_create())) {
+				error = errno;
+				ERR(policy, "%s", strerror(ENOMEM));
+				goto find_port_types_run_fail;
+			}
+		}
+		if (apol_vector_append(item->proof, (void *)proof) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto find_port_types_run_fail;
@@ -392,7 +391,7 @@ int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 	return 0;
 
-find_port_types_run_fail:
+      find_port_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
@@ -403,16 +402,17 @@ find_port_types_run_fail:
 
 /* The print function generates the text and prints the
  * results to stdout.  */
-int find_port_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused))) 
+int find_port_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j=0, k = 0, num_items = 0;
+	int i = 0, j = 0, k = 0, num_items = 0;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
-	if (!mod || !policy){
+	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
 		errno = EINVAL;
 		return -1;
@@ -434,7 +434,7 @@ int find_port_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	}
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i port types.\n", num_items);
@@ -446,13 +446,13 @@ int find_port_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	 * this may need to be changed for longer items. */
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-		for (i=0;i<num_items;i++) {
+		for (i = 0; i < num_items; i++) {
 			j++;
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
-			type = (qpol_type_t *)item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
-			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+			type = (qpol_type_t *) item->item;
+			qpol_type_get_name(q, type, &type_name);
+			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
@@ -467,15 +467,15 @@ int find_port_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	 * displayed in an indented list one per line below it. */
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
-		for ( j=0;j<num_items;j++) {
+		for (j = 0; j < num_items; j++) {
 			item = apol_vector_get_element(mod->result->items, j);
-			type = (qpol_type_t *)item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
-			if ( item ) {
+			type = (qpol_type_t *) item->item;
+			qpol_type_get_name(q, type, &type_name);
+			if (item) {
 				printf("%s\n", type_name);
-				for (k=0;k<apol_vector_get_size(item->proof);k++) {
+				for (k = 0; k < apol_vector_get_size(item->proof); k++) {
 					proof = apol_vector_get_element(item->proof, k);
-					if ( proof )
+					if (proof)
 						printf("\t%s\n", proof->text);
 				}
 			}
@@ -486,7 +486,7 @@ int find_port_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	return 0;
 }
 
-int find_port_types_get_list(sechk_module_t *mod, apol_policy_t *policy __attribute__((unused)), void *arg)
+int find_port_types_get_list(sechk_module_t * mod, apol_policy_t * policy __attribute__ ((unused)), void *arg)
 {
 	apol_vector_t **v = arg;
 

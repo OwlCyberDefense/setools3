@@ -1,5 +1,6 @@
 {
         global:
                 sefs_*;
+                libsefs_get_version;
         local: *;
 };

@@ -26,6 +26,11 @@
 #ifndef SEDIFF_REMAP_TYPES_H
 #define SEDIFF_REMAP_TYPES_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #define SEDIFF_REMAP_POLICY_ONE_COLUMN 0
 #define SEDIFF_REMAP_POLICY_TWO_COLUMN 1
 #define SEDIFF_REMAP_NUM_COLUMNS       2
@@ -39,25 +44,30 @@
 #include <poldiff/poldiff.h>
 #include <poldiff/type_map.h>
 
-typedef struct sediff_remapped_types {
-	apol_vector_t *orig;
-	apol_vector_t *mod;
-} sediff_remapped_types_t;
+	typedef struct sediff_remapped_types
+	{
+		apol_vector_t *orig;
+		apol_vector_t *mod;
+	} sediff_remapped_types_t;
 
-typedef struct sediff_remap_types {
-	GtkTreeView *view;
-	GtkListStore *store;
-	GtkCombo *p1_combo;
-	GtkCombo *p2_combo;
-	GtkWindow *window;
-	GladeXML *xml;
-	struct sediff_app *sediff_app;
-	apol_vector_t *remapped_types;
-} sediff_remap_types_t;
+	typedef struct sediff_remap_types
+	{
+		GtkTreeView *view;
+		GtkListStore *store;
+		GtkCombo *p1_combo;
+		GtkCombo *p2_combo;
+		GtkWindow *window;
+		GladeXML *xml;
+		struct sediff_app *sediff_app;
+		apol_vector_t *remapped_types;
+	} sediff_remap_types_t;
 
-sediff_remap_types_t* sediff_remap_types_window_new(struct sediff_app *sediff_app);
-void sediff_remap_types_window_display(sediff_remap_types_t *remap_types);
-void sediff_remap_types_window_unref_members(sediff_remap_types_t *remap_types);
+	sediff_remap_types_t *sediff_remap_types_window_new(struct sediff_app *sediff_app);
+	void sediff_remap_types_window_display(sediff_remap_types_t * remap_types);
+	void sediff_remap_types_window_unref_members(sediff_remap_types_t * remap_types);
 
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

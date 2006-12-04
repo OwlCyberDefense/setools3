@@ -26,12 +26,17 @@
 #ifndef QPOL_RBACRULE_QUERY
 #define QPOL_RBACRULE_QUERY
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/policy_query.h>
 #include <qpol/iterator.h>
 
-typedef struct qpol_role_allow qpol_role_allow_t;
-typedef struct qpol_role_trans qpol_role_trans_t;
+	typedef struct qpol_role_allow qpol_role_allow_t;
+	typedef struct qpol_role_trans qpol_role_trans_t;
 
 /**
  *  Get an iterator over all role allow rules in the policy.
@@ -44,7 +49,7 @@ typedef struct qpol_role_trans qpol_role_trans_t;
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_role_allow_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
+	extern int qpol_policy_get_role_allow_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the source role from a role allow rule.
@@ -55,7 +60,7 @@ extern int qpol_policy_get_role_allow_iter(qpol_policy_t *policy, qpol_iterator_
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-extern int qpol_role_allow_get_source_role(qpol_policy_t *policy, qpol_role_allow_t *rule, qpol_role_t **source);
+	extern int qpol_role_allow_get_source_role(qpol_policy_t * policy, qpol_role_allow_t * rule, qpol_role_t ** source);
 
 /**
  *  Get the target role from a role allow rule.
@@ -66,7 +71,7 @@ extern int qpol_role_allow_get_source_role(qpol_policy_t *policy, qpol_role_allo
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-extern int qpol_role_allow_get_target_role(qpol_policy_t *policy, qpol_role_allow_t *rule, qpol_role_t **target);
+	extern int qpol_role_allow_get_target_role(qpol_policy_t * policy, qpol_role_allow_t * rule, qpol_role_t ** target);
 
 /**
  *  Get an iterator over all role transition rules in the policy.
@@ -79,7 +84,7 @@ extern int qpol_role_allow_get_target_role(qpol_policy_t *policy, qpol_role_allo
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_role_trans_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
+	extern int qpol_policy_get_role_trans_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the source role from a role transition rule.
@@ -90,7 +95,7 @@ extern int qpol_policy_get_role_trans_iter(qpol_policy_t *policy, qpol_iterator_
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-extern int qpol_role_trans_get_source_role(qpol_policy_t *policy, qpol_role_trans_t *rule, qpol_role_t **source);
+	extern int qpol_role_trans_get_source_role(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_role_t ** source);
 
 /**
  *  Get the target type from a role transition rule.
@@ -101,7 +106,7 @@ extern int qpol_role_trans_get_source_role(qpol_policy_t *policy, qpol_role_tran
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-extern int qpol_role_trans_get_target_type(qpol_policy_t *policy, qpol_role_trans_t *rule, qpol_type_t **target);
+	extern int qpol_role_trans_get_target_type(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_type_t ** target);
 
 /**
  *  Get the default role from a role transition rule.
@@ -112,6 +117,10 @@ extern int qpol_role_trans_get_target_type(qpol_policy_t *policy, qpol_role_tran
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dflt will be NULL.
  */
-extern int qpol_role_trans_get_default_role(qpol_policy_t *policy, qpol_role_trans_t *rule, qpol_role_t **dflt);
+	extern int qpol_role_trans_get_default_role(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_role_t ** dflt);
 
-#endif /* QPOL_RBACRULE_QUERY */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* QPOL_RBACRULE_QUERY */

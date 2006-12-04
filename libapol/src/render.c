@@ -38,10 +38,10 @@
 extern void swab(const void *from, void *to, ssize_t n);
 #endif
 
-char *apol_ipv4_addr_render(apol_policy_t *policydb, uint32_t addr)
+char *apol_ipv4_addr_render(apol_policy_t * policydb, uint32_t addr)
 {
 	char buf[40], *b;
-	unsigned char *p = (unsigned char *) &addr;
+	unsigned char *p = (unsigned char *)&addr;
 	snprintf(buf, sizeof(buf), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
 	if ((b = strdup(buf)) == NULL) {
 		ERR(policydb, "%s", strerror(ENOMEM));
@@ -49,11 +49,11 @@ char *apol_ipv4_addr_render(apol_policy_t *policydb, uint32_t addr)
 	return b;
 }
 
-char *apol_ipv6_addr_render(apol_policy_t *policydb, uint32_t addr[4])
+char *apol_ipv6_addr_render(apol_policy_t * policydb, uint32_t addr[4])
 {
-	uint16_t tmp[8] = {0,0,0,0,0,0,0,0};
+	uint16_t tmp[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	int i, sz = 0, retv;
-	char buf[40], *b; /* 8 * 4 hex digits + 7 * ':' + '\0' == max size of string */
+	char buf[40], *b;	       /* 8 * 4 hex digits + 7 * ':' + '\0' == max size of string */
 	int contract = 0, prev_contr = 0, contr_idx_end = -1;
 	for (i = 0; i < 4; i++) {
 		uint32_t a;
@@ -64,8 +64,8 @@ char *apol_ipv6_addr_render(apol_policy_t *policydb, uint32_t addr[4])
 #endif
 		/* have to use division and mod here, so as to ignore
 		 * host system's byte ordering */
-		tmp[2*i] = a%(1<<16);
-		tmp[2*i+1] = a/(1<<16);
+		tmp[2 * i] = a % (1 << 16);
+		tmp[2 * i + 1] = a / (1 << 16);
 	}
 
 	for (i = 0; i < 8; i++) {
@@ -87,13 +87,12 @@ char *apol_ipv6_addr_render(apol_policy_t *policydb, uint32_t addr[4])
 
 	for (i = 0; i < 8; i++) {
 		if (i == contr_idx_end - contract) {
-			retv = snprintf(buf + sz, 40 - sz, i?":":"::");
+			retv = snprintf(buf + sz, 40 - sz, i ? ":" : "::");
 			sz += retv;
 		} else if (i > contr_idx_end - contract && i < contr_idx_end) {
 			continue;
 		} else {
-			retv = snprintf(buf + sz, 40 - sz,
-					i==7 ? "%04x" : "%04x:", tmp[i]);
+			retv = snprintf(buf + sz, 40 - sz, i == 7 ? "%04x" : "%04x:", tmp[i]);
 			sz += retv;
 		}
 	}
@@ -105,18 +104,18 @@ char *apol_ipv6_addr_render(apol_policy_t *policydb, uint32_t addr[4])
 	return b;
 }
 
-char *apol_qpol_context_render(apol_policy_t *p, qpol_context_t *context)
+char *apol_qpol_context_render(apol_policy_t * p, qpol_context_t * context)
 {
-        apol_context_t *c = NULL;
-        char *rendered_context;
+	apol_context_t *c = NULL;
+	char *rendered_context;
 
 	if (p == NULL)
 		return NULL;
 
-        if ((c = apol_context_create_from_qpol_context(p, context)) == NULL) {
-                return NULL;
-        }
-        rendered_context = apol_context_render(p, c);
-        apol_context_destroy(&c);
-        return rendered_context;
+	if ((c = apol_context_create_from_qpol_context(p, context)) == NULL) {
+		return NULL;
+	}
+	rendered_context = apol_context_render(p, c);
+	apol_context_destroy(&c);
+	return rendered_context;
 }

@@ -22,15 +22,20 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */ 
+ */
 
 #ifndef QPOL_POLICY_EXTEND_H
 #define QPOL_POLICY_EXTEND_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <qpol/policy.h>
 #include <qpol/iterator.h>
 
-typedef struct qpol_extended_image qpol_extended_image_t;
+	typedef struct qpol_extended_image qpol_extended_image_t;
 
 /**
  *  Create an extended image for a policy. This function modifies the policydb
@@ -41,13 +46,22 @@ typedef struct qpol_extended_image qpol_extended_image_t;
  *  errno will be set; the state of the policy is not guaranteed to be stable
  *  if this call fails.
  */
-extern int qpol_policy_extend(qpol_policy_t *policy);
+	extern int qpol_policy_extend(qpol_policy_t * policy);
 
-extern void qpol_extended_image_destroy(qpol_extended_image_t **ext);
+	extern void qpol_extended_image_destroy(qpol_extended_image_t ** ext);
+
+/**
+ *  Build the table of syntactic rules for a policy.
+ *  @param policy The policy for which to build the table.
+ *  This policy will be modified by this call.
+ *  @return 0 on success and < 0 on error; if the call fails,
+ *  errno will be set.
+ */
+	extern int qpol_policy_build_syn_rule_table(qpol_policy_t * policy);
 
 /* forward declarations: see avrule_query.h and terule_query.h */
-struct qpol_avrule;
-struct qpol_terule;
+	struct qpol_avrule;
+	struct qpol_terule;
 
 /**
  *  Get an iterator over the syntactic rules contributing to an av rule.
@@ -61,7 +75,7 @@ struct qpol_terule;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_avrule_get_syn_avrule_iter(qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter);
+	extern int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_avrule *rule, qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator over the syntactic rules contributing to a type rule.
@@ -75,7 +89,10 @@ extern int qpol_avrule_get_syn_avrule_iter(qpol_policy_t *policy, struct qpol_av
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_terule_get_syn_terule_iter(qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter);
+	extern int qpol_terule_get_syn_terule_iter(qpol_policy_t * policy, struct qpol_terule *rule, qpol_iterator_t ** iter);
 
-#endif /* QPOL_POLICY_EXTEND_H */
+#ifdef	__cplusplus
+}
+#endif
 
+#endif				       /* QPOL_POLICY_EXTEND_H */

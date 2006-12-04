@@ -8,7 +8,8 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libsefs_a_SOURCES = \
-	file_contexts.c
+	file_contexts.c \
+	util.c
 
 noinst_LIBRARIES = libsqlite.a
 libsqlite_a_SOURCES =

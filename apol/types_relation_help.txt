@@ -1,6 +1,6 @@
 An overview of types relationship summary analysis
-apol, version 3.0
-October 1, 2006
+apol, version 3.0.1
+December 1, 2006
 selinux@tresys.com
 
 
