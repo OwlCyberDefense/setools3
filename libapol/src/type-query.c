@@ -33,13 +33,15 @@
 
 #include <errno.h>
 
-struct apol_type_query {
+struct apol_type_query
+{
 	char *type_name;
 	unsigned int flags;
 	regex_t *regex;
 };
 
-struct apol_attr_query {
+struct apol_attr_query
+{
 	char *attr_name;
 	unsigned int flags;
 	regex_t *regex;
@@ -47,9 +49,12 @@ struct apol_attr_query {
 
 /******************** type queries ********************/
 
-int apol_get_type_by_query(apol_policy_t *p,
-			   apol_type_query_t *t,
-			   apol_vector_t **v)
+int apol_get_type_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v)
+{
+	return apol_type_get_by_query(p, t, v);
+}
+
+int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1;
@@ -61,14 +66,13 @@ int apol_get_type_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_type_t *type;
 		unsigned char isattr, isalias;
-		if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&type) < 0) {
 			goto cleanup;
 		}
-		if (qpol_type_get_isattr(p->p, type, &isattr) < 0 ||
-		    qpol_type_get_isalias(p->p, type, &isalias) < 0) {
+		if (qpol_type_get_isattr(p->p, type, &isattr) < 0 || qpol_type_get_isalias(p->p, type, &isalias) < 0) {
 			goto cleanup;
 		}
 		if (isattr || isalias) {
@@ -80,8 +84,7 @@ int apol_get_type_by_query(apol_policy_t *p,
 							t->flags, &(t->regex));
 			if (compval < 0) {
 				goto cleanup;
-			}
-			else if (compval == 0) {
+			} else if (compval == 0) {
 				continue;
 			}
 		}
@@ -92,7 +95,7 @@ int apol_get_type_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -105,7 +108,7 @@ apol_type_query_t *apol_type_query_create(void)
 	return calloc(1, sizeof(apol_type_query_t));
 }
 
-void apol_type_query_destroy(apol_type_query_t **t)
+void apol_type_query_destroy(apol_type_query_t ** t)
 {
 	if (*t != NULL) {
 		free((*t)->type_name);
@@ -115,21 +118,24 @@ void apol_type_query_destroy(apol_type_query_t **t)
 	}
 }
 
-int apol_type_query_set_type(apol_policy_t *p, apol_type_query_t *t, const char *name)
+int apol_type_query_set_type(apol_policy_t * p, apol_type_query_t * t, const char *name)
 {
 	return apol_query_set(p, &t->type_name, &t->regex, name);
 }
 
-int apol_type_query_set_regex(apol_policy_t *p, apol_type_query_t *t, int is_regex)
+int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, int is_regex)
 {
 	return apol_query_set_regex(p, &t->flags, is_regex);
 }
 
 /******************** attribute queries ********************/
 
-int apol_get_attr_by_query(apol_policy_t *p,
-			   apol_attr_query_t *a,
-			   apol_vector_t **v)
+int apol_get_attr_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v)
+{
+	return apol_attr_get_by_query(p, a, v);
+}
+
+int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1;
@@ -141,14 +147,13 @@ int apol_get_attr_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_type_t *type;
 		unsigned char isattr, isalias;
-		if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&type) < 0) {
 			goto cleanup;
 		}
-		if (qpol_type_get_isattr(p->p, type, &isattr) < 0 ||
-		    qpol_type_get_isalias(p->p, type, &isalias) < 0) {
+		if (qpol_type_get_isattr(p->p, type, &isattr) < 0 || qpol_type_get_isalias(p->p, type, &isalias) < 0) {
 			goto cleanup;
 		}
 		if (!isattr || isalias) {
@@ -160,12 +165,10 @@ int apol_get_attr_by_query(apol_policy_t *p,
 			if (qpol_type_get_name(p->p, type, &attr_name) < 0) {
 				goto cleanup;
 			}
-			compval = apol_compare(p, attr_name, a->attr_name,
-					       a->flags, &(a->regex));
+			compval = apol_compare(p, attr_name, a->attr_name, a->flags, &(a->regex));
 			if (compval < 0) {
 				goto cleanup;
-			}
-			else if (compval == 0) {
+			} else if (compval == 0) {
 				continue;
 			}
 		}
@@ -176,7 +179,7 @@ int apol_get_attr_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -189,7 +192,7 @@ apol_attr_query_t *apol_attr_query_create(void)
 	return calloc(1, sizeof(apol_attr_query_t));
 }
 
-void apol_attr_query_destroy(apol_attr_query_t **a)
+void apol_attr_query_destroy(apol_attr_query_t ** a)
 {
 	if (*a != NULL) {
 		free((*a)->attr_name);
@@ -199,12 +202,12 @@ void apol_attr_query_destroy(apol_attr_query_t **a)
 	}
 }
 
-int apol_attr_query_set_attr(apol_policy_t *p, apol_attr_query_t *a, const char *name)
+int apol_attr_query_set_attr(apol_policy_t * p, apol_attr_query_t * a, const char *name)
 {
 	return apol_query_set(p, &a->attr_name, &a->regex, name);
 }
 
-int apol_attr_query_set_regex(apol_policy_t *p, apol_attr_query_t *a, int is_regex)
+int apol_attr_query_set_regex(apol_policy_t * p, apol_attr_query_t * a, int is_regex)
 {
 	return apol_query_set_regex(p, &a->flags, is_regex);
 }

@@ -33,14 +33,15 @@
 /**
  *  Generic vector structure. Stores elements as void*.
  */
-struct apol_vector {
+struct apol_vector
+{
 	/** The array of element pointers, which will be resized as needed. */
-	void	**array;
+	void **array;
 	/** The number of elements currently stored in array. */
-	size_t	size;
+	size_t size;
 	/** The actual amount of space in array. This amount will always
 	 *  be >= size and will grow exponentially as needed. */
-	size_t	capacity;
+	size_t capacity;
 };
 
 apol_vector_t *apol_vector_create(void)
@@ -59,7 +60,7 @@ apol_vector_t *apol_vector_create_with_capacity(size_t cap)
 	v = calloc(1, sizeof(apol_vector_t));
 	if (!v)
 		return NULL;
-	v->array = calloc((v->capacity = cap), sizeof(void*));
+	v->array = calloc((v->capacity = cap), sizeof(void *));
 	if (!(v->array)) {
 		error = errno;
 		free(v);
@@ -70,17 +71,16 @@ apol_vector_t *apol_vector_create_with_capacity(size_t cap)
 	return v;
 }
 
-apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t *iter)
+apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter)
 {
 	size_t iter_size;
 	apol_vector_t *v;
 	void *item;
 	int error;
-	if (qpol_iterator_get_size(iter, &iter_size) < 0 ||
-	    (v = apol_vector_create_with_capacity(iter_size)) == NULL) {
+	if (qpol_iterator_get_size(iter, &iter_size) < 0 || (v = apol_vector_create_with_capacity(iter_size)) == NULL) {
 		return NULL;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, &item)) {
 			error = errno;
 			free(v);
@@ -92,9 +92,10 @@ apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t *iter)
 	return v;
 }
 
-apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v)
+apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data)
 {
 	apol_vector_t *new_v;
+	size_t i;
 	if (v == NULL) {
 		errno = EINVAL;
 		return NULL;
@@ -102,15 +103,19 @@ apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v)
 	if ((new_v = apol_vector_create_with_capacity(v->capacity)) == NULL) {
 		return NULL;
 	}
-	memcpy(new_v->array, v->array, v->size * sizeof(void *));
+	if (dup == NULL) {
+		memcpy(new_v->array, v->array, v->size * sizeof(void *));
+	} else {
+		for (i = 0; i < v->size; i++) {
+			new_v->array[i] = dup(v->array[i], data);
+		}
+	}
 	new_v->size = v->size;
 	return new_v;
 }
 
-apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1,
-						    const apol_vector_t *v2,
-						    apol_vector_comp_func *cmp,
-						    void* data)
+apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t * v1,
+						    const apol_vector_t * v2, apol_vector_comp_func * cmp, void *data)
 {
 	apol_vector_t *new_v;
 	size_t i, j;
@@ -136,7 +141,7 @@ apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t *v1,
 	return new_v;
 }
 
-void apol_vector_destroy(apol_vector_t **v, apol_vector_free_func *fr)
+void apol_vector_destroy(apol_vector_t ** v, apol_vector_free_func * fr)
 {
 	size_t i = 0;
 
@@ -149,14 +154,14 @@ void apol_vector_destroy(apol_vector_t **v, apol_vector_free_func *fr)
 		}
 	}
 	free((*v)->array);
-	(*v)->array = NULL;  /* this will catch instances when there
-				are multpile pointers to the same
-				vector object */
+	(*v)->array = NULL;	       /* this will catch instances when there
+				        * are multpile pointers to the same
+				        * vector object */
 	free(*v);
 	*v = NULL;
 }
 
-size_t apol_vector_get_size(const apol_vector_t *v)
+size_t apol_vector_get_size(const apol_vector_t * v)
 {
 	if (!v) {
 		errno = EINVAL;
@@ -166,7 +171,7 @@ size_t apol_vector_get_size(const apol_vector_t *v)
 	}
 }
 
-size_t apol_vector_get_capacity(const apol_vector_t *v)
+size_t apol_vector_get_capacity(const apol_vector_t * v)
 {
 	if (!v) {
 		errno = EINVAL;
@@ -176,7 +181,7 @@ size_t apol_vector_get_capacity(const apol_vector_t *v)
 	}
 }
 
-void *apol_vector_get_element(const apol_vector_t *v, size_t idx)
+void *apol_vector_get_element(const apol_vector_t * v, size_t idx)
 {
 	if (!v || !(v->array)) {
 		errno = EINVAL;
@@ -198,14 +203,13 @@ void *apol_vector_get_element(const apol_vector_t *v, size_t idx)
  *
  * @return 0 on success, -1 on error.
  */
-static int apol_vector_grow(apol_vector_t *v)
+static int apol_vector_grow(apol_vector_t * v)
 {
 	void **tmp;
 	size_t new_capacity = v->capacity;
 	if (new_capacity >= 128) {
 		new_capacity += 128;
-	}
-	else {
+	} else {
 		new_capacity *= 2;
 	}
 	tmp = realloc(v->array, new_capacity * sizeof(void *));
@@ -217,8 +221,7 @@ static int apol_vector_grow(apol_vector_t *v)
 	return 0;
 }
 
-int apol_vector_get_index(const apol_vector_t *v, void *elem,
-			  apol_vector_comp_func *cmp, void *data, size_t *i)
+int apol_vector_get_index(const apol_vector_t * v, void *elem, apol_vector_comp_func * cmp, void *data, size_t * i)
 {
 	if (!v || !i) {
 		errno = EINVAL;
@@ -226,15 +229,14 @@ int apol_vector_get_index(const apol_vector_t *v, void *elem,
 	}
 
 	for (*i = 0; *i < v->size; (*i)++) {
-		if ((cmp != NULL && cmp(v->array[*i], elem, data) == 0) ||
-		    (cmp == NULL && elem == v->array[*i])) {
+		if ((cmp != NULL && cmp(v->array[*i], elem, data) == 0) || (cmp == NULL && elem == v->array[*i])) {
 			return 0;
 		}
 	}
 	return -1;
 }
 
-int apol_vector_append(apol_vector_t *v, void *elem)
+int apol_vector_append(apol_vector_t * v, void *elem)
 {
 	if (!v) {
 		errno = EINVAL;
@@ -251,8 +253,7 @@ int apol_vector_append(apol_vector_t *v, void *elem)
 	return 0;
 }
 
-int apol_vector_append_unique(apol_vector_t *v, void *elem,
-			      apol_vector_comp_func *cmp, void *data)
+int apol_vector_append_unique(apol_vector_t * v, void *elem, apol_vector_comp_func * cmp, void *data)
 {
 	size_t i;
 	if (apol_vector_get_index(v, elem, cmp, data, &i) < 0) {
@@ -262,9 +263,7 @@ int apol_vector_append_unique(apol_vector_t *v, void *elem,
 	return 1;
 }
 
-int apol_vector_compare(apol_vector_t *a, apol_vector_t *b,
-			apol_vector_comp_func *cmp, void *data,
-			size_t *i)
+int apol_vector_compare(apol_vector_t * a, apol_vector_t * b, apol_vector_comp_func * cmp, void *data, size_t * i)
 {
 	int compval;
 	if (a == NULL || b == NULL || i == NULL) {
@@ -276,9 +275,8 @@ int apol_vector_compare(apol_vector_t *a, apol_vector_t *b,
 	for (*i = 0; *i < a_len && *i < b_len; (*i)++) {
 		if (cmp != NULL) {
 			compval = cmp(a->array[*i], b->array[*i], data);
-		}
-		else {
-			compval = (int) ((char *) a->array[*i] - (char *) b->array[*i]);
+		} else {
+			compval = (int)((char *)a->array[*i] - (char *)b->array[*i]);
 		}
 		if (compval != 0) {
 			return compval;
@@ -286,25 +284,21 @@ int apol_vector_compare(apol_vector_t *a, apol_vector_t *b,
 	}
 	if (a_len == b_len) {
 		return 0;
-	}
-	else if (a_len < b_len) {
+	} else if (a_len < b_len) {
 		return -1;
-	}
-	else {
+	} else {
 		return 1;
 	}
 }
 
-static size_t vector_qsort_partition(void **data, size_t first, size_t last,
-				     apol_vector_comp_func *cmp, void *arg)
+static size_t vector_qsort_partition(void **data, size_t first, size_t last, apol_vector_comp_func * cmp, void *arg)
 {
 	void *pivot = data[last];
 	size_t i = first, j = last;
 	while (i < j) {
 		if (cmp(data[i], pivot, arg) <= 0) {
 			i++;
-		}
-		else {
+		} else {
 			data[j] = data[i];
 			data[i] = data[j - 1];
 			j--;
@@ -314,8 +308,7 @@ static size_t vector_qsort_partition(void **data, size_t first, size_t last,
 	return j;
 }
 
-static void vector_qsort(void **data, size_t first, size_t last,
-			 apol_vector_comp_func *cmp, void *arg)
+static void vector_qsort(void **data, size_t first, size_t last, apol_vector_comp_func * cmp, void *arg)
 {
 	if (first < last) {
 		size_t i = vector_qsort_partition(data, first, last, cmp, arg);
@@ -333,21 +326,20 @@ static void vector_qsort(void **data, size_t first, size_t last,
  * Generic comparison function, which treats elements of the vector as
  * unsigned integers.
  */
-static int vector_int_comp(const void *a, const void *b, void *data __attribute__((unused)))
+static int vector_int_comp(const void *a, const void *b, void *data __attribute__ ((unused)))
 {
-	char *i = (char *) a;
-	char *j = (char *) b;
+	char *i = (char *)a;
+	char *j = (char *)b;
 	if (i < j) {
 		return -1;
-	}
-	else if (i > j) {
+	} else if (i > j) {
 		return 1;
 	}
 	return 0;
 }
 
 /* implemented as an in-place quicksort */
-void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data)
+void apol_vector_sort(apol_vector_t * v, apol_vector_comp_func * cmp, void *data)
 {
 	if (!v) {
 		errno = EINVAL;
@@ -361,7 +353,7 @@ void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data)
 	}
 }
 
-void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, void *data, apol_vector_free_func *fr)
+void apol_vector_sort_uniquify(apol_vector_t * v, apol_vector_comp_func * cmp, void *data, apol_vector_free_func * fr)
 {
 	if (!v) {
 		errno = EINVAL;
@@ -380,8 +372,7 @@ void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, voi
 				/* found a unique element */
 				j++;
 				v->array[j] = v->array[i];
-			}
-			else {
+			} else {
 				/* found a non-unique element */
 				if (fr != NULL) {
 					fr(v->array[i]);
@@ -397,8 +388,7 @@ void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, voi
 				/* found a unique element */
 				j++;
 				v->array[j] = v->array[i];
-			}
-			else {
+			} else {
 				/* found a non-unique element */
 				if (fr != NULL) {
 					fr(v->array[i]);
@@ -414,12 +404,12 @@ void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, voi
 	}
 }
 
-int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src)
+int apol_vector_cat(apol_vector_t * dest, const apol_vector_t * src)
 {
 	size_t i, orig_size, cap;
 	void **a;
 	if (!src || !apol_vector_get_size(src)) {
-		return 0; /* nothing to append */
+		return 0;	       /* nothing to append */
 	}
 
 	if (!dest) {
@@ -432,8 +422,7 @@ int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src)
 			/* revert if possible */
 			if (orig_size == 0) {
 				cap = 1;
-			}
-			else {
+			} else {
 				cap = orig_size;
 			}
 			a = realloc(dest->array, cap * sizeof(*a));
@@ -448,7 +437,7 @@ int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src)
 	return 0;
 }
 
-int apol_vector_remove(apol_vector_t *v, const size_t idx)
+int apol_vector_remove(apol_vector_t * v, const size_t idx)
 {
 	if (v == NULL || idx >= v->size) {
 		errno = EINVAL;

@@ -1,5 +1,5 @@
  /* Copyright (C) 2001-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
+  * see file 'COPYING' for use and warranty information */
 
 /* 
  * Author: mayerf@tresys.com 
@@ -14,8 +14,7 @@
 #include <tk.h>
 #include "../libapol-tcl/apol_tcl_other.h"
 
-
-int Tcl_AppInit(Tcl_Interp *interp)
+int Tcl_AppInit(Tcl_Interp * interp)
 {
 	if (Tcl_Init(interp) == TCL_ERROR) {
 		return TCL_ERROR;
@@ -25,19 +24,15 @@ int Tcl_AppInit(Tcl_Interp *interp)
 	}
 	/* apolicy packagae initialization */
 	if (apol_tcl_init(interp) == TCL_ERROR) {
-     		return TCL_ERROR;
-     	}
+		return TCL_ERROR;
+	}
 
-    	return TCL_OK;
+	return TCL_OK;
 }
 
 int main(int argc, char *argv[])
 {
 
 	Tk_Main(argc, argv, Tcl_AppInit);
-  	return(0);
+	return (0);
 }
-
-
-
-

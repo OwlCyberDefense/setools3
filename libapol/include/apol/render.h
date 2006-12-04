@@ -31,6 +31,11 @@
 #ifndef APOL_RENDER_H
 #define APOL_RENDER_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "policy.h"
 #include "mls-query.h"
 #include "vector.h"
@@ -47,7 +52,7 @@
  * @return A newly allocated string, which the caller must free.
  * Returns NULL on error.
  */
-extern char *apol_ipv4_addr_render(apol_policy_t *p, uint32_t addr);
+	extern char *apol_ipv4_addr_render(apol_policy_t * p, uint32_t addr);
 
 /**
  * Given an IPv6 address (or mask) in qpol byte order, allocate and
@@ -59,7 +64,7 @@ extern char *apol_ipv4_addr_render(apol_policy_t *p, uint32_t addr);
  * @return A newly allocated string, which the caller must free.
  * Returns NULL on error.
  */
-extern char *apol_ipv6_addr_render(apol_policy_t *p, uint32_t addr[4]);
+	extern char *apol_ipv6_addr_render(apol_policy_t * p, uint32_t addr[4]);
 
 /**
  * Creates a string containing the textual representation of
@@ -70,6 +75,10 @@ extern char *apol_ipv6_addr_render(apol_policy_t *p, uint32_t addr[4]);
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-extern char *apol_qpol_context_render(apol_policy_t *p, qpol_context_t *context);
+	extern char *apol_qpol_context_render(apol_policy_t * p, qpol_context_t * context);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

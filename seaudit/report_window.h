@@ -20,14 +20,15 @@
  * report_window object. SEAudit will remember any settings the user  
  * has made to the report dialog since initialization.  
  */
-typedef struct report_window {
-	bool_t use_entire_log;	
-	GtkWindow *window;		/* refers to the GTK widget */
-	seaudit_window_t *parent; 	/* refers to the seaudit parent window */
+typedef struct report_window
+{
+	bool_t use_entire_log;
+	GtkWindow *window;	       /* refers to the GTK widget */
+	seaudit_window_t *parent;      /* refers to the seaudit parent window */
 	GladeXML *xml;
 	GString *window_title;
-	seaudit_report_t *report_info;  /* options to pass to seaudit-report generation object */
-	audit_log_t *entire_log; 
+	seaudit_report_t *report_info; /* options to pass to seaudit-report generation object */
+	audit_log_t *entire_log;
 } report_window_t;
 
 /* Function: report_window_create()
@@ -42,14 +43,14 @@ typedef struct report_window {
  *		will not attempt to use the settings from the seaudit config file.
  *	- title(optional) - string for the window title.
  */
-report_window_t *report_window_create(seaudit_window_t *seaudit_window, seaudit_conf_t *seaudit_conf, const char *title);
+report_window_t *report_window_create(seaudit_window_t * seaudit_window, seaudit_conf_t * seaudit_conf, const char *title);
 
 /* Function: report_window_destroy()
  * Description: This function destroys an instance of the report window object.
  * Arguments: 1
  * 	- report_window - a pointer to a report_window struct.
  */
-void report_window_destroy(report_window_t *report_window);
+void report_window_destroy(report_window_t * report_window);
 
 /* Function: report_window_display()
  * Description: This function displays the report dialog from the GUI. SEAudit 
@@ -59,6 +60,6 @@ void report_window_destroy(report_window_t *report_window);
  * Arguments: 1
  * 	- report_window - a pointer to a report_window struct.
  */
-void report_window_display(report_window_t *report_window);
+void report_window_display(report_window_t * report_window);
 
 #endif

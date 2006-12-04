@@ -14,12 +14,14 @@
 #ifndef APOL_QUEUE_H
 #define APOL_QUEUE_H
 
-typedef struct apol_queue_node {
-	void * element;
+typedef struct apol_queue_node
+{
+	void *element;
 	struct apol_queue_node *next;
 } apol_queue_node_t;
 
-typedef struct apol_queue {
+typedef struct apol_queue
+{
 	apol_queue_node_t *head;
 	apol_queue_node_t *tail;
 } apol_queue_t;
@@ -40,7 +42,7 @@ apol_queue_t *apol_queue_create(void);
  *
  * @return 0 on success, < 0 on error.
  */
-int apol_queue_insert(apol_queue_t *q, void *element);
+int apol_queue_insert(apol_queue_t * q, void *element);
 
 /**
  * Adds an element to the beginning of a queue.
@@ -50,7 +52,7 @@ int apol_queue_insert(apol_queue_t *q, void *element);
  *
  * @return 0 on success, < 0 on error.
  */
-int apol_queue_push(apol_queue_t *q, void *element);
+int apol_queue_push(apol_queue_t * q, void *element);
 
 /**
  * Remove the first element from a queue and return the data; the
@@ -59,7 +61,7 @@ int apol_queue_push(apol_queue_t *q, void *element);
  *
  * @return First element of a queue, or NULL if nothing is there.
  */
-void *apol_queue_remove(apol_queue_t *q);
+void *apol_queue_remove(apol_queue_t * q);
 
 /**
  * Return the data within the first element, but do not remove it from
@@ -67,7 +69,7 @@ void *apol_queue_remove(apol_queue_t *q);
  *
  * @return First element of a queue, or NULL if nothing is there.
  */
-void *apol_queue_head(apol_queue_t *q);
+void *apol_queue_head(apol_queue_t * q);
 
 /**
  * Destroy the referenced queue, but <i>do not</i> attempt to free the
@@ -77,9 +79,8 @@ void *apol_queue_head(apol_queue_t *q);
  *
  * @param Reference to a queue to destroy.
  */
-void apol_queue_destroy(apol_queue_t **q);
+void apol_queue_destroy(apol_queue_t ** q);
 
 #endif
-
 
 /* FLASK */

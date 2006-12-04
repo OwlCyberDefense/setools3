@@ -14,20 +14,20 @@
 #include <string.h>
 
 static int seaudit_window_view_matches_tab_index(gconstpointer data, gconstpointer index);
-static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[]);
-static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView *view, const char *name,
-						       GtkCellRenderer *renderer, int field,
-						       int max_width, bool_t visibility[]);
-static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn *column, gpointer user_data);
-static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *window);
-static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, seaudit_window_t *window);
+static int seaudit_window_create_list(GtkTreeView * view, bool_t visibility[]);
+static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView * view, const char *name,
+						       GtkCellRenderer * renderer, int field, int max_width, bool_t visibility[]);
+static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn * column, gpointer user_data);
+static void seaudit_window_close_view(GtkButton * button, seaudit_window_t * window);
+static void seaudit_window_on_notebook_switch_page(GtkNotebook * notebook, GtkNotebookPage * page, guint pagenum,
+						   seaudit_window_t * window);
 
 extern seaudit_t *seaudit_app;
 
 /*
  * seaudit_window_t public functions
  */
-seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibility[])
+seaudit_window_t *seaudit_window_create(audit_log_t * log, bool_t column_visibility[])
 {
 	seaudit_window_t *window;
 	GString *path;
@@ -35,7 +35,7 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	GtkWidget *vbox;
 
 	dir = apol_file_find("seaudit.glade");
-	if (!dir){
+	if (!dir) {
 		fprintf(stderr, "could not find seaudit.glade\n");
 		return NULL;
 	}
@@ -53,7 +53,7 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	window->window = GTK_WINDOW(glade_xml_get_widget(window->xml, "TopWindow"));
 	window->notebook = GTK_NOTEBOOK(gtk_notebook_new());
 	g_signal_connect_after(G_OBJECT(window->notebook), "switch-page",
-			 G_CALLBACK(seaudit_window_on_notebook_switch_page), window);
+			       G_CALLBACK(seaudit_window_on_notebook_switch_page), window);
 	vbox = glade_xml_get_widget(window->xml, "NotebookVBox");
 	gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(window->notebook));
 	gtk_widget_show(GTK_WIDGET(window->notebook));
@@ -65,38 +65,33 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 }
 
 static void
-seaudit_window_tree_view_onSelect_ViewEntireMsg(GtkTreeView *treeview,
-	GtkTreePath *path,
-	GtkTreeViewColumn *column,
-	gpointer user_data)
+seaudit_window_tree_view_onSelect_ViewEntireMsg(GtkTreeView * treeview,
+						GtkTreePath * path, GtkTreeViewColumn * column, gpointer user_data)
 {
 	/* we passed the view as userdata when we connected the signal */
 	seaudit_window_view_entire_message_in_textbox(NULL);
 }
 
-static void
-seaudit_window_popup_menu_on_view_msg(GtkWidget *menuitem, gpointer user_data)
+static void seaudit_window_popup_menu_on_view_msg(GtkWidget * menuitem, gpointer user_data)
 {
 	int idx = GPOINTER_TO_INT(user_data);
 
 	seaudit_window_view_entire_message_in_textbox(&idx);
 }
 
-static void seaudit_window_popup_menu_on_query_policy(GtkWidget *menuitem, gpointer user_data)
+static void seaudit_window_popup_menu_on_query_policy(GtkWidget * menuitem, gpointer user_data)
 {
 	int idx = GPOINTER_TO_INT(user_data);
 
 	query_window_create(&idx);
 }
 
-static void
-seaudit_window_popup_menu_on_export_selection(GtkWidget *menuitem, gpointer userdata)
+static void seaudit_window_popup_menu_on_export_selection(GtkWidget * menuitem, gpointer userdata)
 {
 	seaudit_on_export_selection_activated();
 }
 
-static void
-seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, int *idx)
+static void seaudit_window_popup_menu(GtkWidget * treeview, GdkEventButton * event, int *idx)
 {
 	GtkWidget *menu, *menuitem, *menuitem2, *menuitem3;
 	gint data = *idx;
@@ -114,12 +109,9 @@ seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, int *idx)
 		return;
 	}
 
-	g_signal_connect(menuitem, "activate",
-	             (GCallback) seaudit_window_popup_menu_on_view_msg, GINT_TO_POINTER(data));
-	g_signal_connect(menuitem2, "activate",
-	             (GCallback) seaudit_window_popup_menu_on_query_policy, GINT_TO_POINTER(data));
-	g_signal_connect(menuitem3, "activate",
-	             (GCallback) seaudit_window_popup_menu_on_export_selection, NULL);
+	g_signal_connect(menuitem, "activate", (GCallback) seaudit_window_popup_menu_on_view_msg, GINT_TO_POINTER(data));
+	g_signal_connect(menuitem2, "activate", (GCallback) seaudit_window_popup_menu_on_query_policy, GINT_TO_POINTER(data));
+	g_signal_connect(menuitem3, "activate", (GCallback) seaudit_window_popup_menu_on_export_selection, NULL);
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem2);
@@ -128,14 +120,12 @@ seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, int *idx)
 	gtk_widget_show_all(menu);
 
 	/* Note: event can be NULL here when called from seaudit_window_onPopupMenu;
-	*  gdk_event_get_time() accepts a NULL argument */
+	 *  gdk_event_get_time() accepts a NULL argument */
 	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
-	           (event != NULL) ? event->button : 0,
-	           gdk_event_get_time((GdkEvent*)event));
+		       (event != NULL) ? event->button : 0, gdk_event_get_time((GdkEvent *) event));
 }
 
-static gboolean
-seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
+static gboolean seaudit_window_onButtonPressed(GtkWidget * treeview, GdkEventButton * event, gpointer userdata)
 {
 	GtkTreePath *path;
 	GtkTreeSelection *selection;
@@ -145,15 +135,12 @@ seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpoin
 	int fltr_msg_idx;
 
 	/* single click with the right mouse button? */
-	if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3) {
+	if (event->type == GDK_BUTTON_PRESS && event->button == 3) {
 		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
 
 		/* Get tree path for row that was clicked */
-		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
-						  event->x,
-						  event->y,
-						  &path, NULL, NULL, NULL)) {
-		        glist = gtk_tree_selection_get_selected_rows(selection, &model);
+		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview), event->x, event->y, &path, NULL, NULL, NULL)) {
+			glist = gtk_tree_selection_get_selected_rows(selection, &model);
 			if (glist == NULL) {
 				gtk_tree_path_free(path);
 				return FALSE;
@@ -162,42 +149,41 @@ seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpoin
 				fprintf(stderr, "Could not get valid iterator for the selected path.\n");
 				gtk_tree_path_free(path);
 				g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-				g_list_free (glist);
+				g_list_free(glist);
 				return FALSE;
 			}
-			fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
+			fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore *) model, &iter);
 
 			seaudit_window_popup_menu(treeview, event, &fltr_msg_idx);
 			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-			g_list_free (glist);
+			g_list_free(glist);
 			gtk_tree_path_free(path);
 		}
-		return TRUE; /* we handled this */
-	} else if (event->type == GDK_BUTTON_PRESS  &&  event->button == 1) {
+		return TRUE;	       /* we handled this */
+	} else if (event->type == GDK_BUTTON_PRESS && event->button == 1) {
 		/* remember that we don't care about deselection, because you can't
-		   deselect rows so something will always be selected unless we reload*/
+		 * deselect rows so something will always be selected unless we reload */
 		seaudit_view_entire_selection_update_sensitive(FALSE);
 	}
-	return FALSE; /* we did not handle this */
+	return FALSE;		       /* we did not handle this */
 }
 
-static gboolean
-seaudit_window_onPopupMenu(GtkWidget *treeview, gpointer userdata)
+static gboolean seaudit_window_onPopupMenu(GtkWidget * treeview, gpointer userdata)
 {
 	seaudit_window_popup_menu(treeview, NULL, NULL);
 
-	return TRUE; /* we handled this */
+	return TRUE;		       /* we handled this */
 }
 
-
-seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, bool_t *column_visibility, const char *view_name)
+seaudit_filtered_view_t *seaudit_window_add_new_view(seaudit_window_t * window, audit_log_t * log, bool_t * column_visibility,
+						     const char *view_name)
 {
 	seaudit_filtered_view_t *view;
 	GtkWidget *scrolled_window, *tree_view, *button, *label;
 	gint page_index;
 	GtkWidget *hbox, *image;
 	char tab_title[24];
-	GtkTreeSelection  *selection;
+	GtkTreeSelection *selection;
 
 	if (window == NULL)
 		return NULL;
@@ -245,7 +231,7 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 	gtk_widget_show(image);
 	gtk_widget_show(scrolled_window);
 	gtk_widget_show(tree_view);
-	page_index = gtk_notebook_get_n_pages(window->notebook)-1;
+	page_index = gtk_notebook_get_n_pages(window->notebook) - 1;
 	seaudit_filtered_view_set_notebook_index(view, page_index);
 	window->views = g_list_append(window->views, view);
 	gtk_notebook_set_current_page(window->notebook, page_index);
@@ -254,7 +240,7 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 	return view;
 }
 
-void seaudit_window_open_view(seaudit_window_t *window, audit_log_t *log, bool_t *column_visibility)
+void seaudit_window_open_view(seaudit_window_t * window, audit_log_t * log, bool_t * column_visibility)
 {
 	multifilter_window_t *multifilter_window;
 	seaudit_filtered_view_t *view;
@@ -275,14 +261,14 @@ void seaudit_window_open_view(seaudit_window_t *window, audit_log_t *log, bool_t
 	seaudit_filtered_view_do_filter(view, NULL);
 }
 
-int seaudit_window_get_num_views(seaudit_window_t *window)
+int seaudit_window_get_num_views(seaudit_window_t * window)
 {
 	if (!window)
 		return -1;
 	return gtk_notebook_get_n_pages(window->notebook);
 }
 
-void seaudit_window_save_current_view(seaudit_window_t *window, gboolean saveas)
+void seaudit_window_save_current_view(seaudit_window_t * window, gboolean saveas)
 {
 	seaudit_filtered_view_t *view;
 
@@ -293,7 +279,7 @@ void seaudit_window_save_current_view(seaudit_window_t *window, gboolean saveas)
 	seaudit_filtered_view_save_view(view, saveas);
 }
 
-seaudit_filtered_view_t* seaudit_window_get_current_view(seaudit_window_t *window)
+seaudit_filtered_view_t *seaudit_window_get_current_view(seaudit_window_t * window)
 {
 	gint index;
 	GList *node;
@@ -308,13 +294,12 @@ seaudit_filtered_view_t* seaudit_window_get_current_view(seaudit_window_t *windo
 	return node->data;
 }
 
-void seaudit_window_filter_views(seaudit_window_t *window)
+void seaudit_window_filter_views(seaudit_window_t * window)
 {
 	if (!window)
 		return;
-	g_list_foreach(window->views, (GFunc)seaudit_filtered_view_do_filter, NULL);
+	g_list_foreach(window->views, (GFunc) seaudit_filtered_view_do_filter, NULL);
 }
-
 
 /*
  * Helper function for seaudit_window_t object
@@ -325,7 +310,7 @@ static int seaudit_window_view_matches_tab_index(gconstpointer data, gconstpoint
 	if (!data) {
 		return -1;
 	}
-	view = (seaudit_filtered_view_t*) data;
+	view = (seaudit_filtered_view_t *) data;
 	if (view->notebook_index == GPOINTER_TO_INT(index))
 		return 0;
 	return 1;
@@ -334,7 +319,7 @@ static int seaudit_window_view_matches_tab_index(gconstpointer data, gconstpoint
 /*
  * Gtk Callbacks registered by seaudit_window_t
  */
-static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn *column, gpointer user_data)
+static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn * column, gpointer user_data)
 {
 	GtkTreeSelection *selection;
 	GList *selected_rows;
@@ -347,18 +332,18 @@ static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn *column, gpoi
 	if (selected_rows == NULL)
 		return;
 	path = selected_rows->data;
-	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(user_data),
-				     path, NULL, FALSE, 0.0, 0.0);
+	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(user_data), path, NULL, FALSE, 0.0, 0.0);
 }
 
-static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, seaudit_window_t *window)
+static void seaudit_window_on_notebook_switch_page(GtkNotebook * notebook, GtkNotebookPage * page, guint pagenum,
+						   seaudit_window_t * window)
 {
 	seaudit_filtered_view_t *view;
 	GtkTreeSelection *selection;
 
 	seaudit_update_status_bar(seaudit_app);
 	/* if the current page has a selected row then
-	   make sure the view entire message button is sensitive */
+	 * make sure the view entire message button is sensitive */
 	if (!window)
 		return;
 	view = seaudit_window_get_current_view(window);
@@ -375,26 +360,24 @@ static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNot
 /*
  * Functions to setup a treeview widget for log viewing
  */
-static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView *view, const char *name,
-						       GtkCellRenderer *renderer, int field,
-						       int max_width, bool_t visibility[])
+static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView * view, const char *name,
+						       GtkCellRenderer * renderer, int field, int max_width, bool_t visibility[])
 {
 	GtkTreeViewColumn *column;
 
 	column = gtk_tree_view_column_new_with_attributes(name, renderer, "text", field, NULL);
 	gtk_tree_view_append_column(view, column);
-	gtk_tree_view_column_set_clickable (column, TRUE);
+	gtk_tree_view_column_set_clickable(column, TRUE);
 	gtk_tree_view_column_set_resizable(column, TRUE);
 	gtk_tree_view_column_set_sort_column_id(column, field);
 	gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
 	gtk_tree_view_column_set_fixed_width(column, max_width);
 	gtk_tree_view_column_set_visible(column, visibility[field]);
-	g_signal_connect_after(G_OBJECT(column), "clicked", G_CALLBACK(seaudit_window_on_log_column_clicked),
-			       view);
+	g_signal_connect_after(G_OBJECT(column), "clicked", G_CALLBACK(seaudit_window_on_log_column_clicked), view);
 	return column;
 }
 
-static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *window)
+static void seaudit_window_close_view(GtkButton * button, seaudit_window_t * window)
 {
 	seaudit_filtered_view_t *view;
 	GList *item;
@@ -414,14 +397,14 @@ static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *windo
 	seaudit_filtered_view_destroy(item->data);
 	g_list_free(item);
 	gtk_notebook_remove_page(window->notebook, index);
-	for (item = window->views; item != NULL; item = g_list_next(item)){
-		view = (seaudit_filtered_view_t*)item->data;
+	for (item = window->views; item != NULL; item = g_list_next(item)) {
+		view = (seaudit_filtered_view_t *) item->data;
 		if (view->notebook_index >= index)
 			view->notebook_index--;
 	}
 }
 
-static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[])
+static int seaudit_window_create_list(GtkTreeView * view, bool_t visibility[])
 {
 	GtkCellRenderer *renderer;
 	PangoLayout *layout;
@@ -520,10 +503,10 @@ static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[])
 
 	column = gtk_tree_view_column_new_with_attributes("Other", renderer, "text", AVC_MISC_FIELD, NULL);
 	gtk_tree_view_append_column(view, column);
-	gtk_tree_view_column_set_clickable (column, FALSE);
+	gtk_tree_view_column_set_clickable(column, FALSE);
 	gtk_tree_view_column_set_resizable(column, TRUE);
 	gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
-	gtk_tree_view_column_set_sort_column_id(column, AVC_MISC_FIELD );
+	gtk_tree_view_column_set_sort_column_id(column, AVC_MISC_FIELD);
 	gtk_tree_view_column_set_sort_indicator(column, FALSE);
 	gtk_tree_view_column_set_visible(column, visibility[AVC_MISC_FIELD]);
 

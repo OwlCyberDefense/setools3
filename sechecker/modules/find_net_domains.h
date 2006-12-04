@@ -27,24 +27,33 @@
 #ifndef FIND_NET_DOMAINS
 #define FIND_NET_DOMAINS
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/avrule-query.h>
 
 /* The find_net_domains_data structure is used to hold the check specific
  *  private data of a module. */
-typedef struct find_net_domains_data {
-	apol_vector_t *net_objs;
-} find_net_domains_data_t;
+	typedef struct find_net_domains_data
+	{
+		apol_vector_t *net_objs;
+	} find_net_domains_data_t;
 
-find_net_domains_data_t *find_net_domains_data_new(void);
-void find_net_domains_data_free(void *data);
+	find_net_domains_data_t *find_net_domains_data_new(void);
+	void find_net_domains_data_free(void *data);
 
-int find_net_domains_register(sechk_lib_t *lib);
-int find_net_domains_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_net_domains_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_net_domains_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+	int find_net_domains_register(sechk_lib_t * lib);
+	int find_net_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_net_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_net_domains_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
 
+#ifdef	__cplusplus
+}
 #endif
 
+#endif

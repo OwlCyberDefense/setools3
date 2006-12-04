@@ -1,3 +1,32 @@
+SETools 3.0.1
+
+SETools:
+
+  * All code has been indented uniformly via the 'make indent' target.
+
+SETools libraries:
+
+  * All libraries now have a get_version() function.
+
+libqpol:
+
+  * Syntactic rule table is now off by default; it requires an
+    explicit call to qpol_policy_build_syn_rule_table() to create it.
+
+libapol:
+
+  * apol_policy_t is now an opaque structure.  apol_permmap_t is no
+    longer a public declaration.
+
+  * avrule and terule queries now have full "syntactic" searching
+    features.
+
+apol & sesearch:
+
+  * If loaded policy is source, the new syntactic search algorithm is used.
+
+==================================================
+
 SETools 3.0
 
 SETools:
@@ -11,12 +40,12 @@ SETools libraries:
   * Rewrite of back-end of SETools to use libsepol data structures.
     Most things should run notably faster.
 
-  * All exported library functions have a standarized naming
+  * All exported library functions have a standardized naming
     convention and are fully documented.  This will prove helpful for
     third-party developers integrating SETools into their own
     projects.
 
-  * For policies version 15 or greater, domain transition anlysis now
+  * For policies version 15 or greater, domain transition analysis now
     takes into consideration setexec permission and/or type_transition
     rules.
 

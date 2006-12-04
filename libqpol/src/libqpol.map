@@ -35,6 +35,7 @@
 		qpol_type_*;
 		qpol_user_*;
 		qpol_validatetrans_*;
+		libqpol_get_version;
 	local: *;
 };
  

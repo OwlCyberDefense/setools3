@@ -81,6 +81,7 @@ The following are not strictly required but highly recommended:
   tk-8.4.9-devel or greater
   glib-1.2
   gtk+-2.0
+  gdk-pixbuf-2.0
   libglade-2.0
 These packages are needed to build SETools's graphical tools.
 
@@ -102,13 +103,13 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.0
+  $ cd setools-3.0.1
   $ ./configure
   $ make
   $ make install
 
 This will put the binaries in /usr/local/bin, data files in
-/usr/local/share/setool-3.0, and libraries in /usr/local/lib.
+/usr/local/share/setool-3.0.1, and libraries in /usr/local/lib.
 Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
 $LD_LIBRARY_PATH everything should now work.
 
@@ -412,7 +413,7 @@ OSS website, http://oss.tresys.com/projects/setools.
 SETools source code is maintained within a Subversion repository.
 From the command line do:
 
-  $ svn co http://oss.tresys.com/repos/setools/trunk/setools
+  $ svn co http://oss.tresys.com/repos/setools/trunk/ setools
 
 You may also browse the SVN repository at
 http://oss.tresys.com/projects/setools/browser.

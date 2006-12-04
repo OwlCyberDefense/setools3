@@ -26,12 +26,17 @@
 #ifndef QPOL_OCON_QUERY_H
 #define QPOL_OCON_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 
-typedef struct qpol_genfscon qpol_genfscon_t;
+	typedef struct qpol_genfscon qpol_genfscon_t;
 
 /**
  *  Get a genfscon statement by file system name and path.
@@ -43,7 +48,8 @@ typedef struct qpol_genfscon qpol_genfscon_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *genfscon will be NULL.
  */
-extern int qpol_policy_get_genfscon_by_name(qpol_policy_t *policy, const char *name, const char *path, qpol_genfscon_t **genfscon);
+	extern int qpol_policy_get_genfscon_by_name(qpol_policy_t * policy, const char *name, const char *path,
+						    qpol_genfscon_t ** genfscon);
 
 /**
  *  Get an iterator for the genfscon statements in a policy.
@@ -57,7 +63,7 @@ extern int qpol_policy_get_genfscon_by_name(qpol_policy_t *policy, const char *n
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_genfscon_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
+	extern int qpol_policy_get_genfscon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the file system name from a gefscon statement.
@@ -68,7 +74,7 @@ extern int qpol_policy_get_genfscon_iter(qpol_policy_t *policy, qpol_iterator_t 
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_genfscon_get_name(qpol_policy_t *policy, qpol_genfscon_t *genfs, char **name);
+	extern int qpol_genfscon_get_name(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **name);
 
 /**
  *  Get the relative path from a gefscon statement.
@@ -79,7 +85,7 @@ extern int qpol_genfscon_get_name(qpol_policy_t *policy, qpol_genfscon_t *genfs,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *path will be NULL.
  */
-extern int qpol_genfscon_get_path(qpol_policy_t *policy, qpol_genfscon_t *genfs, char **path);
+	extern int qpol_genfscon_get_path(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **path);
 
 /* values from flask do not change */
 #define QPOL_CLASS_ALL        0
@@ -100,7 +106,7 @@ extern int qpol_genfscon_get_path(qpol_policy_t *policy, qpol_genfscon_t *genfs,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *class will be 0.
  */
-extern int qpol_genfscon_get_class(qpol_policy_t *policy, qpol_genfscon_t *genfs, uint32_t *class);
+	extern int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uint32_t * class);
 
 /**
  *  Get the context from a path component of a genfscon statement.
@@ -112,6 +118,10 @@ extern int qpol_genfscon_get_class(qpol_policy_t *policy, qpol_genfscon_t *genfs
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_genfscon_get_context(qpol_policy_t *policy, qpol_genfscon_t *genfscon, qpol_context_t **context);
+	extern int qpol_genfscon_get_context(qpol_policy_t * policy, qpol_genfscon_t * genfscon, qpol_context_t ** context);
 
-#endif /* QPOL_OCON_QUERY_H */ 
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* QPOL_OCON_QUERY_H */

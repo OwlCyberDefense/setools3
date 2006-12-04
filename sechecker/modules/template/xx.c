@@ -47,7 +47,7 @@ static const char *const mod_name = "xx";
  * of the steps performed in this module's checks. If you are adding
  * additional functions you need other modules to call, see the note at
  * the bottom of this function to do so. */
-int xx_register(sechk_lib_t *lib)
+int xx_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -76,30 +76,24 @@ int xx_register(sechk_lib_t *lib)
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
 		"TODO: detailed description for this module.\n";
-	mod->opt_description = 
-		"  Module requirements:\n"
-		"    none\n"
-		"  Module dependencies:\n"
-		"    none\n"
-		"  Module options:\n"
-		"    none\n";
+	mod->opt_description =
+		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = "TODO: set proper severity";
 
 	/* TODO: assign default options (remove if none)
 	 * fill name and value and repeat as needed */
-	nv = sechk_name_value_new("","");
-	apol_vector_append(mod->options, (void*)nv);
+	nv = sechk_name_value_new("", "");
+	apol_vector_append(mod->options, (void *)nv);
 
 	/* TODO: assign requirements (remove if none)
 	 * fill name and value and repeat as needed */
-	nv = sechk_name_value_new("","");
-	apol_vector_append(mod->requirements, (void*)nv);
+	nv = sechk_name_value_new("", "");
+	apol_vector_append(mod->requirements, (void *)nv);
 
 	/* TODO: assign dependencies (remove if not needed)
 	 * fill name and value and repeat as needed */
-	nv = sechk_name_value_new("","");
-	apol_vector_append(mod->dependencies, (void*)nv);
-
+	nv = sechk_name_value_new("", "");
+	apol_vector_append(mod->dependencies, (void *)nv);
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -115,7 +109,7 @@ int xx_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = xx_init;
-	apol_vector_append(mod->functions, (void*)fn_struct);
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -130,7 +124,7 @@ int xx_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = xx_run;
-	apol_vector_append(mod->functions, (void*)fn_struct);
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	/* TODO: if the module does not have a private data structure
 	 * set this function pointer to NULL */
@@ -149,7 +143,7 @@ int xx_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = xx_print;
-	apol_vector_append(mod->functions, (void*)fn_struct);
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	/* TODO: (optional) add any other functions needed here,
 	 * add a block as above for each additional function */
@@ -160,7 +154,7 @@ int xx_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object and
  * initializes its values.  Add any option processing logic as indicated below.
  * TODO: add options processing logic */
-int xx_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int xx_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_name_value_t *opt = NULL;
 	xx_data_t *datum = NULL;
@@ -214,14 +208,13 @@ int xx_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__(
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found
  * TODO: add check logic */
-int xx_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int xx_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	xx_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	int error = 0;
-
 
 	/* TODO: define any aditional variables needed */
 
@@ -239,7 +232,7 @@ int xx_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((
 	if (mod->result)
 		return 0;
 
-	datum = (xx_data_t*)mod->data;
+	datum = (xx_data_t *) mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		error = errno;
@@ -270,7 +263,7 @@ int xx_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((
 
 	return 0;
 
-xx_run_fail:
+      xx_run_fail:
 	/* TODO: free any other memory allocated during check logic */
 	sechk_proof_free(proof);
 	sechk_item_free(item);
@@ -283,7 +276,7 @@ xx_run_fail:
  * TODO: be sure to free any allocated space in the private data */
 void xx_data_free(void *data)
 {
-	xx_data_t *datum = (xx_data_t *)data;
+	xx_data_t *datum = (xx_data_t *) data;
 
 	if (datum) {
 		/* TODO: free any allocated members of the module's
@@ -301,7 +294,7 @@ void xx_data_free(void *data)
  * detailed, and brief) TODO: fill in the indicated information in the report
  * fields as indicated below. Some alteration may be necessary for checks that
  * perform different analyses */
-int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int xx_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	xx_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -309,7 +302,7 @@ int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0;
 
-	if (!mod || !policy){
+	if (!mod || !policy) {
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
@@ -320,7 +313,7 @@ int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__
 		return -1;
 	}
 
-	datum = (xx_data_t*)mod->data;
+	datum = (xx_data_t *) mod->data;
 	outformat = mod->outputformat;
 
 	if (!mod->result) {
@@ -330,7 +323,7 @@ int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__
 	}
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	/* TODO: display the statistics of the results
 	 * typical text is "Found %i <itemtype>.\n"
@@ -357,7 +350,7 @@ int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__
 			 * print more or less than 4 items per line */
 			i %= 4;
 			/* TODO: second parameter: item name */
-			printf("%s%s", "", (i ? ", " : "\n")); 
+			printf("%s%s", "", (i ? ", " : "\n"));
 		}
 		printf("\n");
 	}
@@ -372,7 +365,7 @@ int xx_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__
 		printf("\n");
 		for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
 			item = apol_vector_get_element(mod->result->items, i);
-			printf("%s", "");/* TODO: item name */
+			printf("%s", "");	/* TODO: item name */
 			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (j = 0; j < apol_vector_get_size(item->proof); j++) {
 				proof = apol_vector_get_element(item->proof, j);
@@ -392,10 +385,9 @@ xx_data_t *xx_data_new(void)
 {
 	xx_data_t *datum = NULL;
 
-	datum = (xx_data_t*)calloc(1,sizeof(xx_data_t));
+	datum = (xx_data_t *) calloc(1, sizeof(xx_data_t));
 
 	/* TODO: initialize data */
 
 	return datum;
 }
-

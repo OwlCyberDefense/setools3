@@ -32,77 +32,101 @@
 #include <string.h>
 
 /* private data structure definitions */
-typedef struct apol_domain_trans_rule {
-	/* relavant type :
+
+/** rule container with meta data */
+typedef struct apol_domain_trans_rule
+{
+	/** relavant type :
 	 * for domain nodes either the transition target or the entrypoint type (target)
 	 * for exec nodes either the entered or calling domain (source) */
-	qpol_type_t	*type;
-	qpol_type_t	*dflt;		/* only for type_transition rules */
-	apol_vector_t	*rules;		/* of qpol_avrule_t or qpol_terule_t */
-	bool_t		used;		/* not used for setexec rules */
-	bool_t		has_no_trans;	/* for exec_rules domain also has execute_no_trans permission */
+	qpol_type_t *type;
+	/** default type, only for type_transition rules */
+	qpol_type_t *dflt;
+	/** vector of rules (of type qpol_avrule_t or qpol_terule_t) */
+	apol_vector_t *rules;
+	/** used flag, marks that a rule has previously been returned, not used for setexec rules */
+	bool_t used;
+	/** for exec_rules domain also has execute_no_trans permission */
+	bool_t has_no_trans;
 } apol_domain_trans_rule_t;
 
-typedef struct apol_domain_trans_dom_node {
-	apol_vector_t	*proc_trans_rules;	/* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
-	apol_vector_t	*ep_rules;		/* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
-	apol_vector_t	*setexec_rules;		/* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
-	apol_vector_t	*type_trans_rules;	/* of type apol_domain_trans_rule_t w/ qpol_terule_t */
+/** node representing a domain and all rules contributing to its transitions */
+typedef struct apol_domain_trans_dom_node
+{
+	/** vector of allow process transition rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *proc_trans_rules;
+	/** vector of allow file entrypoint rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *ep_rules;
+	/** vector of allow self process setexec rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *setexec_rules;
+	/** vector of type transition rules (of type apol_domain_trans_rule_t w/ qpol_terule_t) */
+	apol_vector_t *type_trans_rules;
 } apol_domain_trans_dom_node_t;
 
-typedef struct apol_domain_trans_exec_node {
-	apol_vector_t	*exec_rules;	/* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
-	apol_vector_t	*ep_rules;	/* of type apol_domain_trans_rule_t w/ qpol_avrule_t */
+/** node representing an executable type and all rules allowing its use in transitions */
+typedef struct apol_domain_trans_exec_node
+{
+	/** vector of allow file execute rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *exec_rules;
+	/** vector of allow file entrypoint rules (of type apol_domain_trans_rule_t w/ qpol_avrule_t) */
+	apol_vector_t *ep_rules;
 } apol_domain_trans_exec_node_t;
 
-typedef struct apol_domain_trans {
-	qpol_type_t	*start_type;
-	qpol_type_t	*ep_type;
-	qpol_type_t	*end_type;
-	apol_vector_t	*proc_trans_rules;
-	apol_vector_t	*ep_rules;
-	apol_vector_t	*exec_rules;
-	apol_vector_t	*setexec_rules;
-	apol_vector_t	*type_trans_rules;
-	bool_t		valid;
-	apol_vector_t	*access_rules;	/* used for access filtering, this is only populated on demand */
+/** internal representation of a potential transition */
+typedef struct apol_domain_trans
+{
+	qpol_type_t *start_type;
+	qpol_type_t *ep_type;
+	qpol_type_t *end_type;
+	apol_vector_t *proc_trans_rules;
+	apol_vector_t *ep_rules;
+	apol_vector_t *exec_rules;
+	apol_vector_t *setexec_rules;
+	apol_vector_t *type_trans_rules;
+	/** flag indicating that the transition is possible */
+	bool_t valid;
+	/** used for access filtering, this is only populated on demand */
+	apol_vector_t *access_rules;
 	struct apol_domain_trans *next;
 } apol_domain_trans_t;
 
 /* public data structure definitions */
-struct apol_domain_trans_analysis {
-	unsigned char	direction;
-	unsigned char	valid;
-	char		*start_type;
-	char		*result;
-	apol_vector_t	*access_types;
-	apol_vector_t	*access_class_perms;
-	regex_t		*result_regex;
+struct apol_domain_trans_analysis
+{
+	unsigned char direction;
+	unsigned char valid;
+	char *start_type;
+	char *result;
+	apol_vector_t *access_types;
+	apol_vector_t *access_class_perms;
+	regex_t *result_regex;
 };
 
-struct apol_domain_trans_result {
-	qpol_type_t	*start_type;
-	qpol_type_t	*ep_type;
-	qpol_type_t	*end_type;
-	apol_vector_t	*proc_trans_rules;
-	apol_vector_t	*ep_rules;
-	apol_vector_t	*exec_rules;
-	apol_vector_t	*setexec_rules;
-	apol_vector_t	*type_trans_rules;
-	bool_t		valid;
-	/* if access filters used list of rules that satisfy
+struct apol_domain_trans_result
+{
+	qpol_type_t *start_type;
+	qpol_type_t *ep_type;
+	qpol_type_t *end_type;
+	apol_vector_t *proc_trans_rules;
+	apol_vector_t *ep_rules;
+	apol_vector_t *exec_rules;
+	apol_vector_t *setexec_rules;
+	apol_vector_t *type_trans_rules;
+	bool_t valid;
+	/** if access filters used list of rules that satisfy
 	 * the filter criteria (of type qpol_avrule_t) */
-	apol_vector_t	*access_rules;
+	apol_vector_t *access_rules;
 };
 
-struct apol_domain_trans_table {
-	size_t				size;		/* size == number of types in policy (including attributes) */
-	apol_domain_trans_dom_node_t	*dom_list;	/* these two arrays are indexed by type value -1 */
-	apol_domain_trans_exec_node_t	*exec_list;	/* there will be holes for attributes (which are expanded) */
+struct apol_domain_trans_table
+{
+	size_t size;		       /* size == number of types in policy (including attributes) */
+	apol_domain_trans_dom_node_t *dom_list;	/* these two arrays are indexed by type value -1 */
+	apol_domain_trans_exec_node_t *exec_list;	/* there will be holes for attributes (which are expanded) */
 };
 
 /* private functions */
-static apol_domain_trans_table_t *apol_domain_trans_table_new(apol_policy_t *policy)
+static apol_domain_trans_table_t *apol_domain_trans_table_new(apol_policy_t * policy)
 {
 	apol_domain_trans_table_t *new_table = NULL;
 	apol_vector_t *v = NULL;
@@ -115,29 +139,29 @@ static apol_domain_trans_table_t *apol_domain_trans_table_new(apol_policy_t *pol
 		return NULL;
 	}
 
-	new_table = (apol_domain_trans_table_t*)calloc(1, sizeof(apol_domain_trans_table_t));
+	new_table = (apol_domain_trans_table_t *) calloc(1, sizeof(apol_domain_trans_table_t));
 	if (!new_table) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto cleanup;
 	}
 
-	apol_get_type_by_query(policy, NULL, &v);
+	apol_type_get_by_query(policy, NULL, &v);
 	size += apol_vector_get_size(v);
 	apol_vector_destroy(&v, NULL);
-	apol_get_attr_by_query(policy, NULL, &v);
+	apol_attr_get_by_query(policy, NULL, &v);
 	size += apol_vector_get_size(v);
 	apol_vector_destroy(&v, NULL);
 
 	new_table->size = size;
 
-	new_table->dom_list = (apol_domain_trans_dom_node_t*)calloc(new_table->size, sizeof(apol_domain_trans_dom_node_t));
+	new_table->dom_list = (apol_domain_trans_dom_node_t *) calloc(new_table->size, sizeof(apol_domain_trans_dom_node_t));
 	if (!new_table->dom_list) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto cleanup;
 	}
-	new_table->exec_list = (apol_domain_trans_exec_node_t*)calloc(new_table->size, sizeof(apol_domain_trans_exec_node_t));
+	new_table->exec_list = (apol_domain_trans_exec_node_t *) calloc(new_table->size, sizeof(apol_domain_trans_exec_node_t));
 	if (!new_table->exec_list) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
@@ -147,19 +171,19 @@ static apol_domain_trans_table_t *apol_domain_trans_table_new(apol_policy_t *pol
 	for (i = 0; i < new_table->size; i++) {
 		/* create all the vectors for each side of the table, return error if any fails */
 		if (!(new_table->dom_list[i].proc_trans_rules = apol_vector_create()) ||
-			!(new_table->dom_list[i].ep_rules = apol_vector_create()) ||
-			!(new_table->dom_list[i].setexec_rules = apol_vector_create()) ||
-			!(new_table->dom_list[i].type_trans_rules = apol_vector_create()) ||
-			!(new_table->exec_list[i].exec_rules = apol_vector_create()) ||
-			!(new_table->exec_list[i].ep_rules = apol_vector_create())) {
-			 ERR(policy, "%s", strerror(ENOMEM));
-			 error = ENOMEM;
-			 goto cleanup;
+		    !(new_table->dom_list[i].ep_rules = apol_vector_create()) ||
+		    !(new_table->dom_list[i].setexec_rules = apol_vector_create()) ||
+		    !(new_table->dom_list[i].type_trans_rules = apol_vector_create()) ||
+		    !(new_table->exec_list[i].exec_rules = apol_vector_create()) ||
+		    !(new_table->exec_list[i].ep_rules = apol_vector_create())) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto cleanup;
 		}
 	}
 
 	return new_table;
- cleanup:
+      cleanup:
 	apol_domain_trans_table_destroy(&new_table);
 	errno = error;
 	return NULL;
@@ -170,13 +194,13 @@ static apol_domain_trans_t *apol_domain_trans_new()
 	apol_domain_trans_t *new_trans = NULL;
 	int error;
 
-	new_trans = (apol_domain_trans_t*)calloc(1, sizeof(apol_domain_trans_t));
+	new_trans = (apol_domain_trans_t *) calloc(1, sizeof(apol_domain_trans_t));
 	if (!new_trans) {
 		return NULL;
 	}
 
 	new_trans->access_rules = apol_vector_create();
-	if (!new_trans->access_rules){
+	if (!new_trans->access_rules) {
 		error = errno;
 		free(new_trans);
 		errno = error;
@@ -197,7 +221,7 @@ static void apol_domain_trans_rule_free(void *r)
 	free(r);
 }
 
-static void apol_domain_trans_dom_node_free(apol_domain_trans_dom_node_t *node)
+static void apol_domain_trans_dom_node_free(apol_domain_trans_dom_node_t * node)
 {
 	if (!node)
 		return;
@@ -208,7 +232,7 @@ static void apol_domain_trans_dom_node_free(apol_domain_trans_dom_node_t *node)
 	apol_vector_destroy(&node->type_trans_rules, apol_domain_trans_rule_free);
 }
 
-static void apol_domain_trans_exec_node_free(apol_domain_trans_exec_node_t *node)
+static void apol_domain_trans_exec_node_free(apol_domain_trans_exec_node_t * node)
 {
 	if (!node)
 		return;
@@ -217,7 +241,7 @@ static void apol_domain_trans_exec_node_free(apol_domain_trans_exec_node_t *node
 	apol_vector_destroy(&node->ep_rules, apol_domain_trans_rule_free);
 }
 
-static void apol_domain_trans_destroy(apol_domain_trans_t **trans)
+static void apol_domain_trans_destroy(apol_domain_trans_t ** trans)
 {
 	apol_domain_trans_t *trx = NULL, *next = NULL;
 
@@ -238,7 +262,7 @@ static void apol_domain_trans_destroy(apol_domain_trans_t **trans)
 	*trans = NULL;
 }
 
-static int apol_domain_trans_find_rule_for_type(apol_policy_t *policy, apol_vector_t *rule_list, qpol_type_t *type)
+static int apol_domain_trans_find_rule_for_type(apol_policy_t * policy, apol_vector_t * rule_list, qpol_type_t * type)
 {
 	int list_sz = apol_vector_get_size(rule_list);
 	int left = 0, right = list_sz - 1;
@@ -261,7 +285,7 @@ static int apol_domain_trans_find_rule_for_type(apol_policy_t *policy, apol_vect
 	}
 
 	if (!rule_list || list_sz == 0)
-		return -1; /* empty list, not necessarily an error */
+		return -1;	       /* empty list, not necessarily an error */
 
 	qpol_type_get_value(policy->p, type, &type_val);
 
@@ -273,18 +297,18 @@ static int apol_domain_trans_find_rule_for_type(apol_policy_t *policy, apol_vect
 		if (rule_type_val == type_val) {
 			return i;
 		} else if (rule_type_val < type_val) {
-			left = i+1;
-			i += ((right - i)/2 + (right - i)%2);
+			left = i + 1;
+			i += ((right - i) / 2 + (right - i) % 2);
 		} else {
-			right = i-1;
-			i -= ((i - left)/2 + (i - left)%2);
+			right = i - 1;
+			i -= ((i - left) / 2 + (i - left) % 2);
 		}
 	} while (right >= left);
 
 	return -1;
 }
 
-static int apol_domain_trans_find_rule_for_dflt(apol_policy_t *policy, apol_vector_t *rule_list, qpol_type_t *dflt)
+static int apol_domain_trans_find_rule_for_dflt(apol_policy_t * policy, apol_vector_t * rule_list, qpol_type_t * dflt)
 {
 	size_t list_sz = apol_vector_get_size(rule_list), i;
 	apol_domain_trans_rule_t *rule = NULL;
@@ -305,7 +329,7 @@ static int apol_domain_trans_find_rule_for_dflt(apol_policy_t *policy, apol_vect
 	}
 
 	if (!rule_list)
-		return -1; /* empty list, not necessarily an error */
+		return -1;	       /* empty list, not necessarily an error */
 
 	qpol_type_get_value(policy->p, dflt, &dflt_val);
 
@@ -326,9 +350,9 @@ static int apol_domain_trans_find_rule_for_dflt(apol_policy_t *policy, apol_vect
 
 static int apol_domain_trans_rule_compare(const void *a, const void *b, void *policy)
 {
-	const apol_domain_trans_rule_t *rule_a = (const apol_domain_trans_rule_t*)a;
-	const apol_domain_trans_rule_t *rule_b = (const apol_domain_trans_rule_t*)b;
-	apol_policy_t *p = (apol_policy_t*)policy;
+	const apol_domain_trans_rule_t *rule_a = (const apol_domain_trans_rule_t *)a;
+	const apol_domain_trans_rule_t *rule_b = (const apol_domain_trans_rule_t *)b;
+	apol_policy_t *p = (apol_policy_t *) policy;
 	uint32_t a_val = 0, b_val = 0;
 
 	qpol_type_get_value(p->p, rule_a->type, &a_val);
@@ -337,7 +361,8 @@ static int apol_domain_trans_rule_compare(const void *a, const void *b, void *po
 	return (int)(a_val - b_val);
 }
 
-static int apol_domain_trans_add_rule_to_list(apol_policy_t *policy, apol_vector_t *rule_list, qpol_type_t *type, qpol_type_t *dflt, void *rule, bool_t has_no_trans)
+static int apol_domain_trans_add_rule_to_list(apol_policy_t * policy, apol_vector_t * rule_list, qpol_type_t * type,
+					      qpol_type_t * dflt, void *rule, bool_t has_no_trans)
 {
 	int retv;
 	apol_domain_trans_rule_t *tmp_rule = NULL;
@@ -359,7 +384,7 @@ static int apol_domain_trans_add_rule_to_list(apol_policy_t *policy, apol_vector
 	retv = apol_domain_trans_find_rule_for_type(policy, rule_list, type);
 	if (retv >= 0) {
 		tmp_rule = apol_vector_get_element(rule_list, retv);
-		if (apol_vector_append(tmp_rule->rules, (void*)rule)) {
+		if (apol_vector_append(tmp_rule->rules, (void *)rule)) {
 			ERR(policy, "%s", strerror(ENOMEM));
 			errno = ENOMEM;
 			return -1;
@@ -375,18 +400,18 @@ static int apol_domain_trans_add_rule_to_list(apol_policy_t *policy, apol_vector
 		}
 		tmp_rule->type = type;
 		tmp_rule->dflt = dflt;
-		tmp_rule->has_no_trans = (has_no_trans? TRUE : FALSE);
+		tmp_rule->has_no_trans = (has_no_trans ? TRUE : FALSE);
 		if (!(tmp_rule->rules = apol_vector_create())) {
 			ERR(policy, "%s", strerror(ENOMEM));
 			errno = ENOMEM;
 			return -1;
 		}
-		if (apol_vector_append(tmp_rule->rules, (void*)rule)) {
+		if (apol_vector_append(tmp_rule->rules, (void *)rule)) {
 			ERR(policy, "%s", strerror(ENOMEM));
 			errno = ENOMEM;
 			return -1;
 		}
-		if (apol_vector_append(rule_list, (void*)tmp_rule)) {
+		if (apol_vector_append(rule_list, (void *)tmp_rule)) {
 			free(tmp_rule);
 			errno = ENOMEM;
 			return -1;
@@ -398,7 +423,7 @@ static int apol_domain_trans_add_rule_to_list(apol_policy_t *policy, apol_vector
 	return 0;
 }
 
-static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char rule_type, void *rule)
+static int apol_domain_trans_table_add_rule(apol_policy_t * policy, unsigned char rule_type, void *rule)
 {
 	int retv, error = 0;
 	apol_domain_trans_table_t *table = NULL;
@@ -430,7 +455,7 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 		qpol_avrule_get_target_type(policy->p, avrule, &tgt);
 	}
 
-	/* handle any attributes*/
+	/* handle any attributes */
 	qpol_type_get_isattr(policy->p, src, &isattr);
 	if (isattr) {
 		if (qpol_type_get_type_iter(policy->p, src, &iter)) {
@@ -445,8 +470,7 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 		}
 		qpol_iterator_destroy(&iter);
 	} else {
-		if (!(src_types = apol_vector_create()) ||
-		    apol_vector_append(src_types, src)) {
+		if (!(src_types = apol_vector_create()) || apol_vector_append(src_types, src)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
@@ -480,7 +504,6 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 		}
 	}
 
-
 	if (rule_type & APOL_DOMAIN_TRANS_RULE_PROC_TRANS) {
 		for (j = 0; j < apol_vector_get_size(src_types); j++) {
 			src = apol_vector_get_element(src_types, j);
@@ -488,7 +511,7 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 			for (i = 0; i < apol_vector_get_size(tgt_types); i++) {
 				tgt = apol_vector_get_element(tgt_types, i);
 				retv = apol_domain_trans_add_rule_to_list(policy, table->dom_list[src_val - 1].proc_trans_rules,
-						tgt, NULL, rule, 0);
+									  tgt, NULL, rule, 0);
 				if (retv) {
 					error = errno;
 					goto err;
@@ -503,7 +526,8 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 			for (i = 0; i < apol_vector_get_size(src_types); i++) {
 				src = apol_vector_get_element(src_types, i);
 				retv = apol_domain_trans_add_rule_to_list(policy, table->exec_list[tgt_val - 1].exec_rules,
-						src, NULL, rule, (rule_type & APOL_DOMAIN_TRANS_RULE_EXEC_NO_TRANS));
+									  src, NULL, rule,
+									  (rule_type & APOL_DOMAIN_TRANS_RULE_EXEC_NO_TRANS));
 				if (retv) {
 					error = errno;
 					goto err;
@@ -519,13 +543,13 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 				src = apol_vector_get_element(src_types, j);
 				qpol_type_get_value(policy->p, src, &src_val);
 				retv = apol_domain_trans_add_rule_to_list(policy, table->dom_list[src_val - 1].ep_rules,
-						tgt, NULL, rule, 0);
+									  tgt, NULL, rule, 0);
 				if (retv) {
 					error = errno;
 					goto err;
 				}
 				retv = apol_domain_trans_add_rule_to_list(policy, table->exec_list[tgt_val - 1].ep_rules,
-						src, NULL, rule, 0);
+									  src, NULL, rule, 0);
 				if (retv) {
 					error = errno;
 					goto err;
@@ -534,13 +558,13 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 		}
 	}
 	if (rule_type & APOL_DOMAIN_TRANS_RULE_TYPE_TRANS) {
-		for (i = 0; i < apol_vector_get_size(tgt_types); i++ ) {
+		for (i = 0; i < apol_vector_get_size(tgt_types); i++) {
 			tgt = apol_vector_get_element(tgt_types, i);
 			for (j = 0; j < apol_vector_get_size(src_types); j++) {
 				src = apol_vector_get_element(src_types, j);
 				qpol_type_get_value(policy->p, src, &src_val);
 				retv = apol_domain_trans_add_rule_to_list(policy, table->dom_list[src_val - 1].type_trans_rules,
-						tgt, dflt, rule, 0);
+									  tgt, dflt, rule, 0);
 				if (retv) {
 					error = errno;
 					goto err;
@@ -549,16 +573,16 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 		}
 	}
 	if (rule_type & APOL_DOMAIN_TRANS_RULE_SETEXEC) {
-		for (i = 0; i < apol_vector_get_size(tgt_types); i++ ) {
+		for (i = 0; i < apol_vector_get_size(tgt_types); i++) {
 			tgt = apol_vector_get_element(tgt_types, i);
 			qpol_type_get_value(policy->p, tgt, &tgt_val);
 			for (j = 0; j < apol_vector_get_size(src_types); j++) {
 				src = apol_vector_get_element(src_types, j);
 				qpol_type_get_value(policy->p, src, &src_val);
 				if (src_val != tgt_val)
-					continue; /* only care about allow start self : processes setexec; */
+					continue;	/* only care about allow start self : processes setexec; */
 				retv = apol_domain_trans_add_rule_to_list(policy, table->dom_list[src_val - 1].setexec_rules,
-						tgt, NULL, rule, 0);
+									  tgt, NULL, rule, 0);
 				if (retv) {
 					error = errno;
 					goto err;
@@ -571,14 +595,14 @@ static int apol_domain_trans_table_add_rule(apol_policy_t *policy, unsigned char
 	apol_vector_destroy(&tgt_types, NULL);
 	return 0;
 
-err:
+      err:
 	apol_vector_destroy(&src_types, NULL);
 	apol_vector_destroy(&tgt_types, NULL);
 	errno = error;
 	return -1;
 }
 
-static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, apol_domain_trans_t **trans, qpol_type_t *start)
+static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy, apol_domain_trans_t ** trans, qpol_type_t * start)
 {
 	apol_domain_trans_table_t *table = NULL;
 	apol_domain_trans_t *entry = NULL, *cur_head = NULL, *cur_tail = NULL;
@@ -620,18 +644,19 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 		entry->start_type = start;
 		entry->ep_type = rule_entry->type;
 		entry->end_type = rule_entry->dflt;
-		if (!(entry->type_trans_rules = apol_vector_create_from_vector(rule_entry->rules))) {
+		if (!(entry->type_trans_rules = apol_vector_create_from_vector(rule_entry->rules, NULL, NULL))) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto exit_error;
 		}
 		qpol_type_get_value(policy->p, entry->ep_type, &ep_val);
 		qpol_type_get_value(policy->p, entry->end_type, &end_val);
-		tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].proc_trans_rules, entry->end_type);
+		tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].proc_trans_rules,
+							   entry->end_type);
 		if (tmp >= 0) {
 			tmp_rule = apol_vector_get_element(table->dom_list[start_val - 1].proc_trans_rules, tmp);
 			tmp_rule->used = TRUE;
-			if (!(entry->proc_trans_rules = apol_vector_create_from_vector(tmp_rule->rules))) {
+			if (!(entry->proc_trans_rules = apol_vector_create_from_vector(tmp_rule->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -641,7 +666,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 		if (tmp >= 0) {
 			tmp_rule = apol_vector_get_element(table->exec_list[ep_val - 1].exec_rules, tmp);
 			tmp_rule->used = TRUE;
-			if (!(entry->exec_rules = apol_vector_create_from_vector(tmp_rule->rules))) {
+			if (!(entry->exec_rules = apol_vector_create_from_vector(tmp_rule->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -651,7 +676,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 		if (tmp >= 0) {
 			tmp_rule = apol_vector_get_element(table->exec_list[ep_val - 1].ep_rules, tmp);
 			tmp_rule->used = TRUE;
-			if (!(entry->ep_rules = apol_vector_create_from_vector(tmp_rule->rules))) {
+			if (!(entry->ep_rules = apol_vector_create_from_vector(tmp_rule->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -659,20 +684,19 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 		}
 		/* find a setexec rule if there is one */
 		tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules, start);
-		if (tmp >=0) {
+		if (tmp >= 0) {
 			tmp_rule2 = apol_vector_get_element(table->dom_list[start_val - 1].setexec_rules, tmp);
-			if (!(entry->setexec_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
+			if (!(entry->setexec_rules = apol_vector_create_from_vector(tmp_rule2->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
 			}
 		}
 		if (apol_vector_get_size(entry->exec_rules) &&
-			apol_vector_get_size(entry->ep_rules) &&
-			apol_vector_get_size(entry->proc_trans_rules) &&
-			(policy_version >= 15 ?
-			(apol_vector_get_size(entry->type_trans_rules) ||
-			apol_vector_get_size(entry->setexec_rules)) : 1))
+		    apol_vector_get_size(entry->ep_rules) &&
+		    apol_vector_get_size(entry->proc_trans_rules) &&
+		    (policy_version >= 15 ?
+		     (apol_vector_get_size(entry->type_trans_rules) || apol_vector_get_size(entry->setexec_rules)) : 1))
 			entry->valid = TRUE;
 		entry->next = cur_head;
 		cur_head = entry;
@@ -685,11 +709,11 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 	for (i = 0; i < apol_vector_get_size(table->dom_list[start_val - 1].proc_trans_rules); i++) {
 		rule_entry = apol_vector_get_element(table->dom_list[start_val - 1].proc_trans_rules, i);
 		if (rule_entry->used)
-			continue; /* we already found this transition */
+			continue;      /* we already found this transition */
 		end = rule_entry->type;
 		qpol_type_get_value(policy->p, end, &end_val);
 		if (end_val == start_val)
-			continue; /* if start is same as end no transition occurs */
+			continue;      /* if start is same as end no transition occurs */
 		rule_entry->used = TRUE;
 		/* follow each entrypoint of end */
 		for (j = 0; j < apol_vector_get_size(table->dom_list[end_val - 1].ep_rules); j++) {
@@ -700,7 +724,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 			tmp = apol_domain_trans_find_rule_for_type(policy, table->exec_list[ep_val - 1].ep_rules, end);
 			tmp_rule2 = apol_vector_get_element(table->exec_list[ep_val - 1].ep_rules, tmp);
 			if (tmp_rule2->used)
-				continue; /* we already found this transition */
+				continue;	/* we already found this transition */
 			tmp_rule2->used = TRUE;
 			if (!(entry = apol_domain_trans_new())) {
 				error = errno;
@@ -710,12 +734,12 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 			entry->start_type = start;
 			entry->ep_type = ep;
 			entry->end_type = end;
-			if (!(entry->proc_trans_rules = apol_vector_create_from_vector(rule_entry->rules))) {
+			if (!(entry->proc_trans_rules = apol_vector_create_from_vector(rule_entry->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
 			}
-			if (!(entry->ep_rules = apol_vector_create_from_vector(tmp_rule->rules))) {
+			if (!(entry->ep_rules = apol_vector_create_from_vector(tmp_rule->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -724,7 +748,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 			tmp = apol_domain_trans_find_rule_for_type(policy, table->exec_list[ep_val - 1].exec_rules, start);
 			if (tmp >= 0) {
 				tmp_rule2 = apol_vector_get_element(table->exec_list[ep_val - 1].exec_rules, tmp);
-				if (!(entry->exec_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
+				if (!(entry->exec_rules = apol_vector_create_from_vector(tmp_rule2->rules, NULL, NULL))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto exit_error;
@@ -732,20 +756,19 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 			}
 			/* find a setexec rule if there is one */
 			tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules, start);
-			if (tmp >=0) {
+			if (tmp >= 0) {
 				tmp_rule2 = apol_vector_get_element(table->dom_list[start_val - 1].setexec_rules, tmp);
-				if (!(entry->setexec_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
+				if (!(entry->setexec_rules = apol_vector_create_from_vector(tmp_rule2->rules, NULL, NULL))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto exit_error;
 				}
 			}
 			if (apol_vector_get_size(entry->exec_rules) &&
-				apol_vector_get_size(entry->ep_rules) &&
-				apol_vector_get_size(entry->proc_trans_rules) &&
-				(policy_version >= 15 ?
-				(apol_vector_get_size(entry->type_trans_rules) ||
-				apol_vector_get_size(entry->setexec_rules)) : 1))
+			    apol_vector_get_size(entry->ep_rules) &&
+			    apol_vector_get_size(entry->proc_trans_rules) &&
+			    (policy_version >= 15 ?
+			     (apol_vector_get_size(entry->type_trans_rules) || apol_vector_get_size(entry->setexec_rules)) : 1))
 				entry->valid = TRUE;
 			entry->next = cur_head;
 			cur_head = entry;
@@ -762,7 +785,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 			}
 			entry->start_type = start;
 			entry->end_type = end;
-			if (!(entry->proc_trans_rules = apol_vector_create_from_vector(rule_entry->rules))) {
+			if (!(entry->proc_trans_rules = apol_vector_create_from_vector(rule_entry->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -783,14 +806,14 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 
 	return 0;
 
-exit_error:
+      exit_error:
 	apol_domain_trans_destroy(&entry);
 	apol_domain_trans_destroy(&cur_head);
 	errno = error;
 	return -1;
 }
 
-static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, apol_domain_trans_t **trans, qpol_type_t *end)
+static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol_domain_trans_t ** trans, qpol_type_t * end)
 {
 	apol_domain_trans_table_t *table = NULL;
 	apol_domain_trans_t *entry = NULL, *cur_head = NULL, *cur_tail = NULL;
@@ -835,11 +858,11 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 			qpol_type_get_value(policy->p, start, &start_val);
 			if (start_val == end_val) {
 				if (apol_vector_get_size(table->exec_list[ep_val - 1].exec_rules) == 1)
-					dead = 1; /* if there is only on execute rule for this entrypoint and its source the same as end the entrypoint is dead */
-				continue; /* if start is same as end no transition occurs */
+					dead = 1;	/* if there is only on execute rule for this entrypoint and its source the same as end the entrypoint is dead */
+				continue;	/* if start is same as end no transition occurs */
 			}
 			if (tmp_rule->used)
-				continue; /* we already found this transition */
+				continue;	/* we already found this transition */
 			tmp_rule->used = TRUE;
 			if (!(entry = apol_domain_trans_new())) {
 				error = errno;
@@ -849,12 +872,12 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 			entry->end_type = end;
 			entry->ep_type = ep;
 			entry->start_type = tmp_rule->type;
-			if (!(entry->ep_rules = apol_vector_create_from_vector(rule_entry->rules))) {
+			if (!(entry->ep_rules = apol_vector_create_from_vector(rule_entry->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
 			}
-			if (!(entry->exec_rules = apol_vector_create_from_vector(tmp_rule->rules))) {
+			if (!(entry->exec_rules = apol_vector_create_from_vector(tmp_rule->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -863,7 +886,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 			tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].proc_trans_rules, end);
 			if (tmp >= 0) {
 				tmp_rule2 = apol_vector_get_element(table->dom_list[start_val - 1].proc_trans_rules, tmp);
-				if (!(entry->proc_trans_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
+				if (!(entry->proc_trans_rules = apol_vector_create_from_vector(tmp_rule2->rules, NULL, NULL))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto exit_error;
@@ -879,7 +902,9 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 				qpol_type_get_value(policy->p, dflt, &dflt_val);
 				if (dflt_val == end_val) {
 					tmp_rule2->used = TRUE;
-					if (!(entry->type_trans_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
+					if (!
+					    (entry->type_trans_rules =
+					     apol_vector_create_from_vector(tmp_rule2->rules, NULL, NULL))) {
 						error = errno;
 						ERR(policy, "%s", strerror(error));
 						goto exit_error;
@@ -888,20 +913,19 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 			}
 			/* find a setexec rule if there is one */
 			tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules, start);
-			if (tmp >=0) {
+			if (tmp >= 0) {
 				tmp_rule2 = apol_vector_get_element(table->dom_list[start_val - 1].setexec_rules, tmp);
-				if (!(entry->setexec_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
+				if (!(entry->setexec_rules = apol_vector_create_from_vector(tmp_rule2->rules, NULL, NULL))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto exit_error;
 				}
 			}
 			if (apol_vector_get_size(entry->exec_rules) &&
-				apol_vector_get_size(entry->ep_rules) &&
-				apol_vector_get_size(entry->proc_trans_rules) &&
-				(policy_version >= 15 ?
-				(apol_vector_get_size(entry->type_trans_rules) ||
-				apol_vector_get_size(entry->setexec_rules)) : 1))
+			    apol_vector_get_size(entry->ep_rules) &&
+			    apol_vector_get_size(entry->proc_trans_rules) &&
+			    (policy_version >= 15 ?
+			     (apol_vector_get_size(entry->type_trans_rules) || apol_vector_get_size(entry->setexec_rules)) : 1))
 				entry->valid = TRUE;
 			entry->next = cur_head;
 			cur_head = entry;
@@ -918,7 +942,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 			}
 			entry->end_type = end;
 			entry->ep_type = ep;
-			if (!(entry->ep_rules = apol_vector_create_from_vector(rule_entry->rules))) {
+			if (!(entry->ep_rules = apol_vector_create_from_vector(rule_entry->rules, NULL, NULL))) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -939,21 +963,21 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 		ep = NULL;
 		ep_val = 0;
 		if (i == end_val)
-			continue; /* no transition would occur */
+			continue;      /* no transition would occur */
 		tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[i].proc_trans_rules, end);
 		if (tmp >= 0) {
 			rule_entry = apol_vector_get_element(table->dom_list[i].proc_trans_rules, tmp);
 			if (rule_entry->used)
-			rule_entry = NULL;
+				rule_entry = NULL;
 		}
 		tmp = apol_domain_trans_find_rule_for_dflt(policy, table->dom_list[i].type_trans_rules, end);
 		if (tmp >= 0) {
 			tmp_rule = apol_vector_get_element(table->dom_list[i].type_trans_rules, tmp);
 			if (rule_entry->used)
-			tmp_rule = NULL;
+				tmp_rule = NULL;
 		}
 		if (!rule_entry && !tmp_rule)
-			continue; /* either used or none exists */
+			continue;      /* either used or none exists */
 		if (tmp_rule) {
 			tmp_rule->used = TRUE;
 			qpol_terule_get_source_type(policy->p, apol_vector_get_element(tmp_rule->rules, 0), &start);
@@ -999,14 +1023,14 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 			entry->ep_type = ep;
 			entry->end_type = end;
 			if (rule_entry) {
-				if (!(entry->proc_trans_rules = apol_vector_create_from_vector(rule_entry->rules))) {
+				if (!(entry->proc_trans_rules = apol_vector_create_from_vector(rule_entry->rules, NULL, NULL))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto exit_error;
 				}
 			}
 			if (tmp_rule) {
-				if (!(entry->type_trans_rules = apol_vector_create_from_vector(tmp_rule->rules))) {
+				if (!(entry->type_trans_rules = apol_vector_create_from_vector(tmp_rule->rules, NULL, NULL))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto exit_error;
@@ -1016,7 +1040,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 				if (tmp >= 0) {
 					tmp_rule2 = apol_vector_get_element(table->exec_list[ep_val - 1].exec_rules, tmp);
 					tmp_rule2->used = TRUE;
-					if (!(entry->exec_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
+					if (!(entry->exec_rules = apol_vector_create_from_vector(tmp_rule2->rules, NULL, NULL))) {
 						error = errno;
 						ERR(policy, "%s", strerror(error));
 						goto exit_error;
@@ -1024,10 +1048,11 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 				}
 			}
 			/* find a setexec rule if there is one */
-			tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules, entry->start_type);
-			if (tmp >=0) {
+			tmp = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules,
+								   entry->start_type);
+			if (tmp >= 0) {
 				tmp_rule2 = apol_vector_get_element(table->dom_list[start_val - 1].setexec_rules, tmp);
-				if (!(entry->setexec_rules = apol_vector_create_from_vector(tmp_rule2->rules))) {
+				if (!(entry->setexec_rules = apol_vector_create_from_vector(tmp_rule2->rules, NULL, NULL))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto exit_error;
@@ -1050,7 +1075,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 
 	return 0;
 
-exit_error:
+      exit_error:
 	apol_vector_destroy(&v, NULL);
 	apol_domain_trans_destroy(&entry);
 	apol_domain_trans_destroy(&cur_head);
@@ -1060,7 +1085,7 @@ exit_error:
 
 /* removes all nodes in the linked list pointed to by trans
  * which do not have the same validity as the valid argument */
-static int apol_domain_trans_filter_valid(apol_domain_trans_t **trans, bool_t valid)
+static int apol_domain_trans_filter_valid(apol_domain_trans_t ** trans, bool_t valid)
 {
 	apol_domain_trans_t *cur = NULL, *prev = NULL;
 
@@ -1097,9 +1122,8 @@ static int apol_domain_trans_filter_valid(apol_domain_trans_t **trans, bool_t va
 
 /* filter list of transitions to include only transitions
  * with a result type in the provided list */
-static int apol_domain_trans_filter_result_types(apol_policy_t *policy,
-						 apol_domain_trans_analysis_t *dta,
-						 apol_domain_trans_t **trans)
+static int apol_domain_trans_filter_result_types(apol_policy_t * policy,
+						 apol_domain_trans_analysis_t * dta, apol_domain_trans_t ** trans)
 {
 	apol_domain_trans_t *cur = NULL, *prev = NULL;
 	qpol_type_t *type;
@@ -1108,8 +1132,7 @@ static int apol_domain_trans_filter_result_types(apol_policy_t *policy,
 	for (cur = *trans; cur;) {
 		if (dta->direction == APOL_DOMAIN_TRANS_DIRECTION_REVERSE) {
 			type = cur->start_type;
-		}
-		else {
+		} else {
 			type = cur->end_type;
 		}
 		compval = apol_compare_type(policy, type, dta->result, APOL_QUERY_REGEX, &dta->result_regex);
@@ -1141,7 +1164,8 @@ static int apol_domain_trans_filter_result_types(apol_policy_t *policy,
 /* filter list of transitions to include only transitions
  * with an end type that has access to at least one of the provided
  * access_types for at least one of the object & permission sets */
-static int apol_domain_trans_filter_access(apol_domain_trans_t **trans, apol_vector_t *access_types, apol_vector_t *obj_perm_sets, apol_policy_t *policy)
+static int apol_domain_trans_filter_access(apol_domain_trans_t ** trans, apol_vector_t * access_types,
+					   apol_vector_t * obj_perm_sets, apol_policy_t * policy)
 {
 	apol_domain_trans_t *cur = NULL, *prev = NULL;
 	size_t i, j, k;
@@ -1159,7 +1183,7 @@ static int apol_domain_trans_filter_access(apol_domain_trans_t **trans, apol_vec
 	}
 
 	if (!(*trans))
-		return 0; /* list already empty */
+		return 0;	       /* list already empty */
 
 	avq = apol_avrule_query_create();
 	if (!avq) {
@@ -1185,7 +1209,7 @@ static int apol_domain_trans_filter_access(apol_domain_trans_t **trans, apol_vec
 					tmp = apol_vector_get_element(apol_obj_perm_get_perm_vector(op), k);
 					apol_avrule_query_append_perm(policy, avq, tmp);
 				}
-				apol_get_avrule_by_query(policy, avq, &v);
+				apol_avrule_get_by_query(policy, avq, &v);
 				apol_vector_cat(cur->access_rules, v);
 				apol_vector_destroy(&v, NULL);
 			}
@@ -1211,14 +1235,14 @@ static int apol_domain_trans_filter_access(apol_domain_trans_t **trans, apol_vec
 
 	return 0;
 
-exit_error:
+      exit_error:
 	apol_avrule_query_destroy(&avq);
 	errno = error;
 	return -1;
 }
 
 /* public functions */
-int apol_policy_domain_trans_table_build(apol_policy_t *policy)
+int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 {
 	size_t i;
 	unsigned char rule_type = 0x00;
@@ -1239,7 +1263,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t *policy)
 	}
 
 	if (policy->domain_trans_table) {
-		return 0; /* already built */
+		return 0;	       /* already built */
 	}
 
 	policy->domain_trans_table = apol_domain_trans_table_new(policy);
@@ -1254,33 +1278,33 @@ int apol_policy_domain_trans_table_build(apol_policy_t *policy)
 	apol_avrule_query_set_rules(policy, avq, QPOL_RULE_ALLOW);
 	apol_avrule_query_append_class(policy, avq, "process");
 	apol_avrule_query_append_perm(policy, avq, "transition");
-	apol_get_avrule_by_query(policy, avq, &v);
+	apol_avrule_get_by_query(policy, avq, &v);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		avrule = apol_vector_get_element(v, i);
-		if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_PROC_TRANS, (void*)avrule)) {
+		if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_PROC_TRANS, (void *)avrule)) {
 			error = errno;
 			goto err;
 		}
 	}
-	apol_vector_destroy(&v,  NULL);
+	apol_vector_destroy(&v, NULL);
 	if (policy_version >= 15) {
 		apol_avrule_query_append_perm(policy, avq, NULL);
 		apol_avrule_query_append_perm(policy, avq, "setexec");
-		apol_get_avrule_by_query(policy, avq, &v);
+		apol_avrule_get_by_query(policy, avq, &v);
 		for (i = 0; i < apol_vector_get_size(v); i++) {
 			avrule = apol_vector_get_element(v, i);
-			if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_SETEXEC, (void*)avrule)) {
+			if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_SETEXEC, (void *)avrule)) {
 				error = errno;
 				goto err;
 			}
 		}
-		apol_vector_destroy(&v,  NULL);
+		apol_vector_destroy(&v, NULL);
 	}
 	apol_avrule_query_append_class(policy, avq, NULL);
 	apol_avrule_query_append_perm(policy, avq, NULL);
 
 	apol_avrule_query_append_class(policy, avq, "file");
-	apol_get_avrule_by_query(policy, avq, &v);
+	apol_avrule_get_by_query(policy, avq, &v);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		avrule = apol_vector_get_element(v, i);
 		if (qpol_avrule_get_perm_iter(policy->p, avrule, &iter)) {
@@ -1288,7 +1312,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t *policy)
 			goto err;
 		}
 		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			qpol_iterator_get_item(iter, (void**)&tmp);
+			qpol_iterator_get_item(iter, (void **)&tmp);
 			rule_type = 0x00;
 			if (!strcmp(tmp, "execute")) {
 				rule_type |= APOL_DOMAIN_TRANS_RULE_EXEC;
@@ -1302,33 +1326,33 @@ int apol_policy_domain_trans_table_build(apol_policy_t *policy)
 		}
 		qpol_iterator_destroy(&iter);
 		if (rule_type) {
-			if (apol_domain_trans_table_add_rule(policy, rule_type, (void*)avrule)) {
+			if (apol_domain_trans_table_add_rule(policy, rule_type, (void *)avrule)) {
 				error = errno;
 				goto err;
 			}
 		}
 	}
-	apol_vector_destroy(&v,  NULL);
+	apol_vector_destroy(&v, NULL);
 	apol_avrule_query_destroy(&avq);
 
 	teq = apol_terule_query_create();
 	apol_terule_query_set_rules(policy, teq, QPOL_RULE_TYPE_TRANS);
 	apol_terule_query_append_class(policy, teq, "process");
-	apol_get_terule_by_query(policy, teq, &v);
+	apol_terule_get_by_query(policy, teq, &v);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		terule = apol_vector_get_element(v, i);
-		if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_TYPE_TRANS, (void*)terule)) {
+		if (apol_domain_trans_table_add_rule(policy, APOL_DOMAIN_TRANS_RULE_TYPE_TRANS, (void *)terule)) {
 			error = errno;
 			goto err;
 		}
 	}
-	apol_vector_destroy(&v,  NULL);
+	apol_vector_destroy(&v, NULL);
 	apol_terule_query_destroy(&teq);
 
 	return 0;
 
-err:
-	apol_vector_destroy(&v,  NULL);
+      err:
+	apol_vector_destroy(&v, NULL);
 	apol_terule_query_destroy(&teq);
 	apol_avrule_query_destroy(&avq);
 	qpol_iterator_destroy(&iter);
@@ -1337,7 +1361,7 @@ err:
 	return -1;
 }
 
-void apol_domain_trans_table_destroy(apol_domain_trans_table_t **table)
+void apol_domain_trans_table_destroy(apol_domain_trans_table_t ** table)
 {
 	int i;
 
@@ -1355,7 +1379,7 @@ void apol_domain_trans_table_destroy(apol_domain_trans_table_t **table)
 	*table = NULL;
 }
 
-void apol_domain_trans_table_reset(apol_policy_t *policy)
+void apol_domain_trans_table_reset(apol_policy_t * policy)
 {
 	size_t i, j;
 	apol_domain_trans_rule_t *rule = NULL;
@@ -1407,17 +1431,17 @@ apol_domain_trans_analysis_t *apol_domain_trans_analysis_create(void)
 		goto err;
 	}
 
-	new_dta->valid = APOL_DOMAIN_TRANS_SEARCH_VALID; /* by default search only valid transitions */
+	new_dta->valid = APOL_DOMAIN_TRANS_SEARCH_VALID;	/* by default search only valid transitions */
 
 	return new_dta;
 
-err:
+      err:
 	apol_domain_trans_analysis_destroy(&new_dta);
 	errno = error;
 	return NULL;
 }
 
-void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t **dta)
+void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t ** dta)
 {
 	if (!dta || !(*dta))
 		return;
@@ -1431,7 +1455,7 @@ void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t **dta)
 	*dta = NULL;
 }
 
-int apol_domain_trans_analysis_set_direction(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, unsigned char direction)
+int apol_domain_trans_analysis_set_direction(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, unsigned char direction)
 {
 	if (!dta || (direction != APOL_DOMAIN_TRANS_DIRECTION_FORWARD && direction != APOL_DOMAIN_TRANS_DIRECTION_REVERSE)) {
 		ERR(policy, "Error setting analysis direction: %s", strerror(EINVAL));
@@ -1444,7 +1468,7 @@ int apol_domain_trans_analysis_set_direction(apol_policy_t *policy, apol_domain_
 	return 0;
 }
 
-int apol_domain_trans_analysis_set_valid(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, unsigned char valid)
+int apol_domain_trans_analysis_set_valid(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, unsigned char valid)
 {
 	if (!dta || valid & ~(APOL_DOMAIN_TRANS_SEARCH_BOTH)) {
 		ERR(policy, "Error setting analysis validity flag: %s", strerror(EINVAL));
@@ -1457,7 +1481,7 @@ int apol_domain_trans_analysis_set_valid(apol_policy_t *policy, apol_domain_tran
 	return 0;
 }
 
-int apol_domain_trans_analysis_set_start_type(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *type_name)
+int apol_domain_trans_analysis_set_start_type(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *type_name)
 {
 	char *tmp = NULL;
 	int error = 0;
@@ -1481,7 +1505,7 @@ int apol_domain_trans_analysis_set_start_type(apol_policy_t *policy, apol_domain
 	return 0;
 }
 
-int apol_domain_trans_analysis_set_result_regex(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *regex)
+int apol_domain_trans_analysis_set_result_regex(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *regex)
 {
 	if (!dta) {
 		ERR(policy, "Error setting analysis result expression: %s", strerror(EINVAL));
@@ -1497,7 +1521,7 @@ int apol_domain_trans_analysis_set_result_regex(apol_policy_t *policy, apol_doma
 	return apol_query_set(policy, &dta->result, &dta->result_regex, regex);
 }
 
-int apol_domain_trans_analysis_append_access_type(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *type_name)
+int apol_domain_trans_analysis_append_access_type(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *type_name)
 {
 	char *tmp = NULL;
 	int error = 0;
@@ -1542,13 +1566,14 @@ int apol_domain_trans_analysis_append_access_type(apol_policy_t *policy, apol_do
 
 static int compare_class_perm_by_class_name(const void *in_op, const void *class_name, void *unused __attribute__ ((unused)))
 {
-	const apol_obj_perm_t *op = (const apol_obj_perm_t*)in_op;
-	const char *name = (const char*)class_name;
+	const apol_obj_perm_t *op = (const apol_obj_perm_t *)in_op;
+	const char *name = (const char *)class_name;
 
 	return strcmp(apol_obj_perm_get_obj_name(op), name);
 }
 
-int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *class_name, const char *perm_name)
+int apol_domain_trans_analysis_append_class_perm(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *class_name,
+						 const char *perm_name)
 {
 	int error = 0;
 	apol_obj_perm_t *op = NULL;
@@ -1574,7 +1599,7 @@ int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_dom
 		}
 	}
 
-	if (apol_vector_get_index(dta->access_class_perms, (void*)class_name, compare_class_perm_by_class_name, NULL, &i) < 0) {
+	if (apol_vector_get_index(dta->access_class_perms, (void *)class_name, compare_class_perm_by_class_name, NULL, &i) < 0) {
 		if (perm_name) {
 			if ((op = apol_obj_perm_create()) == NULL) {
 				error = errno;
@@ -1583,8 +1608,7 @@ int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_dom
 				return -1;
 			}
 			if (apol_obj_perm_set_obj_name(op, class_name) ||
-                            apol_obj_perm_append_perm(op, perm_name) ||
-                            apol_vector_append(dta->access_class_perms, op)) {
+			    apol_obj_perm_append_perm(op, perm_name) || apol_vector_append(dta->access_class_perms, op)) {
 				error = errno;
 				ERR(policy, "Error adding class and permission to analysis: %s", strerror(error));
 				apol_obj_perm_free(op);
@@ -1592,7 +1616,7 @@ int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_dom
 				return -1;
 			}
 		} else {
-			return 0; /* noting to clear; done */
+			return 0;      /* noting to clear; done */
 		}
 	} else {
 		op = apol_vector_get_element(dta->access_class_perms, i);
@@ -1607,7 +1631,7 @@ int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_dom
 	return 0;
 }
 
-int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, apol_vector_t **results)
+int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, apol_vector_t ** results)
 {
 	int error = 0;
 	apol_domain_trans_t *trans_list = NULL, *cur = NULL, *next = NULL;
@@ -1625,7 +1649,7 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 	/* build table if not already present */
 	if (!(policy->domain_trans_table)) {
 		if (apol_policy_domain_trans_table_build(policy))
-			return -1; /* errors already reported by build function */
+			return -1;     /* errors already reported by build function */
 	}
 
 	/* validate analysis options */
@@ -1634,8 +1658,7 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 	    (apol_vector_get_size(dta->access_types) && !apol_vector_get_size(dta->access_class_perms)) ||
 	    (!apol_vector_get_size(dta->access_types) && apol_vector_get_size(dta->access_class_perms)) ||
 	    (apol_vector_get_size(dta->access_types) && apol_vector_get_size(dta->access_class_perms) &&
-	     dta->direction == APOL_DOMAIN_TRANS_DIRECTION_REVERSE) ||
-	    !(dta->start_type) ) {
+	     dta->direction == APOL_DOMAIN_TRANS_DIRECTION_REVERSE) || !(dta->start_type)) {
 		error = EINVAL;
 		ERR(policy, "%s", strerror(EINVAL));
 		goto err;
@@ -1671,8 +1694,7 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 	}
 
 	/* next filtering by result type if requested */
-	if (dta->result &&
-	    apol_domain_trans_filter_result_types(policy, dta, &trans_list)) {
+	if (dta->result && apol_domain_trans_filter_result_types(policy, dta, &trans_list)) {
 		error = errno;
 		goto err;
 	}
@@ -1743,7 +1765,7 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 
 	return 0;
 
-err:
+      err:
 	apol_domain_trans_destroy(&trans_list);
 	apol_vector_destroy(&type_v, NULL);
 	apol_vector_destroy(results, apol_domain_trans_result_free);
@@ -1751,7 +1773,7 @@ err:
 	return -1;
 }
 
-apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_domain_trans_result_t *result)
+apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_domain_trans_result_t * result)
 {
 	apol_domain_trans_result_t *new_r = NULL;
 	int retval = -1;
@@ -1759,27 +1781,26 @@ apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_dom
 		goto cleanup;
 	}
 	if (result->proc_trans_rules != NULL &&
-	    (new_r->proc_trans_rules = apol_vector_create_from_vector(result->proc_trans_rules)) == NULL) {
+	    (new_r->proc_trans_rules = apol_vector_create_from_vector(result->proc_trans_rules, NULL, NULL)) == NULL) {
 		goto cleanup;
 	}
-	if (result->ep_rules != NULL &&
-	    (new_r->ep_rules = apol_vector_create_from_vector(result->ep_rules)) == NULL) {
+	if (result->ep_rules != NULL && (new_r->ep_rules = apol_vector_create_from_vector(result->ep_rules, NULL, NULL)) == NULL) {
 		goto cleanup;
 	}
-	if (result->exec_rules != NULL &&
-	    (new_r->exec_rules = apol_vector_create_from_vector(result->exec_rules)) == NULL) {
+	if (result->exec_rules != NULL
+	    && (new_r->exec_rules = apol_vector_create_from_vector(result->exec_rules, NULL, NULL)) == NULL) {
 		goto cleanup;
 	}
-	if (result->setexec_rules != NULL &&
-	    (new_r->setexec_rules = apol_vector_create_from_vector(result->setexec_rules)) == NULL) {
+	if (result->setexec_rules != NULL
+	    && (new_r->setexec_rules = apol_vector_create_from_vector(result->setexec_rules, NULL, NULL)) == NULL) {
 		goto cleanup;
 	}
 	if (result->type_trans_rules != NULL &&
-	    (new_r->type_trans_rules = apol_vector_create_from_vector(result->type_trans_rules)) == NULL) {
+	    (new_r->type_trans_rules = apol_vector_create_from_vector(result->type_trans_rules, NULL, NULL)) == NULL) {
 		goto cleanup;
 	}
-	if (result->access_rules != NULL &&
-	    (new_r->access_rules = apol_vector_create_from_vector(result->access_rules)) == NULL) {
+	if (result->access_rules != NULL
+	    && (new_r->access_rules = apol_vector_create_from_vector(result->access_rules, NULL, NULL)) == NULL) {
 		goto cleanup;
 	}
 	new_r->start_type = result->start_type;
@@ -1787,7 +1808,7 @@ apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_dom
 	new_r->end_type = result->end_type;
 	new_r->valid = result->valid;
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_domain_trans_result_free(new_r);
 		return NULL;
@@ -1797,7 +1818,7 @@ apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_dom
 
 void apol_domain_trans_result_free(void *dtr)
 {
-	apol_domain_trans_result_t *res = (apol_domain_trans_result_t*)dtr;
+	apol_domain_trans_result_t *res = (apol_domain_trans_result_t *) dtr;
 
 	if (!res)
 		return;
@@ -1811,7 +1832,7 @@ void apol_domain_trans_result_free(void *dtr)
 	free(res);
 }
 
-qpol_type_t *apol_domain_trans_result_get_start_type(apol_domain_trans_result_t *dtr)
+qpol_type_t *apol_domain_trans_result_get_start_type(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->start_type;
@@ -1821,7 +1842,7 @@ qpol_type_t *apol_domain_trans_result_get_start_type(apol_domain_trans_result_t 
 	}
 }
 
-qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_trans_result_t *dtr)
+qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->ep_type;
@@ -1831,7 +1852,7 @@ qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_trans_resu
 	}
 }
 
-qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_result_t *dtr)
+qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->end_type;
@@ -1841,7 +1862,7 @@ qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_result_t *d
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_trans_result_t *dtr)
+apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->proc_trans_rules;
@@ -1851,7 +1872,7 @@ apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_trans_r
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_trans_result_t *dtr)
+apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->ep_rules;
@@ -1861,7 +1882,7 @@ apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_trans_r
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_result_t *dtr)
+apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->exec_rules;
@@ -1871,7 +1892,7 @@ apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_result_
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_trans_result_t *dtr)
+apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->setexec_rules;
@@ -1881,7 +1902,7 @@ apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_trans_resu
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_type_trans_rules(apol_domain_trans_result_t *dtr)
+apol_vector_t *apol_domain_trans_result_get_type_trans_rules(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->type_trans_rules;
@@ -1891,7 +1912,7 @@ apol_vector_t *apol_domain_trans_result_get_type_trans_rules(apol_domain_trans_r
 	}
 }
 
-int apol_domain_trans_result_is_trans_valid(apol_domain_trans_result_t *dtr)
+int apol_domain_trans_result_is_trans_valid(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->valid;
@@ -1901,7 +1922,7 @@ int apol_domain_trans_result_is_trans_valid(apol_domain_trans_result_t *dtr)
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_result_t *dtr)
+apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->access_rules;
@@ -1911,7 +1932,8 @@ apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_resul
 	}
 }
 
-int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *start_dom, qpol_type_t *ep_type, qpol_type_t *end_dom)
+int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * start_dom, qpol_type_t * ep_type,
+					 qpol_type_t * end_dom)
 {
 	apol_domain_trans_table_t *table = NULL;
 	int retv;
@@ -1931,21 +1953,21 @@ int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *sta
 	if (!start_dom || !ep_type || !end_dom) {
 		missing_rules = APOL_DOMAIN_TRANS_RULE_TYPE_TRANS;
 		if (!start_dom) {
-			missing_rules |= (APOL_DOMAIN_TRANS_RULE_PROC_TRANS|APOL_DOMAIN_TRANS_RULE_EXEC);
+			missing_rules |= (APOL_DOMAIN_TRANS_RULE_PROC_TRANS | APOL_DOMAIN_TRANS_RULE_EXEC);
 			if (policy_version >= 15)
 				missing_rules |= APOL_DOMAIN_TRANS_RULE_SETEXEC;
 		}
 		if (!ep_type)
-			missing_rules |= (APOL_DOMAIN_TRANS_RULE_EXEC|APOL_DOMAIN_TRANS_RULE_ENTRYPOINT);
+			missing_rules |= (APOL_DOMAIN_TRANS_RULE_EXEC | APOL_DOMAIN_TRANS_RULE_ENTRYPOINT);
 		if (!end_dom)
-			missing_rules |= (APOL_DOMAIN_TRANS_RULE_PROC_TRANS|APOL_DOMAIN_TRANS_RULE_ENTRYPOINT);
+			missing_rules |= (APOL_DOMAIN_TRANS_RULE_PROC_TRANS | APOL_DOMAIN_TRANS_RULE_ENTRYPOINT);
 		return missing_rules;
 	}
 
 	/* build table if not already present */
 	if (!(policy->domain_trans_table)) {
 		if (apol_policy_domain_trans_table_build(policy))
-			return -1; /* errors already reported by build function */
+			return -1;     /* errors already reported by build function */
 	}
 
 	table = policy->domain_trans_table;
@@ -1971,10 +1993,11 @@ int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *sta
 			rule = apol_vector_get_element(table->dom_list[start_val - 1].type_trans_rules, retv);
 			qpol_type_get_value(policy->p, rule->dflt, &dflt_val);
 		}
-		if (retv < 0 || dflt_val != end_val) { /* no type_transition or different default */
-			retv = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules, start_dom);
+		if (retv < 0 || dflt_val != end_val) {	/* no type_transition or different default */
+			retv = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].setexec_rules,
+								    start_dom);
 			if (!dflt_val)
-				missing_rules |= APOL_DOMAIN_TRANS_RULE_TYPE_TRANS; /* only missing if none was found, not if different default */
+				missing_rules |= APOL_DOMAIN_TRANS_RULE_TYPE_TRANS;	/* only missing if none was found, not if different default */
 			if (retv < 0)
 				missing_rules |= APOL_DOMAIN_TRANS_RULE_SETEXEC;
 			else

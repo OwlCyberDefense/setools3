@@ -31,7 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct bst_node {
+typedef struct bst_node
+{
 	void *elem;
 	int is_red;
 	struct bst_node *child[2];
@@ -40,7 +41,8 @@ typedef struct bst_node {
 /**
  *  Generic binary search tree structure.  Stores elements as void*.
  */
-struct apol_bst {
+struct apol_bst
+{
 	/** Comparison function for nodes. */
 	apol_bst_comp_func *cmp;
 	/** The number of elements currently stored in the bst. */
@@ -49,7 +51,7 @@ struct apol_bst {
 	bst_node_t *head;
 };
 
-apol_bst_t *apol_bst_create(apol_bst_comp_func *cmp)
+apol_bst_t *apol_bst_create(apol_bst_comp_func * cmp)
 {
 	apol_bst_t *b = NULL;
 	if ((b = calloc(1, sizeof(*b))) == NULL) {
@@ -67,7 +69,7 @@ apol_bst_t *apol_bst_create(apol_bst_comp_func *cmp)
  * @param fr Callback to free a node's data.  If NULL then do not free
  * the data.
  */
-static void bst_node_free(bst_node_t *node, apol_bst_free_func *fr)
+static void bst_node_free(bst_node_t * node, apol_bst_free_func * fr)
 {
 	if (node != NULL) {
 		if (fr != NULL) {
@@ -79,14 +81,14 @@ static void bst_node_free(bst_node_t *node, apol_bst_free_func *fr)
 	}
 }
 
-void apol_bst_destroy(apol_bst_t **b, apol_bst_free_func *fr)
+void apol_bst_destroy(apol_bst_t ** b, apol_bst_free_func * fr)
 {
 	if (!b || !(*b))
 		return;
 	bst_node_free((*b)->head, fr);
-	(*b)->head = NULL;  /* this will catch instances when there
-			       are multpile pointers to the same
-			       BST object */
+	(*b)->head = NULL;	       /* this will catch instances when there
+				        * are multpile pointers to the same
+				        * BST object */
 	free(*b);
 	*b = NULL;
 }
@@ -100,7 +102,8 @@ void apol_bst_destroy(apol_bst_t **b, apol_bst_free_func *fr)
  *
  * @return 0 on success, < 0 on error.
  */
-static int bst_node_to_vector(bst_node_t *node, apol_vector_t *v) {
+static int bst_node_to_vector(bst_node_t * node, apol_vector_t * v)
+{
 	int retval;
 	if (node == NULL) {
 		return 0;
@@ -114,7 +117,7 @@ static int bst_node_to_vector(bst_node_t *node, apol_vector_t *v) {
 	return bst_node_to_vector(node->child[1], v);
 }
 
-apol_vector_t *apol_bst_get_vector(const struct apol_bst *b)
+apol_vector_t *apol_bst_get_vector(const struct apol_bst * b)
 {
 	apol_vector_t *v = NULL;
 	if (!b) {
@@ -133,8 +136,7 @@ apol_vector_t *apol_bst_get_vector(const struct apol_bst *b)
 	return v;
 }
 
-
-size_t apol_bst_get_size(const apol_bst_t *b)
+size_t apol_bst_get_size(const apol_bst_t * b)
 {
 	if (!b) {
 		errno = EINVAL;
@@ -144,8 +146,7 @@ size_t apol_bst_get_size(const apol_bst_t *b)
 	}
 }
 
-int apol_bst_get_element(const apol_bst_t *b, void *elem,
-			 void *data, void **result)
+int apol_bst_get_element(const apol_bst_t * b, void *elem, void *data, void **result)
 {
 	bst_node_t *node;
 	int compval;
@@ -157,35 +158,30 @@ int apol_bst_get_element(const apol_bst_t *b, void *elem,
 	while (node != NULL) {
 		if (b->cmp != NULL) {
 			compval = b->cmp(node->elem, elem, data);
-		}
-		else {
-			char *p1 = (char *) node->elem;
-			char *p2 = (char *) elem;
+		} else {
+			char *p1 = (char *)node->elem;
+			char *p2 = (char *)elem;
 			if (p1 < p2) {
 				compval = -1;
-			}
-			else if (p1 > p2) {
+			} else if (p1 > p2) {
 				compval = 1;
-			}
-			else {
+			} else {
 				compval = 0;
 			}
 		}
 		if (compval == 0) {
 			*result = node->elem;
 			return 0;
-		}
-		else if (compval > 0) {
+		} else if (compval > 0) {
 			node = node->child[0];
-		}
-		else {
+		} else {
 			node = node->child[1];
 		}
 	}
 	return -1;
 }
 
-int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
+int apol_bst_insert(apol_bst_t * b, void *elem, void *data)
 {
 	return apol_bst_insert_and_get(b, &elem, data, NULL);
 }
@@ -200,7 +196,7 @@ int apol_bst_insert(apol_bst_t *b, void *elem, void *data)
  * @return Allocated BST node, which the caller must insert, or NULL
  * on error.
  */
-static bst_node_t *bst_node_make(apol_bst_t *b, void *elem)
+static bst_node_t *bst_node_make(apol_bst_t * b, void *elem)
 {
 	bst_node_t *new_node;
 	if ((new_node = calloc(1, sizeof(*new_node))) == NULL) {
@@ -219,12 +215,12 @@ static bst_node_t *bst_node_make(apol_bst_t *b, void *elem)
  *
  * @return 0 if the node is black, 1 if red.
  */
-static int bst_node_is_red(bst_node_t *node)
+static int bst_node_is_red(bst_node_t * node)
 {
 	return node != NULL && node->is_red;
 }
 
-static bst_node_t *bst_rotate_single(bst_node_t *root, int dir)
+static bst_node_t *bst_rotate_single(bst_node_t * root, int dir)
 {
 	bst_node_t *save = root->child[!dir];
 	root->child[!dir] = save->child[dir];
@@ -234,13 +230,14 @@ static bst_node_t *bst_rotate_single(bst_node_t *root, int dir)
 	return save;
 }
 
-static bst_node_t *bst_rotate_double(bst_node_t *root, int dir)
+static bst_node_t *bst_rotate_double(bst_node_t * root, int dir)
 {
 	root->child[!dir] = bst_rotate_single(root->child[!dir], !dir);
 	return bst_rotate_single(root, dir);
 }
 
-static bst_node_t *bst_insert_recursive(apol_bst_t *b, bst_node_t *root, void **elem, void *data, apol_bst_free_func *fr, int *uniq)
+static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void **elem, void *data, apol_bst_free_func * fr,
+					int *uniq)
 {
 	int compval, dir;
 	if (root == NULL) {
@@ -249,21 +246,17 @@ static bst_node_t *bst_insert_recursive(apol_bst_t *b, bst_node_t *root, void **
 			return NULL;
 		}
 		*uniq = 1;
-	}
-	else {
+	} else {
 		if (b->cmp != NULL) {
 			compval = b->cmp(root->elem, *elem, data);
-		}
-		else {
-			char *p1 = (char *) root->elem;
-			char *p2 = (char *) (*elem);
+		} else {
+			char *p1 = (char *)root->elem;
+			char *p2 = (char *)(*elem);
 			if (p1 < p2) {
 				compval = -1;
-			}
-			else if (p1 > p2) {
+			} else if (p1 > p2) {
 				compval = 1;
-			}
-			else {
+			} else {
 				compval = 0;
 			}
 		}
@@ -275,11 +268,9 @@ static bst_node_t *bst_insert_recursive(apol_bst_t *b, bst_node_t *root, void **
 			*elem = root->elem;
 			*uniq = 0;
 			return root;
-		}
-		else if (compval > 0) {
+		} else if (compval > 0) {
 			dir = 0;
-		}
-		else {
+		} else {
 			dir = 1;
 		}
 		root->child[dir] = bst_insert_recursive(b, root->child[dir], elem, data, fr, uniq);
@@ -291,17 +282,15 @@ static bst_node_t *bst_insert_recursive(apol_bst_t *b, bst_node_t *root, void **
 		if (bst_node_is_red(root->child[dir])) {
 			if (bst_node_is_red(root->child[!dir])) {
 				/* recolor myself and children.  note
-				   that this can't be reached if a
-				   child is NULL */
+				 * that this can't be reached if a
+				 * child is NULL */
 				root->is_red = 1;
 				root->child[0]->is_red = 0;
 				root->child[1]->is_red = 0;
-			}
-			else {
+			} else {
 				if (bst_node_is_red(root->child[dir]->child[dir])) {
 					root = bst_rotate_single(root, !dir);
-				}
-				else if (bst_node_is_red(root->child[dir]->child[!dir])) {
+				} else if (bst_node_is_red(root->child[dir]->child[!dir])) {
 					root = bst_rotate_double(root, !dir);
 				}
 			}
@@ -310,8 +299,7 @@ static bst_node_t *bst_insert_recursive(apol_bst_t *b, bst_node_t *root, void **
 	return root;
 }
 
-int apol_bst_insert_and_get(apol_bst_t *b, void **elem, void *data,
-			    apol_bst_free_func *fr)
+int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data, apol_bst_free_func * fr)
 {
 	int retval;
 	if (!b || !elem) {

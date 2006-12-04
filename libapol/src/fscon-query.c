@@ -35,25 +35,30 @@
 #include <errno.h>
 #include <stdio.h>
 
-struct apol_genfscon_query {
-        char *fs, *path;
+struct apol_genfscon_query
+{
+	char *fs, *path;
 	int objclass;
-        apol_context_t *context;
+	apol_context_t *context;
 	unsigned int flags;
 };
 
-struct apol_fs_use_query {
+struct apol_fs_use_query
+{
 	char *fs;
 	int behavior;
-        apol_context_t *context;
+	apol_context_t *context;
 	unsigned int flags;
 };
 
 /******************** genfscon queries ********************/
 
-int apol_get_genfscon_by_query(apol_policy_t *p,
-			       apol_genfscon_query_t *g,
-			       apol_vector_t **v)
+int apol_get_genfscon_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apol_vector_t ** v)
+{
+	return apol_genfscon_get_by_query(p, g, v);
+}
+
+int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
@@ -66,8 +71,8 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &genfscon) < 0) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&genfscon) < 0) {
 			goto cleanup;
 		}
 		if (g != NULL) {
@@ -83,16 +88,14 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 			retval2 = apol_compare(p, fs, g->fs, 0, NULL);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				free(genfscon);
 				continue;
 			}
 			retval2 = apol_compare(p, path, g->path, 0, NULL);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				free(genfscon);
 				continue;
 			}
@@ -103,8 +106,7 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 			retval2 = apol_compare_context(p, context, g->context, g->flags);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				free(genfscon);
 				continue;
 			}
@@ -116,7 +118,7 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, free);
 		free(genfscon);
@@ -134,7 +136,7 @@ apol_genfscon_query_t *apol_genfscon_query_create(void)
 	return g;
 }
 
-void apol_genfscon_query_destroy(apol_genfscon_query_t **g)
+void apol_genfscon_query_destroy(apol_genfscon_query_t ** g)
 {
 	if (*g != NULL) {
 		free((*g)->fs);
@@ -145,33 +147,26 @@ void apol_genfscon_query_destroy(apol_genfscon_query_t **g)
 	}
 }
 
-int apol_genfscon_query_set_filesystem(apol_policy_t *p,
-                                       apol_genfscon_query_t *g,
-                                       const char *fs)
+int apol_genfscon_query_set_filesystem(apol_policy_t * p, apol_genfscon_query_t * g, const char *fs)
 {
 	return apol_query_set(p, &g->fs, NULL, fs);
 }
 
-int apol_genfscon_query_set_path(apol_policy_t *p,
-				 apol_genfscon_query_t *g,
-				 const char *path)
+int apol_genfscon_query_set_path(apol_policy_t * p, apol_genfscon_query_t * g, const char *path)
 {
 	int tmp = apol_query_set(p, &g->path, NULL, path);
-	if( !tmp && g->path ){
-		if (strlen( g->path ) > 1 && g->path[strlen(g->path) - 1] == '/')
-		g->path[strlen(g->path) - 1] = 0;
+	if (!tmp && g->path) {
+		if (strlen(g->path) > 1 && g->path[strlen(g->path) - 1] == '/')
+			g->path[strlen(g->path) - 1] = 0;
 	}
 	return tmp;
 }
 
-int apol_genfscon_query_set_objclass(apol_policy_t *p,
-				     apol_genfscon_query_t *g,
-				     int objclass)
+int apol_genfscon_query_set_objclass(apol_policy_t * p, apol_genfscon_query_t * g, int objclass)
 {
 	if (objclass < 0) {
 		g->objclass = -1;
-	}
-	else {
+	} else {
 		switch (objclass) {
 		case QPOL_CLASS_BLK_FILE:
 		case QPOL_CLASS_CHR_FILE:
@@ -180,10 +175,10 @@ int apol_genfscon_query_set_objclass(apol_policy_t *p,
 		case QPOL_CLASS_FILE:
 		case QPOL_CLASS_LNK_FILE:
 		case QPOL_CLASS_SOCK_FILE:
-		case QPOL_CLASS_ALL: {
-			g->objclass = (int) objclass;
-			break;
-		}
+		case QPOL_CLASS_ALL:{
+				g->objclass = (int)objclass;
+				break;
+			}
 		default:
 			ERR(p, "%s", "Invalid object class given.");
 			return -1;
@@ -192,10 +187,8 @@ int apol_genfscon_query_set_objclass(apol_policy_t *p,
 	return 0;
 }
 
-int apol_genfscon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
-                                    apol_genfscon_query_t *g,
-                                    apol_context_t *context,
-                                    unsigned int range_match)
+int apol_genfscon_query_set_context(apol_policy_t * p __attribute__ ((unused)),
+				    apol_genfscon_query_t * g, apol_context_t * context, unsigned int range_match)
 {
 	if (g->context != NULL) {
 		apol_context_destroy(&g->context);
@@ -205,10 +198,10 @@ int apol_genfscon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	return 0;
 }
 
-char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
+char *apol_genfscon_render(apol_policy_t * p, qpol_genfscon_t * genfscon)
 {
 	char *line = NULL, *retval = NULL;
-        char *context_str = NULL, *type_str = NULL;
+	char *context_str = NULL, *type_str = NULL;
 	char *front_str = NULL, *name = NULL, *path = NULL;
 	qpol_context_t *ctxt = NULL;
 	uint32_t fclass;
@@ -271,7 +264,7 @@ char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
 
 	if (qpol_genfscon_get_path(p->p, genfscon, &path))
 		goto cleanup;
-	line = (char*)calloc(len + strlen(path) + 4 + strlen(context_str) + 1 , sizeof(char));
+	line = (char *)calloc(len + strlen(path) + 4 + strlen(context_str) + 1, sizeof(char));
 	if (!line) {
 		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
@@ -279,7 +272,7 @@ char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
 	sprintf(line, "%s %s %s %s", front_str, path, type_str, context_str);
 
 	retval = line;
-cleanup:
+      cleanup:
 	free(front_str);
 	free(context_str);
 	if (retval != line) {
@@ -290,9 +283,12 @@ cleanup:
 
 /******************** fs_use queries ********************/
 
-int apol_get_fs_use_by_query(apol_policy_t *p,
-			     apol_fs_use_query_t *f,
-			     apol_vector_t **v)
+int apol_get_fs_use_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_vector_t ** v)
+{
+	return apol_fs_use_get_by_query(p, f, v);
+}
+
+int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
@@ -305,27 +301,24 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &fs_use) < 0) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&fs_use) < 0) {
 			goto cleanup;
 		}
 		if (f != NULL) {
 			char *fs;
 			uint32_t behavior;
 			qpol_context_t *context = NULL;
-			if (qpol_fs_use_get_name(p->p, fs_use, &fs) < 0 ||
-			    qpol_fs_use_get_behavior(p->p, fs_use, &behavior) < 0) {
+			if (qpol_fs_use_get_name(p->p, fs_use, &fs) < 0 || qpol_fs_use_get_behavior(p->p, fs_use, &behavior) < 0) {
 				goto cleanup;
 			}
-			if (behavior != QPOL_FS_USE_PSID &&
-			    qpol_fs_use_get_context(p->p, fs_use, &context) < 0) {
+			if (behavior != QPOL_FS_USE_PSID && qpol_fs_use_get_context(p->p, fs_use, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, fs, f->fs, 0, NULL);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				continue;
 			}
 			if (f->behavior >= 0 && f->behavior != behavior) {
@@ -335,8 +328,7 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 			 * have contexts */
 			if (f->context != NULL && behavior == QPOL_FS_USE_PSID) {
 				retval2 = 0;
-			}
-			else {
+			} else {
 				retval2 = apol_compare_context(p, context, f->context, f->flags);
 				if (retval2 < 0) {
 					goto cleanup;
@@ -353,7 +345,7 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -370,7 +362,7 @@ apol_fs_use_query_t *apol_fs_use_query_create(void)
 	return f;
 }
 
-void apol_fs_use_query_destroy(apol_fs_use_query_t **f)
+void apol_fs_use_query_destroy(apol_fs_use_query_t ** f)
 {
 	if (*f != NULL) {
 		free((*f)->fs);
@@ -380,31 +372,26 @@ void apol_fs_use_query_destroy(apol_fs_use_query_t **f)
 	}
 }
 
-int apol_fs_use_query_set_filesystem(apol_policy_t *p,
-				     apol_fs_use_query_t *f,
-				     const char *fs)
+int apol_fs_use_query_set_filesystem(apol_policy_t * p, apol_fs_use_query_t * f, const char *fs)
 {
 	return apol_query_set(p, &f->fs, NULL, fs);
 }
 
-int apol_fs_use_query_set_behavior(apol_policy_t *p,
-				   apol_fs_use_query_t *f,
-				   int behavior)
+int apol_fs_use_query_set_behavior(apol_policy_t * p, apol_fs_use_query_t * f, int behavior)
 {
 	if (behavior < 0) {
 		f->behavior = -1;
-	}
-	else {
+	} else {
 		switch (behavior) {
 		case QPOL_FS_USE_XATTR:
 		case QPOL_FS_USE_TASK:
 		case QPOL_FS_USE_TRANS:
 		case QPOL_FS_USE_GENFS:
 		case QPOL_FS_USE_NONE:
-		case QPOL_FS_USE_PSID: {
-			f->behavior = (int) behavior;
-			break;
-		}
+		case QPOL_FS_USE_PSID:{
+				f->behavior = (int)behavior;
+				break;
+			}
 		default:
 			ERR(p, "%s", "Invalid fs_use behavior given.");
 			return -1;
@@ -413,10 +400,8 @@ int apol_fs_use_query_set_behavior(apol_policy_t *p,
 	return 0;
 }
 
-int apol_fs_use_query_set_context(apol_policy_t *p __attribute__ ((unused)),
-				  apol_fs_use_query_t *f,
-				  apol_context_t *context,
-				  unsigned int range_match)
+int apol_fs_use_query_set_context(apol_policy_t * p __attribute__ ((unused)),
+				  apol_fs_use_query_t * f, apol_context_t * context, unsigned int range_match)
 {
 	if (f->context != NULL) {
 		apol_context_destroy(&f->context);
@@ -426,7 +411,7 @@ int apol_fs_use_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	return 0;
 }
 
-char *apol_fs_use_render(apol_policy_t *p, qpol_fs_use_t *fsuse)
+char *apol_fs_use_render(apol_policy_t * p, qpol_fs_use_t * fsuse)
 {
 	char *context_str = NULL;
 	char *line = NULL, *retval = NULL;
@@ -447,8 +432,7 @@ char *apol_fs_use_render(apol_policy_t *p, qpol_fs_use_t *fsuse)
 
 	if (behavior == QPOL_FS_USE_PSID) {
 		context_str = strdup("");
-	}
-	else {
+	} else {
 		if (qpol_fs_use_get_context(p->p, fsuse, &ctxt))
 			goto cleanup;
 		context_str = apol_qpol_context_render(p, ctxt);
@@ -464,7 +448,7 @@ char *apol_fs_use_render(apol_policy_t *p, qpol_fs_use_t *fsuse)
 	sprintf(line, "%s %s %s", behavior_str, fsname, context_str);
 
 	retval = line;
- cleanup:
+      cleanup:
 	free(context_str);
 	if (retval != line) {
 		free(line);

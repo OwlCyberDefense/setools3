@@ -34,18 +34,18 @@
 #include <errno.h>
 #include <assert.h>
 
-static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *ctx_vector, apol_policy_t *policy);
-static bool_t in_isid_ctx(char *type_name, apol_policy_t *policy);
-static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t *datum);
+static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy);
+static bool_t in_isid_ctx(char *type_name, apol_policy_t * policy);
+static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t * datum);
 /* for some reason we have to define this here to remove compile warnings */
-extern ssize_t getline(char **lineptr, size_t *n, FILE *stream);
+extern ssize_t getline(char **lineptr, size_t * n, FILE * stream);
 
 /* This string is the name  f the module and should match the stem
  * of the file name; it should also match the prefix of all functions
  * defined in this module and the private data storage structure */
 static const char *const mod_name = "unreachable_doms";
 
-int unreachable_doms_register(sechk_lib_t *lib)
+int unreachable_doms_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -73,23 +73,20 @@ int unreachable_doms_register(sechk_lib_t *lib)
 		"--------------------------------------------------------------------------------\n"
 		"This module finds all domains in a policy which are unreachable.  A domain is\n"
 		"unreachable if any of the following apply:\n"
-		"1) There is insufficient type enforcement policy to allow a transition,\n"
-		"2) There is insufficient RBAC policy to allow a transition,\n"
-		"3) There are no users with proper roles to allow a transition.\n"
+		"   1) There is insufficient type enforcement policy to allow a transition,\n"
+		"   2) There is insufficient RBAC policy to allow a transition,\n"
+		"   3) There are no users with proper roles to allow a transition.\n"
 		"However, if any of the above rules indicate an unreachable domain, yet the\n"
 		"domain appears in the system default contexts file, it is considered reachable.\n";
 	mod->opt_description =
 		"  Module requirements:\n"
 		"    source policy\n"
 		"    default contexts file\n"
-		"  Module dependencies:\n"
-		"    find_domains module\n"
-		"  Module options:\n"
-		"    none\n";
+		"  Module dependencies:\n" "    find_domains module\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_MED;
 
 	/* assign dependencies */
-	if ( apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains")) < 0 ) {
+	if (apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains")) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -109,7 +106,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = unreachable_doms_init;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -128,7 +125,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = unreachable_doms_run;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -149,7 +146,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = unreachable_doms_print;
-	if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -161,7 +158,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unreachable_doms_data_t *datum = NULL;
 	bool_t retv;
@@ -187,12 +184,11 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	mod->data = datum;
 
 	/* Parse default contexts file */
-	if ( !(datum->ctx_vector = apol_vector_create()) ) {
+	if (!(datum->ctx_vector = apol_vector_create())) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
 	}
-
 #ifdef LIBSELINUX
 	ctx_file_path = selinux_default_context_path();
 	if (!ctx_file_path) {
@@ -212,17 +208,18 @@ int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 	return 0;
 }
 
-typedef enum dom_need {
-	KEEP_SEARCHING = 0, /* keep checking way to reach not found yet */
-	USER,               /* missing a user for role(s) associated with the type */
-	COMMON_USER,        /* missing user for the role in a transition to that type */
-	ROLE_TRANS,         /* transition is valid but need a role transition as well */
-	ROLE_ALLOW,         /* transition is valid and has a role_transition but not role allow */
-	RBAC,               /* there is a transition but insufficient RBAC rules to permit or to determie a user */
-	VALID_TRANS,        /* only transitions to the type are invalid ones needs one or more rules to complete */
-	ROLE,               /* type has no associated role */
-	TRANSITION,         /* no transition exists */
-	DONE                /* done searching a valid way to reach the type has been found */
+typedef enum dom_need
+{
+	KEEP_SEARCHING = 0,	       /* keep checking way to reach not found yet */
+	USER,			       /* missing a user for role(s) associated with the type */
+	COMMON_USER,		       /* missing user for the role in a transition to that type */
+	ROLE_TRANS,		       /* transition is valid but need a role transition as well */
+	ROLE_ALLOW,		       /* transition is valid and has a role_transition but not role allow */
+	RBAC,			       /* there is a transition but insufficient RBAC rules to permit or to determie a user */
+	VALID_TRANS,		       /* only transitions to the type are invalid ones needs one or more rules to complete */
+	ROLE,			       /* type has no associated role */
+	TRANSITION,		       /* no transition exists */
+	DONE			       /* done searching a valid way to reach the type has been found */
 } dom_need_e;
 
 /**
@@ -232,7 +229,8 @@ typedef enum dom_need {
  *  @param tgt_roles The second set of roles.
  *  @return 1 if a common user can be found 0 other wise.
  */
-static int exists_common_user(apol_policy_t *policy, apol_vector_t *src_roles, apol_vector_t *tgt_roles, qpol_role_t **which_sr, qpol_role_t **which_tr, qpol_user_t **which_u)
+static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles, apol_vector_t * tgt_roles, qpol_role_t ** which_sr,
+			      qpol_role_t ** which_tr, qpol_user_t ** which_u)
 {
 	int retv = 0;
 	apol_user_query_t *uq;
@@ -241,6 +239,7 @@ static int exists_common_user(apol_policy_t *policy, apol_vector_t *src_roles, a
 	qpol_user_t *user = NULL;
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *user_v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	size_t i, j, k;
 
 	if (!policy || !src_roles || !tgt_roles)
@@ -260,14 +259,14 @@ static int exists_common_user(apol_policy_t *policy, apol_vector_t *src_roles, a
 		role = apol_vector_get_element(src_roles, i);
 		if (which_sr)
 			*which_sr = role;
-		qpol_role_get_name(policy->p, role, &name);
+		qpol_role_get_name(q, role, &name);
 		apol_user_query_set_role(policy, uq, name);
-		apol_get_user_by_query(policy, uq, &user_v);
+		apol_user_get_by_query(policy, uq, &user_v);
 		for (j = 0; j < apol_vector_get_size(user_v); j++) {
 			user = apol_vector_get_element(user_v, j);
-			qpol_user_get_role_iter(policy->p, user, &iter);
+			qpol_user_get_role_iter(q, user, &iter);
 			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-				qpol_iterator_get_item(iter, (void**)&role);
+				qpol_iterator_get_item(iter, (void **)&role);
 				if (!apol_vector_get_index(tgt_roles, role, NULL, NULL, &k)) {
 					retv = 1;
 					if (which_tr)
@@ -282,7 +281,7 @@ static int exists_common_user(apol_policy_t *policy, apol_vector_t *src_roles, a
 		apol_vector_destroy(&user_v, NULL);
 	}
 
-exists_done:
+      exists_done:
 	qpol_iterator_destroy(&iter);
 	apol_vector_destroy(&user_v, NULL);
 	apol_user_query_destroy(&uq);
@@ -297,7 +296,7 @@ exists_done:
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed"		- some negative results found */
-int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unreachable_doms_data_t *datum;
 	sechk_name_value_t *dep = NULL;
@@ -326,6 +325,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	apol_role_trans_query_t *rtq = NULL;
 	apol_role_allow_query_t *raq = NULL;
 	qpol_role_trans_t *role_trans = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -342,7 +342,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	if (mod->result)
 		return 0;
 
-	datum = (unreachable_doms_data_t*)mod->data;
+	datum = (unreachable_doms_data_t *) mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		ERR(policy, "%s", strerror(ENOMEM));
@@ -378,15 +378,14 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	}
 	for (i = 0; i < apol_vector_get_size(dom_results); i++) {
 		item = apol_vector_get_element(dom_results, i);
-		if (apol_vector_append(dom_vector, (void*)(item->item))) {
+		if (apol_vector_append(dom_vector, (void *)(item->item))) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto unreachable_doms_run_fail;
 		}
 	}
 	item = NULL;
-	dom_results = NULL; /* no need to destroy, belongs to another module. */
-
+	dom_results = NULL;	       /* no need to destroy, belongs to another module. */
 
 	/* initialize query objects */
 	dta = apol_domain_trans_analysis_create();
@@ -428,16 +427,15 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	/* dom_vector now contains all types considered domains */
 	for (i = 0; i < apol_vector_get_size(dom_vector); i++) {
 		cur_dom = apol_vector_get_element(dom_vector, i);
-		qpol_type_get_name(policy->p, cur_dom, &cur_dom_name);
+		qpol_type_get_name(q, cur_dom, &cur_dom_name);
 		need = KEEP_SEARCHING;
 
-		if (in_def_ctx(cur_dom_name, datum) ||
-		    in_isid_ctx(cur_dom_name, policy))
+		if (in_def_ctx(cur_dom_name, datum) || in_isid_ctx(cur_dom_name, policy))
 			continue;
 
 		/* collect information about roles and transitions to this domain */
 		apol_role_query_set_type(policy, role_q, cur_dom_name);
-		apol_get_role_by_query(policy, role_q, &dom_roles);
+		apol_role_get_by_query(policy, role_q, &dom_roles);
 		apol_domain_trans_table_reset(policy);
 		apol_domain_trans_analysis_set_start_type(policy, dta, cur_dom_name);
 		apol_domain_trans_analysis_set_valid(policy, dta, APOL_DOMAIN_TRANS_SEARCH_VALID);
@@ -449,20 +447,20 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		/* for valid transitions - validate RBAC, and then users */
 		for (j = 0; j < apol_vector_get_size(valid_rev_trans); j++) {
 			dtr = apol_vector_get_element(valid_rev_trans, j);
-			start_type =  apol_domain_trans_result_get_start_type(dtr);
+			start_type = apol_domain_trans_result_get_start_type(dtr);
 			ep_type = apol_domain_trans_result_get_entrypoint_type(dtr);
-			qpol_type_get_name(policy->p, start_type, &tmp_name);
+			qpol_type_get_name(q, start_type, &tmp_name);
 			apol_role_query_set_type(policy, role_q, tmp_name);
-			apol_get_role_by_query(policy, role_q, &start_roles);
+			apol_role_get_by_query(policy, role_q, &start_roles);
 			intersect_roles = apol_vector_create_from_intersection(dom_roles, start_roles, NULL, NULL);
 			if (apol_vector_get_size(intersect_roles) > 0) {
 				/* find user with role in intersect */
 				role_users = apol_vector_create();
 				for (k = 0; k < apol_vector_get_size(intersect_roles); k++) {
 					last_role = apol_vector_get_element(intersect_roles, k);
-					qpol_role_get_name(policy->p, last_role, &tmp_name);
+					qpol_role_get_name(q, last_role, &tmp_name);
 					apol_user_query_set_role(policy, user_q, tmp_name);
-					apol_get_user_by_query(policy, user_q, &tmp_users);
+					apol_user_get_by_query(policy, user_q, &tmp_users);
 					if (apol_vector_cat(role_users, tmp_users)) {
 						error = errno;
 						ERR(policy, "%s", strerror(error));
@@ -479,21 +477,22 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			if (need == DONE)
 				break;
 			/* look for role_transitions */
-			qpol_type_get_name(policy->p, ep_type, &tmp_name);
+			qpol_type_get_name(q, ep_type, &tmp_name);
 			apol_role_trans_query_set_target(policy, rtq, tmp_name, 1);
-			apol_get_role_trans_by_query(policy, rtq, &role_trans_vector);
+			apol_role_trans_get_by_query(policy, rtq, &role_trans_vector);
 			for (k = 0; need != DONE && k < apol_vector_get_size(role_trans_vector); k++) {
 				role_trans = apol_vector_get_element(role_trans_vector, k);
-				qpol_role_trans_get_source_role(policy->p, role_trans, &src_role);
-				qpol_role_trans_get_default_role(policy->p, role_trans, &dflt_role);
-				if (apol_vector_get_index(start_roles, src_role, NULL, NULL, &l) || apol_vector_get_index(dom_roles, dflt_role, NULL, NULL, &l))
-					continue; /* start domain must have the source role and cur_dom must have default role or transition does not apply */
+				qpol_role_trans_get_source_role(q, role_trans, &src_role);
+				qpol_role_trans_get_default_role(q, role_trans, &dflt_role);
+				if (apol_vector_get_index(start_roles, src_role, NULL, NULL, &l)
+				    || apol_vector_get_index(dom_roles, dflt_role, NULL, NULL, &l))
+					continue;	/* start domain must have the source role and cur_dom must have default role or transition does not apply */
 				if (exists_common_user(policy, start_roles, dom_roles, NULL, NULL, NULL)) {
-					qpol_role_get_name(policy->p, src_role, &tmp_name);
+					qpol_role_get_name(q, src_role, &tmp_name);
 					apol_role_allow_query_set_source(policy, raq, tmp_name);
-					qpol_role_get_name(policy->p, dflt_role, &tmp_name);
+					qpol_role_get_name(q, dflt_role, &tmp_name);
 					apol_role_allow_query_set_target(policy, raq, tmp_name);
-					apol_get_role_allow_by_query(policy, raq, &role_allow_vector);
+					apol_role_allow_get_by_query(policy, raq, &role_allow_vector);
 					if (apol_vector_get_size(role_allow_vector) > 0) {
 						need = DONE;
 					} else {
@@ -542,9 +541,9 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			role_users = apol_vector_create();
 			for (j = 0; j < apol_vector_get_size(dom_roles); j++) {
 				last_role = apol_vector_get_element(dom_roles, j);
-				qpol_role_get_name(policy->p, last_role, &tmp_name);
+				qpol_role_get_name(q, last_role, &tmp_name);
 				apol_user_query_set_role(policy, user_q, tmp_name);
-				apol_get_user_by_query(policy, user_q, &tmp_users);
+				apol_user_get_by_query(policy, user_q, &tmp_users);
 				apol_vector_cat(role_users, tmp_users);
 				apol_vector_destroy(&tmp_users, NULL);
 			}
@@ -557,7 +556,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			}
 			apol_vector_destroy(&role_users, NULL);
 		}
-		/* if something needs to be reported do so now*/
+		/* if something needs to be reported do so now */
 		if (need != DONE) {
 			assert(need != KEEP_SEARCHING);
 			item = sechk_item_new(NULL);
@@ -566,7 +565,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 				ERR(policy, "%s", strerror(error));
 				goto unreachable_doms_run_fail;
 			}
-			item->item = (void*)cur_dom;
+			item->item = (void *)cur_dom;
 			item->test_result = (unsigned char)need;
 			item->proof = apol_vector_create();
 			if (!item->proof) {
@@ -583,115 +582,128 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 			proof->type = SECHK_ITEM_NONE;
 			proof->elem = NULL;
 			switch (need) {
-				case USER:
-					{
-						qpol_role_get_name(policy->p, last_role, &tmp_name);
-						if (asprintf(&proof->text, "No user associated with role %s for %s", tmp_name, cur_dom_name) < 0) {
-							error = errno;
-							ERR(policy, "%s", strerror(error));
-							goto unreachable_doms_run_fail;
-						}
-						break;
-					}
-				case COMMON_USER:
-					{
-						qpol_role_get_name(policy->p, last_role, &tmp_name);
-						qpol_role_get_name(policy->p, last_dflt, &tmp2);
-						if (asprintf(&proof->text, "Role transition required but no user associated with role %s and %s", tmp_name, tmp2) < 0) {
-							error = errno;
-							ERR(policy, "%s", strerror(error));
-							goto unreachable_doms_run_fail;
-						}
-						break;
-					}
-				case ROLE_TRANS:
-					{
-						qpol_role_get_name(policy->p, last_role, &tmp_name);
-						qpol_role_get_name(policy->p, last_dflt, &tmp2);
-						qpol_type_get_name(policy->p, last_type, &tmp3);
-						if (asprintf(&proof->text, "Missing: role_transition %s %s %s;", tmp_name, tmp3, tmp2) < 0) {
-							error = errno;
-							ERR(policy, "%s", strerror(error));
-							goto unreachable_doms_run_fail;
-						}
-						break;
-					}
-				case ROLE_ALLOW:
-					{
-						qpol_role_get_name(policy->p, last_role, &tmp_name);
-						qpol_role_get_name(policy->p, last_dflt, &tmp2);
-						if (asprintf(&proof->text, "Role transition required but missing role allow rule.\n\tMissing: allow %s %s;", tmp_name, tmp2) < 0) {
-							error = errno;
-							ERR(policy, "%s", strerror(error));
-							goto unreachable_doms_run_fail;
-						}
-						break;
-					}
-				case RBAC:
-					{
-						if (asprintf(&proof->text, "Valid domain transition to %s exists but indufficient RBAC rules to permit it.", cur_dom_name) < 0) {
-							error = errno;
-							ERR(policy, "%s", strerror(error));
-							goto unreachable_doms_run_fail;
-						}
-						break;
-					}
-				case VALID_TRANS:
-					{
-						if (start_type)
-							qpol_type_get_name(policy->p, start_type, &tmp2);
-						else
-							tmp2 = "<start_type>";
-						if (ep_type)
-							qpol_type_get_name(policy->p, ep_type, &tmp3);
-						else
-							tmp3 = "<entrypont>";
-						if (asprintf(&proof->text, "Partial transition to %s found:\n\t%s: allow %s %s : process transition;\n\t%s: allow %s %s : file execute;\n\t%s: allow %s %s : file entrypoint;\n\t%s one of:\n\tallow %s self : process setexec;\n\ttype_transition %s %s : process %s;", cur_dom_name,
-									((trans_missing & APOL_DOMAIN_TRANS_RULE_PROC_TRANS)?"Missing":"Has"), tmp2, cur_dom_name,
-									((trans_missing & APOL_DOMAIN_TRANS_RULE_EXEC)?"Missing":"Has"), tmp2, tmp3,
-									((trans_missing & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT)?"Missing":"Has"), cur_dom_name, tmp3,
-									((trans_missing & (APOL_DOMAIN_TRANS_RULE_TYPE_TRANS|APOL_DOMAIN_TRANS_RULE_SETEXEC))?"May need":"Has"), cur_dom_name,
-									tmp2, tmp3, cur_dom_name) < 0) {
-							error = errno;
-							ERR(policy, "%s", strerror(error));
-							goto unreachable_doms_run_fail;
-						}
-						break;
-					}
-				case ROLE:
-					{
-						if (asprintf(&proof->text, "No role associated with domain %s", cur_dom_name) < 0) {
-							error = errno;
-							ERR(policy, "%s", strerror(error));
-							goto unreachable_doms_run_fail;
-						}
-						break;
-					}
-				case TRANSITION:
-					{
-						if (asprintf(&proof->text, "There are no transitions to domain %s", cur_dom_name) < 0) {
-							error = errno;
-							ERR(policy, "%s", strerror(error));
-							goto unreachable_doms_run_fail;
-						}
-						break;
-					}
-				case DONE:
-				case KEEP_SEARCHING:
-				default:
-					{
-						assert(0);
-						error = EDOM;
+			case USER:
+				{
+					qpol_role_get_name(q, last_role, &tmp_name);
+					if (asprintf(&proof->text, "No user associated with role %s for %s", tmp_name, cur_dom_name)
+					    < 0) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
 						goto unreachable_doms_run_fail;
 					}
+					break;
+				}
+			case COMMON_USER:
+				{
+					qpol_role_get_name(q, last_role, &tmp_name);
+					qpol_role_get_name(q, last_dflt, &tmp2);
+					if (asprintf
+					    (&proof->text, "Role transition required but no user associated with role %s and %s",
+					     tmp_name, tmp2) < 0) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto unreachable_doms_run_fail;
+					}
+					break;
+				}
+			case ROLE_TRANS:
+				{
+					qpol_role_get_name(q, last_role, &tmp_name);
+					qpol_role_get_name(q, last_dflt, &tmp2);
+					qpol_type_get_name(q, last_type, &tmp3);
+					if (asprintf(&proof->text, "Missing: role_transition %s %s %s;", tmp_name, tmp3, tmp2) < 0) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto unreachable_doms_run_fail;
+					}
+					break;
+				}
+			case ROLE_ALLOW:
+				{
+					qpol_role_get_name(q, last_role, &tmp_name);
+					qpol_role_get_name(q, last_dflt, &tmp2);
+					if (asprintf
+					    (&proof->text,
+					     "Role transition required but missing role allow rule.\n\tMissing: allow %s %s;",
+					     tmp_name, tmp2) < 0) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto unreachable_doms_run_fail;
+					}
+					break;
+				}
+			case RBAC:
+				{
+					if (asprintf
+					    (&proof->text,
+					     "Valid domain transition to %s exists but indufficient RBAC rules to permit it.",
+					     cur_dom_name) < 0) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto unreachable_doms_run_fail;
+					}
+					break;
+				}
+			case VALID_TRANS:
+				{
+					if (start_type)
+						qpol_type_get_name(q, start_type, &tmp2);
+					else
+						tmp2 = "<start_type>";
+					if (ep_type)
+						qpol_type_get_name(q, ep_type, &tmp3);
+					else
+						tmp3 = "<entrypont>";
+					if (asprintf
+					    (&proof->text,
+					     "Partial transition to %s found:\n\t%s: allow %s %s : process transition;\n\t%s: allow %s %s : file execute;\n\t%s: allow %s %s : file entrypoint;\n\t%s one of:\n\tallow %s self : process setexec;\n\ttype_transition %s %s : process %s;",
+					     cur_dom_name,
+					     ((trans_missing & APOL_DOMAIN_TRANS_RULE_PROC_TRANS) ? "Missing" : "Has"), tmp2,
+					     cur_dom_name, ((trans_missing & APOL_DOMAIN_TRANS_RULE_EXEC) ? "Missing" : "Has"),
+					     tmp2, tmp3, ((trans_missing & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT) ? "Missing" : "Has"),
+					     cur_dom_name, tmp3,
+					     ((trans_missing & (APOL_DOMAIN_TRANS_RULE_TYPE_TRANS | APOL_DOMAIN_TRANS_RULE_SETEXEC))
+					      ? "May need" : "Has"), cur_dom_name, tmp2, tmp3, cur_dom_name) < 0) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto unreachable_doms_run_fail;
+					}
+					break;
+				}
+			case ROLE:
+				{
+					if (asprintf(&proof->text, "No role associated with domain %s", cur_dom_name) < 0) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto unreachable_doms_run_fail;
+					}
+					break;
+				}
+			case TRANSITION:
+				{
+					if (asprintf(&proof->text, "There are no transitions to domain %s", cur_dom_name) < 0) {
+						error = errno;
+						ERR(policy, "%s", strerror(error));
+						goto unreachable_doms_run_fail;
+					}
+					break;
+				}
+			case DONE:
+			case KEEP_SEARCHING:
+			default:
+				{
+					assert(0);
+					error = EDOM;
+					goto unreachable_doms_run_fail;
+				}
 			}
-			if (apol_vector_append(item->proof, (void*)proof) < 0) {
+			if (apol_vector_append(item->proof, (void *)proof) < 0) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto unreachable_doms_run_fail;
 			}
 			proof = NULL;
-			if (apol_vector_append(res->items, (void*)item) < 0) {
+			if (apol_vector_append(res->items, (void *)item) < 0) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto unreachable_doms_run_fail;
@@ -715,7 +727,7 @@ int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		return 1;
 	return 0;
 
-unreachable_doms_run_fail:
+      unreachable_doms_run_fail:
 	apol_vector_destroy(&dom_vector, NULL);
 	apol_domain_trans_analysis_destroy(&dta);
 	apol_role_query_destroy(&role_q);
@@ -748,7 +760,7 @@ void unreachable_doms_data_free(void *data)
 }
 
 /* The print function generates the text and prints the results to stdout. */
-int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int unreachable_doms_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unreachable_doms_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
@@ -756,9 +768,10 @@ int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k, l, num_items;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
-	if (!mod || !policy){
+	if (!mod || !policy) {
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
@@ -769,7 +782,7 @@ int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 		return -1;
 	}
 
-	datum = (unreachable_doms_data_t*)mod->data;
+	datum = (unreachable_doms_data_t *) mod->data;
 	outformat = mod->outputformat;
 	num_items = apol_vector_get_size(mod->result->items);
 
@@ -780,7 +793,7 @@ int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 	}
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i unreachable domains.\n", num_items);
@@ -788,20 +801,21 @@ int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-		for (i=0;i<num_items;i++) {
+		for (i = 0; i < num_items; i++) {
 			j++;
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
-			type = (qpol_type_t *)item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
-			printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+			type = (qpol_type_t *) item->item;
+			qpol_type_get_name(q, type, &type_name);
+			printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
 
 	if (outformat & SECHK_OUT_PROOF) {
-		if (apol_vector_get_size(datum->ctx_vector) > 0 ) {
-			printf("Found %d domains in %s:\n", apol_vector_get_size(datum->ctx_vector), selinux_default_context_path());
+		if (apol_vector_get_size(datum->ctx_vector) > 0) {
+			printf("Found %d domains in %s:\n", apol_vector_get_size(datum->ctx_vector),
+			       selinux_default_context_path());
 			for (j = 0; j < apol_vector_get_size(datum->ctx_vector); j++) {
 				type_name = apol_vector_get_element(datum->ctx_vector, j);
 				printf("\t%s\n", type_name);
@@ -809,15 +823,15 @@ int unreachable_doms_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 		}
 
 		printf("\n");
-		for (k=0;k<num_items;k++) {
+		for (k = 0; k < num_items; k++) {
 			item = apol_vector_get_element(mod->result->items, k);
-			if ( item ) {
+			if (item) {
 				type = item->item;
-				qpol_type_get_name(policy->p, type, &type_name);
-				printf("%s\n", (char*)type_name);
+				qpol_type_get_name(q, type, &type_name);
+				printf("%s\n", (char *)type_name);
 				for (l = 0; l < apol_vector_get_size(item->proof); l++) {
-					proof = apol_vector_get_element(item->proof,l);
-					if ( proof )
+					proof = apol_vector_get_element(item->proof, l);
+					if (proof)
 						printf("\t%s\n", proof->text);
 				}
 			}
@@ -834,14 +848,14 @@ unreachable_doms_data_t *unreachable_doms_data_new(void)
 {
 	unreachable_doms_data_t *datum = NULL;
 
-	datum = (unreachable_doms_data_t*)calloc(1,sizeof(unreachable_doms_data_t));
+	datum = (unreachable_doms_data_t *) calloc(1, sizeof(unreachable_doms_data_t));
 
 	return datum;
 }
 
 /* Parses default_contexts and adds source domains to datum->ctx_list.
  * The vector will contain newly allocated strings. */
-static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *ctx_vector, apol_policy_t *policy)
+static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy)
 {
 	int str_sz, i, charno, error = 0;
 	FILE *ctx_file;
@@ -857,7 +871,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *c
 		goto parse_default_contexts_fail;
 	}
 
-	while(!feof(ctx_file)) {
+	while (!feof(ctx_file)) {
 		retv = getline(&line, &line_len, ctx_file);
 		if (retv == -1) {
 			if (feof(ctx_file)) {
@@ -890,7 +904,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *c
 			}
 			i++;
 		}
-		i++; /* skip ':' */
+		i++;		       /* skip ':' */
 
 		/* source type */
 		src_dom = malloc(str_sz);
@@ -902,12 +916,12 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *c
 		memset(src_dom, 0x0, str_sz);
 		charno = 0;
 		while (1) {
-			if(isspace(line[i]))
+			if (isspace(line[i]))
 				break;
 			/* Check for MLS */
-			if(line[i] == ':') {
+			if (line[i] == ':') {
 				uses_mls = TRUE;
-				i++; /* skip ':' */
+				i++;   /* skip ':' */
 				while (!isspace(line[i]))
 					i++;
 			}
@@ -936,7 +950,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *c
 
 			i++;
 		}
-		i++; /* skip ':' */
+		i++;		       /* skip ':' */
 
 		/* dest type */
 		dst_dom = malloc(str_sz);
@@ -959,7 +973,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *c
 			i++;
 		}
 
-		if ( apol_vector_append(ctx_vector, (void *)strdup(src_dom)) < 0 ) {
+		if (apol_vector_append(ctx_vector, (void *)strdup(src_dom)) < 0) {
 			error = errno;
 			ERR(policy, "%s", strerror(ENOMEM));
 			goto parse_default_contexts_fail;
@@ -974,7 +988,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t *c
 	free(line);
 	fclose(ctx_file);
 	return TRUE;
-parse_default_contexts_fail:
+      parse_default_contexts_fail:
 	if (ctx_file != NULL) {
 		fclose(ctx_file);
 	}
@@ -988,7 +1002,7 @@ parse_default_contexts_fail:
 }
 
 /* Returns true if type_idx is in datum->ctx_list */
-static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t *datum)
+static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t * datum)
 {
 	size_t i;
 	if (apol_vector_get_index(datum->ctx_vector, type_name, apol_str_strcmp, NULL, &i) < 0) {
@@ -998,20 +1012,21 @@ static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t *datum)
 }
 
 /* Returns true if type is a type assigned to an isid */
-static bool_t in_isid_ctx(char *type_name, apol_policy_t *policy)
+static bool_t in_isid_ctx(char *type_name, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
-	qpol_policy_get_isid_iter(policy->p, &iter);
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
+	qpol_policy_get_isid_iter(q, &iter);
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_isid_t *isid;
 		qpol_context_t *ocon;
 		qpol_type_t *context_type;
 		char *context_type_name;
 
-		qpol_iterator_get_item(iter, (void **) &isid);
-		qpol_isid_get_context(policy->p, isid, &ocon);
-		qpol_context_get_type(policy->p, ocon, &context_type);
-		qpol_type_get_name(policy->p, context_type, &context_type_name);
+		qpol_iterator_get_item(iter, (void **)&isid);
+		qpol_isid_get_context(q, isid, &ocon);
+		qpol_context_get_type(q, ocon, &context_type);
+		qpol_type_get_name(q, context_type, &context_type_name);
 		if (!strcmp(type_name, context_type_name)) {
 			qpol_iterator_destroy(&iter);
 			return TRUE;

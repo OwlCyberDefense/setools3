@@ -27,7 +27,7 @@
 # Look to the examples below for further clarification.
 #
 # Number of object classes.
-58
+59
 
 class security 11
         compute_av     n           1
@@ -42,7 +42,7 @@ class security 11
        setsecparam     n           1
    setcheckreqprot     n           1
 
-class process 29
+class process 30
               fork     n           1
         transition     w           5
            sigchld     w           1
@@ -72,6 +72,7 @@ class process 29
          execstack     n           1
           execheap     n           1
       setkeycreate     w           1
+     setsockcreate     w           1
 
 class system 4
           ipc_info     n           1
@@ -991,3 +992,7 @@ class packet 3
               send     w          10
               recv     r          10
          relabelto     w           3
+
+class context 2
+          contains     n           1
+         translate     n           1

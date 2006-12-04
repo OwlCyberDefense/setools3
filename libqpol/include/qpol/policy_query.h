@@ -27,6 +27,11 @@
 #ifndef QPOL_POLICY_QUERY_H
 #define QPOL_POLICY_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
@@ -59,7 +64,7 @@
  *  @return Returns 1 if MLS is enabled, 0 if MLS is disabled, and
  *  < 0 if there was an error; if the call fails, errno will be set.
  */
-extern int qpol_policy_is_mls_enabled(qpol_policy_t *policy);
+	extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy);
 
 /**
  *  Get the version number of the policy.
@@ -68,6 +73,10 @@ extern int qpol_policy_is_mls_enabled(qpol_policy_t *policy);
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *version will be 0.
  */
-extern int qpol_policy_get_policy_version(qpol_policy_t *policy, unsigned int *version);
+	extern int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version);
 
-#endif /* QPOL_POLICYDB_QUERY_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* QPOL_POLICYDB_QUERY_H */

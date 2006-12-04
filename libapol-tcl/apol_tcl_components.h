@@ -27,6 +27,15 @@
 #ifndef APOL_TCL_COMPONENTS_H
 #define APOL_TCL_COMPONENTS_H
 
-extern int apol_tcl_components_init(Tcl_Interp *interp);
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
+	extern int apol_tcl_components_init(Tcl_Interp * interp);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

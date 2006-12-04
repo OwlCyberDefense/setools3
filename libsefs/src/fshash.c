@@ -31,12 +31,14 @@
 #include <string.h>
 #include <stdlib.h>
 
-typedef struct sefs_hash_node {
+typedef struct sefs_hash_node
+{
 	struct sefs_hash_node *next;
 	char *key;
 } sefs_hash_node_t;
 
-struct sefs_hash {
+struct sefs_hash
+{
 	sefs_hash_node_t **table;
 	int size;
 };
@@ -48,12 +50,12 @@ sefs_hash_t *sefs_hash_new(int size)
 	if (size < 1)
 		return NULL;
 
-	hashtab = (sefs_hash_t *)calloc(1, sizeof(sefs_hash_t));
+	hashtab = (sefs_hash_t *) calloc(1, sizeof(sefs_hash_t));
 	if (!hashtab) {
 		fprintf(stderr, "Out of memory\n");
 		return NULL;
 	}
-	hashtab->table = (sefs_hash_node_t **)calloc(size, sizeof(sefs_hash_node_t *));
+	hashtab->table = (sefs_hash_node_t **) calloc(size, sizeof(sefs_hash_node_t *));
 	if (!hashtab) {
 		fprintf(stderr, "Out of memory\n");
 		return NULL;
@@ -68,11 +70,11 @@ static unsigned sefs_hash(const char *s, int size)
 	unsigned hashval;
 
 	for (hashval = 0; *s != '\0'; s++)
-		hashval = *s + 31 *hashval;
+		hashval = *s + 31 * hashval;
 	return hashval % size;
 }
 
-int sefs_hash_find(sefs_hash_t *hashtab, const char *key)
+int sefs_hash_find(sefs_hash_t * hashtab, const char *key)
 {
 	sefs_hash_node_t *np;
 
@@ -84,7 +86,7 @@ int sefs_hash_find(sefs_hash_t *hashtab, const char *key)
 	return 0;
 }
 
-int sefs_hash_insert(sefs_hash_t *hashtab, const char *key)
+int sefs_hash_insert(sefs_hash_t * hashtab, const char *key)
 {
 	sefs_hash_node_t *np;
 	unsigned hashval;
@@ -92,8 +94,8 @@ int sefs_hash_insert(sefs_hash_t *hashtab, const char *key)
 	if (hashtab == NULL)
 		return -1;
 
-	if (!sefs_hash_find(hashtab, (char*)key)) {
-		np = (sefs_hash_node_t*)calloc(1, sizeof(sefs_hash_node_t));
+	if (!sefs_hash_find(hashtab, (char *)key)) {
+		np = (sefs_hash_node_t *) calloc(1, sizeof(sefs_hash_node_t));
 		if (np == NULL || (np->key = strdup(key)) == NULL) {
 			/* if np is already null free will not cause problems */
 			free(np);
@@ -109,9 +111,9 @@ int sefs_hash_insert(sefs_hash_t *hashtab, const char *key)
 	return 0;
 }
 
-void sefs_hash_destroy(sefs_hash_t *hashtab)
+void sefs_hash_destroy(sefs_hash_t * hashtab)
 {
-	sefs_hash_node_t *curr,*next;
+	sefs_hash_node_t *curr, *next;
 	int i;
 
 	if (hashtab == NULL)

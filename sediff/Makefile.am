@@ -1,6 +1,7 @@
 setoolsdir = @setoolsdir@
 
-dist_setools_DATA = sediff_help.txt sediff.glade
+dist_setools_DATA = sediff_help.txt sediff.glade \
+	sediffx.png sediffx-small.png
 
 if BUILD_GUI
   MAYBE_SEDIFFX = sediffx
@@ -15,11 +16,13 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 LDADD = @SELINUX_LIB_FLAG@ @POLDIFF_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
 sediff_CFLAGS = $(AM_CFLAGS)
-sediffx_CFLAGS = $(AM_CFLAGS) @GTK_CFLAGS@ @GLADE_CFLAGS@ @GTHREAD_CFLAGS@
+sediffx_CFLAGS = $(AM_CFLAGS) \
+	@GTK_CFLAGS@ @PIXBUF_CFLAGS@ @GLADE_CFLAGS@ @GTHREAD_CFLAGS@
 
 # need the -rdynamic flag below - glade uses dlopen() upon seaudit callbacks
 sediffx_LDFLAGS = $(AM_LDFLAGS) \
-	@GTK_LIBS@ @GLADE_LIBS@ @GTHREAD_LIBS@ @XML_LIBS@ -rdynamic
+	@GTK_LIBS@ @PIXBUF_LIBS@ @GLADE_LIBS@ @GTHREAD_LIBS@ @XML_LIBS@ \
+	-rdynamic
 
 DEPENDENCIES = $(top_builddir)/libpoldiff/src/libpoldiff.so \
 	$(top_builddir)/libapol/src/libapol.so \

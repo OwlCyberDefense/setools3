@@ -5,9 +5,6 @@ searchcon \- SELinux file context search tool for indexes
 .B searchcon
 <index file> [OPTIONS]
 .SH DESCRIPTION
-This manual page describes the
-.BR searchcon
-command.
 .PP
 .B searchcon
 allows the user to search file context indexes created by the
@@ -33,6 +30,8 @@ Display help information and exit
 .IP "-v, --version"
 Display version information and exit
 .SH INFORMATION
+If the index file does not contain any MLS ranges and -m was given, then the search will return nothing.
+.PP
 Valid object classes are
 .PP
 file,
@@ -41,11 +40,10 @@ lnk_file,
 chr_file,
 blk_file,
 sock_file,
-fifo_file,
-all_files
+fifo_file
 .SH AUTHOR
 This manual page was written by Kevin Carr <kcarr@tresys.com>.  
 .SH COPYRIGHT
 Copyright(C) 2006 Tresys Technology, LLC
 .SH SEE ALSO
-findcon(1), replcon(1), searchcon(1), indexcon(1)
+findcon(1), replcon(1), indexcon(1)

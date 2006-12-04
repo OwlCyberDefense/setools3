@@ -1,6 +1,6 @@
 /**
  *  @file inc_dom_trans.h
- *  Defines the interface for the incomplete domain transition module. 
+ *  Defines the interface for the incomplete domain transition module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -36,7 +36,7 @@ static const char *const mod_name = "inc_dom_trans";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int inc_dom_trans_register(sechk_lib_t *lib)
+int inc_dom_trans_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -71,11 +71,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		"   4) (optional) a type transition rules specifying these three types\n";
 	mod->opt_description =
 		"Module requirements:\n"
-		"   policy source\n"
-		"Module dependencies:\n"
-		"   find_domains\n"
-		"Module options:\n"
-		"   none\n";
+		"   policy source\n" "Module dependencies:\n" "   find_domains\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_MED;
 	/* Dependencies */
 	apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains"));
@@ -94,7 +90,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_init;
-	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -113,7 +109,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_run;
-	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -134,7 +130,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = inc_dom_trans_print;
-	if (apol_vector_append(mod->functions, (void*)fn_struct) < 0) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -146,7 +142,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int inc_dom_trans_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int inc_dom_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid paramaters");
@@ -166,7 +162,7 @@ int inc_dom_trans_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __a
 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. */
-int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL, *tmp_item = NULL;
@@ -183,6 +179,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 	char *buff = NULL;
 	int buff_sz, error = 0;
 	qpol_type_t *domain = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *domain_name = NULL;
 
 	if (!mod || !policy) {
@@ -262,12 +259,12 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 		goto inc_dom_trans_run_fail;
 	}
 
-	domain_vector = (apol_vector_t *)find_domains_res->items;
+	domain_vector = (apol_vector_t *) find_domains_res->items;
 
 	for (i = 0; i < apol_vector_get_size(domain_vector); i++) {
 		tmp_item = apol_vector_get_element(domain_vector, i);
 		domain = tmp_item->item;
-		qpol_type_get_name(policy->p, domain, &domain_name);
+		qpol_type_get_name(q, domain, &domain_name);
 		apol_domain_trans_analysis_set_start_type(policy, domain_trans, domain_name);
 		apol_domain_trans_analysis_set_direction(policy, domain_trans, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
 		apol_domain_trans_analysis_set_valid(policy, domain_trans, APOL_DOMAIN_TRANS_SEARCH_BOTH);
@@ -290,30 +287,30 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
 			if (start)
-				qpol_type_get_name(policy->p, start, &start_name);
+				qpol_type_get_name(q, start, &start_name);
 			else
 				start_name = "<start_type>";
 			if (end)
-				qpol_type_get_name(policy->p, end, &end_name);
+				qpol_type_get_name(q, end, &end_name);
 			else
 				end_name = "<end_type>";
 			if (ep)
-				qpol_type_get_name(policy->p, ep, &ep_name);
+				qpol_type_get_name(q, ep, &ep_name);
 			else
 				ep_name = "<entrypoint_type>";
 
 			result = apol_domain_trans_table_verify_trans(policy, start, ep, end);
 			if (!result) {
-				apol_get_role_by_query(policy, NULL, &role_vector);
+				apol_role_get_by_query(policy, NULL, &role_vector);
 				for (k = 0; (k < apol_vector_get_size(role_vector)) && !ok; k++) {
 					qpol_role_t *role;
 					char *role_name;
 
 					role = apol_vector_get_element(role_vector, k);
-					qpol_role_get_name(policy->p, role, &role_name);
+					qpol_role_get_name(q, role, &role_name);
 					if (apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end)) {
 						apol_user_query_set_role(policy, user_query, role_name);
-						apol_get_user_by_query(policy, user_query, &user_vector);
+						apol_user_get_by_query(policy, user_query, &user_vector);
 						if (apol_vector_get_size(user_vector) > 0) {
 							ok = TRUE;
 						}
@@ -323,7 +320,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 				apol_vector_destroy(&role_vector, NULL);
 				if (!ok) {
 					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
-					apol_get_role_trans_by_query(policy, role_trans_query, &rbac_vector);
+					apol_role_trans_get_by_query(policy, role_trans_query, &rbac_vector);
 					for (k = 0; (k < apol_vector_get_size(rbac_vector)) && !ok; k++) {
 						qpol_role_trans_t *role_trans;
 						qpol_role_t *source_role;
@@ -332,19 +329,19 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 						char *default_role_name;
 
 						role_trans = apol_vector_get_element(rbac_vector, k);
-						qpol_role_trans_get_source_role(policy->p, role_trans, &source_role);
-						qpol_role_trans_get_default_role(policy->p, role_trans, &default_role);
-						qpol_role_get_name(policy->p, source_role, &source_role_name);
-						qpol_role_get_name(policy->p, default_role, &default_role_name);
+						qpol_role_trans_get_source_role(q, role_trans, &source_role);
+						qpol_role_trans_get_default_role(q, role_trans, &default_role);
+						qpol_role_get_name(q, source_role, &source_role_name);
+						qpol_role_get_name(q, default_role, &default_role_name);
 
 						if (apol_role_has_type(policy, source_role, start) &&
-								apol_role_has_type(policy, default_role, end)) {
+						    apol_role_has_type(policy, default_role, end)) {
 							apol_user_query_set_role(policy, user_query, source_role_name);
-							apol_get_user_by_query(policy, user_query, &user_vector);
+							apol_user_get_by_query(policy, user_query, &user_vector);
 							if (apol_vector_get_size(user_vector) > 0) {
 								apol_vector_destroy(&user_vector, NULL);
 								apol_user_query_set_role(policy, user_query, default_role_name);
-								apol_get_user_by_query(policy, user_query, &user_vector);
+								apol_user_get_by_query(policy, user_query, &user_vector);
 								if (apol_vector_get_size(user_vector) > 0) {
 									ok = TRUE;
 								}
@@ -369,7 +366,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 						goto inc_dom_trans_run_fail;
 					}
 				}
-			} else  {
+			} else {
 				item = sechk_item_new(apol_domain_trans_result_free);
 				if (!item) {
 					error = errno;
@@ -393,7 +390,8 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					proof = sechk_proof_new(NULL);
 					proof->type = SECHK_ITEM_OTHER;
 					buff = NULL;
-					buff_sz = 10 + strlen("allow  : process transition;") + strlen(start_name) + strlen(end_name);
+					buff_sz =
+						10 + strlen("allow  : process transition;") + strlen(start_name) + strlen(end_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
 					if (!buff) {
 						error = errno;
@@ -474,14 +472,17 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 					proof = sechk_proof_new(NULL);
 					proof->type = SECHK_ITEM_OTHER;
 					buff = NULL;
-					buff_sz = 10 + strlen("type_transition  :process ;") + strlen(start_name) + strlen(end_name) + strlen(ep_name);
+					buff_sz =
+						10 + strlen("type_transition  :process ;") + strlen(start_name) + strlen(end_name) +
+						strlen(ep_name);
 					buff = (char *)calloc(buff_sz, sizeof(char));
 					if (!buff) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
-					snprintf(buff, buff_sz, "type_transition %s %s : process %s;", start_name, ep_name, end_name);
+					snprintf(buff, buff_sz, "type_transition %s %s : process %s;", start_name, ep_name,
+						 end_name);
 					proof->text = strdup(buff);
 					free(buff);
 					buff = NULL;
@@ -537,7 +538,7 @@ int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __at
 		return 1;
 	return 0;
 
-inc_dom_trans_run_fail:
+      inc_dom_trans_run_fail:
 	sechk_item_free(item);
 	apol_vector_destroy(&user_vector, NULL);
 	apol_vector_destroy(&domain_trans_vector, apol_domain_trans_result_free);
@@ -548,10 +549,11 @@ inc_dom_trans_run_fail:
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int i = 0, j = 0, num_items;
 
 	if (!mod || !policy) {
@@ -575,7 +577,7 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	}
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i incomplete transitions.\n", num_items);
@@ -584,11 +586,11 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	 * found without any supporting proof. */
 	if (outformat & SECHK_OUT_LIST) {
 		/*
-			printf("\nStart Type\t\tEntrypoint\t\tEnd Type\t\tMissing Rules\n");
-			printf("----------\t\t----------\t\t--------\t\t-------------\n");
+		 * printf("\nStart Type\t\tEntrypoint\t\tEnd Type\t\tMissing Rules\n");
+		 * printf("----------\t\t----------\t\t--------\t\t-------------\n");
 		 */
 		printf("\n");
-		for (i=0;i<num_items;i++) {
+		for (i = 0; i < num_items; i++) {
 			qpol_type_t *start;
 			qpol_type_t *end;
 			qpol_type_t *ep;
@@ -601,15 +603,15 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
 			if (start)
-				qpol_type_get_name(policy->p, start, &start_name);
+				qpol_type_get_name(q, start, &start_name);
 			else
 				start_name = "<start_type>";
 			if (end)
-				qpol_type_get_name(policy->p, end, &end_name);
+				qpol_type_get_name(q, end, &end_name);
 			else
 				end_name = "<end_type>";
 			if (ep)
-				qpol_type_get_name(policy->p, ep, &ep_name);
+				qpol_type_get_name(q, ep, &ep_name);
 			else
 				ep_name = "<entrypoint_type>";
 
@@ -622,7 +624,7 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 	 * of the check for that item (e.g. rules with a given type) */
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
-		for (i=0;i<num_items;i++) {
+		for (i = 0; i < num_items; i++) {
 			qpol_type_t *start;
 			qpol_type_t *end;
 			qpol_type_t *ep;
@@ -635,20 +637,20 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
 			end = apol_domain_trans_result_get_end_type(dtr);
 			if (start)
-				qpol_type_get_name(policy->p, start, &start_name);
+				qpol_type_get_name(q, start, &start_name);
 			else
 				start_name = "<start_type>";
 			if (end)
-				qpol_type_get_name(policy->p, end, &end_name);
+				qpol_type_get_name(q, end, &end_name);
 			else
 				end_name = "<end_type>";
 			if (ep)
-				qpol_type_get_name(policy->p, ep, &ep_name);
+				qpol_type_get_name(q, ep, &ep_name);
 			else
 				ep_name = "<entrypoint_type>";
 
 			printf("%s -> %s\tentrypoint: %s\n\tMissing:\n", start_name, end_name, ep_name);
-			for (j=0;j<apol_vector_get_size(item->proof);j++) {
+			for (j = 0; j < apol_vector_get_size(item->proof); j++) {
 				sechk_proof_t *proof;
 
 				proof = apol_vector_get_element(item->proof, j);
@@ -661,4 +663,3 @@ int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __
 
 	return 0;
 }
-

@@ -27,16 +27,42 @@
 #ifndef APOL_NETCON_QUERY_H
 #define APOL_NETCON_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_portcon_query apol_portcon_query_t;
-typedef struct apol_netifcon_query apol_netifcon_query_t;
-typedef struct apol_nodecon_query apol_nodecon_query_t;
+	typedef struct apol_portcon_query apol_portcon_query_t;
+	typedef struct apol_netifcon_query apol_netifcon_query_t;
+	typedef struct apol_nodecon_query apol_nodecon_query_t;
 
 /******************** portcon queries ********************/
+
+/**
+ * Execute a query against all portcons within the policy.  The
+ * returned portcons will be unordered.
+ * @deprecated This function has been renamed apol_portcon_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
+ *
+ * @param p Policy within which to look up portcons.
+ * @param po Structure containing parameters for query.	 If this is
+ * NULL then return all portcons.
+ * @param v Reference to a vector of qpol_portcon_t.  The vector will
+ * be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+	extern int apol_get_portcon_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all portcons within the policy.  The
@@ -53,9 +79,7 @@ typedef struct apol_nodecon_query apol_nodecon_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_portcon_by_query(apol_policy_t *p,
-				     apol_portcon_query_t *po,
-				     apol_vector_t **v);
+	extern int apol_portcon_get_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol_vector_t ** v);
 
 /**
  * Allocate and return a new portcon query structure. All fields are
@@ -65,7 +89,7 @@ extern int apol_get_portcon_by_query(apol_policy_t *p,
  *
  * @return An initialized portcon query structure, or NULL upon error.
  */
-extern apol_portcon_query_t *apol_portcon_query_create(void);
+	extern apol_portcon_query_t *apol_portcon_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced portcon
@@ -74,7 +98,7 @@ extern apol_portcon_query_t *apol_portcon_query_create(void);
  *
  * @param po Reference to a portcon query structure to destroy.
  */
-extern void apol_portcon_query_destroy(apol_portcon_query_t **po);
+	extern void apol_portcon_query_destroy(apol_portcon_query_t ** po);
 
 /**
  * Set a portcon query to return only portcons that use this protocol.
@@ -86,8 +110,7 @@ extern void apol_portcon_query_destroy(apol_portcon_query_t **po);
  *
  * @return Always 0.
  */
-extern int apol_portcon_query_set_proto(apol_policy_t *p,
-					apol_portcon_query_t *po, int proto);
+	extern int apol_portcon_query_set_proto(apol_policy_t * p, apol_portcon_query_t * po, int proto);
 
 /**
  * Set a portcon query to return only portcons with this as their low
@@ -100,8 +123,7 @@ extern int apol_portcon_query_set_proto(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_portcon_query_set_low(apol_policy_t *p,
-				      apol_portcon_query_t *po, int low);
+	extern int apol_portcon_query_set_low(apol_policy_t * p, apol_portcon_query_t * po, int low);
 
 /**
  * Set a portcon query to return only portcons with this as their high
@@ -114,8 +136,7 @@ extern int apol_portcon_query_set_low(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_portcon_query_set_high(apol_policy_t *p,
-				       apol_portcon_query_t *po, int high);
+	extern int apol_portcon_query_set_high(apol_policy_t * p, apol_portcon_query_t * po, int high);
 
 /**
  * Set a portcon query to return only portcons matching a
@@ -132,10 +153,8 @@ extern int apol_portcon_query_set_high(apol_policy_t *p,
  *
  * @return Always returns 0.
  */
-extern int apol_portcon_query_set_context(apol_policy_t *p,
-					  apol_portcon_query_t *po,
-					  apol_context_t *context,
-					  unsigned int range_match);
+	extern int apol_portcon_query_set_context(apol_policy_t * p,
+						  apol_portcon_query_t * po, apol_context_t * context, unsigned int range_match);
 
 /**
  * Creates a string containing the textual representation of
@@ -146,9 +165,30 @@ extern int apol_portcon_query_set_context(apol_policy_t *p,
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-extern char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon);
+	extern char *apol_portcon_render(apol_policy_t * p, qpol_portcon_t * portcon);
 
 /******************** netifcon queries ********************/
+
+/**
+ * Execute a query against all netifcons within the policy.  The
+ * returned netifcons will be unordered.
+ * @deprecated This function has been renamed apol_netifcon_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
+ *
+ * @param p Policy within which to look up netifcons.
+ * @param n Structure containing parameters for query.	If this is
+ * NULL then return all netifcons.
+ * @param v Reference to a vector of qpol_netifcon_t.  The vector will
+ * be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+	extern int apol_get_netifcon_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all netifcons within the policy.  The
@@ -165,9 +205,7 @@ extern char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon);
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_netifcon_by_query(apol_policy_t *p,
-				      apol_netifcon_query_t *n,
-				      apol_vector_t **v);
+	extern int apol_netifcon_get_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apol_vector_t ** v);
 
 /**
  * Allocate and return a new netifcon query structure.	All fields are
@@ -178,7 +216,7 @@ extern int apol_get_netifcon_by_query(apol_policy_t *p,
  * @return An initialized netifcon query structure, or NULL upon
  * error.
  */
-extern apol_netifcon_query_t *apol_netifcon_query_create(void);
+	extern apol_netifcon_query_t *apol_netifcon_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced netifcon
@@ -187,7 +225,7 @@ extern apol_netifcon_query_t *apol_netifcon_query_create(void);
  *
  * @param n Reference to a netifcon query structure to destroy.
  */
-extern void apol_netifcon_query_destroy(apol_netifcon_query_t **n);
+	extern void apol_netifcon_query_destroy(apol_netifcon_query_t ** n);
 
 /**
  * Set a netifcon query to return only netifcons that use this device.
@@ -199,8 +237,7 @@ extern void apol_netifcon_query_destroy(apol_netifcon_query_t **n);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_netifcon_query_set_device(apol_policy_t *p,
-					  apol_netifcon_query_t *n, const char *dev);
+	extern int apol_netifcon_query_set_device(apol_policy_t * p, apol_netifcon_query_t * n, const char *dev);
 
 /**
  * Set a netifcon query to return only netifcons matching this context
@@ -217,10 +254,9 @@ extern int apol_netifcon_query_set_device(apol_policy_t *p,
  *
  * @return Always returns 0.
  */
-extern int apol_netifcon_query_set_if_context(apol_policy_t *p,
-					      apol_netifcon_query_t *n,
-					      apol_context_t *context,
-					      unsigned int range_match);
+	extern int apol_netifcon_query_set_if_context(apol_policy_t * p,
+						      apol_netifcon_query_t * n, apol_context_t * context,
+						      unsigned int range_match);
 
 /**
  * Set a netifcon query to return only netifcons matching this context
@@ -237,10 +273,9 @@ extern int apol_netifcon_query_set_if_context(apol_policy_t *p,
  *
  * @return Always returns 0.
  */
-extern int apol_netifcon_query_set_msg_context(apol_policy_t *p,
-					       apol_netifcon_query_t *n,
-					       apol_context_t *context,
-					       unsigned int range_match);
+	extern int apol_netifcon_query_set_msg_context(apol_policy_t * p,
+						       apol_netifcon_query_t * n, apol_context_t * context,
+						       unsigned int range_match);
 
 /**
  * Creates a string containing the textual representation of
@@ -251,9 +286,30 @@ extern int apol_netifcon_query_set_msg_context(apol_policy_t *p,
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-extern char *apol_netifcon_render(apol_policy_t *p, qpol_netifcon_t *netifcon);
+	extern char *apol_netifcon_render(apol_policy_t * p, qpol_netifcon_t * netifcon);
 
 /******************** nodecon queries ********************/
+
+/**
+ * Execute a query against all nodecons within the policy.  The
+ * returned nodecons will be unordered.
+ * @deprecated This function has been renamed apol_nodecon_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
+ *
+ * @param p Policy within which to look up nodecons.
+ * @param n Structure containing parameters for query.	If this is
+ * NULL then return all nodecons.
+ * @param v Reference to a vector of qpol_nodecon_t.  The vector will
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, <b>passing free() as the second
+ * parameter</b>.  This will be set to NULL upon no results or upon
+ * error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+	extern int apol_get_nodecon_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all nodecons within the policy.  The
@@ -270,9 +326,7 @@ extern char *apol_netifcon_render(apol_policy_t *p, qpol_netifcon_t *netifcon);
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_nodecon_by_query(apol_policy_t *p,
-				     apol_nodecon_query_t *n,
-				     apol_vector_t **v);
+	extern int apol_nodecon_get_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_vector_t ** v);
 
 /**
  * Allocate and return a new nodecon query structure.  All fields are
@@ -283,7 +337,7 @@ extern int apol_get_nodecon_by_query(apol_policy_t *p,
  * @return An initialized nodecon query structure, or NULL upon
  * error.
  */
-extern apol_nodecon_query_t *apol_nodecon_query_create(void);
+	extern apol_nodecon_query_t *apol_nodecon_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced nodecon
@@ -292,7 +346,7 @@ extern apol_nodecon_query_t *apol_nodecon_query_create(void);
  *
  * @param n Reference to a nodecon query structure to destroy.
  */
-extern void apol_nodecon_query_destroy(apol_nodecon_query_t **n);
+	extern void apol_nodecon_query_destroy(apol_nodecon_query_t ** n);
 
 /**
  * Set a nodecon query to return only nodecons with this protocol,
@@ -305,8 +359,7 @@ extern void apol_nodecon_query_destroy(apol_nodecon_query_t **n);
  *
  * @return 0 if protocol was valid, -1 on error.
  */
-extern int apol_nodecon_query_set_proto(apol_policy_t *p,
-					apol_nodecon_query_t *n, int proto);
+	extern int apol_nodecon_query_set_proto(apol_policy_t * p, apol_nodecon_query_t * n, int proto);
 
 /**
  * Set a nodecon query to return only nodecons with this address.  If
@@ -323,10 +376,7 @@ extern int apol_nodecon_query_set_proto(apol_policy_t *p,
  *
  * @return 0 if protocol was valid, -1 on error.
  */
-extern int apol_nodecon_query_set_addr(apol_policy_t *p,
-				       apol_nodecon_query_t *n,
-				       uint32_t *addr,
-				       int proto);
+	extern int apol_nodecon_query_set_addr(apol_policy_t * p, apol_nodecon_query_t * n, uint32_t * addr, int proto);
 
 /**
  * Set a nodecon query to return only nodecons with this netmask.  If
@@ -343,10 +393,7 @@ extern int apol_nodecon_query_set_addr(apol_policy_t *p,
  *
  * @return 0 if protocol was valid, -1 on error.
  */
-extern int apol_nodecon_query_set_mask(apol_policy_t *p,
-				       apol_nodecon_query_t *n,
-				       uint32_t *mask,
-				       int proto);
+	extern int apol_nodecon_query_set_mask(apol_policy_t * p, apol_nodecon_query_t * n, uint32_t * mask, int proto);
 
 /**
  * Set a nodecon query to return only nodecons matching this context.
@@ -363,10 +410,8 @@ extern int apol_nodecon_query_set_mask(apol_policy_t *p,
  *
  * @return Always returns 0.
  */
-extern int apol_nodecon_query_set_context(apol_policy_t *p,
-					  apol_nodecon_query_t *n,
-					  apol_context_t *context,
-					  unsigned int range_match);
+	extern int apol_nodecon_query_set_context(apol_policy_t * p,
+						  apol_nodecon_query_t * n, apol_context_t * context, unsigned int range_match);
 
 /**
  * Creates a string containing the textual representation of
@@ -377,6 +422,10 @@ extern int apol_nodecon_query_set_context(apol_policy_t *p,
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-extern char *apol_nodecon_render(apol_policy_t *p, qpol_nodecon_t *nodecon);
+	extern char *apol_nodecon_render(apol_policy_t * p, qpol_nodecon_t * nodecon);
 
-#endif /* APOL_NETCON_QUERY_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* APOL_NETCON_QUERY_H */

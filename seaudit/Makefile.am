@@ -1,13 +1,14 @@
 setoolsdir = @setoolsdir@
-bin_PROGRAMS = seaudit_report
+bin_PROGRAMS = seaudit-report
 sbin_PROGRAMS = seaudit
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
-	@QPOL_CFLAGS@ @APOL_CFLAGS@ @GTK_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ \
+	@GTK_CFLAGS@ @PIXBUF_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ \
 	-DAPOL_INSTALL_DIR='"${setoolsdir}"' -I$(top_srcdir)/libseaudit
 # need the -rdynamic flag below - glade uses dlopen() upon seaudit callbacks
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
-	@GTK_LIBS@ @GLADE_LIBS@ @XML_LIBS@ -rdynamic
+	@GTK_LIBS@ @PIXBUF_LIBS@ @GLADE_LIBS@ @XML_LIBS@ -rdynamic
 LDADD = @SELINUX_LIB_FLAG@ $(top_builddir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
 dist_setools_DATA = \
@@ -20,10 +21,12 @@ dist_setools_DATA = \
 	seaudit.glade \
 	seaudit_help.txt \
 	seaudit-report.conf \
-	seaudit-report.css
+	seaudit-report.css \
+	seaudit.png seaudit-small.png
 
 nodist_setools_DATA = \
-	dot_seaudit
+	dot_seaudit \
+	seaudit-report-service
 
 seaudit_SOURCES = \
 	auditlogmodel.c auditlogmodel.h \
@@ -42,10 +45,8 @@ seaudit_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
                        $(top_builddir)/libapol/src/libapol.so \
                        $(top_builddir)/libqpol/src/libqpol.so
 
-# dot_seaudit should probably be configured by configure.ac
 dot_seaudit: dot_seaudit.in Makefile
-	cat $< | \
-	sed -e 's|\@setoolsdir\@|$(setoolsdir)|g' > $@
+	sed -e 's|\@setoolsdir\@|$(setoolsdir)|g' $< > $@
 
 seaudit_report_SOURCES = seaudit-report.c report.c report.h
 seaudit_report_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
@@ -60,9 +61,12 @@ LOGWATCH_FILTER = $(logwatch)/scripts/services
 dist_noinst_DATA = dot_seaudit.in \
 	seaudit-report-group.conf \
         seaudit-report-service.conf \
-        seaudit-report-service
+        seaudit-report-service.in
 
-install-logwatch: $(dist_noinst_DATA)
+seaudit-report-service: seaudit-report-service.in Makefile
+	sed -e 's|\@bindir\@|$(bindir)|g' $< > $@
+
+install-logwatch: $(dist_noinst_DATA) seaudit-report-service
 	install -m 644 seaudit-report-group.conf $(LOGWATCH_GROUP)
 	install -m 644 seaudit-report-service.conf $(LOGWATCH_SERVICE)
 	install -m 755 seaudit-report-service $(LOGWATCH_FILTER)
@@ -81,4 +85,4 @@ $(top_builddir)/libsefs/src/libsefs.so:
 
 .PHONY: install-logwatch
 
-CLEANFILES = dot_seaudit
+CLEANFILES = dot_seaudit seaudit-report-service

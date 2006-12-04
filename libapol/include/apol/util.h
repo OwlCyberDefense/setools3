@@ -27,6 +27,11 @@
 #ifndef APOL_UTIL_H
 #define APOL_UTIL_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <config.h>
 
 #include <stdint.h>
@@ -42,14 +47,14 @@
 #define FALSE   0
 #undef TRUE
 #define TRUE	1
-typedef unsigned char bool_t;
+	typedef unsigned char bool_t;
 
 /**
- * Return an inmutable string describing this library's version.
+ * Return an immutable string describing this library's version.
  *
  * @return String describing this library.
  */
-extern const char* libapol_get_version(void);
+	extern const char *libapol_get_version(void);
 
 /**
  * Given a portcon protocol, return a read-only string that describes
@@ -61,7 +66,7 @@ extern const char* libapol_get_version(void);
  * @return A string that describes the protocol, or NULL if the
  * protocol is invalid.  <b>Do not free() this string.</b>
  */
-extern const char *apol_protocol_to_str(uint8_t protocol);
+	extern const char *apol_protocol_to_str(uint8_t protocol);
 
 /**
  * Given a string representing and IP value (mask or address, IPv4 or
@@ -76,7 +81,7 @@ extern const char *apol_protocol_to_str(uint8_t protocol);
  * @return QPOL_IPV4 if the string is in IPv4 format, QPOL_IPV6 if
  * in IPv6, < 0 on error.
  */
-extern int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
+	extern int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
 
 /**
  * Given a genfscon object class, return a read-only string that
@@ -88,7 +93,7 @@ extern int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
  * @return A string that describes the object class, or NULL if the
  * object class is invalid.  <b>Do not free() this string.</b>
  */
-extern const char *apol_objclass_to_str(uint32_t objclass);
+	extern const char *apol_objclass_to_str(uint32_t objclass);
 
 /**
  * Given a fs_use behavior type, return a read-only string that
@@ -100,7 +105,7 @@ extern const char *apol_objclass_to_str(uint32_t objclass);
  * @return A string that describes the behavior, or NULL if the
  * behavior is invalid.  <b>Do not free() this string.</b>
  */
-extern const char *apol_fs_use_behavior_to_str(uint32_t behavior);
+	extern const char *apol_fs_use_behavior_to_str(uint32_t behavior);
 
 /**
  * Given a fs_use behavior string, return its numeric value.
@@ -112,7 +117,7 @@ extern const char *apol_fs_use_behavior_to_str(uint32_t behavior);
  * QPOL_FS_USE_PSID, QPOL_FS_USE_XATTR, etc, or < 0 if the string is
  * invalid.
  */
-extern int apol_str_to_fs_use_behavior(const char *behavior);
+	extern int apol_str_to_fs_use_behavior(const char *behavior);
 
 /**
  * Given a rule type, return a read-only string that describes that
@@ -124,7 +129,7 @@ extern int apol_str_to_fs_use_behavior(const char *behavior);
  * @return A string that describes the rule, or NULL if the rule_type
  * is invalid.  <b>Do not free() this string.</b>
  */
-extern const char *apol_rule_type_to_str(uint32_t rule_type);
+	extern const char *apol_rule_type_to_str(uint32_t rule_type);
 
 /**
  * Given a conditional expression type, return a read-only string that
@@ -136,7 +141,7 @@ extern const char *apol_rule_type_to_str(uint32_t rule_type);
  * @return A string that describes the expression, or NULL if the
  * expr_type is invalid.  <b>Do not free() this string.</b>
  */
-extern const char *apol_cond_expr_type_to_str(uint32_t expr_type);
+	extern const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 
 /**
  * Given a file name, search and return that file's path on the
@@ -149,7 +154,7 @@ extern const char *apol_cond_expr_type_to_str(uint32_t expr_type);
  * @return File's path, or NULL if not found.  Caller must free() this
  * string afterwards.
  */
-extern char* apol_file_find(const char *file_name);
+	extern char *apol_file_find(const char *file_name);
 
 /**
  * Given a file name for a user configuration, search and return that
@@ -160,7 +165,7 @@ extern char* apol_file_find(const char *file_name);
  * @return File's path, or NULL if not found.  Caller must free() this
  * string afterwards.
  */
-extern char* apol_file_find_user_config(const char *file_name);
+	extern char *apol_file_find_user_config(const char *file_name);
 
 /**
  * Given a file name, read the file's contents into a newly allocated
@@ -172,7 +177,7 @@ extern char* apol_file_find_user_config(const char *file_name);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_file_read_to_buffer(const char *fname, char **buf, size_t *len);
+	extern int apol_file_read_to_buffer(const char *fname, char **buf, size_t * len);
 /**
  * Given a file pointer into a config file, read and return the value
  * for the given config var.  The caller must free() the returned
@@ -185,7 +190,7 @@ extern int apol_file_read_to_buffer(const char *fname, char **buf, size_t *len);
  * @return A newly allocated string containing the variable's value,
  * or NULL if not found or error.
  */
-extern char *apol_config_get_var(const char *var, FILE *fp);
+	extern char *apol_config_get_var(const char *var, FILE * fp);
 
 /**
  * Given a file pointer into a config file, read and return a list of
@@ -203,7 +208,7 @@ extern char *apol_config_get_var(const char *var, FILE *fp);
  * @return A newly allocated array of strings containing the
  * variable's values, or NULL if not found or error.
  */
-extern char **apol_config_get_varlist(const char *var, FILE *file, size_t *list_sz);
+	extern char **apol_config_get_varlist(const char *var, FILE * file, size_t * list_sz);
 
 /**
  * Given a list of configuration variables, as returned by
@@ -216,7 +221,7 @@ extern char **apol_config_get_varlist(const char *var, FILE *file, size_t *list_
  *
  * @return An allocated concatenated string, or NULL upon error.
  */
-extern char *apol_config_varlist_to_str(const char **list, size_t size);
+	extern char *apol_config_varlist_to_str(const char **list, size_t size);
 
 /**
  * Given a dynamically allocated string, allocate a new string with
@@ -228,7 +233,7 @@ extern char *apol_config_varlist_to_str(const char **list, size_t size);
  *
  * @return 0 on success, < 0 on out of memory.
  */
-extern int apol_str_trim(char **str);
+	extern int apol_str_trim(char **str);
 
 /**
  * Append a string to an existing dynamic mutable string, expanding
@@ -240,13 +245,39 @@ extern int apol_str_trim(char **str);
  * string.
  * @param tgt_sz Pointer to number of bytes currently allocated to
  * tgt.  This will be updated with the new string size.  If *tgt is
- * NULL then the existing value is ignored.  (It will still be updated
+ * NULL then this existing value is ignored.  (It will still be updated
  * afterwards).
  * @param str String to append.
  *
- * @return 0 on success, < 0 on error and errno will be set.
+ * @return 0 on success.  On error, return < 0 and set errno; tgt will be
+ * free()d and set to NULL, tgt_sz will be set to 0.
  */
-extern int apol_str_append(char **tgt, size_t *tgt_sz, const char *str);
+	extern int apol_str_append(char **tgt, size_t * tgt_sz, const char *str);
+
+/**
+ * Append a string to an existing dynamic mutable string, expanding
+ * the target string if necessary.  The string to append is computed
+ * using the format string, as per printf(3).  The caller must free()
+ * the target string.  If tgt is NULL then initially allocate the
+ * resulting string.
+ *
+ * @param tgt Reference to a string to modify, or NULL to create a new
+ * string.
+ * @param tgt_sz Pointer to number of bytes currently allocated to
+ * tgt.  This will be updated with the new string size.  If *tgt is
+ * NULL then the existing value is ignored.  (It will still be updated
+ * afterwards).
+ * @param fmt Format for the string with which append, as per
+ * printf(3).
+ *
+ * @return 0 on success.  On error, return < 0 and set errno; tgt will be
+ * free()d and set to NULL, tgt_sz will be set to 0.
+ */
+	extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...);
+
+/* declaration duplicated below to satisfy doxygen */
+	extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...)
+		__attribute__ ((format(printf, 3, 4)));
 
 /**
  * Test whether a given string is only white space.
@@ -254,10 +285,10 @@ extern int apol_str_append(char **tgt, size_t *tgt_sz, const char *str);
  * @param str String to test.
  * @return 1 if string is either NULL or only whitespace, 0 otherwise.
  */
-extern int apol_str_is_only_white_space(const char *str);
+	extern int apol_str_is_only_white_space(const char *str);
 
 /**
- * Wrapper around strcmp for use in vector comparison functions.
+ * Wrapper around strcmp for use in vector and BST comparison functions.
  *
  * @param a String to compare.
  * @param b The other string to compare.
@@ -267,6 +298,20 @@ extern int apol_str_is_only_white_space(const char *str);
  * to be less than, identical to, or greater than string b
  * respectively.
  */
-extern int apol_str_strcmp(const void *a, const void *b, void *unused __attribute__ ((unused)) );
+	extern int apol_str_strcmp(const void *a, const void *b, void *unused __attribute__ ((unused)));
+
+/**
+ * Wrapper around strdup for use in vector and BST cloning functions.
+ *
+ * @param elem String to duplicate.
+ * @param unused Not used. (exists to match expected function signature)
+ *
+ * @return A new string that is a duplicate of elem, or NULL upon error.
+ */
+	extern void *apol_str_strdup(const void *elem, void *unused __attribute__ ((unused)));
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

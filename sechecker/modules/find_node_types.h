@@ -27,6 +27,11 @@
 #ifndef FIND_NODE_TYPES_H
 #define FINE_NODE_TYPES_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/context-query.h>
@@ -35,10 +40,14 @@
 /* Module functions:
  * Do not change any of these prototypes or you will not be
  * able to run the module in the library */
-int find_node_types_register(sechk_lib_t *lib);
-int find_node_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_node_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int find_node_types_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+	int find_node_types_register(sechk_lib_t * lib);
+	int find_node_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_node_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int find_node_types_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

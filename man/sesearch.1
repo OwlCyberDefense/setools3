@@ -5,12 +5,9 @@ sesearch \- SELinux policy query tool
 .B sesearch
 [OPTIONS] [POLICY_FILE]
 .SH DESCRIPTION
-This manual page describes the
-.B sesearch
-command.
 .PP
 .B sesearch
-allows the user to query a SELinux policy for type enforcement rules.
+allows the user to query an SELinux policy for type enforcement rules.
 .SH OPTIONS
 .IP "-s NAME, --source NAME"
 find rules with NAME type/attrib (regex) as source
@@ -27,13 +24,13 @@ find rules with the specified permissions
 .IP "-b NAME, --boolean NAME"
 find conditional rules with NAME in the expression
 .IP "--allow"
-search for allow rules only
+search for allow rules
 .IP "--neverallow"
-search for neverallow rules only
+search for neverallow rules
 .IP "--audit"
-search for auditallow and dontaudit rules only
+search for auditallow and dontaudit rules
 .IP "--type"
-search for type_trans and type_change rules only
+search for type_trans, type_member, and type_change rules
 .IP "--rangetrans"
 search for range transition rules
 .IP "--role_allow"
@@ -41,13 +38,14 @@ search for role allow rules
 .IP "--role_trans"
 search for role transition rules
 .IP "-a, --all"
-show all rules regardless of type, class, or perms
+show all rules regardless of type, class, or permissions
 .IP "-i, --indirect"
 also search for the type's attributes
 .IP "-n, --noregex"
 do not use regular expression to match type/attributes
 .IP "-l, --lineno"
-include line # in policy.conf for each rule.  This option is ignored if using a binary policy.
+search rules syntactically instead of semantically and include line number 
+in policy.conf for each rule.  This option is ignored if using a binary policy.
 .IP "-C, --show_cond"
 show conditional expression for conditional rules
 .IP "-h, --help"
@@ -60,10 +58,13 @@ are specified, then all rules are shown.
 You must specify -a (--all), or one of more of --allow, --neverallow,
 --audit, --rangetrans, --role_allow, --role_trans or --type.
 .PP
-The default source policy, or if that is unavailable the default binary policy, will be opened if no policy file name is provided.
+If no policy file name is provided, the default source policy will be loaded.
+If that is not available, the default binary policy will be loaded.
 .SH AUTHOR
 This manual page was written by Kevin Carr <kcarr@tresys.com>.  
 .SH COPYRIGHT
 Copyright(C) 2006 Tresys Technology, LLC
+.SH BUGS
+Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
 seinfo(1), apol(1)

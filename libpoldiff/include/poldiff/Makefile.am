@@ -10,4 +10,5 @@ poldiff_HEADERS = \
 	rule_diff.h \
 	user_diff.h \
 	type_diff.h \
-	type_map.h
+	type_map.h \
+	util.h

@@ -1,6 +1,6 @@
 Semantic Policy Difference Tool for Security Enhanced Linux
-sediff, version 3.0
-October 1, 2006
+sediff, version 3.0.1
+December 1, 2006
 selinux@tresys.com
 
 
@@ -13,6 +13,7 @@ latter is a GTK+ application.  They can compare source and/or binary
 policies and can also compare different versions of policy.  For
 source policies, versions 12 and higher of SELinux policies are
 supported.  For binary policies, versions 15 and higher are supported.
+
 
 Limitations:
 ------------
@@ -80,7 +81,7 @@ policy").  There are five types of differences shown:
   - Modified (*): A policy component was present in both policies, but
     is different in the modified policy.
 
-Where appropriate, two other differences are available:
+Where appropriate, two other differences are possible:
 
   - Added because of new type (+): This policy component could not
     exist in the original policy because that policy does not declare

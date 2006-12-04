@@ -1,6 +1,6 @@
 /**
  *  @file find_assoc_types.h
- *  Implementation of the association types utility module. 
+ *  Implementation of the association types utility module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -22,7 +22,7 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */ 
+ */
 
 #include "find_assoc_types.h"
 
@@ -32,7 +32,7 @@
 
 static const char *const mod_name = "find_assoc_types";
 
-int find_assoc_types_register(sechk_lib_t *lib)
+int find_assoc_types_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -60,17 +60,13 @@ int find_assoc_types_register(sechk_lib_t *lib)
 	mod->detailed_description =
 		"--------------------------------------------------------------------------------\n"
 		"This module finds types with an unlabeled initial sid. \n";
-	mod->opt_description = 
+	mod->opt_description =
 		"  Module requirements:\n"
-		"    policy source\n"
-		"  Module dependencies:\n"
-		"    none\n"
-		"  Module options:\n"
-		"    none\n";
+		"    policy source\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
 	nv = sechk_name_value_new("policy_type", "source");
-	if ( apol_vector_append(mod->requirements, (void *)nv) < 0 ) {
+	if (apol_vector_append(mod->requirements, (void *)nv) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -90,7 +86,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = find_assoc_types_init;
-	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -109,7 +105,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = find_assoc_types_run;
-	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -130,7 +126,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = find_assoc_types_print;
-	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -149,7 +145,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = find_assoc_types_get_list;
-	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+	if (apol_vector_append(mod->functions, (void *)fn_struct) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -161,7 +157,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+int find_assoc_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -182,12 +178,12 @@ int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy, void *arg 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
- * in all relavant item and proof data. 
+ * in all relavant item and proof data.
  * Return Values:
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
- *   1 The module "failed" 		- some negative results found */
-int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused)))
+ *   1 The module "failed"	- some negative results found */
+int find_assoc_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -198,6 +194,7 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	char *type_name = NULL;
 	qpol_type_t *type;
 	qpol_context_t *context;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
 
 	if (!mod || !policy) {
@@ -231,8 +228,8 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	/* Initialize vectors */
 
-	qpol_policy_get_isid_by_name(policy->p, "unlabeled", &isid);
-	if ( !isid ) {
+	qpol_policy_get_isid_by_name(q, "unlabeled", &isid);
+	if (!isid) {
 		error = errno;
 		goto find_assoc_types_run_fail;
 	}
@@ -243,11 +240,11 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 		goto find_assoc_types_run_fail;
 	}
 
-	qpol_isid_get_context(policy->p, isid, &context);
-	qpol_context_get_type(policy->p, context, &type);
-	qpol_type_get_name(policy->p, type, &type_name);
+	qpol_isid_get_context(q, isid, &context);
+	qpol_context_get_type(q, context, &type);
+	qpol_type_get_name(q, type, &type_name);
 
-	if (apol_str_append(&buff, &buff_sz, type_name) !=  0) {
+	if (apol_str_append(&buff, &buff_sz, type_name) != 0) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
@@ -270,25 +267,25 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 	}
 
 	item->test_result = 1;
-	item->item = (void*)type;
+	item->item = (void *)type;
 	proof->type = SECHK_ITEM_TYPE;
 	proof->text = buff;
-	if ( !(res->items = apol_vector_create()) ) {
-		error = errno;
-		ERR(policy, "%s", strerror(ENOMEM));
-		goto find_assoc_types_run_fail; 
-	}
-	if ( !(item->proof = apol_vector_create()) ) {
+	if (!(res->items = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
 	}
-	if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+	if (!(item->proof = apol_vector_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
 	}
-	if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+	if (apol_vector_append(item->proof, (void *)proof) < 0) {
+		error = errno;
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto find_assoc_types_run_fail;
+	}
+	if (apol_vector_append(res->items, (void *)item) < 0) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
@@ -298,7 +295,7 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy, void *arg _
 
 	return 0;
 
-find_assoc_types_run_fail:
+      find_assoc_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
@@ -309,16 +306,17 @@ find_assoc_types_run_fail:
 
 /* The print function generates the text and prints the
  * results to stdout. */
-int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg __attribute__((unused))) 
+int find_assoc_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, num_items;
 	qpol_type_t *type;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;
 
-	if (!mod || !policy){
+	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
 		errno = EINVAL;
 		return -1;
@@ -339,7 +337,7 @@ int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 	}
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
-		return 0; /* not an error - no output is requested */
+		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i assoc type(s).\n", num_items);
@@ -350,14 +348,14 @@ int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 	 * this may need to be changed for longer items. */
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-		for (j=0;j<num_items;j++) {
+		for (j = 0; j < num_items; j++) {
 			i++;
 			i %= 4;
 			item = apol_vector_get_element(mod->result->items, j);
 			type = item->item;
-			qpol_type_get_name(policy->p, type, &type_name);
-			if ( item )
-				printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
+			qpol_type_get_name(q, type, &type_name);
+			if (item)
+				printf("%s%s", type_name, (char *)((j && i != num_items - 1) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
@@ -373,13 +371,13 @@ int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 		printf("\n");
 		for (j = 0; j < apol_vector_get_size(mod->result->items); j++) {
 			item = apol_vector_get_element(mod->result->items, j);
-			if ( item ) {
+			if (item) {
 				type = item->item;
-				qpol_type_get_name(policy->p, type, &type_name);	
+				qpol_type_get_name(q, type, &type_name);
 				printf("%s\n", type_name);
 				for (k = 0; k < apol_vector_get_size(item->proof); k++) {
-					proof = apol_vector_get_element(item->proof,k);
-					if ( proof )
+					proof = apol_vector_get_element(item->proof, k);
+					if (proof)
 						printf("\t%s\n", proof->text);
 				}
 			}
@@ -392,7 +390,7 @@ int find_assoc_types_print(sechk_module_t *mod, apol_policy_t *policy, void *arg
 	return 0;
 }
 
-int find_assoc_types_get_list(sechk_module_t *mod, apol_policy_t *policy, void *arg)
+int find_assoc_types_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg)
 {
 	apol_vector_t **v = arg;
 
@@ -416,4 +414,3 @@ int find_assoc_types_get_list(sechk_module_t *mod, apol_policy_t *policy, void *
 
 	return 0;
 }
-

@@ -28,11 +28,37 @@
 #ifndef APOL_CONDRULE_QUERY_H
 #define APOL_CONDRULE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_cond_query apol_cond_query_t;
+	typedef struct apol_cond_query apol_cond_query_t;
+
+/**
+ * Execute a query against all conditional expressions within the
+ * policy.
+ * @depricated This function has been renamed apol_cond_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
+ *
+ * @param p Policy within which to look up expressions.
+ * @param c Structure containing parameters for query.	If this is
+ * NULL then return all expressions.
+ * @param v Reference to a vector of qpol_cond_t.  The vector
+ * will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+	extern int apol_get_cond_by_query(apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all conditional expressions within the
@@ -49,9 +75,7 @@ typedef struct apol_cond_query apol_cond_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_cond_by_query(apol_policy_t *p,
-				  apol_cond_query_t *c,
-				  apol_vector_t **v);
+	extern int apol_cond_get_by_query(apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new cond query structure.  All fields are
@@ -62,7 +86,7 @@ extern int apol_get_cond_by_query(apol_policy_t *p,
  *
  * @return An initialized cond query structure, or NULL upon error.
  */
-extern apol_cond_query_t *apol_cond_query_create(void);
+	extern apol_cond_query_t *apol_cond_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced cond query,
@@ -71,7 +95,7 @@ extern apol_cond_query_t *apol_cond_query_create(void);
  *
  * @param c Reference to a cond query structure to destroy.
  */
-extern void apol_cond_query_destroy(apol_cond_query_t **c);
+	extern void apol_cond_query_destroy(apol_cond_query_t ** c);
 
 /**
  * Set a cond query to search only conditional expressions that use a
@@ -84,8 +108,7 @@ extern void apol_cond_query_destroy(apol_cond_query_t **c);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_cond_query_set_bool(apol_policy_t *p,
-				    apol_cond_query_t *c, const char *name);
+	extern int apol_cond_query_set_bool(apol_policy_t * p, apol_cond_query_t * c, const char *name);
 
 /**
  * Set a cond query to use regular expression searching for all of its
@@ -97,8 +120,7 @@ extern int apol_cond_query_set_bool(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_cond_query_set_regex(apol_policy_t *p,
-				     apol_cond_query_t *c, int is_regex);
+	extern int apol_cond_query_set_regex(apol_policy_t * p, apol_cond_query_t * c, int is_regex);
 
 /**
  * Given a conditional node, allocate and return a string
@@ -111,6 +133,10 @@ extern int apol_cond_query_set_regex(apol_policy_t *p,
  * expression, or NULL on failure.  The caller is responsible for
  * calling free() on the returned string.
  */
-extern char *apol_cond_expr_render(apol_policy_t *p, qpol_cond_t *cond);
+	extern char *apol_cond_expr_render(apol_policy_t * p, qpol_cond_t * cond);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

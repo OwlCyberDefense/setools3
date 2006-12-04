@@ -40,7 +40,7 @@
 		avl_height(list[idx].left, list) : avl_height(list[idx].right, list) )
 
 /* single rotated right */
-static int avl_srl(int head, apol_avl_ptrs_t *ptrs)
+static int avl_srl(int head, apol_avl_ptrs_t * ptrs)
 {
 	int newhead;
 
@@ -54,7 +54,7 @@ static int avl_srl(int head, apol_avl_ptrs_t *ptrs)
 }
 
 /* single rotate right */
-static int avl_srr(int head, apol_avl_ptrs_t *ptrs)
+static int avl_srr(int head, apol_avl_ptrs_t * ptrs)
 {
 	int newhead;
 
@@ -68,7 +68,7 @@ static int avl_srr(int head, apol_avl_ptrs_t *ptrs)
 }
 
 /* double rotate left */
-static int avl_drl(int head, apol_avl_ptrs_t *ptrs)
+static int avl_drl(int head, apol_avl_ptrs_t * ptrs)
 {
 	assert(head >= 0 && ptrs != NULL);
 	ptrs[head].left = avl_srr(ptrs[head].left, ptrs);
@@ -76,14 +76,14 @@ static int avl_drl(int head, apol_avl_ptrs_t *ptrs)
 }
 
 /* double rotate right */
-static int avl_drr(int head, apol_avl_ptrs_t *ptrs)
+static int avl_drr(int head, apol_avl_ptrs_t * ptrs)
 {
 	assert(head >= 0 && ptrs != NULL);
 	ptrs[head].right = avl_srl(ptrs[head].right, ptrs);
 	return avl_srr(head, ptrs);
 }
 
-static int avl_get_subtree(int idx, int dir, apol_avl_tree_t *tree)
+static int avl_get_subtree(int idx, int dir, apol_avl_tree_t * tree)
 {
 	assert(idx >= 0 && (dir == LEFT || dir == RIGHT) && tree != NULL);
 	if (dir == LEFT)
@@ -93,52 +93,46 @@ static int avl_get_subtree(int idx, int dir, apol_avl_tree_t *tree)
 }
 
 /* Searches an avl tree looking for a match to key. */
-static int do_avl_get_idx(const void *key, int head, apol_avl_tree_t *tree)
+static int do_avl_get_idx(const void *key, int head, apol_avl_tree_t * tree)
 {
 	int cmpval, subtree;
 
-	if(head < 0)
-		return -1; /* no match */
+	if (head < 0)
+		return -1;	       /* no match */
 
 	cmpval = tree->compare(tree->user_data, key, head);
-	if(cmpval == 0)
-		return head; /* found! */
-	else if(cmpval < 0) {
+	if (cmpval == 0)
+		return head;	       /* found! */
+	else if (cmpval < 0) {
 		subtree = avl_get_subtree(head, LEFT, tree);
 		return do_avl_get_idx(key, subtree, tree);
-	}
-	else { /* (cmpval > 0) */
+	} else {		       /* (cmpval > 0) */
 		subtree = avl_get_subtree(head, RIGHT, tree);
 		return do_avl_get_idx(key, subtree, tree);
 	}
 }
 
-int apol_avl_get_idx(apol_avl_tree_t *tree, const void *key)
+int apol_avl_get_idx(apol_avl_tree_t * tree, const void *key)
 {
 	assert(key != NULL && tree != NULL);
 	return do_avl_get_idx(key, tree->head, tree);
 }
 
-static bool_t avl_check_balance(int idx, int dir, apol_avl_tree_t *tree)
+static bool_t avl_check_balance(int idx, int dir, apol_avl_tree_t * tree)
 {
 	int l, r;
 
 	assert(idx >= 0 && (dir == LEFT || dir == RIGHT) && tree != NULL);
 	l = avl_height(tree->ptrs[idx].left, tree->ptrs);
 	r = avl_height(tree->ptrs[idx].right, tree->ptrs);
-	if(dir == LEFT) {
+	if (dir == LEFT) {
 		return (l - r == 2);
-	}
-	else {
+	} else {
 		return (r - l == 2);
 	}
 }
 
-int apol_avl_init(apol_avl_tree_t *tree,
-		  void *user_data,
-		  apol_avl_compare_t compare,
-		  apol_avl_grow_t grow,
-		  apol_avl_add_t add)
+int apol_avl_init(apol_avl_tree_t * tree, void *user_data, apol_avl_compare_t compare, apol_avl_grow_t grow, apol_avl_add_t add)
 {
 	tree->head = -1;
 	tree->ptrs = NULL;
@@ -150,16 +144,16 @@ int apol_avl_init(apol_avl_tree_t *tree,
 	return 0;
 }
 
-void apol_avl_free(apol_avl_tree_t *tree)
+void apol_avl_free(apol_avl_tree_t * tree)
 {
 	if (tree->ptrs != NULL)
 		free(tree->ptrs);
 }
 
-static int avl_grow(apol_avl_tree_t *tree)
+static int avl_grow(apol_avl_tree_t * tree)
 {
 	tree->ptrs_len++;
-	tree->ptrs = (apol_avl_ptrs_t *)realloc(tree->ptrs, tree->ptrs_len * sizeof(apol_avl_ptrs_t));
+	tree->ptrs = (apol_avl_ptrs_t *) realloc(tree->ptrs, tree->ptrs_len * sizeof(apol_avl_ptrs_t));
 
 	if (tree->ptrs == NULL) {
 		fprintf(stderr, "Out of memory!\n");
@@ -175,8 +169,7 @@ static int avl_grow(apol_avl_tree_t *tree)
 	return 0;
 }
 
-
-static int do_avl_insert(apol_avl_tree_t *tree, int head, void *key, int *idx)
+static int do_avl_insert(apol_avl_tree_t * tree, int head, void *key, int *idx)
 {
 	int newidx, cmpval, tmpidx, newhead;
 
@@ -234,7 +227,7 @@ static int do_avl_insert(apol_avl_tree_t *tree, int head, void *key, int *idx)
 	return newhead;
 }
 
-int apol_avl_insert(apol_avl_tree_t *tree, void *key, int *newidx)
+int apol_avl_insert(apol_avl_tree_t * tree, void *key, int *newidx)
 {
 	int rt;
 
