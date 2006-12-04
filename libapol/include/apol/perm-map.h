@@ -30,26 +30,21 @@
 #ifndef APOL_PERMMAP_H
 #define APOL_PERMMAP_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "policy.h"
 
 #define APOL_PERMMAP_MAX_WEIGHT 10
 #define APOL_PERMMAP_MIN_WEIGHT 1
 
-typedef struct apol_permmap apol_permmap_t;
-
-#define APOL_PERMMAP_UNMAPPED	0x00	/* defined object/perm, but no map */
+#define APOL_PERMMAP_UNMAPPED	0x00   /* defined object/perm, but no map */
 #define	APOL_PERMMAP_READ	0x01
 #define APOL_PERMMAP_WRITE	0x02
 #define APOL_PERMMAP_BOTH	(APOL_PERMMAP_READ | APOL_PERMMAP_WRITE)
 #define APOL_PERMMAP_NONE	0x10
-
-/**
- * Deallocate all space associated with a permmap, including the
- * pointer itself.  Afterwards set the pointer to NULL.
- *
- * @param p Reference to an apol_permmap_t to destroy.
- */
-extern void apol_permmap_destroy(apol_permmap_t **p);
 
 /**
  * Read a permission map from a file into a policy.  If there is a
@@ -58,15 +53,14 @@ extern void apol_permmap_destroy(apol_permmap_t **p);
  * string and send it to the error handler stored within the policy.
  *
  * If a permission map was already loaded, then it will be first
- * destroyed.  The caller is responsible for callaing
- * apol_permmap_destroy() upon the policy's pmap afterwards.
+ * destroyed.
  *
  * @param p Policy to which store permission map.
  * @param filename Name of file containing permission map.
  *
  * @return 0 on success, > 0 on success with warnings, < 0 on error.
  */
-extern int apol_permmap_load(apol_policy_t *p, const char *filename);
+	extern int apol_permmap_load(apol_policy_t * p, const char *filename);
 
 /**
  * Write the contents of permission map to a file.  Any existing file
@@ -77,7 +71,7 @@ extern int apol_permmap_load(apol_policy_t *p, const char *filename);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_permmap_save(apol_policy_t *p, const char *filename);
+	extern int apol_permmap_save(apol_policy_t * p, const char *filename);
 
 /**
  * Given a class and permission name, look up that permission mapping
@@ -95,9 +89,7 @@ extern int apol_permmap_save(apol_policy_t *p, const char *filename);
  * @return 0 if class and permission were found, < 0 on error or if
  * not found.
  */
-extern int apol_permmap_get(apol_policy_t *p,
-			    const char *class_name, const char *perm_name,
-			    int *map, int *weight);
+	extern int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight);
 
 /**
  * Given a class and permission name, set that permission's map and
@@ -114,8 +106,10 @@ extern int apol_permmap_get(apol_policy_t *p,
  * @return 0 if permission map was changed, < 0 on error or if not
  * found.
  */
-extern int apol_permmap_set(apol_policy_t *p,
-			    const char *class_name, const char *perm_name,
-			    int map, int weight);
+	extern int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight);
 
-#endif /*APOL_PERMMAP_H*/
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /*APOL_PERMMAP_H */

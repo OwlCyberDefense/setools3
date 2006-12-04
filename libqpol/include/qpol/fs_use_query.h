@@ -26,13 +26,18 @@
 #ifndef QPOL_FS_USE_QUERY_H
 #define QPOL_FS_USE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/context_query.h>
 
-typedef struct qpol_fs_use qpol_fs_use_t;
+	typedef struct qpol_fs_use qpol_fs_use_t;
 
 /**
  *  Get a fs_use statement by file system name.
@@ -43,7 +48,7 @@ typedef struct qpol_fs_use qpol_fs_use_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-extern int qpol_policy_get_fs_use_by_name(qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon);
+	extern int qpol_policy_get_fs_use_by_name(qpol_policy_t * policy, const char *name, qpol_fs_use_t ** ocon);
 
 /**
  *  Get an iterator for the fs_use statements in a policy.
@@ -56,7 +61,7 @@ extern int qpol_policy_get_fs_use_by_name(qpol_policy_t *policy, const char *nam
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_fs_use_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
+	extern int qpol_policy_get_fs_use_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the file system name from a fs_use statement.
@@ -67,7 +72,7 @@ extern int qpol_policy_get_fs_use_iter(qpol_policy_t *policy, qpol_iterator_t **
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_fs_use_get_name(qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name);
+	extern int qpol_fs_use_get_name(qpol_policy_t * policy, qpol_fs_use_t * ocon, char **name);
 
 /* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are 
  * copied from sepol/policydb/services.h.
@@ -88,7 +93,7 @@ extern int qpol_fs_use_get_name(qpol_policy_t *policy, qpol_fs_use_t *ocon, char
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *behavior will be 0.
  */
-extern int qpol_fs_use_get_behavior(qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_t *behavior);
+	extern int qpol_fs_use_get_behavior(qpol_policy_t * policy, qpol_fs_use_t * ocon, uint32_t * behavior);
 
 /**
  *  Get the context from a fs_use statement.
@@ -100,6 +105,10 @@ extern int qpol_fs_use_get_behavior(qpol_policy_t *policy, qpol_fs_use_t *ocon, 
  *  errno will be set and *context will be NULL. It is considered an 
  *  error to call this function if behavior is QPOL_FS_USE_PSID.
  */
-extern int qpol_fs_use_get_context(qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_context_t **context);
+	extern int qpol_fs_use_get_context(qpol_policy_t * policy, qpol_fs_use_t * ocon, qpol_context_t ** context);
 
-#endif /* QPOL_FS_USE_QUERY_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* QPOL_FS_USE_QUERY_H */

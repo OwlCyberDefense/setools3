@@ -1,5 +1,5 @@
 Writing New Diff Modules for libpoldiff HOWTO
-Septemeber 1, 2006
+December 1, 2006
 
 
 0. Introduction
@@ -119,7 +119,7 @@ type_diff.h:
 
 As a convenience to developers, one should only need to #include the
 public poldiff.h to pick up all diff modules.  Modify
-libpoldiff/include/poldiff/poldiff.h in the vicinity of line 62:
+libpoldiff/include/poldiff/poldiff.h in the vicinity of line 74:
 
   #include <poldiff/type_diff.h>
 
@@ -154,7 +154,7 @@ destructor:
 
 As a convenience to developers, one should only need to #include the
 protected poldiff_internal.h to pick up all diff modules.  Modify
-libpoldiff/src/poldiff_internal.h in the vicinity of line 31:
+libpoldiff/src/poldiff_internal.h in the vicinity of line 42:
 
   #include "type_internal.h"
 
@@ -311,14 +311,14 @@ uint32_ts.  For example:
         apol_vector_t *v2 = type_map_lookup_reverse(diff, t2,
                                                     POLDIFF_POLICY_ORIG);
         apol_vector_t *added_attribs, *removed_attribs;
-        let vector a1 = union of all permissions for all types in vector v1
-        let vector a2 = union of all permissions for all types in vector v2
+        let vector a1 = union of all attributes for all types in vector v1
+        let vector a2 = union of all attributes for all types in vector v2
         sort and uniquify a1
         sort and uniquify a2
-        for all permissions in a1 not in a2,
-            append to removed_attribs those permissions
-        for all permissions in a2 not in a1,
-            append to added_attribs those attribs
+        for all attributes in a1 not in a2,
+            append to removed_attribs those attributes
+        for all attributes in a2 not in a1,
+            append to added_attribs those attributes
         if removed_attribs is not empty or added_attribs is not empty,
         then foreach type in v1,
             create a new poldiff_type_t
@@ -327,7 +327,7 @@ uint32_ts.  For example:
             clone added_attribs
             clone removed_attribs
             append the poldiff_type_t to diff->type_diffs->diffs
-        if no poldiff_type_t were created
+        if no poldiff_type_t was created
             return 0
         else
             return non-zero
@@ -348,6 +348,6 @@ uint32_ts.  For example:
             append the poldiff_type_t to diff->type_diffs->diffs
     }
 
-One implementation of creating temporary vectors added_attribs and
-removed_attribs may be found at
+One implementation of creating temporary vectors similar to
+added_attribs and removed_attribs may be found at
 libpoldiff/src/role_diff.c:role_deep_diff().

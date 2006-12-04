@@ -1,9 +1,9 @@
-SETools version 3.0
+SETools version 3.0.1
 Tresys Technology
 setools@tresys.com, http://oss.tresys.com/projects/setools
 
 
-October 1, 2006
+December 1, 2006
 
 
 CURRENT BUGS AND ISSUES
@@ -43,11 +43,14 @@ SEAUDIT
    is because audit logs do not include a year so we assign the same 
    year to all dates.
 
+2. Sorting in seaudit does not work as intended.  It is being fixed
+   for an upcoming version of SETools.
+
 
 TESTING INFORMATION
 
 Operating Systems:
-  Fedora Core 4 and 5, RHEL 4
+  Fedora Core 4, 5, and 6; RHEL 4
   
 SELinux version:
   2.6

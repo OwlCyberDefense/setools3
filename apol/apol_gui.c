@@ -1,5 +1,5 @@
  /* Copyright (C) 2001-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
+  * see file 'COPYING' for use and warranty information */
 
 /*
  * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
@@ -20,20 +20,19 @@
 #include <apol/util.h>
 
 #ifndef STARTUP_SCRIPT
-	#define STARTUP_SCRIPT "apol.tcl"
+#define STARTUP_SCRIPT "apol.tcl"
 #endif
 
 /* internal global */
-char* policy_conf_file;
-static struct option const opts[] =
-{
+char *policy_conf_file;
+static struct option const opts[] = {
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'v'},
 	{"policy", required_argument, NULL, 'p'},
 	{NULL, 0, NULL, 0}
 };
 
-int Tcl_AppInit(Tcl_Interp *interp)
+int Tcl_AppInit(Tcl_Interp * interp)
 {
 	char *script;
 	Tcl_DString command;
@@ -57,20 +56,21 @@ int Tcl_AppInit(Tcl_Interp *interp)
 		Tcl_Exit(1);
 	}
 	script = (char *)malloc(strlen(interp->result) + strlen(STARTUP_SCRIPT) + 3);
-	if(script == NULL) {
+	if (script == NULL) {
 		fprintf(stderr, "out of memory\n");
 		Tcl_DeleteInterp(interp);
 		Tcl_Exit(1);
 	}
 	sprintf(script, "%s/%s", interp->result, STARTUP_SCRIPT);
-	if(Tcl_EvalFile(interp, script) != TCL_OK) {
-		fprintf(stderr, "Error in StartScript (%s): %s on line %d\n\nIf %s is set, make sure directory is correct\n", script, interp->result, interp->errorLine, APOL_ENVIRON_VAR_NAME);
+	if (Tcl_EvalFile(interp, script) != TCL_OK) {
+		fprintf(stderr, "Error in StartScript (%s): %s on line %d\n\nIf %s is set, make sure directory is correct\n",
+			script, interp->result, interp->errorLine, APOL_ENVIRON_VAR_NAME);
 		Tcl_DeleteInterp(interp);
 		Tcl_Exit(1);
 	}
 
 	/* If a policy.conf file was provided on command line, open it */
-	if(policy_conf_file != NULL) {
+	if (policy_conf_file != NULL) {
 		Tcl_DStringInit(&command);
 		Tcl_DStringAppend(&command, "ApolTop::openPolicyFile ", strlen("ApolTop::openPolicyFile "));
 		Tcl_DStringAppend(&command, policy_conf_file, strlen(policy_conf_file));
@@ -110,10 +110,9 @@ void parse_command_line(int argc, char **argv)
 	bool_t help, ver;
 
 	help = ver = FALSE;
-	while ((optc = getopt_long(argc, argv, "p:vh", opts, NULL)) != -1)
-	{
-		switch(optc) {
-		case 'p':   /* -p is deprecated and should not be used */
+	while ((optc = getopt_long(argc, argv, "p:vh", opts, NULL)) != -1) {
+		switch (optc) {
+		case 'p':	       /* -p is deprecated and should not be used */
 			policy_conf_file = optarg;
 			break;
 		case 'h':
@@ -136,7 +135,7 @@ void parse_command_line(int argc, char **argv)
 			print_version_info();
 		exit(1);
 	}
-	if (optind < argc) { /* trailing non-options */
+	if (optind < argc) {	       /* trailing non-options */
 		policy_conf_file = argv[optind];
 	}
 }

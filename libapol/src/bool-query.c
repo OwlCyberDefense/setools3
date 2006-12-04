@@ -32,7 +32,8 @@
 
 #include <errno.h>
 
-struct apol_bool_query {
+struct apol_bool_query
+{
 	char *bool_name;
 	unsigned int flags;
 	regex_t *regex;
@@ -40,9 +41,12 @@ struct apol_bool_query {
 
 /******************** booleans queries ********************/
 
-int apol_get_bool_by_query(apol_policy_t *p,
-			   apol_bool_query_t *b,
-			   apol_vector_t **v)
+int apol_get_bool_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v)
+{
+	return apol_bool_get_by_query(p, b, v);
+}
+
+int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1;
@@ -54,9 +58,9 @@ int apol_get_bool_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_bool_t *bool;
-		if (qpol_iterator_get_item(iter, (void **) &bool) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&bool) < 0) {
 			goto cleanup;
 		}
 		if (b != NULL) {
@@ -65,12 +69,10 @@ int apol_get_bool_by_query(apol_policy_t *p,
 			if (qpol_bool_get_name(p->p, bool, &bool_name) < 0) {
 				goto cleanup;
 			}
-			compval = apol_compare(p, bool_name, b->bool_name,
-					       b->flags, &(b->regex));
+			compval = apol_compare(p, bool_name, b->bool_name, b->flags, &(b->regex));
 			if (compval < 0) {
 				goto cleanup;
-			}
-			else if (compval == 0) {
+			} else if (compval == 0) {
 				continue;
 			}
 		}
@@ -81,7 +83,7 @@ int apol_get_bool_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -94,7 +96,7 @@ apol_bool_query_t *apol_bool_query_create(void)
 	return calloc(1, sizeof(apol_bool_query_t));
 }
 
-void apol_bool_query_destroy(apol_bool_query_t **b)
+void apol_bool_query_destroy(apol_bool_query_t ** b)
 {
 	if (*b != NULL) {
 		free((*b)->bool_name);
@@ -104,12 +106,12 @@ void apol_bool_query_destroy(apol_bool_query_t **b)
 	}
 }
 
-int apol_bool_query_set_bool(apol_policy_t *p, apol_bool_query_t *b, const char *name)
+int apol_bool_query_set_bool(apol_policy_t * p, apol_bool_query_t * b, const char *name)
 {
 	return apol_query_set(p, &b->bool_name, &b->regex, name);
 }
 
-int apol_bool_query_set_regex(apol_policy_t *p, apol_bool_query_t *b, int is_regex)
+int apol_bool_query_set_regex(apol_policy_t * p, apol_bool_query_t * b, int is_regex)
 {
 	return apol_query_set_regex(p, &b->flags, is_regex);
 }

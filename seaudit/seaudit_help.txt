@@ -1,6 +1,6 @@
 Audit Log Analysis Tool for Security Enhanced Linux
-seaudit, version 3.0
-October 1, 2006
+seaudit, version 3.0.1
+December 1, 2006
 selinux@tresys.com
 
 
@@ -12,7 +12,7 @@ messages.
 
 The tool does not need to be installed on an SELinux system; it will
 work on any Linux machine.  The tool parses a given syslog and
-extracts all load policy messages, AVC messages and change of Boolean
+extracts all load policy messages, AVC messages, and change of Boolean
 messages from conditional policies.
 
 The tool has the following main functions:
@@ -46,13 +46,13 @@ so if another one is opened the current one will be closed.
 When opening a log file the user may get the warning "Warning! One or
 more invalid messages found in audit log."  This means that one or
 more of the SELinux audit messages either was missing a standard
-message field (e.g., time, hostname, access type, etc.) or:
+message field (e.g., time, hostname, or access type) or:
 
   1) A message had an unrecognized time stamp,
   2) An AVC message did not contain permissions,
-  3) An AVC message was not labeled as denied or granted,
-  4) A load policy message was not in the correct form, (i.e., missing
-     a line or a data field), or
+  3) An AVC message was not labeled as "denied" or "granted",
+  4) A load policy message was not in the correct form, such as
+     missing a line or a data field, or
   5) A Boolean message did not contain a list of Booleans.
     
 The seaudit program will still attempt to display the remaining data
@@ -60,43 +60,41 @@ from the SELinux audit message in question along with all the other
 SELinux messages in the log, but only if one of the following
 sub-strings is found within the message:
 
-  "avc:" - indicates an access denied or granted message,
-  "security:" - indicates a load policy message, or
-  "committed Booleans" - indicates a committed Boolean(s) message.
+  "avc:" - an access denied or granted message,
+  "security:" - a load policy message, or
+  "committed booleans" - a change in one or more Boolean states.
 
-Otherwise, these messages will not be extracted from the SELinux audit
-log.
+All other messages will be ignored.
 
 
 Menus:
 ------
-The FILE menu allows the user to change the current policy file and/or
-audit log.  It also shows a list of recently opened files.  The file
-menu also allows the user to change preferences including default log,
-default policy file, which columns to present when viewing audit logs,
-and whether seaudit should enable real-time log monitoring upon
-start-up.  All of these settings will be saved and reloaded each time
-seaudit is started.
+Use the FILE menu to load a different audit log or a policy file.
+The file menu also allows the user to change preferences including
+default log, default policy file, which columns to present when
+viewing audit logs, and whether seaudit should enable real-time log
+monitoring upon start-up.  All of these settings will be saved and
+reloaded each time seaudit is started.
 
-The VIEW menu allows the user to display multiple views of a log.  The
-default view is created automatically once an audit log is opened.
-Additional views can be created by selecting View->New under the VIEW
-menu.  Each tab can be sorted and filtered independently.  The 'Save'
-and 'Save As...' menu items allow the user to save settings for the
-view to a file; 'Export View' menu item allows the user to export an
-entire view (i.e., the audit messages contained in the view) to a
-file.  Alternatively, 'Export Selected Messages' exports only selected
-messages to a file instead of the entire view.  This menu also
-provides the option of viewing an entire audit message within a
-separate text box window as it is rendered in the actual audit log.
-If multiple audit messages are selected, seaudit will use the top-most
-selected audit message in the current view.
+The VIEW menu allows the user to display multiple views of a log.  A
+default view is created automatically when an audit log is first
+opened.  Additional views can be created by selecting View->New.  A
+view has its own set of filters that limit which messages are shown.
+The 'Save' and 'Save As...' menu items allow the user to save to file
+the current view's settings; 'Export View' menu item allows the user
+to export the current view's messages to a file.  Alternatively,
+'Export Selected Messages' exports only those messages that are
+currently selected.  This menu also provides the option of viewing an
+entire audit message within a separate text box window as it is
+rendered in the actual audit log.  If multiple audit messages are
+selected, seaudit will use the top-most selected audit message in the
+current view.
 
-The SEARCH menu allows the user to filter the audit log (See Log Views
-below) or query the policy (See Query Policy below).
+Use the SEARCH menu to filter the audit log (See Log Views below) or
+query the policy (See Query Policy below).
 
-Additionally, right-clicking on an audit message entry will display a
-pop-up menu that allow the user to:
+Right-click on an audit message within a view to display a pop-up menu
+that allows the user to:
   - View the entire message within a separate text box,
   - Query the policy using the message, or
   - Export all selected messages to a file.
@@ -108,23 +106,22 @@ Reports below).
 
 Sorting:
 --------
-By default the messages are sorted in chronological order.  To sort by
-a particular field click on the column heading.  The only column that
-cannot be sorted upon is the 'Other' column.  Only one level of
-sorting can be performed at this time.  The file KNOWN-BUGS describes
-a particular instance where the sort order may be misleading.
+By default the messages within a view are sorted in chronological
+order.  To sort by a particular field click on the column heading.
+The only column that cannot be used for sorting is the 'Other' column.
+Only one level of sorting can be performed.  The file KNOWN-BUGS
+describes a particular instance where the sort order may be
+misleading.
 
 
 Log Monitoring: 
 ---------------
 The 'Toggle Monitor' button turns on and off the real-time log
-monitoring feature.  The monitor status label in the lower right-hand
-corner of the status bar will display 'OFF' or 'ON' as appropriate.
-When this feature is on, seaudit checks for new messages at a regular
-interval, per second by default.  This interval can be configured from
-the Preferences dialog.  As new messages are added to the currently
-loaded log file, they will be displayed according to the filter and
-sorting selections for the current view.
+monitoring feature.  When this feature is on, seaudit checks for new
+messages at a regular interval (per second by default); this interval
+can be configured from the Preferences dialog.  As new messages are
+added to the currently loaded log file, each view will be updated
+according to its filters and sorting criterion.
 
 
 Query Policy:
@@ -133,7 +130,7 @@ The 'Query Policy' button opens a new dialog box that contains two
 tabs.  From the first tab, 'Query Policy', the user enters search
 criteria similar to those in apol's TE Rules query.  If an audit
 message was selected prior to clicking on this button, the search
-criteria are filled in based on the message.  Otherwise, all the
+criteria are filled in based on that message.  Otherwise, all the
 criteria are blank.  For each combobox, the user may enter a regular
 expression; he may also choose a entry from the drop-down box.
 
@@ -146,7 +143,7 @@ that type; it ignores the type's attributes.
 Invoking the 'Query Policy' button will perform the search and return
 a list of matching rules.  If the currently opened policy file is a
 source policy, the displayed rules will contain hyperlinks to the
-appropriate line in the policy.conf tab .
+appropriate line in the policy.conf tab.
 
 The second tab, 'policy.conf', provides a convenient display of the
 raw policy.conf source file and is only available when opening a
@@ -160,25 +157,22 @@ apol.
 Log Views:
 ----------
 The 'Modify View' button opens a dialog box that lets the user modify
-a list of filters for the current view of the audit log.  At the top
-of the dialog box is a drop-down menu that has four different ways to
-apply the filters.  Log entries matching a filter may be either shown
-or hidden; entries can match any or all of the filters.  Individual
-filters may be added, edited, removed, imported, or exported from this
-dialog.  Additionally, from this dialog the user can save to a file
-the view's settings.
+the list of filters for the current view.  Filters may be used to
+select either messages to show or to hide; in addition messages can
+match either any filter or all filters.
 
 Click on the 'Apply' button to apply the filters for the associated
-view; simply hitting 'Close' will not adjust the current view.
+view; simply hitting 'Close' will save the settings but will not
+adjust the current view.
 
 
 Modifying Filters Within A View: 
 --------------------------------
 To add a new filter, first select the view for which the filter is
-needed by clicking on the corresponding tab then click on the 'Modify
-View' button and then 'Add'.  Within this new dialog, edit the various
-properties of a filter such as its name, description, source context,
-target context, object type, etc.
+needed by clicking on the corresponding tab, then click on the 'Modify
+View' button, and then 'Add'.  Within this new dialog, edit the
+various properties of a filter such as its name, description, source
+context, target context, object type, etc.
 
 Use the 'Context' tab to enter values for part or all of the source
 and target context, as well as the object class.  Only exact matches
@@ -290,28 +284,27 @@ Creating Reports:
 -----------------
 
 From the REPORT menu the user can create report files in HTML or plain
-text format using an entire audit log or an seaudit view.  Select the
-'Create Report' menu item to display a dialog for making
-configurations to the report and then save the report to a file.
+text format using an entire audit log or only those messages present
+in the current view.  Select the 'Create Report' menu item to display
+a dialog for making configurations to the report and then save the
+report to a file.
 
-The input frame consists of options for indicating whether to use the
-entire audit report or to use the messages displayed in the current
-log view as input to the report.  Also, there is an option for
-including malformed messages within the report (see the previous 'Log
-and Policy Files' heading for what makes up a malformed message in
-seaudit).  This option is only enabled when the radio button for using
-the entire audit log is selected.
+The input frame consists of options for indicating whether to use
+messages from the entire audit log file or only those in the current
+view.  There is an option for including malformed messages within the
+report (see the previous 'Log and Policy Files' heading for what makes
+up a malformed message in seaudit).  This option is only enabled when
+the radio button for using the entire audit log is selected.
 
 The output frame contains radio buttons for specifying the format of
-the report, HTML or plain text.  Additionally, an entry box is
-provided in this frame for specifying a style sheet to use when
-creating an HTML report.  There also is an entry box for specifying
-the configuration file to use for creating the report.  If the style
-sheet or the configuration file is not specified, seaudit will use the
-appropriate system default files.  If a report configuration file
-cannot be located at this point, an error will be generated.  The
-default values for the style sheet and configuration file may be
-changed from the Preferences dialog.
+the report, either HTML or plain text.  Additionally, an entry box is
+provided in this frame for specifying a style sheet to use if creating
+an HTML report.  There also is an entry box for specifying the
+configuration file to use for creating the report.  If the style sheet
+or the configuration file is not specified, seaudit will use the
+appropriate system default files.  The default values for the style
+sheet and configuration file may be changed from the Preferences
+dialog.
 
 The seaudit report configuration file may be configured to affect
 information presented in reports.  The seaudit report feature is

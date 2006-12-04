@@ -27,11 +27,16 @@
 #ifndef POLDIFF_RBAC_DIFF_H
 #define POLDIFF_RBAC_DIFF_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
-typedef struct poldiff_role_allow poldiff_role_allow_t;
-typedef struct poldiff_role_trans poldiff_role_trans_t;
+	typedef struct poldiff_role_allow poldiff_role_allow_t;
+	typedef struct poldiff_role_trans poldiff_role_trans_t;
 
 /**
  *  Get an array of statistics for the number of differences of each
@@ -45,7 +50,7 @@ typedef struct poldiff_role_trans poldiff_role_trans_t;
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_role_allow_get_stats(poldiff_t *diff, size_t stats[5]);
+	extern void poldiff_role_allow_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of role allow differences from the policy difference
@@ -58,7 +63,7 @@ extern void poldiff_role_allow_get_stats(poldiff_t *diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_role_allow_vector(poldiff_t *diff);
+	extern apol_vector_t *poldiff_get_role_allow_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -71,7 +76,7 @@ extern apol_vector_t *poldiff_get_role_allow_vector(poldiff_t *diff);
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-extern char *poldiff_role_allow_to_string(poldiff_t *diff, const void *role_allow);
+	extern char *poldiff_role_allow_to_string(poldiff_t * diff, const void *role_allow);
 
 /**
  *  Get the name of the source role from a role allow diff.
@@ -82,7 +87,7 @@ extern char *poldiff_role_allow_to_string(poldiff_t *diff, const void *role_allo
  *  call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_role_allow_get_name(const poldiff_role_allow_t *role_allow);
+	extern const char *poldiff_role_allow_get_name(const poldiff_role_allow_t * role_allow);
 
 /**
  *  Get the form of difference from a role allow diff.
@@ -92,7 +97,7 @@ extern const char *poldiff_role_allow_get_name(const poldiff_role_allow_t *role_
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_role_allow_get_form(const void *role_allow);
+	extern poldiff_form_e poldiff_role_allow_get_form(const void *role_allow);
 
 /**
  *  Get a vector of roles added to the role allow rule.
@@ -104,7 +109,7 @@ extern poldiff_form_e poldiff_role_allow_get_form(const void *role_allow);
  *  of the returned vector will be 0.  The caller must not destroy
  *  this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t *role_allow);
+	extern apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t * role_allow);
 
 /**
  *  Get a vector of roles removed from the role allow rule.
@@ -116,7 +121,7 @@ extern apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allo
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-extern apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t *role_allow);
+	extern apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t * role_allow);
 
 /**
  *  Get an array of statistics for the number of differences of each
@@ -130,7 +135,7 @@ extern apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_al
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-extern void poldiff_role_trans_get_stats(poldiff_t *diff, size_t stats[5]);
+	extern void poldiff_role_trans_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of role_transition differences from the policy difference
@@ -143,7 +148,7 @@ extern void poldiff_role_trans_get_stats(poldiff_t *diff, size_t stats[5]);
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-extern apol_vector_t *poldiff_get_role_trans_vector(poldiff_t *diff);
+	extern apol_vector_t *poldiff_get_role_trans_vector(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -156,7 +161,7 @@ extern apol_vector_t *poldiff_get_role_trans_vector(poldiff_t *diff);
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-extern char *poldiff_role_trans_to_string(poldiff_t *diff, const void *role_trans);
+	extern char *poldiff_role_trans_to_string(poldiff_t * diff, const void *role_trans);
 
 /**
  *  Get the name of the source role from a role_transition difference.
@@ -167,7 +172,7 @@ extern char *poldiff_role_trans_to_string(poldiff_t *diff, const void *role_tran
  *  if the call fails, errno will be set. The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_role_trans_get_source_role(const poldiff_role_trans_t *role_trans);
+	extern const char *poldiff_role_trans_get_source_role(const poldiff_role_trans_t * role_trans);
 
 /**
  *  Get the name of the target type from a role_transition difference.
@@ -178,7 +183,7 @@ extern const char *poldiff_role_trans_get_source_role(const poldiff_role_trans_t
  *  if the call fails, errno will be set. The caller should not free the
  *  returned string.
  */
-extern const char *poldiff_role_trans_get_target_type(const poldiff_role_trans_t *role_trans);
+	extern const char *poldiff_role_trans_get_target_type(const poldiff_role_trans_t * role_trans);
 
 /**
  *  Get the form of difference from a role_transition diff.
@@ -189,7 +194,7 @@ extern const char *poldiff_role_trans_get_target_type(const poldiff_role_trans_t
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
  */
-extern poldiff_form_e poldiff_role_trans_get_form(const void *role_trans);
+	extern poldiff_form_e poldiff_role_trans_get_form(const void *role_trans);
 
 /**
  *  Get the original default type from a role_transition diff. Note that
@@ -203,7 +208,7 @@ extern poldiff_form_e poldiff_role_trans_get_form(const void *role_trans);
  *  upon error then return NULL. The caller should not free the returned
  *  string.
  */
-extern const char *poldiff_role_trans_get_original_default(const poldiff_role_trans_t *role_trans);
+	extern const char *poldiff_role_trans_get_original_default(const poldiff_role_trans_t * role_trans);
 
 /**
  *  Get the modified default type from a role_transition diff. Note that if
@@ -217,6 +222,10 @@ extern const char *poldiff_role_trans_get_original_default(const poldiff_role_tr
  *  upon error then return NULL. The caller should not free the returned
  *  string.
  */
-extern const char *poldiff_role_trans_get_modified_default(const poldiff_role_trans_t *role_trans);
+	extern const char *poldiff_role_trans_get_modified_default(const poldiff_role_trans_t * role_trans);
 
-#endif /* POLDIFF_RBAC_DIFF_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* POLDIFF_RBAC_DIFF_H */

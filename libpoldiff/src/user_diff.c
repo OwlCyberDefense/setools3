@@ -33,21 +33,23 @@
 #include <stdio.h>
 #include <string.h>
 
-struct poldiff_user_summary {
+struct poldiff_user_summary
+{
 	size_t num_added;
 	size_t num_removed;
 	size_t num_modified;
 	apol_vector_t *diffs;
 };
 
-struct poldiff_user {
+struct poldiff_user
+{
 	char *name;
 	poldiff_form_e form;
 	apol_vector_t *added_roles;
 	apol_vector_t *removed_roles;
 };
 
-void poldiff_user_get_stats(poldiff_t *diff, size_t stats[5])
+void poldiff_user_get_stats(poldiff_t * diff, size_t stats[5])
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -61,11 +63,11 @@ void poldiff_user_get_stats(poldiff_t *diff, size_t stats[5])
 	stats[4] = 0;
 }
 
-char *poldiff_user_to_string(poldiff_t *diff, const void *user)
+char *poldiff_user_to_string(poldiff_t * diff, const void *user)
 {
 	poldiff_user_t *u = (poldiff_user_t *) user;
-	size_t num_added, num_removed, len, i;
-	char *s = NULL, *t = NULL, *role;
+	size_t num_added, num_removed, len = 0, i;
+	char *s = NULL, *role;
 	if (diff == NULL || user == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -74,95 +76,64 @@ char *poldiff_user_to_string(poldiff_t *diff, const void *user)
 	num_added = apol_vector_get_size(u->added_roles);
 	num_removed = apol_vector_get_size(u->removed_roles);
 	switch (u->form) {
-	case POLDIFF_FORM_ADDED: {
-		if (asprintf(&s, "+ %s", u->name) < 0) {
-			s = NULL;
-			break;
-		}
-		return s;
-	}
-	case POLDIFF_FORM_REMOVED: {
-		if (asprintf(&s, "- %s", u->name) < 0) {
-			s = NULL;
-			break;
-		}
-		return s;
-	}
-	case POLDIFF_FORM_MODIFIED: {
-		if (asprintf(&s, "* %s (", u->name) < 0) {
-			s = NULL;
-			break;
-		}
-		len = strlen(s);
-		if (num_added > 0) {
-			if (asprintf(&t, "%d Added Roles", num_added) < 0) {
-				t = NULL;
+	case POLDIFF_FORM_ADDED:{
+			if (apol_str_appendf(&s, &len, "+ %s", u->name) < 0) {
 				break;
 			}
-			if (apol_str_append(&s, &len, t) < 0) {
+			return s;
+		}
+	case POLDIFF_FORM_REMOVED:{
+			if (apol_str_appendf(&s, &len, "- %s", u->name) < 0) {
 				break;
 			}
-			free(t);
-			t = NULL;
+			return s;
 		}
-		if (num_removed > 0) {
-			if (asprintf(&t, "%s%d Removed Roles",
-				     (num_added > 0 ? ", " : ""),
-				     num_removed) < 0) {
-				t = NULL;
+	case POLDIFF_FORM_MODIFIED:{
+			if (apol_str_appendf(&s, &len, "* %s (", u->name) < 0) {
 				break;
 			}
-			if (apol_str_append(&s, &len, t) < 0) {
+			if (num_added > 0) {
+				if (apol_str_appendf(&s, &len, "%d Added Roles", num_added) < 0) {
+					break;
+				}
+			}
+			if (num_removed > 0) {
+				if (apol_str_appendf(&s, &len, "%s%d Removed Roles", (num_added > 0 ? ", " : ""), num_removed) < 0) {
+					break;
+				}
+			}
+			if (apol_str_append(&s, &len, ")\n") < 0) {
 				break;
 			}
-			free(t);
-			t = NULL;
-		}
-		if (apol_str_append(&s, &len, ")\n") < 0) {
-			break;
-		}
-		for (i = 0; i < apol_vector_get_size(u->added_roles); i++) {
-			role = (char *) apol_vector_get_element(u->added_roles, i);
-			if (asprintf(&t, "\t+ %s\n", role) < 0) {
-				t = NULL;
-				goto err;
+			for (i = 0; i < apol_vector_get_size(u->added_roles); i++) {
+				role = (char *)apol_vector_get_element(u->added_roles, i);
+				if (apol_str_appendf(&s, &len, "\t+ %s\n", role) < 0) {
+					goto err;
+				}
 			}
-			if (apol_str_append(&s, &len, t) < 0) {
-				goto err;
+			for (i = 0; i < apol_vector_get_size(u->removed_roles); i++) {
+				role = (char *)apol_vector_get_element(u->removed_roles, i);
+				if (apol_str_appendf(&s, &len, "\t- %s\n", role) < 0) {
+					goto err;
+				}
 			}
-			free(t);
-			t = NULL;
+			return s;
 		}
-		for (i = 0; i < apol_vector_get_size(u->removed_roles); i++) {
-			role = (char *) apol_vector_get_element(u->removed_roles, i);
-			if (asprintf(&t, "\t- %s\n", role) < 0) {
-				t = NULL;
-				goto err;
-			}
-			if (apol_str_append(&s, &len, t) < 0) {
-				goto err;
-			}
-			free(t);
-			t = NULL;
+	default:{
+			ERR(diff, "%s", strerror(ENOTSUP));
+			errno = ENOTSUP;
+			return NULL;
 		}
-		return s;
 	}
-	default: {
-		ERR(diff, "%s", strerror(ENOTSUP));
-		errno = ENOTSUP;
-		return NULL;
-	}
-	}
- err:
+      err:
 	/* if this is reached then an error occurred */
 	free(s);
-	free(t);
 	ERR(diff, "%s", strerror(ENOMEM));
 	errno = ENOMEM;
 	return NULL;
 }
 
-apol_vector_t *poldiff_get_user_vector(poldiff_t *diff)
+apol_vector_t *poldiff_get_user_vector(poldiff_t * diff)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
@@ -171,7 +142,7 @@ apol_vector_t *poldiff_get_user_vector(poldiff_t *diff)
 	return diff->user_diffs->diffs;
 }
 
-const char *poldiff_user_get_name(const poldiff_user_t *user)
+const char *poldiff_user_get_name(const poldiff_user_t * user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
@@ -186,10 +157,10 @@ poldiff_form_e poldiff_user_get_form(const void *user)
 		errno = EINVAL;
 		return 0;
 	}
-	return ((const poldiff_user_t *) user)->form;
+	return ((const poldiff_user_t *)user)->form;
 }
 
-apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t *user)
+apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t * user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
@@ -198,7 +169,7 @@ apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t *user)
 	return user->added_roles;
 }
 
-apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t *user)
+apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t * user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
@@ -233,7 +204,7 @@ static void user_free(void *elem)
 	}
 }
 
-void user_destroy(poldiff_user_summary_t **us)
+void user_destroy(poldiff_user_summary_t ** us)
 {
 	if (us != NULL && *us != NULL) {
 		apol_vector_destroy(&(*us)->diffs, user_free);
@@ -242,8 +213,7 @@ void user_destroy(poldiff_user_summary_t **us)
 	}
 }
 
-
-int user_reset(poldiff_t *diff)
+int user_reset(poldiff_t * diff)
 {
 	int error = 0;
 
@@ -268,24 +238,26 @@ int user_reset(poldiff_t *diff)
 /**
  * Comparison function for two users from the same policy.
  */
-static int user_name_comp(const void *x, const void *y, void *arg) {
+static int user_name_comp(const void *x, const void *y, void *arg)
+{
 	qpol_user_t *u1 = (qpol_user_t *) x;
 	qpol_user_t *u2 = (qpol_user_t *) y;
 	apol_policy_t *p = (apol_policy_t *) arg;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	char *name1, *name2;
-	if (qpol_user_get_name(p->p, u1, &name1) < 0 ||
-	    qpol_user_get_name(p->p, u2, &name2) < 0) {
+	if (qpol_user_get_name(q, u1, &name1) < 0 || qpol_user_get_name(q, u2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
 }
 
-apol_vector_t *user_get_items(poldiff_t *diff, apol_policy_t *policy)
+apol_vector_t *user_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
-	if (qpol_policy_get_user_iter(policy->p, &iter) < 0) {
+	if (qpol_policy_get_user_iter(q, &iter) < 0) {
 		return NULL;
 	}
 	v = apol_vector_create_from_iter(iter);
@@ -301,13 +273,12 @@ apol_vector_t *user_get_items(poldiff_t *diff, apol_policy_t *policy)
 	return v;
 }
 
-int user_comp(const void *x, const void *y, poldiff_t *diff)
+int user_comp(const void *x, const void *y, poldiff_t * diff)
 {
 	qpol_user_t *u1 = (qpol_user_t *) x;
 	qpol_user_t *u2 = (qpol_user_t *) y;
 	char *name1, *name2;
-	if (qpol_user_get_name(diff->orig_pol->p, u1, &name1) < 0 ||
-	    qpol_user_get_name(diff->mod_pol->p, u2, &name2) < 0) {
+	if (qpol_user_get_name(diff->orig_qpol, u1, &name1) < 0 || qpol_user_get_name(diff->mod_qpol, u2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
@@ -324,7 +295,7 @@ int user_comp(const void *x, const void *y, poldiff_t *diff)
  * The caller is responsible for calling user_free() upon the returned
  * value.
  */
-static poldiff_user_t *make_diff(poldiff_t *diff, poldiff_form_e form, char *name)
+static poldiff_user_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *name)
 {
 	poldiff_user_t *pu;
 	int error;
@@ -342,16 +313,16 @@ static poldiff_user_t *make_diff(poldiff_t *diff, poldiff_form_e form, char *nam
 	return pu;
 }
 
-int user_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
+int user_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	qpol_user_t *u = (qpol_user_t *) item;
 	char *name = NULL;
 	poldiff_user_t *pu;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_user_get_name(diff->mod_pol->p, u, &name) < 0) ||
+	     qpol_user_get_name(diff->mod_qpol, u, &name) < 0) ||
 	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_user_get_name(diff->orig_pol->p, u, &name) < 0)) {
+	     qpol_user_get_name(diff->orig_qpol, u, &name) < 0)) {
 		return -1;
 	}
 	pu = make_diff(diff, form, name);
@@ -367,8 +338,7 @@ int user_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
 	}
 	if (form == POLDIFF_FORM_ADDED) {
 		diff->user_diffs->num_added++;
-	}
-	else {
+	} else {
 		diff->user_diffs->num_removed++;
 	}
 	return 0;
@@ -386,24 +356,24 @@ int user_new_diff(poldiff_t *diff, poldiff_form_e form, const void *item)
  * responsible for calling apol_vector_destroy(), passing NULL as the
  * second parameter.  On error, return NULL.
  */
-static apol_vector_t *user_get_roles(poldiff_t *diff, apol_policy_t *p, qpol_user_t *user)
+static apol_vector_t *user_get_roles(poldiff_t * diff, apol_policy_t * p, qpol_user_t * user)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_role_t *role;
 	char *role_name;
 	apol_vector_t *v = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1, error = 0;
 
 	if ((v = apol_vector_create()) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
-	if (qpol_user_get_role_iter(p->p, user, &iter) < 0) {
+	if (qpol_user_get_role_iter(q, user, &iter) < 0) {
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &role) < 0 ||
-		    qpol_role_get_name(p->p, role, &role_name)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&role) < 0 || qpol_role_get_name(q, role, &role_name)) {
 			error = errno;
 			goto cleanup;
 		}
@@ -415,7 +385,7 @@ static apol_vector_t *user_get_roles(poldiff_t *diff, apol_policy_t *p, qpol_use
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
 		apol_vector_destroy(&v, NULL);
@@ -425,7 +395,7 @@ static apol_vector_t *user_get_roles(poldiff_t *diff, apol_policy_t *p, qpol_use
 	return v;
 }
 
-int user_deep_diff(poldiff_t *diff, const void *x, const void *y)
+int user_deep_diff(poldiff_t * diff, const void *x, const void *y)
 {
 	qpol_user_t *u1 = (qpol_user_t *) x;
 	qpol_user_t *u2 = (qpol_user_t *) y;
@@ -435,19 +405,18 @@ int user_deep_diff(poldiff_t *diff, const void *x, const void *y)
 	size_t i, j;
 	int retval = -1, error = 0, compval;
 
-	if (qpol_user_get_name(diff->orig_pol->p, u1, &name) < 0 ||
-	    (v1 = user_get_roles(diff, diff->orig_pol, u1)) == NULL ||
-	    (v2 = user_get_roles(diff, diff->mod_pol, u2)) == NULL) {
+	if (qpol_user_get_name(diff->orig_qpol, u1, &name) < 0 ||
+	    (v1 = user_get_roles(diff, diff->orig_pol, u1)) == NULL || (v2 = user_get_roles(diff, diff->mod_pol, u2)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
 	apol_vector_sort(v1, apol_str_strcmp, NULL);
 	apol_vector_sort(v2, apol_str_strcmp, NULL);
-	for (i = j = 0; i < apol_vector_get_size(v1); ) {
+	for (i = j = 0; i < apol_vector_get_size(v1);) {
 		if (j >= apol_vector_get_size(v2))
 			break;
-		role1 = (char *) apol_vector_get_element(v1, i);
-		role2 = (char *) apol_vector_get_element(v2, j);
+		role1 = (char *)apol_vector_get_element(v1, i);
+		role2 = (char *)apol_vector_get_element(v2, j);
 		compval = strcmp(role1, role2);
 		if (compval != 0 && u == NULL) {
 			if ((u = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
@@ -456,40 +425,35 @@ int user_deep_diff(poldiff_t *diff, const void *x, const void *y)
 			}
 		}
 		if (compval < 0) {
-			if ((role1 = strdup(role1)) == NULL ||
-			    apol_vector_append(u->removed_roles, role1) < 0) {
+			if ((role1 = strdup(role1)) == NULL || apol_vector_append(u->removed_roles, role1) < 0) {
 				error = errno;
 				free(role1);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
 			i++;
-		}
-		else if (compval > 0) {
-			if ((role2 = strdup(role2)) == NULL ||
-			    apol_vector_append(u->added_roles, role2) < 0) {
+		} else if (compval > 0) {
+			if ((role2 = strdup(role2)) == NULL || apol_vector_append(u->added_roles, role2) < 0) {
 				error = errno;
 				free(role2);
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
 			j++;
-		}
-		else {
+		} else {
 			i++;
 			j++;
 		}
 	}
 	for (; i < apol_vector_get_size(v1); i++) {
-		role1 = (char *) apol_vector_get_element(v1, i);
+		role1 = (char *)apol_vector_get_element(v1, i);
 		if (u == NULL) {
 			if ((u = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
 				error = errno;
 				goto cleanup;
 			}
 		}
-		if ((role1 = strdup(role1)) == NULL ||
-		    apol_vector_append(u->removed_roles, role1) < 0) {
+		if ((role1 = strdup(role1)) == NULL || apol_vector_append(u->removed_roles, role1) < 0) {
 			error = errno;
 			free(role1);
 			ERR(diff, "%s", strerror(error));
@@ -497,15 +461,14 @@ int user_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		}
 	}
 	for (; j < apol_vector_get_size(v2); j++) {
-		role2 = (char *) apol_vector_get_element(v2, j);
+		role2 = (char *)apol_vector_get_element(v2, j);
 		if (u == NULL) {
 			if ((u = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
 				error = errno;
 				goto cleanup;
 			}
 		}
-		if ((role2 = strdup(role2)) == NULL ||
-		    apol_vector_append(u->added_roles, role2) < 0) {
+		if ((role2 = strdup(role2)) == NULL || apol_vector_append(u->added_roles, role2) < 0) {
 			error = errno;
 			free(role2);
 			ERR(diff, "%s", strerror(error));
@@ -523,7 +486,7 @@ int user_deep_diff(poldiff_t *diff, const void *x, const void *y)
 		diff->user_diffs->num_modified++;
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&v1, NULL);
 	apol_vector_destroy(&v2, NULL);
 	if (retval != 0) {

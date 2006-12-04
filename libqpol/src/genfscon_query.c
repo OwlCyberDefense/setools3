@@ -21,7 +21,7 @@
 *  You should have received a copy of the GNU Lesser General Public
 *  License along with this library; if not, write to the Free Software
 *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/ 
+*/
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -34,14 +34,15 @@
 #include "qpol_internal.h"
 #include "iterator_internal.h"
 
-struct qpol_genfscon {
+struct qpol_genfscon
+{
 	char *fs_name;
 	char *path;
 	context_struct_t *context;
 	uint32_t sclass;
 };
 
-int qpol_policy_get_genfscon_by_name(qpol_policy_t *policy, const char *name, const char *path, qpol_genfscon_t **genfscon)
+int qpol_policy_get_genfscon_by_name(qpol_policy_t * policy, const char *name, const char *path, qpol_genfscon_t ** genfscon)
 {
 	genfs_t *tmp = NULL;
 	ocontext_t *tmp2 = NULL;
@@ -94,14 +95,14 @@ int qpol_policy_get_genfscon_by_name(qpol_policy_t *policy, const char *name, co
 	return STATUS_SUCCESS;
 }
 
-
-typedef struct genfs_state {
+typedef struct genfs_state
+{
 	genfs_t *head;
 	genfs_t *cur;
 	ocontext_t *cur_path;
 } genfs_state_t;
 
-static int genfs_state_end(qpol_iterator_t *iter)
+static int genfs_state_end(qpol_iterator_t * iter)
 {
 	genfs_state_t *gs = NULL;
 
@@ -110,7 +111,7 @@ static int genfs_state_end(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	gs = (genfs_state_t*)qpol_iterator_state(iter);
+	gs = (genfs_state_t *) qpol_iterator_state(iter);
 
 	if (gs->cur == NULL && gs->cur_path == NULL)
 		return 1;
@@ -118,7 +119,7 @@ static int genfs_state_end(qpol_iterator_t *iter)
 	return 0;
 }
 
-static void *genfs_state_get_cur(qpol_iterator_t *iter)
+static void *genfs_state_get_cur(qpol_iterator_t * iter)
 {
 	genfs_state_t *gs = NULL;
 	qpol_genfscon_t *genfscon = NULL;
@@ -128,7 +129,7 @@ static void *genfs_state_get_cur(qpol_iterator_t *iter)
 		return NULL;
 	}
 
-	gs = (genfs_state_t*)qpol_iterator_state(iter);
+	gs = (genfs_state_t *) qpol_iterator_state(iter);
 
 	genfscon = calloc(1, sizeof(qpol_genfscon_t));
 	if (!genfscon) {
@@ -143,7 +144,7 @@ static void *genfs_state_get_cur(qpol_iterator_t *iter)
 	return genfscon;
 }
 
-static size_t genfs_state_size(qpol_iterator_t *iter)
+static size_t genfs_state_size(qpol_iterator_t * iter)
 {
 	genfs_state_t *gs = NULL;
 	size_t count = 0;
@@ -155,7 +156,7 @@ static size_t genfs_state_size(qpol_iterator_t *iter)
 		return 0;
 	}
 
-	gs = (genfs_state_t*)qpol_iterator_state(iter);
+	gs = (genfs_state_t *) qpol_iterator_state(iter);
 
 	for (genfs = gs->head; genfs; genfs = genfs->next)
 		for (path = genfs->head; path; path = path->next)
@@ -164,7 +165,7 @@ static size_t genfs_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-static int genfs_state_next(qpol_iterator_t *iter)
+static int genfs_state_next(qpol_iterator_t * iter)
 {
 	genfs_state_t *gs = NULL;
 
@@ -173,7 +174,7 @@ static int genfs_state_next(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	gs = (genfs_state_t*)qpol_iterator_state(iter);
+	gs = (genfs_state_t *) qpol_iterator_state(iter);
 
 	if (gs->cur == NULL) {
 		errno = ERANGE;
@@ -190,13 +191,13 @@ static int genfs_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_genfscon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_genfscon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	genfs_state_t *gs = NULL;
 	int error = 0;
 
-	if (iter != NULL) 
+	if (iter != NULL)
 		*iter = NULL;
 
 	if (policy == NULL || iter == NULL) {
@@ -218,8 +219,8 @@ int qpol_policy_get_genfscon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	gs->head = gs->cur = db->genfs;
 	gs->cur_path = gs->head->head;
 
-	if (qpol_iterator_create(policy, (void*)gs, genfs_state_get_cur,
-		genfs_state_next, genfs_state_end, genfs_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)gs, genfs_state_get_cur,
+				 genfs_state_next, genfs_state_end, genfs_state_size, free, iter)) {
 		free(gs);
 		return STATUS_ERR;
 	}
@@ -227,7 +228,7 @@ int qpol_policy_get_genfscon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_name(qpol_policy_t *policy, qpol_genfscon_t *genfs, char **name)
+int qpol_genfscon_get_name(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **name)
 {
 	if (name != NULL)
 		*name = NULL;
@@ -243,7 +244,7 @@ int qpol_genfscon_get_name(qpol_policy_t *policy, qpol_genfscon_t *genfs, char *
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_path(qpol_policy_t *policy, qpol_genfscon_t *genfs, char **path)
+int qpol_genfscon_get_path(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **path)
 {
 	if (path != NULL)
 		*path = NULL;
@@ -259,7 +260,7 @@ int qpol_genfscon_get_path(qpol_policy_t *policy, qpol_genfscon_t *genfs, char *
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_class(qpol_policy_t *policy, qpol_genfscon_t *genfs, uint32_t *class)
+int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uint32_t * class)
 {
 	if (class != NULL)
 		*class = 0;
@@ -275,7 +276,7 @@ int qpol_genfscon_get_class(qpol_policy_t *policy, qpol_genfscon_t *genfs, uint3
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_context(qpol_policy_t *policy, qpol_genfscon_t *genfscon, qpol_context_t **context)
+int qpol_genfscon_get_context(qpol_policy_t * policy, qpol_genfscon_t * genfscon, qpol_context_t ** context)
 {
 	if (context != NULL)
 		*context = NULL;
@@ -286,8 +287,7 @@ int qpol_genfscon_get_context(qpol_policy_t *policy, qpol_genfscon_t *genfscon, 
 		return STATUS_ERR;
 	}
 
-	*context = (qpol_context_t*)genfscon->context;
+	*context = (qpol_context_t *) genfscon->context;
 
 	return STATUS_SUCCESS;
 }
-

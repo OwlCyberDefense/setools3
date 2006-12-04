@@ -29,12 +29,14 @@
 
 #define TM_YEAR_ZERO 1900
 
-enum {
+enum
+{
 	ITEMS_LIST_COLUMN,
 	NUMBER_ITEMS_LIST_COLUMNS
 };
 
-enum items_list_types_t {
+enum items_list_types_t
+{
 	SEAUDIT_SRC_TYPES,
 	SEAUDIT_SRC_USERS,
 	SEAUDIT_SRC_ROLES,
@@ -44,13 +46,15 @@ enum items_list_types_t {
 	SEAUDIT_OBJECTS
 };
 
-enum select_values_source_t {
+enum select_values_source_t
+{
 	SEAUDIT_FROM_LOG,
 	SEAUDIT_FROM_POLICY,
 	SEAUDIT_FROM_UNION
 };
 
-enum message_types {
+enum message_types
+{
 	SEAUDIT_MSG_NONE,
 	SEAUDIT_MSG_AVC_DENIED,
 	SEAUDIT_MSG_AVC_GRANTED
@@ -62,28 +66,31 @@ enum message_types {
 #define SEAUDIT_DT_OPTION_AFTER 2
 #define SEAUDIT_DT_OPTION_BETWEEN 3
 
-#define SEAUDIT_MAX_U16_STRLEN 5 /* the max # of chars that can be in a string representing a 16 bit digit */
+#define SEAUDIT_MAX_U16_STRLEN 5       /* the max # of chars that can be in a string representing a 16 bit digit */
 
 const char *msg_type_strs[] = { "none", "denied", "granted" };
 
-typedef struct  seaudit_filter_list {
+typedef struct seaudit_filter_list
+{
 	char **list;
 	int size;
 } seaudit_filter_list_t;
 
 struct filter_window;
 
-typedef struct filters_select_items {
+typedef struct filters_select_items
+{
 	GtkListStore *selected_items;
 	GtkListStore *unselected_items;
 	enum items_list_types_t items_list_type;
-        enum select_values_source_t items_source;
+	enum select_values_source_t items_source;
 	GtkWindow *window;
 	GladeXML *xml;
 	struct filter_window *parent;
 } filters_select_items_t;
 
-typedef struct filters_date_item {
+typedef struct filters_date_item
+{
 	struct tm *start;
 	struct tm *end;
 	unsigned int option;
@@ -93,24 +100,24 @@ extern seaudit_t *seaudit_app;
 
 /* Given the year and the month set the spin button to have the correct number of
    days for that month */
-static void filter_window_date_set_number_days(int month, GtkSpinButton *button)
+static void filter_window_date_set_number_days(int month, GtkSpinButton * button)
 {
 	int days[] = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 	int cur_day;
 	if (!button || month < 0)
 		return;
 	/* we have to get the current day because set_range moves the current day
-	   by the difference minus 1 day, i.e. going from jan 20 to february
-	   the day would automatically become 18 */
+	 * by the difference minus 1 day, i.e. going from jan 20 to february
+	 * the day would automatically become 18 */
 	cur_day = gtk_spin_button_get_value_as_int(button);
 	gtk_spin_button_set_range(button, 1, days[month]);
-	/* return to current day, or to the max value allowed in range*/
+	/* return to current day, or to the max value allowed in range */
 	gtk_spin_button_set_value(button, cur_day);
 	return;
 }
 
 /* this is called whenever the month or year is changed in the date filter*/
-static void filter_window_date_update_days(GladeXML *xml)
+static void filter_window_date_update_days(GladeXML * xml)
 {
 	int month;
 	GtkWidget *widget;
@@ -133,11 +140,11 @@ static void filter_window_date_update_days(GladeXML *xml)
 }
 
 /* set the frames sorrounding date options sensitive based on toggle selections */
-static void filter_window_date_set_sensitive(GtkToggleButton *tb, gpointer user_data)
+static void filter_window_date_set_sensitive(GtkToggleButton * tb, gpointer user_data)
 {
 	GtkWidget *startframe;
 	GtkWidget *endframe;
-	filter_window_t *fw = (filter_window_t *)user_data;
+	filter_window_t *fw = (filter_window_t *) user_data;
 	const char *name;
 	/* if this toggle button is the deselected one just return */
 	if (!gtk_toggle_button_get_active(tb))
@@ -146,7 +153,7 @@ static void filter_window_date_set_sensitive(GtkToggleButton *tb, gpointer user_
 	endframe = glade_xml_get_widget(fw->xml, "DateEndFrame");
 	if (!startframe || !endframe)
 		return;
-	name =  gtk_widget_get_name(GTK_WIDGET(tb));
+	name = gtk_widget_get_name(GTK_WIDGET(tb));
 	if (strcmp(name, "MatchNoneRadio") == 0) {
 		gtk_widget_set_sensitive(startframe, FALSE);
 		gtk_widget_set_sensitive(endframe, FALSE);
@@ -160,7 +167,7 @@ static void filter_window_date_set_sensitive(GtkToggleButton *tb, gpointer user_
 }
 
 /* get the option from the date filter gui */
-int filters_window_get_tm_option(GladeXML *xml)
+int filters_window_get_tm_option(GladeXML * xml)
 {
 	GtkWidget *widget;
 	widget = glade_xml_get_widget(xml, "MatchNoneRadio");
@@ -179,7 +186,7 @@ int filters_window_get_tm_option(GladeXML *xml)
    get the current time stored in the window and place in parameter tm
    unless the year is not valid, then do not overwrite the year
 */
-static int filters_window_update_tm(filter_window_t *fw, bool_t start, struct tm *tm)
+static int filters_window_update_tm(filter_window_t * fw, bool_t start, struct tm *tm)
 {
 	GladeXML *xml;
 	GtkWidget *widget = NULL;
@@ -219,12 +226,11 @@ static int filters_window_update_tm(filter_window_t *fw, bool_t start, struct tm
 	return 0;
 }
 
-
 /******************************************************************
  * The following are private methods for the filters_select_items *
  * object. This object is encapsulated by the filters object.	  *
  ******************************************************************/
-static GtkEntry* filters_select_items_get_entry(filters_select_items_t *s)
+static GtkEntry *filters_select_items_get_entry(filters_select_items_t * s)
 {
 	GtkEntry *entry;
 	GtkWidget *widget;
@@ -265,7 +271,7 @@ static GtkEntry* filters_select_items_get_entry(filters_select_items_t *s)
 }
 
 /* Note: the caller must free the string */
-static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, const gchar *item)
+static void filters_select_items_add_item_to_list_model(GtkTreeModel * model, const gchar * item)
 {
 	GtkTreeIter iter;
 	gchar *str_data = NULL;
@@ -286,7 +292,7 @@ static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, con
 		gtk_tree_model_get(model, &iter, ITEMS_LIST_COLUMN, &str_data, -1);
 		if (strcmp(item, str_data) < 0)
 			break;
-		valid = gtk_tree_model_iter_next (model, &iter);
+		valid = gtk_tree_model_iter_next(model, &iter);
 		row++;
 	}
 	/* now insert it into the specified list model */
@@ -294,7 +300,7 @@ static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, con
 	gtk_list_store_set(GTK_LIST_STORE(model), &iter, ITEMS_LIST_COLUMN, item, -1);
 }
 
-static gboolean filters_select_items_is_value_selected(filters_select_items_t *filter_items_list, const gchar *item)
+static gboolean filters_select_items_is_value_selected(filters_select_items_t * filter_items_list, const gchar * item)
 {
 	gboolean valid;
 	GtkTreeIter iter;
@@ -306,12 +312,12 @@ static gboolean filters_select_items_is_value_selected(filters_select_items_t *f
 		gtk_tree_model_get(model, &iter, ITEMS_LIST_COLUMN, &str_data, -1);
 		if (strcmp(item, str_data) == 0)
 			return TRUE;
-		valid = gtk_tree_model_iter_next (model, &iter);
+		valid = gtk_tree_model_iter_next(model, &iter);
 	}
 	return FALSE;
 }
 
-static gboolean filters_select_items_is_value_unselected(filters_select_items_t *filter_items_list, const gchar *item)
+static gboolean filters_select_items_is_value_unselected(filters_select_items_t * filter_items_list, const gchar * item)
 {
 	gboolean valid;
 	GtkTreeIter iter;
@@ -323,78 +329,75 @@ static gboolean filters_select_items_is_value_unselected(filters_select_items_t 
 		gtk_tree_model_get(model, &iter, ITEMS_LIST_COLUMN, &str_data, -1);
 		if (strcmp(item, str_data) == 0)
 			return TRUE;
-		valid = gtk_tree_model_iter_next (model, &iter);
+		valid = gtk_tree_model_iter_next(model, &iter);
 	}
 	return FALSE;
 }
 
-static gboolean is_value_from_current_items_source(filters_select_items_t *filter_items_list, const gchar *item_str)
+static gboolean is_value_from_current_items_source(filters_select_items_t * filter_items_list, const gchar * item_str)
 {
 	qpol_type_t *type;
 	qpol_user_t *user;
 	qpol_role_t *role;
 	qpol_class_t *class;
 
-	if (filter_items_list->items_list_type == SEAUDIT_SRC_TYPES ||
-	    filter_items_list->items_list_type == SEAUDIT_TGT_TYPES)
+	if (filter_items_list->items_list_type == SEAUDIT_SRC_TYPES || filter_items_list->items_list_type == SEAUDIT_TGT_TYPES)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_type_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (qpol_policy_get_type_by_name(seaudit_app->cur_policy->p, item_str, &type) == 0);
+			return (qpol_policy_get_type_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), item_str, &type) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_type_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (qpol_policy_get_type_by_name(seaudit_app->cur_policy->p, item_str, &type) == 0)
+			if (qpol_policy_get_type_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), item_str, &type) == 0)
 				return TRUE;
 			return FALSE;
 		default:
 			break;
 		}
 
-	else if (filter_items_list->items_list_type == SEAUDIT_SRC_USERS ||
-	    filter_items_list->items_list_type == SEAUDIT_TGT_USERS)
+	else if (filter_items_list->items_list_type == SEAUDIT_SRC_USERS || filter_items_list->items_list_type == SEAUDIT_TGT_USERS)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_user_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (qpol_policy_get_user_by_name(seaudit_app->cur_policy->p, item_str, &user) == 0);
+			return (qpol_policy_get_user_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), item_str, &user) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_user_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (qpol_policy_get_user_by_name(seaudit_app->cur_policy->p, item_str, &user) == 0)
+			if (qpol_policy_get_user_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), item_str, &user) == 0)
 				return TRUE;
 			return FALSE;
 		default:
 			break;
 		}
 
-	else if (filter_items_list->items_list_type == SEAUDIT_SRC_ROLES ||
-	    filter_items_list->items_list_type == SEAUDIT_TGT_ROLES)
+	else if (filter_items_list->items_list_type == SEAUDIT_SRC_ROLES || filter_items_list->items_list_type == SEAUDIT_TGT_ROLES)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_role_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (qpol_policy_get_role_by_name(seaudit_app->cur_policy->p, item_str, &role) == 0);
+			return (qpol_policy_get_role_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), item_str, &role) == 0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_role_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (qpol_policy_get_role_by_name(seaudit_app->cur_policy->p, item_str, &role) == 0)
+			if (qpol_policy_get_role_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), item_str, &role) == 0)
 				return TRUE;
 			return FALSE;
 		default:
 			break;
-		}
-	else if (filter_items_list->items_list_type == SEAUDIT_OBJECTS)
+	} else if (filter_items_list->items_list_type == SEAUDIT_OBJECTS)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
 			return (audit_log_get_obj_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
-			return (qpol_policy_get_class_by_name(seaudit_app->cur_policy->p, item_str, &class) == 0);
+			return (qpol_policy_get_class_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), item_str, &class) ==
+				0);
 		case SEAUDIT_FROM_UNION:
 			if (audit_log_get_obj_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
-			if (qpol_policy_get_class_by_name(seaudit_app->cur_policy->p, item_str, &class) == 0)
+			if (qpol_policy_get_class_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), item_str, &class) == 0)
 				return TRUE;
 			return FALSE;
 		default:
@@ -404,7 +407,7 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 }
 
 /* add an unselected item */
-static void filters_select_items_add_unselected_value(filters_select_items_t *filter_items_list, const gchar *item)
+static void filters_select_items_add_unselected_value(filters_select_items_t * filter_items_list, const gchar * item)
 {
 	if (filters_select_items_is_value_selected(filter_items_list, item))
 		return;
@@ -413,7 +416,7 @@ static void filters_select_items_add_unselected_value(filters_select_items_t *fi
 	filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(filter_items_list->unselected_items), item);
 }
 
-static void filters_select_items_add_selected_value(filters_select_items_t *filter_items_list, const gchar *item)
+static void filters_select_items_add_selected_value(filters_select_items_t * filter_items_list, const gchar * item)
 {
 	if (filters_select_items_is_value_selected(filter_items_list, item))
 		return;
@@ -422,7 +425,7 @@ static void filters_select_items_add_selected_value(filters_select_items_t *filt
 	filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(filter_items_list->selected_items), item);
 }
 
-static void filters_select_items_set_objects_list_stores_default_values(filters_select_items_t *filter_items_list)
+static void filters_select_items_set_objects_list_stores_default_values(filters_select_items_t * filter_items_list)
 {
 	int i;
 	const char *object;
@@ -430,33 +433,31 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 	apol_vector_t *class_vector;
 	qpol_class_t *class = NULL;
 
-	apol_get_class_by_query(seaudit_app->cur_policy, NULL, &class_vector);
+	apol_class_get_by_query(seaudit_app->cur_policy, NULL, &class_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
 		for (i = 0; (object = audit_log_get_obj(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(object, -1, NULL))
-				filters_select_items_add_unselected_value(filter_items_list,
-									  object);
+				filters_select_items_add_unselected_value(filter_items_list, object);
 		break;
 	case SEAUDIT_FROM_POLICY:
 		for (i = 0; i < apol_vector_get_size(class_vector); i++) {
 			/* Add to excluded objects list store */
 			class = apol_vector_get_element(class_vector, i);
-			qpol_class_get_name(seaudit_app->cur_policy->p, class, &class_name);
+			qpol_class_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), class, &class_name);
 			filters_select_items_add_unselected_value(filter_items_list, class_name);
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
 		for (i = 0; (object = audit_log_get_obj(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(object, -1, NULL))
-				filters_select_items_add_unselected_value(filter_items_list,
-									  object);
+				filters_select_items_add_unselected_value(filter_items_list, object);
 		for (i = 0; i < apol_vector_get_size(class_vector); i++)
 			/* Add to excluded objects list store */
 			class = apol_vector_get_element(class_vector, i);
-			qpol_class_get_name(seaudit_app->cur_policy->p, class, &class_name);
-			filters_select_items_add_unselected_value(filter_items_list, class_name);
+		qpol_class_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), class, &class_name);
+		filters_select_items_add_unselected_value(filter_items_list, class_name);
 		break;
 	default:
 		fprintf(stderr, "Bad filters_select_items_t object!!\n");
@@ -465,7 +466,7 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 	apol_vector_destroy(&class_vector, NULL);
 }
 
-static void filters_select_items_set_roles_list_stores_default_values(filters_select_items_t *filter_items_list)
+static void filters_select_items_set_roles_list_stores_default_values(filters_select_items_t * filter_items_list)
 {
 	int i;
 	const char *role;
@@ -473,31 +474,29 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 	apol_vector_t *role_vector;
 	qpol_role_t *role_type;
 
-	apol_get_role_by_query (seaudit_app->cur_policy, NULL, &role_vector);
+	apol_role_get_by_query(seaudit_app->cur_policy, NULL, &role_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
 		for (i = 0; (role = audit_log_get_role(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(role, -1, NULL))
-				filters_select_items_add_unselected_value(filter_items_list,
-									  role);
+				filters_select_items_add_unselected_value(filter_items_list, role);
 		break;
 	case SEAUDIT_FROM_POLICY:
 		for (i = 0; i < apol_vector_get_size(role_vector); i++) {
 			role_type = apol_vector_get_element(role_vector, i);
-			qpol_role_get_name(seaudit_app->cur_policy->p, role_type, &role_name);
+			qpol_role_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), role_type, &role_name);
 			filters_select_items_add_unselected_value(filter_items_list, role_name);
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
 		for (i = 0; (role = audit_log_get_role(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(role, -1, NULL))
-				filters_select_items_add_unselected_value(filter_items_list,
-									  role);
+				filters_select_items_add_unselected_value(filter_items_list, role);
 		for (i = 0; i < apol_vector_get_size(role_vector); i++) {
-                        role_type = apol_vector_get_element(role_vector, i);
-                        qpol_role_get_name(seaudit_app->cur_policy->p, role_type, &role_name);
-                        filters_select_items_add_unselected_value(filter_items_list, role_name);
+			role_type = apol_vector_get_element(role_vector, i);
+			qpol_role_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), role_type, &role_name);
+			filters_select_items_add_unselected_value(filter_items_list, role_name);
 		}
 		break;
 	default:
@@ -507,7 +506,7 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 	apol_vector_destroy(&role_vector, NULL);
 }
 
-static void filters_select_items_set_users_list_stores_default_values(filters_select_items_t *filter_items_list)
+static void filters_select_items_set_users_list_stores_default_values(filters_select_items_t * filter_items_list)
 {
 	const char *user_str;
 	int i;
@@ -515,30 +514,28 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 	qpol_user_t *user;
 	char *user_name;
 
-	apol_get_user_by_query(seaudit_app->cur_policy, NULL, &user_vector);
+	apol_user_get_by_query(seaudit_app->cur_policy, NULL, &user_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
 		for (i = 0; (user_str = audit_log_get_user(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(user_str, -1, NULL))
-				filters_select_items_add_unselected_value(filter_items_list,
-									  user_str);
+				filters_select_items_add_unselected_value(filter_items_list, user_str);
 		break;
 	case SEAUDIT_FROM_POLICY:
 		for (i = 0; apol_vector_get_size(user_vector); i++) {
 			user = apol_vector_get_element(user_vector, i);
-			qpol_user_get_name(seaudit_app->cur_policy->p, user, &user_name);
+			qpol_user_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), user, &user_name);
 			filters_select_items_add_unselected_value(filter_items_list, user_name);
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
 		for (i = 0; (user_str = audit_log_get_user(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(user_str, -1, NULL))
-				filters_select_items_add_unselected_value(filter_items_list,
-									  user_str);
+				filters_select_items_add_unselected_value(filter_items_list, user_str);
 		for (i = 0; apol_vector_get_size(user_vector); i++) {
 			user = apol_vector_get_element(user_vector, i);
-			qpol_user_get_name(seaudit_app->cur_policy->p, user, &user_name);
+			qpol_user_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), user, &user_name);
 			filters_select_items_add_unselected_value(filter_items_list, user_name);
 		}
 		break;
@@ -549,7 +546,7 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 	apol_vector_destroy(&user_vector, NULL);
 }
 
-static void filters_select_items_set_types_list_stores_default_values(filters_select_items_t *filter_items_list)
+static void filters_select_items_set_types_list_stores_default_values(filters_select_items_t * filter_items_list)
 {
 	int i;
 	const char *type_str;
@@ -557,33 +554,31 @@ static void filters_select_items_set_types_list_stores_default_values(filters_se
 	qpol_type_t *type;
 	char *type_name;
 
-	apol_get_type_by_query(seaudit_app->cur_policy, NULL, &type_vector);
+	apol_type_get_by_query(seaudit_app->cur_policy, NULL, &type_vector);
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
 		for (i = 0; (type_str = audit_log_get_type(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(type_str, -1, NULL))
-				filters_select_items_add_unselected_value(filter_items_list,
-									  type_str);
+				filters_select_items_add_unselected_value(filter_items_list, type_str);
 		break;
 	case SEAUDIT_FROM_POLICY:
 		/* start iteration of types at index 1 in order to skip 'self' type */
 		for (i = 1; i < apol_vector_get_size(type_vector); i++) {
-                        type = apol_vector_get_element(type_vector, i);
-                        qpol_type_get_name(seaudit_app->cur_policy->p, type, &type_name);
-                        filters_select_items_add_unselected_value(filter_items_list, type_name);
+			type = apol_vector_get_element(type_vector, i);
+			qpol_type_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), type, &type_name);
+			filters_select_items_add_unselected_value(filter_items_list, type_name);
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
 		for (i = 0; (type_str = audit_log_get_type(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(type_str, -1, NULL))
-				filters_select_items_add_unselected_value(filter_items_list,
-									  type_str);
-                for (i = 1; i < apol_vector_get_size(type_vector); i++) {
-                        type = apol_vector_get_element(type_vector, i);
-                        qpol_type_get_name(seaudit_app->cur_policy->p, type, &type_name);
-                        filters_select_items_add_unselected_value(filter_items_list, type_name);
-                }
+				filters_select_items_add_unselected_value(filter_items_list, type_str);
+		for (i = 1; i < apol_vector_get_size(type_vector); i++) {
+			type = apol_vector_get_element(type_vector, i);
+			qpol_type_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), type, &type_name);
+			filters_select_items_add_unselected_value(filter_items_list, type_name);
+		}
 		break;
 	default:
 		fprintf(stderr, "Bad filters_select_items_t object!!\n");
@@ -591,24 +586,21 @@ static void filters_select_items_set_types_list_stores_default_values(filters_se
 	apol_vector_destroy(&type_vector, NULL);
 }
 
-static void filters_select_items_set_list_stores_default_values(filters_select_items_t* filter_items_list)
+static void filters_select_items_set_list_stores_default_values(filters_select_items_t * filter_items_list)
 {
-	if (filter_items_list->items_list_type == SEAUDIT_SRC_TYPES
-	    || filter_items_list->items_list_type == SEAUDIT_TGT_TYPES)
+	if (filter_items_list->items_list_type == SEAUDIT_SRC_TYPES || filter_items_list->items_list_type == SEAUDIT_TGT_TYPES)
 		/* types */
 		filters_select_items_set_types_list_stores_default_values(filter_items_list);
 
-	else if (filter_items_list->items_list_type == SEAUDIT_SRC_USERS
-		   || filter_items_list->items_list_type == SEAUDIT_TGT_USERS)
+	else if (filter_items_list->items_list_type == SEAUDIT_SRC_USERS || filter_items_list->items_list_type == SEAUDIT_TGT_USERS)
 		/* users */
 		filters_select_items_set_users_list_stores_default_values(filter_items_list);
 
-	else if (filter_items_list->items_list_type == SEAUDIT_SRC_ROLES
-		   || filter_items_list->items_list_type == SEAUDIT_TGT_ROLES)
+	else if (filter_items_list->items_list_type == SEAUDIT_SRC_ROLES || filter_items_list->items_list_type == SEAUDIT_TGT_ROLES)
 		/* roles */
 		filters_select_items_set_roles_list_stores_default_values(filter_items_list);
 
-	else if (filter_items_list->items_list_type == SEAUDIT_OBJECTS )
+	else if (filter_items_list->items_list_type == SEAUDIT_OBJECTS)
 		/* objects */
 		filters_select_items_set_objects_list_stores_default_values(filter_items_list);
 
@@ -616,7 +608,7 @@ static void filters_select_items_set_list_stores_default_values(filters_select_i
 		fprintf(stderr, "Wrong filter parameter specified.\n");
 }
 
-static void filters_select_items_refresh_unselected_list_store(filters_select_items_t *filters_select)
+static void filters_select_items_refresh_unselected_list_store(filters_select_items_t * filters_select)
 {
 	show_wait_cursor(GTK_WIDGET(filters_select->window));
 	gtk_list_store_clear(filters_select->unselected_items);
@@ -624,14 +616,14 @@ static void filters_select_items_refresh_unselected_list_store(filters_select_it
 	clear_wait_cursor(GTK_WIDGET(filters_select->window));
 }
 
-static void filters_select_items_on_radio_button_toggled(GtkToggleButton *button, gpointer user_data)
+static void filters_select_items_on_radio_button_toggled(GtkToggleButton * button, gpointer user_data)
 {
-	filters_select_items_t *filters_select = (filters_select_items_t*)user_data;
+	filters_select_items_t *filters_select = (filters_select_items_t *) user_data;
 
 	if (gtk_toggle_button_get_active(button)) {
 		if (strcmp("LogRadioButton", gtk_widget_get_name(GTK_WIDGET(button))) == 0)
 			filters_select->items_source = SEAUDIT_FROM_LOG;
-		if (strcmp("PolicyRadioButton", gtk_widget_get_name(GTK_WIDGET(button))) ==0)
+		if (strcmp("PolicyRadioButton", gtk_widget_get_name(GTK_WIDGET(button))) == 0)
 			filters_select->items_source = SEAUDIT_FROM_POLICY;
 		if (strcmp("UnionRadioButton", gtk_widget_get_name(GTK_WIDGET(button))) == 0)
 			filters_select->items_source = SEAUDIT_FROM_UNION;
@@ -639,7 +631,7 @@ static void filters_select_items_on_radio_button_toggled(GtkToggleButton *button
 	}
 }
 
-static void filters_select_items_fill_entry(filters_select_items_t *s)
+static void filters_select_items_fill_entry(filters_select_items_t * s)
 {
 	GtkTreeIter iter;
 	gboolean valid, first = TRUE;
@@ -668,11 +660,11 @@ static void filters_select_items_fill_entry(filters_select_items_t *s)
 	g_string_free(string, TRUE);
 }
 
-static void filters_select_items_move_to_selected_items_list(filters_select_items_t *filter_items_list)
+static void filters_select_items_move_to_selected_items_list(filters_select_items_t * filter_items_list)
 {
 	GtkTreeView *include_tree, *exclude_tree;
 	GtkTreeModel *incl_model, *excl_model;
-        GtkTreeIter iter;
+	GtkTreeIter iter;
 	GList *sel_rows = NULL;
 	GtkTreePath *path;
 	gchar *item_str = NULL;
@@ -686,13 +678,13 @@ static void filters_select_items_move_to_selected_items_list(filters_select_item
 	excl_model = GTK_TREE_MODEL(filter_items_list->unselected_items);
 	sel_rows = gtk_tree_selection_get_selected_rows(gtk_tree_view_get_selection(exclude_tree), &excl_model);
 
-	if(sel_rows == NULL)
+	if (sel_rows == NULL)
 		return;
 
-	while(sel_rows != NULL) {
+	while (sel_rows != NULL) {
 		path = g_list_nth_data(sel_rows, 0);
 		assert(path != NULL);
-		if(gtk_tree_model_get_iter(excl_model, &iter, path) == 0) {
+		if (gtk_tree_model_get_iter(excl_model, &iter, path) == 0) {
 			fprintf(stderr, "Could not get valid iterator for the selected path.\n");
 			return;
 		}
@@ -703,17 +695,17 @@ static void filters_select_items_move_to_selected_items_list(filters_select_item
 
 		/* Free the list of selected tree paths; we have to get the list of selected items again since the list has now changed */
 		g_list_foreach(sel_rows, (GFunc) gtk_tree_path_free, NULL);
-		g_list_free (sel_rows);
+		g_list_free(sel_rows);
 		sel_rows = gtk_tree_selection_get_selected_rows(gtk_tree_view_get_selection(exclude_tree), &excl_model);
 	}
 	filters_select_items_fill_entry(filter_items_list);
 }
 
-static void filters_select_items_remove_selected_items(filters_select_items_t *filter_items_list)
+static void filters_select_items_remove_selected_items(filters_select_items_t * filter_items_list)
 {
 	GtkTreeModel *incl_model;
 	GtkTreeView *include_tree;
-        GtkTreeIter iter;
+	GtkTreeIter iter;
 	GList *sel_rows = NULL;
 	GtkTreePath *path;
 	gchar *item_str = NULL;
@@ -724,13 +716,13 @@ static void filters_select_items_remove_selected_items(filters_select_items_t *f
 	incl_model = GTK_TREE_MODEL(filter_items_list->selected_items);
 	sel_rows = gtk_tree_selection_get_selected_rows(gtk_tree_view_get_selection(include_tree), &incl_model);
 
-	if(sel_rows == NULL)
+	if (sel_rows == NULL)
 		return;
 
-	while(sel_rows != NULL) {
+	while (sel_rows != NULL) {
 		path = g_list_nth_data(sel_rows, 0);
 		assert(path != NULL);
-		if(gtk_tree_model_get_iter(incl_model, &iter, path) == 0) {
+		if (gtk_tree_model_get_iter(incl_model, &iter, path) == 0) {
 			fprintf(stderr, "Could not get valid iterator for the selected path.\n");
 			return;
 		}
@@ -742,26 +734,26 @@ static void filters_select_items_remove_selected_items(filters_select_items_t *f
 
 		/* Free the list of selected tree paths; we have to get the list of selected items again since the list has now changed */
 		g_list_foreach(sel_rows, (GFunc) gtk_tree_path_free, NULL);
-		g_list_free (sel_rows);
+		g_list_free(sel_rows);
 		sel_rows = gtk_tree_selection_get_selected_rows(gtk_tree_view_get_selection(include_tree), &incl_model);
 	}
 	filters_select_items_fill_entry(filter_items_list);
 }
 
 /* filters_select_items events */
-static void filters_select_items_on_add_button_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filters_select_items_on_add_button_clicked(GtkButton * button, filters_select_items_t * filter_items_list)
 {
 	filters_select_items_move_to_selected_items_list(filter_items_list);
 }
 
-static void filters_select_items_on_remove_button_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filters_select_items_on_remove_button_clicked(GtkButton * button, filters_select_items_t * filter_items_list)
 {
 	filters_select_items_remove_selected_items(filter_items_list);
 }
 
 static void filters_select_on_policy_opened(void *filter_items_list)
 {
-	filters_select_items_t *s = (filters_select_items_t*)filter_items_list;
+	filters_select_items_t *s = (filters_select_items_t *) filter_items_list;
 	GtkWidget *widget;
 
 	widget = glade_xml_get_widget(s->xml, "PolicyRadioButton");
@@ -779,7 +771,7 @@ static void filters_select_on_policy_opened(void *filter_items_list)
 
 static void filters_select_on_log_opened(void *filter_items_list)
 {
-	filters_select_items_t *s = (filters_select_items_t*)filter_items_list;
+	filters_select_items_t *s = (filters_select_items_t *) filter_items_list;
 
 	if (s->items_source == SEAUDIT_FROM_POLICY)
 		return;
@@ -787,14 +779,14 @@ static void filters_select_on_log_opened(void *filter_items_list)
 		filters_select_items_refresh_unselected_list_store(s);
 }
 
-static void filters_select_items_on_close_button_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filters_select_items_on_close_button_clicked(GtkButton * button, filters_select_items_t * filter_items_list)
 {
 	if (filter_items_list->window != NULL) {
 		/* if there is an idle function for this window
 		 * then we must remove it to avoid that function
 		 * being executed after we delete the window.  This
 		 * may happen if the window is closed during a search. */
-		while(g_idle_remove_by_data(filter_items_list->window));
+		while (g_idle_remove_by_data(filter_items_list->window)) ;
 
 		gtk_widget_destroy(GTK_WIDGET(filter_items_list->window));
 		filter_items_list->window = NULL;
@@ -804,35 +796,37 @@ static void filters_select_items_on_close_button_clicked(GtkButton *button, filt
 	}
 }
 
-static gboolean filters_select_items_on_window_destroy(GtkWidget *widget, GdkEvent *event, filters_select_items_t *filter_items_list)
+static gboolean filters_select_items_on_window_destroy(GtkWidget * widget, GdkEvent * event,
+						       filters_select_items_t * filter_items_list)
 {
 
 	filters_select_items_on_close_button_clicked(NULL, filter_items_list);
 	return FALSE;
 }
 
-static void filters_select_items_on_Selected_SelectAllButton_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filters_select_items_on_Selected_SelectAllButton_clicked(GtkButton * button, filters_select_items_t * filter_items_list)
 {
 	GtkTreeView *include_tree = GTK_TREE_VIEW(glade_xml_get_widget(filter_items_list->xml, "IncludeTreeView"));
 	g_assert(include_tree);
 	gtk_tree_selection_select_all(gtk_tree_view_get_selection(include_tree));
 }
 
-static void filters_select_items_on_Selected_ClearButton_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filters_select_items_on_Selected_ClearButton_clicked(GtkButton * button, filters_select_items_t * filter_items_list)
 {
 	GtkTreeView *include_tree = GTK_TREE_VIEW(glade_xml_get_widget(filter_items_list->xml, "IncludeTreeView"));
 	g_assert(include_tree);
 	gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(include_tree));
 }
 
-static void filters_select_items_on_Unselected_SelectAllButton_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filters_select_items_on_Unselected_SelectAllButton_clicked(GtkButton * button,
+								       filters_select_items_t * filter_items_list)
 {
 	GtkTreeView *exclude_tree = GTK_TREE_VIEW(glade_xml_get_widget(filter_items_list->xml, "ExcludeTreeView"));
 	g_assert(exclude_tree);
 	gtk_tree_selection_select_all(gtk_tree_view_get_selection(exclude_tree));
 }
 
-static void filters_select_items_on_Unselected_ClearButton_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filters_select_items_on_Unselected_ClearButton_clicked(GtkButton * button, filters_select_items_t * filter_items_list)
 {
 	GtkTreeView *exclude_tree = GTK_TREE_VIEW(glade_xml_get_widget(filter_items_list->xml, "ExcludeTreeView"));
 	g_assert(exclude_tree);
@@ -844,7 +838,7 @@ static void filters_select_items_on_Unselected_ClearButton_clicked(GtkButton *bu
  * object only in the sense that they are exposed to the encapsulating filters
  * object.
  ********************************************************************************/
-static void filters_select_items_reset_list_store(filters_select_items_t* item)
+static void filters_select_items_reset_list_store(filters_select_items_t * item)
 {
 	/* Remove all rows from the both list stores */
 	gtk_list_store_clear(item->selected_items);
@@ -853,7 +847,7 @@ static void filters_select_items_reset_list_store(filters_select_items_t* item)
 	filters_select_items_set_list_stores_default_values(item);
 }
 
-static void filters_select_items_destroy(filters_select_items_t* item)
+static void filters_select_items_destroy(filters_select_items_t * item)
 {
 	if (item == NULL)
 		return;
@@ -869,7 +863,7 @@ static void filters_select_items_destroy(filters_select_items_t* item)
 	item = NULL;
 }
 
-static void filters_select_items_parse_entry(filters_select_items_t *s)
+static void filters_select_items_parse_entry(filters_select_items_t * s)
 {
 	GtkTreeIter iter;
 	gboolean valid;
@@ -899,7 +893,8 @@ static void filters_select_items_parse_entry(filters_select_items_t *s)
 			if (filters_select_items_is_value_unselected(s, cur)) {
 				valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(s->unselected_items), &iter);
 				while (valid) {
-					gtk_tree_model_get(GTK_TREE_MODEL(s->unselected_items), &iter, ITEMS_LIST_COLUMN, &item, -1);
+					gtk_tree_model_get(GTK_TREE_MODEL(s->unselected_items), &iter, ITEMS_LIST_COLUMN, &item,
+							   -1);
 					if (strcmp(cur, item) == 0) {
 						gtk_list_store_remove(s->unselected_items, &iter);
 						break;
@@ -916,17 +911,17 @@ static void filters_select_items_parse_entry(filters_select_items_t *s)
 	}
 }
 
-static filters_select_items_t* filters_select_items_create(filter_window_t *parent, enum items_list_types_t items_type)
+static filters_select_items_t *filters_select_items_create(filter_window_t * parent, enum items_list_types_t items_type)
 {
 	filters_select_items_t *item = NULL;
 
 	/* Create and initialize the object */
-	item = (filters_select_items_t *)malloc(sizeof(filters_select_items_t));
+	item = (filters_select_items_t *) malloc(sizeof(filters_select_items_t));
 	if (item == NULL) {
 		fprintf(stderr, "Out of memory.");
 		return NULL;
 	}
-	memset (item, 0, sizeof(filters_select_items_t));
+	memset(item, 0, sizeof(filters_select_items_t));
 	item->selected_items = gtk_list_store_new(NUMBER_ITEMS_LIST_COLUMNS, G_TYPE_STRING);
 	item->unselected_items = gtk_list_store_new(NUMBER_ITEMS_LIST_COLUMNS, G_TYPE_STRING);
 	item->items_list_type = items_type;
@@ -935,7 +930,7 @@ static filters_select_items_t* filters_select_items_create(filter_window_t *pare
 	return item;
 }
 
-static void filters_select_items_display(filters_select_items_t *filter_items_list, GtkWindow *parent)
+static void filters_select_items_display(filters_select_items_t * filter_items_list, GtkWindow * parent)
 {
 	GladeXML *xml;
 	GtkTreeView *include_tree, *exclude_tree;
@@ -951,7 +946,7 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 
 	/* Load the glade interface specifications */
 	dir = apol_file_find("customize_filter_window.glade");
-	if (!dir){
+	if (!dir) {
 		fprintf(stderr, "could not find customize_filter_window.glade\n");
 		return;
 	}
@@ -964,8 +959,6 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "CreateFilterWindow"));
 	g_assert(window);
 	filter_items_list->window = window;
-
-
 
 	/* Set this new dialog transient for the parent filters dialog so that
 	 * it will be destroyed when the parent filters dialog is destroyed */
@@ -985,33 +978,23 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	}
 
 	/* Connect all signals to callback functions */
-	g_signal_connect(G_OBJECT(window), "delete_event",
-			 G_CALLBACK(filters_select_items_on_window_destroy),
-			 filter_items_list);
+	g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(filters_select_items_on_window_destroy), filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_radio_button_toggled",
-				      G_CALLBACK(filters_select_items_on_radio_button_toggled),
-				      filter_items_list);
+				      G_CALLBACK(filters_select_items_on_radio_button_toggled), filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_close_button_clicked",
-				      G_CALLBACK(filters_select_items_on_close_button_clicked),
-				      filter_items_list);
+				      G_CALLBACK(filters_select_items_on_close_button_clicked), filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_add_button_clicked",
-				      G_CALLBACK(filters_select_items_on_add_button_clicked),
-				      filter_items_list);
+				      G_CALLBACK(filters_select_items_on_add_button_clicked), filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_remove_button_clicked",
-				      G_CALLBACK(filters_select_items_on_remove_button_clicked),
-				      filter_items_list);
+				      G_CALLBACK(filters_select_items_on_remove_button_clicked), filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_Selected_SelectAllButton_clicked",
-				      G_CALLBACK(filters_select_items_on_Selected_SelectAllButton_clicked),
-				      filter_items_list);
+				      G_CALLBACK(filters_select_items_on_Selected_SelectAllButton_clicked), filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_Selected_ClearButton_clicked",
-				      G_CALLBACK(filters_select_items_on_Selected_ClearButton_clicked),
-				      filter_items_list);
+				      G_CALLBACK(filters_select_items_on_Selected_ClearButton_clicked), filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_Unselected_SelectAllButton_clicked",
-				      G_CALLBACK(filters_select_items_on_Unselected_SelectAllButton_clicked),
-				      filter_items_list);
+				      G_CALLBACK(filters_select_items_on_Unselected_SelectAllButton_clicked), filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_Unselected_ClearButton_clicked",
-				      G_CALLBACK(filters_select_items_on_Unselected_ClearButton_clicked),
-				      filter_items_list);
+				      G_CALLBACK(filters_select_items_on_Unselected_ClearButton_clicked), filter_items_list);
 
 	/* Set labeling */
 	lbl = GTK_LABEL(glade_xml_get_widget(xml, "TitleFrameLabel"));
@@ -1101,7 +1084,7 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 /********************************************************
  * Private methods and callbacks for the filters object *
  ********************************************************/
-static int filter_window_verify_filter_values(filter_window_t *filter_window)
+static int filter_window_verify_filter_values(filter_window_t * filter_window)
 {
 	char *text = NULL;
 	GtkWidget *widget = NULL;
@@ -1110,18 +1093,18 @@ static int filter_window_verify_filter_values(filter_window_t *filter_window)
 
 	/* check for network port filter */
 	/* since we do not know if this is an ipv4 or ipv6 port we check against
-	   ipv6 sizes since that is the larger of the two */
+	 * ipv6 sizes since that is the larger of the two */
 	widget = glade_xml_get_widget(filter_window->xml, "PortEntry");
-	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	/* check to see if the strlen of this number is larger than
-	   the strlen of a __16 which is the
-	   maximum size a ipv6 port can be as defined in in6.h*/
+	 * the strlen of a __16 which is the
+	 * maximum size a ipv6 port can be as defined in in6.h */
 	if (strlen(text) > SEAUDIT_MAX_U16_STRLEN) {
 		message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Port Filter.\n");
 		return -1;
 	}
 	if (strcmp(text, "") != 0) {
-		for (i = 0 ; i < strlen(text); i++) {
+		for (i = 0; i < strlen(text); i++) {
 			if (isdigit(text[i]) == 0) {
 				message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Port Filter.\n");
 				return -1;
@@ -1129,7 +1112,7 @@ static int filter_window_verify_filter_values(filter_window_t *filter_window)
 		}
 		j = atoi(text);
 		/* now check that the number returned is within the range
-		   of #'s allowed for a ipv6 port */
+		 * of #'s allowed for a ipv6 port */
 		if (j < 0 || j > (1 << 16)) {
 			message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Port Filter.\n");
 			return -1;
@@ -1154,7 +1137,7 @@ static int filter_window_verify_filter_values(filter_window_t *filter_window)
 	return 0;
 }
 
-static void filter_window_set_title(filter_window_t *filter_window)
+static void filter_window_set_title(filter_window_t * filter_window)
 {
 	GString *title;
 
@@ -1166,7 +1149,7 @@ static void filter_window_set_title(filter_window_t *filter_window)
 	g_string_free(title, TRUE);
 }
 
-static void filter_window_set_values(filter_window_t *filter_window)
+static void filter_window_set_values(filter_window_t * filter_window)
 {
 	GtkWidget *widget;
 	GtkTextBuffer *buffer;
@@ -1217,7 +1200,7 @@ static void filter_window_set_values(filter_window_t *filter_window)
 	widget = glade_xml_get_widget(filter_window->xml, "HostEntry");
 	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->host->str);
 
-	/* next set the time*/
+	/* next set the time */
 	if (filter_window->dates) {
 		widget = glade_xml_get_widget(filter_window->xml, "DateStartMonth");
 		gtk_combo_box_set_active(GTK_COMBO_BOX(widget), filter_window->dates->start->tm_mon);
@@ -1251,7 +1234,7 @@ static void filter_window_set_values(filter_window_t *filter_window)
 		case SEAUDIT_DT_OPTION_AFTER:
 			widget = glade_xml_get_widget(filter_window->xml, "MatchAfterRadio");
 			break;
-		default :
+		default:
 			widget = glade_xml_get_widget(filter_window->xml, "MatchBetweenRadio");
 			break;
 		}
@@ -1262,7 +1245,7 @@ static void filter_window_set_values(filter_window_t *filter_window)
 
 }
 
-static void filter_window_update_values(filter_window_t *filter_window)
+static void filter_window_update_values(filter_window_t * filter_window)
 {
 	GtkWidget *widget;
 	GtkTextBuffer *buffer;
@@ -1333,7 +1316,7 @@ static void filter_window_update_values(filter_window_t *filter_window)
 
 }
 
-static void filter_window_seaudit_filter_list_free(seaudit_filter_list_t *list)
+static void filter_window_seaudit_filter_list_free(seaudit_filter_list_t * list)
 {
 	int i;
 
@@ -1348,7 +1331,7 @@ static void filter_window_seaudit_filter_list_free(seaudit_filter_list_t *list)
 }
 
 /* Note: the caller must free the returned list */
-static seaudit_filter_list_t* filter_window_seaudit_filter_list_get(filters_select_items_t *filters_select_item)
+static seaudit_filter_list_t *filter_window_seaudit_filter_list_get(filters_select_items_t * filters_select_item)
 {
 	GtkTreeModel *incl_model;
 	GtkTreeIter iter;
@@ -1357,29 +1340,29 @@ static seaudit_filter_list_t* filter_window_seaudit_filter_list_get(filters_sele
 	seaudit_filter_list_t *flist;
 	gboolean valid;
 
-	flist = (seaudit_filter_list_t *)malloc(sizeof(seaudit_filter_list_t));
+	flist = (seaudit_filter_list_t *) malloc(sizeof(seaudit_filter_list_t));
 	if (flist == NULL) {
 		fprintf(stderr, "Out of memory.");
 		return NULL;
 	}
-	memset (flist, 0, sizeof(seaudit_filter_list_t));
+	memset(flist, 0, sizeof(seaudit_filter_list_t));
 	flist->list = NULL;
 	flist->size = 0;
 
 	/* Get the model and the create the array of strings to return */
 	incl_model = GTK_TREE_MODEL(filters_select_item->selected_items);
 	valid = gtk_tree_model_get_iter_first(incl_model, &iter);
-	while(valid) {
+	while (valid) {
 		gtk_tree_model_get(incl_model, &iter, ITEMS_LIST_COLUMN, &str_data, -1);
 		count++;
 		if (flist->list == NULL) {
-			flist->list = (char **)malloc(sizeof(char*));
-			if(flist->list == NULL) {
+			flist->list = (char **)malloc(sizeof(char *));
+			if (flist->list == NULL) {
 				fprintf(stderr, "out of memory\n");
 				return NULL;
 			}
 		} else {
-			flist->list = (char **)realloc(flist->list, count * sizeof(char*));
+			flist->list = (char **)realloc(flist->list, count * sizeof(char *));
 			if (flist->list == NULL) {
 				filter_window_seaudit_filter_list_free(flist);
 				fprintf(stderr, "out of memory\n");
@@ -1387,21 +1370,21 @@ static seaudit_filter_list_t* filter_window_seaudit_filter_list_get(filters_sele
 			}
 		}
 		/* We subtract 1 from the count to get the correct index because count is incremented above */
-		flist->list[count - 1] = (char *)malloc(strlen((const char*)str_data) + 1);
-		if(flist->list[count - 1] == NULL) {
+		flist->list[count - 1] = (char *)malloc(strlen((const char *)str_data) + 1);
+		if (flist->list[count - 1] == NULL) {
 			filter_window_seaudit_filter_list_free(flist);
 			fprintf(stderr, "out of memory\n");
 			return NULL;
 		}
-		strcpy(flist->list[count - 1], (const char*)str_data);
-		valid = gtk_tree_model_iter_next (incl_model, &iter);
+		strcpy(flist->list[count - 1], (const char *)str_data);
+		valid = gtk_tree_model_iter_next(incl_model, &iter);
 	}
 	flist->size = count;
 
 	return flist;
 }
 
-static void filter_window_clear_other_tab_values(filter_window_t *filter_window)
+static void filter_window_clear_other_tab_values(filter_window_t * filter_window)
 {
 	GtkWidget *widget;
 
@@ -1439,10 +1422,9 @@ static void filter_window_clear_other_tab_values(filter_window_t *filter_window)
 	g_assert(widget);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), SEAUDIT_MSG_NONE);
 
-
 }
 
-static void filter_window_clear_context_tab_values(filter_window_t *filter_window)
+static void filter_window_clear_context_tab_values(filter_window_t * filter_window)
 {
 	GtkEntry *entry;
 
@@ -1475,7 +1457,7 @@ static void filter_window_clear_context_tab_values(filter_window_t *filter_windo
 	gtk_entry_set_text(entry, "");
 }
 
-static void filter_window_on_custom_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filter_window_on_custom_clicked(GtkButton * button, filters_select_items_t * filter_items_list)
 {
 	if (filter_items_list->window != NULL) {
 		/* add anything from the entry to the list stores */
@@ -1488,40 +1470,40 @@ static void filter_window_on_custom_clicked(GtkButton *button, filters_select_it
 	filters_select_items_display(filter_items_list, seaudit_app->window->window);
 }
 
-static void filter_window_on_close_button_pressed(GtkButton *button, filter_window_t *filter_window)
+static void filter_window_on_close_button_pressed(GtkButton * button, filter_window_t * filter_window)
 {
 	if (filter_window_verify_filter_values(filter_window) == 0)
 		filter_window_hide(filter_window);
 }
 
-static gboolean filter_window_on_filter_window_destroy(GtkWidget *widget, GdkEvent *event, filter_window_t *filter_window)
+static gboolean filter_window_on_filter_window_destroy(GtkWidget * widget, GdkEvent * event, filter_window_t * filter_window)
 {
 	filter_window_hide(filter_window);
 	return TRUE;
 }
 
-static void filter_window_on_ContextClearButton_clicked(GtkButton *button, filter_window_t *filter_window)
+static void filter_window_on_ContextClearButton_clicked(GtkButton * button, filter_window_t * filter_window)
 {
 	filter_window_clear_context_tab_values(filter_window);
 }
 
-static void filter_window_on_OtherClearButton_clicked(GtkButton *button, filter_window_t *filter_window)
+static void filter_window_on_OtherClearButton_clicked(GtkButton * button, filter_window_t * filter_window)
 {
 	filter_window_clear_other_tab_values(filter_window);
 }
 
-static void filter_window_on_radio_toggled(GtkToggleButton *tb, gpointer user_data)
+static void filter_window_on_radio_toggled(GtkToggleButton * tb, gpointer user_data)
 {
 	filter_window_date_set_sensitive(tb, user_data);
 }
 
-static void filter_window_on_month_changed(GtkComboBox *cb, gpointer user_data)
+static void filter_window_on_month_changed(GtkComboBox * cb, gpointer user_data)
 {
-	filter_window_t *fw = (filter_window_t *)user_data;
+	filter_window_t *fw = (filter_window_t *) user_data;
 	filter_window_date_update_days(fw->xml);
 }
 
-static gboolean filter_window_name_entry_text_changed(GtkWidget *widget, GdkEventKey *event, filter_window_t *filter_window)
+static gboolean filter_window_name_entry_text_changed(GtkWidget * widget, GdkEventKey * event, filter_window_t * filter_window)
 {
 	const gchar *name;
 
@@ -1535,7 +1517,7 @@ static gboolean filter_window_name_entry_text_changed(GtkWidget *widget, GdkEven
 /***************************************************
  * Public member functions for the filter_window object  *
  ***************************************************/
-filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_index, const char *name)
+filter_window_t *filter_window_create(multifilter_window_t * parent, gint parent_index, const char *name)
 {
 	filter_window_t *filter_window;
 	time_t t;
@@ -1543,12 +1525,12 @@ filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_
 	if (!parent || !name)
 		return NULL;
 
-	filter_window = (filter_window_t *)malloc(sizeof(filter_window_t));
+	filter_window = (filter_window_t *) malloc(sizeof(filter_window_t));
 	if (filter_window == NULL) {
 		fprintf(stderr, "Out of memory.");
 		return NULL;
 	}
-	memset (filter_window, 0, sizeof(filter_window_t));
+	memset(filter_window, 0, sizeof(filter_window_t));
 
 	filter_window->src_types_items = filters_select_items_create(filter_window, SEAUDIT_SRC_TYPES);
 	filter_window->src_users_items = filters_select_items_create(filter_window, SEAUDIT_SRC_USERS);
@@ -1576,7 +1558,7 @@ filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_
 	filter_window->parent = parent;
 	filter_window->parent_index = parent_index;
 
-	filter_window->dates = (filters_date_item_t *)calloc(1, sizeof(filters_date_item_t));
+	filter_window->dates = (filters_date_item_t *) calloc(1, sizeof(filters_date_item_t));
 	t = time(NULL);
 	filter_window->dates->start = (struct tm *)calloc(1, sizeof(struct tm));
 	filter_window->dates->start = localtime_r(&t, filter_window->dates->start);
@@ -1595,7 +1577,7 @@ filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_
 	return filter_window;
 }
 
-void filter_window_destroy(filter_window_t *filter_window)
+void filter_window_destroy(filter_window_t * filter_window)
 {
 	if (filter_window == NULL)
 		return;
@@ -1641,8 +1623,7 @@ void filter_window_destroy(filter_window_t *filter_window)
 	free(filter_window);
 }
 
-
-void filter_window_hide(filter_window_t *filter_window)
+void filter_window_hide(filter_window_t * filter_window)
 {
 	if (!filter_window->window)
 		return;
@@ -1682,13 +1663,13 @@ void filter_window_hide(filter_window_t *filter_window)
 	 * then we must remove it to avoid that function
 	 * being executed after we delete the window.  This
 	 * may happen if the window is closed during a search. */
-	while(g_idle_remove_by_data(filter_window->window));
+	while (g_idle_remove_by_data(filter_window->window)) ;
 
 	gtk_widget_destroy(GTK_WIDGET(filter_window->window));
 	filter_window->window = NULL;
 }
 
-void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
+void filter_window_display(filter_window_t * filter_window, GtkWindow * parent)
 {
 	GladeXML *xml;
 	GtkWindow *window;
@@ -1704,7 +1685,7 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 		return;
 	}
 	dir = apol_file_find("filter_window.glade");
-	if (!dir){
+	if (!dir) {
 		fprintf(stderr, "could not find filter_window.glade\n");
 		return;
 	}
@@ -1725,67 +1706,49 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 	filter_window->window = window;
 	filter_window->xml = xml;
 
-	g_signal_connect(G_OBJECT(window), "delete_event",
-			 G_CALLBACK(filter_window_on_filter_window_destroy), filter_window);
+	g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(filter_window_on_filter_window_destroy), filter_window);
 
 	widget = glade_xml_get_widget(filter_window->xml, "CloseButton");
-	g_signal_connect(G_OBJECT(widget), "pressed",
-			 G_CALLBACK(filter_window_on_close_button_pressed), filter_window);
+	g_signal_connect(G_OBJECT(widget), "pressed", G_CALLBACK(filter_window_on_close_button_pressed), filter_window);
 	widget = glade_xml_get_widget(filter_window->xml, "NameEntry");
-	g_signal_connect(G_OBJECT(widget), "key-release-event",
-			 G_CALLBACK(filter_window_name_entry_text_changed), filter_window);
+	g_signal_connect(G_OBJECT(widget), "key-release-event", G_CALLBACK(filter_window_name_entry_text_changed), filter_window);
 
 	glade_xml_signal_connect_data(xml, "filters_on_src_type_custom_clicked",
-				      G_CALLBACK(filter_window_on_custom_clicked),
-				      filter_window->src_types_items);
+				      G_CALLBACK(filter_window_on_custom_clicked), filter_window->src_types_items);
 	glade_xml_signal_connect_data(xml, "filters_on_src_users_custom_clicked",
-				      G_CALLBACK(filter_window_on_custom_clicked),
-				      filter_window->src_users_items);
+				      G_CALLBACK(filter_window_on_custom_clicked), filter_window->src_users_items);
 	glade_xml_signal_connect_data(xml, "filters_on_src_roles_custom_clicked",
-				      G_CALLBACK(filter_window_on_custom_clicked),
-				      filter_window->src_roles_items);
+				      G_CALLBACK(filter_window_on_custom_clicked), filter_window->src_roles_items);
 
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_type_custom_clicked",
-				      G_CALLBACK(filter_window_on_custom_clicked),
-				      filter_window->tgt_types_items);
+				      G_CALLBACK(filter_window_on_custom_clicked), filter_window->tgt_types_items);
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_users_custom_clicked",
-				      G_CALLBACK(filter_window_on_custom_clicked),
-				      filter_window->tgt_users_items);
+				      G_CALLBACK(filter_window_on_custom_clicked), filter_window->tgt_users_items);
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_roles_custom_clicked",
-				      G_CALLBACK(filter_window_on_custom_clicked),
-				      filter_window->tgt_roles_items);
+				      G_CALLBACK(filter_window_on_custom_clicked), filter_window->tgt_roles_items);
 
 	glade_xml_signal_connect_data(xml, "filters_on_objs_custom_clicked",
-				      G_CALLBACK(filter_window_on_custom_clicked),
-				      filter_window->obj_class_items);
+				      G_CALLBACK(filter_window_on_custom_clicked), filter_window->obj_class_items);
 	glade_xml_signal_connect_data(xml, "filters_on_ContextClearButton_clicked",
-				      G_CALLBACK(filter_window_on_ContextClearButton_clicked),
-				      filter_window);
+				      G_CALLBACK(filter_window_on_ContextClearButton_clicked), filter_window);
 	glade_xml_signal_connect_data(xml, "filters_on_OtherClearButton_clicked",
-				      G_CALLBACK(filter_window_on_OtherClearButton_clicked),
-				      filter_window);
+				      G_CALLBACK(filter_window_on_OtherClearButton_clicked), filter_window);
 
 	/* rename vars, or comment to make clear for dates */
 	glade_xml_signal_connect_data(xml, "filters_on_MatchNoneRadio_toggled",
-				      G_CALLBACK(filter_window_on_radio_toggled),
-				      filter_window);
+				      G_CALLBACK(filter_window_on_radio_toggled), filter_window);
 	glade_xml_signal_connect_data(xml, "filters_on_MatchBeforeRadio_toggled",
-				      G_CALLBACK(filter_window_on_radio_toggled),
-				      filter_window);
+				      G_CALLBACK(filter_window_on_radio_toggled), filter_window);
 	glade_xml_signal_connect_data(xml, "filters_on_MatchAfterRadio_toggled",
-				      G_CALLBACK(filter_window_on_radio_toggled),
-				      filter_window);
+				      G_CALLBACK(filter_window_on_radio_toggled), filter_window);
 	glade_xml_signal_connect_data(xml, "filters_on_MatchBetweenRadio_toggled",
-				      G_CALLBACK(filter_window_on_radio_toggled),
-				      filter_window);
+				      G_CALLBACK(filter_window_on_radio_toggled), filter_window);
 
 	glade_xml_signal_connect_data(xml, "filters_on_DateEndMonth_changed",
-				      G_CALLBACK(filter_window_on_month_changed),
-				      filter_window);
+				      G_CALLBACK(filter_window_on_month_changed), filter_window);
 
 	glade_xml_signal_connect_data(xml, "filters_on_DateStartMonth_changed",
-				      G_CALLBACK(filter_window_on_month_changed),
-				      filter_window);
+				      G_CALLBACK(filter_window_on_month_changed), filter_window);
 
 	widget = glade_xml_get_widget(filter_window->xml, "MsgCombo");
 	g_assert(widget);
@@ -1798,7 +1761,7 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 	filter_window_set_values(filter_window);
 }
 
-seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
+seaudit_filter_t *filter_window_get_filter(filter_window_t * filter_window)
 {
 	seaudit_filter_t *rt;
 	GtkTreeIter iter;
@@ -1890,7 +1853,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	/* check for network address filter */
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "IPAddressEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->ip_address->str;
 	if (strcmp(text, "") != 0) {
@@ -1900,7 +1863,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	/* check for network port filter */
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "PortEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->port->str;
 	if (strcmp(text, "") != 0) {
@@ -1911,7 +1874,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	/* check for network interface filter */
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "InterfaceEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->interface->str;
 	if (strcmp(text, "") != 0) {
@@ -1921,7 +1884,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	/* check for executable filter */
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "ExeEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->executable->str;
 	if (strcmp(text, "") != 0) {
@@ -1931,7 +1894,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	/* check for command filter */
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "CommEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->comm->str;
 	if (strcmp(text, "") != 0) {
@@ -1941,13 +1904,12 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	/* check for path filter */
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->path->str;
 	if (strcmp(text, "") != 0) {
 		rt->path_criteria = path_criteria_create(text);
 	}
-
 
 	dt_start = (struct tm *)calloc(1, sizeof(struct tm));
 	dt_end = (struct tm *)calloc(1, sizeof(struct tm));
@@ -1980,7 +1942,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "MatchEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->match->str;
 	if (strcmp("All", text) == 0)
@@ -1990,7 +1952,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "NameEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->name->str;
 	if (strcmp(text, "") != 0)
@@ -1998,7 +1960,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "HostEntry");
-		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+		text = (char *)gtk_entry_get_text(GTK_ENTRY(widget));
 	} else
 		text = filter_window->host->str;
 	if (strcmp(text, "") != 0)
@@ -2009,8 +1971,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 		int_val = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
 	} else
 		int_val = filter_window->msg;
-	switch (int_val)
-	{
+	switch (int_val) {
 	case SEAUDIT_MSG_AVC_DENIED:
 		rt->msg_criteria = msg_criteria_create(AVC_DENIED);
 		break;
@@ -2035,7 +1996,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	return rt;
 }
 
-void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudit_filter_t *filter)
+void filter_window_set_values_from_filter(filter_window_t * filter_window, seaudit_filter_t * filter)
 {
 	apol_vector_t *strs;
 	int i;
@@ -2059,41 +2020,43 @@ void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudi
 	if (filter->tgt_type_criteria) {
 		strs = tgt_type_criteria_get_strs(filter->tgt_type_criteria);
 		for (i = 0; i < apol_vector_get_size(strs); i++)
-			filters_select_items_add_selected_value(filter_window->tgt_types_items, apol_vector_get_element(strs,i));
+			filters_select_items_add_selected_value(filter_window->tgt_types_items, apol_vector_get_element(strs, i));
 	}
 	if (filter->src_user_criteria) {
 		strs = src_user_criteria_get_strs(filter->src_user_criteria);
 		for (i = 0; i < apol_vector_get_size(strs); i++)
-			filters_select_items_add_selected_value(filter_window->src_users_items, apol_vector_get_element(strs,i));
+			filters_select_items_add_selected_value(filter_window->src_users_items, apol_vector_get_element(strs, i));
 	}
 	if (filter->tgt_user_criteria) {
 		strs = tgt_user_criteria_get_strs(filter->tgt_user_criteria);
 		for (i = 0; i < apol_vector_get_size(strs); i++)
-			filters_select_items_add_selected_value(filter_window->tgt_users_items, apol_vector_get_element(strs,i));
+			filters_select_items_add_selected_value(filter_window->tgt_users_items, apol_vector_get_element(strs, i));
 	}
 	if (filter->src_role_criteria) {
 		strs = src_role_criteria_get_strs(filter->src_role_criteria);
 		for (i = 0; i < apol_vector_get_size(strs); i++)
-			filters_select_items_add_selected_value(filter_window->src_roles_items, apol_vector_get_element(strs,i));
+			filters_select_items_add_selected_value(filter_window->src_roles_items, apol_vector_get_element(strs, i));
 	}
 	if (filter->tgt_role_criteria) {
 		strs = tgt_role_criteria_get_strs(filter->tgt_role_criteria);
 		for (i = 0; i < apol_vector_get_size(strs); i++)
-			filters_select_items_add_selected_value(filter_window->tgt_roles_items, apol_vector_get_element(strs,i));
+			filters_select_items_add_selected_value(filter_window->tgt_roles_items, apol_vector_get_element(strs, i));
 	}
 	if (filter->class_criteria) {
 		strs = class_criteria_get_strs(filter->class_criteria);
 		for (i = 0; i < apol_vector_get_size(strs); i++)
-			filters_select_items_add_selected_value(filter_window->obj_class_items, apol_vector_get_element(strs,i));
+			filters_select_items_add_selected_value(filter_window->obj_class_items, apol_vector_get_element(strs, i));
 	}
 	if (filter->ports_criteria) {
 		snprintf(ports_str, ports_str_len, "%d", ports_criteria_get_val(filter->ports_criteria));
 		filter_window->port = g_string_assign(filter_window->port, ports_str);
 	}
 	if (filter->ipaddr_criteria)
-		filter_window->ip_address = g_string_assign(filter_window->ip_address, ipaddr_criteria_get_str(filter->ipaddr_criteria));
+		filter_window->ip_address =
+			g_string_assign(filter_window->ip_address, ipaddr_criteria_get_str(filter->ipaddr_criteria));
 	if (filter->netif_criteria)
-		filter_window->interface = g_string_assign(filter_window->interface, netif_criteria_get_str(filter->netif_criteria));
+		filter_window->interface =
+			g_string_assign(filter_window->interface, netif_criteria_get_str(filter->netif_criteria));
 	if (filter->path_criteria)
 		filter_window->path = g_string_assign(filter_window->path, path_criteria_get_str(filter->path_criteria));
 	if (filter->exe_criteria)
@@ -2103,8 +2066,7 @@ void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudi
 	if (filter->host_criteria)
 		filter_window->host = g_string_assign(filter_window->host, host_criteria_get_str(filter->host_criteria));
 	if (filter->msg_criteria) {
-		switch (msg_criteria_get_val(filter->msg_criteria))
-		{
+		switch (msg_criteria_get_val(filter->msg_criteria)) {
 		case AVC_GRANTED:
 			filter_window->msg = SEAUDIT_MSG_AVC_GRANTED;
 			break;
@@ -2118,11 +2080,11 @@ void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudi
 	}
 	if (filter->date_time_criteria) {
 		if (!filter_window->dates)
-			filter_window->dates = (filters_date_item_t *)calloc(1, sizeof(filters_date_item_t));
+			filter_window->dates = (filters_date_item_t *) calloc(1, sizeof(filters_date_item_t));
 		*(filter_window->dates->start) = *(date_time_criteria_get_date(filter->date_time_criteria, TRUE));
 		*(filter_window->dates->end) = *(date_time_criteria_get_date(filter->date_time_criteria, FALSE));
 		i = date_time_criteria_get_option(filter->date_time_criteria);
-		switch(i) {
+		switch (i) {
 		case FILTER_CRITERIA_DT_OPTION_BEFORE:
 			filter_window->dates->option = SEAUDIT_DT_OPTION_BEFORE;
 			break;

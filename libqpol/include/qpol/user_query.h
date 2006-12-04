@@ -26,13 +26,18 @@
 #ifndef QPOL_USER_QUERY_H
 #define QPOL_USER_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/mls_query.h>
 
-typedef struct qpol_user qpol_user_t;
+	typedef struct qpol_user qpol_user_t;
 
 /**
  *  Get the datum for a user by name.
@@ -43,7 +48,7 @@ typedef struct qpol_user qpol_user_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and and *datum will be NULL.
  */
-extern int qpol_policy_get_user_by_name(qpol_policy_t *policy, const char *name, qpol_user_t **datum);
+	extern int qpol_policy_get_user_by_name(qpol_policy_t * policy, const char *name, qpol_user_t ** datum);
 
 /**
  *  Get an iterator for users declared in the policy.
@@ -55,7 +60,7 @@ extern int qpol_policy_get_user_by_name(qpol_policy_t *policy, const char *name,
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_user_iter(qpol_policy_t *policy, qpol_iterator_t **iter);
+	extern int qpol_policy_get_user_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the integer value associated with a user. Values range from 1 to
@@ -66,7 +71,7 @@ extern int qpol_policy_get_user_iter(qpol_policy_t *policy, qpol_iterator_t **it
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and value will be 0.
  */
-extern int qpol_user_get_value(qpol_policy_t *policy, qpol_user_t *datum, uint32_t *value);
+	extern int qpol_user_get_value(qpol_policy_t * policy, qpol_user_t * datum, uint32_t * value);
 
 /**
  *  Get an iterator for the set of roles assigned to a user.
@@ -79,7 +84,7 @@ extern int qpol_user_get_value(qpol_policy_t *policy, qpol_user_t *datum, uint32
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *roles will be NULL.
  */
-extern int qpol_user_get_role_iter(qpol_policy_t *policy, qpol_user_t *datum, qpol_iterator_t **roles);
+	extern int qpol_user_get_role_iter(qpol_policy_t * policy, qpol_user_t * datum, qpol_iterator_t ** roles);
 
 /**
  *  Get the allowed MLS range of a user.
@@ -90,7 +95,7 @@ extern int qpol_user_get_role_iter(qpol_policy_t *policy, qpol_user_t *datum, qp
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *range will be NULL.
  */
-extern int qpol_user_get_range(qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_range_t **range);
+	extern int qpol_user_get_range(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_range_t ** range);
 
 /**
  *  Get the default level for a user.
@@ -101,7 +106,7 @@ extern int qpol_user_get_range(qpol_policy_t *policy, qpol_user_t *datum, qpol_m
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *level will be NULL.
  */
-extern int qpol_user_get_dfltlevel(qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_level_t **level);
+	extern int qpol_user_get_dfltlevel(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_level_t ** level);
 
 /**
  *  Get the name which identifies a user from its datum.
@@ -112,6 +117,10 @@ extern int qpol_user_get_dfltlevel(qpol_policy_t *policy, qpol_user_t *datum, qp
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_user_get_name(qpol_policy_t *policy, qpol_user_t *datum, char **name);
+	extern int qpol_user_get_name(qpol_policy_t * policy, qpol_user_t * datum, char **name);
 
-#endif /* QPOL_USER_QUERY_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* QPOL_USER_QUERY_H */

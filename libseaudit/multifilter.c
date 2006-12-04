@@ -17,7 +17,8 @@
 #include <time.h>
 
 /* xml parser data structures */
-enum seaudit_multifilter_parser_state_t {
+enum seaudit_multifilter_parser_state_t
+{
 	PARSING_NONE,
 	PARSING_SRC_TYPES,
 	PARSING_TGT_TYPES,
@@ -40,18 +41,19 @@ enum seaudit_multifilter_parser_state_t {
 
 const char *parser_valid_names[] = { "item", "criteria", "view", "filter", "desc", NULL };
 
-typedef struct seaudit_multifilter_parser_data {
+typedef struct seaudit_multifilter_parser_data
+{
 	seaudit_multifilter_t *multifilter;
 	bool_t is_multi;
 	seaudit_filter_t *cur_filter;
 	enum seaudit_multifilter_parser_state_t state;
 	bool_t parsing_item;
-	char **strs; /* parser data */
+	char **strs;		       /* parser data */
 	int num_strs;
-	bool_t invalid_names; /* true if invalid names are found */
+	bool_t invalid_names;	       /* true if invalid names are found */
 } seaudit_multifilter_parser_data_t;
 
-static bool_t seaudit_multifilter_parser_is_valid_name(const xmlChar *name)
+static bool_t seaudit_multifilter_parser_is_valid_name(const xmlChar * name)
 {
 	int i;
 	xmlChar *str_xml;
@@ -67,7 +69,7 @@ static bool_t seaudit_multifilter_parser_is_valid_name(const xmlChar *name)
 	return FALSE;
 }
 
-static void seaudit_multifilter_parser_data_free(seaudit_multifilter_parser_data_t *data)
+static void seaudit_multifilter_parser_data_free(seaudit_multifilter_parser_data_t * data)
 {
 	int i;
 
@@ -82,12 +84,11 @@ static void seaudit_multifilter_parser_data_free(seaudit_multifilter_parser_data
 }
 
 /* implementation of xml parser callback functions */
-static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
+static void my_parse_characters(void *user_data, const xmlChar * ch, int len)
 {
-	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;
+	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *) user_data;
 
-
-	switch(data->state) {
+	switch (data->state) {
 	case PARSING_NONE:
 		break;
 	case PARSING_SRC_TYPES:
@@ -109,47 +110,48 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 		if (!data->parsing_item)
 			break;
 	case PARSING_DESC:
-		data->strs = (char**)realloc(data->strs, sizeof(char*)*((data->num_strs)+2));
+		data->strs = (char **)realloc(data->strs, sizeof(char *) * ((data->num_strs) + 2));
 		data->strs[data->num_strs] = xmlURIUnescapeString((const char *)ch, len, NULL);
-		data->strs[data->num_strs+1] = NULL;
+		data->strs[data->num_strs + 1] = NULL;
 		data->num_strs++;
 		break;
 	}
 }
 
-static void my_parse_startElement(void *user_data, const xmlChar *name, const xmlChar **attrs)
+static void my_parse_startElement(void *user_data, const xmlChar * name, const xmlChar ** attrs)
 {
-	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;
+	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *) user_data;
 	char *unescaped;
 
 	if (!seaudit_multifilter_parser_is_valid_name(name))
 		data->invalid_names = TRUE;
-        /* set state and process attributes.
+	/* set state and process attributes.
 	 * attributes are passed in by name value pairs. */
-	if (xmlStrcmp(name,(unsigned char*)"view") == 0) {
+	if (xmlStrcmp(name, (unsigned char *)"view") == 0) {
 		data->multifilter = seaudit_multifilter_create();
-		if (!attrs[0] || !attrs[1]) /* xmlns= */
+		if (!attrs[0] || !attrs[1])	/* xmlns= */
 			return;
-		if (!attrs[2] || !attrs[3]) /* name= */
+		if (!attrs[2] || !attrs[3])	/* name= */
 			return;
-		if (xmlStrcmp(attrs[2], (unsigned char*)"name") == 0)
+		if (xmlStrcmp(attrs[2], (unsigned char *)"name") == 0)
 			seaudit_multifilter_set_name(data->multifilter, (const char *)attrs[3]);
-		if (!attrs[4] || !attrs[4]) /* match= */
+		if (!attrs[4] || !attrs[4])	/* match= */
 			return;
-		if (xmlStrcmp(attrs[4], (unsigned char*)"match") == 0)
+		if (xmlStrcmp(attrs[4], (unsigned char *)"match") == 0)
 			seaudit_multifilter_set_match(data->multifilter,
-						      (strcmp((char *)attrs[5], "all") == 0)? SEAUDIT_FILTER_MATCH_ALL : SEAUDIT_FILTER_MATCH_ANY);
-		if (!attrs[6] || !attrs[7]) /* show= */
+						      (strcmp((char *)attrs[5], "all") ==
+						       0) ? SEAUDIT_FILTER_MATCH_ALL : SEAUDIT_FILTER_MATCH_ANY);
+		if (!attrs[6] || !attrs[7])	/* show= */
 			return;
-		if (xmlStrcmp(attrs[6],(unsigned char*) "show") == 0)
+		if (xmlStrcmp(attrs[6], (unsigned char *)"show") == 0)
 			seaudit_multifilter_set_show_matches(data->multifilter,
-							     (strcmp((char *)attrs[7], "true") == 0)? TRUE : FALSE);
+							     (strcmp((char *)attrs[7], "true") == 0) ? TRUE : FALSE);
 		data->is_multi = TRUE;
-	} else if (xmlStrcmp(name, (unsigned char*)"filter") == 0) {
+	} else if (xmlStrcmp(name, (unsigned char *)"filter") == 0) {
 		data->cur_filter = seaudit_filter_create();
 		if (!attrs[0] || !attrs[1])
 			return;
-		if (xmlStrcmp(attrs[0],(unsigned char*) "name") == 0) {
+		if (xmlStrcmp(attrs[0], (unsigned char *)"name") == 0) {
 			unescaped = xmlURIUnescapeString((char *)attrs[1], -1, NULL);
 			seaudit_filter_set_name(data->cur_filter, unescaped);
 			free(unescaped);
@@ -157,72 +159,72 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 
 		if (!attrs[2] || !attrs[3])
 			return;
-		if (xmlStrcmp(attrs[2], (unsigned char*)"match") == 0) {
-			if (xmlStrcmp(attrs[3],(unsigned char*) "all") == 0)
+		if (xmlStrcmp(attrs[2], (unsigned char *)"match") == 0) {
+			if (xmlStrcmp(attrs[3], (unsigned char *)"all") == 0)
 				data->cur_filter->match = SEAUDIT_FILTER_MATCH_ALL;
 			else
 				data->cur_filter->match = SEAUDIT_FILTER_MATCH_ANY;
 		}
 
-	} else if (xmlStrcmp(name, (unsigned char*)"desc") == 0) {
+	} else if (xmlStrcmp(name, (unsigned char *)"desc") == 0) {
 		data->state = PARSING_DESC;
 
-	} else if (xmlStrcmp(name, (unsigned char*)"criteria") == 0) {
-		if (!attrs[0] || !attrs[1] || xmlStrcmp(attrs[0], (unsigned char*)"type") != 0)
+	} else if (xmlStrcmp(name, (unsigned char *)"criteria") == 0) {
+		if (!attrs[0] || !attrs[1] || xmlStrcmp(attrs[0], (unsigned char *)"type") != 0)
 			data->state = PARSING_NONE;
-		else if (xmlStrcmp(attrs[1],(unsigned char*)"src_type") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"src_type") == 0)
 			data->state = PARSING_SRC_TYPES;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"tgt_type") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"tgt_type") == 0)
 			data->state = PARSING_TGT_TYPES;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"src_user") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"src_user") == 0)
 			data->state = PARSING_SRC_USERS;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"tgt_user") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"tgt_user") == 0)
 			data->state = PARSING_TGT_USERS;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"src_role") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"src_role") == 0)
 			data->state = PARSING_SRC_ROLES;
-		else if (xmlStrcmp(attrs[1],(unsigned char*) "tgt_role") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"tgt_role") == 0)
 			data->state = PARSING_TGT_ROLES;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"obj_class") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"obj_class") == 0)
 			data->state = PARSING_CLASSES;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"exe") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"exe") == 0)
 			data->state = PARSING_EXE;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"comm") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"comm") == 0)
 			data->state = PARSING_COMM;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"msg") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"msg") == 0)
 			data->state = PARSING_MSG;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"path") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"path") == 0)
 			data->state = PARSING_PATH;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"netif") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"netif") == 0)
 			data->state = PARSING_NETIF;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"ipaddr") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"ipaddr") == 0)
 			data->state = PARSING_IPADDR;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"port") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"port") == 0)
 			data->state = PARSING_PORTS;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"host") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"host") == 0)
 			data->state = PARSING_HOST;
-		else if (xmlStrcmp(attrs[1], (unsigned char*)"date_time") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char *)"date_time") == 0)
 			data->state = PARSING_DATE_TIME;
 		else
 			data->state = PARSING_NONE;
 
-        } else if (xmlStrcmp(name, (unsigned char*)"item") == 0) {
+	} else if (xmlStrcmp(name, (unsigned char *)"item") == 0) {
 		data->parsing_item = TRUE;
 	}
 }
 
-static void my_parse_endElement(void *user_data, const xmlChar *name)
+static void my_parse_endElement(void *user_data, const xmlChar * name)
 {
-	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;
+	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *) user_data;
 	struct tm *t1, *t2;
 	int i;
 
-	t1 = (struct tm*)calloc(1, sizeof(struct tm));
-	t2 = (struct tm*)calloc(1, sizeof(struct tm));
+	t1 = (struct tm *)calloc(1, sizeof(struct tm));
+	t2 = (struct tm *)calloc(1, sizeof(struct tm));
 
 	if (!seaudit_multifilter_parser_is_valid_name(name))
 		data->invalid_names = TRUE;
 
-	if (xmlStrcmp(name, (unsigned char*)"desc") == 0) {
+	if (xmlStrcmp(name, (unsigned char *)"desc") == 0) {
 		if (data->strs[0])
 			seaudit_filter_set_desc(data->cur_filter, data->strs[0]);
 		seaudit_multifilter_parser_data_free(data);
@@ -230,20 +232,20 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 		return;
 	}
 
-	if (xmlStrcmp(name, (unsigned char*)"item") == 0) {
+	if (xmlStrcmp(name, (unsigned char *)"item") == 0) {
 		data->parsing_item = FALSE;
 		return;
 	}
 
-	if (xmlStrcmp(name, (unsigned char*)"filter") == 0) {
+	if (xmlStrcmp(name, (unsigned char *)"filter") == 0) {
 		seaudit_multifilter_add_filter(data->multifilter, data->cur_filter);
 		data->cur_filter = NULL;
 	}
 
-	if (xmlStrcmp(name, (unsigned char*)"criteria") == 0) {
+	if (xmlStrcmp(name, (unsigned char *)"criteria") == 0) {
 		switch (data->state) {
 		case PARSING_NONE:
-		case PARSING_DESC: /* should never get here */
+		case PARSING_DESC:    /* should never get here */
 			break;
 		case PARSING_SRC_TYPES:
 			data->cur_filter->src_type_criteria = src_type_criteria_create(data->strs, data->num_strs);
@@ -345,11 +347,11 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 	free(t2);
 }
 
-seaudit_multifilter_t* seaudit_multifilter_create(void)
+seaudit_multifilter_t *seaudit_multifilter_create(void)
 {
 	seaudit_multifilter_t *rt = NULL;
 
-	rt = (seaudit_multifilter_t*)malloc(sizeof(seaudit_multifilter_t));
+	rt = (seaudit_multifilter_t *) malloc(sizeof(seaudit_multifilter_t));
 	if (rt == NULL) {
 		fprintf(stderr, "out of memory");
 		return NULL;
@@ -358,7 +360,7 @@ seaudit_multifilter_t* seaudit_multifilter_create(void)
 	return rt;
 }
 
-void seaudit_multifilter_init(seaudit_multifilter_t *multifilter)
+void seaudit_multifilter_init(seaudit_multifilter_t * multifilter)
 {
 	if (multifilter == NULL)
 		return;
@@ -369,7 +371,7 @@ void seaudit_multifilter_init(seaudit_multifilter_t *multifilter)
 	multifilter->show = TRUE;
 }
 
-void seaudit_multifilter_destroy(seaudit_multifilter_t *multifilter)
+void seaudit_multifilter_destroy(seaudit_multifilter_t * multifilter)
 {
 	seaudit_filter_t *filter;
 	int i;
@@ -377,7 +379,7 @@ void seaudit_multifilter_destroy(seaudit_multifilter_t *multifilter)
 	if (multifilter == NULL)
 		return;
 
-	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++)  {
+	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) {
 		/* free current and return next */
 		filter = apol_vector_get_element(multifilter->filters, i);
 		seaudit_filter_destroy(filter);
@@ -388,7 +390,7 @@ void seaudit_multifilter_destroy(seaudit_multifilter_t *multifilter)
 		free(multifilter->name);
 }
 
-void seaudit_multifilter_add_filter(seaudit_multifilter_t *multifilter, seaudit_filter_t *filter)
+void seaudit_multifilter_add_filter(seaudit_multifilter_t * multifilter, seaudit_filter_t * filter)
 {
 	if (multifilter == NULL || filter == NULL)
 		return;
@@ -396,7 +398,7 @@ void seaudit_multifilter_add_filter(seaudit_multifilter_t *multifilter, seaudit_
 	apol_vector_append(multifilter->filters, (void *)filter);
 }
 
-void seaudit_multifilter_set_match(seaudit_multifilter_t *multifilter, enum seaudit_filter_match_t match)
+void seaudit_multifilter_set_match(seaudit_multifilter_t * multifilter, enum seaudit_filter_match_t match)
 {
 	if (multifilter == NULL || (match != SEAUDIT_FILTER_MATCH_ALL && match != SEAUDIT_FILTER_MATCH_ANY))
 		return;
@@ -404,14 +406,14 @@ void seaudit_multifilter_set_match(seaudit_multifilter_t *multifilter, enum seau
 	multifilter->match = match;
 }
 
-void seaudit_multifilter_set_show_matches(seaudit_multifilter_t *multifilter, bool_t show)
+void seaudit_multifilter_set_show_matches(seaudit_multifilter_t * multifilter, bool_t show)
 {
 	if (!multifilter)
 		return;
 	multifilter->show = show;
 }
 
-void seaudit_multifilter_set_name(seaudit_multifilter_t *multifilter, const char *name)
+void seaudit_multifilter_set_name(seaudit_multifilter_t * multifilter, const char *name)
 {
 	if (multifilter == NULL || name == NULL)
 		return;
@@ -421,7 +423,7 @@ void seaudit_multifilter_set_name(seaudit_multifilter_t *multifilter, const char
 	multifilter->name = strdup(name);
 }
 
-void seaudit_multifilter_make_dirty_filters(seaudit_multifilter_t *multifilter)
+void seaudit_multifilter_make_dirty_filters(seaudit_multifilter_t * multifilter)
 {
 	seaudit_filter_t *filter;
 	int i;
@@ -432,7 +434,7 @@ void seaudit_multifilter_make_dirty_filters(seaudit_multifilter_t *multifilter)
 	}
 }
 
-static bool_t seaudit_multifilter_does_message_match(seaudit_multifilter_t *multifilter, msg_t *message, audit_log_t *log)
+static bool_t seaudit_multifilter_does_message_match(seaudit_multifilter_t * multifilter, msg_t * message, audit_log_t * log)
 {
 	seaudit_filter_t *filter;
 	bool_t match = TRUE;
@@ -459,7 +461,7 @@ static bool_t seaudit_multifilter_does_message_match(seaudit_multifilter_t *mult
 	return match;
 }
 
-bool_t seaudit_multifilter_should_message_show(seaudit_multifilter_t *multifilter, msg_t *message, audit_log_t *log)
+bool_t seaudit_multifilter_should_message_show(seaudit_multifilter_t * multifilter, msg_t * message, audit_log_t * log)
 {
 	bool_t matches;
 
@@ -467,7 +469,7 @@ bool_t seaudit_multifilter_should_message_show(seaudit_multifilter_t *multifilte
 	return matches == multifilter->show;
 }
 
-int seaudit_multifilter_load_from_file(seaudit_multifilter_t **multifilter, bool_t *is_multi, const char *filename)
+int seaudit_multifilter_load_from_file(seaudit_multifilter_t ** multifilter, bool_t * is_multi, const char *filename)
 {
 	seaudit_multifilter_parser_data_t parse_data;
 	xmlSAXHandler handler;
@@ -490,7 +492,7 @@ int seaudit_multifilter_load_from_file(seaudit_multifilter_t **multifilter, bool
 		if (err)
 			return err;
 		else
-			return 1; /* invalid file */
+			return 1;      /* invalid file */
 	}
 
 	*is_multi = parse_data.is_multi;
@@ -499,7 +501,7 @@ int seaudit_multifilter_load_from_file(seaudit_multifilter_t **multifilter, bool
 	return 0;
 }
 
-int seaudit_multifilter_save_to_file(seaudit_multifilter_t *multifilter, const char *filename)
+int seaudit_multifilter_save_to_file(seaudit_multifilter_t * multifilter, const char *filename)
 {
 	FILE *file;
 	const char *XML_VER = "<?xml version=\"1.0\"?>\n";
@@ -515,8 +517,7 @@ int seaudit_multifilter_save_to_file(seaudit_multifilter_t *multifilter, const c
 	fprintf(file, XML_VER);
 	fprintf(file, "<view xmlns=\"http://oss.tresys.com/projects/setools/seaudit-%s/\" name=\"%s\" match=\"%s\" show=\"%s\">\n",
 		FILTER_FILE_FORMAT_VERSION, multifilter->name,
-		multifilter->match == SEAUDIT_FILTER_MATCH_ALL? "all" : "any",
-		multifilter->show == TRUE? "true" : "false");
+		multifilter->match == SEAUDIT_FILTER_MATCH_ALL ? "all" : "any", multifilter->show == TRUE ? "true" : "false");
 
 	for (i = 0; i < apol_vector_get_size(multifilter->filters); i++) {
 		filter = apol_vector_get_element(multifilter->filters, i);

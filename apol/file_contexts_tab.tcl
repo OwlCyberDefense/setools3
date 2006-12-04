@@ -115,14 +115,13 @@ proc Apol_File_Contexts::initialize { } {
     $widgets(user) configure -values {}
     $widgets(type) configure -values {}
     $widgets(objclass) configure -values {}
+    Apol_Widget::clearSearchResults $widgets(results)
 }
 
 # ------------------------------------------------------------------------------
 #  Command Apol_File_Contexts::close
 # ------------------------------------------------------------------------------
 proc Apol_File_Contexts::close { } {
-    variable widgets
-    Apol_Widget::clearSearchResults $widgets(results)
     Apol_File_Contexts::close_fc_db
     Apol_File_Contexts::initialize
 }
@@ -397,6 +396,7 @@ proc Apol_File_Contexts::load_fc_db { } {
 #  Command Apol_File_Contexts::close_fc_db
 # ------------------------------------------------------------------------------
 proc Apol_File_Contexts::close_fc_db { } {
+    variable widgets
     variable opts
 	set rt [catch {apol_Close_FC_Index_DB} err]
 	if {$rt != 0} {
@@ -404,6 +404,7 @@ proc Apol_File_Contexts::close_fc_db { } {
 			-message "Error closing file context database: $err.\n"
 		return
 	}
+    Apol_Widget::clearSearchResults $widgets(results)
     set opts(db_loaded) 0
 }
 

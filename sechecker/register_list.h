@@ -1,6 +1,6 @@
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
- 
+
 /* 
  * Author: jmowery@tresys.com
  *
@@ -17,35 +17,35 @@
  * don't forget to add any necessary options to the config file */
 
 /* extern register functions declarations */
-extern int find_domains_register(sechk_lib_t *lib);
-extern int find_file_types_register(sechk_lib_t *lib);
-extern int domain_and_file_register(sechk_lib_t *lib);
-extern int attribs_wo_types_register(sechk_lib_t *lib);
-extern int roles_wo_types_register(sechk_lib_t *lib);
-extern int users_wo_roles_register(sechk_lib_t *lib);
-extern int roles_wo_allow_register(sechk_lib_t *lib);
-extern int types_wo_allow_register(sechk_lib_t *lib);
-extern int spurious_audit_register(sechk_lib_t *lib);
-extern int attribs_wo_rules_register(sechk_lib_t *lib);
-extern int inc_mount_register(sechk_lib_t *lib);
-extern int roles_wo_users_register(sechk_lib_t *lib);
+extern int find_domains_register(sechk_lib_t * lib);
+extern int find_file_types_register(sechk_lib_t * lib);
+extern int domain_and_file_register(sechk_lib_t * lib);
+extern int attribs_wo_types_register(sechk_lib_t * lib);
+extern int roles_wo_types_register(sechk_lib_t * lib);
+extern int users_wo_roles_register(sechk_lib_t * lib);
+extern int roles_wo_allow_register(sechk_lib_t * lib);
+extern int types_wo_allow_register(sechk_lib_t * lib);
+extern int spurious_audit_register(sechk_lib_t * lib);
+extern int attribs_wo_rules_register(sechk_lib_t * lib);
+extern int inc_mount_register(sechk_lib_t * lib);
+extern int roles_wo_users_register(sechk_lib_t * lib);
 /* Deprecated *
  extern int rules_exp_nothing_register(sechk_lib_t *lib); 
 */
-extern int domains_wo_roles_register(sechk_lib_t *lib);
-extern int inc_dom_trans_register(sechk_lib_t *lib);
-extern int find_port_types_register(sechk_lib_t *lib);
-extern int find_node_types_register(sechk_lib_t *lib);
-extern int find_netif_types_register(sechk_lib_t *lib);
-extern int find_assoc_types_register(sechk_lib_t *lib);
-extern int find_net_domains_register(sechk_lib_t *lib);
-extern int inc_net_access_register(sechk_lib_t *lib);
-extern int unreachable_doms_register(sechk_lib_t *lib);
-extern int imp_range_trans_register(sechk_lib_t *lib);
+extern int domains_wo_roles_register(sechk_lib_t * lib);
+extern int inc_dom_trans_register(sechk_lib_t * lib);
+extern int find_port_types_register(sechk_lib_t * lib);
+extern int find_node_types_register(sechk_lib_t * lib);
+extern int find_netif_types_register(sechk_lib_t * lib);
+extern int find_assoc_types_register(sechk_lib_t * lib);
+extern int find_net_domains_register(sechk_lib_t * lib);
+extern int inc_net_access_register(sechk_lib_t * lib);
+extern int unreachable_doms_register(sechk_lib_t * lib);
+extern int imp_range_trans_register(sechk_lib_t * lib);
 /* TODO: additional externs go here ... */
 
 size_t sechk_register_list_get_num_modules();
-const sechk_module_name_reg_t* sechk_register_list_get_modules();
+const sechk_module_name_reg_t *sechk_register_list_get_modules();
 size_t sechk_register_list_get_num_profiles();
-const sechk_profile_name_reg_t* sechk_register_list_get_profiles();
-#endif /* SECHK_REGISTER_LIST_H */
+const sechk_profile_name_reg_t *sechk_register_list_get_profiles();
+#endif				       /* SECHK_REGISTER_LIST_H */

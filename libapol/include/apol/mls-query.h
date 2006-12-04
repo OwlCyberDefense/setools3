@@ -27,6 +27,11 @@
 #ifndef APOL_MLS_QUERY_H
 #define APOL_MLS_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
@@ -37,17 +42,19 @@
  * convenience functions below.  Note that the category vector only
  * holds strings.
  */
-typedef struct apol_mls_level {
-	char *sens;
-	apol_vector_t *cats;
-} apol_mls_level_t;
+	typedef struct apol_mls_level
+	{
+		char *sens;
+		apol_vector_t *cats;
+	} apol_mls_level_t;
 
-typedef struct apol_mls_range {
-	apol_mls_level_t *low, *high;
-} apol_mls_range_t;
+	typedef struct apol_mls_range
+	{
+		apol_mls_level_t *low, *high;
+	} apol_mls_range_t;
 
-typedef struct apol_level_query apol_level_query_t;
-typedef struct apol_cat_query apol_cat_query_t;
+	typedef struct apol_level_query apol_level_query_t;
+	typedef struct apol_cat_query apol_cat_query_t;
 
 /******************** level stuff ********************/
 
@@ -58,7 +65,7 @@ typedef struct apol_cat_query apol_cat_query_t;
  *
  * @return An initialized MLS level structure, or NULL upon error.
  */
-extern apol_mls_level_t *apol_mls_level_create(void);
+	extern apol_mls_level_t *apol_mls_level_create(void);
 
 /**
  * Take a MLS level string (e.g., <b>S0:C0.C127</b>) and parse it.
@@ -75,7 +82,7 @@ extern apol_mls_level_t *apol_mls_level_create(void);
  *
  * @return A filled in MLS level structure, or NULL upon error.
  */
-extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_level_string);
+	extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, char *mls_level_string);
 
 /**
  * Create a new apol_mls_level_t and initialize it with a
@@ -89,7 +96,7 @@ extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, cha
  * @return A MLS level structure initialized to the value of
  * qpol_level, or NULL upon error.
  */
-extern apol_mls_level_t * apol_mls_level_create_from_qpol_mls_level(apol_policy_t *p, qpol_mls_level_t *qpol_level);
+	extern apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t * p, qpol_mls_level_t * qpol_level);
 
 /**
  * Create a new apol_mls_level_t and initialize it with a
@@ -103,7 +110,7 @@ extern apol_mls_level_t * apol_mls_level_create_from_qpol_mls_level(apol_policy_
  * @return A MLS level structure initialized to the value of
  * qpol_level, or NULL upon error.
  */
-apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t *p, qpol_level_t *qpol_level);
+	apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t * p, qpol_level_t * qpol_level);
 
 /**
  * Deallocate all memory associated with a MLS level structure and
@@ -112,7 +119,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t *p, 
  *
  * @param level Reference to a MLS level structure to destroy.
  */
-extern void apol_mls_level_destroy(apol_mls_level_t **level);
+	extern void apol_mls_level_destroy(apol_mls_level_t ** level);
 
 /**
  * Set the sensitivity component of an MLS level structure.  This
@@ -125,8 +132,7 @@ extern void apol_mls_level_destroy(apol_mls_level_t **level);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_mls_level_set_sens(apol_policy_t *p,
-				   apol_mls_level_t *level, const char *sens);
+	extern int apol_mls_level_set_sens(apol_policy_t * p, apol_mls_level_t * level, const char *sens);
 
 /**
  * Add a category component of an MLS level structure.	This function
@@ -138,8 +144,7 @@ extern int apol_mls_level_set_sens(apol_policy_t *p,
  *
  * @return 0 on success or < 0 on failure.
  */
-extern int apol_mls_level_append_cats(apol_policy_t *p,
-				      apol_mls_level_t *level, const char *cats);
+	extern int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, const char *cats);
 
 /* the next level compare function will return one of the following on
    success or -1 on error */
@@ -161,9 +166,7 @@ extern int apol_mls_level_append_cats(apol_policy_t *p,
  * @return One of APOL_MLS_EQ, APOL_MLS_DOM, APOL_MLS_DOMBY, or
  * APOL_MLS_INCOMP; < 0 on error.
  */
-extern int apol_mls_level_compare(apol_policy_t *p,
-				  apol_mls_level_t *level1,
-				  apol_mls_level_t *level2);
+	extern int apol_mls_level_compare(apol_policy_t * p, apol_mls_level_t * level1, apol_mls_level_t * level2);
 
 /**
  * Creates a string containing the textual representation of
@@ -174,7 +177,7 @@ extern int apol_mls_level_compare(apol_policy_t *p,
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-extern char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level);
+	extern char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level);
 
 /**
  * Determine if two sensitivities are actually the same.  Either level
@@ -187,9 +190,7 @@ extern char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level);
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-extern int apol_mls_sens_compare(apol_policy_t *p,
-				 const char *sens1,
-				 const char *sens2);
+	extern int apol_mls_sens_compare(apol_policy_t * p, const char *sens1, const char *sens2);
 
 /**
  * Determine if two categories are actually the same.  Either category
@@ -202,9 +203,7 @@ extern int apol_mls_sens_compare(apol_policy_t *p,
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-extern int apol_mls_cats_compare(apol_policy_t *p,
-				 const char *cat1,
-				 const char *cat2);
+	extern int apol_mls_cats_compare(apol_policy_t * p, const char *cat1, const char *cat2);
 
 /**
  * Given two category names, returns < 0 if a has higher value than b,
@@ -219,7 +218,7 @@ extern int apol_mls_cats_compare(apol_policy_t *p,
  * @return <0, 0, or >0 if a is less than, equal, or greater than b,
  * respectively.
  */
-extern int apol_mls_cat_name_compare(const void *a, const void *b, void *data);
+	extern int apol_mls_cat_name_compare(const void *a, const void *b, void *data);
 
 /******************** range stuff ********************/
 
@@ -230,7 +229,7 @@ extern int apol_mls_cat_name_compare(const void *a, const void *b, void *data);
  *
  * @return An initialized MLS range structure, or NULL upon error.
  */
-extern apol_mls_range_t *apol_mls_range_create(void);
+	extern apol_mls_range_t *apol_mls_range_create(void);
 
 /**
  * Create a new apol_mls_range_t and initialize it with a
@@ -244,7 +243,7 @@ extern apol_mls_range_t *apol_mls_range_create(void);
  * @return A MLS range structure initialized to the value of
  * qpol_range, or NULL upon error.
  */
-extern apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t *p, qpol_mls_range_t *qpol_range);
+	extern apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t * p, qpol_mls_range_t * qpol_range);
 
 /**
  * Deallocate all memory associated with a MLS range structure and
@@ -253,7 +252,7 @@ extern apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t
  *
  * @param range Reference to a MLS range structure to destroy.
  */
-extern void apol_mls_range_destroy(apol_mls_range_t **range);
+	extern void apol_mls_range_destroy(apol_mls_range_t ** range);
 
 /**
  * Set the low level component of a MLS range structure.  This
@@ -267,8 +266,7 @@ extern void apol_mls_range_destroy(apol_mls_range_t **range);
  *
  * @return 0 on success or < 0 on failure.
  */
-extern int apol_mls_range_set_low(apol_policy_t *p,
-				  apol_mls_range_t *range, apol_mls_level_t *level);
+	extern int apol_mls_range_set_low(apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level);
 
 /**
  * Set the high level component of a MLS range structure.  This
@@ -282,8 +280,7 @@ extern int apol_mls_range_set_low(apol_policy_t *p,
  *
  * @return 0 on success or < 0 on failure.
  */
-extern int apol_mls_range_set_high(apol_policy_t *p,
-				   apol_mls_range_t *range, apol_mls_level_t *level);
+	extern int apol_mls_range_set_high(apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level);
 
 /**
  * Compare two ranges, determining if one matches the other.  The
@@ -301,10 +298,8 @@ extern int apol_mls_range_set_high(apol_policy_t *p,
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-extern int apol_mls_range_compare(apol_policy_t *p,
-				  apol_mls_range_t *target,
-				  apol_mls_range_t *search,
-				  unsigned int range_compare_type);
+	extern int apol_mls_range_compare(apol_policy_t * p,
+					  apol_mls_range_t * target, apol_mls_range_t * search, unsigned int range_compare_type);
 
 /**
  * Determine if a range completely contains a subrange given a certain
@@ -317,9 +312,7 @@ extern int apol_mls_range_compare(apol_policy_t *p,
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-extern int apol_mls_range_contain_subrange(apol_policy_t *p,
-					   apol_mls_range_t *range,
-					   apol_mls_range_t *subrange);
+	extern int apol_mls_range_contain_subrange(apol_policy_t * p, apol_mls_range_t * range, apol_mls_range_t * subrange);
 /**
  * Given a range, determine if it is legal according to the supplied
  * policy.  This function will convert from aliases to canonical forms
@@ -330,8 +323,7 @@ extern int apol_mls_range_contain_subrange(apol_policy_t *p,
  *
  * @return 1 If range is legal, 0 if not; -1 on error.
  */
-extern int apol_mls_range_validate(apol_policy_t *p,
-				   apol_mls_range_t *range);
+	extern int apol_mls_range_validate(apol_policy_t * p, apol_mls_range_t * range);
 
 /**
  * Creates a string containing the textual representation of
@@ -342,9 +334,31 @@ extern int apol_mls_range_validate(apol_policy_t *p,
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-extern char *apol_mls_range_render(apol_policy_t *p, apol_mls_range_t *range);
+	extern char *apol_mls_range_render(apol_policy_t * p, apol_mls_range_t * range);
 
 /******************** level queries ********************/
+
+/**
+ * Execute a query against all levels within the policy.  The results
+ * will only contain levels, not sensitivity aliases.  The returned
+ * levels will be unordered.
+ * @deprecated This function has been renamed apol_level_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
+ *
+ * @param p Policy within which to look up levels.
+ * @param l Structure containing parameters for query.	If this is
+ * NULL then return all levels.
+ * @param v Reference to a vector of qpol_level_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+	extern int apol_get_level_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all levels within the policy.  The results
@@ -362,9 +376,7 @@ extern char *apol_mls_range_render(apol_policy_t *p, apol_mls_range_t *range);
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_level_by_query(apol_policy_t *p,
-				   apol_level_query_t *l,
-				   apol_vector_t **v);
+	extern int apol_level_get_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vector_t ** v);
 
 /**
  * Allocate and return a new level query structure.  All fields are
@@ -374,7 +386,7 @@ extern int apol_get_level_by_query(apol_policy_t *p,
  *
  * @return An initialized level query structure, or NULL upon error.
  */
-extern apol_level_query_t *apol_level_query_create(void);
+	extern apol_level_query_t *apol_level_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced level query,
@@ -383,7 +395,7 @@ extern apol_level_query_t *apol_level_query_create(void);
  *
  * @param l Reference to a level query structure to destroy.
  */
-extern void apol_level_query_destroy(apol_level_query_t **l);
+	extern void apol_level_query_destroy(apol_level_query_t ** l);
 
 /**
  * Set a level query to return only levels that match this name.  The
@@ -397,8 +409,7 @@ extern void apol_level_query_destroy(apol_level_query_t **l);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_level_query_set_sens(apol_policy_t *p,
-				     apol_level_query_t *l, const char *name);
+	extern int apol_level_query_set_sens(apol_policy_t * p, apol_level_query_t * l, const char *name);
 
 /**
  * Set a level query to return only levels contain a particular
@@ -412,8 +423,7 @@ extern int apol_level_query_set_sens(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_level_query_set_cat(apol_policy_t *p,
-				    apol_level_query_t *l, const char *name);
+	extern int apol_level_query_set_cat(apol_policy_t * p, apol_level_query_t * l, const char *name);
 
 /**
  * Set a level query to use regular expression searching for all of
@@ -427,11 +437,30 @@ extern int apol_level_query_set_cat(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_level_query_set_regex(apol_policy_t *p,
-				      apol_level_query_t *l, int is_regex);
-
+	extern int apol_level_query_set_regex(apol_policy_t * p, apol_level_query_t * l, int is_regex);
 
 /******************** category queries ********************/
+
+/**
+ * Execute a query against all categories within the policy.  The
+ * results will only contain categories, not aliases.  The returned
+ * categories will be unordered.
+ * @deprecated This function has been renamed apol_cat_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
+ *
+ * @param p Policy within which to look up categories.
+ * @param c Structure containing parameters for query.	If this is
+ * NULL then return all categories.
+ * @param v Reference to a vector of qpol_cat_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+	extern int apol_get_cat_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t ** v) __attribute__ ((deprecated));
 
 /**
  * Execute a query against all categories within the policy.  The
@@ -449,9 +478,7 @@ extern int apol_level_query_set_regex(apol_policy_t *p,
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_cat_by_query(apol_policy_t *p,
-				 apol_cat_query_t *c,
-				 apol_vector_t **v);
+	extern int apol_cat_get_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new category query structure.	All fields are
@@ -462,7 +489,7 @@ extern int apol_get_cat_by_query(apol_policy_t *p,
  * @return An initialized category query structure, or NULL upon
  * error.
  */
-extern apol_cat_query_t *apol_cat_query_create(void);
+	extern apol_cat_query_t *apol_cat_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced category
@@ -471,7 +498,7 @@ extern apol_cat_query_t *apol_cat_query_create(void);
  *
  * @param c Reference to a category query structure to destroy.
  */
-extern void apol_cat_query_destroy(apol_cat_query_t **c);
+	extern void apol_cat_query_destroy(apol_cat_query_t ** c);
 
 /**
  * Set a category query to return only categories that match this
@@ -485,8 +512,7 @@ extern void apol_cat_query_destroy(apol_cat_query_t **c);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_cat_query_set_cat(apol_policy_t *p,
-				  apol_cat_query_t *c, const char *name);
+	extern int apol_cat_query_set_cat(apol_policy_t * p, apol_cat_query_t * c, const char *name);
 
 /**
  * Set a category query to use regular expression searching for all of
@@ -500,7 +526,10 @@ extern int apol_cat_query_set_cat(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_cat_query_set_regex(apol_policy_t *p,
-				    apol_cat_query_t *c, int is_regex);
+	extern int apol_cat_query_set_regex(apol_policy_t * p, apol_cat_query_t * c, int is_regex);
 
-#endif /* APOL_MLS_QUERY_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* APOL_MLS_QUERY_H */

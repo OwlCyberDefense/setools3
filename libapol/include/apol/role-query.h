@@ -26,13 +26,38 @@
 #ifndef APOL_ROLE_QUERY_H
 #define APOL_ROLE_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy_query.h>
 
-typedef struct apol_role_query apol_role_query_t;
+	typedef struct apol_role_query apol_role_query_t;
 
 /******************** role queries ********************/
+
+/**
+ * Execute a query against all roles within the policy.
+ * @deprecated This function has been renamed apol_role_get_by_query().
+ * This name has been retained for compatibility but may be removed
+ * in a future release.
+ *
+ * @param p Policy within which to look up roles.
+ * @param r Structure containing parameters for query.	If this is
+ * NULL then return all roles.
+ * @param v Reference to a vector of qpol_role_t.  The vector will be
+ * allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+	extern int apol_get_role_by_query(apol_policy_t * p, apol_role_query_t * r, apol_vector_t ** v)
+		__attribute__ ((deprecated));
 
 /**
  * Execute a query against all roles within the policy.
@@ -48,9 +73,7 @@ typedef struct apol_role_query apol_role_query_t;
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_role_by_query(apol_policy_t *p,
-				  apol_role_query_t *r,
-				  apol_vector_t **v);
+	extern int apol_role_get_by_query(apol_policy_t * p, apol_role_query_t * r, apol_vector_t ** v);
 
 /**
  * Allocate and return a new role query structure.  All fields are
@@ -60,7 +83,7 @@ extern int apol_get_role_by_query(apol_policy_t *p,
  *
  * @return An initialized role query structure, or NULL upon error.
  */
-extern apol_role_query_t *apol_role_query_create(void);
+	extern apol_role_query_t *apol_role_query_create(void);
 
 /**
  * Deallocate all memory associated with the referenced role query,
@@ -69,7 +92,7 @@ extern apol_role_query_t *apol_role_query_create(void);
  *
  * @param r Reference to a role query structure to destroy.
  */
-extern void apol_role_query_destroy(apol_role_query_t **r);
+	extern void apol_role_query_destroy(apol_role_query_t ** r);
 
 /**
  * Set a role query to return only roles that match this name.	This
@@ -82,8 +105,7 @@ extern void apol_role_query_destroy(apol_role_query_t **r);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_query_set_role(apol_policy_t *p,
-				    apol_role_query_t *r, const char *name);
+	extern int apol_role_query_set_role(apol_policy_t * p, apol_role_query_t * r, const char *name);
 
 /**
  * Set a role query to return only roles containing this type or one
@@ -96,8 +118,7 @@ extern int apol_role_query_set_role(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_query_set_type(apol_policy_t *p,
-				    apol_role_query_t *r, const char *name);
+	extern int apol_role_query_set_type(apol_policy_t * p, apol_role_query_t * r, const char *name);
 
 /**
  * Set a role query to use regular expression searching for all of its
@@ -109,8 +130,7 @@ extern int apol_role_query_set_type(apol_policy_t *p,
  *
  * @return Always 0.
  */
-extern int apol_role_query_set_regex(apol_policy_t *p,
-				     apol_role_query_t *r, int is_regex);
+	extern int apol_role_query_set_regex(apol_policy_t * p, apol_role_query_t * r, int is_regex);
 
 /**
  * See if the role passed in includes the type that is the
@@ -120,6 +140,10 @@ extern int apol_role_query_set_regex(apol_policy_t *p,
  * @param t Type that is checked against all types that are in role
  * @return 1 if the type is included in the role, 0 if it's not, < 0 on error
 */
-extern int apol_role_has_type(apol_policy_t *p, qpol_role_t *r, qpol_type_t *t);
+	extern int apol_role_has_type(apol_policy_t * p, qpol_role_t * r, qpol_type_t * t);
 
-#endif /* APOL_ROLE_QUERY_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* APOL_ROLE_QUERY_H */

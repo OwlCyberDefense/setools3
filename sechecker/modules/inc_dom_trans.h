@@ -26,6 +26,11 @@
 #ifndef INC_DOM_TRANS
 #define INC_DOM_TRANS
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include "sechecker.h"
 #include <apol/policy.h>
 #include <apol/domain-trans-analysis.h>
@@ -39,9 +44,13 @@
 #define SECHK_INC_DOM_TRANS_HAS_EP		0x01
 #define SECHK_INC_DOM_TRANS_COMPLETE	(SECHK_INC_DOM_TRANS_HAS_EP|SECHK_INC_DOM_TRANS_HAS_TRANS|SECHK_INC_DOM_TRANS_HAS_EXEC)
 
-int inc_dom_trans_register(sechk_lib_t *lib);
-int inc_dom_trans_init(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int inc_dom_trans_run(sechk_module_t *mod, apol_policy_t *policy, void *arg);
-int inc_dom_trans_print(sechk_module_t *mod, apol_policy_t *policy, void *arg);
+	int inc_dom_trans_register(sechk_lib_t * lib);
+	int inc_dom_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+	int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg);
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

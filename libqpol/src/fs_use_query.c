@@ -21,7 +21,7 @@
 *  You should have received a copy of the GNU Lesser General Public
 *  License along with this library; if not, write to the Free Software
 *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/ 
+*/
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -35,7 +35,7 @@
 #include "qpol_internal.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_fs_use_by_name(qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon)
+int qpol_policy_get_fs_use_by_name(qpol_policy_t * policy, const char *name, qpol_fs_use_t ** ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -55,7 +55,7 @@ int qpol_policy_get_fs_use_by_name(qpol_policy_t *policy, const char *name, qpol
 			break;
 	}
 
-	*ocon = (qpol_fs_use_t *)tmp;
+	*ocon = (qpol_fs_use_t *) tmp;
 
 	if (*ocon == NULL) {
 		ERR(policy, "could not find fs_use statement for %s", name);
@@ -66,13 +66,13 @@ int qpol_policy_get_fs_use_by_name(qpol_policy_t *policy, const char *name, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_fs_use_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_fs_use_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
 	ocon_state_t *os = NULL;
 
-	if (iter != NULL) 
+	if (iter != NULL)
 		*iter = NULL;
 
 	if (policy == NULL || iter == NULL) {
@@ -93,8 +93,8 @@ int qpol_policy_get_fs_use_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 
 	os->head = os->cur = db->ocontexts[OCON_FSUSE];
 
-	if (qpol_iterator_create(policy, (void*)os, ocon_state_get_cur,
-		ocon_state_next, ocon_state_end, ocon_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)os, ocon_state_get_cur,
+				 ocon_state_next, ocon_state_end, ocon_state_size, free, iter)) {
 		free(os);
 		return STATUS_ERR;
 	}
@@ -102,7 +102,7 @@ int qpol_policy_get_fs_use_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_name(qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name)
+int qpol_fs_use_get_name(qpol_policy_t * policy, qpol_fs_use_t * ocon, char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -115,13 +115,13 @@ int qpol_fs_use_get_name(qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name
 		return STATUS_ERR;
 	}
 
-	internal_ocon = (ocontext_t*)ocon;
+	internal_ocon = (ocontext_t *) ocon;
 	*name = internal_ocon->u.name;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_behavior(qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_t *behavior)
+int qpol_fs_use_get_behavior(qpol_policy_t * policy, qpol_fs_use_t * ocon, uint32_t * behavior)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -134,13 +134,13 @@ int qpol_fs_use_get_behavior(qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_
 		return STATUS_ERR;
 	}
 
-	internal_ocon = (ocontext_t*)ocon;
+	internal_ocon = (ocontext_t *) ocon;
 	*behavior = internal_ocon->v.behavior;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_context(qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_context_t **context)
+int qpol_fs_use_get_context(qpol_policy_t * policy, qpol_fs_use_t * ocon, qpol_context_t ** context)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -153,7 +153,7 @@ int qpol_fs_use_get_context(qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_con
 		return STATUS_ERR;
 	}
 
-	internal_ocon = (ocontext_t*)ocon;
+	internal_ocon = (ocontext_t *) ocon;
 
 	if (internal_ocon->v.behavior == QPOL_FS_USE_PSID) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -161,8 +161,7 @@ int qpol_fs_use_get_context(qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_con
 		return STATUS_ERR;
 	}
 
-	*context = (qpol_context_t*)&(internal_ocon->context[0]);
+	*context = (qpol_context_t *) & (internal_ocon->context[0]);
 
 	return STATUS_SUCCESS;
 }
-

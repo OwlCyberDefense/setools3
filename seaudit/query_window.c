@@ -19,10 +19,10 @@ extern seaudit_t *seaudit_app;
 
 static gint query_window_str_compare(gconstpointer a, gconstpointer b)
 {
-	return strcmp((const char*)a, (const char*)b);
+	return strcmp((const char *)a, (const char *)b);
 }
 
-static void raise_policy_tab_goto_line(unsigned long line, GladeXML *xml)
+static void raise_policy_tab_goto_line(unsigned long line, GladeXML * xml)
 {
 	GtkNotebook *notebook;
 	GtkTextBuffer *buffer;
@@ -46,7 +46,8 @@ static void raise_policy_tab_goto_line(unsigned long line, GladeXML *xml)
 	return;
 }
 
-gboolean on_policy_link_event(GtkTextTag *tag, GObject *event_object, GdkEvent *event, const GtkTextIter *iter, gpointer user_data)
+gboolean on_policy_link_event(GtkTextTag * tag, GObject * event_object, GdkEvent * event, const GtkTextIter * iter,
+			      gpointer user_data)
 {
 	int offset;
 	unsigned long line;
@@ -60,7 +61,7 @@ gboolean on_policy_link_event(GtkTextTag *tag, GObject *event_object, GdkEvent *
 		if (offset == 0)
 			gtk_text_iter_forward_char(start);
 		else
-			while ( offset > 1) {
+			while (offset > 1) {
 				gtk_text_iter_backward_char(start);
 				offset = gtk_text_iter_get_line_offset(start);
 			}
@@ -77,7 +78,7 @@ gboolean on_policy_link_event(GtkTextTag *tag, GObject *event_object, GdkEvent *
 	return FALSE;
 }
 
-gboolean on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, gpointer user_data)
+gboolean on_text_view_motion(GtkWidget * widget, GdkEventMotion * event, gpointer user_data)
 {
 	GtkTextBuffer *buffer;
 	GtkTextView *view;
@@ -96,8 +97,7 @@ gboolean on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, gpointer 
 		ey = event->y;
 	}
 
-	gtk_text_view_window_to_buffer_coords (view, GTK_TEXT_WINDOW_WIDGET,
-			ex, ey, &x, &y);
+	gtk_text_view_window_to_buffer_coords(view, GTK_TEXT_WINDOW_WIDGET, ex, ey, &x, &y);
 
 	buffer = gtk_text_view_get_buffer(view);
 	gtk_text_view_get_iter_at_location(view, &iter, x, y);
@@ -116,12 +116,13 @@ gboolean on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, gpointer 
 		gdk_window_set_cursor(event->window, NULL);
 	}
 
-out:
+      out:
 	g_slist_free(tags);
 	return FALSE;
 }
 
-static void display_policy_query_results(GladeXML *xml, GString *src_type, GString *tgt_type, GString *obj_class, apol_vector_t *av_vector)
+static void display_policy_query_results(GladeXML * xml, GString * src_type, GString * tgt_type, GString * obj_class,
+					 apol_vector_t * av_vector)
 {
 	GtkTextView *view;
 	GtkTextBuffer *buffer;
@@ -144,17 +145,14 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 	table = gtk_text_buffer_get_tag_table(buffer);
 	summary_tag = gtk_text_tag_table_lookup(table, "summary-tag");
 	if (!summary_tag) {
-		summary_tag = gtk_text_buffer_create_tag(buffer, "summary-tag",
-				"family", "monospace",
-				"weight", "bold", NULL);
+		summary_tag = gtk_text_buffer_create_tag(buffer, "summary-tag", "family", "monospace", "weight", "bold", NULL);
 	}
 	link_tag = gtk_text_tag_table_lookup(table, "policy-link-tag");
 	if (!apol_policy_is_binary(seaudit_app->cur_policy)) {
 		if (!link_tag) {
 			link_tag = gtk_text_buffer_create_tag(buffer, "policy-link-tag",
-					"family", "monospace",
-					"foreground", "blue",
-					"underline", PANGO_UNDERLINE_SINGLE, NULL);
+							      "family", "monospace",
+							      "foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
 			g_signal_connect_after(G_OBJECT(link_tag), "event", GTK_SIGNAL_FUNC(on_policy_link_event), xml);
 		}
 		glade_xml_signal_connect_data(xml, "on_text_view_motion", GTK_SIGNAL_FUNC(on_text_view_motion), link_tag);
@@ -162,38 +160,30 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 
 	rules_tag = gtk_text_tag_table_lookup(table, "rules-tag");
 	if (!rules_tag) {
-		rules_tag = gtk_text_buffer_create_tag(buffer, "rules-tag",
-				"family", "monospace", NULL);
+		rules_tag = gtk_text_buffer_create_tag(buffer, "rules-tag", "family", "monospace", NULL);
 	}
 
 	if (apol_policy_is_binary(seaudit_app->cur_policy))
-		snprintf(str, STR_SIZE,
-				"Found %zd Rule(s) containing ", apol_vector_get_size(av_vector));
+		snprintf(str, STR_SIZE, "Found %zd Rule(s) containing ", apol_vector_get_size(av_vector));
 	else {
+		qpol_policy_build_syn_rule_table(apol_policy_get_qpol(seaudit_app->cur_policy));
 		syn_avrule_vector = apol_avrule_list_to_syn_avrules(seaudit_app->cur_policy, av_vector, NULL);
-		snprintf(str, STR_SIZE,
-				"Found %zd Rule(s) containing ", apol_vector_get_size(syn_avrule_vector));
+		snprintf(str, STR_SIZE, "Found %zd Rule(s) containing ", apol_vector_get_size(syn_avrule_vector));
 	}
 	gtk_text_buffer_insert_with_tags_by_name(buffer, &end, str, -1, "summary-tag", NULL);
 
 	if (strcmp(src_type->str, "") != 0) {
-		snprintf(str, STR_SIZE,
-				"Source Type: %s ",
-				src_type->str);
+		snprintf(str, STR_SIZE, "Source Type: %s ", src_type->str);
 		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, str, -1, "summary-tag", NULL);
 	}
 
 	if (strcmp(tgt_type->str, "") != 0) {
-		snprintf(str, STR_SIZE,
-				"Target Type: %s ",
-				tgt_type->str);
+		snprintf(str, STR_SIZE, "Target Type: %s ", tgt_type->str);
 		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, str, -1, "summary-tag", NULL);
 	}
 
 	if (strcmp(obj_class->str, "") != 0) {
-		snprintf(str, STR_SIZE,
-				"Object Class: %s ",
-				obj_class->str);
+		snprintf(str, STR_SIZE, "Object Class: %s ", obj_class->str);
 		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, str, -1, "summary-tag", NULL);
 	}
 
@@ -208,15 +198,14 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 			free(string);
 			gtk_text_buffer_insert(buffer, &end, "\n", -1);
 		}
-	}
-	else {
+	} else {
 		for (i = 0; i < apol_vector_get_size(syn_avrule_vector); i++) {
 			qpol_syn_avrule_t *rule;
 			unsigned long lineno;
 			rule = apol_vector_get_element(syn_avrule_vector, i);
 			sprintf(tbuf, "[");
 			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
-			qpol_syn_avrule_get_lineno(seaudit_app->cur_policy->p, rule, &lineno);
+			qpol_syn_avrule_get_lineno(apol_policy_get_qpol(seaudit_app->cur_policy), rule, &lineno);
 			sprintf(tbuf, "%ld", lineno);
 			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "policy-link-tag", NULL);
 			sprintf(tbuf, "] ");
@@ -232,7 +221,7 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 	return;
 }
 
-static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_class, GladeXML *xml)
+static int do_policy_query(GString * src_type, GString * tgt_type, GString * obj_class, GladeXML * xml)
 {
 
 	GtkWindow *window;
@@ -248,7 +237,7 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 
 	widget = glade_xml_get_widget(xml, "SrcTypeDirectCheck");
 	g_assert(widget);
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) )
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
 		indirect = 0;
 	if (strcmp(src_type->str, "") != 0) {
 		apol_avrule_query_set_source(seaudit_app->cur_policy, avrule_query, src_type->str, indirect);
@@ -256,8 +245,8 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 	indirect = 1;
 	widget = glade_xml_get_widget(xml, "TgtTypeDirectCheck");
 	g_assert(widget);
-	if ( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)) )
-                indirect = 0;
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+		indirect = 0;
 	if (strcmp(tgt_type->str, "") != 0) {
 		apol_avrule_query_set_target(seaudit_app->cur_policy, avrule_query, tgt_type->str, indirect);
 	}
@@ -267,7 +256,7 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 	if (strcmp(obj_class->str, "") != 0) {
 		qpol_class_t *class;
 
-		if ( qpol_policy_get_class_by_name(seaudit_app->cur_policy->p, obj_class->str, &class) == 0 ) {
+		if (qpol_policy_get_class_by_name(apol_policy_get_qpol(seaudit_app->cur_policy), obj_class->str, &class) == 0) {
 			apol_avrule_query_append_class(seaudit_app->cur_policy, avrule_query, obj_class->str);
 		} else {
 			window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
@@ -278,12 +267,12 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 	}
 
 	/* initialize the results structure */
-	i = apol_get_avrule_by_query(seaudit_app->cur_policy, avrule_query, &avrule_vector);
+	i = apol_avrule_get_by_query(seaudit_app->cur_policy, avrule_query, &avrule_vector);
 
-	if ( i < 0 ) {
+	if (i < 0) {
 		window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
 		g_assert(window);
-		if(errno) {
+		if (errno) {
 			message_display(window, GTK_MESSAGE_ERROR, strerror(errno));
 			return -1;
 		} else {
@@ -298,16 +287,16 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 	return 0;
 }
 
-void on_close_button_clicked(GtkButton *button, gpointer user_data)
+void on_close_button_clicked(GtkButton * button, gpointer user_data)
 {
-        GladeXML *xml = (GladeXML*)user_data;
-        GtkWidget *widget;
+	GladeXML *xml = (GladeXML *) user_data;
+	GtkWidget *widget;
 
 	widget = glade_xml_get_widget(xml, "query_window");
 	gtk_widget_hide(widget);
 }
 
-void on_query_policy_button_clicked(GtkButton *button, GladeXML *xml)
+void on_query_policy_button_clicked(GtkButton * button, GladeXML * xml)
 {
 	GtkEntry *src_entry, *tgt_entry, *obj_entry;
 	GtkToggleButton *toggle;
@@ -342,7 +331,6 @@ void on_query_policy_button_clicked(GtkButton *button, GladeXML *xml)
 	} else
 		g_string_assign(src_type, "");
 
-
 	toggle = GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "tgt_type_check_button"));
 	tgt_on = gtk_toggle_button_get_active(toggle);
 	if (tgt_on) {
@@ -363,7 +351,7 @@ void on_query_policy_button_clicked(GtkButton *button, GladeXML *xml)
 	} else
 		g_string_assign(obj_class, "");
 
-	if ( !src_on && !obj_on && !tgt_on) {
+	if (!src_on && !obj_on && !tgt_on) {
 		message_display(window, GTK_MESSAGE_ERROR, "You must select a Source Type, Target Type,\nor Object Class");
 		goto exit;
 	}
@@ -372,7 +360,7 @@ void on_query_policy_button_clicked(GtkButton *button, GladeXML *xml)
 	do_policy_query(src_type, tgt_type, obj_class, xml);
 	clear_wait_cursor(GTK_WIDGET(window));
 
-exit:
+      exit:
 	if (src_type)
 		g_string_free(src_type, TRUE);
 	if (tgt_type)
@@ -382,9 +370,9 @@ exit:
 	return;
 }
 
-void on_tgt_type_check_button_toggled(GtkToggleButton *button, gpointer user_data)
+void on_tgt_type_check_button_toggled(GtkToggleButton * button, gpointer user_data)
 {
-	GladeXML *xml = (GladeXML*)user_data;
+	GladeXML *xml = (GladeXML *) user_data;
 	GtkWidget *widget;
 
 	if (gtk_toggle_button_get_active(button)) {
@@ -400,9 +388,9 @@ void on_tgt_type_check_button_toggled(GtkToggleButton *button, gpointer user_dat
 	}
 }
 
-void on_src_type_check_button_toggled(GtkToggleButton *button, gpointer user_data)
+void on_src_type_check_button_toggled(GtkToggleButton * button, gpointer user_data)
 {
-	GladeXML *xml = (GladeXML*)user_data;
+	GladeXML *xml = (GladeXML *) user_data;
 	GtkWidget *widget;
 
 	if (gtk_toggle_button_get_active(button)) {
@@ -418,9 +406,9 @@ void on_src_type_check_button_toggled(GtkToggleButton *button, gpointer user_dat
 	}
 }
 
-void on_obj_check_button_toggled(GtkToggleButton *button, gpointer user_data)
+void on_obj_check_button_toggled(GtkToggleButton * button, gpointer user_data)
 {
-	GladeXML *xml = (GladeXML*)user_data;
+	GladeXML *xml = (GladeXML *) user_data;
 	GtkWidget *combo;
 
 	combo = glade_xml_get_widget(xml, "obj_combo");
@@ -431,20 +419,20 @@ void on_obj_check_button_toggled(GtkToggleButton *button, gpointer user_data)
 		gtk_widget_set_sensitive(combo, FALSE);
 }
 
-static void query_window_populate_combo_boxes(GtkWidget *src_type_combo, GtkWidget *tgt_type_combo, GtkWidget *obj_class_combo)
+static void query_window_populate_combo_boxes(GtkWidget * src_type_combo, GtkWidget * tgt_type_combo, GtkWidget * obj_class_combo)
 {
 	GList *items = NULL;
 	apol_vector_t *type_vector = NULL;
 	apol_vector_t *class_vector = NULL;
 	int i;
 
-	apol_get_type_by_query(seaudit_app->cur_policy, NULL, &type_vector);
+	apol_type_get_by_query(seaudit_app->cur_policy, NULL, &type_vector);
 	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
 		qpol_type_t *type = NULL;
 		char *type_name = NULL;
 
 		type = apol_vector_get_element(type_vector, i);
-		qpol_type_get_name(seaudit_app->cur_policy->p, type, &type_name);
+		qpol_type_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), type, &type_name);
 		items = g_list_append(items, type_name);
 	}
 	items = g_list_sort(items, &query_window_str_compare);
@@ -453,13 +441,13 @@ static void query_window_populate_combo_boxes(GtkWidget *src_type_combo, GtkWidg
 	g_list_free(items);
 	items = NULL;
 
-	apol_get_class_by_query(seaudit_app->cur_policy, NULL, &class_vector);
+	apol_class_get_by_query(seaudit_app->cur_policy, NULL, &class_vector);
 	for (i = 0; i < apol_vector_get_size(class_vector); i++) {
 		qpol_class_t *class = NULL;
 		char *class_name = NULL;
 
 		class = apol_vector_get_element(class_vector, i);
-		qpol_class_get_name(seaudit_app->cur_policy->p, class, &class_name);
+		qpol_class_get_name(apol_policy_get_qpol(seaudit_app->cur_policy), class, &class_name);
 		items = g_list_append(items, class_name);
 	}
 	items = g_list_sort(items, &query_window_str_compare);
@@ -468,7 +456,7 @@ static void query_window_populate_combo_boxes(GtkWidget *src_type_combo, GtkWidg
 	return;
 }
 
-static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
+static void populate_query_window_widgets(GladeXML * xml, int *tree_item_idx)
 {
 	GtkTreeSelection *sel;
 	GtkTreeModel *model;
@@ -524,11 +512,11 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 			fprintf(stderr, "Could not get valid iterator for the selected path.\n");
 			if (glist) {
 				g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-				g_list_free (glist);
+				g_list_free(glist);
 			}
 			return;
 		}
-		fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
+		fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore *) model, &iter);
 		selected = TRUE;
 	} else {
 		fltr_msg_idx = *tree_item_idx;
@@ -536,8 +524,8 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 	}
 
 	msg_list_idx = fltr_msg_idx;
-	msg = apol_vector_get_element(seaudit_app->cur_log->msg_list,msg_list_idx);
-	if (msg->msg_type!=AVC_MSG) {
+	msg = apol_vector_get_element(seaudit_app->cur_log->msg_list, msg_list_idx);
+	if (msg->msg_type != AVC_MSG) {
 		selected = FALSE;
 	} else {
 		g_assert(fltr_msg_idx >= 0);
@@ -555,7 +543,7 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 
 		/* Free selected rows list */
 		if (glist) {
-			g_list_foreach(glist, (GFunc)gtk_tree_path_free, NULL);
+			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
 			g_list_free(glist);
 		}
 	}
@@ -564,7 +552,7 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 
 static void on_new_policy_opened(void *user_data);
 
-void query_window_remove_callbacks(GtkWidget *widget)
+void query_window_remove_callbacks(GtkWidget * widget)
 {
 	policy_load_callback_remove(&on_new_policy_opened, widget);
 
@@ -572,10 +560,10 @@ void query_window_remove_callbacks(GtkWidget *widget)
 	 * then we must remove it to avoid that function
 	 * being executed after we delete the window.  This
 	 * may happen if the window is closed during a search. */
-	while(g_idle_remove_by_data(widget));
+	while (g_idle_remove_by_data(widget)) ;
 }
 
-gboolean on_query_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+gboolean on_query_window_delete_event(GtkWidget * widget, GdkEvent * event, gpointer user_data)
 {
 	query_window_remove_callbacks(widget);
 
@@ -584,11 +572,11 @@ gboolean on_query_window_delete_event(GtkWidget *widget, GdkEvent *event, gpoint
 
 static void on_new_policy_opened(void *user_data)
 {
-	query_window_remove_callbacks((GtkWidget*)user_data);
-	gtk_widget_destroy((GtkWidget*)user_data);
+	query_window_remove_callbacks((GtkWidget *) user_data);
+	gtk_widget_destroy((GtkWidget *) user_data);
 }
 
-void on_list_selection_changed(GtkList *list, GtkWidget *widget, gpointer data)
+void on_list_selection_changed(GtkList * list, GtkWidget * widget, gpointer data)
 {
 	printf("select-child *%s*\n", gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(data)->entry)));
 
@@ -609,7 +597,7 @@ int query_window_create(int *tree_item_idx)
 	}
 
 	dir = apol_file_find("query_window.glade");
-	if (!dir){
+	if (!dir) {
 		fprintf(stderr, "could not find query_window.glade\n");
 		return -1;
 	}
@@ -623,15 +611,9 @@ int query_window_create(int *tree_item_idx)
 	gtk_window_set_transient_for(window, seaudit_app->window->window);
 	gtk_window_set_position(window, GTK_WIN_POS_CENTER_ON_PARENT);
 
-	glade_xml_signal_connect_data(xml, "on_close_button_clicked",
-			G_CALLBACK(on_close_button_clicked),
-			xml);
-	glade_xml_signal_connect_data(xml, "on_query_policy_button_clicked",
-			G_CALLBACK(on_query_policy_button_clicked),
-			xml);
-	g_signal_connect(G_OBJECT(window), "delete_event",
-			G_CALLBACK(on_query_window_delete_event),
-			NULL);
+	glade_xml_signal_connect_data(xml, "on_close_button_clicked", G_CALLBACK(on_close_button_clicked), xml);
+	glade_xml_signal_connect_data(xml, "on_query_policy_button_clicked", G_CALLBACK(on_query_policy_button_clicked), xml);
+	g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(on_query_window_delete_event), NULL);
 
 	policy_load_callback_register(&on_new_policy_opened, window);
 

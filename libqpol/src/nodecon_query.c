@@ -21,7 +21,7 @@
 *  You should have received a copy of the GNU Lesser General Public
 *  License along with this library; if not, write to the Free Software
 *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/ 
+*/
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -34,12 +34,14 @@
 #include "qpol_internal.h"
 #include "iterator_internal.h"
 
-struct qpol_nodecon {
+struct qpol_nodecon
+{
 	ocontext_t *ocon;
 	unsigned char protocol;
 };
 
-int qpol_policy_get_nodecon_by_node(qpol_policy_t *policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol, qpol_nodecon_t **ocon)
+int qpol_policy_get_nodecon_by_node(qpol_policy_t * policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol,
+				    qpol_nodecon_t ** ocon)
 {
 	policydb_t *db = NULL;
 	ocontext_t *tmp = NULL;
@@ -48,7 +50,7 @@ int qpol_policy_get_nodecon_by_node(qpol_policy_t *policy, uint32_t addr[4], uin
 	if (ocon != NULL)
 		*ocon = NULL;
 
-	if (policy == NULL || ocon == NULL){
+	if (policy == NULL || ocon == NULL) {
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
@@ -76,7 +78,7 @@ int qpol_policy_get_nodecon_by_node(qpol_policy_t *policy, uint32_t addr[4], uin
 		(*ocon)->ocon = tmp;
 	}
 
-	if(*ocon == NULL) {
+	if (*ocon == NULL) {
 		ERR(policy, "%s", "could not find nodecon statement for node");
 		errno = ENOENT;
 		return STATUS_ERR;
@@ -85,14 +87,15 @@ int qpol_policy_get_nodecon_by_node(qpol_policy_t *policy, uint32_t addr[4], uin
 	return STATUS_SUCCESS;
 }
 
-typedef struct node_state {
+typedef struct node_state
+{
 	ocon_state_t *v4state;
 	ocon_state_t *v6state;
 } node_state_t;
 
 static void node_state_free(void *ns)
 {
-	node_state_t *ins = (node_state_t*)ns;
+	node_state_t *ins = (node_state_t *) ns;
 
 	if (!ns)
 		return;
@@ -102,7 +105,7 @@ static void node_state_free(void *ns)
 	free(ns);
 }
 
-static int node_state_end(qpol_iterator_t *iter)
+static int node_state_end(qpol_iterator_t * iter)
 {
 	node_state_t *ns = NULL;
 
@@ -111,12 +114,12 @@ static int node_state_end(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	ns = (node_state_t*)qpol_iterator_state(iter);
+	ns = (node_state_t *) qpol_iterator_state(iter);
 
 	return (ns->v4state->cur == NULL && ns->v6state->cur == NULL);
 }
 
-static void *node_state_get_cur(qpol_iterator_t *iter)
+static void *node_state_get_cur(qpol_iterator_t * iter)
 {
 	node_state_t *ns = NULL;
 	qpol_nodecon_t *node = NULL;
@@ -126,7 +129,7 @@ static void *node_state_get_cur(qpol_iterator_t *iter)
 		return NULL;
 	}
 
-	ns = (node_state_t*)qpol_iterator_state(iter);
+	ns = (node_state_t *) qpol_iterator_state(iter);
 
 	node = calloc(1, sizeof(qpol_nodecon_t));
 	if (!node) {
@@ -139,7 +142,7 @@ static void *node_state_get_cur(qpol_iterator_t *iter)
 	return node;
 }
 
-static size_t node_state_size(qpol_iterator_t *iter)
+static size_t node_state_size(qpol_iterator_t * iter)
 {
 	node_state_t *ns = NULL;
 	size_t count = 0;
@@ -150,7 +153,7 @@ static size_t node_state_size(qpol_iterator_t *iter)
 		return 0;
 	}
 
-	ns = (node_state_t*)qpol_iterator_state(iter);
+	ns = (node_state_t *) qpol_iterator_state(iter);
 
 	if (ns->v4state)
 		for (ocon = ns->v4state->head; ocon; ocon = ocon->next)
@@ -163,7 +166,7 @@ static size_t node_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-static int node_state_next(qpol_iterator_t *iter)
+static int node_state_next(qpol_iterator_t * iter)
 {
 	node_state_t *ns = NULL;
 
@@ -172,7 +175,7 @@ static int node_state_next(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	ns = (node_state_t*)qpol_iterator_state(iter);
+	ns = (node_state_t *) qpol_iterator_state(iter);
 
 	if (ns->v4state->cur == NULL && ns->v6state->cur == NULL) {
 		errno = ERANGE;
@@ -187,7 +190,7 @@ static int node_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_nodecon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_nodecon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -236,8 +239,8 @@ int qpol_policy_get_nodecon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	ns->v4state = v4os;
 	ns->v6state = v6os;
 
-	if (qpol_iterator_create(policy, (void*)ns, node_state_get_cur,
-		node_state_next, node_state_end, node_state_size, node_state_free, iter)) {
+	if (qpol_iterator_create(policy, (void *)ns, node_state_get_cur,
+				 node_state_next, node_state_end, node_state_size, node_state_free, iter)) {
 		node_state_free(ns);
 		return STATUS_ERR;
 	}
@@ -245,7 +248,7 @@ int qpol_policy_get_nodecon_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_addr(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **addr, unsigned char *protocol)
+int qpol_nodecon_get_addr(qpol_policy_t * policy, qpol_nodecon_t * ocon, uint32_t ** addr, unsigned char *protocol)
 {
 	if (addr != NULL)
 		*addr = NULL;
@@ -269,7 +272,7 @@ int qpol_nodecon_get_addr(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t 
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_mask(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **mask, unsigned char *protocol)
+int qpol_nodecon_get_mask(qpol_policy_t * policy, qpol_nodecon_t * ocon, uint32_t ** mask, unsigned char *protocol)
 {
 	if (mask != NULL)
 		*mask = NULL;
@@ -293,7 +296,7 @@ int qpol_nodecon_get_mask(qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t 
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_protocol(qpol_policy_t *policy, qpol_nodecon_t *ocon, unsigned char *protocol)
+int qpol_nodecon_get_protocol(qpol_policy_t * policy, qpol_nodecon_t * ocon, unsigned char *protocol)
 {
 	if (protocol != NULL)
 		*protocol = 0;
@@ -309,7 +312,7 @@ int qpol_nodecon_get_protocol(qpol_policy_t *policy, qpol_nodecon_t *ocon, unsig
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_context(qpol_policy_t *policy, qpol_nodecon_t *ocon, qpol_context_t **context)
+int qpol_nodecon_get_context(qpol_policy_t * policy, qpol_nodecon_t * ocon, qpol_context_t ** context)
 {
 	if (context != NULL)
 		*context = NULL;
@@ -320,9 +323,7 @@ int qpol_nodecon_get_context(qpol_policy_t *policy, qpol_nodecon_t *ocon, qpol_c
 		return STATUS_ERR;
 	}
 
-	*context = (qpol_context_t*)&(ocon->ocon->context[0]);
+	*context = (qpol_context_t *) & (ocon->ocon->context[0]);
 
 	return STATUS_SUCCESS;
 }
-
-

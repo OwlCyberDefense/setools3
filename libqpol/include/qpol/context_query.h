@@ -26,6 +26,11 @@
 #ifndef QPOL_CONTEXT_QUERY_H
 #define QPOL_CONTEXT_QUERY_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/policy.h>
@@ -34,7 +39,7 @@
 #include <qpol/type_query.h>
 #include <qpol/mls_query.h>
 
-typedef struct qpol_context qpol_context_t;
+	typedef struct qpol_context qpol_context_t;
 
 /**
  *  Get the datum for the user field of a context.
@@ -45,7 +50,7 @@ typedef struct qpol_context qpol_context_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *user will be NULL.
  */
-extern int qpol_context_get_user(qpol_policy_t *policy, qpol_context_t *context, qpol_user_t **user);
+	extern int qpol_context_get_user(qpol_policy_t * policy, qpol_context_t * context, qpol_user_t ** user);
 
 /**
  *  Get the datum for the role field of a context.
@@ -56,7 +61,7 @@ extern int qpol_context_get_user(qpol_policy_t *policy, qpol_context_t *context,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *role will be NULL.
  */
-extern int qpol_context_get_role(qpol_policy_t *policy, qpol_context_t *context, qpol_role_t **role);
+	extern int qpol_context_get_role(qpol_policy_t * policy, qpol_context_t * context, qpol_role_t ** role);
 
 /**
  *  Get the datum for the type field of a context.
@@ -67,7 +72,7 @@ extern int qpol_context_get_role(qpol_policy_t *policy, qpol_context_t *context,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *type will be NULL.
  */
-extern int qpol_context_get_type(qpol_policy_t *policy, qpol_context_t *context, qpol_type_t **type);
+	extern int qpol_context_get_type(qpol_policy_t * policy, qpol_context_t * context, qpol_type_t ** type);
 
 /**
  *  Get the datum for the MLS range field of a context.
@@ -78,6 +83,10 @@ extern int qpol_context_get_type(qpol_policy_t *policy, qpol_context_t *context,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *range will be NULL.
  */
-extern int qpol_context_get_range(qpol_policy_t *policy, qpol_context_t *context, qpol_mls_range_t **range);
+	extern int qpol_context_get_range(qpol_policy_t * policy, qpol_context_t * context, qpol_mls_range_t ** range);
 
-#endif /* QPOL_CONTEXT_QUERY_H */ 
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* QPOL_CONTEXT_QUERY_H */

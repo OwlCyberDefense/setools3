@@ -37,11 +37,11 @@ typedef struct _SEAuditLogViewStoreClass
 } SEAuditLogViewStoreClass;
 
 SEAuditLogViewStore *seaudit_log_view_store_create(void);
-int seaudit_log_view_store_open_log(SEAuditLogViewStore *store, audit_log_t *new_log);
-void seaudit_log_view_store_close_log(SEAuditLogViewStore *store);
-void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store);
-void seaudit_log_view_store_refresh(SEAuditLogViewStore *store);
-int seaudit_log_view_store_iter_to_idx(SEAuditLogViewStore *store, GtkTreeIter *iter);
+int seaudit_log_view_store_open_log(SEAuditLogViewStore * store, audit_log_t * new_log);
+void seaudit_log_view_store_close_log(SEAuditLogViewStore * store);
+void seaudit_log_view_store_do_filter(SEAuditLogViewStore * store);
+void seaudit_log_view_store_refresh(SEAuditLogViewStore * store);
+int seaudit_log_view_store_iter_to_idx(SEAuditLogViewStore * store, GtkTreeIter * iter);
 GType seaudit_log_view_store_get_type(void);
 
 #endif

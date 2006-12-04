@@ -48,6 +48,7 @@ libqpol_a_SOURCES = \
 	terule_query.c \
 	type_query.c \
 	user_query.c \
+	util.c \
 	policy_parse.y policy_scan.l
 libqpol_a_DEPENDENCIES = $(tmp_sepol)
 libqpol_a_LIBADD = $(tmp_sepol)/*.o

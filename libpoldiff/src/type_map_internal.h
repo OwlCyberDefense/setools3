@@ -27,10 +27,15 @@
 #ifndef POLDIFF_TYPE_MAP_INTERNAL_H
 #define POLDIFF_TYPE_MAP_INTERNAL_H
 
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
+
 #include <apol/vector.h>
 #include <qpol/policy_query.h>
 
-typedef struct type_map type_map_t;
+	typedef struct type_map type_map_t;
 
 #define POLDIFF_POLICY_ORIG 1
 #define POLDIFF_POLICY_MOD  2
@@ -42,7 +47,7 @@ typedef struct type_map type_map_t;
  *  type_map_destroy() afterwards.  On error, return NULL and set
  *  errno.
  */
-type_map_t *type_map_create(void);
+	type_map_t *type_map_create(void);
 
 /**
  *  Free all memory used by the type map.
@@ -50,7 +55,7 @@ type_map_t *type_map_create(void);
  *  @param map Reference pointer to the type map to destroy.  This
  *  pointer will be set to NULL afterwards.
  */
-void type_map_destroy(type_map_t **map);
+	void type_map_destroy(type_map_t ** map);
 
 /**
  *  Build the type map for a policy difference structure, using all
@@ -63,7 +68,7 @@ void type_map_destroy(type_map_t **map);
  *  @return 0 on success and < 0 on error, if the call fails, errno will
  *  be set and the policy difference structure will be unchanged.
  */
-int type_map_build(poldiff_t *diff);
+	int type_map_build(poldiff_t * diff);
 
 /**
  *  Clear away all type remap entries within the type map.  This
@@ -72,7 +77,7 @@ int type_map_build(poldiff_t *diff);
  *  @param diff The policy difference structure containing the
  *  policies from which to construct the type map.
  */
-void poldiff_type_remap_flush(poldiff_t *diff);
+	void poldiff_type_remap_flush(poldiff_t * diff);
 
 /**
  *  Infer type remappings and append them to the current type remap
@@ -110,7 +115,7 @@ void poldiff_type_remap_flush(poldiff_t *diff);
  *
  *  @return 0 on success, < 0 on error and errno will be set.
  */
-int type_map_infer(poldiff_t *diff);
+	int type_map_infer(poldiff_t * diff);
 
 /**
  *  Given a qpol_type_t and a flag indicating from which the policy
@@ -125,7 +130,7 @@ int type_map_infer(poldiff_t *diff);
  *  @return The type's remapped value.  On error this will be 0 and
  *  errno will be set.
  */
-uint32_t type_map_lookup(poldiff_t *diff, qpol_type_t *type, int which_pol);
+	uint32_t type_map_lookup(poldiff_t * diff, qpol_type_t * type, int which_pol);
 
 /**
  *  Given a pseudo-type's value and a flag indicating for which policy
@@ -143,6 +148,10 @@ uint32_t type_map_lookup(poldiff_t *diff, qpol_type_t *type, int which_pol);
  *  free this vector.  If the call fails, NULL will be returned and
  *  errno will be set.
  */
-apol_vector_t *type_map_lookup_reverse(poldiff_t *diff, uint32_t val, int which_pol);
+	apol_vector_t *type_map_lookup_reverse(poldiff_t * diff, uint32_t val, int which_pol);
 
-#endif /* POLDIFF_TYPE_MAP_INTERNAL_H */
+#ifdef	__cplusplus
+}
+#endif
+
+#endif				       /* POLDIFF_TYPE_MAP_INTERNAL_H */

@@ -34,73 +34,53 @@
 #include <errno.h>
 #include <string.h>
 
-
-struct apol_avrule_query {
+struct apol_avrule_query
+{
 	char *source, *target, *bool_name;
 	apol_vector_t *classes, *perms;
 	unsigned int rules;
 	unsigned int flags;
 };
 
-int apol_get_avrule_by_query(apol_policy_t *p,
-			     apol_avrule_query_t *a,
-			     apol_vector_t **v)
+/**
+ *  Common semantic rule selection routine used in get*rule_by_query.
+ *  @param p Policy to search.
+ *  @param v Vector of rules to populate (of type qpol_avrule_t).
+ *  @param rule_type Mask of rules to search.
+ *  @param flags Query options as specified by the apol_avrule_query.
+ *  @param source_list If non-NULL, list of types to use as source.
+ *  If NULL, accept all types.
+ *  @param target_list If non-NULL, list of types to use as target.
+ *  If NULL, accept all types.
+ *  @param class_list If non-NULL, list of classes to use.
+ *  If NULL, accept all classes.
+ *  @param perm_list If non-NULL, list of permisions to use.
+ *  If NULL, accept all permissions.
+ *  @param bool_name If non-NULL, find conditional rules affected by this boolean.
+ *  If NULL, all rules will be considered (including unconditional rules).
+ *  @return 0 on success and < 0 on failure.
+ */
+static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type, unsigned int flags,
+		       apol_vector_t * source_list, apol_vector_t * target_list, apol_vector_t * class_list,
+		       apol_vector_t * perm_list, const char *bool_name)
 {
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
-	apol_vector_t *source_list = NULL, *target_list = NULL,
-		*class_list = NULL, *perm_list = NULL;
-	int retval = -1, source_as_any = 0, only_enabled = 0, is_regex = 0;
-	char *bool_name = NULL;
+	int only_enabled = flags & APOL_QUERY_ONLY_ENABLED;
+	int is_regex = flags & APOL_QUERY_REGEX;
+	int source_as_any = flags & APOL_QUERY_SOURCE_AS_ANY;
+	int retv = -1;
 	regex_t *bool_regex = NULL;
-	*v = NULL;
-
-	uint32_t rule_type = QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW |
-			     QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT;
-	if (a != NULL) {
-		if (a->rules != 0) {
-			rule_type &= a->rules;
-		}
-		only_enabled = a->flags & APOL_QUERY_ONLY_ENABLED;
-		is_regex = a->flags & APOL_QUERY_REGEX;
-		bool_name = a->bool_name;
-		if (a->source != NULL &&
-		    (source_list = apol_query_create_candidate_type_list(p, a->source, is_regex, a->flags & APOL_QUERY_SOURCE_INDIRECT)) == NULL) {
-			goto cleanup;
-		}
-		if ((a->flags & APOL_QUERY_SOURCE_AS_ANY) && a->source != NULL) {
-			target_list = source_list;
-			source_as_any = 1;
-		}
-		else if (a->target != NULL &&
-			 (target_list = apol_query_create_candidate_type_list(p, a->target, is_regex, a->flags & APOL_QUERY_TARGET_INDIRECT)) == NULL) {
-			goto cleanup;
-		}
-		if (a->classes != NULL &&
-		    apol_vector_get_size(a->classes) > 0 &&
-		    (class_list = apol_query_create_candidate_class_list(p, a->classes)) == NULL) {
-			goto cleanup;
-		}
-		if (a->perms != NULL &&
-		    apol_vector_get_size(a->perms) > 0) {
-			perm_list = a->perms;
-		}
-	}
 
 	if (qpol_policy_get_avrule_iter(p->p, rule_type, &iter) < 0) {
 		goto cleanup;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
-		goto cleanup;
-	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_avrule_t *rule;
 		uint32_t is_enabled;
 		qpol_cond_t *cond = NULL;
-		int match_source = 0, match_target = 0, match_perm = 0,
-                        match_bool = 0;
+		int match_source = 0, match_target = 0, match_perm = 0, match_bool = 0;
 		size_t i;
-		if (qpol_iterator_get_item(iter, (void **) &rule) < 0) {
+		if (qpol_iterator_get_item(iter, (void **)&rule) < 0) {
 			goto cleanup;
 		}
 
@@ -116,21 +96,19 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 				goto cleanup;
 			}
 			if (cond == NULL) {
-				continue;	  /* skip unconditional rule */
+				continue;	/* skip unconditional rule */
 			}
 			match_bool = apol_compare_cond_expr(p, cond, bool_name, is_regex, &bool_regex);
 			if (match_bool < 0) {
 				goto cleanup;
-			}
-			else if (match_bool == 0) {
+			} else if (match_bool == 0) {
 				continue;
 			}
 		}
 
 		if (source_list == NULL) {
 			match_source = 1;
-		}
-		else {
+		} else {
 			qpol_type_t *source_type;
 			if (qpol_avrule_get_source_type(p->p, rule, &source_type) < 0) {
 				goto cleanup;
@@ -149,8 +127,7 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 
 		if (target_list == NULL || (source_as_any && match_source)) {
 			match_target = 1;
-		}
-		else {
+		} else {
 			qpol_type_t *target_type;
 			if (qpol_avrule_get_target_type(p->p, rule, &target_type) < 0) {
 				goto cleanup;
@@ -176,7 +153,7 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 
 		if (perm_list != NULL) {
 			for (i = 0; i < apol_vector_get_size(perm_list) && match_perm == 0; i++) {
-				char *perm = (char *) apol_vector_get_element(perm_list, i);
+				char *perm = (char *)apol_vector_get_element(perm_list, i);
 				if (qpol_avrule_get_perm_iter(p->p, rule, &perm_iter) < 0) {
 					goto cleanup;
 				}
@@ -186,22 +163,89 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 				}
 				qpol_iterator_destroy(&perm_iter);
 			}
-		}
-		else {
+		} else {
 			match_perm = 1;
 		}
 		if (!match_perm) {
 			continue;
 		}
 
-		if (apol_vector_append(*v, rule)) {
+		if (apol_vector_append(v, rule)) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
 
+	retv = 0;
+      cleanup:
+	apol_regex_destroy(&bool_regex);
+	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&perm_iter);
+	return retv;
+}
+
+int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
+{
+	return apol_avrule_get_by_query(p, a, v);
+}
+
+int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
+{
+	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL, *perm_list = NULL;
+	int retval = -1, source_as_any = 0, is_regex = 0;
+	char *bool_name = NULL;
+	*v = NULL;
+	unsigned int flags = 0;
+
+	uint32_t rule_type = QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT;
+	if (a != NULL) {
+		if (a->rules != 0) {
+			rule_type &= a->rules;
+		}
+		flags = a->flags;
+		is_regex = a->flags & APOL_QUERY_REGEX;
+		bool_name = a->bool_name;
+		if (a->source != NULL &&
+		    (source_list =
+		     apol_query_create_candidate_type_list(p, a->source, is_regex,
+							   a->flags & APOL_QUERY_SOURCE_INDIRECT,
+							   ((a->flags & (APOL_QUERY_SOURCE_TYPE | APOL_QUERY_SOURCE_ATTRIBUTE)) /
+							    APOL_QUERY_SOURCE_TYPE))) == NULL) {
+			goto cleanup;
+		}
+		if ((a->flags & APOL_QUERY_SOURCE_AS_ANY) && a->source != NULL) {
+			target_list = source_list;
+			source_as_any = 1;
+		} else if (a->target != NULL &&
+			   (target_list =
+			    apol_query_create_candidate_type_list(p, a->target, is_regex,
+								  a->flags & APOL_QUERY_TARGET_INDIRECT,
+								  ((a->
+								    flags & (APOL_QUERY_TARGET_TYPE | APOL_QUERY_TARGET_ATTRIBUTE))
+								   / APOL_QUERY_TARGET_TYPE))) == NULL) {
+			goto cleanup;
+		}
+		if (a->classes != NULL &&
+		    apol_vector_get_size(a->classes) > 0 &&
+		    (class_list = apol_query_create_candidate_class_list(p, a->classes)) == NULL) {
+			goto cleanup;
+		}
+		if (a->perms != NULL && apol_vector_get_size(a->perms) > 0) {
+			perm_list = a->perms;
+		}
+	}
+
+	if ((*v = apol_vector_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+
+	if (rule_select(p, *v, rule_type, flags, source_list, target_list, class_list, perm_list, bool_name)) {
+		goto cleanup;
+	}
+
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -210,7 +254,193 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 		apol_vector_destroy(&target_list, NULL);
 	}
 	apol_vector_destroy(&class_list, NULL);
-        /* don't destroy perm_list - it points to query's permission list */
+	/* don't destroy perm_list - it points to query's permission list */
+	return retval;
+}
+
+int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
+{
+	return apol_syn_avrule_get_by_query(p, a, v);
+}
+
+int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
+{
+	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
+	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL, *perm_list = NULL, *syn_v = NULL;
+	apol_vector_t *target_types_list = NULL;
+	int retval = -1, source_as_any = 0, is_regex = 0;
+	char *bool_name = NULL;
+	regex_t *bool_regex = NULL;
+	*v = NULL;
+	size_t i;
+	unsigned int flags = 0;
+
+	if (!p || apol_policy_is_binary(p)) {
+		ERR(p, "%s", strerror(EINVAL));
+		goto cleanup;
+	}
+
+	uint32_t rule_type = QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT;
+	if (a != NULL) {
+		if (a->rules != 0) {
+			rule_type &= a->rules;
+		}
+		flags = a->flags;
+		is_regex = a->flags & APOL_QUERY_REGEX;
+		bool_name = a->bool_name;
+		if (a->source != NULL &&
+		    (source_list =
+		     apol_query_create_candidate_syn_type_list(p, a->source, is_regex,
+							       a->flags & APOL_QUERY_SOURCE_INDIRECT,
+							       ((a->flags & (APOL_QUERY_SOURCE_TYPE |
+									     APOL_QUERY_SOURCE_ATTRIBUTE)) /
+								APOL_QUERY_SOURCE_TYPE))) == NULL) {
+			goto cleanup;
+		}
+		if ((a->flags & APOL_QUERY_SOURCE_AS_ANY) && a->source != NULL) {
+			target_list = source_list;
+			source_as_any = 1;
+		} else if (a->target != NULL &&
+			   (target_list =
+			    apol_query_create_candidate_syn_type_list(p, a->target, is_regex,
+								      a->flags & APOL_QUERY_TARGET_INDIRECT,
+								      ((a->flags & (APOL_QUERY_TARGET_TYPE |
+										    APOL_QUERY_TARGET_ATTRIBUTE))
+								       / APOL_QUERY_TARGET_TYPE))) == NULL) {
+			goto cleanup;
+		}
+		if (a->classes != NULL &&
+		    apol_vector_get_size(a->classes) > 0 &&
+		    (class_list = apol_query_create_candidate_class_list(p, a->classes)) == NULL) {
+			goto cleanup;
+		}
+		if (a->perms != NULL && apol_vector_get_size(a->perms) > 0) {
+			perm_list = a->perms;
+		}
+	}
+
+	if ((*v = apol_vector_create()) == NULL) {
+		ERR(p, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+
+	if (rule_select(p, *v, rule_type, flags, source_list, target_list, class_list, perm_list, bool_name)) {
+		goto cleanup;
+	}
+
+	syn_v = apol_avrule_list_to_syn_avrules(p, *v, perm_list);
+	if (!syn_v) {
+		goto cleanup;
+	}
+	apol_vector_destroy(v, NULL);
+	*v = syn_v;
+	syn_v = NULL;
+
+	/* if both fields are indirect skip post filtering type sets */
+	if ((a->flags & APOL_QUERY_SOURCE_INDIRECT) && (a->flags & (APOL_QUERY_TARGET_INDIRECT | APOL_QUERY_SOURCE_AS_ANY))) {
+		retval = 0;
+		goto cleanup;
+	}
+	/* if not searching by source or target we are done */
+	if (!source_list && !target_list) {
+		retval = 0;
+		goto cleanup;
+	}
+
+	if (source_list && !(a->flags & APOL_QUERY_SOURCE_INDIRECT)) {
+		apol_vector_destroy(&source_list, NULL);
+		source_list =
+			apol_query_create_candidate_type_list(p, a->source, is_regex, 0,
+							      ((a->flags & (APOL_QUERY_SOURCE_TYPE | APOL_QUERY_SOURCE_ATTRIBUTE)) /
+							       APOL_QUERY_SOURCE_TYPE));
+		if (!source_list)
+			goto cleanup;
+	}
+	if (target_list && (source_as_any || !(a->flags & APOL_QUERY_TARGET_INDIRECT))) {
+		if (source_as_any) {
+			target_list = source_list;
+		} else {
+			apol_vector_destroy(&target_list, NULL);
+			target_list =
+				apol_query_create_candidate_type_list(p, a->target, is_regex, 0,
+								      ((a->flags & (APOL_QUERY_SOURCE_TYPE |
+										    APOL_QUERY_SOURCE_ATTRIBUTE)) /
+								       APOL_QUERY_SOURCE_TYPE));
+			if (!target_list)
+				goto cleanup;
+		}
+	}
+	if (target_list) {
+		target_types_list = apol_vector_create_from_vector(target_list, NULL, NULL);
+		if (!target_types_list) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
+		}
+		qpol_type_t *type = NULL;
+		for (i = 0; i < apol_vector_get_size(target_types_list); i++) {
+			type = apol_vector_get_element(target_types_list, i);
+			unsigned char isattr = 0;
+			qpol_type_get_isattr(p->p, type, &isattr);
+			if (isattr) {
+				apol_vector_remove(target_types_list, i);
+				i--;
+			}
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(*v); i++) {
+		qpol_syn_avrule_t *srule = apol_vector_get_element(*v, i);
+		qpol_type_set_t *stypes = NULL, *ttypes = NULL;
+		int uses_source = 0, uses_target = 0;
+		uint32_t is_self = 0;
+		qpol_syn_avrule_get_source_type_set(p->p, srule, &stypes);
+		qpol_syn_avrule_get_target_type_set(p->p, srule, &ttypes);
+		qpol_syn_avrule_get_is_target_self(p->p, srule, &is_self);
+		if (source_list && !(a->flags & APOL_QUERY_SOURCE_INDIRECT)) {
+			uses_source = apol_query_type_set_uses_types_directly(p, stypes, source_list);
+			if (uses_source < 0)
+				goto cleanup;
+		} else if (source_list && a->flags & APOL_QUERY_SOURCE_INDIRECT) {
+			uses_source = 1;
+		} else if (!source_list) {
+			uses_source = 1;
+		}
+
+		if (target_list
+		    && !((a->flags & APOL_QUERY_TARGET_INDIRECT) || (source_as_any && a->flags & APOL_QUERY_SOURCE_INDIRECT))) {
+			uses_target = apol_query_type_set_uses_types_directly(p, ttypes, target_list);
+			if (uses_target < 0)
+				goto cleanup;
+			if (is_self) {
+				uses_target |= apol_query_type_set_uses_types_directly(p, stypes, target_types_list);
+				if (uses_target < 0)
+					goto cleanup;
+			}
+		} else if (target_list && ((a->flags & APOL_QUERY_TARGET_INDIRECT)
+					   || (source_as_any && a->flags & APOL_QUERY_SOURCE_INDIRECT))) {
+			uses_target = 1;
+		} else if (!target_list) {
+			uses_target = 1;
+		}
+
+		if (!((uses_source && uses_target) || (source_as_any && (uses_source || uses_target)))) {
+			apol_vector_remove(*v, i);
+			i--;
+		}
+	}
+
+	retval = 0;
+      cleanup:
+	if (retval != 0) {
+		apol_vector_destroy(v, NULL);
+	}
+	apol_vector_destroy(&syn_v, NULL);
+	apol_vector_destroy(&source_list, NULL);
+	apol_vector_destroy(&target_types_list, NULL);
+	if (!source_as_any) {
+		apol_vector_destroy(&target_list, NULL);
+	}
+	apol_vector_destroy(&class_list, NULL);
+	/* don't destroy perm_list - it points to query's permission list */
 	apol_regex_destroy(&bool_regex);
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&perm_iter);
@@ -222,11 +452,14 @@ apol_avrule_query_t *apol_avrule_query_create(void)
 	apol_avrule_query_t *a = calloc(1, sizeof(apol_avrule_query_t));
 	if (a != NULL) {
 		a->rules = ~0U;
+		a->flags =
+			(APOL_QUERY_SOURCE_TYPE | APOL_QUERY_SOURCE_ATTRIBUTE | APOL_QUERY_TARGET_TYPE |
+			 APOL_QUERY_TARGET_ATTRIBUTE);
 	}
 	return a;
 }
 
-void apol_avrule_query_destroy(apol_avrule_query_t **a)
+void apol_avrule_query_destroy(apol_avrule_query_t ** a)
 {
 	if (*a != NULL) {
 		free((*a)->source);
@@ -239,94 +472,94 @@ void apol_avrule_query_destroy(apol_avrule_query_t **a)
 	}
 }
 
-int apol_avrule_query_set_rules(apol_policy_t *p __attribute__((unused)),
-				apol_avrule_query_t *a, unsigned int rules)
+int apol_avrule_query_set_rules(apol_policy_t * p __attribute__ ((unused)), apol_avrule_query_t * a, unsigned int rules)
 {
 	if (rules != 0) {
 		a->rules = rules;
-	}
-	else {
+	} else {
 		a->rules = ~0U;
 	}
 	return 0;
 }
 
-int apol_avrule_query_set_source(apol_policy_t *p,
-				 apol_avrule_query_t *a,
-				 const char *symbol,
-				 int is_indirect)
+int apol_avrule_query_set_source(apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect)
 {
-	apol_query_set_flag(p, &a->flags, is_indirect,
-			    APOL_QUERY_SOURCE_INDIRECT);
+	apol_query_set_flag(p, &a->flags, is_indirect, APOL_QUERY_SOURCE_INDIRECT);
 	return apol_query_set(p, &a->source, NULL, symbol);
 }
 
-int apol_avrule_query_set_target(apol_policy_t *p,
-				 apol_avrule_query_t *a,
-				 const char *symbol,
-				 int is_indirect)
+int apol_avrule_query_set_source_component(apol_policy_t * p, apol_avrule_query_t * a, unsigned int component)
 {
-	apol_query_set_flag(p, &a->flags, is_indirect,
-			    APOL_QUERY_TARGET_INDIRECT);
+	if (!a || !(component & APOL_QUERY_SYMBOL_IS_BOTH)) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	apol_query_set_flag(p, &a->flags, component & APOL_QUERY_SYMBOL_IS_TYPE, APOL_QUERY_SOURCE_TYPE);
+	apol_query_set_flag(p, &a->flags, component & APOL_QUERY_SYMBOL_IS_ATTRIBUTE, APOL_QUERY_SOURCE_ATTRIBUTE);
+	return 0;
+}
+
+int apol_avrule_query_set_target(apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect)
+{
+	apol_query_set_flag(p, &a->flags, is_indirect, APOL_QUERY_TARGET_INDIRECT);
 	return apol_query_set(p, &a->target, NULL, symbol);
 }
 
-int apol_avrule_query_append_class(apol_policy_t *p,
-				   apol_avrule_query_t *a,
-				   const char *obj_class)
+int apol_avrule_query_set_target_component(apol_policy_t * p, apol_avrule_query_t * a, unsigned int component)
+{
+	if (!a || !(component && APOL_QUERY_SYMBOL_IS_BOTH)) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	apol_query_set_flag(p, &a->flags, component & APOL_QUERY_SYMBOL_IS_TYPE, APOL_QUERY_TARGET_TYPE);
+	apol_query_set_flag(p, &a->flags, component & APOL_QUERY_SYMBOL_IS_ATTRIBUTE, APOL_QUERY_TARGET_ATTRIBUTE);
+	return 0;
+}
+
+int apol_avrule_query_append_class(apol_policy_t * p, apol_avrule_query_t * a, const char *obj_class)
 {
 	char *s;
 	if (obj_class == NULL) {
 		apol_vector_destroy(&a->classes, free);
-	}
-	else if ((s = strdup(obj_class)) == NULL ||
-	    (a->classes == NULL && (a->classes = apol_vector_create()) == NULL) ||
-	    apol_vector_append(a->classes, s) < 0) {
+	} else if ((s = strdup(obj_class)) == NULL ||
+		   (a->classes == NULL && (a->classes = apol_vector_create()) == NULL) || apol_vector_append(a->classes, s) < 0) {
 		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	return 0;
 }
 
-int apol_avrule_query_append_perm(apol_policy_t *p,
-				  apol_avrule_query_t *a,
-				  const char *perm)
+int apol_avrule_query_append_perm(apol_policy_t * p, apol_avrule_query_t * a, const char *perm)
 {
 	char *s;
 	if (perm == NULL) {
 		apol_vector_destroy(&a->perms, free);
-	}
-	else if ((s = strdup(perm)) == NULL ||
-	    (a->perms == NULL && (a->perms = apol_vector_create()) == NULL) ||
-	    apol_vector_append(a->perms, s) < 0) {
+	} else if ((s = strdup(perm)) == NULL ||
+		   (a->perms == NULL && (a->perms = apol_vector_create()) == NULL) || apol_vector_append(a->perms, s) < 0) {
 		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	return 0;
 }
 
-int apol_avrule_query_set_bool(apol_policy_t *p,
-				    apol_avrule_query_t *a,
-				    const char *bool_name)
+int apol_avrule_query_set_bool(apol_policy_t * p, apol_avrule_query_t * a, const char *bool_name)
 {
 	return apol_query_set(p, &a->bool_name, NULL, bool_name);
 }
 
-int apol_avrule_query_set_enabled(apol_policy_t *p,
-				  apol_avrule_query_t *a, int is_enabled)
+int apol_avrule_query_set_enabled(apol_policy_t * p, apol_avrule_query_t * a, int is_enabled)
 {
-	return apol_query_set_flag(p, &a->flags, is_enabled,
-				   APOL_QUERY_ONLY_ENABLED);
+	return apol_query_set_flag(p, &a->flags, is_enabled, APOL_QUERY_ONLY_ENABLED);
 }
 
-int apol_avrule_query_set_source_any(apol_policy_t *p,
-				     apol_avrule_query_t *a, int is_any)
+int apol_avrule_query_set_source_any(apol_policy_t * p, apol_avrule_query_t * a, int is_any)
 {
-	return apol_query_set_flag(p, &a->flags, is_any,
-				   APOL_QUERY_SOURCE_AS_ANY);
+	return apol_query_set_flag(p, &a->flags, is_any, APOL_QUERY_SOURCE_AS_ANY);
 }
 
-int apol_avrule_query_set_regex(apol_policy_t *p, apol_avrule_query_t *a, int is_regex)
+int apol_avrule_query_set_regex(apol_policy_t * p, apol_avrule_query_t * a, int is_regex)
 {
 	return apol_query_set_regex(p, &a->flags, is_regex);
 }
@@ -341,19 +574,16 @@ static int apol_syn_avrule_comp(const void *a, const void *b, void *data)
 	qpol_syn_avrule_t *r2 = (qpol_syn_avrule_t *) b;
 	apol_policy_t *p = (apol_policy_t *) data;
 	unsigned long num1, num2;
-	if (qpol_syn_avrule_get_lineno(p->p, r1, &num1) < 0 ||
-	    qpol_syn_avrule_get_lineno(p->p, r2, &num2) < 0) {
+	if (qpol_syn_avrule_get_lineno(p->p, r1, &num1) < 0 || qpol_syn_avrule_get_lineno(p->p, r2, &num2) < 0) {
 		return 0;
 	}
 	if (num1 != num2) {
-		return (int) num1 - (int) num2;
+		return (int)num1 - (int)num2;
 	}
-	return (int) ((char *) r1 - (char *) r2);
+	return (int)((char *)r1 - (char *)r2);
 }
 
-apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t *p,
-					  qpol_avrule_t *rule,
-					  apol_vector_t *perms)
+apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t * p, qpol_avrule_t * rule, apol_vector_t * perms)
 {
 	apol_vector_t *v = NULL;
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
@@ -370,8 +600,8 @@ apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t *p,
 		ERR(p, "%s", strerror(error));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &syn_avrule) < 0) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&syn_avrule) < 0) {
 			error = errno;
 			ERR(p, "%s", strerror(error));
 			goto cleanup;
@@ -381,8 +611,8 @@ apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t *p,
 			if (qpol_syn_avrule_get_perm_iter(p->p, syn_avrule, &perm_iter) < 0) {
 				goto cleanup;
 			}
-			for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
-				if (qpol_iterator_get_item(perm_iter, (void **) &perm) < 0) {
+			for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+				if (qpol_iterator_get_item(perm_iter, (void **)&perm) < 0) {
 					error = errno;
 					ERR(p, "%s", strerror(error));
 					goto cleanup;
@@ -392,12 +622,10 @@ apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t *p,
 					break;
 				}
 			}
-		}
-		else {
+		} else {
 			found_perm = 1;
 		}
-		if (found_perm &&
-		    apol_vector_append(v, syn_avrule) < 0) {
+		if (found_perm && apol_vector_append(v, syn_avrule) < 0) {
 			error = errno;
 			ERR(p, "%s", strerror(error));
 			goto cleanup;
@@ -405,7 +633,7 @@ apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t *p,
 	}
 	apol_vector_sort_uniquify(v, apol_syn_avrule_comp, p, NULL);
 	retval = 0;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&perm_iter);
 	if (retval != 0) {
@@ -416,9 +644,7 @@ apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t *p,
 	return v;
 }
 
-apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
-					       apol_vector_t *rules,
-					       apol_vector_t *perms)
+apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t * rules, apol_vector_t * perms)
 {
 	apol_bst_t *b = NULL;
 	qpol_avrule_t *rule;
@@ -440,8 +666,8 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
 			error = errno;
 			goto cleanup;
 		}
-		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			if (qpol_iterator_get_item(iter, (void **) &syn_avrule) < 0) {
+		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+			if (qpol_iterator_get_item(iter, (void **)&syn_avrule) < 0) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto cleanup;
@@ -462,8 +688,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
 	if (perms == NULL || apol_vector_get_size(perms) == 0) {
 		v = tmp_v;
 		tmp_v = NULL;
-	}
-	else {
+	} else {
 		if ((v = apol_vector_create()) == NULL) {
 			error = errno;
 			ERR(p, "%s", strerror(error));
@@ -475,8 +700,8 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
 			if (qpol_syn_avrule_get_perm_iter(p->p, syn_avrule, &iter) < 0) {
 				goto cleanup;
 			}
-			for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-				if (qpol_iterator_get_item(iter, (void **) &perm) < 0) {
+			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+				if (qpol_iterator_get_item(iter, (void **)&perm) < 0) {
 					error = errno;
 					ERR(p, "%s", strerror(error));
 					goto cleanup;
@@ -487,8 +712,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
 				}
 			}
 			qpol_iterator_destroy(&iter);
-			if (found_perm &&
-			    apol_vector_append(v, syn_avrule) < 0) {
+			if (found_perm && apol_vector_append(v, syn_avrule) < 0) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto cleanup;
@@ -496,7 +720,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
 		}
 	}
 	retval = 0;
- cleanup:
+      cleanup:
 	apol_bst_destroy(&b, NULL);
 	qpol_iterator_destroy(&iter);
 	apol_vector_destroy(&tmp_v, NULL);
@@ -508,7 +732,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t *p,
 	return v;
 }
 
-char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
+char *apol_avrule_render(apol_policy_t * policy, qpol_avrule_t * rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
 	int error = 0;
@@ -531,18 +755,17 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 		errno = error;
 		return NULL;
 	}
-	if (!(rule_type &= (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT))) {
+	if (!(rule_type &= (QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT))) {
 		ERR(policy, "%s", "Invalid av rule type");
 		errno = EINVAL;
 		return NULL;
 	}
-	if (!(tmp_name = (char*)apol_rule_type_to_str(rule_type))) {
+	if (!(tmp_name = (char *)apol_rule_type_to_str(rule_type))) {
 		ERR(policy, "%s", "Av rule has multiple rule types?");
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-	    apol_str_append(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -557,8 +780,7 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 		error = errno;
 		goto err;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-	    apol_str_append(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -573,8 +795,7 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 		error = errno;
 		goto err;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-	    apol_str_append(&tmp, &tmp_sz, " : ")) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " : ")) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -589,8 +810,7 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 		error = errno;
 		goto err;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-	    apol_str_append(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -614,7 +834,7 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 		}
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void**)&tmp_name)) {
+		if (qpol_iterator_get_item(iter, (void **)&tmp_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
@@ -649,14 +869,14 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 	qpol_iterator_destroy(&iter);
 	return tmp;
 
-err:
+      err:
 	free(tmp);
 	qpol_iterator_destroy(&iter);
 	errno = error;
 	return NULL;
 }
 
-char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule)
+char *apol_syn_avrule_render(apol_policy_t * policy, qpol_syn_avrule_t * rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
 	int error = 0;
@@ -678,18 +898,17 @@ char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule)
 		error = errno;
 		return NULL;
 	}
-	if (!(rule_type &= (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT))) {
+	if (!(rule_type &= (QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT))) {
 		ERR(policy, "%s", "Invalid av rule type");
 		errno = EINVAL;
 		return NULL;
 	}
-	if (!(tmp_name = (char*)apol_rule_type_to_str(rule_type))) {
+	if (!(tmp_name = (char *)apol_rule_type_to_str(rule_type))) {
 		ERR(policy, "%s", "Av rule has multiple rule types?");
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-	    apol_str_append(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -743,35 +962,33 @@ char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule)
 			}
 		}
 		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			if (qpol_iterator_get_item(iter, (void**)&type)) {
+			if (qpol_iterator_get_item(iter, (void **)&type)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
-			if (qpol_type_get_name(policy->p, type, &tmp_name)){
+			if (qpol_type_get_name(policy->p, type, &tmp_name)) {
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-			    apol_str_append(&tmp, &tmp_sz, " ")) {
+			if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
 		for (; !qpol_iterator_end(iter2); qpol_iterator_next(iter2)) {
-			if (qpol_iterator_get_item(iter2, (void**)&type)) {
+			if (qpol_iterator_get_item(iter2, (void **)&type)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
-			if (qpol_type_get_name(policy->p, type, &tmp_name)){
+			if (qpol_type_get_name(policy->p, type, &tmp_name)) {
 				error = errno;
 				goto err;
 			}
 			if (apol_str_append(&tmp, &tmp_sz, "-") ||
-			    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-			    apol_str_append(&tmp, &tmp_sz, " ")) {
+			    apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
@@ -836,35 +1053,33 @@ char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule)
 			}
 		}
 		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			if (qpol_iterator_get_item(iter, (void**)&type)) {
+			if (qpol_iterator_get_item(iter, (void **)&type)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
-			if (qpol_type_get_name(policy->p, type, &tmp_name)){
+			if (qpol_type_get_name(policy->p, type, &tmp_name)) {
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-			    apol_str_append(&tmp, &tmp_sz, " ")) {
+			if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
 		}
 		for (; !qpol_iterator_end(iter2); qpol_iterator_next(iter2)) {
-			if (qpol_iterator_get_item(iter2, (void**)&type)) {
+			if (qpol_iterator_get_item(iter2, (void **)&type)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
-			if (qpol_type_get_name(policy->p, type, &tmp_name)){
+			if (qpol_type_get_name(policy->p, type, &tmp_name)) {
 				error = errno;
 				goto err;
 			}
 			if (apol_str_append(&tmp, &tmp_sz, "-") ||
-			    apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-			    apol_str_append(&tmp, &tmp_sz, " ")) {
+			    apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
@@ -916,7 +1131,7 @@ char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule)
 		}
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void**)&obj_class)) {
+		if (qpol_iterator_get_item(iter, (void **)&obj_class)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
@@ -925,8 +1140,7 @@ char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule)
 			error = errno;
 			goto err;
 		}
-		if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-		    apol_str_append(&tmp, &tmp_sz, " ")) {
+		if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
@@ -959,13 +1173,12 @@ char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule)
 		}
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void**)&tmp_name)) {
+		if (qpol_iterator_get_item(iter, (void **)&tmp_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
-		if (apol_str_append(&tmp, &tmp_sz, tmp_name) ||
-		    apol_str_append(&tmp, &tmp_sz, " ")) {
+		if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
@@ -988,7 +1201,7 @@ char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule)
 
 	return tmp;
 
-err:
+      err:
 	free(tmp);
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&iter2);

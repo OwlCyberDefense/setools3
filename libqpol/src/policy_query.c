@@ -23,7 +23,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
+
 #include <stddef.h>
 #include <stdint.h>
 #include <qpol/policy.h>
@@ -35,7 +35,7 @@
 #include "qpol_internal.h"
 
 /* generic information about policydb*/
-int qpol_policy_is_mls_enabled(qpol_policy_t *policy)
+int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
 {
 	policydb_t *db = NULL;
 
@@ -47,13 +47,13 @@ int qpol_policy_is_mls_enabled(qpol_policy_t *policy)
 
 	db = &policy->p->p;
 
-	if (db->mls != 0) 
+	if (db->mls != 0)
 		return 1;
 	else
 		return 0;
 }
 
-int qpol_policy_get_policy_version(qpol_policy_t *policy, unsigned int *version)
+int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version)
 {
 	policydb_t *db;
 
@@ -72,4 +72,3 @@ int qpol_policy_get_policy_version(qpol_policy_t *policy, unsigned int *version)
 
 	return STATUS_SUCCESS;
 }
-

@@ -1,6 +1,6 @@
 /* Copyright (C) 2005-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
- 
+
 /* 
  * Author: jmowery@tresys.com
  *
@@ -27,8 +27,7 @@
 extern sechk_module_name_reg_t sechk_register_list[];
 
 /* command line options struct */
-static struct option const longopts[] = 
-{
+static struct option const longopts[] = {
 	{"list", no_argument, NULL, 'l'},
 	{"help", optional_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'V'},
@@ -41,12 +40,12 @@ static struct option const longopts[] =
 	{"fcfile", required_argument, NULL, 'c'},
 #endif
 	{"module", required_argument, NULL, 'm'},
-	{"min-sev", required_argument, NULL, 'M' },
+	{"min-sev", required_argument, NULL, 'M'},
 	{NULL, 0, NULL, 0}
 };
 
 /* display usage help */
-void usage(const char *arg0, bool_t brief) 
+void usage(const char *arg0, bool_t brief)
 {
 	printf("%s (sechecker v%s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: sechecker [OPTS] -m module             run module\n");
@@ -79,7 +78,7 @@ void usage(const char *arg0, bool_t brief)
 }
 
 /* print list of modules and installed profiles */
-int sechk_print_list(sechk_lib_t *lib)
+int sechk_print_list(sechk_lib_t * lib)
 {
 	const sechk_profile_name_reg_t *profiles;
 	size_t num_profiles, i;
@@ -95,7 +94,7 @@ int sechk_print_list(sechk_lib_t *lib)
 		printf("<none>\n");
 
 	printf("Modules:\n");
-	for(i = 0; i < apol_vector_get_size(lib->modules); i++) {
+	for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
 		mod = apol_vector_get_element(lib->modules, i);
 		printf("%20s\t%s\n", mod->name, mod->brief_description);
 	}
@@ -106,7 +105,7 @@ int sechk_print_list(sechk_lib_t *lib)
 }
 
 /* main application */
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
 	int optc = 0, retv = 0, i;
 #ifdef LIBSEFS
@@ -220,8 +219,7 @@ int main(int argc, char **argv)
 			goto exit_err;
 		}
 		mod = apol_vector_get_element(lib->modules, retv);
-		printf("\nModule name: %s\n%s\n%s\n", mod->name, mod->detailed_description, 
-		       mod->opt_description);
+		printf("\nModule name: %s\n%s\n%s\n", mod->name, mod->detailed_description, mod->opt_description);
 		goto exit;
 	}
 
@@ -238,7 +236,7 @@ int main(int argc, char **argv)
 			goto exit_err;
 		}
 	}
-	
+
 	/* initialize the policy */
 	if (sechk_lib_load_policy(polpath, lib) < 0)
 		goto exit_err;
@@ -308,7 +306,7 @@ int main(int argc, char **argv)
 	if (sechk_lib_print_modules_report(lib))
 		goto exit_err;
 
-exit:
+      exit:
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
@@ -319,7 +317,7 @@ exit:
 	sechk_lib_destroy(&lib);
 	return 0;
 
-exit_err:
+      exit_err:
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
@@ -330,4 +328,3 @@ exit_err:
 	sechk_lib_destroy(&lib);
 	return 1;
 }
-

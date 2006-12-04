@@ -35,46 +35,47 @@
 
 static int find_int_in_array(int i, const int *a, int a_sz)
 {
-        int j;
-        if(a == NULL  || a_sz < 1)
-                return -1;
-        for(j = 0; j < a_sz; j++) {
-                if(a[j] == i)
-                        return j;
-        }
-        return -1;
+	int j;
+	if (a == NULL || a_sz < 1)
+		return -1;
+	for (j = 0; j < a_sz; j++) {
+		if (a[j] == i)
+			return j;
+	}
+	return -1;
 }
 
 static int int_compare(const void *aptr, const void *bptr)
 {
-        int *a = (int*)aptr;
-        int *b = (int*)bptr;
+	int *a = (int *)aptr;
+	int *b = (int *)bptr;
 
-        assert(a);
-        assert(b);
+	assert(a);
+	assert(b);
 
-        if (*a < *b)
-                return -1;
-        if (*a > *b)
-                return 1;
-        return 0;
+	if (*a < *b)
+		return -1;
+	if (*a > *b)
+		return 1;
+	return 0;
 }
-
 
 /* seaudit_report valid node names */
 const char *seaudit_report_node_names[] = { "seaudit-report",
-					    "standard-section",
-					    "custom-section",
-					    "view",
-					    NULL };
+	"standard-section",
+	"custom-section",
+	"view",
+	NULL
+};
 
 const char *seaudit_standard_section_names[] = { "PolicyLoads",
-						 "EnforcementToggles",
-						 "PolicyBooleans",
-						 "Statistics",
-						 "AllowListing",
-						 "DenyListing",
-						 NULL };
+	"EnforcementToggles",
+	"PolicyBooleans",
+	"Statistics",
+	"AllowListing",
+	"DenyListing",
+	NULL
+};
 
 /* Helper functions */
 static bool_t seaudit_report_is_valid_node_name(const char *name)
@@ -99,9 +100,8 @@ static bool_t seaudit_report_is_valid_section_name(const char *name)
 	return FALSE;
 }
 
-static int seaudit_report_load_saved_view(seaudit_report_t *seaudit_report,
-					  xmlChar *view_filePath,
-					  audit_log_view_t **log_view) {
+static int seaudit_report_load_saved_view(seaudit_report_t * seaudit_report, xmlChar * view_filePath, audit_log_view_t ** log_view)
+{
 	seaudit_multifilter_t *multifilter = NULL;
 	bool_t is_multi;
 	int *deleted = NULL, num_deleted, num_kept, old_sz, new_sz;
@@ -134,21 +134,21 @@ static int seaudit_report_load_saved_view(seaudit_report_t *seaudit_report,
 
 	assert(num_kept >= 0);
 	assert(num_kept <= new_sz);
-	if (deleted){
+	if (deleted) {
 		free(deleted);
 	}
 	seaudit_multifilter_destroy(multifilter);
 
 	return 0;
-err:
-	if (multifilter) seaudit_multifilter_destroy(multifilter);
+      err:
+	if (multifilter)
+		seaudit_multifilter_destroy(multifilter);
 	return -1;
 }
 
-static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
-						 xmlChar *view_filePath,
-						 audit_log_view_t *log_view,
-						 FILE *outfile) {
+static int seaudit_report_print_view_results(seaudit_report_t * seaudit_report,
+					     xmlChar * view_filePath, audit_log_view_t * log_view, FILE * outfile)
+{
 	int i, j, indx;
 	avc_msg_t *cur_msg;
 	load_policy_msg_t *policy_msg;
@@ -159,7 +159,9 @@ static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
 	assert(view_filePath != NULL && log_view != NULL && outfile != NULL);
 	if (seaudit_report->html) {
 		fprintf(outfile, "View file: %s<br>\n", view_filePath);
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", log_view->num_fltr_msgs);
+		fprintf(outfile,
+			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n",
+			log_view->num_fltr_msgs);
 	} else {
 		fprintf(outfile, "View file: %s\n", view_filePath);
 		fprintf(outfile, "Number of messages: %d\n\n", log_view->num_fltr_msgs);
@@ -197,7 +199,7 @@ static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
 				fprintf(outfile, ":%d", boolean_msg->values[0]);
 
 				for (j = 1; j < boolean_msg->num_bools; j++) {
-				        cur_bool = audit_log_get_bool(log_view->my_log, boolean_msg->booleans[j]);
+					cur_bool = audit_log_get_bool(log_view->my_log, boolean_msg->booleans[j]);
 					fprintf(outfile, ", %s", cur_bool);
 					fprintf(outfile, ":%d", boolean_msg->values[j]);
 				}
@@ -206,8 +208,7 @@ static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
 		} else if (msg->msg_type == LOAD_POLICY_MSG) {
 			policy_msg = msg->msg_data.load_policy_msg;
 			fprintf(outfile, "kernel: security: %d users, %d roles, %d types, %d bools\n",
-						policy_msg->users, policy_msg->roles,
-						policy_msg->types, policy_msg->bools);
+				policy_msg->users, policy_msg->roles, policy_msg->types, policy_msg->bools);
 
 			if (seaudit_report->html)
 				fprintf(outfile, "<font class=\"message_date\">%s </font>", date);
@@ -215,12 +216,12 @@ static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
 				fprintf(outfile, "%s ", date);
 
 			if (seaudit_report->html)
-				fprintf(outfile, "<font class=\"host_name\">%s </font>",audit_log_get_host(log_view->my_log, msg->host));
+				fprintf(outfile, "<font class=\"host_name\">%s </font>",
+					audit_log_get_host(log_view->my_log, msg->host));
 			else
-				fprintf(outfile, "%s ", audit_log_get_host(log_view->my_log,msg->host));
+				fprintf(outfile, "%s ", audit_log_get_host(log_view->my_log, msg->host));
 
-			fprintf(outfile, "kernel: security: %d classes, %d rules",
-						policy_msg->classes, policy_msg->rules);
+			fprintf(outfile, "kernel: security: %d classes, %d rules", policy_msg->classes, policy_msg->rules);
 		} else if (msg->msg_type == AVC_MSG) {
 			cur_msg = msg->msg_data.avc_msg;
 
@@ -228,14 +229,10 @@ static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
 			if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
 				if (seaudit_report->html) {
 					fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>",
-						cur_msg->tm_stmp_sec,
-						cur_msg->tm_stmp_nano,
-						cur_msg->serial);
+						cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano, cur_msg->serial);
 				} else {
 					fprintf(outfile, "audit(%lu.%03lu:%u): ",
-						cur_msg->tm_stmp_sec,
-						cur_msg->tm_stmp_nano,
-						cur_msg->serial);
+						cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano, cur_msg->serial);
 				}
 			}
 			fprintf(outfile, "avc: ");
@@ -276,7 +273,7 @@ static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
 				fprintf(outfile, "ino=%lu ", cur_msg->inode);
 			if (cur_msg->laddr)
 				fprintf(outfile, "laddr=%s ", cur_msg->laddr);
-			if (cur_msg->lport!=0)
+			if (cur_msg->lport != 0)
 				fprintf(outfile, "lport=%d ", cur_msg->lport);
 			if (cur_msg->faddr)
 				fprintf(outfile, "faddr=%s ", cur_msg->faddr);
@@ -302,35 +299,35 @@ static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
 			if (cur_msg->is_src_con) {
 				if (seaudit_report->html) {
 					fprintf(outfile, "<font class=\"src_context\">scontext=%s:%s:%s </font>",
-						audit_log_get_user(log_view->my_log,cur_msg->src_user),
-						audit_log_get_role(log_view->my_log,cur_msg->src_role),
-						audit_log_get_type(log_view->my_log,cur_msg->src_type));
+						audit_log_get_user(log_view->my_log, cur_msg->src_user),
+						audit_log_get_role(log_view->my_log, cur_msg->src_role),
+						audit_log_get_type(log_view->my_log, cur_msg->src_type));
 				} else {
 					fprintf(outfile, "scontext=%s:%s:%s ",
-						audit_log_get_user(log_view->my_log,cur_msg->src_user),
-						audit_log_get_role(log_view->my_log,cur_msg->src_role),
-						audit_log_get_type(log_view->my_log,cur_msg->src_type));
+						audit_log_get_user(log_view->my_log, cur_msg->src_user),
+						audit_log_get_role(log_view->my_log, cur_msg->src_role),
+						audit_log_get_type(log_view->my_log, cur_msg->src_type));
 				}
 			}
 			if (cur_msg->is_tgt_con) {
 				if (seaudit_report->html) {
 					fprintf(outfile, "<font class=\"tgt_context\">tcontext=%s:%s:%s </font>",
-						audit_log_get_user(log_view->my_log,cur_msg->tgt_user),
-						audit_log_get_role(log_view->my_log,cur_msg->tgt_role),
-						audit_log_get_type(log_view->my_log,cur_msg->tgt_type));
+						audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
+						audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
+						audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
 				} else {
 					fprintf(outfile, "tcontext=%s:%s:%s ",
-						audit_log_get_user(log_view->my_log,cur_msg->tgt_user),
-						audit_log_get_role(log_view->my_log,cur_msg->tgt_role),
-						audit_log_get_type(log_view->my_log,cur_msg->tgt_type));
+						audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
+						audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
+						audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
 				}
 			}
 			if (cur_msg->is_obj_class) {
 				if (seaudit_report->html)
 					fprintf(outfile, "<font class=\"obj_class\">tclass=%s </font>",
-						audit_log_get_obj(log_view->my_log,cur_msg->obj_class));
+						audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
 				else
-					fprintf(outfile, "tclass=%s ", audit_log_get_obj(log_view->my_log,cur_msg->obj_class));
+					fprintf(outfile, "tclass=%s ", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
 			}
 		}
 		if (seaudit_report->html)
@@ -342,7 +339,8 @@ static int seaudit_report_print_view_results(seaudit_report_t *seaudit_report,
 	return 0;
 }
 
-static int seaudit_report_import_html_stylesheet(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_import_html_stylesheet(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	char line[LINE_MAX], *line_ptr = NULL;
 	FILE *fp;
 
@@ -355,7 +353,7 @@ static int seaudit_report_import_html_stylesheet(seaudit_report_t *seaudit_repor
 			return -1;
 		}
 
-		while(fgets(line, LINE_MAX, fp) != NULL) {
+		while (fgets(line, LINE_MAX, fp) != NULL) {
 			line_ptr = &line[0];
 			if (apol_str_trim(&line_ptr) != 0) {
 				fclose(fp);
@@ -372,7 +370,8 @@ static int seaudit_report_import_html_stylesheet(seaudit_report_t *seaudit_repor
 	return 0;
 }
 
-static int seaudit_report_print_header(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_print_header(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	time_t ltime;
 	int rt;
 
@@ -386,7 +385,8 @@ static int seaudit_report_print_header(seaudit_report_t *seaudit_report, FILE *o
 		}
 		fprintf(outfile, "<title>seaudit-report</title>\n</head>\n");
 		fprintf(outfile, "<body>\n");
-		rt = fprintf(outfile, "<b class=\"report_date\"># Report generated by seaudit-report on %s</b><br>\n", ctime(&ltime));
+		rt = fprintf(outfile, "<b class=\"report_date\"># Report generated by seaudit-report on %s</b><br>\n",
+			     ctime(&ltime));
 	} else {
 		fprintf(outfile, "# Begin\n\n");
 		rt = fprintf(outfile, "# Report generated by seaudit-report on %s\n", ctime(&ltime));
@@ -396,7 +396,8 @@ static int seaudit_report_print_header(seaudit_report_t *seaudit_report, FILE *o
 	return 0;
 }
 
-static int seaudit_report_print_footer(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_print_footer(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	if (seaudit_report->html) {
 		fprintf(outfile, "</body>\n</html>\n");
 	} else {
@@ -405,7 +406,8 @@ static int seaudit_report_print_footer(seaudit_report_t *seaudit_report, FILE *o
 	return 0;
 }
 
-static void seaudit_report_write_policy_load_msg(seaudit_report_t *seaudit_report, msg_t *cur_msg, FILE *outfile) {
+static void seaudit_report_write_policy_load_msg(seaudit_report_t * seaudit_report, msg_t * cur_msg, FILE * outfile)
+{
 	char date[DATE_STR_SIZE];
 	load_policy_msg_t *policy_msg;
 
@@ -418,14 +420,14 @@ static void seaudit_report_write_policy_load_msg(seaudit_report_t *seaudit_repor
 			fprintf(outfile, "%s ", date);
 
 		if (seaudit_report->html)
-			fprintf(outfile, "<font class=\"host_name\">%s </font>", audit_log_get_host(seaudit_report->log, cur_msg->host));
+			fprintf(outfile, "<font class=\"host_name\">%s </font>",
+				audit_log_get_host(seaudit_report->log, cur_msg->host));
 		else
 			fprintf(outfile, "%s ", audit_log_get_host(seaudit_report->log, cur_msg->host));
 
 		policy_msg = cur_msg->msg_data.load_policy_msg;
 		fprintf(outfile, "kernel: security: %d users, %d roles, %d types, %d bools",
-					policy_msg->users, policy_msg->roles,
-					policy_msg->types, policy_msg->bools);
+			policy_msg->users, policy_msg->roles, policy_msg->types, policy_msg->bools);
 		if (seaudit_report->html)
 			fprintf(outfile, "<br>\n");
 		else
@@ -437,12 +439,12 @@ static void seaudit_report_write_policy_load_msg(seaudit_report_t *seaudit_repor
 			fprintf(outfile, "%s ", date);
 
 		if (seaudit_report->html)
-			fprintf(outfile, "<font class=\"host_name\">%s </font>", audit_log_get_host(seaudit_report->log, cur_msg->host));
+			fprintf(outfile, "<font class=\"host_name\">%s </font>",
+				audit_log_get_host(seaudit_report->log, cur_msg->host));
 		else
 			fprintf(outfile, "%s ", audit_log_get_host(seaudit_report->log, cur_msg->host));
 
-		fprintf(outfile, "kernel: security: %d classes, %d rules",
-					policy_msg->classes, policy_msg->rules);
+		fprintf(outfile, "kernel: security: %d classes, %d rules", policy_msg->classes, policy_msg->rules);
 
 		if (seaudit_report->html)
 			fprintf(outfile, "<br>\n");
@@ -451,7 +453,8 @@ static void seaudit_report_write_policy_load_msg(seaudit_report_t *seaudit_repor
 	}
 }
 
-static int seaudit_report_print_policy_loads(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_print_policy_loads(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	int i, indx, num = 0;
 	msg_t *cur_msg = NULL;
 
@@ -462,28 +465,30 @@ static int seaudit_report_print_policy_loads(seaudit_report_t *seaudit_report, F
 		num = seaudit_report->log->num_load_msgs;
 
 	if (seaudit_report->html)
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", num);
+		fprintf(outfile,
+			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n",
+			num);
 	else
 		fprintf(outfile, "Number of messages: %d\n\n", num);
 
 	if (seaudit_report->log_view != NULL) {
 		for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
 			indx = seaudit_report->log_view->fltr_msgs[i];
-			cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list,indx);
+			cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list, indx);
 			seaudit_report_write_policy_load_msg(seaudit_report, cur_msg, outfile);
 		}
 	} else {
 		for (indx = 0; indx < apol_vector_get_size(seaudit_report->log->msg_list); indx++) {
-			cur_msg = apol_vector_get_element(seaudit_report->log->msg_list,indx);
-			seaudit_report_write_policy_load_msg(seaudit_report,cur_msg, outfile);
+			cur_msg = apol_vector_get_element(seaudit_report->log->msg_list, indx);
+			seaudit_report_write_policy_load_msg(seaudit_report, cur_msg, outfile);
 		}
 	}
 
 	return 0;
 }
 
-static int seaudit_report_enforce_toggles_view_do_filter(seaudit_report_t *seaudit_report,
-						         audit_log_view_t **log_view) {
+static int seaudit_report_enforce_toggles_view_do_filter(seaudit_report_t * seaudit_report, audit_log_view_t ** log_view)
+{
 	seaudit_multifilter_t *multifilter = NULL;
 	seaudit_filter_t *filter = NULL;
 	int *deleted = NULL, num_deleted, num_kept, old_sz, new_sz;
@@ -532,7 +537,7 @@ static int seaudit_report_enforce_toggles_view_do_filter(seaudit_report_t *seaud
 
 	/* Make sure that we still have messages and that it can't be <= to the new size */
 	assert(num_kept >= 0 && num_kept <= new_sz);
-	if (deleted){
+	if (deleted) {
 		free(deleted);
 	}
 	seaudit_multifilter_destroy(multifilter);
@@ -540,7 +545,8 @@ static int seaudit_report_enforce_toggles_view_do_filter(seaudit_report_t *seaud
 	return 0;
 }
 
-static int seaudit_report_print_enforce_toggles(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_print_enforce_toggles(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	audit_log_view_t *log_view = NULL;
 	int rt, indx, i, actual_num = 0;
 	avc_msg_t *cur_msg = NULL;
@@ -585,7 +591,9 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_t *seaudit_report
 	/* Since we cannot filter by setenforce permission within the view, we do so manually
 	 * within the following for loop. */
 	if (seaudit_report->html)
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", actual_num);
+		fprintf(outfile,
+			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n",
+			actual_num);
 	else
 		fprintf(outfile, "Number of messages: %d\n\n", actual_num);
 
@@ -614,7 +622,8 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_t *seaudit_report
 				fprintf(outfile, "%s ", date);
 
 			if (seaudit_report->html)
-				fprintf(outfile, "<font class=\"host_name\">%s </font>", audit_log_get_host(log_view->my_log, msg->host));
+				fprintf(outfile, "<font class=\"host_name\">%s </font>",
+					audit_log_get_host(log_view->my_log, msg->host));
 			else
 				fprintf(outfile, "%s ", audit_log_get_host(log_view->my_log, msg->host));
 
@@ -622,14 +631,10 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_t *seaudit_report
 			if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
 				if (seaudit_report->html) {
 					fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>",
-						cur_msg->tm_stmp_sec,
-						cur_msg->tm_stmp_nano,
-						cur_msg->serial);
+						cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano, cur_msg->serial);
 				} else {
 					fprintf(outfile, "audit(%lu.%03lu:%u): ",
-						cur_msg->tm_stmp_sec,
-						cur_msg->tm_stmp_nano,
-						cur_msg->serial);
+						cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano, cur_msg->serial);
 				}
 			}
 			fprintf(outfile, "avc: ");
@@ -641,7 +646,7 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_t *seaudit_report
 			if (apol_vector_get_size(cur_msg->perms) > 0) {
 				fprintf(outfile, "{ ");
 				for (j = 0; j < apol_vector_get_size(cur_msg->perms); j++) {
-					cur_perm = (char*)apol_vector_get_element(cur_msg->perms,j);
+					cur_perm = (char *)apol_vector_get_element(cur_msg->perms, j);
 					fprintf(outfile, "%s ", cur_perm);
 				}
 				fprintf(outfile, "}");
@@ -665,7 +670,7 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_t *seaudit_report
 				fprintf(outfile, "ino=%lu ", cur_msg->inode);
 			if (cur_msg->laddr)
 				fprintf(outfile, "laddr=%s ", cur_msg->laddr);
-			if (cur_msg->lport!=0)
+			if (cur_msg->lport != 0)
 				fprintf(outfile, "lport=%d ", cur_msg->lport);
 			if (cur_msg->faddr)
 				fprintf(outfile, "faddr=%s ", cur_msg->faddr);
@@ -731,7 +736,8 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_t *seaudit_report
 	return 0;
 }
 
-static void seaudit_report_write_boolean_msg(seaudit_report_t *seaudit_report, msg_t *cur_msg, FILE *outfile) {
+static void seaudit_report_write_boolean_msg(seaudit_report_t * seaudit_report, msg_t * cur_msg, FILE * outfile)
+{
 	boolean_msg_t *boolean_msg;
 	const char *cur_bool;
 	char date[DATE_STR_SIZE];
@@ -746,7 +752,8 @@ static void seaudit_report_write_boolean_msg(seaudit_report_t *seaudit_report, m
 			fprintf(outfile, "%s ", date);
 
 		if (seaudit_report->html)
-			fprintf(outfile, "<font class=\"host_name\">%s </font>", audit_log_get_host(seaudit_report->log, cur_msg->host));
+			fprintf(outfile, "<font class=\"host_name\">%s </font>",
+				audit_log_get_host(seaudit_report->log, cur_msg->host));
 		else
 			fprintf(outfile, "%s ", audit_log_get_host(seaudit_report->log, cur_msg->host));
 
@@ -760,7 +767,7 @@ static void seaudit_report_write_boolean_msg(seaudit_report_t *seaudit_report, m
 			fprintf(outfile, ":%d", boolean_msg->values[0]);
 
 			for (j = 1; j < boolean_msg->num_bools; j++) {
-			        cur_bool = audit_log_get_bool(seaudit_report->log, boolean_msg->booleans[j]);
+				cur_bool = audit_log_get_bool(seaudit_report->log, boolean_msg->booleans[j]);
 				fprintf(outfile, ", %s", cur_bool);
 				fprintf(outfile, ":%d", boolean_msg->values[j]);
 			}
@@ -773,7 +780,8 @@ static void seaudit_report_write_boolean_msg(seaudit_report_t *seaudit_report, m
 	}
 }
 
-static int seaudit_report_print_policy_booleans(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_print_policy_booleans(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	int i, indx, num = 0;
 	msg_t *cur_msg = NULL;
 
@@ -784,19 +792,21 @@ static int seaudit_report_print_policy_booleans(seaudit_report_t *seaudit_report
 		num = seaudit_report->log->num_bool_msgs;
 
 	if (seaudit_report->html)
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", num);
+		fprintf(outfile,
+			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n",
+			num);
 	else
 		fprintf(outfile, "Number of messages: %d\n\n", num);
 
 	if (seaudit_report->log_view != NULL) {
 		for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
 			indx = seaudit_report->log_view->fltr_msgs[i];
-			cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list,indx);
+			cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list, indx);
 			seaudit_report_write_boolean_msg(seaudit_report, cur_msg, outfile);
 		}
 	} else {
 		for (indx = 0; indx < apol_vector_get_size(seaudit_report->log->msg_list); indx++) {
-			cur_msg	= apol_vector_get_element(seaudit_report->log->msg_list,indx);
+			cur_msg = apol_vector_get_element(seaudit_report->log->msg_list, indx);
 			seaudit_report_write_boolean_msg(seaudit_report, cur_msg, outfile);
 		}
 	}
@@ -804,7 +814,8 @@ static int seaudit_report_print_policy_booleans(seaudit_report_t *seaudit_report
 	return 0;
 }
 
-static void seaudit_report_write_allow_msg(seaudit_report_t *seaudit_report, msg_t *msg, FILE *outfile) {
+static void seaudit_report_write_allow_msg(seaudit_report_t * seaudit_report, msg_t * msg, FILE * outfile)
+{
 	avc_msg_t *cur_msg;
 	const char *cur_perm;
 	char date[DATE_STR_SIZE];
@@ -823,7 +834,8 @@ static void seaudit_report_write_allow_msg(seaudit_report_t *seaudit_report, msg
 			fprintf(outfile, "%s ", date);
 
 		if (seaudit_report->html)
-			fprintf(outfile, "<font class=\"host_name\">%s </font>", audit_log_get_host(seaudit_report->log, msg->host));
+			fprintf(outfile, "<font class=\"host_name\">%s </font>",
+				audit_log_get_host(seaudit_report->log, msg->host));
 		else
 			fprintf(outfile, "%s ", audit_log_get_host(seaudit_report->log, msg->host));
 		fprintf(outfile, "kernel: ");
@@ -831,14 +843,10 @@ static void seaudit_report_write_allow_msg(seaudit_report_t *seaudit_report, msg
 		if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
 			if (seaudit_report->html) {
 				fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>",
-					cur_msg->tm_stmp_sec,
-					cur_msg->tm_stmp_nano,
-					cur_msg->serial);
+					cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano, cur_msg->serial);
 			} else {
 				fprintf(outfile, "audit(%lu.%03lu:%u): ",
-					cur_msg->tm_stmp_sec,
-					cur_msg->tm_stmp_nano,
-					cur_msg->serial);
+					cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano, cur_msg->serial);
 			}
 		}
 		fprintf(outfile, "avc: ");
@@ -850,7 +858,7 @@ static void seaudit_report_write_allow_msg(seaudit_report_t *seaudit_report, msg
 		if (apol_vector_get_size(cur_msg->perms) > 0) {
 			fprintf(outfile, "{ ");
 			for (j = 0; j < apol_vector_get_size(cur_msg->perms); j++) {
-				cur_perm = (char *)apol_vector_get_element(cur_msg->perms,j);
+				cur_perm = (char *)apol_vector_get_element(cur_msg->perms, j);
 				fprintf(outfile, "%s ", cur_perm);
 			}
 			fprintf(outfile, "}");
@@ -939,7 +947,8 @@ static void seaudit_report_write_allow_msg(seaudit_report_t *seaudit_report, msg
 	}
 }
 
-static int seaudit_report_print_allow_listing(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_print_allow_listing(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 
 	int i, indx, num = 0;
 	msg_t *cur_msg = NULL;
@@ -952,19 +961,21 @@ static int seaudit_report_print_allow_listing(seaudit_report_t *seaudit_report, 
 		num = seaudit_report->log->num_allow_msgs;
 
 	if (seaudit_report->html)
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", num);
+		fprintf(outfile,
+			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n",
+			num);
 	else
 		fprintf(outfile, "Number of messages: %d\n\n", num);
 
 	if (seaudit_report->log_view != NULL) {
 		for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
 			indx = seaudit_report->log_view->fltr_msgs[i];
-			cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list,indx);
+			cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list, indx);
 			seaudit_report_write_allow_msg(seaudit_report, cur_msg, outfile);
 		}
 	} else {
 		for (indx = 0; indx < apol_vector_get_size(seaudit_report->log->msg_list); indx++) {
-			cur_msg	= apol_vector_get_element(seaudit_report->log->msg_list,indx);
+			cur_msg = apol_vector_get_element(seaudit_report->log->msg_list, indx);
 			seaudit_report_write_allow_msg(seaudit_report, cur_msg, outfile);
 		}
 	}
@@ -972,7 +983,8 @@ static int seaudit_report_print_allow_listing(seaudit_report_t *seaudit_report, 
 	return 0;
 }
 
-static void seaudit_report_write_deny_msg(seaudit_report_t *seaudit_report, msg_t *cur_msg, FILE *outfile) {
+static void seaudit_report_write_deny_msg(seaudit_report_t * seaudit_report, msg_t * cur_msg, FILE * outfile)
+{
 	int j;
 	avc_msg_t *avc_msg;
 	const char *cur_perm;
@@ -990,21 +1002,18 @@ static void seaudit_report_write_deny_msg(seaudit_report_t *seaudit_report, msg_
 		else
 			fprintf(outfile, "%s ", date);
 		if (seaudit_report->html)
-			fprintf(outfile, "<font class=\"host_name\">%s </font>", audit_log_get_host(seaudit_report->log, cur_msg->host));
+			fprintf(outfile, "<font class=\"host_name\">%s </font>",
+				audit_log_get_host(seaudit_report->log, cur_msg->host));
 		else
 			fprintf(outfile, "%s ", audit_log_get_host(seaudit_report->log, cur_msg->host));
 		fprintf(outfile, "kernel: ");
 		if (!(avc_msg->tm_stmp_sec == 0 && avc_msg->tm_stmp_nano == 0 && avc_msg->serial == 0)) {
 			if (seaudit_report->html) {
 				fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>",
-					avc_msg->tm_stmp_sec,
-					avc_msg->tm_stmp_nano,
-					avc_msg->serial);
+					avc_msg->tm_stmp_sec, avc_msg->tm_stmp_nano, avc_msg->serial);
 			} else {
 				fprintf(outfile, "audit(%lu.%03lu:%u): ",
-					avc_msg->tm_stmp_sec,
-					avc_msg->tm_stmp_nano,
-					avc_msg->serial);
+					avc_msg->tm_stmp_sec, avc_msg->tm_stmp_nano, avc_msg->serial);
 			}
 		}
 		fprintf(outfile, "avc: ");
@@ -1016,7 +1025,7 @@ static void seaudit_report_write_deny_msg(seaudit_report_t *seaudit_report, msg_
 		if (apol_vector_get_size(avc_msg->perms) > 0) {
 			fprintf(outfile, "{ ");
 			for (j = 0; j < apol_vector_get_size(avc_msg->perms); j++) {
-				cur_perm = (char *)apol_vector_get_element(avc_msg->perms,j);
+				cur_perm = (char *)apol_vector_get_element(avc_msg->perms, j);
 				fprintf(outfile, "%s ", cur_perm);
 			}
 			fprintf(outfile, "}");
@@ -1106,7 +1115,8 @@ static void seaudit_report_write_deny_msg(seaudit_report_t *seaudit_report, msg_
 	}
 }
 
-static int seaudit_report_print_deny_listing(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_print_deny_listing(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	int i, indx, num = 0;
 	msg_t *cur_msg = NULL;
 
@@ -1117,19 +1127,21 @@ static int seaudit_report_print_deny_listing(seaudit_report_t *seaudit_report, F
 		num = seaudit_report->log->num_deny_msgs;
 
 	if (seaudit_report->html)
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", num);
+		fprintf(outfile,
+			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n",
+			num);
 	else
 		fprintf(outfile, "Number of messages: %d\n\n", num);
 
 	if (seaudit_report->log_view != NULL) {
 		for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
 			indx = seaudit_report->log_view->fltr_msgs[i];
-			cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list,indx);
+			cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list, indx);
 			seaudit_report_write_deny_msg(seaudit_report, cur_msg, outfile);
 		}
 	} else {
 		for (i = 0; i < apol_vector_get_size(seaudit_report->log->msg_list); i++) {
-			cur_msg	= apol_vector_get_element(seaudit_report->log->msg_list,i);
+			cur_msg = apol_vector_get_element(seaudit_report->log->msg_list, i);
 			seaudit_report_write_deny_msg(seaudit_report, cur_msg, outfile);
 		}
 	}
@@ -1137,7 +1149,8 @@ static int seaudit_report_print_deny_listing(seaudit_report_t *seaudit_report, F
 	return 0;
 }
 
-static void seaudit_report_print_view_stats(seaudit_report_t *seaudit_report, FILE *outfile) {
+static void seaudit_report_print_view_stats(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	int i, indx;
 	int num_allow, num_deny, num_bool, num_load;
 	msg_t *cur_msg = NULL;
@@ -1146,7 +1159,7 @@ static void seaudit_report_print_view_stats(seaudit_report_t *seaudit_report, FI
 	num_allow = num_deny = num_bool = num_load = 0;
 	for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
 		indx = seaudit_report->log_view->fltr_msgs[i];
-		cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list,indx);
+		cur_msg = apol_vector_get_element(seaudit_report->log_view->my_log->msg_list, indx);
 
 		if (cur_msg->msg_type == AVC_MSG) {
 			if (cur_msg->msg_data.avc_msg->msg == AVC_DENIED) {
@@ -1161,11 +1174,21 @@ static void seaudit_report_print_view_stats(seaudit_report_t *seaudit_report, FI
 		}
 	}
 	if (seaudit_report->html) {
-		fprintf(outfile, "<font class=\"stats_label\">Number of total messages:</font> <b class=\"stats_count\">%d</b><br>\n", seaudit_report->log_view->num_fltr_msgs);
-		fprintf(outfile, "<font class=\"stats_label\">Number of policy load messages:</font> <b class=\"stats_count\">%d</b><br>\n", num_load);
-		fprintf(outfile, "<font class=\"stats_label\">Number of policy boolean messages:</font> <b class=\"stats_count\">%d</b><br>\n", num_bool);
-		fprintf(outfile, "<font class=\"stats_label\">Number of allow messages:</font> <b class=\"stats_count\">%d</b><br>\n", num_allow);
-		fprintf(outfile, "<font class=\"stats_label\">Number of denied messages:</font> <b class=\"stats_count\">%d</b><br>\n", num_deny);
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of total messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+			seaudit_report->log_view->num_fltr_msgs);
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of policy load messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+			num_load);
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of policy boolean messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+			num_bool);
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of allow messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+			num_allow);
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of denied messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+			num_deny);
 	} else {
 		fprintf(outfile, "Number of total messages: %d\n", seaudit_report->log_view->num_fltr_msgs);
 		fprintf(outfile, "Number of policy load messages: %d\n", num_load);
@@ -1175,19 +1198,25 @@ static void seaudit_report_print_view_stats(seaudit_report_t *seaudit_report, FI
 	}
 }
 
-static void seaudit_report_print_entire_log_stats(seaudit_report_t *seaudit_report, FILE *outfile) {
+static void seaudit_report_print_entire_log_stats(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	assert(seaudit_report != NULL && outfile != NULL);
 
 	if (seaudit_report->html) {
-		fprintf(outfile, "<font class=\"stats_label\">Number of total messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of total messages:</font> <b class=\"stats_count\">%d</b><br>\n",
 			apol_vector_get_size(seaudit_report->log->msg_list));
-		fprintf(outfile, "<font class=\"stats_label\">Number of policy load messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of policy load messages:</font> <b class=\"stats_count\">%d</b><br>\n",
 			seaudit_report->log->num_load_msgs);
-		fprintf(outfile, "<font class=\"stats_label\">Number of policy boolean messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of policy boolean messages:</font> <b class=\"stats_count\">%d</b><br>\n",
 			seaudit_report->log->num_bool_msgs);
-		fprintf(outfile, "<font class=\"stats_label\">Number of allow messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of allow messages:</font> <b class=\"stats_count\">%d</b><br>\n",
 			seaudit_report->log->num_allow_msgs);
-		fprintf(outfile, "<font class=\"stats_label\">Number of denied messages:</font> <b class=\"stats_count\">%d</b><br>\n",
+		fprintf(outfile,
+			"<font class=\"stats_label\">Number of denied messages:</font> <b class=\"stats_count\">%d</b><br>\n",
 			seaudit_report->log->num_deny_msgs);
 	} else {
 		fprintf(outfile, "Number of total messages: %d\n", apol_vector_get_size(seaudit_report->log->msg_list));
@@ -1198,7 +1227,8 @@ static void seaudit_report_print_entire_log_stats(seaudit_report_t *seaudit_repo
 	}
 }
 
-static int seaudit_report_print_stats(seaudit_report_t *seaudit_report, FILE *outfile) {
+static int seaudit_report_print_stats(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	assert(outfile != NULL);
 
 	if (seaudit_report->log_view != NULL) {
@@ -1209,8 +1239,8 @@ static int seaudit_report_print_stats(seaudit_report_t *seaudit_report, FILE *ou
 	return 0;
 }
 
-static int seaudit_report_print_standard_section(seaudit_report_t *seaudit_report, xmlChar *id,
-							  xmlChar *title, FILE *outfile) {
+static int seaudit_report_print_standard_section(seaudit_report_t * seaudit_report, xmlChar * id, xmlChar * title, FILE * outfile)
+{
 	int sz, len, i, rt = 0;
 
 	assert(id != NULL && outfile != NULL);
@@ -1255,10 +1285,9 @@ static int seaudit_report_print_standard_section(seaudit_report_t *seaudit_repor
 	return 0;
 }
 
-static int seaudit_report_print_custom_section(seaudit_report_t *seaudit_report,
-							xmlTextReaderPtr reader,
-						        xmlChar *title,
-						        FILE *outfile) {
+static int seaudit_report_print_custom_section(seaudit_report_t * seaudit_report,
+					       xmlTextReaderPtr reader, xmlChar * title, FILE * outfile)
+{
 	int rt, len, i;
 	xmlChar *view_filePath = NULL, *name = NULL;
 	bool_t end_of_element = FALSE;
@@ -1294,8 +1323,7 @@ static int seaudit_report_print_custom_section(seaudit_report_t *seaudit_report,
 			end_of_element = TRUE;
 			break;
 		}
-		if (strcmp((char *)name, "view") == 0 && xmlTextReaderNodeType(reader) == 1 &&
-		    xmlTextReaderHasAttributes(reader)) {
+		if (strcmp((char *)name, "view") == 0 && xmlTextReaderNodeType(reader) == 1 && xmlTextReaderHasAttributes(reader)) {
 			view_filePath = xmlTextReaderGetAttribute(reader, (const xmlChar *)"file");
 			if (view_filePath == NULL) {
 				fprintf(stderr, "Error getting file attribute for view node.\n");
@@ -1330,14 +1358,18 @@ static int seaudit_report_print_custom_section(seaudit_report_t *seaudit_report,
 		fprintf(outfile, "\n");
 
 	return 0;
-err:
-	if (log_view) audit_log_view_destroy(log_view);
-	if (view_filePath) xmlFree(view_filePath);
-	if (name) xmlFree(name);
+      err:
+	if (log_view)
+		audit_log_view_destroy(log_view);
+	if (view_filePath)
+		xmlFree(view_filePath);
+	if (name)
+		xmlFree(name);
 	return -1;
 }
 
-static void seaudit_report_print_malformed_msgs(seaudit_report_t *seaudit_report, FILE *outfile) {
+static void seaudit_report_print_malformed_msgs(seaudit_report_t * seaudit_report, FILE * outfile)
+{
 	int i, len;
 
 	assert(outfile != NULL);
@@ -1367,11 +1399,9 @@ static void seaudit_report_print_malformed_msgs(seaudit_report_t *seaudit_report
 	fprintf(outfile, "\n");
 }
 
-
-static int seaudit_report_parse_seaudit_report_node(seaudit_report_t *seaudit_report,
-						    xmlTextReaderPtr reader,
-						    xmlChar **id_value,
-						    xmlChar **title_value) {
+static int seaudit_report_parse_seaudit_report_node(seaudit_report_t * seaudit_report,
+						    xmlTextReaderPtr reader, xmlChar ** id_value, xmlChar ** title_value)
+{
 	int rt;
 	xmlChar *name = NULL;
 
@@ -1379,8 +1409,8 @@ static int seaudit_report_parse_seaudit_report_node(seaudit_report_t *seaudit_re
 	if (xmlTextReaderNodeType(reader) == 1 && xmlTextReaderAttributeCount(reader) > 0) {
 		/* Parse attributes */
 		rt = xmlTextReaderMoveToNextAttribute(reader);
-	        while (rt) {
-		name = xmlTextReaderName(reader);
+		while (rt) {
+			name = xmlTextReaderName(reader);
 			if (name == NULL) {
 				fprintf(stderr, "Attribute name unavailable\n");
 				return -1;
@@ -1399,10 +1429,9 @@ static int seaudit_report_parse_seaudit_report_node(seaudit_report_t *seaudit_re
 	return 0;
 }
 
-static int seaudit_report_parse_standard_section_attributes(seaudit_report_t *seaudit_report,
-							    xmlTextReaderPtr reader,
-							    xmlChar **id_value,
-							    xmlChar **title_value) {
+static int seaudit_report_parse_standard_section_attributes(seaudit_report_t * seaudit_report,
+							    xmlTextReaderPtr reader, xmlChar ** id_value, xmlChar ** title_value)
+{
 	int rt;
 	xmlChar *name = NULL;
 
@@ -1410,8 +1439,8 @@ static int seaudit_report_parse_standard_section_attributes(seaudit_report_t *se
 	if (xmlTextReaderNodeType(reader) == 1 && xmlTextReaderAttributeCount(reader) > 0) {
 		/* Parse attributes */
 		rt = xmlTextReaderMoveToNextAttribute(reader);
-	        while (rt) {
-		name = xmlTextReaderName(reader);
+		while (rt) {
+			name = xmlTextReaderName(reader);
 			if (name == NULL) {
 				fprintf(stderr, "Attribute name unavailable\n");
 				return -1;
@@ -1432,9 +1461,9 @@ static int seaudit_report_parse_standard_section_attributes(seaudit_report_t *se
 	return 0;
 }
 
-static int seaudit_report_parse_custom_section_attributes(seaudit_report_t *seaudit_report,
-							  xmlTextReaderPtr reader,
-							  xmlChar **title_value) {
+static int seaudit_report_parse_custom_section_attributes(seaudit_report_t * seaudit_report,
+							  xmlTextReaderPtr reader, xmlChar ** title_value)
+{
 	int rt;
 	xmlChar *name = NULL;
 
@@ -1442,8 +1471,8 @@ static int seaudit_report_parse_custom_section_attributes(seaudit_report_t *seau
 	if (xmlTextReaderNodeType(reader) == 1 && xmlTextReaderAttributeCount(reader) > 0) {
 		/* Parse attributes */
 		rt = xmlTextReaderMoveToNextAttribute(reader);
-	        while (rt) {
-		name = xmlTextReaderName(reader);
+		while (rt) {
+			name = xmlTextReaderName(reader);
 			if (name == NULL) {
 				fprintf(stderr, "Attribute name unavailable\n");
 				return -1;
@@ -1463,7 +1492,8 @@ static int seaudit_report_parse_custom_section_attributes(seaudit_report_t *seau
 }
 
 /* Processes each node in the tree */
-static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlTextReaderPtr reader, FILE *outfile) {
+static int seaudit_report_process_xmlNode(seaudit_report_t * seaudit_report, xmlTextReaderPtr reader, FILE * outfile)
+{
 	xmlChar *name = NULL;
 	xmlChar *id_attr = NULL, *title_attr = NULL;
 	int rt;
@@ -1476,8 +1506,7 @@ static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlT
 
 	if (seaudit_report_is_valid_node_name((char *)name)) {
 		if (strcmp((char *)name, "seaudit-report") == 0 && xmlTextReaderNodeType(reader) == 1) {
-			rt = seaudit_report_parse_seaudit_report_node(seaudit_report, reader,
-								      &id_attr, &title_attr);
+			rt = seaudit_report_parse_seaudit_report_node(seaudit_report, reader, &id_attr, &title_attr);
 			if (rt != 0)
 				goto err;
 			if (seaudit_report->html) {
@@ -1486,8 +1515,7 @@ static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlT
 				fprintf(outfile, "Title: %s\n", title_attr);
 			}
 		} else if (strcmp((char *)name, "standard-section") == 0 && xmlTextReaderNodeType(reader) == 1) {
-			rt = seaudit_report_parse_standard_section_attributes(seaudit_report, reader,
-								              &id_attr, &title_attr);
+			rt = seaudit_report_parse_standard_section_attributes(seaudit_report, reader, &id_attr, &title_attr);
 			if (rt != 0)
 				goto err;
 			if (id_attr == NULL) {
@@ -1495,10 +1523,7 @@ static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlT
 				goto err;
 			}
 			/* NOTE: If a title wasn't provided, we still continue. */
-			rt = seaudit_report_print_standard_section(seaudit_report,
-										    id_attr,
-										    title_attr,
-										    outfile);
+			rt = seaudit_report_print_standard_section(seaudit_report, id_attr, title_attr, outfile);
 			if (rt != 0)
 				goto err;
 		} else if (strcmp((char *)name, "custom-section") == 0 && xmlTextReaderNodeType(reader) == 1) {
@@ -1506,10 +1531,7 @@ static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlT
 			if (rt != 0)
 				goto err;
 			/* NOTE: If a title wasn't provided, we still continue. */
-			rt = seaudit_report_print_custom_section(seaudit_report,
-										  reader,
-										  title_attr,
-										  outfile);
+			rt = seaudit_report_print_custom_section(seaudit_report, reader, title_attr, outfile);
 			if (rt != 0)
 				goto err;
 
@@ -1520,14 +1542,18 @@ static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlT
 	xmlFree(title_attr);
 
 	return 0;
-err:
-	if (name) xmlFree(name);
-	if (id_attr) xmlFree(id_attr);
-	if (title_attr) xmlFree(title_attr);
+      err:
+	if (name)
+		xmlFree(name);
+	if (id_attr)
+		xmlFree(id_attr);
+	if (title_attr)
+		xmlFree(title_attr);
 	return -1;
 }
 
-static int seaudit_report_add_file_path(const char *str, char **copy_ptr) {
+static int seaudit_report_add_file_path(const char *str, char **copy_ptr)
+{
 	int len;
 
 	if (str == NULL)
@@ -1551,12 +1577,11 @@ static int seaudit_report_add_file_path(const char *str, char **copy_ptr) {
 	return 0;
 }
 
-int seaudit_report_add_logfile_to_list(seaudit_report_t *seaudit_report, const char *file)
+int seaudit_report_add_logfile_to_list(seaudit_report_t * seaudit_report, const char *file)
 {
 	assert(seaudit_report != NULL);
 
-	seaudit_report->logfiles =
-	    realloc(seaudit_report->logfiles, (sizeof(char *) * (seaudit_report->num_logfiles + 1)));
+	seaudit_report->logfiles = realloc(seaudit_report->logfiles, (sizeof(char *) * (seaudit_report->num_logfiles + 1)));
 	if (!seaudit_report->logfiles)
 		goto err;
 	if ((seaudit_report->logfiles[seaudit_report->num_logfiles] = strdup(file)) == NULL)
@@ -1564,13 +1589,14 @@ int seaudit_report_add_logfile_to_list(seaudit_report_t *seaudit_report, const c
 	seaudit_report->num_logfiles++;
 	return 0;
 
-err:
+      err:
 	fprintf(stderr, "Error: Out of memory\n");
 	return -1;
 
 }
 
-int seaudit_report_load_audit_messages_from_log_file(seaudit_report_t *seaudit_report) {
+int seaudit_report_load_audit_messages_from_log_file(seaudit_report_t * seaudit_report)
+{
 	int i;
 	unsigned int rt = 0;
 	FILE *tmp_file = NULL;
@@ -1582,10 +1608,10 @@ int seaudit_report_load_audit_messages_from_log_file(seaudit_report_t *seaudit_r
 		rt |= parse_audit(stdin, seaudit_report->log);
 		if (rt & PARSE_RET_MEMORY_ERROR) {
 			fprintf(stderr, "Memory error while parsing the log!\n");
-				return -1;
+			return -1;
 		} else if (rt & PARSE_RET_NO_SELINUX_ERROR) {
 			fprintf(stderr, "No SELinux messages found in log!\n");
-				return -1;
+			return -1;
 		}
 	} else {
 		/* Load in all data into log structure */
@@ -1613,7 +1639,8 @@ int seaudit_report_load_audit_messages_from_log_file(seaudit_report_t *seaudit_r
 	return 0;
 }
 
-int seaudit_report_search_dflt_config_file(seaudit_report_t *seaudit_report) {
+int seaudit_report_search_dflt_config_file(seaudit_report_t * seaudit_report)
+{
 	int len;
 	char *configFile_dir = NULL;
 
@@ -1637,8 +1664,7 @@ int seaudit_report_search_dflt_config_file(seaudit_report_t *seaudit_report) {
 
 		/* Here we must check to see if we can read the file, or the application cannot continue. */
 		if (access(seaudit_report->configPath, R_OK) != 0) {
-			fprintf(stderr, "Could not read system default config file (%s).\n",
-				seaudit_report->configPath);
+			fprintf(stderr, "Could not read system default config file (%s).\n", seaudit_report->configPath);
 			return -1;
 		}
 	}
@@ -1646,7 +1672,8 @@ int seaudit_report_search_dflt_config_file(seaudit_report_t *seaudit_report) {
 	return 0;
 }
 
-int seaudit_report_search_dflt_stylesheet(seaudit_report_t *seaudit_report) {
+int seaudit_report_search_dflt_stylesheet(seaudit_report_t * seaudit_report)
+{
 	int len;
 	char *dir = NULL;
 
@@ -1678,22 +1705,23 @@ int seaudit_report_search_dflt_stylesheet(seaudit_report_t *seaudit_report) {
 	return 0;
 }
 
-int seaudit_report_add_outFile_path(const char *file, seaudit_report_t *seaudit_report)
+int seaudit_report_add_outFile_path(const char *file, seaudit_report_t * seaudit_report)
 {
 	return (seaudit_report_add_file_path(file, &seaudit_report->outFile));
 }
 
-int seaudit_report_add_configFile_path(const char *file, seaudit_report_t *seaudit_report)
+int seaudit_report_add_configFile_path(const char *file, seaudit_report_t * seaudit_report)
 {
 	return (seaudit_report_add_file_path(file, &seaudit_report->configPath));
 }
 
-int seaudit_report_add_stylesheet_path(const char *file, seaudit_report_t *seaudit_report)
+int seaudit_report_add_stylesheet_path(const char *file, seaudit_report_t * seaudit_report)
 {
 	return (seaudit_report_add_file_path(file, &seaudit_report->stylesheet_file));
 }
 
-int seaudit_report_generate_report(seaudit_report_t *seaudit_report) {
+int seaudit_report_generate_report(seaudit_report_t * seaudit_report)
+{
 	int rt;
 	xmlTextReaderPtr reader;
 	FILE *outfile = NULL;
@@ -1755,7 +1783,8 @@ int seaudit_report_generate_report(seaudit_report_t *seaudit_report) {
 	return 0;
 }
 
-void seaudit_report_destroy(seaudit_report_t *seaudit_report) {
+void seaudit_report_destroy(seaudit_report_t * seaudit_report)
+{
 	int i;
 
 	assert(seaudit_report != NULL);
@@ -1778,10 +1807,11 @@ void seaudit_report_destroy(seaudit_report_t *seaudit_report) {
 		audit_log_destroy(seaudit_report->log);
 }
 
-seaudit_report_t *seaudit_report_create() {
+seaudit_report_t *seaudit_report_create()
+{
 	seaudit_report_t *seaudit_report;
 
-	seaudit_report = (seaudit_report_t*)malloc(sizeof(seaudit_report_t));
+	seaudit_report = (seaudit_report_t *) malloc(sizeof(seaudit_report_t));
 	if (!seaudit_report) {
 		fprintf(stderr, "Out of memory");
 		return NULL;

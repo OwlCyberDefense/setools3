@@ -44,7 +44,8 @@ static struct Tcl_ObjType infoflow_tcl_obj_type = {
 	NULL,
 	NULL
 };
-typedef struct infoflow_tcl {
+typedef struct infoflow_tcl
+{
 	Tcl_Obj *obj;
 	Tcl_HashEntry *hash;
 	apol_infoflow_graph_t *g;
@@ -67,7 +68,7 @@ static int infoflow_graph_epoch = 0;
  * @see Treating the graph as a Tcl object handler is based upon the
  * code at http://mini.net/tcl/13881.
  */
-static int apol_infoflow_graph_to_tcl_obj(Tcl_Interp *interp, apol_infoflow_graph_t *g, Tcl_Obj **o)
+static int apol_infoflow_graph_to_tcl_obj(Tcl_Interp * interp, apol_infoflow_graph_t * g, Tcl_Obj ** o)
 {
 	char s[1], *handle_name;
 	int num_bytes, new_entry;
@@ -82,7 +83,7 @@ static int apol_infoflow_graph_to_tcl_obj(Tcl_Interp *interp, apol_infoflow_grap
 	*o = Tcl_NewStringObj(handle_name, -1);
 	(*o)->typePtr = &infoflow_tcl_obj_type;
 	(*o)->internalRep.twoPtrValue.ptr1 = infoflow_tcl;
-	(*o)->internalRep.twoPtrValue.ptr2 = (void *) infoflow_graph_epoch;
+	(*o)->internalRep.twoPtrValue.ptr2 = (void *)infoflow_graph_epoch;
 
 	infoflow_tcl->obj = *o;
 	infoflow_tcl->g = g;
@@ -106,10 +107,9 @@ static int apol_infoflow_graph_to_tcl_obj(Tcl_Interp *interp, apol_infoflow_grap
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-static int tcl_obj_to_infoflow_tcl(Tcl_Interp *interp, Tcl_Obj *o, infoflow_tcl_t **i)
+static int tcl_obj_to_infoflow_tcl(Tcl_Interp * interp, Tcl_Obj * o, infoflow_tcl_t ** i)
 {
-	if (o->typePtr != &infoflow_tcl_obj_type ||
-	    (int) o->internalRep.twoPtrValue.ptr2 != infoflow_graph_epoch) {
+	if (o->typePtr != &infoflow_tcl_obj_type || (int)o->internalRep.twoPtrValue.ptr2 != infoflow_graph_epoch) {
 		char *name;
 		Tcl_HashEntry *entry;
 		name = Tcl_GetString(o);
@@ -122,9 +122,8 @@ static int tcl_obj_to_infoflow_tcl(Tcl_Interp *interp, Tcl_Obj *o, infoflow_tcl_
 		/* shimmer the object back to an infoflow_tcl */
 		o->typePtr = &infoflow_tcl_obj_type;
 		o->internalRep.twoPtrValue.ptr1 = *i;
-		o->internalRep.twoPtrValue.ptr2 = (void *) infoflow_graph_epoch;
-	}
-	else {
+		o->internalRep.twoPtrValue.ptr2 = (void *)infoflow_graph_epoch;
+	} else {
 		*i = (infoflow_tcl_t *) o->internalRep.twoPtrValue.ptr1;
 	}
 	return TCL_OK;
@@ -137,12 +136,12 @@ static int tcl_obj_to_infoflow_tcl(Tcl_Interp *interp, Tcl_Obj *o, infoflow_tcl_
  *
  * @param i Infoflow_tcl_t object to free.
  */
-static void infoflow_tcl_free(infoflow_tcl_t *i)
+static void infoflow_tcl_free(infoflow_tcl_t * i)
 {
 	apol_infoflow_graph_t *g = i->g;
 	apol_infoflow_graph_destroy(&g);
 	Tcl_DeleteHashEntry(i->hash);
-	ckfree((char *) i);
+	ckfree((char *)i);
 	/* now invalidate all cached infoflow_tcl_t pointers stored
 	 * within Tcl_Objs */
 	infoflow_graph_epoch++;
@@ -159,8 +158,7 @@ static void infoflow_tcl_free(infoflow_tcl_t *i)
  * </ol>
  *
  */
-static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
-				    int argc, CONST char *argv[])
+static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
 	qpol_class_t *obj_class;
@@ -178,14 +176,14 @@ static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
 		ERR(policydb, "%s", "Need a class name.");
 		goto cleanup;
 	}
-	if (qpol_policy_get_class_by_name(policydb->p, argv[1], &obj_class) < 0 ||
-	    qpol_class_get_common(policydb->p, obj_class, &common) < 0 ||
-	    qpol_class_get_perm_iter(policydb->p, obj_class, &perm_iter) < 0) {
+	if (qpol_policy_get_class_by_name(qpolicydb, argv[1], &obj_class) < 0 ||
+	    qpol_class_get_common(qpolicydb, obj_class, &common) < 0 ||
+	    qpol_class_get_perm_iter(qpolicydb, obj_class, &perm_iter) < 0) {
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
-		if (qpol_iterator_get_item(perm_iter, (void **) &perm) < 0) {
-				goto cleanup;
+	for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+		if (qpol_iterator_get_item(perm_iter, (void **)&perm) < 0) {
+			goto cleanup;
 		}
 		Tcl_Obj *o = Tcl_NewStringObj(perm, -1);
 		if (Tcl_ListObjAppendElement(interp, result_obj, o) == TCL_ERROR) {
@@ -193,11 +191,11 @@ static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
 		}
 	}
 	if (common != NULL) {
-		if (qpol_common_get_perm_iter(policydb->p, common, &common_iter) < 0) {
+		if (qpol_common_get_perm_iter(qpolicydb, common, &common_iter) < 0) {
 			goto cleanup;
 		}
-		for ( ; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
-			if (qpol_iterator_get_item(common_iter, (void **) &perm) < 0) {
+		for (; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
+			if (qpol_iterator_get_item(common_iter, (void **)&perm) < 0) {
 				goto cleanup;
 			}
 			Tcl_Obj *o = Tcl_NewStringObj(perm, -1);
@@ -208,7 +206,7 @@ static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
 	}
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&perm_iter);
 	qpol_iterator_destroy(&common_iter);
 	if (retval == TCL_ERROR) {
@@ -226,26 +224,22 @@ static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
  *     setexec_rules type_trans_rules access_ruless }
  * </code>
  */
-static int append_domain_trans_result_to_list(Tcl_Interp *interp,
-					       apol_domain_trans_result_t *result,
-					       Tcl_Obj *result_list)
+static int append_domain_trans_result_to_list(Tcl_Interp * interp, apol_domain_trans_result_t * result, Tcl_Obj * result_list)
 {
 	Tcl_Obj *dta_elem[9], *dta_list;
 	qpol_type_t *source, *target, *entry;
 	char *source_name, *target_name, *entry_name;
-	apol_vector_t *proctrans, *entrypoint, *execute,
-		*setexec, *type_trans, *access_rules;
+	apol_vector_t *proctrans, *entrypoint, *execute, *setexec, *type_trans, *access_rules;
 	int retval = TCL_ERROR;
 
 	source = apol_domain_trans_result_get_start_type(result);
 	target = apol_domain_trans_result_get_end_type(result);
-	entry =	 apol_domain_trans_result_get_entrypoint_type(result);
+	entry = apol_domain_trans_result_get_entrypoint_type(result);
 	proctrans = apol_domain_trans_result_get_proc_trans_rules(result);
 	entrypoint = apol_domain_trans_result_get_entrypoint_rules(result);
 	execute = apol_domain_trans_result_get_exec_rules(result);
-	if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->p, target, &target_name) < 0 ||
-	    qpol_type_get_name(policydb->p, entry, &entry_name) < 0) {
+	if (qpol_type_get_name(qpolicydb, source, &source_name) < 0 ||
+	    qpol_type_get_name(qpolicydb, target, &target_name) < 0 || qpol_type_get_name(qpolicydb, entry, &entry_name) < 0) {
 		goto cleanup;
 	}
 	dta_elem[0] = Tcl_NewStringObj(source_name, -1);
@@ -258,20 +252,17 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
 	}
 	if ((setexec = apol_domain_trans_result_get_setexec_rules(result)) == NULL) {
 		dta_elem[6] = Tcl_NewListObj(0, NULL);
-	}
-	else if (apol_vector_avrule_to_tcl_list(interp, setexec, dta_elem + 6) == TCL_ERROR) {
+	} else if (apol_vector_avrule_to_tcl_list(interp, setexec, dta_elem + 6) == TCL_ERROR) {
 		goto cleanup;
 	}
 	if ((type_trans = apol_domain_trans_result_get_type_trans_rules(result)) == NULL) {
 		dta_elem[7] = Tcl_NewListObj(0, NULL);
-	}
-	else if (apol_vector_terule_to_tcl_list(interp, type_trans, dta_elem + 7) == TCL_ERROR) {
+	} else if (apol_vector_terule_to_tcl_list(interp, type_trans, dta_elem + 7) == TCL_ERROR) {
 		goto cleanup;
 	}
 	if ((access_rules = apol_domain_trans_result_get_access_rules(result)) == NULL) {
 		dta_elem[8] = Tcl_NewListObj(0, NULL);
-	}
-	else if (apol_vector_avrule_to_tcl_list(interp, access_rules, dta_elem + 8) == TCL_ERROR) {
+	} else if (apol_vector_avrule_to_tcl_list(interp, access_rules, dta_elem + 8) == TCL_ERROR) {
 		goto cleanup;
 	}
 	dta_list = Tcl_NewListObj(9, dta_elem);
@@ -279,7 +270,7 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -320,8 +311,7 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
  * Note that the list of object types and list of class/perm pairs are
  * ignored if the analysis mode is "reverse".
  */
-static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp,
-					 int argc, CONST char *argv[])
+static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
 	apol_domain_trans_result_t *result = NULL;
@@ -349,11 +339,9 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 
 	if (strcmp(argv[1], "forward") == 0) {
 		direction = APOL_DOMAIN_TRANS_DIRECTION_FORWARD;
-	}
-	else if (strcmp(argv[1], "reverse") == 0) {
+	} else if (strcmp(argv[1], "reverse") == 0) {
 		direction = APOL_DOMAIN_TRANS_DIRECTION_REVERSE;
-	}
-	else {
+	} else {
 		ERR(policydb, "Invalid domain transition mode %s.", argv[1]);
 		goto cleanup;
 	}
@@ -406,12 +394,12 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (targets_strings != NULL) {
-		Tcl_Free((char *) targets_strings);
+		Tcl_Free((char *)targets_strings);
 	}
 	if (classperm_strings != NULL) {
-		Tcl_Free((char *) classperm_strings);
+		Tcl_Free((char *)classperm_strings);
 	}
 	apol_domain_trans_analysis_destroy(&analysis);
 	apol_vector_destroy(&v, apol_domain_trans_result_free);
@@ -428,9 +416,7 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
  *   { flow_direction  source_type  target_type  list_of_rules }
  * </code>
  */
-static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
-						 apol_infoflow_result_t *result,
-						 Tcl_Obj *result_list)
+static int append_direct_infoflow_result_to_list(Tcl_Interp * interp, apol_infoflow_result_t * result, Tcl_Obj * result_list)
 {
 	Tcl_Obj *direct_elem[4], *direct_list;
 	unsigned int dir;
@@ -447,15 +433,20 @@ static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
 	step = (apol_infoflow_step_t *) apol_vector_get_element(steps, 0);
 	rules = apol_infoflow_step_get_rules(step);
 	switch (dir) {
-	case APOL_INFOFLOW_IN: dir_str = "in"; break;
-	case APOL_INFOFLOW_OUT: dir_str = "out"; break;
-	case APOL_INFOFLOW_BOTH: dir_str = "both"; break;
+	case APOL_INFOFLOW_IN:
+		dir_str = "in";
+		break;
+	case APOL_INFOFLOW_OUT:
+		dir_str = "out";
+		break;
+	case APOL_INFOFLOW_BOTH:
+		dir_str = "both";
+		break;
 	default:
 		Tcl_SetResult(interp, "Illegal flow direction.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->p, target, &target_name) < 0) {
+	if (qpol_type_get_name(qpolicydb, source, &source_name) < 0 || qpol_type_get_name(qpolicydb, target, &target_name) < 0) {
 		goto cleanup;
 	}
 	direct_elem[0] = Tcl_NewStringObj(dir_str, -1);
@@ -469,7 +460,7 @@ static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -498,8 +489,7 @@ static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
  */
-static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp,
-					      int argc, CONST char *argv[])
+static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
 	apol_infoflow_result_t *result = NULL;
@@ -523,17 +513,13 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 
 	if (strcmp(argv[1], "in") == 0) {
 		direction = APOL_INFOFLOW_IN;
-	}
-	else if (strcmp(argv[1], "out") == 0) {
+	} else if (strcmp(argv[1], "out") == 0) {
 		direction = APOL_INFOFLOW_OUT;
-	}
-	else if (strcmp(argv[1], "either") == 0) {
+	} else if (strcmp(argv[1], "either") == 0) {
 		direction = APOL_INFOFLOW_EITHER;
-	}
-	else if (strcmp(argv[1], "both") == 0) {
+	} else if (strcmp(argv[1], "both") == 0) {
 		direction = APOL_INFOFLOW_BOTH;
-	}
-	else {
+	} else {
 		ERR(policydb, "Invalid direct infoflow direction %s.", argv[1]);
 		goto cleanup;
 	}
@@ -564,8 +550,7 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 			ERR(policydb, "Not a class/perm pair: %s", s);
 			goto cleanup;
 		}
-		if (apol_infoflow_analysis_append_class_perm
-		    (policydb, analysis, Tcl_GetString(cp[0]), Tcl_GetString(cp[1])) < 0) {
+		if (apol_infoflow_analysis_append_class_perm(policydb, analysis, Tcl_GetString(cp[0]), Tcl_GetString(cp[1])) < 0) {
 			goto cleanup;
 		}
 	}
@@ -586,9 +571,9 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (class_strings != NULL) {
-		Tcl_Free((char *) class_strings);
+		Tcl_Free((char *)class_strings);
 	}
 	apol_infoflow_analysis_destroy(&analysis);
 	apol_vector_destroy(&v, apol_infoflow_result_free);
@@ -610,8 +595,7 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
  *   <li>starting type (string)
  * </ol>
  */
-static int Apol_DirectInformationFlowMore(ClientData clientData, Tcl_Interp *interp,
-					  int argc, CONST char *argv[])
+static int Apol_DirectInformationFlowMore(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
 	infoflow_tcl_t *i_t;
@@ -647,7 +631,7 @@ static int Apol_DirectInformationFlowMore(ClientData clientData, Tcl_Interp *int
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&v, apol_infoflow_result_free);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
@@ -664,9 +648,7 @@ static int Apol_DirectInformationFlowMore(ClientData clientData, Tcl_Interp *int
  *
  * A path consists of a list of steps; each steps has a list of rules.
  */
-static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
-						apol_infoflow_result_t *result,
-						Tcl_Obj *result_list)
+static int append_trans_infoflow_result_to_list(Tcl_Interp * interp, apol_infoflow_result_t * result, Tcl_Obj * result_list)
 {
 	Tcl_Obj *trans_elem[5], *trans_list, *step_elem[4], *step_list;
 	unsigned int dir, length;
@@ -683,14 +665,17 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
 	length = apol_infoflow_result_get_length(result);
 	steps = apol_infoflow_result_get_steps(result);
 	switch (dir) {
-	case APOL_INFOFLOW_IN: dir_str = "to"; break;
-	case APOL_INFOFLOW_OUT: dir_str = "from"; break;
+	case APOL_INFOFLOW_IN:
+		dir_str = "to";
+		break;
+	case APOL_INFOFLOW_OUT:
+		dir_str = "from";
+		break;
 	default:
 		Tcl_SetResult(interp, "Illegal flow direction.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->p, target, &target_name) < 0) {
+	if (qpol_type_get_name(qpolicydb, source, &source_name) < 0 || qpol_type_get_name(qpolicydb, target, &target_name) < 0) {
 		goto cleanup;
 	}
 	trans_elem[0] = Tcl_NewStringObj(dir_str, -1);
@@ -704,8 +689,8 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
 		target = apol_infoflow_step_get_end_type(step);
 		weight = apol_infoflow_step_get_weight(step);
 		rules = apol_infoflow_step_get_rules(step);
-		if (qpol_type_get_name(policydb->p, source, &source_name) < 0 ||
-		    qpol_type_get_name(policydb->p, target, &target_name) < 0) {
+		if (qpol_type_get_name(qpolicydb, source, &source_name) < 0 ||
+		    qpol_type_get_name(qpolicydb, target, &target_name) < 0) {
 			goto cleanup;
 		}
 		step_elem[0] = Tcl_NewStringObj(source_name, -1);
@@ -724,7 +709,7 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -765,8 +750,7 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
  */
-static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp,
-					      int argc, CONST char *argv[])
+static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
 	apol_infoflow_result_t *result = NULL;
@@ -784,17 +768,16 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 		goto cleanup;
 	}
 	if (argc != 7) {
-		ERR(policydb, "%s", "Need a flow direction, starting type, intermediate types, class/perm pairs, weight threshold, and resulting type regex.");
+		ERR(policydb, "%s",
+		    "Need a flow direction, starting type, intermediate types, class/perm pairs, weight threshold, and resulting type regex.");
 		goto cleanup;
 	}
 
 	if (strcmp(argv[1], "to") == 0) {
 		direction = APOL_INFOFLOW_IN;
-	}
-	else if (strcmp(argv[1], "from") == 0) {
+	} else if (strcmp(argv[1], "from") == 0) {
 		direction = APOL_INFOFLOW_OUT;
-	}
-	else {
+	} else {
 		ERR(policydb, "Invalid trans infoflow direction %s.", argv[1]);
 		goto cleanup;
 	}
@@ -834,8 +817,7 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 			ERR(policydb, "Not a class/perm pair: %s", s);
 			goto cleanup;
 		}
-		if (apol_infoflow_analysis_append_class_perm
-		    (policydb, analysis, Tcl_GetString(cp[0]), Tcl_GetString(cp[1])) < 0) {
+		if (apol_infoflow_analysis_append_class_perm(policydb, analysis, Tcl_GetString(cp[0]), Tcl_GetString(cp[1])) < 0) {
 			goto cleanup;
 		}
 	}
@@ -864,12 +846,12 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (intermed_strings != NULL) {
-		Tcl_Free((char *) intermed_strings);
+		Tcl_Free((char *)intermed_strings);
 	}
 	if (classperm_strings != NULL) {
-		Tcl_Free((char *) classperm_strings);
+		Tcl_Free((char *)classperm_strings);
 	}
 	apol_infoflow_analysis_destroy(&analysis);
 	apol_vector_destroy(&v, apol_infoflow_result_free);
@@ -891,8 +873,7 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
  *   <li>starting type (string)
  * </ol>
  */
-static int Apol_TransInformationFlowMore(ClientData clientData, Tcl_Interp *interp,
-					 int argc, CONST char *argv[])
+static int Apol_TransInformationFlowMore(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
 	infoflow_tcl_t *i_t;
@@ -928,7 +909,7 @@ static int Apol_TransInformationFlowMore(ClientData clientData, Tcl_Interp *inte
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&v, apol_infoflow_result_free);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
@@ -949,8 +930,7 @@ static int Apol_TransInformationFlowMore(ClientData clientData, Tcl_Interp *inte
  *   <li>ending type (string)
  * </ol>
  */
-static int Apol_TransInformationFurtherPrepare(ClientData clientData, Tcl_Interp *interp,
-					       int argc, CONST char *argv[])
+static int Apol_TransInformationFurtherPrepare(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *graph_obj;
 	infoflow_tcl_t *i_t;
@@ -976,7 +956,7 @@ static int Apol_TransInformationFurtherPrepare(ClientData clientData, Tcl_Interp
 	}
 	Tcl_SetResult(interp, "", TCL_STATIC);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -993,8 +973,7 @@ static int Apol_TransInformationFurtherPrepare(ClientData clientData, Tcl_Interp
  *   <li>handler to an existing transitive information flow graph
  * </ol>
  */
-static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp *interp,
-					    int argc, CONST char *argv[])
+static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
 	infoflow_tcl_t *i_t;
@@ -1034,7 +1013,7 @@ static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp *i
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	apol_vector_destroy(&v, apol_infoflow_result_free);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
@@ -1051,8 +1030,7 @@ static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp *i
  *   <li>handle to the infoflow graph
  * </ol>
  */
-static int Apol_InformationFlowDestroy(ClientData clientData, Tcl_Interp *interp,
-				       int argc, CONST char *argv[])
+static int Apol_InformationFlowDestroy(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *o;
 	infoflow_tcl_t *i;
@@ -1069,7 +1047,7 @@ static int Apol_InformationFlowDestroy(ClientData clientData, Tcl_Interp *interp
 	}
 	infoflow_tcl_free(i);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1086,9 +1064,7 @@ static int Apol_InformationFlowDestroy(ClientData clientData, Tcl_Interp *interp
  *
  * @return TCL_OK on success, TCL_ERROR on error.
  */
-static int apol_relabel_pair_vector_to_tcl_list(Tcl_Interp *interp,
-						apol_vector_t *v,
-						Tcl_Obj **o)
+static int apol_relabel_pair_vector_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** o)
 {
 	size_t i;
 	apol_relabel_result_pair_t *pair;
@@ -1101,23 +1077,21 @@ static int apol_relabel_pair_vector_to_tcl_list(Tcl_Interp *interp,
 		pair = (apol_relabel_result_pair_t *) apol_vector_get_element(v, i);
 		rA = apol_relabel_result_pair_get_ruleA(pair);
 		rB = apol_relabel_result_pair_get_ruleB(pair);
-                intermed = apol_relabel_result_pair_get_intermediate_type(pair);
+		intermed = apol_relabel_result_pair_get_intermediate_type(pair);
 		if (qpol_avrule_to_tcl_obj(interp, rA, pair_elem + 0) == TCL_ERROR) {
 			return TCL_ERROR;
 		}
 		if (rB == NULL) {
 			pair_elem[1] = Tcl_NewListObj(0, NULL);
-		}
-		else {
+		} else {
 			if (qpol_avrule_to_tcl_obj(interp, rB, pair_elem + 1) == TCL_ERROR) {
 				return TCL_ERROR;
 			}
 		}
-                if (intermed == NULL) {
-                        pair_elem[2] = Tcl_NewStringObj("", -1);
-                }
-                else {
-			if (qpol_type_get_name(policydb->p, intermed, &intermed_name) < 0) {
+		if (intermed == NULL) {
+			pair_elem[2] = Tcl_NewStringObj("", -1);
+		} else {
+			if (qpol_type_get_name(qpolicydb, intermed, &intermed_name) < 0) {
 				return TCL_ERROR;
 			}
 			pair_elem[2] = Tcl_NewStringObj(intermed_name, -1);
@@ -1137,9 +1111,7 @@ static int apol_relabel_pair_vector_to_tcl_list(Tcl_Interp *interp,
  *   { to_rules  from_rules  both_rules }
  * </code>
  */
-static int append_relabel_result_to_list(Tcl_Interp *interp,
-					 apol_relabel_result_t *result,
-					 Tcl_Obj *result_list)
+static int append_relabel_result_to_list(Tcl_Interp * interp, apol_relabel_result_t * result, Tcl_Obj * result_list)
 {
 	Tcl_Obj *relabel_elem[4], *relabel_list;
 	qpol_type_t *type;
@@ -1151,7 +1123,7 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
 	to = apol_relabel_result_get_to(result);
 	from = apol_relabel_result_get_from(result);
 	both = apol_relabel_result_get_both(result);
-	if (qpol_type_get_name(policydb->p, type, &type_name) < 0) {
+	if (qpol_type_get_name(qpolicydb, type, &type_name) < 0) {
 		goto cleanup;
 	}
 	relabel_elem[0] = Tcl_NewStringObj(type_name, -1);
@@ -1162,10 +1134,10 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
 	}
 	relabel_list = Tcl_NewListObj(4, relabel_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, relabel_list) == TCL_ERROR) {
-	    goto cleanup;
+		goto cleanup;
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -1194,8 +1166,7 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
  */
-static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
-                                int argc, CONST char *argv[])
+static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
 	apol_relabel_result_t *result = NULL;
@@ -1212,28 +1183,25 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if (argc != 6) {
-		ERR(policydb, "%s", "Need an analysis mode, starting type, object classes, subject types, and resulting type regex.");
+		ERR(policydb, "%s",
+		    "Need an analysis mode, starting type, object classes, subject types, and resulting type regex.");
 		goto cleanup;
 	}
 
 	if (strcmp(argv[1], "to") == 0) {
 		direction = APOL_RELABEL_DIR_TO;
-	}
-	else if (strcmp(argv[1], "from") == 0) {
+	} else if (strcmp(argv[1], "from") == 0) {
 		direction = APOL_RELABEL_DIR_FROM;
-	}
-	else if (strcmp(argv[1], "both") == 0) {
+	} else if (strcmp(argv[1], "both") == 0) {
 		direction = APOL_RELABEL_DIR_BOTH;
-	}
-	else if (strcmp(argv[1], "subject") == 0) {
+	} else if (strcmp(argv[1], "subject") == 0) {
 		direction = APOL_RELABEL_DIR_SUBJECT;
-	}
-	else {
+	} else {
 		ERR(policydb, "Invalid relabel mode %s.", argv[1]);
 		goto cleanup;
 	}
 
-        if ((analysis = apol_relabel_analysis_create()) == NULL) {
+	if ((analysis = apol_relabel_analysis_create()) == NULL) {
 		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -1265,8 +1233,8 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	if (apol_relabel_analysis_do(policydb, analysis, &v) < 0) {
-                goto cleanup;
-        }
+		goto cleanup;
+	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		result = (apol_relabel_result_t *) apol_vector_get_element(v, i);
 		if (append_relabel_result_to_list(interp, result, result_obj) == TCL_ERROR) {
@@ -1276,12 +1244,12 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (class_strings != NULL) {
-		Tcl_Free((char *) class_strings);
+		Tcl_Free((char *)class_strings);
 	}
 	if (subject_strings != NULL) {
-		Tcl_Free((char *) subject_strings);
+		Tcl_Free((char *)subject_strings);
 	}
 	apol_relabel_analysis_destroy(&analysis);
 	apol_vector_destroy(&v, apol_relabel_result_free);
@@ -1295,9 +1263,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
  * Given a result object from a two types relationship analysis,
  * create a new Tcl list containing the names of common attributes.
  */
-static int apol_types_relation_attribs_to_tcl_list(Tcl_Interp *interp,
-						   apol_types_relation_result_t *r,
-						   Tcl_Obj **o)
+static int apol_types_relation_attribs_to_tcl_list(Tcl_Interp * interp, apol_types_relation_result_t * r, Tcl_Obj ** o)
 {
 	apol_vector_t *v = apol_types_relation_result_get_attributes(r);
 	*o = Tcl_NewListObj(0, NULL);
@@ -1307,7 +1273,7 @@ static int apol_types_relation_attribs_to_tcl_list(Tcl_Interp *interp,
 		qpol_type_t *t = (qpol_type_t *) apol_vector_get_element(v, i);
 		char *name;
 		Tcl_Obj *type_obj;
-		if (qpol_type_get_name(policydb->p, t, &name) < 0) {
+		if (qpol_type_get_name(qpolicydb, t, &name) < 0) {
 			goto cleanup;
 		}
 		type_obj = Tcl_NewStringObj(name, -1);
@@ -1316,7 +1282,7 @@ static int apol_types_relation_attribs_to_tcl_list(Tcl_Interp *interp,
 		}
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -1324,9 +1290,7 @@ static int apol_types_relation_attribs_to_tcl_list(Tcl_Interp *interp,
  * Given a result object from a two types relationship analysis,
  * create a new Tcl list containing the names of common roles.
  */
-static int apol_types_relation_roles_to_tcl_list(Tcl_Interp *interp,
-						 apol_types_relation_result_t *r,
-						 Tcl_Obj **o)
+static int apol_types_relation_roles_to_tcl_list(Tcl_Interp * interp, apol_types_relation_result_t * r, Tcl_Obj ** o)
 {
 	apol_vector_t *v = apol_types_relation_result_get_roles(r);
 	*o = Tcl_NewListObj(0, NULL);
@@ -1336,7 +1300,7 @@ static int apol_types_relation_roles_to_tcl_list(Tcl_Interp *interp,
 		qpol_role_t *role = (qpol_role_t *) apol_vector_get_element(v, i);
 		char *name;
 		Tcl_Obj *role_obj;
-		if (qpol_role_get_name(policydb->p, role, &name) < 0) {
+		if (qpol_role_get_name(qpolicydb, role, &name) < 0) {
 			goto cleanup;
 		}
 		role_obj = Tcl_NewStringObj(name, -1);
@@ -1345,7 +1309,7 @@ static int apol_types_relation_roles_to_tcl_list(Tcl_Interp *interp,
 		}
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -1353,9 +1317,7 @@ static int apol_types_relation_roles_to_tcl_list(Tcl_Interp *interp,
  * Given a result object from a two types relationship analysis,
  * create a new Tcl list containing the names of common users.
  */
-static int apol_types_relation_users_to_tcl_list(Tcl_Interp *interp,
-						 apol_types_relation_result_t *r,
-						 Tcl_Obj **o)
+static int apol_types_relation_users_to_tcl_list(Tcl_Interp * interp, apol_types_relation_result_t * r, Tcl_Obj ** o)
 {
 	apol_vector_t *v = apol_types_relation_result_get_users(r);
 	*o = Tcl_NewListObj(0, NULL);
@@ -1365,7 +1327,7 @@ static int apol_types_relation_users_to_tcl_list(Tcl_Interp *interp,
 		qpol_user_t *u = (qpol_user_t *) apol_vector_get_element(v, i);
 		char *name;
 		Tcl_Obj *user_obj;
-		if (qpol_user_get_name(policydb->p, u, &name) < 0) {
+		if (qpol_user_get_name(qpolicydb, u, &name) < 0) {
 			goto cleanup;
 		}
 		user_obj = Tcl_NewStringObj(name, -1);
@@ -1374,7 +1336,7 @@ static int apol_types_relation_users_to_tcl_list(Tcl_Interp *interp,
 		}
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -1382,9 +1344,7 @@ static int apol_types_relation_users_to_tcl_list(Tcl_Interp *interp,
  * Given a vector of apol_types_relation_access_t pointers, create a
  * new Tcl list containing those accesses.
  */
-static int apol_types_relation_access_to_tcl_list(Tcl_Interp *interp,
-						  apol_vector_t *v,
-						  Tcl_Obj **o)
+static int apol_types_relation_access_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** o)
 {
 	*o = Tcl_NewListObj(0, NULL);
 	size_t i;
@@ -1398,7 +1358,7 @@ static int apol_types_relation_access_to_tcl_list(Tcl_Interp *interp,
 		a = (apol_types_relation_access_t *) apol_vector_get_element(v, i);
 		type = apol_types_relation_access_get_type(a);
 		rules = apol_types_relation_access_get_rules(a);
-		if (qpol_type_get_name(policydb->p, type, &name) < 0) {
+		if (qpol_type_get_name(qpolicydb, type, &name) < 0) {
 			goto cleanup;
 		}
 		access_elem[0] = Tcl_NewStringObj(name, -1);
@@ -1411,7 +1371,7 @@ static int apol_types_relation_access_to_tcl_list(Tcl_Interp *interp,
 		}
 	}
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	return retval;
 }
 
@@ -1419,9 +1379,7 @@ static int apol_types_relation_access_to_tcl_list(Tcl_Interp *interp,
  * Given a result object from a two types relationship analysis,
  * create a new Tcl list containing lists of similar accesses.
  */
-static int apol_types_relation_similar_to_tcl_list(Tcl_Interp *interp,
-						   apol_types_relation_result_t *r,
-						   Tcl_Obj **o)
+static int apol_types_relation_similar_to_tcl_list(Tcl_Interp * interp, apol_types_relation_result_t * r, Tcl_Obj ** o)
 {
 	Tcl_Obj *sim[2];
 	apol_vector_t *v;
@@ -1441,9 +1399,7 @@ static int apol_types_relation_similar_to_tcl_list(Tcl_Interp *interp,
  * Given a result object from a two types relationship analysis,
  * create a new Tcl list containing lists of dissimilar accesses.
  */
-static int apol_types_relation_dissimilar_to_tcl_list(Tcl_Interp *interp,
-						      apol_types_relation_result_t *r,
-						      Tcl_Obj **o)
+static int apol_types_relation_dissimilar_to_tcl_list(Tcl_Interp * interp, apol_types_relation_result_t * r, Tcl_Obj ** o)
 {
 	Tcl_Obj *dis[2];
 	apol_vector_t *v;
@@ -1463,23 +1419,18 @@ static int apol_types_relation_dissimilar_to_tcl_list(Tcl_Interp *interp,
  * Given a vector of rules from a two types relationship analysis,
  * create a new Tcl list containing those rule pointers.
  */
-static int apol_types_relation_rules_to_tcl_list(Tcl_Interp *interp,
-						 apol_vector_t *v,
-						 int is_terule,
-						 Tcl_Obj **o)
+static int apol_types_relation_rules_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, int is_terule, Tcl_Obj ** o)
 {
 	if (v == NULL) {
 		*o = Tcl_NewListObj(0, NULL);
-	}
-	else if (!is_terule) {
+	} else if (!is_terule) {
 		if (apol_vector_avrule_to_tcl_list(interp, v, o) < 0) {
 			return TCL_ERROR;
 		}
-	}
-	else {
-	    if (apol_vector_terule_to_tcl_list(interp, v, o) < 0) {
-		    return TCL_ERROR;
-	    }
+	} else {
+		if (apol_vector_terule_to_tcl_list(interp, v, o) < 0) {
+			return TCL_ERROR;
+		}
 	}
 	return TCL_OK;
 }
@@ -1489,9 +1440,7 @@ static int apol_types_relation_rules_to_tcl_list(Tcl_Interp *interp,
  * create a new Tcl list containing direct infoflows between the
  * types.  See Apol_DirectInformationFlowAnalysis() for format.
  */
-static int apol_types_relation_directflows_to_tcl_list(Tcl_Interp *interp,
-						       apol_types_relation_result_t *r,
-						       Tcl_Obj **o)
+static int apol_types_relation_directflows_to_tcl_list(Tcl_Interp * interp, apol_types_relation_result_t * r, Tcl_Obj ** o)
 {
 	apol_vector_t *v = apol_types_relation_result_get_directflows(r);
 	size_t i;
@@ -1512,9 +1461,7 @@ static int apol_types_relation_directflows_to_tcl_list(Tcl_Interp *interp,
  * transitive infoflows.  See Apol_TransInformationFlowAnalysis() for
  * format.
  */
-static int apol_types_relation_transflows_to_tcl_list(Tcl_Interp *interp,
-						      apol_vector_t *v,
-						      Tcl_Obj **o)
+static int apol_types_relation_transflows_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** o)
 {
 	size_t i;
 	*o = Tcl_NewListObj(0, NULL);
@@ -1534,9 +1481,7 @@ static int apol_types_relation_transflows_to_tcl_list(Tcl_Interp *interp,
  * domain transitions.  See Apol_DomainTransitionAnalysis() for
  * format.
  */
-static int apol_types_relation_domains_to_tcl_list(Tcl_Interp *interp,
-						   apol_vector_t *v,
-						   Tcl_Obj **o)
+static int apol_types_relation_domains_to_tcl_list(Tcl_Interp * interp, apol_vector_t * v, Tcl_Obj ** o)
 {
 	size_t i;
 	*o = Tcl_NewListObj(0, NULL);
@@ -1596,8 +1541,7 @@ static int apol_types_relation_domains_to_tcl_list(Tcl_Interp *interp,
  *       "direct", "transAB", "transBA", "domainAB", and "domainBA"
  * </ol>
  */
-static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp,
-					  int argc, CONST char *argv[])
+static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_elem[12], *result_obj;
 	apol_types_relation_analysis_t *analysis = NULL;
@@ -1623,41 +1567,29 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 		CONST char *s = analyses_strings[num_opts];
 		if (strcmp(s, "attribs") == 0) {
 			analyses |= APOL_TYPES_RELATION_COMMON_ATTRIBS;
-		}
-		else if (strcmp(s, "roles") == 0) {
+		} else if (strcmp(s, "roles") == 0) {
 			analyses |= APOL_TYPES_RELATION_COMMON_ROLES;
-		}
-		else if (strcmp(s, "users") == 0) {
+		} else if (strcmp(s, "users") == 0) {
 			analyses |= APOL_TYPES_RELATION_COMMON_USERS;
-		}
-		else if (strcmp(s, "similars") == 0) {
+		} else if (strcmp(s, "similars") == 0) {
 			analyses |= APOL_TYPES_RELATION_SIMILAR_ACCESS;
-		}
-		else if (strcmp(s, "dissimilars") == 0) {
+		} else if (strcmp(s, "dissimilars") == 0) {
 			analyses |= APOL_TYPES_RELATION_DISSIMILAR_ACCESS;
-		}
-		else if (strcmp(s, "allows") == 0) {
+		} else if (strcmp(s, "allows") == 0) {
 			analyses |= APOL_TYPES_RELATION_ALLOW_RULES;
-		}
-		else if (strcmp(s, "typerules") == 0) {
+		} else if (strcmp(s, "typerules") == 0) {
 			analyses |= APOL_TYPES_RELATION_TYPE_RULES;
-		}
-		else if (strcmp(s, "direct") == 0) {
+		} else if (strcmp(s, "direct") == 0) {
 			analyses |= APOL_TYPES_RELATION_DIRECT_FLOW;
-		}
-		else if (strcmp(s, "transAB") == 0) {
+		} else if (strcmp(s, "transAB") == 0) {
 			analyses |= APOL_TYPES_RELATION_TRANS_FLOW_AB;
-		}
-		else if (strcmp(s, "transBA") == 0) {
+		} else if (strcmp(s, "transBA") == 0) {
 			analyses |= APOL_TYPES_RELATION_TRANS_FLOW_BA;
-		}
-		else if (strcmp(s, "domainAB") == 0) {
+		} else if (strcmp(s, "domainAB") == 0) {
 			analyses |= APOL_TYPES_RELATION_DOMAIN_TRANS_AB;
-		}
-		else if (strcmp(s, "domainBA") == 0) {
+		} else if (strcmp(s, "domainBA") == 0) {
 			analyses |= APOL_TYPES_RELATION_DOMAIN_TRANS_BA;
-		}
-		else {
+		} else {
 			ERR(policydb, "Invalid analysis type %s.", s);
 			goto cleanup;
 		}
@@ -1679,21 +1611,27 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 	    apol_types_relation_users_to_tcl_list(interp, result, result_elem + 2) == TCL_ERROR ||
 	    apol_types_relation_similar_to_tcl_list(interp, result, result_elem + 3) == TCL_ERROR ||
 	    apol_types_relation_dissimilar_to_tcl_list(interp, result, result_elem + 4) == TCL_ERROR ||
-	    apol_types_relation_rules_to_tcl_list(interp, apol_types_relation_result_get_allowrules(result), 0, result_elem + 5) == TCL_ERROR ||
-	    apol_types_relation_rules_to_tcl_list(interp, apol_types_relation_result_get_typerules(result), 1, result_elem + 6) == TCL_ERROR ||
-	    apol_types_relation_directflows_to_tcl_list(interp, result, result_elem + 7) == TCL_ERROR ||
-	    apol_types_relation_transflows_to_tcl_list(interp, apol_types_relation_result_get_transflowsAB(result), result_elem + 8) == TCL_ERROR ||
-	    apol_types_relation_transflows_to_tcl_list(interp, apol_types_relation_result_get_transflowsBA(result), result_elem + 9) == TCL_ERROR ||
-	    apol_types_relation_domains_to_tcl_list(interp, apol_types_relation_result_get_domainsAB(result), result_elem + 10) == TCL_ERROR ||
-	    apol_types_relation_domains_to_tcl_list(interp, apol_types_relation_result_get_domainsBA(result), result_elem + 11) == TCL_ERROR) {
+	    apol_types_relation_rules_to_tcl_list(interp, apol_types_relation_result_get_allowrules(result), 0,
+						  result_elem + 5) == TCL_ERROR
+	    || apol_types_relation_rules_to_tcl_list(interp, apol_types_relation_result_get_typerules(result), 1,
+						     result_elem + 6) == TCL_ERROR
+	    || apol_types_relation_directflows_to_tcl_list(interp, result, result_elem + 7) == TCL_ERROR
+	    || apol_types_relation_transflows_to_tcl_list(interp, apol_types_relation_result_get_transflowsAB(result),
+							  result_elem + 8) == TCL_ERROR
+	    || apol_types_relation_transflows_to_tcl_list(interp, apol_types_relation_result_get_transflowsBA(result),
+							  result_elem + 9) == TCL_ERROR
+	    || apol_types_relation_domains_to_tcl_list(interp, apol_types_relation_result_get_domainsAB(result),
+						       result_elem + 10) == TCL_ERROR
+	    || apol_types_relation_domains_to_tcl_list(interp, apol_types_relation_result_get_domainsBA(result),
+						       result_elem + 11) == TCL_ERROR) {
 		goto cleanup;
 	}
 	result_obj = Tcl_NewListObj(12, result_elem);
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
- cleanup:
+      cleanup:
 	if (analyses_strings != NULL) {
-		Tcl_Free((char *) analyses_strings);
+		Tcl_Free((char *)analyses_strings);
 	}
 	apol_types_relation_analysis_destroy(&analysis);
 	apol_types_relation_result_destroy(&result);
@@ -1703,7 +1641,7 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 	return retval;
 }
 
-int apol_tcl_analysis_init(Tcl_Interp *interp)
+int apol_tcl_analysis_init(Tcl_Interp * interp)
 {
 	Tcl_InitHashTable(&infoflow_htable, TCL_STRING_KEYS);
 	Tcl_CreateCommand(interp, "apol_GetAllPermsForClass", Apol_GetAllPermsForClass, NULL, NULL);
@@ -1717,5 +1655,5 @@ int apol_tcl_analysis_init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_InformationFlowDestroy", Apol_InformationFlowDestroy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TypesRelationshipAnalysis", Apol_TypesRelationshipAnalysis, NULL, NULL);
-        return TCL_OK;
+	return TCL_OK;
 }

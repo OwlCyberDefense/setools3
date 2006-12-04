@@ -21,7 +21,7 @@
 *  You should have received a copy of the GNU Lesser General Public
 *  License along with this library; if not, write to the Free Software
 *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/ 
+*/
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -36,7 +36,7 @@
 #include <sepol/policydb/context.h>
 #include "qpol_internal.h"
 
-int qpol_context_get_user(qpol_policy_t *policy, qpol_context_t *context, qpol_user_t **user)
+int qpol_context_get_user(qpol_policy_t * policy, qpol_context_t * context, qpol_user_t ** user)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -50,15 +50,15 @@ int qpol_context_get_user(qpol_policy_t *policy, qpol_context_t *context, qpol_u
 		return STATUS_ERR;
 	}
 
-	internal_context = (context_struct_t*)context;
+	internal_context = (context_struct_t *) context;
 	db = &policy->p->p;
 
-	*user = (qpol_user_t*)db->user_val_to_struct[internal_context->user - 1];
+	*user = (qpol_user_t *) db->user_val_to_struct[internal_context->user - 1];
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_role(qpol_policy_t *policy, qpol_context_t *context, qpol_role_t **role)
+int qpol_context_get_role(qpol_policy_t * policy, qpol_context_t * context, qpol_role_t ** role)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -72,15 +72,15 @@ int qpol_context_get_role(qpol_policy_t *policy, qpol_context_t *context, qpol_r
 		return STATUS_ERR;
 	}
 
-	internal_context = (context_struct_t*)context;
+	internal_context = (context_struct_t *) context;
 	db = &policy->p->p;
 
-	*role = (qpol_role_t*)db->role_val_to_struct[internal_context->role - 1];
+	*role = (qpol_role_t *) db->role_val_to_struct[internal_context->role - 1];
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_type(qpol_policy_t *policy, qpol_context_t *context, qpol_type_t **type)
+int qpol_context_get_type(qpol_policy_t * policy, qpol_context_t * context, qpol_type_t ** type)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -94,15 +94,15 @@ int qpol_context_get_type(qpol_policy_t *policy, qpol_context_t *context, qpol_t
 		return STATUS_ERR;
 	}
 
-	internal_context = (context_struct_t*)context;
+	internal_context = (context_struct_t *) context;
 	db = &policy->p->p;
 
-	*type = (qpol_type_t*)db->type_val_to_struct[internal_context->type - 1];
+	*type = (qpol_type_t *) db->type_val_to_struct[internal_context->type - 1];
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_range(qpol_policy_t *policy, qpol_context_t *context, qpol_mls_range_t **range)
+int qpol_context_get_range(qpol_policy_t * policy, qpol_context_t * context, qpol_mls_range_t ** range)
 {
 	context_struct_t *internal_context = NULL;
 
@@ -115,10 +115,9 @@ int qpol_context_get_range(qpol_policy_t *policy, qpol_context_t *context, qpol_
 		return STATUS_ERR;
 	}
 
-	internal_context = (context_struct_t*)context;
+	internal_context = (context_struct_t *) context;
 
-	*range = (qpol_mls_range_t*)&internal_context->range;
+	*range = (qpol_mls_range_t *) & internal_context->range;
 
 	return STATUS_SUCCESS;
 }
- 

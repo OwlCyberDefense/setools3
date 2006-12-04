@@ -32,17 +32,21 @@
 
 #include <errno.h>
 
-struct apol_isid_query {
-        char *name;
-        apol_context_t *context;
+struct apol_isid_query
+{
+	char *name;
+	apol_context_t *context;
 	unsigned int flags;
 };
 
 /******************** genfscon queries ********************/
 
-int apol_get_isid_by_query(apol_policy_t *p,
-			   apol_isid_query_t *i,
-			   apol_vector_t **v)
+int apol_get_isid_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v)
+{
+	return apol_isid_get_by_query(p, i, v);
+}
+
+int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
@@ -55,29 +59,26 @@ int apol_get_isid_by_query(apol_policy_t *p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void **) &isid) < 0) {
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&isid) < 0) {
 			goto cleanup;
 		}
 		if (i != NULL) {
 			char *name;
 			qpol_context_t *context;
-			if (qpol_isid_get_name(p->p, isid, &name) < 0 ||
-			    qpol_isid_get_context(p->p, isid, &context) < 0) {
+			if (qpol_isid_get_name(p->p, isid, &name) < 0 || qpol_isid_get_context(p->p, isid, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, name, i->name, 0, NULL);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				continue;
 			}
 			retval2 = apol_compare_context(p, context, i->context, i->flags);
 			if (retval2 < 0) {
 				goto cleanup;
-			}
-			else if (retval2 == 0) {
+			} else if (retval2 == 0) {
 				continue;
 			}
 		}
@@ -88,7 +89,7 @@ int apol_get_isid_by_query(apol_policy_t *p,
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
@@ -101,7 +102,7 @@ apol_isid_query_t *apol_isid_query_create(void)
 	return calloc(1, sizeof(apol_isid_query_t));
 }
 
-void apol_isid_query_destroy(apol_isid_query_t **i)
+void apol_isid_query_destroy(apol_isid_query_t ** i)
 {
 	if (*i != NULL) {
 		free((*i)->name);
@@ -111,17 +112,13 @@ void apol_isid_query_destroy(apol_isid_query_t **i)
 	}
 }
 
-int apol_isid_query_set_name(apol_policy_t *p,
-			     apol_isid_query_t *i,
-			     const char *name)
+int apol_isid_query_set_name(apol_policy_t * p, apol_isid_query_t * i, const char *name)
 {
 	return apol_query_set(p, &i->name, NULL, name);
 }
 
-int apol_isid_query_set_context(apol_policy_t *p __attribute__ ((unused)),
-				apol_isid_query_t *i,
-				apol_context_t *context,
-				unsigned int range_match)
+int apol_isid_query_set_context(apol_policy_t * p __attribute__ ((unused)),
+				apol_isid_query_t * i, apol_context_t * context, unsigned int range_match)
 {
 	if (i->context != NULL) {
 		apol_context_destroy(&i->context);

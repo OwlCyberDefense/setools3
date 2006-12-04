@@ -25,4 +25,5 @@ qpol_HEADERS = \
 	syn_rule_query.h \
 	terule_query.h \
 	type_query.h \
-	user_query.h
+	user_query.h \
+	util.h

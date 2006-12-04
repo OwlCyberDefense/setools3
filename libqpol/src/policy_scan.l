@@ -219,12 +219,11 @@ H1				{ return(H1); }
 h2 |
 H2				{ return(H2); }
 "/"({letter}|{digit}|_|"."|"-"|"/")*	{ return(PATH); }
-{letter}({letter}|{digit}|_|".")*	{ if (is_valid_identifier(yytext)) 
+{letter}({letter}|{digit}|_|"."|"-")*	{ if (is_valid_identifier(yytext)) 
 						return(IDENTIFIER); 
 					  else 
 					  	REJECT;
 					}
-{letter}({letter}|{digit}|_|"."|"-")*	{ return(USER_IDENTIFIER); }
 {digit}{digit}*                 { return(NUMBER); }
 {hexval}{0,4}":"{hexval}{0,4}":"({hexval}|":"|".")*	{ return(IPV6_ADDR); }
 {version}/([ \t\f]*;)           { return(VERSION_IDENTIFIER); }

@@ -349,6 +349,7 @@ proc Apol_Analysis_tra::treeSelect {res tree node} {
 }
 
 proc Apol_Analysis_tra::clearResultsDisplay {f} {
+    variable vals
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
     $tree delete [$tree nodes root]

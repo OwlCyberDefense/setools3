@@ -30,33 +30,17 @@
 #ifndef APOL_POLICY_H
 #define APOL_POLICY_H
 
-/* temporary declaration until everything gets converted */
-typedef struct policy policy_t;
+#ifdef	__cplusplus
+extern "C"
+{
+#endif
 
 #include <stdarg.h>
 #include <qpol/policy.h>
 
-struct apol_policy;
+	typedef struct apol_policy apol_policy_t;
 
-/* forward declaration. the definition resides within perm-map.c */
-struct apol_permmap;
-
-/* forward declaration. the definition resides within domain-trans-analysis.c */
-struct apol_domain_trans_table;
-
-typedef void (*apol_callback_fn_t) (struct apol_policy *p, int level, const char *fmt, va_list argp);
-
-typedef struct apol_policy {
-	qpol_policy_t *p;
-	apol_callback_fn_t msg_callback;
-	int msg_level;
-	void *msg_callback_arg;
-	int policy_type;
-	/** permission mapping for this policy; mappings loaded as needed */
-	struct apol_permmap *pmap;
-	/** for domain trans analysis; table built as needed */
-	struct apol_domain_trans_table *domain_trans_table;
-} apol_policy_t;
+	typedef void (*apol_callback_fn_t) (void *varg, apol_policy_t * p, int level, const char *fmt, va_list argp);
 
 /**
  *  Open a policy file and load it into a newly created apol_policy.
@@ -64,12 +48,12 @@ typedef struct apol_policy {
  *  @param policy The policy to create from the file.
  *  @param msg_callback Callback to invoke as errors/warnings are
  *  generated.  If NULL, then write messages to standard error.
- *  @param callback_arg Value to write to (*policy)->msg_callback_arg.
+ *  @param varg Value to be passed as the first parameter to the
+ *  callback function.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL;
  */
-extern int apol_policy_open(const char *path, apol_policy_t **policy,
-			    apol_callback_fn_t msg_callback, void *callback_arg);
+	extern int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *varg);
 
 /**
  *  Open a policy file and load all components except rules into a newly
@@ -82,16 +66,41 @@ extern int apol_policy_open(const char *path, apol_policy_t **policy,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL;
  */
-extern int apol_policy_open_no_rules(const char *path, apol_policy_t **policy,
-			    apol_callback_fn_t msg_callback, void *callback_arg);
+	extern int apol_policy_open_no_rules(const char *path, apol_policy_t ** policy,
+					     apol_callback_fn_t msg_callback, void *callback_arg);
 
 /**
- * Deallocate all memory associated with a policy, and then set it to
- * NULL.  Does nothing if the pointer is already NULL.
+ * Deallocate all memory associated with a policy, including all
+ * auxillary data structures, and then set it to NULL.  Does nothing
+ * if the pointer is already NULL.
  *
  * @param policy Policy to destroy, if not already NULL.
  */
-extern void apol_policy_destroy(apol_policy_t **policy);
+	extern void apol_policy_destroy(apol_policy_t ** policy);
+
+/**
+ * Given a policy, return the policy type.  This will be one of
+ * QPOL_POLICY_KERNEL_SOURCE, QPOL_POLICY_KERNEL_BINARY, or
+ * QPOL_POLICY_MODULE_BINARY.  (You will need to #include
+ * <qpol/policy.h> to get these definitions.)
+ *
+ * @param policy Policy to which check.
+ *
+ * @return The policy type, or < 0 upon error.
+ */
+	extern int apol_policy_get_policy_type(apol_policy_t * policy);
+
+/**
+ * Given a policy, return a pointer to the underlying qpol policy.
+ * This is needed, for example, to access details of particulary qpol
+ * components.
+ *
+ * @param policy Policy containing qpol policy.
+ *
+ * @return Pointer to underlying qpol policy, or NULL on error.  Do
+ * not free() this pointer.
+ */
+	extern qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy);
 
 /**
  * Given a policy, return 1 if the policy within is MLS, 0 if not.  If
@@ -100,16 +109,16 @@ extern void apol_policy_destroy(apol_policy_t **policy);
  * @param p Policy to which check.
  * @return 1 if policy is MLS, 0 if not, < 0 upon error.
  */
-extern int apol_policy_is_mls(apol_policy_t *p);
+	extern int apol_policy_is_mls(apol_policy_t * p);
 
 /**
- * Given a qpol policy, return 1 if the policy is binary, 0 if
- * not.  If it cannot be determined or upon error, return <0.
+ * Given a policy, return 1 if the policy is binary, 0 if not.  If it
+ * cannot be determined or upon error, return <0.
  *
  * @param p Policy to which check.
  * @return 1 if policy is binary, 0 if not, < 0 upon error.
  */
-extern int apol_policy_is_binary(apol_policy_t *p);
+	extern int apol_policy_is_binary(apol_policy_t * p);
 
 /**
  * Given a policy, allocate and return a string that describes the
@@ -119,7 +128,7 @@ extern int apol_policy_is_binary(apol_policy_t *p);
  * @return String that describes policy, or NULL upon error.  The
  * caller must free() this afterwards.
  */
-extern char *apol_policy_get_version_type_mls_str(apol_policy_t *p);
+	extern char *apol_policy_get_version_type_mls_str(apol_policy_t * p);
 
 #define APOL_MSG_ERR 1
 #define APOL_MSG_WARN 2
@@ -136,8 +145,8 @@ extern char *apol_policy_get_version_type_mls_str(apol_policy_t *p);
  * APOL_MSG_WARN, or APOL_MSG_INFO.
  * @param fmt Format string to print, using syntax of printf(3).
  */
-__attribute__ ((format(printf, 3, 4)))
-extern void apol_handle_msg(apol_policy_t *p, int level, const char *fmt, ...);
+	__attribute__ ((format(printf, 3, 4)))
+	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
 
 /**
  * Invoke a apol_policy_t's callback for an error, passing it a format
@@ -156,5 +165,9 @@ extern void apol_handle_msg(apol_policy_t *p, int level, const char *fmt, ...);
  * passing it a format string and arguments.
  */
 #define INFO(p, format, ...) apol_handle_msg(p, APOL_MSG_INFO, format, __VA_ARGS__)
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif

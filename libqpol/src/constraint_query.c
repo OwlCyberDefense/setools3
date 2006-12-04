@@ -40,35 +40,37 @@
 #include <string.h>
 #include <errno.h>
 
-struct qpol_constraint {
+struct qpol_constraint
+{
 	qpol_class_t *obj_class;
 	constraint_node_t *constr;
 };
 
-typedef struct policy_constr_state {
+typedef struct policy_constr_state
+{
 	qpol_iterator_t *class_iter;
 	qpol_iterator_t *constr_iter;
-	qpol_policy_t *policy; /* needed to get sub iterators */
+	qpol_policy_t *policy;	       /* needed to get sub iterators */
 } policy_constr_state_t;
 
-static int policy_constr_state_end(qpol_iterator_t *iter)
+static int policy_constr_state_end(qpol_iterator_t * iter)
 {
 	policy_constr_state_t *pcs = NULL;
 
-	if (!iter || !(pcs = (policy_constr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(pcs = (policy_constr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
-	return (qpol_iterator_end(pcs->class_iter) && qpol_iterator_end(pcs->constr_iter))? 1 : 0;
+	return (qpol_iterator_end(pcs->class_iter) && qpol_iterator_end(pcs->constr_iter)) ? 1 : 0;
 }
 
-static void *policy_constr_state_get_cur(qpol_iterator_t *iter)
+static void *policy_constr_state_get_cur(qpol_iterator_t * iter)
 {
 	policy_constr_state_t *pcs = NULL;
 	void *tmp = NULL;
 
-	if (!iter || !(pcs = (policy_constr_state_t*)qpol_iterator_state(iter)) || qpol_iterator_end(iter)) {
+	if (!iter || !(pcs = (policy_constr_state_t *) qpol_iterator_state(iter)) || qpol_iterator_end(iter)) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -80,12 +82,12 @@ static void *policy_constr_state_get_cur(qpol_iterator_t *iter)
 	return tmp;
 }
 
-static int policy_constr_state_next(qpol_iterator_t *iter)
+static int policy_constr_state_next(qpol_iterator_t * iter)
 {
 	policy_constr_state_t *pcs = NULL;
 	qpol_class_t *obj_class = NULL;
 
-	if (!iter || !(pcs = (policy_constr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(pcs = (policy_constr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -101,7 +103,7 @@ static int policy_constr_state_next(qpol_iterator_t *iter)
 		qpol_iterator_next(pcs->class_iter);
 		if (qpol_iterator_end(pcs->class_iter))
 			return STATUS_SUCCESS;
-		if (qpol_iterator_get_item(pcs->class_iter, (void**)&obj_class))
+		if (qpol_iterator_get_item(pcs->class_iter, (void **)&obj_class))
 			return STATUS_ERR;
 		if (qpol_class_get_constraint_iter(pcs->policy, obj_class, &pcs->constr_iter))
 			return STATUS_ERR;
@@ -110,14 +112,14 @@ static int policy_constr_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t policy_constr_state_size(qpol_iterator_t *iter)
+static size_t policy_constr_state_size(qpol_iterator_t * iter)
 {
 	policy_constr_state_t *pcs = NULL;
 	qpol_class_t *obj_class = NULL;
 	qpol_iterator_t *internal_iter = NULL, *constr_iter = NULL;
 	size_t count = 0, tmp = 0;
 
-	if (!iter || !(pcs = (policy_constr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(pcs = (policy_constr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return 0;
 	}
@@ -126,7 +128,7 @@ static size_t policy_constr_state_size(qpol_iterator_t *iter)
 		return 0;
 
 	for (; !qpol_iterator_end(internal_iter); qpol_iterator_next(internal_iter)) {
-		if (qpol_iterator_get_item(internal_iter, (void**)&obj_class))
+		if (qpol_iterator_get_item(internal_iter, (void **)&obj_class))
 			goto err;
 		if (qpol_class_get_constraint_iter(pcs->policy, obj_class, &constr_iter))
 			goto err;
@@ -140,7 +142,7 @@ static size_t policy_constr_state_size(qpol_iterator_t *iter)
 	qpol_iterator_destroy(&internal_iter);
 	return count;
 
-err:
+      err:
 	qpol_iterator_destroy(&internal_iter);
 	qpol_iterator_destroy(&constr_iter);
 	return 0;
@@ -148,7 +150,7 @@ err:
 
 static void policy_constr_state_free(void *x)
 {
-	policy_constr_state_t *pcs = (policy_constr_state_t*)x;
+	policy_constr_state_t *pcs = (policy_constr_state_t *) x;
 
 	if (!pcs)
 		return;
@@ -158,7 +160,7 @@ static void policy_constr_state_free(void *x)
 	free(pcs);
 }
 
-int qpol_policy_get_constraint_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_constraint_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policy_constr_state_t *pcs = NULL;
 	int error = 0;
@@ -183,7 +185,7 @@ int qpol_policy_get_constraint_iter(qpol_policy_t *policy, qpol_iterator_t **ite
 		error = errno;
 		goto err;
 	}
-	if (qpol_iterator_get_item(pcs->class_iter, (void**)&tmp)) {
+	if (qpol_iterator_get_item(pcs->class_iter, (void **)&tmp)) {
 		error = errno;
 		ERR(policy, "Error getting first class: %s", strerror(error));
 		goto err;
@@ -193,10 +195,9 @@ int qpol_policy_get_constraint_iter(qpol_policy_t *policy, qpol_iterator_t **ite
 		goto err;
 	}
 
-	if (qpol_iterator_create(policy, (void*)pcs,
-		policy_constr_state_get_cur, policy_constr_state_next,
-		policy_constr_state_end, policy_constr_state_size,
-		policy_constr_state_free, iter)) {
+	if (qpol_iterator_create(policy, (void *)pcs,
+				 policy_constr_state_get_cur, policy_constr_state_next,
+				 policy_constr_state_end, policy_constr_state_size, policy_constr_state_free, iter)) {
 		error = errno;
 		goto err;
 	}
@@ -204,7 +205,7 @@ int qpol_policy_get_constraint_iter(qpol_policy_t *policy, qpol_iterator_t **ite
 	if (qpol_iterator_end(pcs->constr_iter)) {
 		if (qpol_iterator_next(*iter)) {
 			error = errno;
-			pcs = NULL; /* avoid double free, iterator will destroy this */
+			pcs = NULL;    /* avoid double free, iterator will destroy this */
 			ERR(policy, "Error finding first constraint: %s", strerror(error));
 			goto err;
 		}
@@ -212,14 +213,14 @@ int qpol_policy_get_constraint_iter(qpol_policy_t *policy, qpol_iterator_t **ite
 
 	return STATUS_SUCCESS;
 
-err:
+      err:
 	policy_constr_state_free(pcs);
 	qpol_iterator_destroy(iter);
 	errno = error;
 	return STATUS_ERR;
 }
 
-int qpol_constraint_get_class(qpol_policy_t *policy, qpol_constraint_t *constr, qpol_class_t **obj_class)
+int qpol_constraint_get_class(qpol_policy_t * policy, qpol_constraint_t * constr, qpol_class_t ** obj_class)
 {
 	if (obj_class)
 		*obj_class = NULL;
@@ -235,7 +236,7 @@ int qpol_constraint_get_class(qpol_policy_t *policy, qpol_constraint_t *constr, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_constraint_get_perm_iter(qpol_policy_t *policy, qpol_constraint_t *constr, qpol_iterator_t **iter)
+int qpol_constraint_get_perm_iter(qpol_policy_t * policy, qpol_constraint_t * constr, qpol_iterator_t ** iter)
 {
 	perm_state_t *ps = NULL;
 	constraint_node_t *internal_constr = NULL;
@@ -249,7 +250,7 @@ int qpol_constraint_get_perm_iter(qpol_policy_t *policy, qpol_constraint_t *cons
 		return STATUS_ERR;
 	}
 
-	internal_constr = (constraint_node_t*)constr->constr;
+	internal_constr = (constraint_node_t *) constr->constr;
 
 	if (!(ps = calloc(1, sizeof(perm_state_t)))) {
 		ERR(policy, "%s", strerror(ENOMEM));
@@ -258,40 +259,41 @@ int qpol_constraint_get_perm_iter(qpol_policy_t *policy, qpol_constraint_t *cons
 	ps->perm_set = internal_constr->permissions;
 	qpol_class_get_value(policy, constr->obj_class, &ps->obj_class_val);
 
-	if (qpol_iterator_create(policy, (void*)ps, perm_state_get_cur,
-		perm_state_next, perm_state_end, perm_state_size, free, iter)) {
+	if (qpol_iterator_create(policy, (void *)ps, perm_state_get_cur,
+				 perm_state_next, perm_state_end, perm_state_size, free, iter)) {
 		free(ps);
 		return STATUS_ERR;
 	}
 
-	if (!(ps->perm_set & 1)) /* defaults to bit 0 */
+	if (!(ps->perm_set & 1))       /* defaults to bit 0 */
 		qpol_iterator_next(*iter);
 
 	return STATUS_SUCCESS;
 }
 
-typedef struct constr_expr_state {
+typedef struct constr_expr_state
+{
 	constraint_expr_t *head;
 	constraint_expr_t *cur;
 } constr_expr_state_t;
 
-static int constr_expr_state_end(qpol_iterator_t *iter)
+static int constr_expr_state_end(qpol_iterator_t * iter)
 {
 	constr_expr_state_t *ces = NULL;
 
-	if (!iter || !(ces = (constr_expr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(ces = (constr_expr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
-	return ces->cur? 0 : 1;
+	return ces->cur ? 0 : 1;
 }
 
-static void *constr_expr_state_get_cur(qpol_iterator_t *iter)
+static void *constr_expr_state_get_cur(qpol_iterator_t * iter)
 {
 	constr_expr_state_t *ces = NULL;
 
-	if (!iter || !(ces = (constr_expr_state_t*)qpol_iterator_state(iter)) || qpol_iterator_end(iter)) {
+	if (!iter || !(ces = (constr_expr_state_t *) qpol_iterator_state(iter)) || qpol_iterator_end(iter)) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -299,11 +301,11 @@ static void *constr_expr_state_get_cur(qpol_iterator_t *iter)
 	return ces->cur;
 }
 
-static int constr_expr_state_next(qpol_iterator_t *iter)
+static int constr_expr_state_next(qpol_iterator_t * iter)
 {
 	constr_expr_state_t *ces = NULL;
 
-	if (!iter || !(ces = (constr_expr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(ces = (constr_expr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -318,13 +320,13 @@ static int constr_expr_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t constr_expr_state_size(qpol_iterator_t *iter)
+static size_t constr_expr_state_size(qpol_iterator_t * iter)
 {
 	constr_expr_state_t *ces = NULL;
 	constraint_expr_t *tmp = NULL;
 	size_t count = 0;
 
-	if (!iter || !(ces = (constr_expr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(ces = (constr_expr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return 0;
 	}
@@ -335,7 +337,7 @@ static size_t constr_expr_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-int qpol_constraint_get_expr_iter(qpol_policy_t *policy, qpol_constraint_t *constr, qpol_iterator_t **iter)
+int qpol_constraint_get_expr_iter(qpol_policy_t * policy, qpol_constraint_t * constr, qpol_iterator_t ** iter)
 {
 	constr_expr_state_t *ces = NULL;
 	constraint_node_t *internal_constr = NULL;
@@ -349,19 +351,18 @@ int qpol_constraint_get_expr_iter(qpol_policy_t *policy, qpol_constraint_t *cons
 		return STATUS_ERR;
 	}
 
-	internal_constr = (constraint_node_t*)constr->constr;
+	internal_constr = (constraint_node_t *) constr->constr;
 
 	if (!(ces = calloc(1, sizeof(constr_expr_state_t)))) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return STATUS_ERR;
 	}
-	ces-> head = ces->cur = internal_constr->expr;
+	ces->head = ces->cur = internal_constr->expr;
 
-	if (qpol_iterator_create(policy, (void*)ces,
-		constr_expr_state_get_cur, constr_expr_state_next,
-		constr_expr_state_end, constr_expr_state_size,
-		free, iter)) {
+	if (qpol_iterator_create(policy, (void *)ces,
+				 constr_expr_state_get_cur, constr_expr_state_next,
+				 constr_expr_state_end, constr_expr_state_size, free, iter)) {
 		free(ces);
 		return STATUS_ERR;
 	}
@@ -369,12 +370,12 @@ int qpol_constraint_get_expr_iter(qpol_policy_t *policy, qpol_constraint_t *cons
 	return STATUS_SUCCESS;
 }
 
-static int policy_constr_state_next_vtrans(qpol_iterator_t *iter)
+static int policy_constr_state_next_vtrans(qpol_iterator_t * iter)
 {
 	policy_constr_state_t *pcs = NULL;
 	qpol_class_t *obj_class = NULL;
 
-	if (!iter || !(pcs = (policy_constr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(pcs = (policy_constr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -390,7 +391,7 @@ static int policy_constr_state_next_vtrans(qpol_iterator_t *iter)
 		qpol_iterator_next(pcs->class_iter);
 		if (qpol_iterator_end(pcs->class_iter))
 			return STATUS_SUCCESS;
-		if (qpol_iterator_get_item(pcs->class_iter, (void**)&obj_class))
+		if (qpol_iterator_get_item(pcs->class_iter, (void **)&obj_class))
 			return STATUS_ERR;
 		if (qpol_class_get_validatetrans_iter(pcs->policy, obj_class, &pcs->constr_iter))
 			return STATUS_ERR;
@@ -399,14 +400,14 @@ static int policy_constr_state_next_vtrans(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t policy_constr_state_size_vtrans(qpol_iterator_t *iter)
+static size_t policy_constr_state_size_vtrans(qpol_iterator_t * iter)
 {
 	policy_constr_state_t *pcs = NULL;
 	qpol_class_t *obj_class = NULL;
 	qpol_iterator_t *internal_iter = NULL, *constr_iter = NULL;
 	size_t count = 0, tmp = 0;
 
-	if (!iter || !(pcs = (policy_constr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(pcs = (policy_constr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return 0;
 	}
@@ -415,7 +416,7 @@ static size_t policy_constr_state_size_vtrans(qpol_iterator_t *iter)
 		return 0;
 
 	for (; !qpol_iterator_end(internal_iter); qpol_iterator_next(internal_iter)) {
-		if (qpol_iterator_get_item(internal_iter, (void**)&obj_class))
+		if (qpol_iterator_get_item(internal_iter, (void **)&obj_class))
 			goto err;
 		if (qpol_class_get_validatetrans_iter(pcs->policy, obj_class, &constr_iter))
 			goto err;
@@ -429,13 +430,13 @@ static size_t policy_constr_state_size_vtrans(qpol_iterator_t *iter)
 	qpol_iterator_destroy(&internal_iter);
 	return count;
 
-err:
+      err:
 	qpol_iterator_destroy(&internal_iter);
 	qpol_iterator_destroy(&constr_iter);
 	return 0;
 }
 
-int qpol_policy_get_validatetrans_iter(qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_validatetrans_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policy_constr_state_t *pcs = NULL;
 	int error = 0;
@@ -460,7 +461,7 @@ int qpol_policy_get_validatetrans_iter(qpol_policy_t *policy, qpol_iterator_t **
 		error = errno;
 		goto err;
 	}
-	if (qpol_iterator_get_item(pcs->class_iter, (void**)&tmp)) {
+	if (qpol_iterator_get_item(pcs->class_iter, (void **)&tmp)) {
 		error = errno;
 		ERR(policy, "Error getting first class: %s", strerror(error));
 		goto err;
@@ -470,10 +471,9 @@ int qpol_policy_get_validatetrans_iter(qpol_policy_t *policy, qpol_iterator_t **
 		goto err;
 	}
 
-	if (qpol_iterator_create(policy, (void*)pcs,
-		policy_constr_state_get_cur, policy_constr_state_next_vtrans,
-		policy_constr_state_end, policy_constr_state_size_vtrans,
-		policy_constr_state_free, iter)) {
+	if (qpol_iterator_create(policy, (void *)pcs,
+				 policy_constr_state_get_cur, policy_constr_state_next_vtrans,
+				 policy_constr_state_end, policy_constr_state_size_vtrans, policy_constr_state_free, iter)) {
 		error = errno;
 		goto err;
 	}
@@ -481,7 +481,7 @@ int qpol_policy_get_validatetrans_iter(qpol_policy_t *policy, qpol_iterator_t **
 	if (qpol_iterator_end(pcs->constr_iter)) {
 		if (qpol_iterator_next(*iter)) {
 			error = errno;
-			pcs = NULL; /* avoid double free, iterator will destroy this */
+			pcs = NULL;    /* avoid double free, iterator will destroy this */
 			ERR(policy, "Error finding first validatetrans: %s", strerror(error));
 			goto err;
 		}
@@ -489,7 +489,7 @@ int qpol_policy_get_validatetrans_iter(qpol_policy_t *policy, qpol_iterator_t **
 
 	return STATUS_SUCCESS;
 
-err:
+      err:
 	policy_constr_state_free(pcs);
 	qpol_iterator_destroy(iter);
 	errno = error;
@@ -497,7 +497,7 @@ err:
 
 }
 
-int qpol_validatetrans_get_class(qpol_policy_t *policy, qpol_validatetrans_t *vtrans, qpol_class_t **obj_class)
+int qpol_validatetrans_get_class(qpol_policy_t * policy, qpol_validatetrans_t * vtrans, qpol_class_t ** obj_class)
 {
 	if (obj_class)
 		*obj_class = NULL;
@@ -513,7 +513,7 @@ int qpol_validatetrans_get_class(qpol_policy_t *policy, qpol_validatetrans_t *vt
 	return STATUS_SUCCESS;
 }
 
-int qpol_validatetrans_get_expr_iter(qpol_policy_t *policy, qpol_validatetrans_t *vtrans, qpol_iterator_t **iter)
+int qpol_validatetrans_get_expr_iter(qpol_policy_t * policy, qpol_validatetrans_t * vtrans, qpol_iterator_t ** iter)
 {
 	constr_expr_state_t *ces = NULL;
 	constraint_node_t *internal_constr = NULL;
@@ -527,19 +527,18 @@ int qpol_validatetrans_get_expr_iter(qpol_policy_t *policy, qpol_validatetrans_t
 		return STATUS_ERR;
 	}
 
-	internal_constr = (constraint_node_t*)vtrans->constr;
+	internal_constr = (constraint_node_t *) vtrans->constr;
 
 	if (!(ces = calloc(1, sizeof(constr_expr_state_t)))) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return STATUS_ERR;
 	}
-	ces-> head = ces->cur = internal_constr->expr;
+	ces->head = ces->cur = internal_constr->expr;
 
-	if (qpol_iterator_create(policy, (void*)ces,
-		constr_expr_state_get_cur, constr_expr_state_next,
-		constr_expr_state_end, constr_expr_state_size,
-		free, iter)) {
+	if (qpol_iterator_create(policy, (void *)ces,
+				 constr_expr_state_get_cur, constr_expr_state_next,
+				 constr_expr_state_end, constr_expr_state_size, free, iter)) {
 		free(ces);
 		return STATUS_ERR;
 	}
@@ -547,7 +546,7 @@ int qpol_validatetrans_get_expr_iter(qpol_policy_t *policy, qpol_validatetrans_t
 	return STATUS_SUCCESS;
 }
 
-int qpol_constraint_expr_node_get_expr_type(qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *expr_type)
+int qpol_constraint_expr_node_get_expr_type(qpol_policy_t * policy, qpol_constraint_expr_node_t * expr, uint32_t * expr_type)
 {
 	constraint_expr_t *internal_expr = NULL;
 
@@ -557,14 +556,14 @@ int qpol_constraint_expr_node_get_expr_type(qpol_policy_t *policy, qpol_constrai
 		return STATUS_ERR;
 	}
 
-	internal_expr = (constraint_expr_t*)expr;
+	internal_expr = (constraint_expr_t *) expr;
 
 	*expr_type = internal_expr->expr_type;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_constraint_expr_node_get_sym_type(qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *sym_type)
+int qpol_constraint_expr_node_get_sym_type(qpol_policy_t * policy, qpol_constraint_expr_node_t * expr, uint32_t * sym_type)
 {
 	constraint_expr_t *internal_expr = NULL;
 
@@ -574,14 +573,14 @@ int qpol_constraint_expr_node_get_sym_type(qpol_policy_t *policy, qpol_constrain
 		return STATUS_ERR;
 	}
 
-	internal_expr = (constraint_expr_t*)expr;
+	internal_expr = (constraint_expr_t *) expr;
 
 	*sym_type = internal_expr->attr;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_constraint_expr_node_get_op(qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, uint32_t *op)
+int qpol_constraint_expr_node_get_op(qpol_policy_t * policy, qpol_constraint_expr_node_t * expr, uint32_t * op)
 {
 	constraint_expr_t *internal_expr = NULL;
 
@@ -591,14 +590,15 @@ int qpol_constraint_expr_node_get_op(qpol_policy_t *policy, qpol_constraint_expr
 		return STATUS_ERR;
 	}
 
-	internal_expr = (constraint_expr_t*)expr;
+	internal_expr = (constraint_expr_t *) expr;
 
 	*op = internal_expr->op;
 
 	return STATUS_SUCCESS;
 }
 
-typedef struct cexpr_name_state {
+typedef struct cexpr_name_state
+{
 	ebitmap_t *inc;
 	ebitmap_t *sub;
 	size_t cur;
@@ -607,27 +607,27 @@ typedef struct cexpr_name_state {
 	unsigned char list;
 } cexpr_name_state_t;
 
-static int cexpr_name_state_end(qpol_iterator_t *iter)
+static int cexpr_name_state_end(qpol_iterator_t * iter)
 {
 	cexpr_name_state_t *cns = NULL;
 
-	if (!iter || !(cns = (cexpr_name_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(cns = (cexpr_name_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
-	if (cns->list == QPOL_CEXPR_NAME_STATE_SUB_LIST && (cns->sub? cns->cur >= cns->sub->highbit : 1))
+	if (cns->list == QPOL_CEXPR_NAME_STATE_SUB_LIST && (cns->sub ? cns->cur >= cns->sub->highbit : 1))
 		return 1;
 
 	return 0;
 }
 
-static int cexpr_name_state_next(qpol_iterator_t *iter)
+static int cexpr_name_state_next(qpol_iterator_t * iter)
 {
 	cexpr_name_state_t *cns = NULL;
 	ebitmap_t *bmap = NULL;
 
-	if (!iter || !(cns = (cexpr_name_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(cns = (cexpr_name_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -637,7 +637,7 @@ static int cexpr_name_state_next(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	bmap = (cns->list == QPOL_CEXPR_NAME_STATE_INC_LIST? cns->inc : cns->sub);
+	bmap = (cns->list == QPOL_CEXPR_NAME_STATE_INC_LIST ? cns->inc : cns->sub);
 
 	do {
 		cns->cur++;
@@ -657,13 +657,13 @@ static int cexpr_name_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t cexpr_name_state_size(qpol_iterator_t *iter)
+static size_t cexpr_name_state_size(qpol_iterator_t * iter)
 {
 	cexpr_name_state_t *cns = NULL;
 	size_t count = 0, bit = 0;
 	ebitmap_node_t *node = NULL;
 
-	if (!iter || !(cns = (cexpr_name_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(cns = (cexpr_name_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return 0;
 	}
@@ -683,13 +683,13 @@ static size_t cexpr_name_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-static void *cexpr_name_state_get_cur_user(qpol_iterator_t *iter)
+static void *cexpr_name_state_get_cur_user(qpol_iterator_t * iter)
 {
 	cexpr_name_state_t *cns = NULL;
 	policydb_t *db = NULL;
 
-	if (!iter || !(cns = (cexpr_name_state_t*)qpol_iterator_state(iter)) ||
-		!(db = qpol_iterator_policy(iter)) || qpol_iterator_end(iter)) {
+	if (!iter || !(cns = (cexpr_name_state_t *) qpol_iterator_state(iter)) ||
+	    !(db = qpol_iterator_policy(iter)) || qpol_iterator_end(iter)) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -697,13 +697,13 @@ static void *cexpr_name_state_get_cur_user(qpol_iterator_t *iter)
 	return strdup(db->p_user_val_to_name[cns->cur]);
 }
 
-static void *cexpr_name_state_get_cur_role(qpol_iterator_t *iter)
+static void *cexpr_name_state_get_cur_role(qpol_iterator_t * iter)
 {
 	cexpr_name_state_t *cns = NULL;
 	policydb_t *db = NULL;
 
-	if (!iter || !(cns = (cexpr_name_state_t*)qpol_iterator_state(iter)) ||
-		!(db = qpol_iterator_policy(iter)) || qpol_iterator_end(iter)) {
+	if (!iter || !(cns = (cexpr_name_state_t *) qpol_iterator_state(iter)) ||
+	    !(db = qpol_iterator_policy(iter)) || qpol_iterator_end(iter)) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -711,15 +711,15 @@ static void *cexpr_name_state_get_cur_role(qpol_iterator_t *iter)
 	return strdup(db->p_role_val_to_name[cns->cur]);
 }
 
-static void *cexpr_name_state_get_cur_type(qpol_iterator_t *iter)
+static void *cexpr_name_state_get_cur_type(qpol_iterator_t * iter)
 {
 	cexpr_name_state_t *cns = NULL;
 	policydb_t *db = NULL;
 	char *tmp = NULL, *name = NULL;
 	size_t len = 0;
 
-	if (!iter || !(cns = (cexpr_name_state_t*)qpol_iterator_state(iter)) ||
-		!(db = qpol_iterator_policy(iter)) || qpol_iterator_end(iter)) {
+	if (!iter || !(cns = (cexpr_name_state_t *) qpol_iterator_state(iter)) ||
+	    !(db = qpol_iterator_policy(iter)) || qpol_iterator_end(iter)) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -738,13 +738,13 @@ static void *cexpr_name_state_get_cur_type(qpol_iterator_t *iter)
 	}
 	len++;
 
-	snprintf(name, len+1, "-%s", tmp);
+	snprintf(name, len + 1, "-%s", tmp);
 	free(tmp);
 
 	return name;
 }
 
-int qpol_constraint_expr_node_get_names_iter(qpol_policy_t *policy, qpol_constraint_expr_node_t *expr, qpol_iterator_t **iter)
+int qpol_constraint_expr_node_get_names_iter(qpol_policy_t * policy, qpol_constraint_expr_node_t * expr, qpol_iterator_t ** iter)
 {
 	constraint_expr_t *internal_expr = NULL;
 	cexpr_name_state_t *cns = NULL;
@@ -758,7 +758,7 @@ int qpol_constraint_expr_node_get_names_iter(qpol_policy_t *policy, qpol_constra
 		return STATUS_ERR;
 	}
 
-	internal_expr = (constraint_expr_t*)expr;
+	internal_expr = (constraint_expr_t *) expr;
 
 	if (internal_expr->expr_type != QPOL_CEXPR_TYPE_NAMES) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -780,41 +780,41 @@ int qpol_constraint_expr_node_get_names_iter(qpol_policy_t *policy, qpol_constra
 	cns->list = QPOL_CEXPR_NAME_STATE_INC_LIST;
 	cns->cur = cns->inc->node ? cns->inc->node->startbit : 0;
 
-	switch (internal_expr->attr & ~(QPOL_CEXPR_SYM_TARGET|QPOL_CEXPR_SYM_XTARGET)) {
+	switch (internal_expr->attr & ~(QPOL_CEXPR_SYM_TARGET | QPOL_CEXPR_SYM_XTARGET)) {
 	case QPOL_CEXPR_SYM_USER:
-	{
-		if (qpol_iterator_create(policy, (void*)cns,
-			cexpr_name_state_get_cur_user, cexpr_name_state_next,
-			cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
-			return STATUS_ERR;
+		{
+			if (qpol_iterator_create(policy, (void *)cns,
+						 cexpr_name_state_get_cur_user, cexpr_name_state_next,
+						 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
+				return STATUS_ERR;
+			}
+			break;
 		}
-		break;
-	}
 	case QPOL_CEXPR_SYM_ROLE:
-	{
-		if (qpol_iterator_create(policy, (void*)cns,
-			cexpr_name_state_get_cur_role, cexpr_name_state_next,
-			cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
-			return STATUS_ERR;
+		{
+			if (qpol_iterator_create(policy, (void *)cns,
+						 cexpr_name_state_get_cur_role, cexpr_name_state_next,
+						 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
+				return STATUS_ERR;
+			}
+			break;
 		}
-		break;
-	}
 	case QPOL_CEXPR_SYM_TYPE:
-	{
-		if (qpol_iterator_create(policy, (void*)cns,
-			cexpr_name_state_get_cur_type, cexpr_name_state_next,
-			cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
+		{
+			if (qpol_iterator_create(policy, (void *)cns,
+						 cexpr_name_state_get_cur_type, cexpr_name_state_next,
+						 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
+				return STATUS_ERR;
+			}
+			break;
+		}
+	default:
+		{
+			ERR(policy, "%s", strerror(EINVAL));
+			free(cns);
+			errno = EINVAL;
 			return STATUS_ERR;
 		}
-		break;
-	}
-	default:
-	{
-		ERR(policy, "%s", strerror(EINVAL));
-		free(cns);
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
 	}
 
 	if (cns->inc->node && !ebitmap_get_bit(cns->inc, cns->cur))
@@ -823,17 +823,18 @@ int qpol_constraint_expr_node_get_names_iter(qpol_policy_t *policy, qpol_constra
 	return STATUS_SUCCESS;
 }
 
-typedef struct class_constr_state {
+typedef struct class_constr_state
+{
 	constraint_node_t *head;
 	constraint_node_t *cur;
 	qpol_class_t *obj_class;
 } class_constr_state_t;
 
-static int class_constr_state_end(qpol_iterator_t *iter)
+static int class_constr_state_end(qpol_iterator_t * iter)
 {
 	class_constr_state_t *ccs = NULL;
 
-	if (!iter || !(ccs = (class_constr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(ccs = (class_constr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -841,18 +842,18 @@ static int class_constr_state_end(qpol_iterator_t *iter)
 	return ccs->cur ? 0 : 1;
 }
 
-static void *class_constr_state_get_cur(qpol_iterator_t *iter)
+static void *class_constr_state_get_cur(qpol_iterator_t * iter)
 {
 	class_constr_state_t *ccs = NULL;
 	qpol_constraint_t *qc = NULL;
 
-	if (!iter || !(ccs = (class_constr_state_t*)qpol_iterator_state(iter)) || qpol_iterator_end(iter)) {
+	if (!iter || !(ccs = (class_constr_state_t *) qpol_iterator_state(iter)) || qpol_iterator_end(iter)) {
 		errno = EINVAL;
 		return NULL;
 	}
 
 	if (!(qc = calloc(1, sizeof(qpol_constraint_t)))) {
-		return NULL; /* errno set by calloc */
+		return NULL;	       /* errno set by calloc */
 	}
 	qc->obj_class = ccs->obj_class;
 	qc->constr = ccs->cur;
@@ -860,11 +861,11 @@ static void *class_constr_state_get_cur(qpol_iterator_t *iter)
 	return qc;
 }
 
-static int class_constr_state_next(qpol_iterator_t *iter)
+static int class_constr_state_next(qpol_iterator_t * iter)
 {
 	class_constr_state_t *ccs = NULL;
 
-	if (!iter || !(ccs = (class_constr_state_t*)qpol_iterator_state(iter))) {
+	if (!iter || !(ccs = (class_constr_state_t *) qpol_iterator_state(iter))) {
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -879,13 +880,13 @@ static int class_constr_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t class_constr_state_size(qpol_iterator_t *iter)
+static size_t class_constr_state_size(qpol_iterator_t * iter)
 {
 	class_constr_state_t *ccs = NULL;
 	constraint_node_t *tmp = NULL;
 	size_t count = 0;
 
-	if (!iter || !(ccs = (class_constr_state_t*)qpol_iterator_state(iter)) || qpol_iterator_end(iter)) {
+	if (!iter || !(ccs = (class_constr_state_t *) qpol_iterator_state(iter)) || qpol_iterator_end(iter)) {
 		errno = EINVAL;
 		return 0;
 	}
@@ -896,14 +897,14 @@ static size_t class_constr_state_size(qpol_iterator_t *iter)
 	return count;
 }
 
-int qpol_class_get_constraint_iter(qpol_policy_t *policy, qpol_class_t *obj_class, qpol_iterator_t **constr)
+int qpol_class_get_constraint_iter(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_iterator_t ** constr)
 {
 	policydb_t *db = NULL;
 	class_constr_state_t *ccs = NULL;
 	class_datum_t *internal_class = NULL;
 	int error = 0;
 
-	if(constr)
+	if (constr)
 		*constr = NULL;
 
 	if (!policy || !obj_class || !constr) {
@@ -913,7 +914,7 @@ int qpol_class_get_constraint_iter(qpol_policy_t *policy, qpol_class_t *obj_clas
 	}
 
 	db = &policy->p->p;
-	internal_class = (class_datum_t*)obj_class;
+	internal_class = (class_datum_t *) obj_class;
 
 	ccs = calloc(1, sizeof(class_constr_state_t));
 	if (!ccs) {
@@ -925,23 +926,22 @@ int qpol_class_get_constraint_iter(qpol_policy_t *policy, qpol_class_t *obj_clas
 	ccs->obj_class = obj_class;
 	ccs->head = ccs->cur = internal_class->constraints;
 
-	if (qpol_iterator_create(policy, (void*)ccs, class_constr_state_get_cur,
-		class_constr_state_next, class_constr_state_end, class_constr_state_size,
-		free, constr)) {
+	if (qpol_iterator_create(policy, (void *)ccs, class_constr_state_get_cur,
+				 class_constr_state_next, class_constr_state_end, class_constr_state_size, free, constr)) {
 		return STATUS_ERR;
 	}
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_validatetrans_iter(qpol_policy_t *policy, qpol_class_t *obj_class, qpol_iterator_t **vtrans)
+int qpol_class_get_validatetrans_iter(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_iterator_t ** vtrans)
 {
 	policydb_t *db = NULL;
 	class_constr_state_t *ccs = NULL;
 	class_datum_t *internal_class = NULL;
 	int error = 0;
 
-	if(vtrans)
+	if (vtrans)
 		*vtrans = NULL;
 
 	if (!policy || !obj_class || !vtrans) {
@@ -951,7 +951,7 @@ int qpol_class_get_validatetrans_iter(qpol_policy_t *policy, qpol_class_t *obj_c
 	}
 
 	db = &policy->p->p;
-	internal_class = (class_datum_t*)obj_class;
+	internal_class = (class_datum_t *) obj_class;
 
 	ccs = calloc(1, sizeof(class_constr_state_t));
 	if (!ccs) {
@@ -963,9 +963,8 @@ int qpol_class_get_validatetrans_iter(qpol_policy_t *policy, qpol_class_t *obj_c
 	ccs->obj_class = obj_class;
 	ccs->head = ccs->cur = internal_class->validatetrans;
 
-	if (qpol_iterator_create(policy, (void*)ccs, class_constr_state_get_cur,
-		class_constr_state_next, class_constr_state_end, class_constr_state_size,
-		free, vtrans)) {
+	if (qpol_iterator_create(policy, (void *)ccs, class_constr_state_get_cur,
+				 class_constr_state_next, class_constr_state_end, class_constr_state_size, free, vtrans)) {
 		return STATUS_ERR;
 	}
 

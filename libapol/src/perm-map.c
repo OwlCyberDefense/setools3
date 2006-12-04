@@ -24,31 +24,29 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <config.h>
+#include "policy-query-internal.h"
 
 #include <apol/perm-map.h>
-#include <apol/vector.h>
-#include <apol/util.h>
-
-#include <qpol/policy_query.h>
 
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-struct apol_permmap {
-	unsigned char mapped;  /* true if this class's permissions
-	                        * were mapped from a file, false if
-	                        * using default values */
-	apol_vector_t *classes;  /* list of apol_permmap_class_t */
+struct apol_permmap
+{
+	unsigned char mapped;	       /* true if this class's permissions
+				        * were mapped from a file, false if
+				        * using default values */
+	apol_vector_t *classes;	       /* list of apol_permmap_class_t */
 };
 
 /* There is one apol_permmap_class per object class. */
-typedef struct apol_permmap_class {
-	unsigned char mapped;  /* mask */
-        /** pointer to within a qpol_policy_t that represents this class */
-        qpol_class_t *c;
+typedef struct apol_permmap_class
+{
+	unsigned char mapped;	       /* mask */
+	/** pointer to within a qpol_policy_t that represents this class */
+	qpol_class_t *c;
 	/** vector of apol_permmap_perm, an element for each permission bit */
 	apol_vector_t *perms;
 } apol_permmap_class_t;
@@ -59,7 +57,8 @@ typedef struct apol_permmap_class {
  * This allows us to determine information flow.  These mappings will be
  * loadable so that users can re-map them as they see fit.
  */
-typedef struct apol_permmap_perm {
+typedef struct apol_permmap_perm
+{
 	/** name of permission */
 	char *name;
 	/** one of APOL_PERMMAP_READ, etc. */
@@ -145,14 +144,12 @@ static apol_permmap_perm_t *apol_permmap_perm_create(const char *name, unsigned 
  * @param p Policy from which to create permission map.
  *
  * @return A newly allocated map, or NULL on error.  The caller is
- * responsible for deallocating this pointer via
- * apol_permmap_destroy().
+ * responsible for deallocating this pointer via permmap_destroy().
  */
-static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
+static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
 {
 	apol_permmap_t *t = NULL;
-	qpol_iterator_t *class_iter = NULL, *perm_iter = NULL,
-		*common_iter = NULL;
+	qpol_iterator_t *class_iter = NULL, *perm_iter = NULL, *common_iter = NULL;
 	size_t num_obj_classes;
 	int retval = -1;
 
@@ -164,8 +161,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	if (qpol_policy_get_class_iter(p->p, &class_iter) < 0 ||
-	    qpol_iterator_get_size(class_iter, &num_obj_classes) < 0) {
+	if (qpol_policy_get_class_iter(p->p, &class_iter) < 0 || qpol_iterator_get_size(class_iter, &num_obj_classes) < 0) {
 		goto cleanup;
 	}
 	t->mapped = 0;
@@ -173,17 +169,16 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+	for (; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
 		qpol_class_t *c;
 		qpol_common_t *common;
 		apol_permmap_class_t *pc = NULL;
 		apol_permmap_perm_t *pp = NULL;
 		size_t num_unique_perms, num_common_perms = 0;
 		char *name;
-		if (qpol_iterator_get_item(class_iter, (void **) &c) < 0 ||
+		if (qpol_iterator_get_item(class_iter, (void **)&c) < 0 ||
 		    qpol_class_get_perm_iter(p->p, c, &perm_iter) < 0 ||
-		    qpol_iterator_get_size(perm_iter, &num_unique_perms) < 0 ||
-		    qpol_class_get_common(p->p, c, &common) < 0) {
+		    qpol_iterator_get_size(perm_iter, &num_unique_perms) < 0 || qpol_class_get_common(p->p, c, &common) < 0) {
 			goto cleanup;
 		}
 		if (common != NULL &&
@@ -191,8 +186,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 		     qpol_iterator_get_size(common_iter, &num_common_perms) < 0)) {
 			goto cleanup;
 		}
-		if ((pc = calloc(1, sizeof(*pc))) == NULL ||
-		    apol_vector_append(t->classes, pc) < 0) {
+		if ((pc = calloc(1, sizeof(*pc))) == NULL || apol_vector_append(t->classes, pc) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			apol_permmap_class_free(pc);
 			goto cleanup;
@@ -205,11 +199,11 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 		}
 		/* initialize with all the class's unique permissions
 		 * from provided policy */
-		for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
-			if (qpol_iterator_get_item(perm_iter, (void **) &name) < 0) {
+		for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+			if (qpol_iterator_get_item(perm_iter, (void **)&name) < 0) {
 				goto cleanup;
 			}
-			if ((pp = apol_permmap_perm_create(name, 0, (char) APOL_PERMMAP_MIN_WEIGHT)) == NULL ||
+			if ((pp = apol_permmap_perm_create(name, 0, (char)APOL_PERMMAP_MIN_WEIGHT)) == NULL ||
 			    apol_vector_append(pc->perms, pp) < 0) {
 				ERR(p, "%s", strerror(ENOMEM));
 				apol_permmap_perm_free(pp);
@@ -217,13 +211,11 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 			}
 		}
 		/* next initialize with common permissions */
-		for ( ;
-		      common_iter != NULL && !qpol_iterator_end(common_iter);
-		      qpol_iterator_next(common_iter)) {
-			if (qpol_iterator_get_item(common_iter, (void **) &name) < 0) {
+		for (; common_iter != NULL && !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
+			if (qpol_iterator_get_item(common_iter, (void **)&name) < 0) {
 				goto cleanup;
 			}
-			if ((pp = apol_permmap_perm_create(name, 0, (char) APOL_PERMMAP_MIN_WEIGHT)) == NULL ||
+			if ((pp = apol_permmap_perm_create(name, 0, (char)APOL_PERMMAP_MIN_WEIGHT)) == NULL ||
 			    apol_vector_append(pc->perms, pp) < 0) {
 				ERR(p, "%s", strerror(ENOMEM));
 				apol_permmap_perm_free(pp);
@@ -235,19 +227,19 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	qpol_iterator_destroy(&class_iter);
 	qpol_iterator_destroy(&perm_iter);
 	qpol_iterator_destroy(&common_iter);
 	if (retval < 0) {
-		apol_permmap_destroy(&t);
+		permmap_destroy(&t);
 	}
 	return t;
 }
 
-void apol_permmap_destroy(apol_permmap_t **p)
+void permmap_destroy(apol_permmap_t ** p)
 {
-	if (*p == NULL)
+	if (p == NULL || *p == NULL)
 		return;
 	apol_vector_destroy(&(*p)->classes, apol_permmap_class_free);
 	free(*p);
@@ -264,7 +256,7 @@ void apol_permmap_destroy(apol_permmap_t **p)
  * @return Pointer to the class within the permission map, or NULL if
  * not found or on error.
  */
-static apol_permmap_class_t *find_permmap_class(apol_policy_t *p, const char *target)
+static apol_permmap_class_t *find_permmap_class(apol_policy_t * p, const char *target)
 {
 	size_t i;
 	qpol_class_t *target_class;
@@ -291,7 +283,7 @@ static apol_permmap_class_t *find_permmap_class(apol_policy_t *p, const char *ta
  * @return Pointer to the permission record within the class, or NULL
  * if not found or on error.
  */
-static apol_permmap_perm_t *find_permmap_perm(apol_policy_t *p, apol_permmap_class_t *pc, const char *target)
+static apol_permmap_perm_t *find_permmap_perm(apol_policy_t * p, apol_permmap_class_t * pc, const char *target)
 {
 	size_t i;
 	for (i = 0; i < apol_vector_get_size(pc->perms); i++) {
@@ -313,17 +305,21 @@ static apol_permmap_perm_t *find_permmap_perm(apol_policy_t *p, apol_permmap_cla
  *
  * @return One of APOL_PERMMAP_READ, etc, or APOL_PERMMAP_UNMAPPED on error.
  */
-static char convert_map_char(apol_policy_t *p, char *perm_name, char mapid)
+static char convert_map_char(apol_policy_t * p, char *perm_name, char mapid)
 {
-	switch(mapid) {
+	switch (mapid) {
 	case 'r':
-	case 'R': return APOL_PERMMAP_READ;
+	case 'R':
+		return APOL_PERMMAP_READ;
 	case 'w':
-	case 'W': return APOL_PERMMAP_WRITE;
+	case 'W':
+		return APOL_PERMMAP_WRITE;
 	case 'b':
-	case 'B': return APOL_PERMMAP_BOTH;
+	case 'B':
+		return APOL_PERMMAP_BOTH;
 	case 'n':
-	case 'N': return APOL_PERMMAP_NONE;
+	case 'N':
+		return APOL_PERMMAP_NONE;
 	default:
 		ERR(p, "Invalid map character '%c' for permission %s; permission will be unmapped.", mapid, perm_name);
 		return APOL_PERMMAP_UNMAPPED;
@@ -338,7 +334,7 @@ static char convert_map_char(apol_policy_t *p, char *perm_name, char mapid)
  *
  * @return 1 if all classes had entries, 0 if any did not.
  */
-static int are_all_classes_mapped(apol_policy_t *p)
+static int are_all_classes_mapped(apol_policy_t * p)
 {
 	size_t i;
 	for (i = 0; i < apol_vector_get_size(p->pmap->classes); i++) {
@@ -364,7 +360,7 @@ static int are_all_classes_mapped(apol_policy_t *p)
  *
  * @return 1 if all permissions had entries, 0 if any did not.
  */
-static int are_all_perms_mapped(apol_policy_t *p, apol_permmap_class_t *pc)
+static int are_all_perms_mapped(apol_policy_t * p, apol_permmap_class_t * pc)
 {
 	size_t i;
 	for (i = 0; i < apol_vector_get_size(pc->perms); i++) {
@@ -397,8 +393,8 @@ static int are_all_perms_mapped(apol_policy_t *p, apol_permmap_class_t *pc)
  * @return 0 on success, > 0 on success but with warnings, < 0 on
  * error.
  */
-static int parse_permmap_class(apol_policy_t *p, FILE *fp,
-                               size_t num_perms, apol_permmap_class_t *pc) {
+static int parse_permmap_class(apol_policy_t * p, FILE * fp, size_t num_perms, apol_permmap_class_t * pc)
+{
 	char line[APOL_LINE_SZ], perm_name[APOL_LINE_SZ], *line_ptr = NULL;
 	size_t perms_read = 0;
 	int retval = 0;
@@ -433,15 +429,17 @@ static int parse_permmap_class(apol_policy_t *p, FILE *fp,
 			new_weight = APOL_PERMMAP_MIN_WEIGHT;
 		}
 		if (new_weight != perm_weight) {
-			WARN(p, "Permission %s's weight %d is invalid.  Setting it to %d instead.", perm_name, perm_weight, new_weight);
+			WARN(p, "Permission %s's weight %d is invalid.  Setting it to %d instead.", perm_name, perm_weight,
+			     new_weight);
 			perm_weight = new_weight;
 		}
 		if (pc != NULL) {
 			if ((pp = find_permmap_perm(p, pc, perm_name)) == NULL) {
-				WARN(p, "Permission %s was defined in the permission map file but not within the policy.  It will be ignored.", perm_name);
+				WARN(p,
+				     "Permission %s was defined in the permission map file but not within the policy.  It will be ignored.",
+				     perm_name);
 				retval |= APOL_PERMMAP_RET_UNKNOWN_PERM;
-			}
-			else {
+			} else {
 				pp->weight = perm_weight;
 				pp->map = convert_map_char(p, perm_name, mapid);
 			}
@@ -454,7 +452,7 @@ static int parse_permmap_class(apol_policy_t *p, FILE *fp,
 	if (pc != NULL && !are_all_perms_mapped(p, pc)) {
 		retval |= APOL_PERMMAP_RET_UNMAPPED_PERM;
 	}
-        return retval;
+	return retval;
 }
 
 /**
@@ -470,7 +468,7 @@ static int parse_permmap_class(apol_policy_t *p, FILE *fp,
  * @return 0 on success, > 0 on success but with warnings, < 0 on
  * error.
  */
-static int parse_permmap(apol_policy_t *p, FILE *fp)
+static int parse_permmap(apol_policy_t * p, FILE * fp)
 {
 	char line[APOL_LINE_SZ], class_name[APOL_LINE_SZ], *line_ptr = NULL;
 	size_t num_classes = 0, num_perms = 0;
@@ -483,7 +481,7 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 		if (apol_str_trim(&line_ptr) != 0) {
 			return -1;
 		}
-		if(line_ptr[0] != '#' && (sscanf(line_ptr, "%u", &num_classes) == 1 )) {
+		if (line_ptr[0] != '#' && (sscanf(line_ptr, "%u", &num_classes) == 1)) {
 			break;
 		}
 	}
@@ -496,12 +494,12 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 	for (i = 0; i < num_classes; i++) {
 		apol_permmap_class_t *pc;
 		int found_class_decl = 0, rt;
-		while(fgets(line, APOL_LINE_SZ, fp) != NULL) {
+		while (fgets(line, APOL_LINE_SZ, fp) != NULL) {
 			line_ptr = line;
 			if (apol_str_trim(&line_ptr) != 0) {
 				return -1;
 			}
-			if (line_ptr[0] != '#' && (sscanf(line_ptr, "%*s %s %u", class_name, &num_perms) == 2 )) {
+			if (line_ptr[0] != '#' && (sscanf(line_ptr, "%*s %s %u", class_name, &num_perms) == 2)) {
 				found_class_decl = 1;
 				break;
 			}
@@ -511,12 +509,13 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 			return APOL_PERMMAP_RET_NOT_ENOUGH;
 		}
 		if ((pc = find_permmap_class(p, class_name)) == NULL) {
-			WARN(p, "Object class %s was defined in the permission map file but not within the policy.  It will be ignored.", class_name);
+			WARN(p,
+			     "Object class %s was defined in the permission map file but not within the policy.  It will be ignored.",
+			     class_name);
 			/* skip to next record */
 			parse_permmap_class(p, fp, num_perms, NULL);
 			retval |= APOL_PERMMAP_RET_UNKNOWN_OBJ;
-		}
-		else {
+		} else {
 			if ((rt = parse_permmap_class(p, fp, num_perms, pc)) < 0) {
 				return -1;
 			}
@@ -527,7 +526,7 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 	return retval;
 }
 
-int apol_permmap_load(apol_policy_t *p, const char *filename)
+int apol_permmap_load(apol_policy_t * p, const char *filename)
 {
 	FILE *outfile = NULL;
 	int retval = -1, rt = 0;
@@ -535,7 +534,7 @@ int apol_permmap_load(apol_policy_t *p, const char *filename)
 	if (p == NULL || filename == NULL) {
 		goto cleanup;
 	}
-	apol_permmap_destroy(&p->pmap);
+	permmap_destroy(&p->pmap);
 	if ((p->pmap = apol_permmap_create_from_policy(p)) == NULL) {
 		goto cleanup;
 	}
@@ -556,19 +555,19 @@ int apol_permmap_load(apol_policy_t *p, const char *filename)
 	p->pmap->mapped = 1;
 
 	retval = rt;
- cleanup:
+      cleanup:
 	if (outfile != NULL) {
 		fclose(outfile);
 	}
 	return retval;
 }
 
-int apol_permmap_save(apol_policy_t *p, const char *filename)
+int apol_permmap_save(apol_policy_t * p, const char *filename)
 {
 	time_t ltime;
 	size_t i, j;
-        FILE *outfile = NULL;
-        int retval = -1;
+	FILE *outfile = NULL;
+	int retval = -1;
 
 	if (p == NULL || p->pmap == NULL || filename == NULL)
 		goto cleanup;
@@ -578,7 +577,7 @@ int apol_permmap_save(apol_policy_t *p, const char *filename)
 		goto cleanup;
 	}
 
-	if (time(&ltime) == (time_t) -1) {
+	if (time(&ltime) == (time_t) - 1) {
 		ERR(p, "Could not get time: %s", strerror(errno));
 		goto cleanup;
 	}
@@ -604,46 +603,52 @@ int apol_permmap_save(apol_policy_t *p, const char *filename)
 		for (j = 0; j < apol_vector_get_size(pc->perms); j++) {
 			apol_permmap_perm_t *pp = apol_vector_get_element(pc->perms, j);
 			char *s;
-			if (fprintf(outfile, "%s%18s	 ",
-				    pp->map & APOL_PERMMAP_UNMAPPED ? "#" : "",
-				    pp->name) < 0) {
+			if (fprintf(outfile, "%s%18s	 ", pp->map & APOL_PERMMAP_UNMAPPED ? "#" : "", pp->name) < 0) {
 				ERR(p, "Write error: %s", strerror(errno));
 				goto cleanup;
 			}
-			switch(pp->map) {
-			case APOL_PERMMAP_READ: s = "r"; break;
-			case APOL_PERMMAP_WRITE: s = "w"; break;
-			case APOL_PERMMAP_BOTH: s = "b"; break;
-			case APOL_PERMMAP_NONE: s = "n"; break;
-			case APOL_PERMMAP_UNMAPPED: s = "u"; break;
-			default: s = "?";
+			switch (pp->map) {
+			case APOL_PERMMAP_READ:
+				s = "r";
+				break;
+			case APOL_PERMMAP_WRITE:
+				s = "w";
+				break;
+			case APOL_PERMMAP_BOTH:
+				s = "b";
+				break;
+			case APOL_PERMMAP_NONE:
+				s = "n";
+				break;
+			case APOL_PERMMAP_UNMAPPED:
+				s = "u";
+				break;
+			default:
+				s = "?";
 			}
 			if (fprintf(outfile, "%s  %10d\n", s, pp->weight) < 0) {
-                                ERR(p, "Write error: %s", strerror(errno));
-                                goto cleanup;
-                        }
+				ERR(p, "Write error: %s", strerror(errno));
+				goto cleanup;
+			}
 		}
 	}
 
 	retval = 0;
- cleanup:
+      cleanup:
 	if (outfile != NULL) {
 		fclose(outfile);
 	}
-        return retval;
+	return retval;
 }
 
-int apol_permmap_get(apol_policy_t *p,
-		     const char *class_name, const char *perm_name,
-		     int *map, int *weight)
+int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
 {
 	apol_permmap_class_t *pc;
 	apol_permmap_perm_t *pp;
 	if (p == NULL || p->pmap == NULL) {
 		return -1;
 	}
-	if ((pc = find_permmap_class(p, class_name)) == NULL ||
-	    (pp = find_permmap_perm(p, pc, perm_name)) == NULL) {
+	if ((pc = find_permmap_class(p, class_name)) == NULL || (pp = find_permmap_perm(p, pc, perm_name)) == NULL) {
 		ERR(p, "Could not find permission %s in class %s.", perm_name, class_name);
 		return -1;
 	}
@@ -652,25 +657,21 @@ int apol_permmap_get(apol_policy_t *p,
 	return 0;
 }
 
-int apol_permmap_set(apol_policy_t *p,
-		     const char *class_name, const char *perm_name,
-		     int map, int weight)
+int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
 {
 	apol_permmap_class_t *pc;
 	apol_permmap_perm_t *pp;
 	if (p == NULL || p->pmap == NULL) {
 		return -1;
 	}
-	if ((pc = find_permmap_class(p, class_name)) == NULL ||
-	    (pp = find_permmap_perm(p, pc, perm_name)) == NULL) {
+	if ((pc = find_permmap_class(p, class_name)) == NULL || (pp = find_permmap_perm(p, pc, perm_name)) == NULL) {
 		ERR(p, "Could not find permission %s in class %s.", perm_name, class_name);
 		return -1;
 	}
 	pp->map = map;
 	if (weight > APOL_PERMMAP_MAX_WEIGHT) {
 		weight = APOL_PERMMAP_MAX_WEIGHT;
-	}
-	else if (weight < APOL_PERMMAP_MIN_WEIGHT) {
+	} else if (weight < APOL_PERMMAP_MIN_WEIGHT) {
 		weight = APOL_PERMMAP_MIN_WEIGHT;
 	}
 	pp->weight = weight;
