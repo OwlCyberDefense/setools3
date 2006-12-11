@@ -44,6 +44,18 @@ extern "C"
 
 /* forward declaration, full declaration in policy_extend.c */
 	struct qpol_extended_image;
+	struct qpol_policy;
+
+	struct qpol_module
+	{
+		char *name;
+		char *path;
+		uint32_t version;
+		int type;
+		struct sepol_policydb *p;
+		int enabled;
+		struct qpol_policy *parent;
+	};
 
 	struct qpol_policy
 	{
@@ -52,7 +64,11 @@ extern "C"
 		qpol_callback_fn_t fn;
 		void *varg;
 		int rules_loaded;
+		int type;
+		int modified;
 		struct qpol_extended_image *ext;
+		struct qpol_module **modules;
+		size_t num_modules;
 	};
 
 	extern void qpol_handle_msg(qpol_policy_t * policy, int level, const char *fmt, ...);

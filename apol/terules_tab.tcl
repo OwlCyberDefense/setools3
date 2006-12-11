@@ -910,7 +910,7 @@ proc Apol_TE::search_terules {whichButton} {
     if {$source_any} {
         lappend other_opts "source_any"
     }
-    if {![ApolTop::is_binary_policy]} {
+    if {[ApolTop::is_source_policy]} {
         lappend other_opts "syn_search"
     }
 
@@ -950,7 +950,7 @@ proc Apol_TE::search_terules {whichButton} {
             set sr $tabs($id)
             Apol_Widget::clearSearchResults $sr
         }
-        if {[ApolTop::is_binary_policy]} {
+        if {![ApolTop::is_source_policy]} {
             set numAVs [Apol_Widget::appendSearchResultAVRules $sr 0 $avresults tabs(searches_text)]
             set numTEs [Apol_Widget::appendSearchResultTERules $sr 0 $teresults tabs(searches_text)]
         } else {

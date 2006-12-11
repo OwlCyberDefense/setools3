@@ -62,7 +62,7 @@ static struct option const longopts[] = {
 static void usage(const char *prog_name, int brief)
 {
 	printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
-	printf("Usage: %s [OPTIONS] ORIGINAL_POLICY MODIFIED_POLICY\n", prog_name);
+	printf("Usage: %s [OPTIONS] ORIGINAL_POLICY ; MODIFIED_POLICY\n", prog_name);
 	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", prog_name);
 		return;
@@ -1050,20 +1050,18 @@ int main(int argc, char **argv)
 	if (!flags)
 		flags = POLDIFF_DIFF_ALL;
 
-	if (argc - optind != 2) {
+	if (argc - optind < 2) {
 		usage(argv[0], 1);
 		exit(1);
 	}
 
+	if (!strcmp(";", argv[optind])) {
+		ERR(NULL, "%s", "Missing path to original policy.");
+		goto err;
+	}
 	orig_pol_path = argv[optind++];
-	mod_pol_path = argv[optind];
-
 	if (flags & POLDIFF_DIFF_RULES) {
 		if (apol_policy_open(orig_pol_path, &orig_policy, NULL, NULL)) {
-			ERR(NULL, "%s", strerror(errno));
-			goto err;
-		}
-		if (apol_policy_open(mod_pol_path, &mod_policy, NULL, NULL)) {
 			ERR(NULL, "%s", strerror(errno));
 			goto err;
 		}
@@ -1072,15 +1070,75 @@ int main(int argc, char **argv)
 			ERR(NULL, "%s", strerror(errno));
 			goto err;
 		}
+	}
+
+	if (argc - optind > 1) {
+		if (!qpol_policy_has_capability(apol_policy_get_qpol(orig_policy), QPOL_CAP_MODULES)) {
+			ERR(NULL, "%s", "Module linking only supported for modular policies.");
+			goto err;
+		}
+		for (; argc - optind; optind++) {
+			qpol_module_t *mod = NULL;
+			if (!strcmp(";", argv[optind])) {
+				optind++;
+				break;
+			}
+			if (qpol_module_create_from_file(argv[optind], &mod)) {
+				ERR(NULL, "Error loading module %s", argv[optind]);
+				goto err;
+			}
+			if (qpol_policy_append_module(apol_policy_get_qpol(orig_policy), mod)) {
+				qpol_module_destroy(&mod);
+				goto err;
+			}
+		}
+		if (qpol_policy_rebuild(apol_policy_get_qpol(orig_policy))) {
+			goto err;
+		}
+	}
+
+	if (argc - optind == 0) {
+		ERR(NULL, "%s", "Missing path to modified policy.");
+		goto err;
+	}
+	mod_pol_path = argv[optind++];
+	if (flags & POLDIFF_DIFF_RULES) {
+		if (apol_policy_open(mod_pol_path, &mod_policy, NULL, NULL)) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
+	} else {
 		if (apol_policy_open_no_rules(mod_pol_path, &mod_policy, NULL, NULL)) {
 			ERR(NULL, "%s", strerror(errno));
 			goto err;
 		}
 	}
+	if (argc - optind > 1) {
+		if (!qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_MODULES)) {
+			ERR(NULL, "%s", "Module linking only supported for modular policies.");
+			goto err;
+		}
+		for (; argc - optind; optind++) {
+			qpol_module_t *mod = NULL;
+			if (qpol_module_create_from_file(argv[optind], &mod)) {
+				ERR(NULL, "Error loading module %s", argv[optind]);
+				goto err;
+			}
+			if (qpol_policy_append_module(apol_policy_get_qpol(mod_policy), mod)) {
+				qpol_module_destroy(&mod);
+				goto err;
+			}
+		}
+		if (qpol_policy_rebuild(apol_policy_get_qpol(mod_policy))) {
+			goto err;
+		}
+	}
 
-	/* we disable attribute diffs if there is a binary policy
-	 * because attribute names won't make sense */
-	if ((apol_policy_is_binary(orig_policy) || apol_policy_is_binary(mod_policy)) && (flags & POLDIFF_DIFF_ATTRIBS)) {
+	/* we disable attribute diffs if either policy does not support attribute
+	 * names because the fake attribute names won't make sense */
+	if ((flags & POLDIFF_DIFF_ATTRIBS)
+	    && (!(qpol_policy_has_capability(apol_policy_get_qpol(orig_policy), QPOL_CAP_ATTRIB_NAMES))
+		|| !(qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_ATTRIB_NAMES)))) {
 		flags &= ~POLDIFF_DIFF_ATTRIBS;
 		WARN(NULL, "%s", "Attribute diffs are not supported for binary policies.");
 	}

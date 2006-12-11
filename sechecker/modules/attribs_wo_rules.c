@@ -67,10 +67,11 @@ int attribs_wo_rules_register(sechk_lib_t * lib)
 		"attributes will get thrown out by the compiler and have no effect on the \n"
 		"security environment.  They are unnecessary and should be removed.\n";
 	mod->opt_description =
-		"Module requirements:\n" "   policy source\n" "Module dependencies:\n" "   none\n" "Module options:\n" "   none\n";
+		"Module requirements:\n" "   attribute names\n" "Module dependencies:\n" "   none\n" "Module options:\n"
+		"   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	if (apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source")) < 0) {
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES)) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;

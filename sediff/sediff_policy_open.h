@@ -33,7 +33,7 @@ extern "C"
 	int sediff_policy_file_textview_populate(sediff_file_data_t * sfd, GtkTextView * textview, apol_policy_t * policy);
 	void sediff_set_open_policies_gui_state(gboolean open);
 	void sediff_open_button_clicked(void);
-	int sediff_load_policies(const char *p1_file, const char *p2_file);
+	int sediff_load_policies(apol_vector_t * p1_files, apol_vector_t * p2_files);
 
 #ifdef	__cplusplus
 }

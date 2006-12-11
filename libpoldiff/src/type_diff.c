@@ -551,9 +551,10 @@ int type_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	int retval = -1, error = 0, compval;
 
 	assert(tval1 == tval2);
-	/* can't do a deep diff of type if either policy is binary
-	 * because the attribute names are bogus */
-	if (apol_policy_is_binary(diff->orig_pol) || apol_policy_is_binary(diff->mod_pol)) {
+	/* can't do a deep diff of type if either policy does not retain attribute
+	 * names because the fake attribute names are bogus */
+	if (!(qpol_policy_has_capability(apol_policy_get_qpol(diff->orig_pol), QPOL_CAP_ATTRIB_NAMES))
+	    || !(qpol_policy_has_capability(apol_policy_get_qpol(diff->mod_pol), QPOL_CAP_ATTRIB_NAMES))) {
 		return 0;
 	}
 	v1 = type_get_attrib_names(diff, diff->orig_pol, tval1);

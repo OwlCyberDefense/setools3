@@ -78,12 +78,26 @@ int unreachable_doms_register(sechk_lib_t * lib)
 		"   3) There are no users with proper roles to allow a transition.\n"
 		"However, if any of the above rules indicate an unreachable domain, yet the\n"
 		"domain appears in the system default contexts file, it is considered reachable.\n";
-	mod->opt_description =
-		"  Module requirements:\n"
-		"    source policy\n"
-		"    default contexts file\n"
+	mod->opt_description = "  Module requirements:\n" "    attribute names\n"
+#ifdef LIBSELINUX
+		"    default_contexts file\n"
+#endif
 		"  Module dependencies:\n" "    find_domains module\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_MED;
+
+	/* assign requirements */
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES)) < 0) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+#ifdef LIBSELINUX
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_DEFAULT_CONTEXTS, NULL)) < 0) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+#endif
 
 	/* assign dependencies */
 	if (apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains")) < 0) {
@@ -430,7 +444,11 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		qpol_type_get_name(q, cur_dom, &cur_dom_name);
 		need = KEEP_SEARCHING;
 
-		if (in_def_ctx(cur_dom_name, datum) || in_isid_ctx(cur_dom_name, policy))
+		if (
+#ifdef LIBSELINUX
+			   in_def_ctx(cur_dom_name, datum) ||
+#endif
+			   in_isid_ctx(cur_dom_name, policy))
 			continue;
 
 		/* collect information about roles and transitions to this domain */

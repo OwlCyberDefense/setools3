@@ -175,7 +175,17 @@ int apol_policy_is_mls(apol_policy_t * p)
 
 int apol_policy_is_binary(apol_policy_t * p)
 {
-	return (p->policy_type != QPOL_POLICY_KERNEL_SOURCE);
+	return (p->policy_type == QPOL_POLICY_KERNEL_BINARY);
+}
+
+int apol_policy_is_modular(apol_policy_t * p)
+{
+	return (p->policy_type == QPOL_POLICY_MODULE_BINARY);
+}
+
+int apol_policy_is_source(apol_policy_t * p)
+{
+	return (p->policy_type == QPOL_POLICY_KERNEL_SOURCE);
 }
 
 char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
@@ -191,6 +201,9 @@ char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
 		break;
 	case QPOL_POLICY_KERNEL_BINARY:
 		policy_type = "binary";
+		break;
+	case QPOL_POLICY_MODULE_BINARY:
+		policy_type = "modular";
 		break;
 	default:
 		policy_type = "unknown";

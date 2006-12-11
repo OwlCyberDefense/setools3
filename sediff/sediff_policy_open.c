@@ -266,13 +266,13 @@ int sediff_policy_file_textview_populate(sediff_file_data_t * sfd, GtkTextView *
 	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview), TRUE);
 
 	/* if this is not a binary policy */
-	if (!apol_policy_is_binary(policy) && sfd->data) {
+	if (apol_policy_is_source(policy) && sfd->data) {
 		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, sfd->data, sfd->size, "mono-tag", NULL);
 		gtk_text_buffer_set_modified(txt, TRUE);
 		g_free(contents);
 	} else {
 		string = g_string_new("");
-		g_string_printf(string, "Policy File %s is a binary policy", sfd->name->str);
+		g_string_printf(string, "Policy File %s is not a source policy", sfd->name->str);
 		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, -1, "mono-tag", NULL);
 		g_string_free(string, TRUE);
 	}
@@ -469,9 +469,9 @@ static int sediff_file_mmap(const char *file, char **file_data, size_t * size, a
 	*file_data = NULL;
 	*size = 0;
 
-	/* if this is a binary policy just return now
+	/* if this is not a source policy just return now
 	 * but this is not an error */
-	if (apol_policy_is_binary(policy))
+	if (!apol_policy_is_source(policy))
 		return 0;
 
 	rt = open(file, O_RDONLY);
@@ -493,7 +493,7 @@ static int sediff_file_mmap(const char *file, char **file_data, size_t * size, a
 
 struct load_policy_datum
 {
-	const char *file;
+	apol_vector_t *files;
 	const char *which_pol;
 	sediff_app_t *app;
 	apol_policy_t *p;
@@ -504,39 +504,60 @@ static gpointer sediff_load_policy_runner(gpointer data)
 	struct load_policy_datum *l = data;
 	GString *string;
 	int rt;
-	unsigned int p_ver;
+	size_t i;
 	sediff_progress_update(l->app, "Reading policy.");
-	rt = apol_policy_open(l->file, &l->p, sediff_progress_apol_handle_func, l->app);
+	rt = apol_policy_open(apol_vector_get_element(l->files, 0), &l->p, sediff_progress_apol_handle_func, l->app);
 	if (rt != 0) {
 		string = g_string_new("");
-		g_string_printf(string, "Problem opening policy file: %s", l->file);
+		g_string_printf(string, "Problem opening policy file: %s", (char *)apol_vector_get_element(l->files, 0));
 		sediff_progress_abort(l->app, string->str);
 		g_string_free(string, TRUE);
 		return NULL;
 	}
-	qpol_policy_get_policy_version(apol_policy_get_qpol(l->p), &p_ver);
-	if (p_ver < 12) {
-		string = g_string_new("");
-		g_string_printf(string,
-				"%s: Unsupported version: Supported versions are Source (12 and higher), Binary (15 and higher).",
-				l->which_pol);
-		sediff_progress_abort(l->app, string->str);
-		g_string_free(string, TRUE);
-		return NULL;
-	}
-	if (apol_policy_is_binary(l->p) && p_ver < 15) {
-		string = g_string_new("");
-		g_string_printf(string, "%s: Binary policies are only supported for version 15 or higher.", l->which_pol);
-		sediff_progress_abort(l->app, string->str);
-		g_string_free(string, TRUE);
-		return NULL;
+	if (apol_vector_get_size(l->files) > 1) {
+		if (!qpol_policy_has_capability(apol_policy_get_qpol(l->p), QPOL_CAP_MODULES)) {
+			string = g_string_new("");
+			g_string_printf(string, "Policy file %s does not support loadable modules.",
+					(char *)apol_vector_get_element(l->files, 0));
+			sediff_progress_abort(l->app, string->str);
+			g_string_free(string, TRUE);
+			return NULL;
+		}
+		/* start i at 1 here since element 0 is the base */
+		for (i = 1; i < apol_vector_get_size(l->files); i++) {
+			qpol_module_t *mod = NULL;
+			if (qpol_module_create_from_file(apol_vector_get_element(l->files, i), &mod)) {
+				string = g_string_new("");
+				g_string_printf(string, "Problem opening module file: %s",
+						(char *)apol_vector_get_element(l->files, i));
+				sediff_progress_abort(l->app, string->str);
+				g_string_free(string, TRUE);
+				return NULL;
+			}
+			if (qpol_policy_append_module(apol_policy_get_qpol(l->p), mod)) {
+				string = g_string_new("");
+				g_string_printf(string, "Problem opening module file: %s",
+						(char *)apol_vector_get_element(l->files, i));
+				sediff_progress_abort(l->app, string->str);
+				g_string_free(string, TRUE);
+				qpol_module_destroy(&mod);
+				return NULL;
+			}
+		}
+		if (qpol_policy_rebuild(apol_policy_get_qpol(l->p))) {
+			string = g_string_new("");
+			g_string_printf(string, "Problem building policy.");
+			sediff_progress_abort(l->app, string->str);
+			g_string_free(string, TRUE);
+			return NULL;
+		}
 	}
 	sediff_progress_done(l->app);
 	return NULL;
 }
 
 /* opens p1 and p2, populates policy text buffers */
-int sediff_load_policies(const char *p1_file, const char *p2_file)
+int sediff_load_policies(apol_vector_t * p1_files, apol_vector_t * p2_files)
 {
 	GtkTextView *p1_textview, *p2_textview, *stats1, *stats2;
 	GdkCursor *cursor = NULL;
@@ -555,7 +576,7 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 
 	/* attempt to open the policies */
 	sediff_progress_show(sediff_app, "Loading Policy 1");
-	l.file = p1_file;
+	l.files = p1_files;
 	l.which_pol = "Policy 1";
 	l.app = sediff_app;
 	l.p = NULL;
@@ -565,7 +586,7 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 	}
 	sediff_app->orig_pol = l.p;
 	sediff_progress_show(sediff_app, "Loading Policy 2");
-	l.file = p2_file;
+	l.files = p2_files;
 	l.which_pol = "Policy 2";
 	l.app = sediff_app;
 	l.p = NULL;
@@ -575,10 +596,12 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 	}
 	sediff_app->mod_pol = l.p;
 
-	sediff_app->p1_sfd.name = g_string_new(p1_file);
-	sediff_app->p2_sfd.name = g_string_new(p2_file);
-	sediff_file_mmap(p1_file, &(sediff_app->p1_sfd.data), &(sediff_app->p1_sfd.size), sediff_app->orig_pol);
-	sediff_file_mmap(p2_file, &(sediff_app->p2_sfd.data), &(sediff_app->p2_sfd.size), sediff_app->mod_pol);
+	sediff_app->p1_sfd.name = g_string_new(apol_vector_get_element(p1_files, 0));
+	sediff_app->p2_sfd.name = g_string_new(apol_vector_get_element(p2_files, 0));
+	sediff_file_mmap(apol_vector_get_element(p1_files, 0), &(sediff_app->p1_sfd.data), &(sediff_app->p1_sfd.size),
+			 sediff_app->orig_pol);
+	sediff_file_mmap(apol_vector_get_element(p2_files, 0), &(sediff_app->p2_sfd.data), &(sediff_app->p2_sfd.size),
+			 sediff_app->mod_pol);
 
 	/* Grab the 2 policy textviews */
 	p1_textview = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
@@ -600,8 +623,8 @@ int sediff_load_policies(const char *p1_file, const char *p2_file)
 	g_signal_connect_after(G_OBJECT(notebook2), "event-after", G_CALLBACK(sediff_on_policy2_notebook_event_after), notebook2);
 
 	/* populate the 2 stat buffers */
-	sediff_policy_stats_textview_populate(sediff_app->orig_pol, stats1, p1_file);
-	sediff_policy_stats_textview_populate(sediff_app->mod_pol, stats2, p2_file);
+	sediff_policy_stats_textview_populate(sediff_app->orig_pol, stats1, apol_vector_get_element(p1_files, 0));
+	sediff_policy_stats_textview_populate(sediff_app->mod_pol, stats2, apol_vector_get_element(p2_files, 0));
 
 	sediff_reset_policy_notebooks();
 	sediff_app->diff = poldiff_create(sediff_app->orig_pol,
@@ -632,6 +655,8 @@ int sediff_open_dialog_open_and_load_policies()
 {
 	const gchar *p1_file = NULL;
 	const gchar *p2_file = NULL;
+	apol_vector_t *p1_v = NULL;
+	apol_vector_t *p2_v = NULL;
 	GtkEntry *p1_entry;
 	GtkEntry *p2_entry;
 
@@ -661,7 +686,15 @@ int sediff_open_dialog_open_and_load_policies()
 	gdk_cursor_unref(cursor);
 	gdk_flush();
 
-	rt = sediff_load_policies((const char *)p1_file, (const char *)p2_file);
+	if (!(p1_v = apol_vector_create()) || !(p2_v = apol_vector_create())) {
+		return -1;
+	}
+	if (apol_vector_append(p1_v, (void *)p1_file) || apol_vector_append(p2_v, (void *)p2_file)) {
+		return -1;
+	}
+	//TODO add retreiving module list here.
+
+	rt = sediff_load_policies(p1_v, p2_v);
 
 	/* load is done set cursor back to a ptr */
 	cursor = gdk_cursor_new(GDK_LEFT_PTR);

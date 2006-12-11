@@ -71,8 +71,14 @@ int inc_dom_trans_register(sechk_lib_t * lib)
 		"   4) (optional) a type transition rules specifying these three types\n";
 	mod->opt_description =
 		"Module requirements:\n"
-		"   policy source\n" "Module dependencies:\n" "   find_domains\n" "Module options:\n" "   none\n";
+		"   attribute names\n" "Module dependencies:\n" "   find_domains\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_MED;
+	/* assign requirements */
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES)) < 0) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
 	/* Dependencies */
 	apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains"));
 

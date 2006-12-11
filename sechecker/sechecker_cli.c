@@ -35,7 +35,6 @@ static struct option const longopts[] = {
 	{"short", no_argument, NULL, 's'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"profile", required_argument, NULL, 'p'},
-	{"policy", required_argument, NULL, 'P'},
 #ifdef LIBSEFS
 	{"fcfile", required_argument, NULL, 'c'},
 #endif
@@ -111,7 +110,7 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	char *fcpath = NULL;
 #endif
-	char *polpath = NULL, *modname = NULL;
+	char *modname = NULL;
 	char *prof_name = NULL;
 	char *minsev = NULL;
 	unsigned char output_override = 0;
@@ -119,6 +118,7 @@ int main(int argc, char **argv)
 	sechk_module_t *mod = NULL;
 	bool_t list_stop = FALSE;
 	bool_t module_help = FALSE;
+	apol_vector_t *policy_mods = NULL;
 
 	while ((optc = getopt_long(argc, argv, "h::p:m:lqsv", longopts, NULL)) != -1) {
 		switch (optc) {
@@ -130,9 +130,6 @@ int main(int argc, char **argv)
 			fcpath = strdup(optarg);
 			break;
 #endif
-		case 'P':
-			polpath = strdup(optarg);
-			break;
 		case 'M':
 			if (modname) {
 				fprintf(stderr, "Error: --min-sev does not work with -m\n");
@@ -238,8 +235,19 @@ int main(int argc, char **argv)
 	}
 
 	/* initialize the policy */
-	if (sechk_lib_load_policy(polpath, lib) < 0)
-		goto exit_err;
+	if (argc - optind) {
+		if (!(policy_mods = apol_vector_create()))
+			goto exit_err;
+		while (argc - optind) {
+			if (apol_vector_append(policy_mods, argv[optind++]))
+				goto exit_err;
+		}
+		if (sechk_lib_load_policy(policy_mods, lib))
+			goto exit_err;
+	} else {
+		if (sechk_lib_load_policy(NULL, lib))
+			goto exit_err;
+	}
 
 	/* set the minimum severity */
 	if (minsev && sechk_lib_set_minsev(minsev, lib) < 0)
@@ -312,7 +320,6 @@ int main(int argc, char **argv)
 #endif
 	free(minsev);
 	free(prof_name);
-	free(polpath);
 	free(modname);
 	sechk_lib_destroy(&lib);
 	return 0;
@@ -323,8 +330,8 @@ int main(int argc, char **argv)
 #endif
 	free(minsev);
 	free(prof_name);
-	free(polpath);
 	free(modname);
 	sechk_lib_destroy(&lib);
+	apol_vector_destroy(&policy_mods, NULL);
 	return 1;
 }

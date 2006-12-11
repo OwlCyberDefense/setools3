@@ -71,6 +71,42 @@ extern "C"
 #define SECHK_SEV_MED  "med"
 #define SECHK_SEV_HIGH "high"
 
+/* module requirement name strings */
+/** Require that the loaded policy has a given capability;
+ *  values should be set as one of SECHK_REQ_CAP_* from below. */
+#define SECHK_REQ_POLICY_CAP       "capability"
+/** Require that the running system supports a given feature;
+ *  values should be set as one of SECHK_REQ_SYS_* from below. */
+#define SECHK_REQ_SYSTEM           "system"
+/** Require a file_contexts file to be loaded.
+ *  This requirement has no associated value text. */
+#define SECHK_REQ_FILE_CONTEXTS    "file_contexts"
+/** Require a default_contexts file to be loaded.
+ *  This requirement has no associated value text. */
+#define SECHK_REQ_DEFAULT_CONTEXTS "default_contexts"
+
+/* policy capability requirement strings: map to QPOL_CAP_* in policy_query.h */
+/** Require that the loaded policy supports attribute names. */
+#define SECHK_REQ_CAP_ATTRIB_NAMES "attribute names"
+/** Require that the loaded policy supports syntactic rules. */
+#define SECHK_REQ_CAP_SYN_RULES    "syntactic rules"
+/** Require that the loaded policy supports line numbers. */
+#define SECHK_REQ_CAP_LINE_NOS     "line numbers"
+/** Require that the loaded policy supports booleans and conditional statements. */
+#define SECHK_REQ_CAP_CONDITIONALS "conditionals"
+/** Require that the loaded policy supports MLS. */
+#define SECHK_REQ_CAP_MLS          "mls"
+/** Require that the loaded policy supports module loading. */
+#define SECHK_REQ_CAP_MODULES      "module loading"
+/** Require that the loaded policy includes av/te rules. */
+#define SECHK_REQ_CAP_RULES_LOADED "rules loaded"
+
+/* system requirement strings */
+/** Require that the running system is a SELinux system. */
+#define SECHK_REQ_SYS_SELINUX "selinux"
+/** Require that the running system supports MLS*/
+#define SECHK_REQ_SYS_MLS     "mls"
+
 /** item and proof element types to denote casting of the void pointer */
 	typedef enum sechk_item_type
 	{
@@ -529,13 +565,14 @@ extern "C"
 /**
  *  Load the policy the library will analyze.
  *
- *  @param policyfilelocation Path of the policy to load, or NULL to search
- *  for the system default policy.
+ *  @param policy_mods Vector of paths of the policy modules to load,
+ *  or NULL to search for the system default policy. <b>The first element
+ *  of the vector must be the base module.</b>
  *  @param lib The library into which to load the policy.
  *
  *  @return 0 on success and < 0 on failure.
  */
-	int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t * lib);
+	int sechk_lib_load_policy(apol_vector_t * policy_mods, sechk_lib_t * lib);
 #ifdef LIBSEFS
 
 /**

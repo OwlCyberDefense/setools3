@@ -36,7 +36,6 @@ int find_assoc_types_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
-	sechk_name_value_t *nv = NULL;
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
@@ -61,16 +60,8 @@ int find_assoc_types_register(sechk_lib_t * lib)
 		"--------------------------------------------------------------------------------\n"
 		"This module finds types with an unlabeled initial sid. \n";
 	mod->opt_description =
-		"  Module requirements:\n"
-		"    policy source\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
+		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_NONE;
-	/* assign requirements */
-	nv = sechk_name_value_new("policy_type", "source");
-	if (apol_vector_append(mod->requirements, (void *)nv) < 0) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
-		return -1;
-	}
 
 	/* register functions */
 	fn_struct = sechk_fn_new();

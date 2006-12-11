@@ -481,6 +481,9 @@ static int Apol_GetPolicyType(ClientData clientData, Tcl_Interp * interp, int ar
 	case QPOL_POLICY_KERNEL_BINARY:
 		result_elem[0] = Tcl_NewStringObj("binary", -1);
 		break;
+	case QPOL_POLICY_MODULE_BINARY:
+		result_elem[0] = Tcl_NewStringObj("modular", -1);
+		break;
 	default:
 		result_elem[0] = Tcl_NewStringObj("unknown", -1);
 		break;

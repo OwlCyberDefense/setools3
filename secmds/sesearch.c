@@ -52,6 +52,7 @@ static struct option const longopts[] = {
 	{"role_allow", no_argument, NULL, 'L'},
 	{"role_trans", no_argument, NULL, 'o'},
 	{"lineno", no_argument, NULL, 'l'},
+	{"semantic", no_argument, NULL, 'S'},
 	{"show_cond", no_argument, NULL, 'C'},
 	{"indirect", no_argument, NULL, 'i'},
 	{"noregex", no_argument, NULL, 'n'},
@@ -71,6 +72,7 @@ typedef struct options
 	char *bool_name;
 	bool_t all;
 	bool_t lineno;
+	bool_t semantic;
 	bool_t indirect;
 	bool_t allow;
 	bool_t nallow;
@@ -87,7 +89,7 @@ typedef struct options
 void usage(const char *program_name, int brief)
 {
 	printf("%s (sesearch ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] [POLICY_FILE]\n", program_name);
+	printf("Usage: %s [OPTIONS] [POLICY_FILE ...]\n", program_name);
 	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
@@ -116,9 +118,8 @@ Search Type Enforcement rules in an SELinux policy.\n\
 	fputs("\
   -i, --indirect          indirect; also search for the type's attributes\n\
   -n, --noregex           do not use regular expression to match type/attributes\n\
-  -l, --lineno            search rules syntactically instead of semantically\n\
-			  and include line # in policy.conf for each rule.\n\
-			  This option is ignored if using a binary policy.\n\
+  -l, --lineno            show line number for each rule if available\n\
+  --semantic              search rules semantically instead of syntactically\n\
   -C, --show_cond         show conditional expression for conditional rules\n\
   -h, --help              display this help and exit\n\
   -v, --version           output version information and exit\n\
@@ -196,7 +197,7 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		free(tmp);
 	}
 
-	if (opt->lineno && !apol_policy_is_binary(policy)) {
+	if (!(opt->semantic) && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
 		if (apol_syn_avrule_get_by_query(policy, avq, v)) {
 			error = errno;
 			goto err;
@@ -261,11 +262,15 @@ static void print_syn_av_results(apol_policy_t * policy, options_t * opt, apol_v
 					goto cleanup;
 			}
 		}
-		if (qpol_syn_avrule_get_lineno(q, rule, &lineno))
-			goto cleanup;
 		if (!(rule_str = apol_syn_avrule_render(policy, rule)))
 			goto cleanup;
-		fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr ? expr : "");
+		if (opt->lineno) {
+			if (qpol_syn_avrule_get_lineno(q, rule, &lineno))
+				goto cleanup;
+			fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr ? expr : "");
+		} else {
+			fprintf(stdout, "%c%c %s %s\n", enable_char, branch_char, rule_str, expr ? expr : "");
+		}
 		free(rule_str);
 		rule_str = NULL;
 		free(expr);
@@ -376,7 +381,7 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 		}
 	}
 
-	if (opt->lineno && !apol_policy_is_binary(policy)) {
+	if (!(opt->semantic) && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
 		if (apol_syn_terule_get_by_query(policy, teq, v)) {
 			error = errno;
 			goto err;
@@ -439,11 +444,15 @@ static void print_syn_te_results(apol_policy_t * policy, options_t * opt, apol_v
 					break;
 			}
 		}
-		if (qpol_syn_terule_get_lineno(q, rule, &lineno))
-			goto cleanup;
 		if (!(rule_str = apol_syn_terule_render(policy, rule)))
 			goto cleanup;
-		fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr ? expr : "");
+		if (opt->lineno) {
+			if (qpol_syn_terule_get_lineno(q, rule, &lineno))
+				goto cleanup;
+			fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr ? expr : "");
+		} else {
+			fprintf(stdout, "%c%c %s %s\n", enable_char, branch_char, rule_str, expr ? expr : "");
+		}
 		free(rule_str);
 		rule_str = NULL;
 		free(expr);
@@ -761,7 +770,7 @@ int main(int argc, char **argv)
 	cmd_opts.nallow = cmd_opts.audit = cmd_opts.type = FALSE;
 	cmd_opts.rtrans = cmd_opts.indirect = cmd_opts.show_cond = FALSE;
 	cmd_opts.useregex = TRUE;
-	cmd_opts.role_allow = cmd_opts.role_trans = FALSE;
+	cmd_opts.role_allow = cmd_opts.role_trans = cmd_opts.semantic = FALSE;
 	cmd_opts.src_name = cmd_opts.tgt_name = cmd_opts.class_name = NULL;
 	cmd_opts.permlist = cmd_opts.bool_name = cmd_opts.src_role_name = NULL;
 	cmd_opts.tgt_role_name = NULL;
@@ -889,6 +898,9 @@ int main(int argc, char **argv)
 		case 'l':	       /* lineno */
 			cmd_opts.lineno = TRUE;
 			break;
+		case 'S':	       /* semantic */
+			cmd_opts.semantic = TRUE;
+			break;
 		case 'C':
 			cmd_opts.show_cond = TRUE;
 			break;
@@ -914,17 +926,16 @@ int main(int argc, char **argv)
 	if (!search_opts)
 		search_opts = (QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY);
 
-	if (argc - optind > 1) {
-		usage(argv[0], 1);
-		exit(1);
-	} else if (argc - optind < 1) {
+	if (argc - optind < 1) {
 		rt = qpol_find_default_policy_file(search_opts, &policy_file);
 		if (rt != QPOL_FIND_DEFAULT_SUCCESS) {
 			printf("Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
 			exit(1);
 		}
-	} else
+	} else {
 		policy_file = argv[optind];
+		optind++;
+	}
 
 	/* attempt to open the policy */
 	rt = apol_policy_open(policy_file, &policy, NULL, NULL);
@@ -933,11 +944,46 @@ int main(int argc, char **argv)
 		apol_policy_destroy(&policy);
 		exit(1);
 	}
-	if (cmd_opts.lineno && !apol_policy_is_binary(policy)) {
+	if (argc - optind > 0) {
+		if (!qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_MODULES)) {
+			ERR(policy, "%s", "Module linking only supported for modular policies.");
+			apol_policy_destroy(&policy);
+			exit(1);
+		}
+		for (; argc - optind; optind++) {
+			qpol_module_t *mod = NULL;
+			if (qpol_module_create_from_file(argv[optind], &mod)) {
+				ERR(policy, "Error loading module %s", argv[optind]);
+				apol_policy_destroy(&policy);
+				exit(1);
+			}
+			if (qpol_policy_append_module(apol_policy_get_qpol(policy), mod)) {
+				apol_policy_destroy(&policy);
+				qpol_module_destroy(&mod);
+				exit(1);
+			}
+		}
+		if (qpol_policy_rebuild(apol_policy_get_qpol(policy))) {
+			apol_policy_destroy(&policy);
+			exit(1);
+		}
+	}
+
+	if (!cmd_opts.semantic && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
 		if (qpol_policy_build_syn_rule_table(apol_policy_get_qpol(policy))) {
 			apol_policy_destroy(&policy);
 			exit(1);
 		}
+	}
+
+	/* if syntactic rules are not available always do semantic search */
+	if (!qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
+		cmd_opts.semantic = 1;
+	}
+
+	/* supress line numbers if doing semantic search or not available */
+	if (cmd_opts.semantic || !qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_LINE_NOS)) {
+		cmd_opts.lineno = 0;
 	}
 
 	if (perform_av_query(policy, &cmd_opts, &v)) {
@@ -945,7 +991,7 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 	if (v) {
-		if (cmd_opts.lineno && !apol_policy_is_binary(policy))
+		if (!cmd_opts.semantic && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES))
 			print_syn_av_results(policy, &cmd_opts, v);
 		else
 			print_av_results(policy, &cmd_opts, v);
@@ -958,7 +1004,7 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 	if (v) {
-		if (cmd_opts.lineno && !apol_policy_is_binary(policy))
+		if (!cmd_opts.semantic && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES))
 			print_syn_te_results(policy, &cmd_opts, v);
 		else
 			print_te_results(policy, &cmd_opts, v);

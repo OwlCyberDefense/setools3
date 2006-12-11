@@ -35,8 +35,6 @@ extern "C"
 #include <qpol/policy.h>
 #include <qpol/iterator.h>
 
-	typedef struct qpol_extended_image qpol_extended_image_t;
-
 /**
  *  Create an extended image for a policy. This function modifies the policydb
  *  by adding additional records and information about attributes, initial sids
@@ -47,8 +45,6 @@ extern "C"
  *  if this call fails.
  */
 	extern int qpol_policy_extend(qpol_policy_t * policy);
-
-	extern void qpol_extended_image_destroy(qpol_extended_image_t ** ext);
 
 /**
  *  Build the table of syntactic rules for a policy.

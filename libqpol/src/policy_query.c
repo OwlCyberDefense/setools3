@@ -72,3 +72,79 @@ int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version
 
 	return STATUS_SUCCESS;
 }
+
+int qpol_policy_get_type(qpol_policy_t * policy, int *type)
+{
+	if (!policy || !type) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	*type = policy->type;
+
+	return STATUS_SUCCESS;
+}
+
+int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
+{
+	unsigned int version = 0;
+
+	if (!policy) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return 0;
+	}
+
+	qpol_policy_get_policy_version(policy, &version);
+
+	switch (cap) {
+	case QPOL_CAP_ATTRIB_NAMES:
+		{
+			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_SYN_RULES:
+		{
+			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_LINE_NOS:
+		{
+			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_CONDITIONALS:
+		{
+			if (version >= 16 || policy->type == QPOL_POLICY_MODULE_BINARY)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_MLS:
+		{
+			return qpol_policy_is_mls_enabled(policy);
+		}
+	case QPOL_CAP_MODULES:
+		{
+			if (policy->type == QPOL_POLICY_MODULE_BINARY)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_RULES_LOADED:
+		{
+			if (policy->rules_loaded)
+				return 1;
+			break;
+		}
+	default:
+		{
+			ERR(policy, "%s", "Unknown capability");
+			errno = EDOM;
+			break;
+		}
+	}
+	return 0;
+}

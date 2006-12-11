@@ -35,6 +35,7 @@ int domain_and_file_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
+	sechk_name_value_t *nv = NULL;
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
@@ -59,13 +60,19 @@ int domain_and_file_register(sechk_lib_t * lib)
 		"heuristics used to determine these types.  It is considered bad security\n"
 		"practice to use the same type for a domain and its data objects because it \n"
 		"requires that less restrictive access be granted to these types.\n";
-	mod->opt_description =
-		"Module requirements:\n"
-		"   policy source\n"
+	mod->opt_description = "Module requirements:\n" "   attribute names\n"
+#ifdef LIBSEFS
+		"   file_contexts\n"
+#endif
 		"Module dependencies:\n" "   find_domains module\n" "   find_file_types module\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source"));
+	nv = sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES);
+	apol_vector_append(mod->requirements, (void *)nv);
+#ifdef LIBSEFS
+	nv = sechk_name_value_new(SECHK_REQ_FILE_CONTEXTS, NULL);
+	apol_vector_append(mod->requirements, (void *)nv);
+#endif
 
 	/* assign dependencies */
 	apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains"));

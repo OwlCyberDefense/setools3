@@ -63,11 +63,11 @@ int find_domains_register(sechk_lib_t * lib)
 		"   4) it is associated with a role other than object_r\n";
 	mod->opt_description =
 		"Module requirements:\n"
-		"   policy source\n"
+		"   attribute names\n"
 		"Module dependencies:\n" "   none\n" "Module options:\n" "   domain_attributes can be set in a profile\n";
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
-	apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source"));
+	apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES));
 
 	/* assign options */
 	apol_vector_append(mod->options, sechk_name_value_new("domain_attribute", "domain"));

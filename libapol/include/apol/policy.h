@@ -121,6 +121,24 @@ extern "C"
 	extern int apol_policy_is_binary(apol_policy_t * p);
 
 /**
+	 * Given a policy, return 1 if the policy is modular, 0 if not.  If it
+	 * cannot be determined or upon error, return <0.
+	 *
+	 * @param p Policy to which check.
+	 * @return 1 if policy is modular, 0 if not, < 0 upon error.
+ */
+	extern int apol_policy_is_modular(apol_policy_t * p);
+
+/**
+	 * Given a policy, return 1 if the policy is source, 0 if not.  If it
+	 * cannot be determined or upon error, return <0.
+	 *
+	 * @param p Policy to which check.
+	 * @return 1 if policy is source, 0 if not, < 0 upon error.
+ */
+	extern int apol_policy_is_source(apol_policy_t * p);
+
+/**
  * Given a policy, allocate and return a string that describes the
  * policy (policy version, source/binary, mls/non-mls).
  *

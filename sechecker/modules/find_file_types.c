@@ -66,16 +66,24 @@ int find_file_types_register(sechk_lib_t * lib)
 		"\n"
 		"   1) it has an attribute associated with file types\n"
 		"   2) it is the source of a rule to allow filesystem associate permission\n"
-		"   3) it is the default type of a type transition rule with an object class\n"
-		"      other than process\n" "   4) it is specified in a context in the file_contexts file\n";
-	mod->opt_description =
-		"Module requirements:\n"
-		"   policy source\n"
+		"   3) it is the default type of a type transition rule with an object class\n" "      other than process\n"
+#ifdef LIBSEFS
+		"   4) it is specified in a context in the file_contexts file\n"
+#endif
+		;
+	mod->opt_description = "Module requirements:\n" "   attribute names\n"
+#ifdef LIBSEFS
+		"   file_contexts\n"
+#endif
 		"Module dependencies:\n" "   none\n" "Module options:\n" "   file_type_attribute can be modified in a profile\n";
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
-	nv = sechk_name_value_new("policy_type", "source");
+	nv = sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES);
 	apol_vector_append(mod->requirements, (void *)nv);
+#ifdef LIBSEFS
+	nv = sechk_name_value_new(SECHK_REQ_FILE_CONTEXTS, NULL);
+	apol_vector_append(mod->requirements, (void *)nv);
+#endif
 
 	/* assign options */
 	nv = sechk_name_value_new("file_type_attribute", "file_type");

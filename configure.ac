@@ -1,26 +1,26 @@
-AC_INIT(setools, 3.0.1, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.1, [Tresys Technology <setools@tresys.com>], [setools])
 AC_CONFIG_SRCDIR(awish/awish.c)
 AC_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(setools, 3.0.1)
+AM_INIT_AUTOMAKE(setools, 3.1)
 
 dnl *** update these variables as versions change; also update AC_INIT ***
-libqpol_version=1.0.1
-libqpol_soname=libqpol.so.1
+libqpol_version=2.0
+libqpol_soname=libqpol.so.2
 
-libapol_version=3.0.1
-libapol_soname=libapol.so.3
-libapol_tcl_soname=libapol-tcl.so.3
+libapol_version=3.1
+libapol_soname=libapol.so.3.1
+libapol_tcl_soname=libapol-tcl.so.3.1
 
-libpoldiff_version=1.0.1
-libpoldiff_soname=libpoldiff.so.1
+libpoldiff_version=1.1
+libpoldiff_soname=libpoldiff.so.1.1
 
-libsefs_version=3.0.1
-libsefs_soname=libsefs.so.3
+libsefs_version=3.1
+libsefs_soname=libsefs.so.3.1
 
-libseaudit_version=3.0.1
-libseaudit_soname=libseaudit.so.3
+libseaudit_version=3.1
+libseaudit_soname=libseaudit.so.3.1
 
-setoolsdir='${prefix}/share/setools-3.0.1'
+setoolsdir='${prefix}/share/setools-3.1'
 
 version_min_sepol_major=1
 version_min_sepol_minor=12

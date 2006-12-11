@@ -142,6 +142,20 @@ proc ApolTop::is_binary_policy {} {
     return 0
 }
 
+proc ApolTop::is_modular_policy {} {
+    if {[is_policy_open] && $ApolTop::policy_type == "modular"} {
+        return 1
+}
+    return 0
+}
+
+proc ApolTop::is_source_policy {} {
+    if {[is_policy_open] && $ApolTop::policy_type == "source"} {
+        return 1
+}
+    return 0
+}
+
 proc ApolTop::is_mls_policy {} {
     if {![is_policy_open] || $ApolTop::policy_mls_type == "mls"} {
         return 1
@@ -1472,7 +1486,7 @@ proc ApolTop::set_mls_tabs_state {new_state} {
 
 proc ApolTop::set_initial_open_policy_state {} {
     set version_num [apol_GetPolicyVersionNumber]
-    if {$version_num < 16} {
+    if {$version_num < 16 && ![ApolTop::is_modular_policy]} {
         ApolTop::enable_disable_conditional_widgets 0
     }
     if {[ApolTop::is_binary_policy]} {
@@ -1496,6 +1510,9 @@ the names are not preserved in the binary policy format."
                 $fake_attrib_warn draw
             }
         }
+        ApolTop::disable_non_binary_tabs
+    }
+    if {[ApolTop::is_modular_policy]} {
         ApolTop::disable_non_binary_tabs
     }
     if {![is_mls_policy]} {

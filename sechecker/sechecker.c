@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <apol/policy.h>
 #include <apol/util.h>
+#include <apol/vector.h>
 #ifdef LIBSEFS
 #include <sefs/file_contexts.h>
 #endif
@@ -377,16 +378,19 @@ sechk_proof_t *sechk_proof_new(free_fn_t fn)
 	return proof;
 }
 
-int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t * lib)
+int sechk_lib_load_policy(apol_vector_t * policy_mods, sechk_lib_t * lib)
 {
 
 	char *default_policy_path = NULL;
 	int retv = -1;
+	size_t i;
+	qpol_module_t *mod = NULL;
+
 	if (!lib)
 		return -1;
 
 	/* if no policy is given, attempt to find default */
-	if (!policyfilelocation) {
+	if (!policy_mods || !apol_vector_get_size(policy_mods)) {
 		retv = qpol_find_default_policy_file((QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY), &default_policy_path);
 		if (retv) {
 			fprintf(stderr, "Error: %s\n", qpol_find_default_policy_file_strerr(retv));
@@ -402,14 +406,38 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t * lib)
 			fprintf(stderr, "Using policy: %s\n", lib->policy_path);
 		}
 	} else {
-		retv = apol_policy_open(policyfilelocation, &(lib->policy), NULL, NULL);
+		retv = apol_policy_open(apol_vector_get_element(policy_mods, 0), &(lib->policy), NULL, NULL);
 		if (retv) {
-			fprintf(stderr, "Error: failed opening policy %s\n", policyfilelocation);
+			fprintf(stderr, "Error: failed opening policy %s\n", (char *)apol_vector_get_element(policy_mods, 0));
 			return -1;
 		}
-		lib->policy_path = strdup(policyfilelocation);
+		lib->policy_path = strdup(apol_vector_get_element(policy_mods, 0));
+		if (apol_vector_get_size(policy_mods) > 1) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_MODULES)) {
+				fprintf(stderr, "Error: Modules specified for non-modular policy.\n");
+				goto err;
+			}
+			for (i = 1; i < apol_vector_get_size(policy_mods); i++) {
+				mod = NULL;
+				if (qpol_module_create_from_file(apol_vector_get_element(policy_mods, i), &mod)) {
+					goto err;
+				}
+				if (qpol_policy_append_module(apol_policy_get_qpol(lib->policy), mod)) {
+					goto err;
+				}
+			}
+			mod = NULL;
+			if (qpol_policy_rebuild(apol_policy_get_qpol(lib->policy))) {
+				goto err;
+			}
+		}
 	}
 	return 0;
+
+      err:
+	qpol_module_destroy(&mod);
+	apol_policy_destroy(&lib->policy);
+	return -1;
 }
 
 #ifdef LIBSEFS
@@ -808,7 +836,6 @@ int sechk_lib_print_modules_report(sechk_lib_t * lib)
 
 bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 {
-	int pol_ver = 0;
 	struct stat stat_buf;
 
 	if (!req) {
@@ -823,99 +850,117 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 		return FALSE;
 	}
 
-	if (!strcmp(req->name, SECHK_PARSE_REQUIRE_POL_TYPE)) {
-		if (!strcmp(req->value, SECHK_PARSE_REQUIRE_POL_TYPE_SRC)) {
-			if (apol_policy_is_binary(lib->policy)) {
-				/* as long as we're not in quiet mode print output */
-				if (lib->outputformat & ~(SECHK_OUT_QUIET))
-					fprintf(stderr, "Error: module required source policy but was given binary\n");
+	if (!strcmp(req->name, SECHK_REQ_POLICY_CAP)) {
+		if (!strcmp(req->value, SECHK_REQ_CAP_ATTRIB_NAMES)) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_ATTRIB_NAMES)) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				}
 				return FALSE;
 			}
-		} else if (!strcmp(req->value, SECHK_PARSE_REQUIRE_POL_TYPE_BIN)) {
-			if (!apol_policy_is_binary(lib->policy)) {
-				/* as long as we're not in quiet mode print output */
-				if (lib->outputformat & ~(SECHK_OUT_QUIET))
-					fprintf(stderr, "Error: module required binary policy but was given source\n");
+		} else if (!strcmp(req->value, SECHK_REQ_CAP_MLS)) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_MLS)) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				}
+				return FALSE;
+			}
+		} else if (!strcmp(req->value, SECHK_REQ_CAP_SYN_RULES)) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_SYN_RULES)) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				}
+				return FALSE;
+			}
+		} else if (!strcmp(req->value, SECHK_REQ_CAP_RULES_LOADED)) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_RULES_LOADED)) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				}
+				return FALSE;
+			}
+		} else if (!strcmp(req->value, SECHK_REQ_CAP_LINE_NOS)) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_LINE_NOS)) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				}
+				return FALSE;
+			}
+		} else if (!strcmp(req->value, SECHK_REQ_CAP_CONDITIONALS)) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_CONDITIONALS)) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				}
+				return FALSE;
+			}
+		} else if (!strcmp(req->value, SECHK_REQ_CAP_MODULES)) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_MODULES)) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				}
 				return FALSE;
 			}
 		} else {
-			/* as long as we're not in quiet mode print output */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET))
-				fprintf(stderr, "Error: invalid policy type specification %s\n", req->value);
+			ERR(lib->policy, "Unknown requirement: %s, %s", req->name, req->value);
 			return FALSE;
 		}
-	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_POL_VER)) {
-		pol_ver = atoi(req->value);
-		if (pol_ver < 11)
-			pol_ver = 11;
-		else if (pol_ver < 15)
-			pol_ver = 12;
-		else if (pol_ver > 18)
-			pol_ver = 19;
-		else
-			pol_ver = 0;
-
-		unsigned int ver;
-		if (qpol_policy_get_policy_version(apol_policy_get_qpol(lib->policy), &ver) < 0) {
-			ERR(lib->policy, "%s", "Unable to get policy version.");
-			return FALSE;
-		}
-		if (ver < pol_ver) {
-			/* as long as we're not in quiet mode print output */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET))
-				fprintf(stderr, "Error: module requires newer policy version\n");
-			return FALSE;
-		}
-	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_SELINUX)) {
+	} else if (!strcmp(req->name, SECHK_REQ_DEFAULT_CONTEXTS)) {
 #ifdef LIBSELINUX
-		if (!is_selinux_enabled()) {
-			/* as long as we're not in quiet mode print output */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET))
-				fprintf(stderr, "Error: module requires selinux system\n");
-			return FALSE;
-		}
-#else
-		/* as long as we're not in quiet mode print output */
-		if (lib->outputformat & ~(SECHK_OUT_QUIET))
-			fprintf(stderr,
-				"Error: module requires selinux system, but SEChecker was not built to support system checks\n");
-		return FALSE;
-#endif
-	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
-		if (!qpol_policy_is_mls_enabled(apol_policy_get_qpol(lib->policy))) {
-			/* as long as we're not in quiet mode print output */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET))
-				fprintf(stderr, "Error: module requires MLS policy\n");
-			return FALSE;
-		}
-	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_SYSTEM)) {
-#ifdef LIBSELINUX
-		if (!is_selinux_mls_enabled() || !is_selinux_enabled()) {
-			/* as long as we're not in quiet mode print output */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET))
-				fprintf(stderr, "Error: module requires MLS enabled selinux system\n");
-			return FALSE;
-		}
-#else
-		/* as long as we're not in quiet mode print output */
-		if (lib->outputformat & ~(SECHK_OUT_QUIET))
-			fprintf(stderr,
-				"Error: module requires selinux system, but SEChecker was not built to support system checks\n");
-		return FALSE;
-#endif
-	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_DEF_CTX)) {
 		if (stat(selinux_default_context_path(), &stat_buf) < 0) {
-			/* as long as we're not in quiet mode print output */
-			if (lib->outputformat & ~(SECHK_OUT_QUIET))
-				fprintf(stderr, "Error: module requires a default contexts file\n");
+			if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+				ERR(lib->policy, "Requirement %s not met.", req->name);
+			}
 			return FALSE;
 		}
-
-		return TRUE;
-	} else {
-		/* as long as we're not in quiet mode print output */
+#else
+		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+			ERR(lib->policy, "Checking requirement %s: %s", req->name, strerror(ENOTSUP));
+		}
+		return FALSE;
+#endif
+	} else if (!strcmp(req->name, SECHK_REQ_FILE_CONTEXTS)) {
+#ifdef LIBSEFS
+		if (!lib->fc_entries || !apol_vector_get_size(lib->fc_entries)) {
+			if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+				ERR(lib->policy, "Requirement %s not met.", req->name);
+			}
+		}
+#else
 		if (lib->outputformat & ~(SECHK_OUT_QUIET))
-			fprintf(stderr, "Error: unrecognized requirement\n");
+			ERR(lib->policy, "Checking requirement %s, %s: %s", req->name, req->value, strerror(ENOTSUP));
+		return FALSE;
+#endif
+	} else if (!strcmp(req->name, SECHK_REQ_SYSTEM)) {
+		if (!strcmp(req->value, SECHK_REQ_SYS_SELINUX)) {
+#ifdef LIBSELINUX
+			if (!is_selinux_mls_enabled() || !is_selinux_enabled()) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET))
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				return FALSE;
+			}
+#else
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
+				ERR(lib->policy, "Checking requirement %s, %s: %s", req->name, req->value, strerror(ENOTSUP));
+			return FALSE;
+#endif
+		} else if (!strcmp(req->value, SECHK_REQ_SYS_MLS)) {
+#ifdef LIBSELINUX
+			if (!is_selinux_mls_enabled() || !is_selinux_enabled()) {
+				if (lib->outputformat & ~(SECHK_OUT_QUIET))
+					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
+				return FALSE;
+			}
+#else
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
+				ERR(lib->policy, "Checking requirement %s, %s: %s", req->name, req->value, strerror(ENOTSUP));
+			return FALSE;
+#endif
+		} else {
+			ERR(lib->policy, "Unknown requirement: %s, %s", req->name, req->value);
+			return FALSE;
+		}
+	} else {
+		ERR(lib->policy, "Unknown requirement: %s, %s", req->name, req->value);
 		return FALSE;
 	}
 

@@ -490,10 +490,11 @@ void run_diff_clicked(void)
 		gtk_main_iteration();
 
 	r.run_flags = POLDIFF_DIFF_ALL;
-	if (apol_policy_is_binary(sediff_app->orig_pol) || apol_policy_is_binary(sediff_app->mod_pol)) {
+	if (!qpol_policy_has_capability(apol_policy_get_qpol(sediff_app->orig_pol), QPOL_CAP_ATTRIB_NAMES)
+	    || !qpol_policy_has_capability(apol_policy_get_qpol(sediff_app->mod_pol), QPOL_CAP_ATTRIB_NAMES)) {
 		dialog = gtk_message_dialog_new(sediff_app->window, GTK_DIALOG_DESTROY_WITH_PARENT,
 						GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
-						"Attribute diffs are not supported for binary policies.");
+						"Attribute diffs are not supported for the currently loaded policies.");
 		g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
 		gtk_widget_show(dialog);
 		while (gtk_events_pending())
@@ -911,8 +912,8 @@ void sediff_initialize_policies(void)
 
 typedef struct delayed_main_data
 {
-	GString *p1_file;
-	GString *p2_file;
+	apol_vector_t *p1_files;
+	apol_vector_t *p2_files;
 	bool_t run_diff;
 } delayed_data_t;
 
@@ -926,12 +927,10 @@ static gboolean delayed_main(gpointer data)
 {
 	int rt;
 	delayed_data_t *delay_data = (delayed_data_t *) data;
-	const char *p1_file = delay_data->p1_file->str;
-	const char *p2_file = delay_data->p2_file->str;
+	apol_vector_t *p1_v = delay_data->p1_files;
+	apol_vector_t *p2_v = delay_data->p2_files;
 
-	rt = sediff_load_policies(p1_file, p2_file);
-	g_string_free(delay_data->p1_file, TRUE);
-	g_string_free(delay_data->p2_file, TRUE);
+	rt = sediff_load_policies(p1_v, p2_v);
 	if (rt < 0)
 		return FALSE;
 
@@ -1022,7 +1021,7 @@ int main(int argc, char **argv)
 	delayed_data_t delay_data;
 	bool_t havefiles = FALSE;
 	int optc;
-	delay_data.p1_file = delay_data.p2_file = NULL;
+	delay_data.p1_files = delay_data.p2_files = NULL;
 	delay_data.run_diff = FALSE;
 	GtkNotebook *notebook = NULL;
 
@@ -1052,9 +1051,50 @@ int main(int argc, char **argv)
 
 	/* sediff with file names */
 	if (argc - optind == 2) {
+		/* old syntax */
 		havefiles = TRUE;
-		delay_data.p1_file = g_string_new(argv[optind]);
-		delay_data.p2_file = g_string_new(argv[optind + 1]);
+		delay_data.p1_files = apol_vector_create();
+		delay_data.p2_files = apol_vector_create();
+		if (!delay_data.p1_files || !delay_data.p2_files) {
+			g_warning("Out of memory!");
+			exit(1);
+		}
+		if (apol_vector_append(delay_data.p1_files, argv[optind])) {
+			g_warning("Out of memory!");
+			exit(1);
+		}
+		if (apol_vector_append(delay_data.p2_files, argv[optind + 1])) {
+			g_warning("Out of memory!");
+			exit(1);
+		}
+	} else if (argc - optind > 2) {
+		/* module lists */
+		havefiles = TRUE;
+		delay_data.p1_files = apol_vector_create();
+		delay_data.p2_files = apol_vector_create();
+		if (!delay_data.p1_files || !delay_data.p2_files) {
+			g_warning("Out of memory!");
+			exit(1);
+		}
+		for (; argc - optind; optind++) {
+			if (!strcmp(argv[optind], ";")) {
+				optind++;
+				break;
+			}
+			if (apol_vector_append(delay_data.p1_files, argv[optind])) {
+				apol_vector_destroy(&delay_data.p1_files, NULL);
+				g_warning("Out of memory!");
+				exit(1);
+			}
+		}
+		for (; argc - optind; optind++) {
+			if (apol_vector_append(delay_data.p2_files, argv[optind])) {
+				apol_vector_destroy(&delay_data.p1_files, NULL);
+				apol_vector_destroy(&delay_data.p2_files, NULL);
+				g_warning("Out of memory!");
+				exit(1);
+			}
+		}
 	} else if (argc - optind != 0) {
 		usage(argv[0], 0);
 		return -1;

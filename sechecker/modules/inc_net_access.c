@@ -77,35 +77,10 @@ int inc_net_access_register(sechk_lib_t * lib)
 		"      port type (see find_port_types)\n";
 	mod->opt_description =
 		"  Module requirements:\n"
-		"    policy source\n"
-		"  Module dependencies:\n"
-		"    find_net_domains module\n"
-		"    find_assoc_types module\n"
-		"    find_netif_types module\n"
-		"    find_port_types module\n" "    find_node_types module\n" "  Module options:\n" "    none\n";
+		"    none\n" "  Module dependencies:\n" "    find_net_domains\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_MED;
 	/* assign dependencies */
 	if (apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_net_domains")) < 0) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
-		return -1;
-	}
-	if (apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_netif_types")) < 0) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
-		return -1;
-	}
-	if (apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_port_types")) < 0) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
-		return -1;
-	}
-	if (apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_node_types")) < 0) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
-		return -1;
-	}
-	if (apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_assoc_types")) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;

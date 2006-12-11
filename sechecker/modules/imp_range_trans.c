@@ -76,9 +76,16 @@ int imp_range_trans_register(sechk_lib_t * lib)
 		"   2) there exist RBAC rules allowing the range transition to occur\n"
 		"   3) at least one user must be able to transition to the target MLS range\n";
 	mod->opt_description =
-		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
+		"  Module requirements:\n" "    MLS policy\n" "  Module dependencies:\n" "    none\n" "  Module options:\n"
+		"    none\n";
 	mod->severity = SECHK_SEV_MED;
 
+	/* assign requirements */
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_MLS)) < 0) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {

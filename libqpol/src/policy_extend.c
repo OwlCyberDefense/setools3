@@ -82,12 +82,12 @@ typedef struct qpol_syn_rule_table
 	qpol_syn_rule_node_t **buckets;
 } qpol_syn_rule_table_t;
 
-struct qpol_extended_image
+typedef struct qpol_extended_image
 {
 	qpol_syn_rule_table_t *syn_rule_table;
 	struct qpol_syn_rule **syn_rule_master_list;
 	size_t master_list_sz;
-};
+} qpol_extended_image_t;
 
 /**
  *  Builds data for the attributes and inserts them into the policydb.
@@ -800,6 +800,28 @@ int qpol_policy_build_syn_rule_table(qpol_policy_t * policy)
 	return -1;
 }
 
+/**
+ *  Free all memory used by a qpol extended image and set it to NULL.
+ *  @param ext The extended image to destroy.
+ */
+void qpol_extended_image_destroy(qpol_extended_image_t ** ext)
+{
+	size_t i = 0;
+
+	if (!ext || !(*ext))
+		return;
+
+	qpol_syn_rule_table_destroy(&((*ext)->syn_rule_table));
+
+	for (i = 0; i < (*ext)->master_list_sz; i++) {
+		qpol_syn_rule_destroy(&((*ext)->syn_rule_master_list[i]));
+	}
+	free((*ext)->syn_rule_master_list);
+
+	free(*ext);
+	*ext = NULL;
+}
+
 int qpol_policy_extend(qpol_policy_t * policy)
 {
 	int retv, error;
@@ -848,24 +870,6 @@ int qpol_policy_extend(qpol_policy_t * policy)
 	qpol_extended_image_destroy(&policy->ext);
 	errno = error;
 	return STATUS_ERR;
-}
-
-void qpol_extended_image_destroy(qpol_extended_image_t ** ext)
-{
-	size_t i = 0;
-
-	if (!ext || !(*ext))
-		return;
-
-	qpol_syn_rule_table_destroy(&((*ext)->syn_rule_table));
-
-	for (i = 0; i < (*ext)->master_list_sz; i++) {
-		qpol_syn_rule_destroy(&((*ext)->syn_rule_master_list[i]));
-	}
-	free((*ext)->syn_rule_master_list);
-
-	free(*ext);
-	*ext = NULL;
 }
 
 typedef struct syn_rule_state

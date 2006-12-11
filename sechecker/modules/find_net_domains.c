@@ -74,7 +74,8 @@ int find_net_domains_register(sechk_lib_t * lib)
 		"    3) udp_socket\n"
 		"    4) node\n" "    5) association\n" "These values can be overridden in this module's profile.";
 	mod->opt_description =
-		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
+		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n"
+		"    net_obj\n";
 	mod->severity = SECHK_SEV_NONE;
 
 	/* assign default options */
