@@ -1,3 +1,13 @@
+2006-12-11  J. Mowery  <jmowery@tresys.com>
+
+	* Added qpol_policy_has_capability() to qpol/policy_query.h
+	This function and the enumeration qpol_capability_e allows
+	a user of the library to check if a loaded policy is 
+	capable of supporting various policy features.
+
+	* Support has been added to libqpol for loading policy modules.
+	See qpol/policy.h for details.
+
 2006-12-01  J. Tang  <jtang@tresys.com>
 
 	* Official release of SETools 3.0.1.
