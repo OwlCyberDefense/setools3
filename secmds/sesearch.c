@@ -1,11 +1,25 @@
-/* Copyright (C) 2003-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: mayerf@tresys.com
- */
-
-/* sesearch.c: command line tool to search TE rules.
+/**
+ *  @file
+ *  Command line tool to search TE rules.
+ *
+ *  @author Frank Mayer  mayerf@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *
+ *  Copyright (C) 2003-2007 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <config.h>
@@ -20,7 +34,6 @@
 /* libqpol*/
 #include <qpol/syn_rule_query.h>
 #include <qpol/policy.h>
-#include <qpol/policy_query.h>
 #include <qpol/policy_extend.h>
 
 /* other */

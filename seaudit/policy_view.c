@@ -33,7 +33,7 @@
 #include <apol/policy-query.h>
 #include <apol/util.h>
 #include <glade/glade.h>
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 #include <qpol/policy_extend.h>
 #include <seaudit/avc_message.h>
 

@@ -45,7 +45,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define COPYRIGHT_INFO "Copyright (C) 2004-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2004-2007 Tresys Technology, LLC"
 
 static struct option const longopts[] = {
 	{"html", no_argument, NULL, 'H'},
@@ -94,12 +94,12 @@ static void seaudit_report_info_usage(const char *program_name, int brief)
 	printf("  -oFILE, --output=FILE    Output to file.\n");
 	printf("  -cFILE, --config=FILE    Use alternate config file.\n");
 	printf("  --html                   Set output format to HTML.  Default is plain text.\n");
-	printf("  --stylesheet=FILE        HTML stylesheet for formatting HTML report.\n");
+	printf("  --stylesheet=FILE        HTML style sheet for formatting HTML report.\n");
 	printf("                           (Ignored if --html is not given.)\n");
 	printf("  -v, --version            Display version information and exit.\n");
 	printf("  -h, --help               Display this help and exit.\n");
 	printf("\n");
-	printf("Default stylesheet is in %s.\n", APOL_INSTALL_DIR);
+	printf("Default style sheet is at %s.\n", APOL_INSTALL_DIR);
 }
 
 static void parse_command_line_args(int argc, char **argv)

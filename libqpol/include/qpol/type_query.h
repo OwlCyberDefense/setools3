@@ -1,6 +1,6 @@
  /**
  *  @file type_query.h
- *  Defines the public interface for searching and iterating over types. 
+ *  Defines the public interface for searching and iterating over types.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -50,12 +50,12 @@ extern "C"
 	extern int qpol_policy_get_type_by_name(qpol_policy_t * policy, const char *name, qpol_type_t ** datum);
 
 /**
- *  Get an iterator for types (including attributes and aliases) 
+ *  Get an iterator for types (including attributes and aliases)
  *  declared in the policy.
  *  @param policy The policy from which to create the iterator.
- *  @param iter Iterator of type qpol_type_t* returned; 
- *  the caller is responsible for calling qpol_iterator_destroy to 
- *  free memory used; it is important to note that the iterator is 
+ *  @param iter Iterator of type qpol_type_t* returned;
+ *  the caller is responsible for calling qpol_iterator_destroy to
+ *  free memory used; it is important to note that the iterator is
  *  valid only as long as the policy is unchanged.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
@@ -63,7 +63,7 @@ extern "C"
 	extern int qpol_policy_get_type_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
- *  Get the integer value associated with a type. Values range from 1 
+ *  Get the integer value associated with a type. Values range from 1
  *  to the number of types declared in the policy.
  *  @param policy The policy associated with the type.
  *  @param datum The type from which to get the value.
@@ -99,9 +99,9 @@ extern "C"
  *  Get an iterator for the list of types in an attribute.
  *  @param policy The policy associated with the attribute.
  *  @param datum The attribute from which to get the types.
- *  @param types Iterator of type qpol_type_t* returned; 
- *  the caller is responsible for calling qpol_iterator_destroy to 
- *  free memory used; it is important to note that the iterator is 
+ *  @param types Iterator of type qpol_type_t* returned;
+ *  the caller is responsible for calling qpol_iterator_destroy to
+ *  free memory used; it is important to note that the iterator is
  *  valid only as long as the policy is unchanged.
  *  @return Returns 0 on success, > 0 if the type is not an attribute
  *  and < 0 on failure; if the call fails, errno will be set and
@@ -114,9 +114,9 @@ extern "C"
  *  Get an iterator for the list of attributes given to a type.
  *  @param policy The policy associated with the type.
  *  @param datum The type for which to get the attributes.
- *  @param attrs Iterator of type qpol_type_t* returned; 
- *  the caller is responsible for calling qpol_iterator_destroy to 
- *  free memory used; it is important to note that the iterator is 
+ *  @param attrs Iterator of type qpol_type_t* returned;
+ *  the caller is responsible for calling qpol_iterator_destroy to
+ *  free memory used; it is important to note that the iterator is
  *  valid only as long as the policy is unchanged.
  *  @return Returns 0 on success, > 0 if the type is an attribute
  *  and < 0 on failure; if the call fails, errno will be set and
@@ -129,7 +129,7 @@ extern "C"
  *  Get the name by which a type is identified from its datum.
  *  @param policy The policy associated with the type.
  *  @param datum The type for which to get the name.
- *  @param name Pointer in which to store the name; the caller 
+ *  @param name Pointer in which to store the name; the caller
  *  should not free the string. If the type is an alias then the
  *  primary name will be returned.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
@@ -141,7 +141,7 @@ extern "C"
  *  Get an iterator for the list of aliases for a type.
  *  @param policy The policy associated with the type.
  *  @param datum The type for which to get aliases.
- *  @param aliases Iterator of type char* returned; the caller is 
+ *  @param aliases Iterator of type char* returned; the caller is
  *  responsible for calling qpol_iterator_destroy to free
  *  memory used; it is important to note that the iterator is valid
  *  only as long as the policy is unchanged. If a type has no aliases,

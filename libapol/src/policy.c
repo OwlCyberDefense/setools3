@@ -30,7 +30,6 @@
 #include <apol/domain-trans-analysis.h>
 
 #include <qpol/policy_extend.h>
-#include <qpol/policy_query.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>

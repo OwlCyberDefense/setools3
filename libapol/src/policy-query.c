@@ -35,8 +35,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <qpol/policy_query.h>
-
 /******************** misc helpers ********************/
 
 /**

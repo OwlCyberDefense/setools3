@@ -3,7 +3,6 @@
  *
  * Routines to perform a direct relabelling analysis.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -34,7 +33,7 @@ extern "C"
 
 #include "policy.h"
 #include "vector.h"
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 /* defines for direction flag */
 #define APOL_RELABEL_DIR_TO      0x01

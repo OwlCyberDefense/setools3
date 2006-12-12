@@ -1,7 +1,7 @@
 /**
  *  @file rbacrule_query.h
  *  Defines public interface for iterating over RBAC rules.
- *  
+ *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -32,7 +32,6 @@ extern "C"
 #endif
 
 #include <qpol/policy.h>
-#include <qpol/policy_query.h>
 #include <qpol/iterator.h>
 
 	typedef struct qpol_role_allow qpol_role_allow_t;

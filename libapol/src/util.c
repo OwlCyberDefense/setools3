@@ -35,7 +35,6 @@
 #include <unistd.h>
 
 /* these are needed for nodecons and IPv4 and IPv6 */
-#include <qpol/policy_query.h>
 #include <qpol/nodecon_query.h>
 #include <sys/types.h>
 #include <sys/socket.h>

@@ -3,11 +3,10 @@
  *  Implementation of the public interface for all sechecker modules
  *  and the library.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -46,7 +45,7 @@
 #include <selinux/selinux.h>
 #endif
 
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 static int sechk_lib_compare_sev(const char *a, const char *b)
 {

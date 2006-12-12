@@ -2,11 +2,10 @@
  *  @file qpol_internal.h
  *  Defines common debug symbols and the internal policy structure.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -33,6 +32,7 @@ extern "C"
 
 #include <sepol/handle.h>
 #include <qpol/policy.h>
+#include <stdio.h>
 
 #define STATUS_SUCCESS  0
 #define STATUS_ERR     -1
@@ -42,7 +42,6 @@ extern "C"
 #define QPOL_MSG_WARN 2
 #define QPOL_MSG_INFO 3
 
-/* forward declaration, full declaration in policy_extend.c */
 	struct qpol_extended_image;
 	struct qpol_policy;
 
@@ -72,6 +71,7 @@ extern "C"
 	};
 
 	extern void qpol_handle_msg(qpol_policy_t * policy, int level, const char *fmt, ...);
+	int qpol_is_file_mod_pkg(FILE * fp);
 
 #define ERR(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_ERR, format, __VA_ARGS__)
 #define WARN(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_WARN, format, __VA_ARGS__)

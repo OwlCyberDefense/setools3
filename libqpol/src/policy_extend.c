@@ -3,11 +3,10 @@
  *  Implementation of the interface for loading and using an extended
  *  policy image.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -26,7 +25,6 @@
 
 #include <config.h>
 
-#include <qpol/policy_extend.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/conditional.h>
 #include <sepol/policydb/avtab.h>
@@ -35,7 +33,6 @@
 #include <sepol/policydb/ebitmap.h>
 #include <sepol/policydb/expand.h>
 #include <qpol/policy.h>
-#include <qpol/policy_query.h>
 #include <qpol/iterator.h>
 #include <errno.h>
 #include <assert.h>

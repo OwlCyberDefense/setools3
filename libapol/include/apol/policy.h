@@ -104,7 +104,7 @@ extern "C"
 
 /**
  * Given a policy, return 1 if the policy within is MLS, 0 if not.  If
- * it cannot be determined or upon error, return <0.
+ * it cannot be determined or upon error, return < 0.
  *
  * @param p Policy to which check.
  * @return 1 if policy is MLS, 0 if not, < 0 upon error.
@@ -113,7 +113,11 @@ extern "C"
 
 /**
  * Given a policy, return 1 if the policy is binary, 0 if not.  If it
- * cannot be determined or upon error, return <0.
+ * cannot be determined or upon error, return < 0.
+ *
+ * @deprecated Instead of checking if a policy is "binary" or not, one
+ * typically really wants to know if the policy is capable of showing
+ * rules.  See qpol_policy_has_capability() and QPOL_CAP_SYN_RULES.
  *
  * @param p Policy to which check.
  * @return 1 if policy is binary, 0 if not, < 0 upon error.
@@ -121,20 +125,20 @@ extern "C"
 	extern int apol_policy_is_binary(apol_policy_t * p);
 
 /**
-	 * Given a policy, return 1 if the policy is modular, 0 if not.  If it
-	 * cannot be determined or upon error, return <0.
-	 *
-	 * @param p Policy to which check.
-	 * @return 1 if policy is modular, 0 if not, < 0 upon error.
+ * Given a policy, return 1 if the policy is modular, 0 if not.  If it
+ * cannot be determined or upon error, return < 0.
+ *
+ * @param p Policy to which check.
+ * @return 1 if policy is modular, 0 if not, < 0 upon error.
  */
 	extern int apol_policy_is_modular(apol_policy_t * p);
 
 /**
-	 * Given a policy, return 1 if the policy is source, 0 if not.  If it
-	 * cannot be determined or upon error, return <0.
-	 *
-	 * @param p Policy to which check.
-	 * @return 1 if policy is source, 0 if not, < 0 upon error.
+ * Given a policy, return 1 if the policy is source, 0 if not.  If it
+ * cannot be determined or upon error, return < 0.
+ *
+ * @param p Policy to which check.
+ * @return 1 if policy is source, 0 if not, < 0 upon error.
  */
 	extern int apol_policy_is_source(apol_policy_t * p);
 

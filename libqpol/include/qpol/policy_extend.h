@@ -1,7 +1,7 @@
 /**
  *  @file policy_extend.h
  *  Public interface for loading and using an extended
- *  policy image. 
+ *  policy image.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -63,7 +63,7 @@ extern "C"
  *  Get an iterator over the syntactic rules contributing to an av rule.
  *  @param policy Policy associated with the rule.
  *  @param rule Rule from which to get the syntactic rules.
- *  @param iter Iterator over items of type qpol_syn_avrule_t returned. 
+ *  @param iter Iterator over items of type qpol_syn_avrule_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
  *  to free memory used by this iterator.
  *  It is important to note that this iterator is only valid as long as
@@ -77,7 +77,7 @@ extern "C"
  *  Get an iterator over the syntactic rules contributing to a type rule.
  *  @param policy Policy associated with the rule.
  *  @param rule Rule from which to get the syntactic rules.
- *  @param iter Iterator over items of type qpol_syn_terule_t returned. 
+ *  @param iter Iterator over items of type qpol_syn_terule_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
  *  to free memory used by this iterator.
  *  It is important to note that this iterator is only valid as long as

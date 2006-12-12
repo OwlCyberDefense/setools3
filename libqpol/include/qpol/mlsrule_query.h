@@ -33,7 +33,6 @@ extern "C"
 #endif
 
 #include <qpol/policy.h>
-#include <qpol/policy_query.h>
 
 	typedef struct qpol_range_trans qpol_range_trans_t;
 

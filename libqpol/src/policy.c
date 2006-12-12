@@ -2,12 +2,11 @@
  *  @file
  *  Defines the public interface the QPol policy.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *  @author Brandon Whalen bwhalen@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -370,7 +369,7 @@ static bool_t qpol_is_file_binpol(FILE * fp)
 	return rt;
 }
 
-static bool_t qpol_is_file_mod_pkg(FILE * fp)
+int qpol_is_file_mod_pkg(FILE * fp)
 {
 	size_t sz;
 	__u32 ubuf;
@@ -379,13 +378,13 @@ static bool_t qpol_is_file_mod_pkg(FILE * fp)
 	sz = fread(&ubuf, sizeof(__u32), 1, fp);
 
 	if (sz != 1)
-		rt = FALSE;	       /* problem reading file */
+		rt = 0;	       /* problem reading file */
 
 	ubuf = le32_to_cpu(ubuf);
 	if (ubuf == SEPOL_MODULE_PACKAGE_MAGIC)
-		rt = TRUE;
+		rt = 1;
 	else
-		rt = FALSE;
+		rt = 0;
 	rewind(fp);
 	return rt;
 }
@@ -1075,7 +1074,7 @@ int qpol_open_policy_from_file_no_rules(const char *path, qpol_policy_t ** polic
 	return -1;
 }
 
-int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, int size, qpol_callback_fn_t fn, void *varg)
+int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg)
 {
 	int error = 0;
 	if (policy == NULL || filedata == NULL)
@@ -1110,7 +1109,7 @@ int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, 
 
 	qpol_src_input = (char *)filedata;
 	qpol_src_inputptr = qpol_src_input;
-	qpol_src_inputlim = &qpol_src_inputptr[size - 1];
+	qpol_src_inputlim = qpol_src_inputptr + size - 1;
 	qpol_src_originalinput = qpol_src_input;
 
 	/* read in source */
@@ -1211,178 +1210,6 @@ int qpol_policy_reevaluate_conds(qpol_policy_t * policy)
 				list_ptr->node->merged &= ~(QPOL_COND_RULE_ENABLED);
 		}
 	}
-
-	return STATUS_SUCCESS;
-}
-
-int qpol_module_create_from_file(const char *path, qpol_module_t ** module)
-{
-	sepol_module_package_t *smp = NULL;
-	sepol_policy_file_t *spf = NULL;
-	FILE *infile = NULL;
-	int error = 0;
-	char *tmp = NULL;
-
-	if (module)
-		*module = NULL;
-
-	if (!path || !module) {
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	if (!(*module = calloc(1, sizeof(qpol_module_t)))) {
-		return STATUS_ERR;
-	}
-
-	if (!((*module)->path = strdup(path))) {
-		error = errno;
-		goto err;
-	}
-
-	if (sepol_policy_file_create(&spf)) {
-		error = errno;
-		goto err;
-	}
-
-	infile = fopen(path, "rb");
-	if (!infile) {
-		error = errno;
-		goto err;
-	}
-	if (!qpol_is_file_mod_pkg(infile)) {
-		error = ENOTSUP;
-		goto err;
-	}
-	sepol_policy_file_set_fp(spf, infile);
-
-	if (sepol_module_package_create(&smp)) {
-		error = EIO;
-		goto err;
-	}
-
-	if (sepol_module_package_info(spf, &((*module)->type), &((*module)->name), &tmp)) {
-		error = EIO;
-		goto err;
-	}
-	free(tmp);
-	tmp = NULL;
-	rewind(infile);
-	if (sepol_module_package_read(smp, spf, 0)) {
-		error = EIO;
-		goto err;
-	}
-
-	if (!((*module)->p = sepol_module_package_get_policy(smp))) {
-		error = EIO;
-		goto err;
-	}
-	/* set the module package's policy to NULL as the qpol module owns it now */
-	smp->policy = NULL;
-
-	(*module)->version = smp->version;
-	(*module)->enabled = 1;
-
-	sepol_module_package_free(smp);
-	fclose(infile);
-	sepol_policy_file_free(spf);
-
-	return STATUS_SUCCESS;
-
-      err:
-	qpol_module_destroy(module);
-	sepol_policy_file_free(spf);
-	sepol_module_package_free(smp);
-	if (infile)
-		fclose(infile);
-	free(tmp);
-	errno = error;
-	return STATUS_ERR;
-}
-
-void qpol_module_destroy(qpol_module_t ** module)
-{
-	if (!module || !(*module))
-		return;
-
-	free((*module)->path);
-	free((*module)->name);
-	sepol_policydb_free((*module)->p);
-	free(*module);
-	*module = NULL;
-}
-
-int qpol_module_get_path(qpol_module_t * module, char **path)
-{
-	if (!module || !path) {
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	*path = module->path;
-
-	return STATUS_SUCCESS;
-}
-
-int qpol_module_get_name(qpol_module_t * module, char **name)
-{
-	if (!module || !name) {
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	*name = module->name;
-
-	return STATUS_SUCCESS;
-}
-
-int qpol_module_get_version(qpol_module_t * module, uint32_t * version)
-{
-	if (!module || !version) {
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	*version = module->version;
-
-	return STATUS_SUCCESS;
-}
-
-int qpol_module_get_type(qpol_module_t * module, int *type)
-{
-	if (!module || !type) {
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	*type = module->type;
-
-	return STATUS_SUCCESS;
-}
-
-int qpol_module_get_enabled(qpol_module_t * module, int *enabled)
-{
-	if (!module || !enabled) {
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	*enabled = module->enabled;
-
-	return STATUS_SUCCESS;
-}
-
-int qpol_module_set_enabled(qpol_module_t * module, int enabled)
-{
-	if (!module) {
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	if (enabled != module->enabled && module->parent) {
-		module->parent->modified = 1;
-	}
-	module->enabled = enabled;
 
 	return STATUS_SUCCESS;
 }
@@ -1589,4 +1416,118 @@ int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	ms->list = policy->modules;
 
 	return STATUS_SUCCESS;
+}
+
+int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
+{
+	policydb_t *db = NULL;
+
+	if (policy == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p->p;
+
+	if (db->mls != 0)
+		return 1;
+	else
+		return 0;
+}
+
+int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version)
+{
+	policydb_t *db;
+
+	if (version != NULL)
+		*version = 0;
+
+	if (policy == NULL || version == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p->p;
+
+	*version = db->policyvers;
+
+	return STATUS_SUCCESS;
+}
+
+int qpol_policy_get_type(qpol_policy_t * policy, int *type)
+{
+	if (!policy || !type) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	*type = policy->type;
+
+	return STATUS_SUCCESS;
+}
+
+int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
+{
+	unsigned int version = 0;
+
+	if (!policy) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return 0;
+	}
+
+	qpol_policy_get_policy_version(policy, &version);
+
+	switch (cap) {
+	case QPOL_CAP_ATTRIB_NAMES:
+		{
+			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_SYN_RULES:
+		{
+			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_LINE_NOS:
+		{
+			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_CONDITIONALS:
+		{
+			if (version >= 16 || policy->type == QPOL_POLICY_MODULE_BINARY)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_MLS:
+		{
+			return qpol_policy_is_mls_enabled(policy);
+		}
+	case QPOL_CAP_MODULES:
+		{
+			if (policy->type == QPOL_POLICY_MODULE_BINARY)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_RULES_LOADED:
+		{
+			if (policy->rules_loaded)
+				return 1;
+			break;
+		}
+	default:
+		{
+			ERR(policy, "%s", "Unknown capability");
+			errno = EDOM;
+			break;
+		}
+	}
+	return 0;
 }

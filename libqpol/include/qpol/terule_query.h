@@ -1,6 +1,6 @@
 /**
  *  @file terule_query.h
- *  Defines the public interface for searching and iterating over type rules. 
+ *  Defines the public interface for searching and iterating over type rules.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -33,7 +33,6 @@ extern "C"
 
 #include <qpol/policy.h>
 #include <qpol/cond_query.h>
-#include <qpol/policy_query.h>
 
 	typedef struct qpol_terule qpol_terule_t;
 
@@ -138,11 +137,11 @@ extern "C"
 	extern int qpol_terule_get_is_enabled(qpol_policy_t * policy, qpol_terule_t * rule, uint32_t * is_enabled);
 
 /**
- *  Get the list (true or false) in which a conditional rule is. It is 
+ *  Get the list (true or false) in which a conditional rule is. It is
  *  an error to call this function for an unconditional rule.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule to check.
- *  @param which_list Integer in which to store the result: set to 1 if 
+ *  @param which_list Integer in which to store the result: set to 1 if
  *  rule is in the true list or 0 if in the false list.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *which_list will be 0.

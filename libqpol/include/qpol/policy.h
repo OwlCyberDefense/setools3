@@ -2,12 +2,11 @@
  *  @file
  *  Defines the public interface the QPol policy.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *  @author Brandon Whalen bwhalen@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -34,7 +33,31 @@ extern "C"
 
 #include <stdarg.h>
 #include <stdint.h>
+
+	typedef struct qpol_policy qpol_policy_t;
+
+#include <qpol/avrule_query.h>
+#include <qpol/bool_query.h>
+#include <qpol/class_perm_query.h>
+#include <qpol/cond_query.h>
+#include <qpol/constraint_query.h>
+#include <qpol/context_query.h>
+#include <qpol/fs_use_query.h>
+#include <qpol/isid_query.h>
 #include <qpol/iterator.h>
+#include <qpol/genfscon_query.h>
+#include <qpol/mls_query.h>
+#include <qpol/mlsrule_query.h>
+#include <qpol/module.h>
+#include <qpol/netifcon_query.h>
+#include <qpol/nodecon_query.h>
+#include <qpol/portcon_query.h>
+#include <qpol/rbacrule_query.h>
+#include <qpol/role_query.h>
+#include <qpol/syn_rule_query.h>
+#include <qpol/terule_query.h>
+#include <qpol/type_query.h>
+#include <qpol/user_query.h>
 
 /* * Return codes for qpol_find_default_policy_file() function. */
 #define QPOL_FIND_DEFAULT_SUCCESS               0
@@ -50,18 +73,35 @@ extern "C"
 #define QPOL_TYPE_BINARY	1
 #define QPOL_TYPE_SOURCE	2
 
-	typedef struct qpol_policy qpol_policy_t;
 	typedef void (*qpol_callback_fn_t) (void *varg, struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
-	typedef struct qpol_module qpol_module_t;
 
 #define QPOL_POLICY_UNKNOWN       -1
 #define QPOL_POLICY_KERNEL_SOURCE  0
 #define QPOL_POLICY_KERNEL_BINARY  1
 #define QPOL_POLICY_MODULE_BINARY  2
 
-#define QPOL_MODULE_UNKNOWN 0
-#define QPOL_MODULE_BASE    1
-#define QPOL_MODULE_OTHER   2
+/**
+ *  List of capabilities a policy may have. This list represents
+ *  features of policy that may differ from version to version or
+ *  based upon the format of the policy file.
+ */
+	typedef enum qpol_capability
+        {
+                /** The policy format stores the names of attributes. */
+                QPOL_CAP_ATTRIB_NAMES,
+                /** The policy format stores the syntactic rule type sets. */
+                QPOL_CAP_SYN_RULES,
+                /** The policy format stores rule line numbers (implies QPOL_CAP_SYN_RULES). */
+                QPOL_CAP_LINE_NOS,
+                /** The policy version supports booleans and conditional statements. */
+                QPOL_CAP_CONDITIONALS,
+                /** The policy version supports MLS components and statements. */
+                QPOL_CAP_MLS,
+                /** The policy format supports linking loadable modules. */
+                QPOL_CAP_MODULES,
+                /** The policy was loaded with av/te rules. */
+                QPOL_CAP_RULES_LOADED
+        } qpol_capability_e;
 
 /**
  *  Open a policy from a passed in file path.
@@ -70,8 +110,10 @@ extern "C"
  *  this pointer.
  *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
  *  @param varg (Optional) The argument needed by the handle callback.
- *  @return Returns one of QPOL_POLICY_* above on success and < 0 on failure;
- *  if the call fails, errno will be set and *policy will be NULL.
+ *  @return Returns one of QPOL_POLICY_KERNEL_SOURCE,
+ *  QPOL_POLICY_KERNEL_BINARY, or QPOL_POLICY_MODULE_BINARY on success
+ *  and < 0 on failure; if the call fails, errno will be set and
+ *  *policy will be NULL.
  */
 	extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg);
 
@@ -99,7 +141,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL.
  */
-	extern int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, int size, qpol_callback_fn_t fn,
+	extern int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn,
 						void *varg);
 
 /**
@@ -111,9 +153,9 @@ extern "C"
 	extern void qpol_policy_destroy(qpol_policy_t ** policy);
 
 /**
- *  Find the default policy file given a policy type. 
+ *  Find the default policy file given a policy type.
  *  @param search_opt Search options bitmask, defined in this file
- *  @param policy_file_path Character buffer to store policy path in  
+ *  @param policy_file_path Character buffer to store policy path in
  *  @return Returns one of the return codes defined in this file
  */
 	extern int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_path);
@@ -137,81 +179,6 @@ extern "C"
  */
 	extern int qpol_policy_reevaluate_conds(qpol_policy_t * policy);
 
-/**
- *  Create a qpol module from a policy package file.
- *  @param path The file from which to read the module.
- *  @param module Pointer in which to store the newly allocated
- *  module. The caller is responsible for calling qpol_module_destroy()
- *  to free memory used by this module.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *module will be NULL.
- */
-	extern int qpol_module_create_from_file(const char *path, qpol_module_t ** module);
-
-/**
- *  Free all memory used by a qpol module and set it to NULL.
- *  @param module Reference pointer to the module to destroy.
- */
-	extern void qpol_module_destroy(qpol_module_t ** module);
-
-/**
- *  Get the path of the policy package file used to create this module.
- *  @param module The module from which to get the path.
- *  @param path Pointer to the string in which to store the path. <b>The
- *  caller should not free this string.</b>
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *path will be NULL.
- */
-	extern int qpol_module_get_path(qpol_module_t * module, char **path);
-
-/**
- *  Get the name of a module.
- *  @param module The module from which to get the name.
- *  @param Pointer to the string in which to store the name. <b>The
- *  caller should not free this string.</b>
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *name will be NULL.
- */
-	extern int qpol_module_get_name(qpol_module_t * module, char **name);
-
-/**
- *  Get the version of a module.
- *  @param module The module from which to get the version.
- *  @param version Pointer to integer in which to store the version.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *version will be 0.
- */
-	extern int qpol_module_get_version(qpol_module_t * module, uint32_t * version);
-
-/**
- *  Get the type of module (base or other).
- *  @param module The module from which to get the type.
- *  @param type Pointer to integer in which to store the type.
- *  Value will be one of QPOL_MODULE_* from above.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *type will be QPOL_MODULE_UNKNOWN.
- */
-	extern int qpol_module_get_type(qpol_module_t * module, int *type);
-
-/**
- *  Determine if a module is enabled.
- *  @param module The module from which to get the enabled state.
- *  @param enabled Pointer to integer in which to store the state.
- *  Value will be 0 if module is disabled and non-zero if enabled.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *enabled will be 0.
- */
-	extern int qpol_module_get_enabled(qpol_module_t * module, int *enabled);
-
-/**
- *  Enable or disable a module. Note that the caller must still
- *  invoke qpol_policy_rebuild() to update the policy.
- *  @param module The module to enable or disable.
- *  @param enabled Non-zero to enable the module, zero to disable.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and the module will remain unchanged.
- */
-	extern int qpol_module_set_enabled(qpol_module_t * module, int enabled);
 
 /**
  *  Append a module to a policy. The policy now owns the module.
@@ -248,6 +215,42 @@ extern "C"
  *  errno will be set and *iter will be NULL.
  */
 	extern int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+
+/**
+ *  Determine if the policy is MLS enabled.
+ *  @param policy The policy to check.
+ *  @return Returns 1 if MLS is enabled, 0 if MLS is disabled, and
+ *  < 0 if there was an error; if the call fails, errno will be set.
+ */
+        extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy);
+
+/**
+ *  Get the version number of the policy.
+ *  @param policy The policy for which to get the version.
+ *  @param version Pointer to the integer to set to the version number.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *version will be 0.
+ */
+        extern int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version);
+
+/**
+ *  Get the type of policy (source, binary, or module).
+ *  @param policy The policy from which to get the type.
+ *  @param type Pointer to the integer in which to store the type.
+ *  Value will be one of QPOL_POLICY_* from above.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *type will be QPOL_POLICY_UNKNOWN.
+ */
+        extern int qpol_policy_get_type(qpol_policy_t * policy, int *type);
+
+/**
+ *  Determine if a policy has support for a specific capability.
+ *  @param policy The policy to check.
+ *  @param cap The capability for which to check. Must be one of QPOL_CAP_*
+ *  defined above.
+ *  @return Non-zero if the policy has the specified capability, and zero otherwise.
+ */
+        extern int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap);
 
 #ifdef	__cplusplus
 }

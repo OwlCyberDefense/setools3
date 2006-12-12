@@ -4,7 +4,6 @@
  * Public interface for loading and parsing the default file_contexts
  * file.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -42,9 +41,6 @@
 #include <apol/policy.h>
 #include <apol/policy-query.h>
 #include <apol/vector.h>
-
-/* libqpol */
-#include <qpol/policy_query.h>
 
 int sefs_fc_entry_parse_file_contexts(apol_policy_t * p, const char *fc_path, apol_vector_t ** contexts)
 {

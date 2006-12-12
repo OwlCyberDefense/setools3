@@ -5,11 +5,10 @@
  * there is a query structure to specify the details of the query.
  * Analyses are also included by this header file.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006 Tresys Technology, LLC
+ * Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -53,7 +52,7 @@ extern "C"
 #define APOL_QUERY_SYMBOL_IS_TYPE 0x01
 #define APOL_QUERY_SYMBOL_IS_ATTRIBUTE 0x02
 
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 #include "type-query.h"
 #include "class-perm-query.h"
