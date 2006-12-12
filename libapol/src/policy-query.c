@@ -464,7 +464,8 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 		goto cleanup;
 	}
 
-	if (!p || apol_policy_is_binary(p)) {
+	if (!p || !qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_ATTRIB_NAMES)
+	    || !qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_SYN_RULES)) {
 		error = EINVAL;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;

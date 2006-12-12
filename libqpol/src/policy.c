@@ -58,11 +58,6 @@
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
 #include <qpol/expand.h>
-#include <qpol/cond_query.h>
-#include <qpol/constraint_query.h>
-#include <qpol/class_perm_query.h>
-#include <qpol/mlsrule_query.h>
-#include <qpol/fs_use_query.h>
 #include "queue.h"
 #include "iterator_internal.h"
 
@@ -378,7 +373,7 @@ int qpol_is_file_mod_pkg(FILE * fp)
 	sz = fread(&ubuf, sizeof(__u32), 1, fp);
 
 	if (sz != 1)
-		rt = 0;	       /* problem reading file */
+		rt = 0;		       /* problem reading file */
 
 	ubuf = le32_to_cpu(ubuf);
 	if (ubuf == SEPOL_MODULE_PACKAGE_MAGIC)
@@ -754,7 +749,7 @@ static int infer_policy_version(qpol_policy_t * policy)
 	return STATUS_SUCCESS;
 }
 
-int qpol_open_policy_from_file(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
+int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
 {
 	int error = 0, retv = -1;
 	FILE *infile = NULL;
@@ -912,7 +907,12 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 	return -1;
 }
 
-int qpol_open_policy_from_file_no_rules(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
+int qpol_open_policy_from_file(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
+{
+	return qpol_policy_open_from_file(path, policy, fn, varg);
+}
+
+int qpol_policy_open_from_file_no_rules(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
 {
 	int error = 0, retv = -1;
 	FILE *infile = NULL;
@@ -1074,7 +1074,12 @@ int qpol_open_policy_from_file_no_rules(const char *path, qpol_policy_t ** polic
 	return -1;
 }
 
-int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg)
+int qpol_open_policy_from_file_no_rules(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
+{
+	return qpol_policy_open_from_file_no_rules(path, policy, fn, varg);
+}
+
+int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg)
 {
 	int error = 0;
 	if (policy == NULL || filedata == NULL)
@@ -1141,6 +1146,11 @@ int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, 
 	errno = error;
 	return -1;
 
+}
+
+int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg)
+{
+	return qpol_policy_open_from_memory(policy, filedata, size, fn, varg);
 }
 
 /* forward declarations see policy_extend.c */
@@ -1494,7 +1504,7 @@ int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
 				return 1;
 			break;
 		}
-	case QPOL_CAP_LINE_NOS:
+	case QPOL_CAP_LINE_NUMBERS:
 		{
 			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
 				return 1;

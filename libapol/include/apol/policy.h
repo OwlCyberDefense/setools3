@@ -117,12 +117,12 @@ extern "C"
  *
  * @deprecated Instead of checking if a policy is "binary" or not, one
  * typically really wants to know if the policy is capable of showing
- * rules.  See qpol_policy_has_capability() and QPOL_CAP_SYN_RULES.
+ * rules or something else.  See qpol_policy_has_capability().
  *
  * @param p Policy to which check.
  * @return 1 if policy is binary, 0 if not, < 0 upon error.
  */
-	extern int apol_policy_is_binary(apol_policy_t * p);
+	extern int apol_policy_is_binary(apol_policy_t * p) __attribute__ ((deprecated));
 
 /**
  * Given a policy, return 1 if the policy is modular, 0 if not.  If it

@@ -82,6 +82,8 @@ static GtkTreeModel *sediff_create_and_fill_model(poldiff_t * diff)
 	GtkTreeIter topiter, childiter;
 	size_t stats[5] = { 0, 0, 0, 0, 0 }, i;
 	GString *s = g_string_new("");
+	qpol_policy_t *oq = apol_policy_get_qpol(sediff_app->orig_pol);
+	qpol_policy_t *mq = apol_policy_get_qpol(sediff_app->mod_pol);
 
 	treestore = gtk_tree_store_new(SEDIFF_NUM_COLUMNS, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
 
@@ -132,9 +134,8 @@ static GtkTreeModel *sediff_create_and_fill_model(poldiff_t * diff)
 					   SEDIFF_FORM_COLUMN, POLDIFF_FORM_REMOVE_TYPE, -1);
 		}
 		if (sediff_items[i].bit_pos != POLDIFF_DIFF_TYPES ||
-		    (!apol_policy_is_binary(sediff_app->orig_pol) && !apol_policy_is_binary(sediff_app->mod_pol))) {
-			/* can't show the modified types if either
-			 * policy is a binary */
+		    (qpol_policy_has_capability(oq, QPOL_CAP_ATTRIB_NAMES)
+		     && qpol_policy_has_capability(mq, QPOL_CAP_ATTRIB_NAMES))) {
 			gtk_tree_store_append(treestore, &childiter, &topiter);
 			g_string_printf(s, "Modified %zd", stats[2]);
 			gtk_tree_store_set(treestore, &childiter,

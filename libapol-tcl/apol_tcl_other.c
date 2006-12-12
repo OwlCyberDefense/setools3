@@ -415,6 +415,7 @@ static int Apol_GetInfoString(ClientData clientData, Tcl_Interp * interp, int ar
  */
 static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
+	qpol_policy_t *q;
 	if (argc != 2) {
 		Tcl_SetResult(interp, "Need a policy filename.", TCL_STATIC);
 		return TCL_ERROR;
@@ -427,8 +428,10 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 		Tcl_SetObjResult(interp, result_obj);
 		return TCL_ERROR;
 	}
-	/* if not binary load syntactic rules so that line numbers may be accessed */
-	if (!apol_policy_is_binary(policydb) && qpol_policy_build_syn_rule_table(apol_policy_get_qpol(policydb))) {
+	/* if not binary load syntactic rules so that line numbers may
+	 * be accessed */
+	q = apol_policy_get_qpol(policydb);
+	if (qpol_policy_has_capability(q, QPOL_CAP_SYN_RULES) && qpol_policy_build_syn_rule_table(q)) {
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error loading syntactic rules: ", -1);
 		Tcl_AppendToObj(result_obj, strerror(errno), -1);
 		Tcl_SetObjResult(interp, result_obj);

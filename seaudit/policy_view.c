@@ -118,12 +118,13 @@ static gpointer policy_view_find_terules_runner(gpointer data)
 {
 	struct find_terules_datum *run = (struct find_terules_datum *)data;
 	run->results = NULL;
-	if (apol_policy_is_binary(run->policy)) {
+	qpol_policy_t *q = apol_policy_get_qpol(run->policy);
+	if (!qpol_policy_has_capability(q, QPOL_CAP_SYN_RULES)) {
 		progress_update(run->progress, "Searching AV rules");
 		run->retval = apol_avrule_get_by_query(run->policy, run->query, &run->results);
 		run->is_syn_rules = 0;
 	} else {
-		qpol_policy_build_syn_rule_table(apol_policy_get_qpol(run->policy));
+		qpol_policy_build_syn_rule_table(q);
 		progress_update(run->progress, "Searching syntactic AV rules");
 		run->retval = apol_syn_avrule_get_by_query(run->policy, run->query, &run->results);
 		run->is_syn_rules = 1;
@@ -407,7 +408,7 @@ static void policy_view_load_policy_source(policy_view_t * pv, const char *path)
 	apol_policy_t *policy = toplevel_get_policy(pv->top);
 	if (path == NULL) {
 		gtk_text_buffer_set_text(pv->policy_text, "No policy has been loaded.", -1);
-	} else if (apol_policy_is_binary(policy)) {
+	} else if (!apol_policy_is_source(policy)) {
 		GString *string = g_string_new("");
 		g_string_printf(string, "Policy file %s is a binary policy.", path);
 		gtk_text_buffer_set_text(pv->policy_text, string->str, -1);

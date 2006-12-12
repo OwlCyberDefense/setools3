@@ -274,7 +274,7 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 	size_t i;
 	unsigned int flags = 0;
 
-	if (!p || apol_policy_is_binary(p)) {
+	if (!p || !qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_SYN_RULES)) {
 		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}

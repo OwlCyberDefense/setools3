@@ -93,7 +93,7 @@ int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn
 	}
 	(*policy)->msg_callback_arg = varg;
 
-	policy_type = qpol_open_policy_from_file(path, &((*policy)->p), qpol_handle_route_to_callback, (*policy));
+	policy_type = qpol_policy_open_from_file(path, &((*policy)->p), qpol_handle_route_to_callback, (*policy));
 	if (policy_type < 0) {
 		ERR(*policy, "Unable to open policy at %s.", path);
 		apol_policy_destroy(policy);
@@ -125,7 +125,7 @@ int apol_policy_open_no_rules(const char *path, apol_policy_t ** policy, apol_ca
 	}
 	(*policy)->msg_callback_arg = callback_arg;
 
-	policy_type = qpol_open_policy_from_file_no_rules(path, &((*policy)->p), qpol_handle_route_to_callback, (*policy));
+	policy_type = qpol_policy_open_from_file_no_rules(path, &((*policy)->p), qpol_handle_route_to_callback, (*policy));
 	if (policy_type < 0) {
 		ERR(*policy, "Unable to open policy at %s.", path);
 		apol_policy_destroy(policy);

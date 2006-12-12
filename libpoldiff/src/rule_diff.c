@@ -1269,7 +1269,7 @@ static int avrule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
 	sort_and_uniquify_perms(inserted_key);
 
 	/* store the rule pointer, to be used for showing line numbers */
-	if (!apol_policy_is_binary(p)) {
+	if (qpol_policy_has_capability(q, QPOL_CAP_LINE_NUMBERS)) {
 		qpol_avrule_t **a = realloc(inserted_key->rules,
 					    (inserted_key->num_rules + 1) * sizeof(*a));
 		if (a == NULL) {
@@ -1616,7 +1616,7 @@ int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	}
 	apol_vector_sort(pa->unmodified_perms, apol_str_strcmp, NULL);
 
-	if (!apol_policy_is_binary(p)) {
+	if (qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_LINE_NUMBERS)) {
 		/* calculate line numbers */
 		if ((v1 = apol_vector_create()) == NULL) {
 			error = errno;
@@ -1763,7 +1763,7 @@ int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 		apol_vector_sort(pa->removed_perms, apol_str_strcmp, NULL);
 
 		/* calculate line numbers */
-		if (!apol_policy_is_binary(diff->orig_pol)) {
+		if (qpol_policy_has_capability(apol_policy_get_qpol(diff->orig_pol), QPOL_CAP_LINE_NUMBERS)) {
 			if ((pa->orig_linenos = apol_vector_create()) == NULL) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
@@ -1780,7 +1780,7 @@ int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			}
 			memcpy(pa->orig_rules, r1->rules, r1->num_rules * sizeof(qpol_avrule_t *));
 		}
-		if (!apol_policy_is_binary(diff->mod_pol)) {
+		if (qpol_policy_has_capability(apol_policy_get_qpol(diff->mod_pol), QPOL_CAP_LINE_NUMBERS)) {
 			if ((pa->mod_linenos = apol_vector_create()) == NULL) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
@@ -2098,7 +2098,7 @@ static int terule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
 	key = NULL;
 
 	/* store the rule pointer, to be used for showing line numbers */
-	if (!apol_policy_is_binary(p)) {
+	if (qpol_policy_has_capability(q, QPOL_CAP_LINE_NUMBERS)) {
 		qpol_terule_t **t = realloc(inserted_key->rules,
 					    (inserted_key->num_rules + 1) * sizeof(*t));
 		if (t == NULL) {
@@ -2417,7 +2417,7 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	pt->mod_default = mod_default;
 
 	/* calculate line numbers */
-	if (!apol_policy_is_binary(p)) {
+	if (qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_LINE_NUMBERS)) {
 		if ((v1 = apol_vector_create()) == NULL) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
@@ -2513,7 +2513,7 @@ int terule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 		}
 
 		/* calculate line numbers */
-		if (!apol_policy_is_binary(diff->orig_pol)) {
+		if (qpol_policy_has_capability(apol_policy_get_qpol(diff->orig_pol), QPOL_CAP_LINE_NUMBERS)) {
 			if ((pt->orig_linenos = apol_vector_create()) == NULL) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
@@ -2530,7 +2530,7 @@ int terule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			}
 			memcpy(pt->orig_rules, r1->rules, r1->num_rules * sizeof(qpol_terule_t *));
 		}
-		if (!apol_policy_is_binary(diff->mod_pol)) {
+		if (qpol_policy_has_capability(apol_policy_get_qpol(diff->mod_pol), QPOL_CAP_LINE_NUMBERS)) {
 			if ((pt->mod_linenos = apol_vector_create()) == NULL) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));

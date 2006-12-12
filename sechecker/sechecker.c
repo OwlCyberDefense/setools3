@@ -879,7 +879,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 				return FALSE;
 			}
 		} else if (!strcmp(req->value, SECHK_REQ_CAP_LINE_NOS)) {
-			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_LINE_NOS)) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_LINE_NUMBERS)) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
 				}

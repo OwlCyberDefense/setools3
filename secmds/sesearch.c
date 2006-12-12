@@ -995,7 +995,7 @@ int main(int argc, char **argv)
 	}
 
 	/* supress line numbers if doing semantic search or not available */
-	if (cmd_opts.semantic || !qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_LINE_NOS)) {
+	if (cmd_opts.semantic || !qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_LINE_NUMBERS)) {
 		cmd_opts.lineno = 0;
 	}
 

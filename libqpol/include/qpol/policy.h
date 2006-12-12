@@ -86,22 +86,22 @@ extern "C"
  *  based upon the format of the policy file.
  */
 	typedef enum qpol_capability
-        {
-                /** The policy format stores the names of attributes. */
-                QPOL_CAP_ATTRIB_NAMES,
-                /** The policy format stores the syntactic rule type sets. */
-                QPOL_CAP_SYN_RULES,
-                /** The policy format stores rule line numbers (implies QPOL_CAP_SYN_RULES). */
-                QPOL_CAP_LINE_NOS,
-                /** The policy version supports booleans and conditional statements. */
-                QPOL_CAP_CONDITIONALS,
-                /** The policy version supports MLS components and statements. */
-                QPOL_CAP_MLS,
-                /** The policy format supports linking loadable modules. */
-                QPOL_CAP_MODULES,
-                /** The policy was loaded with av/te rules. */
-                QPOL_CAP_RULES_LOADED
-        } qpol_capability_e;
+	{
+		/** The policy format stores the names of attributes. */
+		QPOL_CAP_ATTRIB_NAMES,
+		/** The policy format stores the syntactic rule type sets. */
+		QPOL_CAP_SYN_RULES,
+		/** The policy format stores rule line numbers (implies QPOL_CAP_SYN_RULES). */
+		QPOL_CAP_LINE_NUMBERS,
+		/** The policy version supports booleans and conditional statements. */
+		QPOL_CAP_CONDITIONALS,
+		/** The policy version supports MLS components and statements. */
+		QPOL_CAP_MLS,
+		/** The policy format supports linking loadable modules. */
+		QPOL_CAP_MODULES,
+		/** The policy was loaded with av/te rules. */
+		QPOL_CAP_RULES_LOADED
+	} qpol_capability_e;
 
 /**
  *  Open a policy from a passed in file path.
@@ -115,7 +115,13 @@ extern "C"
  *  and < 0 on failure; if the call fails, errno will be set and
  *  *policy will be NULL.
  */
-	extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg);
+	extern int qpol_policy_open_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg);
+
+/**
+ * @deprecated Use qpol_policy_open_from_file() instead.
+ */
+	extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
+		__attribute__ ((deprecated));
 
 /**
  *  Open a policy from a passed in file path but do not load any rules.
@@ -127,8 +133,14 @@ extern "C"
  *  @return Returns one of QPOL_POLICY_* above on success and < 0 on failure;
  *  if the call fails, errno will be set and *policy will be NULL.
  */
-	extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn,
+	extern int qpol_policy_open_from_file_no_rules(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn,
 						       void *varg);
+
+/**
+ * @deprecated Use qpol_policy_open_from_file_no_rules() instead.
+ */
+	extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn,
+						       void *varg) __attribute__ ((deprecated));
 
 /**
  *  Open a policy from a passed in buffer.
@@ -141,8 +153,14 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL.
  */
-	extern int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn,
+	extern int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn,
 						void *varg);
+
+/**
+ * @deprecated Use qpol_policy_open_from_memory() instead.
+ */
+	extern int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn,
+						void *varg) __attribute__ ((deprecated));
 
 /**
  *  Close a policy and deallocate its memory.  Does nothing if it is
@@ -178,7 +196,6 @@ extern "C"
  *  errno will be set. On failure, the policy state may be inconsistent.
  */
 	extern int qpol_policy_reevaluate_conds(qpol_policy_t * policy);
-
 
 /**
  *  Append a module to a policy. The policy now owns the module.
@@ -222,7 +239,7 @@ extern "C"
  *  @return Returns 1 if MLS is enabled, 0 if MLS is disabled, and
  *  < 0 if there was an error; if the call fails, errno will be set.
  */
-        extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy);
+	extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy);
 
 /**
  *  Get the version number of the policy.
@@ -231,7 +248,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *version will be 0.
  */
-        extern int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version);
+	extern int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version);
 
 /**
  *  Get the type of policy (source, binary, or module).
@@ -241,7 +258,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *type will be QPOL_POLICY_UNKNOWN.
  */
-        extern int qpol_policy_get_type(qpol_policy_t * policy, int *type);
+	extern int qpol_policy_get_type(qpol_policy_t * policy, int *type);
 
 /**
  *  Determine if a policy has support for a specific capability.
@@ -250,7 +267,7 @@ extern "C"
  *  defined above.
  *  @return Non-zero if the policy has the specified capability, and zero otherwise.
  */
-        extern int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap);
+	extern int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap);
 
 #ifdef	__cplusplus
 }

@@ -33,7 +33,7 @@ extern "C"
 #include <stdint.h>
 
 	typedef struct qpol_module qpol_module_t;
-    
+
 #define QPOL_MODULE_UNKNOWN 0
 #define QPOL_MODULE_BASE    1
 #define QPOL_MODULE_OTHER   2
