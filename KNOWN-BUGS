@@ -1,9 +1,9 @@
-SETools version 3.0.1
+SETools version 3.1
 Tresys Technology
 setools@tresys.com, http://oss.tresys.com/projects/setools
 
 
-December 1, 2006
+January 23, 2007
 
 
 CURRENT BUGS AND ISSUES
@@ -42,10 +42,6 @@ SEAUDIT
    by date January 2004 will come before December 2003 entire.  This 
    is because audit logs do not include a year so we assign the same 
    year to all dates.
-
-2. Sorting in seaudit does not work as intended.  It is being fixed
-   for an upcoming version of SETools.
-
 
 TESTING INFORMATION
 

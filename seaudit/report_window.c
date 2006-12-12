@@ -90,7 +90,7 @@ static void report_window_browse(GtkEntry * entry, GtkWindow * parent, const cha
 static void report_window_on_stylesheet_browse_click(GtkWidget * widget, gpointer user_data)
 {
 	struct report_window *rw = (struct report_window *)user_data;
-	report_window_browse(rw->stylesheet_entry, GTK_WINDOW(rw->dialog), "Select Stylesheet");
+	report_window_browse(rw->stylesheet_entry, GTK_WINDOW(rw->dialog), "Select Style Sheet");
 }
 
 static void report_window_on_config_browse_click(GtkWidget * widget, gpointer user_data)

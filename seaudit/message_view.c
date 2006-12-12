@@ -76,7 +76,7 @@ struct message_view
 	GtkWidget *w;
 	/** actual GTK+ tree view widget that displays the rows and
          * columns of message data */
-	GtkWidget *tree;
+	GtkTreeView *view;
 	/** GTK+ store that models messages within the tree */
 	message_view_store_t *store;
 	/** filename for when this view was saved (could be NULL) */
@@ -144,7 +144,7 @@ static gboolean message_view_on_column_click(GtkTreeViewColumn * column, gpointe
 		seaudit_sort_destroy(&sort);
 		toplevel_ERR(view->top, "%s", strerror(errno));
 	}
-	prev_column = gtk_tree_view_get_column(GTK_TREE_VIEW(view->tree), view->store->sort_field);
+	prev_column = gtk_tree_view_get_column(view->view, view->store->sort_field);
 	if (prev_column != NULL) {
 		gtk_tree_view_column_set_sort_indicator(prev_column, FALSE);
 	}
@@ -765,17 +765,17 @@ message_view_t *message_view_create(toplevel_t * top, seaudit_model_t * model, c
 	view->store->sort_field = OTHER_FIELD;
 	view->store->sort_dir = 1;
 	view->w = gtk_scrolled_window_new(NULL, NULL);
-	view->tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(view->store));
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view->tree));
+	view->view = GTK_TREE_VIEW(gtk_tree_view_new_with_model(GTK_TREE_MODEL(view->store)));
+	selection = gtk_tree_view_get_selection(view->view);
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-	gtk_container_add(GTK_CONTAINER(view->w), view->tree);
-	gtk_widget_show(view->tree);
+	gtk_container_add(GTK_CONTAINER(view->w), GTK_WIDGET(view->view));
+	gtk_widget_show(GTK_WIDGET(view->view));
 	gtk_widget_show(view->w);
 
 	renderer = gtk_cell_renderer_text_new();
 	for (i = 0; i < num_columns; i++) {
 		struct view_column_record r = column_data[i];
-		PangoLayout *layout = gtk_widget_create_pango_layout(GTK_WIDGET(view->tree), r.sample_text);
+		PangoLayout *layout = gtk_widget_create_pango_layout(GTK_WIDGET(view->view), r.sample_text);
 		gint width;
 		GtkTreeViewColumn *column;
 		pango_layout_get_pixel_size(layout, &width, NULL);
@@ -790,12 +790,12 @@ message_view_t *message_view_create(toplevel_t * top, seaudit_model_t * model, c
 		}
 		gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
 		gtk_tree_view_column_set_fixed_width(column, width);
-		gtk_tree_view_append_column(GTK_TREE_VIEW(view->tree), column);
+		gtk_tree_view_append_column(view->view, column);
 	}
 
-	g_signal_connect(G_OBJECT(view->tree), "button-press-event", G_CALLBACK(message_view_on_button_press), view);
-	g_signal_connect(G_OBJECT(view->tree), "popup-menu", G_CALLBACK(message_view_on_popup_menu), view);
-	g_signal_connect(G_OBJECT(view->tree), "row-activated", G_CALLBACK(message_view_on_row_activate), view);
+	g_signal_connect(G_OBJECT(view->view), "button-press-event", G_CALLBACK(message_view_on_button_press), view);
+	g_signal_connect(G_OBJECT(view->view), "popup-menu", G_CALLBACK(message_view_on_popup_menu), view);
+	g_signal_connect(G_OBJECT(view->view), "row-activated", G_CALLBACK(message_view_on_row_activate), view);
 	message_view_update_visible_columns(view);
 	message_view_update_rows(view);
 	return view;
@@ -843,7 +843,7 @@ size_t message_view_get_num_log_messages(message_view_t * view)
 
 gboolean message_view_is_message_selected(message_view_t * view)
 {
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view->tree));
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(view->view);
 	GList *glist = gtk_tree_selection_get_selected_rows(selection, NULL);
 	if (glist == NULL) {
 		return FALSE;
@@ -855,7 +855,7 @@ gboolean message_view_is_message_selected(message_view_t * view)
 
 void message_view_entire_message(message_view_t * view)
 {
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view->tree));
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(view->view);
 	GList *glist = gtk_tree_selection_get_selected_rows(selection, NULL);
 	GList *l;
 	apol_vector_t *messages;
@@ -971,7 +971,7 @@ void message_view_export_selected_messages(message_view_t * view)
 {
 	GtkWindow *parent = toplevel_get_window(view->top);
 	char *path;
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view->tree));
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(view->view);
 	GList *glist = gtk_tree_selection_get_selected_rows(selection, NULL);
 	GList *l;
 	apol_vector_t *messages;
@@ -1025,7 +1025,7 @@ void message_view_update_visible_columns(message_view_t * view)
 {
 	GList *columns, *c;
 	preferences_t *prefs = toplevel_get_prefs(view->top);
-	columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(view->tree));
+	columns = gtk_tree_view_get_columns(view->view);
 	c = columns;
 	while (c != NULL) {
 		GtkTreeViewColumn *vc = GTK_TREE_VIEW_COLUMN(c->data);
@@ -1043,16 +1043,33 @@ void message_view_update_visible_columns(message_view_t * view)
 
 void message_view_update_rows(message_view_t * view)
 {
-	/* Remove all existing rows, then insert them back into the
-	 * view according to the model. */
+	/* remove all existing rows, then insert them back into the
+	 * view according to the model.  automatically scroll to the
+	 * same seleceted row(s). */
+	GtkTreeSelection *selection;
+	GList *rows, *r, *selected = NULL;
 	GtkTreePath *path;
 	GtkTreeIter iter;
-	size_t i, num_old_messages = 0, num_new_messages = 0, num_changed;
 	seaudit_log_t *log;
+	size_t i, num_old_messages = 0, num_new_messages = 0, num_changed;
+	int first_scroll = 0;
 
 	if (!seaudit_model_is_changed(view->model)) {
 		return;
 	}
+
+	/* convert the current selection into a GList of message
+	 * pointers */
+	selection = gtk_tree_view_get_selection(view->view);
+	rows = gtk_tree_selection_get_selected_rows(selection, NULL);
+	for (r = rows; r != NULL; r = r->next) {
+		GtkTreePath *path = (GtkTreePath *) r->data;
+		message_view_store_get_iter(GTK_TREE_MODEL(view->store), &iter, path);
+		selected = g_list_prepend(selected, iter.user_data);
+	}
+	g_list_foreach(rows, message_view_gtk_tree_path_free, NULL);
+	g_list_free(rows);
+
 	log = toplevel_get_log(view->top);
 	if (view->store->messages != NULL) {
 		num_old_messages = apol_vector_get_size(view->store->messages);
@@ -1062,6 +1079,8 @@ void message_view_update_rows(message_view_t * view)
 		view->store->messages = seaudit_model_get_messages(log, view->model);
 		num_new_messages = apol_vector_get_size(view->store->messages);
 	}
+	gtk_tree_selection_unselect_all(selection);
+
 	/* mark which rows have been changed/removed/inserted.  do
 	 * this as a single pass, rather than a two pass
 	 * mark-and-sweep, for GTK+ tree views can be somewhat slow */
@@ -1076,6 +1095,16 @@ void message_view_update_rows(message_view_t * view)
 		iter.user_data2 = GINT_TO_POINTER(i);
 		iter.user_data3 = view;
 		gtk_tree_model_row_changed(GTK_TREE_MODEL(view->store), path, &iter);
+		for (r = selected; r != NULL; r = r->next) {
+			if (r->data == iter.user_data) {
+				gtk_tree_selection_select_iter(selection, &iter);
+				if (!first_scroll) {
+					gtk_tree_view_scroll_to_cell(view->view, path, NULL, FALSE, 0.0, 0.0);
+					first_scroll = 1;
+				}
+				break;
+			}
+		}
 		gtk_tree_path_free(path);
 	}
 	if (num_old_messages > num_changed) {
@@ -1094,7 +1123,18 @@ void message_view_update_rows(message_view_t * view)
 			iter.user_data2 = GINT_TO_POINTER(i);
 			iter.user_data3 = view;
 			gtk_tree_model_row_inserted(GTK_TREE_MODEL(view->store), path, &iter);
+			for (r = selected; r != NULL; r = r->next) {
+				if (r->data == iter.user_data) {
+					gtk_tree_selection_select_iter(selection, &iter);
+					if (!first_scroll) {
+						gtk_tree_view_scroll_to_cell(view->view, path, NULL, FALSE, 0.0, 0.0);
+						first_scroll = 1;
+					}
+					break;
+				}
+			}
 			gtk_tree_path_free(path);
 		}
 	}
+	g_list_free(selected);
 }
