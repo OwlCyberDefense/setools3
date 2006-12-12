@@ -17,8 +17,8 @@ libpoldiff_soname=libpoldiff.so.1.1
 libsefs_version=3.1
 libsefs_soname=libsefs.so.3.1
 
-libseaudit_version=3.1
-libseaudit_soname=libseaudit.so.3.1
+libseaudit_version=4.0.0
+libseaudit_soname=libseaudit.so.4
 
 setoolsdir='${prefix}/share/setools-3.1'
 
@@ -67,6 +67,7 @@ if test "x${enable_debug}" = xyes; then
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
     SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=$(top_builddir)/libsefs/src'
     POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=$(top_builddir)/libpoldiff/src'
+    SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.a -Wl,-rpath=$(top_builddir)/libseaudit/src'
     AC_MSG_RESULT(yes)
 else
     AC_DEFINE(NDEBUG, 1, [disable calls to assert()])
@@ -77,11 +78,13 @@ else
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.so'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.so'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.so'
+        SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.so'
     else
         QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a'
+        SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.a'
     fi
     AC_MSG_RESULT(disabled)
 fi
@@ -91,14 +94,17 @@ QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
 APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
 SEFS_CFLAGS='-I$(top_srcdir)/libsefs/include'
 POLDIFF_CFLAGS='-I$(top_srcdir)/libpoldiff/include'
+SEAUDIT_CFLAGS='-I$(top_srcdir)/libseaudit/include'
 AC_SUBST(QPOL_CFLAGS)
 AC_SUBST(APOL_CFLAGS)
 AC_SUBST(SEFS_CFLAGS)
 AC_SUBST(POLDIFF_CFLAGS)
+AC_SUBST(SEAUDIT_CFLAGS)
 AC_SUBST(QPOL_LIB_FLAG)
 AC_SUBST(APOL_LIB_FLAG)
 AC_SUBST(SEFS_LIB_FLAG)
 AC_SUBST(POLDIFF_LIB_FLAG)
+AC_SUBST(SEAUDIT_LIB_FLAG)
 
 AC_ARG_ENABLE(warnall,
               AC_HELP_STRING([--enable-warnall],
@@ -550,7 +556,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
-                 libseaudit/Makefile \
+                 libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile \
                  secmds/Makefile \
                  apol/Makefile \
                  awish/Makefile \

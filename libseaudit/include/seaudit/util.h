@@ -1,12 +1,11 @@
 /**
- *  @file report_window.h
- *  Dialog that generates reports from all messages or only those in
- *  the current view.
+ *  @file
+ *  Miscellaneous, uncategorized functions for libseaudit.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2007 Tresys Technology, LLC
+ *  Copyright (C) 2003-2006 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -23,19 +22,23 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef REPORT_WINDOW_H
-#define REPORT_WINDOW_H
+#ifndef SEAUDIT_UTIL_H
+#define SEAUDIT_UTIL_H
 
-#include "toplevel.h"
-#include "message_view.h"
+#ifdef  __cplusplus
+extern "C"
+{
+#endif
 
 /**
- * Display and run a dialog that allows the user to generate a report.
+ * Return an immutable string describing this library's version.
  *
- * @param top Toplevel containing preferences and log file for report
- * writer.
- * @param view Current message view.
+ * @return String describing this library.
  */
-void report_window_run(toplevel_t * top, message_view_t * view);
+	extern const char *libseaudit_get_version(void);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

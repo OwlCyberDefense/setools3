@@ -34,6 +34,8 @@ extern "C"
 
 #include <config.h>
 
+#include "vector.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -157,13 +159,26 @@ extern "C"
 	extern char *apol_file_find(const char *file_name);
 
 /**
- * Given a file name for a user configuration, search and return that
- * file's path in the user's home directory.
+ * Given a file name, search and return that file's full path
+ * (directory + file name) on the running system.  First search the
+ * present working directory, then the directory at APOL_INSTALL_DIR
+ * (an environment variable), then apol's install dir.
  *
  * @param file_name File to find.
  *
- * @return File's path, or NULL if not found.  Caller must free() this
- * string afterwards.
+ * @return File's path + file name, or NULL if not found.  Caller must
+ * free() this string afterwards.
+ */
+	extern char *apol_file_find_path(const char *file_name);
+
+/**
+ * Given a file name for a user configuration, search and return that
+ * file's path + file name in the user's home directory.
+ *
+ * @param file_name File to find.
+ *
+ * @return File's path + file name, or NULL if not found.  Caller must
+ * free() this string afterwards.
  */
 	extern char *apol_file_find_user_config(const char *file_name);
 
@@ -199,6 +214,9 @@ extern "C"
  * the returned array of strings afterwards, as well as the pointer
  * itself.
  *
+ * @deprecated Do not use this function; use apol_config_split_var()
+ * instead.
+ *
  * @param var Name of configuration variable to obtain.
  * @param fp An open file pointer into a configuration file.  This
  * function will not maintain the pointer's current location.
@@ -208,7 +226,8 @@ extern "C"
  * @return A newly allocated array of strings containing the
  * variable's values, or NULL if not found or error.
  */
-	extern char **apol_config_get_varlist(const char *var, FILE * file, size_t * list_sz);
+	extern char **apol_config_get_varlist(const char *var, FILE * file, size_t * list_sz)
+		__attribute__ ((deprecated));
 
 /**
  * Given a list of configuration variables, as returned by
@@ -216,12 +235,46 @@ extern "C"
  * list using ':' as the separator.  The caller is responsible for
  * free()ing the string afterwards.
  *
+ * @deprecated Do not use this function; use apol_config_join_var()
+ * instead.
+ *
  * @param list Array of strings.
  * @param size Number of elements within the list.
  *
  * @return An allocated concatenated string, or NULL upon error.
  */
-	extern char *apol_config_varlist_to_str(const char **list, size_t size);
+	extern char *apol_config_varlist_to_str(const char **list, size_t size)
+		__attribute__ ((deprecated));
+
+/**
+ * Given a file pointer into a config file, read and return a vector
+ * of values associated with the given config var.  The variable's
+ * value is expected to be a ':' separated string.
+ *
+ * @param var Name of configuration variable to obtain.
+ * @param file An open file pointer into a configuration file.  This
+ * function will not maintain the pointer's current location.
+ *
+ * @return A newly allocated vector of strings containing the
+ * variable's values, or NULL if not found or error.  Note that the
+ * vector could be empty if the config var does not exist or has an
+ * empty value.  The caller must call apol_vector_destroy()
+ * afterwards, passing free as the second parameter.
+ */
+	extern apol_vector_t *apol_config_split_var(const char *var, FILE * file);
+
+/**
+ * Given a vector of strings, allocate and return a string that joins
+ * the vector using ':' as the separator.  The caller is responsible
+ * for free()ing the string afterwards.
+ *
+ * @param list Vector of strings to join.
+ *
+ * @return An allocated concatenated string, or NULL upon error.  If
+ * the list is empty then return an empty string.  The caller is
+ * responsible for calling free() upon the return value.
+ */
+	extern char *apol_config_join_var(apol_vector_t * list);
 
 /**
  * Given a dynamically allocated string, allocate a new string with

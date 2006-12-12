@@ -1,7 +1,6 @@
 /**
- *  @file report_window.h
- *  Dialog that generates reports from all messages or only those in
- *  the current view.
+ *  @file modify_view.h
+ *  Dialog that allows the user to modify the current view.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -23,19 +22,20 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef REPORT_WINDOW_H
-#define REPORT_WINDOW_H
+#ifndef MODIFY_VIEW_H
+#define MODIFY_VIEW_H
 
 #include "toplevel.h"
 #include "message_view.h"
 
 /**
- * Display and run a dialog that allows the user to generate a report.
+ * Display and run a dialog that allows the user to modify a view.
  *
- * @param top Toplevel containing preferences and log file for report
- * writer.
- * @param view Current message view.
+ * @param top Toplevel containing message view.
+ * @param view Message view to modify.
+ *
+ * @return Non-zero if the view changed, zero if not.
  */
-void report_window_run(toplevel_t * top, message_view_t * view);
+int modify_view_run(toplevel_t * top, message_view_t * view);
 
 #endif

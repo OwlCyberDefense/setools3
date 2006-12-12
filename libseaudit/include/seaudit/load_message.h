@@ -1,12 +1,12 @@
 /**
- *  @file report_window.h
- *  Dialog that generates reports from all messages or only those in
- *  the current view.
+ *  @file load_message.h
+ *  Public interface for a single loaded policy log message.  This is
+ *  a subclass of seaudit_message_t.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2007 Tresys Technology, LLC
+ *  Copyright (C) 2006 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -23,19 +23,18 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef REPORT_WINDOW_H
-#define REPORT_WINDOW_H
+#ifndef SEAUDIT_LOAD_MESSAGE_H
+#define SEAUDIT_LOAD_MESSAGE_H
 
-#include "toplevel.h"
-#include "message_view.h"
+#ifdef  __cplusplus
+extern "C"
+{
+#endif
 
-/**
- * Display and run a dialog that allows the user to generate a report.
- *
- * @param top Toplevel containing preferences and log file for report
- * writer.
- * @param view Current message view.
- */
-void report_window_run(toplevel_t * top, message_view_t * view);
+	typedef struct seaudit_load_message seaudit_load_message_t;
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

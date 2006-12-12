@@ -12,6 +12,15 @@ libqpol:
     individally via qpol_policy_has_capability() rather than inferred
     by policy type and version.
 
+libseaudit:
+
+  * Rewrite of library to have proper namespaces.  libseaudit is now
+    suitable for third-party users.
+
+seaudit:
+
+  * Rewrite to use new libseaudit.
+
 ==================================================
 
 SETools 3.0.1

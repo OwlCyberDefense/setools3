@@ -1,12 +1,11 @@
 /**
- *  @file report_window.h
- *  Dialog that generates reports from all messages or only those in
- *  the current view.
+ *  @file preferences_view.h
+ *  Declaration of preferences editor.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2007 Tresys Technology, LLC
+ *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -23,19 +22,19 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef REPORT_WINDOW_H
-#define REPORT_WINDOW_H
+#ifndef PREFERENCES_VIEW_H
+#define PREFERENCES_VIEW_H
 
 #include "toplevel.h"
-#include "message_view.h"
+#include <gtk/gtk.h>
 
 /**
- * Display and run a dialog that allows the user to generate a report.
+ * Display a dialog from which the user may edit his preferences.
  *
- * @param top Toplevel containing preferences and log file for report
- * writer.
- * @param view Current message view.
+ * @param top Toplevel object containing preferences to modify
+ *
+ * @return Non-zero if preferences changed, zero if not.
  */
-void report_window_run(toplevel_t * top, message_view_t * view);
+int preferences_view_run(toplevel_t * top);
 
 #endif

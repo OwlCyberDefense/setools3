@@ -222,120 +222,90 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type)
 
 char *apol_file_find(const char *file_name)
 {
-	char *file = NULL, *var = NULL, *dir = NULL;
-	size_t filesz;
+	char *file = NULL, *var = NULL, *dirs[3];
+	size_t i;
 	int rt;
 
-	if (file_name == NULL)
-		return NULL;
-
-	/* 1. check current directory */
-	filesz = strlen(file_name) + 4;
-	file = (char *)malloc(filesz);
-	if (file == NULL) {
+	if (file_name == NULL) {
+		errno = EINVAL;
 		return NULL;
 	}
-	sprintf(file, "./%s", file_name);
-	rt = access(file, R_OK);
-	if (rt == 0) {
-		dir = (char *)malloc(4);
-		if (dir == NULL) {
-			return NULL;
-		}
-		sprintf(dir, ".");
-		free(file);
-		return dir;
-	}
-	free(file);
 
-	/* 2. check environment variable */
-	var = getenv(APOL_ENVIRON_VAR_NAME);
-	if (!(var == NULL)) {
-		filesz = strlen(var) + strlen(file_name) + 2;
-		file = (char *)malloc(filesz);
-		if (file == NULL) {
-			return NULL;
-		}
-		sprintf(file, "%s/%s", var, file_name);
-		rt = access(file, R_OK);
-		if (rt == 0) {
-			dir = (char *)malloc(strlen(var) + 1);
-			if (dir == NULL) {
+	/* check current directory, environment variable, and then
+	 * installed directory */
+	dirs[0] = ".";
+	dirs[1] = getenv(APOL_ENVIRON_VAR_NAME);
+	dirs[2] = APOL_INSTALL_DIR;
+	for (i = 0; i < 3; i++) {
+		if ((var = dirs[i]) != NULL) {
+			if (asprintf(&file, "%s/%s", var, file_name) < 0) {
 				return NULL;
 			}
-			sprintf(dir, var);
+			rt = access(file, R_OK);
 			free(file);
-			return dir;
+			if (rt == 0) {
+				return strdup(var);
+			}
 		}
 	}
 
-	/* 3. installed directory */
-	filesz = strlen(APOL_INSTALL_DIR) + strlen(file_name) + 2;
-	file = (char *)malloc(filesz);
-	if (file == NULL) {
+	/* didn't find it */
+	return NULL;
+}
+
+char *apol_file_find_path(const char *file_name)
+{
+	char *file = NULL, *var = NULL, *dirs[3];
+	size_t i;
+	int rt;
+
+	if (file_name == NULL) {
+		errno = EINVAL;
 		return NULL;
 	}
-	sprintf(file, "%s/%s", APOL_INSTALL_DIR, file_name);
-	rt = access(file, R_OK);
-	if (rt == 0) {
-		dir = (char *)malloc(strlen(APOL_INSTALL_DIR) + 1);
-		if (dir == NULL) {
-			return NULL;
+
+	/* check current directory, environment variable, and then
+	 * installed directory */
+	dirs[0] = ".";
+	dirs[1] = getenv(APOL_ENVIRON_VAR_NAME);
+	dirs[2] = APOL_INSTALL_DIR;
+	for (i = 0; i < 3; i++) {
+		if ((var = dirs[i]) != NULL) {
+			if (asprintf(&file, "%s/%s", var, file_name) < 0) {
+				return NULL;
+			}
+			rt = access(file, R_OK);
+			if (rt == 0) {
+				return file;
+			}
+			free(file);
 		}
-		sprintf(dir, APOL_INSTALL_DIR);
-		free(file);
-		return dir;
 	}
 
-	/* 4. help install directory */
-	filesz = strlen(APOL_HELP_DIR) + strlen(file_name) + 2;
-	file = (char *)malloc(filesz);
-	if (file == NULL) {
-		return NULL;
-	}
-	sprintf(file, "%s/%s", APOL_HELP_DIR, file_name);
-	rt = access(file, R_OK);
-	if (rt == 0) {
-		dir = (char *)malloc(strlen(APOL_HELP_DIR) + 1);
-		if (dir == NULL) {
-			return NULL;
-		}
-		sprintf(dir, APOL_HELP_DIR);
-		free(file);
-		return dir;
-	}
-
-	/* 5. Didn't find it! */
-	free(file);
+	/* didn't find it */
 	return NULL;
 }
 
 char *apol_file_find_user_config(const char *file_name)
 {
-	char *dir, *path, *tmp;
+	char *file, *var;
 	int rt;
 
-	tmp = getenv("HOME");
-	if (tmp) {
-		dir = malloc(sizeof(char) * (1 + strlen(tmp)));
-		if (!dir) {
+	if (file_name == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	var = getenv("HOME");
+	if (var) {
+		if (asprintf(&file, "%s/%s", var, file_name) < 0) {
 			return NULL;
 		}
-		dir = strcpy(dir, tmp);
-		path = malloc(sizeof(char) * (2 + strlen(dir) + strlen(file_name)));
-		if (!path) {
-			return NULL;
-		}
-		path = strcpy(path, dir);
-		path = strcat(path, "/");
-		path = strcat(path, file_name);
-		rt = access(path, R_OK);
+		rt = access(file, R_OK);
 		if (rt == 0) {
-			free(path);
-			return dir;
+			return file;
 		} else {
-			free(path);
-			free(dir);
+			free(file);
+			return NULL;
 		}
 	}
 	return NULL;
@@ -397,8 +367,10 @@ char *apol_config_get_var(const char *var, FILE * fp)
 	char line[APOL_LINE_SZ], t1[APOL_LINE_SZ], t2[APOL_LINE_SZ], *result = NULL;
 	char *line_ptr = NULL;
 
-	if (var == NULL)
+	if (var == NULL || fp == NULL) {
+		errno = EINVAL;
 		return NULL;
+	}
 
 	rewind(fp);
 	while (fgets(line, APOL_LINE_SZ, fp) != NULL) {
@@ -481,6 +453,68 @@ char *apol_config_varlist_to_str(const char **list, size_t size)
 		val = v;
 		val = strcat(val, list[i]);
 		val = strcat(val, ":");
+	}
+	return val;
+}
+
+apol_vector_t *apol_config_split_var(const char *var, FILE * file)
+{
+	char *values = NULL, *v, *token, *s;
+	apol_vector_t *list;
+	int error = 0;
+
+	if (var == NULL || file == NULL) {
+		error = EINVAL;
+		goto cleanup;
+	}
+	if ((list = apol_vector_create()) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	if ((values = apol_config_get_var(var, file)) != NULL) {
+		v = values;
+		while ((token = strsep(&v, ":")) != NULL) {
+			if (strcmp(token, "") != 0 && !apol_str_is_only_white_space(token)) {
+				if ((s = strdup(token)) == NULL || apol_vector_append(list, s) < 0) {
+					error = errno;
+					free(s);
+					goto cleanup;
+				}
+			}
+		}
+	}
+      cleanup:
+	free(values);
+	if (error != 0) {
+		apol_vector_destroy(&list, free);
+		errno = error;
+		return NULL;
+	}
+	return list;
+}
+
+char *apol_config_join_var(apol_vector_t * list)
+{
+	char *val, *s;
+	size_t i, len;
+
+	if (list == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	if (apol_vector_get_size(list) == 0) {
+		return strdup("");
+	}
+	s = apol_vector_get_element(list, 0);
+	if ((val = strdup(s)) == NULL) {
+		return NULL;
+	}
+	len = strlen(val) + 1;
+	for (i = 1; i < apol_vector_get_size(list); i++) {
+		s = apol_vector_get_element(list, i);
+		if (apol_str_appendf(&val, &len, ":%s", s) < 0) {
+			return NULL;
+		}
 	}
 	return val;
 }

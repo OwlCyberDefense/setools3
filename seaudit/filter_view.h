@@ -1,7 +1,6 @@
 /**
- *  @file report_window.h
- *  Dialog that generates reports from all messages or only those in
- *  the current view.
+ *  @file filter_view.h
+ *  Dialog that allows the user to modify a particular filter.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -23,19 +22,21 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef REPORT_WINDOW_H
-#define REPORT_WINDOW_H
+#ifndef FILTER_VIEW_H
+#define FILTER_VIEW_H
 
 #include "toplevel.h"
-#include "message_view.h"
+#include <seaudit/filter.h>
+#include <gtk/gtk.h>
 
 /**
- * Display and run a dialog that allows the user to generate a report.
+ * Display and run a dialog that allows the user to modify a single
+ * filter.
  *
- * @param top Toplevel containing preferences and log file for report
- * writer.
- * @param view Current message view.
+ * @param top Toplevel containing message view.
+ * @param view Message view to modify.
+ * @param parent Parent window upon which to center this dialog.
  */
-void report_window_run(toplevel_t * top, message_view_t * view);
+void filter_view_run(seaudit_filter_t * filter, toplevel_t * top, GtkWindow * parent);
 
 #endif
