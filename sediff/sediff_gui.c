@@ -103,17 +103,15 @@ typedef struct registered_callback
 static void usage(const char *program_name, int brief)
 {
 	printf("%s (sediffx ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [-h|-v]\n", program_name);
-	printf("Usage: %s [-d] [ORIGINAL_POLICY MODIFIED_POLICY]\n", program_name);
+	printf("Usage: %s [-d] [ORIGINAL_POLICY ; MODIFIED_POLICY]\n", program_name);
 	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
 	fputs("\n\
-Semantically differentiate two policies.  The policies can be either\n\
-source or binary policy files, version 15 or later.  All supported\n\
-policy elements are examined.  The following diff options are\n\
-available:\n\
+Semantically differentiate two policies.\n\
+All supported policy elements are examined.\n\
+The following options are available:\n\
 ", stdout);
 	fputs("\n\
   -h, --help       display this help and exit\n\

@@ -68,9 +68,8 @@ static void usage(const char *prog_name, int brief)
 		return;
 	}
 	fputs("\n"
-	      "Semantically differentiate two policies.  The policies can be either source\n"
-	      "or binary policy files, version 15 or later.  By default, all supported\n"
-	      "policy elements are examined.  The following diff options are available:\n"
+	      "Semantically differentiate two policies.  By default, all supported\n"
+	      "policy elements are examined.  The following options are available:\n"
 	      "  -c, --classes     object class and common permission definitions\n"
 	      "  -t, --types       type definitions\n"
 	      "  -a, --attributes  attribute definitions\n"

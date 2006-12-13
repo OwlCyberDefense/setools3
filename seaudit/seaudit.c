@@ -249,19 +249,18 @@ static void print_version_info(void)
 
 static void print_usage_info(const char *program_name, int brief)
 {
-	printf("Usage:%s [options]\n", program_name);
+	printf("Usage:%s [OPTIONS] [POLICY ...]\n", program_name);
 	if (brief) {
 		printf("\tTry %s --help for more help.\n", program_name);
 		return;
 	}
 	printf("Audit Log analysis tool for Security Enhanced Linux\n\n");
 	printf("   -l FILE, --log FILE     open log file named FILE\n");
-	printf("   -p FILE, --policy FILE  open policy file named FILE\n");
 	printf("   -h, --help              display this help and exit\n");
 	printf("   -v, --version           display version information\n\n");
 }
 
-static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, char **log, char **policy)
+static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, char **log, char **policy, apol_vector_t *modules)
 {
 	int optc;
 	*log = NULL;
@@ -274,6 +273,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 			}
 		case 'p':{
 				*policy = optarg;
+				WARN(NULL, "%s", "Use of --policy is depercated.");
 				break;
 			}
 		case 'h':{
@@ -295,10 +295,24 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 			}
 		}
 	}
-	if (optind < argc) {	       /* trailing non-options */
-		print_usage_info(argv[0], 0);
-		seaudit_destroy(&seaudit);
-		exit(EXIT_FAILURE);
+	if (optind < argc) {	       /* modules */
+		*policy = argv[optind++];
+		while (argc - optind) {
+			qpol_module_t *mod = NULL;
+			if (qpol_module_create_from_file(argv[optind], &mod)) {
+				ERR(NULL, "Unable to open module %s", argv[optind]);
+				qpol_module_destroy(&mod);
+				seaudit_destroy(&seaudit);
+				exit(EXIT_FAILURE);
+			}
+			if (apol_vector_append(modules, mod)) {
+				ERR(NULL, "%s", strerror(ENOMEM));
+				qpol_module_destroy(&mod);
+				seaudit_destroy(&seaudit);
+				exit(EXIT_FAILURE);
+			}
+			optind++;
+		}
 	}
 	if (*log == NULL) {
 		*log = preferences_get_log(seaudit->prefs);
@@ -319,6 +333,7 @@ struct delay_file_data
 	toplevel_t *top;
 	char *log_filename;
 	char *policy_filename;
+	apol_vector_t *modules;
 };
 
 static gboolean delayed_main(gpointer data)
@@ -328,7 +343,7 @@ static gboolean delayed_main(gpointer data)
 		toplevel_open_log(dfd->top, dfd->log_filename);
 	}
 	if (dfd->policy_filename != NULL && strcmp(dfd->policy_filename, "") != 0) {
-		toplevel_open_policy(dfd->top, dfd->policy_filename);
+		toplevel_open_policy(dfd->top, dfd->policy_filename, dfd->modules);
 	}
 	return FALSE;
 }
@@ -338,6 +353,7 @@ int main(int argc, char **argv)
 	preferences_t *prefs;
 	seaudit_t *app;
 	char *log, *policy;
+	apol_vector_t *modules;
 	struct delay_file_data file_data;
 
 	gtk_init(&argc, &argv);
@@ -352,7 +368,11 @@ int main(int argc, char **argv)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		exit(EXIT_FAILURE);
 	}
-	seaudit_parse_command_line(app, argc, argv, &log, &policy);
+	if ((modules = apol_vector_create()) == NULL) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		exit(EXIT_FAILURE);
+	}
+	seaudit_parse_command_line(app, argc, argv, &log, &policy, modules);
 	if ((app->top = toplevel_create(app)) == NULL) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		seaudit_destroy(&app);
@@ -361,6 +381,7 @@ int main(int argc, char **argv)
 	file_data.top = app->top;
 	file_data.log_filename = log;
 	file_data.policy_filename = policy;
+	file_data.modules = modules;
 	g_idle_add(&delayed_main, &file_data);
 	gtk_main();
 	if (preferences_write_to_conf_file(app->prefs) < 0) {

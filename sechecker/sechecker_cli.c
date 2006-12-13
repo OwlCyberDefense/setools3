@@ -35,6 +35,7 @@ static struct option const longopts[] = {
 	{"short", no_argument, NULL, 's'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"profile", required_argument, NULL, 'p'},
+	{"policy", required_argument, NULL, 'P'},
 #ifdef LIBSEFS
 	{"fcfile", required_argument, NULL, 'c'},
 #endif
@@ -47,31 +48,31 @@ static struct option const longopts[] = {
 void usage(const char *arg0, bool_t brief)
 {
 	printf("%s (sechecker v%s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: sechecker [OPTS] -m module             run module\n");
-	printf("   or: sechecker [OPTS] -p profile            run profile\n");
-	printf("   or: sechecker [OPTS] -p profile -m module  run module with profile options\n");
+	printf("Usage: sechecker [OPTIONS] -p profile [POLICY ...]\n");
+	printf("   or: sechecker [OPTIONS] -m module [POLICY ...]\n");
+	printf("   or: sechecker [OPTIONS] -p profile -m module [POLICY ...]\n");
 	printf("\n");
 	if (brief) {
 		printf("\n\tTry %s --help for more help.\n", arg0);
 	} else {
 		printf("Perform modular checks on a SELinux policy\n");
 		printf("\n");
-		printf("   -l, --list       print a list of profiles and modules\n");
-		printf("   -q, --quiet      suppress output\n");
-		printf("   -s, --short      print short output\n");
-		printf("   -v, --verbose    print verbose output\n");
-		printf("   --version        print version and exit\n");
+		printf("   -p <prof>, --profile=<prof>  name or path of profile to load\n");
+		printf("                                If used with out -m, run all modules\n");
+		printf("                                specified in the profile.\n");
+		printf("   -m <mod>,  --module=<mod>    name of module to run\n");
 #ifdef LIBSEFS
-		printf("   --fcfile=<file>  file_contexts file\n");
+		printf("   --fcfile=<file>              file_contexts file to load\n");
 #endif
-		printf("   --policy=<file>  policy file\n");
 		printf("\n");
-		printf("   -h[mod],   --help[=module]   print this help or help for a module\n");
-		printf("   -m <mod>,  --module=<mod>    module name\n");
-		printf("   -p <prof>, --profile=<prof>  profile name or path\n");
-		printf("\n");
+		printf("   -q, --quiet                  suppress output\n");
+		printf("   -s, --short                  print short output\n");
+		printf("   -v, --verbose                print verbose output\n");
 		printf("   --min-sev=<low|med|high>     the minimum severity to report\n");
-
+		printf("\n");
+		printf("   -l, --list                   print a list of profiles and modules\n");
+		printf("   -h[mod],   --help[=module]   print this help or help for a module\n");
+		printf("   --version                    print version and exit\n");
 	}
 	printf("\n");
 }
@@ -112,6 +113,7 @@ int main(int argc, char **argv)
 #endif
 	char *modname = NULL;
 	char *prof_name = NULL;
+	char *old_pol_path = NULL;
 	char *minsev = NULL;
 	unsigned char output_override = 0;
 	sechk_lib_t *lib;
@@ -120,7 +122,7 @@ int main(int argc, char **argv)
 	bool_t module_help = FALSE;
 	apol_vector_t *policy_mods = NULL;
 
-	while ((optc = getopt_long(argc, argv, "h::p:m:lqsv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "h::p:m:P:lqsv", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 'p':
 			prof_name = strdup(optarg);
@@ -130,6 +132,10 @@ int main(int argc, char **argv)
 			fcpath = strdup(optarg);
 			break;
 #endif
+		case 'P':
+			old_pol_path = strdup(optarg);
+			fprintf(stderr, "Warning: Use of --policy is depricated.");
+			break;
 		case 'M':
 			if (modname) {
 				fprintf(stderr, "Error: --min-sev does not work with -m\n");
@@ -235,9 +241,14 @@ int main(int argc, char **argv)
 	}
 
 	/* initialize the policy */
+	if (!(policy_mods = apol_vector_create()))
+		goto exit_err;
 	if (argc - optind) {
-		if (!(policy_mods = apol_vector_create()))
-			goto exit_err;
+		if (old_pol_path) {
+			fprintf(stderr, "Warning: Ignoring --policy option and using policy module list.");
+			free(old_pol_path);
+			old_pol_path = NULL;
+		}
 		while (argc - optind) {
 			if (apol_vector_append(policy_mods, argv[optind++]))
 				goto exit_err;
@@ -245,8 +256,15 @@ int main(int argc, char **argv)
 		if (sechk_lib_load_policy(policy_mods, lib))
 			goto exit_err;
 	} else {
-		if (sechk_lib_load_policy(NULL, lib))
-			goto exit_err;
+		if (old_pol_path) {
+			if (apol_vector_append(policy_mods, old_pol_path))
+				goto exit_err;
+			if (sechk_lib_load_policy(policy_mods, lib))
+				goto exit_err;
+		} else {
+			if (sechk_lib_load_policy(NULL, lib))
+				goto exit_err;
+		}
 	}
 
 	/* set the minimum severity */
@@ -318,9 +336,11 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
+	apol_vector_destroy(&policy_mods, NULL);
 	free(minsev);
 	free(prof_name);
 	free(modname);
+	free(old_pol_path);
 	sechk_lib_destroy(&lib);
 	return 0;
 
@@ -328,10 +348,11 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
+	apol_vector_destroy(&policy_mods, NULL);
 	free(minsev);
 	free(prof_name);
 	free(modname);
+	free(old_pol_path);
 	sechk_lib_destroy(&lib);
-	apol_vector_destroy(&policy_mods, NULL);
 	return 1;
 }

@@ -236,7 +236,8 @@ static void toplevel_on_open_recent_policy_activate(GtkWidget * widget, gpointer
 	GtkWidget *label = gtk_bin_get_child(GTK_BIN(widget));
 	const char *path = gtk_label_get_text(GTK_LABEL(label));
 	toplevel_t *top = (toplevel_t *) user_data;
-	toplevel_open_policy(top, path);
+	//TODO handle modules with recent policy list
+	toplevel_open_policy(top, path, NULL);
 }
 
 /**
@@ -630,6 +631,7 @@ struct policy_run_datum
 	toplevel_t *top;
 	const char *filename;
 	apol_policy_t *policy;
+	apol_vector_t *modules;
 	int result;
 };
 
@@ -652,14 +654,40 @@ static gpointer toplevel_open_policy_runner(gpointer data)
 	} else if (run->result > 0) {
 		progress_warn(run->top->progress, NULL);
 	} else {
-		progress_done(run->top->progress);
+		if (run->modules) {
+			if (!qpol_policy_has_capability(apol_policy_get_qpol(run->policy), QPOL_CAP_MODULES)) {
+				ERR(run->policy, "Polcy %s does not support loadable modules.", run->filename);
+				apol_policy_destroy(&run->policy);
+				progress_abort(run->top->progress, NULL);
+				return NULL;
+			}
+			while (apol_vector_get_size(run->modules)) {
+				if (qpol_policy_append_module(apol_policy_get_qpol(run->policy), apol_vector_get_element(run->modules, apol_vector_get_size(run->modules) - 1)) ||
+					 apol_vector_remove(run->modules, apol_vector_get_size(run->modules) - 1)) {
+					ERR(run->policy, "%s", strerror(ENOMEM));
+					apol_policy_destroy(&run->policy);
+					progress_abort(run->top->progress, NULL);
+					return NULL;
+				}
+			}
+			progress_update(run->top->progress, "Linking policy modules.");
+			run->result = qpol_policy_rebuild(apol_policy_get_qpol(run->policy));
+			if (run->result) {
+				apol_policy_destroy(&run->policy);
+				progress_abort(run->top->progress, NULL);
+			} else {
+				progress_done(run->top->progress);
+			}
+		} else {
+			progress_done(run->top->progress);
+		}
 	}
 	return NULL;
 }
 
-void toplevel_open_policy(toplevel_t * top, const char *filename)
+void toplevel_open_policy(toplevel_t * top, const char *filename, apol_vector_t *modules)
 {
-	struct policy_run_datum run = { top, filename, NULL, 0 };
+	struct policy_run_datum run = { top, filename, NULL, modules, 0 };
 
 	util_cursor_wait(GTK_WIDGET(top->w));
 	progress_show(top->progress, filename);
@@ -890,7 +918,8 @@ void toplevel_on_open_policy_activate(gpointer user_data, GtkWidget * widget __a
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
 	char *path = util_open_file(top->w, "Open Policy", seaudit_get_policy_path(top->s));
 	if (path != NULL) {
-		toplevel_open_policy(top, path);
+		//TODO module dialog here
+		toplevel_open_policy(top, path, NULL);
 		g_free(path);
 	}
 }

@@ -68,8 +68,10 @@ void toplevel_open_log(toplevel_t * top, const char *filename);
  *
  * @param top Toplevel object, used for UI control.
  * @param filename Name of the policy to open.
+ * @param modules Vector of policy modules to link into the base
+ * or NULL if filename is not a modular policy base.
  */
-void toplevel_open_policy(toplevel_t * top, const char *filename);
+void toplevel_open_policy(toplevel_t * top, const char *filename, apol_vector_t * modules);
 
 /**
  * Update the status bar to show the current policy, number of log

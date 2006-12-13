@@ -95,7 +95,7 @@ static struct option const longopts[] = {
 void usage(const char *program_name, int brief)
 {
 	printf("%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] [POLICY_FILE ...]\n", program_name);
+	printf("Usage: %s [OPTIONS] [POLICY ...]\n", program_name);
 	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
