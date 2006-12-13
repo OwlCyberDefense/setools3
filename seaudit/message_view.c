@@ -1063,7 +1063,7 @@ void message_view_update_rows(message_view_t * view)
 	selection = gtk_tree_view_get_selection(view->view);
 	rows = gtk_tree_selection_get_selected_rows(selection, NULL);
 	for (r = rows; r != NULL; r = r->next) {
-		GtkTreePath *path = (GtkTreePath *) r->data;
+		path = (GtkTreePath *) r->data;
 		message_view_store_get_iter(GTK_TREE_MODEL(view->store), &iter, path);
 		selected = g_list_prepend(selected, iter.user_data);
 	}

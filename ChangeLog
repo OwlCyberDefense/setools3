@@ -1,5 +1,10 @@
 2006-12-12  J. Tang  <jtang@tresys.com>
 
+	* Renamed qpol_find_default_policy_file() in qpol/policy.h to
+	qpol_default_policy_find() in qpol/util.h.  Removed
+	qpol_find_default_policy_file_strerr().  These functions were
+	never supposed to be in these locations.
+
 	* Deprecated apol_policy_is_binary(); use qpol policy capabilities
 	instead.
 

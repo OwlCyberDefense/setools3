@@ -59,20 +59,6 @@ extern "C"
 #include <qpol/type_query.h>
 #include <qpol/user_query.h>
 
-/* * Return codes for qpol_find_default_policy_file() function. */
-#define QPOL_FIND_DEFAULT_SUCCESS               0
-#define QPOL_GENERAL_ERROR                     -1
-#define QPOL_BIN_POL_FILE_DOES_NOT_EXIST       -2
-#define QPOL_SRC_POL_FILE_DOES_NOT_EXIST       -3
-#define QPOL_BOTH_POL_FILE_DO_NOT_EXIST        -4
-#define QPOL_POLICY_INSTALL_DIR_DOES_NOT_EXIST -5
-#define QPOL_INVALID_SEARCH_OPTIONS            -6
-
-/* Policy type macros */
-#define QPOL_TYPE_UNKNOWN	0
-#define QPOL_TYPE_BINARY	1
-#define QPOL_TYPE_SOURCE	2
-
 	typedef void (*qpol_callback_fn_t) (void *varg, struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
 
 #define QPOL_POLICY_UNKNOWN       -1
@@ -169,22 +155,6 @@ extern "C"
  *  be set to NULL afterwards.
  */
 	extern void qpol_policy_destroy(qpol_policy_t ** policy);
-
-/**
- *  Find the default policy file given a policy type.
- *  @param search_opt Search options bitmask, defined in this file
- *  @param policy_file_path Character buffer to store policy path in
- *  @return Returns one of the return codes defined in this file
- */
-	extern int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_path);
-
-/**
- *  Get a string for the error code of qpol_find_default_policy_file().
- *  @param err Error code returned by qpol_find_default_policy_file().
- *  @return a string describing the error. <b>The caller should not
- *  free this string.</b>
- */
-	extern const char *qpol_find_default_policy_file_strerr(int err);
 
 /**
  *  Re-evaluate all conditionals in the policy updating the state

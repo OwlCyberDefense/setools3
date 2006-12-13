@@ -36,6 +36,7 @@
 
 /* libqpol */
 #include <qpol/policy.h>
+#include <qpol/util.h>
 
 /* other */
 #include <errno.h>
@@ -1219,7 +1220,6 @@ int main(int argc, char **argv)
 	apol_policy_t *policydb = NULL;
 	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name, *bool_name, *sens_name, *cat_name,
 		*fsuse_type, *genfs_type, *netif_name, *node_addr, *port_num = NULL, *protocol = NULL;
-	unsigned int search_opts = 0;
 
 	class_name = type_name = attrib_name = role_name = user_name = isid_name = bool_name = sens_name = cat_name = fsuse_type =
 		genfs_type = netif_name = node_addr = port_num = NULL;
@@ -1333,13 +1333,14 @@ int main(int argc, char **argv)
 	if (classes + types + attribs + roles + users + isids + bools + sens + cats + fsuse + genfs + netif + node + port + all < 1) {
 		stats = 1;
 	}
-	if (!search_opts)
-		search_opts = (QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY);
 
 	if (argc - optind < 1) {
-		rt = qpol_find_default_policy_file(search_opts, &policy_file);
-		if (rt != QPOL_FIND_DEFAULT_SUCCESS) {
-			fprintf(stderr, "Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
+		rt = qpol_default_policy_find(&policy_file);
+		if (rt < 0) {
+			fprintf(stderr, "Default policy search failed: %s\n", strerror(errno));
+			exit(1);
+		} else if (rt == 0) {
+			fprintf(stderr, "No default policy found.\n");
 			exit(1);
 		}
 	} else {

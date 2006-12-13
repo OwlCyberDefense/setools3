@@ -32,9 +32,10 @@
 #include <apol/vector.h>
 
 /* libqpol*/
-#include <qpol/syn_rule_query.h>
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
+#include <qpol/syn_rule_query.h>
+#include <qpol/util.h>
 
 /* other */
 #include <errno.h>
@@ -777,7 +778,6 @@ int main(int argc, char **argv)
 
 	apol_policy_t *policy = NULL;
 	apol_vector_t *v = NULL;
-	unsigned int search_opts = 0;
 
 	cmd_opts.all = cmd_opts.lineno = cmd_opts.allow = FALSE;
 	cmd_opts.nallow = cmd_opts.audit = cmd_opts.type = FALSE;
@@ -936,13 +936,14 @@ int main(int argc, char **argv)
 		       "--type, --role_allow, or --role_trans mustbe specified\n\n");
 		exit(1);
 	}
-	if (!search_opts)
-		search_opts = (QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY);
 
 	if (argc - optind < 1) {
-		rt = qpol_find_default_policy_file(search_opts, &policy_file);
-		if (rt != QPOL_FIND_DEFAULT_SUCCESS) {
-			printf("Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
+		rt = qpol_default_policy_find(&policy_file);
+		if (rt < 0) {
+			fprintf(stderr, "Default policy search failed: %s\n", strerror(errno));
+			exit(1);
+		} else if (rt == 0) {
+			fprintf(stderr, "No default policy found.\n");
 			exit(1);
 		}
 	} else {

@@ -38,6 +38,18 @@ extern "C"
  */
 	extern const char *libqpol_get_version(void);
 
+/**
+ * Find the "default" policy file on the currently running system.
+ * First try looking for a monolithic source policy; if that does not
+ * exist then try a monolithic binary policy.
+ *
+ * @param path Buffer to store the policy's path.  The caller is
+ * responsible for free()ing this string.
+ *
+ * @return 1 if a policy was found, 0 if not, < 0 upon error.
+ */
+	extern int qpol_default_policy_find(char **path);
+
 #ifdef	__cplusplus
 }
 #endif

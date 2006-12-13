@@ -71,7 +71,16 @@ extern "C"
 	};
 
 	extern void qpol_handle_msg(qpol_policy_t * policy, int level, const char *fmt, ...);
+	int qpol_is_file_binpol(FILE * fp);
 	int qpol_is_file_mod_pkg(FILE * fp);
+/**
+ * Returns the version number of the binary policy.  Note that this
+ * will rewind the file pointer.
+ *
+ * @return Non-negative policy version, or -1 general error for, -2
+ * wrong magic number for file, or -3 problem reading file.
+ */
+	int qpol_binpol_version(FILE * fp);
 
 #define ERR(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_ERR, format, __VA_ARGS__)
 #define WARN(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_WARN, format, __VA_ARGS__)

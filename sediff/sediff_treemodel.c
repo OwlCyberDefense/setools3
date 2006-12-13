@@ -133,9 +133,8 @@ static GtkTreeModel *sediff_create_and_fill_model(poldiff_t * diff)
 					   SEDIFF_DIFFBIT_COLUMN, sediff_items[i].bit_pos,
 					   SEDIFF_FORM_COLUMN, POLDIFF_FORM_REMOVE_TYPE, -1);
 		}
-		if (sediff_items[i].bit_pos != POLDIFF_DIFF_TYPES ||
-		    (qpol_policy_has_capability(oq, QPOL_CAP_ATTRIB_NAMES)
-		     && qpol_policy_has_capability(mq, QPOL_CAP_ATTRIB_NAMES))) {
+		if (sediff_items[i].bit_pos != POLDIFF_DIFF_TYPES || (qpol_policy_has_capability(oq, QPOL_CAP_ATTRIB_NAMES)
+								      && qpol_policy_has_capability(mq, QPOL_CAP_ATTRIB_NAMES))) {
 			gtk_tree_store_append(treestore, &childiter, &topiter);
 			g_string_printf(s, "Modified %zd", stats[2]);
 			gtk_tree_store_set(treestore, &childiter,

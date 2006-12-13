@@ -26,14 +26,14 @@
 #include "sechecker.h"
 #include "register_list.h"
 #include "sechk_parse.h"
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <apol/policy.h>
 #include <apol/util.h>
 #include <apol/vector.h>
@@ -46,6 +46,7 @@
 #endif
 
 #include <qpol/policy.h>
+#include <qpol/util.h>
 
 static int sechk_lib_compare_sev(const char *a, const char *b)
 {
@@ -390,9 +391,12 @@ int sechk_lib_load_policy(apol_vector_t * policy_mods, sechk_lib_t * lib)
 
 	/* if no policy is given, attempt to find default */
 	if (!policy_mods || !apol_vector_get_size(policy_mods)) {
-		retv = qpol_find_default_policy_file((QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY), &default_policy_path);
-		if (retv) {
-			fprintf(stderr, "Error: %s\n", qpol_find_default_policy_file_strerr(retv));
+		retv = qpol_default_policy_find(&default_policy_path);
+		if (retv < 0) {
+			fprintf(stderr, "Default policy search failed: %s\n", strerror(errno));
+			return -1;
+		} else if (retv == 0) {
+			fprintf(stderr, "No default policy found.\n");
 			return -1;
 		}
 		retv = apol_policy_open(default_policy_path, &(lib->policy), NULL, NULL);

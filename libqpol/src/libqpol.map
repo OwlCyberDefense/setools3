@@ -9,8 +9,8 @@
 		qpol_cond_*;
 		qpol_constraint_*;
 		qpol_context_*;
+		qpol_default_policy_find;
 		qpol_expand_module;
-		qpol_find_default_policy_*;
 		qpol_fs_use_*;
 		qpol_genfscon_*;
 		qpol_isid_*;
