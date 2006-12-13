@@ -273,7 +273,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 			}
 		case 'p':{
 				*policy = optarg;
-				WARN(NULL, "%s", "Use of --policy is depercated.");
+				WARN(NULL, "%s", "Use of --policy is deprecated.");
 				break;
 			}
 		case 'h':{

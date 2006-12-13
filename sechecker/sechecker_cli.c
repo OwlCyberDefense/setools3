@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 #endif
 		case 'P':
 			old_pol_path = strdup(optarg);
-			fprintf(stderr, "Warning: Use of --policy is depricated.");
+			fprintf(stderr, "Warning: Use of --policy is deprecated.");
 			break;
 		case 'M':
 			if (modname) {
