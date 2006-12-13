@@ -68,7 +68,8 @@ void seaudit_set_policy(seaudit_t * s, apol_policy_t * policy, const char *filen
 apol_policy_t *seaudit_get_policy(seaudit_t * s);
 
 /**
- * Return the path to the currently loaded policy.
+ * Return the path to the currently loaded policy.  If the current
+ * policy is modular then this returns the base policy's path.
  *
  * @param s seaudit object to query.
  *

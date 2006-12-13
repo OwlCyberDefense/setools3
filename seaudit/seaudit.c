@@ -260,7 +260,8 @@ static void print_usage_info(const char *program_name, int brief)
 	printf("   -v, --version           display version information\n\n");
 }
 
-static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, char **log, char **policy, apol_vector_t *modules)
+static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, char **log, char **policy,
+				       apol_vector_t * modules)
 {
 	int optc;
 	*log = NULL;
@@ -298,16 +299,8 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 	if (optind < argc) {	       /* modules */
 		*policy = argv[optind++];
 		while (argc - optind) {
-			qpol_module_t *mod = NULL;
-			if (qpol_module_create_from_file(argv[optind], &mod)) {
-				ERR(NULL, "Unable to open module %s", argv[optind]);
-				qpol_module_destroy(&mod);
-				seaudit_destroy(&seaudit);
-				exit(EXIT_FAILURE);
-			}
-			if (apol_vector_append(modules, mod)) {
+			if (apol_vector_append(modules, argv[optind])) {
 				ERR(NULL, "%s", strerror(ENOMEM));
-				qpol_module_destroy(&mod);
 				seaudit_destroy(&seaudit);
 				exit(EXIT_FAILURE);
 			}
@@ -387,6 +380,7 @@ int main(int argc, char **argv)
 	if (preferences_write_to_conf_file(app->prefs) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 	}
+	apol_vector_destroy(&modules, NULL);
 	seaudit_destroy(&app);
 	exit(EXIT_SUCCESS);
 }

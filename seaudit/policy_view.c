@@ -499,8 +499,13 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 
 void policy_view_update(policy_view_t * pv, const char *path)
 {
+	GtkTextIter start, end;
 	policy_view_load_policy_source(pv, path);
 	policy_view_populate_combo_boxes(pv);
+	gtk_text_buffer_get_start_iter(pv->rules_text, &start);
+	gtk_text_buffer_get_end_iter(pv->rules_text, &end);
+	gtk_text_buffer_delete(pv->rules_text, &start, &end);
+
 }
 
 void policy_view_find_terules(policy_view_t * pv, seaudit_message_t * message)

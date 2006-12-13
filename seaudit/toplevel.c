@@ -25,6 +25,7 @@
 #include <config.h>
 
 #include "message_view.h"
+#include "open_policy_window.h"
 #include "policy_view.h"
 #include "preferences_view.h"
 #include "report_window.h"
@@ -651,41 +652,49 @@ static gpointer toplevel_open_policy_runner(gpointer data)
 	if (run->result < 0) {
 		apol_policy_destroy(&run->policy);
 		progress_abort(run->top->progress, NULL);
-	} else if (run->result > 0) {
+		return NULL;
+	}
+	if (run->result > 0) {
 		progress_warn(run->top->progress, NULL);
-	} else {
-		if (run->modules) {
-			if (!qpol_policy_has_capability(apol_policy_get_qpol(run->policy), QPOL_CAP_MODULES)) {
-				ERR(run->policy, "Polcy %s does not support loadable modules.", run->filename);
-				apol_policy_destroy(&run->policy);
-				progress_abort(run->top->progress, NULL);
+	}
+	if (run->modules) {
+		size_t i;
+		if (!qpol_policy_has_capability(apol_policy_get_qpol(run->policy), QPOL_CAP_MODULES)) {
+			apol_policy_destroy(&run->policy);
+			run->result = -1;
+			progress_abort(run->top->progress, "Polcy %s does not support loadable modules.", run->filename);
+			return NULL;
+		}
+		for (i = 0; i < apol_vector_get_size(run->modules); i++) {
+			char *module_filename = apol_vector_get_element(run->modules, i);
+			qpol_module_t *mod = NULL;
+			if (qpol_module_create_from_file(module_filename, &mod)) {
+				run->result = -1;
+				progress_abort(run->top->progress, "Unable to open module %s", module_filename);
 				return NULL;
 			}
-			while (apol_vector_get_size(run->modules)) {
-				if (qpol_policy_append_module(apol_policy_get_qpol(run->policy), apol_vector_get_element(run->modules, apol_vector_get_size(run->modules) - 1)) ||
-					 apol_vector_remove(run->modules, apol_vector_get_size(run->modules) - 1)) {
-					ERR(run->policy, "%s", strerror(ENOMEM));
-					apol_policy_destroy(&run->policy);
-					progress_abort(run->top->progress, NULL);
-					return NULL;
-				}
+			if (qpol_policy_append_module(apol_policy_get_qpol(run->policy), mod)) {
+				qpol_module_destroy(&mod);
+				run->result = -1;
+				progress_abort(run->top->progress, "Error appending module: %s", strerror(ENOMEM));
+				return NULL;
 			}
-			progress_update(run->top->progress, "Linking policy modules.");
-			run->result = qpol_policy_rebuild(apol_policy_get_qpol(run->policy));
-			if (run->result) {
-				apol_policy_destroy(&run->policy);
-				progress_abort(run->top->progress, NULL);
-			} else {
-				progress_done(run->top->progress);
-			}
+		}
+
+		progress_update(run->top->progress, "Linking policy modules.");
+		run->result = qpol_policy_rebuild(apol_policy_get_qpol(run->policy));
+		if (run->result) {
+			progress_abort(run->top->progress, NULL);
 		} else {
 			progress_done(run->top->progress);
 		}
+	} else {
+		progress_done(run->top->progress);
 	}
 	return NULL;
 }
 
-void toplevel_open_policy(toplevel_t * top, const char *filename, apol_vector_t *modules)
+int toplevel_open_policy(toplevel_t * top, const char *filename, apol_vector_t * modules)
 {
 	struct policy_run_datum run = { top, filename, NULL, modules, 0 };
 
@@ -696,7 +705,7 @@ void toplevel_open_policy(toplevel_t * top, const char *filename, apol_vector_t 
 	progress_hide(top->progress);
 	util_cursor_clear(GTK_WIDGET(top->w));
 	if (run.result < 0) {
-		return;
+		return run.result;
 	}
 	seaudit_set_policy(top->s, run.policy, filename);
 	toplevel_set_recent_policies_submenu(top);
@@ -704,6 +713,7 @@ void toplevel_open_policy(toplevel_t * top, const char *filename, apol_vector_t 
 	toplevel_update_title_bar(top);
 	toplevel_update_status_bar(top);
 	policy_view_update(top->pv, filename);
+	return 0;
 }
 
 void toplevel_update_status_bar(toplevel_t * top)
@@ -916,12 +926,7 @@ void toplevel_on_open_log_activate(gpointer user_data, GtkWidget * widget __attr
 void toplevel_on_open_policy_activate(gpointer user_data, GtkWidget * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
-	char *path = util_open_file(top->w, "Open Policy", seaudit_get_policy_path(top->s));
-	if (path != NULL) {
-		//TODO module dialog here
-		toplevel_open_policy(top, path, NULL);
-		g_free(path);
-	}
+	open_policy_window_run(top, seaudit_get_policy_path(top->s));
 }
 
 void toplevel_on_preferences_activate(gpointer user_data, GtkWidget * widget __attribute__ ((unused)))

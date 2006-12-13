@@ -28,6 +28,7 @@ seaudit_SOURCES = \
 	filter_view.c filter_view.h \
 	message_view.c message_view.h \
 	modify_view.c modify_view.h \
+	open_policy_window.c open_policy_window.h \
 	policy_components_view.c policy_components_view.h \
 	policy_view.c policy_view.h \
 	preferences.c preferences.h \
