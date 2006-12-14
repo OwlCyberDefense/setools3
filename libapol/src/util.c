@@ -363,7 +363,7 @@ int apol_file_read_to_buffer(const char *fname, char **buf, size_t * len)
 
 char *apol_config_get_var(const char *var, FILE * fp)
 {
-	char line[APOL_LINE_SZ], t1[APOL_LINE_SZ], t2[APOL_LINE_SZ], *result = NULL;
+	char line[APOL_LINE_SZ], t1[APOL_LINE_SZ], t2[APOL_LINE_SZ];
 	char *line_ptr = NULL;
 
 	if (var == NULL || fp == NULL) {
@@ -373,19 +373,19 @@ char *apol_config_get_var(const char *var, FILE * fp)
 
 	rewind(fp);
 	while (fgets(line, APOL_LINE_SZ, fp) != NULL) {
-		line_ptr = &line[0];
-		if (apol_str_trim(&line_ptr) != 0)
+		if ((line_ptr = strdup(line)) == NULL) {
 			return NULL;
-		if (line[0] == '#' || sscanf(line, "%s %[^\n]", t1, t2) != 2 || strcasecmp(var, t1) != 0) {
+		}
+		if (apol_str_trim(&line_ptr) != 0) {
+			free(line_ptr);
+			return NULL;
+		}
+		if (line_ptr[0] == '#' || sscanf(line_ptr, "%s %[^\n]", t1, t2) != 2 || strcasecmp(var, t1) != 0) {
+			free(line_ptr);
 			continue;
 		} else {
-			result = (char *)malloc(sizeof(char) * (strlen(t2) + 1));
-			if (result == NULL) {
-				return NULL;
-			} else {
-				strcpy(result, t2);
-				return result;
-			}
+			free(line_ptr);
+			return strdup(t2);
 		}
 	}
 	return NULL;
@@ -456,34 +456,32 @@ char *apol_config_varlist_to_str(const char **list, size_t size)
 	return val;
 }
 
-apol_vector_t *apol_config_split_var(const char *var, FILE * file)
+apol_vector_t *apol_str_split(const char *s, const char *delim)
 {
-	char *values = NULL, *v, *token, *s;
-	apol_vector_t *list;
+	char *orig_s = NULL, *dup_s = NULL, *v, *token;
+	apol_vector_t *list = NULL;
 	int error = 0;
 
-	if (var == NULL || file == NULL) {
+	if (s == NULL || delim == NULL) {
 		error = EINVAL;
 		goto cleanup;
 	}
-	if ((list = apol_vector_create()) == NULL) {
+	if ((list = apol_vector_create()) == NULL || (orig_s = strdup(s)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
-	if ((values = apol_config_get_var(var, file)) != NULL) {
-		v = values;
-		while ((token = strsep(&v, ":")) != NULL) {
-			if (strcmp(token, "") != 0 && !apol_str_is_only_white_space(token)) {
-				if ((s = strdup(token)) == NULL || apol_vector_append(list, s) < 0) {
-					error = errno;
-					free(s);
-					goto cleanup;
-				}
+	v = orig_s;
+	while ((token = strsep(&v, delim)) != NULL) {
+		if (strcmp(token, "") != 0 && !apol_str_is_only_white_space(token)) {
+			if ((dup_s = strdup(token)) == NULL || apol_vector_append(list, dup_s) < 0) {
+				error = errno;
+				free(dup_s);
+				goto cleanup;
 			}
 		}
 	}
       cleanup:
-	free(values);
+	free(orig_s);
 	if (error != 0) {
 		apol_vector_destroy(&list, free);
 		errno = error;
@@ -492,12 +490,12 @@ apol_vector_t *apol_config_split_var(const char *var, FILE * file)
 	return list;
 }
 
-char *apol_config_join_var(apol_vector_t * list)
+char *apol_str_join(apol_vector_t * list, const char *delim)
 {
 	char *val, *s;
 	size_t i, len;
 
-	if (list == NULL) {
+	if (list == NULL || delim == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -511,7 +509,7 @@ char *apol_config_join_var(apol_vector_t * list)
 	len = strlen(val) + 1;
 	for (i = 1; i < apol_vector_get_size(list); i++) {
 		s = apol_vector_get_element(list, i);
-		if (apol_str_appendf(&val, &len, ":%s", s) < 0) {
+		if (apol_str_appendf(&val, &len, "%s%s", delim, s) < 0) {
 			return NULL;
 		}
 	}
@@ -520,37 +518,18 @@ char *apol_config_join_var(apol_vector_t * list)
 
 /**
  * Given a string, if the string begins with whitespace then allocate
- * a new string that does not contain those whitespaces.  The caller
- * is responsible for free()ing the resulting pointer.  The original
- * string is free()d.
+ * a new string that does not contain those whitespaces.
  *
- * @param str Reference to a dynamically allocated string.
+ * @param str String to modify.
  *
  * @return 0 on success, < 0 on out of memory.
  */
-static int trim_leading_whitespace(char **str)
+static void trim_leading_whitespace(char *str)
 {
-	size_t length, idx = 0, i;
-	char *tmp = NULL;
-
-	assert(str && *str != NULL);
-	length = strlen(*str);
-	if ((tmp = strdup(*str)) == NULL) {
-		return -1;
-	}
-	/* Get index of first non-whitespace char in the duplicate string. */
-	while (idx < length && isspace(tmp[idx]))
-		idx++;
-
-	if (idx && idx != length) {
-		for (i = 0; idx < length; i++, idx++) {
-			(*str)[i] = tmp[idx];
-		}
-		assert(i <= length);
-		(*str)[i] = '\0';
-	}
-	free(tmp);
-	return 0;
+	size_t i, len;
+	for (i = 0; str[i] != '\0' && isspace(str[i]); i++) ;
+	len = strlen(str + i);
+	memmove(str, str + i, len + 1);
 }
 
 /**
@@ -562,7 +541,6 @@ static int trim_leading_whitespace(char **str)
 static void trim_trailing_whitespace(char **str)
 {
 	size_t length;
-	assert(str && *str != NULL);
 	length = strlen(*str);
 	while (length > 0 && isspace((*str)[length - 1])) {
 		(*str)[length - 1] = '\0';
@@ -572,9 +550,11 @@ static void trim_trailing_whitespace(char **str)
 
 int apol_str_trim(char **str)
 {
-	assert(str && *str != NULL);
-	if (trim_leading_whitespace(str) < 0)
+	if (str == NULL || *str == NULL) {
+		errno = EINVAL;
 		return -1;
+	}
+	trim_leading_whitespace(*str);
 	trim_trailing_whitespace(str);
 	return 0;
 }

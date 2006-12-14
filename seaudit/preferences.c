@@ -142,20 +142,24 @@ preferences_t *preferences_create(void)
 		free(prefs->stylesheet);
 		prefs->stylesheet = value;
 	}
-	if ((v = apol_config_split_var("RECENT_LOG_FILES", file)) == NULL) {
+	if ((value = apol_config_get_var("RECENT_LOG_FILES", file)) == NULL || (v = apol_str_split(value, ":")) == NULL) {
 		error = errno;
+		free(value);
 		goto cleanup;
 	}
+	free(value);
 	apol_vector_destroy(&prefs->recent_log_files, free);
 	prefs->recent_log_files = v;
-	if ((v = apol_config_split_var("RECENT_POLICY_FILES", file)) == NULL) {
+	if ((value = apol_config_get_var("RECENT_POLICY_FILES", file)) == NULL || (v = apol_str_split(value, ":")) == NULL) {
 		error = errno;
+		free(value);
 		goto cleanup;
 	}
+	free(value);
 	apol_vector_destroy(&prefs->recent_policy_files, free);
 	prefs->recent_policy_files = v;
 
-	if ((v = apol_config_split_var("LOG_COLUMNS_HIDDEN", file)) == NULL) {
+	if ((value = apol_config_get_var("LOG_COLUMNS_HIDDEN", file)) == NULL || (v = apol_str_split(value, ":")) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -171,6 +175,7 @@ preferences_t *preferences_create(void)
 			}
 		}
 	}
+	free(value);
 	apol_vector_destroy(&v, free);
 	value = apol_config_get_var("REAL_TIME_LOG_MONITORING", file);
 	if (value != NULL && value[0] != '0') {
@@ -249,13 +254,13 @@ int preferences_write_to_conf_file(preferences_t * prefs)
 	if (strcmp(prefs->stylesheet, "") != 0) {
 		fprintf(file, "DEFAULT_REPORT_CSS_FILE %s\n", prefs->stylesheet);
 	}
-	if ((value = apol_config_join_var(prefs->recent_log_files)) == NULL) {
+	if ((value = apol_str_join(prefs->recent_log_files, ":")) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
 	fprintf(file, "RECENT_LOG_FILES %s\n", value);
 	free(value);
-	if ((value = apol_config_join_var(prefs->recent_policy_files)) == NULL) {
+	if ((value = apol_str_join(prefs->recent_policy_files, ":")) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -271,7 +276,7 @@ int preferences_write_to_conf_file(preferences_t * prefs)
 			goto cleanup;
 		}
 	}
-	if ((value = apol_config_join_var(hidden_fields)) == NULL) {
+	if ((value = apol_str_join(hidden_fields, ":")) == NULL) {
 		error = errno;
 		goto cleanup;
 	}

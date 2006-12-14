@@ -1,3 +1,9 @@
+2006-12-14  J. Tang  <jtang@tresys.com>
+
+	* New functions apol_config_join_var() generalized to be
+	apol_str_join().  Same with apol_config_split_var() ->
+	apol_str_split().
+
 2006-12-12  J. Tang  <jtang@tresys.com>
 
 	* Renamed qpol_find_default_policy_file() in qpol/policy.h to

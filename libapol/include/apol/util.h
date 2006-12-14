@@ -3,11 +3,10 @@
  *
  * Miscellaneous, uncategorized functions for libapol.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2001-2006 Tresys Technology, LLC
+ * Copyright (C) 2001-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -214,8 +213,7 @@ extern "C"
  * the returned array of strings afterwards, as well as the pointer
  * itself.
  *
- * @deprecated Do not use this function; use apol_config_split_var()
- * instead.
+ * @deprecated Do not use this function; use apol_str_split() instead.
  *
  * @param var Name of configuration variable to obtain.
  * @param fp An open file pointer into a configuration file.  This
@@ -235,8 +233,7 @@ extern "C"
  * list using ':' as the separator.  The caller is responsible for
  * free()ing the string afterwards.
  *
- * @deprecated Do not use this function; use apol_config_join_var()
- * instead.
+ * @deprecated Do not use this function; use apol_str_join() instead.
  *
  * @param list Array of strings.
  * @param size Number of elements within the list.
@@ -247,13 +244,11 @@ extern "C"
 		__attribute__ ((deprecated));
 
 /**
- * Given a file pointer into a config file, read and return a vector
- * of values associated with the given config var.  The variable's
- * value is expected to be a ':' separated string.
+ * Given a string of tokens, allocate and return a vector of strings
+ * initialized to those tokens.
  *
- * @param var Name of configuration variable to obtain.
- * @param file An open file pointer into a configuration file.  This
- * function will not maintain the pointer's current location.
+ * @param s String to split.
+ * @param delim Delimiter for tokens, as per strsep(3).
  *
  * @return A newly allocated vector of strings containing the
  * variable's values, or NULL if not found or error.  Note that the
@@ -261,20 +256,21 @@ extern "C"
  * empty value.  The caller must call apol_vector_destroy()
  * afterwards, passing free as the second parameter.
  */
-	extern apol_vector_t *apol_config_split_var(const char *var, FILE * file);
+	extern apol_vector_t *apol_str_split(const char *s, const char *delim);
 
 /**
  * Given a vector of strings, allocate and return a string that joins
- * the vector using ':' as the separator.  The caller is responsible
+ * the vector using the given separator.  The caller is responsible
  * for free()ing the string afterwards.
  *
  * @param list Vector of strings to join.
+ * @param delim Delimiter character(s) for the concatenated string.
  *
  * @return An allocated concatenated string, or NULL upon error.  If
  * the list is empty then return an empty string.  The caller is
  * responsible for calling free() upon the return value.
  */
-	extern char *apol_config_join_var(apol_vector_t * list);
+	extern char *apol_str_join(apol_vector_t * list, const char *delim);
 
 /**
  * Given a dynamically allocated string, allocate a new string with
