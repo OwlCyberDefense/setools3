@@ -614,18 +614,18 @@ static void sediff_results_print_rules(sediff_app_t * app, GtkTextBuffer * tb,
 		}
 		if (form != POLDIFF_FORM_MODIFIED) {
 			sediff_results_print_string(tb, &iter, s, 1);
-			if ((syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+			if (qpol_policy_has_capability(apol_policy_get_qpol(app->orig_pol), QPOL_CAP_LINE_NUMBERS) && (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
 				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p1", string);
 			}
-			if ((syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+			if (qpol_policy_has_capability(apol_policy_get_qpol(app->mod_pol), QPOL_CAP_LINE_NUMBERS) && (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
 				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p2", string);
 			}
 		} else {
 			sediff_results_print_rule_modified(tb, &iter, s, 1);
-			if ((syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+			if (qpol_policy_has_capability(apol_policy_get_qpol(app->orig_pol), QPOL_CAP_LINE_NUMBERS) && (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
 				sediff_results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-p1", string);
 			}
-			if ((syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+			if (qpol_policy_has_capability(apol_policy_get_qpol(app->mod_pol), QPOL_CAP_LINE_NUMBERS) && (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
 				sediff_results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-p2", string);
 			}
 		}
@@ -642,18 +642,18 @@ static void sediff_results_print_rules(sediff_app_t * app, GtkTextBuffer * tb,
 		}
 		if (form != POLDIFF_FORM_MODIFIED) {
 			sediff_results_print_string(tb, &iter, s, 1);
-			if ((syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+			if (qpol_policy_has_capability(apol_policy_get_qpol(app->orig_pol), QPOL_CAP_LINE_NUMBERS) && (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
 				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p1", string);
 			}
-			if ((syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+			if (qpol_policy_has_capability(apol_policy_get_qpol(app->mod_pol), QPOL_CAP_LINE_NUMBERS) && (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
 				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p2", string);
 			}
 		} else {
 			sediff_results_print_rule_modified(tb, &iter, s, 1);
-			if ((syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+			if (qpol_policy_has_capability(apol_policy_get_qpol(app->orig_pol), QPOL_CAP_LINE_NUMBERS) && (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
 				sediff_results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-p1", string);
 			}
-			if ((syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+			if (qpol_policy_has_capability(apol_policy_get_qpol(app->mod_pol), QPOL_CAP_LINE_NUMBERS) && (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
 				sediff_results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-p2", string);
 			}
 		}

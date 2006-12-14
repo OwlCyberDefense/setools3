@@ -84,13 +84,15 @@ static void policy_view_display_avrule_results(policy_view_t * pv, apol_vector_t
 			string = apol_avrule_render(policy, rule);
 		} else {
 			qpol_syn_avrule_t *rule = apol_vector_get_element(results, i);
-			unsigned long lineno;
-			qpol_syn_avrule_get_lineno(qp, rule, &lineno);
-			sprintf(buf, "%ld", lineno);
 			string = apol_syn_avrule_render(policy, rule);
-			gtk_text_buffer_insert_with_tags_by_name(pv->rules_text, &end, "[", -1, "rule", NULL);
-			gtk_text_buffer_insert_with_tags_by_name(pv->rules_text, &end, buf, -1, "line-number", NULL);
-			gtk_text_buffer_insert_with_tags_by_name(pv->rules_text, &end, "] ", -1, "rule", NULL);
+			unsigned long lineno;
+			if (qpol_policy_has_capability(qp, QPOL_CAP_LINE_NUMBERS)) {
+				qpol_syn_avrule_get_lineno(qp, rule, &lineno);
+				sprintf(buf, "%ld", lineno);
+				gtk_text_buffer_insert_with_tags_by_name(pv->rules_text, &end, "[", -1, "rule", NULL);
+				gtk_text_buffer_insert_with_tags_by_name(pv->rules_text, &end, buf, -1, "line-number", NULL);
+				gtk_text_buffer_insert_with_tags_by_name(pv->rules_text, &end, "] ", -1, "rule", NULL);
+			}
 		}
 		if (string == NULL) {
 			toplevel_ERR(pv->top, "Error displaying rule: %s", strerror(errno));
