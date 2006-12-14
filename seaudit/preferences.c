@@ -26,6 +26,7 @@
 
 #include "preferences.h"
 
+#include <apol/policy-path.h>
 #include <apol/util.h>
 #include <assert.h>
 #include <errno.h>
@@ -85,7 +86,8 @@ struct preferences
 	char *stylesheet;
 	/** vector of paths (strings) to recently opened log files */
 	apol_vector_t *recent_log_files;
-	/** vector of paths (strings) to recently opened policy files */
+	/** vector of apol_policy_path_t objects to recently opened
+            policies */
 	apol_vector_t *recent_policy_files;
 	/** non-zero if seaudit should poll the log file for changes */
 	int real_time_log;
@@ -93,6 +95,74 @@ struct preferences
 	int real_time_interval;
 	struct visible_field *fields;
 };
+
+void preferences_apol_policy_path_free(void *elem)
+{
+	apol_policy_path_t *path = elem;
+	apol_policy_path_destroy(&path);
+}
+
+/**
+ * Parse the old-style recent policies list (a ':' separated list of
+ * paths) into the recent_policy_files field.
+ */
+static int preferences_parse_old_recent_files(preferences_t * prefs, const char *s)
+{
+	apol_vector_t *v = NULL;
+	size_t i;
+	char *base;
+	apol_policy_path_t *path;
+	int error = 0;
+
+	if ((v = apol_str_split(s, ":")) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		base = apol_vector_get_element(v, i);
+		if ((path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, base, NULL)) == NULL ||
+		    apol_vector_append(prefs->recent_policy_files, path) < 0) {
+			error = errno;
+			apol_policy_path_destroy(&path);
+			goto cleanup;
+		}
+	}
+
+      cleanup:
+	apol_vector_destroy(&v, free);
+	if (error != 0) {
+		errno = error;
+		return -1;
+	}
+	return 0;
+}
+
+/**
+ * Parse the new recent policy files, which now spans across multiple
+ * lines.
+ */
+static int preferences_parse_new_recent_files(preferences_t * prefs, FILE * f, int num_files)
+{
+	int count;
+	for (count = 0; count < num_files; count++) {
+		char *var_name, *value = NULL;
+		apol_policy_path_t *p = NULL;
+		if (asprintf(&var_name, "RECENT_POLICY_PATH_%d", count) < 0) {
+			return -1;
+		}
+		value = apol_config_get_var(var_name, f);
+		free(var_name);
+		if (value == NULL ||
+		    (p = apol_policy_path_create_from_string(value)) == NULL ||
+		    apol_vector_append(prefs->recent_policy_files, p) < 0) {
+			free(value);
+			apol_policy_path_destroy(&p);
+			return -1;
+		}
+		free(value);
+	}
+	return 0;
+}
 
 preferences_t *preferences_create(void)
 {
@@ -150,14 +220,25 @@ preferences_t *preferences_create(void)
 	free(value);
 	apol_vector_destroy(&prefs->recent_log_files, free);
 	prefs->recent_log_files = v;
-	if ((value = apol_config_get_var("RECENT_POLICY_FILES", file)) == NULL || (v = apol_str_split(value, ":")) == NULL) {
-		error = errno;
-		free(value);
-		goto cleanup;
+
+	/* test if there exists the new recent list that contains
+	 * module filenames */
+	if ((value = apol_config_get_var("RECENT_POLICY_PATH_FILES", file)) != NULL) {
+		if (preferences_parse_new_recent_files(prefs, file, atoi(value)) < 0) {
+			error = errno;
+			free(value);
+			goto cleanup;
+		}
+	} else {
+		/* use older style that could only handle monolithic policies */
+		if ((value = apol_config_get_var("RECENT_POLICY_FILES", file)) == NULL
+		    || preferences_parse_old_recent_files(prefs, value) < 0) {
+			error = errno;
+			free(value);
+			goto cleanup;
+		}
 	}
 	free(value);
-	apol_vector_destroy(&prefs->recent_policy_files, free);
-	prefs->recent_policy_files = v;
 
 	if ((value = apol_config_get_var("LOG_COLUMNS_HIDDEN", file)) == NULL || (v = apol_str_split(value, ":")) == NULL) {
 		error = errno;
@@ -208,7 +289,7 @@ void preferences_destroy(preferences_t ** prefs)
 		free((*prefs)->report);
 		free((*prefs)->stylesheet);
 		apol_vector_destroy(&(*prefs)->recent_log_files, free);
-		apol_vector_destroy(&(*prefs)->recent_policy_files, free);
+		apol_vector_destroy(&(*prefs)->recent_policy_files, preferences_apol_policy_path_free);
 		free((*prefs)->fields);
 		free(*prefs);
 		*prefs = NULL;
@@ -260,12 +341,18 @@ int preferences_write_to_conf_file(preferences_t * prefs)
 	}
 	fprintf(file, "RECENT_LOG_FILES %s\n", value);
 	free(value);
-	if ((value = apol_str_join(prefs->recent_policy_files, ":")) == NULL) {
-		error = errno;
-		goto cleanup;
+
+	fprintf(file, "RECENT_POLICY_PATH_FILES %zd\n", apol_vector_get_size(prefs->recent_policy_files));
+	for (i = 0; i < apol_vector_get_size(prefs->recent_policy_files); i++) {
+		apol_policy_path_t *p = apol_vector_get_element(prefs->recent_policy_files, i);
+		if ((value = apol_policy_path_to_string(p)) == NULL) {
+			error = errno;
+			goto cleanup;
+		}
+		fprintf(file, "RECENT_POLICY_PATH_%zd %s", i, value);
+		free(value);
 	}
-	fprintf(file, "RECENT_POLICY_FILES %s\n", value);
-	free(value);
+
 	if ((hidden_fields = apol_vector_create()) == NULL) {
 		error = errno;
 		goto cleanup;
@@ -444,10 +531,13 @@ apol_vector_t *preferences_get_recent_logs(preferences_t * prefs)
 
 int preferences_add_recent_policy(preferences_t * prefs, const char *policy)
 {
+	/* FIX ME: accept a policy_path object instead */
 	return prefs_add_recent_vector(prefs->recent_policy_files, policy);
 }
 
 apol_vector_t *preferences_get_recent_policies(preferences_t * prefs)
 {
-	return prefs->recent_policy_files;
+	return NULL;
+	/* FIX ME: return policy_path objects instead
+	 * return prefs->recent_policy_files; */
 }

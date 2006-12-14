@@ -28,6 +28,7 @@ libapol_a_SOURCES = \
 	netcon-query.c \
 	perm-map.c \
 	policy.c \
+	policy-path.c \
 	policy-query.c \
 	queue.c \
 	rangetrans-query.c \

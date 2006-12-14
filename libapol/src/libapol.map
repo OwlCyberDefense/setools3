@@ -30,6 +30,7 @@
                 apol_perm_*;
                 apol_permmap_*;
                 apol_policy_*;
+                apol_policy_path_*;
                 apol_portcon_*;
                 apol_protocol_to_str;
                 apol_qpol_context_render;
