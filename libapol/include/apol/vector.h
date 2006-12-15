@@ -6,7 +6,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -189,7 +189,8 @@ extern "C"
  *
  *  @return 0 if element was found, or < 0 if not found.
  */
-	extern int apol_vector_get_index(const apol_vector_t * v, void *elem, apol_vector_comp_func * cmp, void *data, size_t * i);
+	extern int apol_vector_get_index(const apol_vector_t * v, const void *elem, apol_vector_comp_func * cmp, void *data,
+					 size_t * i);
 
 /**
  *  Add an element to the end of a vector.
@@ -249,8 +250,8 @@ extern "C"
 	extern int apol_vector_remove(apol_vector_t * v, const size_t idx);
 
 /**
- *  Compares two vectors, determining if one is different than
- *  another.  This uses a callback to compare elements across the
+ *  Compare two vectors, determining if one is different than the
+ *  other.  This uses a callback to compare elements across the
  *  vectors.
  *
  *  @param a First vector to compare.
@@ -271,7 +272,8 @@ extern "C"
  *  @return < 0 if vector A is less than B, > 0 if A is greater than
  *  B, or 0 if equivalent.
  */
-	extern int apol_vector_compare(apol_vector_t * a, apol_vector_t * b, apol_vector_comp_func * cmp, void *data, size_t * i);
+	extern int apol_vector_compare(const apol_vector_t * a, const apol_vector_t * b, apol_vector_comp_func * cmp, void *data,
+				       size_t * i);
 
 /**
  *  Sort the vector's elements within place, using an unstable sorting

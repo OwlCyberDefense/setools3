@@ -27,6 +27,7 @@
 
 #include "preferences.h"
 #include <apol/policy.h>
+#include <apol/policy-path.h>
 #include <seaudit/log.h>
 #include <stdio.h>
 #include <time.h>
@@ -52,10 +53,10 @@ preferences_t *seaudit_get_prefs(seaudit_t * s);
  * @param policy New policy file for seaudit.  If NULL then seaudit
  * has no policy opened.  Afterwards seaudit takes ownership of the
  * policy.
- * @param filename If policy is not NULL, then add this filename to
- * the most recently used files.
+ * @param path If policy is not NULL, then add this path to the most
+ * recently used policy files.
  */
-void seaudit_set_policy(seaudit_t * s, apol_policy_t * policy, const char *filename);
+void seaudit_set_policy(seaudit_t * s, apol_policy_t * policy, apol_policy_path_t * path);
 
 /**
  * Retrieve the currently loaded policy.
@@ -76,7 +77,7 @@ apol_policy_t *seaudit_get_policy(seaudit_t * s);
  * @return Path of policy, or NULL if none loaded.  Treat this as a
  * const pointer.
  */
-char *seaudit_get_policy_path(seaudit_t * s);
+apol_policy_path_t *seaudit_get_policy_path(seaudit_t * s);
 
 /**
  * Set the currently loaded log for seaudit.  This will also update

@@ -65,7 +65,19 @@ apol_policy_path_t *apol_policy_path_create(apol_policy_path_type_e path_type, c
 			apol_policy_path_destroy(&p);
 			return NULL;
 		}
+		apol_vector_sort_uniquify(p->modules, apol_str_strcmp, NULL, free);
 	}
+	return p;
+}
+
+apol_policy_path_t *apol_policy_path_create_from_policy_path(const apol_policy_path_t * path)
+{
+	apol_policy_path_t *p;
+	if (path == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	p = apol_policy_path_create(path->path_type, p->base, p->modules);
 	return p;
 }
 
@@ -118,6 +130,7 @@ apol_policy_path_t *apol_policy_path_create_from_string(const char *path_string)
 				return NULL;
 			}
 		}
+		apol_vector_sort_uniquify(p->modules, apol_str_strcmp, NULL, free);
 	}
 	return p;
 }
@@ -132,6 +145,30 @@ void apol_policy_path_destroy(apol_policy_path_t ** path)
 	}
 }
 
+int apol_policy_path_compare(const apol_policy_path_t * a, const apol_policy_path_t * b)
+{
+	int cmp;
+	if (a == NULL || b == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	if ((cmp = a->path_type - b->path_type) != 0) {
+		return cmp;
+	}
+	if ((cmp = strcmp(a->base, b->base)) != 0) {
+		return cmp;
+	}
+	if (a->path_type == APOL_POLICY_PATH_TYPE_MODULAR) {
+		/* only compare module vector if that field is relevant */
+		size_t i;
+		cmp = apol_vector_compare(a->modules, b->modules, apol_str_strcmp, NULL, &i);
+		if (cmp != 0) {
+			return cmp;
+		}
+	}
+	return 0;
+}
+
 apol_policy_path_type_e apol_policy_path_get_type(const apol_policy_path_t * path)
 {
 	if (path == NULL) {
@@ -141,7 +178,7 @@ apol_policy_path_type_e apol_policy_path_get_type(const apol_policy_path_t * pat
 	return path->path_type;
 }
 
-const char *apol_policy_path_type_get_primary(const apol_policy_path_t * path)
+const char *apol_policy_path_get_primary(const apol_policy_path_t * path)
 {
 	if (path == NULL) {
 		errno = EINVAL;
@@ -150,7 +187,7 @@ const char *apol_policy_path_type_get_primary(const apol_policy_path_t * path)
 	return path->base;
 }
 
-const apol_vector_t *apol_policy_path_type_get_modules(const apol_policy_path_t * path)
+const apol_vector_t *apol_policy_path_get_modules(const apol_policy_path_t * path)
 {
 	if (path == NULL || path->path_type != APOL_POLICY_PATH_TYPE_MODULAR) {
 		errno = EINVAL;

@@ -45,7 +45,7 @@ struct seaudit
 {
 	preferences_t *prefs;
 	apol_policy_t *policy;
-	char *policy_path;
+	apol_policy_path_t *policy_path;
 	seaudit_log_t *log;
 	FILE *file;
 	char *log_path;
@@ -67,26 +67,22 @@ preferences_t *seaudit_get_prefs(seaudit_t * s)
 	return s->prefs;
 }
 
-void seaudit_set_policy(seaudit_t * s, apol_policy_t * policy, const char *filename)
+void seaudit_set_policy(seaudit_t * s, apol_policy_t * policy, apol_policy_path_t * path)
 {
 	if (policy != NULL) {
-		/* do it in this order, for filename could be pointing to
-		 * s->policy_path */
-		char *t = NULL;
-		if ((t = strdup(filename)) == NULL || preferences_add_recent_policy(s->prefs, filename) < 0) {
+		if (preferences_add_recent_policy(s->prefs, path) < 0) {
 			toplevel_ERR(s->top, "%s", strerror(errno));
-			free(t);
 			apol_policy_destroy(&policy);
 			return;
 		}
 		apol_policy_destroy(&s->policy);
-		s->policy = policy;
-		free(s->policy_path);
-		s->policy_path = t;
+		if (path != s->policy_path) {
+			apol_policy_path_destroy(&s->policy_path);
+		}
+		s->policy_path = path;
 	} else {
 		apol_policy_destroy(&s->policy);
-		free(s->policy_path);
-		s->policy_path = NULL;
+		apol_policy_path_destroy(&s->policy_path);
 	}
 }
 
@@ -95,7 +91,7 @@ apol_policy_t *seaudit_get_policy(seaudit_t * s)
 	return s->policy;
 }
 
-char *seaudit_get_policy_path(seaudit_t * s)
+apol_policy_path_t *seaudit_get_policy_path(seaudit_t * s)
 {
 	return s->policy_path;
 }
@@ -260,12 +256,14 @@ static void print_usage_info(const char *program_name, int brief)
 	printf("   -v, --version           display version information\n\n");
 }
 
-static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, char **log, char **policy,
-				       apol_vector_t * modules)
+static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, char **log, apol_policy_path_t ** policy)
 {
 	int optc;
 	*log = NULL;
 	*policy = NULL;
+	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+	char *primary_path = NULL;
+	apol_vector_t *modules = NULL;
 	while ((optc = getopt_long(argc, argv, "l:p:hv", opts, NULL)) != -1) {
 		switch (optc) {
 		case 'l':{
@@ -273,7 +271,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 				break;
 			}
 		case 'p':{
-				*policy = optarg;
+				primary_path = optarg;
 				WARN(NULL, "%s", "Use of --policy is deprecated.");
 				break;
 			}
@@ -297,7 +295,13 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 		}
 	}
 	if (optind < argc) {	       /* modules */
-		*policy = argv[optind++];
+		if ((modules = apol_vector_create()) == NULL) {
+			ERR(NULL, "%s", strerror(ENOMEM));
+			seaudit_destroy(&seaudit);
+			exit(EXIT_FAILURE);
+		}
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		primary_path = argv[optind++];
 		while (argc - optind) {
 			if (apol_vector_append(modules, argv[optind])) {
 				ERR(NULL, "%s", strerror(ENOMEM));
@@ -310,8 +314,15 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 	if (*log == NULL) {
 		*log = preferences_get_log(seaudit->prefs);
 	}
-	if (*policy == NULL) {
-		*policy = preferences_get_policy(seaudit->prefs);
+	if (primary_path == NULL) {
+		primary_path = preferences_get_policy(seaudit->prefs);
+	}
+	if (primary_path != NULL && strcmp(primary_path, "") != 0) {
+		if ((*policy = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
+			ERR(NULL, "%s", strerror(ENOMEM));
+			seaudit_destroy(&seaudit);
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
@@ -325,8 +336,7 @@ struct delay_file_data
 {
 	toplevel_t *top;
 	char *log_filename;
-	char *policy_filename;
-	apol_vector_t *modules;
+	apol_policy_path_t *policy_path;
 };
 
 static gboolean delayed_main(gpointer data)
@@ -335,8 +345,8 @@ static gboolean delayed_main(gpointer data)
 	if (dfd->log_filename != NULL && strcmp(dfd->log_filename, "") != 0) {
 		toplevel_open_log(dfd->top, dfd->log_filename);
 	}
-	if (dfd->policy_filename != NULL && strcmp(dfd->policy_filename, "") != 0) {
-		toplevel_open_policy(dfd->top, dfd->policy_filename, dfd->modules);
+	if (dfd->policy_path != NULL) {
+		toplevel_open_policy(dfd->top, dfd->policy_path);
 	}
 	return FALSE;
 }
@@ -345,7 +355,8 @@ int main(int argc, char **argv)
 {
 	preferences_t *prefs;
 	seaudit_t *app;
-	char *log, *policy;
+	char *log;
+	apol_policy_path_t *policy;
 	apol_vector_t *modules;
 	struct delay_file_data file_data;
 
@@ -365,7 +376,7 @@ int main(int argc, char **argv)
 		ERR(NULL, "%s", strerror(ENOMEM));
 		exit(EXIT_FAILURE);
 	}
-	seaudit_parse_command_line(app, argc, argv, &log, &policy, modules);
+	seaudit_parse_command_line(app, argc, argv, &log, &policy);
 	if ((app->top = toplevel_create(app)) == NULL) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		seaudit_destroy(&app);
@@ -373,8 +384,7 @@ int main(int argc, char **argv)
 	}
 	file_data.top = app->top;
 	file_data.log_filename = log;
-	file_data.policy_filename = policy;
-	file_data.modules = modules;
+	file_data.policy_path = policy;
 	g_idle_add(&delayed_main, &file_data);
 	gtk_main();
 	if (preferences_write_to_conf_file(app->prefs) < 0) {

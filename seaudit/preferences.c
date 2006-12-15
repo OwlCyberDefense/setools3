@@ -26,7 +26,6 @@
 
 #include "preferences.h"
 
-#include <apol/policy-path.h>
 #include <apol/util.h>
 #include <assert.h>
 #include <errno.h>
@@ -349,7 +348,7 @@ int preferences_write_to_conf_file(preferences_t * prefs)
 			error = errno;
 			goto cleanup;
 		}
-		fprintf(file, "RECENT_POLICY_PATH_%zd %s", i, value);
+		fprintf(file, "RECENT_POLICY_PATH_%zd %s\n", i, value);
 		free(value);
 	}
 
@@ -529,15 +528,33 @@ apol_vector_t *preferences_get_recent_logs(preferences_t * prefs)
 	return prefs->recent_log_files;
 }
 
-int preferences_add_recent_policy(preferences_t * prefs, const char *policy)
+static int preferences_policy_path_compare(const void *a, const void *b, void *data __attribute__ ((unused)))
 {
-	/* FIX ME: accept a policy_path object instead */
-	return prefs_add_recent_vector(prefs->recent_policy_files, policy);
+	return apol_policy_path_compare((const apol_policy_path_t *)a, (const apol_policy_path_t *)b);
+}
+
+int preferences_add_recent_policy(preferences_t * prefs, const apol_policy_path_t * policy)
+{
+	size_t i;
+	apol_policy_path_t *p = NULL;
+	if (apol_vector_get_index(prefs->recent_policy_files, policy, preferences_policy_path_compare, NULL, &i) == 0) {
+		return 0;
+	}
+	if ((p = apol_policy_path_create_from_policy_path(policy)) == NULL || apol_vector_append(prefs->recent_policy_files, p) < 0) {
+		int error = errno;
+		apol_policy_path_destroy(&p);
+		errno = error;
+		return -1;
+	}
+	if (apol_vector_get_size(prefs->recent_policy_files) >= MAX_RECENT_ENTRIES) {
+		p = apol_vector_get_element(prefs->recent_policy_files, 0);
+		apol_policy_path_destroy(&p);
+		return apol_vector_remove(prefs->recent_policy_files, 0);
+	}
+	return 0;
 }
 
 apol_vector_t *preferences_get_recent_policies(preferences_t * prefs)
 {
-	return NULL;
-	/* FIX ME: return policy_path objects instead
-	 * return prefs->recent_policy_files; */
+	return prefs->recent_policy_files;
 }

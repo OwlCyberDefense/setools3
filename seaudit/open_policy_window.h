@@ -27,6 +27,7 @@
 #define OPEN_POLICY_WINDOW_H
 
 #include "toplevel.h"
+#include <apol/policy-path.h>
 
 /**
  * Display and run a dialog that allows the user open a policy, either
@@ -35,6 +36,6 @@
  * @param top Toplevel for the application.
  * @param filename If not NULL, the default filename for the policy.
  */
-void open_policy_window_run(toplevel_t * top, char *filename);
+void open_policy_window_run(toplevel_t * top, apol_policy_path_t * path);
 
 #endif

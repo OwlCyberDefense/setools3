@@ -29,6 +29,7 @@ typedef struct toplevel toplevel_t;
 
 #include "progress.h"
 #include "seaudit.h"
+#include <apol/policy-path.h>
 #include <gtk/gtk.h>
 #include <seaudit/message.h>
 
@@ -67,15 +68,12 @@ void toplevel_open_log(toplevel_t * top, const char *filename);
  * Open a policy file, destroying any existing policies first.
  *
  * @param top Toplevel object, used for UI control.
- * @param filename Name of the policy (either monolithic or base
- * policy) to open.
- * @param modules Vector of policy modules filenames (char *) to link
- * into the base.  If filename is not a modular policy base then this
- * parameter is ignored.  This function will not modify the vector.
+ * @param path Path to the policy to open.  This function takes
+ * ownership of this object.
  *
  * @return 0 on successful open, < 0 on error.
  */
-int toplevel_open_policy(toplevel_t * top, const char *filename, apol_vector_t * modules);
+int toplevel_open_policy(toplevel_t * top, apol_policy_path_t * path);
 
 /**
  * Update the status bar to show the current policy, number of log

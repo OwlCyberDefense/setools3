@@ -405,14 +405,18 @@ void policy_view_destroy(policy_view_t ** pv)
  * @param path Path to the currently loaded policy, or NULL if no
  * policy is loaded.
  */
-static void policy_view_load_policy_source(policy_view_t * pv, const char *path)
+static void policy_view_load_policy_source(policy_view_t * pv, apol_policy_path_t * path)
 {
 	apol_policy_t *policy = toplevel_get_policy(pv->top);
+	const char *primary_path;
 	if (path == NULL) {
 		gtk_text_buffer_set_text(pv->policy_text, "No policy has been loaded.", -1);
-	} else if (!apol_policy_is_source(policy)) {
+		return;
+	}
+	primary_path = apol_policy_path_get_primary(path);
+	if (!apol_policy_is_source(policy)) {
 		GString *string = g_string_new("");
-		g_string_printf(string, "Policy file %s is a binary policy.", path);
+		g_string_printf(string, "Policy file %s is not a source policy.", primary_path);
 		gtk_text_buffer_set_text(pv->policy_text, string->str, -1);
 		g_string_free(string, TRUE);
 	} else {
@@ -426,13 +430,13 @@ static void policy_view_load_policy_source(policy_view_t * pv, const char *path)
 		pv->policy_text_mmap = NULL;
 		pv->policy_text_len = 0;
 
-		if ((fd = open(path, O_RDONLY)) < 0) {
-			toplevel_ERR(pv->top, "Could not open %s for reading.", path);
+		if ((fd = open(primary_path, O_RDONLY)) < 0) {
+			toplevel_ERR(pv->top, "Could not open %s for reading.", primary_path);
 			return;
 		}
 		if (fstat(fd, &statbuf) < 0) {
 			close(fd);
-			toplevel_ERR(pv->top, "Could not stat %s.", path);
+			toplevel_ERR(pv->top, "Could not stat %s.", primary_path);
 			return;
 		}
 
@@ -440,7 +444,7 @@ static void policy_view_load_policy_source(policy_view_t * pv, const char *path)
 		if ((pv->policy_text_mmap = mmap(0, statbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
 			close(fd);
 			pv->policy_text_mmap = NULL;
-			toplevel_ERR(pv->top, "Could not mmap %s.", path);
+			toplevel_ERR(pv->top, "Could not mmap %s.", primary_path);
 			return;
 		}
 		close(fd);
@@ -499,7 +503,7 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 	}
 }
 
-void policy_view_update(policy_view_t * pv, const char *path)
+void policy_view_update(policy_view_t * pv, apol_policy_path_t * path)
 {
 	GtkTextIter start, end;
 	policy_view_load_policy_source(pv, path);

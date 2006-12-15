@@ -60,7 +60,7 @@ void policy_view_destroy(policy_view_t ** pv);
  * @param pv Policy view to update.
  * @param path Path to the policy, or NULL if no policy is loaded.
  */
-void policy_view_update(policy_view_t * pv, const char *path);
+void policy_view_update(policy_view_t * pv, apol_policy_path_t * path);
 
 /**
  * (Re)open the policy view window to allow the user to search for TE

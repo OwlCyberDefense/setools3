@@ -180,7 +180,7 @@ static int open_policy_try_loading(struct open_policy *op)
 	return 0;
 }
 
-void open_policy_window_run(toplevel_t * top, char *filename)
+void open_policy_window_run(toplevel_t * top, apol_policy_path_t * filename)
 {
 	struct open_policy op;
 	gint response;

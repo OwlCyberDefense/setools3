@@ -26,6 +26,7 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
+#include <apol/policy-path.h>
 #include <apol/vector.h>
 
 typedef struct preferences preferences_t;
@@ -240,22 +241,23 @@ int preferences_add_recent_log(preferences_t * prefs, const char *log);
 apol_vector_t *preferences_get_recent_logs(preferences_t * prefs);
 
 /**
- * Add a filename to the recently opened policy files list.  If the
+ * Add a policy path to the recently opened policy files list.  If the
  * name is already in the list then do nothing.  Otherwise append the
  * name to the end of the list.  If the list grows too large then
  * remove the oldest entry.
  *
  * @param prefs Preference object to modify.
- * @param policy Path to the most recently opened policy.  The string
+ * @param policy Path to the most recently opened policy.  The path
  * will be duplicated.
  *
  * @return 0 on success, < 0 on error.
  */
-int preferences_add_recent_policy(preferences_t * prefs, const char *policy);
+int preferences_add_recent_policy(preferences_t * prefs, const apol_policy_path_t * policy);
 
 /**
- * Return a vector of recently loaded policy files (type char *), with
- * the oldest file first.  Note that the vector may be empty.
+ * Return a vector of recently loaded policy files (type
+ * apol_policy_path_t *), with the oldest file first.  Note that the
+ * vector may be empty.
  *
  * @param prefs Preferences object to query.
  *

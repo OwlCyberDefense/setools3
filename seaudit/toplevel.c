@@ -235,10 +235,11 @@ static void toplevel_set_recent_logs_submenu(toplevel_t * top)
 static void toplevel_on_open_recent_policy_activate(GtkWidget * widget, gpointer user_data)
 {
 	GtkWidget *label = gtk_bin_get_child(GTK_BIN(widget));
-	const char *path = gtk_label_get_text(GTK_LABEL(label));
+	const char *primary_path = gtk_label_get_text(GTK_LABEL(label));
 	toplevel_t *top = (toplevel_t *) user_data;
 	//TODO handle modules with recent policy list
-	toplevel_open_policy(top, path, NULL);
+	apol_policy_path_t *path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, primary_path, NULL);
+	toplevel_open_policy(top, path);
 }
 
 /**
@@ -255,8 +256,9 @@ static void toplevel_set_recent_policies_submenu(toplevel_t * top)
 	gtk_menu_item_remove_submenu(recent);
 	submenu = gtk_menu_new();
 	for (i = 0; i < apol_vector_get_size(paths); i++) {
-		char *path = (char *)apol_vector_get_element(paths, i);
-		submenu_item = gtk_menu_item_new_with_label(path);
+		apol_policy_path_t *path = apol_vector_get_element(paths, i);
+                const char *primary_path = apol_policy_path_get_primary(path);
+		submenu_item = gtk_menu_item_new_with_label(primary_path);
 		gtk_menu_shell_prepend(GTK_MENU_SHELL(submenu), submenu_item);
 		gtk_widget_show(submenu_item);
 		g_signal_connect(G_OBJECT(submenu_item), "activate", G_CALLBACK(toplevel_on_open_recent_policy_activate), top);
@@ -319,16 +321,23 @@ static void toplevel_enable_policy_items(toplevel_t * top, gboolean sens)
 static void toplevel_update_title_bar(toplevel_t * top)
 {
 	char *log_path = seaudit_get_log_path(top->s);
-	char *policy_path = seaudit_get_policy_path(top->s);
+	apol_policy_path_t *policy_path = seaudit_get_policy_path(top->s);
+	char *policy_type_str = "Policy";
+	const char *primary_path;
 	char *s;
 
 	if (log_path == NULL) {
 		log_path = "No Log";
 	}
 	if (policy_path == NULL) {
-		policy_path = "No Policy";
+		primary_path = "No Policy";
+	} else {
+		if (apol_policy_path_get_type(policy_path) == APOL_POLICY_PATH_TYPE_MODULAR) {
+			policy_type_str = "Base";
+		}
+		primary_path = apol_policy_path_get_primary(policy_path);
 	}
-	if (asprintf(&s, "seaudit - [Log file: %s] [Policy file: %s]", log_path, policy_path) < 0) {
+	if (asprintf(&s, "seaudit - [Log file: %s] [%s file: %s]", log_path, policy_type_str, primary_path) < 0) {
 		toplevel_ERR(top, "%s", strerror(errno));
 		return;
 	}
@@ -630,9 +639,8 @@ void toplevel_open_log(toplevel_t * top, const char *filename)
 struct policy_run_datum
 {
 	toplevel_t *top;
-	const char *filename;
+	apol_policy_path_t *path;
 	apol_policy_t *policy;
-	apol_vector_t *modules;
 	int result;
 };
 
@@ -646,9 +654,10 @@ struct policy_run_datum
 static gpointer toplevel_open_policy_runner(gpointer data)
 {
 	struct policy_run_datum *run = (struct policy_run_datum *)data;
+	const char *primary_path = apol_policy_path_get_primary(run->path);
 	run->policy = NULL;
 	progress_update(run->top->progress, "Opening policy.");
-	run->result = apol_policy_open(run->filename, &run->policy, progress_apol_handle_func, run->top->progress);
+	run->result = apol_policy_open(primary_path, &run->policy, progress_apol_handle_func, run->top->progress);
 	if (run->result < 0) {
 		apol_policy_destroy(&run->policy);
 		progress_abort(run->top->progress, NULL);
@@ -657,16 +666,17 @@ static gpointer toplevel_open_policy_runner(gpointer data)
 	if (run->result > 0) {
 		progress_warn(run->top->progress, NULL);
 	}
-	if (run->modules) {
+	if (apol_policy_path_get_type(run->path) == APOL_POLICY_PATH_TYPE_MODULAR) {
+		const apol_vector_t *modules = apol_policy_path_get_modules(run->path);
 		size_t i;
 		if (!qpol_policy_has_capability(apol_policy_get_qpol(run->policy), QPOL_CAP_MODULES)) {
 			apol_policy_destroy(&run->policy);
 			run->result = -1;
-			progress_abort(run->top->progress, "Polcy %s does not support loadable modules.", run->filename);
+			progress_abort(run->top->progress, "Polcy %s does not support loadable modules.", primary_path);
 			return NULL;
 		}
-		for (i = 0; i < apol_vector_get_size(run->modules); i++) {
-			char *module_filename = apol_vector_get_element(run->modules, i);
+		for (i = 0; i < apol_vector_get_size(modules); i++) {
+			const char *module_filename = apol_vector_get_element(modules, i);
 			qpol_module_t *mod = NULL;
 			if (qpol_module_create_from_file(module_filename, &mod)) {
 				run->result = -1;
@@ -694,25 +704,26 @@ static gpointer toplevel_open_policy_runner(gpointer data)
 	return NULL;
 }
 
-int toplevel_open_policy(toplevel_t * top, const char *filename, apol_vector_t * modules)
+int toplevel_open_policy(toplevel_t * top, apol_policy_path_t * path)
 {
-	struct policy_run_datum run = { top, filename, NULL, modules, 0 };
+	struct policy_run_datum run = { top, path, NULL, 0 };
 
 	util_cursor_wait(GTK_WIDGET(top->w));
-	progress_show(top->progress, filename);
+	progress_show(top->progress, apol_policy_path_get_primary(path));
 	g_thread_create(toplevel_open_policy_runner, &run, FALSE, NULL);
 	progress_wait(top->progress);
 	progress_hide(top->progress);
 	util_cursor_clear(GTK_WIDGET(top->w));
 	if (run.result < 0) {
+		apol_policy_path_destroy(&path);
 		return run.result;
 	}
-	seaudit_set_policy(top->s, run.policy, filename);
+	seaudit_set_policy(top->s, run.policy, path);
 	toplevel_set_recent_policies_submenu(top);
 	toplevel_enable_policy_items(top, TRUE);
 	toplevel_update_title_bar(top);
 	toplevel_update_status_bar(top);
-	policy_view_update(top->pv, filename);
+	policy_view_update(top->pv, path);
 	return 0;
 }
 

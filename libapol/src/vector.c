@@ -221,7 +221,7 @@ static int apol_vector_grow(apol_vector_t * v)
 	return 0;
 }
 
-int apol_vector_get_index(const apol_vector_t * v, void *elem, apol_vector_comp_func * cmp, void *data, size_t * i)
+int apol_vector_get_index(const apol_vector_t * v, const void *elem, apol_vector_comp_func * cmp, void *data, size_t * i)
 {
 	if (!v || !i) {
 		errno = EINVAL;
@@ -263,7 +263,7 @@ int apol_vector_append_unique(apol_vector_t * v, void *elem, apol_vector_comp_fu
 	return 1;
 }
 
-int apol_vector_compare(apol_vector_t * a, apol_vector_t * b, apol_vector_comp_func * cmp, void *data, size_t * i)
+int apol_vector_compare(const apol_vector_t * a, const apol_vector_t * b, apol_vector_comp_func * cmp, void *data, size_t * i)
 {
 	int compval;
 	if (a == NULL || b == NULL || i == NULL) {
