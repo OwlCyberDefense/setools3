@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
+# Copyright (C) 2001-2007 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
@@ -424,13 +424,22 @@ proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} 
 
     set num_enabled 0
     set num_disabled 0
+    if {[ApolTop::is_capable "line numbers"]} {
+        set do_linenums 1
+    } else {
+        set do_linenums 0
+    }
     foreach r $rules {
         $path.tb insert end [string repeat " " $indent]
         foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderSynAVRule $r] {break}
-        set text [list \[ {} \
-                      $line_num linenum \
-                      "\] " {} \
-                      $rule_type {}]
+        if {$do_linenums} {
+            set text [list \[ {} \
+                          $line_num linenum \
+                          "\] " {} \
+                          $rule_type {}]
+        } else {
+            set text [list $rule_type {}]
+        }
         set source_set [_render_typeset $source_set]
         set target_set [_render_typeset $target_set]
         if {[llength $class] > 1} {
@@ -512,13 +521,22 @@ proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} 
     }
     set num_enabled 0
     set num_disabled 0
+    if {[ApolTop::is_capable "line numbers"]} {
+        set do_linenums 1
+    } else {
+        set do_linenums 0
+    }
     foreach r $rules {
         $path.tb insert end [string repeat " " $indent]
         foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderSynTERule $r] {break}
-        set text [list \[ {} \
-                      $line_num linenum \
-                      "\] " {} \
-                      $rule_type {}]
+        if {$do_linenums} {
+            set text [list \[ {} \
+                          $line_num linenum \
+                          "\] " {} \
+                          $rule_type {}]
+        } else {
+            set text [list $rule_type {}]
+        }
         set source_set [_render_typeset $source_set]
         set target_set [_render_typeset $target_set]
         if {[llength $class] > 1} {

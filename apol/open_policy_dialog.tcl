@@ -28,7 +28,7 @@ proc Apol_Open_Policy_Dialog::getPolicyPath {defaultPath} {
     set vars(mod_vers) {}
     set vars(mod_paths) {}
     foreach m [lindex $defaultPath 2] {
-        if {[catch {apol_GetModuleInfo $f} info]} {
+        if {[catch {apol_GetModuleInfo $m} info]} {
             tk_messageBox -icon error -type ok -title "Open Module" -message $info
         } else {
             foreach {name vers} $info {break}
@@ -73,13 +73,15 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     set primary_f [frame $f.primary]
     pack $primary_f -padx 4 -pady 8 -expand 0 -fill x
     set l [label $primary_f.l -text "Policy Filename:"]
-    grid $l - -sticky w
-    set e [entry $primary_f.e -width 32 -bg white \
+    pack $l -anchor w
+    frame $primary_f.f
+    pack $primary_f.f -expand 1 -fill x
+    set e [entry $primary_f.f.e -width 32 -bg white \
                -textvariable Apol_Open_Policy_Dialog::vars(primary_file)]
-    set b [button $primary_f.b -text "Browse" \
+    set b [button $primary_f.f.b -text "Browse" \
                -command Apol_Open_Policy_Dialog::browsePrimary]
-    grid $e $b -padx 4
-    grid configure $e -sticky ew
+    pack $e -side left -expand 1 -fill x -padx 4
+    pack $b -side right -expand 0 -padx 4
 
     set modules_f [frame $f.modules]
     pack $modules_f -pady 4 -padx 4 -expand 1 -fill both
@@ -99,7 +101,6 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     set sb [scrollbar $mod_list_f.sb -orient vertical \
                 -command [list Apol_Open_Policy_Dialog::multiscroll yview]]
     grid $ml $vl $pl $sb -sticky nsew
-    grid configure $sb -sticky ns
     set bb [ButtonBox $modules_f.bb -homogeneous 1 -orient vertical -pady 2]
     $bb add -text "Add" -command Apol_Open_Policy_Dialog::browseModule
     $bb add -text "Remove" -command Apol_Open_Policy_Dialog::removeModule
