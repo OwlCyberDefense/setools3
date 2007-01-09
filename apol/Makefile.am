@@ -30,7 +30,7 @@ apol_SOURCES = apol_gui.c \
 	common_widgets.tcl range_selector.tcl \
 	domaintrans_module.tcl directflow_module.tcl transflow_module.tcl \
 	relabel_module.tcl types_relation_module.tcl \
-	top.tcl
+	open_policy_dialog.tcl top.tcl
 
 dist_noinst_DATA = foo_module.tcl
 
@@ -67,5 +67,3 @@ $(top_builddir)/libsefs/src/libsefs.so:
 	$(MAKE) -C $(top_builddir)/libsefs/src $(notdir $@)
 
 CLEANFILES = $(dist_setools_SCRIPTS)
-
-

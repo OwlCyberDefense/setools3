@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
+# Copyright (C) 2001-2007 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SELinux policy analysis
@@ -13,7 +13,7 @@ namespace eval ApolTop {
     # All capital letters is the convention for variables defined via the Makefile.
     variable status {}
     variable policy_version_string {}
-    variable filename {}
+    variable last_policy_path {}
     variable policyConf_lineno {}
     variable polstats
     variable policy_stats_summary {}
@@ -1021,7 +1021,7 @@ proc ApolTop::buildRecentFilesMenu {} {
             set label $primary_file
         } else {
             set label "$primary_file + [llength $modules] module"
-            if {[llengith $modules] != 1} {
+            if {[llength $modules] != 1} {
                 append label "s"
             }
         }
@@ -1200,7 +1200,6 @@ proc ApolTop::aboutBox {} {
 }
 
 proc ApolTop::closePolicy {} {
-    variable filename {}
     variable policy_version_string {}
     variable policy_is_open
     variable policy_stats_summary {}
@@ -1346,9 +1345,7 @@ proc ApolTop::openPolicyFile {path} {
     variable policy_is_open
 
     ApolTop::closePolicy
-    if {[llength $path] > 1} {
-        foreach {path_type primary_file modules} $path {break}
-    }
+    foreach {path_type primary_file modules} $path {break}
 
     set policy_is_open 0
 
@@ -1371,29 +1368,30 @@ proc ApolTop::openPolicyFile {path} {
     if {$retval} {
         tk_messageBox -icon error -type ok -title "Open Policy" \
             -message "The selected file does not appear to be a valid SELinux Policy.\n\n$err"
-        return
+        return -1
     }
 
     if {[catch {apol_GetPolicyVersionString} policy_version_string]} {
         tk_messageBox -icon error -type ok -title "Open Policy" -message "Could not determine policy version:\n$policy_version_string"
-        return
+        return -1
     }
     ApolTop::showPolicyStats
     set policy_is_open 1
     if {[catch {open_apol_tabs $path} err]} {
         set policy_is_open 0
         tk_messageBox -icon error -type ok -title "Open Policy" -message $err
-        return
+        return -1
     }
     if {[catch {set_initial_open_policy_state} err]} {
         set policy_is_open 0
         tk_messageBox -icon error -type ok -title "Open Policy" -message $err
-        return
+        return -1
     }
 
     addRecent $path
-    variable filename $primary_file
+    variable last_policy_path $path
     wm title . "SELinux Policy Analysis - $primary_file"
+    return 0
 }
 
 proc ApolTop::doOpenIdle {} {
@@ -1407,23 +1405,8 @@ proc ApolTop::doOpenIdle {} {
 }
 
 proc ApolTop::openPolicy {} {
-    # FIX ME: use new open dialog here
-    variable filename
-
-    set file ""
-    set types {
-        {"All files"		*}
-        {"Policy conf files"	{.conf}}
-    }
-    if {$filename != ""} {
-        set file [tk_getOpenFile -filetypes $types -initialdir [file dirname $filename]]
-    } else {
-        set file [tk_getOpenFile -filetypes $types]
-    }
-
-    if {$file != ""} {
-        ApolTop::openPolicyFile [list monolithic $file {}]
-    }
+    variable last_policy_path
+    Apol_Open_Policy_Dialog::getPolicyPath $last_policy_path
 }
 
 proc ApolTop::apolExit { } {
