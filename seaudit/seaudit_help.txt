@@ -142,11 +142,11 @@ that type; it ignores the type's attributes.
 Click on 'Find TE Rules' button to perform the search and return a
 list of matching rules.  If the currently opened policy file is
 capable of showing line numbers, the displayed rules will contain
-hyperlinks to the appropriate line in the policy.conf tab.
+hyperlinks to the appropriate line in the Policy Source tab.
 
-The second tab, 'policy.conf', provides a convenient display of the
-raw policy.conf source file and is only available when opening a
-source policy file.
+The second tab, 'Policy Source', provides a convenient display of the
+text of the policy source file and is only available when opening a
+source policy.
 
 The seaudit program provides limited searching.  More thorough policy
 searches and analyses may be conducted through the companion tool,

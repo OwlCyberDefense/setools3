@@ -212,22 +212,12 @@ int apol_policy_is_mls(apol_policy_t * p)
 	if (p == NULL) {
 		return -1;
 	}
-	return qpol_policy_is_mls_enabled(p->p);
+	return qpol_policy_has_capability(p->p, QPOL_CAP_MLS);
 }
 
 int apol_policy_is_binary(apol_policy_t * p)
 {
 	return (p->policy_type == QPOL_POLICY_KERNEL_BINARY);
-}
-
-int apol_policy_is_modular(apol_policy_t * p)
-{
-	return (p->policy_type == QPOL_POLICY_MODULE_BINARY);
-}
-
-int apol_policy_is_source(apol_policy_t * p)
-{
-	return (p->policy_type == QPOL_POLICY_KERNEL_SOURCE);
 }
 
 char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
@@ -251,7 +241,7 @@ char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
 		policy_type = "unknown";
 		break;
 	}
-	if (qpol_policy_is_mls_enabled(p->p)) {
+	if (qpol_policy_has_capability(p->p, QPOL_CAP_MLS)) {
 		mls = "mls";
 	} else {
 		mls = "non-mls";

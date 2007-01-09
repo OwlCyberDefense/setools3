@@ -540,7 +540,7 @@ static int Apol_GetPolicyType(ClientData clientData, Tcl_Interp * interp, int ar
 		result_elem[0] = Tcl_NewStringObj("unknown", -1);
 		break;
 	}
-	if (qpol_policy_is_mls_enabled(qpolicydb)) {
+	if (qpol_policy_has_capability(qpolicydb, QPOL_CAP_MLS)) {
 		result_elem[1] = Tcl_NewStringObj("mls", -1);
 	} else {
 		result_elem[1] = Tcl_NewStringObj("non-mls", -1);

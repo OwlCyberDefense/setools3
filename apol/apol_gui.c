@@ -22,6 +22,7 @@
 #include <apol/util.h>
 
 #define STARTUP_SCRIPT "apol.tcl"
+#define COPYRIGHT_INFO "Copyright (C) 2001-2006 Tresys Technology, LLC"
 
 static struct option const opts[] = {
 	{"help", no_argument, NULL, 'h'},
@@ -98,13 +99,13 @@ int Tcl_AppInit(Tcl_Interp * interp)
 
 void usage(const char *program_name, bool_t brief)
 {
-	printf("Usage: %s [OPTIONS] [FILE]\n", program_name);
+	printf("Usage: %s [OPTIONS] [POLICY ...]\n", program_name);
 	if (brief) {
 		printf("   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
 	printf("Policy Analysis tool for Security Enhanced Linux.\n\n");
-	printf("   FILE                    open policy file named FILE\n");
+	printf("   POLICY                  open policy from file(s)\n");
 	printf("   -v, --version           display version information\n");
 	printf("   -h, --help              display this help dialog\n\n");
 	return;
@@ -112,6 +113,7 @@ void usage(const char *program_name, bool_t brief)
 
 void print_version_info(void)
 {
+	printf("apol %s\n", COPYRIGHT_INFO);
 	printf("Policy Analysis tool for Security Enhanced Linux.\n\n");
 	printf("   GUI version %s\n", VERSION);
 	printf("   libapol version %s\n\n", libapol_get_version());
@@ -124,7 +126,7 @@ void parse_command_line(int argc, char **argv)
 	bool_t help, ver;
 
 	help = ver = FALSE;
-	while ((optc = getopt_long(argc, argv, "p:vh", opts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "pvh", opts, NULL)) != -1) {
 		switch (optc) {
 		case 'p':
                     /* flag is deprecated and is now ignored */

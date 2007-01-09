@@ -1,3 +1,11 @@
+2007-01-05  J. Mowery  <jmowery@tresys.com>
+
+	* Added capability QPOL_CAP_SOURCE to detect ability to display
+	  the policy source.
+
+	* Deprecated qpol_policy_is_mls_enabled() use
+	  qpol_policy_has_capability() for QPOL_CAP_MLS instead.
+
 2007-01-04  J. Tang  <jtang@tresys.com>
 
 	* seaudit converted to use accept modular policies.

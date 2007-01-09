@@ -86,7 +86,9 @@ extern "C"
 		/** The policy format supports linking loadable modules. */
 		QPOL_CAP_MODULES,
 		/** The policy was loaded with av/te rules. */
-		QPOL_CAP_RULES_LOADED
+		QPOL_CAP_RULES_LOADED,
+		/** The policy source may be displayed. */
+		QPOL_CAP_SOURCE
 	} qpol_capability_e;
 
 /**
@@ -208,8 +210,9 @@ extern "C"
  *  @param policy The policy to check.
  *  @return Returns 1 if MLS is enabled, 0 if MLS is disabled, and
  *  < 0 if there was an error; if the call fails, errno will be set.
+ * @deprecated use qpol_policy_has_capability() for QPOL_CAP_MLS instead.
  */
-	extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy);
+	extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy) __attribute__((deprecated));
 
 /**
  *  Get the version number of the policy.

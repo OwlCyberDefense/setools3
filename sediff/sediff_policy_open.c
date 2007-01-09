@@ -266,7 +266,7 @@ int sediff_policy_file_textview_populate(sediff_file_data_t * sfd, GtkTextView *
 	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview), TRUE);
 
 	/* if this is not a binary policy */
-	if (apol_policy_is_source(policy) && sfd->data) {
+	if (qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SOURCE) && sfd->data) {
 		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, sfd->data, sfd->size, "mono-tag", NULL);
 		gtk_text_buffer_set_modified(txt, TRUE);
 		g_free(contents);
@@ -471,7 +471,7 @@ static int sediff_file_mmap(const char *file, char **file_data, size_t * size, a
 
 	/* if this is not a source policy just return now
 	 * but this is not an error */
-	if (!apol_policy_is_source(policy))
+	if (!qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SOURCE))
 		return 0;
 
 	rt = open(file, O_RDONLY);

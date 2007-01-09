@@ -130,7 +130,7 @@ For -ctaruSCfgnopi options, if NAME is provided, then only show info for NAME.\n
  Specifying a name is most useful when used with the -x option.\n\
  If no option is provided, display useful policy statistics (-s).\n\n\
 The default source policy, or if that is unavailable the default binary\n\
- policy, will be opened if no policy file name is provided.\n", stdout);
+ policy, will be opened if no policy is provided.\n", stdout);
 	return;
 }
 
@@ -1555,7 +1555,7 @@ static void print_user_roles(FILE * fp, qpol_user_t * user_datum, apol_policy_t 
 	fprintf(fp, "   %s\n", user_name);
 
 	if (expand) {
-		if (qpol_policy_is_mls_enabled(q)) {
+		if (qpol_policy_has_capability(q, QPOL_CAP_MLS)) {
 			/* print default level */
 			if (qpol_user_get_dfltlevel(q, user_datum, &dflt_level))
 				goto cleanup;

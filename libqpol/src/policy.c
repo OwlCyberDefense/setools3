@@ -1116,7 +1116,7 @@ int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
+static int is_mls_policy(qpol_policy_t * policy)
 {
 	policydb_t *db = NULL;
 
@@ -1132,6 +1132,11 @@ int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
 		return 1;
 	else
 		return 0;
+};
+
+int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
+{
+	return is_mls_policy(policy);
 }
 
 int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version)
@@ -1206,7 +1211,7 @@ int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
 		}
 	case QPOL_CAP_MLS:
 		{
-			return qpol_policy_is_mls_enabled(policy);
+			return is_mls_policy(policy);
 		}
 	case QPOL_CAP_MODULES:
 		{
@@ -1220,7 +1225,13 @@ int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
 				return 1;
 			break;
 		}
-	default:
+	case QPOL_CAP_SOURCE:
+		{
+			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+				return 1;
+			break;
+		}
+		default:
 		{
 			ERR(policy, "%s", "Unknown capability");
 			errno = EDOM;

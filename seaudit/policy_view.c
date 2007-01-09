@@ -414,7 +414,7 @@ static void policy_view_load_policy_source(policy_view_t * pv, apol_policy_path_
 		return;
 	}
 	primary_path = apol_policy_path_get_primary(path);
-	if (!apol_policy_is_source(policy)) {
+	if (!qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SOURCE)) {
 		GString *string = g_string_new("");
 		g_string_printf(string, "Policy file %s is not a source policy.", primary_path);
 		gtk_text_buffer_set_text(pv->policy_text, string->str, -1);
