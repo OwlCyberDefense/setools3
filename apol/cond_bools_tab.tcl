@@ -1,7 +1,7 @@
-# Copyright (C) 2004-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# Copyright (C) 2004-2007 Tresys Technology, LLC
+# see file 'COPYING' for use and warranty information
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget
 #
 # Author: <don.patterson@tresys.com>
@@ -9,7 +9,7 @@
 
 ##############################################################
 # ::Apol_Cond_Bools
-#  
+#
 # The Conditional Booleans tab namespace
 ##############################################################
 namespace eval Apol_Cond_Bools {
@@ -26,7 +26,7 @@ namespace eval Apol_Cond_Bools {
 proc Apol_Cond_Bools::search_bools {} {
     variable opts
     variable widgets
-    
+
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
@@ -84,7 +84,7 @@ proc Apol_Cond_Bools::reset_bools {} {
     # hopefully each of the traces associated with each boolean
     # triggers, causing the policy to be updated
     array set cond_bools_values [array get cond_bools_defaults]
-} 
+}
 
 ###############################################################
 #  ::cond_bool_set_bool_value
@@ -118,8 +118,8 @@ proc Apol_Cond_Bools::insert_listbox_item {bool_datum} {
 
 ################################################################
 # ::search
-#  	- Search text widget for a string
-# 
+#	- Search text widget for a string
+#
 proc Apol_Cond_Bools::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
@@ -127,8 +127,8 @@ proc Apol_Cond_Bools::search { str case_Insensitive regExpr srch_Direction } {
 
 ################################################################
 # ::goto_line
-#  	- goes to indicated line in text box
-# 
+#	- goes to indicated line in text box
+#
 proc Apol_Cond_Bools::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
@@ -136,7 +136,7 @@ proc Apol_Cond_Bools::goto_line { line_num } {
 
 ################################################################
 # ::set_Focus_to_Text
-# 
+#
 proc Apol_Cond_Bools::set_Focus_to_Text {} {
     focus $Apol_Cond_Bools::widgets(results)
 }
@@ -195,12 +195,6 @@ proc Apol_Cond_Bools::initializeVars {} {
 }
 
 ################################################################
-#  ::free_call_back_procs
-#
-proc Apol_Cond_Bools::free_call_back_procs { } {
-}
-
-################################################################
 #  ::create
 #
 proc Apol_Cond_Bools::create {nb} {
@@ -208,7 +202,7 @@ proc Apol_Cond_Bools::create {nb} {
     variable widgets
 
     initializeVars
-    
+
     # Layout frames
     set frame [$nb insert end $ApolTop::cond_bools_tab -text "Booleans"]
     set pw [PanedWindow $frame.pw -side top]
@@ -264,7 +258,7 @@ proc Apol_Cond_Bools::create {nb} {
                         -variable Apol_Cond_Bools::opts(show_current) \
                         -text "Show current state"]
     pack $show_default $show_current -anchor w
-       
+
     # Action Buttons
     set ok_button [button $ofm.ok -text "OK" -width 6 \
                        -command Apol_Cond_Bools::search_bools]
@@ -274,7 +268,7 @@ proc Apol_Cond_Bools::create {nb} {
     set widgets(results) [Apol_Widget::makeSearchResults [$rslts_frame getframe].results]
     pack $widgets(results) -expand yes -fill both
 
-    return $frame	
+    return $frame
 }
 
 proc Apol_Cond_Bools::toggleSearchBools {name1 name2 op} {

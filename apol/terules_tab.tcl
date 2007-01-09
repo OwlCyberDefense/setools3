@@ -1,7 +1,7 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
+# Copyright (C) 2001-2007 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget
 
 
@@ -90,9 +90,6 @@ proc Apol_TE::close { } {
     reinitialize_search_widgets
     reinitialize_default_search_options
     set enabled(cp:perms) 1
-}
-
-proc Apol_TE::free_call_back_procs { } {
 }
 
 # -----------------------------------------------------------------------------

@@ -285,7 +285,7 @@ static void toplevel_set_recent_policies_submenu(toplevel_t * top)
 					toplevel_ERR(top, "%s", strerror(errno));
 					break;
 				}
-				g_string_append_printf(tip, "\n	   %s", s);
+				g_string_append_printf(tip, "\n    %s", s);
 				free(s);
 			}
 		}

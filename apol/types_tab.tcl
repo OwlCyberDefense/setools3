@@ -1,14 +1,14 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# Copyright (C) 2001-2007 Tresys Technology, LLC
+# see file 'COPYING' for use and warranty information
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget
 
 
 
 ##############################################################
 # ::Apol_Types
-#  
+#
 # The Types page
 ##############################################################
 namespace eval Apol_Types {
@@ -49,14 +49,6 @@ proc Apol_Types::initializeVars {} {
     }
 }
 
-proc Apol_Types::free_call_back_procs { } {
-}
-
-# ----------------------------------------------------------------------------------------
-#  Command Apol_Types::set_Focus_to_Text
-#
-#  Description: 
-# ----------------------------------------------------------------------------------------
 proc Apol_Types::set_Focus_to_Text {} {
     focus $Apol_Types::widgets(results)
 }
@@ -78,23 +70,23 @@ proc Apol_Types::popupTypeInfo {which ta} {
                 return -1
             }
             set index_file_loaded 1
-        } 
+        }
     }
     set w .ta_infobox
     destroy $w
 
-    toplevel $w 
+    toplevel $w
     wm title $w $ta
 
     set top_f [frame $w.top_f]
     set bot_f [frame $w.bot_f]
     set notebook [NoteBook $top_f.nb]
-    
+
     set ta_info_tab [$notebook insert end ta_info_tab]
     if {$ApolTop::libsefs == 1} {
         set fc_info_tab [$notebook insert end fc_info_tab -text "Files"]
     }
-    
+
     if {$which == "type"} {
         $notebook itemconfigure ta_info_tab -text "Attributes"
     } else {
@@ -103,7 +95,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
     set s_ta [ScrolledWindow [$notebook getframe ta_info_tab].s_ta  -scrollbar both -auto both]
     set f_ta [text [$s_ta getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
     $s_ta setwidget $f_ta
-    
+
     if {$ApolTop::libsefs == 1} {
         if {$which != "type"} {
             set lbl [Label [$notebook getframe fc_info_tab].lbl \
@@ -124,8 +116,8 @@ proc Apol_Types::popupTypeInfo {which ta} {
     pack $notebook -fill both -expand yes -padx 4 -pady 4
     $notebook raise [$notebook page 0]
     $f_ta insert 0.0 $info_ta
-    $f_ta configure -state disabled 
-    
+    $f_ta configure -state disabled
+
     if {$ApolTop::libsefs == 1} {
         if {$which != "type"} {
             pack $lbl -side top -side top -anchor nw
@@ -148,7 +140,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
         }
         $f_fc configure -state disabled
     }
-    
+
     wm geometry $w 400x400
     wm deiconify $w
     wm protocol $w WM_DELETE_WINDOW [list destroy $w]
@@ -157,8 +149,8 @@ proc Apol_Types::popupTypeInfo {which ta} {
 
 ##############################################################
 # ::search
-#  	- Search text widget for a string
-# 
+#	- Search text widget for a string
+#
 proc Apol_Types::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
@@ -167,7 +159,7 @@ proc Apol_Types::search { str case_Insensitive regExpr srch_Direction } {
 proc Apol_Types::searchTypes {} {
     variable widgets
     variable opts
-	
+
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
@@ -261,8 +253,8 @@ proc Apol_Types::renderAttrib {attrib_datum show_types show_attribs} {
 
 ########################################################################
 # ::goto_line
-#  	- goes to indicated line in text box
-# 
+#	- goes to indicated line in text box
+#
 proc Apol_Types::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
@@ -295,7 +287,7 @@ proc Apol_Types::create {nb} {
     pack $pw1 -fill both -expand yes
     pack $tpane -fill both -expand 1
     pack $apane -fill both -expand 1
-    
+
     # Types listbox
     set tlistbox [Apol_Widget::makeScrolledListbox [$tbox getframe].types \
                       -height 10 -width 20 -listvar Apol_Types::typelist]
@@ -317,7 +309,7 @@ proc Apol_Types::create {nb} {
 
     set types_select [checkbutton $fm_types_select.type -text "Show types" -variable Apol_Types::opts(types)]
     set typeattribs [checkbutton $fm_types_select.typeattribs -text "Include attributes" \
-	-variable Apol_Types::opts(types:show_attribs)] 
+	-variable Apol_Types::opts(types:show_attribs)]
     pack $types_select -anchor w
     pack $typeattribs -anchor w -padx 8
     trace add variable Apol_Types::opts(types) write \
@@ -341,10 +333,10 @@ proc Apol_Types::create {nb} {
 
     set ok [button $ofm.ok -text OK -width 6 -command Apol_Types::searchTypes]
     pack $ok -side right -padx 5 -pady 5 -anchor ne
-  
+
     # Display results window
     set widgets(results) [Apol_Widget::makeSearchResults [$rbox getframe].results]
-    pack $widgets(results) -expand yes -fill both 
+    pack $widgets(results) -expand yes -fill both
 
     return $frame
 }

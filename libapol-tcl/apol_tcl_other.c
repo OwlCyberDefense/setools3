@@ -1,14 +1,13 @@
 /**
- * @file apol_tcl_other.c
+ * @file
  *
  * Miscellaneous routines that translate between apol (a Tcl/Tk
  * application) and libapol.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2002-2006 Tresys Technology, LLC
+ * Copyright (C) 2002-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -411,34 +410,84 @@ static int Apol_GetInfoString(ClientData clientData, Tcl_Interp * interp, int ar
  * Regardless of success or failure, the previously opened policy is
  * destroyed.
  *
- * @param argv This function takes one parameter: policy to open.
+ * @param argv This function takes three parameters:
+ * <ol>
+ *   <li>type of policy to open, one of "monolithic" or "modular"
+ *   <li>path to monolithic policy or to base policy
+ *   <li>(optional) if moduler policy, a list of module paths
+ * </ol>
  */
 static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
-	qpol_policy_t *q;
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Need a policy filename.", TCL_STATIC);
-		return TCL_ERROR;
+    enum apol_policy_path_type path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+    const char *primary_path;
+    const char **module_paths = NULL;
+    apol_vector_t *modules = NULL;
+    apol_policy_path_t *path;
+    int num_modules, retval = TCL_ERROR;
+
+    apol_tcl_clear_error();
+	if (argc < 3 || argc > 4) {
+		Tcl_SetResult(interp, "Need a policy type, base path, and ?module list?.", TCL_STATIC);
+		goto cleanup;
 	}
+        if (strcmp(argv[1], "modular") == 0) {
+            path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+            if (argc >= 4) {
+                if (Tcl_SplitList(interp, argv[3], &num_modules, &module_paths) == TCL_ERROR) {
+                    goto cleanup;
+                }
+                if ((modules = apol_vector_create()) == NULL) {
+                    ERR(policydb, "%s", strerror(errno));
+                    goto cleanup;
+                }
+                while (--num_modules >= 0) {
+                    char *m;
+                    if ((m = strdup(module_paths[num_modules])) == NULL ||
+                        apol_vector_append(modules, m) < 0) {
+                        ERR(policydb, "%s", strerror(errno));
+                        free(m);
+                        goto cleanup;
+                    }
+                }
+            }
+        }
+        primary_path = argv[2];
+        if ((path = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
+            ERR(policydb, "%s", strerror(errno));
+                goto cleanup;
+        }
+
 	apol_tcl_reset_globals();
+
 	apol_policy_destroy(&policydb);
-	if (apol_policy_open(argv[1], &policydb, apol_tcl_route_handle_to_string, NULL)) {
+        policydb = apol_policy_create_from_policy_path(path, 0, apol_tcl_route_handle_to_string, NULL);
+        if (policydb == NULL) {
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error opening policy: ", -1);
 		Tcl_AppendToObj(result_obj, strerror(errno), -1);
 		Tcl_SetObjResult(interp, result_obj);
-		return TCL_ERROR;
+                goto cleanup;
 	}
 	/* if not binary load syntactic rules so that line numbers may
 	 * be accessed */
-	q = apol_policy_get_qpol(policydb);
-	if (qpol_policy_has_capability(q, QPOL_CAP_SYN_RULES) && qpol_policy_build_syn_rule_table(q)) {
+	qpolicydb = apol_policy_get_qpol(policydb);
+	if (qpol_policy_has_capability(qpolicydb, QPOL_CAP_SYN_RULES) && qpol_policy_build_syn_rule_table(qpolicydb)) {
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error loading syntactic rules: ", -1);
 		Tcl_AppendToObj(result_obj, strerror(errno), -1);
 		Tcl_SetObjResult(interp, result_obj);
-		return TCL_ERROR;
+                goto cleanup;
 	}
-	qpolicydb = apol_policy_get_qpol(policydb);
-	return TCL_OK;
+        retval = TCL_OK;
+ cleanup:
+        apol_vector_destroy(&modules, free);
+        apol_policy_path_destroy(&path);
+        if (module_paths != NULL) {
+            Tcl_Free((char *) module_paths);
+        }
+        if (retval != TCL_OK) {
+            apol_tcl_write_error(interp);
+        }
+	return retval;
 }
 
 /**

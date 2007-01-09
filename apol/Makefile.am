@@ -1,6 +1,3 @@
-setoolsdir = @setoolsdir@
-apol_gui_version = @VERSION@
-
 bin_PROGRAMS = apol
 dist_setools_SCRIPTS = apol.tcl
 
@@ -15,8 +12,6 @@ dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 	perm_maps/apol_perm_mapping_ver20 \
 	perm_maps/apol_perm_mapping_ver21 \
 	apol.gif
-
-BUILT_SOURCES = tmp.tcl
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
@@ -51,20 +46,13 @@ endif
 
 TCL_STRIP_FILES = $(top_builddir)/config.tcl $(filter-out head.tcl,$(filter %.tcl,$(apol_SOURCES)))
 
-apol.tcl: head.tcl tmp.tcl
-	cat $^ | \
-	sed -e 's/APOL_GUI_VERSION/$(apol_gui_version)/g' | \
-	sed -e 's|APOL_INSTALL_DIR|$(setoolsdir)|g' > $@
-
-# build a compacted version of apol Tcl files
-tmp.tcl: $(TCL_STRIP_FILES)
-	cat $^ > $@
-	@perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' $@
+apol.tcl: head.tcl $(TCL_STRIP_FILES)
+	cat $(TCL_STRIP_FILES) | perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' > tmp.tcl
+	cat head.tcl tmp.tcl > $@
+	rm tmp.tcl
 
 %.tcl:
 # do nothing
-
-# FIX ME: link to default perm map
 
 $(top_builddir)/libapol/libapol-tcl.a:
 	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
@@ -80,8 +68,4 @@ $(top_builddir)/libsefs/src/libsefs.so:
 
 CLEANFILES = $(dist_setools_SCRIPTS)
 
-mostlyclean-local:
-	-rm -rf $(dist_setools_SCRIPTS)
 
-clean-local:
-	-rm -rf tmp.tcl

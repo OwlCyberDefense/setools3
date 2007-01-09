@@ -1,7 +1,7 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
+# Copyright (C) 2001-2007 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget
 #
 # Author: <don.patterson@tresys.com>
@@ -88,9 +88,6 @@ proc Apol_Initial_SIDS::close { } {
     set vals(items) {}
     Apol_Widget::clearSearchResults $widgets(results)
     Apol_Widget::clearContextSelector $widgets(context)
-}
-
-proc Apol_Initial_SIDS::free_call_back_procs { } {
 }
 
 # ------------------------------------------------------------------------------

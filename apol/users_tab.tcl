@@ -1,13 +1,13 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# Copyright (C) 2001-2007 Tresys Technology, LLC
+# see file 'COPYING' for use and warranty information
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget
 
 
 ##############################################################
 # ::Apol_Users
-#  
+#
 # The Users page
 ##############################################################
 namespace eval Apol_Users {
@@ -18,8 +18,8 @@ namespace eval Apol_Users {
 
 ##############################################################
 # ::search
-#  	- Search text widget for a string
-# 
+#	- Search text widget for a string
+#
 proc Apol_Users::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
@@ -28,7 +28,7 @@ proc Apol_Users::search { str case_Insensitive regExpr srch_Direction } {
 # ----------------------------------------------------------------------------------------
 #  Command Apol_Users::set_Focus_to_Text
 #
-#  Description: 
+#  Description:
 # ----------------------------------------------------------------------------------------
 proc Apol_Users::set_Focus_to_Text {} {
     focus $Apol_Users::widgets(results)
@@ -145,7 +145,7 @@ proc Apol_Users::open { } {
         $widgets(defaultCB) configure -state disabled
     }
     return 0
-} 
+}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Users::close
@@ -171,9 +171,6 @@ proc Apol_Users::initializeVars {} {
     }
 }
 
-proc Apol_Users::free_call_back_procs { } {
-}
-
 # ------------------------------------------------------------------------------
 #  Command Apol_Users::popupUserInfo
 # ------------------------------------------------------------------------------
@@ -184,8 +181,8 @@ proc Apol_Users::popupUserInfo {which user} {
 
 ########################################################################
 # ::goto_line
-#  	- goes to indicated line in text box
-# 
+#	- goes to indicated line in text box
+#
 proc Apol_Users::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
@@ -218,7 +215,7 @@ proc Apol_Users::create {nb} {
     pack $s_optionsbox -side top -expand 0 -fill both -padx 2
     pack $userbox -fill both -expand yes
     pack $resultsbox -expand yes -fill both -padx 2
-   
+
     # Users listbox widget
     set users_listbox [Apol_Widget::makeScrolledListbox [$userbox getframe].lb -width 20 -listvar Apol_Users::users_list]
     Apol_Widget::setListboxCallbacks $users_listbox \
@@ -237,7 +234,7 @@ proc Apol_Users::create {nb} {
     radiobutton $verboseFrame.all_info -text "All information" \
         -variable Apol_Users::opts(showSelection) -value all
     radiobutton $verboseFrame.names_only -text "Names only" \
-        -variable Apol_Users::opts(showSelection) -value names 
+        -variable Apol_Users::opts(showSelection) -value names
     pack $verboseFrame.all_info $verboseFrame.names_only -anchor w -padx 5 -pady 4
 
     checkbutton $rolesFrame.cb -variable Apol_Users::opts(useRole) -text "Role"
@@ -262,16 +259,16 @@ proc Apol_Users::create {nb} {
 
     set widgets(range) [Apol_Widget::makeRangeSelector $rangeFrame.range Users]
     pack $widgets(range) -expand 1 -fill x
-    
+
     # Action Buttons
     button $ofm.ok -text OK -width 6 -command {Apol_Users::searchUsers}
     pack $ofm.ok -side right -pady 5 -padx 5 -anchor ne
 
     # Display results window
     set widgets(results) [Apol_Widget::makeSearchResults [$resultsbox getframe].results]
-    pack $widgets(results) -expand yes -fill both 
+    pack $widgets(results) -expand yes -fill both
 
-    return $frame	
+    return $frame
 }
 
 #### private functions below ####

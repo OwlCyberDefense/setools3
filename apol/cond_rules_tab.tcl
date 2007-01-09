@@ -1,7 +1,7 @@
-# Copyright (C) 2004-2006 Tresys Technology, LLC
+# Copyright (C) 2004-2007 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget
 #
 # Author: <don.patterson@tresys.com>
@@ -159,13 +159,6 @@ proc Apol_Cond_Rules::initializeVars {} {
         use_regexp 0
     }
 }
-
-################################################################
-#  ::free_call_back_procs
-#
-proc Apol_Cond_Rules::free_call_back_procs { } {
-}
-
 
 ################################################################
 #  ::create

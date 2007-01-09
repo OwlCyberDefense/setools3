@@ -1,19 +1,12 @@
 #############################################################
 #  analysis_tab.tcl
 # -----------------------------------------------------------
-#  Copyright (C) 2003-2006 Tresys Technology, LLC
+#  Copyright (C) 2003-2007 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information
 #
 #  Requires tcl and tk 8.4+, with BWidget
-#  Author: <don.patterson@tresys.com>
-#  Modified by: <kcarr@tresys.com>
 # -----------------------------------------------------------
 
-##############################################################
-# ::Apol_Analysis
-#
-# The Analysis tab
-##############################################################
 namespace eval Apol_Analysis {
     variable vals
     variable widgets
@@ -40,9 +33,6 @@ proc Apol_Analysis::close {} {
         ${m}::close
     }
     reinitializeTabs
-}
-
-proc Apol_Analysis::free_call_back_procs { } {
 }
 
 proc Apol_Analysis::set_Focus_to_Text { tab } {

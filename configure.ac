@@ -517,8 +517,9 @@ AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol 
 # for older version of BWidget, overcome bug in NoteBook::bindtabs and
 # add a new -autopost option to ComboBox
 AC_CONFIG_COMMANDS([config.tcl], [[
+   echo "" > ./config.tcl
    if test ${bwidget_ver} = 1.7; then
-        cat > ./config.tcl <<EOF
+        cat >> ./config.tcl <<EOF
 proc tcl_patch_bwidget {} {
     # explicitly pull in old BWidget code before patching
     NoteBook .foo ; destroy .foo
@@ -529,8 +530,6 @@ EOF
 	cat ${ac_top_srcdir}/packages/mainframe.tcl >> ./config.tcl
 	cat ${ac_top_srcdir}/packages/notebook.tcl >> ./config.tcl
         echo "}" >> ./config.tcl
-   else
-        echo "" > ./config.tcl
    fi
    if test "x${enable_debug}" = xyes; then
         cat >> ./config.tcl <<EOF
@@ -548,7 +547,11 @@ if {![catch {source tkcon.tcl}]} {
 }
 EOF
    fi
-]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug])
+   echo "proc tcl_config_init {} {" >> ./config.tcl
+   echo "    set ApolTop::gui_ver ${apol_gui_version}" >> ./config.tcl
+   echo "    set ApolTop::apol_install_dir ${setoolsdir}" >> ./config.tcl
+   echo "}" >> ./config.tcl
+]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; setoolsdir=$setoolsdir])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \

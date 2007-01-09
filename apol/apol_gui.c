@@ -1,8 +1,8 @@
- /* Copyright (C) 2001-2006 Tresys Technology, LLC
+ /* Copyright (C) 2001-2007 Tresys Technology, LLC
   * see file 'COPYING' for use and warranty information */
 
 /*
- * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
+ * Author: mayerf@tresys.com
  */
 
 /* This file contains the tcl/tk initialization code for apol
@@ -10,21 +10,19 @@
 
 #include <config.h>
 
+#include <errno.h>
+#include <getopt.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <tcl.h>
 #include <tk.h>
-#include <getopt.h>
 #include "../libapol-tcl/apol_tcl_other.h"
+#include <apol/policy-path.h>
 #include <apol/util.h>
 
-#ifndef STARTUP_SCRIPT
 #define STARTUP_SCRIPT "apol.tcl"
-#endif
 
-/* internal global */
-char *policy_conf_file;
 static struct option const opts[] = {
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'v'},
@@ -32,11 +30,11 @@ static struct option const opts[] = {
 	{NULL, 0, NULL, 0}
 };
 
+static apol_policy_path_t *path = NULL;
+
 int Tcl_AppInit(Tcl_Interp * interp)
 {
 	char *script;
-	Tcl_DString command;
-	int rt;
 
 	if (Tcl_Init(interp) == TCL_ERROR) {
 		return TCL_ERROR;
@@ -51,34 +49,50 @@ int Tcl_AppInit(Tcl_Interp * interp)
 
 	/* find and start the TCL scripts */
 	if (apol_tcl_get_startup_script(interp, STARTUP_SCRIPT) != TCL_OK) {
-		fprintf(stderr, "Error finding TCL script: %s\n", interp->result);
+		fprintf(stderr, "Error finding TCL script: %s\n", Tcl_GetStringResult(interp));
 		Tcl_DeleteInterp(interp);
 		Tcl_Exit(1);
 	}
-	script = (char *)malloc(strlen(interp->result) + strlen(STARTUP_SCRIPT) + 3);
-	if (script == NULL) {
-		fprintf(stderr, "out of memory\n");
+        if (asprintf(&script, "%s/%s", interp->result, STARTUP_SCRIPT) < 0) {
+            fprintf(stderr, "%s\n", strerror(errno));
 		Tcl_DeleteInterp(interp);
 		Tcl_Exit(1);
 	}
-	sprintf(script, "%s/%s", interp->result, STARTUP_SCRIPT);
 	if (Tcl_EvalFile(interp, script) != TCL_OK) {
-		fprintf(stderr, "Error in StartScript (%s): %s on line %d\n\nIf %s is set, make sure directory is correct\n",
-			script, interp->result, interp->errorLine, APOL_ENVIRON_VAR_NAME);
+		fprintf(stderr, "Error while parsing %s: %s on line %d\n\nIf %s is set, make sure directory is correct.\n",
+			script, Tcl_GetStringResult(interp), interp->errorLine, APOL_ENVIRON_VAR_NAME);
 		Tcl_DeleteInterp(interp);
 		Tcl_Exit(1);
 	}
+        free(script);
 
-	/* If a policy.conf file was provided on command line, open it */
-	if (policy_conf_file != NULL) {
-		Tcl_DStringInit(&command);
-		Tcl_DStringAppend(&command, "ApolTop::openPolicyFile ", strlen("ApolTop::openPolicyFile "));
-		Tcl_DStringAppend(&command, policy_conf_file, strlen(policy_conf_file));
-		Tcl_DStringAppend(&command, " 0", strlen(" 0"));
-		rt = Tcl_Eval(interp, Tcl_DStringValue(&command));
-		Tcl_DStringFree(&command);
+	/* if a policy file was provided on command line, open it */
+	if (path != NULL) {
+            char *policy_type = "monolithic";
+            const char *primary_path = apol_policy_path_get_primary(path);
+            Tcl_Obj *command[2], *path_objs[3], *o;
+            path_objs[2] = Tcl_NewListObj(0, NULL);
+            if (apol_policy_path_get_type(path) == APOL_POLICY_PATH_TYPE_MODULAR) {
+                size_t i;
+                const apol_vector_t *modules = apol_policy_path_get_modules(path);
+                policy_type = "modular";
+                for (i = 0; i < apol_vector_get_size(modules); i++) {
+                    const char *m = apol_vector_get_element(modules, i);
+                    o = Tcl_NewStringObj(m, -1);
+                    if (Tcl_ListObjAppendElement(interp, path_objs[2], o) == TCL_ERROR) {
+                        fprintf(stderr, "Error building initial load command: %s\n", Tcl_GetStringResult(interp));
+                        Tcl_DeleteInterp(interp);
+                        Tcl_Exit(1);
+                    }
+                }
+            }
+            path_objs[0] = Tcl_NewStringObj(policy_type, -1);
+            path_objs[1] = Tcl_NewStringObj(primary_path, -1);
+            command[0] = Tcl_NewStringObj("::ApolTop::openPolicyFile", -1);
+            command[1] = Tcl_NewListObj(3, path_objs);
+            Tcl_EvalObjv(interp, 2, command, TCL_EVAL_GLOBAL);
+            apol_policy_path_destroy(&path);
 	}
-	free(script);
 	return TCL_OK;
 }
 
@@ -112,8 +126,8 @@ void parse_command_line(int argc, char **argv)
 	help = ver = FALSE;
 	while ((optc = getopt_long(argc, argv, "p:vh", opts, NULL)) != -1) {
 		switch (optc) {
-		case 'p':	       /* -p is deprecated and should not be used */
-			policy_conf_file = optarg;
+		case 'p':
+                    /* flag is deprecated and is now ignored */
 			break;
 		case 'h':
 			help = TRUE;
@@ -135,9 +149,31 @@ void parse_command_line(int argc, char **argv)
 			print_version_info();
 		exit(1);
 	}
-	if (optind < argc) {	       /* trailing non-options */
-		policy_conf_file = argv[optind];
-	}
+        if (argc - optind > 0) {
+            apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+            char *policy_file = argv[optind];
+            apol_vector_t *mod_paths = NULL;
+            if (argc - optind > 1) {
+                path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		if (!(mod_paths = apol_vector_create())) {
+			ERR(NULL, "%s", strerror(ENOMEM));
+			exit(1);
+		}
+		for (optind++; argc - optind; optind++) {
+			if (apol_vector_append(mod_paths, argv[optind])) {
+				ERR(NULL, "Error loading module %s.", argv[optind]);
+				apol_vector_destroy(&mod_paths, NULL);
+				exit(1);
+			}
+		}
+            }
+            if ((path = apol_policy_path_create(path_type, policy_file, mod_paths)) == NULL) {
+				ERR(NULL, "Error loading module %s.", argv[optind]);
+				apol_vector_destroy(&mod_paths, NULL);
+				exit(1);
+            }
+            apol_vector_destroy(&mod_paths, NULL);
+        }
 }
 
 int main(int argc, char *argv[])
