@@ -13,8 +13,6 @@ namespace eval ApolTop {
     # All capital letters is the convention for variables defined via the Makefile.
     variable status {}
     variable policy_version_string {}
-    variable policy_type {}
-    variable policy_mls_type {}
     variable filename {}
     variable policyConf_lineno {}
     variable polstats
@@ -126,32 +124,11 @@ proc ApolTop::get_toplevel_dialog {} {
     return $ApolTop::mainframe
 }
 
-proc ApolTop::is_binary_policy {} {
-    if {[is_policy_open] && $ApolTop::policy_type == "binary"} {
-        return 1
+proc ApolTop::is_capable {capability} {
+    if {![is_policy_open]} {
+        return 0;
     }
-    return 0
-}
-
-proc ApolTop::is_modular_policy {} {
-    if {[is_policy_open] && $ApolTop::policy_type == "modular"} {
-        return 1
-}
-    return 0
-}
-
-proc ApolTop::is_source_policy {} {
-    if {[is_policy_open] && $ApolTop::policy_type == "source"} {
-        return 1
-}
-    return 0
-}
-
-proc ApolTop::is_mls_policy {} {
-    if {![is_policy_open] || $ApolTop::policy_mls_type == "mls"} {
-        return 1
-    }
-    return 0
+    return [apol_IsCapable $capability]
 }
 
 proc ApolTop::load_fc_index_file {} {
@@ -292,11 +269,12 @@ proc ApolTop::set_Focus_to_Text { tab } {
 
     $ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal
     # The load query menu option should be enabled across all tabs.
-    # However, we disable the save query menu option if it this is not the Analysis or TE Rules tab.
-    # Currently, these are the only tabs providing the ability to save queries. It would be too trivial
-    # to allow saving queries for the other tabs.
+    # However, we disable the save query menu option if it this is not
+    # the Analysis or TE Rules tab.  Currently, these are the only
+    # tabs providing the ability to save queries. It would be too
+    # trivial to allow saving queries for the other tabs.
     $ApolTop::mainframe setmenustate Disable_LoadQuery_Tag normal
-    set ApolTop::policyConf_lineno ""
+    set ApolTop::policyConf_lineno {}
 
     switch -exact -- $tab \
         $ApolTop::components_tab {
@@ -582,10 +560,6 @@ proc ApolTop::save_query_info {} {
             }
         ::close $f
     }
-
-
-
-    return 0
 }
 
 proc ApolTop::displayFindDialog {} {
@@ -858,7 +832,6 @@ proc ApolTop::writeInitFile { } {
     variable title_font
     variable dialog_font
     variable general_font
-    variable policy_open_option
 
     if {[catch {open $dot_apol_file w+} f]} {
         tk_messageBox -icon error -type ok -title "Error" \
@@ -906,8 +879,6 @@ proc ApolTop::writeInitFile { } {
     puts $f [winfo height .]
     puts $f "\[window_width\]"
     puts $f [winfo width .]
-    puts $f "\[policy_open_option\]"
-    puts $f $policy_open_option
     puts $f "\[show_fake_attrib_warning\]"
     puts $f $ApolTop::show_fake_attrib_warning
     close $f
@@ -978,7 +949,7 @@ proc ApolTop::readInitFile { } {
             # The form of [max_recent_file] is a single line that
             # follows containing an integer with the max number of
             # recent files to keep.  The default is 5 if this is not
-            # specified.A number of less than 2 is set to 2.
+            # specified.  The minimum is 2.
             "max_recent_files" {
                 if {[string is integer -strict $value] != 1} {
                     puts "max_recent_files was not given as an integer and is ignored"
@@ -1012,6 +983,11 @@ proc ApolTop::readInitFile { } {
                         puts "EOF reached trying to read recent files."
                         break
                     }
+                    if {[llength $line] == 1} {
+                        # reading older recent files, before advent of
+                        # policy_path
+                        set line [list monolithic $line {}]
+                    }
                     lappend recent_files $line
                 }
             }
@@ -1020,8 +996,8 @@ proc ApolTop::readInitFile { } {
     close $f
 }
 
-# Add a policy path to the recently opened list, and then regenerate
-# the recent menu.
+# Add a policy path to the recently opened list, trim the menu to
+# max_recent_files, and then regenerate the recent menu.
 proc ApolTop::addRecent {path} {
     variable recent_files
     variable max_recent_files
@@ -1029,7 +1005,7 @@ proc ApolTop::addRecent {path} {
     if {[lsearch $recent_files $path] >= 0} {
         return
     }
-    set recent_files [lrange [concat $path $recent_files] 0 [expr {$max_recent_files - 1}]]
+    set recent_files [lrange [concat [list $path] $recent_files] 0 [expr {$max_recent_files - 1}]]
     buildRecentFilesMenu
 }
 
@@ -1040,18 +1016,28 @@ proc ApolTop::buildRecentFilesMenu {} {
     set recent_menu [$mainframe getmenu recent]
     $recent_menu delete 0 $max_recent_files
     foreach r $recent_files {
-        $recent_menu add command -label $r \
+        foreach {path_type primary_file modules} $r {break}
+        if {$path_type == "monolithic"} {
+            set label $primary_file
+        } else {
+            set label "$primary_file + [llength $modules] module"
+            if {[llengith $modules] != 1} {
+                append label "s"
+            }
+        }
+        $recent_menu add command -label $label \
             -command [list ApolTop::openPolicyFile $r]
     }
 }
 
 proc ApolTop::helpDlg {title file_name} {
     set help_dir [apol_GetHelpDir "$file_name"]
-    set helpfile "$help_dir/$file_name"
+    set helpfile [file join $help_dir $file_name]
     if {[catch {open $helpfile} f]} {
         set info $f
     } else {
         set info [read $f]
+        close $f
     }
     Apol_Widget::showPopupParagraph $title $info
 }
@@ -1218,7 +1204,6 @@ proc ApolTop::closePolicy {} {
     variable policy_version_string {}
     variable policy_is_open
     variable policy_stats_summary {}
-    variable policy_mls_type ""
 
     wm title . "SELinux Policy Analysis"
 
@@ -1240,18 +1225,18 @@ proc ApolTop::closePolicy {} {
     $ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
     $ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
     $ApolTop::mainframe setmenustate Disable_Summary disabled
-    ApolTop::enable_non_binary_tabs
+    ApolTop::enable_source_policy_tab
     ApolTop::enable_disable_conditional_widgets 1
     set_mls_tabs_state normal
     ApolTop::configure_edit_pmap_menu_item 0
     #ApolTop::configure_load_index_menu_item 0
 }
 
-proc ApolTop::open_apol_tabs {file} {
+proc ApolTop::open_apol_tabs {policy_path} {
     variable tab_names
     foreach tab $tab_names {
         if {$tab == "PolicyConf"} {
-            Apol_PolicyConf::open $file
+            Apol_PolicyConf::open $policy_path
         } else {
             Apol_${tab}::open
         }
@@ -1293,12 +1278,11 @@ proc ApolTop::enable_disable_conditional_widgets {enable} {
     }
 }
 
-proc ApolTop::enable_non_binary_tabs {} {
-    # We make sure tabs that were disabled are re-enabled
+proc ApolTop::enable_source_policy_tab {} {
     $ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state normal
 }
 
-proc ApolTop::disable_non_binary_tabs {} {
+proc ApolTop::disable_source_policy_tab {} {
     if {[$ApolTop::notebook raise] == $ApolTop::policy_conf_tab} {
         set name [$ApolTop::notebook pages 0]
         $ApolTop::notebook raise $name
@@ -1323,39 +1307,27 @@ proc ApolTop::set_mls_tabs_state {new_state} {
 }
 
 proc ApolTop::set_initial_open_policy_state {} {
-    set version_num [apol_GetPolicyVersionNumber]
-    if {$version_num < 16 && ![ApolTop::is_modular_policy]} {
+    if {![ApolTop::is_capable "conditionals"]} {
         ApolTop::enable_disable_conditional_widgets 0
     }
-    if {[ApolTop::is_binary_policy]} {
-        # FIX ME: use a capability here
-        if {$version_num >= 20} {
-            if {$ApolTop::show_fake_attrib_warning != 0} {
-                set fake_attrib_warn .fakeattribDlg
-                Dialog $fake_attrib_warn -modal local -parent . \
-                    -title "Warning - Attribute Names"
-                set message_text "Warning: Apol has created fake attribute names because
-the names are not preserved in the binary policy format."
-                set fake_attrib_label [label $fake_attrib_warn.l -text $message_text]
-                set fake_attrib_ok [button $fake_attrib_warn.b_ok -text "OK" \
-					-command "destroy $fake_attrib_warn"]
-                set fake_attrib_show [checkbutton $fake_attrib_warn.show_cb \
-                                          -text "Show this message again next time." \
-                                          -variable ApolTop::show_fake_attrib_warning]
-                $fake_attrib_show select
-                pack $fake_attrib_label -side top -padx 10 -pady 10
-                pack $fake_attrib_show -side top -pady 10
-                pack $fake_attrib_ok -side top -padx 10 -pady 10
-                $fake_attrib_warn draw
-            }
-        }
-        ApolTop::disable_non_binary_tabs
+    if {![ApolTop::is_capable "source"]} {
+        ApolTop::disable_source_policy_tab
     }
-    if {[ApolTop::is_modular_policy]} {
-        ApolTop::disable_non_binary_tabs
-    }
-    if {![is_mls_policy]} {
+    if {![ApolTop::is_capable "mls"]} {
         set_mls_tabs_state disabled
+    }
+    if {![ApolTop::is_capable "attribute names"] && \
+            [llength $::Apol_Types::attriblist] > 0 && \
+            $ApolTop::show_fake_attrib_warning} {
+        set d [Dialog .fake_attribute_dialog -modal local -parent . \
+                   -title "Warning - Attribute Names" -separator 1]
+        $d add -text "OK"
+        set f [$d getframe]
+        label $f.l -text "Warning: Apol has generated attribute names because\nthe original names were not preserved in the policy." -justify left
+        checkbutton $f.cb -text "Show this message again next time." \
+            -variable ApolTop::show_fake_attrib_warning
+        pack $f.l $f.cb -padx 10 -pady 10
+        $d draw
     }
 
     ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
@@ -1365,31 +1337,25 @@ the names are not preserved in the binary policy format."
     $ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal
 }
 
-# Open the given policy file.
+# Open the given policy path.  Re-initialize all tabs and add the path
+# to the list of recently opened policies.
 #
-# @param file Policy to open.
+# @param path Policy path to open.
 proc ApolTop::openPolicyFile {path} {
     variable policy_version_string
-    variable policy_type
-    variable policy_mls_type
     variable policy_is_open
 
     ApolTop::closePolicy
-    puts "path = $path"
     if {[llength $path] > 1} {
-        foreach {policy_type primary_file modules} $path {break}
-    } else {
-        set policy_type "monolithic"
-        set primary_file $path
-        set modules {}
+        foreach {path_type primary_file modules} $path {break}
     }
 
     set policy_is_open 0
 
     variable openDialogText "$primary_file:\n    Opening policy."
     variable openDialogVal -1
-    if {[set dialog_width [string length $primary_file]] < 16} {
-        set dialog_width 16
+    if {[set dialog_width [string length $primary_file]] < 32} {
+        set dialog_width 32
     }
     ProgressDlg .apol_policy_open -title "Open Policy" \
         -type normal -stop {} -separator 1 -parent . -maximum 2 \
@@ -1399,7 +1365,7 @@ proc ApolTop::openPolicyFile {path} {
     . configure -cursor watch
     update idletasks
     after idle ApolTop::doOpenIdle
-    set retval [catch {apol_OpenPolicy $policy_type $primary_file $modules} err]
+    set retval [catch {apol_OpenPolicy $path_type $primary_file $modules} err]
     . configure -cursor $orig_Cursor
     destroy .apol_policy_open
     if {$retval} {
@@ -1412,10 +1378,9 @@ proc ApolTop::openPolicyFile {path} {
         tk_messageBox -icon error -type ok -title "Open Policy" -message "Could not determine policy version:\n$policy_version_string"
         return
     }
-    foreach {policy_type policy_mls_type} [apol_GetPolicyType] {break}
     ApolTop::showPolicyStats
     set policy_is_open 1
-    if {[catch {open_apol_tabs $primary_file} err]} {
+    if {[catch {open_apol_tabs $path} err]} {
         set policy_is_open 0
         tk_messageBox -icon error -type ok -title "Open Policy" -message $err
         return
@@ -1426,9 +1391,9 @@ proc ApolTop::openPolicyFile {path} {
         return
     }
 
-    addRecent $file
+    addRecent $path
     variable filename $primary_file
-    wm title . "SELinux Policy Analysis - $filename"
+    wm title . "SELinux Policy Analysis - $primary_file"
 }
 
 proc ApolTop::doOpenIdle {} {
@@ -1457,7 +1422,7 @@ proc ApolTop::openPolicy {} {
     }
 
     if {$file != ""} {
-        ApolTop::openPolicyFile $file
+        ApolTop::openPolicyFile [list monolithic $file {}]
     }
 }
 
@@ -1541,25 +1506,18 @@ proc ApolTop::main {} {
     # Read apol's default settings file, gather all font information,
     # create the gui and then load recent files into the menu.
     catch {tcl_patch_bwidget}
-    bind . <Button-1> {focus %W}
-    bind . <Button-2> {focus %W}
-    bind . <Button-3> {focus %W}
     ApolTop::load_fonts
     ApolTop::readInitFile
     ApolTop::create
+    bind . <Button-1> {focus %W}
+    bind . <Button-2> {focus %W}
+    bind . <Button-3> {focus %W}
     ApolTop::buildRecentFilesMenu
 
     set icon_file [file join [apol_GetHelpDir apol.gif] apol.gif]
     if {![catch {image create photo -file $icon_file} icon]} {
         wm iconphoto . -default $icon
     }
-
-    #    # Configure the geometry for the window manager
-    #    set x  [winfo screenwidth .]
-    #    set y  [winfo screenheight .]
-    #    set width  [ expr $x - ($x/10) ]
-    #    set height [ expr $y - ($y/4)  ]
-    #    BWidget::place . $width $height center
 
     set ApolTop::top_width [$notebook cget -width]
     set ApolTop::top_height [$notebook cget -height]

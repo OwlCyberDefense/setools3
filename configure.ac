@@ -549,9 +549,9 @@ EOF
    fi
    echo "proc tcl_config_init {} {" >> ./config.tcl
    echo "    set ApolTop::gui_ver ${apol_gui_version}" >> ./config.tcl
-   echo "    set ApolTop::apol_install_dir ${setoolsdir}" >> ./config.tcl
+   echo "    set ApolTop::apol_install_dir \{${setoolsdir}\}" >> ./config.tcl
    echo "}" >> ./config.tcl
-]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; setoolsdir=$setoolsdir])
+]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; setoolsdir=${prefix}${setoolsdir}])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \

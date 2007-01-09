@@ -212,7 +212,7 @@ extern "C"
  *  < 0 if there was an error; if the call fails, errno will be set.
  * @deprecated use qpol_policy_has_capability() for QPOL_CAP_MLS instead.
  */
-	extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy) __attribute__((deprecated));
+	extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy) __attribute__ ((deprecated));
 
 /**
  *  Get the version number of the policy.

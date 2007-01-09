@@ -1,5 +1,5 @@
-# Copyright (C) 2005-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# Copyright (C) 2005-2007 Tresys Technology, LLC
+# see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
 # Requires tcl and tk 8.4+, with BWidget 1.7+
@@ -37,7 +37,7 @@ proc Apol_Context_Dialog::getContext {{defaultContext {{} {} {} {{{} {}}}}} {par
     } else {
         set vars($dialog:role_enable) 1
     }
-    
+
     Apol_Widget::resetTypeComboboxToPolicy $vars($dialog:type_box)
     Apol_Widget::setTypeComboboxValue $vars($dialog:type_box) $type
     if {$type == {}} {
@@ -45,10 +45,10 @@ proc Apol_Context_Dialog::getContext {{defaultContext {{} {} {} {{{} {}}}}} {par
     } else {
         set vars($dialog:type_enable) 1
     }
-    
+
     Apol_Widget::resetLevelSelectorToPolicy $vars($dialog:low_level)
     Apol_Widget::resetLevelSelectorToPolicy $vars($dialog:high_level)
-    if {[ApolTop::is_mls_policy]} {
+    if {[ApolTop::is_capable "mls"]} {
         if {[llength $range] == 1} {
             if {[lindex $range 0] == {{} {}}} {
                 set vars($dialog:low_enable) 0
@@ -90,7 +90,7 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
                     -separator 1 -homogeneous 1 -title "Select Context"]
     array unset vars $dialog:*
 
-    
+
     set f [$dialog getframe]
     set left_f [frame $f.left]
 

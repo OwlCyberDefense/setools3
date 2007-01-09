@@ -416,7 +416,6 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}}
 proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    set is_binary [ApolTop::is_binary_policy]
     if {$varname != {}} {
         upvar $varname progressvar
         set progressvar "Rendering [llength $rules] syntactic av rule(s)..."
@@ -465,7 +464,6 @@ proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} 
 proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    set is_binary [ApolTop::is_binary_policy]
     if {$varname != {}} {
         upvar $varname progressvar
         set progressvar "Sorting [llength $rule_list] semantic type rule(s)..."
@@ -507,7 +505,6 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}}
 proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    set is_binary [ApolTop::is_binary_policy]
     if {$varname != {}} {
         upvar $varname progressvar
         set progressvar "Rendering [llength $rules] syntactic type rule(s)..."

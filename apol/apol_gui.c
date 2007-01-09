@@ -54,8 +54,8 @@ int Tcl_AppInit(Tcl_Interp * interp)
 		Tcl_DeleteInterp(interp);
 		Tcl_Exit(1);
 	}
-        if (asprintf(&script, "%s/%s", interp->result, STARTUP_SCRIPT) < 0) {
-            fprintf(stderr, "%s\n", strerror(errno));
+	if (asprintf(&script, "%s/%s", interp->result, STARTUP_SCRIPT) < 0) {
+		fprintf(stderr, "%s\n", strerror(errno));
 		Tcl_DeleteInterp(interp);
 		Tcl_Exit(1);
 	}
@@ -65,34 +65,34 @@ int Tcl_AppInit(Tcl_Interp * interp)
 		Tcl_DeleteInterp(interp);
 		Tcl_Exit(1);
 	}
-        free(script);
+	free(script);
 
 	/* if a policy file was provided on command line, open it */
 	if (path != NULL) {
-            char *policy_type = "monolithic";
-            const char *primary_path = apol_policy_path_get_primary(path);
-            Tcl_Obj *command[2], *path_objs[3], *o;
-            path_objs[2] = Tcl_NewListObj(0, NULL);
-            if (apol_policy_path_get_type(path) == APOL_POLICY_PATH_TYPE_MODULAR) {
-                size_t i;
-                const apol_vector_t *modules = apol_policy_path_get_modules(path);
-                policy_type = "modular";
-                for (i = 0; i < apol_vector_get_size(modules); i++) {
-                    const char *m = apol_vector_get_element(modules, i);
-                    o = Tcl_NewStringObj(m, -1);
-                    if (Tcl_ListObjAppendElement(interp, path_objs[2], o) == TCL_ERROR) {
-                        fprintf(stderr, "Error building initial load command: %s\n", Tcl_GetStringResult(interp));
-                        Tcl_DeleteInterp(interp);
-                        Tcl_Exit(1);
-                    }
-                }
-            }
-            path_objs[0] = Tcl_NewStringObj(policy_type, -1);
-            path_objs[1] = Tcl_NewStringObj(primary_path, -1);
-            command[0] = Tcl_NewStringObj("::ApolTop::openPolicyFile", -1);
-            command[1] = Tcl_NewListObj(3, path_objs);
-            Tcl_EvalObjv(interp, 2, command, TCL_EVAL_GLOBAL);
-            apol_policy_path_destroy(&path);
+		char *policy_type = "monolithic";
+		const char *primary_path = apol_policy_path_get_primary(path);
+		Tcl_Obj *command[2], *path_objs[3], *o;
+		path_objs[2] = Tcl_NewListObj(0, NULL);
+		if (apol_policy_path_get_type(path) == APOL_POLICY_PATH_TYPE_MODULAR) {
+			size_t i;
+			const apol_vector_t *modules = apol_policy_path_get_modules(path);
+			policy_type = "modular";
+			for (i = 0; i < apol_vector_get_size(modules); i++) {
+				const char *m = apol_vector_get_element(modules, i);
+				o = Tcl_NewStringObj(m, -1);
+				if (Tcl_ListObjAppendElement(interp, path_objs[2], o) == TCL_ERROR) {
+					fprintf(stderr, "Error building initial load command: %s\n", Tcl_GetStringResult(interp));
+					Tcl_DeleteInterp(interp);
+					Tcl_Exit(1);
+				}
+			}
+		}
+		path_objs[0] = Tcl_NewStringObj(policy_type, -1);
+		path_objs[1] = Tcl_NewStringObj(primary_path, -1);
+		command[0] = Tcl_NewStringObj("::ApolTop::openPolicyFile", -1);
+		command[1] = Tcl_NewListObj(3, path_objs);
+		Tcl_EvalObjv(interp, 2, command, TCL_EVAL_GLOBAL);
+		apol_policy_path_destroy(&path);
 	}
 	return TCL_OK;
 }
@@ -129,7 +129,7 @@ void parse_command_line(int argc, char **argv)
 	while ((optc = getopt_long(argc, argv, "pvh", opts, NULL)) != -1) {
 		switch (optc) {
 		case 'p':
-                    /* flag is deprecated and is now ignored */
+			/* flag is deprecated and is now ignored */
 			break;
 		case 'h':
 			help = TRUE;
@@ -151,31 +151,31 @@ void parse_command_line(int argc, char **argv)
 			print_version_info();
 		exit(1);
 	}
-        if (argc - optind > 0) {
-            apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
-            char *policy_file = argv[optind];
-            apol_vector_t *mod_paths = NULL;
-            if (argc - optind > 1) {
-                path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-		if (!(mod_paths = apol_vector_create())) {
-			ERR(NULL, "%s", strerror(ENOMEM));
-			exit(1);
-		}
-		for (optind++; argc - optind; optind++) {
-			if (apol_vector_append(mod_paths, argv[optind])) {
-				ERR(NULL, "Error loading module %s.", argv[optind]);
-				apol_vector_destroy(&mod_paths, NULL);
+	if (argc - optind > 0) {
+		apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+		char *policy_file = argv[optind];
+		apol_vector_t *mod_paths = NULL;
+		if (argc - optind > 1) {
+			path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+			if (!(mod_paths = apol_vector_create())) {
+				ERR(NULL, "%s", strerror(ENOMEM));
 				exit(1);
 			}
+			for (optind++; argc - optind; optind++) {
+				if (apol_vector_append(mod_paths, argv[optind])) {
+					ERR(NULL, "Error loading module %s.", argv[optind]);
+					apol_vector_destroy(&mod_paths, NULL);
+					exit(1);
+				}
+			}
 		}
-            }
-            if ((path = apol_policy_path_create(path_type, policy_file, mod_paths)) == NULL) {
-				ERR(NULL, "Error loading module %s.", argv[optind]);
-				apol_vector_destroy(&mod_paths, NULL);
-				exit(1);
-            }
-            apol_vector_destroy(&mod_paths, NULL);
-        }
+		if ((path = apol_policy_path_create(path_type, policy_file, mod_paths)) == NULL) {
+			ERR(NULL, "Error loading module %s.", argv[optind]);
+			apol_vector_destroy(&mod_paths, NULL);
+			exit(1);
+		}
+		apol_vector_destroy(&mod_paths, NULL);
+	}
 }
 
 int main(int argc, char *argv[])

@@ -419,54 +419,53 @@ static int Apol_GetInfoString(ClientData clientData, Tcl_Interp * interp, int ar
  */
 static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
-    enum apol_policy_path_type path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
-    const char *primary_path;
-    const char **module_paths = NULL;
-    apol_vector_t *modules = NULL;
-    apol_policy_path_t *path;
-    int num_modules, retval = TCL_ERROR;
+	enum apol_policy_path_type path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+	const char *primary_path;
+	const char **module_paths = NULL;
+	apol_vector_t *modules = NULL;
+	apol_policy_path_t *path;
+	int num_modules, retval = TCL_ERROR;
 
-    apol_tcl_clear_error();
+	apol_tcl_clear_error();
 	if (argc < 3 || argc > 4) {
 		Tcl_SetResult(interp, "Need a policy type, base path, and ?module list?.", TCL_STATIC);
 		goto cleanup;
 	}
-        if (strcmp(argv[1], "modular") == 0) {
-            path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-            if (argc >= 4) {
-                if (Tcl_SplitList(interp, argv[3], &num_modules, &module_paths) == TCL_ERROR) {
-                    goto cleanup;
-                }
-                if ((modules = apol_vector_create()) == NULL) {
-                    ERR(policydb, "%s", strerror(errno));
-                    goto cleanup;
-                }
-                while (--num_modules >= 0) {
-                    char *m;
-                    if ((m = strdup(module_paths[num_modules])) == NULL ||
-                        apol_vector_append(modules, m) < 0) {
-                        ERR(policydb, "%s", strerror(errno));
-                        free(m);
-                        goto cleanup;
-                    }
-                }
-            }
-        }
-        primary_path = argv[2];
-        if ((path = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
-            ERR(policydb, "%s", strerror(errno));
-                goto cleanup;
-        }
+	if (strcmp(argv[1], "modular") == 0) {
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		if (argc >= 4) {
+			if (Tcl_SplitList(interp, argv[3], &num_modules, &module_paths) == TCL_ERROR) {
+				goto cleanup;
+			}
+			if ((modules = apol_vector_create()) == NULL) {
+				ERR(policydb, "%s", strerror(errno));
+				goto cleanup;
+			}
+			while (--num_modules >= 0) {
+				char *m;
+				if ((m = strdup(module_paths[num_modules])) == NULL || apol_vector_append(modules, m) < 0) {
+					ERR(policydb, "%s", strerror(errno));
+					free(m);
+					goto cleanup;
+				}
+			}
+		}
+	}
+	primary_path = argv[2];
+	if ((path = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
+		ERR(policydb, "%s", strerror(errno));
+		goto cleanup;
+	}
 
 	apol_tcl_reset_globals();
 
 	apol_policy_destroy(&policydb);
-        policydb = apol_policy_create_from_policy_path(path, 0, apol_tcl_route_handle_to_string, NULL);
-        if (policydb == NULL) {
+	policydb = apol_policy_create_from_policy_path(path, 0, apol_tcl_route_handle_to_string, NULL);
+	if (policydb == NULL) {
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error opening policy: ", -1);
 		Tcl_AppendToObj(result_obj, strerror(errno), -1);
 		Tcl_SetObjResult(interp, result_obj);
-                goto cleanup;
+		goto cleanup;
 	}
 	/* if not binary load syntactic rules so that line numbers may
 	 * be accessed */
@@ -475,18 +474,18 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error loading syntactic rules: ", -1);
 		Tcl_AppendToObj(result_obj, strerror(errno), -1);
 		Tcl_SetObjResult(interp, result_obj);
-                goto cleanup;
+		goto cleanup;
 	}
-        retval = TCL_OK;
- cleanup:
-        apol_vector_destroy(&modules, free);
-        apol_policy_path_destroy(&path);
-        if (module_paths != NULL) {
-            Tcl_Free((char *) module_paths);
-        }
-        if (retval != TCL_OK) {
-            apol_tcl_write_error(interp);
-        }
+	retval = TCL_OK;
+      cleanup:
+	apol_vector_destroy(&modules, free);
+	apol_policy_path_destroy(&path);
+	if (module_paths != NULL) {
+		Tcl_Free((char *)module_paths);
+	}
+	if (retval != TCL_OK) {
+		apol_tcl_write_error(interp);
+	}
 	return retval;
 }
 
@@ -502,51 +501,61 @@ static int Apol_ClosePolicy(ClientData clientData, Tcl_Interp * interp, int argc
 }
 
 /**
+ * Given a capability, return 1 if the currently loaded policy can do
+ * that particular thing, 0 if not.
+ *
+ * @param argv This function takes a single capability string, which
+ * is one of:
+ * <ol>
+ *   <li>"attribute names"
+ *   <li>"conditionals"
+ *   <li>"line numbers"
+ *   <li>"mls"
+ *   <li>"source"
+ *   <li>"syntactic rules"
+ * </ol>
+ */
+static int Apol_IsCapable(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
+{
+	qpol_capability_e cap;
+	int retval;
+	Tcl_Obj *result_obj;
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (argc < 1) {
+		Tcl_SetResult(interp, "Need a capability to check.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (strcmp(argv[1], "attribute names") == 0) {
+		cap = QPOL_CAP_ATTRIB_NAMES;
+	} else if (strcmp(argv[1], "conditionals") == 0) {
+		cap = QPOL_CAP_CONDITIONALS;
+	} else if (strcmp(argv[1], "line numbers") == 0) {
+		cap = QPOL_CAP_LINE_NUMBERS;
+	} else if (strcmp(argv[1], "mls") == 0) {
+		cap = QPOL_CAP_MLS;
+	} else if (strcmp(argv[1], "source") == 0) {
+		cap = QPOL_CAP_SOURCE;
+	} else if (strcmp(argv[1], "syntactic rules") == 0) {
+		cap = QPOL_CAP_SYN_RULES;
+	} else {
+		Tcl_SetResult(interp, "Unknown capability.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	retval = qpol_policy_has_capability(qpolicydb, cap);
+	result_obj = Tcl_NewIntObj(retval);
+	Tcl_SetObjResult(interp, result_obj);
+	return TCL_OK;
+}
+
+/**
  * Return a string that describes the current version if libapol.
  */
 static int Apol_GetVersion(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	Tcl_SetResult(interp, (char *)libapol_get_version(), TCL_STATIC);
-	return TCL_OK;
-}
-
-/**
- * Returns a 2-uple describing the current policy type.  The first
- * element is says if the policy is binary or source.  The second
- * element gives if the policy is MLS or not.
- * <ol>
- *   <li>"binary" or "source"
- *   <li>"mls" or "non-mls"
- * </ol>
- */
-static int Apol_GetPolicyType(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	Tcl_Obj *result_elem[2], *result_list;
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
-	}
-	switch (apol_policy_get_policy_type(policydb)) {
-	case QPOL_POLICY_KERNEL_SOURCE:
-		result_elem[0] = Tcl_NewStringObj("source", -1);
-		break;
-	case QPOL_POLICY_KERNEL_BINARY:
-		result_elem[0] = Tcl_NewStringObj("binary", -1);
-		break;
-	case QPOL_POLICY_MODULE_BINARY:
-		result_elem[0] = Tcl_NewStringObj("modular", -1);
-		break;
-	default:
-		result_elem[0] = Tcl_NewStringObj("unknown", -1);
-		break;
-	}
-	if (qpol_policy_has_capability(qpolicydb, QPOL_CAP_MLS)) {
-		result_elem[1] = Tcl_NewStringObj("mls", -1);
-	} else {
-		result_elem[1] = Tcl_NewStringObj("non-mls", -1);
-	}
-	result_list = Tcl_NewListObj(2, result_elem);
-	Tcl_SetObjResult(interp, result_list);
 	return TCL_OK;
 }
 
@@ -568,28 +577,6 @@ static int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp * inter
 	}
 	Tcl_SetResult(interp, pol_string, TCL_VOLATILE);
 	free(pol_string);
-	return TCL_OK;
-}
-
-/**
- * Returns the policy version number for the currently opened policy.
- */
-static int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	unsigned int version;
-	Tcl_Obj *version_obj;
-
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
-	}
-	if (qpol_policy_get_policy_version(qpolicydb, &version) < 0) {
-		apol_tcl_write_error(interp);
-		return TCL_ERROR;
-	}
-	version_obj = Tcl_NewIntObj(version);
-	Tcl_SetObjResult(interp, version_obj);
 	return TCL_OK;
 }
 
@@ -1216,10 +1203,9 @@ int apol_tcl_init(Tcl_Interp * interp)
 	Tcl_CreateCommand(interp, "apol_GetInfoString", Apol_GetInfoString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_OpenPolicy", Apol_OpenPolicy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_ClosePolicy", Apol_ClosePolicy, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_IsCapable", Apol_IsCapable, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetVersion", Apol_GetVersion, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetPolicyType", Apol_GetPolicyType, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", Apol_GetPolicyVersionString, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", Apol_GetPolicyVersionNumber, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetStats", Apol_GetStats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidRange", Apol_IsValidRange, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidPartialContext", Apol_IsValidPartialContext, NULL, NULL);

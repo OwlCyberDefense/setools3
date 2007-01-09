@@ -1124,13 +1124,17 @@ int main(int argc, char **argv)
 			goto err;
 		}
 	}
-	
-	orig_policy = apol_policy_create_from_policy_path(orig_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : APOL_POLICY_OPTION_NO_RULES), NULL, NULL);
+
+	orig_policy =
+		apol_policy_create_from_policy_path(orig_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : APOL_POLICY_OPTION_NO_RULES),
+						    NULL, NULL);
 	if (!orig_policy) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
-	mod_policy = apol_policy_create_from_policy_path(mod_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : APOL_POLICY_OPTION_NO_RULES), NULL, NULL);
+	mod_policy =
+		apol_policy_create_from_policy_path(mod_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : APOL_POLICY_OPTION_NO_RULES),
+						    NULL, NULL);
 	if (!mod_policy) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;

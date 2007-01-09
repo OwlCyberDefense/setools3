@@ -102,7 +102,7 @@ proc Apol_Users::renderUser {user_datum show_all} {
     if {!$show_all} {
         return $text
     }
-    if {[ApolTop::is_mls_policy]} {
+    if {[ApolTop::is_capable "mls"]} {
         append text " level [apol_RenderLevel $default]"
         set low [apol_RenderLevel [lindex $range 0]]
         set high [apol_RenderLevel [lindex $range 1]]
@@ -135,7 +135,7 @@ proc Apol_Users::open { } {
     }
     set users_list [lsort $users_list]
     $Apol_Users::widgets(role) configure -values $Apol_Roles::role_list
-    if {[ApolTop::is_mls_policy]} {
+    if {[ApolTop::is_capable "mls"]} {
         Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
         $widgets(defaultCB) configure -state normal
     } else {
@@ -144,7 +144,6 @@ proc Apol_Users::open { } {
         set Apol_Users::opts(enable_default) 0
         $widgets(defaultCB) configure -state disabled
     }
-    return 0
 }
 
 # ------------------------------------------------------------------------------

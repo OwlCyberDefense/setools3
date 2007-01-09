@@ -1,5 +1,5 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# Copyright (C) 2001-2007 Tresys Technology, LLC
+# see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
 # Requires tcl and tk 8.4+, with BWidget 1.7+
@@ -68,7 +68,7 @@ proc Apol_Widget::setContextSelectorState {path newState} {
     foreach w {display button} {
         $path.context.$w configure -state $new_state
     }
-    if {![ApolTop::is_mls_policy]} {
+    if {![ApolTop::is_capable "mls"]} {
         set new_state disabled
     }
     foreach w {label exact subset superset} {
@@ -131,7 +131,7 @@ proc Apol_Widget::_update_context_display {path name1 name2 op} {
     } else {
         lappend context [lindex $type 0]
     }
-    if {[ApolTop::is_mls_policy]} {
+    if {[ApolTop::is_capable "mls"]} {
         if {$range == {} || $range == {{{} {}}}} {
             lappend context "*"
         } else {
