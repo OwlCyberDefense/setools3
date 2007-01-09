@@ -114,6 +114,9 @@ int main(int argc, char **argv)
 	char *modname = NULL;
 	char *prof_name = NULL;
 	char *old_pol_path = NULL;
+	char *base_path = NULL;
+	apol_policy_path_t *pol_path = NULL;
+	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 	char *minsev = NULL;
 	unsigned char output_override = 0;
 	sechk_lib_t *lib;
@@ -249,23 +252,32 @@ int main(int argc, char **argv)
 			free(old_pol_path);
 			old_pol_path = NULL;
 		}
+		base_path = argv[optind];
+		optind++;
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 		while (argc - optind) {
 			if (apol_vector_append(policy_mods, argv[optind++]))
 				goto exit_err;
 		}
-		if (sechk_lib_load_policy(policy_mods, lib))
+		pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
+		if (!pol_path)
+			goto exit_err;
+		if (sechk_lib_load_policy(pol_path, lib))
 			goto exit_err;
 	} else {
 		if (old_pol_path) {
-			if (apol_vector_append(policy_mods, old_pol_path))
+			pol_path = apol_policy_path_create(path_type, old_pol_path, policy_mods);
+			if (!pol_path)
 				goto exit_err;
-			if (sechk_lib_load_policy(policy_mods, lib))
+			if (sechk_lib_load_policy(pol_path, lib))
 				goto exit_err;
 		} else {
 			if (sechk_lib_load_policy(NULL, lib))
 				goto exit_err;
 		}
 	}
+	/* library now owns path object */
+	pol_path = NULL;
 
 	/* set the minimum severity */
 	if (minsev && sechk_lib_set_minsev(minsev, lib) < 0)
@@ -353,6 +365,7 @@ int main(int argc, char **argv)
 	free(prof_name);
 	free(modname);
 	free(old_pol_path);
+	apol_policy_path_destroy(&pol_path);
 	sechk_lib_destroy(&lib);
 	return 1;
 }

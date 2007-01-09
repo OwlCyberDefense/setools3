@@ -215,7 +215,7 @@ int qpol_default_policy_find(char **path)
 	*path = NULL;
 	/* Try default source policy first as a source policy contains
 	 * more useful information. */
-	if ((rt = search_policy_source_file(path)) != 0) {
+	if ((rt = search_policy_source_file(path)) < 0) {
 		return rt;
 	}
 	/* Try a binary policy */

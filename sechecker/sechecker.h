@@ -34,6 +34,7 @@ extern "C"
 #include <config.h>
 
 #include <apol/policy.h>
+#include <apol/policy-path.h>
 #include <apol/policy-query.h>
 #include <apol/vector.h>
 #include <apol/util.h>
@@ -56,7 +57,7 @@ extern "C"
 #define SECHK_OUT_STATS		0x01
 #define SECHK_OUT_LIST		0x02
 #define SECHK_OUT_PROOF		0x04
-/* mode flags from command line, test profiles, and comfig file */
+/* mode flags from command line and test profiles */
 /* NOTE: none is only valid in profiles */
 #define SECHK_OUT_NONE    0x00
 #define SECHK_OUT_QUIET   0x20
@@ -221,7 +222,7 @@ extern "C"
 	/** The path for the selinux configuration file */
 		char *selinux_config_path;
 	/** File name of the policy loaded.*/
-		char *policy_path;
+		apol_policy_path_t *policy_path;
 	/** Minimum severity level specified for the report. */
 		const char *minsev;
 	} sechk_lib_t;
@@ -565,14 +566,13 @@ extern "C"
 /**
  *  Load the policy the library will analyze.
  *
- *  @param policy_mods Vector of paths of the policy modules to load,
- *  or NULL to search for the system default policy. <b>The first element
- *  of the vector must be the base module.</b>
+ *  @param policy_mods Policy path object to use to load the policy.
  *  @param lib The library into which to load the policy.
  *
  *  @return 0 on success and < 0 on failure.
  */
-	int sechk_lib_load_policy(apol_vector_t * policy_mods, sechk_lib_t * lib);
+	int sechk_lib_load_policy(apol_policy_path_t * policy_mods, sechk_lib_t * lib);
+
 #ifdef LIBSEFS
 
 /**

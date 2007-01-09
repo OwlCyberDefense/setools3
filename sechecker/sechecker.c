@@ -220,7 +220,7 @@ void sechk_lib_destroy(sechk_lib_t ** lib)
 	free((*lib)->fc_path);
 #endif
 	free((*lib)->selinux_config_path);
-	free((*lib)->policy_path);
+	apol_policy_path_destroy(&((*lib)->policy_path));
 	free(*lib);
 	*lib = NULL;
 }
@@ -378,67 +378,46 @@ sechk_proof_t *sechk_proof_new(free_fn_t fn)
 	return proof;
 }
 
-int sechk_lib_load_policy(apol_vector_t * policy_mods, sechk_lib_t * lib)
+int sechk_lib_load_policy(apol_policy_path_t * policy_mods, sechk_lib_t * lib)
 {
 
 	char *default_policy_path = NULL;
 	int retv = -1;
-	size_t i;
-	qpol_module_t *mod = NULL;
 
 	if (!lib)
 		return -1;
 
 	/* if no policy is given, attempt to find default */
-	if (!policy_mods || !apol_vector_get_size(policy_mods)) {
+	if (!policy_mods) {
 		retv = qpol_default_policy_find(&default_policy_path);
 		if (retv < 0) {
 			fprintf(stderr, "Default policy search failed: %s\n", strerror(errno));
 			return -1;
-		} else if (retv == 0) {
+		} else if (retv != 0) {
 			fprintf(stderr, "No default policy found.\n");
 			return -1;
 		}
-		retv = apol_policy_open(default_policy_path, &(lib->policy), NULL, NULL);
-		if (retv) {
+		policy_mods = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, default_policy_path, NULL);
+		lib->policy = apol_policy_create_from_policy_path(policy_mods, 0, NULL, NULL);
+		if (lib->policy == NULL) {
 			fprintf(stderr, "Error: failed opening default policy\n");
 			return -1;
 		}
-		lib->policy_path = strdup(default_policy_path);
-		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
-			fprintf(stderr, "Using policy: %s\n", lib->policy_path);
+		lib->policy_path = policy_mods;
+		if (!(lib->outputformat & SECHK_OUT_QUIET)) {
+			fprintf(stderr, "Using policy: %s\n", apol_policy_path_get_primary(lib->policy_path));
 		}
 	} else {
-		retv = apol_policy_open(apol_vector_get_element(policy_mods, 0), &(lib->policy), NULL, NULL);
-		if (retv) {
-			fprintf(stderr, "Error: failed opening policy %s\n", (char *)apol_vector_get_element(policy_mods, 0));
-			return -1;
-		}
-		lib->policy_path = strdup(apol_vector_get_element(policy_mods, 0));
-		if (apol_vector_get_size(policy_mods) > 1) {
-			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_MODULES)) {
-				fprintf(stderr, "Error: Modules specified for non-modular policy.\n");
-				goto err;
-			}
-			for (i = 1; i < apol_vector_get_size(policy_mods); i++) {
-				mod = NULL;
-				if (qpol_module_create_from_file(apol_vector_get_element(policy_mods, i), &mod)) {
-					goto err;
-				}
-				if (qpol_policy_append_module(apol_policy_get_qpol(lib->policy), mod)) {
-					goto err;
-				}
-			}
-			mod = NULL;
-			if (qpol_policy_rebuild(apol_policy_get_qpol(lib->policy))) {
-				goto err;
-			}
+		lib->policy_path = policy_mods;
+		lib->policy = apol_policy_create_from_policy_path(policy_mods, 0, NULL, NULL);
+		if (lib->policy == NULL) {
+			fprintf(stderr, "Error: failed opening policy %s\n", apol_policy_path_to_string(lib->policy_path));
+			goto err;
 		}
 	}
 	return 0;
 
       err:
-	qpol_module_destroy(&mod);
 	apol_policy_destroy(&lib->policy);
 	return -1;
 }

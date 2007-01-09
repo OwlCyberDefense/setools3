@@ -1218,6 +1218,10 @@ int main(int argc, char **argv)
 	int classes, types, attribs, roles, users, all, expand, stats, rt, optc, isids, bools, sens, cats, fsuse, genfs, netif,
 		node, port;
 	apol_policy_t *policydb = NULL;
+	apol_policy_path_t *pol_path = NULL;
+	apol_vector_t *mod_paths = NULL;
+	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+
 	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name, *bool_name, *sens_name, *cat_name,
 		*fsuse_type, *genfs_type, *netif_name, *node_addr, *port_num = NULL, *protocol = NULL;
 
@@ -1339,7 +1343,7 @@ int main(int argc, char **argv)
 		if (rt < 0) {
 			fprintf(stderr, "Default policy search failed: %s\n", strerror(errno));
 			exit(1);
-		} else if (rt == 0) {
+		} else if (rt != 0) {
 			fprintf(stderr, "No default policy found.\n");
 			exit(1);
 		}
@@ -1352,48 +1356,46 @@ int main(int argc, char **argv)
 		optind++;
 	}
 
-	/* attempt to open the policy */
-	if (stats || all) {
-		if (apol_policy_open(policy_file, &policydb, NULL, NULL)) {
-			perror("Error opening policy");
-			free(policy_file);
-			exit(1);
-		}
-	} else {
-		if (apol_policy_open_no_rules(policy_file, &policydb, NULL, NULL)) {
-			perror("Error opening policy");
-			free(policy_file);
-			exit(1);
-		}
-	}
-
 	if (argc - optind > 0) {
-		if (!qpol_policy_has_capability(apol_policy_get_qpol(policydb), QPOL_CAP_MODULES)) {
-			ERR(policydb, "%s", "Module linking only supported for modular policies.");
-			apol_policy_destroy(&policydb);
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		if (!(mod_paths = apol_vector_create())) {
+			ERR(policydb, "%s", strerror(ENOMEM));
 			free(policy_file);
 			exit(1);
 		}
 		for (; argc - optind; optind++) {
-			qpol_module_t *mod = NULL;
-			if (qpol_module_create_from_file(argv[optind], &mod)) {
+			char *tmp = NULL;
+			if (!(tmp = strdup(argv[optind]))) {
 				ERR(policydb, "Error loading module %s", argv[optind]);
-				apol_policy_destroy(&policydb);
 				free(policy_file);
+				apol_vector_destroy(&mod_paths, free);
 				exit(1);
 			}
-			if (qpol_policy_append_module(apol_policy_get_qpol(policydb), mod)) {
-				apol_policy_destroy(&policydb);
-				qpol_module_destroy(&mod);
+			if (apol_vector_append(mod_paths, (void *)tmp)) {
+				ERR(policydb, "Error loading module %s", argv[optind]);
 				free(policy_file);
+				free(tmp);
+				apol_vector_destroy(&mod_paths, free);
 				exit(1);
 			}
 		}
-		if (qpol_policy_rebuild(apol_policy_get_qpol(policydb))) {
-			apol_policy_destroy(&policydb);
-			free(policy_file);
-			exit(1);
-		}
+	}
+
+	pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
+	if (!pol_path) {
+		ERR(policydb, "%s", strerror(ENOMEM));
+		free(policy_file);
+		apol_vector_destroy(&mod_paths, free);
+		exit(1);
+	}
+	apol_vector_destroy(&mod_paths, free);
+
+	policydb = apol_policy_create_from_policy_path(pol_path, ((stats || all) ? 0 : APOL_POLICY_OPTION_NO_RULES), NULL, NULL);
+	if (!policydb) {
+		ERR(policydb, "%s", strerror(errno));
+		free(policy_file);
+		apol_policy_path_destroy(&pol_path);
+		exit(1);
 	}
 
 	/* display requested info */
@@ -1429,6 +1431,7 @@ int main(int argc, char **argv)
 		print_isids(stdout, isid_name, expand, policydb);
 
 	apol_policy_destroy(&policydb);
+	apol_policy_path_destroy(&pol_path);
 	free(policy_file);
 	exit(0);
 }

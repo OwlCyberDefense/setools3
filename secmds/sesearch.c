@@ -778,6 +778,9 @@ int main(int argc, char **argv)
 
 	apol_policy_t *policy = NULL;
 	apol_vector_t *v = NULL;
+	apol_policy_path_t *pol_path = NULL;
+	apol_vector_t *mod_paths = NULL;
+	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 
 	cmd_opts.all = cmd_opts.lineno = cmd_opts.allow = FALSE;
 	cmd_opts.nallow = cmd_opts.audit = cmd_opts.type = FALSE;
@@ -942,7 +945,7 @@ int main(int argc, char **argv)
 		if (rt < 0) {
 			fprintf(stderr, "Default policy search failed: %s\n", strerror(errno));
 			exit(1);
-		} else if (rt == 0) {
+		} else if (rt != 0) {
 			fprintf(stderr, "No default policy found.\n");
 			exit(1);
 		}
@@ -951,36 +954,45 @@ int main(int argc, char **argv)
 		optind++;
 	}
 
-	/* attempt to open the policy */
-	rt = apol_policy_open(policy_file, &policy, NULL, NULL);
-	if (rt) {
-		perror("Error opening policy");
-		apol_policy_destroy(&policy);
-		exit(1);
-	}
 	if (argc - optind > 0) {
-		if (!qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_MODULES)) {
-			ERR(policy, "%s", "Module linking only supported for modular policies.");
-			apol_policy_destroy(&policy);
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		if (!(mod_paths = apol_vector_create())) {
+			ERR(policy, "%s", strerror(ENOMEM));
 			exit(1);
 		}
 		for (; argc - optind; optind++) {
-			qpol_module_t *mod = NULL;
-			if (qpol_module_create_from_file(argv[optind], &mod)) {
+			char *tmp = NULL;
+			if (!(tmp = strdup(argv[optind]))) {
 				ERR(policy, "Error loading module %s", argv[optind]);
-				apol_policy_destroy(&policy);
+				free(policy_file);
+				apol_vector_destroy(&mod_paths, free);
 				exit(1);
 			}
-			if (qpol_policy_append_module(apol_policy_get_qpol(policy), mod)) {
-				apol_policy_destroy(&policy);
-				qpol_module_destroy(&mod);
+			if (apol_vector_append(mod_paths, (void *)tmp)) {
+				ERR(policy, "Error loading module %s", argv[optind]);
+				apol_vector_destroy(&mod_paths, free);
+				free(policy_file);
+				free(tmp);
 				exit(1);
 			}
 		}
-		if (qpol_policy_rebuild(apol_policy_get_qpol(policy))) {
-			apol_policy_destroy(&policy);
-			exit(1);
-		}
+	}
+
+	pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
+	if (!pol_path) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		free(policy_file);
+		apol_vector_destroy(&mod_paths, free);
+		exit(1);
+	}
+	apol_vector_destroy(&mod_paths, free);
+
+	policy = apol_policy_create_from_policy_path(pol_path, 0, NULL, NULL);
+	if (!policy) {
+		ERR(policy, "%s", strerror(errno));
+		free(policy_file);
+		apol_policy_path_destroy(&pol_path);
+		exit(1);
 	}
 
 	if (!cmd_opts.semantic && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
@@ -1059,6 +1071,7 @@ int main(int argc, char **argv)
 
       cleanup:
 	apol_policy_destroy(&policy);
+	apol_policy_path_destroy(&pol_path);
 	free(cmd_opts.src_name);
 	free(cmd_opts.tgt_name);
 	free(cmd_opts.class_name);
