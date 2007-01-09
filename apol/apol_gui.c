@@ -130,6 +130,7 @@ void parse_command_line(int argc, char **argv)
 		switch (optc) {
 		case 'p':
 			/* flag is deprecated and is now ignored */
+			WARN(NULL, "%s", "The --policy flag is deprecated and will be ignored.");
 			break;
 		case 'h':
 			help = TRUE;

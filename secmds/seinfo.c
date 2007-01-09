@@ -95,13 +95,13 @@ static struct option const longopts[] = {
 void usage(const char *program_name, int brief)
 {
 	printf("%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] [POLICY ...]\n", program_name);
+	printf("Usage: %s [OPTIONS] [EXPRESSION] [POLICY ...]\n", program_name);
 	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
 	fputs("\n\
-Print requested information about an SELinux policy.\n\
+Print information about the componets of a SELinux policy.\n\
   -c[NAME], --classes[=NAME]       print object classes\n\
   -t[NAME], --types[=NAME]         print types (no aliases or attributes)\n\
   -a[NAME], --attribs[=NAME]       print type attributes\n\
@@ -118,15 +118,15 @@ Print requested information about an SELinux policy.\n\
   -lPROTO,  --protocol=PROTO       specify a protocol for portcons\n\
   -i[NAME], --initialsid[=NAME]    print initial SIDs\n\
   -A, --all                        print all of the above\n\
-  -x, --expand                     show additional info for -ctarbuSCiA options\n\
+", stdout);
+	fputs("\n\
+  -x, --expand                     show additional info for specified components\n\
   -s, --stats                      print useful policy statistics\n\
+  -h, --help                       print this help and exit\n\
+  -v, --version                    print version information and exit\n\
 ", stdout);
 	fputs("\n\
-  -h, --help                       display this help and exit\n\
-  -v, --version                    output version information and exit\n\
-", stdout);
-	fputs("\n\
-For -ctaruSCfgnopi options, if NAME is provided, then only show info for NAME.\n\
+For component options, if NAME is provided, then only show info for NAME.\n\
  Specifying a name is most useful when used with the -x option.\n\
  If no option is provided, display useful policy statistics (-s).\n\n\
 The default source policy, or if that is unavailable the default binary\n\

@@ -3,66 +3,97 @@
 seinfo \- SELinux policy query tool
 .SH SYNOPSIS
 .B seinfo
-[OPTIONS] [POLICY_FILE]
+[OPTIONS] [EXPRESSION] [POLICY ...]
 .SH DESCRIPTION
 .PP
 .B seinfo
-allows the user to query a SELinux policy.
-.SH OPTIONS
+allows the user to query the components of a SELinux policy.
+.SH POLICY
+.PP
+.B 
+seinfo
+supports loading several versions SELinux policy in one of three formats. 
+.IP "source"
+A single text file containing policy source for versions 12 through 21. Usually named policy.conf.
+.IP "binary"
+A single file containg a monolithic kernel binary policy for versions 15 through 21. Usually named policy.#.
+.IP "modular"
+A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
+.PP
+If not provied
+.B
+seinfo
+will search for the system default policy, checking first for a source policy, then a binary policy matching the running kernel's prefered version, then finally the highest version that can be found.
+If no policy can be found
+.B
+seinfo
+will print an error message and exit.
+.SH EXPRESSIONS
+.P
+One or more of the following component types may be specified to query for specific components. Each option may only be provided once.
+If an option is provided multiple times, the last instance will be used. Some components support the -x flag to print expanded information
+about that component; if a particular component specified does not support expanded information, 
+then this flag will be ignored for that component (see -x below). If no expression is provided, print only statistics (see -s below).
 .IP "-c[NAME], --classes[=NAME]"
-print a list of object classes
+Print a list of object classes or, if NAME is provided, print the object class NAME if it exists.
+With -x, print a list of permissions for each object class printed.
 .IP "-t[NAME], --types[=NAME]"
-print a list of types (no aliases or attributes)
+Print a list of types (not including aliases or attributes) or, if NAME is provided, print the type NAME if it exists.
+With -x, print a list of attributes which include each type printed.
 .IP "-a[NAME], --attribs[=NAME]"
-print a list of type attributes
+Print a list of type attributes or, if NAME is provided, print the attribute NAME if it exists.
+With -x, print a list of types assigned to each attribute printed.
 .IP "-r[NAME], --roles[=NAME]"
-print a list of roles
+Print a list of roles or, if NAME is provided, print the role NAME if it exists.
+With -x, print a list of types assigned to each role printed.
 .IP "-u[NAME], --users[=NAME]"
-print a list of users
+Print a list of users or, if NAME is provided, print the user NAME if it exists.
+With -x, print a list of roles assigned to each user printed.
 .IP "-b[NAME], --boolean[=NAME]"
-print a list of conditional booleans
+Print a list of conditional booleans or, if NAME is provided, print the boolean NAME if it exists.
+With -x, print the default state of each conditional boolean printed.
 .IP "-S[NAME], --sensitivities[=NAME]"
-print a list of sensitivities
+Print a list of sensitivities or, if NAME is provided, print the sensitivity NAME if it exists.
+With -x, print the corresponding level statement for each sensitivity printed.
 .IP "-C[NAME], --categories[=NAME]"
-print a list of categories
+Print a list of categories or, if NAME is provided, print the category NAME if it exists.
+With -x, print a list of sensitivities with which each category printed may be associated.
 .IP "-f[TYPE], --fs_use[=TYPE]"
-print a list of fs_use statements
+Print a list of fs_use statements or, if TYPE is provided, print the statement for filesystem TYPE if it exists.
+There is no expanded information for this component.
 .IP "-g[TYPE], --genfscon[=TYPE]"
-print a list of genfscon statements
+Print a list of genfscon statements or, if TYPE is provided, print the statement for the filesystem TYPE if it exists.
+There is no expanded information for this component.
 .IP "-n[NAME], --netifcon[=NAME]"
-print a list of netif contexts
+Print a list of netif contexts or, if NAME is provided, print the statement for interface NAME if it exists.
+There is no expanded information for this component.
 .IP "-o[ADDR], --nodecon[=ADDR]"
-print a list of node contexts
+Print a list of node contexts or, if ADDR is provided, print the statement for the node with address ADDR if it exists.
+There is no expanded information for this component.
 .IP "-p[PORT],  --portcon[=PORT]"
-print a list of port contexts
+Print a list of port contexts or, if PORT is provided, print the statement for port PORT if it exists.
+There is no expanded information for this component.
 .IP "-lPROTO,  --protocol=PROTO"
-pecify a protocol for portcons
+Print only portcon statements for the protocol PROTO. This option is ignored if portcon statements are not printed or if no statement exists for the requested port.
 .IP "-i[NAME], --initialsid[=NAME]"
-print a list of initial SIDs
+Print a list of initial SIDs or, if NAME is provieded, print the initial SID NAME if it exists.
+With -x, print the context assigned to each SID printed.
 .IP "-A, --all"
-print all of the above
+Print all components.
+.SH OPTIONS
 .IP "-x, --expand"
-show additional info for -ctarbuSCiA options
+Print additional details for each component matching the expression.
+These details include the types assigned to an attribue or role and the permissions for an object class.
+This options is not available for all component types; see the description of each component for the details this option will provide.
 .IP "-s, --stats"
-print useful policy statistics
+Print policy statistics including policy type and version information and counts of all components and rules.
 .IP "-h, --help"
-display this help and exit
+Print help information and exit.
 .IP "-v, --version"
-output version information and exit
-.SH INFORMATION
-For -ctaruSCfgnopi options, if NAME is provided, then only show info
-for NAME.  Specifying a name is most useful when used with the -x
-option.  If no option is provided, display useful policy statistics
-(-s).
-.PP
-If \fB\-l\fR is given without \fB\-p\fR or \fB\-A\fR then it will be
-ignored.
-.PP
-If no policy file name is provided, the default source policy will be loaded.
-If that is not available, the default binary policy will be loaded.
+Print version information and exit.
 .SH AUTHOR
-This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.  
 .SH COPYRIGHT
-Copyright(C) 2006 Tresys Technology, LLC
+Copyright(C) 2003-2007 Tresys Technology, LLC
 .SH SEE ALSO
 sesearch(1), apol(1)

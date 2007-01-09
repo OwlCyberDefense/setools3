@@ -3,21 +3,23 @@
 indexcon \- SELinux file context indexing tool
 .SH SYNOPSIS
 .B indexcon
-<filename> [OPTIONS]
+FILE [OPTIONS]
 .SH DESCRIPTION
 .PP
 .B indexcon 
-allows the user to index the file contexts on a SELinux system.  The results can be imported in the apol analysis tool or searched using the searchcon tool.
+allows the user to index the file contexts on a SELinux system.
+The index will be written to FILE.
+The index can be searched using apol or searchcon.
 .SH OPTIONS
-.IP "-d directory, --directory=directory"
-Start scanning a directory
+.IP "-d DIR, --directory=DIR"
+Start scanning at directory DIR.
 .IP "-h, --help"
-Display help information and exit
+Print help information and exit.
 .IP "-v, --version"
-Display version information and exit
+Print version information and exit.
 .SH AUTHOR
-This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.  
 .SH COPYRIGHT
-Copyright(C) 2006 Tresys Technology, LLC
+Copyright(C) 2003-2007 Tresys Technology, LLC
 .SH SEE ALSO
 findcon(1), replcon(1), searchcon(1), apol(1)

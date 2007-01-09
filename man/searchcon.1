@@ -1,38 +1,48 @@
 .TH searchcon 1
 .SH NAME
-searchcon \- SELinux file context search tool for indexes
+searchcon \- SELinux file context index searching tool
 .SH SYNOPSIS
 .B searchcon
-<index file> [OPTIONS]
+INDEX [OPTIONS] [EXPRESSION]
 .SH DESCRIPTION
 .PP
 .B searchcon
-allows the user to search file context indexes created by the
-.BR indexcon 
-command.
+allows the user to search a file context index created by
+.B indexcon
+or
+.B
+apol.
+.SH EXPRESSIONS
+.P
+The following options allow the user to specify which files to print.
+A file must meet all specified criteria.
+If no expression is provided, all files in the index are printed.
+.IP "-t TYPE, --type=TYPE"
+Search for files with a context containing the type TYPE.
+.IP "-u USER, --user=USER"
+Search for files with a context containing the user USER.
+.IP "-m RANGE, --mls-range=RANGE"
+Search for files with a context with the MLS range of RANGE.
+.IP "-p PATH, --path=PATH"
+Search for files which include PATH.
+.IP "-o CLASS, --object=CLASS"
+Search only files of object class CLASS.
 .SH OPTIONS
-.IP "-t type, --type=typename"
-The name of the type to search for
-.IP "-u user, --user=username"
-The name of the user to search for
-.IP "-m range, --mls-range=range"
-MLS range to search for
-.IP "-p path, --path=pathname"
-The path or path fragment to search for
-.IP "-o object, --object=class"
-The name of the object class to search for
+The following additional options are available.
 .IP "-r, --regex"
-Search using regular expressions
+Search using regular expressions instead of exact string matching.
+This option does not affect the --object flag.
 .IP "-l, --list"
-List types in the snapshot
+Print a list types in the index and exit.
 .IP "-h, --help"
-Display help information and exit
+Print help information and exit.
 .IP "-v, --version"
-Display version information and exit
+Print version information and exit.
 .SH INFORMATION
-If the index file does not contain any MLS ranges and -m was given, then the search will return nothing.
+If the index file does not contain any MLS ranges and -m was given,
+then the search will return nothing.
 .PP
-Valid object classes are
+Valid object classes are the following:
 .PP
 file,
 dir,
@@ -42,8 +52,8 @@ blk_file,
 sock_file,
 fifo_file
 .SH AUTHOR
-This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+This manual page was written by Jeremy A. Mowery <kcarr@tresys.com>.  
 .SH COPYRIGHT
-Copyright(C) 2006 Tresys Technology, LLC
+Copyright(C) 2003-2007 Tresys Technology, LLC
 .SH SEE ALSO
-findcon(1), replcon(1), indexcon(1)
+findcon(1), replcon(1), indexcon(1), apol(1)

@@ -103,23 +103,15 @@ typedef struct options
 void usage(const char *program_name, int brief)
 {
 	printf("%s (sesearch ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] [POLICY ...]\n", program_name);
+	printf("Usage: %s [OPTIONS] RULE_TYPE [EXPESSION] [POLICY ...]\n", program_name);
 	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
 	fputs("\n\
-Search Type Enforcement rules in an SELinux policy.\n\
-  -s NAME, --source NAME  find rules with NAME type/attrib (regex) as source\n\
-  -t NAME, --target NAME  find rules with NAME type/attrib (regex) as target\n\
-  --role_source NAME      find rules with NAME role (regex) as source\n\
-  --role_target NAME      find rules with NAME role (regex) as target\n\
-  -c NAME, --class NAME   find rules with NAME as the object class\n\
-  -p P1[,P2,...] --perms P1[,P2...]\n\
-                          find rules with the specified permissions\n\
-  -b NAME, --boolean NAME find conditional rules with NAME in the expression\n\
+Search the rules in a SELinux policy.\n\
 ", stdout);
-	fputs("\
+	fputs("RULE_TYPE must be one or more of the following:\n\
   --allow                 search for allow rules\n\
   --neverallow            search for neverallow rules\n\
   --audit                 search for auditallow and dontaudit rules\n\
@@ -129,23 +121,30 @@ Search Type Enforcement rules in an SELinux policy.\n\
   --role_trans            search for role transition rules\n\
   -a, --all               show all rules regardless of type, class, or perms\n\
 ", stdout);
-	fputs("\
-  -i, --indirect          indirect; also search for the type's attributes\n\
-  -n, --noregex           do not use regular expression to match type/attributes\n\
+	fputs("EXPRESSION options:\n\
+  -s NAME, --source=NAME  find rules with type/attribute NAME (regex) as source\n\
+  -t NAME, --target=NAME  find rules with type/attribute NAME (regex) as target\n\
+  --role_source=NAME      find rules with role NAME (regex) as source\n\
+  --role_target=NAME      find rules with role NAME (regex) as target\n\
+  -c NAME, --class=NAME   find rules with class NAME as the object class\n\
+  -p P1[,P2,...] --perms=P1[,P2...]\n\
+                          find rules with the specified permissions\n\
+  -b NAME, --boolean=NAME find conditional rules with NAME in the expression\n\
+", stdout);
+	fputs("Other options:\n\
+  -i, --indirect          also search for the type's attributes\n\
+  -n, --noregex           do not use regular expression matching\n\
   -l, --lineno            show line number for each rule if available\n\
   --semantic              search rules semantically instead of syntactically\n\
   -C, --show_cond         show conditional expression for conditional rules\n\
-  -h, --help              display this help and exit\n\
-  -v, --version           output version information and exit\n\
+  -h, --help              print this help text and exit\n\
+  -v, --version           print version information and exit\n\
 ", stdout);
 	fputs("\n\
-If none of -s, -t, -c, -p, -b, --role_source, or --role_target\n\
-are specified, then all rules are shown.\n\
-You must specify -a (--all), or one of more of --allow, --neverallow, \n\
---audit, --rangetrans, --role_allow, --role_trans or --type.\n\
+If no expression is specified, then all rules are shown.\n\
 \n\
 The default source policy, or if that is unavailable the default binary\n\
-policy, will be opened if no policy file name is provided.\n", stdout);
+policy, will be opened if no policy is provided.\n", stdout);
 	return;
 }
 
