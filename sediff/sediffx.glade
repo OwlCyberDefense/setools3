@@ -3,16 +3,14 @@
 
 <glade-interface>
 
-<widget class="GtkWindow" id="sediff_main_window">
-  <property name="width_request">800</property>
-  <property name="height_request">600</property>
+<widget class="GtkWindow" id="toplevel">
   <property name="visible">True</property>
   <property name="title" translatable="yes">Semantic Policy Difference Tool </property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>
-  <property name="default_width">700</property>
-  <property name="default_height">490</property>
+  <property name="default_width">800</property>
+  <property name="default_height">600</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
   <property name="decorated">True</property>
@@ -21,6 +19,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
 
   <child>
     <widget class="GtkVBox" id="vbox1">
@@ -29,28 +28,30 @@
       <property name="spacing">0</property>
 
       <child>
-	<widget class="GtkMenuBar" id="sediff_main_menubar">
+	<widget class="GtkMenuBar" id="main_menubar">
 	  <property name="visible">True</property>
+	  <property name="pack_direction">GTK_PACK_DIRECTION_LTR</property>
+	  <property name="child_pack_direction">GTK_PACK_DIRECTION_LTR</property>
 
 	  <child>
-	    <widget class="GtkMenuItem" id="menuitem5">
+	    <widget class="GtkMenuItem" id="file menu item">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_File</property>
 	      <property name="use_underline">True</property>
 
 	      <child>
-		<widget class="GtkMenu" id="menuitem5_menu">
+		<widget class="GtkMenu" id="file menu">
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="open1">
+		    <widget class="GtkImageMenuItem" id="Open">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">_Open Policies</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="sediff_menu_on_open_clicked" last_modification_time="Mon, 13 Jun 2005 12:30:04 GMT"/>
+		      <signal name="activate" handler="toplevel_on_open_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:14:14 GMT"/>
 		      <accelerator key="O" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image165">
+			<widget class="GtkImage" id="image201">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -70,11 +71,11 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="Exit">
+		    <widget class="GtkImageMenuItem" id="Quit">
 		      <property name="visible">True</property>
 		      <property name="label">gtk-quit</property>
 		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="sediff_menu_on_quit_clicked" last_modification_time="Thu, 06 Jan 2005 17:56:59 GMT"/>
+		      <signal name="activate" handler="toplevel_on_quit_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:14:08 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -83,22 +84,22 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkMenuItem" id="edit">
+	    <widget class="GtkMenuItem" id="edit menu item">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Edit</property>
 	      <property name="use_underline">True</property>
 	      <signal name="activate" handler="sediff_menu_on_edit_clicked" last_modification_time="Wed, 31 Aug 2005 18:32:24 GMT"/>
 
 	      <child>
-		<widget class="GtkMenu" id="edit_menu">
+		<widget class="GtkMenu" id="edit menu">
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="sediff_menu_copy">
+		    <widget class="GtkImageMenuItem" id="Copy">
 		      <property name="visible">True</property>
 		      <property name="sensitive">False</property>
 		      <property name="label">gtk-copy</property>
 		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="sediff_menu_on_copy_clicked" last_modification_time="Wed, 31 Aug 2005 18:32:24 GMT"/>
+		      <signal name="activate" handler="toplevel_on_copy_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:14:02 GMT"/>
 		    </widget>
 		  </child>
 
@@ -109,11 +110,11 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="sediff_select_all">
+		    <widget class="GtkMenuItem" id="Select All">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Select _All</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="sediff_menu_on_select_all_clicked" last_modification_time="Thu, 01 Sep 2005 18:07:30 GMT"/>
+		      <signal name="activate" handler="toplevel_on_select_all_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:56 GMT"/>
 		      <accelerator key="A" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 		    </widget>
 		  </child>
@@ -123,25 +124,25 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkMenuItem" id="tools2">
+	    <widget class="GtkMenuItem" id="tools menu item">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Tools</property>
 	      <property name="use_underline">True</property>
 
 	      <child>
-		<widget class="GtkMenu" id="tools2_menu">
+		<widget class="GtkMenu" id="tools menu">
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="sediff_menu_find">
+		    <widget class="GtkImageMenuItem" id="Find">
 		      <property name="visible">True</property>
 		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">_Find Text</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="sediff_menu_on_find_clicked" last_modification_time="Wed, 10 Aug 2005 14:24:41 GMT"/>
+		      <signal name="activate" handler="toplevel_on_find_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:50 GMT"/>
 		      <accelerator key="F" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image166">
+			<widget class="GtkImage" id="image202">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-find</property>
 			  <property name="icon_size">1</property>
@@ -155,15 +156,15 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="menu_run_diff">
+		    <widget class="GtkImageMenuItem" id="Run Diff">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">_Run Diff</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="sediff_menu_on_rundiff_clicked" last_modification_time="Tue, 07 Jun 2005 21:56:43 GMT"/>
+		      <signal name="activate" handler="toplevel_on_run_diff_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:44 GMT"/>
 		      <accelerator key="R" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image167">
+			<widget class="GtkImage" id="image203">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-execute</property>
 			  <property name="icon_size">1</property>
@@ -177,15 +178,15 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="menu_remap_types">
+		    <widget class="GtkImageMenuItem" id="Remap Types">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Remap _Types</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="sediff_menu_on_remaptypes_clicked" last_modification_time="Mon, 13 Jun 2005 12:32:07 GMT"/>
+		      <signal name="activate" handler="toplevel_on_remap_types_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:37 GMT"/>
 		      <accelerator key="T" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image168">
+			<widget class="GtkImage" id="image204">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -199,46 +200,47 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkSeparatorMenuItem" id="separator4">
+		    <widget class="GtkSeparatorMenuItem" id="separator3">
 		      <property name="visible">True</property>
 		    </widget>
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="sediff_sort_menu">
+		    <widget class="GtkMenuItem" id="sort menu item">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Sort TE Rules</property>
 		      <property name="use_underline">True</property>
 
 		      <child>
-			<widget class="GtkMenu" id="sediff_sort_menu_menu">
+			<widget class="GtkMenu" id="sort menu">
 
 			  <child>
-			    <widget class="GtkMenuItem" id="sort_default">
+			    <widget class="GtkMenuItem" id="Default Sort">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">Default Sort</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="sediff_menu_on_default_sort_clicked"/>
-                            </widget>
-                          </child>
+			      <signal name="activate" handler="toplevel_on_default_sort_click" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:04:31 GMT"/>
+			    </widget>
+			  </child>
+
 			  <child>
-			    <widget class="GtkMenuItem" id="source_type1">
+			    <widget class="GtkMenuItem" id="source type menu item">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">Source Type</property>
 			      <property name="use_underline">True</property>
 
 			      <child>
-				<widget class="GtkMenu" id="source_type1_menu">
+				<widget class="GtkMenu" id="source type menu">
 
 				  <child>
-				    <widget class="GtkImageMenuItem" id="ascending3">
+				    <widget class="GtkImageMenuItem" id="Ascending source type">
 				      <property name="visible">True</property>
 				      <property name="label" translatable="yes">Ascending</property>
 				      <property name="use_underline">True</property>
-				      <signal name="activate" handler="sediff_menu_on_src_type_asc_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
+				      <signal name="activate" handler="toplevel_on_source_type_asc_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:12:38 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image169">
+					<widget class="GtkImage" id="image205">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-ascending</property>
 					  <property name="icon_size">1</property>
@@ -252,14 +254,14 @@
 				  </child>
 
 				  <child>
-				    <widget class="GtkImageMenuItem" id="descending3">
+				    <widget class="GtkImageMenuItem" id="Descending source type">
 				      <property name="visible">True</property>
 				      <property name="label" translatable="yes">Descending</property>
 				      <property name="use_underline">True</property>
-				      <signal name="activate" handler="sediff_menu_on_src_type_des_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
+				      <signal name="activate" handler="toplevel_on_source_type_des_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:12:45 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image170">
+					<widget class="GtkImage" id="image206">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-descending</property>
 					  <property name="icon_size">1</property>
@@ -277,23 +279,23 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="target_type1">
+			    <widget class="GtkMenuItem" id="target type menu item">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">Target Type</property>
 			      <property name="use_underline">True</property>
 
 			      <child>
-				<widget class="GtkMenu" id="target_type1_menu">
+				<widget class="GtkMenu" id="target type menu">
 
 				  <child>
-				    <widget class="GtkImageMenuItem" id="ascending2">
+				    <widget class="GtkImageMenuItem" id="Ascending target type">
 				      <property name="visible">True</property>
 				      <property name="label" translatable="yes">Ascending</property>
 				      <property name="use_underline">True</property>
-				      <signal name="activate" handler="sediff_menu_on_tgt_type_asc_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
+				      <signal name="activate" handler="toplevel_on_target_type_asc_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:12:53 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image171">
+					<widget class="GtkImage" id="image207">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-ascending</property>
 					  <property name="icon_size">1</property>
@@ -307,14 +309,14 @@
 				  </child>
 
 				  <child>
-				    <widget class="GtkImageMenuItem" id="descending2">
+				    <widget class="GtkImageMenuItem" id="Descending target type">
 				      <property name="visible">True</property>
 				      <property name="label" translatable="yes">Descending</property>
 				      <property name="use_underline">True</property>
-				      <signal name="activate" handler="sediff_menu_on_tgt_type_des_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
+				      <signal name="activate" handler="toplevel_on_target_type_des_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:12:59 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image172">
+					<widget class="GtkImage" id="image208">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-descending</property>
 					  <property name="icon_size">1</property>
@@ -332,23 +334,23 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="object_class1">
+			    <widget class="GtkMenuItem" id="object class menu item">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">Object Class</property>
 			      <property name="use_underline">True</property>
 
 			      <child>
-				<widget class="GtkMenu" id="object_class1_menu">
+				<widget class="GtkMenu" id="object class menu">
 
 				  <child>
-				    <widget class="GtkImageMenuItem" id="ascending1">
+				    <widget class="GtkImageMenuItem" id="Ascending object class">
 				      <property name="visible">True</property>
 				      <property name="label" translatable="yes">Ascending</property>
 				      <property name="use_underline">True</property>
-				      <signal name="activate" handler="sediff_menu_on_oclass_asc_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
+				      <signal name="activate" handler="toplevel_on_class_asc_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:05 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image173">
+					<widget class="GtkImage" id="image209">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-ascending</property>
 					  <property name="icon_size">1</property>
@@ -362,14 +364,14 @@
 				  </child>
 
 				  <child>
-				    <widget class="GtkImageMenuItem" id="descending1">
+				    <widget class="GtkImageMenuItem" id="Descending object class">
 				      <property name="visible">True</property>
 				      <property name="label" translatable="yes">Descending</property>
 				      <property name="use_underline">True</property>
-				      <signal name="activate" handler="sediff_menu_on_oclass_des_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
+				      <signal name="activate" handler="toplevel_on_class_des_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:10 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image174">
+					<widget class="GtkImage" id="image210">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-descending</property>
 					  <property name="icon_size">1</property>
@@ -385,24 +387,25 @@
 			      </child>
 			    </widget>
 			  </child>
+
 			  <child>
-			    <widget class="GtkMenuItem" id="conditional1">
+			    <widget class="GtkMenuItem" id="conditional menu item">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">Conditional</property>
 			      <property name="use_underline">True</property>
 
 			      <child>
-				<widget class="GtkMenu" id="conditional1_menu">
+				<widget class="GtkMenu" id="conditional menu">
 
 				  <child>
-				    <widget class="GtkImageMenuItem" id="ascending2">
+				    <widget class="GtkImageMenuItem" id="Ascending conditional">
 				      <property name="visible">True</property>
 				      <property name="label" translatable="yes">Ascending</property>
 				      <property name="use_underline">True</property>
-				      <signal name="activate" handler="sediff_menu_on_cond_asc_clicked"/>
+				      <signal name="activate" handler="toplevel_on_conditional_asc_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:17 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image171">
+					<widget class="GtkImage" id="image211">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-ascending</property>
 					  <property name="icon_size">1</property>
@@ -416,14 +419,14 @@
 				  </child>
 
 				  <child>
-				    <widget class="GtkImageMenuItem" id="descending2">
+				    <widget class="GtkImageMenuItem" id="Descending conditional">
 				      <property name="visible">True</property>
 				      <property name="label" translatable="yes">Descending</property>
 				      <property name="use_underline">True</property>
-				      <signal name="activate" handler="sediff_menu_on_cond_des_clicked"/>
+				      <signal name="activate" handler="toplevel_on_conditional_des_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:23 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image172">
+					<widget class="GtkImage" id="image212">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-descending</property>
 					  <property name="icon_size">1</property>
@@ -439,7 +442,7 @@
 			      </child>
 			    </widget>
 			  </child>
-                        </widget>
+			</widget>
 		      </child>
 		    </widget>
 		  </child>
@@ -449,32 +452,38 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkMenuItem" id="menuitem8">
+	    <widget class="GtkMenuItem" id="help menu item">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Help</property>
 	      <property name="use_underline">True</property>
 
 	      <child>
-		<widget class="GtkMenu" id="menuitem8_menu">
+		<widget class="GtkMenu" id="help menu">
 
 		  <child>
 		    <widget class="GtkImageMenuItem" id="Help">
 		      <property name="visible">True</property>
 		      <property name="label">gtk-help</property>
 		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="sediff_menu_on_help_clicked" last_modification_time="Thu, 06 Jan 2005 17:56:59 GMT"/>
+		      <signal name="activate" handler="toplevel_on_help_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 20:29:03 GMT"/>
 		    </widget>
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="about">
+		    <widget class="GtkSeparatorMenuItem" id="separator4">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">About</property>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkImageMenuItem" id="About sediffx">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">_About sediff</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="sediff_menu_on_about_clicked" last_modification_time="Sun, 04 Sep 2005 19:04:21 GMT"/>
+		      <signal name="activate" handler="toplevel_on_about_sediffx_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 20:28:55 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image175">
+			<widget class="GtkImage" id="image213">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-about</property>
 			  <property name="icon_size">1</property>
@@ -507,15 +516,14 @@
 	  <property name="show_arrow">True</property>
 
 	  <child>
-	    <widget class="GtkToolButton" id="toolbutton4">
+	    <widget class="GtkToolButton" id="open policy button">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">_Open Policies</property>
+	      <property name="label" translatable="yes">Open Policies</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-open</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">False</property>
-	      <signal name="clicked" handler="sediff_toolbar_on_open_button_clicked" last_modification_time="Mon, 13 Jun 2005 11:41:35 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
@@ -524,32 +532,30 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkToolButton" id="toolbutton_remap_types">
+	    <widget class="GtkToolButton" id="run diff button">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Remap _Types</property>
-	      <property name="use_underline">True</property>
-	      <property name="stock_id">gtk-preferences</property>
-	      <property name="visible_horizontal">True</property>
-	      <property name="visible_vertical">True</property>
-	      <property name="is_important">False</property>
-	      <signal name="clicked" handler="sediff_toolbar_on_remaptypes_button_clicked" last_modification_time="Mon, 13 Jun 2005 11:42:17 GMT"/>
-	    </widget>
-	    <packing>
-	      <property name="expand">False</property>
-	      <property name="homogeneous">True</property>
-	    </packing>
-	  </child>
-
-	  <child>
-	    <widget class="GtkToolButton" id="toolbutton_run_diff">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">_Run Diff</property>
+	      <property name="label" translatable="yes">Run Diff</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-execute</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">False</property>
-	      <signal name="clicked" handler="sediff_toolbar_on_rundiff_button_clicked" last_modification_time="Mon, 13 Jun 2005 11:42:06 GMT"/>
+	    </widget>
+	    <packing>
+	      <property name="expand">False</property>
+	      <property name="homogeneous">True</property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkToolButton" id="remap types button">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Remap Types</property>
+	      <property name="use_underline">True</property>
+	      <property name="stock_id">gtk-preferences</property>
+	      <property name="visible_horizontal">True</property>
+	      <property name="visible_vertical">True</property>
+	      <property name="is_important">False</property>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
@@ -950,7 +956,7 @@
 	  <child>
 	    <widget class="GtkLabel" id="label8">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Policy 1</property>
+	      <property name="label" translatable="yes">Original Policy</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">False</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1128,7 +1134,7 @@
 	  <child>
 	    <widget class="GtkLabel" id="label9">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Policy 2</property>
+	      <property name="label" translatable="yes">Modified Policy</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">False</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1237,6 +1243,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
   <property name="has_separator">True</property>
 
   <child internal-child="vbox">
@@ -1248,7 +1255,7 @@
       <child internal-child="action_area">
 	<widget class="GtkHButtonBox" id="dialog-action_area1">
 	  <property name="visible">True</property>
-	  <property name="layout_style">GTK_BUTTONBOX_SPREAD</property>
+	  <property name="layout_style">GTK_BUTTONBOX_END</property>
 
 	  <child>
 	    <widget class="GtkButton" id="sediff_open_dialog_on_cancel_button_clicked">
@@ -1607,6 +1614,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
 
   <child>
     <widget class="GtkVBox" id="vbox6">
@@ -1704,7 +1712,7 @@
 	  <child>
 	    <widget class="GtkLabel" id="label25">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Remap types</property>
+	      <property name="label" translatable="yes">Remap Types</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">True</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1767,7 +1775,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label23">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Policy 1 types - not in Policy 2</property>
+			  <property name="label" translatable="yes">Original Policy</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1790,34 +1798,11 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCombo" id="sediff_remap_types_combo1">
+			<widget class="GtkComboBoxEntry" id="sediff_remap_types_combo1">
 			  <property name="visible">True</property>
-			  <property name="value_in_list">True</property>
-			  <property name="allow_empty">True</property>
-			  <property name="case_sensitive">True</property>
-			  <property name="enable_arrow_keys">True</property>
-			  <property name="enable_arrows_always">True</property>
-
-			  <child internal-child="entry">
-			    <widget class="GtkEntry" id="sediff_remap_types_entry1">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="editable">False</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">0</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			    </widget>
-			  </child>
-
-			  <child internal-child="list">
-			    <widget class="GtkList" id="combo-list1">
-			      <property name="visible">True</property>
-			      <property name="selection_mode">GTK_SELECTION_BROWSE</property>
-			    </widget>
-			  </child>
+			  <property name="add_tearoffs">False</property>
+			  <property name="has_frame">True</property>
+			  <property name="focus_on_click">True</property>
 			</widget>
 			<packing>
 			  <property name="padding">5</property>
@@ -1843,7 +1828,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label24">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Policy 2 types - not in Policy 1</property>
+			  <property name="label" translatable="yes">Modified Policy</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1866,34 +1851,11 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCombo" id="sediff_remap_types_combo2">
+			<widget class="GtkComboBoxEntry" id="sediff_remap_types_combo2">
 			  <property name="visible">True</property>
-			  <property name="value_in_list">True</property>
-			  <property name="allow_empty">True</property>
-			  <property name="case_sensitive">True</property>
-			  <property name="enable_arrow_keys">True</property>
-			  <property name="enable_arrows_always">True</property>
-
-			  <child internal-child="entry">
-			    <widget class="GtkEntry" id="sediff_remap_types_entry2">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="editable">False</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">0</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			    </widget>
-			  </child>
-
-			  <child internal-child="list">
-			    <widget class="GtkList" id="combo-list2">
-			      <property name="visible">True</property>
-			      <property name="selection_mode">GTK_SELECTION_BROWSE</property>
-			    </widget>
-			  </child>
+			  <property name="add_tearoffs">False</property>
+			  <property name="has_frame">True</property>
+			  <property name="focus_on_click">True</property>
 			</widget>
 			<packing>
 			  <property name="padding">5</property>
@@ -1944,7 +1906,7 @@
 	  <child>
 	    <widget class="GtkLabel" id="label23">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Add a new type remap</property>
+	      <property name="label" translatable="yes">Add New Remap</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">True</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -2014,6 +1976,7 @@
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
+  <property name="urgency_hint">False</property>
   <property name="has_separator">True</property>
 
   <child internal-child="vbox">

@@ -1,12 +1,13 @@
 /**
- *  @file sediff_gui.c
- *  Main program for running sediff in a GTK+ environment.
+ *  @file
+ *  Implementation for sediffx's main toplevel window.
  *
- *  @author Don Patterson don.patterson@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
  *  @author Brandon Whalen bwhalen@tresys.com
  *  @author Randy Wicks rwicks@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -24,6 +25,213 @@
  */
 
 #include <config.h>
+
+#include "sediffx.h"
+#include "toplevel.h"
+
+#include <errno.h>
+#include <stdlib.h>
+#include <apol/util.h>
+#include <gtk/gtk.h>
+#include <glade/glade.h>
+
+struct toplevel
+{
+	sediffx_t *s;
+	GladeXML *xml;
+	/** filename for glade file */
+	char *xml_filename;
+	/** toplevel window widget */
+	GtkWindow *w;
+};
+
+/**
+ * Initialize the application icons for the program.  These icons are
+ * the ones shown by the window manager within title bars and pagers.
+ * The last icon listed in the array will be displayed in the About
+ * dialog.
+ *
+ * @param top Toplevel whose icon to set.  All child windows will
+ * inherit these icons.
+ */
+static void init_icons(toplevel_t * top)
+{
+	static const char *icon_names[] = { "sediffx-small.png", "sediffx.png" };
+	GdkPixbuf *icon;
+	char *path;
+	GList *icon_list = NULL;
+	size_t i;
+	for (i = 0; i < sizeof(icon_names) / sizeof(icon_names[0]); i++) {
+		if ((path = apol_file_find_path(icon_names[i])) == NULL) {
+			continue;
+		}
+		icon = gdk_pixbuf_new_from_file(path, NULL);
+		free(path);
+		if (icon == NULL) {
+			continue;
+		}
+		icon_list = g_list_append(icon_list, icon);
+	}
+	gtk_window_set_default_icon_list(icon_list);
+	gtk_window_set_icon_list(top->w, icon_list);
+}
+
+toplevel_t *toplevel_create(sediffx_t * s)
+{
+	toplevel_t *top;
+	int error = 0;
+	if ((top = calloc(1, sizeof(*top))) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	top->s = s;
+
+	if ((top->xml_filename = apol_file_find_path("sediffx.glade")) == NULL ||
+	    (top->xml = glade_xml_new(top->xml_filename, "toplevel", NULL)) == NULL) {
+		fprintf(stderr, "Could not open sediffx.glade.\n");
+		error = EIO;
+		goto cleanup;
+	}
+	top->w = GTK_WINDOW(glade_xml_get_widget(top->xml, "toplevel"));
+	init_icons(top);
+	g_object_set_data(G_OBJECT(top->w), "toplevel", top);
+	gtk_widget_show(GTK_WIDGET(top->w));
+
+	glade_xml_signal_autoconnect(top->xml);
+
+      cleanup:
+	if (error != 0) {
+		toplevel_destroy(&top);
+		errno = error;
+		return NULL;
+	}
+	return top;
+}
+
+void toplevel_destroy(toplevel_t ** top)
+{
+	if (top != NULL && *top != NULL) {
+		free((*top)->xml_filename);
+		free(*top);
+		*top = NULL;
+	}
+}
+
+int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apol_policy_path_t * mod_path)
+{
+	return 0;
+}
+
+void toplevel_run_diff(toplevel_t * top)
+{
+}
+
+/**
+ * Pop-up a dialog with a line of text and wait for the user to
+ * dismiss the dialog.
+ *
+ * @param top Toplevel window; this message dialog will be centered
+ * upon it.
+ * @param msg_type Type of message being displayed.
+ * @param fmt Format string to print, using syntax of printf(3).
+ */
+static void toplevel_message(toplevel_t * top, GtkMessageType msg_type, const char *fmt, va_list ap)
+{
+	GtkWidget *dialog;
+	char *msg;
+	if (vasprintf(&msg, fmt, ap) < 0) {
+		ERR(NULL, "%s", strerror(errno));
+		return;
+	}
+	dialog = gtk_message_dialog_new(top->w, GTK_DIALOG_DESTROY_WITH_PARENT, msg_type, GTK_BUTTONS_CLOSE, msg);
+	free(msg);
+	gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+}
+
+void toplevel_ERR(toplevel_t * top, const char *format, ...)
+{
+	va_list(ap);
+	va_start(ap, format);
+	toplevel_message(top, GTK_MESSAGE_ERROR, format, ap);
+	va_end(ap);
+}
+
+void toplevel_WARN(toplevel_t * top, const char *format, ...)
+{
+	va_list(ap);
+	va_start(ap, format);
+	toplevel_message(top, GTK_MESSAGE_WARNING, format, ap);
+	va_end(ap);
+}
+
+/******************** menu callbacks below ********************/
+
+void toplevel_on_quit_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	top->w = NULL;
+	gtk_main_quit();
+}
+
+void toplevel_on_run_diff_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	toplevel_run_diff(top);
+}
+
+void toplevel_on_help_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	GtkWidget *window;
+	GtkWidget *scroll;
+	GtkWidget *text_view;
+	GtkTextBuffer *buffer;
+	char *help_text = NULL;
+	size_t len;
+	int rt;
+	char *dir;
+
+	window = gtk_dialog_new_with_buttons("sediffx Help",
+					     GTK_WINDOW(top->w),
+					     GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, NULL);
+	gtk_dialog_set_default_response(GTK_DIALOG(window), GTK_RESPONSE_CLOSE);
+	g_signal_connect_swapped(window, "response", G_CALLBACK(gtk_widget_destroy), window);
+	scroll = gtk_scrolled_window_new(NULL, NULL);
+	text_view = gtk_text_view_new();
+	gtk_window_set_default_size(GTK_WINDOW(window), 520, 300);
+	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(window)->vbox), scroll);
+	gtk_container_add(GTK_CONTAINER(scroll), text_view);
+	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_NONE);
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+	if ((dir = apol_file_find_path("sediff_help.txt")) == NULL) {
+		toplevel_ERR(top, "Cannot find help file.");
+		return;
+	}
+	rt = apol_file_read_to_buffer(dir, &help_text, &len);
+	free(dir);
+	if (rt != 0) {
+		free(help_text);
+		return;
+	}
+	gtk_text_buffer_set_text(buffer, help_text, len);
+	gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
+	gtk_widget_show(text_view);
+	gtk_widget_show(scroll);
+	gtk_widget_show(window);
+}
+
+void toplevel_on_about_sediffx_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	gtk_show_about_dialog(top->w,
+			      "comments", "Policy Semantic Difference Tool for Security Enhanced Linux",
+			      "copyright", COPYRIGHT_INFO,
+			      "name", "sediffx", "version", VERSION, "website", "http://oss.tresys.com/projects/setools", NULL);
+}
+
+#if 0
 
 #include "sediff_gui.h"
 #include "sediff_policy_open.h"
@@ -45,22 +253,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <sys/mman.h>
 
-#ifndef VERSION
-#define VERSION "UNKNOWN"
-#endif
-
-#define COPYRIGHT_INFO "Copyright (C) 2004-2006 Tresys Technology, LLC"
-
-sediff_app_t *sediff_app = NULL;
 gboolean toggle = TRUE;
-gint curr_option = POLDIFF_DIFF_SUMMARY;
-
-static struct option const longopts[] = {
-	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
-	{"run-diff", no_argument, NULL, 'd'},
-	{NULL, 0, NULL, 0}
-};
 
 const sediff_item_record_t sediff_items[] = {
 	{"Classes", POLDIFF_DIFF_CLASSES, 0,
@@ -99,27 +292,6 @@ typedef struct registered_callback
 } registered_callback_t;
 
 #define row_selected_signal_emit() sediff_callback_signal_emit(LISTBOX_SELECTED_SIGNAL)
-
-static void usage(const char *program_name, int brief)
-{
-	printf("%s (sediffx ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [-d] [ORIGINAL_POLICY ; MODIFIED_POLICY]\n", program_name);
-	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
-		return;
-	}
-	fputs("\n\
-Semantically differentiate two policies.\n\
-All supported policy elements are examined.\n\
-The following options are available:\n\
-", stdout);
-	fputs("\n\
-  -h, --help       display this help and exit\n\
-  -v, --version    output version information and exit\n\
-  -d, --diff-now   load policies and diff immediately\n\n\
-", stdout);
-	return;
-}
 
 /* clear text from passed in text buffer */
 void sediff_clear_text_buffer(GtkTextBuffer * txt)
@@ -252,49 +424,6 @@ static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 	if (callback)
 		free(callback);
 	return;
-}
-
-static void sediff_destroy(void)
-{
-
-	if (sediff_app == NULL)
-		return;
-
-	if (sediff_app->dummy_view && gtk_widget_get_parent(GTK_WIDGET(sediff_app->dummy_view)) == NULL)
-		gtk_widget_unref(sediff_app->dummy_view);
-	if (sediff_app->tree_view != NULL)
-		gtk_widget_destroy(GTK_WIDGET(sediff_app->tree_view));
-	if (sediff_app->window != NULL)
-		gtk_widget_destroy(GTK_WIDGET(sediff_app->window));
-	if (sediff_app->open_dlg != NULL)
-		gtk_widget_destroy(GTK_WIDGET(sediff_app->open_dlg));
-	if (sediff_app->window_xml != NULL)
-		g_object_unref(G_OBJECT(sediff_app->window_xml));
-	if (sediff_app->open_dlg_xml != NULL)
-		g_object_unref(G_OBJECT(sediff_app->open_dlg_xml));
-	sediff_progress_destroy(sediff_app);
-	if (sediff_app->p1_sfd.name)
-		g_string_free(sediff_app->p1_sfd.name, TRUE);
-	if (sediff_app->p2_sfd.name)
-		g_string_free(sediff_app->p2_sfd.name, TRUE);
-	if (sediff_app->p1_sfd.data)
-		munmap(sediff_app->p1_sfd.data, sediff_app->p1_sfd.size);
-	if (sediff_app->p2_sfd.data)
-		munmap(sediff_app->p2_sfd.data, sediff_app->p2_sfd.size);
-	if (sediff_app->remap_types_window) {
-		sediff_remap_types_window_unref_members(sediff_app->remap_types_window);
-		free(sediff_app->remap_types_window);
-	}
-	poldiff_destroy(&sediff_app->diff);
-
-	g_list_foreach(sediff_app->callbacks, &sediff_callbacks_free_elem_data, NULL);
-	g_list_free(sediff_app->callbacks);
-
-	/* destroy our stored buffers */
-	sediff_results_clear(sediff_app);
-	free(sediff_app->results);
-	free(sediff_app);
-	sediff_app = NULL;
 }
 
 static void sediff_exit_app(void)
@@ -633,11 +762,6 @@ void sediff_menu_on_copy_clicked(GtkMenuItem * menuitem, gpointer user_data)
 	gtk_text_buffer_copy_clipboard(txt, clipboard);
 }
 
-void sediff_menu_on_rundiff_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	run_diff_clicked();
-}
-
 void sediff_toolbar_on_rundiff_button_clicked(GtkButton * button, gpointer user_data)
 {
 	run_diff_clicked();
@@ -669,66 +793,6 @@ void sediff_toolbar_on_open_button_clicked(GtkToolButton * button, gpointer user
 void sediff_menu_on_open_clicked(GtkMenuItem * menuitem, gpointer user_data)
 {
 	sediff_open_button_clicked();
-}
-
-void sediff_menu_on_quit_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_exit_app();
-}
-
-void sediff_menu_on_help_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	GtkWidget *window;
-	GtkWidget *scroll;
-	GtkWidget *text_view;
-	GtkTextBuffer *buffer;
-	GString *string;
-	char *help_text = NULL;
-	size_t len;
-	int rt;
-	char *dir;
-
-	window = gtk_dialog_new_with_buttons("SEDiffx Help",
-					     GTK_WINDOW(sediff_app->window),
-					     GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, NULL);
-	gtk_dialog_set_default_response(GTK_DIALOG(window), GTK_RESPONSE_CLOSE);
-	g_signal_connect_swapped(window, "response", G_CALLBACK(gtk_widget_destroy), window);
-	scroll = gtk_scrolled_window_new(NULL, NULL);
-	text_view = gtk_text_view_new();
-	gtk_window_set_default_size(GTK_WINDOW(window), 520, 320);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(window)->vbox), scroll);
-	gtk_container_add(GTK_CONTAINER(scroll), text_view);
-	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_NONE);
-	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-	dir = apol_file_find("sediff_help.txt");
-	if (!dir) {
-		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "Cannot find help file.");
-		return;
-	}
-	string = g_string_new(dir);
-	free(dir);
-	g_string_append(string, "/sediff_help.txt");
-	rt = apol_file_read_to_buffer(string->str, &help_text, &len);
-	g_string_free(string, TRUE);
-	if (rt != 0) {
-		free(help_text);
-		return;
-	}
-	gtk_text_buffer_set_text(buffer, help_text, len);
-	free(help_text);
-	gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
-	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
-	gtk_widget_show(text_view);
-	gtk_widget_show(scroll);
-	gtk_dialog_run(GTK_DIALOG(window));
-}
-
-void sediff_menu_on_about_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	gtk_show_about_dialog(sediff_app->window,
-			      "comments", "Policy Semantic Difference Tool for Security Enhanced Linux",
-			      "copyright", COPYRIGHT_INFO,
-			      "name", "sediffx", "version", VERSION, "website", "http://oss.tresys.com/projects/setools", NULL);
 }
 
 static void sediff_policy_notebook_on_switch_page(GtkNotebook * notebook, GtkNotebookPage * page, guint pagenum, gpointer user_data)
@@ -908,37 +972,6 @@ void sediff_initialize_policies(void)
 	sediff_set_open_policies_gui_state(FALSE);
 }
 
-typedef struct delayed_main_data
-{
-	apol_vector_t *p1_files;
-	apol_vector_t *p2_files;
-	bool_t run_diff;
-} delayed_data_t;
-
-/*
- * We don't want to do the heavy work of loading and displaying
- * the diff before the main loop has started because it will freeze
- * the gui for too long. To solve this, the function is called from an
- * idle callback set-up in main.
- */
-static gboolean delayed_main(gpointer data)
-{
-	int rt;
-	delayed_data_t *delay_data = (delayed_data_t *) data;
-	apol_vector_t *p1_v = delay_data->p1_files;
-	apol_vector_t *p2_v = delay_data->p2_files;
-
-	rt = sediff_load_policies(p1_v, p2_v);
-	if (rt < 0)
-		return FALSE;
-
-	if (delay_data->run_diff == TRUE)
-		run_diff_clicked();
-
-	return FALSE;
-
-}
-
 static void sediff_main_notebook_on_switch_page(GtkNotebook * notebook, GtkNotebookPage * page, guint pagenum, gpointer user_data)
 {
 	sediff_app_t *app = (sediff_app_t *) user_data;
@@ -983,180 +1016,4 @@ GtkTextView *sediff_get_current_view(sediff_app_t * app)
 	return text_view;
 
 }
-
-static void init_icons(GtkWindow * main_window)
-{
-	const char *icon_names[] = { "sediffx-small.png", "sediffx.png" };
-	GdkPixbuf *icon;
-	char *dir, *path;
-	GList *icon_list = NULL;
-	size_t i;
-	int rt;
-	for (i = 0; i < sizeof(icon_names) / sizeof(icon_names[0]); i++) {
-		if ((dir = apol_file_find(icon_names[i])) == NULL) {
-			continue;
-		}
-		rt = asprintf(&path, "%s/%s", dir, icon_names[i]);
-		free(dir);
-		if (rt < 0) {
-			continue;
-		}
-		icon = gdk_pixbuf_new_from_file(path, NULL);
-		free(path);
-		if (icon == NULL) {
-			continue;
-		}
-		icon_list = g_list_append(icon_list, icon);
-	}
-	gtk_window_set_default_icon_list(icon_list);
-	gtk_window_set_icon_list(main_window, icon_list);
-}
-
-int main(int argc, char **argv)
-{
-	char *dir = NULL;
-	GString *path = NULL;
-	delayed_data_t delay_data;
-	bool_t havefiles = FALSE;
-	int optc;
-	delay_data.p1_files = delay_data.p2_files = NULL;
-	delay_data.run_diff = FALSE;
-	GtkNotebook *notebook = NULL;
-
-	if (!g_thread_supported())
-		g_thread_init(NULL);
-
-	while ((optc = getopt_long(argc, argv, "hvd", longopts, NULL)) != -1) {
-		switch (optc) {
-		case 0:
-			break;
-		case 'd':	       /* run the diff only for gui */
-			delay_data.run_diff = TRUE;
-			break;
-		case 'h':	       /* help */
-			usage(argv[0], 0);
-			exit(0);
-			break;
-		case 'v':	       /* version */
-			printf("\n%s (sediffx ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-			exit(0);
-			break;
-		default:
-			usage(argv[0], 1);
-			exit(1);
-		}
-	}
-
-	/* sediff with file names */
-	if (argc - optind == 2) {
-		/* old syntax */
-		havefiles = TRUE;
-		delay_data.p1_files = apol_vector_create();
-		delay_data.p2_files = apol_vector_create();
-		if (!delay_data.p1_files || !delay_data.p2_files) {
-			g_warning("Out of memory!");
-			exit(1);
-		}
-		if (apol_vector_append(delay_data.p1_files, argv[optind])) {
-			g_warning("Out of memory!");
-			exit(1);
-		}
-		if (apol_vector_append(delay_data.p2_files, argv[optind + 1])) {
-			g_warning("Out of memory!");
-			exit(1);
-		}
-	} else if (argc - optind > 2) {
-		/* module lists */
-		havefiles = TRUE;
-		delay_data.p1_files = apol_vector_create();
-		delay_data.p2_files = apol_vector_create();
-		if (!delay_data.p1_files || !delay_data.p2_files) {
-			g_warning("Out of memory!");
-			exit(1);
-		}
-		for (; argc - optind; optind++) {
-			if (!strcmp(argv[optind], ";")) {
-				optind++;
-				break;
-			}
-			if (apol_vector_append(delay_data.p1_files, argv[optind])) {
-				apol_vector_destroy(&delay_data.p1_files, NULL);
-				g_warning("Out of memory!");
-				exit(1);
-			}
-		}
-		for (; argc - optind; optind++) {
-			if (apol_vector_append(delay_data.p2_files, argv[optind])) {
-				apol_vector_destroy(&delay_data.p1_files, NULL);
-				apol_vector_destroy(&delay_data.p2_files, NULL);
-				g_warning("Out of memory!");
-				exit(1);
-			}
-		}
-	} else if (argc - optind != 0) {
-		usage(argv[0], 0);
-		return -1;
-	} else {
-		/* here we have found no missing arguments, but perhaps the user specified -d with no files */
-		if (delay_data.run_diff == TRUE) {
-			usage(argv[0], 0);
-			return -1;
-		}
-	}
-
-	gtk_init(&argc, &argv);
-	glade_init();
-	dir = apol_file_find(GLADEFILE);
-	if (!dir) {
-		fprintf(stderr, "Could not find %s!", GLADEFILE);
-		return -1;
-	}
-
-	path = g_string_new(dir);
-	free(dir);
-	g_string_append_printf(path, "/%s", GLADEFILE);
-
-	sediff_app = calloc(1, sizeof(*sediff_app));
-	if (!sediff_app) {
-		g_warning("Out of memory!");
-		exit(-1);
-	}
-
-	gtk_set_locale();
-	gtk_init(&argc, &argv);
-	sediff_app->window_xml = glade_xml_new(path->str, MAIN_WINDOW_ID, NULL);
-	if (!sediff_app->window_xml) {
-		free(sediff_app);
-		g_warning("Unable to create interface");
-		return -1;
-	}
-	sediff_app->window = GTK_WINDOW(glade_xml_get_widget(sediff_app->window_xml, MAIN_WINDOW_ID));
-	init_icons(sediff_app->window);
-	g_signal_connect(G_OBJECT(sediff_app->window), "delete_event", G_CALLBACK(sediff_main_window_on_destroy), sediff_app);
-	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
-	g_assert(notebook);
-	g_signal_connect_after(G_OBJECT(notebook), "switch-page", G_CALLBACK(sediff_main_notebook_on_switch_page), sediff_app);
-
-	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook1"));
-	g_assert(notebook);
-	g_signal_connect_after(G_OBJECT(notebook), "switch-page", G_CALLBACK(sediff_policy_notebook_on_switch_page), sediff_app);
-	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
-	g_assert(notebook);
-	g_signal_connect_after(G_OBJECT(notebook), "switch-page", G_CALLBACK(sediff_policy_notebook_on_switch_page), sediff_app);
-
-	glade_xml_signal_autoconnect(sediff_app->window_xml);
-
-	sediff_initialize_policies();
-	sediff_initialize_diff();
-
-	if (havefiles)
-		g_idle_add(&delayed_main, &delay_data);
-
-	sediff_results_select(sediff_app, POLDIFF_DIFF_SUMMARY, 0);
-
-	gtk_main();
-
-	if (path != NULL)
-		g_string_free(path, 1);
-	return 0;
-}
+#endif

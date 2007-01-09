@@ -1,6 +1,6 @@
 setoolsdir = @setoolsdir@
 
-dist_setools_DATA = sediff_help.txt sediff.glade \
+dist_setools_DATA = sediff_help.txt sediffx.glade \
 	sediffx.png sediffx-small.png
 
 if BUILD_GUI
@@ -19,7 +19,7 @@ sediff_CFLAGS = $(AM_CFLAGS)
 sediffx_CFLAGS = $(AM_CFLAGS) \
 	@GTK_CFLAGS@ @PIXBUF_CFLAGS@ @GLADE_CFLAGS@ @GTHREAD_CFLAGS@
 
-# need the -rdynamic flag below - glade uses dlopen() upon seaudit callbacks
+# need the -rdynamic flag below - glade uses dlopen() upon sediffx callbacks
 sediffx_LDFLAGS = $(AM_LDFLAGS) \
 	@GTK_LIBS@ @PIXBUF_LIBS@ @GLADE_LIBS@ @GTHREAD_LIBS@ @XML_LIBS@ \
 	-rdynamic
@@ -30,15 +30,19 @@ DEPENDENCIES = $(top_builddir)/libpoldiff/src/libpoldiff.so \
 
 sediff_SOURCES = sediff_cli.c
 
+#sediffx_SOURCES = \
+#	sediff_find_window.c sediff_find_window.h \
+#	sediff_remap_types.c sediff_remap_types.h \
+#	sediff_treemodel.c sediff_treemodel.h \
+#	utilgui.c utilgui.h \
+#	sediff_policy_open.c sediff_policy_open.h \
+#	sediff_progress.c sediff_progress.h \
+#	sediff_results.c sediff_results.h \
+#
+
 sediffx_SOURCES = \
-	sediff_find_window.c sediff_find_window.h \
-	sediff_remap_types.c sediff_remap_types.h \
-	sediff_treemodel.c sediff_treemodel.h \
-	utilgui.c utilgui.h \
-	sediff_policy_open.c sediff_policy_open.h \
-	sediff_progress.c sediff_progress.h \
-	sediff_results.c sediff_results.h \
-	sediff_gui.c sediff_gui.h
+	toplevel.c toplevel.h \
+	sediffx.c sediffx.h
 
 $(top_builddir)/libpoldiff/src/libpoldiff.so:
 	$(MAKE) -C $(top_builddir)/libpoldiff/src $(notdir $@)
