@@ -77,7 +77,7 @@ apol_policy_path_t *apol_policy_path_create_from_policy_path(const apol_policy_p
 		errno = EINVAL;
 		return NULL;
 	}
-	p = apol_policy_path_create(path->path_type, p->base, p->modules);
+	p = apol_policy_path_create(path->path_type, path->base, path->modules);
 	return p;
 }
 

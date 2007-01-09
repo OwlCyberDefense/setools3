@@ -257,7 +257,7 @@ static void toplevel_set_recent_policies_submenu(toplevel_t * top)
 	submenu = gtk_menu_new();
 	for (i = 0; i < apol_vector_get_size(paths); i++) {
 		apol_policy_path_t *path = apol_vector_get_element(paths, i);
-                const char *primary_path = apol_policy_path_get_primary(path);
+		const char *primary_path = apol_policy_path_get_primary(path);
 		submenu_item = gtk_menu_item_new_with_label(primary_path);
 		gtk_menu_shell_prepend(GTK_MENU_SHELL(submenu), submenu_item);
 		gtk_widget_show(submenu_item);

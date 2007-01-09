@@ -1,3 +1,8 @@
+2007-01-03  J. Tang  <jtang@tresys.com>
+
+	* Deprecated apol_policy_open() and apol_policy_open_no_rules();
+	use apol_policy_create_from_policy_path() instead.
+
 2006-12-14  J. Tang  <jtang@tresys.com>
 
 	* Added apol_policy_path_t object.  This is needed because policy
