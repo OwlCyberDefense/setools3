@@ -46,7 +46,7 @@ extern "C"
  * @param path Buffer to store the policy's path.  The caller is
  * responsible for free()ing this string.
  *
- * @return 1 if a policy was found, 0 if not, < 0 upon error.
+ * @return 0 if a policy was found, > 0 if not, < 0 upon error.
  */
 	extern int qpol_default_policy_find(char **path);
 

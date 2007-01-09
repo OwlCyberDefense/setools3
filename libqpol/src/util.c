@@ -49,11 +49,11 @@ static int search_policy_source_file(char **path)
 		*path = NULL;
 		return -1;
 	}
-	if (access(*path, F_OK)) {
+	if (access(*path, F_OK) < 0) {
+		free(*path);
+		*path = NULL;
 		return 1;
 	}
-	free(*path);
-	*path = NULL;
 	return 0;
 }
 
@@ -215,7 +215,7 @@ int qpol_default_policy_find(char **path)
 	*path = NULL;
 	/* Try default source policy first as a source policy contains
 	 * more useful information. */
-	if ((rt = search_policy_source_file(path)) < 0) {
+	if ((rt = search_policy_source_file(path)) <= 0) {
 		return rt;
 	}
 	/* Try a binary policy */
