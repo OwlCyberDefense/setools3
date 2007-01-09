@@ -880,7 +880,11 @@ proc ApolTop::writeInitFile { } {
     puts $f "\[window_width\]"
     puts $f [winfo width .]
     puts $f "\[show_fake_attrib_warning\]"
-    puts $f $ApolTop::show_fake_attrib_warning
+    variable show_fake_attrib_warning
+    puts $f $show_fake_attrib_warning
+    puts $f "\[max_recent_files\]"
+    variable max_recent_files
+    puts $f $max_recent_files
     close $f
 }
 
@@ -950,7 +954,7 @@ proc ApolTop::readInitFile { } {
             # follows containing an integer with the max number of
             # recent files to keep.  The default is 5 if this is not
             # specified.  The minimum is 2.
-            "max_recent_files" {
+            "\[max_recent_files\]" {
                 if {[string is integer -strict $value] != 1} {
                     puts "max_recent_files was not given as an integer and is ignored"
                 } else {
