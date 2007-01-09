@@ -1,7 +1,8 @@
 /**
  *  @file
  *  Dialog that allows the user to select either a monolithic policy
- *  or a base policy + list of modules.  Note that this does not act.
+ *  or a base policy + list of modules.  The dialog may also actually
+ *  open the policy or it may be used simply as a file chooser.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -34,8 +35,12 @@
  * a monolithic or a modular policy.
  *
  * @param top Toplevel for the application.
- * @param filename If not NULL, the default filename for the policy.
+ * @param path If not NULL, the default path for the policy.
+ * @param selection If non-NULL, then allocate and set this reference
+ * pointer to the path selected; caller must call
+ * apol_policy_path_destroy() afterwards.  Otherwise if NULL then
+ * actually load the policy and set the path tloplvel_open_policy().
  */
-void open_policy_window_run(toplevel_t * top, apol_policy_path_t * path);
+void open_policy_window_run(toplevel_t * top, const apol_policy_path_t * path, apol_policy_path_t ** selection);
 
 #endif

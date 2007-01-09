@@ -1,3 +1,7 @@
+2007-01-04  J. Tang  <jtang@tresys.com>
+
+	* seaudit converted to use accept modular policies.
+
 2007-01-03  J. Tang  <jtang@tresys.com>
 
 	* Deprecated apol_policy_open() and apol_policy_open_no_rules();

@@ -24,6 +24,7 @@
 
 #include <config.h>
 
+#include "open_policy_window.h"
 #include "preferences_view.h"
 #include "utilgui.h"
 #include <assert.h>
@@ -114,6 +115,23 @@ static void preferences_view_on_log_current_click(GtkWidget * widget, gpointer u
 	}
 }
 
+static void preferences_view_on_policy_browse_click(GtkWidget * widget, gpointer user_data)
+{
+	struct pref_view *pv = (struct pref_view *)user_data;
+	GtkEntry *entry = GTK_ENTRY(glade_xml_get_widget(pv->xml, "PrefsViewPolicyEntry"));
+	assert(entry != NULL);
+	apol_policy_path_t *new_path;
+
+	open_policy_window_run(pv->top, pv->policy_path, &new_path);
+	if (new_path != NULL) {
+		apol_policy_path_destroy(&pv->policy_path);
+		pv->policy_path = new_path;
+		char *path_string = util_policy_path_to_string(pv->policy_path);
+		gtk_entry_set_text(entry, path_string);
+		free(path_string);
+	}
+}
+
 static void preferences_view_on_policy_current_click(GtkWidget * widget, gpointer user_data)
 {
 	struct pref_view *pv = (struct pref_view *)user_data;
@@ -155,6 +173,9 @@ static void preferences_view_init_widgets(struct pref_view *pv)
 	}
 	g_signal_connect(w, "clicked", G_CALLBACK(preferences_view_on_log_current_click), pv);
 
+	w = glade_xml_get_widget(pv->xml, "PrefsViewPolicyModifyButton");
+	assert(w != NULL);
+	g_signal_connect(w, "clicked", G_CALLBACK(preferences_view_on_policy_browse_click), pv);
 	w = glade_xml_get_widget(pv->xml, "PrefsViewPolicyCurrentButton");
 	assert(w != NULL);
 	if (pv->current_policy == NULL) {

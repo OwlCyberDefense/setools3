@@ -259,7 +259,7 @@ static void open_policy_init_signals(struct open_policy *op)
 	g_signal_connect(op->remove_button, "clicked", G_CALLBACK(open_policy_on_remove_click), op);
 }
 
-static void open_policy_init_values(struct open_policy *op, apol_policy_path_t * path)
+static void open_policy_init_values(struct open_policy *op, const apol_policy_path_t * path)
 {
 	if (path != NULL) {
 		apol_policy_path_type_e path_type = apol_policy_path_get_type(path);
@@ -280,11 +280,13 @@ static void open_policy_init_values(struct open_policy *op, apol_policy_path_t *
 }
 
 /**
- * Attempt to load the policy given the user's inputs.
+ * Build the policy path corresponding to the user's inputs on this
+ * dialog.
  *
- * @return 0 on successful load, < 0 on error.
+ * @return path for the dialog, or NULL upon error.  The caller must
+ * call apol_policy_path_destroy() afterwards.
  */
-static int open_policy_try_loading(struct open_policy *op)
+static apol_policy_path_t *open_policy_build_path(struct open_policy *op)
 {
 	const char *primary_path = gtk_entry_get_text(op->base_entry);
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
@@ -295,7 +297,7 @@ static int open_policy_try_loading(struct open_policy *op)
 		GtkTreeIter iter;
 		if ((modules = apol_vector_create()) == NULL) {
 			toplevel_ERR(op->top, "%s", strerror(errno));
-			return -1;
+			return NULL;
 		}
 		if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(op->module_store), &iter)) {
 			do {
@@ -308,7 +310,7 @@ static int open_policy_try_loading(struct open_policy *op)
 					toplevel_ERR(op->top, "%s", strerror(errno));
 					free(module_path);
 					apol_vector_destroy(&modules, free);
-					return -1;
+					return NULL;
 				}
 			}
 			while (gtk_tree_model_iter_next(GTK_TREE_MODEL(op->module_store), &iter));
@@ -318,15 +320,16 @@ static int open_policy_try_loading(struct open_policy *op)
 	apol_vector_destroy(&modules, free);
 	if (path == NULL) {
 		toplevel_ERR(op->top, "%s", strerror(errno));
-		return -1;
+		return NULL;
 	}
-	return toplevel_open_policy(op->top, path);
+	return path;
 }
 
-void open_policy_window_run(toplevel_t * top, apol_policy_path_t * path)
+void open_policy_window_run(toplevel_t * top, const apol_policy_path_t * path, apol_policy_path_t ** selection)
 {
 	struct open_policy op;
 	gint response;
+	apol_policy_path_t *input;
 
 	memset(&op, 0, sizeof(op));
 	op.top = top;
@@ -335,13 +338,24 @@ void open_policy_window_run(toplevel_t * top, apol_policy_path_t * path)
 	open_policy_init_widgets(&op);
 	open_policy_init_signals(&op);
 	open_policy_init_values(&op, path);
+	if (selection != NULL) {
+		*selection = NULL;
+	}
 
 	while (1) {
 		response = gtk_dialog_run(op.dialog);
 		if (response == GTK_RESPONSE_CANCEL) {
 			break;
 		}
-		if (open_policy_try_loading(&op) == 0) {
+		if ((input = open_policy_build_path(&op)) == NULL) {
+			continue;
+		}
+		if (selection == NULL) {
+			if (toplevel_open_policy(op.top, input) == 0) {
+				break;
+			}
+		} else {
+			*selection = input;
 			break;
 		}
 	}

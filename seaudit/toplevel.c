@@ -932,7 +932,7 @@ void toplevel_on_open_log_activate(gpointer user_data, GtkWidget * widget __attr
 void toplevel_on_open_policy_activate(gpointer user_data, GtkWidget * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
-	open_policy_window_run(top, seaudit_get_policy_path(top->s));
+	open_policy_window_run(top, seaudit_get_policy_path(top->s), NULL);
 }
 
 void toplevel_on_preferences_activate(gpointer user_data, GtkWidget * widget __attribute__ ((unused)))
