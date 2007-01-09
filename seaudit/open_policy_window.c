@@ -5,7 +5,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2007 Tresys Technology, LLC
+ *  Copyright (C) 2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -39,9 +39,8 @@ struct open_policy
 {
 	GladeXML *xml;
 	toplevel_t *top;
+	char *last_module_path;
 	GtkDialog *dialog;
-	char *base_filename;
-	apol_vector_t *module_filenames;
 
 	GtkRadioButton *monolithic_radio, *modular_radio;
 
@@ -57,11 +56,39 @@ struct open_policy
 
 enum module_columns
 {
-	POINTER_COLUMN = 0, NAME_COLUMN, VERSION_COLUMN, PATH_COLUMN
+	PATH_COLUMN = 0, NAME_COLUMN, VERSION_COLUMN, NUM_COLUMNS
 };
+
+/**
+ * Sort columns in alphabetical order.
+ */
+static gint open_policy_sort(GtkTreeModel * model, GtkTreeIter * a, GtkTreeIter * b, gpointer user_data)
+{
+	GValue value_a = { 0 }, value_b = {
+	0};
+	const char *name_a, *name_b;
+	int retval, column_id = (int)user_data;
+
+	gtk_tree_model_get_value(model, a, column_id, &value_a);
+	gtk_tree_model_get_value(model, b, column_id, &value_b);
+	name_a = g_value_get_string(&value_a);
+	name_b = g_value_get_string(&value_b);
+	if (column_id == VERSION_COLUMN) {
+		retval = atoi(name_a) - atoi(name_b);
+	} else {
+		retval = strcmp(name_a, name_b);
+	}
+	g_value_unset(&value_a);
+	g_value_unset(&value_b);
+	return retval;
+}
 
 static void open_policy_init_widgets(struct open_policy *op)
 {
+	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column;
+	GtkTreeSelection *selection;
+
 	op->dialog = GTK_DIALOG(glade_xml_get_widget(op->xml, "PolicyOpenWindow"));
 	assert(op->dialog != NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(op->dialog), toplevel_get_window(op->top));
@@ -79,12 +106,38 @@ static void open_policy_init_widgets(struct open_policy *op)
 
 	op->module_view = GTK_TREE_VIEW(glade_xml_get_widget(op->xml, "module view"));
 	assert(op->module_view != NULL);
-	op->module_store = gtk_list_store_new(PATH_COLUMN + 1, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+	op->module_store = gtk_list_store_new(NUM_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
 	gtk_tree_view_set_model(op->module_view, GTK_TREE_MODEL(op->module_store));
 
 	op->add_button = GTK_BUTTON(glade_xml_get_widget(op->xml, "module add button"));
 	op->remove_button = GTK_BUTTON(glade_xml_get_widget(op->xml, "module remove button"));
 	assert(op->add_button != NULL && op->remove_button != NULL);
+
+	selection = gtk_tree_view_get_selection(op->module_view);
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);
+
+	column = gtk_tree_view_column_new_with_attributes("Module", renderer, "text", NAME_COLUMN, NULL);
+	gtk_tree_view_column_set_sort_column_id(column, NAME_COLUMN);
+	gtk_tree_view_column_set_resizable(column, TRUE);
+	gtk_tree_view_append_column(op->module_view, column);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(op->module_store), NAME_COLUMN, open_policy_sort, (gpointer) NAME_COLUMN,
+					NULL);
+
+	column = gtk_tree_view_column_new_with_attributes("Version", renderer, "text", VERSION_COLUMN, NULL);
+	gtk_tree_view_column_set_sort_column_id(column, VERSION_COLUMN);
+	gtk_tree_view_column_set_resizable(column, TRUE);
+	gtk_tree_view_append_column(op->module_view, column);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(op->module_store), VERSION_COLUMN, open_policy_sort,
+					(gpointer) VERSION_COLUMN, NULL);
+
+	column = gtk_tree_view_column_new_with_attributes("Path", renderer, "text", PATH_COLUMN, NULL);
+	gtk_tree_view_column_set_sort_column_id(column, PATH_COLUMN);
+	gtk_tree_view_column_set_resizable(column, TRUE);
+	gtk_tree_view_append_column(op->module_view, column);
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(op->module_store), PATH_COLUMN, open_policy_sort, (gpointer) PATH_COLUMN,
+					NULL);
+
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(op->module_store), NAME_COLUMN, GTK_SORT_ASCENDING);
 }
 
 static void open_policy_on_policy_type_toggle(GtkToggleButton * widget, gpointer user_data)
@@ -106,6 +159,7 @@ static void open_policy_on_policy_type_toggle(GtkToggleButton * widget, gpointer
 static void open_policy_on_base_browse_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {
 	struct open_policy *op = (struct open_policy *)user_data;
+	const char *current_path = gtk_entry_get_text(op->base_entry);
 	char *title;
 	char *path;
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(op->monolithic_radio))) {
@@ -113,17 +167,74 @@ static void open_policy_on_base_browse_click(GtkButton * button __attribute__ ((
 	} else {
 		title = "Open Modular Policy";
 	}
-	if ((path = util_open_file(GTK_WINDOW(op->dialog), title, NULL)) == NULL) {
+	if (strcmp(current_path, "") == 0) {
+		current_path = NULL;
+	}
+	if ((path = util_open_file(GTK_WINDOW(op->dialog), title, current_path)) == NULL) {
 		return;
 	}
 	gtk_entry_set_text(op->base_entry, path);
-	free(op->base_filename);
-	op->base_filename = path;
+}
+
+/**
+ * Attempt to load a module and retrieve its name and version.  Upon
+ * success add an entry to the list store.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int open_policy_load_module(struct open_policy *op, const char *path)
+{
+	char *module_name, version_string[32];
+	uint32_t version;
+	int module_type;
+	qpol_module_t *module = NULL;
+	GtkTreeIter iter;
+
+	if ((qpol_module_create_from_file(path, &module)) < 0) {
+		toplevel_ERR(op->top, "Error opening module: %s", strerror(errno));
+		return -1;
+	}
+	if (qpol_module_get_name(module, &module_name) < 0 ||
+	    qpol_module_get_version(module, &version) < 0 || qpol_module_get_type(module, &module_type) < 0) {
+		toplevel_ERR(op->top, "Error reading module: %s", strerror(errno));
+		qpol_module_destroy(&module);
+		return -1;
+	}
+	if (module_type != QPOL_MODULE_OTHER) {
+		toplevel_ERR(op->top, "%s is not a loadable module.", path);
+		qpol_module_destroy(&module);
+		return -1;
+	}
+	snprintf(version_string, sizeof(version_string), "%zd", version);
+	gtk_list_store_append(op->module_store, &iter);
+	gtk_list_store_set(op->module_store, &iter, PATH_COLUMN, path, NAME_COLUMN, module_name, VERSION_COLUMN, version_string,
+			   -1);
+	qpol_module_destroy(&module);
+	return 0;
 }
 
 static void open_policy_on_add_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {
+	struct open_policy *op = (struct open_policy *)user_data;
+	char *path;
+	const char *prev_path;
 
+	if ((prev_path = op->last_module_path) == NULL) {
+		prev_path = gtk_entry_get_text(op->base_entry);
+		if (strcmp(prev_path, "") == 0) {
+			prev_path = NULL;
+		}
+	}
+	path = util_open_file(GTK_WINDOW(op->dialog), "Open Module", prev_path);
+	if (path == NULL) {
+		return;
+	}
+	if (open_policy_load_module(op, path) < 0) {
+		free(path);
+		return;
+	}
+	free(op->last_module_path);
+	op->last_module_path = path;
 }
 
 static void open_policy_on_remove_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
@@ -132,17 +243,10 @@ static void open_policy_on_remove_click(GtkButton * button __attribute__ ((unuse
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(op->module_view);
 	GtkTreeIter iter;
 	char *path;
-	size_t i;
-	int rt;
 	if (!gtk_tree_selection_get_selected(selection, NULL, &iter)) {
 		return;
 	}
 	gtk_tree_model_get(GTK_TREE_MODEL(op->module_store), &iter, 0, &path, -1);
-	rt = apol_vector_get_index(op->module_filenames, path, apol_str_strcmp, NULL, &i);
-	assert(rt == 0);
-	path = apol_vector_get_element(op->module_filenames, i);
-	free(path);
-	apol_vector_remove(op->module_filenames, i);
 	gtk_list_store_remove(op->module_store, &iter);
 }
 
@@ -155,32 +259,71 @@ static void open_policy_init_signals(struct open_policy *op)
 	g_signal_connect(op->remove_button, "clicked", G_CALLBACK(open_policy_on_remove_click), op);
 }
 
-static void open_policy_init_module_list(struct open_policy *op)
+static void open_policy_init_values(struct open_policy *op, apol_policy_path_t * path)
 {
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(op->module_view);
-	gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);
-
-	column = gtk_tree_view_column_new_with_attributes("Module", renderer, "text", 1, NULL);
-	gtk_tree_view_column_set_clickable(column, FALSE);
-	gtk_tree_view_column_set_resizable(column, TRUE);
-	gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-	gtk_tree_view_column_set_visible(column, TRUE);
-	gtk_tree_view_append_column(op->module_view, column);
+	if (path != NULL) {
+		apol_policy_path_type_e path_type = apol_policy_path_get_type(path);
+		const char *primary_path = apol_policy_path_get_primary(path);
+		gtk_entry_set_text(op->base_entry, primary_path);
+		if (path_type == APOL_POLICY_PATH_TYPE_MODULAR) {
+			const apol_vector_t *modules = apol_policy_path_get_modules(path);
+			size_t i;
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(op->modular_radio), TRUE);
+			for (i = 0; i < apol_vector_get_size(modules); i++) {
+				char *module_path = apol_vector_get_element(modules, i);
+				if (open_policy_load_module(op, module_path) < 0) {
+					break;
+				}
+			}
+		}
+	}
 }
 
 /**
  * Attempt to load the policy given the user's inputs.
  *
- * @return Non-zero on successful load, zero on error.
+ * @return 0 on successful load, < 0 on error.
  */
 static int open_policy_try_loading(struct open_policy *op)
 {
-	return 0;
+	const char *primary_path = gtk_entry_get_text(op->base_entry);
+	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+	apol_vector_t *modules = NULL;
+	apol_policy_path_t *path = NULL;
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(op->modular_radio))) {
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		GtkTreeIter iter;
+		if ((modules = apol_vector_create()) == NULL) {
+			toplevel_ERR(op->top, "%s", strerror(errno));
+			return -1;
+		}
+		if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(op->module_store), &iter)) {
+			do {
+				GValue value = { 0 };
+				char *module_path;
+				gtk_tree_model_get_value(GTK_TREE_MODEL(op->module_store), &iter, PATH_COLUMN, &value);
+				module_path = g_value_dup_string(&value);
+				g_value_unset(&value);
+				if (apol_vector_append(modules, module_path) < 0) {
+					toplevel_ERR(op->top, "%s", strerror(errno));
+					free(module_path);
+					apol_vector_destroy(&modules, free);
+					return -1;
+				}
+			}
+			while (gtk_tree_model_iter_next(GTK_TREE_MODEL(op->module_store), &iter));
+		}
+	}
+	path = apol_policy_path_create(path_type, primary_path, modules);
+	apol_vector_destroy(&modules, free);
+	if (path == NULL) {
+		toplevel_ERR(op->top, "%s", strerror(errno));
+		return -1;
+	}
+	return toplevel_open_policy(op->top, path);
 }
 
-void open_policy_window_run(toplevel_t * top, apol_policy_path_t * filename)
+void open_policy_window_run(toplevel_t * top, apol_policy_path_t * path)
 {
 	struct open_policy op;
 	gint response;
@@ -188,25 +331,21 @@ void open_policy_window_run(toplevel_t * top, apol_policy_path_t * filename)
 	memset(&op, 0, sizeof(op));
 	op.top = top;
 	op.xml = glade_xml_new(toplevel_get_glade_xml(top), "PolicyOpenWindow", NULL);
-	if ((op.module_filenames = apol_vector_create()) == NULL) {
-		toplevel_ERR(top, "%s", strerror(errno));
-		return;
-	}
+
 	open_policy_init_widgets(&op);
 	open_policy_init_signals(&op);
-	open_policy_init_module_list(&op);
+	open_policy_init_values(&op, path);
 
 	while (1) {
 		response = gtk_dialog_run(op.dialog);
 		if (response == GTK_RESPONSE_CANCEL) {
 			break;
 		}
-		if (open_policy_try_loading(&op)) {
+		if (open_policy_try_loading(&op) == 0) {
 			break;
 		}
 	}
 	gtk_widget_destroy(GTK_WIDGET(op.dialog));
+	free(op.last_module_path);
 	g_object_unref(op.module_store);
-	free(op.base_filename);
-	apol_vector_destroy(&op.module_filenames, NULL);
 }

@@ -1,5 +1,5 @@
 /**
- *  @file preferences_view.c
+ *  @file
  *  Implementation of preferences editor.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -30,21 +30,29 @@
 #include <string.h>
 #include <glade/glade.h>
 
+struct pref_view
+{
+	GladeXML *xml;
+	toplevel_t *top;
+	preferences_t *prefs;
+	GtkDialog *dialog;
+	const char *current_log;
+	const apol_policy_path_t *current_policy;
+	apol_policy_path_t *policy_path;
+};
+
 struct pref_entry
 {
 	const char *entry_name, *browse_name;
-	char *(*accessor) (preferences_t *);
+	const char *(*accessor) (preferences_t *);
 	int (*modifier) (preferences_t *, const char *);
 	const char *title;
-	/* these next two are for callbacks to the browse button */
-	GladeXML *xml;
-	GtkWindow *parent;
+	/* next field is for callbacks to the browse button */
+	struct pref_view *pv;
 };
 
 static struct pref_entry pref_entry_data[] = {
 	{"PrefsViewLogEntry", "PrefsViewLogBrowseButton", preferences_get_log, preferences_set_log, "Select Default Log"},
-	{"PrefsViewPolicyEntry", "PrefsViewPolicyBrowseButton", preferences_get_policy, preferences_set_policy,
-	 "Select Default Policy"},
 	{"PrefsViewConfigEntry", "PrefsViewConfigBrowseButton", preferences_get_report, preferences_set_report,
 	 "Select Report Configuration File"},
 	{"PrefsViewStylesheetEntry", "PrefsViewStylesheetBrowseButton", preferences_get_stylesheet, preferences_set_stylesheet,
@@ -79,59 +87,130 @@ static const struct pref_toggle pref_toggle_map[] = {
 };
 static const size_t num_toggles = sizeof(pref_toggle_map) / sizeof(pref_toggle_map[0]);
 
-static void display_browse_dialog_for_entry_box(GtkEntry * entry, GtkWindow * parent, const char *title)
-{
-	const char *current_path = gtk_entry_get_text(entry);
-	char *new_path = util_open_file(parent, title, current_path);
-	if (new_path != NULL) {
-		gtk_entry_set_text(entry, new_path);
-		g_free(new_path);
-	}
-}
-
 static void preferences_view_on_browse_click(GtkWidget * widget, gpointer user_data)
 {
 	const struct pref_entry *pe = (const struct pref_entry *)user_data;
-	GtkEntry *entry = GTK_ENTRY(glade_xml_get_widget(pe->xml, pe->entry_name));
-	display_browse_dialog_for_entry_box(entry, pe->parent, pe->title);
+	struct pref_view *pv = pe->pv;
+	GtkEntry *entry = GTK_ENTRY(glade_xml_get_widget(pv->xml, pe->entry_name));
+	const char *current_path = gtk_entry_get_text(entry);
+	GtkWindow *parent = GTK_WINDOW(pv->dialog);
+	const char *title = pe->title;
+	char *new_path = util_open_file(parent, title, current_path);
+	if (new_path != NULL) {
+		gtk_entry_set_text(entry, new_path);
+		free(new_path);
+	}
+}
+
+static void preferences_view_on_log_current_click(GtkWidget * widget, gpointer user_data)
+{
+	struct pref_view *pv = (struct pref_view *)user_data;
+	GtkEntry *entry = GTK_ENTRY(glade_xml_get_widget(pv->xml, "PrefsViewLogEntry"));
+	assert(entry != NULL);
+	if (pv->current_log == NULL) {
+		gtk_entry_set_text(entry, "");
+	} else {
+		gtk_entry_set_text(entry, pv->current_log);
+	}
+}
+
+static void preferences_view_on_policy_current_click(GtkWidget * widget, gpointer user_data)
+{
+	struct pref_view *pv = (struct pref_view *)user_data;
+	GtkEntry *entry = GTK_ENTRY(glade_xml_get_widget(pv->xml, "PrefsViewPolicyEntry"));
+	assert(entry != NULL);
+	apol_policy_path_destroy(&pv->policy_path);
+	if (pv->current_policy != NULL) {
+		pv->policy_path = apol_policy_path_create_from_policy_path(pv->current_policy);
+		char *path_string = util_policy_path_to_string(pv->policy_path);
+		gtk_entry_set_text(entry, path_string);
+		free(path_string);
+	} else {
+		gtk_entry_set_text(entry, "");
+	}
+}
+
+static void preferences_view_init_widgets(struct pref_view *pv)
+{
+	GtkWidget *w;
+	size_t i;
+
+	w = glade_xml_get_widget(pv->xml, "PreferencesWindow");
+	assert(w != NULL);
+	pv->dialog = GTK_DIALOG(w);
+	gtk_window_set_transient_for(GTK_WINDOW(pv->dialog), toplevel_get_window(pv->top));
+
+	for (i = 0; i < num_entries; i++) {
+		struct pref_entry *pe = pref_entry_data + i;
+		w = glade_xml_get_widget(pv->xml, pe->browse_name);
+		assert(w != NULL);
+		pe->pv = pv;
+		g_signal_connect(w, "clicked", G_CALLBACK(preferences_view_on_browse_click), pe);
+	}
+
+	w = glade_xml_get_widget(pv->xml, "PrefsViewLogCurrentButton");
+	assert(w != NULL);
+	if (pv->current_log == NULL) {
+		gtk_widget_set_sensitive(w, FALSE);
+	}
+	g_signal_connect(w, "clicked", G_CALLBACK(preferences_view_on_log_current_click), pv);
+
+	w = glade_xml_get_widget(pv->xml, "PrefsViewPolicyCurrentButton");
+	assert(w != NULL);
+	if (pv->current_policy == NULL) {
+		gtk_widget_set_sensitive(w, FALSE);
+	}
+	g_signal_connect(w, "clicked", G_CALLBACK(preferences_view_on_policy_current_click), pv);
 }
 
 /**
  * Copy values from preferences object to dialog widgets.
  */
-static void preferences_view_init_dialog(preferences_t * prefs, GladeXML * xml)
+static void preferences_view_init_values(struct pref_view *pv)
 {
 	GtkWidget *w;
+	const char *current_value;
+	const apol_policy_path_t *current_path;
 	char *s;
 	size_t i;
 
 	for (i = 0; i < num_entries; i++) {
 		const struct pref_entry *pe = pref_entry_data + i;
-		w = glade_xml_get_widget(xml, pe->entry_name);
+		w = glade_xml_get_widget(pv->xml, pe->entry_name);
 		assert(w != NULL);
-		s = pe->accessor(prefs);
-		gtk_entry_set_text(GTK_ENTRY(w), s);
+		current_value = pe->accessor(pv->prefs);
+		gtk_entry_set_text(GTK_ENTRY(w), current_value);
+	}
+	if ((current_path = preferences_get_policy(pv->prefs)) != NULL) {
+		pv->policy_path = apol_policy_path_create_from_policy_path(current_path);
+		w = glade_xml_get_widget(pv->xml, "PrefsViewPolicyEntry");
+		char *path_string = util_policy_path_to_string(pv->policy_path);
+		assert(w != NULL);
+		gtk_entry_set_text(GTK_ENTRY(w), path_string);
+		free(path_string);
 	}
 	for (i = 0; i < num_toggles; i++) {
 		int visible;
-		w = glade_xml_get_widget(xml, pref_toggle_map[i].widget_name);
+		w = glade_xml_get_widget(pv->xml, pref_toggle_map[i].widget_name);
 		assert(w != NULL);
-		visible = preferences_is_column_visible(prefs, pref_toggle_map[i].preference_field);
+		visible = preferences_is_column_visible(pv->prefs, pref_toggle_map[i].preference_field);
 		if (visible) {
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w), TRUE);
 		} else {
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w), FALSE);
 		}
 	}
-	w = glade_xml_get_widget(xml, "PrefsViewIntervalEntry");
-	if (asprintf(&s, "%d", preferences_get_real_time_interval(prefs)) >= 0) {
+	w = glade_xml_get_widget(pv->xml, "PrefsViewIntervalEntry");
+	assert(w != NULL);
+	if (asprintf(&s, "%d", preferences_get_real_time_interval(pv->prefs)) >= 0) {
 		gtk_entry_set_text(GTK_ENTRY(w), s);
 		free(s);
 	} else {
 		gtk_entry_set_text(GTK_ENTRY(w), "");
 	}
-	w = glade_xml_get_widget(xml, "RealTimeCheck");
-	if (preferences_get_real_time_at_startup(prefs)) {
+	w = glade_xml_get_widget(pv->xml, "RealTimeCheck");
+	assert(w != NULL);
+	if (preferences_get_real_time_at_startup(pv->prefs)) {
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w), TRUE);
 	} else {
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w), FALSE);
@@ -141,7 +220,7 @@ static void preferences_view_init_dialog(preferences_t * prefs, GladeXML * xml)
 /**
  * Copy values from dialog widget to the preferences object.
  */
-static void preferences_view_get_from_dialog(GladeXML * xml, preferences_t * prefs)
+static void preferences_view_get_from_dialog(struct pref_view *pv)
 {
 	GtkWidget *w;
 	const gchar *entry;
@@ -149,61 +228,56 @@ static void preferences_view_get_from_dialog(GladeXML * xml, preferences_t * pre
 
 	for (i = 0; i < num_entries; i++) {
 		const struct pref_entry *pe = pref_entry_data + i;
-		w = glade_xml_get_widget(xml, pe->entry_name);
+		w = glade_xml_get_widget(pv->xml, pe->entry_name);
 		entry = gtk_entry_get_text(GTK_ENTRY(w));
-		pe->modifier(prefs, entry);
+		pe->modifier(pv->prefs, entry);
 	}
+	preferences_set_policy(pv->prefs, pv->policy_path);
 	for (i = 0; i < num_toggles; i++) {
 		gboolean active;
-		w = glade_xml_get_widget(xml, pref_toggle_map[i].widget_name);
+		w = glade_xml_get_widget(pv->xml, pref_toggle_map[i].widget_name);
 		active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w));
 		if (active) {
-			preferences_set_column_visible(prefs, pref_toggle_map[i].preference_field, 1);
+			preferences_set_column_visible(pv->prefs, pref_toggle_map[i].preference_field, 1);
 		} else {
-			preferences_set_column_visible(prefs, pref_toggle_map[i].preference_field, 0);
+			preferences_set_column_visible(pv->prefs, pref_toggle_map[i].preference_field, 0);
 		}
 	}
-	w = glade_xml_get_widget(xml, "PrefsViewIntervalEntry");
+	w = glade_xml_get_widget(pv->xml, "PrefsViewIntervalEntry");
 	entry = gtk_entry_get_text(GTK_ENTRY(w));
 	if (strcmp(entry, "") == 0) {
 		entry = "0";
 	}
-	preferences_set_real_time_interval(prefs, atoi(entry));
-	w = glade_xml_get_widget(xml, "RealTimeCheck");
+	preferences_set_real_time_interval(pv->prefs, atoi(entry));
+	w = glade_xml_get_widget(pv->xml, "RealTimeCheck");
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
-		preferences_set_real_time_at_startup(prefs, 1);
+		preferences_set_real_time_at_startup(pv->prefs, 1);
 	} else {
-		preferences_set_real_time_at_startup(prefs, 0);
+		preferences_set_real_time_at_startup(pv->prefs, 0);
 	}
 }
 
-int preferences_view_run(toplevel_t * top)
+int preferences_view_run(toplevel_t * top, const char *current_log, const apol_policy_path_t * current_policy)
 {
-	GladeXML *xml;
-	preferences_t *prefs = toplevel_get_prefs(top);
-	GtkWidget *dialog, *browse;
+	struct pref_view pv;
 	gint response;
-	size_t i;
 
-	xml = glade_xml_new(toplevel_get_glade_xml(top), "PreferencesWindow", NULL);
-	dialog = glade_xml_get_widget(xml, "PreferencesWindow");
-	assert(dialog != NULL);
-	gtk_window_set_transient_for(GTK_WINDOW(dialog), toplevel_get_window(top));
+	memset(&pv, 0, sizeof(pv));
+	pv.top = top;
+	pv.xml = glade_xml_new(toplevel_get_glade_xml(top), "PreferencesWindow", NULL);
+	pv.prefs = toplevel_get_prefs(top);
+	pv.current_log = current_log;
+	pv.current_policy = current_policy;
 
-	preferences_view_init_dialog(prefs, xml);
-	for (i = 0; i < num_entries; i++) {
-		struct pref_entry *pe = pref_entry_data + i;
-		pe->xml = xml;
-		pe->parent = GTK_WINDOW(dialog);
-		browse = glade_xml_get_widget(xml, pe->browse_name);
-		g_signal_connect(browse, "clicked", G_CALLBACK(preferences_view_on_browse_click), pe);
-	}
-	response = gtk_dialog_run(GTK_DIALOG(dialog));
+	preferences_view_init_widgets(&pv);
+	preferences_view_init_values(&pv);
+
+	response = gtk_dialog_run(pv.dialog);
 	if (response != GTK_RESPONSE_OK) {
-		gtk_widget_destroy(dialog);
+		gtk_widget_destroy(GTK_WIDGET(pv.dialog));
 		return 0;
 	}
-	preferences_view_get_from_dialog(xml, prefs);
-	gtk_widget_destroy(dialog);
+	preferences_view_get_from_dialog(&pv);
+	gtk_widget_destroy(GTK_WIDGET(pv.dialog));
 	return 1;
 }

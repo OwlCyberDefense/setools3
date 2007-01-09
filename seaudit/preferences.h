@@ -114,30 +114,33 @@ int preferences_set_log(preferences_t * prefs, const char *log);
  *
  * @param prefs Preference object to query.
  *
- * @return Filename for the log file.  Do not modify this string.
+ * @return Filename for the log file, or an empty string if none set.
+ * Do not modify this string.
  */
-char *preferences_get_log(preferences_t * prefs);
+const char *preferences_get_log(preferences_t * prefs);
 
 /**
- * Set the filename for the preferred policy.  Unless overridden by the
+ * Set the path for the preferred policy.  Unless overridden by the
  * command line, this policy will be opened when seaudit is launched.
  *
  * @param prefs Preference object to modify.
- * @param policy Path to the policy file.  The string will be
- * duplicated.
+ * @param policy Path to the policy file.  The policy path object will
+ * be duplicated.
  *
  * @return 0 on success, < 0 on error.
  */
-int preferences_set_policy(preferences_t * prefs, const char *policy);
+int preferences_set_policy(preferences_t * prefs, const apol_policy_path_t * policy);
 
 /**
- * Get the filename for the preferred policy from the preferences object.
+ * Get the policy path object for the preferred policy from the
+ * preferences object.
  *
  * @param prefs Preference object to query.
  *
- * @return Filename for the policy.  Do not modify this string.
+ * @return Policy path object for the policy, or NULL if none set.  Do
+ * not modify this object.
  */
-char *preferences_get_policy(preferences_t * prefs);
+const apol_policy_path_t *preferences_get_policy(preferences_t * prefs);
 
 /**
  * Set the default report filename.
@@ -154,9 +157,10 @@ int preferences_set_report(preferences_t * prefs, const char *report);
  *
  * @param prefs Preference object to query.
  *
- * @return Filename for the report.  Do not modify this string.
+ * @return Filename for the report, or an empty string if none set.
+ * Do not modify this string.
  */
-char *preferences_get_report(preferences_t * prefs);
+const char *preferences_get_report(preferences_t * prefs);
 
 /**
  * Set the default stylesheet filename.
@@ -174,9 +178,10 @@ int preferences_set_stylesheet(preferences_t * prefs, const char *stylesheet);
  *
  * @param prefs Preference object to query.
  *
- * @return Filename for the stylesheet.  Do not modify this string.
+ * @return Filename for the stylesheet, or an empty string if none
+ * set.  Do not modify this string.
  */
-char *preferences_get_stylesheet(preferences_t * prefs);
+const char *preferences_get_stylesheet(preferences_t * prefs);
 
 /**
  * Set the default real-time setting for opened log files.  If startup

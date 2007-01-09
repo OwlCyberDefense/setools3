@@ -992,7 +992,6 @@ int qpol_policy_rebuild(qpol_policy_t * policy)
 	qpol_module_destroy(&base);
 	if (sepol_link_modules(policy->sh, policy->p, modules, num_modules, 0)) {
 		error = EIO;
-		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	free(modules);

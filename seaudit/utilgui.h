@@ -25,6 +25,7 @@
 #ifndef UTILGUI_H
 #define UTILGUI_H
 
+#include <apol/policy-path.h>
 #include <gtk/gtk.h>
 
 /**
@@ -78,4 +79,17 @@ char *util_open_file(GtkWindow * parent, const char *title, const char *init_pat
  * The caller must free the returned value with g_free().
  */
 char *util_save_file(GtkWindow * parent, const char *title, const char *init_path);
+
+/**
+ * Given a policy path, return a newly allocated string that briefly
+ * describes the path.  This string is suitable for showing to the
+ * user.
+ *
+ * @param path Policy path to describe.
+ *
+ * @return String describing the path, or NULL upon error.  The caller
+ * must free the string afterwards.
+ */
+char *util_policy_path_to_string(const apol_policy_path_t * path);
+
 #endif

@@ -92,13 +92,14 @@ apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * pa
 	}
 	policy->msg_callback_arg = varg;
 	primary_path = apol_policy_path_get_primary(path);
+	INFO(policy, "Loading policy %s.", primary_path);
 	if (options & APOL_POLICY_OPTION_NO_RULES) {
 		policy_type = qpol_policy_open_from_file_no_rules(primary_path, &policy->p, qpol_handle_route_to_callback, policy);
 	} else {
 		policy_type = qpol_policy_open_from_file(primary_path, &policy->p, qpol_handle_route_to_callback, policy);
 	}
 	if (policy_type < 0) {
-		ERR(policy, "Unable to open policy at %s.", primary_path);
+		ERR(policy, "Unable to open policy %s.", primary_path);
 		apol_policy_destroy(&policy);
 		return NULL;	       /* qpol sets errno */
 	}
@@ -115,17 +116,20 @@ apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * pa
 		for (i = 0; i < apol_vector_get_size(modules); i++) {
 			const char *module_path = apol_vector_get_element(modules, i);
 			qpol_module_t *mod = NULL;
+			INFO(policy, "Loading module %s.", module_path);
 			if (qpol_module_create_from_file(module_path, &mod)) {
 				ERR(policy, "Error loading module %s.", module_path);
 				apol_policy_destroy(&policy);
 				return NULL;
 			}
 			if (qpol_policy_append_module(policy->p, mod)) {
+				ERR(policy, "Error loading module %s.", module_path);
 				apol_policy_destroy(&policy);
 				qpol_module_destroy(&mod);
 				return NULL;
 			}
 		}
+		INFO(policy, "%s", "Linking modules into base policy.");
 		if (qpol_policy_rebuild(policy->p)) {
 			apol_policy_destroy(&policy);
 			return NULL;

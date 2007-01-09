@@ -270,7 +270,7 @@ extern "C"
  * the list is empty then return an empty string.  The caller is
  * responsible for calling free() upon the return value.
  */
-	extern char *apol_str_join(apol_vector_t * list, const char *delim);
+	extern char *apol_str_join(const apol_vector_t * list, const char *delim);
 
 /**
  * Given a dynamically allocated string, allocate a new string with

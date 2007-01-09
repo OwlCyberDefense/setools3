@@ -490,7 +490,7 @@ apol_vector_t *apol_str_split(const char *s, const char *delim)
 	return list;
 }
 
-char *apol_str_join(apol_vector_t * list, const char *delim)
+char *apol_str_join(const apol_vector_t * list, const char *delim)
 {
 	char *val, *s;
 	size_t i, len;

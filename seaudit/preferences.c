@@ -78,7 +78,7 @@ struct preferences
 	/** path to default system log file */
 	char *log;
 	/** path to default policy */
-	char *policy;
+	apol_policy_path_t *policy;
 	/** default path when writing reports */
 	char *report;
 	/** default path to the stylesheet, used during report writing */
@@ -174,7 +174,6 @@ preferences_t *preferences_create(void)
 
 	if ((prefs = calloc(1, sizeof(*prefs))) == NULL ||
 	    (prefs->log = strdup("")) == NULL ||
-	    (prefs->policy = strdup("")) == NULL ||
 	    (prefs->report = strdup("")) == NULL ||
 	    (prefs->stylesheet = strdup("")) == NULL ||
 	    (prefs->recent_log_files = apol_vector_create()) == NULL ||
@@ -200,8 +199,22 @@ preferences_t *preferences_create(void)
 		prefs->log = value;
 	}
 	if ((value = apol_config_get_var("DEFAULT_POLICY_FILE", file)) != NULL) {
-		free(prefs->policy);
-		prefs->policy = value;
+		apol_policy_path_destroy(&prefs->policy);
+		if (apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, value, NULL) < 0) {
+			error = errno;
+			free(value);
+			goto cleanup;
+		}
+		free(value);
+	}
+	if ((value = apol_config_get_var("DEFAULT_POLICY_PATH", file)) != NULL) {
+		apol_policy_path_destroy(&prefs->policy);
+		if ((prefs->policy = apol_policy_path_create_from_string(value)) == NULL) {
+			error = errno;
+			free(value);
+			goto cleanup;
+		}
+		free(value);
 	}
 	if ((value = apol_config_get_var("DEFAULT_REPORT_CONFIG_FILE", file)) != NULL) {
 		free(prefs->report);
@@ -284,7 +297,7 @@ void preferences_destroy(preferences_t ** prefs)
 {
 	if (prefs != NULL && *prefs != NULL) {
 		free((*prefs)->log);
-		free((*prefs)->policy);
+		apol_policy_path_destroy(&(*prefs)->policy);
 		free((*prefs)->report);
 		free((*prefs)->stylesheet);
 		apol_vector_destroy(&(*prefs)->recent_log_files, free);
@@ -325,8 +338,14 @@ int preferences_write_to_conf_file(preferences_t * prefs)
 	if (strcmp(prefs->log, "") != 0) {
 		fprintf(file, "DEFAULT_LOG_FILE %s\n", prefs->log);
 	}
-	if (strcmp(prefs->policy, "") != 0) {
-		fprintf(file, "DEFAULT_POLICY_FILE %s\n", prefs->policy);
+	if (prefs->policy != NULL) {
+		value = apol_policy_path_to_string(prefs->policy);
+		if (value == NULL) {
+			error = errno;
+			goto cleanup;
+		}
+		fprintf(file, "DEFAULT_POLICY_PATH %s\n", value);
+		free(value);
 	}
 	if (strcmp(prefs->report, "") != 0) {
 		fprintf(file, "DEFAULT_REPORT_CONFIG_FILE %s\n", prefs->report);
@@ -416,23 +435,23 @@ int preferences_set_log(preferences_t * prefs, const char *log)
 	return 0;
 }
 
-char *preferences_get_log(preferences_t * prefs)
+const char *preferences_get_log(preferences_t * prefs)
 {
 	return prefs->log;
 }
 
-int preferences_set_policy(preferences_t * prefs, const char *policy)
+int preferences_set_policy(preferences_t * prefs, const apol_policy_path_t * policy)
 {
-	char *s;
-	if ((s = strdup(policy)) == NULL) {
+	apol_policy_path_t *new_policy;
+	if ((new_policy = apol_policy_path_create_from_policy_path(policy)) == NULL) {
 		return -1;
 	}
-	free(prefs->policy);
-	prefs->policy = s;
+	apol_policy_path_destroy(&prefs->policy);
+	prefs->policy = new_policy;
 	return 0;
 }
 
-char *preferences_get_policy(preferences_t * prefs)
+const apol_policy_path_t *preferences_get_policy(preferences_t * prefs)
 {
 	return prefs->policy;
 }
@@ -448,7 +467,7 @@ int preferences_set_report(preferences_t * prefs, const char *report)
 	return 0;
 }
 
-char *preferences_get_report(preferences_t * prefs)
+const char *preferences_get_report(preferences_t * prefs)
 {
 	return prefs->report;
 }
@@ -464,7 +483,7 @@ int preferences_set_stylesheet(preferences_t * prefs, const char *stylesheet)
 	return 0;
 }
 
-char *preferences_get_stylesheet(preferences_t * prefs)
+const char *preferences_get_stylesheet(preferences_t * prefs)
 {
 	return prefs->stylesheet;
 }

@@ -66,8 +66,8 @@ extern "C"
  * NULL upon error.  The caller is responsible for calling
  * apol_policy_destroy() upon the returned value afterwards.
  */
-	extern apol_policy_t *apol_policy_create_from_path(const apol_policy_path_t * path, const int options,
-							   apol_callback_fn_t msg_callback, void *varg);
+	extern apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * path, const int options,
+								  apol_callback_fn_t msg_callback, void *varg);
 
 /**
  * Open a monolithic policy from disk.

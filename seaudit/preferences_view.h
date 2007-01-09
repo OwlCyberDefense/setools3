@@ -32,9 +32,13 @@
  * Display a dialog from which the user may edit his preferences.
  *
  * @param top Toplevel object containing preferences to modify
+ * @param current_log Path to the currently loaded log file, or NULL
+ * if none loaded.
+ * @param current_policy Path to the currently loaded policy, or NULL
+ * if none loaded.
  *
  * @return Non-zero if preferences changed, zero if not.
  */
-int preferences_view_run(toplevel_t * top);
+int preferences_view_run(toplevel_t * top, const char *current_log, const apol_policy_path_t * current_policy);
 
 #endif

@@ -25,6 +25,7 @@
 #include <config.h>
 
 #include "utilgui.h"
+#include <string.h>
 
 void util_message(GtkWindow * parent, GtkMessageType msg_type, const char *msg)
 {
@@ -96,4 +97,20 @@ char *util_save_file(GtkWindow * parent, const char *title, const char *init_pat
 	}
 	gtk_widget_destroy(dialog);
 	return path;
+}
+
+char *util_policy_path_to_string(const apol_policy_path_t * path)
+{
+	char *s;
+	const char *primary_path = apol_policy_path_get_primary(path);
+	if (apol_policy_path_get_type(path) == APOL_POLICY_PATH_TYPE_MONOLITHIC) {
+		return strdup(primary_path);
+	} else {
+		const apol_vector_t *modules = apol_policy_path_get_modules(path);
+		size_t num_modules = apol_vector_get_size(modules);
+		if (asprintf(&s, "%s + %zd module%s", primary_path, num_modules, num_modules == 1 ? "" : "s") < 0) {
+			return NULL;
+		}
+		return s;
+	}
 }

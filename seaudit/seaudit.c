@@ -76,6 +76,7 @@ void seaudit_set_policy(seaudit_t * s, apol_policy_t * policy, apol_policy_path_
 			return;
 		}
 		apol_policy_destroy(&s->policy);
+		s->policy = policy;
 		if (path != s->policy_path) {
 			apol_policy_path_destroy(&s->policy_path);
 		}
@@ -256,7 +257,7 @@ static void print_usage_info(const char *program_name, int brief)
 	printf("   -v, --version           display version information\n\n");
 }
 
-static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, char **log, apol_policy_path_t ** policy)
+static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, const char **log, apol_policy_path_t ** policy)
 {
 	int optc;
 	*log = NULL;
@@ -314,11 +315,15 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 	if (*log == NULL) {
 		*log = preferences_get_log(seaudit->prefs);
 	}
-	if (primary_path == NULL) {
-		primary_path = preferences_get_policy(seaudit->prefs);
-	}
 	if (primary_path != NULL && strcmp(primary_path, "") != 0) {
 		if ((*policy = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
+			ERR(NULL, "%s", strerror(ENOMEM));
+			seaudit_destroy(&seaudit);
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		const apol_policy_path_t *path = preferences_get_policy(seaudit->prefs);
+		if (path != NULL && (*policy = apol_policy_path_create_from_policy_path(path)) == NULL) {
 			ERR(NULL, "%s", strerror(ENOMEM));
 			seaudit_destroy(&seaudit);
 			exit(EXIT_FAILURE);
@@ -335,7 +340,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 struct delay_file_data
 {
 	toplevel_t *top;
-	char *log_filename;
+	const char *log_filename;
 	apol_policy_path_t *policy_path;
 };
 
@@ -355,7 +360,7 @@ int main(int argc, char **argv)
 {
 	preferences_t *prefs;
 	seaudit_t *app;
-	char *log;
+	const char *log;
 	apol_policy_path_t *policy;
 	apol_vector_t *modules;
 	struct delay_file_data file_data;
