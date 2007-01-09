@@ -87,11 +87,11 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     pack $modules_f -pady 4 -padx 4 -expand 1 -fill both
     set mod_list_f [frame $modules_f.mods -relief sunken]
     pack $mod_list_f -side left -expand 1 -fill both -padx 4
-    set ml [label $mod_list_f.ml -text "Module:"]
-    set vl [label $mod_list_f.vl -text "Version:"]
-    set pl [label $mod_list_f.pl -text "Path:"]
-    grid $ml $vl $pl x -sticky w
-    set dis_bg [$ml cget -bg]
+    set mlabel [label $mod_list_f.ml -text "Module:"]
+    set vlabel [label $mod_list_f.vl -text "Version:"]
+    set plabel [label $mod_list_f.pl -text "Path:"]
+    grid $mlabel $vlabel $plabel x -sticky w
+    set dis_bg [$mlabel cget -bg]
     set ml [listbox $mod_list_f.mods -height 6 -width 10 \
                 -listvariable Apol_Open_Policy_Dialog::vars(mod_names)]
     set vl [listbox $mod_list_f.vers -height 6 -width 4 \
@@ -116,21 +116,26 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     }
 
     trace add variable Apol_Open_Policy_Dialog::vars(path_type) write \
-        [list Apol_Open_Policy_Dialog::togglePathType [list $ml $vl $pl] $dis_bg $bb]
+        [list Apol_Open_Policy_Dialog::togglePathType \
+             [list $mlabel $vlabel $plabel] $dis_bg $bb]
     $dialog add -text "Ok" -command Apol_Open_Policy_Dialog::tryOpenPolicy
     $dialog add -text "Cancel"
 }
 
-proc Apol_Open_Policy_Dialog::togglePathType {paths dis_bg bb name1 name2 op} {
+proc Apol_Open_Policy_Dialog::togglePathType {labels disabled_bg bb name1 name2 op} {
     variable vars
+    variable widgets
     if {$vars(path_type) == "modular"} {
         set state normal
         set bg white
     } else {
         set state disabled
-        set bg $dis_bg
+        set bg $disabled_bg
     }
-    foreach w $paths {
+    foreach w $labels {
+        $w configure -state $state
+    }
+    foreach w $widgets(listboxes) {
         $w configure -state $state -bg $bg
     }
     $bb configure -state $state
@@ -144,7 +149,8 @@ proc Apol_Open_Policy_Dialog::browsePrimary {} {
     } else {
         set title "Open Modular Policy"
     }
-    set f [tk_getOpenFile -initialfile $vars(primary_file) -parent $dialog -title $title]
+    set f [tk_getOpenFile -initialdir [file dirname $vars(primary_file)] \
+               -initialfile $vars(primary_file) -parent $dialog -title $title]
     if {$f != {}} {
         set vars(primary_file) $f
     }
@@ -154,7 +160,9 @@ proc Apol_Open_Policy_Dialog::browseModule {} {
     variable vars
     variable dialog
     variable widgets
-    set f [tk_getOpenFile -initialfile $vars(last_module) -parent $dialog -title "Open Module"]
+    set f [tk_getOpenFile -initialdir [file dirname $vars(last_module)] \
+               -initialfile $vars(last_module) -parent $dialog \
+               -title "Open Module"]
     if {$f == {}} {
         return
     }

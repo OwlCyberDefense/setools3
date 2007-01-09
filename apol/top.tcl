@@ -1327,6 +1327,7 @@ proc ApolTop::set_initial_open_policy_state {} {
             -variable ApolTop::show_fake_attrib_warning
         pack $f.l $f.cb -padx 10 -pady 10
         $d draw
+        destroy $d
     }
 
     ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
