@@ -49,6 +49,9 @@ struct toplevel
 	char *xml_filename;
 	/** toplevel window widget */
 	GtkWindow *w;
+	/* non-zero if the currently opened policies are capable of
+	 * diffing attributes */
+	int can_diff_attributes;
 };
 
 /**
@@ -163,12 +166,12 @@ toplevel_t *toplevel_create(sediffx_t * s)
 	g_object_set_data(G_OBJECT(top->w), "toplevel", top);
 	gtk_widget_show(GTK_WIDGET(top->w));
 
-        /* initialize sub-windows, now that glade XML file has been
-         * read */
-        if ((top->progress = progress_create(top)) == NULL) {
-                error = errno;
-                goto cleanup;
-        }
+	/* initialize sub-windows, now that glade XML file has been
+	 * read */
+	if ((top->progress = progress_create(top)) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
 
 	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
 		if ((top->views[i] = policy_view_create(top, i)) == NULL) {
@@ -264,19 +267,76 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 		apol_policy_path_destroy(&run.paths[1]);
 		return run.result;
 	}
+	top->can_diff_attributes = 1;
 	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
-            policy_view_update(top->views[i], run.policies[i], run.paths[i]);
-                sediffx_set_policy(top->s, i, run.policies[i], run.paths[i]);
-        }
+		qpol_policy_t *q = apol_policy_get_qpol(run.policies[i]);
+		if (!qpol_policy_has_capability(q, QPOL_CAP_ATTRIB_NAMES)) {
+			top->can_diff_attributes = 0;
+		}
+		policy_view_update(top->views[i], run.policies[i], run.paths[i]);
+		sediffx_set_policy(top->s, i, run.policies[i], run.paths[i]);
+	}
 	toplevel_enable_policy_items(top, TRUE);
 	toplevel_update_title_bar(top);
 	/*        toplevel_update_status_bar(top); */
 	return 0;
 }
 
+struct run_datum
+{
+	toplevel_t *top;
+	uint32_t run_flags;
+	int result;
+};
+
+static gpointer toplevel_run_diff_runner(gpointer data)
+{
+	struct run_datum *run = data;
+	poldiff_t *diff = sediffx_get_poldiff(run->top->s, progress_poldiff_handle_func, run->top->progress);
+	if (diff == NULL) {
+		run->result = -1;
+		progress_abort(run->top->progress, "Could not get a poldiff object: %s", strerror(errno));
+		return NULL;
+	}
+	if ((run->result = poldiff_run(diff, run->run_flags)) < 0) {
+		progress_abort(run->top->progress, NULL);
+	} else {
+		progress_done(run->top->progress);
+	}
+	return NULL;
+}
+
 void toplevel_run_diff(toplevel_t * top)
 {
-	printf("running diff\n");
+	struct run_datum r;
+	GtkWidget *dialog = NULL;
+
+	r.top = top;
+	r.run_flags = POLDIFF_DIFF_ALL;
+	r.result = 0;
+	if (!top->can_diff_attributes) {
+		dialog = gtk_message_dialog_new(top->w, GTK_DIALOG_DESTROY_WITH_PARENT,
+						GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
+						"Attribute diffs are not supported for the currently loaded policies.");
+		g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
+		r.run_flags &= ~POLDIFF_DIFF_ATTRIBS;
+	}
+
+	util_cursor_wait(GTK_WIDGET(top->w));
+	progress_show(top->progress, "Running Diff");
+	/* pop the attribute warning over the progress dialog */
+	if (dialog != NULL) {
+		gtk_widget_show(dialog);
+	}
+	g_thread_create(toplevel_run_diff_runner, &r, FALSE, NULL);
+	progress_wait(top->progress);
+	progress_hide(top->progress);
+	util_cursor_clear(GTK_WIDGET(top->w));
+	/* FIX ME
+	 * if (run.result == 0) {
+	 * populate_main_window();
+	 * }
+	 */
 }
 
 char *toplevel_get_glade_xml(toplevel_t * top)
@@ -399,6 +459,13 @@ void toplevel_on_run_diff_button_click(gpointer user_data, GtkWidget * widget __
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
 	toplevel_run_diff(top);
+}
+
+void toplevel_on_destroy(gpointer user_data, GtkObject * object __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	top->w = NULL;
+	gtk_main_quit();
 }
 
 #if 0
@@ -585,17 +652,6 @@ static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 	return;
 }
 
-static void sediff_exit_app(void)
-{
-	sediff_destroy();
-	gtk_main_quit();
-}
-
-static void sediff_main_window_on_destroy(GtkWidget * widget, GdkEvent * event, gpointer user_data)
-{
-	sediff_exit_app();
-}
-
 /* this function is used to determine whether we allow
    a window click events to happen, if there is nothing in the
    buffer we don't */
@@ -740,66 +796,6 @@ static gboolean sediff_populate_main_window()
 	return FALSE;
 }
 
-struct run_datum
-{
-	sediff_app_t *app;
-	uint32_t run_flags;
-};
-
-static gpointer sediff_run_diff_runner(gpointer data)
-{
-	struct run_datum *r = data;
-	if (poldiff_run(r->app->diff, r->run_flags) < 0) {
-		sediff_progress_abort(r->app, NULL);
-	} else {
-		sediff_progress_done(r->app);
-	}
-	return NULL;
-}
-
-void run_diff_clicked(void)
-{
-	GdkCursor *cursor = NULL;
-	struct run_datum r;
-	GtkWidget *dialog;
-
-	sediff_initialize_diff();
-
-	/* set the cursor to a hourglass */
-	cursor = gdk_cursor_new(GDK_WATCH);
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
-	gdk_cursor_unref(cursor);
-	gdk_flush();
-
-	/* make sure we clear everything out before we run the diff */
-	while (gtk_events_pending())
-		gtk_main_iteration();
-
-	r.run_flags = POLDIFF_DIFF_ALL;
-	if (!qpol_policy_has_capability(apol_policy_get_qpol(sediff_app->orig_pol), QPOL_CAP_ATTRIB_NAMES)
-	    || !qpol_policy_has_capability(apol_policy_get_qpol(sediff_app->mod_pol), QPOL_CAP_ATTRIB_NAMES)) {
-		dialog = gtk_message_dialog_new(sediff_app->window, GTK_DIALOG_DESTROY_WITH_PARENT,
-						GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
-						"Attribute diffs are not supported for the currently loaded policies.");
-		g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
-		gtk_widget_show(dialog);
-		while (gtk_events_pending())
-			gtk_main_iteration();
-		r.run_flags &= ~POLDIFF_DIFF_ATTRIBS;
-	}
-
-	sediff_progress_show(sediff_app, "Running Diff");
-	r.app = sediff_app;
-	g_thread_create(sediff_run_diff_runner, &r, FALSE, NULL);
-	sediff_progress_wait(sediff_app);
-	sediff_populate_main_window();
-
-	sediff_progress_hide(sediff_app);
-	cursor = gdk_cursor_new(GDK_LEFT_PTR);
-	if (sediff_app->window != NULL)
-		gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
-}
-
 void sediff_menu_on_default_sort_clicked(GtkMenuItem * menuitem, gpointer user_data)
 {
 	sediff_results_sort_current(sediff_app, SORT_DEFAULT, SORT_ASCEND);
@@ -939,58 +935,6 @@ void sediff_menu_on_open_clicked(GtkMenuItem * menuitem, gpointer user_data)
 	sediff_open_button_clicked();
 }
 
-static void sediff_policy_notebook_on_switch_page(GtkNotebook * notebook, GtkNotebookPage * page, guint pagenum, gpointer user_data)
-{
-	GtkTextView *txt;
-	int main_pagenum;
-	GtkNotebook *main_notebook;
-	sediff_file_data_t *sfd = NULL;
-
-	/* if we don't have filenames we can't open anything... */
-	if (!sediff_app->p1_sfd.name && !sediff_app->p2_sfd.name)
-		return;
-
-	/* if we aren't looking at the policy tab of the noteboook return */
-	if (pagenum == 0)
-		return;
-
-	main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
-	assert(main_notebook);
-
-	/* here we know pagenum is going to be 1 or 2 */
-	main_pagenum = gtk_notebook_get_current_page(main_notebook);
-
-	if (main_pagenum == 1) {
-		/* if we are looking at policy 1 */
-		txt = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text"));
-		g_assert(txt);
-		sfd = &(sediff_app->p1_sfd);
-	} else {
-		/* if we are looking at policy 2 */
-		txt = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text"));
-		g_assert(txt);
-		sfd = &(sediff_app->p2_sfd);
-	}
-
-	/* if the buffer has already been modified, i.e. its had the policy put into it
-	 * just return we have already printed */
-	if (gtk_text_buffer_get_modified(gtk_text_view_get_buffer(txt)) == TRUE)
-		return;
-
-	/* set the modified bit immediately because of gtk is asynchronous
-	 * and this fcn might be called again before its set in the populate fcn */
-	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(txt), TRUE);
-
-	/* show our loading dialog */
-	sediff_progress_message(sediff_app, "Loading Policy", "Loading text - this may take a while.");
-	if (main_pagenum == 1)
-		sediff_policy_file_textview_populate(sfd, txt, sediff_app->orig_pol);
-	else
-		sediff_policy_file_textview_populate(sfd, txt, sediff_app->mod_pol);
-	sediff_progress_hide(sediff_app);
-	return;
-}
-
 /* raise the correct policy tab on the gui, and go to the line clicked
  * by the user */
 void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, int whichview)
@@ -1114,17 +1058,6 @@ void sediff_initialize_policies(void)
 	sediff_clear_text_buffer(txt);
 
 	sediff_set_open_policies_gui_state(FALSE);
-}
-
-static void sediff_main_notebook_on_switch_page(GtkNotebook * notebook, GtkNotebookPage * page, guint pagenum, gpointer user_data)
-{
-	sediff_app_t *app = (sediff_app_t *) user_data;
-	GtkLabel *label = NULL;
-
-	if (pagenum == 0) {
-		label = (GtkLabel *) glade_xml_get_widget(app->window_xml, "line_label");
-		gtk_label_set_text(label, "");
-	}
 }
 
 /* return the textview currently displayed to the user */

@@ -44,19 +44,19 @@ struct policy_view
 {
 	toplevel_t *top;
 	sediffx_policy_e which;
-    GladeXML *xml;
-    GtkTextBuffer *stats, *source;
-    GtkNotebook *main_notebook, *notebook;
-    GtkLabel *line_number;
-    void *mmap_start;
-    size_t mmap_length;
+	GladeXML *xml;
+	GtkTextBuffer *stats, *source;
+	GtkNotebook *main_notebook, *notebook;
+	GtkLabel *line_number;
+	void *mmap_start;
+	size_t mmap_length;
 };
 
 static const char *policy_view_widget_names[SEDIFFX_POLICY_NUM][3] = {
-    { "toplevel policy_orig stats text", "toplevel policy_orig source text",
-    "toplevel policy_orig notebook" },
-    { "toplevel policy_mod stats text", "toplevel policy_mod source text",
-    "toplevel policy_mod notebook" }
+	{"toplevel policy_orig stats text", "toplevel policy_orig source text",
+	 "toplevel policy_orig notebook"},
+	{"toplevel policy_mod stats text", "toplevel policy_mod source text",
+	 "toplevel policy_mod notebook"}
 };
 
 /**
@@ -64,23 +64,24 @@ static const char *policy_view_widget_names[SEDIFFX_POLICY_NUM][3] = {
  * update the bottom label with the line number.  Once that view is
  * hidden, by flipping to a different tab, then clear the label.
  */
-static void policy_view_notebook_on_event_after(GtkWidget * widget __attribute__((unused)), GdkEvent * event __attribute__((unused)), gpointer user_data)
+static void policy_view_notebook_on_event_after(GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
+						__attribute__ ((unused)), gpointer user_data)
 {
-    policy_view_t *view = (policy_view_t *) user_data;
+	policy_view_t *view = (policy_view_t *) user_data;
 	guint main_pagenum, view_pagenum;
 	GtkTextMark *mark = NULL;
 	GtkTextIter iter;
 
-        main_pagenum = gtk_notebook_get_current_page(view->main_notebook);
+	main_pagenum = gtk_notebook_get_current_page(view->main_notebook);
 	view_pagenum = gtk_notebook_get_current_page(view->notebook);
-        if (main_pagenum == 1 + view->which && view_pagenum == 1) {
+	if (main_pagenum == 1 + view->which && view_pagenum == 1) {
 		mark = gtk_text_buffer_get_insert(view->source);
 		if (mark != NULL) {
-                    GString *string = g_string_new("");
+			GString *string = g_string_new("");
 			gtk_text_buffer_get_iter_at_mark(view->source, &iter, mark);
 			g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter) + 1);
 			gtk_label_set_text(view->line_number, string->str);
-                        g_string_free(string, TRUE);
+			g_string_free(string, TRUE);
 		}
 	} else {
 		gtk_label_set_text(view->line_number, "");
@@ -91,7 +92,7 @@ policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which)
 {
 	policy_view_t *view;
 	GtkTextTag *mono_tag;
-        GtkTextView *stats_view, *source_view;
+	GtkTextView *stats_view, *source_view;
 	int error = 0;
 
 	if ((view = calloc(1, sizeof(*view))) == NULL) {
@@ -101,25 +102,24 @@ policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which)
 	view->top = top;
 	view->which = which;
 
-        view->xml = glade_get_widget_tree(GTK_WIDGET(toplevel_get_window(view->top)));
-        view->stats = gtk_text_buffer_new(NULL);
-        view->source = gtk_text_buffer_new(NULL);
-        mono_tag = gtk_text_buffer_create_tag(view->source, "mono-tag",
-                                              "style", PANGO_STYLE_NORMAL,
-                                              "weight", PANGO_WEIGHT_NORMAL,
-                                              "family", "monospace", NULL);
+	view->xml = glade_get_widget_tree(GTK_WIDGET(toplevel_get_window(view->top)));
+	view->stats = gtk_text_buffer_new(NULL);
+	view->source = gtk_text_buffer_new(NULL);
+	mono_tag = gtk_text_buffer_create_tag(view->source, "mono-tag",
+					      "style", PANGO_STYLE_NORMAL,
+					      "weight", PANGO_WEIGHT_NORMAL, "family", "monospace", NULL);
 
-        stats_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][0]));
-        source_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][1]));
-        assert(stats_view != NULL && source_view != NULL);
-        gtk_text_view_set_buffer(stats_view, view->stats);
-        gtk_text_view_set_buffer(source_view, view->source);
+	stats_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][0]));
+	source_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][1]));
+	assert(stats_view != NULL && source_view != NULL);
+	gtk_text_view_set_buffer(stats_view, view->stats);
+	gtk_text_view_set_buffer(source_view, view->source);
 
-        view->notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][2]));
-        view->main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, "toplevel main notebook"));
-        view->line_number = GTK_LABEL(glade_xml_get_widget(view->xml, "toplevel line label"));
-        assert(view->notebook != NULL && view->main_notebook != NULL && view->line_number != NULL);
-        g_signal_connect_after(G_OBJECT(view->notebook), "event-after", G_CALLBACK(policy_view_notebook_on_event_after), view);
+	view->notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][2]));
+	view->main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, "toplevel main notebook"));
+	view->line_number = GTK_LABEL(glade_xml_get_widget(view->xml, "toplevel line label"));
+	assert(view->notebook != NULL && view->main_notebook != NULL && view->line_number != NULL);
+	g_signal_connect_after(G_OBJECT(view->notebook), "event-after", G_CALLBACK(policy_view_notebook_on_event_after), view);
 
       cleanup:
 	if (error != 0) {
@@ -146,7 +146,7 @@ void policy_view_destroy(policy_view_t ** view)
  * @param p New policy whose statistics to get.
  * @param path Path to the new policy.
  */
-static void policy_view_stats_update(policy_view_t *view, apol_policy_t * p, apol_policy_path_t *path)
+static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, apol_policy_path_t * path)
 {
 	GtkTextIter iter;
 	gchar *contents = NULL;
@@ -161,19 +161,17 @@ static void policy_view_stats_update(policy_view_t *view, apol_policy_t * p, apo
 		num_type_trans = 0,
 		num_type_change = 0,
 		num_auditallow = 0, num_dontaudit = 0,
-		num_roles = 0, num_roleallow = 0, num_role_trans = 0,
-		num_users = 0, num_bools = 0;
+		num_roles = 0, num_roleallow = 0, num_role_trans = 0, num_users = 0, num_bools = 0;
 	apol_vector_t *vec = NULL;
 	qpol_iterator_t *i = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 
 	util_text_buffer_clear(view->stats);
 
-        path_desc = util_policy_path_to_string(path);
-        tmp = apol_policy_get_version_type_mls_str(p);
-	contents = g_strdup_printf("Policy: %s\n"
-				   "Policy Version & Type: %s\n", path_desc, tmp);
-        free(path_desc);
+	path_desc = util_policy_path_to_string(path);
+	tmp = apol_policy_get_version_type_mls_str(p);
+	contents = g_strdup_printf("Policy: %s\n" "Policy Version & Type: %s\n", path_desc, tmp);
+	free(path_desc);
 	free(tmp);
 	tmp = NULL;
 	gtk_text_buffer_get_end_iter(view->stats, &iter);
@@ -287,57 +285,56 @@ static void policy_view_stats_update(policy_view_t *view, apol_policy_t * p, apo
  * @param policy Policy to show, or NULL if none loaded.
  * @param path Path to the policy.
  */
-static void policy_view_source_update(policy_view_t *view, apol_policy_t *p, apol_policy_path_t *path)
+static void policy_view_source_update(policy_view_t * view, apol_policy_t * p, apol_policy_path_t * path)
 {
-    const char *primary_path;
+	const char *primary_path;
 	util_text_buffer_clear(view->source);
 
 	/* clear out any old data */
-        if (view->mmap_start != NULL) {
+	if (view->mmap_start != NULL) {
 		munmap(view->mmap_start, view->mmap_length);
-                view->mmap_start = NULL;
-                view->mmap_length = 0;
-        }
-        if (p == NULL) {
-            gtk_text_buffer_set_text(view->source, "No policy has been loaded.", -1);
-            return;
-        }
-        primary_path = apol_policy_path_get_primary(path);
+		view->mmap_start = NULL;
+		view->mmap_length = 0;
+	}
+	if (p == NULL) {
+		gtk_text_buffer_set_text(view->source, "No policy has been loaded.", -1);
+		return;
+	}
+	primary_path = apol_policy_path_get_primary(path);
 	if (!qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_SOURCE)) {
-                GString *string = g_string_new("");
-                g_string_printf(string, "Policy file %s is not a source policy.", primary_path);
-                gtk_text_buffer_set_text(view->source, string->str, -1);
-                g_string_free(string, TRUE);
-        } else {
+		GString *string = g_string_new("");
+		g_string_printf(string, "Policy file %s is not a source policy.", primary_path);
+		gtk_text_buffer_set_text(view->source, string->str, -1);
+		g_string_free(string, TRUE);
+	} else {
 		/* load the policy by mmap()ing the file */
-                struct stat statbuf;
-                int fd;
+		struct stat statbuf;
+		int fd;
 
-                if ((fd = open(primary_path, O_RDONLY)) < 0) {
-                        toplevel_ERR(view->top, "Could not open %s for reading: %s", primary_path, strerror(errno));
-                        return;
-                }
-                if (fstat(fd, &statbuf) < 0) {
-                        toplevel_ERR(view->top, "Could not stat %s: %s", primary_path, strerror(errno));
-                        close(fd);
-                        return;
-                }
+		if ((fd = open(primary_path, O_RDONLY)) < 0) {
+			toplevel_ERR(view->top, "Could not open %s for reading: %s", primary_path, strerror(errno));
+			return;
+		}
+		if (fstat(fd, &statbuf) < 0) {
+			toplevel_ERR(view->top, "Could not stat %s: %s", primary_path, strerror(errno));
+			close(fd);
+			return;
+		}
 
-                view->mmap_length = statbuf.st_size;
-                if ((view->mmap_start = mmap(0, statbuf.st_size, PROT_READ,
-MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
-                        toplevel_ERR(view->top, "Could not mmap %s: %s", primary_path, strerror(errno));
-                        close(fd);
-                        view->mmap_start = NULL;
-                        return;
-                }
-                close(fd);
-                gtk_text_buffer_set_text(view->source, view->mmap_start, view->mmap_length);
-        }
+		view->mmap_length = statbuf.st_size;
+		if ((view->mmap_start = mmap(0, statbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
+			toplevel_ERR(view->top, "Could not mmap %s: %s", primary_path, strerror(errno));
+			close(fd);
+			view->mmap_start = NULL;
+			return;
+		}
+		close(fd);
+		gtk_text_buffer_set_text(view->source, view->mmap_start, view->mmap_length);
+	}
 }
 
-void policy_view_update(policy_view_t * view, apol_policy_t *policy, apol_policy_path_t *path)
+void policy_view_update(policy_view_t * view, apol_policy_t * policy, apol_policy_path_t * path)
 {
-    policy_view_stats_update(view, policy, path);
-    policy_view_source_update(view, policy, path);
+	policy_view_stats_update(view, policy, path);
+	policy_view_source_update(view, policy, path);
 }

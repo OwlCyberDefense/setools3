@@ -66,4 +66,21 @@ void sediffx_set_policy(sediffx_t * s, sediffx_policy_e which, apol_policy_t * p
  */
 const apol_policy_path_t *sediffx_get_policy_path(sediffx_t * s, const sediffx_policy_e which);
 
+/**
+ * Return the currently active poldiff object.  If one is not yet
+ * created or if a policy has changed since the last time this
+ * function was called, then build a new one and return it.  Note that
+ * this does not actually call poldiff_run(); it is up to the caller
+ * of this function to do that.
+ *
+ * @param s sediffx object to query.
+ * @param fn If a poldiff object is being created, a valid callback
+ * function to receive poldiff messages.
+ * @param arg Arbitrary argument to poldiff callback handler.
+ *
+ * @return Poldiff object for currently loaded policies, or NULL upon
+ * error.
+ */
+poldiff_t *sediffx_get_poldiff(sediffx_t * s, poldiff_handle_fn_t fn, void *arg);
+
 #endif

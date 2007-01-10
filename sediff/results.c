@@ -1,12 +1,10 @@
 /**
- *  @file sediff_results.c
- *  Routines for displaying the results of a difference run, as well
- *  as maintaining the status bar.
+ *  @file
+ *  Routines for displaying the results after running poldiff.
  *
- *  @author Don Patterson don.patterson@tresys.com
  *  @author Randy Wicks rwicks@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

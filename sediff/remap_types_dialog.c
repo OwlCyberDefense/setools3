@@ -1,12 +1,13 @@
 /**
- *  @file sediff_remap_types.c
+ *  @file
  *  Displays a dialog that allows users to explicitly remap/remap
  *  types from one policy to the other.
  *
- *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
  *  @author Randy Wicks rwicks@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

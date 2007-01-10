@@ -61,6 +61,6 @@ void policy_view_destroy(policy_view_t ** view);
  *
  * @parav view View to update.
  */
-void policy_view_update(policy_view_t * view, apol_policy_t *policy, apol_policy_path_t *path);
+void policy_view_update(policy_view_t * view, apol_policy_t * policy, apol_policy_path_t * path);
 
 #endif

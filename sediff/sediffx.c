@@ -41,6 +41,7 @@ struct sediffx
 	apol_policy_path_t *paths[SEDIFFX_POLICY_NUM];
 	apol_policy_t *policies[SEDIFFX_POLICY_NUM];
 	toplevel_t *top;
+	poldiff_t *poldiff;
 };
 
 static struct option const longopts[] = {
@@ -52,7 +53,7 @@ static struct option const longopts[] = {
 
 void sediffx_set_policy(sediffx_t * s, sediffx_policy_e which, apol_policy_t * policy, apol_policy_path_t * path)
 {
-	/* fix me: destroy poldiff object */
+	poldiff_destroy(&s->poldiff);
 	if (policy != NULL) {
 		apol_policy_destroy(&s->policies[which]);
 		s->policies[which] = policy;
@@ -69,6 +70,23 @@ void sediffx_set_policy(sediffx_t * s, sediffx_policy_e which, apol_policy_t * p
 const apol_policy_path_t *sediffx_get_policy_path(sediffx_t * sediffx, const sediffx_policy_e which)
 {
 	return sediffx->paths[which];
+}
+
+poldiff_t *sediffx_get_poldiff(sediffx_t * s, poldiff_handle_fn_t fn, void *arg)
+{
+	if (s->poldiff != NULL) {
+		return s->poldiff;
+	}
+	if (s->policies[SEDIFFX_POLICY_ORIG] == NULL || s->policies[SEDIFFX_POLICY_MOD] == NULL) {
+		return NULL;
+	}
+	s->poldiff = poldiff_create(s->policies[SEDIFFX_POLICY_ORIG], s->policies[SEDIFFX_POLICY_MOD], fn, arg);
+	if (s->poldiff != NULL) {
+		/* poldiff_create() took ownership of the policies */
+		s->policies[SEDIFFX_POLICY_ORIG] = NULL;
+		s->policies[SEDIFFX_POLICY_MOD] = NULL;
+	}
+	return s->poldiff;
 }
 
 static void print_version_info(void)
