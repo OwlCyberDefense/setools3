@@ -53,6 +53,14 @@ void util_cursor_wait(GtkWidget * widget);
 void util_cursor_clear(GtkWidget * widget);
 
 /**
+ * Given some arbitrary GtkTextBuffer, remove all of its text and
+ * attributes.  This will not delete the buffer's tag table.
+ *
+ * @param txt Text buffer to clear.
+ */
+void util_text_buffer_clear(GtkTextBuffer * txt);
+
+/**
  * Allow the user select an existing file.  Run the dialog and return
  * the selected filename.
  *

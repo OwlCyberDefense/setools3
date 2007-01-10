@@ -27,20 +27,71 @@
 #include <config.h>
 
 #include "policy_view.h"
+#include "utilgui.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <glade/glade.h>
 
 struct policy_view
 {
 	toplevel_t *top;
 	sediffx_policy_e which;
+    GladeXML *xml;
+    GtkTextBuffer *stats, *source;
+    GtkNotebook *main_notebook, *notebook;
+    GtkLabel *line_number;
+    void *mmap_start;
+    size_t mmap_length;
 };
+
+static const char *policy_view_widget_names[SEDIFFX_POLICY_NUM][3] = {
+    { "toplevel policy_orig stats text", "toplevel policy_orig source text",
+    "toplevel policy_orig notebook" },
+    { "toplevel policy_mod stats text", "toplevel policy_mod source text",
+    "toplevel policy_mod notebook" }
+};
+
+/**
+ * As the user moves the cursor within the source policy text view
+ * update the bottom label with the line number.  Once that view is
+ * hidden, by flipping to a different tab, then clear the label.
+ */
+static void policy_view_notebook_on_event_after(GtkWidget * widget __attribute__((unused)), GdkEvent * event __attribute__((unused)), gpointer user_data)
+{
+    policy_view_t *view = (policy_view_t *) user_data;
+	guint main_pagenum, view_pagenum;
+	GtkTextMark *mark = NULL;
+	GtkTextIter iter;
+
+        main_pagenum = gtk_notebook_get_current_page(view->main_notebook);
+	view_pagenum = gtk_notebook_get_current_page(view->notebook);
+        if (main_pagenum == 1 + view->which && view_pagenum == 1) {
+		mark = gtk_text_buffer_get_insert(view->source);
+		if (mark != NULL) {
+                    GString *string = g_string_new("");
+			gtk_text_buffer_get_iter_at_mark(view->source, &iter, mark);
+			g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter) + 1);
+			gtk_label_set_text(view->line_number, string->str);
+                        g_string_free(string, TRUE);
+		}
+	} else {
+		gtk_label_set_text(view->line_number, "");
+	}
+}
 
 policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which)
 {
 	policy_view_t *view;
+	GtkTextTag *mono_tag;
+        GtkTextView *stats_view, *source_view;
 	int error = 0;
 
 	if ((view = calloc(1, sizeof(*view))) == NULL) {
@@ -49,6 +100,26 @@ policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which)
 	}
 	view->top = top;
 	view->which = which;
+
+        view->xml = glade_get_widget_tree(GTK_WIDGET(toplevel_get_window(view->top)));
+        view->stats = gtk_text_buffer_new(NULL);
+        view->source = gtk_text_buffer_new(NULL);
+        mono_tag = gtk_text_buffer_create_tag(view->source, "mono-tag",
+                                              "style", PANGO_STYLE_NORMAL,
+                                              "weight", PANGO_WEIGHT_NORMAL,
+                                              "family", "monospace", NULL);
+
+        stats_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][0]));
+        source_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][1]));
+        assert(stats_view != NULL && source_view != NULL);
+        gtk_text_view_set_buffer(stats_view, view->stats);
+        gtk_text_view_set_buffer(source_view, view->source);
+
+        view->notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][2]));
+        view->main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, "toplevel main notebook"));
+        view->line_number = GTK_LABEL(glade_xml_get_widget(view->xml, "toplevel line label"));
+        assert(view->notebook != NULL && view->main_notebook != NULL && view->line_number != NULL);
+        g_signal_connect_after(G_OBJECT(view->notebook), "event-after", G_CALLBACK(policy_view_notebook_on_event_after), view);
 
       cleanup:
 	if (error != 0) {
@@ -67,29 +138,19 @@ void policy_view_destroy(policy_view_t ** view)
 	}
 }
 
-#if 0
-
-#include "sediff_gui.h"
-#include "sediff_progress.h"
-#include "utilgui.h"
-
-#include <apol/policy-query.h>
-#include <apol/util.h>
-
-#include <assert.h>
-#include <fcntl.h>
-#include <strings.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView * textview, const char *filename)
+/**
+ * Update the policy stats text buffer (and hence its view) to show
+ * statistics about the given policy.
+ *
+ * @param view View to update.
+ * @param p New policy whose statistics to get.
+ * @param path Path to the new policy.
+ */
+static void policy_view_stats_update(policy_view_t *view, apol_policy_t * p, apol_policy_path_t *path)
 {
-	GtkTextBuffer *txt;
 	GtkTextIter iter;
 	gchar *contents = NULL;
-	char *tmp = NULL;
+	char *path_desc, *tmp = NULL;
 	size_t num_classes = 0,
 		num_commons = 0,
 		num_perms = 0,
@@ -99,26 +160,24 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 		num_neverallow = 0,
 		num_type_trans = 0,
 		num_type_change = 0,
-		num_auditallow = 0,
-		num_dontaudit = 0, num_roles = 0, num_roleallow = 0, num_role_trans = 0, num_users = 0, num_bools = 0;
+		num_auditallow = 0, num_dontaudit = 0,
+		num_roles = 0, num_roleallow = 0, num_role_trans = 0,
+		num_users = 0, num_bools = 0;
 	apol_vector_t *vec = NULL;
 	qpol_iterator_t *i = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 
-	/* grab the text buffer for our tree_view */
-	txt = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-	sediff_clear_text_buffer(txt);
+	util_text_buffer_clear(view->stats);
 
-	/* set some variables up */
-	gtk_text_view_set_editable(GTK_TEXT_VIEW(textview), FALSE);
-	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview), FALSE);
-
-	contents = g_strdup_printf("Filename: %s\n"
-				   "Policy Version & Type: %s\n", filename, (tmp = apol_policy_get_version_type_mls_str(p)));
+        path_desc = util_policy_path_to_string(path);
+        tmp = apol_policy_get_version_type_mls_str(p);
+	contents = g_strdup_printf("Policy: %s\n"
+				   "Policy Version & Type: %s\n", path_desc, tmp);
+        free(path_desc);
 	free(tmp);
 	tmp = NULL;
-	gtk_text_buffer_get_end_iter(txt, &iter);
-	gtk_text_buffer_insert(txt, &iter, contents, -1);
+	gtk_text_buffer_get_end_iter(view->stats, &iter);
+	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
 	apol_class_get_by_query(p, NULL, &vec);
@@ -136,8 +195,7 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 	contents = g_strdup_printf("\nNumber of Classes and Permissions:\n"
 				   "\tObject Classes: %d\n"
 				   "\tCommon Classes: %d\n" "\tPermissions: %d\n", num_classes, num_commons, num_perms);
-	gtk_text_buffer_get_end_iter(txt, &iter);
-	gtk_text_buffer_insert(txt, &iter, contents, -1);
+	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
 	apol_type_get_by_query(p, NULL, &vec);
@@ -150,8 +208,7 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 
 	contents = g_strdup_printf("\nNumber of Types and Attributes:\n"
 				   "\tTypes: %d\n" "\tAttributes: %d\n", num_types, num_attribs);
-	gtk_text_buffer_get_end_iter(txt, &iter);
-	gtk_text_buffer_insert(txt, &iter, contents, -1);
+	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
 	qpol_policy_get_avrule_iter(q, QPOL_RULE_ALLOW, &i);
@@ -186,8 +243,7 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 				   "\tauditallow: %d\n"
 				   "\tdontaudit %d\n",
 				   num_allow, num_neverallow, num_type_trans, num_type_change, num_auditallow, num_dontaudit);
-	gtk_text_buffer_get_end_iter(txt, &iter);
-	gtk_text_buffer_insert(txt, &iter, contents, -1);
+	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
 	apol_role_get_by_query(p, NULL, &vec);
@@ -205,8 +261,7 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 	contents = g_strdup_printf("\nNumber of Roles: %d\n"
 				   "\nNumber of RBAC Rules:\n"
 				   "\tallow: %d\n" "\trole_transition %d\n", num_roles, num_roleallow, num_role_trans);
-	gtk_text_buffer_get_end_iter(txt, &iter);
-	gtk_text_buffer_insert(txt, &iter, contents, -1);
+	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
 	apol_user_get_by_query(p, NULL, &vec);
@@ -218,324 +273,71 @@ static void sediff_policy_stats_textview_populate(apol_policy_t * p, GtkTextView
 	apol_vector_destroy(&vec, NULL);
 
 	contents = g_strdup_printf("\nNumber of Users: %d\n" "\nNumber of Booleans: %d\n", num_users, num_bools);
-	gtk_text_buffer_get_end_iter(txt, &iter);
-	gtk_text_buffer_insert(txt, &iter, contents, -1);
+	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 }
 
-int sediff_policy_file_textview_populate(sediff_file_data_t * sfd, GtkTextView * textview, apol_policy_t * policy)
-{
-	GtkTextBuffer *txt;
-	GtkTextIter iter;
-	gchar *contents = NULL;
-	GString *string;
-	GtkTextTag *mono_tag = NULL;
-	GtkTextTagTable *table = NULL;
-
-	/* grab the text buffer for our text view */
-	txt = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-
-	table = gtk_text_buffer_get_tag_table(txt);
-	mono_tag = gtk_text_tag_table_lookup(table, "mono-tag");
-	if (!mono_tag) {
-		mono_tag = gtk_text_buffer_create_tag(txt, "mono-tag",
-						      "style", PANGO_STYLE_NORMAL,
-						      "weight", PANGO_WEIGHT_NORMAL, "family", "monospace", NULL);
-	}
-	sediff_clear_text_buffer(txt);
-	gtk_text_buffer_get_end_iter(txt, &iter);
-
-	/* set some variables up */
-	gtk_text_view_set_editable(GTK_TEXT_VIEW(textview), FALSE);
-	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview), TRUE);
-
-	/* if this is not a binary policy */
-	if (qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SOURCE) && sfd->data) {
-		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, sfd->data, sfd->size, "mono-tag", NULL);
-		gtk_text_buffer_set_modified(txt, TRUE);
-		g_free(contents);
-	} else {
-		string = g_string_new("");
-		g_string_printf(string, "Policy File %s is not a source policy", sfd->name->str);
-		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, -1, "mono-tag", NULL);
-		g_string_free(string, TRUE);
-	}
-
-	return 0;
-}
-
-void sediff_on_policy1_notebook_event_after(GtkWidget * widget, GdkEvent * event, gpointer user_data)
-{
-	GtkNotebook *notebook = (GtkNotebook *) user_data;
-	GtkLabel *label = NULL;
-	guint pagenum;
-	GtkTextMark *mark = NULL;
-	GtkTextBuffer *txt = NULL;
-	GtkTextIter iter;
-	GtkTextView *p1_textview = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
-
-	pagenum = gtk_notebook_get_current_page(notebook);
-	txt = gtk_text_view_get_buffer(p1_textview);
-	assert(txt);
-	sediff_find_window_reset_idx(sediff_app->find_window);
-	if (pagenum == 0) {
-		label = (GtkLabel *) glade_xml_get_widget(sediff_app->window_xml, "line_label");
-		gtk_label_set_text(label, "");
-	} else if (gtk_text_buffer_get_modified(txt)) {
-		g_assert(p1_textview);
-		GString *string = g_string_new("");
-		mark = gtk_text_buffer_get_insert(txt);
-		if (mark != NULL) {
-			gtk_text_buffer_get_iter_at_mark(txt, &iter, mark);
-			g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter) + 1);
-			label = (GtkLabel *) glade_xml_get_widget(sediff_app->window_xml, "line_label");
-			gtk_label_set_text(label, string->str);
-		}
-		g_string_free(string, TRUE);
-	}
-}
-
-void sediff_on_policy2_notebook_event_after(GtkWidget * widget, GdkEvent * event, gpointer user_data)
-{
-	GtkLabel *label = NULL;
-	guint pagenum;
-	GtkTextMark *mark = NULL;
-	GtkTextBuffer *txt = NULL;
-	GtkTextIter iter;
-	GtkTextView *p2_textview;
-
-	p2_textview = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text"));
-	assert(p2_textview);
-	pagenum = gtk_notebook_get_current_page(GTK_NOTEBOOK(user_data));
-	txt = gtk_text_view_get_buffer(p2_textview);
-	assert(txt);
-	sediff_find_window_reset_idx(sediff_app->find_window);
-	if (pagenum == 0) {
-		label = (GtkLabel *) glade_xml_get_widget(sediff_app->window_xml, "line_label");
-		gtk_label_set_text(label, "");
-	} else if (gtk_text_buffer_get_modified(txt)) {
-		g_assert(p2_textview);
-		GString *string = g_string_new("");
-		mark = gtk_text_buffer_get_insert(txt);
-		if (mark != NULL) {
-			gtk_text_buffer_get_iter_at_mark(txt, &iter, mark);
-			g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter) + 1);
-			label = (GtkLabel *) glade_xml_get_widget(sediff_app->window_xml, "line_label");
-			gtk_label_set_text(label, string->str);
-		}
-		g_string_free(string, TRUE);
-	}
-}
-
-void sediff_reset_policy_notebooks()
-{
-	GtkNotebook *nb = NULL;
-	nb = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook1"));
-	assert(nb);
-	gtk_notebook_set_current_page(nb, 0);
-	nb = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
-	assert(nb);
-	gtk_notebook_set_current_page(nb, 0);
-
-}
-
-/* file_data should be a char ** that can be assigned to the data
- * allocated by mmap, size should be a preallocated int that we can
- * put the size of data into will also clear out any existing data
- * from file_data.  Will return 0 after clearing out data if file is
- * binary
+/**
+ * Attempt to load the primary policy into this view's source policy
+ * buffer.  If the policy is not a source policy then show an
+ * appropriate message.  Otherwise mmap() the policy's contents to the
+ * buffer.
+ *
+ * @param view View whose source buffer to update.
+ * @param policy Policy to show, or NULL if none loaded.
+ * @param path Path to the policy.
  */
-static int sediff_file_mmap(const char *file, char **file_data, size_t * size, apol_policy_t * policy)
+static void policy_view_source_update(policy_view_t *view, apol_policy_t *p, apol_policy_path_t *path)
 {
-	struct stat statbuf;
-	int rt;
+    const char *primary_path;
+	util_text_buffer_clear(view->source);
 
 	/* clear out any old data */
-	if (*file_data)
-		munmap(*file_data, *size);
+        if (view->mmap_start != NULL) {
+		munmap(view->mmap_start, view->mmap_length);
+                view->mmap_start = NULL;
+                view->mmap_length = 0;
+        }
+        if (p == NULL) {
+            gtk_text_buffer_set_text(view->source, "No policy has been loaded.", -1);
+            return;
+        }
+        primary_path = apol_policy_path_get_primary(path);
+	if (!qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_SOURCE)) {
+                GString *string = g_string_new("");
+                g_string_printf(string, "Policy file %s is not a source policy.", primary_path);
+                gtk_text_buffer_set_text(view->source, string->str, -1);
+                g_string_free(string, TRUE);
+        } else {
+		/* load the policy by mmap()ing the file */
+                struct stat statbuf;
+                int fd;
 
-	*file_data = NULL;
-	*size = 0;
+                if ((fd = open(primary_path, O_RDONLY)) < 0) {
+                        toplevel_ERR(view->top, "Could not open %s for reading: %s", primary_path, strerror(errno));
+                        return;
+                }
+                if (fstat(fd, &statbuf) < 0) {
+                        toplevel_ERR(view->top, "Could not stat %s: %s", primary_path, strerror(errno));
+                        close(fd);
+                        return;
+                }
 
-	/* if this is not a source policy just return now
-	 * but this is not an error */
-	if (!qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SOURCE))
-		return 0;
-
-	rt = open(file, O_RDONLY);
-	if (rt < 0)
-		return -1;
-	if (fstat(rt, &statbuf) < 0) {
-		close(rt);
-		return -1;
-	}
-
-	*size = statbuf.st_size;
-	if ((*file_data = mmap(0, statbuf.st_size, PROT_READ, MAP_PRIVATE, rt, 0)) == MAP_FAILED) {
-		close(rt);
-		return -1;
-	}
-	close(rt);
-	return 0;
+                view->mmap_length = statbuf.st_size;
+                if ((view->mmap_start = mmap(0, statbuf.st_size, PROT_READ,
+MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
+                        toplevel_ERR(view->top, "Could not mmap %s: %s", primary_path, strerror(errno));
+                        close(fd);
+                        view->mmap_start = NULL;
+                        return;
+                }
+                close(fd);
+                gtk_text_buffer_set_text(view->source, view->mmap_start, view->mmap_length);
+        }
 }
 
-struct load_policy_datum
+void policy_view_update(policy_view_t * view, apol_policy_t *policy, apol_policy_path_t *path)
 {
-	apol_vector_t *files;
-	const char *which_pol;
-	sediff_app_t *app;
-	apol_policy_t *p;
-};
-
-static gpointer sediff_load_policy_runner(gpointer data)
-{
-	struct load_policy_datum *l = data;
-	GString *string;
-	int rt;
-	size_t i;
-	sediff_progress_update(l->app, "Reading policy.");
-	rt = apol_policy_open(apol_vector_get_element(l->files, 0), &l->p, sediff_progress_apol_handle_func, l->app);
-	if (rt != 0) {
-		string = g_string_new("");
-		g_string_printf(string, "Problem opening policy file: %s", (char *)apol_vector_get_element(l->files, 0));
-		sediff_progress_abort(l->app, string->str);
-		g_string_free(string, TRUE);
-		return NULL;
-	}
-	if (apol_vector_get_size(l->files) > 1) {
-		if (!qpol_policy_has_capability(apol_policy_get_qpol(l->p), QPOL_CAP_MODULES)) {
-			string = g_string_new("");
-			g_string_printf(string, "Policy file %s does not support loadable modules.",
-					(char *)apol_vector_get_element(l->files, 0));
-			sediff_progress_abort(l->app, string->str);
-			g_string_free(string, TRUE);
-			return NULL;
-		}
-		/* start i at 1 here since element 0 is the base */
-		for (i = 1; i < apol_vector_get_size(l->files); i++) {
-			qpol_module_t *mod = NULL;
-			if (qpol_module_create_from_file(apol_vector_get_element(l->files, i), &mod)) {
-				string = g_string_new("");
-				g_string_printf(string, "Problem opening module file: %s",
-						(char *)apol_vector_get_element(l->files, i));
-				sediff_progress_abort(l->app, string->str);
-				g_string_free(string, TRUE);
-				return NULL;
-			}
-			if (qpol_policy_append_module(apol_policy_get_qpol(l->p), mod)) {
-				string = g_string_new("");
-				g_string_printf(string, "Problem opening module file: %s",
-						(char *)apol_vector_get_element(l->files, i));
-				sediff_progress_abort(l->app, string->str);
-				g_string_free(string, TRUE);
-				qpol_module_destroy(&mod);
-				return NULL;
-			}
-		}
-		if (qpol_policy_rebuild(apol_policy_get_qpol(l->p))) {
-			string = g_string_new("");
-			g_string_printf(string, "Problem building policy.");
-			sediff_progress_abort(l->app, string->str);
-			g_string_free(string, TRUE);
-			return NULL;
-		}
-	}
-	sediff_progress_done(l->app);
-	return NULL;
+    policy_view_stats_update(view, policy, path);
+    policy_view_source_update(view, policy, path);
 }
-
-/* opens p1 and p2, populates policy text buffers */
-int sediff_load_policies(apol_vector_t * p1_files, apol_vector_t * p2_files)
-{
-	GtkTextView *p1_textview, *p2_textview, *stats1, *stats2;
-	GdkCursor *cursor = NULL;
-	GtkNotebook *notebook1, *notebook2;
-	struct load_policy_datum l;
-
-	/* set the cursor to a hourglass */
-	cursor = gdk_cursor_new(GDK_WATCH);
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
-	gdk_cursor_unref(cursor);
-	gdk_flush();
-
-	sediff_initialize_policies();
-	while (gtk_events_pending())
-		gtk_main_iteration();
-
-	/* attempt to open the policies */
-	sediff_progress_show(sediff_app, "Loading Policy 1");
-	l.files = p1_files;
-	l.which_pol = "Policy 1";
-	l.app = sediff_app;
-	l.p = NULL;
-	g_thread_create(sediff_load_policy_runner, &l, FALSE, NULL);
-	if (sediff_progress_wait(sediff_app) < 0) {
-		goto err;
-	}
-	sediff_app->orig_pol = l.p;
-	sediff_progress_show(sediff_app, "Loading Policy 2");
-	l.files = p2_files;
-	l.which_pol = "Policy 2";
-	l.app = sediff_app;
-	l.p = NULL;
-	g_thread_create(sediff_load_policy_runner, &l, FALSE, NULL);
-	if (sediff_progress_wait(sediff_app) < 0) {
-		goto err;
-	}
-	sediff_app->mod_pol = l.p;
-
-	sediff_app->p1_sfd.name = g_string_new(apol_vector_get_element(p1_files, 0));
-	sediff_app->p2_sfd.name = g_string_new(apol_vector_get_element(p2_files, 0));
-	sediff_file_mmap(apol_vector_get_element(p1_files, 0), &(sediff_app->p1_sfd.data), &(sediff_app->p1_sfd.size),
-			 sediff_app->orig_pol);
-	sediff_file_mmap(apol_vector_get_element(p2_files, 0), &(sediff_app->p2_sfd.data), &(sediff_app->p2_sfd.size),
-			 sediff_app->mod_pol);
-
-	/* Grab the 2 policy textviews */
-	p1_textview = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
-	g_assert(p1_textview);
-	p2_textview = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text");
-	g_assert(p2_textview);
-
-	stats1 = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_stats_text");
-	g_assert(stats1);
-	stats2 = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_stats_text");
-	g_assert(stats2);
-
-	notebook1 = (GtkNotebook *) glade_xml_get_widget(sediff_app->window_xml, "notebook1");
-	g_assert(notebook1);
-	notebook2 = (GtkNotebook *) glade_xml_get_widget(sediff_app->window_xml, "notebook2");
-	g_assert(notebook2);
-
-	g_signal_connect_after(G_OBJECT(notebook1), "event-after", G_CALLBACK(sediff_on_policy1_notebook_event_after), notebook1);
-	g_signal_connect_after(G_OBJECT(notebook2), "event-after", G_CALLBACK(sediff_on_policy2_notebook_event_after), notebook2);
-
-	/* populate the 2 stat buffers */
-	sediff_policy_stats_textview_populate(sediff_app->orig_pol, stats1, apol_vector_get_element(p1_files, 0));
-	sediff_policy_stats_textview_populate(sediff_app->mod_pol, stats2, apol_vector_get_element(p2_files, 0));
-
-	sediff_reset_policy_notebooks();
-	sediff_app->diff = poldiff_create(sediff_app->orig_pol,
-					  sediff_app->mod_pol, sediff_progress_poldiff_handle_func, sediff_app);
-	if (sediff_app->diff == NULL) {
-		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "Error creating differences.");
-		goto err;
-	}
-
-	/* open is done set cursor back to a ptr */
-	sediff_progress_hide(sediff_app);
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);
-
-	sediff_set_open_policies_gui_state(TRUE);
-	sediff_initialize_diff();
-	return 0;
-
-      err:
-	sediff_progress_hide(sediff_app);
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);
-	sediff_initialize_policies();
-	sediff_initialize_diff();
-	return -1;
-}
-
-#endif

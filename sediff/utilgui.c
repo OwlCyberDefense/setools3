@@ -64,6 +64,15 @@ void util_cursor_clear(GtkWidget * widget)
 	g_idle_add(&pointer_reset, widget);
 }
 
+void util_text_buffer_clear(GtkTextBuffer * txt)
+{
+	GtkTextIter start, end;
+	gtk_text_buffer_get_start_iter(txt, &start);
+	gtk_text_buffer_get_end_iter(txt, &end);
+	gtk_text_buffer_remove_all_tags(txt, &start, &end);
+	gtk_text_buffer_delete(txt, &start, &end);
+}
+
 char *util_open_file(GtkWindow * parent, const char *title, const char *init_path)
 {
 	GtkWidget *dialog = gtk_file_chooser_dialog_new(title, parent, GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL,

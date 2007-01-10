@@ -53,4 +53,14 @@ policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which);
  */
 void policy_view_destroy(policy_view_t ** view);
 
+/**
+ * Direct the given policy view to update its display, to reflect the
+ * policy currently loaded.  Note that this should be called prior to
+ * building the poldiff_t object, for poldiff_create() will take
+ * ownership of the policy.
+ *
+ * @parav view View to update.
+ */
+void policy_view_update(policy_view_t * view, apol_policy_t *policy, apol_policy_path_t *path);
+
 #endif

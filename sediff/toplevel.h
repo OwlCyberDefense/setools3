@@ -184,7 +184,6 @@ typedef struct sediff_item_record
 /* return the textview currently displayed to the user */
 GtkTextView *sediff_get_current_view(sediff_app_t * app);
 
-void sediff_clear_text_buffer(GtkTextBuffer * txt);
 void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, int whichview);
 void sediff_initialize_diff(void);
 void sediff_initialize_policies(void);

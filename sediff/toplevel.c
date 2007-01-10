@@ -147,7 +147,7 @@ toplevel_t *toplevel_create(sediffx_t * s)
 	toplevel_t *top;
 	int error = 0;
 	sediffx_policy_e i;
-	if ((top = calloc(1, sizeof(*top))) == NULL || (top->progress = progress_create(top)) == NULL) {
+	if ((top = calloc(1, sizeof(*top))) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -163,7 +163,14 @@ toplevel_t *toplevel_create(sediffx_t * s)
 	g_object_set_data(G_OBJECT(top->w), "toplevel", top);
 	gtk_widget_show(GTK_WIDGET(top->w));
 
-	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_MOD; i++) {
+        /* initialize sub-windows, now that glade XML file has been
+         * read */
+        if ((top->progress = progress_create(top)) == NULL) {
+                error = errno;
+                goto cleanup;
+        }
+
+	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
 		if ((top->views[i] = policy_view_create(top, i)) == NULL) {
 			fprintf(stderr, "%s\n", strerror(errno));
 			error = errno;
@@ -244,6 +251,7 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 	run.top = top;
 	run.paths[0] = orig_path;
 	run.paths[1] = mod_path;
+	sediffx_policy_e i;
 
 	util_cursor_wait(GTK_WIDGET(top->w));
 	progress_show(top->progress, "Loading Policies");
@@ -256,12 +264,13 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 		apol_policy_path_destroy(&run.paths[1]);
 		return run.result;
 	}
-	sediffx_set_policy(top->s, SEDIFFX_POLICY_ORIG, run.policies[0], run.paths[0]);
-	sediffx_set_policy(top->s, SEDIFFX_POLICY_MOD, run.policies[1], run.paths[1]);
+	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
+            policy_view_update(top->views[i], run.policies[i], run.paths[i]);
+                sediffx_set_policy(top->s, i, run.policies[i], run.paths[i]);
+        }
 	toplevel_enable_policy_items(top, TRUE);
 	toplevel_update_title_bar(top);
 	/*        toplevel_update_status_bar(top); */
-	/*      policy_view_update(top->pv, path); */
 	return 0;
 }
 
@@ -453,17 +462,6 @@ typedef struct registered_callback
 } registered_callback_t;
 
 #define row_selected_signal_emit() sediff_callback_signal_emit(LISTBOX_SELECTED_SIGNAL)
-
-/* clear text from passed in text buffer */
-void sediff_clear_text_buffer(GtkTextBuffer * txt)
-{
-	GtkTextIter start, end;
-
-	gtk_text_buffer_get_start_iter(txt, &start);
-	gtk_text_buffer_get_end_iter(txt, &end);
-	gtk_text_buffer_remove_all_tags(txt, &start, &end);
-	gtk_text_buffer_delete(txt, &start, &end);
-}
 
 static void sediff_callback_signal_emit_1(gpointer data, gpointer user_data)
 {
