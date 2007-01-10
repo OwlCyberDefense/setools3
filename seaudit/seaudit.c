@@ -289,7 +289,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 		case '?':
 		default:{
 				/* unrecognized argument give full usage */
-				print_usage_info(argv[0], 0);
+				print_usage_info(argv[0], 1);
 				seaudit_destroy(&seaudit);
 				exit(EXIT_FAILURE);
 			}

@@ -27,7 +27,9 @@
 #ifndef SEDIFF_TOPLEVEL_H
 #define SEDIFF_TOPLEVEL_H
 
+#include "sediffx.h"
 #include <apol/policy-path.h>
+#include <gtk/gtk.h>
 
 typedef struct toplevel toplevel_t;
 
@@ -53,8 +55,40 @@ toplevel_t *toplevel_create(sediffx_t * s);
  */
 void toplevel_destroy(toplevel_t ** top);
 
+/**
+ * Open the policy files.  Upon success destroy the existing policies
+ * and current poldiff objects.
+ *
+ * @param top Toplevel object, used for UI control.
+ * @param orig_path Path to the original policy.  This function takes
+ * ownership of this object.
+ * @param mod_path Path to the modified policy.  This function takes
+ * ownership of this object.
+ *
+ * @return 0 on successful open, < 0 on error.
+ */
 int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apol_policy_path_t * mod_path);
+
 void toplevel_run_diff(toplevel_t * top);
+
+/**
+ * Return the filename containing sediffx's glade file.
+ *
+ * @param top Toplevel containing glade XML declarations.
+ *
+ * @return Name of the glade file.  Do not modify this string.
+ */
+char *toplevel_get_glade_xml(toplevel_t * top);
+
+/**
+ * Return the main application window.  Sub-windows should be set
+ * transient to this window.
+ *
+ * @param top Toplevel containing main window.
+ *
+ * @return Main window.
+ */
+GtkWindow *toplevel_get_window(toplevel_t * top);
 
 /**
  * Pop-up an error dialog with a line of text and wait for the user to

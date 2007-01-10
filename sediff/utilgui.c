@@ -1,10 +1,11 @@
 /**
  *  @file
- *  Miscellaneous GTK utility functions.
+ *  Miscellaneous helper functions for GTK+ applications.
  *
- *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2006 Tresys Technology, LLC
+ *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -21,9 +22,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "utilgui.h"
+#include <config.h>
 
-void message_display(GtkWindow * parent, GtkMessageType msg_type, const char *msg)
+#include "utilgui.h"
+#include <string.h>
+
+void util_message(GtkWindow * parent, GtkMessageType msg_type, const char *msg)
 {
 	GtkWidget *dialog;
 	dialog = gtk_message_dialog_new(parent, GTK_DIALOG_DESTROY_WITH_PARENT, msg_type, GTK_BUTTONS_CLOSE, msg);
@@ -31,30 +35,23 @@ void message_display(GtkWindow * parent, GtkMessageType msg_type, const char *ms
 	gtk_widget_destroy(dialog);
 }
 
-void get_dialog_response(GtkDialog * dialog, gint id, gpointer response)
+void util_cursor_wait(GtkWidget * widget)
 {
-	*((gint *) response) = id;
-	return;
+	GdkCursor *cursor;
+	if (widget->window != NULL) {
+		cursor = gdk_cursor_new(GDK_WATCH);
+		gdk_window_set_cursor(widget->window, cursor);
+		gdk_cursor_unref(cursor);
+	}
 }
 
-void show_wait_cursor(GtkWidget * widget)
-{
-	GdkCursor *cursor = NULL;
-
-	/* set the cursor to a watch */
-	cursor = gdk_cursor_new(GDK_WATCH);
-	gdk_window_set_cursor(widget->window, cursor);
-	gdk_cursor_unref(cursor);
-	gdk_flush();
-}
-
-/*
+/**
  * WARNING: this is sort of a hack
  *
- * If we reset the pointer at the end of a callback, it
- * gets reset too soon (i.e. before all of the pending events have
- * been processed. To avoid this, this function is put in an idle
- * handler by clear_wait_cursor.
+ * If we reset the pointer at the end of a callback, it gets reset too
+ * soon (i.e. before all of the pending events have been processed. To
+ * avoid this, this function is put in an idle handler by
+ * clear_wait_cursor.
  */
 static gboolean pointer_reset(gpointer data)
 {
@@ -62,54 +59,58 @@ static gboolean pointer_reset(gpointer data)
 	return FALSE;
 }
 
-void clear_wait_cursor(GtkWidget * widget)
+void util_cursor_clear(GtkWidget * widget)
 {
 	g_idle_add(&pointer_reset, widget);
 }
 
-GString *get_filename_from_user(GtkWindow * parent, const char *title, const gchar * startfilename)
+char *util_open_file(GtkWindow * parent, const char *title, const char *init_path)
 {
-	GtkWidget *file_selector;
-	gint response;
-	GString *filename;
-
-	file_selector = gtk_file_selection_new(title);
-	gtk_window_set_transient_for(GTK_WINDOW(file_selector), GTK_WINDOW(parent));
-	gtk_window_set_position(GTK_WINDOW(file_selector), GTK_WIN_POS_CENTER_ON_PARENT);
-	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
-	if (startfilename)
-		gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selector), startfilename);
-
-	g_signal_connect(GTK_OBJECT(file_selector), "response", G_CALLBACK(get_dialog_response), &response);
-	while (1) {
-		gtk_dialog_run(GTK_DIALOG(file_selector));
-		if (response != GTK_RESPONSE_OK) {
-			gtk_widget_destroy(file_selector);
-			return NULL;
-		}
-		filename = g_string_new(gtk_file_selection_get_filename(GTK_FILE_SELECTION(file_selector)));
-		/* If the filename specified is a directory, then simply list the files in that directory
-		 * under the Files list. */
-		if (g_file_test(filename->str, G_FILE_TEST_IS_DIR))
-			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename->str);
-		else
-			break;
+	GtkWidget *dialog = gtk_file_chooser_dialog_new(title, parent, GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL,
+							GTK_RESPONSE_CANCEL,
+							GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+	char *path = NULL;
+	if (init_path != NULL) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), init_path);
 	}
-	gtk_widget_destroy(file_selector);
-	return filename;
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+		path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+	}
+	gtk_widget_destroy(dialog);
+	return path;
 }
 
-/* Get response to a yes/no dialog message */
-gint get_user_response_to_message(GtkWindow * window, const char *message)
+char *util_save_file(GtkWindow * parent, const char *title, const char *init_path)
 {
-	GtkWidget *dialog;
-	gint response;
-
-	dialog = gtk_message_dialog_new(window,
-					GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-					GTK_MESSAGE_WARNING, GTK_BUTTONS_YES_NO, message);
-	g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(get_dialog_response), &response);
-	gtk_dialog_run(GTK_DIALOG(dialog));
+	GtkWidget *dialog = gtk_file_chooser_dialog_new(title, parent, GTK_FILE_CHOOSER_ACTION_SAVE, GTK_STOCK_CANCEL,
+							GTK_RESPONSE_CANCEL,
+							GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
+	char *path = NULL;
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
+	if (init_path != NULL) {
+		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), init_path);
+	} else {
+		gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), "Untitled");
+	}
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+		path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+	}
 	gtk_widget_destroy(dialog);
-	return response;
+	return path;
+}
+
+char *util_policy_path_to_string(const apol_policy_path_t * path)
+{
+	char *s;
+	const char *primary_path = apol_policy_path_get_primary(path);
+	if (apol_policy_path_get_type(path) == APOL_POLICY_PATH_TYPE_MONOLITHIC) {
+		return strdup(primary_path);
+	} else {
+		const apol_vector_t *modules = apol_policy_path_get_modules(path);
+		size_t num_modules = apol_vector_get_size(modules);
+		if (asprintf(&s, "%s + %zd module%s", primary_path, num_modules, num_modules == 1 ? "" : "s") < 0) {
+			return NULL;
+		}
+		return s;
+	}
 }

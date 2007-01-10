@@ -1,5 +1,5 @@
 /**
- *  @file toplevel.c
+ *  @file
  *  Implementation for the main toplevel window.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -327,7 +327,7 @@ static void toplevel_enable_log_items(toplevel_t * top, gboolean sens)
  * Enable/disable all items (menus and buttons) that depend upon if a
  * policy is loaded.
  *
- * @param top Toplevel object containing menu items.
+ * @param top Toplevel object containing widgets.
  * @param TRUE to enable items, FALSE to disable.
  */
 static void toplevel_enable_policy_items(toplevel_t * top, gboolean sens)

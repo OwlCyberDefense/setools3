@@ -38,8 +38,8 @@
 
 struct sediffx
 {
-	apol_policy_path_t *paths[2];
-	apol_policy_t *policies[2];
+	apol_policy_path_t *paths[SEDIFFX_POLICY_NUM];
+	apol_policy_t *policies[SEDIFFX_POLICY_NUM];
 	toplevel_t *top;
 };
 
@@ -50,7 +50,23 @@ static struct option const longopts[] = {
 	{NULL, 0, NULL, 0}
 };
 
-apol_policy_path_t *sediff_get_policy_path(sediffx_t * sediffx, const sediff_policy_e which)
+void sediffx_set_policy(sediffx_t * s, sediffx_policy_e which, apol_policy_t * policy, apol_policy_path_t * path)
+{
+	/* fix me: destroy poldiff object */
+	if (policy != NULL) {
+		apol_policy_destroy(&s->policies[which]);
+		s->policies[which] = policy;
+		if (path != s->paths[which]) {
+			apol_policy_path_destroy(&s->paths[which]);
+		}
+		s->paths[which] = path;
+	} else {
+		apol_policy_destroy(&s->policies[which]);
+		apol_policy_path_destroy(&s->paths[which]);
+	}
+}
+
+const apol_policy_path_t *sediffx_get_policy_path(sediffx_t * sediffx, const sediffx_policy_e which)
 {
 	return sediffx->paths[which];
 }
@@ -108,7 +124,7 @@ static void sediffx_destroy(sediffx_t ** sediffx)
 {
 	if (sediffx != NULL && *sediffx != NULL) {
 		int i;
-		for (i = SEDIFF_ORIG_POLICY; i <= SEDIFF_MOD_POLICY; i++) {
+		for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
 			apol_policy_path_destroy(&((*sediffx)->paths[i]));
 			apol_policy_destroy(&((*sediffx)->policies[i]));
 		}

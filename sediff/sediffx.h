@@ -35,21 +35,35 @@ typedef struct sediffx sediffx_t;
 
 /** enumeration of which policy to affect -- the original policy (used
     to be called "policy 1") or the modified policy ("policy 2") */
-typedef enum sediff_policy
+typedef enum sediffx_policy
 {
-	SEDIFF_ORIG_POLICY, SEDIFF_MOD_POLICY
-} sediff_policy_e;
+	SEDIFFX_POLICY_ORIG = 0, SEDIFFX_POLICY_MOD, SEDIFFX_POLICY_NUM
+} sediffx_policy_e;
 
 #define COPYRIGHT_INFO "Copyright (C) 2004-2007 Tresys Technology, LLC"
 
 /**
- * Return the policy path for the policy given.  If the policy has not
- * yet been leaded then return NULL.
+ * Set one of the policies for sediffx.  This will invalidate any
+ * currently executed poldiff_t objects.
  *
+ * @param s sediffx object to query.
+ * @param which Which policy to set.
+ * @param policy New policy file for sediffx.  If NULL then no policy
+ * is opened.  Afterwards sediffx takes ownership of the policy.
+ * @param path If policy is not NULL, then the path that was used to
+ * open the policy.
+ */
+void sediffx_set_policy(sediffx_t * s, sediffx_policy_e which, apol_policy_t * policy, apol_policy_path_t * path);
+
+/**
+ * Return the policy path for the policy given.  If the policy has not
+ * yet been loaded then return NULL.
+ *
+ * @param s sediffx object to query.
  * @param which Which policy path to get.
  *
  * @return Path to the policy, or NULL if none set.
  */
-apol_policy_path_t *sediff_get_policy_path(sediffx_t * sediffx, const sediff_policy_e which);
+const apol_policy_path_t *sediffx_get_policy_path(sediffx_t * s, const sediffx_policy_e which);
 
 #endif

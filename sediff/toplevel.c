@@ -26,9 +26,13 @@
 
 #include <config.h>
 
+#include "policy_view.h"
+#include "progress.h"
 #include "sediffx.h"
 #include "toplevel.h"
+#include "utilgui.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <apol/util.h>
@@ -38,12 +42,74 @@
 struct toplevel
 {
 	sediffx_t *s;
+	progress_t *progress;
+	policy_view_t *views[SEDIFFX_POLICY_NUM];
 	GladeXML *xml;
 	/** filename for glade file */
 	char *xml_filename;
 	/** toplevel window widget */
 	GtkWindow *w;
 };
+
+/**
+ * Enable/disable all items (menus and buttons) that depend upon if a
+ * policy is loaded.
+ *
+ * @param top Toplevel object containing menu widgets.
+ * @param TRUE to enable items, FALSE to disable.
+ */
+static void toplevel_enable_policy_items(toplevel_t * top, gboolean sens)
+{
+	static const char *items[] = {
+		"Copy", "Select All",
+		"Find", "Run Diff", "Remap Types", "sort menu item",
+		"run diff button", "remap types button",
+		NULL
+	};
+	size_t i;
+	const char *s;
+	for (i = 0, s = items[0]; s != NULL; s = items[++i]) {
+		GtkWidget *w = glade_xml_get_widget(top->xml, s);
+		assert(w != NULL);
+		gtk_widget_set_sensitive(w, sens);
+	}
+}
+
+/**
+ * Update the toplevel's title bar to list the policies currently
+ * opened.
+ *
+ * @param top Toplevel to modify.
+ */
+static void toplevel_update_title_bar(toplevel_t * top)
+{
+	const apol_policy_path_t *paths[SEDIFFX_POLICY_NUM];
+	char *types[SEDIFFX_POLICY_NUM] = { "Policy", "Policy" }, *s;
+	const char *primaries[SEDIFFX_POLICY_NUM] = { NULL, NULL };
+	sediffx_policy_e i;
+
+	paths[SEDIFFX_POLICY_ORIG] = sediffx_get_policy_path(top->s, SEDIFFX_POLICY_ORIG);
+	paths[SEDIFFX_POLICY_MOD] = sediffx_get_policy_path(top->s, SEDIFFX_POLICY_MOD);
+
+	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
+		if (paths[i] == NULL) {
+			primaries[i] = "No Policy";
+		} else {
+			if (apol_policy_path_get_type(paths[i]) == APOL_POLICY_PATH_TYPE_MODULAR) {
+				types[i] = "Base";
+			}
+			primaries[i] = apol_policy_path_get_primary(paths[i]);
+		}
+	}
+	if (asprintf(&s, "sediffx - [%s file: %s] [%s file: %s]",
+		     types[SEDIFFX_POLICY_ORIG], primaries[SEDIFFX_POLICY_ORIG],
+		     types[SEDIFFX_POLICY_MOD], primaries[SEDIFFX_POLICY_MOD]) < 0) {
+		toplevel_ERR(top, "%s", strerror(errno));
+		return;
+	}
+	gtk_window_set_title(top->w, s);
+	free(s);
+}
 
 /**
  * Initialize the application icons for the program.  These icons are
@@ -80,12 +146,12 @@ toplevel_t *toplevel_create(sediffx_t * s)
 {
 	toplevel_t *top;
 	int error = 0;
-	if ((top = calloc(1, sizeof(*top))) == NULL) {
+	sediffx_policy_e i;
+	if ((top = calloc(1, sizeof(*top))) == NULL || (top->progress = progress_create(top)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
 	top->s = s;
-
 	if ((top->xml_filename = apol_file_find_path("sediffx.glade")) == NULL ||
 	    (top->xml = glade_xml_new(top->xml_filename, "toplevel", NULL)) == NULL) {
 		fprintf(stderr, "Could not open sediffx.glade.\n");
@@ -96,6 +162,14 @@ toplevel_t *toplevel_create(sediffx_t * s)
 	init_icons(top);
 	g_object_set_data(G_OBJECT(top->w), "toplevel", top);
 	gtk_widget_show(GTK_WIDGET(top->w));
+
+	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_MOD; i++) {
+		if ((top->views[i] = policy_view_create(top, i)) == NULL) {
+			fprintf(stderr, "%s\n", strerror(errno));
+			error = errno;
+			goto cleanup;
+		}
+	}
 
 	glade_xml_signal_autoconnect(top->xml);
 
@@ -111,19 +185,99 @@ toplevel_t *toplevel_create(sediffx_t * s)
 void toplevel_destroy(toplevel_t ** top)
 {
 	if (top != NULL && *top != NULL) {
+		sediffx_policy_e i;
+		for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
+			policy_view_destroy(&(*top)->views[i]);
+		}
 		free((*top)->xml_filename);
+		progress_destroy(&(*top)->progress);
 		free(*top);
 		*top = NULL;
 	}
 }
 
+struct policy_run_datum
+{
+	toplevel_t *top;
+	apol_policy_path_t *paths[2];
+	apol_policy_t *policies[2];
+	int result;
+};
+
+/**
+ * Thread that loads and parses a policy file.  It will write to
+ * progress_seaudit_handle_func() its status during the load.
+ *
+ * @param data Pointer to a struct policy_run_datum, for control
+ * information.
+ */
+static gpointer toplevel_open_policy_runner(gpointer data)
+{
+	struct policy_run_datum *run = (struct policy_run_datum *)data;
+	sediffx_policy_e i;
+	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
+		apol_policy_path_t *path = run->paths[i];
+		char *title = util_policy_path_to_string(path);
+		if (title == NULL) {
+			run->result = -1;
+			progress_abort(run->top->progress, "%s", strerror(errno));
+			return NULL;
+		}
+		progress_update(run->top->progress, "Opening %s", title);
+		free(title);
+		run->policies[i] = apol_policy_create_from_policy_path(path, 0, progress_apol_handle_func, run->top->progress);
+		if (run->policies[i] == NULL) {
+			run->result = -1;
+			progress_abort(run->top->progress, NULL);
+			return NULL;
+		}
+	}
+	run->result = 0;
+	progress_done(run->top->progress);
+	return NULL;
+}
+
 int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apol_policy_path_t * mod_path)
 {
+	struct policy_run_datum run;
+	memset(&run, 0, sizeof(run));
+	run.top = top;
+	run.paths[0] = orig_path;
+	run.paths[1] = mod_path;
+
+	util_cursor_wait(GTK_WIDGET(top->w));
+	progress_show(top->progress, "Loading Policies");
+	g_thread_create(toplevel_open_policy_runner, &run, FALSE, NULL);
+	progress_wait(top->progress);
+	progress_hide(top->progress);
+	util_cursor_clear(GTK_WIDGET(top->w));
+	if (run.result < 0) {
+		apol_policy_path_destroy(&run.paths[0]);
+		apol_policy_path_destroy(&run.paths[1]);
+		return run.result;
+	}
+	sediffx_set_policy(top->s, SEDIFFX_POLICY_ORIG, run.policies[0], run.paths[0]);
+	sediffx_set_policy(top->s, SEDIFFX_POLICY_MOD, run.policies[1], run.paths[1]);
+	toplevel_enable_policy_items(top, TRUE);
+	toplevel_update_title_bar(top);
+	/*        toplevel_update_status_bar(top); */
+	/*      policy_view_update(top->pv, path); */
 	return 0;
 }
 
 void toplevel_run_diff(toplevel_t * top)
 {
+	printf("running diff\n");
+}
+
+char *toplevel_get_glade_xml(toplevel_t * top)
+{
+	return top->xml_filename;
+}
+
+GtkWindow *toplevel_get_window(toplevel_t * top)
+{
+	return top->w;
 }
 
 /**
@@ -229,6 +383,13 @@ void toplevel_on_about_sediffx_activate(gpointer user_data, GtkMenuItem * widget
 			      "comments", "Policy Semantic Difference Tool for Security Enhanced Linux",
 			      "copyright", COPYRIGHT_INFO,
 			      "name", "sediffx", "version", VERSION, "website", "http://oss.tresys.com/projects/setools", NULL);
+}
+
+void toplevel_on_run_diff_button_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
+				       __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	toplevel_run_diff(top);
 }
 
 #if 0
@@ -762,11 +923,6 @@ void sediff_menu_on_copy_clicked(GtkMenuItem * menuitem, gpointer user_data)
 	gtk_text_buffer_copy_clipboard(txt, clipboard);
 }
 
-void sediff_toolbar_on_rundiff_button_clicked(GtkButton * button, gpointer user_data)
-{
-	run_diff_clicked();
-}
-
 static void sediff_remap_types_window_show()
 {
 	if (sediff_app->remap_types_window == NULL)
@@ -778,16 +934,6 @@ static void sediff_remap_types_window_show()
 void sediff_menu_on_remaptypes_clicked(GtkMenuItem * menuitem, gpointer user_data)
 {
 	sediff_remap_types_window_show();
-}
-
-void sediff_toolbar_on_remaptypes_button_clicked(GtkToolButton * button, gpointer user_data)
-{
-	sediff_remap_types_window_show();
-}
-
-void sediff_toolbar_on_open_button_clicked(GtkToolButton * button, gpointer user_data)
-{
-	sediff_open_button_clicked();
 }
 
 void sediff_menu_on_open_clicked(GtkMenuItem * menuitem, gpointer user_data)

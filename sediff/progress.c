@@ -185,7 +185,7 @@ void progress_update(progress_t * progress, char *fmt, ...)
 	va_end(ap);
 }
 
-void progress_seaudit_handle_func(void *arg, seaudit_log_t * log, int level, const char *fmt, va_list va_args)
+void progress_poldiff_handle_func(void *arg, poldiff_t * diff, int level, const char *fmt, va_list va_args)
 {
 	progress_t *progress = arg;
 	progress_update_label(progress, fmt, va_args);

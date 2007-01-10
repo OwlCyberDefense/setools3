@@ -1,5 +1,5 @@
 /**
- *  @file toplevel.h
+ *  @file
  *  Declaration of the main toplevel window for seaudit.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -65,7 +65,7 @@ void toplevel_destroy(toplevel_t ** top);
 void toplevel_open_log(toplevel_t * top, const char *filename);
 
 /**
- * Open a policy file, destroying any existing policies first.
+ * Open a policy file, destroying any existing policies upon success.
  *
  * @param top Toplevel object, used for UI control.
  * @param path Path to the policy to open.  This function takes

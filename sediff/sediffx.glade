@@ -88,7 +88,6 @@
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Edit</property>
 	      <property name="use_underline">True</property>
-	      <signal name="activate" handler="sediff_menu_on_edit_clicked" last_modification_time="Wed, 31 Aug 2005 18:32:24 GMT"/>
 
 	      <child>
 		<widget class="GtkMenu" id="edit menu">
@@ -112,6 +111,7 @@
 		  <child>
 		    <widget class="GtkMenuItem" id="Select All">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Select _All</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="toplevel_on_select_all_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:56 GMT"/>
@@ -158,6 +158,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="Run Diff">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">_Run Diff</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="toplevel_on_run_diff_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:44 GMT"/>
@@ -180,6 +181,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="Remap Types">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Remap _Types</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="toplevel_on_remap_types_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 21:13:37 GMT"/>
@@ -208,6 +210,7 @@
 		  <child>
 		    <widget class="GtkMenuItem" id="sort menu item">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Sort TE Rules</property>
 		      <property name="use_underline">True</property>
 
@@ -524,6 +527,7 @@
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">False</property>
+	      <signal name="clicked" handler="toplevel_on_open_policy button_click" object="toplevel" last_modification_time="Tue, 09 Jan 2007 23:49:08 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
@@ -534,12 +538,14 @@
 	  <child>
 	    <widget class="GtkToolButton" id="run diff button">
 	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
 	      <property name="label" translatable="yes">Run Diff</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-execute</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">False</property>
+	      <signal name="clicked" handler="toplevel_on_run_diff button_click" object="toplevel" last_modification_time="Tue, 09 Jan 2007 23:49:21 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
@@ -556,6 +562,7 @@
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">False</property>
+	      <signal name="clicked" handler="toplevel_on_remap_types_button_click" object="toplevel" last_modification_time="Tue, 09 Jan 2007 23:49:40 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
@@ -1230,7 +1237,6 @@
 </widget>
 
 <widget class="GtkDialog" id="sediff_policies_dialog">
-  <property name="visible">True</property>
   <property name="title" translatable="yes">Policy Selection</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
@@ -1601,7 +1607,6 @@
 <widget class="GtkWindow" id="sediff_remap_types_dialog">
   <property name="width_request">640</property>
   <property name="height_request">480</property>
-  <property name="visible">True</property>
   <property name="title" translatable="yes">Remap Types</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
@@ -1963,7 +1968,6 @@
 </widget>
 
 <widget class="GtkDialog" id="sediff_find_dialog">
-  <property name="visible">True</property>
   <property name="title" translatable="yes">Sediff Find</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>

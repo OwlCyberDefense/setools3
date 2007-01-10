@@ -41,7 +41,10 @@ sediff_SOURCES = sediff_cli.c
 #
 
 sediffx_SOURCES = \
+	policy_view.c policy_view.h \
+	progress.c progress.h \
 	toplevel.c toplevel.h \
+	utilgui.c utilgui.h \
 	sediffx.c sediffx.h
 
 $(top_builddir)/libpoldiff/src/libpoldiff.so:

@@ -54,7 +54,8 @@ preferences_t *seaudit_get_prefs(seaudit_t * s);
  * has no policy opened.  Afterwards seaudit takes ownership of the
  * policy.
  * @param path If policy is not NULL, then add this path to the most
- * recently used policy files.
+ * recently used policy files.  This function takes ownership of the
+ * path.
  */
 void seaudit_set_policy(seaudit_t * s, apol_policy_t * policy, apol_policy_path_t * path);
 
