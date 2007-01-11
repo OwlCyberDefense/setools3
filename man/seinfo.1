@@ -12,11 +12,11 @@ allows the user to query the components of a SELinux policy.
 .PP
 .B 
 seinfo
-supports loading several versions SELinux policy in one of three formats. 
+supports loading a SELinux policy in one of three formats. 
 .IP "source"
-A single text file containing policy source for versions 12 through 21. Usually named policy.conf.
+A single text file containing policy source for versions 12 through 21. This file is usually named policy.conf.
 .IP "binary"
-A single file containg a monolithic kernel binary policy for versions 15 through 21. Usually named policy.#.
+A single file containg a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
 .IP "modular"
 A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
 .PP

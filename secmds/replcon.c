@@ -506,79 +506,65 @@ void replcon_usage(const char *program_name, int brief)
 	}
 #ifndef FINDCON
 	printf("\nFile context replacement tool for Security Enhanced Linux.\n");
-	printf("  -c,  --context=OLD NEW  Specify context to replace, see below.\n");
-	printf("  -o,  --object=OBJECT    Only replace context for the specified object class.\n");
+	printf("  -c, --context=OLD NEW  replace context OLD with NEW, see below.\n");
+	printf("  -o, --object=OBJECT    replace contexts only for files of object class OBJECT.\n");
 #else
 	printf("\nFile context search tool for Security Enhanced Linux.\n");
-	printf("  -c,  --context=CONTEXT  Specify context to search for, see below.\n");
-	printf("  -o,  --object=OBJECT    Restrict search to the specified object class.\n");
+	printf("  -c, --context=CONTEXT  search for files with CONTEXT, see below.\n");
+	printf("  -o, --object=OBJECT    search only for files of object class OBJECT.\n");
 #endif
-	printf("  --raw                   Use raw contexts.\n");
-	printf("  -r,  --recursive        Recurse through directories.\n");
-	printf("  -s,  --stdin            Read FILENAMES from standard input.\n");
-	printf("  -q,  --quiet            Suppress progress output.\n");
-	printf("  -V,  --verbose          Display context info.\n");
-	printf("  -v,  --version          Display version information and exit.\n");
-	printf("  -h,  --help             Display this help and exit.\n");
+	printf("  --raw                  use raw contexts.\n");
+	printf("  -r, --recursive        recurse through directories.\n");
+	printf("  -s, --stdin            read FILENAMES from standard input.\n");
+	printf("  -q, --quiet            suppress progress output.\n");
+	printf("  -V, --verbose          display context info.\n");
+	printf("  -v, --version          print version information and exit.\n");
+	printf("  -h, --help             print this help text and exit.\n");
 	printf("\n");
 	if (is_selinux_mls_enabled()) {
 		printf("A context may be specified as a colon separated list of user, role, type, and\n");
-		printf("mls security range as follows - user_u:object_r:user_t:s0.  A single colon can\n");
-		printf("be used to match any context, so to find all contexts you only need to type : .\n");
-		printf("The tool will automatically match a user, role, type, or range that is not \n");
-		printf("specified, with any other user, role, type, or range.  The normal matching is \n");
-		printf("done using the translation library if it is enabled.  If you want the tool to \n");
-		printf("match raw contexts please use --raw.\n");
+		printf("mls security range as follows: user_u:object_r:user_t:s0.\n");
+		printf("If the MLS translation library is enabled, matching is done using translated\n"
+				"contexts. To match raw contexts, use the --raw option.\n");
 	} else {
 		printf("A context may be specified as a colon separated list of user, role, and type\n");
-		printf("as follows - user_u:object_r:user_t. A single colon can be used to match any \n");
-		printf("context, so to find all contexts you only need to type : .  The tool will \n");
-		printf("automatically match a user, role, or type that is not specified, with any other\n");
-		printf("user, role, or type.\n");
+		printf("as follows: user_u:object_r:user_t.\n");
 	}
+	printf("If a field is not specified, the query will always match that field.\n");
 #ifdef FINDCON
+	printf("\nSearch examples:\n");
+	printf("    findcon -c : .\n");
+	printf("        Find every context in the current directory.\n");
+	printf("    findcon -c :role_r .\n");
+	printf("        Find every context that contains role_r in the current directory.\n");
+	printf("    findcon -c user_u: .\n");
+	printf("        Find every context that contains user_u in the current directory.\n");
 	if (is_selinux_mls_enabled()) {
-		printf("Search examples:\n");
-		printf("    findcon -c : .\n");
-		printf("        Find every context in the current directory\n");
-		printf("    findcon -c user_u: .\n");
-		printf("        Find every context that contains user_u in the current directory\n");
 		printf("    findcon -c :::s0 .\n");
-		printf("        Find every context that contains MLS range s0 in the current directory\n");
-	} else {
-		printf("Search examples:\n");
-		printf("    findcon -c : .\n");
-		printf("        Find every context in the current directory\n");
-		printf("    findcon -c :role_r .\n");
-		printf("        Find every context that contains role_r in the current directory\n");
-		printf("    findcon -c user_u: .\n");
-		printf("        Find every context that contains user_u in the current directory\n");
+		printf("        Find every context that contains MLS range s0 in the current directory.\n");
 	}
 #else
+	printf("Replacement examples:\n");
+	printf("    replcon -c : ::type_t .\n");
+	printf("        Replace every context in the current directory with type type_t.\n");
+	printf("    replcon -c user_u: :role_r .\n");
+	printf("        Replace every context that contains user_u in the current directory\n");
+	printf("        with role role_r\n");
+	printf("    replcon -c :role_r :newrole_r .\n");
+	printf("        Replace every context that contains role_r in the current directory with\n");
+	printf("        newrole_r\n");
 	if (is_selinux_mls_enabled()) {
-		printf("Replacement examples:\n");
-		printf("    replcon -c : ::type_t .\n");
-		printf("        Replace every context in the current directory with type type_t\n");
-		printf("    replcon -c user_u: :role_r .\n");
-		printf("        Replace every context that contains user_u in the current directory \n");
-		printf("        with role role_r\n");
 		printf("    replcon -c ::type_t:s0 :::s0:c0\n");
 		printf("        Replace every context that contains type type_t and MLS range s0 in the\n");
 		printf("        current directory with MLS range s0:c0\n");
-	} else {
-		printf("Replacement examples:\n");
-		printf("    replcon -c : ::type_t .\n");
-		printf("        Replace every context in the current directory with type type_t\n");
-		printf("    replcon -c user_u: :role_r .\n");
-		printf("        Replace every context that contains user_u in the current directory with\n");
-		printf("        role role_r\n");
-		printf("    replcon -c :role_r :newrole_r .\n");
-		printf("        Replace every context that contains role_r in the current directory with\n");
-		printf("        newrole_r\n");
 	}
 #endif
 	printf("\nThe special string 'unlabeled' can be provided to the -c option in order\n");
-	printf("to find or replace files that have no label.\n\n");
+#ifdef FINDCON
+	printf("to find files that have no label.\n\n");
+#else
+	printf("to replace files that have no label.\n\n");
+#endif
 	printf("Valid OBJECT classes to specify include: \n");
 	array = sefs_get_valid_object_classes(&size);
 	sefs_double_array_print(array, size);

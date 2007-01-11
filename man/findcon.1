@@ -9,19 +9,19 @@ findcon \- SELinux file context search tool
 .B findcon
 allows the user to search for files with a specified context.
 Results can be filtered by object class as described below.
-.PP 
-A context may be specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
-If your system supports MLS you can also add an additional MLS range to the end as follows: user_u:object_r:type_t:s0.
-If a user is not specified then the query will match all users; likewise, empty role, type, and range fields match all.
-If your system has MLS and the translation library is enabled, matching is done using translated contexts.
-If you want the tool to match raw contexts, please use the --raw option.
 .SH OPTIONS
-.IP "--raw"
-Specify context to search for, ignoring the translation library if present.
 .IP "-c, --context=CONTEXT"
-Specify context to search for.
+Search for files with context CONTEXT.
+A context may be specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
+If the system supports MLS, additional MLS range can be added to the end as follows: user_u:object_r:type_t:s0.
+If a field is not specified, the query will always match that field.
+If the system supports MLS and the translation library is enabled, matching is done using translated contexts.
+To match raw contexts, use the --raw option.
+The special string "unlabeled" can also be specified to match files with no label.
+.IP "--raw"
+Match raw contexts, ignoring the translation library if present.
 .IP "-o, --object=OBJECT"
-Restrict search to the specified object class.
+Restrict search to files of object class OBJECT.
 .IP "-r, --recursive"
 Recurse through directories.
 .IP "-s, --stdin"
