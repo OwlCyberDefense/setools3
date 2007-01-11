@@ -1,0 +1,19 @@
+SETools TODO List
+=======================
+The following items are desirable features to be considered for future versions.
+
+Policy module profiles - read list of modules from a file - all tools
+Recent policies list - similar to that in seaudit - sediffx
+Improved type feedback - convert results to tk table and permit right-click to pull up type info dialog - apol
+Module source loading - load .te and .if sources for modules - all tools
+Global semantic/syntactic option - allow semantic and syntactic search globally - apol
+range_transition - allow searching by object class - apol & sesearch
+Report generation - similar to saved queries export query results - apol 
+Line number trace back - which line added/removed a given permission - sediffx
+Type split/join - extend type remapping to handle split or joined types - sediffx
+Object class regex - allow searching for object classes by regular expression - sesearch (& apol)?
+MLS diff - support diffs of sensitivities and categories - sediff & sediffx
+Role dominance queries - query for role dominance relationships - apol & seinfo(display only)
+Constraint analysis - features to search and analyze constraints - apol
+Result filtering/sorting - allow rule diffs to be sorted or filtered by various fields - sediffx
+
