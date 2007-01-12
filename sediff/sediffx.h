@@ -83,4 +83,26 @@ const apol_policy_path_t *sediffx_get_policy_path(sediffx_t * s, const sediffx_p
  */
 poldiff_t *sediffx_get_poldiff(sediffx_t * s, poldiff_handle_fn_t fn, void *arg);
 
+/**
+ * Set the flags that were used to run a poldiff.  This function
+ * should be called immediately proceeding a call to poldiff_run().
+ *
+ * @param s sediffx object that contained the poldiff object that ran.
+ * @param flags Flags for that were used during the run.
+ *
+ * @see sediffx_get_poldiff_run_flags
+ */
+void sediffx_set_poldiff_run_flags(sediffx_t * s, uint32_t flags);
+
+/**
+ * Get the flags that were used to run a poldiff.
+ *
+ * @param s sediffx object to query.
+ *
+ * @return poldiff run flags, or 0 in none set.
+ *
+ * @see sediffx_set_poldiff_run_flags
+ */
+uint32_t sediffx_get_poldiff_run_flags(sediffx_t * s);
+
 #endif

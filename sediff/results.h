@@ -1,11 +1,13 @@
 /**
- *  @file sediff_results.h
+ *  @file
  *  Header for showing diff results.
  *
- *  @author Don Patterson don.patterson@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *  @author Brandon Whalen bwhalen@tresys.com
  *  @author Randy Wicks rwicks@tresys.com
  *
- *  Copyright (C) 2004-2006 Tresys Technology, LLC
+ *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -21,26 +23,53 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#ifndef SEDIFF_RESULTS_H
-#define SEDIFF_RESULTS_H
+#ifndef RESULTS_H
+#define RESULTS_H
 
-#ifdef	__cplusplus
-extern "C"
-{
-#endif
+#include "toplevel.h"
 
-#include "sediff_gui.h"
+#include <poldiff/poldiff.h>
 
-	typedef struct sediff_results sediff_results_t;
+typedef struct results results_t;
 
-	void sediff_results_create(sediff_app_t * app);
-	void sediff_results_clear(sediff_app_t * app);
-	void sediff_results_select(sediff_app_t * app, uint32_t diffbit, poldiff_form_e form);
-	void sediff_results_sort_current(sediff_app_t * app, int field, int direction);
-	void sediff_results_update_stats(sediff_app_t * app);
+/**
+ * Allocate and return a results object.  This object is responsible
+ * for showing the results of a poldiff run, and all sorting of
+ * results.
+ *
+ * @param top Toplevel object to contain the results object.
+ *
+ * @return Results object, or NULL upon error.  The caller is
+ * responsible for calling results_destroy() afterwards.
+ */
+results_t *results_create(toplevel_t * top);
 
-#ifdef	__cplusplus
-}
-#endif
+/**
+ * Destroy the results object.  This does nothing if the pointer is
+ * set to NULL.
+ *
+ * @param r Reference to a results object.  Afterwards the pointer
+ * will be set to NULL.
+ */
+void results_destroy(results_t ** r);
+
+/**
+ * Clear all text from the results object.  This should be done prior
+ * to running a new diff.
+ *
+ * @param r Results object to clear.
+ */
+void results_clear(results_t * r);
+
+/**
+ * Update the results display to match the most recent poldiff run.
+ *
+ * @param r Results object to update.
+ */
+void results_update(results_t * r);
+
+void results_select(results_t * r, uint32_t diffbit, poldiff_form_e form);
+
+void results_sort_current(results_t * r, int field, int direction);
 
 #endif

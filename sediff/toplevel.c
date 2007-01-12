@@ -28,6 +28,7 @@
 
 #include "policy_view.h"
 #include "progress.h"
+#include "results.h"
 #include "sediffx.h"
 #include "toplevel.h"
 #include "utilgui.h"
@@ -43,13 +44,14 @@ struct toplevel
 {
 	sediffx_t *s;
 	progress_t *progress;
+	results_t *results;
 	policy_view_t *views[SEDIFFX_POLICY_NUM];
 	GladeXML *xml;
 	/** filename for glade file */
 	char *xml_filename;
 	/** toplevel window widget */
 	GtkWindow *w;
-	/* non-zero if the currently opened policies are capable of
+	/** non-zero if the currently opened policies are capable of
 	 * diffing attributes */
 	int can_diff_attributes;
 };
@@ -65,7 +67,7 @@ static void toplevel_enable_policy_items(toplevel_t * top, gboolean sens)
 {
 	static const char *items[] = {
 		"Copy", "Select All",
-		"Find", "Run Diff", "Remap Types", "sort menu item",
+		"Find", "Run Diff", "Remap Types",
 		"run diff button", "remap types button",
 		NULL
 	};
@@ -168,11 +170,10 @@ toplevel_t *toplevel_create(sediffx_t * s)
 
 	/* initialize sub-windows, now that glade XML file has been
 	 * read */
-	if ((top->progress = progress_create(top)) == NULL) {
+	if ((top->progress = progress_create(top)) == NULL || (top->results = results_create(top)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
-
 	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
 		if ((top->views[i] = policy_view_create(top, i)) == NULL) {
 			fprintf(stderr, "%s\n", strerror(errno));
@@ -196,11 +197,12 @@ void toplevel_destroy(toplevel_t ** top)
 {
 	if (top != NULL && *top != NULL) {
 		sediffx_policy_e i;
+		progress_destroy(&(*top)->progress);
+		results_destroy(&(*top)->results);
 		for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
 			policy_view_destroy(&(*top)->views[i]);
 		}
 		free((*top)->xml_filename);
-		progress_destroy(&(*top)->progress);
 		free(*top);
 		*top = NULL;
 	}
@@ -298,7 +300,9 @@ static gpointer toplevel_run_diff_runner(gpointer data)
 		progress_abort(run->top->progress, "Could not get a poldiff object: %s", strerror(errno));
 		return NULL;
 	}
-	if ((run->result = poldiff_run(diff, run->run_flags)) < 0) {
+	run->result = poldiff_run(diff, run->run_flags);
+	sediffx_set_poldiff_run_flags(run->top->s, run->run_flags);
+	if (run->result < 0) {
 		progress_abort(run->top->progress, NULL);
 	} else {
 		progress_done(run->top->progress);
@@ -321,6 +325,7 @@ void toplevel_run_diff(toplevel_t * top)
 		g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
 		r.run_flags &= ~POLDIFF_DIFF_ATTRIBS;
 	}
+	results_clear(top->results);
 
 	util_cursor_wait(GTK_WIDGET(top->w));
 	progress_show(top->progress, "Running Diff");
@@ -332,11 +337,16 @@ void toplevel_run_diff(toplevel_t * top)
 	progress_wait(top->progress);
 	progress_hide(top->progress);
 	util_cursor_clear(GTK_WIDGET(top->w));
-	/* FIX ME
-	 * if (run.result == 0) {
-	 * populate_main_window();
-	 * }
-	 */
+	if (r.result == 0) {
+		results_update(top->results);
+	}
+}
+
+void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens)
+{
+	GtkWidget *w = glade_xml_get_widget(top->xml, "sort menu item");
+	assert(w != NULL);
+	gtk_widget_set_sensitive(w, sens);
 }
 
 char *toplevel_get_glade_xml(toplevel_t * top)
@@ -347,6 +357,16 @@ char *toplevel_get_glade_xml(toplevel_t * top)
 GtkWindow *toplevel_get_window(toplevel_t * top)
 {
 	return top->w;
+}
+
+poldiff_t *toplevel_get_poldiff(toplevel_t * top)
+{
+	return sediffx_get_poldiff(top->s, progress_poldiff_handle_func, top->progress);
+}
+
+uint32_t toplevel_get_poldiff_run_flags(toplevel_t * top)
+{
+	return sediffx_get_poldiff_run_flags(top->s);
 }
 
 /**
@@ -492,30 +512,6 @@ void toplevel_on_destroy(gpointer user_data, GtkObject * object __attribute__ ((
 
 gboolean toggle = TRUE;
 
-const sediff_item_record_t sediff_items[] = {
-	{"Classes", POLDIFF_DIFF_CLASSES, 0,
-	 poldiff_get_class_vector, poldiff_class_get_form, poldiff_class_to_string},
-	{"Commons", POLDIFF_DIFF_COMMONS, 0,
-	 poldiff_get_common_vector, poldiff_common_get_form, poldiff_common_to_string},
-	{"Types", POLDIFF_DIFF_TYPES, 0,
-	 poldiff_get_type_vector, poldiff_type_get_form, poldiff_type_to_string},
-	{"Attributes", POLDIFF_DIFF_ATTRIBS, 0,
-	 poldiff_get_attrib_vector, poldiff_attrib_get_form, poldiff_attrib_to_string},
-	{"Roles", POLDIFF_DIFF_ROLES, 0,
-	 poldiff_get_role_vector, poldiff_role_get_form, poldiff_role_to_string},
-	{"Users", POLDIFF_DIFF_USERS, 0,
-	 poldiff_get_user_vector, poldiff_user_get_form, poldiff_user_to_string},
-	{"Booleans", POLDIFF_DIFF_BOOLS, 0,
-	 poldiff_get_bool_vector, poldiff_bool_get_form, poldiff_bool_to_string},
-	{"Role Allows", POLDIFF_DIFF_ROLE_ALLOWS, 0,
-	 poldiff_get_role_allow_vector, poldiff_role_allow_get_form, poldiff_role_allow_to_string},
-	{"Role Transitions", POLDIFF_DIFF_ROLE_TRANS, 1,
-	 poldiff_get_role_trans_vector, poldiff_role_trans_get_form, poldiff_role_trans_to_string},
-	{"TE Rules", POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1,
-	 NULL, NULL, NULL /* special case because this is from two datum */ },
-	{NULL, 0, 0, NULL, NULL, NULL}
-};
-
 /* Generic function prototype for getting policy components */
 typedef struct registered_callback
 {
@@ -549,251 +545,12 @@ static void sediff_callback_signal_emit(unsigned int type)
 	return;
 }
 
-/* show the help message in the bottom-left corner */
-static void sediff_populate_key_buffer(void)
-{
-	GtkTextView *txt_view;
-	GtkTextBuffer *txt;
-	GString *string = g_string_new("");
-	GtkTextTag *added_tag, *removed_tag, *changed_tag, *mono_tag, *header_tag;
-	GtkTextTagTable *table;
-	GtkTextIter iter;
-
-	txt_view = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_key_txt_view")));
-	txt = gtk_text_view_get_buffer(txt_view);
-	sediff_clear_text_buffer(txt);
-	gtk_text_buffer_get_end_iter(txt, &iter);
-
-	table = gtk_text_buffer_get_tag_table(txt);
-	added_tag = gtk_text_tag_table_lookup(table, "added-tag");
-	if (!added_tag) {
-		added_tag = gtk_text_buffer_create_tag(txt, "added-tag", "family", "monospace", "foreground", "dark green", NULL);
-	}
-	removed_tag = gtk_text_tag_table_lookup(table, "removed-tag");
-	if (!removed_tag) {
-		removed_tag = gtk_text_buffer_create_tag(txt, "removed-tag", "family", "monospace", "foreground", "red", NULL);
-	}
-	changed_tag = gtk_text_tag_table_lookup(table, "changed-tag");
-	if (!changed_tag) {
-		changed_tag = gtk_text_buffer_create_tag(txt, "changed-tag",
-							 "family", "monospace", "foreground", "dark blue", NULL);
-	}
-	mono_tag = gtk_text_tag_table_lookup(table, "mono-tag");
-	if (!mono_tag) {
-		mono_tag = gtk_text_buffer_create_tag(txt, "mono-tag", "family", "monospace", NULL);
-	}
-	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
-	if (!header_tag) {
-		header_tag = gtk_text_buffer_create_tag(txt, "header-tag",
-							"family", "monospace",
-							"weight", PANGO_WEIGHT_BOLD, "underline", PANGO_UNDERLINE_SINGLE, NULL);
-	}
-
-	g_string_printf(string, " Added(+):\n  Items added\n  in policy 2.\n\n");
-	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, -1, "added-tag", NULL);
-	g_string_printf(string, " Removed(-):\n  Items removed\n  from policy 1.\n\n");
-	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, -1, "removed-tag", NULL);
-	g_string_printf(string, " Modified(*):\n  Items modified\n  from policy 1\n  to policy 2.");
-	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, -1, "changed-tag", NULL);
-	g_string_free(string, TRUE);
-}
-
-/* Callback used to switch our text view based on user input from the
- * treeview.
- */
-static gboolean sediff_results_txt_view_switch_results(gpointer data)
-{
-	uint32_t diffbit = 0;
-	poldiff_form_e form = POLDIFF_FORM_NONE;
-	if (sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view), &diffbit, &form)) {
-		/* Configure text_view */
-		sediff_results_select(sediff_app, diffbit, form);
-	}
-	return FALSE;
-}
-
-static void sediff_treeview_on_row_double_clicked(GtkTreeView * tree_view,
-						  GtkTreePath * path, GtkTreeViewColumn * col, gpointer user_data)
-{
-	/* Finish later */
-
-	g_idle_add_full(G_PRIORITY_HIGH_IDLE, &sediff_results_txt_view_switch_results, NULL, NULL);
-	row_selected_signal_emit();
-}
-
-static gboolean sediff_treeview_on_row_selected(GtkTreeSelection * selection,
-						GtkTreeModel * model,
-						GtkTreePath * path, gboolean path_currently_selected, gpointer userdata)
-{
-
-	/* if the row is not selected, then its about to be selected ! */
-	/* we put in this toggle because for some reason if we have a previously selected path
-	 * then this callback is called like this
-	 * 1  new_path is not selected
-	 * 2  old_path is selected
-	 * 3  new_path is not selected
-	 * This messes up our te rules stuff so I just put in a check to make sure we're not called
-	 * 2 times when we are really only selected once
-	 */
-	if (toggle && gtk_tree_selection_path_is_selected(selection, path) == FALSE) {
-		g_idle_add_full(G_PRIORITY_HIGH_IDLE, &sediff_results_txt_view_switch_results, NULL, NULL);
-		row_selected_signal_emit();
-
-	} else
-		toggle = !toggle;
-	return TRUE;		       /* allow selection state to change */
-}
-
 static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 {
 	registered_callback_t *callback = (registered_callback_t *) data;
 	if (callback)
 		free(callback);
 	return;
-}
-
-/* this function is used to determine whether we allow
-   a window click events to happen, if there is nothing in the
-   buffer we don't */
-gboolean sediff_textview_button_event(GtkWidget * widget, GdkEventButton * event, gpointer user_data)
-{
-	GtkTextBuffer *txt = NULL;
-	GtkTextView *view = NULL;
-	GtkTextIter start, end;
-
-	if (strcmp("GtkTextView", gtk_type_name(GTK_WIDGET_TYPE(widget))) == 0)
-		view = GTK_TEXT_VIEW(widget);
-	else
-		return FALSE;
-	if (view == NULL)
-		return FALSE;
-	txt = gtk_text_view_get_buffer(view);
-
-	/* check to see if there is anything currently in this buffer that can be selected */
-	gtk_text_buffer_get_start_iter(txt, &start);
-	gtk_text_buffer_get_end_iter(txt, &end);
-	if (gtk_text_iter_get_offset(&start) == gtk_text_iter_get_offset(&end)) {
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-/* This function resets the treemodel, recreates our stored buffers
- * (this is faster than clearing them), clears out the keys, and
- * results textviews, resets the indexes into diff buffers, and resets
- * the diff pointer itself.
- */
-void sediff_initialize_diff(void)
-{
-	GtkTextView *textview;
-	GtkTextBuffer *textbuf;
-	GtkWidget *container = NULL;
-	GtkLabel *label = NULL;
-	GtkTreeSelection *selection = NULL;
-	GtkWidget *widget;
-
-	if (sediff_app->tree_view) {
-		/* unselect the selected items */
-		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sediff_app->tree_view));
-		gtk_tree_selection_unselect_all(selection);
-		/* delete tree_view */
-		gtk_widget_destroy(GTK_WIDGET(sediff_app->tree_view));
-		sediff_app->tree_view = NULL;
-	}
-
-	/*deselect the sort te rules menu item */
-	widget = glade_xml_get_widget(sediff_app->window_xml, "sediff_sort_menu");
-	g_assert(widget);
-	gtk_widget_set_sensitive(widget, FALSE);
-
-	/* get the scrolled window and replace the text_view with a blank dummy view */
-	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
-	g_assert(container);
-	if (sediff_app->dummy_view == NULL) {
-		sediff_app->dummy_view = gtk_text_view_new();
-		g_assert(sediff_app->dummy_view);
-		gtk_text_view_set_editable(GTK_TEXT_VIEW(sediff_app->dummy_view), FALSE);
-		gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(sediff_app->dummy_view), FALSE);
-		g_signal_connect(G_OBJECT(sediff_app->dummy_view), "button-press-event",
-				 G_CALLBACK(sediff_textview_button_event), sediff_app);
-		gtk_container_add(GTK_CONTAINER(container), sediff_app->dummy_view);
-		gtk_widget_show_all(container);
-	} else if (gtk_widget_get_parent(GTK_WIDGET(sediff_app->dummy_view)) == NULL) {
-		/* If the dummy view has been removed, then re-add it to the container */
-		gtk_container_add(GTK_CONTAINER(container), sediff_app->dummy_view);
-		gtk_widget_show_all(container);
-	}
-
-	sediff_results_clear(sediff_app);
-	sediff_results_create(sediff_app);
-
-	textview = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_key_txt_view")));
-	g_assert(textview);
-	textbuf = gtk_text_view_get_buffer(textview);
-	g_assert(textbuf);
-	sediff_clear_text_buffer(textbuf);
-
-	label = (GtkLabel *) glade_xml_get_widget(sediff_app->window_xml, "line_label");
-	gtk_label_set_text(label, "");
-}
-
-/*
-   populate the main window
-*/
-static gboolean sediff_populate_main_window()
-{
-	GtkWidget *container = NULL;
-	GtkTreeModel *tree_model;
-	GtkTreeSelection *sel;
-	GtkTreeIter iter;
-	GtkNotebook *notebook1, *notebook2;
-
-	/* load up the status bar */
-	sediff_results_update_stats(sediff_app);
-
-	/* populate the key */
-	sediff_populate_key_buffer();
-
-	/* get the scrolled window we are going to put the tree_store in */
-	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
-	g_assert(container);
-	if (sediff_app->dummy_view != NULL) {
-		/* Add a reference to the dummy view widget before removing it from the container so we can add it later */
-		sediff_app->dummy_view = gtk_widget_ref(sediff_app->dummy_view);
-		gtk_container_remove(GTK_CONTAINER(container), sediff_app->dummy_view);
-	}
-
-	/* create the tree_view */
-	sediff_app->tree_view = sediff_create_view_and_model(sediff_app->diff);
-
-	sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(sediff_app->tree_view));
-	gtk_tree_selection_set_mode(sel, GTK_SELECTION_BROWSE);
-	gtk_tree_selection_set_select_function(sel, sediff_treeview_on_row_selected, sediff_app->tree_view, NULL);
-	g_signal_connect(G_OBJECT(sediff_app->tree_view), "row-activated", G_CALLBACK(sediff_treeview_on_row_double_clicked), NULL);
-
-	notebook1 = (GtkNotebook *) glade_xml_get_widget(sediff_app->window_xml, "notebook1");
-	g_assert(notebook1);
-	notebook2 = (GtkNotebook *) glade_xml_get_widget(sediff_app->window_xml, "notebook2");
-	g_assert(notebook2);
-
-	/* make it viewable */
-	gtk_container_add(GTK_CONTAINER(container), sediff_app->tree_view);
-	gtk_widget_show_all(container);
-
-	/* select the first element in the tree */
-	tree_model = gtk_tree_view_get_model(GTK_TREE_VIEW(sediff_app->tree_view));
-	sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(sediff_app->tree_view));
-	if (gtk_tree_model_get_iter_first(tree_model, &iter)) {
-		gtk_tree_selection_select_iter(sel, &iter);
-	}
-
-	/* set the buffer to the summary page */
-	sediff_results_select(sediff_app, POLDIFF_DIFF_SUMMARY, 0);
-
-	return FALSE;
 }
 
 void sediff_menu_on_default_sort_clicked(GtkMenuItem * menuitem, gpointer user_data)
@@ -1000,64 +757,6 @@ void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, int whi
 	gtk_label_set_text(lbl, string->str);
 	g_string_free(string, TRUE);
 	return;
-}
-
-void sediff_initialize_policies(void)
-{
-	GtkTextView *textview;
-	GtkTextBuffer *txt;
-
-	if (sediff_app->diff) {
-		poldiff_destroy(&sediff_app->diff);
-	} else {
-		apol_policy_destroy(&sediff_app->orig_pol);
-		apol_policy_destroy(&sediff_app->mod_pol);
-	}
-	sediff_app->orig_pol = NULL;
-	sediff_app->mod_pol = NULL;
-	if (sediff_app->p1_sfd.name)
-		g_string_free(sediff_app->p1_sfd.name, TRUE);
-	if (sediff_app->p2_sfd.name)
-		g_string_free(sediff_app->p2_sfd.name, TRUE);
-	sediff_app->p1_sfd.name = NULL;
-	sediff_app->p2_sfd.name = NULL;
-
-	sediff_remap_types_window_unref_members(sediff_app->remap_types_window);
-
-	/* Grab the 2 policy textviews */
-	textview = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
-	g_assert(textview);
-	/* grab the text buffer for our text view */
-	txt = gtk_text_view_get_buffer(textview);
-	g_assert(txt);
-	sediff_clear_text_buffer(txt);
-	/* Set modified bit to zero, so line numbers won't show while in initialized mode. */
-	gtk_text_buffer_set_modified(txt, FALSE);
-
-	textview = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text");
-	g_assert(textview);
-	/* grab the text buffer for our text view */
-	txt = gtk_text_view_get_buffer(textview);
-	g_assert(txt);
-	sediff_clear_text_buffer(txt);
-	/* Set modified bit to zero, so line numbers won't show while in initialized mode. */
-	gtk_text_buffer_set_modified(txt, FALSE);
-
-	textview = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_stats_text");
-	g_assert(textview);
-	/* grab the text buffer for our text view */
-	txt = gtk_text_view_get_buffer(textview);
-	g_assert(txt);
-	sediff_clear_text_buffer(txt);
-
-	textview = (GtkTextView *) glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_stats_text");
-	g_assert(textview);
-	/* grab the text buffer for our text view */
-	txt = gtk_text_view_get_buffer(textview);
-	g_assert(txt);
-	sediff_clear_text_buffer(txt);
-
-	sediff_set_open_policies_gui_state(FALSE);
 }
 
 /* return the textview currently displayed to the user */

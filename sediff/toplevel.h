@@ -24,12 +24,13 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SEDIFF_TOPLEVEL_H
-#define SEDIFF_TOPLEVEL_H
+#ifndef TOPLEVEL_H
+#define TOPLEVEL_H
 
 #include "sediffx.h"
 #include <apol/policy-path.h>
 #include <gtk/gtk.h>
+#include <poldiff/poldiff.h>
 
 typedef struct toplevel toplevel_t;
 
@@ -69,7 +70,23 @@ void toplevel_destroy(toplevel_t ** top);
  */
 int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apol_policy_path_t * mod_path);
 
+/**
+ * Run the current poldiff object.  Afterwards this function will
+ * notify the results object to update its view.
+ *
+ * @param top Toplevel object whose poldiff to run.
+ */
 void toplevel_run_diff(toplevel_t * top);
+
+/**
+ * Enable or disable the toplevel's sort menu.  The sort menu should
+ * be enabled only when showing the differences for TE rules;
+ * otherwise it should be disabled.
+ *
+ * @param top Toplevel object containing sort menu.
+ * @param sens New sensitivity for the menu.
+ */
+void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens);
 
 /**
  * Return the filename containing sediffx's glade file.
@@ -89,6 +106,26 @@ char *toplevel_get_glade_xml(toplevel_t * top);
  * @return Main window.
  */
 GtkWindow *toplevel_get_window(toplevel_t * top);
+
+/**
+ * Retrieve the currently active poldiff object.  If policies have not
+ * yet been loaded then this returns NULL.  Note that the poldiff
+ * object will not be run yet; for that call toplevel_run_diff().
+ *
+ * @param top Toplevel containing poldiff object.
+ *
+ * @return poldiff object, or NULL if none availble or upon error.
+ */
+poldiff_t *toplevel_get_poldiff(toplevel_t * top);
+
+/**
+ * Get the flags that were used the most recently run poldiff.
+ *
+ * @param top Toplevel object to query.
+ *
+ * @return poldiff run flags, or 0 in none set.
+ */
+uint32_t toplevel_get_poldiff_run_flags(toplevel_t * top);
 
 /**
  * Pop-up an error dialog with a line of text and wait for the user to
@@ -111,32 +148,6 @@ void toplevel_ERR(toplevel_t * top, const char *format, ...) __attribute__ ((for
 void toplevel_WARN(toplevel_t * top, const char *format, ...) __attribute__ ((format(printf, 2, 3)));
 
 #if 0
-
-#include "sediff_treemodel.h"
-#include "sediff_remap_types.h"
-#include "sediff_find_window.h"
-#include <poldiff/poldiff.h>
-#include <gtk/gtk.h>
-#include <glade/glade.h>
-
-#define GLADEFILE "sediff.glade"
-
-#define MAIN_WINDOW_ID	       "sediff_main_window"
-#define OPEN_DIALOG_ID	       "sediff_policies_dialog"
-#define REMAP_TYPES_DIALOG_ID "sediff_remap_types_dialog"
-#define FIND_DIALOG_ID       "sediff_find_dialog"
-#define FIND_FORWARD_ID      "sediff_find_forward"
-#define FIND_ENTRY_ID        "sediff_find_text_entry"
-
-typedef struct sediff_file_data
-{
-	GString *name;		       /* the filename */
-	char *data;		       /* the data inside the file */
-	size_t size;		       /* the size of the data inside the file */
-} sediff_file_data_t;
-
-struct sediff_progress;
-struct sediff_results;
 
 /* STRUCT: sediff_app_t
    This structure is used to control the gui.  It contains the links
@@ -161,16 +172,6 @@ typedef struct sediff_app
 	struct sediff_find_window *find_window;	/* the find window reference */
 	int tv_curr_buf;	       /* the buffer currently displayed for the treeview */
 } sediff_app_t;
-
-typedef struct sediff_item_record
-{
-	const char *label;
-	uint32_t bit_pos;
-	int has_add_type;
-	apol_vector_t *(*get_vector) (poldiff_t *);
-	 poldiff_form_e(*get_form) (const void *);
-	char *(*get_string) (poldiff_t *, const void *);
-} sediff_item_record_t;
 
 /* constants that denote how to sort rules within the results buffer */
 #define SORT_DEFAULT 0

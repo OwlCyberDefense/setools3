@@ -2,6 +2,9 @@
  *  @file
  *  Routines for displaying the results after running poldiff.
  *
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *  @author Brandon Whalen bwhalen@tresys.com
  *  @author Randy Wicks rwicks@tresys.com
  *
  *  Copyright (C) 2005-2007 Tresys Technology, LLC
@@ -23,200 +26,389 @@
 
 #include <config.h>
 
-#include "sediff_gui.h"
-#include "sediff_progress.h"
-#include "sediff_results.h"
+#include "results.h"
 #include "utilgui.h"
-
-#include <qpol/cond_query.h>
 
 #include <assert.h>
 #include <string.h>
 
-struct sediff_results
+#include <gtk/gtk.h>
+#include <glade/glade.h>
+#include <poldiff/poldiff.h>
+#include <qpol/cond_query.h>
+
+enum
 {
-	GtkTextBuffer *main_buffer;    /* generic buffer used for everything but te rules and conditionals(because they take so long to draw) */
-	GtkTextBuffer *te_buffers[5];
-	int te_buffered[5];
+	RESULTS_SUMMARY_COLUMN_LABEL = 0,
+	RESULTS_SUMMARY_COLUMN_DIFFBIT,
+	RESULTS_SUMMARY_COLUMN_FORM,
+	RESULTS_SUMMARY_COLUMN_RECORD,
+	RESULTS_SUMMARY_COLUMN_NUM
+};
+
+enum
+{
+	RESULTS_BUFFER_MAIN = 0,
+	RESULTS_BUFFER_TE_ADD, RESULTS_BUFFER_TE_ADDTYPE,
+	RESULTS_BUFFER_TE_REMOVED, RESULTS_BUFFER_TE_REMOVE_TYPE,
+	RESULTS_BUFFER_MODIFIED,
+	RESULTS_BUFFER_NUM
+};
+
+struct results
+{
+	toplevel_t *top;
+	GladeXML *xml;
+	GtkTreeStore *summary_tree;
+	GtkTextBuffer *buffers[RESULTS_BUFFER_NUM];
+	GtkTextBuffer *key_buffer;
+	GtkTextView *view;
+	GtkTextTag *policy_orig_tag, *policy_mod_tag;
+	GtkLabel *stats;
+	/** flags to indicate if a TE buffer needs to be redrawn or not */
+	int te_buffered[RESULTS_BUFFER_NUM];
 	gint *saved_offsets;
 	size_t current_buffer;
 };
 
-extern sediff_item_record_t sediff_items[];
-
-static gboolean sediff_results_line_event(GtkTextTag * tag, GObject * event_object,
-					  GdkEvent * event, const GtkTextIter * iter, gpointer user_data);
-
-void sediff_results_create(sediff_app_t * app)
+struct poldiff_item_record
 {
-	sediff_results_t *r;
-	GtkTextView *textview;
+	const char *label;
+	int record_id;
+	uint32_t bit_pos;
+	int has_add_type;
+	apol_vector_t *(*get_vector) (poldiff_t *);
+	 poldiff_form_e(*get_form) (const void *);
+	char *(*get_string) (poldiff_t *, const void *);
+};
+
+static const struct poldiff_item_record poldiff_items[] = {
+	{"Classes", 1, POLDIFF_DIFF_CLASSES, 0,
+	 poldiff_get_class_vector, poldiff_class_get_form, poldiff_class_to_string},
+	{"Commons", 2, POLDIFF_DIFF_COMMONS, 0,
+	 poldiff_get_common_vector, poldiff_common_get_form, poldiff_common_to_string},
+	{"Types", 3, POLDIFF_DIFF_TYPES, 0,
+	 poldiff_get_type_vector, poldiff_type_get_form, poldiff_type_to_string},
+	{"Attributes", 4, POLDIFF_DIFF_ATTRIBS, 0,
+	 poldiff_get_attrib_vector, poldiff_attrib_get_form, poldiff_attrib_to_string},
+	{"Roles", 5, POLDIFF_DIFF_ROLES, 0,
+	 poldiff_get_role_vector, poldiff_role_get_form, poldiff_role_to_string},
+	{"Users", 6, POLDIFF_DIFF_USERS, 0,
+	 poldiff_get_user_vector, poldiff_user_get_form, poldiff_user_to_string},
+	{"Booleans", 7, POLDIFF_DIFF_BOOLS, 0,
+	 poldiff_get_bool_vector, poldiff_bool_get_form, poldiff_bool_to_string},
+	{"Role Allows", 8, POLDIFF_DIFF_ROLE_ALLOWS, 0,
+	 poldiff_get_role_allow_vector, poldiff_role_allow_get_form, poldiff_role_allow_to_string},
+	{"Role Transitions", 9, POLDIFF_DIFF_ROLE_TRANS, 1,
+	 poldiff_get_role_trans_vector, poldiff_role_trans_get_form, poldiff_role_trans_to_string},
+	{"TE Rules", 10, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1,
+	 NULL, NULL, NULL /* special case because this is from two data */ },
+	{NULL, 11, 0, 0, NULL, NULL, NULL}
+};
+
+static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data);
+
+static gboolean results_line_event(GtkTextTag * tag, GObject * event_object,
+				   GdkEvent * event, const GtkTextIter * iter, gpointer user_data);
+
+/**
+ * Build a GTK tree store to hold the summary table of contents; then
+ * add that (empty) tree to the tree view.
+ */
+static void results_create_summary(results_t * r)
+{
+	GtkTreeViewColumn *col;
+	GtkCellRenderer *renderer;
+	GtkTreeView *view;
+	GtkTreeSelection *selection;
+
+	r->summary_tree = gtk_tree_store_new(RESULTS_SUMMARY_COLUMN_NUM, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_POINTER);
+	view = GTK_TREE_VIEW(glade_xml_get_widget(r->xml, "toplevel summary view"));
+	assert(view != NULL);
+	col = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
+	gtk_tree_view_column_set_title(col, "Differences");
+	gtk_tree_view_append_column(view, col);
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_add_attribute(col, renderer, "text", RESULTS_SUMMARY_COLUMN_LABEL);
+	gtk_tree_view_set_model(view, GTK_TREE_MODEL(r->summary_tree));
+
+	selection = gtk_tree_view_get_selection(view);
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);
+	g_signal_connect(G_OBJECT(selection), "changed", G_CALLBACK(results_summary_on_change), r);
+}
+
+results_t *results_create(toplevel_t * top)
+{
+	results_t *r;
+	int i;
+	GtkTextTagTable *tag_table;
 	GtkTextAttributes *attr;
+	GtkTextView *text_view;
 	gint size;
 	PangoTabArray *tabs;
-	GtkLabel *label;
-	size_t i;
 
-	if ((r = app->results) == NULL) {
-		app->results = g_malloc0(sizeof(*r));
-		r = app->results;
-		/* allocate an array to keep track of the scrollbar
-		 * position; that way when a user switches to a
-		 * particular result item the view will retain its
-		 * position */
-		for (i = 0; sediff_items[i].label != NULL; i++) ;
-		/* add 1 for the summary buffer; multiply by 6 for the
-		 * 5 different difference forms + summary display */
-		r->saved_offsets = g_malloc0((i + 1) * 6 * sizeof(gint));
-		r->current_buffer = 0;
+	if ((r = calloc(1, sizeof(*r))) == NULL) {
+		return NULL;
 	}
-	if (r->main_buffer == NULL) {
-		/* recreate the results buffer -- it could have been
-		 * destroyed by sediff_results_clear() */
-		GtkTextTagTable *tag_table;
-		GtkTextTag *tag;
-		r->main_buffer = gtk_text_buffer_new(NULL);
-		tag_table = gtk_text_buffer_get_tag_table(r->main_buffer);
-		for (i = 0; i < 5; i++) {
-			r->te_buffers[i] = gtk_text_buffer_new(tag_table);
-		}
-		gtk_text_buffer_create_tag(r->main_buffer, "header",
-					   "style", PANGO_STYLE_ITALIC, "weight", PANGO_WEIGHT_BOLD, NULL);
-		gtk_text_buffer_create_tag(r->main_buffer, "subheader",
-					   "family", "monospace",
-					   "weight", PANGO_WEIGHT_BOLD, "underline", PANGO_UNDERLINE_SINGLE, NULL);
-		gtk_text_buffer_create_tag(r->main_buffer, "removed-header",
-					   "family", "monospace", "foreground", "red", "weight", PANGO_WEIGHT_BOLD, NULL);
-		gtk_text_buffer_create_tag(r->main_buffer, "added-header",
-					   "family", "monospace", "foreground", "dark green", "weight", PANGO_WEIGHT_BOLD, NULL);
-		gtk_text_buffer_create_tag(r->main_buffer, "modified-header",
-					   "family", "monospace", "foreground", "dark blue", "weight", PANGO_WEIGHT_BOLD, NULL);
-		gtk_text_buffer_create_tag(r->main_buffer, "removed", "family", "monospace", "foreground", "red", NULL);
-		gtk_text_buffer_create_tag(r->main_buffer, "added", "family", "monospace", "foreground", "dark green", NULL);
-		gtk_text_buffer_create_tag(r->main_buffer, "modified", "family", "monospace", "foreground", "dark blue", NULL);
-		tag = gtk_text_buffer_create_tag(r->main_buffer, "line-p1",
-						 "family", "monospace",
-						 "foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
-		g_signal_connect_after(G_OBJECT(tag), "event", GTK_SIGNAL_FUNC(sediff_results_line_event), "orig");
-		tag = gtk_text_buffer_create_tag(r->main_buffer, "line-p2",
-						 "family", "monospace",
-						 "foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
-		g_signal_connect_after(G_OBJECT(tag), "event", GTK_SIGNAL_FUNC(sediff_results_line_event), "mod");
-	}
+	r->top = top;
+	r->xml = glade_get_widget_tree(GTK_WIDGET(toplevel_get_window(r->top)));
+	results_create_summary(r);
 
-	textview = GTK_TEXT_VIEW((glade_xml_get_widget(app->window_xml, "sediff_results_txt_view")));
-	attr = gtk_text_view_get_default_attributes(textview);
+	/* allocate an array to keep track of the scrollbar position; that
+	 * way when a user switches to a particular result item the view
+	 * will retain its position */
+	for (i = 0; poldiff_items[i].label != NULL; i++) ;
+	/* add 1 for the summary buffer; multiply by 6 for the 5 different
+	 * difference forms + summary display */
+	r->saved_offsets = g_malloc0((i + 1) * 6 * sizeof(gint));
+
+	r->buffers[0] = gtk_text_buffer_new(NULL);
+	tag_table = gtk_text_buffer_get_tag_table(r->buffers[0]);
+	for (i = 1; i < RESULTS_BUFFER_NUM; i++) {
+		r->buffers[i] = gtk_text_buffer_new(tag_table);
+	}
+	gtk_text_buffer_create_tag(r->buffers[0], "header", "style", PANGO_STYLE_ITALIC, "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(r->buffers[0], "subheader",
+				   "family", "monospace", "weight", PANGO_WEIGHT_BOLD, "underline", PANGO_UNDERLINE_SINGLE, NULL);
+	gtk_text_buffer_create_tag(r->buffers[0], "removed-header",
+				   "family", "monospace", "foreground", "red", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(r->buffers[0], "added-header",
+				   "family", "monospace", "foreground", "dark green", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(r->buffers[0], "modified-header",
+				   "family", "monospace", "foreground", "dark blue", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(r->buffers[0], "removed", "family", "monospace", "foreground", "red", NULL);
+	gtk_text_buffer_create_tag(r->buffers[0], "added", "family", "monospace", "foreground", "dark green", NULL);
+	gtk_text_buffer_create_tag(r->buffers[0], "modified", "family", "monospace", "foreground", "dark blue", NULL);
+	r->policy_orig_tag = gtk_text_buffer_create_tag(r->buffers[0], "line-pol_orig",
+							"family", "monospace",
+							"foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
+	g_signal_connect_after(G_OBJECT(r->policy_orig_tag), "event", GTK_SIGNAL_FUNC(results_line_event), r);
+	r->policy_mod_tag = gtk_text_buffer_create_tag(r->buffers[0], "line-pol_mod",
+						       "family", "monospace",
+						       "foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
+	g_signal_connect_after(G_OBJECT(r->policy_mod_tag), "event", GTK_SIGNAL_FUNC(results_line_event), r);
+
+	r->view = GTK_TEXT_VIEW(glade_xml_get_widget(r->xml, "toplevel results view"));
+	assert(r->view != NULL);
+	attr = gtk_text_view_get_default_attributes(r->view);
 	size = pango_font_description_get_size(attr->font);
 	tabs = pango_tab_array_new_with_positions(4,
 						  FALSE,
 						  PANGO_TAB_LEFT, 3 * size,
 						  PANGO_TAB_LEFT, 6 * size, PANGO_TAB_LEFT, 9 * size, PANGO_TAB_LEFT, 12 * size);
-	gtk_text_view_set_tabs(textview, tabs);
+	gtk_text_view_set_tabs(r->view, tabs);
+	gtk_text_view_set_buffer(r->view, r->buffers[RESULTS_BUFFER_MAIN]);
+	r->current_buffer = 0;
 
-	/* switch to our newly blank main buffer */
-	gtk_text_view_set_buffer(textview, r->main_buffer);
+	r->key_buffer = gtk_text_buffer_new(tag_table);
+	text_view = GTK_TEXT_VIEW(glade_xml_get_widget(r->xml, "toplevel key view"));
+	assert(text_view != NULL);
+	gtk_text_view_set_buffer(text_view, r->key_buffer);
 
-	label = (GtkLabel *) (glade_xml_get_widget(app->window_xml, "label_stats"));
-	gtk_label_set_text(label, "");
+	r->stats = GTK_LABEL((glade_xml_get_widget(r->xml, "toplevel stats label")));
+	assert(r->stats != NULL);
+	gtk_label_set_text(r->stats, "");
+
+	return r;
 }
 
-void sediff_results_clear(sediff_app_t * app)
+void results_destroy(results_t ** r)
 {
-	sediff_results_t *r = app->results;
-	if (r != NULL) {
-		size_t i;
-
-		if (r->main_buffer) {
-			g_object_unref(G_OBJECT(r->main_buffer));
-			r->main_buffer = NULL;
-		}
-		for (i = 0; i < 5; i++) {
-			if (r->te_buffers[i]) {
-				g_object_unref(G_OBJECT(r->te_buffers[i]));
-				r->te_buffers[i] = NULL;
-				r->te_buffered[i] = 0;
-			}
-		}
+	if (r != NULL && *r != NULL) {
+		free((*r)->saved_offsets);
+		free(*r);
+		*r = NULL;
 	}
 }
 
-static void sediff_results_print_summary(sediff_app_t * app, GtkTextBuffer * tb, sediff_item_record_t * record)
+void results_clear(results_t * r)
 {
-	GtkTextIter iter;
-	size_t stats[5] = { 0, 0, 0, 0, 0 };
-	GString *string = g_string_new("");
-
-	gtk_text_buffer_get_end_iter(tb, &iter);
-	poldiff_get_stats(app->diff, record->bit_pos, stats);
-
-	g_string_printf(string, "%s:\n", record->label);
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "subheader", NULL);
-
-	g_string_printf(string, "\tAdded: %zd\n", stats[0]);
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "added-header", NULL);
-
-	if (record->has_add_type) {
-		g_string_printf(string, "\tAdded because of new type: %zd\n", stats[3]);
-		gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "added-header", NULL);
-	}
-
-	g_string_printf(string, "\tRemoved: %zd\n", stats[1]);
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "removed-header", NULL);
-
-	if (record->has_add_type) {
-		g_string_printf(string, "\tRemoved because of missing type: %zd\n", stats[4]);
-		gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "removed-header", NULL);
-	}
-
-	g_string_printf(string, "\tModified: %zd\n", stats[2]);
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "modified-header", NULL);
-
-	g_string_free(string, TRUE);
-}
-
-static void sediff_results_select_summary(sediff_app_t * app, GtkTextView * view)
-{
-	sediff_results_t *r = app->results;
-	GtkTextBuffer *tb = r->main_buffer;
-	GtkTextIter iter;
-	GString *string = g_string_new("");
 	size_t i;
+	gtk_tree_store_clear(r->summary_tree);
+	for (i = 0; i < RESULTS_BUFFER_NUM; i++) {
+		util_text_buffer_clear(r->buffers[i]);
+		r->te_buffered[i] = 0;
+	}
+	gtk_text_view_set_buffer(r->view, r->buffers[RESULTS_BUFFER_MAIN]);
+	r->current_buffer = 0;
+	util_text_buffer_clear(r->key_buffer);
+}
 
-	gtk_text_view_set_buffer(view, tb);
-	sediff_clear_text_buffer(tb);
+/**
+ * Update the summary tree to reflect the number of items
+ * added/removed/modified.
+ */
+static void results_update_summary(results_t * r)
+{
+	GtkTreeIter topiter, childiter;
+	size_t stats[5] = { 0, 0, 0, 0, 0 }, i;
+	GString *s = g_string_new("");
+	poldiff_t *diff = toplevel_get_poldiff(r->top);
+	uint32_t flags = toplevel_get_poldiff_run_flags(r->top);
+	assert(diff != NULL);
 
-	gtk_text_buffer_get_start_iter(tb, &iter);
-	g_string_printf(string, "Policy Difference Statistics\n\n");
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "header", NULL);
+	gtk_tree_store_append(r->summary_tree, &topiter, NULL);
+	gtk_tree_store_set(r->summary_tree, &topiter,
+			   RESULTS_SUMMARY_COLUMN_LABEL, "Summary",
+			   RESULTS_SUMMARY_COLUMN_DIFFBIT, 0,
+			   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_NONE, RESULTS_SUMMARY_COLUMN_RECORD, NULL, -1);
 
-	g_string_printf(string, "Policy Filenames:\n");
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "subheader", NULL);
-	g_string_printf(string, "\tPolicy 1: %s\n", app->p1_sfd.name->str);
-	gtk_text_buffer_insert(tb, &iter, string->str, -1);
-	g_string_printf(string, "\tPolicy 2: %s\n", app->p2_sfd.name->str);
-	gtk_text_buffer_insert(tb, &iter, string->str, -1);
-
-	for (i = 0; sediff_items[i].label != NULL; i++) {
-		if (!poldiff_is_run(app->diff, sediff_items[i].bit_pos)) {
+	for (i = 0; poldiff_items[i].label != NULL; i++) {
+		if (!poldiff_is_run(diff, poldiff_items[i].bit_pos)) {
 			continue;
 		}
-		gtk_text_buffer_insert(tb, &iter, "\n", -1);
-		sediff_results_print_summary(app, tb, sediff_items + i);
-		gtk_text_buffer_get_end_iter(tb, &iter);
+		poldiff_get_stats(diff, poldiff_items[i].bit_pos, stats);
+
+		gtk_tree_store_append(r->summary_tree, &topiter, NULL);
+		g_string_printf(s, "%s %zd", poldiff_items[i].label, stats[0] + stats[1] + stats[2] + stats[3] + stats[4]);
+		gtk_tree_store_set(r->summary_tree, &topiter,
+				   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
+				   RESULTS_SUMMARY_COLUMN_DIFFBIT, poldiff_items[i].bit_pos,
+				   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_NONE,
+				   RESULTS_SUMMARY_COLUMN_RECORD, poldiff_items + i, -1);
+
+		gtk_tree_store_append(r->summary_tree, &childiter, &topiter);
+		g_string_printf(s, "Added %zd", stats[0]);
+		gtk_tree_store_set(r->summary_tree, &childiter,
+				   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
+				   RESULTS_SUMMARY_COLUMN_DIFFBIT, poldiff_items[i].bit_pos,
+				   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_ADDED,
+				   RESULTS_SUMMARY_COLUMN_RECORD, poldiff_items + i, -1);
+
+		if (poldiff_items[i].has_add_type) {
+			gtk_tree_store_append(r->summary_tree, &childiter, &topiter);
+			g_string_printf(s, "Added Type %zd", stats[3]);
+			gtk_tree_store_set(r->summary_tree, &childiter,
+					   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
+					   RESULTS_SUMMARY_COLUMN_DIFFBIT, poldiff_items[i].bit_pos,
+					   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_ADD_TYPE,
+					   RESULTS_SUMMARY_COLUMN_RECORD, poldiff_items + i, -1);
+		}
+
+		gtk_tree_store_append(r->summary_tree, &childiter, &topiter);
+		g_string_printf(s, "Removed %zd", stats[1]);
+		gtk_tree_store_set(r->summary_tree, &childiter,
+				   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
+				   RESULTS_SUMMARY_COLUMN_DIFFBIT, poldiff_items[i].bit_pos,
+				   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_REMOVED,
+				   RESULTS_SUMMARY_COLUMN_RECORD, poldiff_items + i, -1);
+
+		if (poldiff_items[i].has_add_type) {
+			gtk_tree_store_append(r->summary_tree, &childiter, &topiter);
+			g_string_printf(s, "Removed Type %zd", stats[4]);
+			gtk_tree_store_set(r->summary_tree, &childiter,
+					   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
+					   RESULTS_SUMMARY_COLUMN_DIFFBIT, poldiff_items[i].bit_pos,
+					   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_REMOVE_TYPE,
+					   RESULTS_SUMMARY_COLUMN_RECORD, poldiff_items + i, -1);
+		}
+		if (poldiff_items[i].bit_pos != POLDIFF_DIFF_TYPES || (flags & POLDIFF_DIFF_ATTRIBS)) {
+			gtk_tree_store_append(r->summary_tree, &childiter, &topiter);
+			g_string_printf(s, "Modified %zd", stats[2]);
+			gtk_tree_store_set(r->summary_tree, &childiter,
+					   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
+					   RESULTS_SUMMARY_COLUMN_DIFFBIT, poldiff_items[i].bit_pos,
+					   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_MODIFIED,
+					   RESULTS_SUMMARY_COLUMN_RECORD, poldiff_items + i, -1);
+		}
 	}
+
+	g_string_free(s, TRUE);
+}
+
+/**
+ * Show the legend of the symbols used in results displays.
+ */
+static void results_populate_key_buffer(results_t * r)
+{
+	GString *string = g_string_new("");
+	GtkTextIter iter;
+
+	util_text_buffer_clear(r->key_buffer);
+	gtk_text_buffer_get_end_iter(r->key_buffer, &iter);
+
+	g_string_printf(string, " Added(+):\n  Items added in\n  modified policy.\n\n");
+	gtk_text_buffer_insert_with_tags_by_name(r->key_buffer, &iter, string->str, -1, "added", NULL);
+	g_string_printf(string, " Removed(-):\n  Items removed\n  from original\n   policy.\n\n");
+	gtk_text_buffer_insert_with_tags_by_name(r->key_buffer, &iter, string->str, -1, "removed", NULL);
+	g_string_printf(string, " Modified(*):\n  Items modified\n  from original\n  policy to\n  modified policy.");
+	gtk_text_buffer_insert_with_tags_by_name(r->key_buffer, &iter, string->str, -1, "modified", NULL);
 	g_string_free(string, TRUE);
 }
 
-static void sediff_results_print_item_header(sediff_app_t * app, GtkTextBuffer * tb, sediff_item_record_t * record,
-					     poldiff_form_e form)
+/**
+ * Populate the status bar with summary info of our diff.
+ */
+static void results_update_stats(results_t * r)
+{
+	GString *string = g_string_new("");
+	size_t class_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t common_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t type_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t attrib_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t role_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t user_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t bool_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t terule_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t avrule_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t rallow_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t rtrans_stats[5] = { 0, 0, 0, 0, 0 };
+	poldiff_t *diff = toplevel_get_poldiff(r->top);
+	assert(diff != NULL);
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_CLASSES, class_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_COMMONS, common_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_TYPES, type_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_ATTRIBS, attrib_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_ROLES, role_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_USERS, user_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_BOOLS, bool_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_TERULES, terule_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES, avrule_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_ALLOWS, rallow_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_TRANS, rtrans_stats);
+
+	g_string_printf(string, "Classes %d "
+			"Commons %d Types: %d Attribs: %d Roles: %d Users: %d Bools: %d "
+			"TE Rules: %d Role Allows: %d Role Trans: %d",
+			class_stats[0] + class_stats[1] + class_stats[2],
+			common_stats[0] + common_stats[1] + common_stats[2],
+			type_stats[0] + type_stats[1] + type_stats[2],
+			attrib_stats[0] + attrib_stats[1] + attrib_stats[2],
+			role_stats[0] + role_stats[1] + role_stats[2],
+			user_stats[0] + user_stats[1] + user_stats[2],
+			bool_stats[0] + bool_stats[1] + bool_stats[2],
+			terule_stats[0] + terule_stats[1] + terule_stats[2] + terule_stats[3] + terule_stats[4] +
+			avrule_stats[0] + avrule_stats[1] + avrule_stats[2] + avrule_stats[3] + avrule_stats[4],
+			rallow_stats[0] + rallow_stats[1] + rallow_stats[2],
+			rtrans_stats[0] + rtrans_stats[1] + rtrans_stats[2] + rtrans_stats[3] + rtrans_stats[4]);
+	gtk_label_set_text(r->stats, string->str);
+	g_string_free(string, TRUE);
+}
+
+void results_update(results_t * r)
+{
+	results_update_summary(r);
+	results_populate_key_buffer(r);
+	results_update_stats(r);
+}
+
+/**
+ * Show a common header when printing a policy component diff.
+ */
+static void results_print_item_header(results_t * r, GtkTextBuffer * tb, const struct poldiff_item_record *record,
+				      poldiff_form_e form)
 {
 	GtkTextIter iter;
+	poldiff_t *diff = toplevel_get_poldiff(r->top);
 	size_t stats[5] = { 0, 0, 0, 0, 0 };
 	GString *string = g_string_new("");
 	char *s;
 
 	gtk_text_buffer_get_end_iter(tb, &iter);
-	poldiff_get_stats(app->diff, record->bit_pos, stats);
+	poldiff_get_stats(diff, record->bit_pos, stats);
 	if (record->has_add_type) {
 		g_string_printf(string,
 				"%s (%zd Added, %zd Added New Type, %zd Removed, %zd Removed Missing Type, %zd Changed)\n\n",
@@ -262,7 +454,11 @@ static void sediff_results_print_item_header(sediff_app_t * app, GtkTextBuffer *
 	g_string_free(string, TRUE);
 }
 
-static void sediff_results_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
+/**
+ * Show a single diff item string.  This will add the appropriate
+ * color tags based upon the item's first character.
+ */
+static void results_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
 {
 	const char *c = s;
 	unsigned int i;
@@ -325,17 +521,86 @@ static void sediff_results_print_string(GtkTextBuffer * tb, GtkTextIter * iter, 
 	}
 }
 
-static void sediff_results_select_simple(sediff_app_t * app, GtkTextView * view,
-					 sediff_item_record_t * item_record, poldiff_form_e form)
+/**
+ * Show a summary of the diff for a particular policy component.
+ */
+static void results_print_summary(results_t * r, GtkTextBuffer * tb, const struct poldiff_item_record *record)
 {
-	sediff_results_t *r = app->results;
-	GtkTextBuffer *tb = r->main_buffer;
+	GtkTextIter iter;
+	poldiff_t *diff = toplevel_get_poldiff(r->top);
+	size_t stats[5] = { 0, 0, 0, 0, 0 };
+	GString *string = g_string_new("");
 
-	gtk_text_view_set_buffer(view, tb);
-	sediff_clear_text_buffer(tb);
+	gtk_text_buffer_get_end_iter(tb, &iter);
+	poldiff_get_stats(diff, record->bit_pos, stats);
+
+	g_string_printf(string, "%s:\n", record->label);
+	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "subheader", NULL);
+
+	g_string_printf(string, "\tAdded: %zd\n", stats[0]);
+	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "added-header", NULL);
+
+	if (record->has_add_type) {
+		g_string_printf(string, "\tAdded because of new type: %zd\n", stats[3]);
+		gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "added-header", NULL);
+	}
+
+	g_string_printf(string, "\tRemoved: %zd\n", stats[1]);
+	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "removed-header", NULL);
+
+	if (record->has_add_type) {
+		g_string_printf(string, "\tRemoved because of missing type: %zd\n", stats[4]);
+		gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "removed-header", NULL);
+	}
+
+	g_string_printf(string, "\tModified: %zd\n", stats[2]);
+	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "modified-header", NULL);
+
+	g_string_free(string, TRUE);
+}
+
+/**
+ * Show a summary of the diff for all policy components.
+ */
+static void results_select_summary(results_t * r)
+{
+	GtkTextBuffer *tb = r->buffers[RESULTS_BUFFER_MAIN];
+	GtkTextIter iter;
+	GString *string = g_string_new("");
+	size_t i;
+	poldiff_t *diff = toplevel_get_poldiff(r->top);
+
+	gtk_text_view_set_buffer(r->view, tb);
+	util_text_buffer_clear(tb);
+
+	gtk_text_buffer_get_start_iter(tb, &iter);
+	g_string_printf(string, "Policy Difference Statistics\n\n");
+	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "header", NULL);
+
+	for (i = 0; poldiff_items[i].label != NULL; i++) {
+		if (!poldiff_is_run(diff, poldiff_items[i].bit_pos)) {
+			continue;
+		}
+		gtk_text_buffer_insert(tb, &iter, "\n", -1);
+		results_print_summary(r, tb, poldiff_items + i);
+		gtk_text_buffer_get_end_iter(tb, &iter);
+	}
+	g_string_free(string, TRUE);
+}
+
+/**
+ * Show the results for non-rules diff components.
+ */
+static void results_select_simple(results_t * r, const struct poldiff_item_record *item_record, poldiff_form_e form)
+{
+	GtkTextBuffer *tb = r->buffers[RESULTS_BUFFER_MAIN];
+	poldiff_t *diff = toplevel_get_poldiff(r->top);
+
+	gtk_text_view_set_buffer(r->view, tb);
+	util_text_buffer_clear(tb);
 
 	if (form == POLDIFF_FORM_NONE) {
-		sediff_results_print_summary(app, tb, item_record);
+		results_print_summary(r, tb, item_record);
 	} else {
 		GtkTextIter iter;
 		apol_vector_t *v;
@@ -343,15 +608,15 @@ static void sediff_results_select_simple(sediff_app_t * app, GtkTextView * view,
 		void *elem;
 		char *s = NULL;
 
-		sediff_results_print_item_header(app, tb, item_record, form);
+		results_print_item_header(r, tb, item_record, form);
 		gtk_text_buffer_get_end_iter(tb, &iter);
 
-		v = item_record->get_vector(app->diff);
+		v = item_record->get_vector(diff);
 		for (i = 0; i < apol_vector_get_size(v); i++) {
 			elem = apol_vector_get_element(v, i);
 			if (item_record->get_form(elem) == form) {
-				s = item_record->get_string(app->diff, elem);
-				sediff_results_print_string(tb, &iter, s, 1);
+				s = item_record->get_string(diff, elem);
+				results_print_string(tb, &iter, s, 1);
 				free(s);
 				gtk_text_buffer_insert(tb, &iter, "\n", -1);
 			}
@@ -360,6 +625,127 @@ static void sediff_results_select_simple(sediff_app_t * app, GtkTextView * view,
 
 }
 
+/**
+ * Display in the main view the diff results for a particular component.
+ *
+ * @param r Results object whose view to update.
+ * @param record Item record for the component to show.
+ * @param form Particular form of the diff result to show.
+ */
+static void results_record_select(results_t * r, const struct poldiff_item_record *record, poldiff_form_e form)
+{
+	GtkTextMark *mark;
+	GdkRectangle rect;
+	GtkTextIter iter;
+	size_t new_buffer;
+	GtkTextBuffer *tb;
+
+	/* save current view position */
+	gtk_text_view_get_visible_rect(r->view, &rect);
+	gtk_text_view_get_iter_at_location(r->view, &iter, rect.x, rect.y);
+	r->saved_offsets[r->current_buffer] = gtk_text_iter_get_offset(&iter);
+
+	toplevel_set_sort_menu_sensitivity(r->top, FALSE);
+
+	if (record == NULL) {
+		results_select_summary(r);
+		new_buffer = 0;
+	} else {
+		switch (record->bit_pos) {
+		case POLDIFF_DIFF_CLASSES:
+		case POLDIFF_DIFF_COMMONS:
+		case POLDIFF_DIFF_TYPES:
+		case POLDIFF_DIFF_ATTRIBS:
+		case POLDIFF_DIFF_ROLES:
+		case POLDIFF_DIFF_USERS:
+		case POLDIFF_DIFF_BOOLS:
+		case POLDIFF_DIFF_ROLE_ALLOWS:
+		case POLDIFF_DIFF_ROLE_TRANS:{
+				results_select_simple(r, record, form);
+				break;
+			}
+		case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES):{
+				/*
+				 * results_select_rules(r, record, form);
+				 */
+				break;
+			}
+		}
+
+		new_buffer = record->record_id * 6 + form;
+	}
+
+	/* restore saved location.  use marks to ensure that we go to
+	 * this position even if it hasn't been drawn. */
+	tb = gtk_text_view_get_buffer(r->view);
+	gtk_text_buffer_get_start_iter(tb, &iter);
+	gtk_text_iter_set_offset(&iter, r->saved_offsets[new_buffer]);
+	mark = gtk_text_buffer_create_mark(tb, "location-mark", &iter, FALSE);
+	gtk_text_view_scroll_to_mark(r->view, mark, 0.0, TRUE, 0.0, 0.0);
+	gtk_text_buffer_delete_mark(tb, mark);
+	r->current_buffer = new_buffer;
+}
+
+/**
+ * Callback invoked when the user selects an entry from the summary
+ * tree.
+ */
+static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data)
+{
+	results_t *r = (results_t *) user_data;
+	GtkTreeIter iter;
+	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
+		int form;
+		const struct poldiff_item_record *item_record;
+		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
+				   RESULTS_SUMMARY_COLUMN_RECORD, &item_record, -1);
+		results_record_select(r, item_record, form);
+	}
+}
+
+/**
+ * Callback invoked when the user clicks on a line number tag.  This
+ * will flip to the appropriate policy's source page and jump to that
+ * line.
+ */
+static gboolean results_line_event(GtkTextTag * tag, GObject * event_object __attribute__ ((unused)),
+				   GdkEvent * event, const GtkTextIter * iter, gpointer user_data)
+{
+	results_t *r = (results_t *) user_data;
+	int offset;
+	sediffx_policy_e which_pol = -1;
+	unsigned long line;
+	GtkTextIter *start, *end;
+	if (event->type == GDK_BUTTON_PRESS) {
+		start = gtk_text_iter_copy(iter);
+		offset = gtk_text_iter_get_line_offset(start);
+
+		while (!gtk_text_iter_starts_word(start))
+			gtk_text_iter_backward_char(start);
+		end = gtk_text_iter_copy(start);
+		while (!gtk_text_iter_ends_word(end))
+			gtk_text_iter_forward_char(end);
+
+		/* the line # in policy starts with 1, in the buffer it
+		 * starts at 0 */
+		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
+		if (tag == r->policy_orig_tag) {
+			which_pol = SEDIFFX_POLICY_ORIG;
+		} else if (tag == r->policy_mod_tag) {
+			which_pol = SEDIFFX_POLICY_MOD;
+		} else {
+			/* should never get here */
+			assert(0);
+		}
+		/*
+		 * toplevel__raise_policy_tab_goto_line(r->top, which_pol, line);
+		 */
+		return TRUE;
+	}
+	return FALSE;
+}
+
+#if 0
 struct sort_opts
 {
 	poldiff_t *diff;
@@ -837,55 +1223,6 @@ void sediff_results_sort_current(sediff_app_t * app, int field, int direction)
 	sediff_progress_hide(app);
 }
 
-/* populate the status bar with summary info of our diff */
-void sediff_results_update_stats(sediff_app_t * app)
-{
-	GtkLabel *statusbar;
-	GString *string = g_string_new("");
-	size_t class_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t common_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t type_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t attrib_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t role_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t user_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t bool_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t terule_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t avrule_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t rallow_stats[5] = { 0, 0, 0, 0, 0 };
-	size_t rtrans_stats[5] = { 0, 0, 0, 0, 0 };
-
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_CLASSES, class_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_COMMONS, common_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_TYPES, type_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_ATTRIBS, attrib_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_ROLES, role_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_USERS, user_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_BOOLS, bool_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_TERULES, terule_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_AVRULES, avrule_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_ROLE_ALLOWS, rallow_stats);
-	poldiff_get_stats(app->diff, POLDIFF_DIFF_ROLE_TRANS, rtrans_stats);
-
-	g_string_printf(string, "Classes %d "
-			"Commons %d Types: %d Attribs: %d Roles: %d Users: %d Bools: %d "
-			"TE Rules: %d Role Allows: %d Role Trans: %d",
-			class_stats[0] + class_stats[1] + class_stats[2],
-			common_stats[0] + common_stats[1] + common_stats[2],
-			type_stats[0] + type_stats[1] + type_stats[2],
-			attrib_stats[0] + attrib_stats[1] + attrib_stats[2],
-			role_stats[0] + role_stats[1] + role_stats[2],
-			user_stats[0] + user_stats[1] + user_stats[2],
-			bool_stats[0] + bool_stats[1] + bool_stats[2],
-			terule_stats[0] + terule_stats[1] + terule_stats[2] + terule_stats[3] + terule_stats[4] +
-			avrule_stats[0] + avrule_stats[1] + avrule_stats[2] + avrule_stats[3] + avrule_stats[4],
-			rallow_stats[0] + rallow_stats[1] + rallow_stats[2],
-			rtrans_stats[0] + rtrans_stats[1] + rtrans_stats[2] + rtrans_stats[3] + rtrans_stats[4]);
-	statusbar = (GtkLabel *) (glade_xml_get_widget(app->window_xml, "label_stats"));
-	g_assert(statusbar);
-	gtk_label_set_text(statusbar, string->str);
-	g_string_free(string, TRUE);
-}
-
 /* Set the cursor to a hand when user scrolls over a line number in
  * when displaying te diff.
  */
@@ -931,34 +1268,4 @@ gboolean sediff_results_on_text_view_motion(GtkWidget * widget, GdkEventMotion *
 	return FALSE;
 }
 
-static gboolean sediff_results_line_event(GtkTextTag * tag, GObject * event_object,
-					  GdkEvent * event, const GtkTextIter * iter, gpointer user_data)
-{
-	int offset, which_pol;
-	unsigned long line;
-	GtkTextIter *start, *end;
-	if (event->type == GDK_BUTTON_PRESS) {
-		start = gtk_text_iter_copy(iter);
-		offset = gtk_text_iter_get_line_offset(start);
-
-		/* testing a new way */
-		while (!gtk_text_iter_starts_word(start))
-			gtk_text_iter_backward_char(start);
-		end = gtk_text_iter_copy(start);
-		while (!gtk_text_iter_ends_word(end))
-			gtk_text_iter_forward_char(end);
-
-		/* the line # in policy starts with 1, in the buffer it
-		 * starts at 0 */
-		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
-		if (strcmp((char *)user_data, "orig") == 0) {
-			which_pol = 0;
-		} else {
-			which_pol = 1;
-		}
-
-		sediff_main_notebook_raise_policy_tab_goto_line(line, which_pol);
-		return TRUE;
-	}
-	return FALSE;
-}
+#endif

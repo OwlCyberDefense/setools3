@@ -34,15 +34,13 @@ sediff_SOURCES = sediff_cli.c
 #	sediff_find_window.c sediff_find_window.h \
 #	sediff_remap_types.c sediff_remap_types.h \
 #	sediff_treemodel.c sediff_treemodel.h \
-#	utilgui.c utilgui.h \
 #	sediff_policy_open.c sediff_policy_open.h \
-#	sediff_progress.c sediff_progress.h \
-#	sediff_results.c sediff_results.h \
 #
 
 sediffx_SOURCES = \
 	policy_view.c policy_view.h \
 	progress.c progress.h \
+	results.c results.h \
 	toplevel.c toplevel.h \
 	utilgui.c utilgui.h \
 	sediffx.c sediffx.h

@@ -42,6 +42,7 @@ struct sediffx
 	apol_policy_t *policies[SEDIFFX_POLICY_NUM];
 	toplevel_t *top;
 	poldiff_t *poldiff;
+	uint32_t flags;
 };
 
 static struct option const longopts[] = {
@@ -87,6 +88,16 @@ poldiff_t *sediffx_get_poldiff(sediffx_t * s, poldiff_handle_fn_t fn, void *arg)
 		s->policies[SEDIFFX_POLICY_MOD] = NULL;
 	}
 	return s->poldiff;
+}
+
+void sediffx_set_poldiff_run_flags(sediffx_t * s, uint32_t flags)
+{
+	s->flags = flags;
+}
+
+uint32_t sediffx_get_poldiff_run_flags(sediffx_t * s)
+{
+	return s->flags;
 }
 
 static void print_version_info(void)
