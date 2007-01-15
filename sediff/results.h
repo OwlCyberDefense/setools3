@@ -32,6 +32,16 @@
 
 typedef struct results results_t;
 
+typedef enum results_sort
+{
+	RESULTS_SORT_DEFAULT = 0,
+	RESULTS_SORT_SOURCE, RESULTS_SORT_TARGET,
+	RESULTS_SORT_CLASS, RESULTS_SORT_COND
+} results_sort_e;
+
+#define RESULTS_SORT_ASCEND 1
+#define RESULTS_SORT_DESCEND -1
+
 /**
  * Allocate and return a results object.  This object is responsible
  * for showing the results of a poldiff run, and all sorting of
@@ -68,7 +78,13 @@ void results_clear(results_t * r);
  */
 void results_update(results_t * r);
 
-void results_select(results_t * r, uint32_t diffbit, poldiff_form_e form);
+/**
+ * Called whenever the user switches to the results page.  This
+ * function is responsible for setting up its menus and other widgets.
+ *
+ * @param r Results object to update.
+ */
+void results_switch_to_page(results_t * r);
 
 void results_sort_current(results_t * r, int field, int direction);
 

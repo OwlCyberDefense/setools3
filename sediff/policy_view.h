@@ -63,4 +63,13 @@ void policy_view_destroy(policy_view_t ** view);
  */
 void policy_view_update(policy_view_t * view, apol_policy_t * policy, apol_policy_path_t * path);
 
+/**
+ * Direct the given policy view to show its source policy tab and then
+ * scroll to the given line number.  Line numbers are zero indexed.
+ *
+ * @param view View whose source tab to show.
+ * @param line Line to show.
+ */
+void policy_view_show_policy_line(policy_view_t * view, unsigned long line);
+
 #endif

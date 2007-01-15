@@ -27,12 +27,13 @@
 #ifndef TOPLEVEL_H
 #define TOPLEVEL_H
 
+typedef struct toplevel toplevel_t;
+
+#include "progress.h"
 #include "sediffx.h"
 #include <apol/policy-path.h>
 #include <gtk/gtk.h>
 #include <poldiff/poldiff.h>
-
-typedef struct toplevel toplevel_t;
 
 /**
  * Allocate and return an instance of the toplevel window object.
@@ -79,6 +80,28 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 void toplevel_run_diff(toplevel_t * top);
 
 /**
+ * Switch to the given policy's source tab, if not already visible,
+ * and then scroll the view to show the given line.  Policy line
+ * numbers are zero-indexed.
+ *
+ * @param top Toplevel object containing policy source tabs.
+ * @param which Which policy's source tab to show.
+ * @param line Line to show.
+ */
+void toplevel_show_policy_line(toplevel_t * top, sediffx_policy_e which, unsigned long line);
+
+/**
+ * Check if a loaded policy can show line numbers or not.  Note that
+ * this is different than if a policy can show syntactic rules.
+ *
+ * @param top Toplevel object to query.
+ * @param which Which loadad policy to check.
+ *
+ * @return Non-zero if the policy can show line numbers, zero if not.
+ */
+int toplevel_is_policy_capable_line_numbers(toplevel_t * top, sediffx_policy_e which);
+
+/**
  * Enable or disable the toplevel's sort menu.  The sort menu should
  * be enabled only when showing the differences for TE rules;
  * otherwise it should be disabled.
@@ -96,6 +119,25 @@ void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens);
  * @return Name of the glade file.  Do not modify this string.
  */
 char *toplevel_get_glade_xml(toplevel_t * top);
+
+/**
+ * Return the current page number for the toplevel main notebook.
+ *
+ * @param top Toplevel to query.
+ *
+ * @return Page number for the currently showing tab.
+ */
+gint toplevel_get_notebook_page(toplevel_t * top);
+
+/**
+ * Return the progress object, so that sub-windows may also show the
+ * threaded progress object.
+ *
+ * @param top Toplevel containing progress object.
+ *
+ * @return Progress object.  Do not free() this pointer.
+ */
+progress_t *toplevel_get_progress(toplevel_t * top);
 
 /**
  * Return the main application window.  Sub-windows should be set
@@ -173,19 +215,9 @@ typedef struct sediff_app
 	int tv_curr_buf;	       /* the buffer currently displayed for the treeview */
 } sediff_app_t;
 
-/* constants that denote how to sort rules within the results buffer */
-#define SORT_DEFAULT 0
-#define SORT_SOURCE 1
-#define SORT_TARGET 2
-#define SORT_CLASS 3
-#define SORT_COND 4
-#define SORT_ASCEND 1
-#define SORT_DESCEND -1
-
 /* return the textview currently displayed to the user */
 GtkTextView *sediff_get_current_view(sediff_app_t * app);
 
-void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, int whichview);
 void sediff_initialize_diff(void);
 void sediff_initialize_policies(void);
 void run_diff_clicked(void);

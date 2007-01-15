@@ -30,8 +30,8 @@
 #include "utilgui.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
-
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include <poldiff/poldiff.h>
@@ -60,6 +60,7 @@ struct results
 	toplevel_t *top;
 	GladeXML *xml;
 	GtkTreeStore *summary_tree;
+	GtkTreeView *summary_view;
 	GtkTextBuffer *buffers[RESULTS_BUFFER_NUM];
 	GtkTextBuffer *key_buffer;
 	GtkTextView *view;
@@ -108,8 +109,9 @@ static const struct poldiff_item_record poldiff_items[] = {
 
 static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data);
 
-static gboolean results_line_event(GtkTextTag * tag, GObject * event_object,
-				   GdkEvent * event, const GtkTextIter * iter, gpointer user_data);
+static gboolean results_on_line_event(GtkTextTag * tag, GObject * event_object,
+				      GdkEvent * event, const GtkTextIter * iter, gpointer user_data);
+static gboolean results_on_text_view_motion(GtkWidget * widget, GdkEventMotion * event, gpointer user_data);
 
 /**
  * Build a GTK tree store to hold the summary table of contents; then
@@ -119,22 +121,21 @@ static void results_create_summary(results_t * r)
 {
 	GtkTreeViewColumn *col;
 	GtkCellRenderer *renderer;
-	GtkTreeView *view;
 	GtkTreeSelection *selection;
 
 	r->summary_tree = gtk_tree_store_new(RESULTS_SUMMARY_COLUMN_NUM, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_POINTER);
-	view = GTK_TREE_VIEW(glade_xml_get_widget(r->xml, "toplevel summary view"));
-	assert(view != NULL);
+	r->summary_view = GTK_TREE_VIEW(glade_xml_get_widget(r->xml, "toplevel summary view"));
+	assert(r->summary_view != NULL);
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
 	gtk_tree_view_column_set_title(col, "Differences");
-	gtk_tree_view_append_column(view, col);
+	gtk_tree_view_append_column(r->summary_view, col);
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", RESULTS_SUMMARY_COLUMN_LABEL);
-	gtk_tree_view_set_model(view, GTK_TREE_MODEL(r->summary_tree));
+	gtk_tree_view_set_model(r->summary_view, GTK_TREE_MODEL(r->summary_tree));
 
-	selection = gtk_tree_view_get_selection(view);
+	selection = gtk_tree_view_get_selection(r->summary_view);
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);
 	g_signal_connect(G_OBJECT(selection), "changed", G_CALLBACK(results_summary_on_change), r);
 }
@@ -184,14 +185,15 @@ results_t *results_create(toplevel_t * top)
 	r->policy_orig_tag = gtk_text_buffer_create_tag(r->buffers[0], "line-pol_orig",
 							"family", "monospace",
 							"foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
-	g_signal_connect_after(G_OBJECT(r->policy_orig_tag), "event", GTK_SIGNAL_FUNC(results_line_event), r);
+	g_signal_connect_after(G_OBJECT(r->policy_orig_tag), "event", G_CALLBACK(results_on_line_event), r);
 	r->policy_mod_tag = gtk_text_buffer_create_tag(r->buffers[0], "line-pol_mod",
 						       "family", "monospace",
 						       "foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
-	g_signal_connect_after(G_OBJECT(r->policy_mod_tag), "event", GTK_SIGNAL_FUNC(results_line_event), r);
+	g_signal_connect_after(G_OBJECT(r->policy_mod_tag), "event", G_CALLBACK(results_on_line_event), r);
 
 	r->view = GTK_TEXT_VIEW(glade_xml_get_widget(r->xml, "toplevel results view"));
 	assert(r->view != NULL);
+	g_signal_connect(G_OBJECT(r->view), "motion-notify-event", G_CALLBACK(results_on_text_view_motion), r);
 	attr = gtk_text_view_get_default_attributes(r->view);
 	size = pango_font_description_get_size(attr->font);
 	tabs = pango_tab_array_new_with_positions(4,
@@ -395,6 +397,23 @@ void results_update(results_t * r)
 	results_update_stats(r);
 }
 
+void results_switch_to_page(results_t * r)
+{
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(r->summary_view);
+	GtkTreeIter iter;
+	toplevel_set_sort_menu_sensitivity(r->top, FALSE);
+	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
+		int form;
+		const struct poldiff_item_record *item_record;
+		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
+				   RESULTS_SUMMARY_COLUMN_RECORD, &item_record, -1);
+		if (item_record != NULL &&
+		    item_record->bit_pos == (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES) && form != POLDIFF_FORM_NONE) {
+			toplevel_set_sort_menu_sensitivity(r->top, TRUE);
+		}
+	}
+}
+
 /**
  * Show a common header when printing a policy component diff.
  */
@@ -411,10 +430,10 @@ static void results_print_item_header(results_t * r, GtkTextBuffer * tb, const s
 	poldiff_get_stats(diff, record->bit_pos, stats);
 	if (record->has_add_type) {
 		g_string_printf(string,
-				"%s (%zd Added, %zd Added New Type, %zd Removed, %zd Removed Missing Type, %zd Changed)\n\n",
+				"%s (%zd Added, %zd Added New Type, %zd Removed, %zd Removed Missing Type, %zd Modified)\n\n",
 				record->label, stats[0], stats[3], stats[1], stats[4], stats[2]);
 	} else {
-		g_string_printf(string, "%s (%zd Added, %zd Removed, %zd Changed)\n\n",
+		g_string_printf(string, "%s (%zd Added, %zd Removed, %zd Modified)\n\n",
 				record->label, stats[0], stats[1], stats[2]);
 	}
 	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "header", NULL);
@@ -625,127 +644,6 @@ static void results_select_simple(results_t * r, const struct poldiff_item_recor
 
 }
 
-/**
- * Display in the main view the diff results for a particular component.
- *
- * @param r Results object whose view to update.
- * @param record Item record for the component to show.
- * @param form Particular form of the diff result to show.
- */
-static void results_record_select(results_t * r, const struct poldiff_item_record *record, poldiff_form_e form)
-{
-	GtkTextMark *mark;
-	GdkRectangle rect;
-	GtkTextIter iter;
-	size_t new_buffer;
-	GtkTextBuffer *tb;
-
-	/* save current view position */
-	gtk_text_view_get_visible_rect(r->view, &rect);
-	gtk_text_view_get_iter_at_location(r->view, &iter, rect.x, rect.y);
-	r->saved_offsets[r->current_buffer] = gtk_text_iter_get_offset(&iter);
-
-	toplevel_set_sort_menu_sensitivity(r->top, FALSE);
-
-	if (record == NULL) {
-		results_select_summary(r);
-		new_buffer = 0;
-	} else {
-		switch (record->bit_pos) {
-		case POLDIFF_DIFF_CLASSES:
-		case POLDIFF_DIFF_COMMONS:
-		case POLDIFF_DIFF_TYPES:
-		case POLDIFF_DIFF_ATTRIBS:
-		case POLDIFF_DIFF_ROLES:
-		case POLDIFF_DIFF_USERS:
-		case POLDIFF_DIFF_BOOLS:
-		case POLDIFF_DIFF_ROLE_ALLOWS:
-		case POLDIFF_DIFF_ROLE_TRANS:{
-				results_select_simple(r, record, form);
-				break;
-			}
-		case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES):{
-				/*
-				 * results_select_rules(r, record, form);
-				 */
-				break;
-			}
-		}
-
-		new_buffer = record->record_id * 6 + form;
-	}
-
-	/* restore saved location.  use marks to ensure that we go to
-	 * this position even if it hasn't been drawn. */
-	tb = gtk_text_view_get_buffer(r->view);
-	gtk_text_buffer_get_start_iter(tb, &iter);
-	gtk_text_iter_set_offset(&iter, r->saved_offsets[new_buffer]);
-	mark = gtk_text_buffer_create_mark(tb, "location-mark", &iter, FALSE);
-	gtk_text_view_scroll_to_mark(r->view, mark, 0.0, TRUE, 0.0, 0.0);
-	gtk_text_buffer_delete_mark(tb, mark);
-	r->current_buffer = new_buffer;
-}
-
-/**
- * Callback invoked when the user selects an entry from the summary
- * tree.
- */
-static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data)
-{
-	results_t *r = (results_t *) user_data;
-	GtkTreeIter iter;
-	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
-		int form;
-		const struct poldiff_item_record *item_record;
-		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
-				   RESULTS_SUMMARY_COLUMN_RECORD, &item_record, -1);
-		results_record_select(r, item_record, form);
-	}
-}
-
-/**
- * Callback invoked when the user clicks on a line number tag.  This
- * will flip to the appropriate policy's source page and jump to that
- * line.
- */
-static gboolean results_line_event(GtkTextTag * tag, GObject * event_object __attribute__ ((unused)),
-				   GdkEvent * event, const GtkTextIter * iter, gpointer user_data)
-{
-	results_t *r = (results_t *) user_data;
-	int offset;
-	sediffx_policy_e which_pol = -1;
-	unsigned long line;
-	GtkTextIter *start, *end;
-	if (event->type == GDK_BUTTON_PRESS) {
-		start = gtk_text_iter_copy(iter);
-		offset = gtk_text_iter_get_line_offset(start);
-
-		while (!gtk_text_iter_starts_word(start))
-			gtk_text_iter_backward_char(start);
-		end = gtk_text_iter_copy(start);
-		while (!gtk_text_iter_ends_word(end))
-			gtk_text_iter_forward_char(end);
-
-		/* the line # in policy starts with 1, in the buffer it
-		 * starts at 0 */
-		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
-		if (tag == r->policy_orig_tag) {
-			which_pol = SEDIFFX_POLICY_ORIG;
-		} else if (tag == r->policy_mod_tag) {
-			which_pol = SEDIFFX_POLICY_MOD;
-		} else {
-			/* should never get here */
-			assert(0);
-		}
-		/*
-		 * toplevel__raise_policy_tab_goto_line(r->top, which_pol, line);
-		 */
-		return TRUE;
-	}
-	return FALSE;
-}
-
-#if 0
 struct sort_opts
 {
 	poldiff_t *diff;
@@ -753,29 +651,29 @@ struct sort_opts
 	int direction;
 };
 
-static int sediff_results_avsort_comp(const void *a, const void *b, void *data)
+static int results_avsort_comp(const void *a, const void *b, void *data)
 {
 	const poldiff_avrule_t *a1 = a;
 	const poldiff_avrule_t *a2 = b;
 	struct sort_opts *opts = data;
 	const char *s1, *s2;
 	switch (opts->field) {
-	case SORT_SOURCE:{
+	case RESULTS_SORT_SOURCE:{
 			s1 = poldiff_avrule_get_source_type(a1);
 			s2 = poldiff_avrule_get_source_type(a2);
 			break;
 		}
-	case SORT_TARGET:{
+	case RESULTS_SORT_TARGET:{
 			s1 = poldiff_avrule_get_target_type(a1);
 			s2 = poldiff_avrule_get_target_type(a2);
 			break;
 		}
-	case SORT_CLASS:{
+	case RESULTS_SORT_CLASS:{
 			s1 = poldiff_avrule_get_object_class(a1);
 			s2 = poldiff_avrule_get_object_class(a2);
 			break;
 		}
-	case SORT_COND:{
+	case RESULTS_SORT_COND:{
 			qpol_cond_t *q1, *q2;
 			apol_policy_t *p1, *p2;
 			uint32_t w1, w2;
@@ -796,7 +694,7 @@ static int sediff_results_avsort_comp(const void *a, const void *b, void *data)
 	return opts->direction * strcmp(s1, s2);
 }
 
-static apol_vector_t *sediff_results_avsort(poldiff_t * diff, poldiff_form_e form, int field, int direction)
+static apol_vector_t *results_avsort(poldiff_t * diff, poldiff_form_e form, int field, int direction)
 {
 	apol_vector_t *orig_v, *v;
 	size_t i;
@@ -813,35 +711,35 @@ static apol_vector_t *sediff_results_avsort(poldiff_t * diff, poldiff_form_e for
 			return NULL;
 		}
 	}
-	if (field != SORT_DEFAULT) {
-		apol_vector_sort(v, sediff_results_avsort_comp, &opts);
+	if (field != RESULTS_SORT_DEFAULT) {
+		apol_vector_sort(v, results_avsort_comp, &opts);
 	}
 	return v;
 }
 
-static int sediff_results_tesort_comp(const void *a, const void *b, void *data)
+static int results_tesort_comp(const void *a, const void *b, void *data)
 {
 	const poldiff_terule_t *a1 = a;
 	const poldiff_terule_t *a2 = b;
 	struct sort_opts *opts = data;
 	const char *s1, *s2;
 	switch (opts->field) {
-	case SORT_SOURCE:{
+	case RESULTS_SORT_SOURCE:{
 			s1 = poldiff_terule_get_source_type(a1);
 			s2 = poldiff_terule_get_source_type(a2);
 			break;
 		}
-	case SORT_TARGET:{
+	case RESULTS_SORT_TARGET:{
 			s1 = poldiff_terule_get_target_type(a1);
 			s2 = poldiff_terule_get_target_type(a2);
 			break;
 		}
-	case SORT_CLASS:{
+	case RESULTS_SORT_CLASS:{
 			s1 = poldiff_terule_get_object_class(a1);
 			s2 = poldiff_terule_get_object_class(a2);
 			break;
 		}
-	case SORT_COND:{
+	case RESULTS_SORT_COND:{
 			qpol_cond_t *q1, *q2;
 			apol_policy_t *p1, *p2;
 			uint32_t w1, w2;
@@ -862,7 +760,7 @@ static int sediff_results_tesort_comp(const void *a, const void *b, void *data)
 	return opts->direction * strcmp(s1, s2);
 }
 
-static apol_vector_t *sediff_results_tesort(poldiff_t * diff, poldiff_form_e form, int field, int direction)
+static apol_vector_t *results_tesort(poldiff_t * diff, poldiff_form_e form, int field, int direction)
 {
 	apol_vector_t *orig_v, *v;
 	size_t i;
@@ -879,15 +777,15 @@ static apol_vector_t *sediff_results_tesort(poldiff_t * diff, poldiff_form_e for
 			return NULL;
 		}
 	}
-	if (field != SORT_DEFAULT) {
-		apol_vector_sort(v, sediff_results_tesort_comp, &opts);
+	if (field != RESULTS_SORT_DEFAULT) {
+		apol_vector_sort(v, results_tesort_comp, &opts);
 	}
 	return v;
 }
 
 /**
  * Print a modified rule.  Note that this differs from the more
- * general sediff_results_print_string() because:
+ * general results_print_string() because:
  *
  * <ul>
  *   <li>there are inline '+' and '-' markers
@@ -895,7 +793,7 @@ static apol_vector_t *sediff_results_tesort(poldiff_t * diff, poldiff_form_e for
  *       line(s) within the policy
  * </ul>
  */
-static void sediff_results_print_rule_modified(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
+static void results_print_rule_modified(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
 {
 	const char *c = s;
 	unsigned int i;
@@ -952,8 +850,12 @@ static void sediff_results_print_rule_modified(GtkTextBuffer * tb, GtkTextIter *
 	}
 }
 
-static void sediff_results_print_linenos(GtkTextBuffer * tb, GtkTextIter * iter,
-					 const gchar * prefix, apol_vector_t * linenos, const gchar * tag, GString * string)
+/**
+ * Given a vector of unsigned long integers, write to the text buffer
+ * those line numbers using the given tag.
+ */
+static void results_print_linenos(GtkTextBuffer * tb, GtkTextIter * iter,
+				  const gchar * prefix, apol_vector_t * linenos, const gchar * tag, GString * string)
 {
 	size_t i;
 	unsigned long lineno;
@@ -972,10 +874,11 @@ static void sediff_results_print_linenos(GtkTextBuffer * tb, GtkTextIter * iter,
 	gtk_text_buffer_insert(tb, iter, "]", -1);
 }
 
-static void sediff_results_print_rules(sediff_app_t * app, GtkTextBuffer * tb,
-				       sediff_item_record_t * item_record,
-				       poldiff_form_e form, apol_vector_t * av, apol_vector_t * te)
+static void results_print_rules(results_t * r, GtkTextBuffer * tb,
+				const struct poldiff_item_record *item_record,
+				poldiff_form_e form, apol_vector_t * av, apol_vector_t * te)
 {
+	poldiff_t *diff = toplevel_get_poldiff(r->top);
 	GtkTextIter iter;
 	size_t i;
 	void *elem;
@@ -983,38 +886,38 @@ static void sediff_results_print_rules(sediff_app_t * app, GtkTextBuffer * tb,
 	apol_vector_t *syn_linenos;
 	GString *string = g_string_new("");
 
-	sediff_results_print_item_header(app, tb, item_record, form);
+	results_print_item_header(r, tb, item_record, form);
 	gtk_text_buffer_get_end_iter(tb, &iter);
 
-	if (apol_vector_get_size(av) + apol_vector_get_size(te) > 0) {
-		poldiff_enable_line_numbers(app->diff);
+	if (apol_vector_get_size(av) > 0 || apol_vector_get_size(te) > 0) {
+		poldiff_enable_line_numbers(diff);
 	}
 	for (i = 0; i < apol_vector_get_size(av); i++) {
 		elem = apol_vector_get_element(av, i);
-		if ((s = poldiff_avrule_to_string(app->diff, elem)) == NULL) {
-			message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
+		if ((s = poldiff_avrule_to_string(diff, elem)) == NULL) {
+			util_message(toplevel_get_window(r->top), GTK_MESSAGE_ERROR, "Out of memory.");
 			g_string_free(string, TRUE);
 			return;
 		}
 		if (form != POLDIFF_FORM_MODIFIED) {
-			sediff_results_print_string(tb, &iter, s, 1);
-			if (qpol_policy_has_capability(apol_policy_get_qpol(app->orig_pol), QPOL_CAP_LINE_NUMBERS)
-			    && (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p1", string);
+			results_print_string(tb, &iter, s, 1);
+			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_ORIG) &&
+			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				results_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
 			}
-			if (qpol_policy_has_capability(apol_policy_get_qpol(app->mod_pol), QPOL_CAP_LINE_NUMBERS)
-			    && (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p2", string);
+			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_MOD) &&
+			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				results_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
 			}
 		} else {
-			sediff_results_print_rule_modified(tb, &iter, s, 1);
-			if (qpol_policy_has_capability(apol_policy_get_qpol(app->orig_pol), QPOL_CAP_LINE_NUMBERS)
-			    && (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				sediff_results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-p1", string);
+			results_print_rule_modified(tb, &iter, s, 1);
+			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_ORIG) &&
+			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
 			}
-			if (qpol_policy_has_capability(apol_policy_get_qpol(app->mod_pol), QPOL_CAP_LINE_NUMBERS)
-			    && (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				sediff_results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-p2", string);
+			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_MOD) &&
+			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-pol_mod", string);
 			}
 		}
 		free(s);
@@ -1023,130 +926,136 @@ static void sediff_results_print_rules(sediff_app_t * app, GtkTextBuffer * tb,
 
 	for (i = 0; i < apol_vector_get_size(te); i++) {
 		elem = apol_vector_get_element(te, i);
-		if ((s = poldiff_terule_to_string(app->diff, elem)) == NULL) {
-			message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
+		if ((s = poldiff_terule_to_string(diff, elem)) == NULL) {
+			util_message(toplevel_get_window(r->top), GTK_MESSAGE_ERROR, "Out of memory.");
 			g_string_free(string, TRUE);
 			return;
 		}
 		if (form != POLDIFF_FORM_MODIFIED) {
-			sediff_results_print_string(tb, &iter, s, 1);
-			if (qpol_policy_has_capability(apol_policy_get_qpol(app->orig_pol), QPOL_CAP_LINE_NUMBERS)
-			    && (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p1", string);
+			results_print_string(tb, &iter, s, 1);
+			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_ORIG) &&
+			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				results_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
 			}
-			if (qpol_policy_has_capability(apol_policy_get_qpol(app->mod_pol), QPOL_CAP_LINE_NUMBERS)
-			    && (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				sediff_results_print_linenos(tb, &iter, NULL, syn_linenos, "line-p2", string);
+			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_MOD) &&
+			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				results_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
 			}
 		} else {
-			sediff_results_print_rule_modified(tb, &iter, s, 1);
-			if (qpol_policy_has_capability(apol_policy_get_qpol(app->orig_pol), QPOL_CAP_LINE_NUMBERS)
-			    && (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				sediff_results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-p1", string);
+			results_print_rule_modified(tb, &iter, s, 1);
+			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_ORIG) &&
+			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
 			}
-			if (qpol_policy_has_capability(apol_policy_get_qpol(app->mod_pol), QPOL_CAP_LINE_NUMBERS)
-			    && (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				sediff_results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-p2", string);
+			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_MOD) &&
+			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-pol_mod", string);
 			}
 		}
 		free(s);
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
 	}
 
-	app->results->te_buffered[form - 1] = 1;
 	g_string_free(string, TRUE);
 }
 
-static void sediff_results_select_rules(sediff_app_t * app, GtkTextView * view,
-					sediff_item_record_t * item_record, poldiff_form_e form)
+struct run_datum
 {
-	sediff_results_t *r = app->results;
-	GtkTextBuffer *tb;
+	results_t *r;
+	poldiff_form_e form;
+	progress_t *progress;
+	apol_vector_t *av, *te;
+	int result;
+};
 
-	if (form == POLDIFF_FORM_NONE) {
-		tb = r->main_buffer;
-		gtk_text_view_set_buffer(view, tb);
-		sediff_clear_text_buffer(tb);
-		sediff_results_print_summary(app, tb, item_record);
+static gpointer results_sort_rule_runner(gpointer data)
+{
+	struct run_datum *run = (struct run_datum *)data;
+	progress_update(run->progress, "sorting rules");
+	poldiff_t *diff = toplevel_get_poldiff(run->r->top);
+	if ((run->av = results_avsort(diff, run->form, RESULTS_SORT_DEFAULT, 0)) == NULL ||
+	    (run->te = results_tesort(diff, run->form, RESULTS_SORT_DEFAULT, 0)) == NULL) {
+		apol_vector_destroy(&run->av, NULL);
+		apol_vector_destroy(&run->te, NULL);
+		progress_abort(run->progress, "%s", strerror(errno));
+		run->result = -1;
 	} else {
-		GtkWidget *w;
-		apol_vector_t *av = NULL, *te = NULL;
+		progress_update(run->progress, "printing rules");
+		run->result = 0;
+		progress_done(run->progress);
+	}
+	return NULL;
+}
 
-		/* enable sort TE rules menu */
-		w = glade_xml_get_widget(app->window_xml, "sediff_sort_menu");
-		g_assert(w);
+/**
+ * Show the results for AV and TE rules diff.
+ */
+static void results_select_rules(results_t * r, const struct poldiff_item_record *item_record, poldiff_form_e form)
+{
+	GtkTextBuffer *tb;
+	if (form == POLDIFF_FORM_NONE) {
+		tb = r->buffers[RESULTS_BUFFER_MAIN];
+		gtk_text_view_set_buffer(r->view, tb);
+		util_text_buffer_clear(tb);
+		results_print_summary(r, tb, item_record);
+	} else if (r->te_buffered[form]) {
+		tb = r->buffers[form];
+		gtk_text_view_set_buffer(r->view, tb);
+		toplevel_set_sort_menu_sensitivity(r->top, TRUE);
+	} else {
+		struct run_datum run;
+		run.r = r;
+		run.form = form;
+		run.progress = toplevel_get_progress(r->top);
+		run.av = run.te = NULL;
+		run.result = 0;
 
-		gtk_widget_set_sensitive(w, TRUE);
-		tb = r->te_buffers[form - 1];
-		gtk_text_view_set_buffer(view, tb);
-		if (r->te_buffered[form - 1]) {
-			return;
+		toplevel_set_sort_menu_sensitivity(r->top, TRUE);
+		tb = r->buffers[form];
+		gtk_text_view_set_buffer(r->view, tb);
+
+		util_cursor_wait(GTK_WIDGET(toplevel_get_window(r->top)));
+		progress_show(run.progress, "Rendering Rules");
+		g_thread_create(results_sort_rule_runner, &run, FALSE, NULL);
+		progress_wait(run.progress);
+		util_cursor_clear(GTK_WIDGET(toplevel_get_window(r->top)));
+		if (run.result == 0) {
+			results_print_rules(r, tb, item_record, form, run.av, run.te);
+			apol_vector_destroy(&run.av, NULL);
+			apol_vector_destroy(&run.te, NULL);
 		}
-
-		sediff_progress_message(app, "Rendering Rules", "Rendering Rules - this may take a while.");
-
-		if ((av = sediff_results_avsort(app->diff, form, SORT_DEFAULT, 0)) == NULL ||
-		    (te = sediff_results_tesort(app->diff, form, SORT_DEFAULT, 0)) == NULL) {
-			message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
-			apol_vector_destroy(&av, NULL);
-			apol_vector_destroy(&te, NULL);
-			sediff_progress_hide(app);
-			return;
-		}
-		sediff_results_print_rules(app, tb, item_record, form, av, te);
-		apol_vector_destroy(&av, NULL);
-		apol_vector_destroy(&te, NULL);
-		sediff_progress_hide(app);
+		progress_hide(run.progress);
+		r->te_buffered[form] = 1;
 	}
 }
 
-void sediff_results_select(sediff_app_t * app, uint32_t diffbit, poldiff_form_e form)
+/**
+ * Display in the main view the diff results for a particular component.
+ *
+ * @param r Results object whose view to update.
+ * @param record Item record for the component to show.
+ * @param form Particular form of the diff result to show.
+ */
+static void results_record_select(results_t * r, const struct poldiff_item_record *record, poldiff_form_e form)
 {
-	sediff_results_t *r = app->results;
-	GtkTextView *textview1;
-	GtkTextBuffer *tb;
 	GtkTextMark *mark;
 	GdkRectangle rect;
 	GtkTextIter iter;
-	GtkWidget *w;
-	size_t i, new_buffer;
-	sediff_item_record_t *item_record = NULL;
+	size_t new_buffer;
+	GtkTextBuffer *tb;
 
-	if (app->diff == NULL) {
-		/* diff not run yet, so don't display anything */
-		return;
-	}
-
-	/* grab the text buffers for our text views */
-	textview1 = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_results_txt_view"));
-	g_assert(textview1);
-	gtk_text_view_set_editable(GTK_TEXT_VIEW(textview1), FALSE);
-	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(textview1), FALSE);
-
-	/* save view position */
-	gtk_text_view_get_visible_rect(textview1, &rect);
-	gtk_text_view_get_iter_at_location(textview1, &iter, rect.x, rect.y);
+	/* save current view position */
+	gtk_text_view_get_visible_rect(r->view, &rect);
+	gtk_text_view_get_iter_at_location(r->view, &iter, rect.x, rect.y);
 	r->saved_offsets[r->current_buffer] = gtk_text_iter_get_offset(&iter);
 
-	/* disable sort TE rules menu */
-	w = glade_xml_get_widget(app->window_xml, "sediff_sort_menu");
-	g_assert(w);
-	gtk_widget_set_sensitive(w, FALSE);
+	toplevel_set_sort_menu_sensitivity(r->top, FALSE);
 
-	if (diffbit == POLDIFF_DIFF_SUMMARY) {
-		sediff_results_select_summary(app, textview1);
+	if (record == NULL) {
+		results_select_summary(r);
 		new_buffer = 0;
 	} else {
-		/* find associated item record */
-		for (i = 0; sediff_items[i].label != NULL; i++) {
-			if (sediff_items[i].bit_pos == diffbit) {
-				item_record = sediff_items + i;
-				break;
-			}
-		}
-		assert(item_record != NULL);
-
-		switch (diffbit) {
+		switch (record->bit_pos) {
 		case POLDIFF_DIFF_CLASSES:
 		case POLDIFF_DIFF_COMMONS:
 		case POLDIFF_DIFF_TYPES:
@@ -1156,77 +1065,90 @@ void sediff_results_select(sediff_app_t * app, uint32_t diffbit, poldiff_form_e 
 		case POLDIFF_DIFF_BOOLS:
 		case POLDIFF_DIFF_ROLE_ALLOWS:
 		case POLDIFF_DIFF_ROLE_TRANS:{
-				sediff_results_select_simple(app, textview1, item_record, form);
+				results_select_simple(r, record, form);
 				break;
 			}
 		case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES):{
-				sediff_results_select_rules(app, textview1, item_record, form);
+				results_select_rules(r, record, form);
 				break;
 			}
 		}
 
-		/* add 1 to i because the first 6 slots are taken by
-		 * the overall diff summary */
-		new_buffer = (i + 1) * 6 + form;
+		new_buffer = record->record_id * 6 + form;
 	}
 
 	/* restore saved location.  use marks to ensure that we go to
 	 * this position even if it hasn't been drawn. */
-	tb = gtk_text_view_get_buffer(textview1);
+	tb = gtk_text_view_get_buffer(r->view);
 	gtk_text_buffer_get_start_iter(tb, &iter);
 	gtk_text_iter_set_offset(&iter, r->saved_offsets[new_buffer]);
 	mark = gtk_text_buffer_create_mark(tb, "location-mark", &iter, FALSE);
-	gtk_text_view_scroll_to_mark(textview1, mark, 0.0, TRUE, 0.0, 0.0);
+	gtk_text_view_scroll_to_mark(r->view, mark, 0.0, TRUE, 0.0, 0.0);
 	gtk_text_buffer_delete_mark(tb, mark);
 	r->current_buffer = new_buffer;
 }
 
-void sediff_results_sort_current(sediff_app_t * app, int field, int direction)
+/**
+ * Callback invoked when the user selects an entry from the summary
+ * tree.
+ */
+static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data)
 {
-	uint32_t diffbit;
-	poldiff_form_e form;
-	sediff_item_record_t *item_record = NULL;
-	size_t i;
-	GtkTextBuffer *tb;
-	apol_vector_t *av = NULL, *te = NULL;
-
-	/* get the current row so we know what to sort */
-	if (sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(app->tree_view), &diffbit, &form) == 0) {
-		return;
+	results_t *r = (results_t *) user_data;
+	GtkTreeIter iter;
+	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
+		int form;
+		const struct poldiff_item_record *item_record;
+		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
+				   RESULTS_SUMMARY_COLUMN_RECORD, &item_record, -1);
+		results_record_select(r, item_record, form);
 	}
+}
 
-	sediff_progress_message(app, "Sorting", "Sorting - this may take a while.");
+/**
+ * Callback invoked when the user clicks on a line number tag.  This
+ * will flip to the appropriate policy's source page and jump to that
+ * line.
+ */
+static gboolean results_on_line_event(GtkTextTag * tag, GObject * event_object __attribute__ ((unused)),
+				      GdkEvent * event, const GtkTextIter * iter, gpointer user_data)
+{
+	results_t *r = (results_t *) user_data;
+	int offset;
+	sediffx_policy_e which_pol = -1;
+	unsigned long line;
+	GtkTextIter *start, *end;
+	if (event->type == GDK_BUTTON_PRESS) {
+		start = gtk_text_iter_copy(iter);
+		offset = gtk_text_iter_get_line_offset(start);
 
-	/* find associated item record */
-	for (i = 0; sediff_items[i].label != NULL; i++) {
-		if (sediff_items[i].bit_pos == diffbit) {
-			item_record = sediff_items + i;
-			break;
+		while (!gtk_text_iter_starts_word(start))
+			gtk_text_iter_backward_char(start);
+		end = gtk_text_iter_copy(start);
+		while (!gtk_text_iter_ends_word(end))
+			gtk_text_iter_forward_char(end);
+
+		/* the line # in policy starts with 1, in the buffer it
+		 * starts at 0 */
+		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
+		if (tag == r->policy_orig_tag) {
+			which_pol = SEDIFFX_POLICY_ORIG;
+		} else if (tag == r->policy_mod_tag) {
+			which_pol = SEDIFFX_POLICY_MOD;
+		} else {
+			/* should never get here */
+			assert(0);
 		}
+		toplevel_show_policy_line(r->top, which_pol, line);
+		return TRUE;
 	}
-	assert(item_record != NULL);
-
-	if ((av = sediff_results_avsort(app->diff, form, field, direction)) == NULL ||
-	    (te = sediff_results_tesort(app->diff, form, field, direction)) == NULL) {
-		message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
-		apol_vector_destroy(&av, NULL);
-		apol_vector_destroy(&te, NULL);
-		sediff_progress_hide(app);
-		return;
-	}
-
-	tb = app->results->te_buffers[form - 1];
-	sediff_clear_text_buffer(tb);
-	sediff_results_print_rules(app, tb, item_record, form, av, te);
-	apol_vector_destroy(&av, NULL);
-	apol_vector_destroy(&te, NULL);
-	sediff_progress_hide(app);
+	return FALSE;
 }
 
 /* Set the cursor to a hand when user scrolls over a line number in
  * when displaying te diff.
  */
-gboolean sediff_results_on_text_view_motion(GtkWidget * widget, GdkEventMotion * event, gpointer user_data)
+static gboolean results_on_text_view_motion(GtkWidget * widget, GdkEventMotion * event, gpointer user_data __attribute__ ((unused)))
 {
 	GtkTextBuffer *buffer;
 	GtkTextView *textview;
@@ -1266,6 +1188,50 @@ gboolean sediff_results_on_text_view_motion(GtkWidget * widget, GdkEventMotion *
 	}
 	g_slist_free(tags);
 	return FALSE;
+}
+
+#if 0
+
+void results_sort_current_buffer(results_t * r, results_sort_e field, int direction)
+{
+	uint32_t diffbit;
+	poldiff_form_e form;
+	sediff_item_record_t *item_record = NULL;
+	size_t i;
+	GtkTextBuffer *tb;
+	apol_vector_t *av = NULL, *te = NULL;
+
+	/* get the current row so we know what to sort */
+	if (sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(app->tree_view), &diffbit, &form) == 0) {
+		return;
+	}
+
+	sediff_progress_message(app, "Sorting", "Sorting - this may take a while.");
+
+	/* find associated item record */
+	for (i = 0; sediff_items[i].label != NULL; i++) {
+		if (sediff_items[i].bit_pos == diffbit) {
+			item_record = sediff_items + i;
+			break;
+		}
+	}
+	assert(item_record != NULL);
+
+	if ((av = sediff_results_avsort(app->diff, form, field, direction)) == NULL ||
+	    (te = sediff_results_tesort(app->diff, form, field, direction)) == NULL) {
+		message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
+		apol_vector_destroy(&av, NULL);
+		apol_vector_destroy(&te, NULL);
+		sediff_progress_hide(app);
+		return;
+	}
+
+	tb = app->results->te_buffers[form - 1];
+	sediff_clear_text_buffer(tb);
+	sediff_results_print_rules(app, tb, item_record, form, av, te);
+	apol_vector_destroy(&av, NULL);
+	apol_vector_destroy(&te, NULL);
+	sediff_progress_hide(app);
 }
 
 #endif

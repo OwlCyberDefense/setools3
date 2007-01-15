@@ -27,7 +27,6 @@
 #include <config.h>
 
 #include "policy_view.h"
-#include "progress.h"
 #include "results.h"
 #include "sediffx.h"
 #include "toplevel.h"
@@ -51,9 +50,14 @@ struct toplevel
 	char *xml_filename;
 	/** toplevel window widget */
 	GtkWindow *w;
+	/** toplevel notebook widget */
+	GtkNotebook *notebook;
 	/** non-zero if the currently opened policies are capable of
 	 * diffing attributes */
 	int can_diff_attributes;
+	/** non-zero if the given policy is capable of showing line
+         * numbers */
+	int can_show_line_numbers[SEDIFFX_POLICY_NUM];
 };
 
 /**
@@ -147,6 +151,17 @@ static void init_icons(toplevel_t * top)
 	gtk_window_set_icon_list(top->w, icon_list);
 }
 
+static void toplevel_on_switch_page(GtkNotebook * notebook __attribute__ ((unused)), GtkNotebookPage * page
+				    __attribute__ ((unused)), guint page_num, gpointer user_data)
+{
+	toplevel_t *top = (toplevel_t *) user_data;
+	if (page_num != 0) {
+		toplevel_set_sort_menu_sensitivity(top, FALSE);
+	} else {
+		results_switch_to_page(top->results);
+	}
+}
+
 toplevel_t *toplevel_create(sediffx_t * s)
 {
 	toplevel_t *top;
@@ -164,9 +179,12 @@ toplevel_t *toplevel_create(sediffx_t * s)
 		goto cleanup;
 	}
 	top->w = GTK_WINDOW(glade_xml_get_widget(top->xml, "toplevel"));
+	top->notebook = GTK_NOTEBOOK(glade_xml_get_widget(top->xml, "toplevel main notebook"));
+	assert(top->w != NULL && top->notebook != NULL);
 	init_icons(top);
 	g_object_set_data(G_OBJECT(top->w), "toplevel", top);
 	gtk_widget_show(GTK_WIDGET(top->w));
+	g_signal_connect(G_OBJECT(top->notebook), "switch-page", G_CALLBACK(toplevel_on_switch_page), top);
 
 	/* initialize sub-windows, now that glade XML file has been
 	 * read */
@@ -275,6 +293,7 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 		if (!qpol_policy_has_capability(q, QPOL_CAP_ATTRIB_NAMES)) {
 			top->can_diff_attributes = 0;
 		}
+		top->can_show_line_numbers[i] = qpol_policy_has_capability(q, QPOL_CAP_LINE_NUMBERS);
 		policy_view_update(top->views[i], run.policies[i], run.paths[i]);
 		sediffx_set_policy(top->s, i, run.policies[i], run.paths[i]);
 	}
@@ -342,6 +361,17 @@ void toplevel_run_diff(toplevel_t * top)
 	}
 }
 
+void toplevel_show_policy_line(toplevel_t * top, sediffx_policy_e which, unsigned long line)
+{
+	gtk_notebook_set_current_page(top->notebook, 1 + which);
+	policy_view_show_policy_line(top->views[which], line);
+}
+
+int toplevel_is_policy_capable_line_numbers(toplevel_t * top, sediffx_policy_e which)
+{
+	return top->can_show_line_numbers[which];
+}
+
 void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens)
 {
 	GtkWidget *w = glade_xml_get_widget(top->xml, "sort menu item");
@@ -352,6 +382,16 @@ void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens)
 char *toplevel_get_glade_xml(toplevel_t * top)
 {
 	return top->xml_filename;
+}
+
+gint toplevel_get_notebook_page(toplevel_t * top)
+{
+	return gtk_notebook_get_current_page(top->notebook);
+}
+
+progress_t *toplevel_get_progress(toplevel_t * top)
+{
+	return top->progress;
 }
 
 GtkWindow *toplevel_get_window(toplevel_t * top)
@@ -690,73 +730,6 @@ void sediff_menu_on_remaptypes_clicked(GtkMenuItem * menuitem, gpointer user_dat
 void sediff_menu_on_open_clicked(GtkMenuItem * menuitem, gpointer user_data)
 {
 	sediff_open_button_clicked();
-}
-
-/* raise the correct policy tab on the gui, and go to the line clicked
- * by the user */
-void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, int whichview)
-{
-	GtkNotebook *main_notebook, *tab_notebook;
-	GtkTextBuffer *buffer;
-	GtkTextIter iter, end_iter;
-	GtkTextView *text_view = NULL;
-	GtkTextTagTable *table = NULL;
-	GtkTextMark *mark = NULL;
-	GtkLabel *lbl = NULL;
-	GString *string = g_string_new("");
-
-	main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
-	g_assert(main_notebook);
-
-	if (whichview == 0) {
-		gtk_notebook_set_current_page(main_notebook, 1);
-		text_view = (GtkTextView *) (glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text"));
-		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook1"));
-		g_assert(tab_notebook);
-		gtk_notebook_set_current_page(tab_notebook, 1);
-	} else {
-		gtk_notebook_set_current_page(main_notebook, 2);
-		text_view = (GtkTextView *) (glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text"));
-		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
-		g_assert(tab_notebook);
-		gtk_notebook_set_current_page(tab_notebook, 1);
-	}
-
-	/* when moving the buffer we must use marks to scroll because
-	 * goto_line if called before the line height has been
-	 * calculated can produce undesired results, in our case we
-	 * get no scrolling at all */
-	buffer = gtk_text_view_get_buffer(text_view);
-	g_assert(buffer);
-
-	table = gtk_text_buffer_get_tag_table(buffer);
-	gtk_text_buffer_get_start_iter(buffer, &iter);
-	gtk_text_iter_set_line(&iter, line);
-	gtk_text_buffer_get_start_iter(buffer, &end_iter);
-	gtk_text_iter_set_line(&end_iter, line);
-	while (!gtk_text_iter_ends_line(&end_iter))
-		gtk_text_iter_forward_char(&end_iter);
-
-	mark = gtk_text_buffer_create_mark(buffer, "line-position", &iter, TRUE);
-	assert(mark);
-
-	gtk_text_view_scroll_to_mark(text_view, mark, 0.0, TRUE, 0.0, 0.5);
-
-	/* destroying the mark and recreating is faster than doing a
-	 * move on a mark that still exists, so we always destroy it
-	 * once we're done */
-	gtk_text_buffer_delete_mark(buffer, mark);
-	gtk_text_view_set_cursor_visible(text_view, TRUE);
-	gtk_text_buffer_place_cursor(buffer, &iter);
-	gtk_text_buffer_select_range(buffer, &iter, &end_iter);
-
-	gtk_container_set_focus_child(GTK_CONTAINER(tab_notebook), GTK_WIDGET(text_view));
-
-	g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter) + 1);
-	lbl = (GtkLabel *) glade_xml_get_widget(sediff_app->window_xml, "line_label");
-	gtk_label_set_text(lbl, string->str);
-	g_string_free(string, TRUE);
-	return;
 }
 
 /* return the textview currently displayed to the user */

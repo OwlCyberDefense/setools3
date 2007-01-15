@@ -525,7 +525,7 @@ void replcon_usage(const char *program_name, int brief)
 		printf("A context may be specified as a colon separated list of user, role, type, and\n");
 		printf("mls security range as follows: user_u:object_r:user_t:s0.\n");
 		printf("If the MLS translation library is enabled, matching is done using translated\n"
-				"contexts. To match raw contexts, use the --raw option.\n");
+		       "contexts. To match raw contexts, use the --raw option.\n");
 	} else {
 		printf("A context may be specified as a colon separated list of user, role, and type\n");
 		printf("as follows: user_u:object_r:user_t.\n");

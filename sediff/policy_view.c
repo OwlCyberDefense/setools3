@@ -46,7 +46,8 @@ struct policy_view
 	sediffx_policy_e which;
 	GladeXML *xml;
 	GtkTextBuffer *stats, *source;
-	GtkNotebook *main_notebook, *notebook;
+	GtkTextView *source_view;
+	GtkNotebook *notebook;
 	GtkLabel *line_number;
 	void *mmap_start;
 	size_t mmap_length;
@@ -72,7 +73,7 @@ static void policy_view_notebook_on_event_after(GtkWidget * widget __attribute__
 	GtkTextMark *mark = NULL;
 	GtkTextIter iter;
 
-	main_pagenum = gtk_notebook_get_current_page(view->main_notebook);
+	main_pagenum = toplevel_get_notebook_page(view->top);
 	view_pagenum = gtk_notebook_get_current_page(view->notebook);
 	if (main_pagenum == 1 + view->which && view_pagenum == 1) {
 		mark = gtk_text_buffer_get_insert(view->source);
@@ -92,7 +93,7 @@ policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which)
 {
 	policy_view_t *view;
 	GtkTextTag *mono_tag;
-	GtkTextView *stats_view, *source_view;
+	GtkTextView *stats_view;
 	int error = 0;
 
 	if ((view = calloc(1, sizeof(*view))) == NULL) {
@@ -110,15 +111,14 @@ policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which)
 					      "weight", PANGO_WEIGHT_NORMAL, "family", "monospace", NULL);
 
 	stats_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][0]));
-	source_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][1]));
-	assert(stats_view != NULL && source_view != NULL);
+	view->source_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][1]));
+	assert(stats_view != NULL && view->source_view != NULL);
 	gtk_text_view_set_buffer(stats_view, view->stats);
-	gtk_text_view_set_buffer(source_view, view->source);
+	gtk_text_view_set_buffer(view->source_view, view->source);
 
 	view->notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][2]));
-	view->main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, "toplevel main notebook"));
 	view->line_number = GTK_LABEL(glade_xml_get_widget(view->xml, "toplevel line label"));
-	assert(view->notebook != NULL && view->main_notebook != NULL && view->line_number != NULL);
+	assert(view->notebook != NULL && view->line_number != NULL);
 	g_signal_connect_after(G_OBJECT(view->notebook), "event-after", G_CALLBACK(policy_view_notebook_on_event_after), view);
 
       cleanup:
@@ -337,4 +337,45 @@ void policy_view_update(policy_view_t * view, apol_policy_t * policy, apol_polic
 {
 	policy_view_stats_update(view, policy, path);
 	policy_view_source_update(view, policy, path);
+}
+
+void policy_view_show_policy_line(policy_view_t * view, unsigned long line)
+{
+	GtkTextTagTable *table = NULL;
+	GtkTextIter iter, end_iter;
+	GtkTextMark *mark = NULL;
+	GString *string = g_string_new("");
+
+	gtk_notebook_set_current_page(view->notebook, 1);
+
+	/* when moving the buffer we must use marks to scroll because
+	 * goto_line if called before the line height has been
+	 * calculated can produce undesired results, in our case we
+	 * get no scrolling at all */
+	table = gtk_text_buffer_get_tag_table(view->source);
+	gtk_text_buffer_get_start_iter(view->source, &iter);
+	gtk_text_iter_set_line(&iter, line);
+	gtk_text_buffer_get_start_iter(view->source, &end_iter);
+	gtk_text_iter_set_line(&end_iter, line);
+	while (!gtk_text_iter_ends_line(&end_iter)) {
+		gtk_text_iter_forward_char(&end_iter);
+	}
+
+	mark = gtk_text_buffer_create_mark(view->source, "line-position", &iter, TRUE);
+	assert(mark);
+	gtk_text_view_scroll_to_mark(view->source_view, mark, 0.0, TRUE, 0.0, 0.5);
+
+	/* destroying the mark and recreating is faster than doing a
+	 * move on a mark that still exists, so we always destroy it
+	 * once we're done */
+	gtk_text_buffer_delete_mark(view->source, mark);
+	gtk_text_view_set_cursor_visible(view->source_view, TRUE);
+	gtk_text_buffer_place_cursor(view->source, &iter);
+	gtk_text_buffer_select_range(view->source, &iter, &end_iter);
+
+	gtk_container_set_focus_child(GTK_CONTAINER(view->notebook), GTK_WIDGET(view->source_view));
+
+	g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter) + 1);
+	gtk_label_set_text(view->line_number, string->str);
+	g_string_free(string, TRUE);
 }
