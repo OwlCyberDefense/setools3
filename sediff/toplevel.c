@@ -27,7 +27,6 @@
 #include <config.h>
 
 #include "policy_view.h"
-#include "results.h"
 #include "sediffx.h"
 #include "toplevel.h"
 #include "utilgui.h"
@@ -379,6 +378,25 @@ void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens)
 	gtk_widget_set_sensitive(w, sens);
 }
 
+void toplevel_set_sort_menu_selection(toplevel_t * top, results_sort_e field, int direction)
+{
+	static const char *menu_items[][2] = {
+		{"Default Sort", "Default Sort"},
+		{"Ascending source type", "Descending source type"},
+		{"Ascending target type", "Descending target type"},
+		{"Ascending object class", "Descending object class"},
+		{"Ascending conditional", "Descending conditonal"}
+	};
+	if (direction >= 1) {
+		direction = 0;
+	} else {
+		direction = 1;
+	}
+	GtkWidget *w = glade_xml_get_widget(top->xml, menu_items[field][direction]);
+	assert(w != NULL);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w), TRUE);
+}
+
 char *toplevel_get_glade_xml(toplevel_t * top)
 {
 	return top->xml_filename;
@@ -461,6 +479,78 @@ void toplevel_on_run_diff_activate(gpointer user_data, GtkMenuItem * widget __at
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
 	toplevel_run_diff(top);
+}
+
+void toplevel_on_default_sort_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_DEFAULT, RESULTS_SORT_ASCEND);
+	}
+}
+
+void toplevel_on_source_type_asc_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_SOURCE, RESULTS_SORT_ASCEND);
+	}
+}
+
+void toplevel_on_source_type_des_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_SOURCE, RESULTS_SORT_DESCEND);
+	}
+}
+
+void toplevel_on_target_type_asc_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_TARGET, RESULTS_SORT_ASCEND);
+	}
+}
+
+void toplevel_on_target_type_des_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_TARGET, RESULTS_SORT_DESCEND);
+	}
+}
+
+void toplevel_on_class_asc_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_CLASS, RESULTS_SORT_ASCEND);
+	}
+}
+
+void toplevel_on_class_des_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_CLASS, RESULTS_SORT_DESCEND);
+	}
+}
+
+void toplevel_on_conditional_asc_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_COND, RESULTS_SORT_ASCEND);
+	}
+}
+
+void toplevel_on_conditional_des_activate(gpointer user_data, GtkMenuItem * menuitem)
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem))) {
+		results_sort(top->results, RESULTS_SORT_COND, RESULTS_SORT_DESCEND);
+	}
 }
 
 void toplevel_on_help_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
@@ -591,51 +681,6 @@ static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 	if (callback)
 		free(callback);
 	return;
-}
-
-void sediff_menu_on_default_sort_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_DEFAULT, SORT_ASCEND);
-}
-
-void sediff_menu_on_src_type_asc_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_SOURCE, SORT_ASCEND);
-}
-
-void sediff_menu_on_src_type_des_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_SOURCE, SORT_DESCEND);
-}
-
-void sediff_menu_on_tgt_type_asc_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_TARGET, SORT_ASCEND);
-}
-
-void sediff_menu_on_tgt_type_des_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_TARGET, SORT_DESCEND);
-}
-
-void sediff_menu_on_oclass_asc_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_CLASS, SORT_ASCEND);
-}
-
-void sediff_menu_on_oclass_des_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_CLASS, SORT_DESCEND);
-}
-
-void sediff_menu_on_cond_asc_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_COND, SORT_ASCEND);
-}
-
-void sediff_menu_on_cond_des_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_results_sort_current(sediff_app, SORT_COND, SORT_DESCEND);
 }
 
 void sediff_menu_on_find_clicked(GtkMenuItem * menuitem, gpointer user_data)

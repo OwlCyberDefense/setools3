@@ -26,12 +26,6 @@
 #ifndef RESULTS_H
 #define RESULTS_H
 
-#include "toplevel.h"
-
-#include <poldiff/poldiff.h>
-
-typedef struct results results_t;
-
 typedef enum results_sort
 {
 	RESULTS_SORT_DEFAULT = 0,
@@ -41,6 +35,12 @@ typedef enum results_sort
 
 #define RESULTS_SORT_ASCEND 1
 #define RESULTS_SORT_DESCEND -1
+
+#include "toplevel.h"
+
+#include <poldiff/poldiff.h>
+
+typedef struct results results_t;
 
 /**
  * Allocate and return a results object.  This object is responsible
@@ -86,6 +86,15 @@ void results_update(results_t * r);
  */
 void results_switch_to_page(results_t * r);
 
-void results_sort_current(results_t * r, int field, int direction);
+/**
+ * Sort the currently visible result buffer (which hopefully is the TE
+ * rules diff) using the given criteria.
+ *
+ * @param r Results object to sort.
+ * @param field Component of a rule to sort against.
+ * @param direction Direction of sort, either RESULTS_SORT_ASCEND or
+ * RESULTS_SORT_DESCEND.
+ */
+void results_sort(results_t * r, results_sort_e field, int direction);
 
 #endif

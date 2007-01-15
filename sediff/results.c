@@ -68,6 +68,8 @@ struct results
 	GtkLabel *stats;
 	/** flags to indicate if a TE buffer needs to be redrawn or not */
 	int te_buffered[RESULTS_BUFFER_NUM];
+	results_sort_e te_sort_field[RESULTS_BUFFER_NUM];
+	int te_sort_direction[RESULTS_BUFFER_NUM];
 	gint *saved_offsets;
 	size_t current_buffer;
 };
@@ -157,6 +159,10 @@ results_t *results_create(toplevel_t * top)
 	r->xml = glade_get_widget_tree(GTK_WIDGET(toplevel_get_window(r->top)));
 	results_create_summary(r);
 
+	for (i = 0; i < RESULTS_BUFFER_NUM; i++) {
+		r->te_sort_field[i] = RESULTS_SORT_DEFAULT;
+		r->te_sort_direction[i] = RESULTS_SORT_ASCEND;
+	}
 	/* allocate an array to keep track of the scrollbar position; that
 	 * way when a user switches to a particular result item the view
 	 * will retain its position */
@@ -973,8 +979,10 @@ static gpointer results_sort_rule_runner(gpointer data)
 	struct run_datum *run = (struct run_datum *)data;
 	progress_update(run->progress, "sorting rules");
 	poldiff_t *diff = toplevel_get_poldiff(run->r->top);
-	if ((run->av = results_avsort(diff, run->form, RESULTS_SORT_DEFAULT, 0)) == NULL ||
-	    (run->te = results_tesort(diff, run->form, RESULTS_SORT_DEFAULT, 0)) == NULL) {
+	if ((run->av =
+	     results_avsort(diff, run->form, run->r->te_sort_field[run->form], run->r->te_sort_direction[run->form])) == NULL
+	    || (run->te =
+		results_tesort(diff, run->form, run->r->te_sort_field[run->form], run->r->te_sort_direction[run->form])) == NULL) {
 		apol_vector_destroy(&run->av, NULL);
 		apol_vector_destroy(&run->te, NULL);
 		progress_abort(run->progress, "%s", strerror(errno));
@@ -998,11 +1006,12 @@ static void results_select_rules(results_t * r, const struct poldiff_item_record
 		gtk_text_view_set_buffer(r->view, tb);
 		util_text_buffer_clear(tb);
 		results_print_summary(r, tb, item_record);
-	} else if (r->te_buffered[form]) {
-		tb = r->buffers[form];
-		gtk_text_view_set_buffer(r->view, tb);
-		toplevel_set_sort_menu_sensitivity(r->top, TRUE);
-	} else {
+		return;
+	}
+	tb = r->buffers[form];
+	gtk_text_view_set_buffer(r->view, tb);
+	toplevel_set_sort_menu_sensitivity(r->top, TRUE);
+	if (!r->te_buffered[form]) {
 		struct run_datum run;
 		run.r = r;
 		run.form = form;
@@ -1010,10 +1019,7 @@ static void results_select_rules(results_t * r, const struct poldiff_item_record
 		run.av = run.te = NULL;
 		run.result = 0;
 
-		toplevel_set_sort_menu_sensitivity(r->top, TRUE);
-		tb = r->buffers[form];
-		gtk_text_view_set_buffer(r->view, tb);
-
+		util_text_buffer_clear(tb);
 		util_cursor_wait(GTK_WIDGET(toplevel_get_window(r->top)));
 		progress_show(run.progress, "Rendering Rules");
 		g_thread_create(results_sort_rule_runner, &run, FALSE, NULL);
@@ -1070,6 +1076,7 @@ static void results_record_select(results_t * r, const struct poldiff_item_recor
 			}
 		case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES):{
 				results_select_rules(r, record, form);
+				toplevel_set_sort_menu_selection(r->top, r->te_sort_field[form], r->te_sort_direction[form]);
 				break;
 			}
 		}
@@ -1145,7 +1152,8 @@ static gboolean results_on_line_event(GtkTextTag * tag, GObject * event_object _
 	return FALSE;
 }
 
-/* Set the cursor to a hand when user scrolls over a line number in
+/**
+ * Set the cursor to a hand when user scrolls over a line number in
  * when displaying te diff.
  */
 static gboolean results_on_text_view_motion(GtkWidget * widget, GdkEventMotion * event, gpointer user_data __attribute__ ((unused)))
@@ -1190,48 +1198,22 @@ static gboolean results_on_text_view_motion(GtkWidget * widget, GdkEventMotion *
 	return FALSE;
 }
 
-#if 0
-
-void results_sort_current_buffer(results_t * r, results_sort_e field, int direction)
+void results_sort(results_t * r, results_sort_e field, int direction)
 {
-	uint32_t diffbit;
-	poldiff_form_e form;
-	sediff_item_record_t *item_record = NULL;
-	size_t i;
-	GtkTextBuffer *tb;
-	apol_vector_t *av = NULL, *te = NULL;
-
-	/* get the current row so we know what to sort */
-	if (sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(app->tree_view), &diffbit, &form) == 0) {
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(r->summary_view);
+	GtkTreeIter iter;
+	int form;
+	const struct poldiff_item_record *item_record;
+	if (!gtk_tree_selection_get_selected(selection, NULL, &iter)) {
 		return;
 	}
-
-	sediff_progress_message(app, "Sorting", "Sorting - this may take a while.");
-
-	/* find associated item record */
-	for (i = 0; sediff_items[i].label != NULL; i++) {
-		if (sediff_items[i].bit_pos == diffbit) {
-			item_record = sediff_items + i;
-			break;
-		}
+	gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
+			   RESULTS_SUMMARY_COLUMN_RECORD, &item_record, -1);
+	assert(item_record->bit_pos == (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES));
+	if (r->te_sort_field[form] != field || r->te_sort_direction[form] != direction || !r->te_buffered[form]) {
+		r->te_sort_field[form] = field;
+		r->te_sort_direction[form] = direction;
+		r->te_buffered[form] = 0;
+		results_select_rules(r, item_record, form);
 	}
-	assert(item_record != NULL);
-
-	if ((av = sediff_results_avsort(app->diff, form, field, direction)) == NULL ||
-	    (te = sediff_results_tesort(app->diff, form, field, direction)) == NULL) {
-		message_display(app->window, GTK_MESSAGE_ERROR, "Out of memory!");
-		apol_vector_destroy(&av, NULL);
-		apol_vector_destroy(&te, NULL);
-		sediff_progress_hide(app);
-		return;
-	}
-
-	tb = app->results->te_buffers[form - 1];
-	sediff_clear_text_buffer(tb);
-	sediff_results_print_rules(app, tb, item_record, form, av, te);
-	apol_vector_destroy(&av, NULL);
-	apol_vector_destroy(&te, NULL);
-	sediff_progress_hide(app);
 }
-
-#endif

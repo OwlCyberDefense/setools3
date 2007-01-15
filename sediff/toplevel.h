@@ -30,6 +30,7 @@
 typedef struct toplevel toplevel_t;
 
 #include "progress.h"
+#include "results.h"
 #include "sediffx.h"
 #include <apol/policy-path.h>
 #include <gtk/gtk.h>
@@ -112,6 +113,16 @@ int toplevel_is_policy_capable_line_numbers(toplevel_t * top, sediffx_policy_e w
 void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens);
 
 /**
+ * Set the current sort menu selection to the given field and
+ * direction.
+ *
+ * @param top Toplevel object containing sort menu.
+ * @param field Sort field to select.
+ * @param direction Sort direction to select.
+ */
+void toplevel_set_sort_menu_selection(toplevel_t * top, results_sort_e field, int direction);
+
+/**
  * Return the filename containing sediffx's glade file.
  *
  * @param top Toplevel containing glade XML declarations.
@@ -188,39 +199,5 @@ void toplevel_ERR(toplevel_t * top, const char *format, ...) __attribute__ ((for
  * @param format Format string to print, using syntax of printf(3).
  */
 void toplevel_WARN(toplevel_t * top, const char *format, ...) __attribute__ ((format(printf, 2, 3)));
-
-#if 0
-
-/* STRUCT: sediff_app_t
-   This structure is used to control the gui.  It contains the links
-   to all necessary buffers, textviews, dlgs, etc that are needed.  */
-typedef struct sediff_app
-{
-	GtkWindow *window;	       /* the main window */
-	GtkWindow *open_dlg;	       /* dialog box used when opening up the policies */
-	struct sediff_progress *progress;	/* dialog to show progress */
-	struct sediff_results *results;	/* results display */
-	GtkWidget *dummy_view;	       /* this is a view we put in the left hand pane when we have no diff, and therefore no treeview */
-	GladeXML *window_xml;	       /* the main windows xml */
-	GladeXML *open_dlg_xml;	       /* the open dialogs xml */
-	GtkWidget *tree_view;	       /* the treeview seen on left hand pane */
-	GList *callbacks;
-	gint progress_completed;
-	sediff_file_data_t p1_sfd;     /* file info for policy 1 */
-	sediff_file_data_t p2_sfd;     /* file info for policy 2 */
-	apol_policy_t *orig_pol, *mod_pol;
-	poldiff_t *diff;
-	struct sediff_remap_types *remap_types_window;	/* the remapped types window reference */
-	struct sediff_find_window *find_window;	/* the find window reference */
-	int tv_curr_buf;	       /* the buffer currently displayed for the treeview */
-} sediff_app_t;
-
-/* return the textview currently displayed to the user */
-GtkTextView *sediff_get_current_view(sediff_app_t * app);
-
-void sediff_initialize_diff(void);
-void sediff_initialize_policies(void);
-void run_diff_clicked(void);
-#endif
 
 #endif
