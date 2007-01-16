@@ -84,20 +84,20 @@ static void seaudit_report_info_usage(const char *program_name, int brief)
 {
 	printf("%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("\nDescription: Generate a customized SELinux log report.\n");
-	printf("Usage: %s [OPTIONS] LOGFILES\n", program_name);
+	printf("Usage: %s [OPTIONS] LOGFILE ...\n", program_name);
 	if (brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
-	printf("  -s, --stdin              Read LOGFILES from standard input.\n");
-	printf("  -m, --malformed          Include malformed log messages.\n");
-	printf("  -oFILE, --output=FILE    Output to file.\n");
-	printf("  -cFILE, --config=FILE    Use alternate config file.\n");
-	printf("  --html                   Set output format to HTML.  Default is plain text.\n");
+	printf("  -s, --stdin              read log file(s) from standard input.\n");
+	printf("  -m, --malformed          include malformed log messages.\n");
+	printf("  -oFILE, --output=FILE    output to file.\n");
+	printf("  -cFILE, --config=FILE    use alternate config file.\n");
+	printf("  --html                   set output format to HTML.  Default is plain text.\n");
 	printf("  --stylesheet=FILE        HTML style sheet for formatting HTML report.\n");
 	printf("                           (Ignored if --html is not given.)\n");
-	printf("  -v, --version            Display version information and exit.\n");
-	printf("  -h, --help               Display this help and exit.\n");
+	printf("  -v, --version            Print version information and exit.\n");
+	printf("  -h, --help               Print this help text and exit.\n");
 	printf("\n");
 	printf("Default style sheet is at %s.\n", APOL_INSTALL_DIR);
 }

@@ -3,26 +3,27 @@
 seaudit-report \- SELinux audit log reporting tool
 .SH SYNOPSIS
 .B seaudit-report
-[OPTIONS] LOGFILES
+[OPTIONS] LOGFILE ...
 .SH DESCRIPTION
 .PP
 .B seaudit-report
 allows the user to generate custom audit log reports from the command line or by integration with the Logwatch tool.
 .SH OPTIONS
 .IP "-s, --stdin"
-Read LOGFILES from standard input.
+Read log file(s) from standard input.
+Any files specified on the command line will be ignored.
 .IP "-m, --malformed"
 Include malformed log messages.
 .IP "-o FILE, --output=FILE"
 Write output to FILE.
 .IP "-c FILE, --config=FILE"
-Use alternate config file.
+Read configuration options from FILE instead of the default config file.
 .IP "--html"
-Set output format to HTML.  Default is plain text.
+Set output format to HTML instead of plain text.
 .IP "--stylesheet=FILE"
-HTML stylesheet for formatting HTML report.  This option is ignored if
---html is not given.  See /usr/local/share/setools/seaudit-report.css
-(or wherever you installed SETools) for an example stylesheet.
+Specify the HTML stylesheet to use for formatting the HTML report.
+This option is ignored if --html is not given.
+See the default styesheet for an example (installed at @setoolsdir@/seaudit-report.css).
 .IP "-v, --version"
 Print version information and exit.
 .IP "-h, --help"
