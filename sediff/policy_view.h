@@ -72,4 +72,13 @@ void policy_view_update(policy_view_t * view, apol_policy_t * policy, apol_polic
  */
 void policy_view_show_policy_line(policy_view_t * view, unsigned long line);
 
+/**
+ * Get the currently showing text view for the policy view.
+ *
+ * @param view View containing text view.
+ *
+ * @return Currently visible text view.
+ */
+GtkTextView *policy_view_get_text_view(policy_view_t * view);
+
 #endif

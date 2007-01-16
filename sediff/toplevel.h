@@ -161,6 +161,16 @@ progress_t *toplevel_get_progress(toplevel_t * top);
 GtkWindow *toplevel_get_window(toplevel_t * top);
 
 /**
+ * Get the currently showing text view.  This depends upon which
+ * toplevel notebook page is showing.
+ *
+ * @param top Toplevel containing text views.
+ *
+ * @return Currently visible text view.
+ */
+GtkTextView *toplevel_get_text_view(toplevel_t * top);
+
+/**
  * Retrieve the currently active poldiff object.  If policies have not
  * yet been loaded then this returns NULL.  Note that the poldiff
  * object will not be run yet; for that call toplevel_run_diff().

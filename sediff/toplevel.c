@@ -26,6 +26,7 @@
 
 #include <config.h>
 
+#include "find_dialog.h"
 #include "policy_view.h"
 #include "sediffx.h"
 #include "toplevel.h"
@@ -42,6 +43,7 @@ struct toplevel
 {
 	sediffx_t *s;
 	progress_t *progress;
+	find_dialog_t *find;
 	results_t *results;
 	policy_view_t *views[SEDIFFX_POLICY_NUM];
 	GladeXML *xml;
@@ -187,7 +189,8 @@ toplevel_t *toplevel_create(sediffx_t * s)
 
 	/* initialize sub-windows, now that glade XML file has been
 	 * read */
-	if ((top->progress = progress_create(top)) == NULL || (top->results = results_create(top)) == NULL) {
+	if ((top->find = find_dialog_create(top)) == NULL ||
+	    (top->progress = progress_create(top)) == NULL || (top->results = results_create(top)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -214,6 +217,7 @@ void toplevel_destroy(toplevel_t ** top)
 {
 	if (top != NULL && *top != NULL) {
 		sediffx_policy_e i;
+		find_dialog_destroy(&(*top)->find);
 		progress_destroy(&(*top)->progress);
 		results_destroy(&(*top)->results);
 		for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
@@ -417,6 +421,22 @@ GtkWindow *toplevel_get_window(toplevel_t * top)
 	return top->w;
 }
 
+GtkTextView *toplevel_get_text_view(toplevel_t * top)
+{
+	gint pagenum = gtk_notebook_get_current_page(top->notebook);
+	switch (pagenum) {
+	case 0:
+		return results_get_text_view(top->results);
+	case 1:
+		return policy_view_get_text_view(top->views[SEDIFFX_POLICY_ORIG]);
+	case 2:
+		return policy_view_get_text_view(top->views[SEDIFFX_POLICY_MOD]);
+	}
+	/* should never get here */
+	assert(0);
+	return NULL;
+}
+
 poldiff_t *toplevel_get_poldiff(toplevel_t * top)
 {
 	return sediffx_get_poldiff(top->s, progress_poldiff_handle_func, top->progress);
@@ -473,6 +493,62 @@ void toplevel_on_quit_activate(gpointer user_data, GtkMenuItem * widget __attrib
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
 	top->w = NULL;
 	gtk_main_quit();
+}
+
+void toplevel_on_edit_menu_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	GtkTextView *view = toplevel_get_text_view(top);
+	GtkTextBuffer *txt = gtk_text_view_get_buffer(view);
+	GtkWidget *copy = glade_xml_get_widget(top->xml, "Copy");
+	GtkWidget *select_all = glade_xml_get_widget(top->xml, "Select All");
+	GtkTextIter start, end;
+	assert(copy != NULL && select_all != NULL);
+
+	/* check to see if anything has been selected and set copy
+	 * button up */
+	if (gtk_text_buffer_get_selection_bounds(txt, &start, &end)) {
+		gtk_widget_set_sensitive(copy, TRUE);
+	} else {
+		gtk_widget_set_sensitive(copy, FALSE);
+	}
+	/* check to see if there is anything currently in this buffer
+	 * that can be selected */
+	gtk_text_buffer_get_start_iter(txt, &start);
+	gtk_text_buffer_get_end_iter(txt, &end);
+	if (gtk_text_iter_get_offset(&start) == gtk_text_iter_get_offset(&end)) {
+		gtk_widget_set_sensitive(select_all, FALSE);
+	} else {
+		gtk_widget_set_sensitive(select_all, TRUE);
+	}
+}
+
+void toplevel_on_copy_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	GtkClipboard *clipboard = gtk_clipboard_get(NULL);
+	GtkTextView *view = toplevel_get_text_view(top);
+	GtkTextBuffer *txt = gtk_text_view_get_buffer(view);
+	if (gtk_text_buffer_get_selection_bounds(txt, NULL, NULL)) {
+		gtk_text_buffer_copy_clipboard(txt, clipboard);
+	}
+}
+
+void toplevel_on_select_all_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	GtkTextView *view = toplevel_get_text_view(top);
+	GtkTextBuffer *txt = gtk_text_view_get_buffer(view);
+	GtkTextIter start, end;
+	gtk_text_buffer_get_start_iter(txt, &start);
+	gtk_text_buffer_get_end_iter(txt, &end);
+	gtk_text_buffer_select_range(txt, &start, &end);
+}
+
+void toplevel_on_find_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	find_dialog_show(top->find);
 }
 
 void toplevel_on_run_diff_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
@@ -683,82 +759,6 @@ static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 	return;
 }
 
-void sediff_menu_on_find_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	if (sediff_app->find_window == NULL)
-		sediff_app->find_window = sediff_find_window_new(sediff_app);
-	g_assert(sediff_app->find_window);
-	sediff_find_window_display(sediff_app->find_window);
-}
-
-void sediff_menu_on_edit_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	GtkTextBuffer *txt = NULL;
-	GtkTextView *view = NULL;
-	GtkTextIter start, end;
-	GtkWidget *widget = NULL;
-	if (sediff_app == NULL)
-		return;
-	view = sediff_get_current_view(sediff_app);
-	if (view == NULL)
-		return;
-	txt = gtk_text_view_get_buffer(view);
-	widget = glade_xml_get_widget(sediff_app->window_xml, "sediff_menu_copy");
-	g_assert(widget);
-
-	/* check to see if anything has been selected and set copy button up */
-	if (gtk_text_buffer_get_selection_bounds(txt, &start, &end)) {
-		gtk_widget_set_sensitive(widget, TRUE);
-	} else {
-		gtk_widget_set_sensitive(widget, FALSE);
-	}
-	widget = glade_xml_get_widget(sediff_app->window_xml, "sediff_select_all");
-	g_assert(widget);
-	/* check to see if there is anything currently in this buffer that can be selected */
-	gtk_text_buffer_get_start_iter(txt, &start);
-	gtk_text_buffer_get_end_iter(txt, &end);
-	if (gtk_text_iter_get_offset(&start) == gtk_text_iter_get_offset(&end)) {
-		gtk_widget_set_sensitive(widget, FALSE);
-	} else {
-		gtk_widget_set_sensitive(widget, TRUE);
-	}
-}
-
-void sediff_menu_on_select_all_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	GtkTextBuffer *txt = NULL;
-	GtkTextView *view = NULL;
-	GtkTextIter start, end;
-	if (sediff_app == NULL)
-		return;
-	view = sediff_get_current_view(sediff_app);
-	if (view == NULL)
-		return;
-	txt = gtk_text_view_get_buffer(view);
-	gtk_text_buffer_get_start_iter(txt, &start);
-	gtk_text_buffer_get_end_iter(txt, &end);
-	gtk_text_buffer_select_range(txt, &start, &end);
-}
-
-void sediff_menu_on_copy_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	GtkClipboard *clipboard = NULL;
-	GtkTextBuffer *txt = NULL;
-	GtkTextView *view = NULL;
-	if (sediff_app == NULL)
-		return;
-	clipboard = gtk_clipboard_get(NULL);
-	if (clipboard == NULL)
-		return;
-	view = sediff_get_current_view(sediff_app);
-	if (view == NULL)
-		return;
-	txt = gtk_text_view_get_buffer(view);
-	if (txt == NULL)
-		return;
-	gtk_text_buffer_copy_clipboard(txt, clipboard);
-}
-
 static void sediff_remap_types_window_show()
 {
 	if (sediff_app->remap_types_window == NULL)
@@ -777,37 +777,4 @@ void sediff_menu_on_open_clicked(GtkMenuItem * menuitem, gpointer user_data)
 	sediff_open_button_clicked();
 }
 
-/* return the textview currently displayed to the user */
-GtkTextView *sediff_get_current_view(sediff_app_t * app)
-{
-	GtkNotebook *notebook = NULL;
-	GtkNotebook *tab_notebook = NULL;
-	int pagenum;
-	GtkTextView *text_view = NULL;
-
-	notebook = GTK_NOTEBOOK(glade_xml_get_widget(app->window_xml, "main_notebook"));
-	pagenum = gtk_notebook_get_current_page(notebook);
-	/* do we need to use the treeview */
-	if (pagenum == 0) {
-		text_view = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_results_txt_view"));
-	} else if (pagenum == 1) {
-		/* is this one of the other notebooks */
-		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook1"));
-		pagenum = gtk_notebook_get_current_page(tab_notebook);
-		if (pagenum == 0)
-			text_view = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_main_p1_stats_text"));
-		else
-			text_view = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_main_p1_text"));
-	} else {
-		/* is this one of the other notebooks */
-		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
-		pagenum = gtk_notebook_get_current_page(tab_notebook);
-		if (pagenum == 0)
-			text_view = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_main_p2_stats_text"));
-		else
-			text_view = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_main_p2_text"));
-	}
-	return text_view;
-
-}
 #endif

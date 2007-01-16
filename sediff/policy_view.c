@@ -46,7 +46,7 @@ struct policy_view
 	sediffx_policy_e which;
 	GladeXML *xml;
 	GtkTextBuffer *stats, *source;
-	GtkTextView *source_view;
+	GtkTextView *stats_view, *source_view;
 	GtkNotebook *notebook;
 	GtkLabel *line_number;
 	void *mmap_start;
@@ -93,7 +93,6 @@ policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which)
 {
 	policy_view_t *view;
 	GtkTextTag *mono_tag;
-	GtkTextView *stats_view;
 	int error = 0;
 
 	if ((view = calloc(1, sizeof(*view))) == NULL) {
@@ -110,10 +109,10 @@ policy_view_t *policy_view_create(toplevel_t * top, sediffx_policy_e which)
 					      "style", PANGO_STYLE_NORMAL,
 					      "weight", PANGO_WEIGHT_NORMAL, "family", "monospace", NULL);
 
-	stats_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][0]));
+	view->stats_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][0]));
 	view->source_view = GTK_TEXT_VIEW(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][1]));
-	assert(stats_view != NULL && view->source_view != NULL);
-	gtk_text_view_set_buffer(stats_view, view->stats);
+	assert(view->stats_view != NULL && view->source_view != NULL);
+	gtk_text_view_set_buffer(view->stats_view, view->stats);
 	gtk_text_view_set_buffer(view->source_view, view->source);
 
 	view->notebook = GTK_NOTEBOOK(glade_xml_get_widget(view->xml, policy_view_widget_names[view->which][2]));
@@ -378,4 +377,14 @@ void policy_view_show_policy_line(policy_view_t * view, unsigned long line)
 	g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter) + 1);
 	gtk_label_set_text(view->line_number, string->str);
 	g_string_free(string, TRUE);
+}
+
+GtkTextView *policy_view_get_text_view(policy_view_t * view)
+{
+	gint pagenum = gtk_notebook_get_current_page(view->notebook);
+	if (pagenum == 0) {
+		return view->stats_view;
+	} else {
+		return view->source_view;
+	}
 }

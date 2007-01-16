@@ -32,9 +32,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
-#include <gtk/gtk.h>
 #include <glade/glade.h>
-#include <poldiff/poldiff.h>
 #include <qpol/cond_query.h>
 
 enum
@@ -68,8 +66,12 @@ struct results
 	GtkLabel *stats;
 	/** flags to indicate if a TE buffer needs to be redrawn or not */
 	int te_buffered[RESULTS_BUFFER_NUM];
+	/** current sort field for a given TE buffer */
 	results_sort_e te_sort_field[RESULTS_BUFFER_NUM];
+	/** current sort direction for a given TE buffer */
 	int te_sort_direction[RESULTS_BUFFER_NUM];
+	/** array of line numbers, giving where the cursor is for that
+	 * particular results display */
 	gint *saved_offsets;
 	size_t current_buffer;
 };
@@ -401,6 +403,11 @@ void results_update(results_t * r)
 	results_update_summary(r);
 	results_populate_key_buffer(r);
 	results_update_stats(r);
+	/* select the summary item */
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(r->summary_view);
+	GtkTreeIter iter;
+	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(r->summary_tree), &iter);
+	gtk_tree_selection_select_iter(selection, &iter);
 }
 
 void results_switch_to_page(results_t * r)
@@ -1216,4 +1223,9 @@ void results_sort(results_t * r, results_sort_e field, int direction)
 		r->te_buffered[form] = 0;
 		results_select_rules(r, item_record, form);
 	}
+}
+
+GtkTextView *results_get_text_view(results_t * r)
+{
+	return r->view;
 }

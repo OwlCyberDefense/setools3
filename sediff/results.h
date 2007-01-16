@@ -38,6 +38,7 @@ typedef enum results_sort
 
 #include "toplevel.h"
 
+#include <gtk/gtk.h>
 #include <poldiff/poldiff.h>
 
 typedef struct results results_t;
@@ -96,5 +97,14 @@ void results_switch_to_page(results_t * r);
  * RESULTS_SORT_DESCEND.
  */
 void results_sort(results_t * r, results_sort_e field, int direction);
+
+/**
+ * Get the currently showing text view for the results object.
+ *
+ * @param r Results object containing text view.
+ *
+ * @return Currently visible text view.
+ */
+GtkTextView *results_get_text_view(results_t * r);
 
 #endif
