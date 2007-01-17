@@ -1,12 +1,13 @@
 /**
- *  @file sediff_remap_types.h
+ *  @file
  *  Headers for a dialog that allows users to explicitly remap/remap
  *  types.
  *
- *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
  *  @author Randy Wicks rwicks@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -23,8 +24,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef REMAP_TYPES_H
-#define REMAP_TYPES_H
+#ifndef REMAP_TYPES_DIALOG_H
+#define REMAP_TYPES_DIALOG_H
 
 #include "toplevel.h"
 

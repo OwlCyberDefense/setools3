@@ -6,6 +6,12 @@ SETools:
     Command line tools expect the first module to be a base module
     followed optionally by any other modules.
 
+libapol:
+
+  * New class apol_policy_path_t to represent a base policy and any
+    number of modules.  Use this whenever referring to the file or
+    files constituting a policy.
+  
 libqpol:
 
   * Policy features such as attribute names or MLS can now be queried
@@ -20,6 +26,16 @@ libseaudit:
 seaudit:
 
   * Rewrite to use new libseaudit.
+
+  * Numerous tweaks to the interface to be more user friendly.
+
+seaudit-report:
+
+  * Rewrite to use new libseaudit.
+
+sediffx:
+
+  * Numerous tweaks to the interface to be more user friendly.
 
 ==================================================
 
