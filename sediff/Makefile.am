@@ -32,6 +32,7 @@ sediff_SOURCES = sediff_cli.c
 
 sediffx_SOURCES = \
 	find_dialog.c find_dialog.h \
+	open_policies_dialog.c open_policies_dialog.h \
 	policy_view.c policy_view.h \
 	progress.c progress.h \
 	remap_types_dialog.c remap_types_dialog.h \

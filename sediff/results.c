@@ -336,7 +336,6 @@ static void results_populate_key_buffer(results_t * r)
 	GString *string = g_string_new("");
 	GtkTextIter iter;
 
-	util_text_buffer_clear(r->key_buffer);
 	gtk_text_buffer_get_end_iter(r->key_buffer, &iter);
 
 	g_string_printf(string, " Added(+):\n  Items added in\n  modified policy.\n\n");
@@ -400,14 +399,35 @@ static void results_update_stats(results_t * r)
 
 void results_update(results_t * r)
 {
-	results_update_summary(r);
-	results_populate_key_buffer(r);
-	results_update_stats(r);
-	/* select the summary item */
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(r->summary_view);
-	GtkTreeIter iter;
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(r->summary_tree), &iter);
-	gtk_tree_selection_select_iter(selection, &iter);
+	size_t i, was_diff_run = 0;
+	poldiff_t *diff = toplevel_get_poldiff(r->top);
+
+	/* first clear away old stuff */
+	gtk_tree_store_clear(r->summary_tree);
+	util_text_buffer_clear(r->key_buffer);
+	gtk_label_set_text(r->stats, "");
+	gtk_text_view_set_buffer(r->view, r->buffers[RESULTS_BUFFER_MAIN]);
+	util_text_buffer_clear(r->buffers[RESULTS_BUFFER_MAIN]);
+	r->current_buffer = 0;
+
+	/* only show diff-relevant buffers if a diff was actually run */
+	for (i = 0; diff != NULL && poldiff_items[i].label != NULL; i++) {
+		if (poldiff_is_run(diff, poldiff_items[i].bit_pos)) {
+			was_diff_run = 1;
+			break;
+		}
+	}
+	if (was_diff_run) {
+		results_update_summary(r);
+		results_populate_key_buffer(r);
+		results_update_stats(r);
+
+		/* select the summary item */
+		GtkTreeSelection *selection = gtk_tree_view_get_selection(r->summary_view);
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter_first(GTK_TREE_MODEL(r->summary_tree), &iter);
+		gtk_tree_selection_select_iter(selection, &iter);
+	}
 }
 
 void results_switch_to_page(results_t * r)

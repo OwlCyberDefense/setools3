@@ -2239,7 +2239,7 @@
 			      <property name="active">False</property>
 			      <property name="inconsistent">False</property>
 			      <property name="draw_indicator">True</property>
-			      <property name="group">monolithic radio</property>
+			      <property name="group">monolithic radio 1</property>
 			    </widget>
 			    <packing>
 			      <property name="padding">0</property>
@@ -2321,7 +2321,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkButton" id="base browse 2">
+			<widget class="GtkButton" id="base browse 1">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
@@ -2413,7 +2413,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkHBox" id="hbox25">
+		<widget class="GtkHBox" id="hbox.3 1">
 		  <property name="visible">True</property>
 		  <property name="sensitive">False</property>
 		  <property name="homogeneous">False</property>

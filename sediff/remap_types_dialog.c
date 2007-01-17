@@ -45,11 +45,48 @@ struct remap_types
 	/** drop-down combo boxes that allow user to add new remap */
 	GtkComboBoxEntry *combo[SEDIFFX_POLICY_NUM];
 	GtkButton *add, *remove;
-	apol_vector_t *remapped_entries;
 	GtkListStore *remaps;
+	/** non-zero if a type map was added or removed */
+	int changed;
 };
 
 static GtkListStore *types[SEDIFFX_POLICY_NUM] = { NULL, NULL };
+
+/**
+ * Populate the main text view with all type remaps currently within
+ * the poldiff object.
+ */
+static void remap_types_update_view(struct remap_types *rt)
+{
+	apol_vector_t *entries = poldiff_type_remap_get_entries(rt->diff);
+	apol_vector_t *origs = NULL, *mods = NULL;
+	char *orig_string = NULL, *mod_string = NULL;
+	size_t i;
+	GtkTreeIter iter;
+	gtk_list_store_clear(rt->remaps);
+	for (i = 0; i < apol_vector_get_size(entries); i++) {
+		poldiff_type_remap_entry_t *e = apol_vector_get_element(entries, i);
+		if ((origs = poldiff_type_remap_entry_get_original_types(rt->diff, e)) == NULL ||
+		    (mods = poldiff_type_remap_entry_get_modified_types(rt->diff, e)) == NULL ||
+		    (orig_string = apol_str_join(origs, ", ")) == NULL || (mod_string = apol_str_join(mods, ", ")) == NULL) {
+			toplevel_ERR(rt->top, "%s", strerror(errno));
+			apol_vector_destroy(&origs, NULL);
+			apol_vector_destroy(&mods, NULL);
+			free(orig_string);
+			free(mod_string);
+			return;
+		}
+		/* don't display implicit remaps */
+		if (!poldiff_type_remap_entry_get_is_inferred(e)) {
+			gtk_list_store_append(rt->remaps, &iter);
+			gtk_list_store_set(rt->remaps, &iter, 0, orig_string, 1, mod_string, 2, e, -1);
+		}
+		apol_vector_destroy(&origs, NULL);
+		apol_vector_destroy(&mods, NULL);
+		free(orig_string);
+		free(mod_string);
+	}
+}
 
 static void remap_types_on_selection_change(GtkTreeSelection * selection, gpointer user_data)
 {
@@ -77,11 +114,13 @@ static void remap_types_on_add_click(GtkButton * button __attribute__ ((unused))
 	gchar *orig_type = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
 	gchar *mod_type = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
 
-	if ((orig = apol_str_split(orig_type, " ")) == NULL ||
-	    (mod = apol_str_split(mod_type, " ")) == NULL || poldiff_type_remap_create(rt->diff, orig, mod) < 0) {
+	if ((orig = apol_str_split(orig_type, " ")) == NULL || (mod = apol_str_split(mod_type, " ")) == NULL) {
 		toplevel_ERR(rt->top, "%s", strerror(errno));
+	} else if (poldiff_type_remap_create(rt->diff, orig, mod) < 0) {
+		toplevel_ERR(rt->top, "%s", "This was not a valid type remap.");
 	} else {
-		/* FIX ME to update display */
+		remap_types_update_view(rt);
+		rt->changed = 1;
 	}
 	apol_vector_destroy(&orig, free);
 	apol_vector_destroy(&mod, free);
@@ -97,6 +136,7 @@ static void remap_types_on_remove_click(GtkButton * button __attribute__ ((unuse
 		gtk_tree_model_get(GTK_TREE_MODEL(rt->remaps), &iter, SEDIFFX_POLICY_NUM, &entry, -1);
 		poldiff_type_remap_entry_remove(rt->diff, entry);
 		gtk_list_store_remove(rt->remaps, &iter);
+		rt->changed = 1;
 	}
 }
 
@@ -151,15 +191,6 @@ static void remap_types_init_combos(struct remap_types *rt)
 	}
 }
 
-/**
- * Populate the main text view with all type remaps currently within
- * the poldiff object.
- */
-static void remap_types_init_view(struct remap_types *rt)
-{
-	/* FIX ME */
-}
-
 int remap_types_run(toplevel_t * top)
 {
 	struct remap_types rt;
@@ -172,17 +203,22 @@ int remap_types_run(toplevel_t * top)
 
 	remap_types_init_widgets(&rt);
 	remap_types_init_combos(&rt);
-	remap_types_init_view(&rt);
+	remap_types_update_view(&rt);
 
 	response = gtk_dialog_run(rt.dialog);
 
 	gtk_widget_destroy(GTK_WIDGET(rt.dialog));
 	g_object_unref(rt.remaps);
-	return 0;		       /* FIX ME */
+	return rt.changed;
 }
 
 int remap_types_update(apol_policy_t * orig_policy, apol_policy_t * mod_policy)
 {
+	/* N.b.: The reason why this does not use libpoldiff for the
+	 * calculations is because libpoldiff would invoke the already
+	 * stored type maps when finding the types.  So rather than
+	 * disabling all maps and then getting the diffs, this finds the
+	 * differences directly. */
 	qpol_policy_t *oq = apol_policy_get_qpol(orig_policy);
 	qpol_policy_t *mq = apol_policy_get_qpol(mod_policy);
 	apol_vector_t *type_vector = NULL, *v = NULL;

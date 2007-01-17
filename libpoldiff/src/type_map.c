@@ -92,7 +92,7 @@ static void poldiff_type_remap_entry_free(void *elem)
 
 /**
  * Allocate a new poldiff type remap entry, append it to the current
- * type remap vector, and return the entry.
+ * type remap vector, enable it, and return the entry.
  *
  * @param diff Policy diff structure containing remap vector.
  *
@@ -108,6 +108,7 @@ static poldiff_type_remap_entry_t *poldiff_type_remap_entry_create(poldiff_t * d
 		return NULL;
 	}
 	diff->remapped = 1;
+	e->enabled = 1;
 	return e;
 }
 
@@ -175,6 +176,7 @@ int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names
 			goto cleanup;
 		}
 	}
+	entry->enabled = 1;
 	if (apol_vector_append(diff->type_map->remap, entry) < 0) {
 		error = ENOMEM;
 		ERR(diff, "%s", strerror(error));
@@ -855,7 +857,6 @@ int type_map_infer(poldiff_t * diff)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		entry->enabled = 1;
 		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
@@ -887,7 +888,7 @@ int type_map_infer(poldiff_t * diff)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		entry->enabled = 1;
+		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
 	}
@@ -918,7 +919,7 @@ int type_map_infer(poldiff_t * diff)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		entry->enabled = 1;
+		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
 	}
@@ -949,7 +950,7 @@ int type_map_infer(poldiff_t * diff)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		entry->enabled = 1;
+		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
 	}

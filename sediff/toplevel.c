@@ -27,6 +27,7 @@
 #include <config.h>
 
 #include "find_dialog.h"
+#include "open_policies_dialog.h"
 #include "policy_view.h"
 #include "remap_types_dialog.h"
 #include "sediffx.h"
@@ -307,6 +308,7 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 		policy_view_update(top->views[i], run.policies[i], run.paths[i]);
 		sediffx_set_policy(top->s, i, run.policies[i], run.paths[i]);
 	}
+	results_update(top->results);
 	toplevel_enable_policy_items(top, TRUE);
 	toplevel_update_title_bar(top);
 	return 0;
@@ -497,8 +499,9 @@ void toplevel_WARN(toplevel_t * top, const char *format, ...)
 void toplevel_on_open_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
-	/* FIX ME */
-	printf("open goes here\n");
+	const apol_policy_path_t *orig_path = sediffx_get_policy_path(top->s, SEDIFFX_POLICY_ORIG);
+	const apol_policy_path_t *mod_path = sediffx_get_policy_path(top->s, SEDIFFX_POLICY_MOD);
+	open_policies_dialog_run(top, orig_path, mod_path);
 }
 
 void toplevel_on_quit_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
@@ -703,7 +706,9 @@ void toplevel_on_open_policies_button_click(gpointer user_data, GtkWidget * widg
 					    __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
-	/* FIX ME */
+	const apol_policy_path_t *orig_path = sediffx_get_policy_path(top->s, SEDIFFX_POLICY_ORIG);
+	const apol_policy_path_t *mod_path = sediffx_get_policy_path(top->s, SEDIFFX_POLICY_MOD);
+	open_policies_dialog_run(top, orig_path, mod_path);
 }
 
 void toplevel_on_run_diff_button_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
