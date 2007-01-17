@@ -405,6 +405,10 @@ fi
 if test "x${build_gui}" = xyes; then
   dnl check for GTK
   AC_MSG_CHECKING([for GTK])
+  pkg-config --exists 'gtk+-2.0 >= 2.4'
+  if test $? -ne 0; then
+     AC_MSG_ERROR([setools requires GTK+ 2.4 or greater])
+  fi
   GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
   if test -z "${GTK_CFLAGS}"; then
      AC_MSG_ERROR([could not find GTK headers])

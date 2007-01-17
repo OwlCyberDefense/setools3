@@ -442,7 +442,7 @@
 	  <property name="show_arrow">True</property>
 
 	  <child>
-	    <widget class="GtkToolButton" id="open policy button">
+	    <widget class="GtkToolButton" id="open policies button">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">Open Policies</property>
 	      <property name="use_underline">True</property>
@@ -450,7 +450,7 @@
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">True</property>
-	      <signal name="clicked" handler="toplevel_on_open_policy button_click" object="toplevel" last_modification_time="Tue, 09 Jan 2007 23:49:08 GMT"/>
+	      <signal name="clicked" handler="toplevel_on_open_policies_button_click" object="toplevel" last_modification_time="Tue, 16 Jan 2007 23:30:33 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
@@ -1273,14 +1273,13 @@
   </child>
 </widget>
 
-<widget class="GtkDialog" id="remap_type">
-  <property name="visible">True</property>
+<widget class="GtkDialog" id="remap_types">
   <property name="title" translatable="yes">Remap Types</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
   <property name="modal">True</property>
-  <property name="default_width">400</property>
-  <property name="default_height">550</property>
+  <property name="default_width">500</property>
+  <property name="default_height">400</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">True</property>
   <property name="decorated">True</property>
@@ -1332,7 +1331,7 @@
 
 	  <child>
 	    <widget class="GtkFrame" id="frame3">
-	      <property name="border_width">5</property>
+	      <property name="border_width">4</property>
 	      <property name="visible">True</property>
 	      <property name="label_xalign">0</property>
 	      <property name="label_yalign">0.5</property>
@@ -1347,7 +1346,7 @@
 		  <property name="yscale">1</property>
 		  <property name="top_padding">0</property>
 		  <property name="bottom_padding">0</property>
-		  <property name="left_padding">12</property>
+		  <property name="left_padding">0</property>
 		  <property name="right_padding">0</property>
 
 		  <child>
@@ -1358,7 +1357,7 @@
 
 		      <child>
 			<widget class="GtkScrolledWindow" id="scrolledwindow17">
-			  <property name="border_width">5</property>
+			  <property name="border_width">4</property>
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
@@ -1367,7 +1366,7 @@
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 			  <child>
-			    <widget class="GtkTreeView" id="remap_type treeview">
+			    <widget class="GtkTreeView" id="remap_types treeview">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="headers_visible">True</property>
@@ -1389,14 +1388,15 @@
 
 		      <child>
 			<widget class="GtkVButtonBox" id="vbuttonbox3">
-			  <property name="border_width">5</property>
+			  <property name="border_width">4</property>
 			  <property name="visible">True</property>
 			  <property name="layout_style">GTK_BUTTONBOX_END</property>
 			  <property name="spacing">0</property>
 
 			  <child>
-			    <widget class="GtkButton" id="remap_type remove button">
+			    <widget class="GtkButton" id="remap_types remove button">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_default">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label">gtk-remove</property>
@@ -1449,7 +1449,7 @@
 
 	  <child>
 	    <widget class="GtkFrame" id="frame2">
-	      <property name="border_width">5</property>
+	      <property name="border_width">4</property>
 	      <property name="visible">True</property>
 	      <property name="label_xalign">0</property>
 	      <property name="label_yalign">0.5</property>
@@ -1464,7 +1464,7 @@
 		  <property name="yscale">1</property>
 		  <property name="top_padding">0</property>
 		  <property name="bottom_padding">0</property>
-		  <property name="left_padding">12</property>
+		  <property name="left_padding">0</property>
 		  <property name="right_padding">0</property>
 
 		  <child>
@@ -1475,7 +1475,7 @@
 
 		      <child>
 			<widget class="GtkVBox" id="vbox7">
-			  <property name="border_width">5</property>
+			  <property name="border_width">4</property>
 			  <property name="visible">True</property>
 			  <property name="homogeneous">False</property>
 			  <property name="spacing">0</property>
@@ -1506,7 +1506,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkComboBoxEntry" id="sremap_type orig combo">
+			    <widget class="GtkComboBoxEntry" id="remap_types orig combo">
 			      <property name="visible">True</property>
 			      <property name="add_tearoffs">False</property>
 			      <property name="has_frame">True</property>
@@ -1528,7 +1528,7 @@
 
 		      <child>
 			<widget class="GtkVBox" id="vbox8">
-			  <property name="border_width">5</property>
+			  <property name="border_width">4</property>
 			  <property name="visible">True</property>
 			  <property name="homogeneous">False</property>
 			  <property name="spacing">0</property>
@@ -1559,7 +1559,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkComboBoxEntry" id="remap_type mod combo">
+			    <widget class="GtkComboBoxEntry" id="remap_types mod combo">
 			      <property name="visible">True</property>
 			      <property name="add_tearoffs">False</property>
 			      <property name="has_frame">True</property>
@@ -1581,16 +1581,15 @@
 
 		      <child>
 			<widget class="GtkVButtonBox" id="vbuttonbox2">
-			  <property name="border_width">5</property>
+			  <property name="border_width">4</property>
 			  <property name="visible">True</property>
 			  <property name="layout_style">GTK_BUTTONBOX_SPREAD</property>
 			  <property name="spacing">0</property>
 
 			  <child>
-			    <widget class="GtkButton" id="remap_type add button">
-			      <property name="width_request">72</property>
-			      <property name="height_request">30</property>
+			    <widget class="GtkButton" id="remap_types add button">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_default">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label">gtk-add</property>

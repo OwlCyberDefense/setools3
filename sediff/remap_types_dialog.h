@@ -23,51 +23,33 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SEDIFF_REMAP_TYPES_H
-#define SEDIFF_REMAP_TYPES_H
+#ifndef REMAP_TYPES_H
+#define REMAP_TYPES_H
 
-#ifdef	__cplusplus
-extern "C"
-{
-#endif
+#include "toplevel.h"
 
-#define SEDIFF_REMAP_POLICY_ONE_COLUMN 0
-#define SEDIFF_REMAP_POLICY_TWO_COLUMN 1
-#define SEDIFF_REMAP_NUM_COLUMNS       2
+/**
+ * Display and run a dialog that allows the user to add and remove
+ * type remappings.
+ *
+ * @param top Toplevel containing poldiff structure.
+ *
+ * @return Non-zero if any mapping was added or removed, zero if there
+ * were no changes.
+ */
+int remap_types_run(toplevel_t * top);
 
-#include "sediff_gui.h"
-#include <glade/glade.h>
-#include <gtk/gtk.h>
-#include <qpol/type_query.h>
-#include <apol/policy.h>
-#include <apol/type-query.h>
-#include <poldiff/poldiff.h>
-#include <poldiff/type_map.h>
-
-	typedef struct sediff_remapped_types
-	{
-		apol_vector_t *orig;
-		apol_vector_t *mod;
-	} sediff_remapped_types_t;
-
-	typedef struct sediff_remap_types
-	{
-		GtkTreeView *view;
-		GtkListStore *store;
-		GtkCombo *p1_combo;
-		GtkCombo *p2_combo;
-		GtkWindow *window;
-		GladeXML *xml;
-		struct sediff_app *sediff_app;
-		apol_vector_t *remapped_types;
-	} sediff_remap_types_t;
-
-	sediff_remap_types_t *sediff_remap_types_window_new(struct sediff_app *sediff_app);
-	void sediff_remap_types_window_display(sediff_remap_types_t * remap_types);
-	void sediff_remap_types_window_unref_members(sediff_remap_types_t * remap_types);
-
-#ifdef	__cplusplus
-}
-#endif
+/**
+ * Notify the remap types dialog that the currently loaded policies
+ * have changed.  This function updates its lists of types from the
+ * policies.  This function must be called at least once prior to
+ * remap_types_run().
+ *
+ * @param orig_policy Newly loaded original policy.
+ * @param mod_policy Newly loaded modified policy.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+int remap_types_update(apol_policy_t * orig_policy, apol_policy_t * mod_policy);
 
 #endif

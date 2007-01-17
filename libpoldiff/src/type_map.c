@@ -110,7 +110,7 @@ static poldiff_type_remap_entry_t *poldiff_type_remap_entry_create(poldiff_t * d
 	return e;
 }
 
-int poldiff_type_remap_create(poldiff_t * diff, apol_vector_t * orig_names, apol_vector_t * mod_names)
+int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names, const apol_vector_t * mod_names)
 {
 	poldiff_type_remap_entry_t *entry = NULL;
 	size_t i;

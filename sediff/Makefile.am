@@ -30,16 +30,11 @@ DEPENDENCIES = $(top_builddir)/libpoldiff/src/libpoldiff.so \
 
 sediff_SOURCES = sediff_cli.c
 
-#sediffx_SOURCES = \
-#	sediff_find_window.c sediff_find_window.h \
-#	sediff_remap_types.c sediff_remap_types.h \
-#	sediff_policy_open.c sediff_policy_open.h \
-#
-
 sediffx_SOURCES = \
 	find_dialog.c find_dialog.h \
 	policy_view.c policy_view.h \
 	progress.c progress.h \
+	remap_types_dialog.c remap_types_dialog.h \
 	results.c results.h \
 	toplevel.c toplevel.h \
 	utilgui.c utilgui.h \

@@ -80,7 +80,7 @@ The following are not strictly required but highly recommended:
   tcl-8.4.9-devel or greater
   tk-8.4.9-devel or greater
   glib-1.2
-  gtk+-2.0
+  gtk+-2.4
   gdk-pixbuf-2.0
   libglade-2.0
 These packages are needed to build SETools's graphical tools.

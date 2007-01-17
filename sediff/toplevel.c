@@ -28,6 +28,7 @@
 
 #include "find_dialog.h"
 #include "policy_view.h"
+#include "remap_types_dialog.h"
 #include "sediffx.h"
 #include "toplevel.h"
 #include "utilgui.h"
@@ -290,6 +291,12 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 		apol_policy_path_destroy(&run.paths[1]);
 		return run.result;
 	}
+	if (remap_types_update(run.policies[SEDIFFX_POLICY_ORIG], run.policies[SEDIFFX_POLICY_MOD]) < 0) {
+		toplevel_ERR(top, "%s", strerror(errno));
+		apol_policy_path_destroy(&run.paths[0]);
+		apol_policy_path_destroy(&run.paths[1]);
+		return -1;
+	}
 	top->can_diff_attributes = 1;
 	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
 		qpol_policy_t *q = apol_policy_get_qpol(run.policies[i]);
@@ -302,7 +309,6 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 	}
 	toplevel_enable_policy_items(top, TRUE);
 	toplevel_update_title_bar(top);
-	/*        toplevel_update_status_bar(top); */
 	return 0;
 }
 
@@ -488,6 +494,13 @@ void toplevel_WARN(toplevel_t * top, const char *format, ...)
 
 /******************** menu callbacks below ********************/
 
+void toplevel_on_open_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	/* FIX ME */
+	printf("open goes here\n");
+}
+
 void toplevel_on_quit_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
@@ -555,6 +568,12 @@ void toplevel_on_run_diff_activate(gpointer user_data, GtkMenuItem * widget __at
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
 	toplevel_run_diff(top);
+}
+
+void toplevel_on_remap_types_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	remap_types_run(top);
 }
 
 void toplevel_on_default_sort_activate(gpointer user_data, GtkMenuItem * menuitem)
@@ -680,11 +699,25 @@ void toplevel_on_about_sediffx_activate(gpointer user_data, GtkMenuItem * widget
 			      "name", "sediffx", "version", VERSION, "website", "http://oss.tresys.com/projects/setools", NULL);
 }
 
+void toplevel_on_open_policies_button_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
+					    __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	/* FIX ME */
+}
+
 void toplevel_on_run_diff_button_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
 				       __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
 	toplevel_run_diff(top);
+}
+
+void toplevel_on_remap_types_button_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
+					  __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	remap_types_run(top);
 }
 
 void toplevel_on_destroy(gpointer user_data, GtkObject * object __attribute__ ((unused)))
@@ -693,88 +726,3 @@ void toplevel_on_destroy(gpointer user_data, GtkObject * object __attribute__ ((
 	top->w = NULL;
 	gtk_main_quit();
 }
-
-#if 0
-
-#include "sediff_gui.h"
-#include "sediff_policy_open.h"
-#include "sediff_progress.h"
-#include "sediff_results.h"
-#include "sediff_treemodel.h"
-#include "utilgui.h"
-
-#include <apol/policy.h>
-#include <apol/util.h>
-
-#include <assert.h>
-#include <fcntl.h>
-#include <getopt.h>
-#include <glib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <gdk-pixbuf/gdk-pixbuf.h>
-#include <sys/mman.h>
-
-gboolean toggle = TRUE;
-
-/* Generic function prototype for getting policy components */
-typedef struct registered_callback
-{
-	GSourceFunc function;	       /* gboolean (*GSourceFunc)(gpointer data); */
-	void *user_data;
-	unsigned int type;
-
-/* callback types */
-#define LISTBOX_SELECTED_CALLBACK   0
-#define LISTBOX_SELECTED_SIGNAL     LISTBOX_SELECTED_CALLBACK
-} registered_callback_t;
-
-#define row_selected_signal_emit() sediff_callback_signal_emit(LISTBOX_SELECTED_SIGNAL)
-
-static void sediff_callback_signal_emit_1(gpointer data, gpointer user_data)
-{
-	registered_callback_t *callback = (registered_callback_t *) data;
-	unsigned int type = *(unsigned int *)user_data;
-	if (callback->type == type) {
-		data = &callback->user_data;
-		g_idle_add_full(G_PRIORITY_HIGH_IDLE + 10, callback->function, &data, NULL);
-	}
-	return;
-}
-
-/* the signal emit function executes each function registered with
- * sediff_callback_register() */
-static void sediff_callback_signal_emit(unsigned int type)
-{
-	g_list_foreach(sediff_app->callbacks, &sediff_callback_signal_emit_1, &type);
-	return;
-}
-
-static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
-{
-	registered_callback_t *callback = (registered_callback_t *) data;
-	if (callback)
-		free(callback);
-	return;
-}
-
-static void sediff_remap_types_window_show()
-{
-	if (sediff_app->remap_types_window == NULL)
-		sediff_app->remap_types_window = sediff_remap_types_window_new(sediff_app);
-	g_assert(sediff_app->remap_types_window);
-	sediff_remap_types_window_display(sediff_app->remap_types_window);
-}
-
-void sediff_menu_on_remaptypes_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_remap_types_window_show();
-}
-
-void sediff_menu_on_open_clicked(GtkMenuItem * menuitem, gpointer user_data)
-{
-	sediff_open_button_clicked();
-}
-
-#endif

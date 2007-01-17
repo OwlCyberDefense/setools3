@@ -24,325 +24,233 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "sediff_gui.h"
-#include "sediff_remap_types.h"
-#include <apol/policy.h>
+#include "remap_types_dialog.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <apol/type-query.h>
 #include <apol/util.h>
-#include <string.h>
+#include <glade/glade.h>
+#include <poldiff/type_map.h>
 
-static void sediff_remap_types_window_dialog_on_window_destroy(GtkWidget * widget, GdkEvent * event, gpointer user_data);
-static gint sediff_str_compare_func(gconstpointer a, gconstpointer b);
-static int sediff_remap_types_window_init(sediff_remap_types_t * remap_types_window);
-
-void sediff_remap_types_window_display(sediff_remap_types_t * remap_types_window)
+struct remap_types
 {
-	if (remap_types_window == NULL)
-		return;
-	if (remap_types_window->xml == NULL)
-		sediff_remap_types_window_init(remap_types_window);
+	toplevel_t *top;
+	GladeXML *xml;
+	poldiff_t *diff;
+	/** main dialog widget for type remapps*/
+	GtkDialog *dialog;
+	GtkTreeView *view;
+	/** drop-down combo boxes that allow user to add new remap */
+	GtkComboBoxEntry *combo[SEDIFFX_POLICY_NUM];
+	GtkButton *add, *remove;
+	apol_vector_t *remapped_entries;
+	GtkListStore *remaps;
+};
 
-	gtk_window_present(remap_types_window->window);
+static GtkListStore *types[SEDIFFX_POLICY_NUM] = { NULL, NULL };
+
+static void remap_types_on_selection_change(GtkTreeSelection * selection, gpointer user_data)
+{
+	struct remap_types *rt = (struct remap_types *)user_data;
+	gboolean sens = gtk_tree_selection_get_selected(selection, NULL, NULL);
+	gtk_widget_set_sensitive(GTK_WIDGET(rt->remove), sens);
 }
 
-sediff_remap_types_t *sediff_remap_types_window_new(sediff_app_t * sediff_app)
+static void remap_types_on_combo_change(GtkComboBox * widget __attribute__ ((unused)), gpointer user_data)
 {
-	sediff_remap_types_t *remap_types_window = NULL;
-
-	remap_types_window = (sediff_remap_types_t *) calloc(1, sizeof(sediff_remap_types_t));
-	if (!remap_types_window) {
-		g_warning("Out of memory!");
-		goto err;
+	struct remap_types *rt = (struct remap_types *)user_data;
+	gchar *orig_text = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
+	gchar *mod_text = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
+	if (orig_text != NULL && strcmp(orig_text, "") != 0 && mod_text != NULL && strcmp(mod_text, "") != 0) {
+		gtk_widget_set_sensitive(GTK_WIDGET(rt->add), TRUE);
+	} else {
+		gtk_widget_set_sensitive(GTK_WIDGET(rt->add), FALSE);
 	}
-	remap_types_window->sediff_app = sediff_app;
-	remap_types_window->remapped_types = apol_vector_create();
-	if (remap_types_window->remapped_types == NULL) {
-		g_warning("Out of memory!");
-		goto err;
-	}
-      exit:
-	return remap_types_window;
-      err:
-	if (remap_types_window) {
-		if (remap_types_window->remapped_types)
-			apol_vector_destroy(&remap_types_window->remapped_types, NULL);
-		free(remap_types_window);
-		remap_types_window = NULL;
-	}
-	goto exit;
 }
 
-void sediff_remap_types_window_unref_members(sediff_remap_types_t * remap_types_window)
+static void remap_types_on_add_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {
-	if (remap_types_window == NULL)
-		return;
-	if (remap_types_window->xml) {
-		g_object_unref(G_OBJECT(remap_types_window->xml));
-		remap_types_window->xml = NULL;
+	struct remap_types *rt = (struct remap_types *)user_data;
+	apol_vector_t *orig = NULL, *mod = NULL;
+	gchar *orig_type = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
+	gchar *mod_type = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
+
+	if ((orig = apol_str_split(orig_type, " ")) == NULL ||
+	    (mod = apol_str_split(mod_type, " ")) == NULL || poldiff_type_remap_create(rt->diff, orig, mod) < 0) {
+		toplevel_ERR(rt->top, "%s", strerror(errno));
+	} else {
+		/* FIX ME to update display */
 	}
-	if (remap_types_window->window) {
-		gtk_widget_destroy(GTK_WIDGET(remap_types_window->window));
-		remap_types_window->window = NULL;
-	}
-	if (remap_types_window->remapped_types) {
-		apol_vector_destroy(&remap_types_window->remapped_types, NULL);
-	}
-	remap_types_window->p1_combo = NULL;
-	remap_types_window->p2_combo = NULL;
-	remap_types_window->store = NULL;
-	remap_types_window->view = NULL;
+	apol_vector_destroy(&orig, free);
+	apol_vector_destroy(&mod, free);
 }
 
-/* static functions */
-static int sediff_remap_types_remove(poldiff_t * diff, char *orig_name, char *mod_name)
+static void remap_types_on_remove_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {
-	int i;
-	apol_vector_t *entry_vector, *orig, *mod;
-
-	entry_vector = poldiff_type_remap_get_entries(diff);
-	for (i = 0; i < apol_vector_get_size(entry_vector); i++) {
+	struct remap_types *rt = (struct remap_types *)user_data;
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(rt->view);
+	GtkTreeIter iter;
+	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
 		poldiff_type_remap_entry_t *entry;
-		char *entry_orig_name, *entry_mod_name;
-
-		entry = apol_vector_get_element(entry_vector, i);
-		orig = poldiff_type_remap_entry_get_original_types(diff, entry);
-		mod = poldiff_type_remap_entry_get_modified_types(diff, entry);
-		entry_orig_name = apol_vector_get_element(orig, 0);
-		entry_mod_name = apol_vector_get_element(mod, 0);
-		if (!strcmp(orig_name, entry_orig_name) && !strcmp(mod_name, entry_mod_name)) {
-			poldiff_type_remap_entry_remove(diff, entry);
-			return 1;
-		}
+		gtk_tree_model_get(GTK_TREE_MODEL(rt->remaps), &iter, SEDIFFX_POLICY_NUM, &entry, -1);
+		poldiff_type_remap_entry_remove(rt->diff, entry);
+		gtk_list_store_remove(rt->remaps, &iter);
 	}
-	return 0;
 }
 
-static void sediff_remap_types_window_on_remove_button_clicked(GtkButton * button, gpointer user_data)
+static void remap_types_init_widgets(struct remap_types *rt)
 {
 	GtkTreeSelection *selection;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	GtkWidget *dialog;
-	sediff_remap_types_t *remap_types_window;
-	char *p1_str, *p2_str;
-
-	remap_types_window = (sediff_remap_types_t *) user_data;
-	g_assert(remap_types_window);
-	selection = gtk_tree_view_get_selection(remap_types_window->view);
-	if (gtk_tree_selection_get_selected(selection, &model, &iter) == FALSE) {
-		dialog = gtk_message_dialog_new(remap_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
-						"You must select an item to remove.");
-		gtk_dialog_run(GTK_DIALOG(dialog));
-		gtk_widget_destroy(dialog);
-		return;
-	}
-	gtk_tree_model_get(model, &iter, SEDIFF_REMAP_POLICY_ONE_COLUMN, &p1_str, SEDIFF_REMAP_POLICY_TWO_COLUMN, &p2_str, -1);
-
-	if (sediff_remap_types_remove(remap_types_window->sediff_app->diff, (char *)p1_str, (char *)p2_str) == 0) {
-		dialog = gtk_message_dialog_new(remap_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
-						"Could not remove the selected item.");
-		gtk_dialog_run(GTK_DIALOG(dialog));
-		gtk_widget_destroy(dialog);
-		return;
-	}
-
-	gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
-}
-
-static void sediff_remap_types_window_on_close_button_clicked(GtkButton * button, gpointer user_data)
-{
-	sediff_remap_types_t *remap_types_window;
-	apol_vector_t *remap_vector;
-	int i;
-
-	remap_types_window = (sediff_remap_types_t *) user_data;
-	gtk_widget_hide(GTK_WIDGET(remap_types_window->window));
-	remap_vector = poldiff_type_remap_get_entries(remap_types_window->sediff_app->diff);
-	for (i = 0; i < apol_vector_get_size(remap_vector); i++) {
-		poldiff_type_remap_entry_t *entry;
-
-		entry = apol_vector_get_element(remap_vector, i);
-		poldiff_type_remap_entry_set_enabled(entry, 1);
-	}
-}
-
-static void sediff_remap_types_window_on_add_button_clicked(GtkButton * button, gpointer user_data)
-{
-	GtkEntry *p1_entry, *p2_entry;
-	GtkTreeIter iter;
-	GtkListStore *store;
-	GtkWidget *dialog;
-	const char *p1_str, *p2_str;
-	sediff_remap_types_t *remap_types_window;
-	apol_vector_t *orig, *mod;
-	qpol_type_t *orig_type, *mod_type;
-	qpol_policy_t *oq, *mq;
-
-	/* cast user_data */
-	remap_types_window = (sediff_remap_types_t *) user_data;
-	g_assert(remap_types_window);
-	oq = apol_policy_get_qpol(remap_types_window->sediff_app->orig_pol);
-	mq = apol_policy_get_qpol(remap_types_window->sediff_app->mod_pol);
-
-	/* validate the gui data is entered properly */
-	p1_entry = GTK_ENTRY(glade_xml_get_widget(remap_types_window->xml, "sediff_remap_types_entry1"));
-	g_assert(p1_entry);
-	p2_entry = GTK_ENTRY(glade_xml_get_widget(remap_types_window->xml, "sediff_remap_types_entry2"));
-	g_assert(p2_entry);
-
-	p1_str = gtk_entry_get_text(p1_entry);
-	p2_str = gtk_entry_get_text(p2_entry);
-
-	if (strcmp(p1_str, "") == 0 || strcmp(p2_str, "") == 0) {
-		dialog = gtk_message_dialog_new(remap_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
-						"You must select a type from Policy 1 AND Policy 2 to continue.");
-		gtk_dialog_run(GTK_DIALOG(dialog));
-		gtk_widget_destroy(dialog);
-		return;
-	}
-
-	qpol_policy_get_type_by_name(oq, p1_str, &orig_type);
-	qpol_policy_get_type_by_name(mq, p2_str, &mod_type);
-
-	orig = apol_vector_create();
-	mod = apol_vector_create();
-	apol_vector_append(orig, (void *)p1_str);
-	apol_vector_append(mod, (void *)p2_str);
-	poldiff_type_remap_create(remap_types_window->sediff_app->diff, orig, mod);
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(remap_types_window->view));
-	gtk_list_store_append(store, &iter);
-	gtk_list_store_set(store, &iter, SEDIFF_REMAP_POLICY_ONE_COLUMN, p1_str, SEDIFF_REMAP_POLICY_TWO_COLUMN, p2_str, -1);
-}
-
-static int sediff_remap_types_window_init(sediff_remap_types_t * remap_types_window)
-{
-	GList *items;
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
-	GtkButton *button;
-	GString *path;
-	int i;
-	char *dir = NULL;
-	apol_vector_t *type_vector;
-	qpol_policy_t *oq = apol_policy_get_qpol(remap_types_window->sediff_app->orig_pol);
-	qpol_policy_t *mq = apol_policy_get_qpol(remap_types_window->sediff_app->mod_pol);
 
-	if (remap_types_window == NULL)
-		return -1;
+	rt->dialog = GTK_DIALOG(glade_xml_get_widget(rt->xml, "remap_types"));
+	assert(rt->dialog != NULL);
+	gtk_window_set_transient_for(GTK_WINDOW(rt->dialog), toplevel_get_window(rt->top));
+	rt->view = GTK_TREE_VIEW(glade_xml_get_widget(rt->xml, "remap_types treeview"));
+	rt->combo[SEDIFFX_POLICY_ORIG] = GTK_COMBO_BOX_ENTRY(glade_xml_get_widget(rt->xml, "remap_types orig combo"));
+	rt->combo[SEDIFFX_POLICY_MOD] = GTK_COMBO_BOX_ENTRY(glade_xml_get_widget(rt->xml, "remap_types mod combo"));
+	assert(rt->view != NULL && rt->combo[SEDIFFX_POLICY_ORIG] != NULL && rt->combo[SEDIFFX_POLICY_MOD] != NULL);
 
-	dir = apol_file_find(GLADEFILE);
-	if (!dir) {
-		fprintf(stderr, "Could not find %s!", GLADEFILE);
-		return -1;
-	}
-	path = g_string_new(dir);
-	free(dir);
-	g_string_append_printf(path, "/%s", GLADEFILE);
+	rt->add = GTK_BUTTON(glade_xml_get_widget(rt->xml, "remap_types add button"));
+	rt->remove = GTK_BUTTON(glade_xml_get_widget(rt->xml, "remap_types remove button"));
+	assert(rt->add != NULL && rt->remove != NULL);
+	g_signal_connect(rt->add, "clicked", G_CALLBACK(remap_types_on_add_click), rt);
+	g_signal_connect(rt->remove, "clicked", G_CALLBACK(remap_types_on_remove_click), rt);
 
-	/* get the xml */
-	remap_types_window->xml = glade_xml_new(path->str, REMAP_TYPES_DIALOG_ID, NULL);
-	g_assert(remap_types_window->xml);
-	g_string_free(path, TRUE);
+	rt->remaps = gtk_list_store_new(SEDIFFX_POLICY_NUM + 1, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
+	gtk_tree_view_set_model(rt->view, GTK_TREE_MODEL(rt->remaps));
 
-	/* get a window reference from xml */
-	remap_types_window->window = GTK_WINDOW(glade_xml_get_widget(remap_types_window->xml, REMAP_TYPES_DIALOG_ID));
-	g_assert(remap_types_window->window);
-	gtk_window_set_transient_for(remap_types_window->window, remap_types_window->sediff_app->window);
-	gtk_window_set_position(remap_types_window->window, GTK_WIN_POS_CENTER_ON_PARENT);
-
-	/* connect to the window delete event */
-	g_signal_connect(G_OBJECT(remap_types_window->window), "delete_event",
-			 G_CALLBACK(sediff_remap_types_window_dialog_on_window_destroy), remap_types_window);
-	glade_xml_signal_autoconnect(remap_types_window->xml);
-
-	/* connect the button events */
-	button = GTK_BUTTON(glade_xml_get_widget(remap_types_window->xml, "sediff_remap_types_close_button"));
-	g_signal_connect(G_OBJECT(button), "clicked",
-			 G_CALLBACK(sediff_remap_types_window_on_close_button_clicked), remap_types_window);
-	button = GTK_BUTTON(glade_xml_get_widget(remap_types_window->xml, "sediff_remap_types_remove_button"));
-	g_signal_connect(G_OBJECT(button), "clicked",
-			 G_CALLBACK(sediff_remap_types_window_on_remove_button_clicked), remap_types_window);
-	button = GTK_BUTTON(glade_xml_get_widget(remap_types_window->xml, "sediff_remap_types_add_button"));
-	g_signal_connect(G_OBJECT(button), "clicked",
-			 G_CALLBACK(sediff_remap_types_window_on_add_button_clicked), remap_types_window);
-
-	/* get the combo boxes that we use */
-	remap_types_window->p1_combo = GTK_COMBO(glade_xml_get_widget(remap_types_window->xml, "sediff_remap_types_combo1"));
-	g_assert(remap_types_window->p1_combo);
-	remap_types_window->p2_combo = GTK_COMBO(glade_xml_get_widget(remap_types_window->xml, "sediff_remap_types_combo2"));
-	g_assert(remap_types_window->p2_combo);
-
-	/* populate data into the combo boxes */
-	items = g_list_alloc();
-	apol_type_get_by_query(remap_types_window->sediff_app->orig_pol, NULL, &type_vector);
-	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
-		qpol_type_t *type = NULL, *t = NULL;
-		char *type_name;
-
-		type = apol_vector_get_element(type_vector, i);
-		qpol_type_get_name(oq, type, &type_name);
-		g_assert(type_name != NULL);
-		qpol_policy_get_type_by_name(mq, type_name, &t);
-		if (!t)
-			items = g_list_append(items, type_name);
-	}
-
-	items = g_list_sort(items, &sediff_str_compare_func);
-	gtk_combo_set_popdown_strings(GTK_COMBO(remap_types_window->p1_combo), items);
-	g_list_free(items);
-
-	items = g_list_alloc();
-	apol_type_get_by_query(remap_types_window->sediff_app->mod_pol, NULL, &type_vector);
-	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
-		qpol_type_t *type = NULL, *t = NULL;
-		char *type_name;
-
-		type = apol_vector_get_element(type_vector, i);
-		qpol_type_get_name(mq, type, &type_name);
-		g_assert(type_name != NULL);
-		qpol_policy_get_type_by_name(oq, type_name, &t);
-		if (!t)
-			items = g_list_append(items, type_name);
-	}
-
-	items = g_list_sort(items, &sediff_str_compare_func);
-	gtk_combo_set_popdown_strings(GTK_COMBO(remap_types_window->p2_combo), items);
-	g_list_free(items);
-
-	/* get the listview */
-	remap_types_window->view = GTK_TREE_VIEW(glade_xml_get_widget(remap_types_window->xml, "sediff_remapped_types_treeview"));
-	g_assert(remap_types_window->view);
-
-	/* create the list store */
-	remap_types_window->store = gtk_list_store_new(SEDIFF_REMAP_NUM_COLUMNS, G_TYPE_STRING, G_TYPE_STRING);
-	gtk_tree_view_set_model(remap_types_window->view, GTK_TREE_MODEL(remap_types_window->store));
-
-	/* create columns */
-	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Policy 1 Types", renderer, "text", SEDIFF_REMAP_POLICY_ONE_COLUMN, NULL);
-	gtk_tree_view_column_set_expand(column, TRUE);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(remap_types_window->view), column);
+	selection = gtk_tree_view_get_selection(rt->view);
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);
+	g_signal_connect(selection, "changed", G_CALLBACK(remap_types_on_selection_change), rt);
 
 	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Policy 2 Types", renderer, "text", SEDIFF_REMAP_POLICY_TWO_COLUMN, NULL);
+	column = gtk_tree_view_column_new_with_attributes("Original Policy", renderer, "text", SEDIFFX_POLICY_ORIG, NULL);
 	gtk_tree_view_column_set_expand(column, TRUE);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(remap_types_window->view), column);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(rt->view), column);
 
-	/* create the remap types structure */
-	if (remap_types_window->remapped_types == NULL)
-		remap_types_window->remapped_types = apol_vector_create();
-	return 0;
+	column = gtk_tree_view_column_new_with_attributes("Modified Policy", renderer, "text", SEDIFFX_POLICY_MOD, NULL);
+	gtk_tree_view_column_set_expand(column, TRUE);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(rt->view), column);
 }
 
-static void sediff_remap_types_window_dialog_on_window_destroy(GtkWidget * widget, GdkEvent * event, gpointer user_data)
+/**
+ * Set up the combo boxes to show only types unique to that policy.
+ * (The lists of types were calculated by remap_types_update().)
+ */
+static void remap_types_init_combos(struct remap_types *rt)
 {
-	gtk_widget_hide(widget);
+	sediffx_policy_e i;
+	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
+		gtk_combo_box_set_model(GTK_COMBO_BOX(rt->combo[i]), GTK_TREE_MODEL(types[i]));
+		gtk_combo_box_entry_set_text_column(rt->combo[i], 0);
+		g_signal_connect(rt->combo[i], "changed", G_CALLBACK(remap_types_on_combo_change), rt);
+	}
 }
 
-static gint sediff_str_compare_func(gconstpointer a, gconstpointer b)
+/**
+ * Populate the main text view with all type remaps currently within
+ * the poldiff object.
+ */
+static void remap_types_init_view(struct remap_types *rt)
 {
-	if (a == NULL)
-		return -1;
-	else if (b == NULL)
-		return 1;
-	return (gint) strcmp((const char *)a, (const char *)b);
+	/* FIX ME */
+}
+
+int remap_types_run(toplevel_t * top)
+{
+	struct remap_types rt;
+	gint response;
+
+	memset(&rt, 0, sizeof(rt));
+	rt.top = top;
+	rt.xml = glade_xml_new(toplevel_get_glade_xml(rt.top), "remap_types", NULL);
+	rt.diff = toplevel_get_poldiff(rt.top);
+
+	remap_types_init_widgets(&rt);
+	remap_types_init_combos(&rt);
+	remap_types_init_view(&rt);
+
+	response = gtk_dialog_run(rt.dialog);
+
+	gtk_widget_destroy(GTK_WIDGET(rt.dialog));
+	g_object_unref(rt.remaps);
+	return 0;		       /* FIX ME */
+}
+
+int remap_types_update(apol_policy_t * orig_policy, apol_policy_t * mod_policy)
+{
+	qpol_policy_t *oq = apol_policy_get_qpol(orig_policy);
+	qpol_policy_t *mq = apol_policy_get_qpol(mod_policy);
+	apol_vector_t *type_vector = NULL, *v = NULL;
+	size_t i;
+	qpol_type_t *t;
+	char *type_name;
+	GtkTreeIter iter;
+	int error = 0, retval = -1;
+
+	if (types[SEDIFFX_POLICY_ORIG] == NULL) {
+		types[SEDIFFX_POLICY_ORIG] = gtk_list_store_new(1, G_TYPE_STRING);
+	} else {
+		gtk_list_store_clear(types[SEDIFFX_POLICY_ORIG]);
+	}
+	if (types[SEDIFFX_POLICY_MOD] == NULL) {
+		types[SEDIFFX_POLICY_MOD] = gtk_list_store_new(1, G_TYPE_STRING);
+	} else {
+		gtk_list_store_clear(types[SEDIFFX_POLICY_MOD]);
+	}
+
+	if (apol_type_get_by_query(orig_policy, NULL, &type_vector) < 0 || (v = apol_vector_create()) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	/* only add original types that are not in modified policy */
+	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
+		t = apol_vector_get_element(type_vector, i);
+		qpol_type_get_name(oq, t, &type_name);
+		if (qpol_policy_get_type_by_name(mq, type_name, &t) != 0 && apol_vector_append(v, type_name) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+	}
+	apol_vector_sort(v, apol_str_strcmp, NULL);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		type_name = apol_vector_get_element(v, i);
+		gtk_list_store_append(types[SEDIFFX_POLICY_ORIG], &iter);
+		gtk_list_store_set(types[SEDIFFX_POLICY_ORIG], &iter, 0, type_name, -1);
+	}
+	apol_vector_destroy(&type_vector, NULL);
+	apol_vector_destroy(&v, NULL);
+
+	if (apol_type_get_by_query(mod_policy, NULL, &type_vector) < 0 || (v = apol_vector_create()) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	/* only add modified types that are not in original policy */
+	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
+		t = apol_vector_get_element(type_vector, i);
+		qpol_type_get_name(mq, t, &type_name);
+		if (qpol_policy_get_type_by_name(oq, type_name, &t) != 0 && apol_vector_append(v, type_name) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+	}
+	apol_vector_sort(v, apol_str_strcmp, NULL);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		type_name = apol_vector_get_element(v, i);
+		gtk_list_store_append(types[SEDIFFX_POLICY_MOD], &iter);
+		gtk_list_store_set(types[SEDIFFX_POLICY_MOD], &iter, 0, type_name, -1);
+	}
+	retval = 0;
+      cleanup:
+	apol_vector_destroy(&type_vector, NULL);
+	apol_vector_destroy(&v, NULL);
+	if (retval != 0) {
+		errno = error;
+		return retval;
+	}
+	return retval;
 }

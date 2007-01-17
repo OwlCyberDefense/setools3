@@ -65,7 +65,7 @@ static seaudit_filter_t *modify_view_get_current_filter(struct modify_view *mv)
 	GtkTreeIter iter;
 	seaudit_filter_t *filter;
 	if (!gtk_tree_selection_get_selected(selection, NULL, &iter)) {
-		return FALSE;
+		return NULL;
 	}
 	gtk_tree_model_get(GTK_TREE_MODEL(mv->filter_store), &iter, 0, &filter, -1);
 	return filter;

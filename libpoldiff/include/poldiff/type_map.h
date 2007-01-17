@@ -60,7 +60,7 @@ extern "C"
  *  @return 0 on success or < 0 on error; if the call fails, errno
  *  will be set and the poldiff object remains unchanged.
  */
-	extern int poldiff_type_remap_create(poldiff_t * diff, apol_vector_t * orig_names, apol_vector_t * mod_names);
+	extern int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names, const apol_vector_t * mod_names);
 
 /**
  *  Get a vector of all identified type remap entries.  The caller may
