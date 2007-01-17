@@ -58,8 +58,8 @@ void usage(const char *arg0, bool_t brief)
 		printf("Perform modular checks on a SELinux policy\n");
 		printf("\n");
 		printf("   -p <prof>, --profile=<prof>  name or path of profile to load\n");
-		printf("                                If used with out -m, run all modules\n");
-		printf("                                specified in the profile.\n");
+		printf("                                if used with out -m, run all modules\n");
+		printf("                                specified in the profile\n");
 		printf("   -m <mod>,  --module=<mod>    name of module to run\n");
 #ifdef LIBSEFS
 		printf("   --fcfile=<file>              file_contexts file to load\n");
@@ -68,11 +68,11 @@ void usage(const char *arg0, bool_t brief)
 		printf("   -q, --quiet                  suppress output\n");
 		printf("   -s, --short                  print short output\n");
 		printf("   -v, --verbose                print verbose output\n");
-		printf("   --min-sev=<low|med|high>     the minimum severity to report\n");
+		printf("   --min-sev=<low|med|high>     set the minimum severity to report\n");
 		printf("\n");
-		printf("   -l, --list                   print a list of profiles and modules\n");
-		printf("   -h[mod],   --help[=module]   print this help or help for a module\n");
-		printf("   --version                    print version and exit\n");
+		printf("   -l, --list                   print a list of profiles and modules and exit\n");
+		printf("   -h[mod],   --help[=module]   print this help text or help for a module\n");
+		printf("   --version                    print version information and exit\n");
 	}
 	printf("\n");
 }

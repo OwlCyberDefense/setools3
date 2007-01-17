@@ -81,8 +81,8 @@ static void usage(const char *prog_name, int brief)
 	      "  -A, --roleallows  role allow rules\n\n"
 	      "  -q, --quiet       only print different definitions\n"
 	      "  -s, --stats       print only statistics\n"
-	      "  -h, --help        display this help and exit\n"
-	      "  -v, --version     output version information and exit\n\n", stdout);
+	      "  -h, --help        print this help text and exit\n"
+	      "  -v, --version     print version information and exit\n\n", stdout);
 	return;
 }
 

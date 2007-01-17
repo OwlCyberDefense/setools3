@@ -105,9 +105,8 @@ void usage(const char *program_name, bool_t brief)
 		return;
 	}
 	printf("Policy Analysis tool for Security Enhanced Linux.\n\n");
-	printf("   POLICY                  open policy from file(s)\n");
-	printf("   -v, --version           display version information\n");
-	printf("   -h, --help              display this help dialog\n\n");
+	printf("   -v, --version           print version information and exit\n");
+	printf("   -h, --help              print this help text and exit\n\n");
 	return;
 }
 

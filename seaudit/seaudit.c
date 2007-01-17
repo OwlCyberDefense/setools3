@@ -252,9 +252,9 @@ static void print_usage_info(const char *program_name, int brief)
 		return;
 	}
 	printf("Audit Log analysis tool for Security Enhanced Linux\n\n");
-	printf("   -l FILE, --log FILE     open log file named FILE\n");
-	printf("   -h, --help              display this help and exit\n");
-	printf("   -v, --version           display version information\n\n");
+	printf("   -l FILE, --log=FILE     open the log FILE\n");
+	printf("   -h, --help              print this help text and exit\n");
+	printf("   -v, --version           print version information and exit\n\n");
 }
 
 static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, const char **log, apol_policy_path_t ** policy)

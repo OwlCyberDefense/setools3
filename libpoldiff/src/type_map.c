@@ -70,6 +70,7 @@ struct poldiff_type_remap_entry
 {
 	apol_vector_t *orig_types;
 	apol_vector_t *mod_types;
+	int inferred;
 	int enabled;
 };
 
@@ -286,6 +287,15 @@ apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, pol
 		}
 	}
 	return v;
+}
+
+int poldiff_type_remap_entry_get_is_inferred(poldiff_type_remap_entry_t * entry)
+{
+	if (entry == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return entry->inferred;
 }
 
 int poldiff_type_remap_entry_get_is_enabled(poldiff_type_remap_entry_t * entry)
@@ -846,6 +856,7 @@ int type_map_infer(poldiff_t * diff)
 			goto cleanup;
 		}
 		entry->enabled = 1;
+		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
 	}

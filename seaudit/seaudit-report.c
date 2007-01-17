@@ -89,15 +89,15 @@ static void seaudit_report_info_usage(const char *program_name, int brief)
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
-	printf("  -s, --stdin              read log file(s) from standard input.\n");
-	printf("  -m, --malformed          include malformed log messages.\n");
-	printf("  -oFILE, --output=FILE    output to file.\n");
-	printf("  -cFILE, --config=FILE    use alternate config file.\n");
-	printf("  --html                   set output format to HTML.  Default is plain text.\n");
-	printf("  --stylesheet=FILE        HTML style sheet for formatting HTML report.\n");
-	printf("                           (Ignored if --html is not given.)\n");
-	printf("  -v, --version            Print version information and exit.\n");
-	printf("  -h, --help               Print this help text and exit.\n");
+	printf("  -s, --stdin              read log file(s) from standard input\n");
+	printf("  -m, --malformed          include malformed log messages\n");
+	printf("  -oFILE, --output=FILE    output to FILE\n");
+	printf("  -cFILE, --config=FILE    read configuration from FILE\n");
+	printf("  --html                   set output format to HTML\n");
+	printf("  --stylesheet=FILE        HTML style sheet for formatting HTML report\n");
+	printf("                           (ignored if --html is not given)\n");
+	printf("  -v, --version            print version information and exit\n");
+	printf("  -h, --help               print this help text and exit\n");
 	printf("\n");
 	printf("Default style sheet is at %s.\n", APOL_INSTALL_DIR);
 }

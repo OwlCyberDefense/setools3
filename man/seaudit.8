@@ -3,24 +3,42 @@
 seaudit \- SELinux graphical audit log analysis tool
 .SH SYNOPSIS
 .B seaudit
-[OPTIONS]
+[OPTIONS] [POLICY ...]
 .SH DESCRIPTION
 .PP
 .B seaudit
 allows the user to view and filter the contents of a log file.
 .B seaudit
 supports the syslog and auditd log formats and provides queries to inspect the SELinux policy based on log messages.
+.SH POLICY
+.PP
+.B 
+seaudit
+supports loading a SELinux policy in one of three formats. 
+.IP "source"
+A single text file containing policy source for versions 12 through 21. This file is usually named policy.conf.
+.IP "binary"
+A single file containg a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
+.IP "modular"
+A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
+.PP
+If not provied
+.B
+seaudit
+will search for the system default policy, checking first for a source policy, then a binary policy matching the running kernel's prefered version, then finally the highest version that can be found.
+If no policy can be found
+.B
+seaudit
+will begin with no policy loaded.
 .SH OPTIONS
-.IP "-l FILE, --log FILE"
-open log file named FILE
-.IP "-p FILE, --policy FILE"
-open policy file named FILE
+.IP "-l FILE, --log=FILE"
+Open the log FILE.
 .IP "-h, --help"
-display this help and exit
+Print help information and exit.
 .IP "-v, --version"
-display version information
+Print version information and exit.
 .SH AUTHOR
-This manual page was written by Kevin Carr <kcarr@tresys.com>.
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
 Copyright(C) 2006 Tresys Technology, LLC
 .SH SEE ALSO

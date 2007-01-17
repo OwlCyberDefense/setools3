@@ -82,7 +82,7 @@ extern "C"
  *  Infer type remappings and append them to the current type remap
  *  vector.  The vector should probably be first flushed via
  *  poldiff_type_remap_flush().  Generated entries will have their
- *  'enabled' flag set.
+ *  'inferred' and 'enabled' flags set.
  *
  *  The heuristic for determining type remaps is as follow.
  *  <ol>

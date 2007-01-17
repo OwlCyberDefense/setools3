@@ -116,6 +116,16 @@ extern "C"
 	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
 /**
+ *  Given a poldiff_type_remap_entry_t object, determine if was
+ *  an inferred mapping or not.
+ *
+ *  @param entry Remap entry from which to get its inference status.
+ *
+ *  @return 1 if it was inferred, 0 if not, < 0 on error.
+ */
+	extern int poldiff_type_remap_entry_get_is_inferred(poldiff_type_remap_entry_t * entry);
+
+/**
  *  Given a poldiff_type_remap_entry_t object, determine if it is
  *  enabled or not.
  *

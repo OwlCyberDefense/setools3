@@ -506,20 +506,20 @@ void replcon_usage(const char *program_name, int brief)
 	}
 #ifndef FINDCON
 	printf("\nFile context replacement tool for Security Enhanced Linux.\n");
-	printf("  -c, --context=OLD NEW  replace context OLD with NEW, see below.\n");
-	printf("  -o, --object=OBJECT    replace contexts only for files of object class OBJECT.\n");
+	printf("  -c, --context=OLD NEW  replace context OLD with NEW, see below\n");
+	printf("  -o, --object=OBJECT    replace contexts only for files of object class OBJECT\n");
 #else
 	printf("\nFile context search tool for Security Enhanced Linux.\n");
-	printf("  -c, --context=CONTEXT  search for files with CONTEXT, see below.\n");
-	printf("  -o, --object=OBJECT    search only for files of object class OBJECT.\n");
+	printf("  -c, --context=CONTEXT  search for files with CONTEXT, see below\n");
+	printf("  -o, --object=OBJECT    search only for files of object class OBJECT\n");
 #endif
-	printf("  --raw                  use raw contexts.\n");
-	printf("  -r, --recursive        recurse through directories.\n");
-	printf("  -s, --stdin            read FILENAMES from standard input.\n");
-	printf("  -q, --quiet            suppress progress output.\n");
-	printf("  -V, --verbose          display context info.\n");
-	printf("  -v, --version          print version information and exit.\n");
-	printf("  -h, --help             print this help text and exit.\n");
+	printf("  --raw                  use raw contexts\n");
+	printf("  -r, --recursive        recurse through directories\n");
+	printf("  -s, --stdin            read FILENAMES from standard input\n");
+	printf("  -q, --quiet            suppress progress output\n");
+	printf("  -V, --verbose          display context information\n");
+	printf("  -v, --version          print version information and exit\n");
+	printf("  -h, --help             print this help text and exit\n");
 	printf("\n");
 	if (is_selinux_mls_enabled()) {
 		printf("A context may be specified as a colon separated list of user, role, type, and\n");
