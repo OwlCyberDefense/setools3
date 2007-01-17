@@ -3,43 +3,89 @@
 sediff \- SELinux policy difference tool
 .SH SYNOPSIS
 .B sediff
-[OPTIONS] ORIGINAL_POLICY ; MODIFIED_POLICY
+[OPTIONS] [EXPRESSION] ORIGINAL_POLICY ; MODIFIED_POLICY
 .SH DESCRIPTION
 .PP
 .B sediff
-allows the user to inspect the semantic differences between two SELinux policy files.
-The policies can be either source or binary policy files, version 15 or later.
-By default, all supported policy elements are examined.
-.SH OPTIONS
+allows the user to inspect the semantic differences between two SELinux policies.
+.SH POLICY
+.PP
+.B 
+sediff
+supports loading SELinux policies in one of three formats. 
+.IP "source"
+A single text file containing policy source for versions 12 through 21. This file is usually named policy.conf.
+.IP "binary"
+A single file containg a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
+.IP "modular"
+A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
+.PP
+Policies do not need to be the same format. If not provied
+.B
+sediff
+will print an error message and exit.
+.SH EXPRESSIONS
+.P
+The user may specify an expression listing the policy elements to differentiate.
+If not provided, all supported policy elements are examined.
 .IP "-c, --classes"
-object class and common permission definitions
+Find differences in permissions assigned to object classes and common permission sets.
 .IP "-t, --types"
-type definitions
+Find differences in attributes associated with types.
 .IP "-a, --attributes"
-attribute definitions
+Find differences in types assigned to attributes.
 .IP "-r, --roles"
-role definitions
+Find differences in types authorized for roles.
 .IP "-u, --users"
-user definitions
+Find differences in roles authorized for users.
 .IP "-b, --booleans"
-boolean definitions and default values
+Find differences in the default values of booleans.
 .IP "-T, --terules"
-type enforcement rules
+Find differences in type enforcement rules.
+These rules are allow, neverallow, auditallow, dontaudit, type_transition, type_member, and type_change rules.
 .IP "-R, --roletrans"
-role transition rules
+Find differences in role transition rules.
+This includes differences in the default role.
 .IP "-A, --roleallows"
-role allow rules
+Find differences in role allow rules.
+.SH OPTIONS
 .IP "-q, --quiet"
-only print different definitions
+If there are no differences for elements of a given kind,
+supress status output for that kind of element.
 .IP "-s, --stats"
-print useful policy statistics
+Print difference statistics only.
 .IP "-h, --help"
-display this help and exit
+Print help information and exit.
 .IP "-v, --version"
-output version information and exit
+Print version information and exit.
+.SH DIFFERENCES
+.PP
+.B
+sediff
+categorizes differences in policy elements into one of three forms.
+.RS
+.IP "added"
+The element exists only in the modified policy.
+.IP "removed"
+The element exists only in the original policy.
+.IP "modified"
+The element exists in both policies but its semantic meaning has changed.
+For example, a class is modified if one or more permissions are added or removed.
+.RE
+.PP
+For all rules with types as their source or target, two additional forms of difference are recognized.
+This helps distinguish differences due to new types from differences in rules for existing types.
+.RS
+.IP "added, new type"
+The rule exists only in the modified policy;
+furthermore, one or more of the types in the rule do not exist in the original policy.
+.IP "removed, missing type"
+The rule exists only in the original policy;
+furthermore, one or more of the types in the rule do not exist in the modified policy.
+.RE
 .SH AUTHOR
-This manual page was written by Kevin Carr <kcarr@tresys.com>.
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
-Copyright(C) 2006 Tresys Technology, LLC
+Copyright(C) 2004-2007 Tresys Technology, LLC
 .SH SEE ALSO
 sediffx(1)

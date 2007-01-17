@@ -79,7 +79,7 @@ static void usage(const char *prog_name, int brief)
 	      "  -T, --terules     type enforcement rules\n"
 	      "  -R, --roletrans   role transition rules\n"
 	      "  -A, --roleallows  role allow rules\n\n"
-	      "  -q, --quiet       only print different definitions\n"
+	      "  -q, --quiet       supress status output for elements with no differences\n"
 	      "  -s, --stats       print only statistics\n"
 	      "  -h, --help        print this help text and exit\n"
 	      "  -v, --version     print version information and exit\n\n", stdout);

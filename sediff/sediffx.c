@@ -120,9 +120,9 @@ All supported policy elements are examined.\n\
 The following options are available:\n\
 ", stdout);
 	fputs("\n\
+  -d, --diff-now   load policies and diff immediately\n\
   -h, --help       print this help text and exit\n\
-  -v, --version    print version information and exit\n\
-  -d, --diff-now   load policies and diff immediately\n\n\
+  -v, --version    print version information and exit\n\n\
 ", stdout);
 	return;
 }

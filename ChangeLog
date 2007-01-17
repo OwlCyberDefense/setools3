@@ -1,3 +1,7 @@
+2007-01-17  J. Mowery  <jmowery@tresys.com>
+
+	* updated all man pages
+
 2007-01-17  J. Tang  <jtang@tresys.com>
 
 	* added poldiff_type_remap_entry_get_is_inferred()
