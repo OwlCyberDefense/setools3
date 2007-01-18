@@ -1,5 +1,5 @@
 /**
- *  @file log.h
+ *  @file
  *  Public interface for the main libseaudit object, seaudit_log_t.
  *  Note that there is no public way to get at the messages stored
  *  within a model.  For that, the caller must create a
@@ -8,7 +8,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2003-2006 Tresys Technology, LLC
+ *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -58,10 +58,10 @@ extern "C"
  * then write messages to standard error.
  * @param callback_arg Argument for the callback.
  *
- * @return A newly allocated and initialized difference structure or
- * NULL on error; if the call fails, errno will be set.
- * The caller is responsible for calling seaudit_log_destroy() to free
- * memory used by this structure.
+ * @return A newly allocated and initialized seaudit log structure or
+ * NULL on error; if the call fails, errno will be set.  The caller is
+ * responsible for calling seaudit_log_destroy() to free memory used
+ * by this structure.
  */
 	extern seaudit_log_t *seaudit_log_create(seaudit_handle_fn_t fn, void *callback_arg);
 

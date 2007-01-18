@@ -1,5 +1,5 @@
 /**
- *  @file model.h
+ *  @file
  *  Public interface to a seaudit_model_t.  This represents a subset
  *  of log messages from one or more seaudit_log_t, where the subset
  *  is defined by a finite set of seaudit_filters and sorted by some
@@ -8,7 +8,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2006 Tresys Technology, LLC
+ *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -47,9 +47,10 @@ extern "C"
  * seaudit_log_t.  The model will be initialized with the default
  * filter (i.e., accept all of the messages from the log).
  *
- * @param Name for the model; the string will be duplicated.  If NULL
- * then the model will be assigned a non-unique default name.
- * @param log Log to model.  If NULL then do not watch any log files.
+ * @param name Name for the model; the string will be duplicated.  If
+ * NULL then the model will be assigned a non-unique default name.
+ * @param log Initial log for this model to watch.  If NULL then do
+ * not watch any log files.
  *
  * @return An initialized model, or NULL upon error.  The caller must
  * call seaudit_model_destroy() afterwards.
@@ -93,7 +94,10 @@ extern "C"
 	extern void seaudit_model_destroy(seaudit_model_t ** model);
 
 /**
- * Save to disk, in XML format, the given model's values.  This includes the filters contained within the model as well.
+ * Save to disk, in XML format, the given model's values.  This
+ * includes the filters contained within the model as well.  Note that
+ * this does not save the messages within the model nor the associated
+ * logs.
  *
  * @param model Model to save.
  * @param filename Name of the file to write.  If the file already
@@ -180,7 +184,7 @@ extern "C"
 /**
  * Set a model to accept a message if all filters are met (default
  * behavior) or if any filter is met.  Note that is independent from
- * the setting given to seaudit_model_set_filter_visibility().
+ * the setting given to seaudit_model_set_filter_visible().
  *
  * @param model Model to modify.
  * @param match Matching behavior if model has multiple filters.
@@ -237,20 +241,20 @@ extern "C"
 /**
  * Remove all sort criteria from this model.  The next time the
  * model's messages are retrieved they will be in the same order as
- * provided by the model's logs.
+ * provided by the model's log(s).
  *
  * @param model Model to modify.
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_model_remove_all_sort(seaudit_model_t * model);
+	extern int seaudit_model_clear_sorts(seaudit_model_t * model);
 
 /**
  * Return a value indicating if this model has changed since the last
- * time seaudit_model_get_messages() was called().  Note that upon a
+ * time seaudit_model_get_messages() was called.  Note that upon a
  * non-zero return value, the vector returned by
  * seaudit_model_get_messages() might contain the same messages.  For
- * example, the user could have removed all sorts but then re-insert
+ * example, the user could have removed all sorts but then re-inserted
  * them in the same order.
  *
  * @param model Model to check.

@@ -1,5 +1,5 @@
 /**
- *  @file sort.h
+ *  @file
  *  Public interface to a seaudit_sort_t.  This represents an abstract
  *  object that specifies how to sort messages within a particular
  *  seaudit_model_t.  The caller obtains a specific sort object and
@@ -9,7 +9,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2003-2006 Tresys Technology, LLC
+ *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

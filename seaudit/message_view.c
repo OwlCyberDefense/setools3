@@ -1,5 +1,5 @@
 /**
- *  @file message_view.c
+ *  @file
  *  Implementation of the view for a libseaudit model.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -139,7 +139,7 @@ static gboolean message_view_on_column_click(GtkTreeViewColumn * column, gpointe
 		toplevel_ERR(view->top, "%s", strerror(errno));
 		return TRUE;
 	}
-	seaudit_model_remove_all_sort(view->model);
+	seaudit_model_clear_sorts(view->model);
 	if (seaudit_model_append_sort(view->model, sort) < 0) {
 		seaudit_sort_destroy(&sort);
 		toplevel_ERR(view->top, "%s", strerror(errno));

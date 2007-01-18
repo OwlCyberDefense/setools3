@@ -1,11 +1,11 @@
 /**
- *  @file report.c
+ *  @file
  *  Implementation of seaudit report generator.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2006 Tresys Technology, LLC
+ *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -44,8 +44,6 @@ struct seaudit_report
 {
 	/** output format for the report */
 	seaudit_report_format_e format;
-	/** name of output file */
-	char *out_file;
 	/** path to configuration file, or NULL to use system configuration */
 	char *config;
 	/** path to HTML stylesheet, or NULL to use system stylesheet */
@@ -76,16 +74,10 @@ static const char *seaudit_standard_section_names[] = {
 	NULL
 };
 
-seaudit_report_t *seaudit_report_create(seaudit_model_t * model, const char *out_file)
+seaudit_report_t *seaudit_report_create(seaudit_model_t * model)
 {
 	seaudit_report_t *r = calloc(1, sizeof(*r));
 	if (r == NULL) {
-		return NULL;
-	}
-	if (out_file != NULL && (r->out_file = strdup(out_file)) == NULL) {
-		int error = errno;
-		seaudit_report_destroy(&r);
-		errno = error;
 		return NULL;
 	}
 	r->model = model;
@@ -97,7 +89,6 @@ void seaudit_report_destroy(seaudit_report_t ** report)
 	if (report == NULL || *report == NULL) {
 		return;
 	}
-	free((*report)->out_file);
 	free((*report)->config);
 	free((*report)->stylesheet);
 	free(*report);
@@ -1005,19 +996,19 @@ static int report_print_malformed(seaudit_log_t * log, seaudit_report_t * report
 	return 0;
 }
 
-int seaudit_report_write(seaudit_log_t * log, seaudit_report_t * report)
+int seaudit_report_write(seaudit_log_t * log, seaudit_report_t * report, const char *out_file)
 {
 	xmlTextReaderPtr reader;
 	FILE *outfile = NULL;
 	int rt, retval = -1, error = 0;
 
 	/* Set/Open the output stream */
-	if (report->out_file == NULL) {
+	if (out_file == NULL) {
 		outfile = stdout;
 	} else {
-		if ((outfile = fopen(report->out_file, "w+")) == NULL) {
+		if ((outfile = fopen(out_file, "w+")) == NULL) {
 			error = errno;
-			ERR(log, "Could not open %s for writing.", report->out_file);
+			ERR(log, "Could not open %s for writing.", out_file);
 			goto cleanup;
 		}
 	}

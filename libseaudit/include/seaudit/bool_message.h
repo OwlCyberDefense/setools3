@@ -1,12 +1,13 @@
 /**
- *  @file bool_message.h
+ *  @file
  *  Public interface for a single boolean change log message.  This is
- *  a subclass of seaudit_message_t.
+ *  a subclass of seaudit_message_t; it has no publicly accessible
+ *  functions.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

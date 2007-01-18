@@ -188,7 +188,7 @@ static gpointer report_window_create_report_runner(gpointer data)
 		config_name = NULL;
 	}
 
-	if ((report = seaudit_report_create(model, rw->filename)) == NULL) {
+	if ((report = seaudit_report_create(model)) == NULL) {
 		progress_abort(rw->progress, "%s", strerror(errno));
 		goto cleanup;
 	}
@@ -199,7 +199,7 @@ static gpointer report_window_create_report_runner(gpointer data)
 		goto cleanup;
 	}
 	progress_update(rw->progress, "Writing");
-	if (seaudit_report_write(rw->log, report) < 0) {
+	if (seaudit_report_write(rw->log, report, rw->filename) < 0) {
 		goto cleanup;
 	}
 	rw->result = 0;

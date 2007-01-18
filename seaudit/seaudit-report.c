@@ -1,5 +1,5 @@
 /**
- *  @file seaudit-report.c
+ *  @file
  *  Command line tool for processing SELinux audit logs and generating
  *  a concise report containing standard information as well as
  *  customized information using seaudit views.  Reports are rendered
@@ -12,7 +12,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2006 Tresys Technology, LLC
+ *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -80,6 +80,12 @@ static seaudit_model_t *model = NULL;
  */
 static seaudit_report_t *report = NULL;
 
+/**
+ * Destination file for the seaudit report, or NULL to write to
+ * standard output.
+ */
+static char *outfile = NULL;
+
 static void seaudit_report_info_usage(const char *program_name, int brief)
 {
 	printf("%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
@@ -107,7 +113,7 @@ static void parse_command_line_args(int argc, char **argv)
 	int optc, i;
 	int do_malformed = 0, do_style = 0, read_stdin = 0;
 	seaudit_report_format_e format = SEAUDIT_REPORT_FORMAT_TEXT;
-	char *outfile = NULL, *configfile = NULL, *stylesheet = NULL;
+	char *configfile = NULL, *stylesheet = NULL;
 
 	/* get option arguments */
 	while ((optc = getopt_long(argc, argv, "o:c:t:msvh", longopts, NULL)) != -1) {
@@ -213,7 +219,7 @@ static void parse_command_line_args(int argc, char **argv)
 		}
 	}
 
-	if ((report = seaudit_report_create(model, outfile)) == NULL ||
+	if ((report = seaudit_report_create(model)) == NULL ||
 	    seaudit_report_set_format(first_log, report, format) < 0 ||
 	    seaudit_report_set_configuration(first_log, report, configfile) < 0 ||
 	    seaudit_report_set_stylesheet(first_log, report, stylesheet, do_style) < 0 ||
@@ -226,7 +232,7 @@ int main(int argc, char **argv)
 {
 	size_t i;
 	parse_command_line_args(argc, argv);
-	if (seaudit_report_write(first_log, report) < 0) {
+	if (seaudit_report_write(first_log, report, outfile) < 0) {
 		return -1;
 	}
 	seaudit_report_destroy(&report);

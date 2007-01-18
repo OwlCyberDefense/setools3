@@ -647,7 +647,7 @@ int seaudit_model_append_sort(seaudit_model_t * model, seaudit_sort_t * sort)
 	return 0;
 }
 
-int seaudit_model_remove_all_sort(seaudit_model_t * model)
+int seaudit_model_clear_sorts(seaudit_model_t * model)
 {
 	if (model == NULL) {
 		errno = EINVAL;

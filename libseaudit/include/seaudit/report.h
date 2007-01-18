@@ -1,5 +1,5 @@
 /**
- *  @file report.h
+ *  @file
  *
  *  This is the interface for processing SELinux audit logs and/or
  *  seaudit views to generate concise reports containing standard
@@ -12,7 +12,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2004-2006 Tresys Technology, LLC
+ *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -52,14 +52,11 @@ extern "C"
  * seaudit_report_write().
  *
  * @param model Model containing messages that will be written.
- * @param out_file File name for the report.  (The name will be
- * duplicated by this function.)  If this is set to NULL then write to
- * standard out.
  *
  * @return A newly allocated report, or NULL upon error.  The caller
  * must call seaudit_report_destroy() afterwards.
  */
-	extern seaudit_report_t *seaudit_report_create(seaudit_model_t * model, const char *out_file);
+	extern seaudit_report_t *seaudit_report_create(seaudit_model_t * model);
 
 /**
  * Destroy the referenced seaudit_report_t object.
@@ -75,10 +72,12 @@ extern "C"
  *
  * @param log Error handler.
  * @param report Report to write.
+ * @param out_file File name for the report.  If this is NULL then
+ * write to standard output.
  *
  * @return 0 on successful write, < 0 on error.
  */
-	extern int seaudit_report_write(seaudit_log_t * log, seaudit_report_t * report);
+	extern int seaudit_report_write(seaudit_log_t * log, seaudit_report_t * report, const char *out_file);
 
 /**
  * Set the output format of the report.  The default format is plain
