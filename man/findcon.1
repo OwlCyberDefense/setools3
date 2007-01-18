@@ -12,7 +12,7 @@ Results can be filtered by object class as described below.
 .SH OPTIONS
 .IP "-c, --context=CONTEXT"
 Search for files with context CONTEXT.
-A context may be specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
+A context is specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
 If the system supports MLS, additional MLS range can be added to the end as follows: user_u:object_r:type_t:s0.
 If a field is not specified, the query will always match that field.
 If the system supports MLS and the translation library is enabled, matching is done using translated contexts.
@@ -50,13 +50,16 @@ fifo_file
 Find every context in the current directory.
 .TP
 .B findcon -c user_u: .
-Find every context that contains user_u in the current directory. 
+Find every context in the current directory whose user is user_u.
 .TP
-.B findcon -c ::type_t:s0 .
-Find every context with type type_t and MLS range s0 in the current directory.
+.B findcon -r -c ::type_t:s0 .
+Find every context with type type_t and MLS range s0, searching in the
+current directory and all subdirectories.
 .SH AUTHOR
-This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.  
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
 Copyright(C) 2003-2007 Tresys Technology, LLC
+.SH BUGS
+Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
 replcon(1), indexcon(1), searchcon(1)

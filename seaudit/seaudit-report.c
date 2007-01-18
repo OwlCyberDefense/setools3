@@ -89,7 +89,7 @@ static void seaudit_report_info_usage(const char *program_name, int brief)
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
-	printf("  -s, --stdin              read log file(s) from standard input\n");
+	printf("  -s, --stdin              read log data from standard input\n");
 	printf("  -m, --malformed          include malformed log messages\n");
 	printf("  -oFILE, --output=FILE    output to FILE\n");
 	printf("  -cFILE, --config=FILE    read configuration from FILE\n");

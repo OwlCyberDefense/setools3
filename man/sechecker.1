@@ -13,37 +13,37 @@ sechecker \- SELinux policy checking tool
 .SH DESCRIPTION
 .PP
 .B sechecker
-allows the user to perform predefined modular checks on a SELinux policy.  
+allows the user to perform predefined modular checks on a SELinux policy.
 Profiles exist to group modules together and allow modification of module settings (see below).
 .SH POLICY
 .PP
-.B 
+.B
 sechecker
-supports loading a SELinux policy in one of three formats. 
+supports loading a SELinux policy in one of three formats.
 .IP "source"
 A single text file containing policy source for versions 12 through 21. This file is usually named policy.conf.
 .IP "binary"
-A single file containg a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
+A single file containing a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
 .IP "modular"
 A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
 .PP
-If not provied
+If not provided
 .B
 sechecker
-will search for the system default policy, checking first for a source policy, then a binary policy matching the running kernel's prefered version, then finally the highest version that can be found.
+will search for the system default policy, checking first for a source policy, then a binary policy matching the running kernel's preferred version, then finally the highest version that can be found.
 If no policy can be found
 .B
 sechecker
 will print an error message and exit.
 .SH OPTIONS
 .IP "-p PROFILE, --profile=PROFILE"
-Load module settings from a module profile. 
+Load module settings from a module profile.
 The settings in the profile will override the default settings for all specified modules.
 If specified without -m, run all modules in the profile.
-PROFILE may either be the name of a know profile (see --list) or the path of a user created profile. 
+PROFILE may either be the name of a known profile (see --list) or the path to a user created profile.
 see PROFILE OPTIONS below for more information about creating profiles.
 .IP "-m MODULE, --module=MODULE"
-Run only the module named MODULE (see --list). 
+Run only the module named MODULE (see --list).
 .IP "--min-sev=SEVERITY"
 Report only results with the minimum severity of SEVERITY.
 SEVERITY may have one of the following values:
@@ -53,12 +53,12 @@ The module's results indicate a flaw in the policy that does not affect the mann
 .IP "med"
 The module's results indicate a flaw in the policy that changes the manner in which the policy is enforced; however, it does not present an identifiable security risk.
 .IP "high"
-The module's results indicate a flaw in the policy that presents and identifiable security risk.
+The module's results indicate a flaw in the policy that presents an identifiable security risk.
 .RE
 .IP "--fcfile=FILE"
 Use FILE for the file_contexts file instead of the system default.
 .IP "-l, --list"
-Print a list of the names of all known profiles and modules with a brief description and exit.
+Print a list of the name and a brief description of all known profiles and modules and exit.
 .IP "--version"
 Print version information and exit.
 .IP "-h[MODULE], --help[=MODULE]"
@@ -66,7 +66,7 @@ Print general help information and exit.
 If MODULE is provided, print help information for the module named MODULE and exit.
 .SS REPORT GENERATION OPTIONS
 .P
-Only one of the following may be provided to specify the lenght of the report for all modules.
+Only one of the following may be provided to specify the length of the report for all modules.
 If provided, this option overrides both profile and module default output settings.
 .IP "-q, --quiet"
 suppress output
@@ -108,7 +108,7 @@ The example profile also overrides the default value for the "domain_attribute" 
 .SS PROFILE OUTPUT OPTIONS
 The valid output values for each module are specified below:
 .IP "verbose"
-Print each result in the report with accompanying proof(s)
+Print each result in the report with accompanying proof(s).
 .IP "short"
 Print a list of results with no accompanying proof.
 .IP "none"
@@ -120,8 +120,10 @@ Several modules provide one or more options that can be set from a profile.
 Each option has one or more items.
 To check what options are available for a module use --help=MODULE, where MODULE is the name of the module as printed by --list.
 .SH AUTHOR
-This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.  
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
 Copyright(C) 2005-2007 Tresys Technology, LLC
+.SH BUGS
+Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
 apol(1)

@@ -6,13 +6,13 @@ replcon \- SELinux file context replacement tool
 [OPTIONS] -c OLD NEW FILENAMES
 .SH DESCRIPTION
 .PP
-.B replcon 
+.B replcon
 allows the user to find and replace file contexts.
 Replacements can be restricted by object class.
 .SH OPTIONS
 .IP "-c, --context=OLD NEW"
 Search for files with context OLD and replace their context with NEW.
-A context may be specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
+A context is specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
 If the system supports MLS, additional MLS range can be added to the end as follows: user_u:object_r:type_t:s0.
 If a field is not specified, the query will always match that field.
 If the system supports MLS and the translation library is enabled, matching is done using translated contexts.
@@ -47,16 +47,18 @@ fifo_file
 .SH EXAMPLES
 .TP
 .B replcon -c : ::type_t .
-Replace every context in the current directory with type_t
+Replace every context in the current directory with type_t.
 .TP
 .B replcon -c user_u: :role_r .
-Replace every context with user user_u in the current directory with role role_r
+Replace every context with user user_u in the current directory with role role_r.
 .TP
 .B replcon -c ::type_t:s0  :::s0:c0 .
-Replace every context with type type_t and MLS range s0 in the current directory with range s0:c0
+Replace every context with type type_t and MLS range s0 in the current directory with MLS range s0:c0.
 .SH AUTHOR
-This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.  
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
 Copyright(C) 2003-2007 Tresys Technology, LLC
+.SH BUGS
+Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
 findcon(1), indexcon(1), searchcon(1)

@@ -10,17 +10,17 @@ sediff \- SELinux policy difference tool
 allows the user to inspect the semantic differences between two SELinux policies.
 .SH POLICY
 .PP
-.B 
+.B
 sediff
-supports loading SELinux policies in one of three formats. 
+supports loading SELinux policies in one of three formats.
 .IP "source"
 A single text file containing policy source for versions 12 through 21. This file is usually named policy.conf.
 .IP "binary"
-A single file containg a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
+A single file containing a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
 .IP "modular"
 A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
 .PP
-Policies do not need to be the same format. If not provied
+Policies do not need to be the same format. If not provided
 .B
 sediff
 will print an error message and exit.
@@ -51,7 +51,7 @@ Find differences in role allow rules.
 .SH OPTIONS
 .IP "-q, --quiet"
 If there are no differences for elements of a given kind,
-supress status output for that kind of element.
+suppress status output for that kind of element.
 .IP "-s, --stats"
 Print difference statistics only.
 .IP "-h, --help"
@@ -83,9 +83,16 @@ furthermore, one or more of the types in the rule do not exist in the original p
 The rule exists only in the original policy;
 furthermore, one or more of the types in the rule do not exist in the modified policy.
 .RE
+.SH NOTE
+Most shells interpret the semicolon as a metacharacter, thus requiring
+a backslash like so:
+.B
+sediff original.policy \\; modified.policy
 .SH AUTHOR
 This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
 Copyright(C) 2004-2007 Tresys Technology, LLC
+.SH BUGS
+Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
 sediffx(1)

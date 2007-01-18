@@ -157,6 +157,7 @@ static void sediffx_destroy(sediffx_t ** sediffx)
 			apol_policy_path_destroy(&((*sediffx)->paths[i]));
 			apol_policy_destroy(&((*sediffx)->policies[i]));
 		}
+		poldiff_destroy(&((*sediffx)->poldiff));
 		free(*sediffx);
 		*sediffx = NULL;
 	}
