@@ -18,4 +18,5 @@ Constraint analysis - features to search and analyze constraints - apol
 Result filtering/sorting - allow rule diffs to be sorted or filtered by various fields - sediffx
 Duplicate TE warning - can we remove it - parser
 Profiling - can we optimize the source loading process - parser
+Audit Rules - split dontaudit and auditallow rules - sesearch
 
