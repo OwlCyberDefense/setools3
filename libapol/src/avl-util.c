@@ -1,5 +1,5 @@
 /**
- * @file avl-util.c
+ * @file
  *
  * Generic support functions for AVL trees.
  *
@@ -8,7 +8,7 @@
  * @author mayerf@tresys.com
  * @author Karl MacMillan <kmacmillan@tresys.com>
  *
- * Copyright (C) 2001-2006 Tresys Technology, LLC
+ * Copyright (C) 2001-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

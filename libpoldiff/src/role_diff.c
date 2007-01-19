@@ -1,5 +1,5 @@
 /**
- *  @file role_diff.c
+ *  @file
  *  Implementation for computing a semantic differences in roles.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

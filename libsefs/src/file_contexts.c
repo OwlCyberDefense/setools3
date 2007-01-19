@@ -1,5 +1,5 @@
 /**
- * @file file_contexts.c
+ * @file
  *
  * Public interface for loading and parsing the default file_contexts
  * file.
@@ -7,7 +7,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2005-2006 Tresys Technology, LLC
+ * Copyright (C) 2005-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

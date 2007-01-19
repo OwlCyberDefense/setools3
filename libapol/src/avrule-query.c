@@ -1,5 +1,5 @@
 /**
- * @file avrule-query.c
+ * @file
  *
  * Provides a way for setools to make queries about access vector
  * rules within a policy.  The caller obtains a query object, fills in

@@ -1,5 +1,5 @@
 /**
- * @file rangetrans-query.h
+ * @file
  *
  * Routines to query range transition rules of a policy.
  *

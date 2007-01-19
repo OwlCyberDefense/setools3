@@ -1,5 +1,5 @@
 /**
- * @file infoflow-analysis.h
+ * @file
  *
  * Routines to perform an information flow analysis, both direct and
  * transitive flows.

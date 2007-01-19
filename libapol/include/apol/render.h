@@ -1,5 +1,5 @@
 /**
- * @file render.h
+ * @file
  *
  * Public interfaces that renders things that are not already covered
  * by one of the query files.  Unless otherwise stated, all functions

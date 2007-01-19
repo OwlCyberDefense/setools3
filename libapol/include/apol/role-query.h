@@ -1,5 +1,5 @@
 /**
- *  @file role-query.h
+ *  @file
  *  Public Interface for querying roles of a policy.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

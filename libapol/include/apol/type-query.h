@@ -1,5 +1,5 @@
 /**
- * @file type-query.h
+ * @file
  *
  * Routines to query types and attributes of a policy.
  *

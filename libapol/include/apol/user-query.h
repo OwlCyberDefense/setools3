@@ -1,5 +1,5 @@
 /**
- *  @file user-query.h
+ *  @file
  *  Public Interface for querying users of a policy.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

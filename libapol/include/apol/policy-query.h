@@ -1,5 +1,5 @@
 /**
- * @file policy-query.h
+ * @file
  *
  * Routines to query parts of a policy.  For each component and rule
  * there is a query structure to specify the details of the query.

@@ -1,5 +1,5 @@
 /**
- * @file apol_tcl_other.h
+ * @file
  *
  * Miscellaneous routines that translate between apol (a Tcl/Tk
  * application) and libapol.

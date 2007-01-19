@@ -1,11 +1,11 @@
 /**
- *  @file log.c
+ *  @file
  *  Implementation for the main libseaudit object, seaudit_log_t.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2003-2006 Tresys Technology, LLC
+ *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

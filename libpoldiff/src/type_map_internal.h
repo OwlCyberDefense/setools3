@@ -1,5 +1,5 @@
 /**
- *  @file type_map_internal.h
+ *  @file
  *  Protected Interface for type equivalence mapping for semantic
  *  difference calculations.
  *

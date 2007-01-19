@@ -1,5 +1,5 @@
 /**
- *  @file fscon-query.h
+ *  @file
  *  Public Interface for querying genfscons and fs_uses of a policy.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

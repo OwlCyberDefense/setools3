@@ -1,5 +1,5 @@
 /**
- *  @file type_diff.c
+ *  @file
  *  Implementation for computing a semantic differences in types.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

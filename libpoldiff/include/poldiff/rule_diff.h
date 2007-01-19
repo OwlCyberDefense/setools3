@@ -1,5 +1,5 @@
 /**
- *  @file rule_diff.h
+ *  @file
  *  Public Interface for computing a semantic differences in av rules
  *  (allow, neverallow, auditallow, dontaudit) and in te rules
  *  (type_transition, type_change, type_member).

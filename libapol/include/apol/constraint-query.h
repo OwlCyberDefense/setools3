@@ -1,5 +1,5 @@
 /**
- * @file constraint-query.h
+ * @file
  *
  * Routines to query constraint and validatetrans statements in a policy.
  *
@@ -7,7 +7,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006 Tresys Technology, LLC
+ * Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

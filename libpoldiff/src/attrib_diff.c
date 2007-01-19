@@ -1,5 +1,5 @@
 /**
- *  @file attrib_diff.c
+ *  @file
  *  Implementation for computing a semantic differences in attribs.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

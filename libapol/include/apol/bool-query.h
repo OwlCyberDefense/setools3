@@ -1,5 +1,5 @@
 /**
- *  @file bool-query.h
+ *  @file
  *  Public Interface for querying conditional booleans of a policy.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

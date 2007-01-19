@@ -1,5 +1,5 @@
 /**
- * @file class-perm-query.h
+ * @file
  *
  * Routines to query classes, commons, and permissions of a policy.
  *

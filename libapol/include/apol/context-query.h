@@ -1,5 +1,5 @@
 /**
- *  @file context-query.h
+ *  @file
  *  Public interface for querying and manipulating a context.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

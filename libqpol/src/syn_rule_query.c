@@ -1,5 +1,5 @@
 /**
- *  @file syn_rule_query.c
+ *  @file
  *  Public interface for querying syntactic rules from the extended
  *  policy image.
  *

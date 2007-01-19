@@ -1,5 +1,5 @@
 /**
- * @file types-relation-analysis.h
+ * @file
  *
  * Routines to perform a two-types relationship analysis.
  *

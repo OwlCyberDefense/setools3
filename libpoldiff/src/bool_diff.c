@@ -1,5 +1,5 @@
 /**
- *  @file bool_diff.c
+ *  @file
  *  Implementation for computing a semantic differences in bools.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

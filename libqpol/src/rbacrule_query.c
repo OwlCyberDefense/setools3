@@ -1,5 +1,5 @@
 /**
- *  @file rbacrule_query.c
+ *  @file
  *  Defines public interface for iterating over RBAC rules.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

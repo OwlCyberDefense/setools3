@@ -1,5 +1,5 @@
 /**
- * @file rbacrule-query.h
+ * @file
  *
  * Routines to query (role) allow and role_transition rules of a
  * policy.  This does not include access vector's allow rules, which

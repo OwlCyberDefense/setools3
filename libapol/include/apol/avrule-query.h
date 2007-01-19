@@ -1,5 +1,5 @@
 /**
- * @file avrule-query.h
+ * @file
  *
  * Routines to query access vector rules of a policy.  These are
  * allow, neverallow, auditallow, and dontaudit rules.

@@ -1,5 +1,5 @@
 /**
- *  @file isid-query.h
+ *  @file
  *  Public Interface for querying initial SIDs of a policy.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

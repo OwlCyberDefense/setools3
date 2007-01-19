@@ -1,5 +1,5 @@
 /**
- * @file condrule-query.h
+ * @file
  *
  * Routines to query conditional expressions and conditional rules of
  * a policy.

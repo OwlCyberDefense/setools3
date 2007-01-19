@@ -1,5 +1,5 @@
 /**
- *  @file mls-query.h
+ *  @file
  *  Public Interface for querying MLS components, and for
  *  sensitivities and categories within a policy.
  *

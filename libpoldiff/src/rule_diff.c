@@ -1,5 +1,5 @@
 /**
- *  @file rule_diff.c
+ *  @file
  *  Implementation for computing a semantic differences in av and te
  *  rules.
  *

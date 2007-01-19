@@ -1,5 +1,5 @@
 /**
- *  @file class_diff.c
+ *  @file
  *  Implementation for computing a semantic differences in classes and
  *  commons.
  *

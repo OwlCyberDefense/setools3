@@ -1,5 +1,5 @@
 /**
- * @file terule-query.h
+ * @file
  *
  * Routines to query type enforcement rules of a policy.  These are
  * type_transition, type_member, and type_change rules.

@@ -1,5 +1,5 @@
 /**
- * @file domain-trans-analysis.h
+ * @file
  *
  * Routines to perform a domain transition analysis.
  *

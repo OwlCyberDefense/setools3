@@ -1,5 +1,5 @@
 /**
- *  @file policy_extend.c
+ *  @file
  *  Implementation of the interface for loading and using an extended
  *  policy image.
  *

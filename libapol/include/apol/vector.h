@@ -1,5 +1,5 @@
 /**
- *  @file vector.h
+ *  @file
  *  Contains the API for a generic vector.  Note that vector functions
  *  are not thread-safe.
  *

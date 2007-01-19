@@ -1,5 +1,5 @@
 /**
- *  @file file_contexts.h
+ *  @file
  *  Defines the public interface for manipulating a file_contexts
  *  file.
  *

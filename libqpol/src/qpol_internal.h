@@ -1,5 +1,5 @@
 /**
- *  @file qpol_internal.h
+ *  @file
  *  Defines common debug symbols and the internal policy structure.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

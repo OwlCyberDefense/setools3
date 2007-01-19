@@ -1,5 +1,5 @@
 /**
- *  @file netcon-query.h
+ *  @file
  *  Public Interface for querying portcons, netifcons, and nodecons of
  *  a policy.
  *

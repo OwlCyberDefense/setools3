@@ -1,5 +1,5 @@
 /**
- *  @file poldiff_internal.h
+ *  @file
  *  Protected Interface for computing a semantic policy difference.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

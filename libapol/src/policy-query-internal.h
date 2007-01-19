@@ -1,5 +1,5 @@
 /**
- * @file policy-query-internal.h
+ * @file
  *
  * Header for routines shared among libapol's queries and analyses.
  * These routines are declared hidden within the library by way of the
