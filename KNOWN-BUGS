@@ -3,7 +3,7 @@ Tresys Technology
 setools@tresys.com, http://oss.tresys.com/projects/setools
 
 
-January 23, 2007
+February 1, 2007
 
 
 CURRENT BUGS AND ISSUES
@@ -51,10 +51,13 @@ Operating Systems:
 SELinux version:
   2.6
 
-SELinux Policy versions:
+SELinux monolithic policy versions:
   12, 15, 16, 17, 18, 19, and 20 (with MLS support for versions 19 and 20)
   Partial support for version 21 (policies will load, but range
   transition classes are not searchable)
+
+SELinux modular policy versions:
+  5, 6
 
 Tcl/Tk versions:
   8.4.9 and 8.4.12
@@ -62,6 +65,5 @@ Tcl/Tk versions:
 Desktop environments:
   Gnome, KDE
 
-These tools will likely have some bugs of which we are currently
-unaware.  Please report any new bugs or comments to
-setools-bugs@tresys.com.  Thank you for using SETools!
+Please report any new bugs or comments to setools-bugs@tresys.com.
+Thank you for using SETools!

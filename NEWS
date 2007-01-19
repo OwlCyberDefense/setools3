@@ -4,7 +4,9 @@ SETools:
 
   * All tools that open a policy now support loadable policy modules.
     Command line tools expect the first module to be a base module
-    followed optionally by any other modules.
+    followed optionally by any other modules.  Graphical tools have
+    a new open policy dialog to select a base module and any number of
+    additional modules.
 
 libapol:
 
@@ -18,10 +20,13 @@ libqpol:
     individally via qpol_policy_has_capability() rather than inferred
     by policy type and version.
 
+  * New class qpol_module_t to represent a particular policy module
+    prior to it being linked into a base policy (qpol_policy_t).
+
 libseaudit:
 
   * Rewrite of library to have proper namespaces.  libseaudit is now
-    suitable for third-party users.
+    fully documented and suitable for third-party users.
 
 seaudit:
 

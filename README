@@ -1,4 +1,4 @@
-SETools - Policy analysis tools for SELinux (C) 2001-2006
+SETools - Policy analysis tools for SELinux (C) 2001-2007
 Tresys Technology
 setools@tresys.com, http://oss.tresys.com/projects/setools
 
@@ -103,13 +103,13 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.0.1
+  $ cd setools-3.1
   $ ./configure
   $ make
   $ make install
 
 This will put the binaries in /usr/local/bin, data files in
-/usr/local/share/setool-3.0.1, and libraries in /usr/local/lib.
+/usr/local/share/setool-3.1, and libraries in /usr/local/lib.
 Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
 $LD_LIBRARY_PATH everything should now work.
 
@@ -390,8 +390,8 @@ maintain compatibility beginning with SETools version 3.0.
       not meant to be used by any other program.
 
   libseaudit:
-      Parse and store SELinux audit messages.  Its chief user is the
-      seaudit tool.
+      Parse and store SELinux audit messages.  Its chief users are
+      seaudit and seaudit-report.
 
   libsefs:
       Create a snapshot of SELinux filesystem security contexts and
@@ -436,7 +436,8 @@ respond to you as soon as possible.
 6. Copyright license
 --------------------
 
-The intent is to allow free use of this source code under the GNU
-General Public License (see COPYING).  All source code is copyright
-protected and freely distributed under the GNU GPL (see COPYING).
-Absolutely no warranty is provided or implied (see COPYING).
+The intent is to allow free use of this source code.  All programs'
+source files are copyright protected and freely distributed under the
+GNU General Public License (see COPYING.GPL).  All library source
+files are copyright under the GNU Lesser General Public License (see
+COPYING.LGPL).  Absolutely no warranty is provided or implied.
