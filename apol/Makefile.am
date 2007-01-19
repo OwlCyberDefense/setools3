@@ -17,8 +17,9 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @TCL_LIB_SPEC@ @TK_LIB_SPEC@
 
-apol_SOURCES = apol_gui.c \
-	head.tcl \
+apol_SOURCES = apol_gui.c
+
+nodist_apol_SOURCES = head.tcl \
 	types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
 	users_tab.tcl initial_sids_tab.tcl file_contexts_tab.tcl \
 	cond_bools_tab.tcl cond_rules_tab.tcl classes_perms_tab.tcl \
@@ -44,11 +45,11 @@ else
 apol_LDADD = $(top_builddir)/libapol-tcl/libapol-tcl.a $(LDADD)
 endif
 
-TCL_STRIP_FILES = $(top_builddir)/config.tcl $(filter-out head.tcl,$(filter %.tcl,$(apol_SOURCES)))
+TCL_STRIP_FILES = $(top_builddir)/config.tcl $(filter-out head.tcl,$(nodist_apol_SOURCES))
 
-apol.tcl: head.tcl $(TCL_STRIP_FILES)
-	cat $(TCL_STRIP_FILES) | perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' > tmp.tcl
-	cat head.tcl tmp.tcl > $@
+apol.tcl: $(srcdir)/head.tcl $(patsubst %,$(srcdir)/%,$(TCL_STRIP_FILES))
+	cat $(patsubst %,$(srcdir)/%,$(TCL_STRIP_FILES)) | perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' > tmp.tcl
+	cat $(srcdir)/head.tcl tmp.tcl > $@
 	rm tmp.tcl
 
 %.tcl:
