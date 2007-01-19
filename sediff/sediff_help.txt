@@ -1,18 +1,19 @@
 Semantic Policy Difference Tool for Security Enhanced Linux
-sediff, version 3.0.1
-December 1, 2006
+sediff, version 3.1
+February 1, 2007
 selinux@tresys.com
 
 
 Overview:
 ---------
-The sediff and sediffx programs are policy analysis tools that parse
-two given policy files and compare them showing a list of the
-differences; the former is a command-line only program while the
-latter is a GTK+ application.  They can compare source and/or binary
-policies and can also compare different versions of policy.  For
-source policies, versions 12 and higher of SELinux policies are
-supported.  For binary policies, versions 15 and higher are supported.
+The sediff and sediffx programs are policy analysis tools that take
+two policies and compare them, showing a list of the differences.  The
+former is a command-line only program while the latter is a GTK+
+application.  They can compare source, monolithic binary, and modular
+binary policies; they can also compare different versions of policy.
+The two programs support source policies versions 12 and higher,
+monolithic binary versions 15 and higher, and modular binary versions
+5 and higher.
 
 
 Limitations:
@@ -145,8 +146,8 @@ area:
 
   TE Rules:
   ---------
-  The TE rules checks cover the majority of a diff.  This includes AV
-  rules (allow, neverallow auditallow, and dontaudit) and Type rules
+  The TE rules cover the majority of a diff.  This includes AV rules
+  (allow, neverallow auditallow, and dontaudit) and Type rules
   (type_transition, type_change, and type_member).  The rule
   comparison is truly semantic.  All issues of redundancy and
   duplication, as well as indirect access through attributes are
@@ -174,7 +175,7 @@ area:
   between the policies.
 
   When source policies are compared, hyperlinked line numbers are
-  shown that take you to the source ".conf" file where the rule was
+  shown that take you to the policy's source where the rule was
   defined.  If there were more than one source rules that contributed
   to a STC triple for a given rule, then all source rules are linked.
 
@@ -215,8 +216,8 @@ The diff algorithm implicitly treats a type with the same name across
 both policies as the same semantic item.  This includes a name that
 was a type in one policy but became an alias in the other.  There may
 be instances where the operator has special knowledge of the remaining
-unmapped types.  In this case, he may use sediffx's "Remap Types"
-dialog to explicitly remap types.  From the main interface, select
-"Remap Types" from the Tools menu to open a dialog box.  From here, he
-may add additional remappings between types.  Note that sediffx will
-only list types that have not been implicitly remapped.
+unmapped types.  From sediffx's main interface, select "Remap Types"
+from the Tools menu to open a dialog box.  Add additional remappings
+between types as necessary.  Note that sediffx will only list explicit
+mappings; it does not display mappings that it inferred when the two
+policies were loaded.

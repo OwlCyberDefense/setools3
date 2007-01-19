@@ -1,6 +1,6 @@
 Audit Log Analysis Tool for Security Enhanced Linux
 seaudit, version 3.1
-January 23, 2007
+February 1, 2007
 selinux@tresys.com
 
 
@@ -26,22 +26,16 @@ The tool has the following main functions:
 
 Log and Policy Files:
 ---------------------
-The seaudit program accepts the following command line arguments to
-open files at start-up.  Zero, one, or both arguments will be
-accepted.
+The program provides you with the option of opening either a source,
+monolithic binary, or modular policy file.  If a policy is not
+specified at the command line, seaudit will attempt to use the default
+policy location, as specified during configuration time (e.g.,
+./configure --with-default-policy).
 
-  -l[FILE], --log[=FILE]       open log file named FILE
-  -p[FILE], --policy[=FILE]    open policy file named FILE
-
-The program provides you with the option of opening either a source or
-binary policy file.  If a policy is not specified at the command line,
-seaudit will attempt to use the default policy location, as specified
-during configuration time (e.g., ./configure --with-default-policy).
-
-Note that seaudit does not require an open policy file; in this case
-the user will not be able to use the search policy features of the
-tool.  Only one policy file and one audit log can be open at a time,
-so if another one is opened the current one will be closed.
+Note that seaudit does not require an opened policy; in this case the
+user will not be able to use the search policy features of the tool.
+Only one policy and one audit log can be open at a time, so if another
+one is opened the current one will be closed.
 
 When opening a log file the user may get the warning "Warning! One or
 more invalid messages found in audit log."  This means that one or
@@ -69,12 +63,12 @@ All other messages will be ignored.
 
 Menus:
 ------
-Use the FILE menu to load a different audit log or a policy file.
-The file menu also allows the user to change preferences including
-default log, default policy file, which columns to present when
-viewing audit logs, and whether seaudit should enable real-time log
-monitoring upon start-up.  All of these settings will be saved and
-reloaded each time seaudit is started.
+Use the FILE menu to load a different audit log or a policy.  The file
+menu also allows the user to change preferences including default log,
+default policy, which columns to present when viewing audit logs, and
+whether seaudit should enable real-time log monitoring upon start-up.
+All of these settings will be saved and reloaded each time seaudit is
+started.
 
 The VIEW menu allows the user to display multiple views of a log.  A
 default view is created automatically when an audit log is first
@@ -128,10 +122,10 @@ Finding TE Rules:
 The 'Find TE Rules' button opens a new dialog box that contains two
 tabs.  In the first tab, the user enters search criteria similar to
 those in apol's TE Rules query.  If the user had right-clicked an
-audit message and selected the second option,, the search criteria
-will be filled in automatically based on that message.  For each
-entry, the user may enter a regular expression; he may also choose a
-entry from the drop-down box.
+audit message and selected the second option, the search criteria will
+be filled in automatically based on that message.  For each entry, the
+user may enter a regular expression; he may also choose a entry from
+the drop-down box.
 
 The 'Only show direct matches' checkbox alters the meaning of the
 search.  By default the search returns rules that have either the
@@ -146,7 +140,8 @@ hyperlinks to the appropriate line in the Policy Source tab.
 
 The second tab, 'Policy Source', provides a convenient display of the
 text of the policy source file and is only available when opening a
-source policy.
+source policy.  If a modular policy was opened, then this tab only
+shows the base policy's source.
 
 The seaudit program provides limited searching.  More thorough policy
 searches and analyses may be conducted through the companion tool,
@@ -156,9 +151,9 @@ apol.
 Log Views:
 ----------
 The 'Modify View' button opens a dialog box that lets the user modify
-the list of filters for the current view.  Filters may be used to
-select either messages to show or to hide; in addition messages can
-match either any filter or all filters.
+the list of filters for the current view.  Filters are used to select
+either messages to show or to hide; in addition messages can match
+either any filter or all filters.
 
 
 Modifying Filters Within A View: 
@@ -189,10 +184,10 @@ closed.
 
 Globbing Expressions:
 ---------------------
-Using glob expressions allows one to construct more flexible search
-filters by allowing for pattern expansion instead of just static
-strings.  There are several different methods of glob syntax that are
-supported by seaudit.
+Use glob expressions to construct more flexible search filters by
+allowing for pattern expansion instead of just static strings.  There
+are several different methods of glob syntax that are supported by
+seaudit.
 
 (1) Wildcard Matching
 
@@ -251,7 +246,7 @@ brackets after the '!' character is used.
 *** CAUTION ***
 
 The seaudit program intersperses the use of regular expressions versus
-glob expressions.  For example, the Edit Filter' uses tool tips to
+glob expressions.  For example, 'Edit Filter' uses tool tips to
 specify what type of matching is permitted.  The 'Find TE Rules'
 dialog allows regular expressions, not glob expressions.
 Additionally, note that all characters used in glob expressions are
@@ -262,11 +257,10 @@ Status Bar:
 -----------
 At the bottom of seaudit is a status bar.  In the left corner it
 displays the approximate version of the policy you have loaded along
-with the policy type (binary or source).  The middle displays the
-number of log messages displayed and the total number of SELinux
-messages in the audit log.  The next label shows the span of the dates
-in the audit log and the right-most label shows the status of the
-real-time log monitor.
+with the policy type.  The middle displays the number of log messages
+displayed and the total number of SELinux messages in the audit log.
+The next label shows the span of the dates in the audit log and the
+right-most label shows the status of the real-time log monitor.
 
 
 Creating Reports:

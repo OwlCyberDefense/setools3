@@ -35,7 +35,7 @@ proc Apol_Analysis_tra::getInfo {} {
 mechanism to allow a user to quickly do several queries and analyses
 already in present in Apol to understand the relationship between two
 types.  This is meant to quickly display the relationship between two
-types and therefore doesn't include all of the options present in the
+types and therefore does not include all of the options present in the
 standard queries and analyses.
 
 \nFor additional help on this topic select \"Types Relationship Summary

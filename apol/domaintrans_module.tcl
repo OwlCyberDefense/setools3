@@ -39,8 +39,8 @@ proc Apol_Analysis_domaintrans::close {} {
 proc Apol_Analysis_domaintrans::getInfo {} {
     return "A forward domain transition analysis will determine all (target)
 domains to which a given (source) domain may transition.  For a
-forward domain transition to be allowed, three forms of access must be
-granted:
+forward domain transition to be allowed, multiple forms of access must
+be granted:
 
 \n    (1) source domain must have process transition permission for
         target domain,
@@ -63,8 +63,8 @@ granted:
     (3) source domain must have file execute permission to the same
         entrypoint type.
 
-\nThe results are presented in tree form.  You can open target children
-domains to perform another domain transition analysis on that domain.
+\nThe results are presented in tree form.  Open target children domains
+to perform another domain transition analysis on that domain.
 
 \nFor additional help on this topic select \"Domain Transition Analysis\"
 from the help menu."

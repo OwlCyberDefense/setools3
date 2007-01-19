@@ -51,7 +51,7 @@ from the parent to the child.
 selection or an end type regular expression.
 
 \nNOTE: For any given generation, if the parent and the child are the
-same, you cannot open the child.  This avoids cyclic analyses.
+same, the child cannot be opened.  This avoids cyclic analyses.
 
 \nFor additional help on this topic select \"Information Flow Analysis\"
 from the help menu."
