@@ -16,4 +16,4 @@ man_MANS = findcon.1 indexcon.1 replcon.1 searchcon.1 \
 seaudit-report.8: seaudit-report.8.in Makefile
 	sed -e 's|\@setoolsdir\@|$(setoolsdir)|g' $< > $@
 
-CLEANFILES = seauditr-report.8
+CLEANFILES = seaudit-report.8
