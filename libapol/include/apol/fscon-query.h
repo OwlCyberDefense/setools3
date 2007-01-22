@@ -44,7 +44,7 @@ extern "C"
 /**
  * Execute a query against all genfscons within the policy.  The
  * returned genfscons will be unordered.
- * @depricated This function has been renamed apol_genfscon_get_by_query().
+ * @deprecated This function has been renamed apol_genfscon_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *
@@ -174,7 +174,7 @@ extern "C"
 /**
  * Execute a query against all fs_uses within the policy.  The
  * returned fs_use statements will be unordered.
- * @depricated This function has been renamed apol_fs_use_get_by_query().
+ * @deprecated This function has been renamed apol_fs_use_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *

@@ -44,7 +44,7 @@ extern "C"
 /**
  * Execute a query against all classes within the policy.  The results
  * will only contain object classes, not common classes.
- * @depricated This function has been renamed apol_class_get_by_query().
+ * @deprecated This function has been renamed apol_class_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *
@@ -143,7 +143,7 @@ extern "C"
 /**
  * Execute a query against all common classes within the policy.  The
  * results will only contain common classes, not object classes.
- * @depricated This function has been renamed apol_common_get_by_query().
+ * @deprecated This function has been renamed apol_common_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *
@@ -232,7 +232,7 @@ extern "C"
  * permission name is declared within multiple classes (e.g.,
  * <tt>file/read</tt> and <tt>socket/read</tt>) then only one instance
  * of <tt>read</tt> is returned.
- * @depricated This function has been renamed apol_perm_get_by_query().
+ * @deprecated This function has been renamed apol_perm_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *

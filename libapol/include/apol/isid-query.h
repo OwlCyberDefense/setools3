@@ -42,7 +42,7 @@ extern "C"
 /**
  * Execute a query against all initial SIDs within the policy.	The
  * returned isids will be unordered.
- * @depricated This function has been renamed apol_isid_get_by_query().
+ * @deprecated This function has been renamed apol_isid_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *

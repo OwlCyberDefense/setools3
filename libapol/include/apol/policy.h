@@ -72,7 +72,7 @@ extern "C"
 /**
  * Open a monolithic policy from disk.
  *
- * @deprecated Use apol_policy_create_from_path() instead.
+ * @deprecated Use apol_policy_create_from_policy_path() instead.
  */
 	extern int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *varg)
 		__attribute__ ((deprecated));
@@ -80,7 +80,7 @@ extern "C"
 /**
  * Open a monolithic policy and load all components except rules.
  *
- * @deprecated Use apol_policy_create_from_path() instead.
+ * @deprecated Use apol_policy_create_from_policy_path() instead.
  */
 	extern int apol_policy_open_no_rules(const char *path, apol_policy_t ** policy,
 					     apol_callback_fn_t msg_callback, void *varg) __attribute__ ((deprecated));

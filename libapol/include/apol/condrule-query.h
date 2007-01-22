@@ -41,7 +41,7 @@ extern "C"
 /**
  * Execute a query against all conditional expressions within the
  * policy.
- * @depricated This function has been renamed apol_cond_get_by_query().
+ * @deprecated This function has been renamed apol_cond_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *
