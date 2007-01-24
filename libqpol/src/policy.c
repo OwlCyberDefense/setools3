@@ -1132,7 +1132,7 @@ static int is_mls_policy(qpol_policy_t * policy)
 		return 1;
 	else
 		return 0;
-};
+}
 
 int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
 {

@@ -200,7 +200,7 @@ preferences_t *preferences_create(void)
 	}
 	if ((value = apol_config_get_var("DEFAULT_POLICY_FILE", file)) != NULL) {
 		apol_policy_path_destroy(&prefs->policy);
-		if (apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, value, NULL) < 0) {
+		if (apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, value, NULL) == NULL) {
 			error = errno;
 			free(value);
 			goto cleanup;
