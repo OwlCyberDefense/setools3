@@ -404,7 +404,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="About sediffx">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">_About sediff</property>
+		      <property name="label" translatable="yes">_About sediffx</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="toplevel_on_about_sediffx_activate" object="toplevel" last_modification_time="Tue, 09 Jan 2007 20:28:55 GMT"/>
 

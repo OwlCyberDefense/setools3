@@ -2,7 +2,6 @@
  *  @file
  *  Command line frontend for computing a semantic policy difference.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -35,10 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef VERSION
-#define VERSION "UNKNOWN"
-#endif
-#define COPYRIGHT_INFO "Copyright (C) 2004-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2004-2007 Tresys Technology, LLC"
 
 /* command line options struct */
 static struct option const longopts[] = {
@@ -79,7 +75,7 @@ static void usage(const char *prog_name, int brief)
 	      "  -T, --terules     type enforcement rules\n"
 	      "  -R, --roletrans   role transition rules\n"
 	      "  -A, --roleallows  role allow rules\n\n"
-	      "  -q, --quiet       supress status output for elements with no differences\n"
+	      "  -q, --quiet       suppress status output for elements with no differences\n"
 	      "  -s, --stats       print only statistics\n"
 	      "  -h, --help        print this help text and exit\n"
 	      "  -v, --version     print version information and exit\n\n", stdout);
@@ -1066,63 +1062,62 @@ int main(int argc, char **argv)
 		goto err;
 	}
 	orig_base_path = argv[optind++];
-	if (argc - optind > 1) {
+	orig_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+	if (!(orig_module_paths = apol_vector_create())) {
+		ERR(NULL, "%s", strerror(errno));
+		goto err;
+	}
+	for (; argc - optind; optind++) {
+		if (!strcmp(";", argv[optind])) {
+			optind++;
+			break;
+		}
+		char *tmp = NULL;
+		if (!(tmp = strdup(argv[optind]))) {
+			ERR(NULL, "Error loading module %s", argv[optind]);
+			goto err;
+		}
+		if (apol_vector_append(orig_module_paths, (void *)tmp)) {
+			ERR(NULL, "Error loading module %s", argv[optind]);
+			free(tmp);
+			goto err;
+		}
 		orig_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-		if (!(orig_module_paths = apol_vector_create())) {
-			ERR(NULL, "%s", strerror(ENOMEM));
-			goto err;
-		}
-		for (; argc - optind; optind++) {
-			if (!strcmp(";", argv[optind])) {
-				optind++;
-				break;
-			}
-			char *tmp = NULL;
-			if (!(tmp = strdup(argv[optind]))) {
-				ERR(NULL, "Error loading module %s", argv[optind]);
-				goto err;
-			}
-			if (apol_vector_append(orig_module_paths, (void *)tmp)) {
-				ERR(NULL, "Error loading module %s", argv[optind]);
-				free(tmp);
-				goto err;
-			}
-		}
-		orig_pol_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
-		if (!orig_pol_path) {
-			ERR(NULL, "%s", strerror(ENOMEM));
-			goto err;
-		}
+	}
+	orig_pol_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
+	if (!orig_pol_path) {
+		ERR(NULL, "%s", strerror(errno));
+		goto err;
 	}
 
 	if (argc - optind == 0) {
 		ERR(NULL, "%s", "Missing path to modified policy.");
 		goto err;
 	}
+
 	mod_base_path = argv[optind++];
-	if (argc - optind > 1) {
+	mod_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+	if (!(mod_module_paths = apol_vector_create())) {
+		ERR(NULL, "%s", strerror(errno));
+		goto err;
+	}
+	for (; argc - optind; optind++) {
+		char *tmp = NULL;
+		if (!(tmp = strdup(argv[optind]))) {
+			ERR(NULL, "Error loading module %s", argv[optind]);
+			goto err;
+		}
+		if (apol_vector_append(mod_module_paths, (void *)tmp)) {
+			ERR(NULL, "Error loading module %s", argv[optind]);
+			free(tmp);
+			goto err;
+		}
 		mod_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-		if (!(mod_module_paths = apol_vector_create())) {
-			ERR(NULL, "%s", strerror(ENOMEM));
-			goto err;
-		}
-		for (; argc - optind; optind++) {
-			char *tmp = NULL;
-			if (!(tmp = strdup(argv[optind]))) {
-				ERR(NULL, "Error loading module %s", argv[optind]);
-				goto err;
-			}
-			if (apol_vector_append(mod_module_paths, (void *)tmp)) {
-				ERR(NULL, "Error loading module %s", argv[optind]);
-				free(tmp);
-				goto err;
-			}
-		}
-		mod_pol_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
-		if (!mod_pol_path) {
-			ERR(NULL, "%s", strerror(ENOMEM));
-			goto err;
-		}
+	}
+	mod_pol_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
+	if (!mod_pol_path) {
+		ERR(NULL, "%s", strerror(errno));
+		goto err;
 	}
 
 	orig_policy =

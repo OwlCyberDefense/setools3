@@ -301,7 +301,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 			seaudit_destroy(&seaudit);
 			exit(EXIT_FAILURE);
 		}
-		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 		primary_path = argv[optind++];
 		while (argc - optind) {
 			if (apol_vector_append(modules, argv[optind])) {
@@ -309,6 +309,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 				seaudit_destroy(&seaudit);
 				exit(EXIT_FAILURE);
 			}
+			path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 			optind++;
 		}
 	}

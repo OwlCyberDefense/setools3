@@ -60,9 +60,9 @@ static void find_dialog_search(find_dialog_t * f)
 	const gchar *search_text = gtk_entry_get_text(f->entry);
 	gboolean text_found;
 	/* if nothing is selected then start the search from the
-	   cursor.  otherwise, if searching forward then start search
-	   at the end of the selection, else set start to beginning of
-	   selection */
+	 * cursor.  otherwise, if searching forward then start search
+	 * at the end of the selection, else set start to beginning of
+	 * selection */
 	if (!gtk_text_buffer_get_selection_bounds(tb, &start, &end)) {
 		gtk_text_buffer_get_iter_at_mark(tb, &iter, mark);
 	} else {
