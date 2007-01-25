@@ -1,3 +1,8 @@
+2007-01-25  J. Tang  <jtang@tresys.com>
+
+	* fixed error where aliases within modules were not being detected
+	properly
+
 2007-01-19  J. Mowery  <jmowery@tresys.com>
 
 	* all files now have correct copyright and license notices
