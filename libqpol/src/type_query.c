@@ -148,7 +148,7 @@ int qpol_type_get_isalias(qpol_policy_t * policy, qpol_type_t * datum, unsigned 
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-
+	internal_datum = (type_datum_t *) datum;
 	*isalias = is_type_really_an_alias(internal_datum);
 
 	return STATUS_SUCCESS;
