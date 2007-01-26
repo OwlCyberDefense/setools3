@@ -101,7 +101,7 @@ int qpol_module_create_from_file(const char *path, qpol_module_t ** module)
 	/* set the module package's policy to NULL as the qpol module owns it now */
 	smp->policy = NULL;
 
-	(*module)->version = smp->version;
+	(*module)->version = (*module)->p->p.version;
 	(*module)->enabled = 1;
 
 	sepol_module_package_free(smp);
@@ -157,7 +157,7 @@ int qpol_module_get_name(qpol_module_t * module, char **name)
 	return STATUS_SUCCESS;
 }
 
-int qpol_module_get_version(qpol_module_t * module, uint32_t * version)
+int qpol_module_get_version(qpol_module_t * module, char ** version)
 {
 	if (!module || !version) {
 		errno = EINVAL;

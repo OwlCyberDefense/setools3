@@ -49,7 +49,7 @@ extern "C"
 	{
 		char *name;
 		char *path;
-		uint32_t version;
+		char *version;
 		int type;
 		struct sepol_policydb *p;
 		int enabled;

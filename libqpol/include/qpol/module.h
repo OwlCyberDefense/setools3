@@ -81,11 +81,11 @@ extern "C"
 /**
  *  Get the version of a module.
  *  @param module The module from which to get the version.
- *  @param version Pointer to integer in which to store the version.
+ *  @param version Pointer to string in which to store the version.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *version will be 0.
  */
-	extern int qpol_module_get_version(qpol_module_t * module, uint32_t * version);
+	extern int qpol_module_get_version(qpol_module_t * module, char ** version);
 
 /**
  *  Get the type of module (base or other).
