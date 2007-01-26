@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Defines the public interface for all sechecker modules and the library. 
+ *  Defines the public interface for all sechecker modules and the library.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -163,13 +162,13 @@ extern "C"
 		free_fn_t elem_free_fn;
 	} sechk_proof_t;
 
-/** Module results item: 
+/** Module results item:
  *  This represents an item for which results were found. */
 	typedef struct sechk_item
 	{
 	/** The policy item */
 		void *item;
-	/** Test result code for this item. This field is reserved for use 
+	/** Test result code for this item. This field is reserved for use
 	 *  only within the module creating the item. */
 		unsigned char test_result;
 	/** Vector of proof elements (of type sechk_proof_t) indicating
@@ -360,7 +359,7 @@ extern "C"
 	sechk_fn_t *sechk_fn_new(void);
 
 /**
- *  Create and initialize a new name value pair. 
+ *  Create and initialize a new name value pair.
  *  The incoming strings are duplicated.
  *
  *  @param name Name to assign.
@@ -679,7 +678,7 @@ extern "C"
  */
 	sechk_proof_t *sechk_proof_copy(sechk_proof_t * orig);
 
-/** 
+/**
  *  Callback for vector comparison of proof elements.
  *  This callback takes two different type objects both cast to void
  *  it is important that the order of the parameters is correct or the

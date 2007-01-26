@@ -1,4 +1,11 @@
-/*
+/**
+ * @file
+ * Command-line program that builds a SQLite3 database of file
+ * contexts.
+ *
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,15 +26,12 @@
 
 #include <config.h>
 
-/* libsefs */
 #include <sefs/fsdata.h>
-/* standard library includes */
 #include <stdio.h>
 #include <stdlib.h>
-/* command line parsing commands */
 #include <getopt.h>
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
 static struct option const longopts[] = {
 	{"directory", required_argument, NULL, 'd'},

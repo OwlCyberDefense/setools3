@@ -1,11 +1,11 @@
 /**
  * @file
  *
- * A tool for replacing file contexts in SE Linux
+ * A tool for replacing file contexts in SELinux.
  *
- * @author Jeremy Stitz <jstitz@tresys.com>
- * @author Kevin Carr <kcarr@tresys.com>
- * @author James Athey <jathey@tresys.com>
+ *  @author James Athey <jathey@tresys.com>
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
  *
  * Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -50,7 +50,7 @@
 #include <apol/policy.h>
 #include <apol/util.h>
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
 #define MAX_INPUT_SIZE 1024
 #define NFTW_FLAGS FTW_MOUNT | FTW_PHYS

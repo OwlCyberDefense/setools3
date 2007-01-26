@@ -1,4 +1,11 @@
-/*  Copyright (C) 2005-2007 Tresys Technology, LLC
+/**
+ * @file
+ * Keeps track of the all known sechecker modules.
+ *
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -12,11 +19,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
-
-/* 
- * Author: kcarr@tresys.com
- *
  */
 
 #include "register_list.h"
@@ -45,7 +47,7 @@ static sechk_module_name_reg_t sechk_module_register_list[] = {
 	{"roles_wo_types", &roles_wo_types_register},
 	{"roles_wo_users", &roles_wo_users_register},
 	/* Deprecated *
-	 * {"roles_exp_nothing",   &roles_exp_nothing_register}, 
+	 * {"roles_exp_nothing",   &roles_exp_nothing_register},
 	 */
 	{"spurious_audit", &spurious_audit_register},
 	{"types_wo_allow", &types_wo_allow_register},

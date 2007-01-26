@@ -1,4 +1,11 @@
-/*  Copyright (C) 2005-2007 Tresys Technology, LLC
+/**
+ * @file
+ * Main function and command line parser for the sechecker program.
+ *
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -14,11 +21,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-/* 
- * Author: jmowery@tresys.com
- *
- */
-
 #include <config.h>
 
 #include "sechecker.h"
@@ -30,12 +32,7 @@
 #include <getopt.h>
 #include <errno.h>
 
-/* SECHECKER_VERSION should be defined in the make environment */
-#ifndef VERSION
-#define VERSION "UNKNOWN"
-#endif
-
-#define COPYRIGHT_INFO "Copyright (C) 2005-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2005-2007 Tresys Technology, LLC"
 
 extern sechk_module_name_reg_t sechk_register_list[];
 

@@ -46,7 +46,7 @@
 #include <assert.h>
 #include <getopt.h>
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
 static char *policy_file = NULL;
 static int portconset, protoset;

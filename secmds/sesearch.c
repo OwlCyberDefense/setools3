@@ -45,7 +45,7 @@
 #include <getopt.h>
 #include <string.h>
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
 char *policy_file = NULL;
 
