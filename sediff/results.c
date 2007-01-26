@@ -116,6 +116,11 @@ static void results_summary_on_change(GtkTreeSelection * selection, gpointer use
 static gboolean results_on_line_event(GtkTextTag * tag, GObject * event_object,
 				      GdkEvent * event, const GtkTextIter * iter, gpointer user_data);
 static gboolean results_on_text_view_motion(GtkWidget * widget, GdkEventMotion * event, gpointer user_data);
+/**
+ * Callback whenever the user double-clicks a row in the summary tree.
+ */
+static void results_summary_on_row_activate(GtkTreeView * tree_view, GtkTreePath * path, GtkTreeViewColumn * column,
+					    gpointer user_data);
 
 /**
  * Build a GTK tree store to hold the summary table of contents; then
@@ -142,6 +147,7 @@ static void results_create_summary(results_t * r)
 	selection = gtk_tree_view_get_selection(r->summary_view);
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);
 	g_signal_connect(G_OBJECT(selection), "changed", G_CALLBACK(results_summary_on_change), r);
+	g_signal_connect(r->summary_view, "row-activated", G_CALLBACK(results_summary_on_row_activate), r);
 }
 
 results_t *results_create(toplevel_t * top)
@@ -1136,6 +1142,17 @@ static void results_summary_on_change(GtkTreeSelection * selection, gpointer use
 		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
 				   RESULTS_SUMMARY_COLUMN_RECORD, &item_record, -1);
 		results_record_select(r, item_record, form);
+	}
+}
+
+static void results_summary_on_row_activate(GtkTreeView * tree_view, GtkTreePath * path, GtkTreeViewColumn * column
+					    __attribute__ ((unused)), gpointer user_data __attribute__ ((unused)))
+{
+	gboolean expanded = gtk_tree_view_row_expanded(tree_view, path);
+	if (!expanded) {
+		gtk_tree_view_expand_row(tree_view, path, 1);
+	} else {
+		gtk_tree_view_collapse_row(tree_view, path);
 	}
 }
 

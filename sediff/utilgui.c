@@ -26,6 +26,7 @@
 
 #include "utilgui.h"
 #include <string.h>
+#include <apol/util.h>
 
 void util_message(GtkWindow * parent, GtkMessageType msg_type, const char *msg)
 {
@@ -119,6 +120,30 @@ char *util_policy_path_to_string(const apol_policy_path_t * path)
 		size_t num_modules = apol_vector_get_size(modules);
 		if (asprintf(&s, "%s + %zd module%s", primary_path, num_modules, num_modules == 1 ? "" : "s") < 0) {
 			return NULL;
+		}
+		return s;
+	}
+}
+
+char *util_policy_path_to_full_string(const apol_policy_path_t * path)
+{
+	const char *primary_path = apol_policy_path_get_primary(path);
+	if (apol_policy_path_get_type(path) == APOL_POLICY_PATH_TYPE_MONOLITHIC) {
+		return strdup(primary_path);
+	} else {
+		char *s = NULL, *t = NULL;
+		size_t len = 0;
+		const apol_vector_t *modules = apol_policy_path_get_modules(path);
+		size_t num_modules = apol_vector_get_size(modules);
+		if (apol_str_appendf(&s, &len, "%s + %zd module%s", primary_path, num_modules, num_modules == 1 ? "" : "s") < 0) {
+			return NULL;
+		}
+		if (num_modules > 0) {
+			if ((t = apol_str_join(modules, "\n\t")) == NULL || apol_str_appendf(&s, &len, "\n\t%s", t) < 0) {
+				free(t);
+				free(s);
+				return NULL;
+			}
 		}
 		return s;
 	}

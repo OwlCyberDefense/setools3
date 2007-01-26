@@ -167,7 +167,10 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 
 	util_text_buffer_clear(view->stats);
 
-	path_desc = util_policy_path_to_string(path);
+	if ((path_desc = util_policy_path_to_full_string(path)) == NULL) {
+		toplevel_ERR(view->top, "%s", strerror(errno));
+		return;
+	}
 	tmp = apol_policy_get_version_type_mls_str(p);
 	contents = g_strdup_printf("Policy: %s\n" "Policy Version & Type: %s\n", path_desc, tmp);
 	free(path_desc);

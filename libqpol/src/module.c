@@ -157,7 +157,7 @@ int qpol_module_get_name(qpol_module_t * module, char **name)
 	return STATUS_SUCCESS;
 }
 
-int qpol_module_get_version(qpol_module_t * module, char ** version)
+int qpol_module_get_version(qpol_module_t * module, char **version)
 {
 	if (!module || !version) {
 		errno = EINVAL;

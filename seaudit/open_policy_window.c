@@ -51,7 +51,7 @@ struct open_policy
 	GtkButton *base_browse_button;
 
 	GtkTreeView *module_view;
-	GtkButton *add_button, *remove_button;
+	GtkButton *add_button, *remove_button, *ok_button;
 };
 
 enum module_columns
@@ -73,11 +73,7 @@ static gint open_policy_sort(GtkTreeModel * model, GtkTreeIter * a, GtkTreeIter 
 	gtk_tree_model_get_value(model, b, column_id, &value_b);
 	name_a = g_value_get_string(&value_a);
 	name_b = g_value_get_string(&value_b);
-	if (column_id == VERSION_COLUMN) {
-		retval = atoi(name_a) - atoi(name_b);
-	} else {
-		retval = strcmp(name_a, name_b);
-	}
+	retval = strcmp(name_a, name_b);
 	g_value_unset(&value_a);
 	g_value_unset(&value_b);
 	return retval;
@@ -111,7 +107,8 @@ static void open_policy_init_widgets(struct open_policy *op)
 
 	op->add_button = GTK_BUTTON(glade_xml_get_widget(op->xml, "module add button"));
 	op->remove_button = GTK_BUTTON(glade_xml_get_widget(op->xml, "module remove button"));
-	assert(op->add_button != NULL && op->remove_button != NULL);
+	op->ok_button = GTK_BUTTON(glade_xml_get_widget(op->xml, "ok button"));
+	assert(op->add_button != NULL && op->remove_button != NULL && op->ok_button != NULL);
 
 	selection = gtk_tree_view_get_selection(op->module_view);
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);
@@ -156,6 +153,17 @@ static void open_policy_on_policy_type_toggle(GtkToggleButton * widget, gpointer
 	}
 }
 
+static void open_policy_on_entry_event_after(GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
+					     __attribute__ ((unused)), gpointer user_data)
+{
+	struct open_policy *op = (struct open_policy *)user_data;
+	gboolean sens = FALSE;
+	if (strcmp(gtk_entry_get_text(op->base_entry), "") != 0) {
+		sens = TRUE;
+	}
+	gtk_widget_set_sensitive(GTK_WIDGET(op->ok_button), sens);
+}
+
 static void open_policy_on_base_browse_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {
 	struct open_policy *op = (struct open_policy *)user_data;
@@ -184,8 +192,7 @@ static void open_policy_on_base_browse_click(GtkButton * button __attribute__ ((
  */
 static int open_policy_load_module(struct open_policy *op, const char *path)
 {
-	char *module_name, version_string[32];
-	uint32_t version;
+	char *module_name, *version_string;
 	int module_type;
 	qpol_module_t *module = NULL;
 	GtkTreeIter iter;
@@ -195,7 +202,7 @@ static int open_policy_load_module(struct open_policy *op, const char *path)
 		return -1;
 	}
 	if (qpol_module_get_name(module, &module_name) < 0 ||
-	    qpol_module_get_version(module, &version) < 0 || qpol_module_get_type(module, &module_type) < 0) {
+	    qpol_module_get_version(module, &version_string) < 0 || qpol_module_get_type(module, &module_type) < 0) {
 		toplevel_ERR(op->top, "Error reading module: %s", strerror(errno));
 		qpol_module_destroy(&module);
 		return -1;
@@ -205,7 +212,6 @@ static int open_policy_load_module(struct open_policy *op, const char *path)
 		qpol_module_destroy(&module);
 		return -1;
 	}
-	snprintf(version_string, sizeof(version_string), "%zd", version);
 	gtk_list_store_append(op->module_store, &iter);
 	gtk_list_store_set(op->module_store, &iter, PATH_COLUMN, path, NAME_COLUMN, module_name, VERSION_COLUMN, version_string,
 			   -1);
@@ -250,11 +256,21 @@ static void open_policy_on_remove_click(GtkButton * button __attribute__ ((unuse
 	gtk_list_store_remove(op->module_store, &iter);
 }
 
+static void open_policy_on_selection_change(GtkTreeSelection * selection, gpointer user_data)
+{
+	struct open_policy *op = (struct open_policy *)user_data;
+	gboolean sens = gtk_tree_selection_get_selected(selection, NULL, NULL);
+	gtk_widget_set_sensitive(GTK_WIDGET(op->remove_button), sens);
+}
+
 static void open_policy_init_signals(struct open_policy *op)
 {
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(op->module_view);
 	g_signal_connect(op->monolithic_radio, "toggled", G_CALLBACK(open_policy_on_policy_type_toggle), op);
 	g_signal_connect(op->modular_radio, "toggled", G_CALLBACK(open_policy_on_policy_type_toggle), op);
+	g_signal_connect(op->base_entry, "event-after", G_CALLBACK(open_policy_on_entry_event_after), op);
 	g_signal_connect(op->base_browse_button, "clicked", G_CALLBACK(open_policy_on_base_browse_click), op);
+	g_signal_connect(selection, "changed", G_CALLBACK(open_policy_on_selection_change), op);
 	g_signal_connect(op->add_button, "clicked", G_CALLBACK(open_policy_on_add_click), op);
 	g_signal_connect(op->remove_button, "clicked", G_CALLBACK(open_policy_on_remove_click), op);
 }

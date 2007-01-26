@@ -86,7 +86,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *version will be 0.
  */
-	extern int qpol_module_get_version(qpol_module_t * module, char ** version);
+	extern int qpol_module_get_version(qpol_module_t * module, char **version);
 
 /**
  *  Get the type of module (base or other).

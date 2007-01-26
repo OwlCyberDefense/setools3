@@ -1089,6 +1089,7 @@ int main(int argc, char **argv)
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
+	orig_module_paths = NULL;
 
 	if (argc - optind == 0) {
 		ERR(NULL, "%s", "Missing path to modified policy.");
@@ -1119,6 +1120,7 @@ int main(int argc, char **argv)
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
+	mod_module_paths = NULL;
 
 	orig_policy =
 		apol_policy_create_from_policy_path(orig_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : APOL_POLICY_OPTION_NO_RULES),

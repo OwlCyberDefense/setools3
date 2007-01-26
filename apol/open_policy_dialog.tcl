@@ -34,7 +34,9 @@ proc Apol_Open_Policy_Dialog::getPolicyPath {defaultPath} {
         set defaultPath [list monolithic {} {}]
     }
     set vars(path_type) [lindex $defaultPath 0]
-    set vars(primary_file) [lindex $defaultPath 1]
+    if {[set vars(primary_file) [lindex $defaultPath 1]] != {}} {
+        $dialog itemconfigure 0 -state normal
+    }
     set vars(last_module) $vars(primary_file)
     set vars(mod_names) {}
     set vars(mod_vers) {}
@@ -89,7 +91,9 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     frame $primary_f.f
     pack $primary_f.f -expand 1 -fill x
     set e [entry $primary_f.f.e -width 32 -bg white \
-               -textvariable Apol_Open_Policy_Dialog::vars(primary_file)]
+               -textvariable Apol_Open_Policy_Dialog::vars(primary_file) \
+               -validate key \
+               -vcmd [list Apol_Open_Policy_Dialog::validateEntryKey %P]]
     set b [button $primary_f.f.b -text "Browse" \
                -command Apol_Open_Policy_Dialog::browsePrimary]
     pack $e -side left -expand 1 -fill x -padx 4
@@ -113,10 +117,10 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     set sb [scrollbar $mod_list_f.sb -orient vertical \
                 -command [list Apol_Open_Policy_Dialog::multiscroll yview]]
     grid $ml $vl $pl $sb -sticky nsew
-    set bb [ButtonBox $modules_f.bb -homogeneous 1 -orient vertical -pady 2]
-    $bb add -text "Add" -command Apol_Open_Policy_Dialog::browseModule
-    $bb add -text "Remove" -command Apol_Open_Policy_Dialog::removeModule
-    pack $bb -side right -expand 0 -anchor n -padx 4 -pady 10
+    set widgets(bb) [ButtonBox $modules_f.bb -homogeneous 1 -orient vertical -pady 2]
+    $widgets(bb) add -text "Add" -command Apol_Open_Policy_Dialog::browseModule
+    $widgets(bb) add -text "Remove" -command Apol_Open_Policy_Dialog::removeModule -state disabled
+    pack $widgets(bb) -side right -expand 0 -anchor n -padx 4 -pady 10
 
     set widgets(listboxes) [list $ml $vl $pl]
     set widgets(scrollbar) $sb
@@ -129,9 +133,20 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
 
     trace add variable Apol_Open_Policy_Dialog::vars(path_type) write \
         [list Apol_Open_Policy_Dialog::togglePathType \
-             [list $mlabel $vlabel $plabel] $dis_bg $bb]
-    $dialog add -text "Ok" -command Apol_Open_Policy_Dialog::tryOpenPolicy
+             [list $mlabel $vlabel $plabel] $dis_bg $widgets(bb)]
+    $dialog add -text "Ok" -command Apol_Open_Policy_Dialog::tryOpenPolicy \
+        -state disabled
     $dialog add -text "Cancel"
+}
+
+proc Apol_Open_Policy_Dialog::validateEntryKey {newvalue} {
+    variable dialog
+    if {$newvalue == {}} {
+        $dialog itemconfigure 0 -state disabled
+    } else {
+        $dialog itemconfigure 0 -state normal
+    }
+    return 1
 }
 
 proc Apol_Open_Policy_Dialog::togglePathType {labels disabled_bg bb name1 name2 op} {
@@ -151,6 +166,11 @@ proc Apol_Open_Policy_Dialog::togglePathType {labels disabled_bg bb name1 name2 
         $w configure -state $state -bg $bg
     }
     $bb configure -state $state
+    if {$state == "normal" && [[lindex $widgets(listboxes) 0] curselection] > 0} {
+        $bb itemconfigure 1 -state normal
+    } else {
+        $bb itemconfigure 1 -state disabled
+    }
 }
 
 proc Apol_Open_Policy_Dialog::browsePrimary {} {
@@ -165,6 +185,7 @@ proc Apol_Open_Policy_Dialog::browsePrimary {} {
                -initialfile $vars(primary_file) -parent $dialog -title $title]
     if {$f != {}} {
         set vars(primary_file) $f
+        $dialog itemconfigure 0 -state normal
     }
 }
 
@@ -196,6 +217,7 @@ proc Apol_Open_Policy_Dialog::browseModule {} {
         }
         [lindex $widgets(listboxes) 0] see $i
         set vars(last_module) $f
+        $widgets(bb) itemconfigure 1 -state normal
     }
 }
 
@@ -207,6 +229,7 @@ proc Apol_Open_Policy_Dialog::removeModule {} {
             $lb delete [lindex $i 0]
         }
     }
+    $widgets(bb) itemconfigure 1 -state disabled
 }
 
 proc Apol_Open_Policy_Dialog::multiscroll {args} {
@@ -219,11 +242,16 @@ proc Apol_Open_Policy_Dialog::multiscroll {args} {
 proc Apol_Open_Policy_Dialog::multiselect {lb} {
     variable widgets
     set sellist [$lb curselection]
+    set enable_remove 0
     foreach lb $widgets(listboxes) {
         $lb selection clear 0 end
         foreach item $sellist {
             $lb selection set $item
+            set enable_remove 1
         }
+    }
+    if {$enable_remove} {
+        $widgets(bb) itemconfigure 1 -state normal
     }
 }
 

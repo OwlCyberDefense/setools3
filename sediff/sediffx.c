@@ -189,71 +189,104 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 		}
 	}
 
-	/* sediffx with file names */
-	if (argc - optind == 2) {
-		/* old syntax */
-		*orig_path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, argv[optind], NULL);
-		*mod_path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, argv[optind + 1], NULL);
-		if (*orig_path == NULL || *mod_path == NULL) {
-			ERR(NULL, "%s", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-	} else if (argc - optind > 2) {
-		/* module lists */
-		char *primary_path;
-		apol_vector_t *v = apol_vector_create();
-		if (v == NULL) {
-			ERR(NULL, "%s", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		primary_path = argv[optind++];
-		for (; argc - optind; optind++) {
-			if (!strcmp(argv[optind], ";")) {
-				optind++;
-				break;
-			}
-			if (apol_vector_append(v, argv[optind])) {
-				ERR(NULL, "%s", strerror(errno));
-				exit(EXIT_FAILURE);
-			}
-		}
-		if (optind >= argc) {
-			usage(argv[0], 1);
-			exit(EXIT_FAILURE);
-		}
-		if ((*orig_path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MODULAR, primary_path, v)) == NULL) {
-			ERR(NULL, "%s", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		apol_vector_destroy(&v, NULL);
-		if ((v = apol_vector_create()) == NULL) {
-			ERR(NULL, "%s", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		primary_path = argv[optind++];
-		for (; argc - optind; optind++) {
-			if (apol_vector_append(v, argv[optind])) {
-				ERR(NULL, "%s", strerror(errno));
-				exit(EXIT_FAILURE);
-			}
-		}
-		if ((*mod_path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MODULAR, primary_path, v)) == NULL) {
-			ERR(NULL, "%s", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		apol_vector_destroy(&v, NULL);
-
-	} else if (argc - optind != 0) {
-		usage(argv[0], 1);
-		exit(EXIT_FAILURE);
-	} else {
+	if (argc - optind == 0) {
 		/* here we have found no missing arguments, but
 		 * perhaps the user specified -d with no files */
 		if (*run_diff) {
 			usage(argv[0], 0);
 			exit(EXIT_FAILURE);
 		}
+		return;
+	} else if (argc - optind == 1) {
+		usage(argv[0], 1);
+		exit(EXIT_FAILURE);
 	}
+	if (argc - optind == 2) {
+		/* sediffx with file names, old syntax */
+		if (strcmp(argv[optind], ";") == 0 || strcmp(argv[optind + 1], ";") == 0) {
+			usage(argv[0], 1);
+			exit(EXIT_FAILURE);
+		}
+		*orig_path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, argv[optind], NULL);
+		*mod_path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, argv[optind + 1], NULL);
+		if (*orig_path == NULL || *mod_path == NULL) {
+			ERR(NULL, "%s", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		return;
+	}
+
+	/* module lists */
+	char *orig_base_path = NULL;
+	apol_vector_t *orig_module_paths = NULL;
+	char *mod_base_path = NULL;
+	apol_vector_t *mod_module_paths = NULL;
+	apol_policy_path_type_e orig_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+	apol_policy_path_type_e mod_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+
+	orig_base_path = argv[optind++];
+	if (!(orig_module_paths = apol_vector_create())) {
+		ERR(NULL, "%s", strerror(errno));
+		goto err;
+	}
+	for (; argc - optind; optind++) {
+		if (!strcmp(";", argv[optind])) {
+			optind++;
+			break;
+		}
+		char *tmp = NULL;
+		if (!(tmp = strdup(argv[optind]))) {
+			ERR(NULL, "Error loading module %s", argv[optind]);
+			goto err;
+		}
+		if (apol_vector_append(orig_module_paths, (void *)tmp)) {
+			ERR(NULL, "Error loading module %s", argv[optind]);
+			free(tmp);
+			goto err;
+		}
+		orig_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+	}
+	*orig_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
+	if (*orig_path == NULL) {
+		ERR(NULL, "%s", strerror(errno));
+		goto err;
+	}
+	orig_module_paths = NULL;
+
+	if (argc - optind == 0) {
+		ERR(NULL, "%s", "Missing path to modified policy.");
+		goto err;
+	}
+
+	mod_base_path = argv[optind++];
+	if (!(mod_module_paths = apol_vector_create())) {
+		ERR(NULL, "%s", strerror(errno));
+		goto err;
+	}
+	for (; argc - optind; optind++) {
+		char *tmp = NULL;
+		if (!(tmp = strdup(argv[optind]))) {
+			ERR(NULL, "Error loading module %s", argv[optind]);
+			goto err;
+		}
+		if (apol_vector_append(mod_module_paths, (void *)tmp)) {
+			ERR(NULL, "Error loading module %s", argv[optind]);
+			free(tmp);
+			goto err;
+		}
+		mod_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+	}
+	*mod_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
+	if (*mod_path == NULL) {
+		ERR(NULL, "%s", strerror(errno));
+		goto err;
+	}
+	return;
+      err:
+	apol_policy_path_destroy(orig_path);
+	apol_policy_path_destroy(mod_path);
+	apol_vector_destroy(&orig_module_paths, free);
+	apol_vector_destroy(&mod_module_paths, free);
 }
 
 int main(int argc, char **argv)

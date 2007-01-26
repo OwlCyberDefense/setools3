@@ -502,7 +502,8 @@ static int Apol_ClosePolicy(ClientData clientData, Tcl_Interp * interp, int argc
 
 /**
  * Retrieve information about a policy module file, either source or
- * binary, from disk.  The policy module will be closed afterwards.
+ * binary, from disk.  This will be a 2-ple of module name and
+ * version.  The policy module will be closed afterwards.
  *
  * @param argv This function takes one parameter:
  * <ol>
@@ -512,8 +513,7 @@ static int Apol_ClosePolicy(ClientData clientData, Tcl_Interp * interp, int argc
 static int Apol_GetModuleInfo(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	qpol_module_t *module = NULL;
-	char *module_name;
-	uint32_t version;
+	char *module_name, *version;
 	int module_type;
 	Tcl_Obj *result_obj, *objs[2];
 	int retval = TCL_ERROR;
@@ -537,7 +537,7 @@ static int Apol_GetModuleInfo(ClientData clientData, Tcl_Interp * interp, int ar
 		goto cleanup;
 	}
 	objs[0] = Tcl_NewStringObj(module_name, -1);
-	objs[1] = Tcl_NewIntObj(version);
+	objs[1] = Tcl_NewStringObj(version, -1);
 	result_obj = Tcl_NewListObj(2, objs);
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
