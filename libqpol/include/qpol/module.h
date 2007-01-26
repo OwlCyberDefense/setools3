@@ -81,7 +81,8 @@ extern "C"
 /**
  *  Get the version of a module.
  *  @param module The module from which to get the version.
- *  @param version Pointer to string in which to store the version.
+ *  @param version Pointer to string in which to store the version. <b>The
+ *  caller should not free this string.</b>
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *version will be 0.
  */
