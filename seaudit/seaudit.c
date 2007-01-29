@@ -238,10 +238,7 @@ static void seaudit_destroy(seaudit_t ** s)
 
 static void print_version_info(void)
 {
-	printf("Audit Log analysis tool for Security Enhanced Linux\n\n");
-	printf("   GUI version %s\n", VERSION);
-	printf("   libapol version %s\n", libapol_get_version());
-	printf("   libseaudit version %s\n\n", libseaudit_get_version());
+	printf("seaudit %s\n%s\n", VERSION, COPYRIGHT_INFO);
 }
 
 static void print_usage_info(const char *program_name, int brief)

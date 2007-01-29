@@ -5,7 +5,7 @@
  *  @author Frank Mayer mayerf@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
- * 
+ *
  *  Copyright (C) 2001-2007 Tresys Technology, LLC
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -126,11 +126,7 @@ void usage(const char *program_name, bool_t brief)
 
 void print_version_info(void)
 {
-	printf("apol %s\n", COPYRIGHT_INFO);
-	printf("Policy Analysis tool for Security Enhanced Linux.\n\n");
-	printf("   GUI version %s\n", VERSION);
-	printf("   libapol version %s\n\n", libapol_get_version());
-	return;
+	printf("apol %s\n%s\n", VERSION, COPYRIGHT_INFO);
 }
 
 void parse_command_line(int argc, char **argv)

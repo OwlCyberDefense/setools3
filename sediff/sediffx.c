@@ -102,8 +102,7 @@ uint32_t sediffx_get_poldiff_run_flags(sediffx_t * s)
 
 static void print_version_info(void)
 {
-	printf("Semantic Policy Difference Tool version " VERSION "\n");
-	printf("%s\n", COPYRIGHT_INFO);
+	printf("sediffx %s\n%s\n", VERSION, COPYRIGHT_INFO);
 }
 
 static void usage(const char *program_name, int brief)

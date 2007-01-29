@@ -1041,7 +1041,7 @@ int main(int argc, char **argv)
 			usage(argv[0], 0);
 			exit(0);
 		case 'v':
-			printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
+			printf("sediff %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
 			usage(argv[0], 1);

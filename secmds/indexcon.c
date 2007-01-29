@@ -74,7 +74,7 @@ int main(int argc, char **argv, char **envp)
 			usage(argv[0], 0);
 			exit(0);
 		case 'v':	       /* version */
-			printf("\n%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
+			printf("indexcon %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
 			usage(argv[0], 1);

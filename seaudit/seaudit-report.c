@@ -142,7 +142,7 @@ static void parse_command_line_args(int argc, char **argv)
 			break;
 		case 'v':
 			/* display version */
-			printf("\n%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
+			printf("seaudit-report %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		case 'h':
 			/* display help */

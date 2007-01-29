@@ -65,12 +65,11 @@ void usage(const char *arg0, bool_t brief)
 	if (brief) {
 		printf("\n\tTry %s --help for more help.\n", arg0);
 	} else {
-		printf("Perform modular checks on a SELinux policy\n");
+		printf("Perform modular checks on a SELinux policy.\n");
 		printf("\n");
 		printf("   -p <prof>, --profile=<prof>  name or path of profile to load\n");
-		printf("                                if used with out -m, run all modules\n");
-		printf("                                specified in the profile\n");
-		printf("   -m <mod>,  --module=<mod>    name of module to run\n");
+		printf("                                if used without -m, run all modules in profile\n");
+		printf("   -m <mod>, --module=<mod>     name of module to run\n");
 #ifdef LIBSEFS
 		printf("   --fcfile=<file>              file_contexts file to load\n");
 #endif
@@ -81,7 +80,7 @@ void usage(const char *arg0, bool_t brief)
 		printf("   --min-sev=<low|med|high>     set the minimum severity to report\n");
 		printf("\n");
 		printf("   -l, --list                   print a list of profiles and modules and exit\n");
-		printf("   -h[mod],   --help[=module]   print this help text or help for a module\n");
+		printf("   -h[mod], --help[=module]     print this help text or help for a module\n");
 		printf("   --version                    print version information and exit\n");
 	}
 	printf("\n");
@@ -202,7 +201,7 @@ int main(int argc, char **argv)
 			usage(argv[0], 0);
 			exit(0);
 		case 'V':
-			printf("\nSEChecker v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
+			printf("sechecker %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
 			usage(argv[0], 1);
@@ -264,10 +263,10 @@ int main(int argc, char **argv)
 		}
 		base_path = argv[optind];
 		optind++;
-		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 		while (argc - optind) {
 			if (apol_vector_append(policy_mods, argv[optind++]))
 				goto exit_err;
+			path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 		}
 		pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
 		if (!pol_path)

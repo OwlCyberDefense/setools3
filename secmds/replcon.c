@@ -1299,9 +1299,9 @@ void replcon_parse_command_line(int argc, char **argv)
 			break;
 		case 'v':	       /* version */
 #ifndef FINDCON
-			printf("\n%s (replcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
+			printf("replcon %s\n%s\n", VERSION, COPYRIGHT_INFO);
 #else
-			printf("\n%s (findcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
+			printf("findcon %s\n%s\n", VERSION, COPYRIGHT_INFO);
 #endif
 
 			replcon_info_free(&replcon_info);
