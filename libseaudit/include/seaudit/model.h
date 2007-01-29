@@ -1,8 +1,9 @@
 /**
  *  @file
- *  Public interface to a seaudit_model_t.  This represents a subset
- *  of log messages from one or more seaudit_log_t, where the subset
- *  is defined by a finite set of seaudit_filters and sorted by some
+ *
+ *  Public interface to a seaudit_model.  This represents a subset of
+ *  log messages from one or more seaudit_log, where the subset is
+ *  defined by a finite set of seaudit_filter and sorted by some
  *  criterion or criteria.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -44,8 +45,8 @@ extern "C"
 
 /**
  * Create a seaudit_model based upon the messages from some particular
- * seaudit_log_t.  The model will be initialized with the default
- * filter (i.e., accept all of the messages from the log).
+ * seaudit_log.  The model will be initialized with the default filter
+ * (i.e., accept all of the messages from the log).
  *
  * @param name Name for the model; the string will be duplicated.  If
  * NULL then the model will be assigned a non-unique default name.
@@ -86,7 +87,7 @@ extern "C"
 	extern seaudit_model_t *seaudit_model_create_from_file(const char *filename);
 
 /**
- * Destroy the referenced seadit_model_t object.
+ * Destroy the referenced seadit_model object.
  *
  * @param model Model to destroy.  The pointer will be set to NULL
  * afterwards.  (If pointer is already NULL then do nothing.)
@@ -161,10 +162,10 @@ extern "C"
  *
  * @param model Model containing filters.
  *
- * @return Vector of seaudit_filter_t objects, or NULL upon error.
- * Note that the vector my be empty.  Do not destroy or otherwise
- * modify this vector.  (It is safe to manipulate the elements within
- * the vector.)
+ * @return Vector of seaudit_filter objects, or NULL upon error.  Note
+ * that the vector my be empty.  Do not destroy or otherwise modify
+ * this vector.  (It is safe to manipulate the elements within the
+ * vector.)
  */
 	extern apol_vector_t *seaudit_model_get_filters(seaudit_model_t * model);
 

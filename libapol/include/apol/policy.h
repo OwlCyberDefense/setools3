@@ -2,9 +2,9 @@
  * @file
  *
  * Public interface for SELinux policies.  This function declares
- * apol_policy_t, a convenience structure that contains all of the
- * other structures use by the setools project.  Almost all setools
- * files will need to #include this header.
+ * apol_policy, a structure that groups a qpol_policy with other
+ * structures needed by libapol.  Almost all setools files will need
+ * to #include this header.
  *
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
@@ -107,14 +107,14 @@ extern "C"
 	extern int apol_policy_get_policy_type(apol_policy_t * policy);
 
 /**
- * Given a policy, return a pointer to the underlying qpol policy.
+ * Given a policy, return a pointer to the underlying qpol_policy.
  * This is needed, for example, to access details of particulary qpol
  * components.
  *
  * @param policy Policy containing qpol policy.
  *
  * @return Pointer to underlying qpol policy, or NULL on error.  Do
- * not free() this pointer.
+ * not free() or otherwise destroy this pointer.
  */
 	extern qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy);
 
@@ -165,6 +165,8 @@ extern "C"
  * APOL_MSG_WARN, or APOL_MSG_INFO.
  * @param fmt Format string to print, using syntax of printf(3).
  */
+	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
+
 	__attribute__ ((format(printf, 3, 4)))
 	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
 

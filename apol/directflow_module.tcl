@@ -1,6 +1,3 @@
-#############################################################
-#  directflow_module.tcl
-# -----------------------------------------------------------
 #  Copyright (C) 2003-2007 Tresys Technology, LLC
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,13 +12,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-#  Requires tcl and tk 8.4+, with BWidget
-#  Author: <don.patterson@tresys.com, mayerf@tresys.com, kcarr@tresys>
-# -----------------------------------------------------------
-#
-# This is the implementation of the interface for Information
-# Flow analysis.
 
 namespace eval Apol_Analysis_directflow {
     variable vals

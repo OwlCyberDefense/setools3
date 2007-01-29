@@ -13,17 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-#
-# Author: <don.patterson@tresys.com>
-#
-
-##############################################################
-# ::Apol_File_Contexts
-#  
-# The File Contexts page
-##############################################################
 namespace eval Apol_File_Contexts {
     variable opts
     variable widgets

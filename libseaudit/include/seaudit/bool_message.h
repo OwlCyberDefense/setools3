@@ -1,7 +1,7 @@
 /**
  *  @file
  *  Public interface for a single boolean change log message.  This is
- *  a subclass of seaudit_message_t; it has no publicly accessible
+ *  a subclass of seaudit_message; it has no publicly accessible
  *  functions.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

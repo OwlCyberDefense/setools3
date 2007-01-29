@@ -1,9 +1,10 @@
 /**
  *  @file
- *  Public interface for the main libseaudit object, seaudit_log_t.
+ *
+ *  Public interface for the main libseaudit object, seaudit_log.
  *  Note that there is no public way to get at the messages stored
- *  within a model.  For that, the caller must create a
- *  seaudit_model_t and then access messages through the model.
+ *  within a model.  For that, the caller must create a seaudit_model
+ *  and then access messages through the model.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

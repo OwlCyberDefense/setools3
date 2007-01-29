@@ -52,7 +52,8 @@ extern "C"
 	extern int qpol_module_create_from_file(const char *path, qpol_module_t ** module);
 
 /**
- *  Free all memory used by a qpol module and set it to NULL.
+ *  Free all memory used by a qpol module and set it to NULL.  Does
+ *  nothing if the pointer is already NULL.
  *  @param module Reference pointer to the module to destroy.
  */
 	extern void qpol_module_destroy(qpol_module_t ** module);

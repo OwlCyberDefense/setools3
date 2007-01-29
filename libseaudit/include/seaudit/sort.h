@@ -1,10 +1,11 @@
 /**
  *  @file
- *  Public interface to a seaudit_sort_t.  This represents an abstract
+ *
+ *  Public interface to a seaudit_sort.  This represents an abstract
  *  object that specifies how to sort messages within a particular
- *  seaudit_model_t.  The caller obtains a specific sort object and
- *  appends it to a model via seaudit_model_append_sort(); the
- *  caller cannot get a "generic" sort object.
+ *  seaudit_model.  The caller obtains a specific sort object and
+ *  appends it to a model via seaudit_model_append_sort(); the caller
+ *  cannot get a "generic" sort object.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -37,7 +38,7 @@ extern "C"
 	typedef struct seaudit_sort seaudit_sort_t;
 
 /**
- * Destroy the referenced seaudit_sort_t object.
+ * Destroy the referenced seaudit_sort object.
  *
  * @param sort Sort object to destroy.  The pointer will be set to
  * NULL afterwards.  (If pointer is already NULL then do nothing.)

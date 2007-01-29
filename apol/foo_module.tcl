@@ -1,6 +1,3 @@
-#############################################################
-#  foo_module.tcl
-# -----------------------------------------------------------
 #  Copyright (C) 2003-2007 Tresys Technology, LLC
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,19 +12,16 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-#  Requires tcl and tk 8.4+, with BWidget
-#  Author: <don.patterson@tresys.com, mayerf@tresys.com>
-# -----------------------------------------------------------
-#
+
+
 ## This module is not a real analysis, but an example that serves as a
 ## guide to what one must do when creating a module via embedded
 ## comments.  This file also serves as a template for when new
 ## analysis modules are created.  To include this module in apol, add
 ## the file name to apol_SOURCES variable in Makefile.am.
-#
-# All this module does is display an entry box and echo the contents
-# of that box.
+##
+## All this module does is display an entry box and echo the contents
+## of that box.
 
 ## The name space should following the convention of Apol_Analysis_XXX, where
 ## XXX is a 3-4 letter name for the analysis.

@@ -13,16 +13,7 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-##############################################################
-# ::ApolTop
-#
-# The top level GUI
-##############################################################
 namespace eval ApolTop {
-    # All capital letters is the convention for variables defined via the Makefile.
     variable status {}
     variable policy_version_string {}
     variable last_policy_path {}
@@ -84,8 +75,9 @@ namespace eval ApolTop {
     variable srch_Direction	"down"
     variable policy_is_open	0
 
-    # Notebook tab IDENTIFIERS; NOTE: We name all tabs after their related namespace qualified names.
-    # We use the prefix 'Apol_' for all notebook tabnames. Note that the prefix must end with an
+    # Notebook tab IDENTIFIERS; NOTE: We name all tabs after their
+    # related namespace qualified names.  We use the prefix 'Apol_'
+    # for all notebook tabnames. Note that the prefix must end with an
     # underscore and that that tabnames may NOT have a colon.
     variable tabName_prefix	"Apol_"
     variable components_tab	"Apol_Components"
@@ -182,7 +174,6 @@ proc ApolTop::configure_edit_pmap_menu_item {enable} {
     } else {
         [$mainframe getmenu pmap_menu] entryconfigure last -state disabled -label "Edit Perm Map... (Not loaded)"
     }
-    return 0
 }
 
 proc ApolTop::configure_load_index_menu_item {enable} {
@@ -193,28 +184,7 @@ proc ApolTop::configure_load_index_menu_item {enable} {
     } else {
         [$mainframe getmenu fc_index_menu] entryconfigure last -label "Load Index... (Not loaded)"
     }
-    return 0
 }
-
-########################################################################
-# ::strip_list_of_empty_items -- takes a tcl list and checks for empty
-#	list items. If empty list items are found, it will be removed
-#	from the list and a new formatted list will be returned.
-#
-proc ApolTop::strip_list_of_empty_items {list_1} {
-    global tcl_version
-
-    set len [llength $list_1]
-    set items ""
-    for {set i 0} {$i < $len} {incr i} {
-        if {[lindex $list_1 $i] != ""} {
-            set items [lappend items [lindex $list_1 $i]]
-        }
-    }
-
-    return $items
-}
-
 
 # ------------------------------------------------------------------------------
 #  Command ApolTop::popup_listbox_Menu
@@ -242,8 +212,6 @@ proc ApolTop::popup_listbox_Menu { global x y popup callbacks list_box} {
 
     # Posting the popup menu
     tk_popup $popup $cmx $cmy
-
-    return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -270,8 +238,6 @@ proc ApolTop::popup_Tab_Menu { window x y popupMenu callbacks page } {
 
     # Posting the popup menu
     tk_popup $popupMenu $cmx $cmy
-
-    return 0
 }
 
 proc ApolTop::set_Focus_to_Text { tab } {
@@ -422,8 +388,6 @@ proc ApolTop::search {} {
         default {
             puts "Invalid raised tab!"
         }
-
-    return 0
 }
 
 ##############################################################
@@ -498,7 +462,6 @@ proc ApolTop::load_query_info {} {
         ApolTop::set_Focus_to_Text [$notebook raise]
         ::close $f
     }
-    return 0
 }
 
 ##############################################################

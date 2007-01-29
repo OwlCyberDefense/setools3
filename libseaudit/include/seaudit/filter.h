@@ -1,7 +1,8 @@
 /**
  *  @file
- *  Public interface to a seaudit_filter_t.  A filter is used to
- *  modify the list of messages returned from a seaudit_model_t.
+ *
+ *  Public interface to a seaudit_filter.  A filter is used to modify
+ *  the list of messages returned from a seaudit_model.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -97,7 +98,7 @@ extern "C"
 	extern seaudit_filter_t *seaudit_filter_create_from_filter(const seaudit_filter_t * filter);
 
 /**
- * Create and return a vector of filters (type seaudit_filter_t),
+ * Create and return a vector of filters (type seaudit_filter),
  * initialized from the contents of a XML configuration file.
  *
  * @param filename File containing one or more filter data.
@@ -111,7 +112,7 @@ extern "C"
 	extern apol_vector_t *seaudit_filter_create_from_file(const char *filename);
 
 /**
- * Destroy the referenced seaudit_filter_t object.
+ * Destroy the referenced seaudit_filter object.
  *
  * @param filter Filter object to destroy.  The pointer will be set to
  * NULL afterwards.  (If pointer is already NULL then do nothing.)
