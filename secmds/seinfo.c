@@ -101,7 +101,7 @@ void usage(const char *program_name, int brief)
 		return;
 	}
 	fputs("\n\
-Print information about the componets of a SELinux policy.\n\
+Print information about the components of a SELinux policy.\n\
   -c[NAME], --classes[=NAME]       print object classes\n\
   -t[NAME], --types[=NAME]         print types (no aliases or attributes)\n\
   -a[NAME], --attribs[=NAME]       print type attributes\n\

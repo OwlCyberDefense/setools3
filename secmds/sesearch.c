@@ -47,7 +47,7 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
-char *policy_file = NULL;
+static char *policy_file = NULL;
 
 static struct option const longopts[] = {
 	{"source", required_argument, NULL, 's'},
@@ -127,7 +127,7 @@ Search the rules in a SELinux policy.\n\
   --role_source=NAME      find rules with role NAME (regex) as source\n\
   --role_target=NAME      find rules with role NAME (regex) as target\n\
   -c NAME, --class=NAME   find rules with class NAME as the object class\n\
-  -p P1[,P2,...] --perms=P1[,P2...]\n\
+  -p P1[,P2,...], --perms=P1[,P2...]\n\
                           find rules with the specified permissions\n\
   -b NAME, --boolean=NAME find conditional rules with NAME in the expression\n\
 ", stdout);
@@ -949,7 +949,10 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 	} else {
-		policy_file = argv[optind];
+		if ((policy_file = strdup(argv[optind])) == NULL) {
+			fprintf(stderr, "%s\n", strerror(errno));
+			exit(1);
+		}
 		optind++;
 	}
 
@@ -984,12 +987,12 @@ int main(int argc, char **argv)
 		apol_vector_destroy(&mod_paths, free);
 		exit(1);
 	}
+	free(policy_file);
 	apol_vector_destroy(&mod_paths, free);
 
 	policy = apol_policy_create_from_policy_path(pol_path, 0, NULL, NULL);
 	if (!policy) {
 		ERR(policy, "%s", strerror(errno));
-		free(policy_file);
 		apol_policy_path_destroy(&pol_path);
 		exit(1);
 	}
