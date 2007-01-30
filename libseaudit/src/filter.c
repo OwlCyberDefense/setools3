@@ -74,7 +74,7 @@ struct seaudit_filter
 	char *comm;
 	/** criteria for IP address, glob expression */
 	char *ipaddr;
-	/** criteria for port (exact match) */
+	/** criteria for port, exact match */
 	int port;
 	/** criteria for netif, exact match */
 	char *netif;
@@ -1169,7 +1169,7 @@ static int filter_date_read(seaudit_filter_t * filter, const xmlChar * ch)
 			free(s);
 			return -1;
 		}
-		strptime(s, "%a %b %d %T %Y", filter->start);
+		strptime(s, "%a %b %d %T %Y", filter->end);
 	} else {
 		filter->date_match = atoi(s);
 	}
