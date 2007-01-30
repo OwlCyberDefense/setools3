@@ -240,7 +240,7 @@ static int append_attr_to_list(Tcl_Interp * interp, qpol_type_t * attr_datum, Tc
  * <ol>
  *   <li>attribute name to look up, or a regular expression, or empty
  *       to get all attributes
- *   <li>(optional) treat argv[1] as an attribute name or regex
+ *   <li>(optional) if true then treat argv[1] as a regex
  * </ol>
  */
 static int Apol_GetAttribs(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])

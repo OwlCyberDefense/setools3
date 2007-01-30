@@ -131,24 +131,11 @@ proc Apol_File_Contexts::close { } {
 #  Command Apol_File_Contexts::get_fc_files_for_ta
 # ------------------------------------------------------------------------------
 proc Apol_File_Contexts::get_fc_files_for_ta {which ta} {	
-	set types_list ""
-	set results ""
-	
-	if {$which == "type"} {
-		set types_list [lappend types_list $ta]
-	} else {
-		# Get all types for the attribute
-		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $ta]} err]	
-		if {$rt != 0} {
-			return -code error $err
-		}
-		foreach type $attrib_typesList {
-			if {$type != "self"} {
-				set types_list [lappend types_list $type]
-			}	
-		}
-		set types_list $attrib_typesList
-	}
+    if {$which == "type"} {
+        set types_list $ta
+    } else {
+        set types_list [lindex [apol_GetAttribs $ta] 0 1]
+    }
     set results [apol_Search_FC_Index_DB {} $types_list {} {} {} 0 0 0 0]
     set return_list {}
     foreach fscon $results {

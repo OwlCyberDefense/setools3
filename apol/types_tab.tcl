@@ -13,16 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-
-##############################################################
-# ::Apol_Types
-#
-# The Types page
-##############################################################
 namespace eval Apol_Types {
     variable typelist {}
     variable attriblist {}
@@ -73,16 +63,9 @@ proc Apol_Types::popupTypeInfo {which ta} {
     } else {
         set info_ta [renderAttrib [lindex [apol_GetAttribs $ta 0] 0] 1 0]
     }
-    if {$ApolTop::libsefs == 1} {
-        if {[Apol_File_Contexts::is_db_loaded]} {
-            set rt [catch {set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]} err]
-            if {$rt != 0} {
-                tk_messageBox -icon error -type ok -title "Error" \
-                    -message "$err. \n\nIf you need to load an index file, go to the File Context tab."
-                return -1
-            }
-            set index_file_loaded 1
-        }
+    if {$ApolTop::libsefs == 1 && [Apol_File_Contexts::is_db_loaded]} {
+        set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]
+        set index_file_loaded 1
     }
     set w .ta_infobox
     destroy $w

@@ -4,8 +4,8 @@ AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(setools, 3.1)
 
 dnl *** update these variables as versions change; also update AC_INIT ***
-libqpol_version=2.0
-libqpol_soname=libqpol.so.2
+libqpol_version=1.1
+libqpol_soname=libqpol.so.1
 
 libapol_version=3.1
 libapol_soname=libapol.so.3.1
@@ -14,8 +14,8 @@ libapol_tcl_soname=libapol-tcl.so.3.1
 libpoldiff_version=1.1
 libpoldiff_soname=libpoldiff.so.1.1
 
-libsefs_version=3.1
-libsefs_soname=libsefs.so.3.1
+libsefs_version=3.0.2
+libsefs_soname=libsefs.so.3
 
 libseaudit_version=4.0.0
 libseaudit_soname=libseaudit.so.4
@@ -356,6 +356,23 @@ SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
 AC_SUBST(SELINUX_CFLAGS)
 AC_SUBST(SELINUX_LIB_FLAG)
 
+sepol_save_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} ${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG}"
+AC_RUN_IFELSE([#include <sepol/policydb/policydb.h>
+#include <stdio.h>
+#include <stdlib.h>
+int main(void) {
+    FILE *f = fopen("conftest.data", "w");
+    if (f != NULL && fprintf(f, "%d", POLICYDB_VERSION_MAX) > 0) {
+       fclose(f);
+       exit(EXIT_SUCCESS);
+    }
+    exit(EXIT_FAILURE); }],
+    sepol_policy_version_max=`cat conftest.data`,
+    AC_MSG_FAILURE([could not determine maximum libsepol policy version]))
+AC_DEFINE_UNQUOTED(SEPOL_POLICY_VERSION_MAX, ${sepol_policy_version_max}, [maximum policy version supported by libsepol])
+CFLAGS="${sepol_save_CFLAGS}"
+
 if test ${use_selinux} = "yes"; then
 dnl Locate selinux policy root directory
     AC_MSG_CHECKING([for selinux policy root])
@@ -517,6 +534,7 @@ AC_DEFINE_UNQUOTED(LIBQPOL_VERSION_STRING, "${libqpol_version}", [libqpol versio
 AC_DEFINE_UNQUOTED(LIBPOLDIFF_VERSION_STRING, "${libpoldiff_version}", [libpoldiff version])
 AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
+AC_DEFINE(SQLITE_PTR_SZ, SIZEOF_CHAR_P, [size of a pointer, as used by SQLite3])
 
 # for older version of BWidget, overcome bug in NoteBook::bindtabs and
 # add a new -autopost option to ComboBox

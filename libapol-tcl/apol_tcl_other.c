@@ -630,6 +630,35 @@ static int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp * inter
 }
 
 /**
+ * Returns the policy version number for the currently opened policy.
+ * If the policy is modular, return the maximum allowed policy as per
+ * libsepol.
+ */
+static int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
+{
+        unsigned int version;
+        Tcl_Obj *version_obj;
+
+        apol_tcl_clear_error();
+        if (policydb == NULL) {
+                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+                return TCL_ERROR;
+        }
+	if (apol_policy_get_policy_type(policydb) != QPOL_POLICY_MODULE_BINARY) {
+		if (qpol_policy_get_policy_version(qpolicydb, &version) < 0) {
+			apol_tcl_write_error(interp);
+			return TCL_ERROR;
+		}
+	}
+	else {
+		version = SEPOL_POLICY_VERSION_MAX;
+	}
+        version_obj = Tcl_NewIntObj(version);
+        Tcl_SetObjResult(interp, version_obj);
+        return TCL_OK;
+}
+
+/**
  * Appends a name and size to a stats list, conveniently in a format
  * suitable for [array set].
  *
@@ -1257,6 +1286,7 @@ int apol_tcl_init(Tcl_Interp * interp)
 	Tcl_CreateCommand(interp, "apol_IsCapable", Apol_IsCapable, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetVersion", Apol_GetVersion, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", Apol_GetPolicyVersionString, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", Apol_GetPolicyVersionNumber, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetStats", Apol_GetStats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidRange", Apol_IsValidRange, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidPartialContext", Apol_IsValidPartialContext, NULL, NULL);

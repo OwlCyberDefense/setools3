@@ -1,3 +1,17 @@
+2007-01-30  J. Tang  <jtang@tresys.com>
+
+	* fixed error in apol when right-clicking an attribute when a file
+	contexts database is loaded.
+
+	* fixed error in SQLite configuration in which a pointer size was
+	defined as the size of an integer.  this is a no longer valid
+	assumption on 64-bit architectures.
+
+	* if apol has a modular policy loaded, then its "policy version"
+	for purposes of permission maps is now set to the maximum policy
+	version as defined in libsepol.  this mimics the linking behavior
+	of sepol.
+
 2007-01-25  J. Tang  <jtang@tresys.com>
 
 	* fixed error where aliases within modules were not being detected
