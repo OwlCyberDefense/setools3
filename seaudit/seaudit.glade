@@ -4379,7 +4379,7 @@ Any Criterion</property>
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Target type(s) to filter, comma separated</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">False</property>
+			      <property name="editable">True</property>
 			      <property name="visibility">True</property>
 			      <property name="max_length">0</property>
 			      <property name="text" translatable="yes"></property>
@@ -4401,7 +4401,7 @@ Any Criterion</property>
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Target user(s) to filter, comma separated</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">False</property>
+			      <property name="editable">True</property>
 			      <property name="visibility">True</property>
 			      <property name="max_length">0</property>
 			      <property name="text" translatable="yes"></property>
@@ -4423,7 +4423,7 @@ Any Criterion</property>
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Target role(s) to filter, comma separated</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">False</property>
+			      <property name="editable">True</property>
 			      <property name="visibility">True</property>
 			      <property name="max_length">0</property>
 			      <property name="text" translatable="yes"></property>
@@ -4508,7 +4508,7 @@ Any Criterion</property>
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Object class(es) to filter, comma separated</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">False</property>
+			      <property name="editable">True</property>
 			      <property name="visibility">True</property>
 			      <property name="max_length">0</property>
 			      <property name="text" translatable="yes"></property>

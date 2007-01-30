@@ -618,19 +618,12 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
 
 }
 
-/******************** handle right clicks on a message ********************/
+/******************** handlers for  right click menu ********************/
 
 static void message_view_popup_on_view_message_activate(GtkMenuItem * menuitem, gpointer user_data)
 {
 	message_view_t *v = g_object_get_data(G_OBJECT(menuitem), "view-object");
-	apol_vector_t *messages = NULL;
-	if ((messages = apol_vector_create_with_capacity(1)) == NULL || apol_vector_append(messages, user_data) < 0) {
-		apol_vector_destroy(&messages, NULL);
-		toplevel_ERR(v->top, "%s", strerror(errno));
-	} else {
-		message_view_messages_vector(v, messages);
-		apol_vector_destroy(&messages, NULL);
-	}
+	message_view_entire_message(v);
 }
 
 static void message_view_popup_on_find_terules_activate(GtkMenuItem * menuitem, gpointer user_data)
@@ -649,13 +642,21 @@ static void message_view_popup_on_export_selected_messages_activate(GtkMenuItem 
 static void message_view_popup_menu(GtkWidget * treeview, GdkEventButton * event, message_view_t * view,
 				    seaudit_message_t * message)
 {
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+	gint num_selected_rows = gtk_tree_selection_count_selected_rows(selection);
 	GtkWidget *menu, *menuitem, *menuitem2, *menuitem3;
 	int button, event_time;
 
 	menu = gtk_menu_new();
-	menuitem = gtk_menu_item_new_with_label("View Message");
+	if (num_selected_rows == 1) {
+		menuitem = gtk_menu_item_new_with_label("View Selected Message");
+		menuitem3 = gtk_menu_item_new_with_label("Export Selected Message...");
+	}
+	else {
+		menuitem = gtk_menu_item_new_with_label("View Selected Messages");
+		menuitem3 = gtk_menu_item_new_with_label("Export Selected Messages...");
+	}
 	menuitem2 = gtk_menu_item_new_with_label("Find TERules using Message...");
-	menuitem3 = gtk_menu_item_new_with_label("Export Selected Messages...");
 	g_signal_connect(menuitem, "activate", (GCallback) message_view_popup_on_view_message_activate, message);
 	g_signal_connect(menuitem2, "activate", (GCallback) message_view_popup_on_find_terules_activate, message);
 	g_signal_connect(menuitem3, "activate", (GCallback) message_view_popup_on_export_selected_messages_activate, NULL);
@@ -694,11 +695,18 @@ static gboolean message_view_on_button_press(GtkWidget * treeview, GdkEventButto
 	if (event->type == GDK_BUTTON_PRESS && event->button == 3) {
 		GtkTreePath *path = NULL;
 		GtkTreeIter iter;
-		/* popup a menu for the row that was clicked */
+		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
 		if (!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview), event->x, event->y, &path, NULL, NULL, NULL)) {
 			return FALSE;
 		}
+		/* if the right click occurred on an unselected row, remove
+		 * all selections and select the item under the pointer */
+		if (!gtk_tree_selection_path_is_selected(selection, path)) {
+			gtk_tree_selection_unselect_all(selection);
+			gtk_tree_selection_select_path(selection, path);
+		}
 		message_view_store_get_iter(GTK_TREE_MODEL(view->store), &iter, path);
+		/* popup a menu for the row that was clicked */
 		message_view_popup_menu(treeview, event, view, (seaudit_message_t *) iter.user_data);
 		return TRUE;
 	} else if (event->type == GDK_BUTTON_PRESS && event->button == 1) {

@@ -305,6 +305,7 @@ int modify_view_run(toplevel_t * top, message_view_t * view)
 				break;
 			}
 			message_view_set_model(mv.view, new_model);
+			toplevel_update_status_bar(mv.top);
 		}
 	} while (response == GTK_RESPONSE_APPLY);
 
