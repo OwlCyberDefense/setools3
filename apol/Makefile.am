@@ -17,7 +17,7 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @TCL_LIB_SPEC@ @TK_LIB_SPEC@
 
-apol_SOURCES = apol_gui.c \
+apol_SOURCES = apol.c \
 	head.tcl \
 	types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
 	users_tab.tcl initial_sids_tab.tcl file_contexts_tab.tcl \

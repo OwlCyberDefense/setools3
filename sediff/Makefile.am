@@ -28,7 +28,7 @@ DEPENDENCIES = $(top_builddir)/libpoldiff/src/libpoldiff.so \
 	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libqpol/src/libqpol.so
 
-sediff_SOURCES = sediff_cli.c
+sediff_SOURCES = sediff.c
 
 sediffx_SOURCES = \
 	find_dialog.c find_dialog.h \

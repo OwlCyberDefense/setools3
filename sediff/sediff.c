@@ -57,29 +57,27 @@ static struct option const longopts[] = {
 
 static void usage(const char *prog_name, int brief)
 {
-	printf("\nSEDiff v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
-	printf("Usage: %s [OPTIONS] ORIGINAL_POLICY ; MODIFIED_POLICY\n", prog_name);
+	printf("Usage: %s [OPTIONS] ORIGINAL_POLICY ; MODIFIED_POLICY\n\n", prog_name);
 	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", prog_name);
+		printf("\tTry %s --help for more help.\n\n", prog_name);
 		return;
 	}
-	fputs("\n"
-	      "Semantically differentiate two policies.  By default, all supported\n"
-	      "policy elements are examined.  The following options are available:\n"
-	      "  -c, --classes     object class and common permission definitions\n"
-	      "  -t, --types       type definitions\n"
-	      "  -a, --attributes  attribute definitions\n"
-	      "  -r, --roles       role definitions\n"
-	      "  -u, --users       user definitions\n"
-	      "  -b, --booleans    boolean definitions and default values\n"
-	      "  -T, --terules     type enforcement rules\n"
-	      "  -R, --roletrans   role transition rules\n"
-	      "  -A, --roleallows  role allow rules\n\n"
-	      "  -q, --quiet       suppress status output for elements with no differences\n"
-	      "  -s, --stats       print only statistics\n"
-	      "  -h, --help        print this help text and exit\n"
-	      "  -v, --version     print version information and exit\n\n", stdout);
-	return;
+	printf("Semantically differentiate two policies.  By default, all supported\n");
+	printf("policy elements are examined.  The following options are available:\n\n");
+	printf("  -c, --classes     object class and common permission definitions\n");
+	printf("  -t, --types       type definitions\n");
+	printf("  -a, --attributes  attribute definitions\n");
+	printf("  -r, --roles       role definitions\n");
+	printf("  -u, --users       user definitions\n");
+	printf("  -b, --booleans    boolean definitions and default values\n");
+	printf("  -T, --terules     type enforcement rules\n");
+	printf("  -R, --roletrans   role transition rules\n");
+	printf("  -A, --roleallows  role allow rules\n");
+	printf("\n");
+	printf("  -q, --quiet       suppress status output for elements with no differences\n");
+	printf("  -s, --stats       print only statistics\n");
+	printf("  -h, --help        print this help text and exit\n");
+	printf("  -v, --version     print version information and exit\n\n");
 }
 
 static void print_diff_string(const char *str, unsigned int indent_level)

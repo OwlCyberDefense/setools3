@@ -107,23 +107,17 @@ static void print_version_info(void)
 
 static void usage(const char *program_name, int brief)
 {
-	printf("%s (sediffx ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [-d] [ORIGINAL_POLICY ; MODIFIED_POLICY]\n", program_name);
+	printf("Usage: %s [-d] [ORIGINAL_POLICY ; MODIFIED_POLICY]\n\n", program_name);
 	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
-	fputs("\n\
-Semantically differentiate two policies.\n\
-All supported policy elements are examined.\n\
-The following options are available:\n\
-", stdout);
-	fputs("\n\
-  -d, --diff-now   load policies and diff immediately\n\
-  -h, --help       print this help text and exit\n\
-  -v, --version    print version information and exit\n\n\
-", stdout);
-	return;
+	printf("Semantically differentiate two policies.  All supported policy elements\n");
+	printf("are examined.  The following options are available:\n\n");
+	printf("\n");
+	printf("  -d, --diff-now   load policies and diff immediately\n");
+	printf("  -h, --help       print this help text and exit\n");
+	printf("  -v, --version    print version information and exit\n\n");
 }
 
 struct delayed_main_data
@@ -298,6 +292,7 @@ int main(int argc, char **argv)
 		g_thread_init(NULL);
 
 	gtk_init(&argc, &argv);
+	sediffx_parse_command_line(argc, argv, &orig_path, &mod_path, &run_diff);
 	glade_init();
 	if (!g_thread_supported())
 		g_thread_init(NULL);
@@ -306,7 +301,6 @@ int main(int argc, char **argv)
 		sediffx_destroy(&app);
 		exit(EXIT_FAILURE);
 	}
-	sediffx_parse_command_line(argc, argv, &orig_path, &mod_path, &run_diff);
 	if (orig_path != NULL && mod_path != NULL) {
 		struct delayed_main_data dmd = { orig_path, mod_path, run_diff, app->top };
 		g_idle_add(&delayed_main, &dmd);

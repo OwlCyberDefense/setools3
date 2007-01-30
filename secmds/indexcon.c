@@ -42,18 +42,15 @@ static struct option const longopts[] = {
 
 void usage(const char *program_name, int brief)
 {
-	printf("%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s FILE [OPTIONS]\n", program_name);
+	printf("Usage: %s FILE [OPTIONS]\n\n", program_name);
 	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
-	fprintf(stdout, "\n\
-Index SELinux contexts on the filesystem\n\
-  -d DIR, --directory=DIR  start scanning at directory DIR\n\
-  -h, --help               print this help text and exit\n\
-  -v, --version            print version information and exit\n");
-	return;
+	printf("Index SELinux contexts on the filesystem.\n\n");
+	printf("  -d DIR, --directory=DIR  start scanning at directory DIR\n");
+	printf("  -h, --help               print this help text and exit\n");
+	printf("  -v, --version            print version information and exit\n\n");
 }
 
 int main(int argc, char **argv, char **envp)

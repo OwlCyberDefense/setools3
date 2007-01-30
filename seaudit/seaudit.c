@@ -243,12 +243,12 @@ static void print_version_info(void)
 
 static void print_usage_info(const char *program_name, int brief)
 {
-	printf("Usage:%s [OPTIONS] [POLICY ...]\n", program_name);
+	printf("Usage: %s [OPTIONS] [POLICY ...]\n\n", program_name);
 	if (brief) {
-		printf("\tTry %s --help for more help.\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
-	printf("Audit Log analysis tool for Security Enhanced Linux\n\n");
+	printf("Audit Log analysis tool for Security Enhanced Linux.\n\n");
 	printf("   -l FILE, --log=FILE     open the log FILE\n");
 	printf("   -h, --help              print this help text and exit\n");
 	printf("   -v, --version           print version information and exit\n\n");

@@ -94,44 +94,41 @@ static struct option const longopts[] = {
  */
 void usage(const char *program_name, int brief)
 {
-	printf("%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] [EXPRESSION] [POLICY ...]\n", program_name);
+	printf("Usage: %s [OPTIONS] [EXPRESSION] [POLICY ...]\n\n", program_name);
 	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
-	fputs("\n\
-Print information about the components of a SELinux policy.\n\
-  -c[NAME], --classes[=NAME]       print object classes\n\
-  -t[NAME], --types[=NAME]         print types (no aliases or attributes)\n\
-  -a[NAME], --attribs[=NAME]       print type attributes\n\
-  -r[NAME], --roles[=NAME]         print roles\n\
-  -u[NAME], --users[=NAME]         print users\n\
-  -b[NAME], --boolean[=NAME]       print conditional booleans\n\
-  -S[NAME], --sensitivities[=NAME] print sensitivities\n\
-  -C[NAME], --categories[=NAME]    print categories\n\
-  -f[TYPE], --fs_use[=TYPE]        print fs_use statements\n\
-  -g[TYPE], --genfscon[=TYPE]      print genfscon statements\n\
-  -n[NAME], --netifcon[=NAME]      print netif contexts\n\
-  -o[ADDR], --nodecon[=ADDR]       print node contexts\n\
-  -p[PORT], --portcon[=PORT]       print port contexts\n\
-  -lPROTO,  --protocol=PROTO       specify a protocol for portcons\n\
-  -i[NAME], --initialsid[=NAME]    print initial SIDs\n\
-  -A, --all                        print all of the above\n\
-", stdout);
-	fputs("\n\
-  -x, --expand                     show additional info for specified components\n\
-  -s, --stats                      print useful policy statistics\n\
-  -h, --help                       print this help and exit\n\
-  -v, --version                    print version information and exit\n\
-", stdout);
-	fputs("\n\
-For component options, if NAME is provided, then only show info for NAME.\n\
- Specifying a name is most useful when used with the -x option.\n\
- If no option is provided, display useful policy statistics (-s).\n\n\
-The default source policy, or if that is unavailable the default binary\n\
- policy, will be opened if no policy is provided.\n", stdout);
-	return;
+	printf("Print information about the components of a SELinux policy.\n\n");
+	printf("EXPRESSIONS:\n");
+	printf("  -c[NAME], --classes[=NAME]       print object classes\n");
+	printf("  -t[NAME], --types[=NAME]         print types (no aliases or attributes)\n");
+	printf("  -a[NAME], --attribs[=NAME]       print type attributes\n");
+	printf("  -r[NAME], --roles[=NAME]         print roles\n");
+	printf("  -u[NAME], --users[=NAME]         print users\n");
+	printf("  -b[NAME], --boolean[=NAME]       print conditional booleans\n");
+	printf("  -S[NAME], --sensitivities[=NAME] print sensitivities\n");
+	printf("  -C[NAME], --categories[=NAME]    print categories\n");
+	printf("  -f[TYPE], --fs_use[=TYPE]        print fs_use statements\n");
+	printf("  -g[TYPE], --genfscon[=TYPE]      print genfscon statements\n");
+	printf("  -n[NAME], --netifcon[=NAME]      print netif contexts\n");
+	printf("  -o[ADDR], --nodecon[=ADDR]       print node contexts\n");
+	printf("  -p[PORT], --portcon[=PORT]       print port contexts\n");
+	printf("  -lPROTO,  --protocol=PROTO       specify a protocol for portcons\n");
+	printf("  -i[NAME], --initialsid[=NAME]    print initial SIDs\n");
+	printf("  -A, --all                        print all of the above\n");
+	printf("OPTIONS:\n");
+	printf("  -x, --expand                     show more info for specified components\n");
+	printf("  -s, --stats                      print useful policy statistics\n");
+	printf("  -h, --help                       print this help and exit\n");
+	printf("  -v, --version                    print version information and exit\n");
+	printf("\n");
+	printf("For component options, if NAME is provided, then only show info for\n");
+	printf("NAME.  Specifying a name is most useful when used with the -x option.\n");
+	printf("If no option is provided, display useful policy statistics (-s).\n");
+	printf("\n");
+	printf("The default source policy, or if that is unavailable the default binary\n");
+	printf("policy, will be opened if no policy is provided.\n\n");
 }
 
 /**

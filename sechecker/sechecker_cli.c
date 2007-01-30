@@ -57,13 +57,12 @@ static struct option const longopts[] = {
 /* display usage help */
 void usage(const char *arg0, bool_t brief)
 {
-	printf("%s (sechecker v%s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: sechecker [OPTIONS] -p profile [POLICY ...]\n");
-	printf("   or: sechecker [OPTIONS] -m module [POLICY ...]\n");
-	printf("   or: sechecker [OPTIONS] -p profile -m module [POLICY ...]\n");
+	printf("       sechecker [OPTIONS] -m module [POLICY ...]\n");
+	printf("       sechecker [OPTIONS] -p profile -m module [POLICY ...]\n");
 	printf("\n");
 	if (brief) {
-		printf("\n\tTry %s --help for more help.\n", arg0);
+		printf("\tTry %s --help for more help.\n\n", arg0);
 	} else {
 		printf("Perform modular checks on a SELinux policy.\n");
 		printf("\n");
@@ -82,8 +81,8 @@ void usage(const char *arg0, bool_t brief)
 		printf("   -l, --list                   print a list of profiles and modules and exit\n");
 		printf("   -h[mod], --help[=module]     print this help text or help for a module\n");
 		printf("   --version                    print version information and exit\n");
+		printf("\n");
 	}
-	printf("\n");
 }
 
 /* print list of modules and installed profiles */

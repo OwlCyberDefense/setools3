@@ -88,13 +88,12 @@ static char *outfile = NULL;
 
 static void seaudit_report_info_usage(const char *program_name, int brief)
 {
-	printf("%s (seaudit-report ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("\nDescription: Generate a customized SELinux log report.\n");
-	printf("Usage: %s [OPTIONS] LOGFILE ...\n", program_name);
+	printf("Usage: %s [OPTIONS] LOGFILE ...\n\n", program_name);
 	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
+	printf("Generate a customized SELinux log report.\n\n");
 	printf("  -s, --stdin              read log data from standard input\n");
 	printf("  -m, --malformed          include malformed log messages\n");
 	printf("  -oFILE, --output=FILE    output to FILE\n");

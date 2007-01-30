@@ -111,17 +111,16 @@ int Tcl_AppInit(Tcl_Interp * interp)
 	return TCL_OK;
 }
 
-void usage(const char *program_name, bool_t brief)
+static void usage(const char *program_name, bool_t brief)
 {
-	printf("Usage: %s [OPTIONS] [POLICY ...]\n", program_name);
+	printf("Usage: %s [OPTIONS] [POLICY ...]\n\n", program_name);
 	if (brief) {
-		printf("   Try %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
 	printf("Policy Analysis tool for Security Enhanced Linux.\n\n");
 	printf("   -v, --version           print version information and exit\n");
 	printf("   -h, --help              print this help text and exit\n\n");
-	return;
 }
 
 void print_version_info(void)
@@ -148,7 +147,7 @@ void parse_command_line(int argc, char **argv)
 			ver = TRUE;
 			break;
 		case '?':
-			usage(argv[0], FALSE);
+			usage(argv[0], TRUE);
 			exit(1);
 		default:
 			break;

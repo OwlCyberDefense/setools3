@@ -84,34 +84,30 @@ void usage(const char *program_name, int brief)
 {
 	int size;
 	char **array = NULL;
-	printf("%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s INDEX [OPTIONS] [EXPRESSION]\n", program_name);
+	printf("Usage: %s INDEX [OPTIONS] [EXPRESSION]\n\n", program_name);
 	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
-	fputs("\n\
-Search a file context index for matching files.\n\
-  -t TYPE,  --type=TYPE            search for contexts with type TYPE\n\
-  -u USER,  --user=USER            search for contexts with user USER\n\
-  -m RANGE, --mls-range=RANGE      search for contexts with MLS range RANGE\n\
-  -p PATH,  --path=PATH            search for files in PATH\n\
-  -o CLASS, --object=CLASS         search for files of object class CLASS\n\
-", stdout);
-	fputs("\n\
-  -r, --regex                      search using regular expressions\n\
-  -l, --list                       list types in the snapshot\n\
-  -h, --help                       print this help text and exit\n\
-  -v, --version                    print version information and exit\n\
-", stdout);
-	printf("\nIf the index file does not contain any MLS ranges and -m was given,\nthen the search will return nothing.\n");
-	fputs("\n\
-Valid object classes include:\n\
-", stdout);
+	printf("Search a file context index for matching files.\n\n");
+	printf("  -t TYPE,  --type=TYPE            search for contexts with type TYPE\n");
+	printf("  -u USER,  --user=USER            search for contexts with user USER\n");
+	printf("  -m RANGE, --mls-range=RANGE      search for contexts with MLS range RANGE\n");
+	printf("  -p PATH,  --path=PATH            search for files in PATH\n");
+	printf("  -o CLASS, --object=CLASS         search for files of object class CLASS\n");
+	printf("\n");
+	printf("  -r, --regex                      search using regular expressions\n");
+	printf("  -l, --list                       list types in the snapshot\n");
+	printf("  -h, --help                       print this help text and exit\n");
+	printf("  -v, --version                    print version information and exit\n");
+	printf("\n");
+	printf("If the index file does not contain any MLS ranges and -m was given,\n");
+	printf("then the search will return nothing.\n");
+	printf("\n");
+	printf("Valid object classes include:\n");
 	array = sefs_get_valid_object_classes(&size);
 	sefs_double_array_print(array, size);
 	sefs_double_array_destroy(array, size);
-	return;
 }
 
 int main(int argc, char **argv, char **envp)

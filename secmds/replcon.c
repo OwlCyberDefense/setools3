@@ -494,22 +494,20 @@ void replcon_usage(const char *program_name, int brief)
 	char **array = NULL;
 	int size;
 #ifndef FINDCON
-	printf("%s (replcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] -c OLD NEW FILENAMES\n", program_name);
+	printf("Usage: %s [OPTIONS] -c OLD NEW FILENAMES\n\n", program_name);
 #else
-	printf("%s (findcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] -c CONTEXT FILENAMES\n", program_name);
+	printf("Usage: %s [OPTIONS] -c CONTEXT FILENAMES\n\n", program_name);
 #endif
 	if (brief) {
-		printf("\nTry %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
 #ifndef FINDCON
-	printf("\nFile context replacement tool for Security Enhanced Linux.\n");
+	printf("File context replacement tool for Security Enhanced Linux.\n");
 	printf("  -c, --context=OLD NEW  replace context OLD with NEW, see below\n");
 	printf("  -o, --object=OBJECT    replace contexts only for files of object class OBJECT\n");
 #else
-	printf("\nFile context search tool for Security Enhanced Linux.\n");
+	printf("File context search tool for Security Enhanced Linux.\n");
 	printf("  -c, --context=CONTEXT  search for files with CONTEXT, see below\n");
 	printf("  -o, --object=OBJECT    search only for files of object class OBJECT\n");
 #endif
