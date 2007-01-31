@@ -1,5 +1,7 @@
 bwidget_destdir = @BWIDGET_DESTDIR@
-dist_noinst_DATA = BWidget-1.8.0.tar.bz2 combobox.tcl mainframe.tcl notebook.tcl Doxyfile
+dist_noinst_DATA = BWidget-1.8.0.tar.bz2 combobox.tcl mainframe.tcl notebook.tcl \
+	Doxyfile \
+	rpm/setools.spec rpm/apol.desktop rpm/seaudit.desktop rpm/sediffx.desktop rpm/setools.pam
 
 install-data-local:
 	tar jxf BWidget-1.8.0.tar.bz2
@@ -9,3 +11,6 @@ install-data-local:
 
 uninstall-local:
 	-rm -rf $(bwidget_destdir)/BWidget-1.8.0
+
+clean-local:
+	-rm -rf BWidget-1.8.0
