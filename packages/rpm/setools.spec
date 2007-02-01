@@ -1,13 +1,12 @@
 Name: setools
 Version: 3.1
-Release: 1
+Release: 0
 Group: System Environment/Base
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <jtang@tresys.com>
 License: GPL
 URL: http://oss.tresys.com/projects/setools
 Summary: Policy analysis tools for SELinux.
-
 Prefix: %{_prefix}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Source: setools-3.1.tar.gz
@@ -19,10 +18,30 @@ BuildPrereq: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
 BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
+Prereq: /sbin/ldconfig
+
+# disable auto dependency generation because they are explicitly listed above
+%define __find_requires %{nil}
 
 %description
 SETools is a collection of graphical tools, command-line tools, and
 libraries designed to facilitate SELinux policy analysis.
+
+This package includes the following:
+
+  apol          Tcl/Tk-based policy analysis tool
+  awish         customized wish interpreter
+  libapol       policy analysis library
+  libapol-tcl   bindings between apol and libapol
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    parse and filter SELinux audit messages in log files
+  libsefs       SELinux filesystem database library
+  seaudit       audit log analysis tools: seaudit and seaudit-report
+  sechecker     SELinux policy checking tool
+  secmds        command line tools: seinfo, sesearch, findcon,
+                replcon, indexcon, and searchcon
+  sediff        semantic policy difference tools: sediff and sediffx
 
 %prep
 %setup -q
@@ -34,7 +53,7 @@ make
 %install
 rm -rf ${RPM_BUILD_ROOT}
 %makeinstall
-#make -C packages -f packages/Makefile bwidget_destdir=${RPM_BUILD_ROOT}/usr/share/tcl8.4 install
+rm -f ${RPM_BUILD_ROOT}%{_libdir}/lib*so
 mkdir -p ${RPM_BUILD_ROOT}/usr/share/pixmaps
 install -d -m 755 ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d
 install -m 644 packages/rpm/seaudit.pam ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d/seaudit
@@ -160,7 +179,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/apol
 %{_bindir}/awish
 %{_bindir}/seaudit-report
-%{_datadir}/setools-3.1/sechecker-profiles
 %{_datadir}/setools-3.1/sechecker-profiles/all-checks.sechecker
 %{_datadir}/setools-3.1/sechecker-profiles/analysis-checks.sechecker
 %{_datadir}/setools-3.1/sechecker-profiles/devel-checks.sechecker
@@ -193,18 +211,18 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_datadir}/setools-3.1/seaudit-small.png
 %{_datadir}/setools-3.1/dot_seaudit
 %{_datadir}/setools-3.1/seaudit-report-service
-%{_mandir}/man1/findcon.1
-%{_mandir}/man1/indexcon.1
-%{_mandir}/man1/replcon.1
-%{_mandir}/man1/searchcon.1
-%{_mandir}/man1/sechecker.1
-%{_mandir}/man1/sediff.1
-%{_mandir}/man1/seinfo.1
-%{_mandir}/man1/sesearch.1
-%{_mandir}/man1/apol.1
-%{_mandir}/man1/sediffx.1
-%{_mandir}/man8/seaudit.8
-%{_mandir}/man8/seaudit-report.8
+%{_mandir}/man1/findcon.1.gz
+%{_mandir}/man1/indexcon.1.gz
+%{_mandir}/man1/replcon.1.gz
+%{_mandir}/man1/searchcon.1.gz
+%{_mandir}/man1/sechecker.1.gz
+%{_mandir}/man1/sediff.1.gz
+%{_mandir}/man1/seinfo.1.gz
+%{_mandir}/man1/sesearch.1.gz
+%{_mandir}/man1/apol.1.gz
+%{_mandir}/man1/sediffx.1.gz
+%{_mandir}/man8/seaudit.8.gz
+%{_mandir}/man8/seaudit-report.8.gz
 %{_sbindir}/seaudit
 
 %config(noreplace) %{_sysconfdir}/pam.d/seaudit
@@ -220,6 +238,8 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %post
 /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
 
 %changelog
 * Mon Oct 30 2006 Dan Jason Tang <jtang@tresys.com> 3.1.0-1

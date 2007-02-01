@@ -42,7 +42,7 @@ and libraries:
   libapol-tcl   bindings between apol and libapol
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
-  libseaudit    seaudit support library
+  libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux filesystem database library
   seaudit       audit log analysis tools: seaudit and seaudit-report
   sechecker     SELinux policy checking tool
