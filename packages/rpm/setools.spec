@@ -1,5 +1,5 @@
 Name: setools
-Version: 3.1.0
+Version: 3.1
 Release: 1
 Group: System Environment/Base
 Vendor: Tresys Technology, LLC
@@ -11,12 +11,12 @@ Summary: Policy analysis tools for SELinux.
 Prefix: %{_prefix}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Source: setools-3.1.tar.gz
-Requires: libselinux >= 1.30.27 libsepol >= 1.12.27
+Requires: libselinux >= 1.30 libsepol >= 1.12.27
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
 Requires: glib >= 1.2 gtk2 >= 2.4 gdk-pixbuf libxml2 libglade2
 Provides: libqpol-1.1 libapol-3.1 libpoldiff-1.1 libsefs-3.0.2 libseaudit-4.0.0
 BuildPrereq: flex, bison, pkgconfig
-BuildRequires: libselinux-devel >= 1.30.27 libsepol-devel >= 1.12.27
+BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
 BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
 
@@ -160,39 +160,39 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/apol
 %{_bindir}/awish
 %{_bindir}/seaudit-report
-%{_sharedir}/setools-3.1/sechecker-profiles
-%{_sharedir}/setools-3.1/sechecker-profiles/all-checks.sechecker
-%{_sharedir}/setools-3.1/sechecker-profiles/analysis-checks.sechecker
-%{_sharedir}/setools-3.1/sechecker-profiles/devel-checks.sechecker
-%{_sharedir}/setools-3.1/sechecker-profiles/sechecker.dtd
-%{_sharedir}/setools-3.1/sechecker_help.txt
-%{_sharedir}/setools-3.1/sediff_help.txt
-%{_sharedir}/setools-3.1/sediffx.glade
-%{_sharedir}/setools-3.1/sediffx.png
-%{_sharedir}/setools-3.1/sediffx-small.png
-%{_sharedir}/setools-3.1/apol_help.txt
-%{_sharedir}/setools-3.1/domaintrans_help.txt
-%{_sharedir}/setools-3.1/file_relabel_help.txt
-%{_sharedir}/setools-3.1/infoflow_help.txt
-%{_sharedir}/setools-3.1/types_relation_help.txt
-%{_sharedir}/setools-3.1/apol_perm_mapping_ver12
-%{_sharedir}/setools-3.1/apol_perm_mapping_ver15
-%{_sharedir}/setools-3.1/apol_perm_mapping_ver16
-%{_sharedir}/setools-3.1/apol_perm_mapping_ver17
-%{_sharedir}/setools-3.1/apol_perm_mapping_ver18
-%{_sharedir}/setools-3.1/apol_perm_mapping_ver19
-%{_sharedir}/setools-3.1/apol_perm_mapping_ver20
-%{_sharedir}/setools-3.1/apol_perm_mapping_ver21
-%{_sharedir}/setools-3.1/apol.gif
-%{_sharedir}/setools-3.1/apol.tcl
-%{_sharedir}/setools-3.1/seaudit.glade
-%{_sharedir}/setools-3.1/seaudit_help.txt
-%{_sharedir}/setools-3.1/seaudit-report.conf
-%{_sharedir}/setools-3.1/seaudit-report.css
-%{_sharedir}/setools-3.1/seaudit.png
-%{_sharedir}/setools-3.1/seaudit-small.png
-%{_sharedir}/setools-3.1/dot_seaudit
-%{_sharedir}/setools-3.1/seaudit-report-service
+%{_datadir}/setools-3.1/sechecker-profiles
+%{_datadir}/setools-3.1/sechecker-profiles/all-checks.sechecker
+%{_datadir}/setools-3.1/sechecker-profiles/analysis-checks.sechecker
+%{_datadir}/setools-3.1/sechecker-profiles/devel-checks.sechecker
+%{_datadir}/setools-3.1/sechecker-profiles/sechecker.dtd
+%{_datadir}/setools-3.1/sechecker_help.txt
+%{_datadir}/setools-3.1/sediff_help.txt
+%{_datadir}/setools-3.1/sediffx.glade
+%{_datadir}/setools-3.1/sediffx.png
+%{_datadir}/setools-3.1/sediffx-small.png
+%{_datadir}/setools-3.1/apol_help.txt
+%{_datadir}/setools-3.1/domaintrans_help.txt
+%{_datadir}/setools-3.1/file_relabel_help.txt
+%{_datadir}/setools-3.1/infoflow_help.txt
+%{_datadir}/setools-3.1/types_relation_help.txt
+%{_datadir}/setools-3.1/apol_perm_mapping_ver12
+%{_datadir}/setools-3.1/apol_perm_mapping_ver15
+%{_datadir}/setools-3.1/apol_perm_mapping_ver16
+%{_datadir}/setools-3.1/apol_perm_mapping_ver17
+%{_datadir}/setools-3.1/apol_perm_mapping_ver18
+%{_datadir}/setools-3.1/apol_perm_mapping_ver19
+%{_datadir}/setools-3.1/apol_perm_mapping_ver20
+%{_datadir}/setools-3.1/apol_perm_mapping_ver21
+%{_datadir}/setools-3.1/apol.gif
+%{_datadir}/setools-3.1/apol.tcl
+%{_datadir}/setools-3.1/seaudit.glade
+%{_datadir}/setools-3.1/seaudit_help.txt
+%{_datadir}/setools-3.1/seaudit-report.conf
+%{_datadir}/setools-3.1/seaudit-report.css
+%{_datadir}/setools-3.1/seaudit.png
+%{_datadir}/setools-3.1/seaudit-small.png
+%{_datadir}/setools-3.1/dot_seaudit
+%{_datadir}/setools-3.1/seaudit-report-service
 %{_mandir}/man1/findcon.1
 %{_mandir}/man1/indexcon.1
 %{_mandir}/man1/replcon.1
@@ -207,8 +207,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_mandir}/man8/seaudit-report.8
 %{_sbindir}/seaudit
 
-#%dir /usr/share/tcl8.4/BWidget-1.8.0
-#/usr/share/tcl8.4/BWidget-1.8.0/*
 %config(noreplace) %{_sysconfdir}/pam.d/seaudit
 %config(noreplace) %{_sysconfdir}/security/console.apps/seaudit
 %{_datadir}/applications/apol.desktop

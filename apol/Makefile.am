@@ -13,7 +13,7 @@ dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 	perm_maps/apol_perm_mapping_ver21 \
 	apol.gif
 
-dist_noinst_DATA = apol.png
+dist_noinst_DATA = apol.png foo_module.tcl
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
@@ -33,8 +33,6 @@ apol_SOURCES = apol.c \
 	domaintrans_module.tcl directflow_module.tcl transflow_module.tcl \
 	relabel_module.tcl types_relation_module.tcl \
 	open_policy_dialog.tcl top.tcl
-
-dist_noinst_DATA = foo_module.tcl
 
 LDADD = @SELINUX_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
 apol_DEPENDENCIES = apol.tcl $(top_builddir)/libapol-tcl/libapol-tcl.a $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/config.tcl
