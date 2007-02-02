@@ -651,8 +651,7 @@ static void message_view_popup_menu(GtkWidget * treeview, GdkEventButton * event
 	if (num_selected_rows == 1) {
 		menuitem = gtk_menu_item_new_with_label("View Selected Message");
 		menuitem3 = gtk_menu_item_new_with_label("Export Selected Message...");
-	}
-	else {
+	} else {
 		menuitem = gtk_menu_item_new_with_label("View Selected Messages");
 		menuitem3 = gtk_menu_item_new_with_label("Export Selected Messages...");
 	}

@@ -254,6 +254,22 @@ static int insert_standard_msg_header(seaudit_log_t * log, apol_vector_t * token
 }
 
 /**
+ * Parse the object manager that generated this audit message.
+ */
+static int insert_manager(seaudit_log_t * log, seaudit_message_t * msg, const char *manager)
+{
+	char *m;
+	if ((m = strdup(manager)) == NULL || apol_bst_insert_and_get(log->managers, (void **)&m, NULL, free) < 0) {
+		int error = errno;
+		ERR(log, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
+	msg->manager = m;
+	return 0;
+}
+
+/**
  * Parse a context (user:role:type).  For each of the pieces, add them
  * to the log's BSTs.  Set reference pointers to those strings.
  */
@@ -436,7 +452,8 @@ static int avc_msg_insert_access_type(seaudit_log_t * log, char *token, seaudit_
 		avc->msg = SEAUDIT_AVC_DENIED;
 		return 0;
 	}
-	WARN(log, "%s", "No AVC message type found.");
+	WARN(log, "%s", "No AVC message type found, assuming it was a denial.");
+	avc->msg = SEAUDIT_AVC_DENIED;
 	return 1;
 }
 
@@ -485,7 +502,6 @@ static int avc_msg_insert_tclass(seaudit_log_t * log, seaudit_avc_message_t * av
 		errno = error;
 		return -1;
 	}
-	free(avc->tclass);
 	avc->tclass = tclass;
 	return 0;
 }
@@ -778,7 +794,8 @@ static int avc_msg_insert_additional_field_data(seaudit_log_t * log, apol_vector
 			}
 			continue;
 		}
-
+		/* found a field that this parser did not understand,
+		 * so flag the entire message as a warning */
 		has_warnings = 1;
 	}
 
@@ -805,7 +822,7 @@ static int avc_parse(seaudit_log_t * log, apol_vector_t * tokens)
 	seaudit_message_type_e type;
 	int ret, has_warnings = 0;
 	size_t position = 0, num_tokens = apol_vector_get_size(tokens);
-	char *token;
+	char *token, *t;
 
 	if ((msg = message_create(log, SEAUDIT_MESSAGE_TYPE_AVC)) == NULL) {
 		return -1;
@@ -853,11 +870,17 @@ static int avc_parse(seaudit_log_t * log, apol_vector_t * tokens)
 		}
 		token = apol_vector_get_element(tokens, position);
 
-		if (!strstr(token, "kernel")) {
-			WARN(log, "%s", "Expected to see kernel here.");
+		/* for now, only let avc messages set their object
+		 * manager */
+		if ((t = strrchr(token, ':')) == NULL) {
+			WARN(log, "%s", "Expeceted to find an object manager here.");
 			has_warnings = 1;
 			/* Hold the position */
 		} else {
+			*t = '\0';
+			if ((ret = insert_manager(log, msg, token)) < 0) {
+				return ret;
+			}
 			position++;
 			if (position >= num_tokens) {
 				WARN(log, "%s", "Not enough tokens for new audit header.");
@@ -1019,11 +1042,14 @@ static int bool_parse(seaudit_log_t * log, apol_vector_t * tokens)
 	token = apol_vector_get_element(tokens, position);
 
 	/* Make sure the following token is the string "kernel:" */
-	if (!strstr(token, "kernel")) {
+	if (!strstr(token, "kernel:")) {
 		WARN(log, "%s", "Expected to see kernel here.");
 		has_warnings = 1;
 		/* Hold the position */
 	} else {
+		if ((ret = insert_manager(log, msg, "kernel")) < 0) {
+			return ret;
+		}
 		position++;
 		if (position >= num_tokens) {
 			WARN(log, "%s", "Not enough tokens for boolean change.");
@@ -1229,11 +1255,14 @@ static int load_parse(seaudit_log_t * log, apol_vector_t * tokens)
 	}
 
 	/* Check the following token for the string "kernel:" */
-	if (!strstr(token, "kernel")) {
+	if (!strstr(token, "kernel:")) {
 		WARN(log, "%s", "Expected to see kernel here.");
 		has_warnings = 1;
 		/* Hold the position */
 	} else {
+		if ((ret = insert_manager(log, msg, "kernel")) < 0) {
+			return ret;
+		}
 		position++;
 		if (position >= num_tokens) {
 			WARN(log, "%s", "Not enough tokens for policy load.");

@@ -43,29 +43,37 @@ void load_message_free(seaudit_load_message_t * msg)
 	}
 }
 
-char *load_message_to_string(seaudit_load_message_t * load, const char *date, const char *host)
+char *load_message_to_string(seaudit_message_t * msg, const char *date)
 {
+	seaudit_load_message_t *load = msg->data.load;
+	const char *host = msg->host;
+	const char *manager = msg->manager;
 	char *s = NULL;
 	if (asprintf(&s,
-		     "%s %s kernel: security: %d users, %d roles, %d types, %d bools\n"
-		     "%s %s kernel: security: %d classes, %d rules",
-		     date, host, load->users, load->roles, load->types, load->bools, date, host, load->classes, load->rules) < 0) {
+		     "%s %s %s: security: %d users, %d roles, %d types, %d bools\n"
+		     "%s %s %s: security: %d classes, %d rules",
+		     date, host, manager, load->users, load->roles, load->types, load->bools, date, host, manager, load->classes,
+		     load->rules) < 0) {
 		return NULL;
 	}
 	return s;
 }
 
-char *load_message_to_string_html(seaudit_load_message_t * load, const char *date, const char *host)
+char *load_message_to_string_html(seaudit_message_t * msg, const char *date)
 {
+	seaudit_load_message_t *load = msg->data.load;
+	const char *host = msg->host;
+	const char *manager = msg->manager;
 	char *s = NULL;
 	if (asprintf(&s,
 		     "<font class=\"message_date\">%s</font> "
 		     "<font class=\"host_name\">%s</font> "
-		     "kernel: security: %d users, %d roles, %d types, %d bools<br>\n"
+		     "%s: security: %d users, %d roles, %d types, %d bools<br>\n"
 		     "<font class=\"message_date\">%s</font> "
 		     "<font class=\"host_name\">%s</font> "
-		     "kernel: security: %d classes, %d rules<br>",
-		     date, host, load->users, load->roles, load->types, load->bools, date, host, load->classes, load->rules) < 0) {
+		     "%s: security: %d classes, %d rules<br>",
+		     date, host, manager, load->users, load->roles, load->types, load->bools, date, host, manager, load->classes,
+		     load->rules) < 0) {
 		return NULL;
 	}
 	return s;

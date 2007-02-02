@@ -83,11 +83,11 @@ char *seaudit_message_to_string(seaudit_message_t * msg)
 	strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S", msg->date_stamp);
 	switch (msg->type) {
 	case SEAUDIT_MESSAGE_TYPE_AVC:
-		return avc_message_to_string(msg->data.avc, date, msg->host);
+		return avc_message_to_string(msg, date);
 	case SEAUDIT_MESSAGE_TYPE_BOOL:
-		return bool_message_to_string(msg->data.bool, date, msg->host);
+		return bool_message_to_string(msg, date);
 	case SEAUDIT_MESSAGE_TYPE_LOAD:
-		return load_message_to_string(msg->data.load, date, msg->host);
+		return load_message_to_string(msg, date);
 	default:
 		errno = EINVAL;
 		return NULL;
@@ -104,11 +104,11 @@ char *seaudit_message_to_string_html(seaudit_message_t * msg)
 	strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S", msg->date_stamp);
 	switch (msg->type) {
 	case SEAUDIT_MESSAGE_TYPE_AVC:
-		return avc_message_to_string_html(msg->data.avc, date, msg->host);
+		return avc_message_to_string_html(msg, date);
 	case SEAUDIT_MESSAGE_TYPE_BOOL:
-		return bool_message_to_string_html(msg->data.bool, date, msg->host);
+		return bool_message_to_string_html(msg, date);
 	case SEAUDIT_MESSAGE_TYPE_LOAD:
-		return load_message_to_string_html(msg->data.load, date, msg->host);
+		return load_message_to_string_html(msg, date);
 	default:
 		errno = EINVAL;
 		return NULL;

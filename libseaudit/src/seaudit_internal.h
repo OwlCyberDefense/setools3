@@ -55,7 +55,7 @@ struct seaudit_log
 	/** vector of seaudit_model_t that are watching this log */
 	apol_vector_t *models;
 	apol_bst_t *types, *classes, *roles, *users;
-	apol_bst_t *perms, *hosts, *bools;
+	apol_bst_t *perms, *hosts, *bools, *managers;
 	seaudit_log_type_e logtype;
 	seaudit_handle_fn_t fn;
 	void *handle_arg;
@@ -112,9 +112,12 @@ struct seaudit_message
 {
 	/** when this message was generated */
 	struct tm *date_stamp;
-	/** pointer into log->host for the hostname that generated
+	/** pointer into log->hosts for the hostname that generated
 	 * this message, or NULL if none found */
 	char *host;
+	/** pointer intor log->managers for the object manager that
+	 *  generated this message, or NULL if none found */
+	char *manager;
 	/** type of message this really is */
 	seaudit_message_type_e type;
 	/** fake polymorphism by having a union of possible subclasses */
@@ -256,28 +259,26 @@ void avc_message_free(seaudit_avc_message_t * avc);
  * Given an avc message, allocate and return a string that
  * approximates the message as it had appeared within the log file.
  *
- * @param avc Message whose string representation to get.
+ * @param msg Message whose string representation to get.
  * @param date Date and time when message was generated.
- * @param host Hostname that generated message.
  *
  * @return String representation for message, or NULL upon error.  The
  * caller is responsible for free()ing the string afterwards.
  */
-char *avc_message_to_string(seaudit_avc_message_t * avc, const char *date, const char *host);
+char *avc_message_to_string(seaudit_message_t * msg, const char *date);
 
 /**
  * Given an avc change message, allocate and return a string,
  * formatted in HTML, that approximates the message as it had appeared
  * within the log file.
  *
- * @param avc Message whose string representation to get.
+ * @param msg Message whose string representation to get.
  * @param date Date and time when message was generated.
- * @param host Hostname that generated message.
  *
  * @return String representation for message, or NULL upon error.  The
  * caller is responsible for free()ing the string afterwards.
  */
-char *avc_message_to_string_html(seaudit_avc_message_t * avc, const char *date, const char *host);
+char *avc_message_to_string_html(seaudit_message_t * msg, const char *date);
 
 /**
  * Given an avc change message, allocate and return a string that
@@ -340,28 +341,26 @@ void bool_message_free(seaudit_bool_message_t * bool);
  * Given a boolean change message, allocate and return a string that
  * approximates the message as it had appeared within the log file.
  *
- * @param bool Message whose string representation to get.
+ * @param msg Message whose string representation to get.
  * @param date Date and time when message was generated.
- * @param host Hostname that generated message.
  *
  * @return String representation for message, or NULL upon error.  The
  * caller is responsible for free()ing the string afterwards.
  */
-char *bool_message_to_string(seaudit_bool_message_t * bool, const char *date, const char *host);
+char *bool_message_to_string(seaudit_message_t * msg, const char *date);
 
 /**
  * Given a boolean change message, allocate and return a string,
  * formatted in HTML, that approximates the message as it had appeared
  * within the log file.
  *
- * @param bool Message whose string representation to get.
+ * @param msg Message whose string representation to get.
  * @param date Date and time when message was generated.
- * @param host Hostname that generated message.
  *
  * @return String representation for message, or NULL upon error.  The
  * caller is responsible for free()ing the string afterwards.
  */
-char *bool_message_to_string_html(seaudit_bool_message_t * bool, const char *date, const char *host);
+char *bool_message_to_string_html(seaudit_message_t * msg, const char *date);
 
 /**
  * Given a boolean change message, allocate and return a string that
@@ -408,28 +407,26 @@ void load_message_free(seaudit_load_message_t * msg);
  * Given a load message, allocate and return a string that
  * approximates the message as it had appeared within the log file.
  *
- * @param load Message whose string representation to get.
+ * @param msg Message whose string representation to get.
  * @param date Date and time when message was generated.
- * @param host Hostname that generated message.
  *
  * @return String representation for message, or NULL upon error.  The
  * caller is responsible for free()ing the string afterwards.
  */
-char *load_message_to_string(seaudit_load_message_t * load, const char *date, const char *host);
+char *load_message_to_string(seaudit_message_t * msg, const char *date);
 
 /**
  * Given a load message, allocate and return a string, formatted in
  * HTML, that approximates the message as it had appeared within the
  * log file.
  *
- * @param load Message whose string representation to get.
+ * @param msg Message whose string representation to get.
  * @param date Date and time when message was generated.
- * @param host Hostname that generated message.
  *
  * @return String representation for message, or NULL upon error.  The
  * caller is responsible for free()ing the string afterwards.
  */
-char *load_message_to_string_html(seaudit_load_message_t * load, const char *date, const char *host);
+char *load_message_to_string_html(seaudit_message_t * msg, const char *date);
 
 /**
  * Given a load message, allocate and return a string that gives

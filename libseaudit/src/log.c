@@ -49,7 +49,8 @@ seaudit_log_t *seaudit_log_create(seaudit_handle_fn_t fn, void *callback_arg)
 	    (log->roles = apol_bst_create(apol_str_strcmp)) == NULL ||
 	    (log->users = apol_bst_create(apol_str_strcmp)) == NULL ||
 	    (log->perms = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (log->hosts = apol_bst_create(apol_str_strcmp)) == NULL || (log->bools = apol_bst_create(apol_str_strcmp)) == NULL) {
+	    (log->hosts = apol_bst_create(apol_str_strcmp)) == NULL || (log->bools = apol_bst_create(apol_str_strcmp)) == NULL ||
+	    (log->managers = apol_bst_create(apol_str_strcmp)) == NULL) {
 		error = errno;
 		seaudit_log_destroy(&log);
 		errno = error;
@@ -78,6 +79,7 @@ void seaudit_log_destroy(seaudit_log_t ** log)
 	apol_bst_destroy(&(*log)->perms, free);
 	apol_bst_destroy(&(*log)->hosts, free);
 	apol_bst_destroy(&(*log)->bools, free);
+	apol_bst_destroy(&(*log)->managers, free);
 	free(*log);
 	*log = NULL;
 }

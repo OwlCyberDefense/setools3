@@ -68,6 +68,7 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
 
     destroy $dialog
     set dialog [Dialog .open_policy_dialog -modal local -parent $parent \
+                    -cancel 1 \
                     -separator 1 -homogeneous 1 -title "Open Policy"]
 
     set f [$dialog getframe]

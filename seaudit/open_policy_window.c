@@ -360,7 +360,7 @@ void open_policy_window_run(toplevel_t * top, const apol_policy_path_t * path, a
 
 	while (1) {
 		response = gtk_dialog_run(op.dialog);
-		if (response == GTK_RESPONSE_CANCEL) {
+		if (response == GTK_RESPONSE_CANCEL || response == GTK_RESPONSE_DELETE_EVENT) {
 			break;
 		}
 		if ((input = open_policy_build_path(&op)) == NULL) {

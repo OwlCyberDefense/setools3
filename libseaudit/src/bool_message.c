@@ -85,8 +85,11 @@ void bool_message_free(seaudit_bool_message_t * bool)
 	}
 }
 
-char *bool_message_to_string(seaudit_bool_message_t * bool, const char *date, const char *host)
+char *bool_message_to_string(seaudit_message_t * msg, const char *date)
 {
+	seaudit_bool_message_t *bool = msg->data.bool;
+	const char *host = msg->host;
+	const char *manager = msg->manager;
 	char *s = NULL, *misc_string;
 	size_t len = 0;
 	char *open_brace = "", *close_brace = "";
@@ -94,7 +97,7 @@ char *bool_message_to_string(seaudit_bool_message_t * bool, const char *date, co
 		open_brace = "{ ";
 		close_brace = " }";
 	}
-	if (apol_str_appendf(&s, &len, "%s %s kernel: security: committed booleans: %s", date, host, open_brace) < 0) {
+	if (apol_str_appendf(&s, &len, "%s %s %s: security: committed booleans: %s", date, host, manager, open_brace) < 0) {
 		return NULL;
 	}
 	if ((misc_string = bool_message_to_misc_string(bool)) == NULL ||
@@ -106,8 +109,11 @@ char *bool_message_to_string(seaudit_bool_message_t * bool, const char *date, co
 	return s;
 }
 
-char *bool_message_to_string_html(seaudit_bool_message_t * bool, const char *date, const char *host)
+char *bool_message_to_string_html(seaudit_message_t * msg, const char *date)
 {
+	seaudit_bool_message_t *bool = msg->data.bool;
+	const char *host = msg->host;
+	const char *manager = msg->manager;
 	char *s = NULL, *misc_string;
 	size_t len = 0;
 	char *open_brace = "", *close_brace = "";
@@ -118,7 +124,7 @@ char *bool_message_to_string_html(seaudit_bool_message_t * bool, const char *dat
 	if (apol_str_appendf(&s, &len,
 			     "<font class=\"message_date\">%s</font> "
 			     "<font class=\"host_name\">%s</font> "
-			     "kernel: security: committed booleans: %s", date, host, open_brace) < 0) {
+			     "%s: security: committed booleans: %s", date, host, manager, open_brace) < 0) {
 		return NULL;
 	}
 	if ((misc_string = bool_message_to_misc_string(bool)) == NULL ||

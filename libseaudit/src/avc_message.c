@@ -253,11 +253,14 @@ static char *avc_message_get_misc_string(seaudit_avc_message_t * avc)
 	return s;
 }
 
-char *avc_message_to_string(seaudit_avc_message_t * avc, const char *date, const char *host)
+char *avc_message_to_string(seaudit_message_t * msg, const char *date)
 {
+	seaudit_avc_message_t *avc = msg->data.avc;
+	const char *host = msg->host;
+	const char *manager = msg->manager;
 	char *s = NULL, *misc_string = NULL, *perm;
 	size_t i, len = 0;
-	if (apol_str_appendf(&s, &len, "%s %s kernel: ", date, host) < 0) {
+	if (apol_str_appendf(&s, &len, "%s %s %s: ", date, host, manager) < 0) {
 		return NULL;
 	}
 	if (!(avc->tm_stmp_sec == 0 && avc->tm_stmp_nano == 0 && avc->serial == 0)) {
@@ -317,13 +320,16 @@ char *avc_message_to_string(seaudit_avc_message_t * avc, const char *date, const
 	return s;
 }
 
-char *avc_message_to_string_html(seaudit_avc_message_t * avc, const char *date, const char *host)
+char *avc_message_to_string_html(seaudit_message_t * msg, const char *date)
 {
+	seaudit_avc_message_t *avc = msg->data.avc;
+	const char *host = msg->host;
+	const char *manager = msg->manager;
 	char *s = NULL, *misc_string = NULL, *perm;
 	size_t i, len = 0;
 	if (apol_str_appendf(&s, &len,
 			     "<font class=\"message_date\">%s</font> "
-			     "<font class=\"host_name\">%s</font> " "kernel: ", date, host) < 0) {
+			     "<font class=\"host_name\">%s</font> " "%s: ", date, host, manager) < 0) {
 		return NULL;
 	}
 	if (!(avc->tm_stmp_sec == 0 && avc->tm_stmp_nano == 0 && avc->serial == 0)) {

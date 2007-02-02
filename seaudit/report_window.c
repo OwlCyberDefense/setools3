@@ -244,10 +244,18 @@ void report_window_run(toplevel_t * top, message_view_t * view)
 		g_thread_create(report_window_create_report_runner, &rw, FALSE, NULL);
 		progress_wait(rw.progress);
 		progress_hide(rw.progress);
-		util_cursor_clear(GTK_WIDGET(rw.dialog));
+		/* Reset the cursor if the save failed.  upon success,
+		 * the window will be destroyed anyways, so don't
+		 * bother resetting the cursor.
+		 *
+		 * (Real reason: util_cursor_clear() resets the cursor
+		 * as an idle callback -- but by the time it triggers,
+		 * the window will be destroyed by then.)
+		 */
 		if (rw.result == 0) {
 			break;
 		}
+		util_cursor_clear(GTK_WIDGET(rw.dialog));
 	} while (1);
 	gtk_widget_destroy(GTK_WIDGET(rw.dialog));
 }

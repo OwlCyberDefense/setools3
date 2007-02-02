@@ -636,26 +636,25 @@ static int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp * inter
  */
 static int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
-        unsigned int version;
-        Tcl_Obj *version_obj;
+	unsigned int version;
+	Tcl_Obj *version_obj;
 
-        apol_tcl_clear_error();
-        if (policydb == NULL) {
-                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-                return TCL_ERROR;
-        }
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		return TCL_ERROR;
+	}
 	if (apol_policy_get_policy_type(policydb) != QPOL_POLICY_MODULE_BINARY) {
 		if (qpol_policy_get_policy_version(qpolicydb, &version) < 0) {
 			apol_tcl_write_error(interp);
 			return TCL_ERROR;
 		}
-	}
-	else {
+	} else {
 		version = SEPOL_POLICY_VERSION_MAX;
 	}
-        version_obj = Tcl_NewIntObj(version);
-        Tcl_SetObjResult(interp, version_obj);
-        return TCL_OK;
+	version_obj = Tcl_NewIntObj(version);
+	Tcl_SetObjResult(interp, version_obj);
+	return TCL_OK;
 }
 
 /**
