@@ -37,7 +37,7 @@ License: LGPL
 Summary: Policy analysis support libraries for SELinux.
 Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
-Provides: libqpol-1.1 libapol-3.1 libpoldiff-1.1 libsefs-3.0.2 libseaudit-4.0.0
+Provides: libqpol = 1.1 libapol = 3.1 libpoldiff = 1.1 libsefs = 3.0.2 libseaudit = 4.0.0
 BuildPrereq: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
