@@ -1,33 +1,22 @@
 Name: setools
 Version: 3.1
 Release: 0
-Group: System Environment/Base
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <jtang@tresys.com>
 License: GPL
 URL: http://oss.tresys.com/projects/setools
-Summary: Policy analysis tools for SELinux.
-Prefix: %{_prefix}
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Source: setools-3.1.tar.gz
-Requires: libselinux >= 1.30 libsepol >= 1.12.27
-Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
-Requires: glib >= 1.2 gtk2 >= 2.4 gdk-pixbuf libxml2 libglade2
-Provides: libqpol-1.1 libapol-3.1 libpoldiff-1.1 libsefs-3.0.2 libseaudit-4.0.0
-BuildPrereq: flex, bison, pkgconfig
-BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
-BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
-BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
-Prereq: /sbin/ldconfig
+Summary: Policy analysis tools for SELinux.
+Group: System Environment/Base
 
 # disable auto dependency generation because they are explicitly listed above
 %define __find_requires %{nil}
 
 %description
 SETools is a collection of graphical tools, command-line tools, and
-libraries designed to facilitate SELinux policy analysis.
-
-This package includes the following:
+libraries designed to facilitate SELinux policy analysis.  The
+following are included:
 
   apol          Tcl/Tk-based policy analysis tool
   awish         customized wish interpreter
@@ -42,6 +31,85 @@ This package includes the following:
   secmds        command line tools: seinfo, sesearch, findcon,
                 replcon, indexcon, and searchcon
   sediff        semantic policy difference tools: sediff and sediffx
+
+%package libs
+License: LGPL
+Summary: Policy analysis support libraries for SELinux.
+Group: System Environment/Libraries
+Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
+Provides: libqpol-1.1 libapol-3.1 libpoldiff-1.1 libsefs-3.0.2 libseaudit-4.0.0
+BuildPrereq: flex, bison, pkgconfig
+BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
+BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
+BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
+Prereq: /sbin/ldconfig
+
+%description libs
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes the following run-time libraries:
+
+  libapol       policy analysis library
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    parse and filter SELinux audit messages in log files
+  libsefs       SELinux filesystem database library
+
+%package devel
+Summary: Policy analysis development files for SELinux.
+Group: System Environment/Libraries
+Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
+
+%description devel
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes header files and archives for the following
+libraries:
+
+  libapol       policy analysis library
+  libapol-tcl   bindings between apol and libapol
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    parse and filter SELinux audit messages in log files
+  libsefs       SELinux filesystem database library
+
+%package console
+Summary: Policy analysis command-line tools for SELinux.
+Group: System Environment/Base
+Requires: libqpol >= 1.1 libapol >= 3.1 libpoldiff >= 1.1 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libselinux >= 1.30
+
+%description console
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes the following console tools:
+
+  seaudit-report  audit log analysis tool
+  sechecker       SELinux policy checking tool
+  secmds          command line tools: seinfo, sesearch, findcon,
+                  replcon, indexcon, and searchcon
+  sediff          semantic policy difference tool
+
+%package gui
+Summary: Policy analysis graphical tools for SELinux.
+Group: System Environment/Base
+Requires: libqpol >= 1.1 libapol >= 3.1 libpoldiff >= 1.1 libsefs >= 3.0 libseaudit >= 4.0
+Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
+Requires: glib >= 1.2 gtk2 >= 2.4 gdk-pixbuf libxml2 libglade2
+
+%description gui
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes the following graphical tools:
+
+  apol          Tcl/Tk-based policy analysis tool
+  awish         customized wish interpreter
+  seaudit       audit log analysis tool
+  sediffx       semantic policy difference tool
 
 %prep
 %setup -q
@@ -72,18 +140,23 @@ ln -sf consolehelper seaudit
 %clean
 rm -rf ${RPM_BUILD_ROOT}
 
-%files
+%files libs
 %defattr(-,root,root)
-%{_libdir}/libqpol.a
 %{_libdir}/libqpol.so.1
-%{_libdir}/libapol.a
 %{_libdir}/libapol.so.3.1
-%{_libdir}/libpoldiff.a
 %{_libdir}/libpoldiff.so.1.1
-%{_libdir}/libsefs.a
 %{_libdir}/libsefs.so.3
-%{_libdir}/libseaudit.a
 %{_libdir}/libseaudit.so.4
+%{_datadir}/setools-3.1/seaudit-report.conf
+%{_datadir}/setools-3.1/seaudit-report.css
+%doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
+
+%files devel
+%{_libdir}/libqpol.a
+%{_libdir}/libapol.a
+%{_libdir}/libpoldiff.a
+%{_libdir}/libsefs.a
+%{_libdir}/libseaudit.a
 %{_libdir}/libapol-tcl.a
 %{_includedir}/qpol/avrule_query.h
 %{_includedir}/qpol/bool_query.h
@@ -166,24 +239,38 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/seaudit/report.h
 %{_includedir}/seaudit/sort.h
 %{_includedir}/seaudit/util.h
+
+%files console
 %{_bindir}/seinfo
 %{_bindir}/sesearch
 %{_bindir}/indexcon
 %{_bindir}/findcon
 %{_bindir}/replcon
 %{_bindir}/searchcon
-%{_bindir}/seaudit
 %{_bindir}/sechecker
 %{_bindir}/sediff
-%{_bindir}/sediffx
-%{_bindir}/apol
-%{_bindir}/awish
 %{_bindir}/seaudit-report
 %{_datadir}/setools-3.1/sechecker-profiles/all-checks.sechecker
 %{_datadir}/setools-3.1/sechecker-profiles/analysis-checks.sechecker
 %{_datadir}/setools-3.1/sechecker-profiles/devel-checks.sechecker
 %{_datadir}/setools-3.1/sechecker-profiles/sechecker.dtd
 %{_datadir}/setools-3.1/sechecker_help.txt
+%{_datadir}/setools-3.1/seaudit-report-service
+%{_mandir}/man1/findcon.1.gz
+%{_mandir}/man1/indexcon.1.gz
+%{_mandir}/man1/replcon.1.gz
+%{_mandir}/man1/searchcon.1.gz
+%{_mandir}/man1/sechecker.1.gz
+%{_mandir}/man1/sediff.1.gz
+%{_mandir}/man1/seinfo.1.gz
+%{_mandir}/man1/sesearch.1.gz
+%{_mandir}/man8/seaudit-report.8.gz
+
+%files gui
+%{_bindir}/seaudit
+%{_bindir}/sediffx
+%{_bindir}/apol
+%{_bindir}/awish
 %{_datadir}/setools-3.1/sediff_help.txt
 %{_datadir}/setools-3.1/sediffx.glade
 %{_datadir}/setools-3.1/sediffx.png
@@ -205,24 +292,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_datadir}/setools-3.1/apol.tcl
 %{_datadir}/setools-3.1/seaudit.glade
 %{_datadir}/setools-3.1/seaudit_help.txt
-%{_datadir}/setools-3.1/seaudit-report.conf
-%{_datadir}/setools-3.1/seaudit-report.css
 %{_datadir}/setools-3.1/seaudit.png
 %{_datadir}/setools-3.1/seaudit-small.png
 %{_datadir}/setools-3.1/dot_seaudit
-%{_datadir}/setools-3.1/seaudit-report-service
-%{_mandir}/man1/findcon.1.gz
-%{_mandir}/man1/indexcon.1.gz
-%{_mandir}/man1/replcon.1.gz
-%{_mandir}/man1/searchcon.1.gz
-%{_mandir}/man1/sechecker.1.gz
-%{_mandir}/man1/sediff.1.gz
-%{_mandir}/man1/seinfo.1.gz
-%{_mandir}/man1/sesearch.1.gz
 %{_mandir}/man1/apol.1.gz
 %{_mandir}/man1/sediffx.1.gz
 %{_mandir}/man8/seaudit.8.gz
-%{_mandir}/man8/seaudit-report.8.gz
 %{_sbindir}/seaudit
 
 %config(noreplace) %{_sysconfdir}/pam.d/seaudit
@@ -234,15 +309,13 @@ rm -rf ${RPM_BUILD_ROOT}
 %attr(0644,root,root) /usr/share/pixmaps/seaudit.png
 %attr(0644,root,root) /usr/share/pixmaps/sediffx.png
 
-%doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
-
-%post
+%post libs
 /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
 
 %changelog
-* Mon Oct 30 2006 Dan Jason Tang <jtang@tresys.com> 3.1.0-1
+* Mon Oct 30 2006 Dan Jason Tang <jtang@tresys.com> 3.1-0
 - update to SETools 3.1 release
 
 * Mon Oct 30 2006 Dan Walsh <dwalsh@redhat.com> 3.0-2.fc6
