@@ -7,10 +7,11 @@ License: GPL
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Source: setools-3.1.tar.gz
+AutoReqProv: no
 Summary: Policy analysis tools for SELinux.
 Group: System Environment/Base
 
-# disable auto dependency generation because they are explicitly listed above
+# disable auto dependency generation because they are explicitly listed
 %define __find_requires %{nil}
 
 %description
@@ -76,6 +77,7 @@ libraries:
   libsefs       SELinux filesystem database library
 
 %package console
+AutoReqProv: no
 Summary: Policy analysis command-line tools for SELinux.
 Group: System Environment/Base
 Requires: libqpol >= 1.1 libapol >= 3.1 libpoldiff >= 1.1 libsefs >= 3.0 libseaudit >= 4.0
@@ -94,6 +96,7 @@ This package includes the following console tools:
   sediff          semantic policy difference tool
 
 %package gui
+AutoReqProv: no
 Summary: Policy analysis graphical tools for SELinux.
 Group: System Environment/Base
 Requires: libqpol >= 1.1 libapol >= 3.1 libpoldiff >= 1.1 libsefs >= 3.0 libseaudit >= 4.0

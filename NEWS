@@ -8,6 +8,9 @@ SETools:
     a new open policy dialog to select a base module and any number of
     additional modules.
 
+  * Release of RPM packages that are compatible with Fedora Core 5 and
+    6.  The spec and support files are in packages/rpm.
+
 libapol:
 
   * New class apol_policy_path_t to represent a base policy and any
