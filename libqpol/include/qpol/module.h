@@ -71,7 +71,7 @@ extern "C"
 /**
  *  Get the name of a module.
  *  @param module The module from which to get the name.
- *  @param Pointer to the string in which to store the name. <b>The
+ *  @param name Pointer to the string in which to store the name. <b>The
  *  caller should not free this string.</b> If the module is a base
  *  module the name will be NULL.
  *  @return 0 on success and < 0 on failure; if the call fails,
@@ -85,7 +85,7 @@ extern "C"
  *  @param version Pointer to string in which to store the version. <b>The
  *  caller should not free this string.</b>
  *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *version will be 0.
+ *  errno will be set and *version will be NULL.
  */
 	extern int qpol_module_get_version(qpol_module_t * module, char **version);
 
