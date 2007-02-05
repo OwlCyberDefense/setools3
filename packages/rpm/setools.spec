@@ -44,6 +44,7 @@ BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
 BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
 Prereq: /sbin/ldconfig
+Obsoletes: setools
 
 %description libs
 SETools is a collection of graphical tools, command-line tools, and

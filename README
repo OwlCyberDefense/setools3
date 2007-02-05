@@ -408,7 +408,10 @@ maintain compatibility beginning with SETools version 3.0.
 --------------------
 
 Official releases of SETools may be freely downloaded from Tresys's
-OSS website, http://oss.tresys.com/projects/setools.
+Open Source Software website, http://oss.tresys.com/projects/setools.
+
+Tresys builds RPM packages of SETools.  They may also be obtained from
+the website listed above.
 
 SETools source code is maintained within a Subversion repository.
 From the command line do:
@@ -418,11 +421,10 @@ From the command line do:
 You may also browse the SVN repository at
 http://oss.tresys.com/projects/setools/browser.
 
-Binary releases of SETools are available for your favorite Linux
-packaging system.  Red Hat releases RPM builds regularly; use
-rpmfind.net to find it.  Gentoo users have an ebuild script for
-SETools.  Debian maintains the dpkg "setools" in section admin,
-priority optional.
+Other binary releases SETools are available for your favorite Linux
+packaging system from third-party sources.  Gentoo users have an
+ebuild script for SETools.  Debian maintains the dpkg "setools" in
+section admin, priority optional.
 
 
 5. Reporting bugs

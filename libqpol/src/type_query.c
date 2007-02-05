@@ -110,7 +110,13 @@ int qpol_type_get_value(qpol_policy_t * policy, qpol_type_t * datum, uint32_t * 
 	}
 
 	internal_datum = (type_datum_t *) datum;
-	*value = internal_datum->s.value;
+	if (internal_datum->flavor == TYPE_ALIAS) {
+		/* aliases that came from modules should use the value
+		 * referenced to by that alias */
+		*value = internal_datum->primary;
+	} else {
+		*value = internal_datum->s.value;
+	}
 
 	return STATUS_SUCCESS;
 }

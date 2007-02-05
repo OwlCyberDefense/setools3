@@ -1293,7 +1293,7 @@ static int avrule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
 
 /**
  * Given a rule, expand its source and target types into individual
- * pseudo-type values.  Then add the expanded rule to the BST.  This
+ * pseudo-type values.  Then add the expanded rules to the BST.  This
  * is needed for when the source and/or target is an attribute.
  *
  * @param diff Policy difference structure.
