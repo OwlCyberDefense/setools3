@@ -209,7 +209,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	apol_attr_query_destroy(&attr_query);
 	apol_vector_destroy(&v, NULL);
 
-	fprintf(fp, "   Types:         %7d    Attributes:    %7d\n", n_types, n_attrs);
+	fprintf(fp, "   Types:         %7zd    Attributes:    %7zd\n", n_types, n_attrs);
 	qpol_iterator_destroy(&iter);
 
 	/* users/roles */

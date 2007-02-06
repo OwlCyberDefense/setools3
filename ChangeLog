@@ -1,6 +1,8 @@
-2007-02-05  J. Tang  <jtang@tresys.com>
+2007-02-06  J. Tang  <jtang@tresys.com>
 
 	* Official release of SETools-3.1.
+
+	* Compile fixes for 64-bit Linux.
 
 2007-02-02  J. Tang  <jtang@tresys.com>
 

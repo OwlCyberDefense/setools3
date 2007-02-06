@@ -814,7 +814,7 @@ int unreachable_doms_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i unreachable domains.\n", num_items);
+		printf("Found %zd unreachable domains.\n", num_items);
 	}
 
 	if (outformat & SECHK_OUT_LIST) {
@@ -832,7 +832,7 @@ int unreachable_doms_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 
 	if (outformat & SECHK_OUT_PROOF) {
 		if (apol_vector_get_size(datum->ctx_vector) > 0) {
-			printf("Found %d domains in %s:\n", apol_vector_get_size(datum->ctx_vector),
+			printf("Found %zd domains in %s:\n", apol_vector_get_size(datum->ctx_vector),
 			       selinux_default_context_path());
 			for (j = 0; j < apol_vector_get_size(datum->ctx_vector); j++) {
 				type_name = apol_vector_get_element(datum->ctx_vector, j);

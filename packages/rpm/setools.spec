@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.1
-Release: 0
+Release: 1
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <jtang@tresys.com>
 License: GPL
