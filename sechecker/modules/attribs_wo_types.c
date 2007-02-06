@@ -330,7 +330,7 @@ int attribs_wo_types_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i attributes.\n", num_items);
+		printf("Found %zd attributes.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following attributes are not associated with any types.\n");

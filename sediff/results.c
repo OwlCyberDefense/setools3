@@ -719,7 +719,7 @@ static int results_avsort_comp(const void *a, const void *b, void *data)
 			poldiff_avrule_get_cond(opts->diff, a1, &q1, &w1, &p1);
 			poldiff_avrule_get_cond(opts->diff, a2, &q2, &w2, &p2);
 			if (q1 != q2) {
-				return opts->direction * ((int)q1 - (int)q2);
+			  return opts->direction * ((char *) q1 - (char *) q2);
 			}
 			return opts->direction * (w1 - w2);
 			break;
@@ -785,7 +785,7 @@ static int results_tesort_comp(const void *a, const void *b, void *data)
 			poldiff_terule_get_cond(opts->diff, a1, &q1, &w1, &p1);
 			poldiff_terule_get_cond(opts->diff, a2, &q2, &w2, &p2);
 			if (q1 != q2) {
-				return opts->direction * ((int)q1 - (int)q2);
+				return opts->direction * ((char *) q1 - (char *) q2);
 			}
 			return opts->direction * (w1 - w2);
 			break;

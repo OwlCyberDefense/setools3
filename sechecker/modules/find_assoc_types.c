@@ -331,7 +331,7 @@ int find_assoc_types_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i assoc type(s).\n", num_items);
+		printf("Found %zd assoc type(s).\n", num_items);
 	}
 	/* The list reassoc component is a display of all items
 	 * found without any supassocing proof. The default method

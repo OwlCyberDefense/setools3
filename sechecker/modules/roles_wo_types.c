@@ -306,7 +306,7 @@ int roles_wo_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i roles.\n", num_items);
+		printf("Found %zd roles.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following roles have no associated types:\n");

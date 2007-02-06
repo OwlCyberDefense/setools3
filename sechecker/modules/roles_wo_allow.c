@@ -338,7 +338,7 @@ int roles_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i roles.\n", num_items);
+		printf("Found %zd roles.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following roles do not appear in any allow rules.\n");
