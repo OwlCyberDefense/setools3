@@ -483,7 +483,7 @@ int sechk_lib_register_modules(const sechk_module_name_reg_t * register_fns, sec
 	}
 	if (apol_vector_get_size(lib->modules) != sechk_register_list_get_num_modules()) {
 		fprintf(stderr,
-			"Error: the number of registered modules (%d) does not match the number of modules in the configuration file (%d).\n",
+			"Error: the number of registered modules (%zd) does not match the number of modules in the configuration file (%zd).\n",
 			sechk_register_list_get_num_modules(), apol_vector_get_size(lib->modules));
 		errno = EINVAL;
 		return -1;
@@ -493,7 +493,7 @@ int sechk_lib_register_modules(const sechk_module_name_reg_t * register_fns, sec
 		retv = fn(lib);
 		if (retv) {
 			error = errno;
-			fprintf(stderr, "Error: could not register module #%i\n", i);
+			fprintf(stderr, "Error: could not register module #%zd\n", i);
 			errno = error;
 			return retv;
 		}

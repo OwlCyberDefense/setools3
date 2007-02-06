@@ -642,7 +642,7 @@ int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 		return 0;	       /* not an error - no output is requested */
 	if (outformat & SECHK_OUT_STATS) {
 		num_items = apol_vector_get_size(mod->result->items);
-		printf("Found %i file types.\n", num_items);
+		printf("Found %zd file types.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following types are file types.\n\n");

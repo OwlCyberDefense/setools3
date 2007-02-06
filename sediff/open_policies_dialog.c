@@ -71,7 +71,7 @@ static gint open_policy_sort(GtkTreeModel * model, GtkTreeIter * a, GtkTreeIter 
 	GValue value_a = { 0 }, value_b = {
 	0};
 	const char *name_a, *name_b;
-	int retval, column_id = (int)user_data;
+	int retval, column_id = GPOINTER_TO_INT(user_data);
 
 	gtk_tree_model_get_value(model, a, column_id, &value_a);
 	gtk_tree_model_get_value(model, b, column_id, &value_b);

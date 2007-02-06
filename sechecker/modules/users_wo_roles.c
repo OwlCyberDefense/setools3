@@ -298,7 +298,7 @@ int users_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i users.\n", num_items);
+		printf("Found %zd users.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following users have no associated roles.\n");

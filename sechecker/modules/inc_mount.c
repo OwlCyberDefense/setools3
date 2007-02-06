@@ -474,7 +474,7 @@ int inc_mount_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __at
 		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i types.\n", num_items);
+		printf("Found %zd types.\n", num_items);
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */

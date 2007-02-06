@@ -190,13 +190,13 @@ You can customize your SETools build using the flags given to
 
   --with-sepol-devel=PATH
       Look for libsepol header files in PATH/include and library in
-      PATH/lib.  Note that if --enable-sepol-src and
+      PATH/lib64 and PATH/lib.  Note that if --enable-sepol-src and
       --with-sepol-devel are both specified then --enable-sepol-src
       takes precedence.
 
   --with-selinux-devel=PATH
       Look for libselinux header files in PATH/include and library
-      in PATH/lib.
+      in PATH/lib64 and PATH/lib.
 
   --with-default-policy=PATH
       Explicitly use PATH as the default SELinux policy source file,

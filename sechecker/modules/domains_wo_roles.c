@@ -341,7 +341,7 @@ int domains_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i types.\n", num_items);
+		printf("Found %zd types.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following types are domains but not associated with any roles.\n");
