@@ -321,7 +321,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 			for (; !qpol_iterator_end(node_iter); qpol_iterator_next(node_iter)) {
 				qpol_constraint_expr_node_t *constraint_node;
-				size_t node_type;
+				uint32_t node_type;
 
 				qpol_iterator_get_item(node_iter, (void **)&constraint_node);
 				qpol_constraint_expr_node_get_expr_type(q, constraint_node, &node_type);
@@ -451,7 +451,7 @@ int attribs_wo_rules_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i attributes.\n", num_items);
+		printf("Found %zd attributes.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following attributes do not appear in any rules.\n");

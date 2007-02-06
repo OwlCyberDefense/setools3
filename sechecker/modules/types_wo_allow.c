@@ -247,7 +247,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_query_set_source(policy, avrule_query, type_name, 1);
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
-			size_t rule_type;
+			uint32_t rule_type;
 			qpol_avrule_t *rule;
 
 			rule = apol_vector_get_element(avrule_vector, j);
@@ -264,7 +264,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_avrule_query_set_target(policy, avrule_query, type_name, 1);
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
-			size_t rule_type;
+			uint32_t rule_type;
 			qpol_avrule_t *rule;
 
 			rule = apol_vector_get_element(avrule_vector, j);

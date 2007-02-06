@@ -499,10 +499,10 @@ static int report_print_enforce_toggles(seaudit_log_t * log, seaudit_report_t * 
 	 * view, we do so manually within the following for loop. */
 	if (report->format == SEAUDIT_REPORT_FORMAT_HTML)
 		fprintf(outfile,
-			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n",
+			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%zd</b><br>\n<br>\n",
 			num_setenforce);
 	else
-		fprintf(outfile, "Number of messages: %d\n\n", num_setenforce);
+		fprintf(outfile, "Number of messages: %zd\n\n", num_setenforce);
 
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		msg = apol_vector_get_element(v, i);
@@ -545,10 +545,10 @@ static int report_print_policy_booleans(seaudit_log_t * log, seaudit_report_t * 
 	char *s;
 	if (report->format == SEAUDIT_REPORT_FORMAT_HTML)
 		fprintf(outfile,
-			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n",
+			"<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%zd</b><br>\n<br>\n",
 			num);
 	else
-		fprintf(outfile, "Number of messages: %d\n\n", num);
+		fprintf(outfile, "Number of messages: %zd\n\n", num);
 
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		m = apol_vector_get_element(v, i);
@@ -682,11 +682,11 @@ static int report_print_stats(seaudit_log_t * log, seaudit_report_t * report, FI
 			"<font class=\"stats_label\">Number of denied messages:</font> <b class=\"stats_count\">%zd</b><br>\n",
 			seaudit_model_get_num_denies(log, report->model));
 	} else {
-		fprintf(outfile, "Number of total messages: %d\n", num_messages);
-		fprintf(outfile, "Number of policy load messages: %d\n", seaudit_model_get_num_loads(log, report->model));
-		fprintf(outfile, "Number of policy boolean messages: %d\n", seaudit_model_get_num_bools(log, report->model));
-		fprintf(outfile, "Number of allow messages: %d\n", seaudit_model_get_num_allows(log, report->model));
-		fprintf(outfile, "Number of denied messages: %d\n", seaudit_model_get_num_denies(log, report->model));
+		fprintf(outfile, "Number of total messages: %zd\n", num_messages);
+		fprintf(outfile, "Number of policy load messages: %zd\n", seaudit_model_get_num_loads(log, report->model));
+		fprintf(outfile, "Number of policy boolean messages: %zd\n", seaudit_model_get_num_bools(log, report->model));
+		fprintf(outfile, "Number of allow messages: %zd\n", seaudit_model_get_num_allows(log, report->model));
+		fprintf(outfile, "Number of denied messages: %zd\n", seaudit_model_get_num_denies(log, report->model));
 	}
 	return 0;
 }

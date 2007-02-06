@@ -91,12 +91,12 @@ char *poldiff_user_to_string(poldiff_t * diff, const void *user)
 				break;
 			}
 			if (num_added > 0) {
-				if (apol_str_appendf(&s, &len, "%d Added Roles", num_added) < 0) {
+				if (apol_str_appendf(&s, &len, "%zd Added Roles", num_added) < 0) {
 					break;
 				}
 			}
 			if (num_removed > 0) {
-				if (apol_str_appendf(&s, &len, "%s%d Removed Roles", (num_added > 0 ? ", " : ""), num_removed) < 0) {
+				if (apol_str_appendf(&s, &len, "%s%zd Removed Roles", (num_added > 0 ? ", " : ""), num_removed) < 0) {
 					break;
 				}
 			}

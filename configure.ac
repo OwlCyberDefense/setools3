@@ -264,9 +264,20 @@ AC_ARG_WITH(selinux-devel,
             selinux_devel="$withval",
             selinux_devel="/usr")
 sepol_devel_incdir="${sepol_devel}/include"
-sepol_devel_libdir="${sepol_devel}/lib"
 selinux_devel_incdir="${selinux_devel}/include"
-selinux_devel_libdir="${selinux_devel}/lib"
+dnl if /lib64 exists then use that directory, otherwise revert to just /lib
+for dir in lib64 lib ; do
+  sepol_devel_libdir="${sepol_devel}/${dir}"
+  if test -d ${sepol_devel_libdir} ; then
+    break
+  fi
+done
+for dir in lib64 lib ; do
+  selinux_devel_libdir="${selinux_devel}/${dir}"
+  if test -d ${selinux_devel_libdir} ; then
+    break
+  fi
+done
 AC_MSG_CHECKING([for sepol/sepol.h])
 selinux_save_CFLAGS="${CFLAGS}"
 SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
