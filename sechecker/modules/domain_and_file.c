@@ -370,7 +370,7 @@ int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 		return 0;	       /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i types.\n", num_items);
+		printf("Found %zd types.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
