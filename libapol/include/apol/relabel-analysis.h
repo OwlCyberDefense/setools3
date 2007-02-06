@@ -1,13 +1,12 @@
 /**
- * @file relabel-analysis.h
+ * @file
  *
  * Routines to perform a direct relabelling analysis.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2005-2006 Tresys Technology, LLC
+ * Copyright (C) 2005-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -34,7 +33,7 @@ extern "C"
 
 #include "policy.h"
 #include "vector.h"
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 /* defines for direction flag */
 #define APOL_RELABEL_DIR_TO      0x01

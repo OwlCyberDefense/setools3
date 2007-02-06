@@ -1,15 +1,17 @@
-#############################################################
-#  directflow_module.tcl
-# -----------------------------------------------------------
-#  Copyright (C) 2003-2006 Tresys Technology, LLC
-#  see file 'COPYING' for use and warranty information
+#  Copyright (C) 2003-2007 Tresys Technology, LLC
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
 #
-#  Requires tcl and tk 8.4+, with BWidget
-#  Author: <don.patterson@tresys.com, mayerf@tresys.com, kcarr@tresys>
-# -----------------------------------------------------------
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# This is the implementation of the interface for Information
-# Flow analysis.
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace eval Apol_Analysis_directflow {
     variable vals
@@ -51,7 +53,7 @@ from the parent to the child.
 selection or an end type regular expression.
 
 \nNOTE: For any given generation, if the parent and the child are the
-same, you cannot open the child.  This avoids cyclic analyses.
+same, the child cannot be opened.  This avoids cyclic analyses.
 
 \nFor additional help on this topic select \"Information Flow Analysis\"
 from the help menu."

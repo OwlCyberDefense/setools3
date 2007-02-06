@@ -1,13 +1,12 @@
 /**
- * @file util.h
+ * @file
  *
  * Miscellaneous, uncategorized functions for libapol.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2001-2006 Tresys Technology, LLC
+ * Copyright (C) 2001-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -33,6 +32,8 @@ extern "C"
 #endif
 
 #include <config.h>
+
+#include "vector.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -157,13 +158,26 @@ extern "C"
 	extern char *apol_file_find(const char *file_name);
 
 /**
- * Given a file name for a user configuration, search and return that
- * file's path in the user's home directory.
+ * Given a file name, search and return that file's full path
+ * (directory + file name) on the running system.  First search the
+ * present working directory, then the directory at APOL_INSTALL_DIR
+ * (an environment variable), then apol's install dir.
  *
  * @param file_name File to find.
  *
- * @return File's path, or NULL if not found.  Caller must free() this
- * string afterwards.
+ * @return File's path + file name, or NULL if not found.  Caller must
+ * free() this string afterwards.
+ */
+	extern char *apol_file_find_path(const char *file_name);
+
+/**
+ * Given a file name for a user configuration, search and return that
+ * file's path + file name in the user's home directory.
+ *
+ * @param file_name File to find.
+ *
+ * @return File's path + file name, or NULL if not found.  Caller must
+ * free() this string afterwards.
  */
 	extern char *apol_file_find_user_config(const char *file_name);
 
@@ -199,6 +213,8 @@ extern "C"
  * the returned array of strings afterwards, as well as the pointer
  * itself.
  *
+ * @deprecated Do not use this function; use apol_str_split() instead.
+ *
  * @param var Name of configuration variable to obtain.
  * @param fp An open file pointer into a configuration file.  This
  * function will not maintain the pointer's current location.
@@ -208,7 +224,8 @@ extern "C"
  * @return A newly allocated array of strings containing the
  * variable's values, or NULL if not found or error.
  */
-	extern char **apol_config_get_varlist(const char *var, FILE * file, size_t * list_sz);
+	extern char **apol_config_get_varlist(const char *var, FILE * file, size_t * list_sz)
+		__attribute__ ((deprecated));
 
 /**
  * Given a list of configuration variables, as returned by
@@ -216,12 +233,44 @@ extern "C"
  * list using ':' as the separator.  The caller is responsible for
  * free()ing the string afterwards.
  *
+ * @deprecated Do not use this function; use apol_str_join() instead.
+ *
  * @param list Array of strings.
  * @param size Number of elements within the list.
  *
  * @return An allocated concatenated string, or NULL upon error.
  */
-	extern char *apol_config_varlist_to_str(const char **list, size_t size);
+	extern char *apol_config_varlist_to_str(const char **list, size_t size)
+		__attribute__ ((deprecated));
+
+/**
+ * Given a string of tokens, allocate and return a vector of strings
+ * initialized to those tokens.
+ *
+ * @param s String to split.
+ * @param delim Delimiter for tokens, as per strsep(3).
+ *
+ * @return A newly allocated vector of strings containing the
+ * variable's values, or NULL if not found or error.  Note that the
+ * vector could be empty if the config var does not exist or has an
+ * empty value.  The caller must call apol_vector_destroy()
+ * afterwards, passing free as the second parameter.
+ */
+	extern apol_vector_t *apol_str_split(const char *s, const char *delim);
+
+/**
+ * Given a vector of strings, allocate and return a string that joins
+ * the vector using the given separator.  The caller is responsible
+ * for free()ing the string afterwards.
+ *
+ * @param list Vector of strings to join.
+ * @param delim Delimiter character(s) for the concatenated string.
+ *
+ * @return An allocated concatenated string, or NULL upon error.  If
+ * the list is empty then return an empty string.  The caller is
+ * responsible for calling free() upon the return value.
+ */
+	extern char *apol_str_join(const apol_vector_t * list, const char *delim);
 
 /**
  * Given a dynamically allocated string, allocate a new string with

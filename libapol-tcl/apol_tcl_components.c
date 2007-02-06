@@ -1,12 +1,12 @@
 /**
- *  @file apol_tcl_components.c
+ *  @file
  *  Implementation for the apol interface to search for policy components.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2003-2006 Tresys Technology, LLC
+ *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -240,7 +240,7 @@ static int append_attr_to_list(Tcl_Interp * interp, qpol_type_t * attr_datum, Tc
  * <ol>
  *   <li>attribute name to look up, or a regular expression, or empty
  *       to get all attributes
- *   <li>(optional) treat argv[1] as an attribute name or regex
+ *   <li>(optional) if true then treat argv[1] as a regex
  * </ol>
  */
 static int Apol_GetAttribs(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])

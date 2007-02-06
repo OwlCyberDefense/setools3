@@ -1,12 +1,12 @@
 /**
- *  @file bool_query.h
- *  Defines the public interface for searching and iterating over booleans. 
+ *  @file
+ *  Defines the public interface for searching and iterating over booleans.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,7 @@ extern "C"
 
 	typedef struct qpol_bool qpol_bool_t;
 
-/** 
+/**
  *  Get the datum for a conditional boolean by name.
  *  @param policy The policy database from which to retrieve the boolean.
  *  @param name The name of the boolean; searching is case sensitive.
@@ -49,10 +49,10 @@ extern "C"
  */
 	extern int qpol_policy_get_bool_by_name(qpol_policy_t * policy, const char *name, qpol_bool_t ** datum);
 
-/** 
+/**
  *  Get an iterator for conditional booleans in the policy.
  *  @param policy The policy database from which to create the iterator.
- *  @param iter Iterator of type qpol_bool_t* returned; 
+ *  @param iter Iterator of type qpol_bool_t* returned;
  *  the user is responsible for calling qpol_iterator_destroy to
  *  free memory used. It is also important to note that an iterator
  *  is only valid as long as the policy is unchanged.
@@ -61,10 +61,10 @@ extern "C"
  */
 	extern int qpol_policy_get_bool_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
 
-/** 
- *  Get the integer value associated with a boolean. Values range from 1 to 
+/**
+ *  Get the integer value associated with a boolean. Values range from 1 to
  *  the number of conditional booleans declared in the policy.
- *  @param policy The policy with which the boolean is associated. 
+ *  @param policy The policy with which the boolean is associated.
  *  @param datum Boolean datum from which to get the value. Must be non-NULL.
  *  @param value Pointer to integer be set to value. Must be non-NULL.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
@@ -72,18 +72,18 @@ extern "C"
  */
 	extern int qpol_bool_get_value(qpol_policy_t * policy, qpol_bool_t * datum, uint32_t * value);
 
-/** 
+/**
  *  Get the state of a boolean.
  *  @param policy The policy with which the boolean is associated.
  *  @param datum Boolean datum from which to get the state. Must be non-NULL.
- *  @param state Pointer to the integer to be set to the boolean's state. 
+ *  @param state Pointer to the integer to be set to the boolean's state.
  *  Must be non-NULL.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *state will set to 0 (false).
  */
 	extern int qpol_bool_get_state(qpol_policy_t * policy, qpol_bool_t * datum, int *state);
 
-/** 
+/**
  *  Set the state of a boolean and update the state of all conditionals
  *  using the boolean.
  *  @param policy The policy with which the boolean is associated.
@@ -95,7 +95,7 @@ extern "C"
  */
 	extern int qpol_bool_set_state(qpol_policy_t * policy, qpol_bool_t * datum, int state);
 
-/** 
+/**
  *  Set the state of a boolean but do not update the state of all conditionals
  *  using the boolean. The caller is responsible for calling
  *  qpol_policy_reevaluate_conds() at a later time to maintain a consistent
@@ -116,7 +116,7 @@ extern "C"
  *  @param name Pointer to the string in which to store the name.
  *  Must be non-NULL. The caller should not free the string.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *name will be NULL. 
+ *  errno will be set and *name will be NULL.
  */
 	extern int qpol_bool_get_name(qpol_policy_t * policy, qpol_bool_t * datum, char **name);
 

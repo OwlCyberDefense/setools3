@@ -1,0 +1,6 @@
+{
+	global:
+		seaudit_*;
+		libseaudit_get_version;
+	local: *;
+};

@@ -9,9 +9,8 @@
 		qpol_cond_*;
 		qpol_constraint_*;
 		qpol_context_*;
+		qpol_default_policy_find;
 		qpol_expand_module;
-		qpol_extended_image_destroy;
-		qpol_find_default_policy_*;
 		qpol_fs_use_*;
 		qpol_genfscon_*;
 		qpol_isid_*;
@@ -21,6 +20,7 @@
 		qpol_iterator_destroy;
 		qpol_level_*;
 		qpol_mls_*;
+		qpol_module_*;
 		qpol_netifcon_*;
 		qpol_nodecon_*;
 		qpol_open_policy_*;

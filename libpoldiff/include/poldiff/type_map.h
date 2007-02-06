@@ -1,5 +1,5 @@
 /**
- *  @file type_map.h
+ *  @file
  *  Public Interface for type equivalence mapping for semantic
  *  difference calculations.
  *
@@ -7,7 +7,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,7 @@ extern "C"
  *  @return 0 on success or < 0 on error; if the call fails, errno
  *  will be set and the poldiff object remains unchanged.
  */
-	extern int poldiff_type_remap_create(poldiff_t * diff, apol_vector_t * orig_names, apol_vector_t * mod_names);
+	extern int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names, const apol_vector_t * mod_names);
 
 /**
  *  Get a vector of all identified type remap entries.  The caller may
@@ -114,6 +114,16 @@ extern "C"
  *  second parameter.  Upon error return NULL and set errno.
  */
 	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
+
+/**
+ *  Given a poldiff_type_remap_entry_t object, determine if was
+ *  an inferred mapping or not.
+ *
+ *  @param entry Remap entry from which to get its inference status.
+ *
+ *  @return 1 if it was inferred, 0 if not, < 0 on error.
+ */
+	extern int poldiff_type_remap_entry_get_is_inferred(poldiff_type_remap_entry_t * entry);
 
 /**
  *  Given a poldiff_type_remap_entry_t object, determine if it is

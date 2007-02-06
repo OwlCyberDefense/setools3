@@ -1,5 +1,5 @@
 /**
- * @file queue.c
+ * @file
  *
  * This file is a copy of queue.c from NSA's CVS repository.
  *

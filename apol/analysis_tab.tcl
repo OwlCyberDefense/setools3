@@ -1,19 +1,24 @@
 #############################################################
 #  analysis_tab.tcl
 # -----------------------------------------------------------
-#  Copyright (C) 2003-2006 Tresys Technology, LLC
-#  see file 'COPYING' for use and warranty information
+#  Copyright (C) 2003-2007 Tresys Technology, LLC
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 #  Requires tcl and tk 8.4+, with BWidget
-#  Author: <don.patterson@tresys.com>
-#  Modified by: <kcarr@tresys.com>
 # -----------------------------------------------------------
 
-##############################################################
-# ::Apol_Analysis
-#
-# The Analysis tab
-##############################################################
 namespace eval Apol_Analysis {
     variable vals
     variable widgets
@@ -40,9 +45,6 @@ proc Apol_Analysis::close {} {
         ${m}::close
     }
     reinitializeTabs
-}
-
-proc Apol_Analysis::free_call_back_procs { } {
 }
 
 proc Apol_Analysis::set_Focus_to_Text { tab } {

@@ -1,13 +1,12 @@
 /**
- * @file class-perm-query.h
+ * @file
  *
  * Routines to query classes, commons, and permissions of a policy.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006 Tresys Technology, LLC
+ * Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -34,7 +33,7 @@ extern "C"
 
 #include "policy.h"
 #include "vector.h"
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 	typedef struct apol_class_query apol_class_query_t;
 	typedef struct apol_common_query apol_common_query_t;
@@ -45,7 +44,7 @@ extern "C"
 /**
  * Execute a query against all classes within the policy.  The results
  * will only contain object classes, not common classes.
- * @depricated This function has been renamed apol_class_get_by_query().
+ * @deprecated This function has been renamed apol_class_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *
@@ -144,7 +143,7 @@ extern "C"
 /**
  * Execute a query against all common classes within the policy.  The
  * results will only contain common classes, not object classes.
- * @depricated This function has been renamed apol_common_get_by_query().
+ * @deprecated This function has been renamed apol_common_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *
@@ -233,7 +232,7 @@ extern "C"
  * permission name is declared within multiple classes (e.g.,
  * <tt>file/read</tt> and <tt>socket/read</tt>) then only one instance
  * of <tt>read</tt> is returned.
- * @depricated This function has been renamed apol_perm_get_by_query().
+ * @deprecated This function has been renamed apol_perm_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *

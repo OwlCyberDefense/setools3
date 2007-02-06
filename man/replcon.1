@@ -6,17 +6,22 @@ replcon \- SELinux file context replacement tool
 [OPTIONS] -c OLD NEW FILENAMES
 .SH DESCRIPTION
 .PP
-.B replcon 
-allows the user to find and replace file contexts.  Replacements can be restricted by object class.
-.PP 
-A context may be specified as a colon separated list of user, role, and type as follows - user_u:object_r:type_t. If your system supports MLS you can also add an additional MLS range to the end as follows - user_u:object_r:type_t:s0. The tool will automatically match a user, role, type, or range that is not specified, with any other user, role, type, or range. If your system has MLS and the translation library is enabled matching is done using it. If you want the tool to match raw contexts please use --raw option. 
+.B replcon
+allows the user to find and replace file contexts.
+Replacements can be restricted by object class.
 .SH OPTIONS
-.IP "--raw"
-Specify context to search for, ignoring the translation library if present.
 .IP "-c, --context=OLD NEW"
-Specify context to search for, and replace.
+Search for files with context OLD and replace their context with NEW.
+A context is specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
+If the system supports MLS, additional MLS range can be added to the end as follows: user_u:object_r:type_t:s0.
+If a field is not specified, the query will always match that field.
+If the system supports MLS and the translation library is enabled, matching is done using translated contexts.
+To match raw contexts, use the --raw option.
+The special string "unlabeled" can also be specified to match files with no label.
+.IP "--raw"
+Match raw contexts, ignoring the translation library if present.
 .IP "-o, --object=OBJECT"
-Only replace context for the specified object class.
+Only replace the context for files of object class OBJECT.
 .IP "-r, --recursive"
 Recurse through directories.
 .IP "-s, --stdin"
@@ -26,9 +31,9 @@ Suppress progress output.
 .IP "-V, --verbose"
 Display context info.
 .IP "-v, --version"
-Display version information and exit.
+Print version information and exit.
 .IP "-h, --help"
-Display help information and exit.
+Print help information and exit.
 .SH INFORMATION
 Valid object classes are
 .PP
@@ -42,16 +47,18 @@ fifo_file
 .SH EXAMPLES
 .TP
 .B replcon -c : ::type_t .
-Replace every context in the current directory with type_t
+Replace every context in the current directory with type_t.
 .TP
 .B replcon -c user_u: :role_r .
-Replace every context with user user_u in the current directory with role role_r
+Replace every context with user user_u in the current directory with role role_r.
 .TP
 .B replcon -c ::type_t:s0  :::s0:c0 .
-Replace every context with type type_t and MLS range s0 in the current directory with range s0:c0
+Replace every context with type type_t and MLS range s0 in the current directory with MLS range s0:c0.
 .SH AUTHOR
-This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
-Copyright(C) 2006 Tresys Technology, LLC
+Copyright(C) 2003-2007 Tresys Technology, LLC
+.SH BUGS
+Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
 findcon(1), indexcon(1), searchcon(1)

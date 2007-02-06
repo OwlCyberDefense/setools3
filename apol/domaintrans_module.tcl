@@ -1,15 +1,17 @@
-#############################################################
-#  domaintrans_module.tcl
-# -----------------------------------------------------------
-#  Copyright (C) 2003-2006 Tresys Technology, LLC
-#  see file 'COPYING' for use and warranty information
+#  Copyright (C) 2003-2007 Tresys Technology, LLC
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
 #
-#  Requires tcl and tk 8.4+, with BWidget
-#  Author: <don.patterson@tresys.com, mayerf@tresys.com>
-# -----------------------------------------------------------
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# This module implements the domain transition analysis interface.
-
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace eval Apol_Analysis_domaintrans {
     variable vals
@@ -39,8 +41,8 @@ proc Apol_Analysis_domaintrans::close {} {
 proc Apol_Analysis_domaintrans::getInfo {} {
     return "A forward domain transition analysis will determine all (target)
 domains to which a given (source) domain may transition.  For a
-forward domain transition to be allowed, three forms of access must be
-granted:
+forward domain transition to be allowed, multiple forms of access must
+be granted:
 
 \n    (1) source domain must have process transition permission for
         target domain,
@@ -63,8 +65,8 @@ granted:
     (3) source domain must have file execute permission to the same
         entrypoint type.
 
-\nThe results are presented in tree form.  You can open target children
-domains to perform another domain transition analysis on that domain.
+\nThe results are presented in tree form.  Open target children domains
+to perform another domain transition analysis on that domain.
 
 \nFor additional help on this topic select \"Domain Transition Analysis\"
 from the help menu."

@@ -1,5 +1,5 @@
 /**
- *  @file bst.h
+ *  @file
  *  Contains the API for a binary search tree.  The tree guarantees
  *  uniqueness of all entries within.  Note that BST functions are not
  *  thread-safe.  Use this if you need uniqueness in items; use
@@ -8,7 +8,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

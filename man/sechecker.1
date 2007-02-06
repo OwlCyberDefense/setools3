@@ -3,93 +3,127 @@
 sechecker \- SELinux policy checking tool
 .SH SYNOPSIS
 .B sechecker
-[OPTIONS] -m module
-.PP
+[OPTIONS] -p profile [POLICY ...]
+.br
 .B sechecker
-[OPTIONS] -p profile
-.PP
+[OPTIONS] -m module [POLICY ...]
+.br
 .B sechecker
-[OPTIONS] -m module -p profile
+[OPTIONS] -p profile -m module [POLICY ...]
 .SH DESCRIPTION
 .PP
 .B sechecker
-allows the user to perform predefined modular checks on a SELinux policy.  Profiles exist to group modules together and allow modification of module settings (see below).
+allows the user to perform predefined modular checks on a SELinux policy.
+Profiles exist to group modules together and allow modification of module settings (see below).
+.SH POLICY
+.PP
+.B
+sechecker
+supports loading a SELinux policy in one of three formats.
+.IP "source"
+A single text file containing policy source for versions 12 through 21. This file is usually named policy.conf.
+.IP "binary"
+A single file containing a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
+.IP "modular"
+A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
+.PP
+If not provided
+.B
+sechecker
+will search for the system default policy, checking first for a source policy, then a binary policy matching the running kernel's preferred version, then finally the highest version that can be found.
+If no policy can be found
+.B
+sechecker
+will print an error message and exit.
 .SH OPTIONS
-.IP "-m module, --module=module"
-run module
-.IP "-p profile"
-run profile
+.IP "-p PROFILE, --profile=PROFILE"
+Load module settings from a module profile.
+The settings in the profile will override the default settings for all specified modules.
+If specified without -m, run all modules in the profile.
+PROFILE may either be the name of a known profile (see --list) or the path to a user created profile.
+see PROFILE OPTIONS below for more information about creating profiles.
+.IP "-m MODULE, --module=MODULE"
+Run only the module named MODULE (see --list).
+.IP "--min-sev=SEVERITY"
+Report only results with the minimum severity of SEVERITY.
+SEVERITY may have one of the following values:
+.RS
+.IP "low"
+The module's results indicate a flaw in the policy that does not affect the manner in which the policy is enforced, but is considered to be improper.
+.IP "med"
+The module's results indicate a flaw in the policy that changes the manner in which the policy is enforced; however, it does not present an identifiable security risk.
+.IP "high"
+The module's results indicate a flaw in the policy that presents an identifiable security risk.
+.RE
+.IP "--fcfile=FILE"
+Use FILE for the file_contexts file instead of the system default.
 .IP "-l, --list"
-print a list of profiles and modules
+Print a list of the name and a brief description of all known profiles and modules and exit.
+.IP "--version"
+Print version information and exit.
+.IP "-h[MODULE], --help[=MODULE]"
+Print general help information and exit.
+If MODULE is provided, print help information for the module named MODULE and exit.
+.SS REPORT GENERATION OPTIONS
+.P
+Only one of the following may be provided to specify the length of the report for all modules.
+If provided, this option overrides both profile and module default output settings.
 .IP "-q, --quiet"
 suppress output
 .IP "-s, --short"
 print short output
 .IP "-v, --verbose"
 print verbose output
-.IP "--version"
-print version and exit
-.IP "--fcfile=<file>"
-file_contexts file
-.IP "--policy=<file>"
-policy file
-.IP "-h[module], --help[=module]"
-print general help or help for a module
-.IP "--min-sev=<low|med|high>"
-the minimum severity to report
 .SH PROFILE OPTIONS
 Profiles are used to group modules together, to specify the output format for each module in the report, and to provide the ability to override the modules' default options.  Each profile is a well-formed XML document, as specified by the DTD installed with sechecker.  An example profile follows:
-
+.PP
 <sechecker version="1.1">
-.PD 0
-.PP
+.br
 	<profile>
-.PP
+.br
 		<module name="find_domains">
-.PP
+.br
 			<output value="quiet"/>
-.PP
+.br
 			<option name="domain_attribute">
-.PP
+.br
 				<item value="domain"/>
-.PP
+.br
 				<item value="user_domain"/>
-.PP
+.br
 				...
-.PP
+.br
 			</option>
-.PP
+.br
 		</module>
-.PP
+.br
 		...
-.PP
+.br
 	</profile>
-.PP
+.br
 </sechecker>
 .PP
-
-The example profile specifies the output property for the find_domains module.  The valid output values for each module are specified below:
-
-.IP "verbose:"
-prints each result in the report with an accompanying proof
-
-.IP "short:"
-prints a list of results without an accompanying proof
-
-.IP "none:"
-does not print output in the report, however module errors will be printed
-
-.IP "quiet:"
-does not print output in the report and does not print errors (this is useful for utility modules for which the calling module handles the errors)
-
-.PP
-The example profile also overrides the default value for the "domain_attribute" option in the find_domains module. 
-
+The example profile specifies the output property for the find_domains module.
+The example profile also overrides the default value for the "domain_attribute" option in the find_domains module.
+.SS PROFILE OUTPUT OPTIONS
+The valid output values for each module are specified below:
+.IP "verbose"
+Print each result in the report with accompanying proof(s).
+.IP "short"
+Print a list of results with no accompanying proof.
+.IP "none"
+Do not print output from this module in the report; however, module errors will still be printed.
+.IP "quiet"
+Do not print output from this module in the report and do not print errors. This is useful for utility modules for which the calling module handles any errors.
+.SS PROFILE MODULE OPTIONS
+Several modules provide one or more options that can be set from a profile.
+Each option has one or more items.
+To check what options are available for a module use --help=MODULE, where MODULE is the name of the module as printed by --list.
 .SH AUTHOR
-This manual page was written by Kevin Carr <kcarr@tresys.com> and Jeremy Mowery <jmowery@tresys.com>.  
-
+This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
-Copyright(C) 2006 Tresys Technology, LLC
-
+Copyright(C) 2005-2007 Tresys Technology, LLC
+.SH BUGS
+Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
 apol(1)

@@ -1,26 +1,26 @@
-AC_INIT(setools, 3.0.1, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.1, [Tresys Technology <setools@tresys.com>], [setools])
 AC_CONFIG_SRCDIR(awish/awish.c)
 AC_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(setools, 3.0.1)
+AM_INIT_AUTOMAKE(setools, 3.1)
 
 dnl *** update these variables as versions change; also update AC_INIT ***
-libqpol_version=1.0.1
+libqpol_version=1.1
 libqpol_soname=libqpol.so.1
 
-libapol_version=3.0.1
-libapol_soname=libapol.so.3
-libapol_tcl_soname=libapol-tcl.so.3
+libapol_version=3.1
+libapol_soname=libapol.so.3.1
+libapol_tcl_soname=libapol-tcl.so.3.1
 
-libpoldiff_version=1.0.1
-libpoldiff_soname=libpoldiff.so.1
+libpoldiff_version=1.1
+libpoldiff_soname=libpoldiff.so.1.1
 
-libsefs_version=3.0.1
+libsefs_version=3.0.2
 libsefs_soname=libsefs.so.3
 
-libseaudit_version=3.0.1
-libseaudit_soname=libseaudit.so.3
+libseaudit_version=4.0.0
+libseaudit_soname=libseaudit.so.4
 
-setoolsdir='${prefix}/share/setools-3.0.1'
+setoolsdir='${prefix}/share/setools-3.1'
 
 version_min_sepol_major=1
 version_min_sepol_minor=12
@@ -67,6 +67,7 @@ if test "x${enable_debug}" = xyes; then
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
     SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=$(top_builddir)/libsefs/src'
     POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=$(top_builddir)/libpoldiff/src'
+    SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.a -Wl,-rpath=$(top_builddir)/libseaudit/src'
     AC_MSG_RESULT(yes)
 else
     AC_DEFINE(NDEBUG, 1, [disable calls to assert()])
@@ -77,11 +78,13 @@ else
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.so'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.so'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.so'
+        SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.so'
     else
         QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a'
+        SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.a'
     fi
     AC_MSG_RESULT(disabled)
 fi
@@ -91,14 +94,17 @@ QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
 APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
 SEFS_CFLAGS='-I$(top_srcdir)/libsefs/include'
 POLDIFF_CFLAGS='-I$(top_srcdir)/libpoldiff/include'
+SEAUDIT_CFLAGS='-I$(top_srcdir)/libseaudit/include'
 AC_SUBST(QPOL_CFLAGS)
 AC_SUBST(APOL_CFLAGS)
 AC_SUBST(SEFS_CFLAGS)
 AC_SUBST(POLDIFF_CFLAGS)
+AC_SUBST(SEAUDIT_CFLAGS)
 AC_SUBST(QPOL_LIB_FLAG)
 AC_SUBST(APOL_LIB_FLAG)
 AC_SUBST(SEFS_LIB_FLAG)
 AC_SUBST(POLDIFF_LIB_FLAG)
+AC_SUBST(SEAUDIT_LIB_FLAG)
 
 AC_ARG_ENABLE(warnall,
               AC_HELP_STRING([--enable-warnall],
@@ -350,6 +356,23 @@ SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
 AC_SUBST(SELINUX_CFLAGS)
 AC_SUBST(SELINUX_LIB_FLAG)
 
+sepol_save_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} ${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG}"
+AC_RUN_IFELSE([#include <sepol/policydb/policydb.h>
+#include <stdio.h>
+#include <stdlib.h>
+int main(void) {
+    FILE *f = fopen("conftest.data", "w");
+    if (f != NULL && fprintf(f, "%d", POLICYDB_VERSION_MAX) > 0) {
+       fclose(f);
+       exit(EXIT_SUCCESS);
+    }
+    exit(EXIT_FAILURE); }],
+    sepol_policy_version_max=`cat conftest.data`,
+    AC_MSG_FAILURE([could not determine maximum libsepol policy version]))
+AC_DEFINE_UNQUOTED(SEPOL_POLICY_VERSION_MAX, ${sepol_policy_version_max}, [maximum policy version supported by libsepol])
+CFLAGS="${sepol_save_CFLAGS}"
+
 if test ${use_selinux} = "yes"; then
 dnl Locate selinux policy root directory
     AC_MSG_CHECKING([for selinux policy root])
@@ -399,6 +422,10 @@ fi
 if test "x${build_gui}" = xyes; then
   dnl check for GTK
   AC_MSG_CHECKING([for GTK])
+  pkg-config --exists 'gtk+-2.0 >= 2.4'
+  if test $? -ne 0; then
+     AC_MSG_ERROR([setools requires GTK+ 2.4 or greater])
+  fi
   GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
   if test -z "${GTK_CFLAGS}"; then
      AC_MSG_ERROR([could not find GTK headers])
@@ -507,12 +534,14 @@ AC_DEFINE_UNQUOTED(LIBQPOL_VERSION_STRING, "${libqpol_version}", [libqpol versio
 AC_DEFINE_UNQUOTED(LIBPOLDIFF_VERSION_STRING, "${libpoldiff_version}", [libpoldiff version])
 AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
+AC_DEFINE(SQLITE_PTR_SZ, SIZEOF_CHAR_P, [size of a pointer, as used by SQLite3])
 
 # for older version of BWidget, overcome bug in NoteBook::bindtabs and
 # add a new -autopost option to ComboBox
 AC_CONFIG_COMMANDS([config.tcl], [[
+   echo "" > ./config.tcl
    if test ${bwidget_ver} = 1.7; then
-        cat > ./config.tcl <<EOF
+        cat >> ./config.tcl <<EOF
 proc tcl_patch_bwidget {} {
     # explicitly pull in old BWidget code before patching
     NoteBook .foo ; destroy .foo
@@ -523,8 +552,6 @@ EOF
 	cat ${ac_top_srcdir}/packages/mainframe.tcl >> ./config.tcl
 	cat ${ac_top_srcdir}/packages/notebook.tcl >> ./config.tcl
         echo "}" >> ./config.tcl
-   else
-        echo "" > ./config.tcl
    fi
    if test "x${enable_debug}" = xyes; then
         cat >> ./config.tcl <<EOF
@@ -542,7 +569,11 @@ if {![catch {source tkcon.tcl}]} {
 }
 EOF
    fi
-]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug])
+   echo "proc tcl_config_init {} {" >> ./config.tcl
+   echo "    set ApolTop::gui_ver ${apol_gui_version}" >> ./config.tcl
+   echo "    set ApolTop::apol_install_dir \{${setoolsdir}\}" >> ./config.tcl
+   echo "}" >> ./config.tcl
+]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; setoolsdir=${prefix}${setoolsdir}])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
@@ -550,7 +581,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
-                 libseaudit/Makefile \
+                 libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile \
                  secmds/Makefile \
                  apol/Makefile \
                  awish/Makefile \
