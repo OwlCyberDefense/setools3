@@ -1,12 +1,11 @@
 /**
- *  @file type_query.c
- *  Implementation of the interface for searching and iterating over types. 
+ *  @file
+ *  Implementation of the interface for searching and iterating over types.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -111,9 +110,37 @@ int qpol_type_get_value(qpol_policy_t * policy, qpol_type_t * datum, uint32_t * 
 	}
 
 	internal_datum = (type_datum_t *) datum;
-	*value = internal_datum->s.value;
+	if (internal_datum->flavor == TYPE_ALIAS) {
+		/* aliases that came from modules should use the value
+		 * referenced to by that alias */
+		*value = internal_datum->primary;
+	} else {
+		*value = internal_datum->s.value;
+	}
 
 	return STATUS_SUCCESS;
+}
+
+/**
+ * Determine if a type_datum_t is an alias or a non-alias (primary
+ * type or an attribute).  For aliases declared in base policies, they
+ * will have no primary value and a flavor of TYPE_TYPE.  For aliases
+ * declared in modules, they have a flavor of TYPE_ALIAS; their
+ * primary value points to the new /linked/ type's value.
+ *
+ * @param datum Type datum to check.
+ *
+ * @return 1 if the datum is an alias, 0 if not.
+ */
+static int is_type_really_an_alias(const type_datum_t * datum)
+{
+	if (datum->primary == 0 && datum->flavor == TYPE_TYPE) {
+		return 1;
+	}
+	if (datum->flavor == TYPE_ALIAS) {
+		return 1;
+	}
+	return 0;
 }
 
 int qpol_type_get_isalias(qpol_policy_t * policy, qpol_type_t * datum, unsigned char *isalias)
@@ -127,9 +154,8 @@ int qpol_type_get_isalias(qpol_policy_t * policy, qpol_type_t * datum, unsigned 
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-
 	internal_datum = (type_datum_t *) datum;
-	*isalias = internal_datum->primary ? 0 : 1;
+	*isalias = is_type_really_an_alias(internal_datum);
 
 	return STATUS_SUCCESS;
 }
@@ -273,6 +299,24 @@ typedef struct type_alias_hash_state
 	uint32_t val;
 } type_alias_hash_state_t;
 
+/**
+ * For aliases that came from the base policy, their primary type is
+ * referenced by s.value.  For aliases that came from modules, their
+ * primary type is referenced by the primary field.
+ *
+ * @param datum Alias whose primary value to get.
+ *
+ * @return The primary type's identifier.
+ */
+static uint32_t get_alias_primary(const type_datum_t * datum)
+{
+	if (datum->flavor == TYPE_TYPE) {
+		return datum->s.value;
+	} else {
+		return datum->primary;
+	}
+}
+
 static int hash_state_next_type_alias(qpol_iterator_t * iter)
 {
 	type_alias_hash_state_t *hs = NULL;
@@ -296,10 +340,11 @@ static int hash_state_next_type_alias(qpol_iterator_t * iter)
 	do {
 		hash_state_next(iter);
 		datum = hs->node ? (type_datum_t *) hs->node->datum : NULL;
-	} while (datum != NULL && (datum->s.value != hs->val || datum->primary));
+	} while (datum != NULL && (hs->val != get_alias_primary(datum) || !is_type_really_an_alias(datum)));
 
 	return STATUS_SUCCESS;
 }
+
 static void *hash_state_get_cur_alias(qpol_iterator_t * iter)
 {
 	type_alias_hash_state_t *hs = NULL;
@@ -321,6 +366,7 @@ static void *hash_state_get_cur_alias(qpol_iterator_t * iter)
 
 	return hs->node->key;
 }
+
 static size_t hash_alias_state_size(qpol_iterator_t * iter)
 {
 	type_alias_hash_state_t *hs = NULL;
@@ -340,7 +386,7 @@ static size_t hash_alias_state_size(qpol_iterator_t * iter)
 		for (tmp_node = (*(hs->table))->htable[tmp_bucket]; tmp_node; tmp_node = tmp_node->next) {
 			tmp_datum = tmp_node ? tmp_node->datum : NULL;
 			if (tmp_datum) {
-				if (tmp_datum->s.value == hs->val && !tmp_datum->primary) {
+				if (hs->val == get_alias_primary(tmp_datum) && is_type_really_an_alias(tmp_datum)) {
 					count++;
 				}
 			}
@@ -376,7 +422,7 @@ int qpol_type_get_alias_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_i
 	}
 	hs->table = &db->p_types.table;
 	hs->node = (*(hs->table))->htable[0];
-	hs->val = internal_datum->s.value;
+	hs->val = get_alias_primary(internal_datum);
 
 	if (qpol_iterator_create(policy, (void *)hs, hash_state_get_cur_alias,
 				 hash_state_next_type_alias, hash_state_end, hash_alias_state_size, free, aliases)) {
@@ -384,7 +430,7 @@ int qpol_type_get_alias_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_i
 		return STATUS_ERR;
 	}
 
-	if (hs->node == NULL || ((type_datum_t *) (hs->node->datum))->s.value != hs->val)
+	if (hs->node == NULL || hs->val != get_alias_primary((type_datum_t *) (hs->node->datum)))
 		hash_state_next_type_alias(*aliases);
 
 	return STATUS_SUCCESS;

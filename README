@@ -1,4 +1,4 @@
-SETools - Policy analysis tools for SELinux (C) 2001-2006
+SETools - Policy analysis tools for SELinux (C) 2001-2007
 Tresys Technology
 setools@tresys.com, http://oss.tresys.com/projects/setools
 
@@ -42,7 +42,7 @@ and libraries:
   libapol-tcl   bindings between apol and libapol
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
-  libseaudit    seaudit support library
+  libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux filesystem database library
   seaudit       audit log analysis tools: seaudit and seaudit-report
   sechecker     SELinux policy checking tool
@@ -80,7 +80,7 @@ The following are not strictly required but highly recommended:
   tcl-8.4.9-devel or greater
   tk-8.4.9-devel or greater
   glib-1.2
-  gtk+-2.0
+  gtk+-2.4
   gdk-pixbuf-2.0
   libglade-2.0
 These packages are needed to build SETools's graphical tools.
@@ -103,13 +103,13 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.0.1
+  $ cd setools-3.1
   $ ./configure
   $ make
   $ make install
 
 This will put the binaries in /usr/local/bin, data files in
-/usr/local/share/setool-3.0.1, and libraries in /usr/local/lib.
+/usr/local/share/setool-3.1, and libraries in /usr/local/lib.
 Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
 $LD_LIBRARY_PATH everything should now work.
 
@@ -390,8 +390,8 @@ maintain compatibility beginning with SETools version 3.0.
       not meant to be used by any other program.
 
   libseaudit:
-      Parse and store SELinux audit messages.  Its chief user is the
-      seaudit tool.
+      Parse and store SELinux audit messages.  Its chief users are
+      seaudit and seaudit-report.
 
   libsefs:
       Create a snapshot of SELinux filesystem security contexts and
@@ -408,7 +408,10 @@ maintain compatibility beginning with SETools version 3.0.
 --------------------
 
 Official releases of SETools may be freely downloaded from Tresys's
-OSS website, http://oss.tresys.com/projects/setools.
+Open Source Software website, http://oss.tresys.com/projects/setools.
+
+Tresys builds RPM packages of SETools.  They may also be obtained from
+the website listed above.
 
 SETools source code is maintained within a Subversion repository.
 From the command line do:
@@ -418,11 +421,10 @@ From the command line do:
 You may also browse the SVN repository at
 http://oss.tresys.com/projects/setools/browser.
 
-Binary releases of SETools are available for your favorite Linux
-packaging system.  Red Hat releases RPM builds regularly; use
-rpmfind.net to find it.  Gentoo users have an ebuild script for
-SETools.  Debian maintains the dpkg "setools" in section admin,
-priority optional.
+Other binary releases SETools are available for your favorite Linux
+packaging system from third-party sources.  Gentoo users have an
+ebuild script for SETools.  Debian maintains the dpkg "setools" in
+section admin, priority optional.
 
 
 5. Reporting bugs
@@ -436,7 +438,8 @@ respond to you as soon as possible.
 6. Copyright license
 --------------------
 
-The intent is to allow free use of this source code under the GNU
-General Public License (see COPYING).  All source code is copyright
-protected and freely distributed under the GNU GPL (see COPYING).
-Absolutely no warranty is provided or implied (see COPYING).
+The intent is to allow free use of this source code.  All programs'
+source files are copyright protected and freely distributed under the
+GNU General Public License (see COPYING.GPL).  All library source
+files are copyright under the GNU Lesser General Public License (see
+COPYING.LGPL).  Absolutely no warranty is provided or implied.

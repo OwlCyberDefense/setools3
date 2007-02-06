@@ -1,6 +1,6 @@
 An overview of types relationship summary analysis
-apol, version 3.0.1
-December 1, 2006
+apol, version 3.1
+February 1, 2007
 selinux@tresys.com
 
 
@@ -10,7 +10,7 @@ The types relationship summary analysis in apol is a convenience
 mechanism to allow a user to quickly do several queries and analyses
 already in present in apol to understand the relationship between two
 types.  It is meant to quickly display the relationship between two
-types and therefore doesn't include all of the options present in the
+types and therefore does not include all of the options present in the
 standard queries and analyses.  The analyses are grouped into two
 categories: Basic and Analysis.
 

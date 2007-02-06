@@ -1,5 +1,5 @@
 /**
- * @file avl-util.h
+ * @file
  *
  * Generic avl trees. This data structure is an efficient way to map
  * keys to array indexes. The user of this interface provides 3
@@ -12,7 +12,7 @@
  * @author mayerf@tresys.com
  * @author Karl MacMillan <kmacmillan@tresys.com>
  *
- * Copyright (C) 2001-2006 Tresys Technology, LLC
+ * Copyright (C) 2001-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public

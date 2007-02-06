@@ -1,14 +1,13 @@
 /**
- * @file condrule-query.h
+ * @file
  *
  * Routines to query conditional expressions and conditional rules of
  * a policy.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006 Tresys Technology, LLC
+ * Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -35,14 +34,14 @@ extern "C"
 
 #include "policy.h"
 #include "vector.h"
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 	typedef struct apol_cond_query apol_cond_query_t;
 
 /**
  * Execute a query against all conditional expressions within the
  * policy.
- * @depricated This function has been renamed apol_cond_get_by_query().
+ * @deprecated This function has been renamed apol_cond_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *

@@ -3,21 +3,21 @@ bin_PROGRAMS = seaudit-report
 sbin_PROGRAMS = seaudit
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
-	@QPOL_CFLAGS@ @APOL_CFLAGS@ \
-	@GTK_CFLAGS@ @PIXBUF_CFLAGS@ @GLADE_CFLAGS@ @XML_CFLAGS@ \
-	-DAPOL_INSTALL_DIR='"${setoolsdir}"' -I$(top_srcdir)/libseaudit
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEAUDIT_CFLAGS@ @XML_CFLAGS@
+
+seaudit_CFLAGS = $(AM_CFLAGS) \
+	@GTK_CFLAGS@ @PIXBUF_CFLAGS@ @GLADE_CFLAGS@ @GTHREAD_CFLAGS@
+seaudit_report_CFLAGS = $(AM_CFLAGS) -DAPOL_INSTALL_DIR='"${setoolsdir}"'
+
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @XML_LIBS@
+
 # need the -rdynamic flag below - glade uses dlopen() upon seaudit callbacks
-AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
-	@GTK_LIBS@ @PIXBUF_LIBS@ @GLADE_LIBS@ @XML_LIBS@ -rdynamic
-LDADD = @SELINUX_LIB_FLAG@ $(top_builddir)/libseaudit/libseaudit.a @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
+seaudit_LDFLAGS = $(AM_LDFLAGS) \
+	@GTK_LIBS@ @PIXBUF_LIBS@ @GLADE_LIBS@ @GTHREAD_LIBS@ -rdynamic
+
+LDADD = @SELINUX_LIB_FLAG@ @SEAUDIT_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
 dist_setools_DATA = \
-	customize_filter_window.glade \
-	filter_window.glade \
-	multifilter_window.glade \
-	prefer_window.glade \
-	query_window.glade \
-	report_window.glade \
 	seaudit.glade \
 	seaudit_help.txt \
 	seaudit-report.conf \
@@ -29,27 +29,29 @@ nodist_setools_DATA = \
 	seaudit-report-service
 
 seaudit_SOURCES = \
-	auditlogmodel.c auditlogmodel.h \
-	filtered_view.c filtered_view.h \
-	filter_window.c filter_window.h \
-	multifilter_window.c multifilter_window.h \
+	filter_view.c filter_view.h \
+	message_view.c message_view.h \
+	modify_view.c modify_view.h \
+	open_policy_window.c open_policy_window.h \
+	policy_components_view.c policy_components_view.h \
+	policy_view.c policy_view.h \
 	preferences.c preferences.h \
-	query_window.c query_window.h \
-	report.c report.h \
+	preferences_view.c preferences_view.h \
+	progress.c progress.h \
 	report_window.c report_window.h \
-	seaudit.c seaudit_callback.c \
-	seaudit_callback.h seaudit.h \
-	seaudit_window.c seaudit_window.h \
+	seaudit.c seaudit.h \
+	toplevel.c toplevel.h \
 	utilgui.c utilgui.h
-seaudit_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
+
+seaudit_DEPENDENCIES = $(top_builddir)/libseaudit/src/libseaudit.so \
                        $(top_builddir)/libapol/src/libapol.so \
                        $(top_builddir)/libqpol/src/libqpol.so
 
 dot_seaudit: dot_seaudit.in Makefile
 	sed -e 's|\@setoolsdir\@|$(setoolsdir)|g' $< > $@
 
-seaudit_report_SOURCES = seaudit-report.c report.c report.h
-seaudit_report_DEPENDENCIES = $(top_builddir)/libseaudit/libseaudit.a \
+seaudit_report_SOURCES = seaudit-report.c
+seaudit_report_DEPENDENCIES = $(top_builddir)/libseaudit/src/libseaudit.so \
                               $(top_builddir)/libapol/src/libapol.so \
                               $(top_builddir)/libqpol/src/libqpol.so
 

@@ -1,12 +1,12 @@
 /**
- *  @file context-query.c
+ *  @file
  *  Implementation for querying aspects of a context.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -76,7 +76,7 @@ apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_co
 	    qpol_role_get_name(p->p, role, &role_name) < 0 || qpol_type_get_name(p->p, type, &type_name) < 0) {
 		goto err;
 	}
-	if (qpol_policy_is_mls_enabled(p->p)) {
+	if (qpol_policy_has_capability(p->p, QPOL_CAP_MLS)) {
 		/* if the policy is MLS then convert the range, else
 		 * rely upon the default value of NULL */
 		if ((apol_range = apol_mls_range_create_from_qpol_mls_range(p, range)) == NULL) {

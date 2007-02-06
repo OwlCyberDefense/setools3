@@ -1,17 +1,16 @@
 /**
- * @file render.h
+ * @file
  *
  * Public interfaces that renders things that are not already covered
  * by one of the query files.  Unless otherwise stated, all functions
  * return a newly allocated string, which the caller is responsible
  * for free()ing afterwards.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  * @author David Windsor dwindsor@tresys.com
  *
- * Copyright (C) 2003-2006 Tresys Technology, LLC
+ * Copyright (C) 2003-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -39,7 +38,7 @@ extern "C"
 #include "policy.h"
 #include "mls-query.h"
 #include "vector.h"
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 #include <stdlib.h>
 
 /**

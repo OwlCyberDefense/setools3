@@ -1,35 +1,27 @@
 /**
- *  @file imp_range_trans.c
+ *  @file
  *  Implementation of the impossible range_transition module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
- *  @author: David Windsor <dwindsor@tresys.com>
+ *  @author: David Windsor dwindsor@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- *  This library is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
-
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: David Windsor <dwindsor@tresys.com>
- *
  */
 
 #include "imp_range_trans.h"
@@ -76,9 +68,16 @@ int imp_range_trans_register(sechk_lib_t * lib)
 		"   2) there exist RBAC rules allowing the range transition to occur\n"
 		"   3) at least one user must be able to transition to the target MLS range\n";
 	mod->opt_description =
-		"  Module requirements:\n" "    none\n" "  Module dependencies:\n" "    none\n" "  Module options:\n" "    none\n";
+		"  Module requirements:\n" "    MLS policy\n" "  Module dependencies:\n" "    none\n" "  Module options:\n"
+		"    none\n";
 	mod->severity = SECHK_SEV_MED;
 
+	/* assign requirements */
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_MLS)) < 0) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {

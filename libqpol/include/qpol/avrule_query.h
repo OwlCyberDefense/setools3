@@ -1,12 +1,12 @@
  /**
- *  @file avrule_query.h
- *  Defines the public interface for searching and iterating over avrules. 
+ *  @file
+ *  Defines the public interface for searching and iterating over avrules.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,9 @@ extern "C"
 #endif
 
 #include <qpol/policy.h>
+#include <qpol/class_perm_query.h>
 #include <qpol/cond_query.h>
-#include <qpol/policy_query.h>
+#include <qpol/type_query.h>
 
 	typedef struct qpol_avrule qpol_avrule_t;
 
@@ -144,11 +145,11 @@ extern "C"
 	extern int qpol_avrule_get_is_enabled(qpol_policy_t * policy, qpol_avrule_t * rule, uint32_t * is_enabled);
 
 /**
- *  Get the list (true or false) in which a conditional rule is. It is 
+ *  Get the list (true or false) in which a conditional rule is. It is
  *  an error to call this function for an unconditional rule.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule to check.
- *  @param which_list Integer in which to store the result: set to 1 if 
+ *  @param which_list Integer in which to store the result: set to 1 if
  *  rule is in the true list or 0 if in the false list.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *which_list will be 0.

@@ -1,12 +1,24 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# Copyright (C) 2001-2007 Tresys Technology, LLC
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget
 
 ##############################################################
 # ::Apol_Class_Perms
-#  
+#
 # The Classes/Permissions page
 ##############################################################
 namespace eval Apol_Class_Perms {
@@ -51,17 +63,14 @@ proc Apol_Class_Perms::initializeVars {} {
     }
 }
 
-proc Apol_Class_Perms::free_call_back_procs { } {
-}
-
 proc Apol_Class_Perms::set_Focus_to_Text {} {
     focus $Apol_Class_Perms::widgets(results)
 }
 
 ########################################################################
 # ::goto_line
-#  	- goes to indicated line in text box
-# 
+#	- goes to indicated line in text box
+#
 proc Apol_Class_Perms::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
@@ -80,8 +89,8 @@ proc Apol_Class_Perms::popupInfo {which name} {
 
 ##############################################################
 # ::search
-#  	- Search text widget for a string
-# 
+#	- Search text widget for a string
+#
 proc Apol_Class_Perms::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
@@ -290,13 +299,13 @@ proc Apol_Class_Perms::create {nb} {
         {{"Display Common Permission Class Info" {Apol_Class_Perms::popupInfo common}}}
     pack $common_listbox -fill both -expand yes
 
-    # Permissions listbox 
+    # Permissions listbox
     set perms_listbox [Apol_Widget::makeScrolledListbox [$perms_box getframe].lb -height 10 -width 20 -listvar Apol_Class_Perms::perms_list]
     Apol_Widget::setListboxCallbacks $perms_listbox \
         {{"Display Permission Info" {Apol_Class_Perms::popupInfo perm}}}
     pack $perms_listbox -fill both -expand yes
 
-    # Search options section      
+    # Search options section
     set ofm [$options_box getframe]
     set classesfm [frame $ofm.classes]
     set commonsfm [frame $ofm.commons]
@@ -355,9 +364,9 @@ proc Apol_Class_Perms::create {nb} {
 
     # Display results window
     set widgets(results) [Apol_Widget::makeSearchResults [$results_box getframe].results]
-    pack $widgets(results) -expand yes -fill both 
+    pack $widgets(results) -expand yes -fill both
 
-    return $frame	
+    return $frame
 }
 
 proc Apol_Class_Perms::toggleCheckbuttons {cb1 cb2 name1 name2 op} {

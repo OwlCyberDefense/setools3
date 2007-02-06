@@ -1,13 +1,13 @@
 /**
- *  @file policy-extend.h
+ *  @file
  *  Public interface for loading and using an extended
- *  policy image. 
+ *  policy image.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -35,8 +35,6 @@ extern "C"
 #include <qpol/policy.h>
 #include <qpol/iterator.h>
 
-	typedef struct qpol_extended_image qpol_extended_image_t;
-
 /**
  *  Create an extended image for a policy. This function modifies the policydb
  *  by adding additional records and information about attributes, initial sids
@@ -47,8 +45,6 @@ extern "C"
  *  if this call fails.
  */
 	extern int qpol_policy_extend(qpol_policy_t * policy);
-
-	extern void qpol_extended_image_destroy(qpol_extended_image_t ** ext);
 
 /**
  *  Build the table of syntactic rules for a policy.
@@ -67,7 +63,7 @@ extern "C"
  *  Get an iterator over the syntactic rules contributing to an av rule.
  *  @param policy Policy associated with the rule.
  *  @param rule Rule from which to get the syntactic rules.
- *  @param iter Iterator over items of type qpol_syn_avrule_t returned. 
+ *  @param iter Iterator over items of type qpol_syn_avrule_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
  *  to free memory used by this iterator.
  *  It is important to note that this iterator is only valid as long as
@@ -81,7 +77,7 @@ extern "C"
  *  Get an iterator over the syntactic rules contributing to a type rule.
  *  @param policy Policy associated with the rule.
  *  @param rule Rule from which to get the syntactic rules.
- *  @param iter Iterator over items of type qpol_syn_terule_t returned. 
+ *  @param iter Iterator over items of type qpol_syn_terule_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
  *  to free memory used by this iterator.
  *  It is important to note that this iterator is only valid as long as

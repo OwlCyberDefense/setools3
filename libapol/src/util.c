@@ -1,13 +1,12 @@
 /**
- * @file util.c
+ * @file
  *
  * Implementation of utility functions.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006 Tresys Technology, LLC
+ * Copyright (C) 2001-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -36,7 +35,6 @@
 #include <unistd.h>
 
 /* these are needed for nodecons and IPv4 and IPv6 */
-#include <qpol/policy_query.h>
 #include <qpol/nodecon_query.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -223,120 +221,90 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type)
 
 char *apol_file_find(const char *file_name)
 {
-	char *file = NULL, *var = NULL, *dir = NULL;
-	size_t filesz;
+	char *file = NULL, *var = NULL, *dirs[3];
+	size_t i;
 	int rt;
 
-	if (file_name == NULL)
-		return NULL;
-
-	/* 1. check current directory */
-	filesz = strlen(file_name) + 4;
-	file = (char *)malloc(filesz);
-	if (file == NULL) {
+	if (file_name == NULL) {
+		errno = EINVAL;
 		return NULL;
 	}
-	sprintf(file, "./%s", file_name);
-	rt = access(file, R_OK);
-	if (rt == 0) {
-		dir = (char *)malloc(4);
-		if (dir == NULL) {
-			return NULL;
-		}
-		sprintf(dir, ".");
-		free(file);
-		return dir;
-	}
-	free(file);
 
-	/* 2. check environment variable */
-	var = getenv(APOL_ENVIRON_VAR_NAME);
-	if (!(var == NULL)) {
-		filesz = strlen(var) + strlen(file_name) + 2;
-		file = (char *)malloc(filesz);
-		if (file == NULL) {
-			return NULL;
-		}
-		sprintf(file, "%s/%s", var, file_name);
-		rt = access(file, R_OK);
-		if (rt == 0) {
-			dir = (char *)malloc(strlen(var) + 1);
-			if (dir == NULL) {
+	/* check current directory, environment variable, and then
+	 * installed directory */
+	dirs[0] = ".";
+	dirs[1] = getenv(APOL_ENVIRON_VAR_NAME);
+	dirs[2] = APOL_INSTALL_DIR;
+	for (i = 0; i < 3; i++) {
+		if ((var = dirs[i]) != NULL) {
+			if (asprintf(&file, "%s/%s", var, file_name) < 0) {
 				return NULL;
 			}
-			sprintf(dir, var);
+			rt = access(file, R_OK);
 			free(file);
-			return dir;
+			if (rt == 0) {
+				return strdup(var);
+			}
 		}
 	}
 
-	/* 3. installed directory */
-	filesz = strlen(APOL_INSTALL_DIR) + strlen(file_name) + 2;
-	file = (char *)malloc(filesz);
-	if (file == NULL) {
+	/* didn't find it */
+	return NULL;
+}
+
+char *apol_file_find_path(const char *file_name)
+{
+	char *file = NULL, *var = NULL, *dirs[3];
+	size_t i;
+	int rt;
+
+	if (file_name == NULL) {
+		errno = EINVAL;
 		return NULL;
 	}
-	sprintf(file, "%s/%s", APOL_INSTALL_DIR, file_name);
-	rt = access(file, R_OK);
-	if (rt == 0) {
-		dir = (char *)malloc(strlen(APOL_INSTALL_DIR) + 1);
-		if (dir == NULL) {
-			return NULL;
+
+	/* check current directory, environment variable, and then
+	 * installed directory */
+	dirs[0] = ".";
+	dirs[1] = getenv(APOL_ENVIRON_VAR_NAME);
+	dirs[2] = APOL_INSTALL_DIR;
+	for (i = 0; i < 3; i++) {
+		if ((var = dirs[i]) != NULL) {
+			if (asprintf(&file, "%s/%s", var, file_name) < 0) {
+				return NULL;
+			}
+			rt = access(file, R_OK);
+			if (rt == 0) {
+				return file;
+			}
+			free(file);
 		}
-		sprintf(dir, APOL_INSTALL_DIR);
-		free(file);
-		return dir;
 	}
 
-	/* 4. help install directory */
-	filesz = strlen(APOL_HELP_DIR) + strlen(file_name) + 2;
-	file = (char *)malloc(filesz);
-	if (file == NULL) {
-		return NULL;
-	}
-	sprintf(file, "%s/%s", APOL_HELP_DIR, file_name);
-	rt = access(file, R_OK);
-	if (rt == 0) {
-		dir = (char *)malloc(strlen(APOL_HELP_DIR) + 1);
-		if (dir == NULL) {
-			return NULL;
-		}
-		sprintf(dir, APOL_HELP_DIR);
-		free(file);
-		return dir;
-	}
-
-	/* 5. Didn't find it! */
-	free(file);
+	/* didn't find it */
 	return NULL;
 }
 
 char *apol_file_find_user_config(const char *file_name)
 {
-	char *dir, *path, *tmp;
+	char *file, *var;
 	int rt;
 
-	tmp = getenv("HOME");
-	if (tmp) {
-		dir = malloc(sizeof(char) * (1 + strlen(tmp)));
-		if (!dir) {
+	if (file_name == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	var = getenv("HOME");
+	if (var) {
+		if (asprintf(&file, "%s/%s", var, file_name) < 0) {
 			return NULL;
 		}
-		dir = strcpy(dir, tmp);
-		path = malloc(sizeof(char) * (2 + strlen(dir) + strlen(file_name)));
-		if (!path) {
-			return NULL;
-		}
-		path = strcpy(path, dir);
-		path = strcat(path, "/");
-		path = strcat(path, file_name);
-		rt = access(path, R_OK);
+		rt = access(file, R_OK);
 		if (rt == 0) {
-			free(path);
-			return dir;
+			return file;
 		} else {
-			free(path);
-			free(dir);
+			free(file);
+			return NULL;
 		}
 	}
 	return NULL;
@@ -395,27 +363,29 @@ int apol_file_read_to_buffer(const char *fname, char **buf, size_t * len)
 
 char *apol_config_get_var(const char *var, FILE * fp)
 {
-	char line[APOL_LINE_SZ], t1[APOL_LINE_SZ], t2[APOL_LINE_SZ], *result = NULL;
+	char line[APOL_LINE_SZ], t1[APOL_LINE_SZ], t2[APOL_LINE_SZ];
 	char *line_ptr = NULL;
 
-	if (var == NULL)
+	if (var == NULL || fp == NULL) {
+		errno = EINVAL;
 		return NULL;
+	}
 
 	rewind(fp);
 	while (fgets(line, APOL_LINE_SZ, fp) != NULL) {
-		line_ptr = &line[0];
-		if (apol_str_trim(&line_ptr) != 0)
+		if ((line_ptr = strdup(line)) == NULL) {
 			return NULL;
-		if (line[0] == '#' || sscanf(line, "%s %[^\n]", t1, t2) != 2 || strcasecmp(var, t1) != 0) {
+		}
+		if (apol_str_trim(&line_ptr) != 0) {
+			free(line_ptr);
+			return NULL;
+		}
+		if (line_ptr[0] == '#' || sscanf(line_ptr, "%s %[^\n]", t1, t2) != 2 || strcasecmp(var, t1) != 0) {
+			free(line_ptr);
 			continue;
 		} else {
-			result = (char *)malloc(sizeof(char) * (strlen(t2) + 1));
-			if (result == NULL) {
-				return NULL;
-			} else {
-				strcpy(result, t2);
-				return result;
-			}
+			free(line_ptr);
+			return strdup(t2);
 		}
 	}
 	return NULL;
@@ -486,39 +456,80 @@ char *apol_config_varlist_to_str(const char **list, size_t size)
 	return val;
 }
 
+apol_vector_t *apol_str_split(const char *s, const char *delim)
+{
+	char *orig_s = NULL, *dup_s = NULL, *v, *token;
+	apol_vector_t *list = NULL;
+	int error = 0;
+
+	if (s == NULL || delim == NULL) {
+		error = EINVAL;
+		goto cleanup;
+	}
+	if ((list = apol_vector_create()) == NULL || (orig_s = strdup(s)) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	v = orig_s;
+	while ((token = strsep(&v, delim)) != NULL) {
+		if (strcmp(token, "") != 0 && !apol_str_is_only_white_space(token)) {
+			if ((dup_s = strdup(token)) == NULL || apol_vector_append(list, dup_s) < 0) {
+				error = errno;
+				free(dup_s);
+				goto cleanup;
+			}
+		}
+	}
+      cleanup:
+	free(orig_s);
+	if (error != 0) {
+		apol_vector_destroy(&list, free);
+		errno = error;
+		return NULL;
+	}
+	return list;
+}
+
+char *apol_str_join(const apol_vector_t * list, const char *delim)
+{
+	char *val, *s;
+	size_t i, len;
+
+	if (list == NULL || delim == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	if (apol_vector_get_size(list) == 0) {
+		return strdup("");
+	}
+	s = apol_vector_get_element(list, 0);
+	if ((val = strdup(s)) == NULL) {
+		return NULL;
+	}
+	len = strlen(val) + 1;
+	for (i = 1; i < apol_vector_get_size(list); i++) {
+		s = apol_vector_get_element(list, i);
+		if (apol_str_appendf(&val, &len, "%s%s", delim, s) < 0) {
+			return NULL;
+		}
+	}
+	return val;
+}
+
 /**
  * Given a string, if the string begins with whitespace then allocate
- * a new string that does not contain those whitespaces.  The caller
- * is responsible for free()ing the resulting pointer.  The original
- * string is free()d.
+ * a new string that does not contain those whitespaces.
  *
- * @param str Reference to a dynamically allocated string.
+ * @param str String to modify.
  *
  * @return 0 on success, < 0 on out of memory.
  */
-static int trim_leading_whitespace(char **str)
+static void trim_leading_whitespace(char *str)
 {
-	size_t length, idx = 0, i;
-	char *tmp = NULL;
-
-	assert(str && *str != NULL);
-	length = strlen(*str);
-	if ((tmp = strdup(*str)) == NULL) {
-		return -1;
-	}
-	/* Get index of first non-whitespace char in the duplicate string. */
-	while (idx < length && isspace(tmp[idx]))
-		idx++;
-
-	if (idx && idx != length) {
-		for (i = 0; idx < length; i++, idx++) {
-			(*str)[i] = tmp[idx];
-		}
-		assert(i <= length);
-		(*str)[i] = '\0';
-	}
-	free(tmp);
-	return 0;
+	size_t i, len;
+	for (i = 0; str[i] != '\0' && isspace(str[i]); i++) ;
+	len = strlen(str + i);
+	memmove(str, str + i, len + 1);
 }
 
 /**
@@ -530,7 +541,6 @@ static int trim_leading_whitespace(char **str)
 static void trim_trailing_whitespace(char **str)
 {
 	size_t length;
-	assert(str && *str != NULL);
 	length = strlen(*str);
 	while (length > 0 && isspace((*str)[length - 1])) {
 		(*str)[length - 1] = '\0';
@@ -540,9 +550,11 @@ static void trim_trailing_whitespace(char **str)
 
 int apol_str_trim(char **str)
 {
-	assert(str && *str != NULL);
-	if (trim_leading_whitespace(str) < 0)
+	if (str == NULL || *str == NULL) {
+		errno = EINVAL;
 		return -1;
+	}
+	trim_leading_whitespace(*str);
 	trim_trailing_whitespace(str);
 	return 0;
 }

@@ -1,13 +1,12 @@
 /**
- *  @file syn_rule_query.c
+ *  @file
  *  Public interface for querying syntactic rules from the extended
  *  policy image.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -27,7 +26,6 @@
 #include <config.h>
 
 #include <qpol/syn_rule_query.h>
-#include <qpol/policy_query.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/util.h>
 #include <sepol/policydb/conditional.h>

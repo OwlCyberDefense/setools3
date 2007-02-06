@@ -1,13 +1,12 @@
 /**
- *  @file file_contexts.h
+ *  @file
  *  Defines the public interface for manipulating a file_contexts
  *  file.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -37,7 +36,7 @@ extern "C"
 #include <apol/vector.h>
 
 /* libqpol */
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 /* file type IDs, used by sefs_fc_entry::filetype */
 #define SEFS_FILETYPE_NONE 0	       /* none */

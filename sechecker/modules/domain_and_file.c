@@ -1,25 +1,25 @@
 /**
- *  @file domain_and_file.c
+ *  @file
  *  Implementation of the domain and file type module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- *  This library is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
@@ -35,6 +35,7 @@ int domain_and_file_register(sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
+	sechk_name_value_t *nv = NULL;
 
 	if (!lib) {
 		ERR(NULL, "%s", "No library");
@@ -59,13 +60,19 @@ int domain_and_file_register(sechk_lib_t * lib)
 		"heuristics used to determine these types.  It is considered bad security\n"
 		"practice to use the same type for a domain and its data objects because it \n"
 		"requires that less restrictive access be granted to these types.\n";
-	mod->opt_description =
-		"Module requirements:\n"
-		"   policy source\n"
+	mod->opt_description = "Module requirements:\n" "   attribute names\n"
+#ifdef LIBSEFS
+		"   file_contexts\n"
+#endif
 		"Module dependencies:\n" "   find_domains module\n" "   find_file_types module\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source"));
+	nv = sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES);
+	apol_vector_append(mod->requirements, (void *)nv);
+#ifdef LIBSEFS
+	nv = sechk_name_value_new(SECHK_REQ_FILE_CONTEXTS, NULL);
+	apol_vector_append(mod->requirements, (void *)nv);
+#endif
 
 	/* assign dependencies */
 	apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains"));

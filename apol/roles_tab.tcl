@@ -1,13 +1,25 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# Copyright (C) 2001-2007 Tresys Technology, LLC
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
+# TCL/TK GUI for SELinux policy analysis
 # Requires tcl and tk 8.4+, with BWidget
 
 
 ##############################################################
 # ::Apol_Roles
-#  
+#
 # The Roles page
 ##############################################################
 namespace eval Apol_Roles {
@@ -15,7 +27,7 @@ namespace eval Apol_Roles {
     variable opts
     set opts(useType)		0
     set opts(showSelection)     all
-    variable role_list 		""
+    variable role_list		""
 }
 
 proc Apol_Roles::open { } {
@@ -30,22 +42,14 @@ proc Apol_Roles::open { } {
 
 proc Apol_Roles::close { } {
     variable widgets
-    variable opts 
+    variable opts
     set opts(useType)	0
-    set opts(showSelection) 	all
-    set Apol_Roles::role_list 	""
+    set opts(showSelection)	all
+    set Apol_Roles::role_list	""
     Apol_Widget::clearTypeCombobox $widgets(combo_types)
     Apol_Widget::clearSearchResults $widgets(resultsbox)
 }
 
-proc Apol_Roles::free_call_back_procs { } {
-}
-
-# ----------------------------------------------------------------------------------------
-#  Command Apol_Roles::set_Focus_to_Text
-#
-#  Description: 
-# ----------------------------------------------------------------------------------------
 proc Apol_Roles::set_Focus_to_Text {} {
     focus $Apol_Roles::widgets(resultsbox)
 }
@@ -74,8 +78,8 @@ proc Apol_Roles::renderRole {role_datum show_all} {
 
 ##############################################################
 # ::search
-#  	- Search text widget for a string
-# 
+#	- Search text widget for a string
+#
 proc Apol_Roles::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
     ApolTop::textSearch $widgets(resultsbox).tb $str $case_Insensitive $regExpr $srch_Direction
@@ -127,8 +131,8 @@ proc Apol_Roles::toggleTypeCombobox {path name1 name2 op} {
 
 ########################################################################
 # ::goto_line
-#  	- goes to indicated line in text box
-# 
+#	- goes to indicated line in text box
+#
 proc Apol_Roles::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(resultsbox) $line_num
@@ -137,24 +141,24 @@ proc Apol_Roles::goto_line { line_num } {
 proc Apol_Roles::create {nb} {
     variable widgets
     variable opts
-    
+
     # Layout frames
     set frame [$nb insert end $ApolTop::roles_tab -text "Roles"]
     set pw [PanedWindow $frame.pw -side top]
     set leftf [$pw add -weight 0]
     set rightf [$pw add -weight 1]
     pack $pw -fill both -expand yes
-    
+
     # Title frames
     set rolebox [TitleFrame $leftf.rolebox -text "Roles"]
     set s_optionsbox [TitleFrame $rightf.obox -text "Search Options"]
     set resultsbox [TitleFrame $rightf.rbox -text "Search Results"]
-    
+
     # Placing title frames
     pack $rolebox -fill both -expand yes
     pack $s_optionsbox -padx 2 -fill both -expand 0
     pack $resultsbox -padx 2 -fill both -expand yes
-    
+
     # Roles listbox widget
     set rlistbox [Apol_Widget::makeScrolledListbox [$rolebox getframe].lb \
                       -width 20 -listvar Apol_Roles::role_list]
@@ -184,12 +188,12 @@ proc Apol_Roles::create {nb} {
     pack $cb_type -anchor w
     pack $widgets(combo_types) -anchor w -padx 4
 
-    button $ofm.ok -text OK -width 6 -command {Apol_Roles::searchRoles}      
+    button $ofm.ok -text OK -width 6 -command {Apol_Roles::searchRoles}
     pack $ofm.ok -side top -anchor e -pady 5 -padx 5
 
     # Display results window
     set widgets(resultsbox) [Apol_Widget::makeSearchResults [$resultsbox getframe].sw]
     pack $widgets(resultsbox) -expand 1 -fill both
 
-    return $frame	
+    return $frame
 }

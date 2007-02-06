@@ -29,6 +29,7 @@ libqpol_a_SOURCES = \
 	iterator_internal.h \
 	mls_query.c \
 	mlsrule_query.c \
+	module.c \
 	module_compiler.c \
 	module_compiler.h \
 	netifcon_query.c \
@@ -36,7 +37,6 @@ libqpol_a_SOURCES = \
 	policy.c \
 	policy_extend.c \
 	policy_parse.h \
-	policy_query.c \
 	portcon_query.c \
 	qpol_internal.h \
 	queue.c \

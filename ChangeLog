@@ -1,3 +1,119 @@
+2007-02-05  J. Tang  <jtang@tresys.com>
+
+	* Official release of SETools-3.1.
+
+2007-02-02  J. Tang  <jtang@tresys.com>
+
+	* added RPM spec files.
+
+2007-01-30  J. Tang  <jtang@tresys.com>
+
+	* fixed error in apol when right-clicking an attribute when a file
+	contexts database is loaded.
+
+	* fixed error in SQLite configuration in which a pointer size was
+	defined as the size of an integer.  this is a no longer valid
+	assumption on 64-bit architectures.
+
+	* if apol has a modular policy loaded, then its "policy version"
+	for purposes of permission maps is now set to the maximum policy
+	version as defined in libsepol.  this mimics the linking behavior
+	of sepol.
+
+2007-01-25  J. Tang  <jtang@tresys.com>
+
+	* fixed error where aliases within modules were not being detected
+	properly
+
+2007-01-19  J. Mowery  <jmowery@tresys.com>
+
+	* all files now have correct copyright and license notices
+
+2007-01-19  J. Tang  <jtang@tresys.com>
+
+	* updated all help documentation
+
+2007-01-17  J. Mowery  <jmowery@tresys.com>
+
+	* updated all man pages
+
+2007-01-17  J. Tang  <jtang@tresys.com>
+
+	* added poldiff_type_remap_entry_get_is_inferred()
+
+	* sediffx converted to use modular policies.
+
+2007-01-08  J. Tang  <jtang@tresys.com>
+
+	* apol converted to use modular policies.
+
+2007-01-05  J. Mowery  <jmowery@tresys.com>
+
+	* Added capability QPOL_CAP_SOURCE to detect ability to display
+	  the policy source.
+
+	* Deprecated qpol_policy_is_mls_enabled() use
+	  qpol_policy_has_capability() for QPOL_CAP_MLS instead.
+
+2007-01-04  J. Tang  <jtang@tresys.com>
+
+	* seaudit converted to use modular policies.
+
+2007-01-03  J. Tang  <jtang@tresys.com>
+
+	* Deprecated apol_policy_open() and apol_policy_open_no_rules();
+	use apol_policy_create_from_policy_path() instead.
+
+2006-12-14  J. Tang  <jtang@tresys.com>
+
+	* Added apol_policy_path_t object.  This is needed because policy
+	paths are not just a single string, but rather a base policy and
+	any number of modules.
+
+	* New functions apol_config_join_var() generalized to be
+	apol_str_join().  Same with apol_config_split_var() ->
+	apol_str_split().
+
+2006-12-12  J. Tang  <jtang@tresys.com>
+
+	* Renamed qpol_find_default_policy_file() in qpol/policy.h to
+	qpol_default_policy_find() in qpol/util.h.  Removed
+	qpol_find_default_policy_file_strerr().  These functions were
+	never supposed to be in these locations.
+
+	* Deprecated apol_policy_is_binary(); use qpol policy capabilities
+	instead.
+
+	* Deprecated qpol_open_policy_from_file(); it is now called
+	qpol_policy_open_from_file().  Similar change to
+	qpol_open_policy_from_file_no_rules() and
+	qpol_open_policy_from_memory().
+
+	* Merged qpol/policy_query.h into qpol/policy.h.  Split module
+	related code into qpol/module.h.
+
+	* Rewrite of seaudit to utilize libseaudit.so.4; tweaked numerous
+	interface issues.
+
+	* Rewrite of libseaudit to meet coding standards.  libseaudit.so.4
+	is now a shared object file with proper namespacing.
+
+2006-12-11  J. Mowery  <jmowery@tresys.com>
+
+	* Added qpol_policy_has_capability() to qpol/policy_query.h
+	This function and the enumeration qpol_capability_e allows
+	a user of the library to check if a loaded policy is
+	capable of supporting various policy features.
+
+	* Support has been added to libqpol for loading policy modules.
+	See qpol/policy.h for details.
+
+2006-12-01  J. Tang  <jtang@tresys.com>
+
+	* deprecated apol_config_get_varlist() and
+	apol_config_varlist_to_str(); added apol_file_find_path(),
+	apol_config_split_var(), and apol_config_join_var()
+
 2006-12-01  J. Tang  <jtang@tresys.com>
 
 	* Official release of SETools 3.0.1.

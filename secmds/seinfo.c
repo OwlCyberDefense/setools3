@@ -1,26 +1,27 @@
 /**
- * @file seinfo.c
+ * @file
  *
  * Command line tool for looking at a SELinux policy
  * and getting various component elements and statistics.
  *
  * @author Frank Mayer  mayerf@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
  * @author David Windsor dwindsor@tresys.com
  *
- * Copyright (C) 2003-2006 Tresys Technology, LLC
+ * Copyright (C) 2003-2007 Tresys Technology, LLC
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- *  This library is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
@@ -34,7 +35,8 @@
 #include <apol/vector.h>
 
 /* libqpol */
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
+#include <qpol/util.h>
 
 /* other */
 #include <errno.h>
@@ -44,7 +46,7 @@
 #include <assert.h>
 #include <getopt.h>
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
 static char *policy_file = NULL;
 static int portconset, protoset;
@@ -92,44 +94,41 @@ static struct option const longopts[] = {
  */
 void usage(const char *program_name, int brief)
 {
-	printf("%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] [POLICY_FILE]\n", program_name);
+	printf("Usage: %s [OPTIONS] [EXPRESSION] [POLICY ...]\n\n", program_name);
 	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
-	fputs("\n\
-Print requested information about an SELinux policy.\n\
-  -c[NAME], --classes[=NAME]       print object classes\n\
-  -t[NAME], --types[=NAME]         print types (no aliases or attributes)\n\
-  -a[NAME], --attribs[=NAME]       print type attributes\n\
-  -r[NAME], --roles[=NAME]         print roles\n\
-  -u[NAME], --users[=NAME]         print users\n\
-  -b[NAME], --boolean[=NAME]       print conditional booleans\n\
-  -S[NAME], --sensitivities[=NAME] print sensitivities\n\
-  -C[NAME], --categories[=NAME]    print categories\n\
-  -f[TYPE], --fs_use[=TYPE]        print fs_use statements\n\
-  -g[TYPE], --genfscon[=TYPE]      print genfscon statements\n\
-  -n[NAME], --netifcon[=NAME]      print netif contexts\n\
-  -o[ADDR], --nodecon[=ADDR]       print node contexts\n\
-  -p[PORT], --portcon[=PORT]       print port contexts\n\
-  -lPROTO,  --protocol=PROTO       specify a protocol for portcons\n\
-  -i[NAME], --initialsid[=NAME]    print initial SIDs\n\
-  -A, --all                        print all of the above\n\
-  -x, --expand                     show additional info for -ctarbuSCiA options\n\
-  -s, --stats                      print useful policy statistics\n\
-", stdout);
-	fputs("\n\
-  -h, --help                       display this help and exit\n\
-  -v, --version                    output version information and exit\n\
-", stdout);
-	fputs("\n\
-For -ctaruSCfgnopi options, if NAME is provided, then only show info for NAME.\n\
- Specifying a name is most useful when used with the -x option.\n\
- If no option is provided, display useful policy statistics (-s).\n\n\
-The default source policy, or if that is unavailable the default binary\n\
- policy, will be opened if no policy file name is provided.\n", stdout);
-	return;
+	printf("Print information about the components of a SELinux policy.\n\n");
+	printf("EXPRESSIONS:\n");
+	printf("  -c[NAME], --classes[=NAME]       print object classes\n");
+	printf("  -t[NAME], --types[=NAME]         print types (no aliases or attributes)\n");
+	printf("  -a[NAME], --attribs[=NAME]       print type attributes\n");
+	printf("  -r[NAME], --roles[=NAME]         print roles\n");
+	printf("  -u[NAME], --users[=NAME]         print users\n");
+	printf("  -b[NAME], --boolean[=NAME]       print conditional booleans\n");
+	printf("  -S[NAME], --sensitivities[=NAME] print sensitivities\n");
+	printf("  -C[NAME], --categories[=NAME]    print categories\n");
+	printf("  -f[TYPE], --fs_use[=TYPE]        print fs_use statements\n");
+	printf("  -g[TYPE], --genfscon[=TYPE]      print genfscon statements\n");
+	printf("  -n[NAME], --netifcon[=NAME]      print netif contexts\n");
+	printf("  -o[ADDR], --nodecon[=ADDR]       print node contexts\n");
+	printf("  -p[PORT], --portcon[=PORT]       print port contexts\n");
+	printf("  -lPROTO,  --protocol=PROTO       specify a protocol for portcons\n");
+	printf("  -i[NAME], --initialsid[=NAME]    print initial SIDs\n");
+	printf("  -A, --all                        print all of the above\n");
+	printf("OPTIONS:\n");
+	printf("  -x, --expand                     show more info for specified components\n");
+	printf("  -s, --stats                      print useful policy statistics\n");
+	printf("  -h, --help                       print this help and exit\n");
+	printf("  -v, --version                    print version information and exit\n");
+	printf("\n");
+	printf("For component options, if NAME is provided, then only show info for\n");
+	printf("NAME.  Specifying a name is most useful when used with the -x option.\n");
+	printf("If no option is provided, display useful policy statistics (-s).\n");
+	printf("\n");
+	printf("The default source policy, or if that is unavailable the default binary\n");
+	printf("policy, will be opened if no policy is provided.\n\n");
 }
 
 /**
@@ -143,17 +142,16 @@ The default source policy, or if that is unavailable the default binary\n\
  */
 static int print_stats(FILE * fp, apol_policy_t * policydb)
 {
-	int retval = -1, mls;
-	unsigned int ver = 0, n_perms = 0;
+	int retval = -1;
+	unsigned int n_perms = 0;
 	qpol_iterator_t *iter = NULL;
 	apol_type_query_t *type_query = NULL;
 	apol_attr_query_t *attr_query = NULL;
 	apol_perm_query_t *perm_query = NULL;
 	apol_vector_t *perms = NULL, *v = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policydb);
-	char *str = NULL, *ver_str = NULL;
-	size_t str_sz = 0, ver_str_sz = 16, n_types = 0, n_attrs = 0;
-	bool_t binary = FALSE;
+	char *str = NULL;
+	size_t n_types = 0, n_attrs = 0;
 	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_conds = 0, n_levels = 0,
 		n_cats = 0, n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0,
 		n_genfscons = 0, n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
@@ -164,33 +162,11 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 
 	fprintf(fp, "\nStatistics for policy file: %s\n", policy_file);
 
-	if (qpol_policy_get_policy_version(q, &ver))
+	if (!(str = apol_policy_get_version_type_mls_str(policydb)))
 		goto cleanup;
-
-	apol_str_append(&str, &str_sz, "");
-	mls = qpol_policy_is_mls_enabled(q);
-	if (mls < 0)
-		goto cleanup;
-
-	apol_str_append(&str, &str_sz, "v.");
-
-	ver_str = malloc(sizeof(unsigned char) * ver_str_sz);
-	memset(ver_str, 0x0, ver_str_sz);
-	snprintf(ver_str, ver_str_sz, "%u", ver);
-
-	/* we can only handle binary policies at this point */
-	if (apol_policy_is_binary(policydb))
-		binary = TRUE;
-
-	apol_str_append(&str, &str_sz, ver_str);
-	apol_str_append(&str, &str_sz, " (");
-	apol_str_append(&str, &str_sz, binary ? "binary, " : "source, ");
-	apol_str_append(&str, &str_sz, mls ? "MLS" : "non-MLS");
-	apol_str_append(&str, &str_sz, ")");
 
 	fprintf(fp, "Policy Version & Type: ");
 	fprintf(fp, "%s\n", str);
-	free(ver_str);
 	free(str);
 
 	if (qpol_policy_get_class_iter(q, &iter))
@@ -1239,9 +1215,12 @@ int main(int argc, char **argv)
 	int classes, types, attribs, roles, users, all, expand, stats, rt, optc, isids, bools, sens, cats, fsuse, genfs, netif,
 		node, port;
 	apol_policy_t *policydb = NULL;
+	apol_policy_path_t *pol_path = NULL;
+	apol_vector_t *mod_paths = NULL;
+	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+
 	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name, *bool_name, *sens_name, *cat_name,
 		*fsuse_type, *genfs_type, *netif_name, *node_addr, *port_num = NULL, *protocol = NULL;
-	unsigned int search_opts = 0;
 
 	class_name = type_name = attrib_name = role_name = user_name = isid_name = bool_name = sens_name = cat_name = fsuse_type =
 		genfs_type = netif_name = node_addr = port_num = NULL;
@@ -1338,7 +1317,7 @@ int main(int argc, char **argv)
 			usage(argv[0], 0);
 			exit(0);
 		case 'v':	       /* version */
-			printf("\n%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
+			printf("seinfo %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
 			usage(argv[0], 1);
@@ -1355,16 +1334,14 @@ int main(int argc, char **argv)
 	if (classes + types + attribs + roles + users + isids + bools + sens + cats + fsuse + genfs + netif + node + port + all < 1) {
 		stats = 1;
 	}
-	if (!search_opts)
-		search_opts = (QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY);
 
-	if (argc - optind > 1) {
-		usage(argv[0], 1);
-		exit(1);
-	} else if (argc - optind < 1) {
-		rt = qpol_find_default_policy_file(search_opts, &policy_file);
-		if (rt != QPOL_FIND_DEFAULT_SUCCESS) {
-			fprintf(stderr, "Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
+	if (argc - optind < 1) {
+		rt = qpol_default_policy_find(&policy_file);
+		if (rt < 0) {
+			fprintf(stderr, "Default policy search failed: %s\n", strerror(errno));
+			exit(1);
+		} else if (rt != 0) {
+			fprintf(stderr, "No default policy found.\n");
 			exit(1);
 		}
 	} else {
@@ -1373,21 +1350,49 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Out of memory\n");
 			exit(1);
 		}
+		optind++;
 	}
 
-	/* attempt to open the policy */
-	if (stats || all) {
-		if (apol_policy_open(policy_file, &policydb, NULL, NULL)) {
-			perror("Error opening policy");
+	if (argc - optind > 0) {
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		if (!(mod_paths = apol_vector_create())) {
+			ERR(policydb, "%s", strerror(ENOMEM));
 			free(policy_file);
 			exit(1);
 		}
-	} else {
-		if (apol_policy_open_no_rules(policy_file, &policydb, NULL, NULL)) {
-			perror("Error opening policy");
-			free(policy_file);
-			exit(1);
+		for (; argc - optind; optind++) {
+			char *tmp = NULL;
+			if (!(tmp = strdup(argv[optind]))) {
+				ERR(policydb, "Error loading module %s", argv[optind]);
+				free(policy_file);
+				apol_vector_destroy(&mod_paths, free);
+				exit(1);
+			}
+			if (apol_vector_append(mod_paths, (void *)tmp)) {
+				ERR(policydb, "Error loading module %s", argv[optind]);
+				free(policy_file);
+				free(tmp);
+				apol_vector_destroy(&mod_paths, free);
+				exit(1);
+			}
 		}
+	}
+
+	pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
+	if (!pol_path) {
+		ERR(policydb, "%s", strerror(ENOMEM));
+		free(policy_file);
+		apol_vector_destroy(&mod_paths, free);
+		exit(1);
+	}
+	apol_vector_destroy(&mod_paths, free);
+
+	policydb = apol_policy_create_from_policy_path(pol_path, ((stats || all) ? 0 : APOL_POLICY_OPTION_NO_RULES), NULL, NULL);
+	if (!policydb) {
+		ERR(policydb, "%s", strerror(errno));
+		free(policy_file);
+		apol_policy_path_destroy(&pol_path);
+		exit(1);
 	}
 
 	/* display requested info */
@@ -1423,6 +1428,7 @@ int main(int argc, char **argv)
 		print_isids(stdout, isid_name, expand, policydb);
 
 	apol_policy_destroy(&policydb);
+	apol_policy_path_destroy(&pol_path);
 	free(policy_file);
 	exit(0);
 }
@@ -1546,7 +1552,7 @@ static void print_user_roles(FILE * fp, qpol_user_t * user_datum, apol_policy_t 
 	fprintf(fp, "   %s\n", user_name);
 
 	if (expand) {
-		if (qpol_policy_is_mls_enabled(q)) {
+		if (qpol_policy_has_capability(q, QPOL_CAP_MLS)) {
 			/* print default level */
 			if (qpol_user_get_dfltlevel(q, user_datum, &dflt_level))
 				goto cleanup;

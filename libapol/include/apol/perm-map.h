@@ -1,5 +1,5 @@
 /**
- * @file perm-map.h
+ * @file
  *
  * Permission mapping routines for libapol.  These maps assoicate all
  * object class permissions with read, write, read&write, and none

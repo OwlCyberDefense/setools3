@@ -1,6 +1,6 @@
 SELinux Policy Analysis Tool Help File
-apol, version 3.0.1
-December 1, 2006
+apol, version 3.1
+February 1, 2007
 selinux@tresys.com
 
 Overview
@@ -24,16 +24,14 @@ policy analysis tools for Security Enhanced (SELinux) Type Enforcement
     analysis, as well as transitive (indirect) information flow
     analysis, direct relabel analysis, and type relationship analysis.
 
-The tool supports binary as well as source policies, using all of the
-features of apol as appropriate.  However, apol cannot display the
-policy source or line numbers when given a binary policy, so those
-features are disabled. In addition, attributes and initial SIDs data
-are inferred by the policy contents.  Otherwise, apol treats the two
-types of policies similarly.
+The tool supports source, monolithic binary, and modular binary
+policies.  Certain apol features may be disabled if the underlying
+policy does not support the action.  For example, rule searches will
+not report line numbers when searching monolithic binary polices.
 
 Apol provides compatibility with the current and previous policy
-syntax, to support analysis of all policy versions from version 12 to
-the current version 21.
+syntax.  It supports analysis of monolithic policy versions 12 to the
+current version 21 and modular policy versions 5 and 6.
 
 See setools/ChangeLog for a list of new features in this release.  See
 setools/KNOWN_BUGS for a list of current bugs.
@@ -41,12 +39,12 @@ setools/KNOWN_BUGS for a list of current bugs.
 
 Menus
 -----
-The File menu allows you to open a valid source or binary policy file,
-i.e., one that file can be successfully parsed using checkpolicy
--d.  Only one policy file can be open at a time; opening a second file
-will result in the first being closed.
+Use 'Open' from the File menu to open a valid policy.  The policy may
+be monolithic or be composed of a base linked with multiple modules.
+Only one policy can be open at a time; opening a second policy will
+result in the first being closed.
 
-The Query menu allows you to save or load a query for a TE Rules
+The Query menu allows the user to save or load a query for a TE Rules
 search or for an analysis module listed on the Analysis tab.  Saving a
 query writes the appropriate parameters and settings to a '.qf' file:
 for TE Rules queries, the required query parameters are saved; for
@@ -57,14 +55,15 @@ configures the query options with the specified query parameters and
 advanced settings.  The load query menu item is enabled across all
 tabs, but the save query menu item is only enabled when the Analysis
 tab or the TE Rules tab (see the Policy Rules tab description below)
-is raised.  The Query menu also allows you to display statistics about
-the currently loaded policy.  A shorthand version of these statistics
-is always displayed on the status bar when a policy file is opened.
+is raised.  Choose 'Policy Summary' from the Query menu to display
+statistics about the currently loaded policy.  A shorthand version of
+these statistics is always displayed on the status bar when a policy
+is opened.
 
-The Advanced menu allows you to directly manage permission mappings
-for apol's direct and transitive information flow analyses.  Although
-this dialog is not required to perform an information flow analysis,
-it provides additional control over permission mappings.  See the
+Permission mappings are managed through the Advanced.  The mappings
+are used by apol's direct and transitive information flow analyses.
+Although this dialog is not required to perform an information flow
+analysis, it provides additional control over those mappings.  See the
 separate help file on information flow for more information about
 permission mappings and their management.
 
@@ -128,7 +127,7 @@ relate the core components of an SELinux policy.
   default state of the variable.  This tab also provides the interface
   to change the state of the boolean variable to TRUE or FALSE.  This
   boolean state change will be applied in memory and but will not
-  change the state within the actual policy file.
+  change the state within the actual policy.
 
   MLS tab
   -------
@@ -227,12 +226,12 @@ rules in a policy based on selected search criteria.
 	
   In the Results Tab for a given search, all rules that meet the
   search criteria are displayed.  In addition, if the policy that is
-  opened is a policy source file, a hyperlink for each rule is shown.
-  Clicking on this link will raise the policy.conf tab and highlight
-  the exact line in the policy.conf file where the rule was found.
-  This traces the rule back to the ultimate source code. If the policy
-  is a binary policy, the hyperlinks will not be provided and the
-  policy.conf tab will be disabled.
+  opened is capable of showing line numbers, a hyperlink for each rule
+  is shown.  Clicking on this link will raise the Policy Source tab
+  and highlight the exact line in the source file where the rule was
+  found.  This traces the rule back to the ultimate source code.  If
+  the policy cannot show line numbers then there will be no
+  hyperlinks.
 
   The TE Rules Tab also supports multiple results windows.  Each
   active window remembers the search options used for it, and will set
@@ -251,10 +250,10 @@ rules in a policy based on selected search criteria.
   these conditional expressions.  Note that conditional expressions
   are displayed in Reverse Polish Notation.
 			
-  By default, all conditionals are displayed; however you can search
-  conditional expressions that use a specific boolean variable, as
-  well as choose whether to use a regular expression.  The current
-  state of each rule is provided by means of a tag within the results:
+  By default, all conditionals are displayed; however they can be
+  limited to expressions that use particular boolean variables.  The
+  current state of each rule is provided by means of a tag within the
+  results:
 	
       [Enabled] - indicates the rule is enabled
       [Disabled] - indicates the rule is disabled	
@@ -310,12 +309,10 @@ following features:
   widgets provided.  Drop down lists and entryboxes are presented for
   specifying the search criteria, of which the drop down lists contain
   items from the index file.  Regular expressions can be specified for
-  all fields except the object class field.  Additionally, you choose
-  whether to include the file context and/or object class within the
-  results. To perform a search, click the 'OK' button.  Once the
-  search is finished, list of files that matched the criteria
-  displays, along with the files' context and/or object type, if
-  specified.
+  all fields except the object class field.  To perform a search,
+  click the 'OK' button.  Once the search is finished, list of files
+  that matched the criteria displays, along with the files' context
+  and/or object type, if specified.
 
 
 Analysis tab
@@ -341,7 +338,7 @@ Menus section above).
 	       transition.
 
                The Forward Domain Transition (FDT) analysis also
-	       provides the means to limit your query to find
+	       provides the means to limit the query to find
 	       transitions only to domains that are granted specific
 	       object class permissions and/or are granted access to a
 	       particular object type(s).  Use the 'Access Filters'
@@ -474,10 +471,10 @@ Menus section above).
   which can be accessed from the help menu in apol.
 
 
-Policy.conf tab
----------------
-The Policy.conf tab provides a convenient display of the raw policy
-source file.  In addition, the TE rules tab and the Domain Transition
-analysis (on the Analysis tab) support a hyperlink to this tab if the
-loaded policy is a source file.  Otherwise, this tab is disabled and
-hyperlinks to this tab will not be provided.
+Policy Source tab
+-----------------
+The Policy Source tab provides a convenient display of the raw policy
+source file.  If a modular policy was loaded, this tab shows only the
+base policy's source.  Various search results will hyperlink to lines
+within this tab.  If the loaded policy is not source then this tab
+will be disabled.

@@ -1,12 +1,11 @@
 /**
- *  @file type_diff.c
+ *  @file
  *  Implementation for computing a semantic differences in types.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -28,7 +27,6 @@
 #include "poldiff_internal.h"
 
 #include <apol/util.h>
-#include <qpol/policy_query.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -551,9 +549,10 @@ int type_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	int retval = -1, error = 0, compval;
 
 	assert(tval1 == tval2);
-	/* can't do a deep diff of type if either policy is binary
-	 * because the attribute names are bogus */
-	if (apol_policy_is_binary(diff->orig_pol) || apol_policy_is_binary(diff->mod_pol)) {
+	/* can't do a deep diff of type if either policy does not retain attribute
+	 * names because the fake attribute names are bogus */
+	if (!(qpol_policy_has_capability(apol_policy_get_qpol(diff->orig_pol), QPOL_CAP_ATTRIB_NAMES))
+	    || !(qpol_policy_has_capability(apol_policy_get_qpol(diff->mod_pol), QPOL_CAP_ATTRIB_NAMES))) {
 		return 0;
 	}
 	v1 = type_get_attrib_names(diff, diff->orig_pol, tval1);

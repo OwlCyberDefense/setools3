@@ -1,5 +1,17 @@
-# Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information
+# Copyright (C) 2001-2007 Tresys Technology, LLC
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 # TCL/TK GUI for SE Linux policy analysis
 # Requires tcl and tk 8.4+, with BWidget 1.7+
@@ -416,7 +428,6 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}}
 proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    set is_binary [ApolTop::is_binary_policy]
     if {$varname != {}} {
         upvar $varname progressvar
         set progressvar "Rendering [llength $rules] syntactic av rule(s)..."
@@ -425,13 +436,22 @@ proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} 
 
     set num_enabled 0
     set num_disabled 0
+    if {[ApolTop::is_capable "line numbers"]} {
+        set do_linenums 1
+    } else {
+        set do_linenums 0
+    }
     foreach r $rules {
         $path.tb insert end [string repeat " " $indent]
         foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderSynAVRule $r] {break}
-        set text [list \[ {} \
-                      $line_num linenum \
-                      "\] " {} \
-                      $rule_type {}]
+        if {$do_linenums} {
+            set text [list \[ {} \
+                          $line_num linenum \
+                          "\] " {} \
+                          $rule_type {}]
+        } else {
+            set text [list $rule_type {}]
+        }
         set source_set [_render_typeset $source_set]
         set target_set [_render_typeset $target_set]
         if {[llength $class] > 1} {
@@ -465,7 +485,6 @@ proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} 
 proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    set is_binary [ApolTop::is_binary_policy]
     if {$varname != {}} {
         upvar $varname progressvar
         set progressvar "Sorting [llength $rule_list] semantic type rule(s)..."
@@ -507,7 +526,6 @@ proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}}
 proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    set is_binary [ApolTop::is_binary_policy]
     if {$varname != {}} {
         upvar $varname progressvar
         set progressvar "Rendering [llength $rules] syntactic type rule(s)..."
@@ -515,13 +533,22 @@ proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} 
     }
     set num_enabled 0
     set num_disabled 0
+    if {[ApolTop::is_capable "line numbers"]} {
+        set do_linenums 1
+    } else {
+        set do_linenums 0
+    }
     foreach r $rules {
         $path.tb insert end [string repeat " " $indent]
         foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderSynTERule $r] {break}
-        set text [list \[ {} \
-                      $line_num linenum \
-                      "\] " {} \
-                      $rule_type {}]
+        if {$do_linenums} {
+            set text [list \[ {} \
+                          $line_num linenum \
+                          "\] " {} \
+                          $rule_type {}]
+        } else {
+            set text [list $rule_type {}]
+        }
         set source_set [_render_typeset $source_set]
         set target_set [_render_typeset $target_set]
         if {[llength $class] > 1} {

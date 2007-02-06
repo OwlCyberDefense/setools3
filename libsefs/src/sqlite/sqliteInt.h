@@ -48,8 +48,6 @@
 #include <string.h>
 #include <assert.h>
 
-#define SQLITE_PTR_SZ SIZEOF_INT_P
-
 /*
 ** The maximum number of in-memory pages to use for the main database
 ** table and for temporary tables.

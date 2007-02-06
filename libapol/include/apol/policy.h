@@ -1,16 +1,15 @@
 /**
- * @file policy.h
+ * @file
  *
  * Public interface for SELinux policies.  This function declares
- * apol_policy_t, a convenience structure that contains all of the
- * other structures use by the setools project.  Almost all setools
- * files will need to #include this header.
+ * apol_policy, a structure that groups a qpol_policy with other
+ * structures needed by libapol.  Almost all setools files will need
+ * to #include this header.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006 Tresys Technology, LLC
+ * Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -35,6 +34,7 @@ extern "C"
 {
 #endif
 
+#include "policy-path.h"
 #include <stdarg.h>
 #include <qpol/policy.h>
 
@@ -43,31 +43,47 @@ extern "C"
 	typedef void (*apol_callback_fn_t) (void *varg, apol_policy_t * p, int level, const char *fmt, va_list argp);
 
 /**
- *  Open a policy file and load it into a newly created apol_policy.
- *  @param path The path of the policy file to open.
- *  @param policy The policy to create from the file.
- *  @param msg_callback Callback to invoke as errors/warnings are
- *  generated.  If NULL, then write messages to standard error.
- *  @param varg Value to be passed as the first parameter to the
- *  callback function.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *policy will be NULL;
+ * When creating an apol_policy, load all components except rules
+ * (both AV and TE rules).  For modular policies, this affects both
+ * the base policy and subsequent modules.
  */
-	extern int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *varg);
+#define APOL_POLICY_OPTION_NO_RULES 1
 
 /**
- *  Open a policy file and load all components except rules into a newly
- *  created apol_policy.
- *  @param path The path of the policy file to open.
- *  @param policy The policy to create from the file.
- *  @param msg_callback Callback to invoke as errors/warnings are
- *  generated.  If NULL, then write messages to standard error.
- *  @param callback_arg Value to write to (*policy)->msg_callback_arg.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *policy will be NULL;
+ * Create a new apol_policy initialized from one or more policy files.
+ *
+ * @param path Policy path object specifying which policy file or
+ * files to load.
+ * @param options Bitfield specifying options for the returned policy.
+ * Currently the only acceptable option is
+ * APOL_POLICY_OPTION_NO_RULES.
+ * @param msg_callback Callback to invoke as errors/warnings are
+ * generated.  If NULL, then write messages to standard error.
+ * @param varg Value to be passed as the first parameter to the
+ * callback function.
+ *
+ * @return A newly allocated policy that may be used for analysis, or
+ * NULL upon error.  The caller is responsible for calling
+ * apol_policy_destroy() upon the returned value afterwards.
+ */
+	extern apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * path, const int options,
+								  apol_callback_fn_t msg_callback, void *varg);
+
+/**
+ * Open a monolithic policy from disk.
+ *
+ * @deprecated Use apol_policy_create_from_policy_path() instead.
+ */
+	extern int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *varg)
+		__attribute__ ((deprecated));
+
+/**
+ * Open a monolithic policy and load all components except rules.
+ *
+ * @deprecated Use apol_policy_create_from_policy_path() instead.
  */
 	extern int apol_policy_open_no_rules(const char *path, apol_policy_t ** policy,
-					     apol_callback_fn_t msg_callback, void *callback_arg);
+					     apol_callback_fn_t msg_callback, void *varg) __attribute__ ((deprecated));
 
 /**
  * Deallocate all memory associated with a policy, including all
@@ -91,20 +107,20 @@ extern "C"
 	extern int apol_policy_get_policy_type(apol_policy_t * policy);
 
 /**
- * Given a policy, return a pointer to the underlying qpol policy.
+ * Given a policy, return a pointer to the underlying qpol_policy.
  * This is needed, for example, to access details of particulary qpol
  * components.
  *
  * @param policy Policy containing qpol policy.
  *
  * @return Pointer to underlying qpol policy, or NULL on error.  Do
- * not free() this pointer.
+ * not free() or otherwise destroy this pointer.
  */
 	extern qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy);
 
 /**
  * Given a policy, return 1 if the policy within is MLS, 0 if not.  If
- * it cannot be determined or upon error, return <0.
+ * it cannot be determined or upon error, return < 0.
  *
  * @param p Policy to which check.
  * @return 1 if policy is MLS, 0 if not, < 0 upon error.
@@ -113,12 +129,16 @@ extern "C"
 
 /**
  * Given a policy, return 1 if the policy is binary, 0 if not.  If it
- * cannot be determined or upon error, return <0.
+ * cannot be determined or upon error, return < 0.
+ *
+ * @deprecated Instead of checking if a policy is "binary" or not, one
+ * typically really wants to know if the policy is capable of showing
+ * rules or something else.  See qpol_policy_has_capability().
  *
  * @param p Policy to which check.
  * @return 1 if policy is binary, 0 if not, < 0 upon error.
  */
-	extern int apol_policy_is_binary(apol_policy_t * p);
+	extern int apol_policy_is_binary(apol_policy_t * p) __attribute__ ((deprecated));
 
 /**
  * Given a policy, allocate and return a string that describes the
@@ -145,6 +165,8 @@ extern "C"
  * APOL_MSG_WARN, or APOL_MSG_INFO.
  * @param fmt Format string to print, using syntax of printf(3).
  */
+	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
+
 	__attribute__ ((format(printf, 3, 4)))
 	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
 
