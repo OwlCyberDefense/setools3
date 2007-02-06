@@ -1,25 +1,25 @@
 /**
- *  @file find_domains.c
+ *  @file
  *  Implementation of the find domains utility module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- *  This library is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
@@ -63,11 +63,11 @@ int find_domains_register(sechk_lib_t * lib)
 		"   4) it is associated with a role other than object_r\n";
 	mod->opt_description =
 		"Module requirements:\n"
-		"   policy source\n"
+		"   attribute names\n"
 		"Module dependencies:\n" "   none\n" "Module options:\n" "   domain_attributes can be set in a profile\n";
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
-	apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source"));
+	apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES));
 
 	/* assign options */
 	apol_vector_append(mod->options, sechk_name_value_new("domain_attribute", "domain"));

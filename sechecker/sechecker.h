@@ -1,25 +1,24 @@
 /**
- *  @file sechecker.h
- *  Defines the public interface for all sechecker modules and the library. 
+ *  @file
+ *  Defines the public interface for all sechecker modules and the library.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- *  This library is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
@@ -34,6 +33,7 @@ extern "C"
 #include <config.h>
 
 #include <apol/policy.h>
+#include <apol/policy-path.h>
 #include <apol/policy-query.h>
 #include <apol/vector.h>
 #include <apol/util.h>
@@ -56,7 +56,7 @@ extern "C"
 #define SECHK_OUT_STATS		0x01
 #define SECHK_OUT_LIST		0x02
 #define SECHK_OUT_PROOF		0x04
-/* mode flags from command line, test profiles, and comfig file */
+/* mode flags from command line and test profiles */
 /* NOTE: none is only valid in profiles */
 #define SECHK_OUT_NONE    0x00
 #define SECHK_OUT_QUIET   0x20
@@ -70,6 +70,42 @@ extern "C"
 #define SECHK_SEV_LOW  "low"
 #define SECHK_SEV_MED  "med"
 #define SECHK_SEV_HIGH "high"
+
+/* module requirement name strings */
+/** Require that the loaded policy has a given capability;
+ *  values should be set as one of SECHK_REQ_CAP_* from below. */
+#define SECHK_REQ_POLICY_CAP       "capability"
+/** Require that the running system supports a given feature;
+ *  values should be set as one of SECHK_REQ_SYS_* from below. */
+#define SECHK_REQ_SYSTEM           "system"
+/** Require a file_contexts file to be loaded.
+ *  This requirement has no associated value text. */
+#define SECHK_REQ_FILE_CONTEXTS    "file_contexts"
+/** Require a default_contexts file to be loaded.
+ *  This requirement has no associated value text. */
+#define SECHK_REQ_DEFAULT_CONTEXTS "default_contexts"
+
+/* policy capability requirement strings: map to QPOL_CAP_* in policy_query.h */
+/** Require that the loaded policy supports attribute names. */
+#define SECHK_REQ_CAP_ATTRIB_NAMES "attribute names"
+/** Require that the loaded policy supports syntactic rules. */
+#define SECHK_REQ_CAP_SYN_RULES    "syntactic rules"
+/** Require that the loaded policy supports line numbers. */
+#define SECHK_REQ_CAP_LINE_NOS     "line numbers"
+/** Require that the loaded policy supports booleans and conditional statements. */
+#define SECHK_REQ_CAP_CONDITIONALS "conditionals"
+/** Require that the loaded policy supports MLS. */
+#define SECHK_REQ_CAP_MLS          "mls"
+/** Require that the loaded policy supports module loading. */
+#define SECHK_REQ_CAP_MODULES      "module loading"
+/** Require that the loaded policy includes av/te rules. */
+#define SECHK_REQ_CAP_RULES_LOADED "rules loaded"
+
+/* system requirement strings */
+/** Require that the running system is a SELinux system. */
+#define SECHK_REQ_SYS_SELINUX "selinux"
+/** Require that the running system supports MLS*/
+#define SECHK_REQ_SYS_MLS     "mls"
 
 /** item and proof element types to denote casting of the void pointer */
 	typedef enum sechk_item_type
@@ -126,13 +162,13 @@ extern "C"
 		free_fn_t elem_free_fn;
 	} sechk_proof_t;
 
-/** Module results item: 
+/** Module results item:
  *  This represents an item for which results were found. */
 	typedef struct sechk_item
 	{
 	/** The policy item */
 		void *item;
-	/** Test result code for this item. This field is reserved for use 
+	/** Test result code for this item. This field is reserved for use
 	 *  only within the module creating the item. */
 		unsigned char test_result;
 	/** Vector of proof elements (of type sechk_proof_t) indicating
@@ -185,7 +221,7 @@ extern "C"
 	/** The path for the selinux configuration file */
 		char *selinux_config_path;
 	/** File name of the policy loaded.*/
-		char *policy_path;
+		apol_policy_path_t *policy_path;
 	/** Minimum severity level specified for the report. */
 		const char *minsev;
 	} sechk_lib_t;
@@ -323,7 +359,7 @@ extern "C"
 	sechk_fn_t *sechk_fn_new(void);
 
 /**
- *  Create and initialize a new name value pair. 
+ *  Create and initialize a new name value pair.
  *  The incoming strings are duplicated.
  *
  *  @param name Name to assign.
@@ -529,13 +565,13 @@ extern "C"
 /**
  *  Load the policy the library will analyze.
  *
- *  @param policyfilelocation Path of the policy to load, or NULL to search
- *  for the system default policy.
+ *  @param policy_mods Policy path object to use to load the policy.
  *  @param lib The library into which to load the policy.
  *
  *  @return 0 on success and < 0 on failure.
  */
-	int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t * lib);
+	int sechk_lib_load_policy(apol_policy_path_t * policy_mods, sechk_lib_t * lib);
+
 #ifdef LIBSEFS
 
 /**
@@ -642,7 +678,7 @@ extern "C"
  */
 	sechk_proof_t *sechk_proof_copy(sechk_proof_t * orig);
 
-/** 
+/**
  *  Callback for vector comparison of proof elements.
  *  This callback takes two different type objects both cast to void
  *  it is important that the order of the parameters is correct or the

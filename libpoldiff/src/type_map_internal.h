@@ -1,13 +1,12 @@
 /**
- *  @file type_map_internal.h
+ *  @file
  *  Protected Interface for type equivalence mapping for semantic
  *  difference calculations.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -33,7 +32,7 @@ extern "C"
 #endif
 
 #include <apol/vector.h>
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 	typedef struct type_map type_map_t;
 
@@ -83,7 +82,7 @@ extern "C"
  *  Infer type remappings and append them to the current type remap
  *  vector.  The vector should probably be first flushed via
  *  poldiff_type_remap_flush().  Generated entries will have their
- *  'enabled' flag set.
+ *  'inferred' and 'enabled' flags set.
  *
  *  The heuristic for determining type remaps is as follow.
  *  <ol>

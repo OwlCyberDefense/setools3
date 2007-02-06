@@ -1,6 +1,6 @@
 SELinux Policy Checker Tool Help File
-sechecker, version 3.0.1
-December 1, 2006
+sechecker, version 3.1
+February 1, 2007
 selinux@tresys.com
 
 
@@ -57,7 +57,7 @@ defined as follows:
    it does not present an identifiable security risk.
 
 3) "low":  The module's results indicate a flaw in the policy that
-   does not effect the manner in which the policy is enforced, but is
+   does not affect the manner in which the policy is enforced, but is
    considered to be improper.
 
 

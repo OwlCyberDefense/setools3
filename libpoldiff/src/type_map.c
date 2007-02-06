@@ -1,5 +1,5 @@
 /**
- *  @file type_map.c
+ *  @file
  *  Implementation of type equivalence mapping for semantic
  *  difference calculations.
  *  The mapping of types is handled by creating a list of pseudo type
@@ -12,7 +12,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -70,6 +70,7 @@ struct poldiff_type_remap_entry
 {
 	apol_vector_t *orig_types;
 	apol_vector_t *mod_types;
+	int inferred;
 	int enabled;
 };
 
@@ -91,7 +92,7 @@ static void poldiff_type_remap_entry_free(void *elem)
 
 /**
  * Allocate a new poldiff type remap entry, append it to the current
- * type remap vector, and return the entry.
+ * type remap vector, enable it, and return the entry.
  *
  * @param diff Policy diff structure containing remap vector.
  *
@@ -107,10 +108,11 @@ static poldiff_type_remap_entry_t *poldiff_type_remap_entry_create(poldiff_t * d
 		return NULL;
 	}
 	diff->remapped = 1;
+	e->enabled = 1;
 	return e;
 }
 
-int poldiff_type_remap_create(poldiff_t * diff, apol_vector_t * orig_names, apol_vector_t * mod_names)
+int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names, const apol_vector_t * mod_names)
 {
 	poldiff_type_remap_entry_t *entry = NULL;
 	size_t i;
@@ -174,6 +176,7 @@ int poldiff_type_remap_create(poldiff_t * diff, apol_vector_t * orig_names, apol
 			goto cleanup;
 		}
 	}
+	entry->enabled = 1;
 	if (apol_vector_append(diff->type_map->remap, entry) < 0) {
 		error = ENOMEM;
 		ERR(diff, "%s", strerror(error));
@@ -286,6 +289,15 @@ apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, pol
 		}
 	}
 	return v;
+}
+
+int poldiff_type_remap_entry_get_is_inferred(poldiff_type_remap_entry_t * entry)
+{
+	if (entry == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return entry->inferred;
 }
 
 int poldiff_type_remap_entry_get_is_enabled(poldiff_type_remap_entry_t * entry)
@@ -845,7 +857,7 @@ int type_map_infer(poldiff_t * diff)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		entry->enabled = 1;
+		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
 	}
@@ -876,7 +888,7 @@ int type_map_infer(poldiff_t * diff)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		entry->enabled = 1;
+		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
 	}
@@ -907,7 +919,7 @@ int type_map_infer(poldiff_t * diff)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		entry->enabled = 1;
+		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
 	}
@@ -938,7 +950,7 @@ int type_map_infer(poldiff_t * diff)
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		entry->enabled = 1;
+		entry->inferred = 1;
 		orig_done[i] = 1;
 		mod_done[j] = 1;
 	}

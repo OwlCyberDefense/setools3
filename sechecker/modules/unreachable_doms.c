@@ -1,26 +1,26 @@
 /**
- *  @file unreachable_doms.c
+ *  @file
  *  Implementation of the unreachable domains module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
- *  @author David Windsor <dwindsor@tresys.com>
+ *  @author David Windsor dwindsor@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- *  This library is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
@@ -78,12 +78,26 @@ int unreachable_doms_register(sechk_lib_t * lib)
 		"   3) There are no users with proper roles to allow a transition.\n"
 		"However, if any of the above rules indicate an unreachable domain, yet the\n"
 		"domain appears in the system default contexts file, it is considered reachable.\n";
-	mod->opt_description =
-		"  Module requirements:\n"
-		"    source policy\n"
-		"    default contexts file\n"
+	mod->opt_description = "  Module requirements:\n" "    attribute names\n"
+#ifdef LIBSELINUX
+		"    default_contexts file\n"
+#endif
 		"  Module dependencies:\n" "    find_domains module\n" "  Module options:\n" "    none\n";
 	mod->severity = SECHK_SEV_MED;
+
+	/* assign requirements */
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES)) < 0) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+#ifdef LIBSELINUX
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_DEFAULT_CONTEXTS, NULL)) < 0) {
+		ERR(NULL, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+#endif
 
 	/* assign dependencies */
 	if (apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains")) < 0) {
@@ -430,7 +444,11 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		qpol_type_get_name(q, cur_dom, &cur_dom_name);
 		need = KEEP_SEARCHING;
 
-		if (in_def_ctx(cur_dom_name, datum) || in_isid_ctx(cur_dom_name, policy))
+		if (
+#ifdef LIBSELINUX
+			   in_def_ctx(cur_dom_name, datum) ||
+#endif
+			   in_isid_ctx(cur_dom_name, policy))
 			continue;
 
 		/* collect information about roles and transitions to this domain */

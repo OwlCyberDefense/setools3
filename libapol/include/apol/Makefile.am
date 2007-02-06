@@ -17,6 +17,7 @@ apol_HEADERS = \
 	netcon-query.h \
 	perm-map.h \
 	policy.h \
+	policy-path.h \
 	policy-query.h \
 	rangetrans-query.h \
 	rbacrule-query.h \

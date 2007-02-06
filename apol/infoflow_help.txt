@@ -1,6 +1,6 @@
 An overview of information flow analysis
-apol, version 3.0.1
-December 1, 2006
+apol, version 3.1
+February 1, 2007
 selinux@tresys.com
 
 
@@ -12,7 +12,7 @@ is assigned to the shadow password file /etc/shadow.  To determine all
 the types to which information can flow from the shadow_t type (e.g,
 indicating possible paths for encrypted passwords to be
 unintentionally leaked), do a "flow from" analysis on the shadow_t
-type.  Another example might be a firewall application where your
+type.  Another example might be a firewall application where the
 intent is to understand all flows allowed between two network
 interfaces.
 
@@ -143,9 +143,9 @@ this way, apol continues its tradition of supporting old and new
 versions of policies (see below for more on managing permission maps).
 
 Apol provides mechanisms to manage and customize permission mappings
-that best suit your needs.  These tools, including a permission map
-editor, are all available under the Advanced menu (see more on this
-topic below).
+that best suit the analyst's needs.  These tools, including a
+permission map editor, are all available under the Advanced menu (see
+more on this topic below).
 
 
 Permission weighting

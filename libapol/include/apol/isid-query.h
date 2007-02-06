@@ -1,12 +1,11 @@
 /**
- *  @file isid-query.h
+ *  @file
  *  Public Interface for querying initial SIDs of a policy.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -34,7 +33,7 @@ extern "C"
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 	typedef struct apol_isid_query apol_isid_query_t;
 
@@ -43,7 +42,7 @@ extern "C"
 /**
  * Execute a query against all initial SIDs within the policy.	The
  * returned isids will be unordered.
- * @depricated This function has been renamed apol_isid_get_by_query().
+ * @deprecated This function has been renamed apol_isid_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *

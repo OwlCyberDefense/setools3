@@ -1,5 +1,5 @@
 /**
- *  @file module_compiler.h
+ *  @file
  *
  *  This file is a copy of module_compiler.h from NSA's CVS repository.
  *

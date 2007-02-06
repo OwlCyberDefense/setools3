@@ -1,13 +1,12 @@
 /**
- *  @file netcon-query.h
+ *  @file
  *  Public Interface for querying portcons, netifcons, and nodecons of
  *  a policy.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006 Tresys Technology, LLC
+ *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -35,7 +34,7 @@ extern "C"
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
-#include <qpol/policy_query.h>
+#include <qpol/policy.h>
 
 	typedef struct apol_portcon_query apol_portcon_query_t;
 	typedef struct apol_netifcon_query apol_netifcon_query_t;

@@ -1,5 +1,5 @@
 /**
- * @file constraint-query.h
+ * @file
  *
  * Routines to query constraint and validatetrans statements in a policy.
  *
@@ -7,7 +7,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006 Tresys Technology, LLC
+ * Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ extern "C"
 
 /**
  * Execute a query against all constraints within the policy.
- * @depricated This function has been renamed apol_constraint_get_by_query().
+ * @deprecated This function has been renamed apol_constraint_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *
@@ -142,7 +142,7 @@ extern "C"
 /**
  * Execute a query against all validatetrans statements within the
  * policy.
- * @depricated This function has been renamed apol_validatetrans_get_by_query().
+ * @deprecated This function has been renamed apol_validatetrans_get_by_query().
  * This name has been retained for compatibility but may be removed
  * in a future release.
  *

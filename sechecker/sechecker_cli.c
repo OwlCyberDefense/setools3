@@ -1,9 +1,24 @@
-/* Copyright (C) 2005-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: jmowery@tresys.com
+/**
+ * @file
+ * Main function and command line parser for the sechecker program.
  *
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <config.h>
@@ -17,12 +32,7 @@
 #include <getopt.h>
 #include <errno.h>
 
-/* SECHECKER_VERSION should be defined in the make environment */
-#ifndef VERSION
-#define VERSION "UNKNOWN"
-#endif
-
-#define COPYRIGHT_INFO "Copyright (C) 2005-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2005-2007 Tresys Technology, LLC"
 
 extern sechk_module_name_reg_t sechk_register_list[];
 
@@ -47,34 +57,32 @@ static struct option const longopts[] = {
 /* display usage help */
 void usage(const char *arg0, bool_t brief)
 {
-	printf("%s (sechecker v%s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: sechecker [OPTS] -m module             run module\n");
-	printf("   or: sechecker [OPTS] -p profile            run profile\n");
-	printf("   or: sechecker [OPTS] -p profile -m module  run module with profile options\n");
+	printf("Usage: sechecker [OPTIONS] -p profile [POLICY ...]\n");
+	printf("       sechecker [OPTIONS] -m module [POLICY ...]\n");
+	printf("       sechecker [OPTIONS] -p profile -m module [POLICY ...]\n");
 	printf("\n");
 	if (brief) {
-		printf("\n\tTry %s --help for more help.\n", arg0);
+		printf("\tTry %s --help for more help.\n\n", arg0);
 	} else {
-		printf("Perform modular checks on a SELinux policy\n");
+		printf("Perform modular checks on a SELinux policy.\n");
 		printf("\n");
-		printf("   -l, --list       print a list of profiles and modules\n");
-		printf("   -q, --quiet      suppress output\n");
-		printf("   -s, --short      print short output\n");
-		printf("   -v, --verbose    print verbose output\n");
-		printf("   --version        print version and exit\n");
+		printf("   -p <prof>, --profile=<prof>  name or path of profile to load\n");
+		printf("                                if used without -m, run all modules in profile\n");
+		printf("   -m <mod>, --module=<mod>     name of module to run\n");
 #ifdef LIBSEFS
-		printf("   --fcfile=<file>  file_contexts file\n");
+		printf("   --fcfile=<file>              file_contexts file to load\n");
 #endif
-		printf("   --policy=<file>  policy file\n");
 		printf("\n");
-		printf("   -h[mod],   --help[=module]   print this help or help for a module\n");
-		printf("   -m <mod>,  --module=<mod>    module name\n");
-		printf("   -p <prof>, --profile=<prof>  profile name or path\n");
+		printf("   -q, --quiet                  suppress output\n");
+		printf("   -s, --short                  print short output\n");
+		printf("   -v, --verbose                print verbose output\n");
+		printf("   --min-sev=<low|med|high>     set the minimum severity to report\n");
 		printf("\n");
-		printf("   --min-sev=<low|med|high>     the minimum severity to report\n");
-
+		printf("   -l, --list                   print a list of profiles and modules and exit\n");
+		printf("   -h[mod], --help[=module]     print this help text or help for a module\n");
+		printf("   --version                    print version information and exit\n");
+		printf("\n");
 	}
-	printf("\n");
 }
 
 /* print list of modules and installed profiles */
@@ -111,16 +119,21 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	char *fcpath = NULL;
 #endif
-	char *polpath = NULL, *modname = NULL;
+	char *modname = NULL;
 	char *prof_name = NULL;
+	char *old_pol_path = NULL;
+	char *base_path = NULL;
+	apol_policy_path_t *pol_path = NULL;
+	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 	char *minsev = NULL;
 	unsigned char output_override = 0;
 	sechk_lib_t *lib;
 	sechk_module_t *mod = NULL;
 	bool_t list_stop = FALSE;
 	bool_t module_help = FALSE;
+	apol_vector_t *policy_mods = NULL;
 
-	while ((optc = getopt_long(argc, argv, "h::p:m:lqsv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "h::p:m:P:lqsv", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 'p':
 			prof_name = strdup(optarg);
@@ -131,7 +144,8 @@ int main(int argc, char **argv)
 			break;
 #endif
 		case 'P':
-			polpath = strdup(optarg);
+			old_pol_path = strdup(optarg);
+			fprintf(stderr, "Warning: Use of --policy is deprecated.");
 			break;
 		case 'M':
 			if (modname) {
@@ -186,7 +200,7 @@ int main(int argc, char **argv)
 			usage(argv[0], 0);
 			exit(0);
 		case 'V':
-			printf("\nSEChecker v%s\n%s\n\n", VERSION, COPYRIGHT_INFO);
+			printf("sechecker %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
 			usage(argv[0], 1);
@@ -238,8 +252,40 @@ int main(int argc, char **argv)
 	}
 
 	/* initialize the policy */
-	if (sechk_lib_load_policy(polpath, lib) < 0)
+	if (!(policy_mods = apol_vector_create()))
 		goto exit_err;
+	if (argc - optind) {
+		if (old_pol_path) {
+			fprintf(stderr, "Warning: Ignoring --policy option and using policy module list.");
+			free(old_pol_path);
+			old_pol_path = NULL;
+		}
+		base_path = argv[optind];
+		optind++;
+		while (argc - optind) {
+			if (apol_vector_append(policy_mods, argv[optind++]))
+				goto exit_err;
+			path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		}
+		pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
+		if (!pol_path)
+			goto exit_err;
+		if (sechk_lib_load_policy(pol_path, lib))
+			goto exit_err;
+	} else {
+		if (old_pol_path) {
+			pol_path = apol_policy_path_create(path_type, old_pol_path, policy_mods);
+			if (!pol_path)
+				goto exit_err;
+			if (sechk_lib_load_policy(pol_path, lib))
+				goto exit_err;
+		} else {
+			if (sechk_lib_load_policy(NULL, lib))
+				goto exit_err;
+		}
+	}
+	/* library now owns path object */
+	pol_path = NULL;
 
 	/* set the minimum severity */
 	if (minsev && sechk_lib_set_minsev(minsev, lib) < 0)
@@ -310,10 +356,11 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
+	apol_vector_destroy(&policy_mods, NULL);
 	free(minsev);
 	free(prof_name);
-	free(polpath);
 	free(modname);
+	free(old_pol_path);
 	sechk_lib_destroy(&lib);
 	return 0;
 
@@ -321,10 +368,12 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
+	apol_vector_destroy(&policy_mods, NULL);
 	free(minsev);
 	free(prof_name);
-	free(polpath);
 	free(modname);
+	free(old_pol_path);
+	apol_policy_path_destroy(&pol_path);
 	sechk_lib_destroy(&lib);
 	return 1;
 }

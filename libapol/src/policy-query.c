@@ -1,5 +1,5 @@
 /**
- * @file policy-query.c
+ * @file
  *
  * Provides a way for setools to make queries about different
  * components of a policy.  The caller obtains a query object, fills
@@ -11,7 +11,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006 Tresys Technology, LLC
+ * Copyright (C) 2006-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -34,8 +34,6 @@
 #include <regex.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <qpol/policy_query.h>
 
 /******************** misc helpers ********************/
 
@@ -466,7 +464,8 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 		goto cleanup;
 	}
 
-	if (!p || apol_policy_is_binary(p)) {
+	if (!p || !qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_ATTRIB_NAMES)
+	    || !qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_SYN_RULES)) {
 		error = EINVAL;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;

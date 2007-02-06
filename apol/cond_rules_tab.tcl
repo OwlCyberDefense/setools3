@@ -1,17 +1,18 @@
-# Copyright (C) 2004-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information
+# Copyright (C) 2004-2007 Tresys Technology, LLC
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-#
-# Author: <don.patterson@tresys.com>
-#
-
-##############################################################
-# ::Apol_Cond_Rules
-#
-# The Conditional Booleans tab namespace
-##############################################################
 namespace eval Apol_Cond_Rules {
     variable vals
     variable widgets
@@ -82,7 +83,7 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
     set text "conditional expression $cond_number: \[ [join $cond_expr] \]\n"
     append text "\nTRUE list:\n"
     Apol_Widget::appendSearchResultText $widgets(results) $text
-    if {[ApolTop::is_binary_policy]} {
+    if {![ApolTop::is_capable "syntactic rules"]} {
         Apol_Widget::appendSearchResultAVRules $widgets(results) 4 [lindex $true_list 0]
         Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $true_list 1]
     } else {
@@ -92,7 +93,7 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
         Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 $syn_terules
     }
     Apol_Widget::appendSearchResultText $widgets(results) "\nFALSE list:\n"
-    if {[ApolTop::is_binary_policy]} {
+    if {![ApolTop::is_capable "source"]} {
         Apol_Widget::appendSearchResultAVRules $widgets(results) 4 [lindex $false_list 0]
         Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $false_list 1]
     } else {
@@ -159,13 +160,6 @@ proc Apol_Cond_Rules::initializeVars {} {
         use_regexp 0
     }
 }
-
-################################################################
-#  ::free_call_back_procs
-#
-proc Apol_Cond_Rules::free_call_back_procs { } {
-}
-
 
 ################################################################
 #  ::create

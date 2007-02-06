@@ -1,11 +1,25 @@
-/* Copyright (C) 2003-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: mayerf@tresys.com
- */
-
-/* sesearch.c: command line tool to search TE rules.
+/**
+ *  @file
+ *  Command line tool to search TE rules.
+ *
+ *  @author Frank Mayer  mayerf@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *
+ *  Copyright (C) 2003-2007 Tresys Technology, LLC
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <config.h>
@@ -18,10 +32,10 @@
 #include <apol/vector.h>
 
 /* libqpol*/
-#include <qpol/syn_rule_query.h>
 #include <qpol/policy.h>
-#include <qpol/policy_query.h>
 #include <qpol/policy_extend.h>
+#include <qpol/syn_rule_query.h>
+#include <qpol/util.h>
 
 /* other */
 #include <errno.h>
@@ -31,9 +45,9 @@
 #include <getopt.h>
 #include <string.h>
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
-char *policy_file = NULL;
+static char *policy_file = NULL;
 
 static struct option const longopts[] = {
 	{"source", required_argument, NULL, 's'},
@@ -52,6 +66,7 @@ static struct option const longopts[] = {
 	{"role_allow", no_argument, NULL, 'L'},
 	{"role_trans", no_argument, NULL, 'o'},
 	{"lineno", no_argument, NULL, 'l'},
+	{"semantic", no_argument, NULL, 'S'},
 	{"show_cond", no_argument, NULL, 'C'},
 	{"indirect", no_argument, NULL, 'i'},
 	{"noregex", no_argument, NULL, 'n'},
@@ -71,6 +86,7 @@ typedef struct options
 	char *bool_name;
 	bool_t all;
 	bool_t lineno;
+	bool_t semantic;
 	bool_t indirect;
 	bool_t allow;
 	bool_t nallow;
@@ -86,52 +102,43 @@ typedef struct options
 
 void usage(const char *program_name, int brief)
 {
-	printf("%s (sesearch ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
-	printf("Usage: %s [OPTIONS] [POLICY_FILE]\n", program_name);
+	printf("Usage: %s [OPTIONS] RULE_TYPE [RULE_TYPE ...] [EXPESSION] [POLICY ...]\n\n", program_name);
 	if (brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
+		printf("\tTry %s --help for more help.\n\n", program_name);
 		return;
 	}
-	fputs("\n\
-Search Type Enforcement rules in an SELinux policy.\n\
-  -s NAME, --source NAME  find rules with NAME type/attrib (regex) as source\n\
-  -t NAME, --target NAME  find rules with NAME type/attrib (regex) as target\n\
-  --role_source NAME      find rules with NAME role (regex) as source\n\
-  --role_target NAME      find rules with NAME role (regex) as target\n\
-  -c NAME, --class NAME   find rules with NAME as the object class\n\
-  -p P1[,P2,...] --perms P1[,P2...]\n\
-                          find rules with the specified permissions\n\
-  -b NAME, --boolean NAME find conditional rules with NAME in the expression\n\
-", stdout);
-	fputs("\
-  --allow                 search for allow rules\n\
-  --neverallow            search for neverallow rules\n\
-  --audit                 search for auditallow and dontaudit rules\n\
-  --type                  search for type_trans, type_member, and type_change\n\
-  --rangetrans            search for range transition rules\n\
-  --role_allow            search for role allow rules\n\
-  --role_trans            search for role transition rules\n\
-  -a, --all               show all rules regardless of type, class, or perms\n\
-", stdout);
-	fputs("\
-  -i, --indirect          indirect; also search for the type's attributes\n\
-  -n, --noregex           do not use regular expression to match type/attributes\n\
-  -l, --lineno            search rules syntactically instead of semantically\n\
-			  and include line # in policy.conf for each rule.\n\
-			  This option is ignored if using a binary policy.\n\
-  -C, --show_cond         show conditional expression for conditional rules\n\
-  -h, --help              display this help and exit\n\
-  -v, --version           output version information and exit\n\
-", stdout);
-	fputs("\n\
-If none of -s, -t, -c, -p, -b, --role_source, or --role_target\n\
-are specified, then all rules are shown.\n\
-You must specify -a (--all), or one of more of --allow, --neverallow, \n\
---audit, --rangetrans, --role_allow, --role_trans or --type.\n\
-\n\
-The default source policy, or if that is unavailable the default binary\n\
-policy, will be opened if no policy file name is provided.\n", stdout);
-	return;
+	printf("Search the rules in a SELinux policy.\n\n");
+	printf("RULE_TYPES:\n");
+	printf("  --allow                   allow rules\n");
+	printf("  --neverallow              neverallow rules\n");
+	printf("  --audit                   auditallow and dontaudit rules\n");
+	printf("  --type                    type_trans, type_member, and type_change\n");
+	printf("  --rangetrans              range transition rules\n");
+	printf("  --role_allow              role allow rules\n");
+	printf("  --role_trans              role transition rules\n");
+	printf("  -a, --all                 all rules regardless of type, class, or perms\n");
+	printf("EXPRESSIONS:\n");
+	printf("  -s NAME, --source=NAME    rules with type/attribute NAME (regex) as source\n");
+	printf("  -t NAME, --target=NAME    rules with type/attribute NAME (regex) as target\n");
+	printf("  --role_source=NAME        rules with role NAME (regex) as source\n");
+	printf("  --role_target=NAME        rules with role NAME (regex) as target\n");
+	printf("  -c NAME, --class=NAME     rules with class NAME as the object class\n");
+	printf("  -p P1[,P2,...], --perms=P1[,P2...]\n");
+	printf("                            rules with the specified permissions\n");
+	printf("  -b NAME, --boolean=NAME   conditional rules with NAME in the expression\n");
+	printf("OPTIONS:\n");
+	printf("  -i, --indirect            also search for the type's attributes\n");
+	printf("  -n, --noregex             do not use regular expression matching\n");
+	printf("  -l, --lineno              show line number for each rule if available\n");
+	printf("  --semantic                search rules semantically instead of syntactically\n");
+	printf("  -C, --show_cond           show conditional expression for conditional rules\n");
+	printf("  -h, --help                print this help text and exit\n");
+	printf("  -v, --version             print version information and exit\n");
+	printf("\n");
+	printf("If no expression is specified, then all rules are shown.\n");
+	printf("\n");
+	printf("The default source policy, or if that is unavailable the default binary\n");
+	printf("policy, will be opened if no policy is provided.\n\n");
 }
 
 static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector_t ** v)
@@ -196,7 +203,7 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		free(tmp);
 	}
 
-	if (opt->lineno && !apol_policy_is_binary(policy)) {
+	if (!(opt->semantic) && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
 		if (apol_syn_avrule_get_by_query(policy, avq, v)) {
 			error = errno;
 			goto err;
@@ -261,11 +268,15 @@ static void print_syn_av_results(apol_policy_t * policy, options_t * opt, apol_v
 					goto cleanup;
 			}
 		}
-		if (qpol_syn_avrule_get_lineno(q, rule, &lineno))
-			goto cleanup;
 		if (!(rule_str = apol_syn_avrule_render(policy, rule)))
 			goto cleanup;
-		fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr ? expr : "");
+		if (opt->lineno) {
+			if (qpol_syn_avrule_get_lineno(q, rule, &lineno))
+				goto cleanup;
+			fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr ? expr : "");
+		} else {
+			fprintf(stdout, "%c%c %s %s\n", enable_char, branch_char, rule_str, expr ? expr : "");
+		}
 		free(rule_str);
 		rule_str = NULL;
 		free(expr);
@@ -376,7 +387,7 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 		}
 	}
 
-	if (opt->lineno && !apol_policy_is_binary(policy)) {
+	if (!(opt->semantic) && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
 		if (apol_syn_terule_get_by_query(policy, teq, v)) {
 			error = errno;
 			goto err;
@@ -439,11 +450,15 @@ static void print_syn_te_results(apol_policy_t * policy, options_t * opt, apol_v
 					break;
 			}
 		}
-		if (qpol_syn_terule_get_lineno(q, rule, &lineno))
-			goto cleanup;
 		if (!(rule_str = apol_syn_terule_render(policy, rule)))
 			goto cleanup;
-		fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr ? expr : "");
+		if (opt->lineno) {
+			if (qpol_syn_terule_get_lineno(q, rule, &lineno))
+				goto cleanup;
+			fprintf(stdout, "%c%c [%7lu] %s %s\n", enable_char, branch_char, lineno, rule_str, expr ? expr : "");
+		} else {
+			fprintf(stdout, "%c%c %s %s\n", enable_char, branch_char, rule_str, expr ? expr : "");
+		}
 		free(rule_str);
 		rule_str = NULL;
 		free(expr);
@@ -755,13 +770,15 @@ int main(int argc, char **argv)
 
 	apol_policy_t *policy = NULL;
 	apol_vector_t *v = NULL;
-	unsigned int search_opts = 0;
+	apol_policy_path_t *pol_path = NULL;
+	apol_vector_t *mod_paths = NULL;
+	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 
 	cmd_opts.all = cmd_opts.lineno = cmd_opts.allow = FALSE;
 	cmd_opts.nallow = cmd_opts.audit = cmd_opts.type = FALSE;
 	cmd_opts.rtrans = cmd_opts.indirect = cmd_opts.show_cond = FALSE;
 	cmd_opts.useregex = TRUE;
-	cmd_opts.role_allow = cmd_opts.role_trans = FALSE;
+	cmd_opts.role_allow = cmd_opts.role_trans = cmd_opts.semantic = FALSE;
 	cmd_opts.src_name = cmd_opts.tgt_name = cmd_opts.class_name = NULL;
 	cmd_opts.permlist = cmd_opts.bool_name = cmd_opts.src_role_name = NULL;
 	cmd_opts.tgt_role_name = NULL;
@@ -889,6 +906,9 @@ int main(int argc, char **argv)
 		case 'l':	       /* lineno */
 			cmd_opts.lineno = TRUE;
 			break;
+		case 'S':	       /* semantic */
+			cmd_opts.semantic = TRUE;
+			break;
 		case 'C':
 			cmd_opts.show_cond = TRUE;
 			break;
@@ -896,7 +916,7 @@ int main(int argc, char **argv)
 			usage(argv[0], 0);
 			exit(0);
 		case 'v':	       /* version */
-			printf("\n%s (sesearch ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
+			printf("sesearch %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
 			usage(argv[0], 1);
@@ -911,33 +931,80 @@ int main(int argc, char **argv)
 		       "--type, --role_allow, or --role_trans mustbe specified\n\n");
 		exit(1);
 	}
-	if (!search_opts)
-		search_opts = (QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY);
 
-	if (argc - optind > 1) {
-		usage(argv[0], 1);
-		exit(1);
-	} else if (argc - optind < 1) {
-		rt = qpol_find_default_policy_file(search_opts, &policy_file);
-		if (rt != QPOL_FIND_DEFAULT_SUCCESS) {
-			printf("Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
+	if (argc - optind < 1) {
+		rt = qpol_default_policy_find(&policy_file);
+		if (rt < 0) {
+			fprintf(stderr, "Default policy search failed: %s\n", strerror(errno));
+			exit(1);
+		} else if (rt != 0) {
+			fprintf(stderr, "No default policy found.\n");
 			exit(1);
 		}
-	} else
-		policy_file = argv[optind];
+	} else {
+		if ((policy_file = strdup(argv[optind])) == NULL) {
+			fprintf(stderr, "%s\n", strerror(errno));
+			exit(1);
+		}
+		optind++;
+	}
 
-	/* attempt to open the policy */
-	rt = apol_policy_open(policy_file, &policy, NULL, NULL);
-	if (rt) {
-		perror("Error opening policy");
-		apol_policy_destroy(&policy);
+	if (argc - optind > 0) {
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+		if (!(mod_paths = apol_vector_create())) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			exit(1);
+		}
+		for (; argc - optind; optind++) {
+			char *tmp = NULL;
+			if (!(tmp = strdup(argv[optind]))) {
+				ERR(policy, "Error loading module %s", argv[optind]);
+				free(policy_file);
+				apol_vector_destroy(&mod_paths, free);
+				exit(1);
+			}
+			if (apol_vector_append(mod_paths, (void *)tmp)) {
+				ERR(policy, "Error loading module %s", argv[optind]);
+				apol_vector_destroy(&mod_paths, free);
+				free(policy_file);
+				free(tmp);
+				exit(1);
+			}
+		}
+	}
+
+	pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
+	if (!pol_path) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		free(policy_file);
+		apol_vector_destroy(&mod_paths, free);
 		exit(1);
 	}
-	if (cmd_opts.lineno && !apol_policy_is_binary(policy)) {
+	free(policy_file);
+	apol_vector_destroy(&mod_paths, free);
+
+	policy = apol_policy_create_from_policy_path(pol_path, 0, NULL, NULL);
+	if (!policy) {
+		ERR(policy, "%s", strerror(errno));
+		apol_policy_path_destroy(&pol_path);
+		exit(1);
+	}
+
+	if (!cmd_opts.semantic && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
 		if (qpol_policy_build_syn_rule_table(apol_policy_get_qpol(policy))) {
 			apol_policy_destroy(&policy);
 			exit(1);
 		}
+	}
+
+	/* if syntactic rules are not available always do semantic search */
+	if (!qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
+		cmd_opts.semantic = 1;
+	}
+
+	/* supress line numbers if doing semantic search or not available */
+	if (cmd_opts.semantic || !qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_LINE_NUMBERS)) {
+		cmd_opts.lineno = 0;
 	}
 
 	if (perform_av_query(policy, &cmd_opts, &v)) {
@@ -945,7 +1012,7 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 	if (v) {
-		if (cmd_opts.lineno && !apol_policy_is_binary(policy))
+		if (!cmd_opts.semantic && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES))
 			print_syn_av_results(policy, &cmd_opts, v);
 		else
 			print_av_results(policy, &cmd_opts, v);
@@ -958,7 +1025,7 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 	if (v) {
-		if (cmd_opts.lineno && !apol_policy_is_binary(policy))
+		if (!cmd_opts.semantic && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES))
 			print_syn_te_results(policy, &cmd_opts, v);
 		else
 			print_te_results(policy, &cmd_opts, v);
@@ -999,6 +1066,7 @@ int main(int argc, char **argv)
 
       cleanup:
 	apol_policy_destroy(&policy);
+	apol_policy_path_destroy(&pol_path);
 	free(cmd_opts.src_name);
 	free(cmd_opts.tgt_name);
 	free(cmd_opts.class_name);

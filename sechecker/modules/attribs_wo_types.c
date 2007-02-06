@@ -1,25 +1,25 @@
 /**
- *  @file attribs_wo_types.c
+ *  @file
  *  Implementation of the attributes without types module.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *  Copyright (C) 2005-2007 Tresys Technology, LLC
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
  *
- *  This library is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
@@ -66,10 +66,11 @@ int attribs_wo_types_register(sechk_lib_t * lib)
 		"types.  Attributes without types can cause type fields in rules to expand to\n"
 		"empty sets and thus become unreachable.  This makes for misleading policy source\n" "files.\n";
 	mod->opt_description =
-		"Module requirements:\n" "   policy source\n" "Module dependencies:\n" "   none\n" "Module options:\n" "   none\n";
+		"Module requirements:\n" "   attribute names\n" "Module dependencies:\n" "   none\n" "Module options:\n"
+		"   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	if (apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source")) < 0) {
+	if (apol_vector_append(mod->requirements, sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES)) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;

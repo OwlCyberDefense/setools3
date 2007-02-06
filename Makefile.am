@@ -10,7 +10,7 @@ SUBDIRS = libqpol libapol libpoldiff libsefs libseaudit secmds sechecker sediff 
 
 INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc
 
-EXTRA_DIST = VERSION KNOWN-BUGS
+EXTRA_DIST = VERSION KNOWN-BUGS COPYING.LGPL COPYING.GPL
 
 libqpol:
 	$(MAKE) -C $(top_srcdir)/libqpol
