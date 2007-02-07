@@ -193,8 +193,8 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 	apol_vector_destroy(&vec, NULL);
 
 	contents = g_strdup_printf("\nNumber of Classes and Permissions:\n"
-				   "\tObject Classes: %d\n"
-				   "\tCommon Classes: %d\n" "\tPermissions: %d\n", num_classes, num_commons, num_perms);
+				   "\tObject Classes: %zd\n"
+				   "\tCommon Classes: %zd\n" "\tPermissions: %zd\n", num_classes, num_commons, num_perms);
 	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
@@ -207,7 +207,7 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 	apol_vector_destroy(&vec, NULL);
 
 	contents = g_strdup_printf("\nNumber of Types and Attributes:\n"
-				   "\tTypes: %d\n" "\tAttributes: %d\n", num_types, num_attribs);
+				   "\tTypes: %zd\n" "\tAttributes: %zd\n", num_types, num_attribs);
 	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
@@ -236,12 +236,12 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 	qpol_iterator_destroy(&i);
 
 	contents = g_strdup_printf("\nNumber of Type Enforcement Rules:\n"
-				   "\tallow: %d\n"
-				   "\tneverallow: %d\n"
-				   "\ttype_transition: %d\n"
-				   "\ttype_change: %d\n"
-				   "\tauditallow: %d\n"
-				   "\tdontaudit %d\n",
+				   "\tallow: %zd\n"
+				   "\tneverallow: %zd\n"
+				   "\ttype_transition: %zd\n"
+				   "\ttype_change: %zd\n"
+				   "\tauditallow: %zd\n"
+				   "\tdontaudit %zd\n",
 				   num_allow, num_neverallow, num_type_trans, num_type_change, num_auditallow, num_dontaudit);
 	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
@@ -258,9 +258,9 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 	qpol_iterator_get_size(i, &num_roleallow);
 	qpol_iterator_destroy(&i);
 
-	contents = g_strdup_printf("\nNumber of Roles: %d\n"
+	contents = g_strdup_printf("\nNumber of Roles: %zd\n"
 				   "\nNumber of RBAC Rules:\n"
-				   "\tallow: %d\n" "\trole_transition %d\n", num_roles, num_roleallow, num_role_trans);
+				   "\tallow: %zd\n" "\trole_transition %zd\n", num_roles, num_roleallow, num_role_trans);
 	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
