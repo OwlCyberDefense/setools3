@@ -34,7 +34,7 @@
 
 struct apol_range_trans_query
 {
-	char *source, *target;
+	char *source, *target, *obj_class;
 	apol_mls_range_t *range;
 	unsigned int flags;
 };
@@ -122,6 +122,15 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 			continue;
 		}
 
+		if (r && r->obj_class) {
+			char *obj_name;
+			qpol_class_t *obj = NULL;
+			if (qpol_range_trans_get_target_class(p->p, rule, &obj) || qpol_class_get_name(p->p, obj, &obj_name))
+				goto cleanup;
+			if (strcmp(r->obj_class, obj_name))
+				continue;
+		}
+
 		if (qpol_range_trans_get_range(p->p, rule, &mls_range) < 0 ||
 		    (range = apol_mls_range_create_from_qpol_mls_range(p, mls_range)) == NULL) {
 			goto cleanup;
@@ -167,6 +176,7 @@ void apol_range_trans_query_destroy(apol_range_trans_query_t ** r)
 	if (*r != NULL) {
 		free((*r)->source);
 		free((*r)->target);
+		free((*r)->obj_class);
 		apol_mls_range_destroy(&((*r)->range));
 		free(*r);
 		*r = NULL;
@@ -183,6 +193,11 @@ int apol_range_trans_query_set_target(apol_policy_t * p, apol_range_trans_query_
 {
 	apol_query_set_flag(p, &r->flags, is_indirect, APOL_QUERY_TARGET_INDIRECT);
 	return apol_query_set(p, &r->target, NULL, symbol);
+}
+
+int apol_range_trans_query_set_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol)
+{
+	return apol_query_set(p, &r->obj_class, NULL, symbol);
 }
 
 int apol_range_trans_query_set_range(apol_policy_t * p __attribute__ ((unused)),

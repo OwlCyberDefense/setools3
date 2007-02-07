@@ -136,6 +136,18 @@ extern "C"
 						     int is_indirect);
 
 /**
+ * Set a range trans query to return rules whose object class matches symbol.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Range trans query to set.
+ * @param symbol Limit query to rules with this symbol as their object class,
+ * or NULL to unset this field.
+ *
+ * @return 0 on success, negative on error.
+ */
+	extern int apol_range_trans_query_set_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol);
+
+/**
  * Set a range trans query to return only users matching a MLS range.
  * This function takes ownership of the range, such that the caller
  * must not modify nor destroy it afterwards.

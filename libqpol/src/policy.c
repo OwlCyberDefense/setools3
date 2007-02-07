@@ -1231,6 +1231,12 @@ int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
 				return 1;
 			break;
 		}
+	case QPOL_CAP_NEVERALLOW:
+		{
+			if (policy->type != QPOL_POLICY_KERNEL_BINARY)
+				return 1;
+			break;
+		}
 	default:
 		{
 			ERR(policy, "%s", "Unknown capability");

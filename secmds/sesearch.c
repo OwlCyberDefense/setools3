@@ -60,6 +60,8 @@ static struct option const longopts[] = {
 	{"allow", no_argument, NULL, 'A'},
 	{"neverallow", no_argument, NULL, 'N'},
 	{"audit", no_argument, NULL, 'U'},
+	{"auditallow", no_argument, NULL, 'w'},
+	{"dontaudit", no_argument, NULL, 'd'},
 	{"rangetrans", no_argument, NULL, 'R'},
 	{"all", no_argument, NULL, 'a'},
 	{"type", no_argument, NULL, 'T'},
@@ -90,7 +92,8 @@ typedef struct options
 	bool_t indirect;
 	bool_t allow;
 	bool_t nallow;
-	bool_t audit;
+	bool_t auditallow;
+	bool_t dontaudit;
 	bool_t type;
 	bool_t rtrans;
 	bool_t role_allow;
@@ -111,7 +114,8 @@ void usage(const char *program_name, int brief)
 	printf("RULE_TYPES:\n");
 	printf("  --allow                   allow rules\n");
 	printf("  --neverallow              neverallow rules\n");
-	printf("  --audit                   auditallow and dontaudit rules\n");
+	printf("  --auditallow              auditallow rules\n");
+	printf("  --dontaudit               dontaudit rules\n");
 	printf("  --type                    type_trans, type_member, and type_change\n");
 	printf("  --rangetrans              range transition rules\n");
 	printf("  --role_allow              role allow rules\n");
@@ -154,7 +158,7 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		return -1;
 	}
 
-	if (!opt->all && !opt->allow && !opt->nallow && !opt->audit) {
+	if (!opt->all && !opt->allow && !opt->nallow && !opt->auditallow && opt->dontaudit) {
 		*v = NULL;
 		return 0;	       /* no search to do */
 	}
@@ -170,8 +174,10 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		rules |= QPOL_RULE_ALLOW;
 	if (opt->nallow || opt->all)
 		rules |= QPOL_RULE_NEVERALLOW;
-	if (opt->audit || opt->all)
-		rules |= (QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT);
+	if (opt->auditallow || opt->all)
+		rules |= QPOL_RULE_AUDITALLOW;
+	if (opt->dontaudit || opt->all)
+		rules |= QPOL_RULE_DONTAUDIT;
 	apol_avrule_query_set_rules(policy, avq, rules);
 
 	apol_avrule_query_set_regex(policy, avq, opt->useregex);
@@ -721,6 +727,12 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 			goto err;
 		}
 	}
+	if (opt->class_name) {
+		if (apol_range_trans_query_set_class(policy, rtq, opt->class_name)) {
+			error = errno;
+			goto err;
+		}
+	}
 
 	if (apol_range_trans_get_by_query(policy, rtq, v)) {
 		error = errno;
@@ -775,7 +787,7 @@ int main(int argc, char **argv)
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 
 	cmd_opts.all = cmd_opts.lineno = cmd_opts.allow = FALSE;
-	cmd_opts.nallow = cmd_opts.audit = cmd_opts.type = FALSE;
+	cmd_opts.nallow = cmd_opts.auditallow = cmd_opts.dontaudit = cmd_opts.type = FALSE;
 	cmd_opts.rtrans = cmd_opts.indirect = cmd_opts.show_cond = FALSE;
 	cmd_opts.useregex = TRUE;
 	cmd_opts.role_allow = cmd_opts.role_trans = cmd_opts.semantic = FALSE;
@@ -784,7 +796,7 @@ int main(int argc, char **argv)
 	cmd_opts.tgt_role_name = NULL;
 	cmd_opts.perm_vector = NULL;
 
-	while ((optc = getopt_long(argc, argv, "s:t:r:g:c:p:b:ANURaTLolCinhv0", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "s:t:c:p:b:alCinhv", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -886,7 +898,15 @@ int main(int argc, char **argv)
 			cmd_opts.nallow = TRUE;
 			break;
 		case 'U':	       /* audit */
-			cmd_opts.audit = TRUE;
+			cmd_opts.auditallow = TRUE;
+			cmd_opts.dontaudit = TRUE;
+			fprintf(stderr, "use of --audit is depercated; use --auditallow and --dontaudit instead\n");
+			break;
+		case 'w':
+			cmd_opts.auditallow = TRUE;
+			break;
+		case 'd':
+			cmd_opts.dontaudit = TRUE;
 			break;
 		case 'T':	       /* type */
 			cmd_opts.type = TRUE;
@@ -924,11 +944,11 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.audit || cmd_opts.role_allow ||
+	if (!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.auditallow || cmd_opts.dontaudit || cmd_opts.role_allow ||
 	      cmd_opts.type || cmd_opts.rtrans || cmd_opts.role_trans || cmd_opts.all)) {
 		usage(argv[0], 1);
-		printf("One of -a (--all), --allow, --neverallow, --audit, --rangetrans, "
-		       "--type, --role_allow, or --role_trans mustbe specified\n\n");
+		printf("One of --all, --allow, --neverallow, --auditallow, --dontaudit, "
+		       "--rangetrans, --type, --role_allow, or --role_trans mustbe specified\n\n");
 		exit(1);
 	}
 
