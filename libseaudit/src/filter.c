@@ -286,38 +286,39 @@ char *seaudit_filter_get_description(seaudit_filter_t * filter)
  */
 static int filter_set_vector(seaudit_filter_t * filter, apol_vector_t ** tgt, apol_vector_t * v)
 {
-	int retval = 0;
 	apol_vector_t *new_v = NULL;
 	if (v != NULL) {
 		if ((new_v = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
-			retval = -1;
+			return -1;
 		}
 	}
-	if (retval == 0) {
-		apol_vector_destroy(tgt, free);
-		*tgt = new_v;
-	}
+	apol_vector_destroy(tgt, free);
+	*tgt = new_v;
 	if (filter->model != NULL) {
 		model_notify_filter_changed(filter->model, filter);
 	}
-	return retval;
+	return 0;
 }
 
 /**
- * Helper function to set a criterion string.
+ * Helper function to set a criterion string, by dupping the src
+ * string.  As a check, if the pointers are already the same then do
+ * nothing.
  */
 static int filter_set_string(seaudit_filter_t * filter, char **dest, const char *src)
 {
-	int retval = 0;
-	free(*dest);
-	*dest = NULL;
-	if (src != NULL && (*dest = strdup(src)) == NULL) {
-		retval = -1;
+	if (src != *dest) {
+		char *new_s = NULL;
+		if (src != NULL && (new_s = strdup(src)) == NULL) {
+			return -1;
+		}
+		free(*dest);
+		*dest = new_s;
+		if (filter->model != NULL) {
+			model_notify_filter_changed(filter->model, filter);
+		}
 	}
-	if (filter->model != NULL) {
-		model_notify_filter_changed(filter->model, filter);
-	}
-	return retval;
+	return 0;
 }
 
 int seaudit_filter_set_source_user(seaudit_filter_t * filter, apol_vector_t * v)
