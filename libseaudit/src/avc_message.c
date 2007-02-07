@@ -295,7 +295,13 @@ char *avc_message_to_string(seaudit_message_t * msg, const char *date)
 	if (avc->exe && apol_str_appendf(&s, &len, "exe=%s ", avc->exe) < 0) {
 		return NULL;
 	}
+	if (avc->comm && apol_str_appendf(&s, &len, "comm=%s ", avc->comm) < 0) {
+		return NULL;
+	}
 	if (avc->path && apol_str_appendf(&s, &len, "path=%s ", avc->path) < 0) {
+		return NULL;
+	}
+	if (avc->name && apol_str_appendf(&s, &len, "name=%s ", avc->name) < 0) {
 		return NULL;
 	}
 	if (avc->is_inode && apol_str_appendf(&s, &len, "ino=%lu ", avc->inode) < 0) {
@@ -366,7 +372,13 @@ char *avc_message_to_string_html(seaudit_message_t * msg, const char *date)
 	if (avc->exe && apol_str_appendf(&s, &len, "<font class=\"exe\">exe=%s</font> ", avc->exe) < 0) {
 		return NULL;
 	}
+	if (avc->comm && apol_str_appendf(&s, &len, "comm=%s ", avc->comm) < 0) {
+		return NULL;
+	}
 	if (avc->path && apol_str_appendf(&s, &len, "path=%s ", avc->path) < 0) {
+		return NULL;
+	}
+	if (avc->name && apol_str_appendf(&s, &len, "name=%s ", avc->name) < 0) {
 		return NULL;
 	}
 	if (avc->is_inode && apol_str_appendf(&s, &len, "ino=%lu ", avc->inode) < 0) {

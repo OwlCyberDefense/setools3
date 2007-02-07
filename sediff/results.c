@@ -385,9 +385,9 @@ static void results_update_stats(results_t * r)
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_ALLOWS, rallow_stats);
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_TRANS, rtrans_stats);
 
-	g_string_printf(string, "Classes %d "
-			"Commons %d Types: %d Attribs: %d Roles: %d Users: %d Bools: %d "
-			"TE Rules: %d Role Allows: %d Role Trans: %d",
+	g_string_printf(string, "Classes %zd "
+			"Commons %zd Types: %zd Attribs: %zd Roles: %zd Users: %zd Bools: %zd "
+			"TE Rules: %zd Role Allows: %zd Role Trans: %zd",
 			class_stats[0] + class_stats[1] + class_stats[2],
 			common_stats[0] + common_stats[1] + common_stats[2],
 			type_stats[0] + type_stats[1] + type_stats[2],
@@ -719,7 +719,7 @@ static int results_avsort_comp(const void *a, const void *b, void *data)
 			poldiff_avrule_get_cond(opts->diff, a1, &q1, &w1, &p1);
 			poldiff_avrule_get_cond(opts->diff, a2, &q2, &w2, &p2);
 			if (q1 != q2) {
-			  return opts->direction * ((char *) q1 - (char *) q2);
+				return opts->direction * ((char *)q1 - (char *)q2);
 			}
 			return opts->direction * (w1 - w2);
 			break;
@@ -785,7 +785,7 @@ static int results_tesort_comp(const void *a, const void *b, void *data)
 			poldiff_terule_get_cond(opts->diff, a1, &q1, &w1, &p1);
 			poldiff_terule_get_cond(opts->diff, a2, &q2, &w2, &p2);
 			if (q1 != q2) {
-				return opts->direction * ((char *) q1 - (char *) q2);
+				return opts->direction * ((char *)q1 - (char *)q2);
 			}
 			return opts->direction * (w1 - w2);
 			break;
