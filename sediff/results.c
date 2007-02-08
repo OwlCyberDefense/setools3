@@ -79,6 +79,7 @@ struct results
 struct poldiff_item_record
 {
 	const char *label;
+	/** unique serial number used to identify the associated text buffer */
 	int record_id;
 	uint32_t bit_pos;
 	int has_add_type;
@@ -92,6 +93,10 @@ static const struct poldiff_item_record poldiff_items[] = {
 	 poldiff_get_class_vector, poldiff_class_get_form, poldiff_class_to_string},
 	{"Commons", 2, POLDIFF_DIFF_COMMONS, 0,
 	 poldiff_get_common_vector, poldiff_common_get_form, poldiff_common_to_string},
+	{"Levels", 11, POLDIFF_DIFF_LEVELS, 0,
+	 poldiff_get_level_vector, poldiff_level_get_form, poldiff_level_to_string},
+	{"Categories", 12, POLDIFF_DIFF_CATS, 0,
+	 poldiff_get_cat_vector, poldiff_cat_get_form, poldiff_cat_to_string},
 	{"Types", 3, POLDIFF_DIFF_TYPES, 0,
 	 poldiff_get_type_vector, poldiff_type_get_form, poldiff_type_to_string},
 	{"Attributes", 4, POLDIFF_DIFF_ATTRIBS, 0,
@@ -108,7 +113,7 @@ static const struct poldiff_item_record poldiff_items[] = {
 	 poldiff_get_role_trans_vector, poldiff_role_trans_get_form, poldiff_role_trans_to_string},
 	{"TE Rules", 10, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1,
 	 NULL, NULL, NULL /* special case because this is from two data */ },
-	{NULL, 11, 0, 0, NULL, NULL, NULL}
+	{NULL, 13, 0, 0, NULL, NULL, NULL} /* must have highest id value */
 };
 
 static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data);
@@ -361,6 +366,8 @@ static void results_update_stats(results_t * r)
 	GString *string = g_string_new("");
 	size_t class_stats[5] = { 0, 0, 0, 0, 0 };
 	size_t common_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t level_stats[5] = { 0, 0, 0, 0, 0 };
+	size_t cat_stats[5] = { 0, 0, 0, 0, 0 };
 	size_t type_stats[5] = { 0, 0, 0, 0, 0 };
 	size_t attrib_stats[5] = { 0, 0, 0, 0, 0 };
 	size_t role_stats[5] = { 0, 0, 0, 0, 0 };
@@ -375,6 +382,8 @@ static void results_update_stats(results_t * r)
 
 	poldiff_get_stats(diff, POLDIFF_DIFF_CLASSES, class_stats);
 	poldiff_get_stats(diff, POLDIFF_DIFF_COMMONS, common_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_LEVELS, level_stats);
+	poldiff_get_stats(diff, POLDIFF_DIFF_CATS, cat_stats);
 	poldiff_get_stats(diff, POLDIFF_DIFF_TYPES, type_stats);
 	poldiff_get_stats(diff, POLDIFF_DIFF_ATTRIBS, attrib_stats);
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLES, role_stats);
@@ -385,11 +394,13 @@ static void results_update_stats(results_t * r)
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_ALLOWS, rallow_stats);
 	poldiff_get_stats(diff, POLDIFF_DIFF_ROLE_TRANS, rtrans_stats);
 
-	g_string_printf(string, "Classes %zd "
-			"Commons %zd Types: %zd Attribs: %zd Roles: %zd Users: %zd Bools: %zd "
+	g_string_printf(string, "Classes: %d "
+			"Commons: %zd Levels: %zd Categories: %zd Types: %zd Attribs: %zd Roles: %zd Users: %zd Bools: %zd "
 			"TE Rules: %zd Role Allows: %zd Role Trans: %zd",
 			class_stats[0] + class_stats[1] + class_stats[2],
 			common_stats[0] + common_stats[1] + common_stats[2],
+			level_stats[0] + level_stats[1] + level_stats[2],
+			cat_stats[0] + cat_stats[1],
 			type_stats[0] + type_stats[1] + type_stats[2],
 			attrib_stats[0] + attrib_stats[1] + attrib_stats[2],
 			role_stats[0] + role_stats[1] + role_stats[2],
@@ -1097,6 +1108,8 @@ static void results_record_select(results_t * r, const struct poldiff_item_recor
 		switch (record->bit_pos) {
 		case POLDIFF_DIFF_CLASSES:
 		case POLDIFF_DIFF_COMMONS:
+		case POLDIFF_DIFF_LEVELS:
+		case POLDIFF_DIFF_CATS:
 		case POLDIFF_DIFF_TYPES:
 		case POLDIFF_DIFF_ATTRIBS:
 		case POLDIFF_DIFF_ROLES:

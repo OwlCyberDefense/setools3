@@ -164,6 +164,34 @@ static const poldiff_item_record_t item_records[] = {
 	 user_deep_diff,
 	 },
 	{
+	 "level",
+	 POLDIFF_DIFF_LEVELS,
+	 poldiff_level_get_stats,
+	 poldiff_get_level_vector,
+	 poldiff_level_get_form,
+	 poldiff_level_to_string,
+	 level_reset,
+	 level_get_items,
+	 NULL,
+	 level_comp,
+	 level_new_diff,
+	 level_deep_diff,
+	},
+	{
+	 "category",
+	 POLDIFF_DIFF_CATS,
+	 poldiff_cat_get_stats,
+	 poldiff_get_cat_vector,
+	 poldiff_cat_get_form,
+	 poldiff_cat_to_string,
+	 cat_reset,
+	 cat_get_items,
+	 NULL,
+	 cat_comp,
+	 cat_new_diff,
+	 cat_deep_diff,
+	},
+	{
 	 "terule",
 	 POLDIFF_DIFF_TERULES,
 	 poldiff_terule_get_stats,
@@ -246,6 +274,8 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	    (diff->bool_diffs = bool_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
 	    (diff->common_diffs = common_create()) == NULL ||
+	    (diff->level_diffs = level_create()) == NULL ||
+	    (diff->cat_diffs = cat_create()) == NULL ||
 	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->role_trans_diffs = role_trans_create()) == NULL ||
@@ -271,6 +301,8 @@ void poldiff_destroy(poldiff_t ** diff)
 	bool_destroy(&(*diff)->bool_diffs);
 	class_destroy(&(*diff)->class_diffs);
 	common_destroy(&(*diff)->common_diffs);
+	level_destroy(&(*diff)->level_diffs);
+	cat_destroy(&(*diff)->cat_diffs);
 	role_destroy(&(*diff)->role_diffs);
 	role_allow_destroy(&(*diff)->role_allow_diffs);
 	role_trans_destroy(&(*diff)->role_trans_diffs);

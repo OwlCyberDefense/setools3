@@ -40,6 +40,8 @@ extern "C"
 #include "user_internal.h"
 #include "type_internal.h"
 #include "attrib_internal.h"
+#include "level_internal.h"
+#include "cat_internal.h"
 
 #include "type_map_internal.h"
 
@@ -51,12 +53,12 @@ extern "C"
 	struct poldiff_role_summary;
 	struct poldiff_user_summary;
 	struct poldiff_bool_summary;
-/*struct poldiff_sens_summary;*/
-/*struct poldiff_cat_summary;*/
+	struct poldiff_level_summary;
+	struct poldiff_cat_summary;
 	struct poldiff_rule_summary;
 	struct poldiff_role_allow_summary;
 	struct poldiff_role_trans_summary;
-/*struct range_trans_summary;*/
+	struct range_trans_summary;
 /* and so forth for ocon_summary structs */
 
 	struct poldiff
@@ -80,12 +82,12 @@ extern "C"
 		struct poldiff_role_summary *role_diffs;
 		struct poldiff_user_summary *user_diffs;
 		struct poldiff_bool_summary *bool_diffs;
-/*	struct poldiff_sens_summary *sens_diffs;*/
-/*	struct poldiff_cat_summary *cat_diffs;*/
+		struct poldiff_level_summary *level_diffs;
+		struct poldiff_cat_summary *cat_diffs;
 		struct poldiff_rule_summary *rule_diffs;
 		struct poldiff_role_allow_summary *role_allow_diffs;
 		struct poldiff_role_trans_summary *role_trans_diffs;
-/*	struct poldiff_range_trans_summary *range_trans_diffs;*/
+		struct poldiff_range_trans_summary *range_trans_diffs;
 		/* and so forth if we want ocon_diffs */
 		type_map_t *type_map;
 	/** set if type mapping was changed since last run */

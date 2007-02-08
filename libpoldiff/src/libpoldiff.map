@@ -17,6 +17,8 @@
 		poldiff_terule_*;
 		poldiff_type_*;
 		poldiff_user_*;
+		poldiff_level_*;
+		poldiff_cat_*;
 		libpoldiff_get_version;
 		poldiff_enable_line_numbers;
 	local: *;

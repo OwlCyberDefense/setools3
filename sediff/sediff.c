@@ -39,6 +39,7 @@
 /* command line options struct */
 static struct option const longopts[] = {
 	{"classes", no_argument, NULL, 'c'},
+	{"levels", no_argument, NULL, 'l'},
 	{"types", no_argument, NULL, 't'},
 	{"attributes", no_argument, NULL, 'a'},
 	{"roles", no_argument, NULL, 'r'},
@@ -65,6 +66,8 @@ static void usage(const char *prog_name, int brief)
 	printf("Semantically differentiate two policies.  By default, all supported\n");
 	printf("policy elements are examined.  The following options are available:\n\n");
 	printf("  -c, --classes     object class and common permission definitions\n");
+	printf("  -l, --levels      MLS level definitions\n");
+	printf("  -C, --categories  MLS category definitions\n");
 	printf("  -t, --types       type definitions\n");
 	printf("  -a, --attributes  attribute definitions\n");
 	printf("  -r, --roles       role definitions\n");
@@ -299,6 +302,130 @@ static void print_common_diffs(poldiff_t * diff, int stats_only)
 			return;
 		if (poldiff_common_get_form(item) == POLDIFF_FORM_MODIFIED) {
 			str = poldiff_common_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
+static void print_level_diffs(poldiff_t * diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
+	char *str = NULL;
+	const poldiff_level_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_LEVELS, stats);
+	printf("Levels (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+	if (stats_only)
+		return;
+	v = poldiff_get_level_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Levels: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Levels: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Levels: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
+static void print_cat_diffs(poldiff_t * diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
+	char *str = NULL;
+	const poldiff_level_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_CATS, stats);
+	printf("Categories (Added %zd, Removed %zd)\n", stats[0], stats[1]);
+	if (stats_only)
+		return;
+	v = poldiff_get_level_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Categories: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Categories: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_level_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -955,6 +1082,12 @@ static void print_diff(poldiff_t * diff, uint32_t flags, int stats, int quiet)
 	if (flags & POLDIFF_DIFF_COMMONS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_COMMONS))) {
 		print_common_diffs(diff, stats);
 	}
+	if (flags & POLDIFF_DIFF_LEVELS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_LEVELS))) {
+		print_level_diffs(diff, stats);
+	}
+	if (flags & POLDIFF_DIFF_CATS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_CATS))) {
+		print_cat_diffs(diff, stats);
+	}
 	if (flags & POLDIFF_DIFF_TYPES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TYPES))) {
 		print_type_diffs(diff, stats);
 	}
@@ -984,7 +1117,7 @@ static void print_diff(poldiff_t * diff, uint32_t flags, int stats, int quiet)
 
 int main(int argc, char **argv)
 {
-	int optc = 0, quiet = 0, stats = 0;
+	int optc = 0, quiet = 0, stats = 0, default_all = 0;
 	uint32_t flags = 0;
 	apol_policy_t *orig_policy = NULL, *mod_policy = NULL;
 	apol_policy_path_type_e orig_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
@@ -998,12 +1131,18 @@ int main(int argc, char **argv)
 	poldiff_t *diff = NULL;
 	size_t total = 0;
 
-	while ((optc = getopt_long(argc, argv, "ctarubTARsqhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "clCtarubTARsqhv", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
 		case 'c':
 			flags |= (POLDIFF_DIFF_CLASSES | POLDIFF_DIFF_COMMONS);
+			break;
+		case 'l':
+			flags |= POLDIFF_DIFF_LEVELS;
+			break;
+		case 'C':
+			flags |= POLDIFF_DIFF_CATS;
 			break;
 		case 't':
 			flags |= POLDIFF_DIFF_TYPES;
@@ -1047,8 +1186,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!flags)
+	if (!flags) {
 		flags = POLDIFF_DIFF_ALL;
+		default_all = 1;
+	}
 
 	if (argc - optind < 2) {
 		usage(argv[0], 1);
@@ -1142,6 +1283,18 @@ int main(int argc, char **argv)
 		|| !(qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_ATTRIB_NAMES)))) {
 		flags &= ~POLDIFF_DIFF_ATTRIBS;
 		WARN(NULL, "%s", "Attribute diffs are not supported for current policies.");
+	}
+
+	/* we disable MLS diffs if either policy does not support MLS
+	 * but do not warn if it was implicitly requested for two non-MLS policies */
+	if ((flags & POLDIFF_DIFF_MLS)
+	    && (!(qpol_policy_has_capability(apol_policy_get_qpol(orig_policy), QPOL_CAP_MLS))
+		|| !(qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_MLS)))) {
+		flags &= ~(POLDIFF_DIFF_MLS);
+		if (!default_all || qpol_policy_has_capability(apol_policy_get_qpol(orig_policy), QPOL_CAP_MLS) ||
+			qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_MLS)) {
+			WARN(NULL, "%s", "MLS diffs are not supported for current policies.");
+		}
 	}
 
 	/* default callback for error handling is sufficient here */
