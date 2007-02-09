@@ -1,12 +1,12 @@
 Name: setools
-Version: 3.1
-Release: 1
+Version: 3.2
+Release: 0
 Vendor: Tresys Technology, LLC
-Packager: Jason Tang <jtang@tresys.com>
+Packager: Jason Tang <selinux@tresys.com>
 License: GPL
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Source: setools-3.1.tar.gz
+Source: setools-3.2.tar.gz
 AutoReqProv: no
 Summary: Policy analysis tools for SELinux.
 Group: System Environment/Base
@@ -38,7 +38,7 @@ License: LGPL
 Summary: Policy analysis support libraries for SELinux.
 Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
-Provides: libqpol = 1.1 libapol = 3.1 libpoldiff = 1.1 libsefs = 3.0.2 libseaudit = 4.0.0
+Provides: libqpol = 1.2 libapol = 3.2 libpoldiff = 1.2 libsefs = 3.0.2 libseaudit = 4.1
 BuildPrereq: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
@@ -81,7 +81,7 @@ libraries:
 AutoReqProv: no
 Summary: Policy analysis command-line tools for SELinux.
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 3.1 libpoldiff >= 1.1 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 3.2 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
 Requires: libselinux >= 1.30
 
 %description console
@@ -100,7 +100,7 @@ This package includes the following console tools:
 AutoReqProv: no
 Summary: Policy analysis graphical tools for SELinux.
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 3.1 libpoldiff >= 1.1 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 3.2 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
 Requires: glib >= 1.2 gtk2 >= 2.4 gdk-pixbuf libxml2 libglade2
 
