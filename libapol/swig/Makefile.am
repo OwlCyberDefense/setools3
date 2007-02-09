@@ -27,6 +27,6 @@ install-data-hook:
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) _apol.so
 
 uninstall-local:
-	-rf -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_DATA)
+	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_DATA)
 
 CLEANFILES = $(BUILT_SOURCES) $(OBJS) $(patsubst %.i,%.py,$(dist_noinst_DATA)) _apol.so $(wrappedso_DATA)
