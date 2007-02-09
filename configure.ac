@@ -137,18 +137,17 @@ fi
 AC_SUBST(PROFILECFLAGS)
 AC_SUBST(PROFILELDFLAGS)
 
-AC_ARG_ENABLE(profiling,
-              AC_HELP_STRING([--enable-swig],
-                             [compile swig interface libraries for python]),
-              enable_swig="$enableval")
-if test "x${enable_swig}" = xyes; then
-   AC_PROG_LIBTOOL
+do_swigify=no
+AC_ARG_ENABLE(swig-python,
+              AC_HELP_STRING([--enable-swig-python],
+                             [build SWIG interfaces for Python])
+              enable_pyswig="$enableval")
+if test "x${enable_pyswig}" = xyes; then
    AM_PATH_PYTHON(2.3)
    AC_PROG_SWIG(1.3.21)
    SWIG_PYTHON
+   do_swigify_python=yes
    do_swigify=yes
-else
-   do_swigify=no
 fi
 
 AC_ARG_ENABLE(gui,
