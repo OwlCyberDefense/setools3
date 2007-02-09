@@ -137,6 +137,20 @@ fi
 AC_SUBST(PROFILECFLAGS)
 AC_SUBST(PROFILELDFLAGS)
 
+AC_ARG_ENABLE(profiling,
+              AC_HELP_STRING([--enable-swig],
+                             [compile swig interface libraries for python]),
+              enable_swig="$enableval")
+if test "x${enable_swig}" = xyes; then
+   AC_PROG_LIBTOOL
+   AM_PATH_PYTHON(2.3)
+   AC_PROG_SWIG(1.3.21)
+   SWIG_PYTHON
+   do_swigify=yes
+else
+   do_swigify=no
+fi
+
 AC_ARG_ENABLE(gui,
               AC_HELP_STRING([--disable-gui],
                              [do not compile graphical tools (default is ENABLE)]),
@@ -425,8 +439,8 @@ if test ${use_selinux} = "yes"; then
 fi
 
 dnl check for pkg-config
-AC_CHECK_PROG(pkg_config_dir, pkg-config, yes, no)
-if test ${pkg_config_dir} = "no"; then
+AC_CHECK_PROG(has_pkg_config, pkg-config, yes, no)
+if test ${has_pkg_config} = "no"; then
    AC_MSG_ERROR([pkg-config not found])
 fi
 
@@ -516,6 +530,7 @@ if test ${use_sefs} = "yes"; then
    AC_SUBST(use_sefs)
 fi
 
+AM_CONDITIONAL(DO_SWIGIFY, test ${do_swigify} = "yes")
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
@@ -588,7 +603,7 @@ EOF
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
-                 libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
+                 libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile libapol/swig/Makefile \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \

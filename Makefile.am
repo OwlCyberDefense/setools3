@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 if COPY_BWIDGET
   MAYBE_BWIDGET = packages
 endif
