@@ -217,12 +217,13 @@ extern "C"
  * class.  If more than one class are appended to the query, the
  * rule's class must be one of those appended.  (I.e., the rule's
  * class must be a member of the query's classes.)  Pass a NULL to
- * clear all classes.
+ * clear all classes.  Note that this performs straight string
+ * comparison, ignoring the regex flag.
  *
  * @param p Policy handler, to report errors.
  * @param a AV rule query to set.
- * @param class Name of object class to add to search set, or NULL to
- * clear all classes.
+ * @param obj_class Name of object class to add to search set, or NULL
+ * to clear all classes.
  *
  * @return 0 on success, negative on error.
  */

@@ -113,7 +113,7 @@ static const struct poldiff_item_record poldiff_items[] = {
 	 poldiff_get_role_trans_vector, poldiff_role_trans_get_form, poldiff_role_trans_to_string},
 	{"TE Rules", 10, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1,
 	 NULL, NULL, NULL /* special case because this is from two data */ },
-	{NULL, 13, 0, 0, NULL, NULL, NULL} /* must have highest id value */
+	{NULL, 13, 0, 0, NULL, NULL, NULL}	/* must have highest id value */
 };
 
 static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data);

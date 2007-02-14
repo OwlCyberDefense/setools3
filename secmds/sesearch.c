@@ -728,7 +728,7 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 		}
 	}
 	if (opt->class_name) {
-		if (apol_range_trans_query_set_class(policy, rtq, opt->class_name)) {
+		if (apol_range_trans_query_append_class(policy, rtq, opt->class_name)) {
 			error = errno;
 			goto err;
 		}

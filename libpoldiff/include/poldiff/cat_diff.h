@@ -101,4 +101,3 @@ extern "C"
 #endif
 
 #endif				       /* POLDIFF_CAT_DIFF_H */
- 

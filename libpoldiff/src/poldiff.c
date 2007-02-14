@@ -176,7 +176,7 @@ static const poldiff_item_record_t item_records[] = {
 	 level_comp,
 	 level_new_diff,
 	 level_deep_diff,
-	},
+	 },
 	{
 	 "category",
 	 POLDIFF_DIFF_CATS,
@@ -190,7 +190,7 @@ static const poldiff_item_record_t item_records[] = {
 	 cat_comp,
 	 cat_new_diff,
 	 cat_deep_diff,
-	},
+	 },
 	{
 	 "terule",
 	 POLDIFF_DIFF_TERULES,

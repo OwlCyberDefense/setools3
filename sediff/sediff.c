@@ -1292,7 +1292,7 @@ int main(int argc, char **argv)
 		|| !(qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_MLS)))) {
 		flags &= ~(POLDIFF_DIFF_MLS);
 		if (!default_all || qpol_policy_has_capability(apol_policy_get_qpol(orig_policy), QPOL_CAP_MLS) ||
-			qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_MLS)) {
+		    qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_MLS)) {
 			WARN(NULL, "%s", "MLS diffs are not supported for current policies.");
 		}
 	}

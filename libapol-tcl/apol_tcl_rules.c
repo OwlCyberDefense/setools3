@@ -2,7 +2,6 @@
  * @file
  * Implementation for the apol interface to search rules within a policy.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -1146,13 +1145,17 @@ static int append_range_trans_to_list(Tcl_Interp * interp, qpol_range_trans_t * 
  * <ol>
  *   <li>source type
  *   <li>target type
+ *   <li>list of target classes
  *   <li>new range
  *   <li>range query type
  * </ol>
+ * For classes, the returned rule's class must be within this list.
  */
 static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp, int argc, const char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	CONST char **class_strings = NULL;
+	int num_opts;
 	qpol_range_trans_t *rule;
 	apol_range_trans_query_t *query = NULL;
 	apol_vector_t *v = NULL;
@@ -1164,8 +1167,8 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 5) {
-		ERR(policydb, "%s", "Need a source type, target type, range, and range type.");
+	if (argc != 6) {
+		ERR(policydb, "%s", "Need a source type, target type, target class, range, and range type.");
 		goto cleanup;
 	}
 
@@ -1178,17 +1181,26 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp
 	    apol_range_trans_query_set_target(policydb, query, argv[2], 0) < 0) {
 		goto cleanup;
 	}
-	if (*argv[3] != '\0') {
+	if (Tcl_SplitList(interp, argv[3], &num_opts, &class_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = class_strings[num_opts];
+		if (apol_range_trans_query_append_class(policydb, query, s) < 0) {
+			goto cleanup;
+		}
+	}
+	if (*argv[4] != '\0') {
 		apol_mls_range_t *range;
 		unsigned int range_match = 0;
-		if (apol_tcl_string_to_range_match(interp, argv[4], &range_match) < 0) {
+		if (apol_tcl_string_to_range_match(interp, argv[5], &range_match) < 0) {
 			goto cleanup;
 		}
 		if ((range = apol_mls_range_create()) == NULL) {
 			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
-		if (apol_tcl_string_to_range(interp, argv[3], range) != 0 ||
+		if (apol_tcl_string_to_range(interp, argv[4], range) != 0 ||
 		    apol_range_trans_query_set_range(policydb, query, range, range_match) < 0) {
 			apol_mls_range_destroy(&range);
 			goto cleanup;
@@ -1208,6 +1220,9 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
       cleanup:
+	if (class_strings != NULL) {
+		Tcl_Free((char *)class_strings);
+	}
 	apol_range_trans_query_destroy(&query);
 	apol_vector_destroy(&v, NULL);
 	if (retval == TCL_ERROR) {

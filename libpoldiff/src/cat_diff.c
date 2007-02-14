@@ -79,14 +79,14 @@ char *poldiff_cat_to_string(poldiff_t * diff, const void *cat)
 	}
 	switch (c->form) {
 	case POLDIFF_FORM_ADDED:
-	{
+		{
 			if (apol_str_appendf(&s, &len, "+ %s", c->name) < 0) {
 				break;
 			}
 			return s;
 		}
 	case POLDIFF_FORM_REMOVED:
-	{
+		{
 			if (apol_str_appendf(&s, &len, "- %s", c->name) < 0) {
 				break;
 			}
@@ -94,7 +94,7 @@ char *poldiff_cat_to_string(poldiff_t * diff, const void *cat)
 		}
 	case POLDIFF_FORM_MODIFIED:
 	default:
-	{
+		{
 			ERR(diff, "%s", strerror(ENOTSUP));
 			errno = ENOTSUP;
 			return NULL;
@@ -239,8 +239,7 @@ static poldiff_cat_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *nam
 {
 	poldiff_cat_t *pl;
 	int error;
-	if ((pl = calloc(1, sizeof(*pl))) == NULL ||
-	    (pl->name = strdup(name)) == NULL) {
+	if ((pl = calloc(1, sizeof(*pl))) == NULL || (pl->name = strdup(name)) == NULL) {
 		error = errno;
 		cat_free(pl);
 		ERR(diff, "%s", strerror(error));
@@ -259,8 +258,7 @@ int cat_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
 	     qpol_cat_get_name(diff->mod_qpol, c, &name) < 0) ||
-	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_cat_get_name(diff->orig_qpol, c, &name) < 0)) {
+	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) && qpol_cat_get_name(diff->orig_qpol, c, &name) < 0)) {
 		return -1;
 	}
 	pl = make_diff(diff, form, name);
@@ -288,4 +286,3 @@ int cat_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	 * This call back simply returns 0 to satisfy the generic diff algorithm. */
 	return 0;
 }
- 

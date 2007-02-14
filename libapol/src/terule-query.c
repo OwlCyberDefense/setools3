@@ -7,7 +7,6 @@
  * results.  Searches are conjunctive -- all fields of the search
  * query must match for a datum to be added to the results query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -521,12 +520,13 @@ int apol_terule_query_set_default(apol_policy_t * p, apol_terule_query_t * t, co
 
 int apol_terule_query_append_class(apol_policy_t * p, apol_terule_query_t * t, const char *obj_class)
 {
-	char *s;
+	char *s = NULL;
 	if (obj_class == NULL) {
 		apol_vector_destroy(&t->classes, free);
 	} else if ((s = strdup(obj_class)) == NULL ||
 		   (t->classes == NULL && (t->classes = apol_vector_create()) == NULL) || apol_vector_append(t->classes, s) < 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
+		free(s);
 		return -1;
 	}
 	return 0;

@@ -136,16 +136,21 @@ extern "C"
 						     int is_indirect);
 
 /**
- * Set a range trans query to return rules whose object class matches symbol.
+ * Set a range trans query to return rules whose object class matches
+ * symbol.  If more than one class are appended to the query, the
+ * rule's class must be one of those appended.  (I.e., the rule's
+ * class must be a member of the query's classes.)  Pass a NULL to
+ * clear all classes.  Note that this performs straight string
+ * comparison, ignoring the regex flag.
  *
  * @param p Policy handler, to report errors.
  * @param r Range trans query to set.
- * @param symbol Limit query to rules with this symbol as their object class,
- * or NULL to unset this field.
+ * @param obj_class Name of object class to add to search set, or NULL
+ * to clear all classes.
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_range_trans_query_set_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol);
+	extern int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class);
 
 /**
  * Set a range trans query to return only users matching a MLS range.

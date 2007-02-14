@@ -519,12 +519,13 @@ int apol_avrule_query_set_target_component(apol_policy_t * p, apol_avrule_query_
 
 int apol_avrule_query_append_class(apol_policy_t * p, apol_avrule_query_t * a, const char *obj_class)
 {
-	char *s;
+	char *s = NULL;
 	if (obj_class == NULL) {
 		apol_vector_destroy(&a->classes, free);
 	} else if ((s = strdup(obj_class)) == NULL ||
 		   (a->classes == NULL && (a->classes = apol_vector_create()) == NULL) || apol_vector_append(a->classes, s) < 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
+		free(s);
 		return -1;
 	}
 	return 0;
