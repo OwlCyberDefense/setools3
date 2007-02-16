@@ -22,6 +22,7 @@ libqpol_a_SOURCES = \
 	constraint_query.c \
 	context_query.c \
 	expand.c \
+	expand.h \
 	fs_use_query.c \
 	genfscon_query.c \
 	isid_query.c \

@@ -5,7 +5,7 @@ AM_INIT_AUTOMAKE(setools, 3.2)
 
 dnl *** update these variables as versions change; also update AC_INIT ***
 libqpol_version=1.2
-libqpol_soname=libqpol.so.2
+libqpol_soname=libqpol.so.1.2
 
 libapol_version=3.2
 libapol_soname=libapol.so.3.2
@@ -601,7 +601,7 @@ EOF
 ]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; setoolsdir=${prefix}${setoolsdir}])
 
 AC_CONFIG_FILES([Makefile VERSION \
-                 libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
+                 libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile libqpol/swig/Makefile \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile libapol/swig/Makefile \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \

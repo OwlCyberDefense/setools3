@@ -24,7 +24,6 @@
 %module apol
 
 #define __attribute__(x)
-#define __deprecated__
 
 %{
 #include "../include/apol/avl-util.h"
