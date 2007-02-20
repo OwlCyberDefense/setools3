@@ -947,8 +947,8 @@ int main(int argc, char **argv)
 	if (!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.auditallow || cmd_opts.dontaudit || cmd_opts.role_allow ||
 	      cmd_opts.type || cmd_opts.rtrans || cmd_opts.role_trans || cmd_opts.all)) {
 		usage(argv[0], 1);
-		printf("One of --all, --allow, --neverallow, --auditallow, --dontaudit, "
-		       "--rangetrans, --type, --role_allow, or --role_trans mustbe specified\n\n");
+		fprintf(stderr, "One of --all, --allow, --neverallow, --auditallow, --dontaudit,\n"
+		       "--rangetrans, --type, --role_allow, or --role_trans must be specified.\n");
 		exit(1);
 	}
 

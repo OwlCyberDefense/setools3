@@ -24,7 +24,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <qpol/expand.h>
 #include <sepol/policydb/expand.h>
 #include <sepol/policydb.h>
 #include <stdlib.h>

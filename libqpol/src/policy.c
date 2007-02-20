@@ -49,7 +49,7 @@
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
-#include <qpol/expand.h>
+#include "expand.h"
 #include "queue.h"
 #include "iterator_internal.h"
 
@@ -459,6 +459,7 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 
 	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
 		error = errno;
+		ERR(NULL, "%s", strerror(error));
 		goto err;
 	}
 	(*policy)->rules_loaded = 1;
@@ -586,9 +587,12 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 	return retv;
 
       err:
-	sepol_policydb_free((*policy)->p);
+	if (*policy != NULL) {
+		sepol_policydb_free((*policy)->p);
+		free(*policy);
+		*policy = NULL;
+	}
 	qpol_module_destroy(&mod);
-	*policy = NULL;
 	sepol_policy_file_free(pfile);
 	if (infile)
 		fclose(infile);
