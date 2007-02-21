@@ -925,7 +925,8 @@ static int insert_id(char *id, int push)
  * exist.  (Note that the avtab is discarded afterwards; it will be
  * regenerated during expansion.)  Return 1 if rule was added (or
  * otherwise handled successfully), 0 if it conflicted with something,
- * or -1 on error. */
+ * 2 if the rule is not to be added, or -1 on error.
+ */
 static int insert_check_type_rule(avrule_t *rule, avtab_t *avtab, cond_av_list_t **list, cond_av_list_t **other)
 {
 	int ret;
@@ -2151,6 +2152,7 @@ static int define_compute_type(int which)
 		append_avrule(avrule);
 		return 0;
 	}
+	case 2: /* FALLTHROUGH */
 	case 0: {
 		/* rule conflicted, so don't actually add this rule */
 		avrule_destroy(avrule);
