@@ -167,7 +167,7 @@ extern "C"
  *  number of items of form POLDIFF_FORM_ADDED, number of POLDIFF_FORM_REMOVED,
  *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
  *  number of POLDIFF_FORM_REMOVE_TYPE.
- *  @return 0 on success an < 0 on error; if the call fails, errno will be set.
+ *  @return 0 on success and < 0 on error; if the call fails, errno will be set.
  */
 	extern int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5]);
 

@@ -58,9 +58,6 @@ struct toplevel
 	/** non-zero if the currently opened policies are capable of
 	 * diffing attributes */
 	int can_diff_attributes;
-	/** non-zero if the given policy is capable of showing line
-         * numbers */
-	int can_show_line_numbers[SEDIFFX_POLICY_NUM];
 };
 
 /**
@@ -299,12 +296,12 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 		return -1;
 	}
 	top->can_diff_attributes = 1;
+	results_open_policies(top->results, run.policies[SEDIFFX_POLICY_ORIG], run.policies[SEDIFFX_POLICY_MOD]);
 	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
 		qpol_policy_t *q = apol_policy_get_qpol(run.policies[i]);
 		if (!qpol_policy_has_capability(q, QPOL_CAP_ATTRIB_NAMES)) {
 			top->can_diff_attributes = 0;
 		}
-		top->can_show_line_numbers[i] = qpol_policy_has_capability(q, QPOL_CAP_LINE_NUMBERS);
 		policy_view_update(top->views[i], run.policies[i], run.paths[i]);
 		sediffx_set_policy(top->s, i, run.policies[i], run.paths[i]);
 	}
@@ -378,11 +375,6 @@ void toplevel_show_policy_line(toplevel_t * top, sediffx_policy_e which, unsigne
 	policy_view_show_policy_line(top->views[which], line);
 }
 
-int toplevel_is_policy_capable_line_numbers(toplevel_t * top, sediffx_policy_e which)
-{
-	return top->can_show_line_numbers[which];
-}
-
 void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens)
 {
 	GtkWidget *w = glade_xml_get_widget(top->xml, "sort menu item");
@@ -390,7 +382,7 @@ void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens)
 	gtk_widget_set_sensitive(w, sens);
 }
 
-void toplevel_set_sort_menu_selection(toplevel_t * top, results_sort_e field, int direction)
+void toplevel_set_sort_menu_selection(toplevel_t * top, results_sort_e field, results_sort_dir_e dir)
 {
 	static const char *menu_items[][2] = {
 		{"Default Sort", "Default Sort"},
@@ -399,10 +391,9 @@ void toplevel_set_sort_menu_selection(toplevel_t * top, results_sort_e field, in
 		{"Ascending object class", "Descending object class"},
 		{"Ascending conditional", "Descending conditonal"}
 	};
-	if (direction >= 1) {
+	int direction = 1;
+	if (dir == RESULTS_SORT_ASCEND) {
 		direction = 0;
-	} else {
-		direction = 1;
 	}
 	GtkWidget *w = glade_xml_get_widget(top->xml, menu_items[field][direction]);
 	assert(w != NULL);

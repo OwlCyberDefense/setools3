@@ -1,3 +1,8 @@
+2007-02-16  J. Mowery  <jmowery@tresys.com>
+
+	* added SWIG wrappers to libapol; build system updated.  configure
+	must be passed --enable-swig-python to build the wrappers.
+
 2007-02-14  J. Tang  <jtang@tresys.com>
 
 	* sesearch and apol now allow searching range transitions based

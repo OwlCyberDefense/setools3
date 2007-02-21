@@ -948,7 +948,7 @@ int main(int argc, char **argv)
 	      cmd_opts.type || cmd_opts.rtrans || cmd_opts.role_trans || cmd_opts.all)) {
 		usage(argv[0], 1);
 		fprintf(stderr, "One of --all, --allow, --neverallow, --auditallow, --dontaudit,\n"
-		       "--rangetrans, --type, --role_allow, or --role_trans must be specified.\n");
+			"--rangetrans, --type, --role_allow, or --role_trans must be specified.\n");
 		exit(1);
 	}
 

@@ -171,6 +171,11 @@ You can customize your SETools build using the flags given to
       deployed on systems not running SELinux.  For example, sediff
       does not need an SELinux-enabled kernel to operate.
 
+  --enable-swig-python
+      Build SWIG interfaces for Python.  This permits third-party
+      developers who prefer Python to use the SETools libraries for
+      their own products.
+
   --enable-sepol-src=PATH
       Look for libsepol source files in PATH.  Use this flag when
       compiling against a development version of SELinux (see
