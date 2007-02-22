@@ -34,6 +34,12 @@ typedef struct result_item result_item_t;
 result_item_t *result_item_create_classes(GtkTextTagTable * table);
 result_item_t *result_item_create_commons(GtkTextTagTable * table);
 result_item_t *result_item_create_types(GtkTextTagTable * table);
+result_item_t *result_item_create_attributes(GtkTextTagTable * table);
+result_item_t *result_item_create_roles(GtkTextTagTable * table);
+result_item_t *result_item_create_users(GtkTextTagTable * table);
+result_item_t *result_item_create_booleans(GtkTextTagTable * table);
+result_item_t *result_item_create_role_allows(GtkTextTagTable * table);
+result_item_t *result_item_create_role_trans(GtkTextTagTable * table);
 
 /**
  * Deallocate all space associated with a result item, including the
@@ -76,6 +82,19 @@ void result_item_policy_changed(result_item_t * item, apol_policy_t * orig_pol, 
 void result_item_poldiff_run(result_item_t * item, poldiff_t * diff, int incremental);
 
 /**
+ * Return a text buffer that contains the rendered results for a
+ * particular policy component's form.  This will re-render the buffer
+ * as necessary.
+ *
+ * @param item Result item whose display to obtain.
+ * @param form Form to display, or POLDIFF_FORM_NONE if just the
+ * summary is requested.
+ *
+ * @return A text buffer containing the results.
+ */
+GtkTextBuffer *result_item_get_buffer(result_item_t * item, poldiff_form_e form);
+
+/**
  * Determine if a result item is capable of being run according to the
  * given policies.  For example, for binary policies prior to version
  * 20, it is not possible to have modified types.  Note that this does
@@ -96,14 +115,14 @@ int result_item_is_supported(const result_item_t * item);
  * add by type, removed, remove by type, modified).  For each form,
  * the possible values are:
  *
- * <dd>
+ * <dl>
  * <dt>less than zero
  *   <dd>form is not supported
  * <dt>zero
  *   <dd>form was not run
  * <dt>greater than zero
  *   <dd>form was run
- * </dd>
+ * </dl>
  *
  * @param item Result item to query.
  * @param diff Diff structure that was run.
@@ -134,5 +153,16 @@ size_t result_item_get_num_differences(result_item_t * item, poldiff_form_e form
  * does not.
  */
 int result_item_get_current_sort(result_item_t * item, results_sort_e * sort, results_sort_dir_e * dir);
+
+/**
+ * Set the current sorting algorithm and sort direction for the given
+ * result item.  This will re-render the item's text buffer as
+ * necessary.
+ *
+ * @param item Result item to modify.
+ * @param sort New sorting algorithm.
+ * @param dir New sorting direction.
+ */
+void result_item_set_current_sort(result_item_t * item, results_sort_e sort, results_sort_dir_e dir);
 
 #endif

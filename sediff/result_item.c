@@ -25,255 +25,74 @@
 #include <config.h>
 
 #include "result_item.h"
+#include "utilgui.h"
 
 #include <assert.h>
 #include <errno.h>
 
 typedef void (*policy_changed_fn_t) (result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol);
 typedef void (*poldiff_run_fn_t) (result_item_t * item, poldiff_t * diff, int incremental);
+typedef GtkTextBuffer *(*get_buffer_fn_t) (result_item_t * item, poldiff_form_e form);
 typedef void (*get_forms_fn_t) (result_item_t * item, int forms[5]);
 typedef size_t(*get_num_differences_fn_t) (result_item_t * item, poldiff_form_e form);
+typedef void (*set_current_sort_fn_t) (result_item_t * item, results_sort_e sort, results_sort_dir_e dir);
 
 struct result_item
 {
 	const char *label;
 	results_sort_e current_sort;
 	results_sort_dir_e current_sort_dir;
-    /** bit value corresponding to polidiff/poldiff.h defines */
+	/** bit value corresponding to polidiff/poldiff.h defines */
 	uint32_t bit_pos;
-    /** if either policy does not support a particular policy
-        component then this will be zero */
+	/** if either policy does not support a particular policy
+	    component then this will be zero */
 	int supported;
 	/* protected members below */
-    /** if the result item cannot be sorted then this will be zero */
-	int can_sort;
 	poldiff_t *diff;
 	size_t stats[5];
+	/* below are required functions to get poldiff results */
+	apol_vector_t *(*get_vector) (poldiff_t *);
+	 poldiff_form_e(*get_form) (const void *);
+	char *(*get_string) (poldiff_t *, const void *);
 	/* below is a virtual function table */
+	/** if the result item does not care about the type of
+	    policies are loaded then this can be NULL */
 	policy_changed_fn_t policy_changed;
 	poldiff_run_fn_t poldiff_run;
+	get_buffer_fn_t get_buffer;
 	get_forms_fn_t get_forms;
 	get_num_differences_fn_t get_num_differences;
+	/** if the result item cannot be sorted then this will be
+	    NULL */
+	set_current_sort_fn_t set_current_sort;
 	union
 	{
-		struct single_datum
-		{
-			apol_vector_t *(*get_vector) (poldiff_t *);
-			 poldiff_form_e(*get_form) (const void *);
-			char *(*get_string) (poldiff_t *, const void *);
-		} single;
+		int type_can_modify;
 	} data;
 };
 
-/******************** single buffer functions ********************/
+/******************** common rendering functions ********************/
 
-/* below is the implementation of the 'single buffer result item'
-   class.  most policy components are instances of this class */
-
-static GtkTextBuffer *single_buffer = NULL;
-
-/**
- * For simple items, results are always destroyed.  (Recalculating
- * results is very fast.)
- */
-static void result_item_single_poldiff_run(result_item_t * item, poldiff_t * diff, int incremental __attribute__ ((unused)))
-{
-	item->diff = diff;
-	memset(item->stats, 0, sizeof(item->stats));
-}
-
-static void result_item_single_get_forms(result_item_t * item, int forms[5])
-{
-	int i, was_run = poldiff_is_run(item->diff, item->bit_pos);
-	if (was_run) {
-		poldiff_get_stats(item->diff, item->bit_pos, item->stats);
-	}
-	for (i = 0; i < 5; i++) {
-		if (!result_item_is_supported(item) || i == 1 || i == 3) {
-			/* single items do not have add-by-type and remove-by-type
-			 * forms */
-			forms[i] = -1;
-		} else {
-			forms[i] = was_run;
-		}
-	}
-}
-
-static size_t result_item_single_get_num_differences(result_item_t * item, poldiff_form_e form)
-{
-	switch (form) {
-	case POLDIFF_FORM_ADDED:
-		return item->stats[0];
-	case POLDIFF_FORM_REMOVED:
-		return item->stats[1];
-	case POLDIFF_FORM_MODIFIED:
-		return item->stats[2];
-	case POLDIFF_FORM_ADD_TYPE:
-		return item->stats[3];
-	case POLDIFF_FORM_REMOVE_TYPE:
-		return item->stats[4];
-	default:		       /* should never get here */
-		assert(0);
-		return 0;
-	}
-}
-
-result_item_t *result_item_create_classes(GtkTextTagTable * table)
-{
-	result_item_t *item = calloc(1, sizeof(*item));
-	if (item == NULL) {
-		return item;
-	}
-	item->label = "Classes";
-	item->bit_pos = POLDIFF_DIFF_CLASSES;
-	item->supported = 1;
-	item->policy_changed = NULL;
-	item->poldiff_run = result_item_single_poldiff_run;
-	item->get_forms = result_item_single_get_forms;
-	item->get_num_differences = result_item_single_get_num_differences;
-	return item;
-}
-
-void result_item_destroy(result_item_t ** item)
-{
-	if (item != NULL && *item != NULL) {
-		free(*item);
-		*item = NULL;
-	}
-}
-
-const char *result_item_get_label(const result_item_t * item)
-{
-	return item->label;
-}
-
-void result_item_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
-{
-	if (item->policy_changed != NULL) {
-		item->policy_changed(item, orig_pol, mod_pol);
-	}
-}
-
-void result_item_poldiff_run(result_item_t * item, poldiff_t * diff, int incremental)
-{
-	item->poldiff_run(item, diff, incremental);
-}
-
-int result_item_is_supported(const result_item_t * item)
-{
-	return item->supported;
-}
-
-void result_item_get_forms(result_item_t * item, int forms[5])
-{
-	item->get_forms(item, forms);
-}
-
-size_t result_item_get_num_differences(result_item_t * item, poldiff_form_e form)
-{
-	return item->get_num_differences(item, form);
-}
-
-int result_item_get_current_sort(result_item_t * item, results_sort_e * sort, results_sort_dir_e * dir)
-{
-	*sort = item->current_sort;
-	*dir = item->current_sort_dir;
-	return item->can_sort;
-}
-
-#if 0
-static const struct poldiff_item_record poldiff_items[] = {
-	{"Classes", 1, POLDIFF_DIFF_CLASSES, 0,
-	 poldiff_get_class_vector, poldiff_class_get_form, poldiff_class_to_string},
-	{"Commons", 2, POLDIFF_DIFF_COMMONS, 0,
-	 poldiff_get_common_vector, poldiff_common_get_form, poldiff_common_to_string},
-	{"Levels", 11, POLDIFF_DIFF_LEVELS, 0,
-	 poldiff_get_level_vector, poldiff_level_get_form, poldiff_level_to_string},
-	{"Categories", 12, POLDIFF_DIFF_CATS, 0,
-	 poldiff_get_cat_vector, poldiff_cat_get_form, poldiff_cat_to_string},
-	{"Types", 3, POLDIFF_DIFF_TYPES, 0,
-	 poldiff_get_type_vector, poldiff_type_get_form, poldiff_type_to_string},
-	{"Attributes", 4, POLDIFF_DIFF_ATTRIBS, 0,
-	 poldiff_get_attrib_vector, poldiff_attrib_get_form, poldiff_attrib_to_string},
-	{"Roles", 5, POLDIFF_DIFF_ROLES, 0,
-	 poldiff_get_role_vector, poldiff_role_get_form, poldiff_role_to_string},
-	{"Users", 6, POLDIFF_DIFF_USERS, 0,
-	 poldiff_get_user_vector, poldiff_user_get_form, poldiff_user_to_string},
-	{"Booleans", 7, POLDIFF_DIFF_BOOLS, 0,
-	 poldiff_get_bool_vector, poldiff_bool_get_form, poldiff_bool_to_string},
-	{"Role Allows", 8, POLDIFF_DIFF_ROLE_ALLOWS, 0,
-	 poldiff_get_role_allow_vector, poldiff_role_allow_get_form, poldiff_role_allow_to_string},
-	{"Role Transitions", 9, POLDIFF_DIFF_ROLE_TRANS, 1,
-	 poldiff_get_role_trans_vector, poldiff_role_trans_get_form, poldiff_role_trans_to_string},
-	{"TE Rules", 10, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1,
-	 NULL, NULL, NULL /* special case because this is from two data */ },
-	{NULL, 13, 0, 0, NULL, NULL, NULL}	/* must have highest id value */
+static const char *form_name_map[] = {
+	"Added", "Added New Type", "Removed", "Removed Missing Type", "Modified"
 };
-
-/**
- * Show a common header when printing a policy component diff.
- */
-static void results_print_item_header(results_t * r, GtkTextBuffer * tb, const struct poldiff_item_record *record,
-				      poldiff_form_e form)
-{
-	GtkTextIter iter;
-	poldiff_t *diff = toplevel_get_poldiff(r->top);
-	size_t stats[5] = { 0, 0, 0, 0, 0 };
-	GString *string = g_string_new("");
-	char *s;
-
-	gtk_text_buffer_get_end_iter(tb, &iter);
-	poldiff_get_stats(diff, record->bit_pos, stats);
-	if (record->has_add_type) {
-		g_string_printf(string,
-				"%s (%zd Added, %zd Added New Type, %zd Removed, %zd Removed Missing Type, %zd Modified)\n\n",
-				record->label, stats[0], stats[3], stats[1], stats[4], stats[2]);
-	} else {
-		g_string_printf(string, "%s (%zd Added, %zd Removed, %zd Modified)\n\n",
-				record->label, stats[0], stats[1], stats[2]);
-	}
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "header", NULL);
-
-	switch (form) {
-	case POLDIFF_FORM_ADDED:{
-			g_string_printf(string, "Added %s: %zd\n", record->label, stats[0]);
-			s = "added-header";
-			break;
-		}
-	case POLDIFF_FORM_ADD_TYPE:{
-			g_string_printf(string, "Added %s because of new type: %zd\n", record->label, stats[3]);
-			s = "added-header";
-			break;
-		}
-	case POLDIFF_FORM_REMOVED:{
-			g_string_printf(string, "Removed %s: %zd\n", record->label, stats[1]);
-			s = "removed-header";
-			break;
-		}
-	case POLDIFF_FORM_REMOVE_TYPE:{
-			g_string_printf(string, "Removed %s because of missing type: %zd\n", record->label, stats[4]);
-			s = "removed-header";
-			break;
-		}
-	case POLDIFF_FORM_MODIFIED:{
-			g_string_printf(string, "Modified %s: %zd\n", record->label, stats[2]);
-			s = "modified-header";
-			break;
-		}
-	default:{
-			assert(0);
-			s = NULL;
-		}
-	}
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, s, NULL);
-	g_string_free(string, TRUE);
-}
+static const char *form_name_long_map[] = {
+	"Added", "Added because of new type", "Removed", "Removed because of missing type", "Modified"
+};
+static const char *tag_map[] = {
+	"added-header", "added-header", "removed-header", "removed-header", "modified-header"
+};
+static const poldiff_form_e form_map[] = {
+	POLDIFF_FORM_ADDED, POLDIFF_FORM_ADD_TYPE,
+	POLDIFF_FORM_REMOVED, POLDIFF_FORM_REMOVE_TYPE,
+	POLDIFF_FORM_MODIFIED
+};
 
 /**
  * Show a single diff item string.  This will add the appropriate
  * color tags based upon the item's first character.
  */
-static void results_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
+static void result_item_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
 {
 	const char *c = s;
 	unsigned int i;
@@ -339,106 +158,449 @@ static void results_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const c
 /**
  * Show a summary of the diff for a particular policy component.
  */
-static void results_print_summary(results_t * r, GtkTextBuffer * tb, const struct poldiff_item_record *record)
+static void result_item_print_summary(result_item_t * item, GtkTextBuffer * tb)
 {
 	GtkTextIter iter;
-	poldiff_t *diff = toplevel_get_poldiff(r->top);
-	size_t stats[5] = { 0, 0, 0, 0, 0 };
+	int i, forms[5];
 	GString *string = g_string_new("");
 
 	gtk_text_buffer_get_end_iter(tb, &iter);
-	poldiff_get_stats(diff, record->bit_pos, stats);
-
-	g_string_printf(string, "%s:\n", record->label);
+	g_string_printf(string, "%s:\n", result_item_get_label(item));
 	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "subheader", NULL);
 
-	g_string_printf(string, "\tAdded: %zd\n", stats[0]);
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "added-header", NULL);
-
-	if (record->has_add_type) {
-		g_string_printf(string, "\tAdded because of new type: %zd\n", stats[3]);
-		gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "added-header", NULL);
+	result_item_get_forms(item, forms);
+	for (i = 0; i < 5; i++) {
+		if (forms[i] > 0) {
+			g_string_printf(string, "\t%s: %zd\n",
+					form_name_long_map[i], result_item_get_num_differences(item, form_map[i]));
+			gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, tag_map[i], NULL);
+		}
 	}
-
-	g_string_printf(string, "\tRemoved: %zd\n", stats[1]);
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "removed-header", NULL);
-
-	if (record->has_add_type) {
-		g_string_printf(string, "\tRemoved because of missing type: %zd\n", stats[4]);
-		gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "removed-header", NULL);
-	}
-
-	g_string_printf(string, "\tModified: %zd\n", stats[2]);
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "modified-header", NULL);
-
 	g_string_free(string, TRUE);
 }
 
 /**
- * Show a summary of the diff for all policy components.
+ * Show a common header when printing a policy component diff.
  */
-static void results_select_summary(results_t * r)
+static void result_item_print_header(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
 {
-	GtkTextBuffer *tb = r->buffers[RESULTS_BUFFER_MAIN];
 	GtkTextIter iter;
+	int i, forms[5];
 	GString *string = g_string_new("");
-	size_t i;
-	poldiff_t *diff = toplevel_get_poldiff(r->top);
+	char *tag = NULL;
+	const char *label = result_item_get_label(item);
+	int add_separator = 0;
 
-	gtk_text_view_set_buffer(r->view, tb);
-	util_text_buffer_clear(tb);
-
-	gtk_text_buffer_get_start_iter(tb, &iter);
-	g_string_printf(string, "Policy Difference Statistics\n\n");
+	gtk_text_buffer_get_end_iter(tb, &iter);
+	result_item_get_forms(item, forms);
+	g_string_printf(string, "%s (", label);
+	for (i = 0; i < 5; i++) {
+		if (forms[i] > 0) {
+			g_string_append_printf(string, "%s%zd %s",
+					       (add_separator ? ", " : ""),
+					       result_item_get_num_differences(item, form_map[i]), form_name_map[i]);
+			add_separator = 1;
+		}
+	}
+	g_string_append_printf(string, ")\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "header", NULL);
 
-	for (i = 0; poldiff_items[i].label != NULL; i++) {
-		if (!poldiff_is_run(diff, poldiff_items[i].bit_pos)) {
-			continue;
+	switch (form) {
+	case POLDIFF_FORM_ADDED:{
+			g_string_printf(string, "Added %s:", label);
+			tag = "added-header";
+			break;
 		}
-		gtk_text_buffer_insert(tb, &iter, "\n", -1);
-		results_print_summary(r, tb, poldiff_items + i);
-		gtk_text_buffer_get_end_iter(tb, &iter);
+	case POLDIFF_FORM_ADD_TYPE:{
+			g_string_printf(string, "Added %s because of new type:", label);
+			tag = "added-header";
+			break;
+		}
+	case POLDIFF_FORM_REMOVED:{
+			g_string_printf(string, "Removed %s:", label);
+			tag = "removed-header";
+			break;
+		}
+	case POLDIFF_FORM_REMOVE_TYPE:{
+			g_string_printf(string, "Removed %s because of missing type:", label);
+			tag = "removed-header";
+			break;
+		}
+	case POLDIFF_FORM_MODIFIED:{
+			g_string_printf(string, "Modified %s:", label);
+			tag = "modified-header";
+			break;
+		}
+	default:{
+			assert(0);
+			tag = NULL;
+		}
 	}
+	g_string_append_printf(string, " %zd\n", result_item_get_num_differences(item, form));
+	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, tag, NULL);
 	g_string_free(string, TRUE);
 }
 
 /**
  * Show the results for non-rules diff components.
  */
-static void results_select_simple(results_t * r, const struct poldiff_item_record *item_record, poldiff_form_e form)
+static void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
 {
-	GtkTextBuffer *tb = r->buffers[RESULTS_BUFFER_MAIN];
-	poldiff_t *diff = toplevel_get_poldiff(r->top);
+	GtkTextIter iter;
+	apol_vector_t *v;
+	size_t i;
+	void *elem;
+	char *s = NULL;
 
-	gtk_text_view_set_buffer(r->view, tb);
-	util_text_buffer_clear(tb);
-
-	if (form == POLDIFF_FORM_NONE) {
-		results_print_summary(r, tb, item_record);
-	} else {
-		GtkTextIter iter;
-		apol_vector_t *v;
-		size_t i;
-		void *elem;
-		char *s = NULL;
-
-		results_print_item_header(r, tb, item_record, form);
-		gtk_text_buffer_get_end_iter(tb, &iter);
-
-		v = item_record->get_vector(diff);
-		for (i = 0; i < apol_vector_get_size(v); i++) {
-			elem = apol_vector_get_element(v, i);
-			if (item_record->get_form(elem) == form) {
-				s = item_record->get_string(diff, elem);
-				results_print_string(tb, &iter, s, 1);
-				free(s);
-				gtk_text_buffer_insert(tb, &iter, "\n", -1);
-			}
+	gtk_text_buffer_get_end_iter(tb, &iter);
+	v = item->get_vector(item->diff);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		elem = apol_vector_get_element(v, i);
+		if (item->get_form(elem) == form) {
+			s = item->get_string(item->diff, elem);
+			result_item_print_string(tb, &iter, s, 1);
+			free(s);
+			gtk_text_buffer_insert(tb, &iter, "\n", -1);
 		}
 	}
-
 }
+
+/******************** single buffer functions ********************/
+
+/* below is the implementation of the 'single buffer result item'
+   class.  most policy components are instances of this class.*/
+
+static GtkTextBuffer *single_buffer = NULL;
+
+/**
+ * For single items, results are always destroyed.  (Recalculating
+ * results is very fast.)
+ */
+static void result_item_single_poldiff_run(result_item_t * item, poldiff_t * diff, int incremental __attribute__ ((unused)))
+{
+	item->diff = diff;
+	memset(item->stats, 0, sizeof(item->stats));
+}
+
+/**
+ * For single items, re-use the same buffer each time.
+ */
+static GtkTextBuffer *result_item_single_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	util_text_buffer_clear(single_buffer);
+	if (form == POLDIFF_FORM_NONE) {
+		result_item_print_summary(item, single_buffer);
+	} else {
+		result_item_print_header(item, single_buffer, form);
+		result_item_print_diff(item, single_buffer, form);
+	}
+	return single_buffer;
+}
+
+static void result_item_single_get_forms(result_item_t * item, int forms[5])
+{
+	int i, was_run = poldiff_is_run(item->diff, item->bit_pos);
+	if (was_run) {
+		poldiff_get_stats(item->diff, item->bit_pos, item->stats);
+	}
+	for (i = 0; i < 5; i++) {
+		if (!result_item_is_supported(item) || i == 1 || i == 3) {
+			/* single items do not have add-by-type and
+			 * remove-by-type forms */
+			forms[i] = -1;
+		} else {
+			forms[i] = was_run;
+		}
+	}
+}
+
+static size_t result_item_single_get_num_differences(result_item_t * item, poldiff_form_e form)
+{
+	switch (form) {
+	case POLDIFF_FORM_ADDED:
+		return item->stats[0];
+	case POLDIFF_FORM_REMOVED:
+		return item->stats[1];
+	case POLDIFF_FORM_MODIFIED:
+		return item->stats[2];
+	case POLDIFF_FORM_ADD_TYPE:
+		return item->stats[3];
+	case POLDIFF_FORM_REMOVE_TYPE:
+		return item->stats[4];
+	default:		       /* should never get here */
+		assert(0);
+		return 0;
+	}
+}
+
+/**
+ * Constructor for the abstract single buffer item class.
+ */
+static result_item_t *result_item_single_create(GtkTextTagTable * table)
+{
+	result_item_t *item = calloc(1, sizeof(*item));
+	if (item == NULL) {
+		return item;
+	}
+	if (single_buffer == NULL) {
+		single_buffer = gtk_text_buffer_new(table);
+	}
+	item->supported = 1;
+	item->policy_changed = NULL;
+	item->poldiff_run = result_item_single_poldiff_run;
+	item->get_buffer = result_item_single_get_buffer;
+	item->get_forms = result_item_single_get_forms;
+	item->get_num_differences = result_item_single_get_num_differences;
+	return item;
+}
+
+/******************** constructors below ********************/
+
+result_item_t *result_item_create_classes(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Classes";
+	item->bit_pos = POLDIFF_DIFF_CLASSES;
+	item->get_vector = poldiff_get_class_vector;
+	item->get_form = poldiff_class_get_form;
+	item->get_string = poldiff_class_to_string;
+	return item;
+}
+
+result_item_t *result_item_create_commons(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Commons";
+	item->bit_pos = POLDIFF_DIFF_COMMONS;
+	item->get_vector = poldiff_get_common_vector;
+	item->get_form = poldiff_common_get_form;
+	item->get_string = poldiff_common_to_string;
+	return item;
+}
+
+/**
+ * Only show modified types if it makes sense -- i.e, when both
+ * policies have meaningful attribute names.
+ */
+static void result_item_type_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
+{
+	qpol_policy_t *oq = apol_policy_get_qpol(orig_pol);
+	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
+	if (!qpol_policy_has_capability(oq, QPOL_CAP_ATTRIB_NAMES) || !qpol_policy_has_capability(mq, QPOL_CAP_ATTRIB_NAMES)) {
+		item->data.type_can_modify = 0;
+	} else {
+		item->data.type_can_modify = 1;
+	}
+}
+
+static void result_item_type_get_forms(result_item_t * item, int forms[5])
+{
+	result_item_single_get_forms(item, forms);
+	if (!item->data.type_can_modify) {
+		forms[4] = -1;
+	}
+}
+
+/* the type result item is a subclass of single item.  it differs in
+   that it might not have a modified form */
+result_item_t *result_item_create_types(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Types";
+	item->bit_pos = POLDIFF_DIFF_TYPES;
+	item->get_vector = poldiff_get_type_vector;
+	item->get_form = poldiff_type_get_form;
+	item->get_string = poldiff_type_to_string;
+	item->policy_changed = result_item_type_policy_changed;
+	item->get_forms = result_item_type_get_forms;
+	return item;
+}
+
+/**
+ * Only support attributes when both policies (can) have them.
+ */
+static void result_item_attribute_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
+{
+	qpol_policy_t *oq = apol_policy_get_qpol(orig_pol);
+	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
+	if (!qpol_policy_has_capability(oq, QPOL_CAP_ATTRIB_NAMES) || !qpol_policy_has_capability(mq, QPOL_CAP_ATTRIB_NAMES)) {
+		item->supported = 0;
+	}
+}
+
+/* the attribute result item is a subclass of single item.  it differs
+   in that it might not exist if attributes are not supported in
+   either policy */
+result_item_t *result_item_create_attributes(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Attributes";
+	item->bit_pos = POLDIFF_DIFF_ATTRIBS;
+	item->get_vector = poldiff_get_attrib_vector;
+	item->get_form = poldiff_attrib_get_form;
+	item->get_string = poldiff_attrib_to_string;
+	item->policy_changed = result_item_attribute_policy_changed;
+	return item;
+}
+
+result_item_t *result_item_create_roles(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Roles";
+	item->bit_pos = POLDIFF_DIFF_ROLES;
+	item->get_vector = poldiff_get_role_vector;
+	item->get_form = poldiff_role_get_form;
+	item->get_string = poldiff_role_to_string;
+	return item;
+}
+
+/**
+ * Printing a modified user is special; the result depends upon if a
+ * MLS policy is loaded or not.
+ */
+static GtkTextBuffer *result_item_user_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	/* FIX ME */
+	return result_item_single_get_buffer(item, form);
+}
+
+/* the user result item is a subclass of a single item. */
+result_item_t *result_item_create_users(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Users";
+	item->bit_pos = POLDIFF_DIFF_USERS;
+	item->get_vector = poldiff_get_user_vector;
+	item->get_form = poldiff_user_get_form;
+	item->get_string = poldiff_user_to_string;
+	item->get_buffer = result_item_user_get_buffer;
+	return item;
+}
+
+/**
+ * Only support booleans when both policies (can) have them.
+ */
+static void result_item_boolean_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
+{
+	qpol_policy_t *oq = apol_policy_get_qpol(orig_pol);
+	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
+	if (!qpol_policy_has_capability(oq, QPOL_CAP_CONDITIONALS) || !qpol_policy_has_capability(mq, QPOL_CAP_CONDITIONALS)) {
+		item->supported = 0;
+	}
+}
+
+/* booleans are not supported for policy versions less than 16 */
+result_item_t *result_item_create_booleans(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Booleans";
+	item->bit_pos = POLDIFF_DIFF_BOOLS;
+	item->get_vector = poldiff_get_bool_vector;
+	item->get_form = poldiff_bool_get_form;
+	item->get_string = poldiff_bool_to_string;
+	item->policy_changed = result_item_boolean_policy_changed;
+	return item;
+}
+
+/******************** public methods below ********************/
+
+void result_item_destroy(result_item_t ** item)
+{
+	if (item != NULL && *item != NULL) {
+		free(*item);
+		*item = NULL;
+	}
+}
+
+const char *result_item_get_label(const result_item_t * item)
+{
+	return item->label;
+}
+
+void result_item_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
+{
+	if (item->policy_changed != NULL) {
+		item->policy_changed(item, orig_pol, mod_pol);
+	}
+}
+
+GtkTextBuffer *result_item_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	return item->get_buffer(item, form);
+}
+
+void result_item_poldiff_run(result_item_t * item, poldiff_t * diff, int incremental)
+{
+	item->poldiff_run(item, diff, incremental);
+}
+
+int result_item_is_supported(const result_item_t * item)
+{
+	return item->supported;
+}
+
+void result_item_get_forms(result_item_t * item, int forms[5])
+{
+	item->get_forms(item, forms);
+}
+
+size_t result_item_get_num_differences(result_item_t * item, poldiff_form_e form)
+{
+	return item->get_num_differences(item, form);
+}
+
+int result_item_get_current_sort(result_item_t * item, results_sort_e * sort, results_sort_dir_e * dir)
+{
+	if (item->set_current_sort == NULL) {
+		return 0;
+	}
+	*sort = item->current_sort;
+	*dir = item->current_sort_dir;
+	return 1;
+}
+
+void result_item_set_current_sort(result_item_t * item, results_sort_e sort, results_sort_dir_e dir)
+{
+	if (item->set_current_sort != NULL) {
+		item->set_current_sort(item, sort, dir);
+	}
+}
+
+#if 0
+static const struct poldiff_item_record poldiff_items[] = {
+	{"Levels", 11, POLDIFF_DIFF_LEVELS, 0,
+	 poldiff_get_level_vector, poldiff_level_get_form, poldiff_level_to_string},
+	{"Categories", 12, POLDIFF_DIFF_CATS, 0,
+	 poldiff_get_cat_vector, poldiff_cat_get_form, poldiff_cat_to_string},
+	{"Role Allows", 8, POLDIFF_DIFF_ROLE_ALLOWS, 0,
+	 poldiff_get_role_allow_vector, poldiff_role_allow_get_form, poldiff_role_allow_to_string},
+	{"Role Transitions", 9, POLDIFF_DIFF_ROLE_TRANS, 1,
+	 poldiff_get_role_trans_vector, poldiff_role_trans_get_form, poldiff_role_trans_to_string},
+	{"TE Rules", 10, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1,
+	 NULL, NULL, NULL /* special case because this is from two data */ },
+	{NULL, 13, 0, 0, NULL, NULL, NULL}	/* must have highest id value */
+};
 
 struct sort_opts
 {
