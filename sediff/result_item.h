@@ -31,15 +31,22 @@ typedef struct result_item result_item_t;
 #include <gtk/gtk.h>
 #include <poldiff/poldiff.h>
 
+/* constructors for various result items */
+
 result_item_t *result_item_create_classes(GtkTextTagTable * table);
 result_item_t *result_item_create_commons(GtkTextTagTable * table);
+result_item_t *result_item_create_levels(GtkTextTagTable * table);
+result_item_t *result_item_create_categories(GtkTextTagTable * table);
 result_item_t *result_item_create_types(GtkTextTagTable * table);
 result_item_t *result_item_create_attributes(GtkTextTagTable * table);
 result_item_t *result_item_create_roles(GtkTextTagTable * table);
 result_item_t *result_item_create_users(GtkTextTagTable * table);
 result_item_t *result_item_create_booleans(GtkTextTagTable * table);
+result_item_t *result_item_create_avrules(GtkTextTagTable * table);
+result_item_t *result_item_create_terules(GtkTextTagTable * table);
 result_item_t *result_item_create_role_allows(GtkTextTagTable * table);
 result_item_t *result_item_create_role_trans(GtkTextTagTable * table);
+result_item_t *result_item_create_range_trans(GtkTextTagTable * table);
 
 /**
  * Deallocate all space associated with a result item, including the
@@ -164,5 +171,26 @@ int result_item_get_current_sort(result_item_t * item, results_sort_e * sort, re
  * @param dir New sorting direction.
  */
 void result_item_set_current_sort(result_item_t * item, results_sort_e sort, results_sort_dir_e dir);
+
+/**
+ * Tell the result item to store a particular line offset for the
+ * given form.
+ *
+ * @param item Result item to modify.
+ * @param form Particular form's line number to store.
+ * @param offset Line number to store.
+ */
+void result_item_save_current_line(result_item_t * item, poldiff_form_e form, gint offset);
+
+/**
+ * Return the saved line number for a result item's particular form.
+ * If a line number has not yet been saved then return 0.
+ *
+ * @param item Result item to query.
+ * @param form Form whose line number to retrieve.
+ *
+ * @return The stored line number.
+ */
+gint result_item_get_current_line(result_item_t * item, poldiff_form_e form);
 
 #endif

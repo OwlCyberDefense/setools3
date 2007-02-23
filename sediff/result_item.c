@@ -34,7 +34,6 @@ typedef void (*policy_changed_fn_t) (result_item_t * item, apol_policy_t * orig_
 typedef void (*poldiff_run_fn_t) (result_item_t * item, poldiff_t * diff, int incremental);
 typedef GtkTextBuffer *(*get_buffer_fn_t) (result_item_t * item, poldiff_form_e form);
 typedef void (*get_forms_fn_t) (result_item_t * item, int forms[5]);
-typedef size_t(*get_num_differences_fn_t) (result_item_t * item, poldiff_form_e form);
 typedef void (*set_current_sort_fn_t) (result_item_t * item, results_sort_e sort, results_sort_dir_e dir);
 
 struct result_item
@@ -50,6 +49,7 @@ struct result_item
 	/* protected members below */
 	poldiff_t *diff;
 	size_t stats[5];
+	gint offsets[5];
 	/* below are required functions to get poldiff results */
 	apol_vector_t *(*get_vector) (poldiff_t *);
 	 poldiff_form_e(*get_form) (const void *);
@@ -61,13 +61,19 @@ struct result_item
 	poldiff_run_fn_t poldiff_run;
 	get_buffer_fn_t get_buffer;
 	get_forms_fn_t get_forms;
-	get_num_differences_fn_t get_num_differences;
 	/** if the result item cannot be sorted then this will be
 	    NULL */
 	set_current_sort_fn_t set_current_sort;
+	/** data specific to subclasses of result_item */
 	union
 	{
 		int type_can_modify;
+		struct
+		{
+			int has_line_numbers[SEDIFFX_POLICY_NUM];
+			int cached[5];
+			GtkTextBuffer *buffers[5];
+		} multi;
 	} data;
 };
 
@@ -86,6 +92,11 @@ static const poldiff_form_e form_map[] = {
 	POLDIFF_FORM_ADDED, POLDIFF_FORM_ADD_TYPE,
 	POLDIFF_FORM_REMOVED, POLDIFF_FORM_REMOVE_TYPE,
 	POLDIFF_FORM_MODIFIED
+};
+
+/** map from a poldiff_form_e to an integer */
+static const poldiff_form_e form_reverse_map[] = {
+	-1, 0, 2, 4, 1, 3
 };
 
 /**
@@ -145,6 +156,68 @@ static void result_item_print_string(GtkTextBuffer * tb, GtkTextIter * iter, con
 						gtk_text_buffer_insert(tb, iter, indent, -1);
 					}
 					start = end + 1;
+				}
+				break;
+			}
+		}
+	}
+	if (start < end) {
+		gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+	}
+}
+
+/**
+ * Print a modified rule.  Note that this differs from the more
+ * general results_print_string() because there are inline '+' and '-'
+ * markers.
+ */
+static void result_item_print_rule_modified(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
+{
+	const char *c = s;
+	unsigned int i;
+	size_t start = 0, end = 0;
+	static const char *indent = "\t";
+	const gchar *current_tag = "modified";
+	for (i = 0; i < indent_level; i++) {
+		gtk_text_buffer_insert(tb, iter, indent, -1);
+	}
+	for (; *c; c++, end++) {
+		switch (*c) {
+		case '+':{
+				if (end > 0) {
+					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag,
+										 NULL);
+				}
+				start = end;
+				current_tag = "added";
+				break;
+			}
+		case '-':{
+				if (end > 0) {
+					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag,
+										 NULL);
+				}
+				start = end;
+				current_tag = "removed";
+				break;
+			}
+		case '\n':{
+				if (*(c + 1) != '\0') {
+					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
+										 NULL);
+					for (i = 0; i < indent_level; i++) {
+						gtk_text_buffer_insert(tb, iter, indent, -1);
+					}
+					start = end + 1;
+				}
+				break;
+			}
+		case ' ':{
+				if (current_tag != "modified") {
+					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
+										 NULL);
+					start = end + 1;
+					current_tag = "modified";
 				}
 				break;
 			}
@@ -265,6 +338,34 @@ static void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, pol
 	}
 }
 
+/**
+ * Show the results for rules diff components.
+ */
+static void result_item_print_rule_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
+{
+	GtkTextIter iter;
+	apol_vector_t *v;
+	size_t i;
+	void *elem;
+	char *s = NULL;
+
+	gtk_text_buffer_get_end_iter(tb, &iter);
+	v = item->get_vector(item->diff);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		elem = apol_vector_get_element(v, i);
+		if (item->get_form(elem) == form) {
+			s = item->get_string(item->diff, elem);
+			if (form != POLDIFF_FORM_MODIFIED) {
+				result_item_print_string(tb, &iter, s, 1);
+			} else {
+				result_item_print_rule_modified(tb, &iter, s, 1);
+			}
+			free(s);
+			gtk_text_buffer_insert(tb, &iter, "\n", -1);
+		}
+	}
+}
+
 /******************** single buffer functions ********************/
 
 /* below is the implementation of the 'single buffer result item'
@@ -297,6 +398,23 @@ static GtkTextBuffer *result_item_single_get_buffer(result_item_t * item, poldif
 	return single_buffer;
 }
 
+/**
+ * For single items, re-use the same buffer each time.  This function
+ * calls a modified rendering functions to be used explicitly by
+ * rules.
+ */
+static GtkTextBuffer *result_item_single_get_rule_buffer(result_item_t * item, poldiff_form_e form)
+{
+	util_text_buffer_clear(single_buffer);
+	if (form == POLDIFF_FORM_NONE) {
+		result_item_print_summary(item, single_buffer);
+	} else {
+		result_item_print_header(item, single_buffer, form);
+		result_item_print_rule_diff(item, single_buffer, form);
+	}
+	return single_buffer;
+}
+
 static void result_item_single_get_forms(result_item_t * item, int forms[5])
 {
 	int i, was_run = poldiff_is_run(item->diff, item->bit_pos);
@@ -304,32 +422,14 @@ static void result_item_single_get_forms(result_item_t * item, int forms[5])
 		poldiff_get_stats(item->diff, item->bit_pos, item->stats);
 	}
 	for (i = 0; i < 5; i++) {
-		if (!result_item_is_supported(item) || i == 1 || i == 3) {
+		if (!result_item_is_supported(item) || i == form_reverse_map[POLDIFF_FORM_ADD_TYPE]
+		    || i == form_reverse_map[POLDIFF_FORM_REMOVE_TYPE]) {
 			/* single items do not have add-by-type and
 			 * remove-by-type forms */
 			forms[i] = -1;
 		} else {
 			forms[i] = was_run;
 		}
-	}
-}
-
-static size_t result_item_single_get_num_differences(result_item_t * item, poldiff_form_e form)
-{
-	switch (form) {
-	case POLDIFF_FORM_ADDED:
-		return item->stats[0];
-	case POLDIFF_FORM_REMOVED:
-		return item->stats[1];
-	case POLDIFF_FORM_MODIFIED:
-		return item->stats[2];
-	case POLDIFF_FORM_ADD_TYPE:
-		return item->stats[3];
-	case POLDIFF_FORM_REMOVE_TYPE:
-		return item->stats[4];
-	default:		       /* should never get here */
-		assert(0);
-		return 0;
 	}
 }
 
@@ -350,7 +450,6 @@ static result_item_t *result_item_single_create(GtkTextTagTable * table)
 	item->poldiff_run = result_item_single_poldiff_run;
 	item->get_buffer = result_item_single_get_buffer;
 	item->get_forms = result_item_single_get_forms;
-	item->get_num_differences = result_item_single_get_num_differences;
 	return item;
 }
 
@@ -381,6 +480,62 @@ result_item_t *result_item_create_commons(GtkTextTagTable * table)
 	item->get_vector = poldiff_get_common_vector;
 	item->get_form = poldiff_common_get_form;
 	item->get_string = poldiff_common_to_string;
+	return item;
+}
+
+/**
+ * Only support sensitivites and levels if either policy (can) has
+ * them.
+ */
+static void result_item_level_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
+{
+	qpol_policy_t *oq = apol_policy_get_qpol(orig_pol);
+	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
+	if (!qpol_policy_has_capability(oq, QPOL_CAP_MLS) && !qpol_policy_has_capability(mq, QPOL_CAP_MLS)) {
+		item->supported = 0;
+	}
+}
+
+/* levels require at least one MLS policy */
+result_item_t *result_item_create_levels(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Levels";
+	item->bit_pos = POLDIFF_DIFF_LEVELS;
+	item->get_vector = poldiff_get_level_vector;
+	item->get_form = poldiff_level_get_form;
+	item->get_string = poldiff_level_to_string;
+	item->policy_changed = result_item_level_policy_changed;
+	return item;
+}
+
+/**
+ * The modified form is always unsupported.
+ */
+static void result_item_category_get_forms(result_item_t * item, int forms[5])
+{
+	result_item_single_get_forms(item, forms);
+	forms[4] = -1;
+}
+
+/* categories have no modified form; they also require two MLS
+   policies to be supported */
+result_item_t *result_item_create_categories(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Categories";
+	item->bit_pos = POLDIFF_DIFF_CATS;
+	item->get_vector = poldiff_get_cat_vector;
+	item->get_form = poldiff_cat_get_form;
+	item->get_string = poldiff_cat_to_string;
+	item->policy_changed = result_item_level_policy_changed;	/* [sic] */
+	item->get_forms = result_item_category_get_forms;
 	return item;
 }
 
@@ -496,18 +651,17 @@ result_item_t *result_item_create_users(GtkTextTagTable * table)
 }
 
 /**
- * Only support booleans when both policies (can) have them.
+ * Only support booleans if either policy (can) has them.
  */
 static void result_item_boolean_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
 {
 	qpol_policy_t *oq = apol_policy_get_qpol(orig_pol);
 	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
-	if (!qpol_policy_has_capability(oq, QPOL_CAP_CONDITIONALS) || !qpol_policy_has_capability(mq, QPOL_CAP_CONDITIONALS)) {
+	if (!qpol_policy_has_capability(oq, QPOL_CAP_CONDITIONALS) && !qpol_policy_has_capability(mq, QPOL_CAP_CONDITIONALS)) {
 		item->supported = 0;
 	}
 }
 
-/* booleans are not supported for policy versions less than 16 */
 result_item_t *result_item_create_booleans(GtkTextTagTable * table)
 {
 	result_item_t *item = result_item_single_create(table);
@@ -520,6 +674,161 @@ result_item_t *result_item_create_booleans(GtkTextTagTable * table)
 	item->get_form = poldiff_bool_get_form;
 	item->get_string = poldiff_bool_to_string;
 	item->policy_changed = result_item_boolean_policy_changed;
+	return item;
+}
+
+/* role trans are a subclass of single buffer item, in that they have
+   a special rendering function for modified items */
+result_item_t *result_item_create_role_allows(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Role Allows";
+	item->bit_pos = POLDIFF_DIFF_ROLE_ALLOWS;
+	item->get_vector = poldiff_get_role_allow_vector;
+	item->get_form = poldiff_role_allow_get_form;
+	item->get_string = poldiff_role_allow_to_string;
+	item->get_buffer = result_item_single_get_rule_buffer;
+	return item;
+}
+
+static void result_item_role_trans_get_forms(result_item_t * item, int forms[5])
+{
+	int i, was_run = poldiff_is_run(item->diff, item->bit_pos);
+	if (was_run) {
+		poldiff_get_stats(item->diff, item->bit_pos, item->stats);
+	}
+	for (i = 0; i < 5; i++) {
+		if (!result_item_is_supported(item)) {
+			forms[i] = -1;
+		} else {
+			forms[i] = was_run;
+		}
+	}
+}
+
+/* role trans are a subclass of single buffer item, in that they have
+   a special rendering function for modified items and that they have
+   add-type and remove-type forms */
+result_item_t *result_item_create_role_trans(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Role Transitions";
+	item->bit_pos = POLDIFF_DIFF_ROLE_TRANS;
+	item->get_vector = poldiff_get_role_trans_vector;
+	item->get_form = poldiff_role_trans_get_form;
+	item->get_string = poldiff_role_trans_to_string;
+	item->get_forms = result_item_role_trans_get_forms;
+	item->get_buffer = result_item_single_get_rule_buffer;
+	return item;
+}
+
+/******************** AV and Type rules below ********************/
+
+/**
+ * Show line numbers if the policy has them.
+ */
+static void result_item_multi_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
+{
+	qpol_policy_t *oq = apol_policy_get_qpol(orig_pol);
+	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
+	item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] = qpol_policy_has_capability(oq, QPOL_CAP_LINE_NUMBERS);
+	item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] = qpol_policy_has_capability(mq, QPOL_CAP_LINE_NUMBERS);
+}
+
+/**
+ * Clear the cache whenever poldiff is (re-)run.
+ */
+static void result_item_multi_poldiff_run(result_item_t * item, poldiff_t * diff, int incremental __attribute__ ((unused)))
+{
+	item->diff = diff;
+	memset(item->stats, 0, sizeof(item->stats));
+	int i;
+	for (i = 0; i < 5; i++) {
+		item->data.multi.cached[i] = 0;
+		util_text_buffer_clear(item->data.multi.buffers[i]);
+	}
+}
+
+/**
+ * Render the buffer if it has not yet been cached, then return it.
+ */
+static GtkTextBuffer *result_item_multi_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	GtkTextBuffer *tb;
+	if (form == POLDIFF_FORM_NONE) {
+		/* just use the global single_buffer when printing the
+		 * summary */
+		util_text_buffer_clear(single_buffer);
+		result_item_print_summary(item, single_buffer);
+		tb = single_buffer;
+	} else {
+		tb = item->data.multi.buffers[form_reverse_map[form]];
+		if (!item->data.multi.cached[form_reverse_map[form]]) {
+			result_item_print_header(item, tb, form);
+			result_item_print_rule_diff(item, tb, form);
+			item->data.multi.cached[form_reverse_map[form]] = 1;
+		}
+	}
+	return tb;
+}
+
+/**
+ * Constructor for the abstract multi buffer item class.  Multi-buffer
+ * items are capable of sorting and potentially take some time to
+ * render their buffers.
+ */
+static result_item_t *result_item_multi_create(GtkTextTagTable * table)
+{
+	result_item_t *item = calloc(1, sizeof(*item));
+	if (item == NULL) {
+		return item;
+	}
+	if (single_buffer == NULL) {
+		single_buffer = gtk_text_buffer_new(table);
+	}
+	item->supported = 1;
+	item->policy_changed = result_item_multi_policy_changed;
+	item->poldiff_run = result_item_multi_poldiff_run;
+	item->get_buffer = result_item_multi_get_buffer;
+	item->get_forms = result_item_role_trans_get_forms;	/* [sic] */
+	int i;
+	for (i = 0; i < 5; i++) {
+		item->data.multi.buffers[i] = gtk_text_buffer_new(table);
+	}
+	return item;
+}
+
+result_item_t *result_item_create_avrules(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_multi_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "AV Rules";
+	item->bit_pos = POLDIFF_DIFF_AVRULES;
+	item->get_vector = poldiff_get_avrule_vector;
+	item->get_form = poldiff_avrule_get_form;
+	item->get_string = poldiff_avrule_to_string;
+	return item;
+}
+
+result_item_t *result_item_create_terules(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_multi_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Type Rules";
+	item->bit_pos = POLDIFF_DIFF_TERULES;
+	item->get_vector = poldiff_get_terule_vector;
+	item->get_form = poldiff_terule_get_form;
+	item->get_string = poldiff_terule_to_string;
 	return item;
 }
 
@@ -567,7 +876,21 @@ void result_item_get_forms(result_item_t * item, int forms[5])
 
 size_t result_item_get_num_differences(result_item_t * item, poldiff_form_e form)
 {
-	return item->get_num_differences(item, form);
+	switch (form) {
+	case POLDIFF_FORM_ADDED:
+		return item->stats[0];
+	case POLDIFF_FORM_REMOVED:
+		return item->stats[1];
+	case POLDIFF_FORM_MODIFIED:
+		return item->stats[2];
+	case POLDIFF_FORM_ADD_TYPE:
+		return item->stats[3];
+	case POLDIFF_FORM_REMOVE_TYPE:
+		return item->stats[4];
+	default:		       /* should never get here */
+		assert(0);
+		return 0;
+	}
 }
 
 int result_item_get_current_sort(result_item_t * item, results_sort_e * sort, results_sort_dir_e * dir)
@@ -584,22 +907,32 @@ void result_item_set_current_sort(result_item_t * item, results_sort_e sort, res
 {
 	if (item->set_current_sort != NULL) {
 		item->set_current_sort(item, sort, dir);
+		/* FIX ME */
 	}
+}
+
+void result_item_save_current_line(result_item_t * item, poldiff_form_e form, gint offset)
+{
+	/* don't care about the summary page */
+	if (form != POLDIFF_FORM_NONE) {
+		item->offsets[form_reverse_map[form]] = offset;
+	}
+}
+
+gint result_item_get_current_line(result_item_t * item, poldiff_form_e form)
+{
+	/* don't care about the summary page */
+	if (form == POLDIFF_FORM_NONE) {
+		return 0;
+	}
+	return item->offsets[form_reverse_map[form]];
 }
 
 #if 0
 static const struct poldiff_item_record poldiff_items[] = {
-	{"Levels", 11, POLDIFF_DIFF_LEVELS, 0,
-	 poldiff_get_level_vector, poldiff_level_get_form, poldiff_level_to_string},
-	{"Categories", 12, POLDIFF_DIFF_CATS, 0,
-	 poldiff_get_cat_vector, poldiff_cat_get_form, poldiff_cat_to_string},
-	{"Role Allows", 8, POLDIFF_DIFF_ROLE_ALLOWS, 0,
-	 poldiff_get_role_allow_vector, poldiff_role_allow_get_form, poldiff_role_allow_to_string},
-	{"Role Transitions", 9, POLDIFF_DIFF_ROLE_TRANS, 1,
-	 poldiff_get_role_trans_vector, poldiff_role_trans_get_form, poldiff_role_trans_to_string},
-	{"TE Rules", 10, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, 1,
-	 NULL, NULL, NULL /* special case because this is from two data */ },
-	{NULL, 13, 0, 0, NULL, NULL, NULL}	/* must have highest id value */
+	NULL, NULL, NULL /* special case because this is from two data */
+}, {
+NULL, 13, 0, 0, NULL, NULL, NULL}      /* must have highest id value */
 };
 
 struct sort_opts
@@ -739,73 +1072,6 @@ static apol_vector_t *results_tesort(poldiff_t * diff, poldiff_form_e form, int 
 		apol_vector_sort(v, results_tesort_comp, &opts);
 	}
 	return v;
-}
-
-/**
- * Print a modified rule.  Note that this differs from the more
- * general results_print_string() because:
- *
- * <ul>
- *   <li>there are inline '+' and '-' markers
- *   <li>for source policies, hyperlink permission names to their
- *       line(s) within the policy
- * </ul>
- */
-static void results_print_rule_modified(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
-{
-	const char *c = s;
-	unsigned int i;
-	size_t start = 0, end = 0;
-	static const char *indent = "\t";
-	const gchar *current_tag = "modified";
-	for (i = 0; i < indent_level; i++) {
-		gtk_text_buffer_insert(tb, iter, indent, -1);
-	}
-	for (; *c; c++, end++) {
-		switch (*c) {
-		case '+':{
-				if (end > 0) {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag,
-										 NULL);
-				}
-				start = end;
-				current_tag = "added";
-				break;
-			}
-		case '-':{
-				if (end > 0) {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag,
-										 NULL);
-				}
-				start = end;
-				current_tag = "removed";
-				break;
-			}
-		case '\n':{
-				if (*(c + 1) != '\0') {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
-										 NULL);
-					for (i = 0; i < indent_level; i++) {
-						gtk_text_buffer_insert(tb, iter, indent, -1);
-					}
-					start = end + 1;
-				}
-				break;
-			}
-		case ' ':{
-				if (current_tag != "modified") {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
-										 NULL);
-					start = end + 1;
-					current_tag = "modified";
-				}
-				break;
-			}
-		}
-	}
-	if (start < end) {
-		gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
-	}
 }
 
 /**
@@ -985,68 +1251,6 @@ static void results_select_rules(results_t * r, const struct poldiff_item_record
 		progress_hide(run.progress);
 		r->te_buffered[form] = 1;
 	}
-}
-
-/**
- * Display in the main view the diff results for a particular component.
- *
- * @param r Results object whose view to update.
- * @param record Item record for the component to show.
- * @param form Particular form of the diff result to show.
- */
-static void results_record_select(results_t * r, const struct poldiff_item_record *record, poldiff_form_e form)
-{
-	GtkTextMark *mark;
-	GdkRectangle rect;
-	GtkTextIter iter;
-	size_t new_buffer;
-	GtkTextBuffer *tb;
-
-	/* save current view position */
-	gtk_text_view_get_visible_rect(r->view, &rect);
-	gtk_text_view_get_iter_at_location(r->view, &iter, rect.x, rect.y);
-	r->saved_offsets[r->current_buffer] = gtk_text_iter_get_offset(&iter);
-
-	toplevel_set_sort_menu_sensitivity(r->top, FALSE);
-
-	if (record == NULL) {
-		results_select_summary(r);
-		new_buffer = 0;
-	} else {
-		switch (record->bit_pos) {
-		case POLDIFF_DIFF_CLASSES:
-		case POLDIFF_DIFF_COMMONS:
-		case POLDIFF_DIFF_LEVELS:
-		case POLDIFF_DIFF_CATS:
-		case POLDIFF_DIFF_TYPES:
-		case POLDIFF_DIFF_ATTRIBS:
-		case POLDIFF_DIFF_ROLES:
-		case POLDIFF_DIFF_USERS:
-		case POLDIFF_DIFF_BOOLS:
-		case POLDIFF_DIFF_ROLE_ALLOWS:
-		case POLDIFF_DIFF_ROLE_TRANS:{
-				results_select_simple(r, record, form);
-				break;
-			}
-		case (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES):{
-				results_select_rules(r, record, form);
-				toplevel_set_sort_menu_selection(r->top, r->te_sort_field[form], r->te_sort_direction[form]);
-				break;
-			}
-		}
-
-		new_buffer = record->record_id * 6 + form;
-	}
-
-	/* restore saved location.  use marks to ensure that we go to
-	 * this position even if it hasn't been drawn. */
-	tb = gtk_text_view_get_buffer(r->view);
-	gtk_text_buffer_get_start_iter(tb, &iter);
-	gtk_text_iter_set_offset(&iter, r->saved_offsets[new_buffer]);
-	mark = gtk_text_buffer_create_mark(tb, "location-mark", &iter, FALSE);
-	gtk_text_view_scroll_to_mark(r->view, mark, 0.0, TRUE, 0.0, 0.0);
-	gtk_text_buffer_delete_mark(tb, mark);
-	r->current_buffer = new_buffer;
 }
 
 #endif

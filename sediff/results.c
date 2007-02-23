@@ -44,7 +44,7 @@ enum
 	RESULTS_SUMMARY_COLUMN_NUM
 };
 
-#define NUM_RESULT_ITEMS 7
+#define NUM_RESULT_ITEMS 13
 
 struct results
 {
@@ -56,6 +56,14 @@ struct results
 	GtkTextView *view;
 	GtkTextTag *policy_orig_tag, *policy_mod_tag;
 	GtkLabel *stats;
+	/** pointer to within items[] of the currently selected result
+	 * item, or NULL if the summary page or none are selected */
+	result_item_t *current_item;
+	/** form that is currently selected, or POLDIFF_FORM_NONE if
+	 * the summary or item's summary page is selected */
+	poldiff_form_e current_form;
+	/** saved cursor's line number for the summary page */
+	gint summary_offset;
 	result_item_t *items[NUM_RESULT_ITEMS];
 };
 
@@ -65,10 +73,19 @@ static const poldiff_form_e form_map[] = {
 	POLDIFF_FORM_MODIFIED
 };
 
+/**
+ * Array or result_item constructors.  Note that the order given below
+ * governs the order that the items appear in the results summary
+ * tree.
+ */
 static result_item_t *(*result_item_constructors[NUM_RESULT_ITEMS]) (GtkTextTagTable *) = {
 result_item_create_classes, result_item_create_commons,
+		result_item_create_levels, result_item_create_categories,
 		result_item_create_types, result_item_create_attributes,
-		result_item_create_roles, result_item_create_users, result_item_create_booleans};
+		result_item_create_roles, result_item_create_users,
+		result_item_create_booleans,
+		result_item_create_avrules, result_item_create_terules,
+		result_item_create_role_allows, result_item_create_role_trans};
 
 static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data);
 
@@ -206,6 +223,9 @@ void results_clear(results_t * r)
 	util_text_buffer_clear(r->main_buffer);
 	util_text_buffer_clear(r->key_buffer);
 	gtk_label_set_text(r->stats, "");
+	r->current_item = NULL;
+	r->current_form = POLDIFF_FORM_NONE;
+	r->summary_offset = 0;
 }
 
 /**
@@ -381,22 +401,49 @@ static void results_summary_on_change(GtkTreeSelection * selection, gpointer use
 	GtkTreeIter iter;
 	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
 		int form;
-		result_item_t *item;
+		GdkRectangle rect;
+		GtkTextIter textiter;
+		GtkTextMark *mark;
+		gint offset;
+		GtkTextBuffer *tb;
 		results_sort_e sort;
 		results_sort_dir_e dir;
 		gboolean sens = FALSE;
-		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
-				   RESULTS_SUMMARY_COLUMN_ITEM, &item, -1);
-		if (item == NULL) {
-			gtk_text_view_set_buffer(r->view, r->main_buffer);
+
+		gtk_text_view_get_visible_rect(r->view, &rect);
+		gtk_text_view_get_iter_at_location(r->view, &textiter, rect.x, rect.y);
+		offset = gtk_text_iter_get_offset(&textiter);
+		if (r->current_item == NULL) {
+			r->summary_offset = offset;
 		} else {
-			if (result_item_get_current_sort(item, &sort, &dir)) {
+			result_item_save_current_line(r->current_item, r->current_form, offset);
+		}
+		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
+				   RESULTS_SUMMARY_COLUMN_ITEM, &r->current_item, -1);
+		r->current_form = (poldiff_form_e) form;
+		if (r->current_item == NULL) {
+			tb = r->main_buffer;
+			offset = r->summary_offset;
+		} else {
+			if (result_item_get_current_sort(r->current_item, &sort, &dir)) {
 				sens = TRUE;
 				toplevel_set_sort_menu_selection(r->top, sort, dir);
 			}
-			GtkTextBuffer *tb = result_item_get_buffer(item, form);
-			gtk_text_view_set_buffer(r->view, tb);
+			tb = result_item_get_buffer(r->current_item, r->current_form);
+			offset = result_item_get_current_line(r->current_item, r->current_form);
 		}
+
+		gtk_text_view_set_buffer(r->view, tb);
+
+		/* restore saved location.  use marks to ensure that
+		 * we go to this position even if it hasn't been
+		 * drawn. */
+		gtk_text_buffer_get_start_iter(tb, &textiter);
+		gtk_text_iter_set_offset(&textiter, offset);
+		mark = gtk_text_buffer_create_mark(tb, "location-mark", &textiter, FALSE);
+		gtk_text_view_scroll_to_mark(r->view, mark, 0.0, TRUE, 0.0, 0.0);
+		gtk_text_buffer_delete_mark(tb, mark);
+
 		toplevel_set_sort_menu_sensitivity(r->top, sens);
 	}
 }
