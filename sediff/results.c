@@ -41,6 +41,7 @@ enum
 	RESULTS_SUMMARY_COLUMN_LABEL = 0,
 	RESULTS_SUMMARY_COLUMN_FORM,
 	RESULTS_SUMMARY_COLUMN_ITEM,
+	RESULTS_SUMMARY_COLUMN_STYLE,
 	RESULTS_SUMMARY_COLUMN_NUM
 };
 
@@ -108,7 +109,7 @@ static void results_create_summary(results_t * r)
 	GtkCellRenderer *renderer;
 	GtkTreeSelection *selection;
 
-	r->summary_tree = gtk_tree_store_new(RESULTS_SUMMARY_COLUMN_NUM, G_TYPE_STRING, G_TYPE_INT, G_TYPE_POINTER);
+	r->summary_tree = gtk_tree_store_new(RESULTS_SUMMARY_COLUMN_NUM, G_TYPE_STRING, G_TYPE_INT, G_TYPE_POINTER, G_TYPE_BOOLEAN);
 	r->summary_view = GTK_TREE_VIEW(glade_xml_get_widget(r->xml, "toplevel summary view"));
 	assert(r->summary_view != NULL);
 	col = gtk_tree_view_column_new();
@@ -117,7 +118,9 @@ static void results_create_summary(results_t * r)
 	gtk_tree_view_append_column(r->summary_view, col);
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute(col, renderer, "text", RESULTS_SUMMARY_COLUMN_LABEL);
+	gtk_tree_view_column_set_attributes(col, renderer,
+					    "text", RESULTS_SUMMARY_COLUMN_LABEL,
+					    "strikethrough", RESULTS_SUMMARY_COLUMN_STYLE, NULL);;
 	gtk_tree_view_set_model(r->summary_view, GTK_TREE_MODEL(r->summary_tree));
 
 	selection = gtk_tree_view_get_selection(r->summary_view);
@@ -239,8 +242,6 @@ static void results_update_summary(results_t * r)
 	size_t sum_diffs;
 	int i, j, forms[5];
 	GString *s = g_string_new("");
-	poldiff_t *diff = toplevel_get_poldiff(r->top);
-	assert(diff != NULL);
 
 	gtk_tree_store_append(r->summary_tree, &topiter, NULL);
 	gtk_tree_store_set(r->summary_tree, &topiter,
@@ -258,11 +259,12 @@ static void results_update_summary(results_t * r)
 		"added-header", "added-header", "removed-header", "removed-header", "modified-header"
 	};
 	for (i = 0; i < NUM_RESULT_ITEMS; i++) {
+		const char *label = result_item_get_label(r->items[i]);
+		gtk_tree_store_append(r->summary_tree, &topiter, NULL);
+		gtk_tree_store_set(r->summary_tree, &topiter,
+				   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_NONE, RESULTS_SUMMARY_COLUMN_ITEM, r->items[i], -1);
 		if (result_item_is_supported(r->items[i])) {
-			const char *label;
-			gtk_tree_store_append(r->summary_tree, &topiter, NULL);
 			result_item_get_forms(r->items[i], forms);
-			label = result_item_get_label(r->items[i]);
 			sum_diffs = 0;
 			g_string_printf(s, "\n%s:\n", label);
 			gtk_text_buffer_insert_with_tags_by_name(r->main_buffer, &iter, s->str, -1, "subheader", NULL);
@@ -275,18 +277,21 @@ static void results_update_summary(results_t * r)
 										 NULL);
 					sum_diffs += num_diffs;
 					gtk_tree_store_append(r->summary_tree, &childiter, &topiter);
-					g_string_printf(s, "%s %zd", form_name_short_map[j], num_diffs);
+					g_string_printf(s, "%s (%zd)", form_name_short_map[j], num_diffs);
 					gtk_tree_store_set(r->summary_tree, &childiter,
 							   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
 							   RESULTS_SUMMARY_COLUMN_FORM, form_map[j],
 							   RESULTS_SUMMARY_COLUMN_ITEM, r->items[i], -1);
 				}
 			}
-			g_string_printf(s, "%s %zd", label, sum_diffs);
+			g_string_printf(s, "%s (%zd)", label, sum_diffs);
 			gtk_tree_store_set(r->summary_tree, &topiter,
-					   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
-					   RESULTS_SUMMARY_COLUMN_FORM, POLDIFF_FORM_NONE,
-					   RESULTS_SUMMARY_COLUMN_ITEM, r->items[i], -1);
+					   RESULTS_SUMMARY_COLUMN_LABEL, s->str, RESULTS_SUMMARY_COLUMN_STYLE, FALSE, -1);
+		} else {
+			/* item is not supported at all */
+			g_string_printf(s, "%s (N/A)", label);
+			gtk_tree_store_set(r->summary_tree, &topiter,
+					   RESULTS_SUMMARY_COLUMN_LABEL, s->str, RESULTS_SUMMARY_COLUMN_STYLE, FALSE, -1);
 		}
 	}
 
@@ -319,20 +324,20 @@ static void results_update_stats(results_t * r)
 {
 	GString *string = g_string_new("");
 	int i, j, forms[5];
+	size_t diffs[5] = { 0, 0, 0, 0, 0 };
 	for (i = 0; i < NUM_RESULT_ITEMS; i++) {
 		if (result_item_is_supported(r->items[i])) {
 			const char *label;
-			size_t sum_diffs = 0;
 			result_item_get_forms(r->items[i], forms);
 			label = result_item_get_label(r->items[i]);
 			for (j = 0; j < 5; j++) {
 				if (forms[j] > 0) {
-					sum_diffs += result_item_get_num_differences(r->items[i], form_map[j]);
+					diffs[j] += result_item_get_num_differences(r->items[i], form_map[j]);
 				}
 			}
-			g_string_append_printf(string, "%s: %zd  ", label, sum_diffs);
 		}
 	}
+	g_string_printf(string, "Total Differences: %zd", diffs[0] + diffs[1] + diffs[2] + diffs[3] + diffs[4]);
 	gtk_label_set_text(r->stats, string->str);
 	g_string_free(string, TRUE);
 }
@@ -378,17 +383,57 @@ void results_switch_to_page(results_t * r)
 	GtkTreeIter iter;
 	gboolean sens = FALSE;
 	if (gtk_tree_selection_get_selected(selection, NULL, &iter)) {
-		int form;
+		int f;
 		result_item_t *item;
 		results_sort_e sort;
 		results_sort_dir_e dir;
-		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
+		gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &f,
 				   RESULTS_SUMMARY_COLUMN_ITEM, &item, -1);
-		if (item != NULL && result_item_get_current_sort(item, &sort, &dir)) {
+		poldiff_form_e form = (poldiff_form_e) f;
+		if (item != NULL && result_item_get_current_sort(item, form, &sort, &dir)) {
 			sens = TRUE;
 		}
 	}
 	toplevel_set_sort_menu_sensitivity(r->top, sens);
+}
+
+struct run_datum
+{
+	results_t *r;
+	progress_t *progress;
+	GtkTextBuffer *tb;
+};
+
+static gpointer results_get_slow_buffer_runner(gpointer data)
+{
+	struct run_datum *run = (struct run_datum *)data;
+	results_t *r = run->r;
+	run->tb = result_item_get_buffer(r->current_item, r->current_form);
+	progress_done(run->progress);
+	return NULL;
+}
+
+/**
+ * Spawn a thread that will get the result_item buffer as given by
+ * r->current_item and r->current_form.  This will display a progress
+ * dialog while waiting.
+ */
+static GtkTextBuffer *results_get_slow_buffer(results_t * r, const char *action)
+{
+	struct run_datum run;
+	run.r = r;
+	run.progress = toplevel_get_progress(r->top);
+	util_cursor_wait(GTK_WIDGET(toplevel_get_window(r->top)));
+	GString *s = g_string_new("");
+	g_string_printf(s, "Rendering %s", result_item_get_label(r->current_item));
+	progress_show(run.progress, s->str);
+	g_string_free(s, TRUE);
+	progress_update(run.progress, "%s", action);
+	g_thread_create(results_get_slow_buffer_runner, &run, FALSE, NULL);
+	progress_wait(run.progress);
+	util_cursor_clear(GTK_WIDGET(toplevel_get_window(r->top)));
+	progress_hide(run.progress);
+	return run.tb;
 }
 
 /**
@@ -425,11 +470,16 @@ static void results_summary_on_change(GtkTreeSelection * selection, gpointer use
 			tb = r->main_buffer;
 			offset = r->summary_offset;
 		} else {
-			if (result_item_get_current_sort(r->current_item, &sort, &dir)) {
+			int render_is_slow = result_item_is_render_slow(r->current_item, r->current_form);
+			if (result_item_get_current_sort(r->current_item, r->current_form, &sort, &dir)) {
 				sens = TRUE;
 				toplevel_set_sort_menu_selection(r->top, sort, dir);
 			}
-			tb = result_item_get_buffer(r->current_item, r->current_form);
+			if (render_is_slow) {
+				tb = results_get_slow_buffer(r, "Displaying Items");
+			} else {
+				tb = result_item_get_buffer(r->current_item, r->current_form);
+			}
 			offset = result_item_get_current_line(r->current_item, r->current_form);
 		}
 
@@ -545,21 +595,30 @@ static gboolean results_on_text_view_motion(GtkWidget * widget, GdkEventMotion *
 	return FALSE;
 }
 
-void results_sort(results_t * r, results_sort_e field, int direction)
+void results_sort(results_t * r, results_sort_e field, results_sort_dir_e direction)
 {
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(r->summary_view);
 	GtkTreeIter iter;
-	int form;
+	int f;
 	result_item_t *item;
+#ifndef NDEBUG
 	results_sort_e sort;
 	results_sort_dir_e dir;
+#endif
 	if (!gtk_tree_selection_get_selected(selection, NULL, &iter)) {
 		return;
 	}
-	gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &form,
+	gtk_tree_model_get(GTK_TREE_MODEL(r->summary_tree), &iter, RESULTS_SUMMARY_COLUMN_FORM, &f,
 			   RESULTS_SUMMARY_COLUMN_ITEM, &item, -1);
-	assert(result_item_get_current_sort(item, &sort, &dir) != 0);
-	result_item_set_current_sort(item, sort, dir);
+	poldiff_form_e form = (poldiff_form_e) f;
+	assert(item != NULL && item == r->current_item && form == r->current_form
+	       && result_item_get_current_sort(item, form, &sort, &dir) != 0);
+	result_item_set_current_sort(item, form, field, direction);
+	if (result_item_is_render_slow(r->current_item, form)) {
+		results_get_slow_buffer(r, "Sorting Items");
+	} else {
+		result_item_get_buffer(item, form);
+	}
 }
 
 GtkTextView *results_get_text_view(results_t * r)

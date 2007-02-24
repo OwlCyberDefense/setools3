@@ -33,14 +33,14 @@
 typedef void (*policy_changed_fn_t) (result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol);
 typedef void (*poldiff_run_fn_t) (result_item_t * item, poldiff_t * diff, int incremental);
 typedef GtkTextBuffer *(*get_buffer_fn_t) (result_item_t * item, poldiff_form_e form);
+typedef int (*is_render_slow_fn_t) (result_item_t * item, poldiff_form_e form);
 typedef void (*get_forms_fn_t) (result_item_t * item, int forms[5]);
-typedef void (*set_current_sort_fn_t) (result_item_t * item, results_sort_e sort, results_sort_dir_e dir);
+typedef void (*set_current_sort_fn_t) (result_item_t * item, poldiff_form_e form, results_sort_e sort, results_sort_dir_e dir);
+typedef void (*print_diff_fn_t) (result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form);
 
 struct result_item
 {
 	const char *label;
-	results_sort_e current_sort;
-	results_sort_dir_e current_sort_dir;
 	/** bit value corresponding to polidiff/poldiff.h defines */
 	uint32_t bit_pos;
 	/** if either policy does not support a particular policy
@@ -50,6 +50,8 @@ struct result_item
 	poldiff_t *diff;
 	size_t stats[5];
 	gint offsets[5];
+	results_sort_e sorts[5];
+	results_sort_dir_e sort_dirs[5];
 	/* below are required functions to get poldiff results */
 	apol_vector_t *(*get_vector) (poldiff_t *);
 	 poldiff_form_e(*get_form) (const void *);
@@ -60,9 +62,10 @@ struct result_item
 	policy_changed_fn_t policy_changed;
 	poldiff_run_fn_t poldiff_run;
 	get_buffer_fn_t get_buffer;
+	is_render_slow_fn_t is_render_slow;
 	get_forms_fn_t get_forms;
-	/** if the result item cannot be sorted then this will be
-	    NULL */
+	/** if the result item cannot be sorted then this will be an array
+	    of zeroes */
 	set_current_sort_fn_t set_current_sort;
 	/** data specific to subclasses of result_item */
 	union
@@ -73,6 +76,7 @@ struct result_item
 			int has_line_numbers[SEDIFFX_POLICY_NUM];
 			int cached[5];
 			GtkTextBuffer *buffers[5];
+			print_diff_fn_t print_diff;
 		} multi;
 	} data;
 };
@@ -339,6 +343,30 @@ static void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, pol
 }
 
 /**
+ * Given a vector of unsigned long integers, write to the text buffer
+ * those line numbers using the given tag.
+ */
+static void result_item_print_linenos(GtkTextBuffer * tb, GtkTextIter * iter,
+				      const gchar * prefix, apol_vector_t * linenos, const gchar * tag, GString * string)
+{
+	size_t i;
+	unsigned long lineno;
+	gtk_text_buffer_insert(tb, iter, "  [", -1);
+	if (prefix != NULL) {
+		gtk_text_buffer_insert(tb, iter, prefix, -1);
+	}
+	for (i = 0; i < apol_vector_get_size(linenos); i++) {
+		lineno = (unsigned long)apol_vector_get_element(linenos, i);
+		if (i > 0) {
+			gtk_text_buffer_insert(tb, iter, ", ", -1);
+		}
+		g_string_printf(string, "%lu", lineno);
+		gtk_text_buffer_insert_with_tags_by_name(tb, iter, string->str, -1, tag, NULL);
+	}
+	gtk_text_buffer_insert(tb, iter, "]", -1);
+}
+
+/**
  * Show the results for rules diff components.
  */
 static void result_item_print_rule_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
@@ -399,6 +427,14 @@ static GtkTextBuffer *result_item_single_get_buffer(result_item_t * item, poldif
 }
 
 /**
+ * For single items, rendering is (supposed to be) very fast.
+ */
+static int result_item_single_is_render_slow(result_item_t * item, poldiff_form_e form)
+{
+	return 0;
+}
+
+/**
  * For single items, re-use the same buffer each time.  This function
  * calls a modified rendering functions to be used explicitly by
  * rules.
@@ -449,6 +485,7 @@ static result_item_t *result_item_single_create(GtkTextTagTable * table)
 	item->policy_changed = NULL;
 	item->poldiff_run = result_item_single_poldiff_run;
 	item->get_buffer = result_item_single_get_buffer;
+	item->is_render_slow = result_item_single_is_render_slow;
 	item->get_forms = result_item_single_get_forms;
 	return item;
 }
@@ -484,6 +521,20 @@ result_item_t *result_item_create_commons(GtkTextTagTable * table)
 }
 
 /**
+ * Print an appropriate error message if levels are not supported.
+ */
+static GtkTextBuffer *result_item_level_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	if (!result_item_is_supported(item)) {
+		gtk_text_buffer_set_text(single_buffer,
+					 "Level diffs are not supported because one of the policies is not a MLS policy.", -1);
+		return single_buffer;
+	} else {
+		return result_item_single_get_buffer(item, form);
+	}
+}
+
+/**
  * Only support sensitivites and levels if either policy (can) has
  * them.
  */
@@ -508,8 +559,23 @@ result_item_t *result_item_create_levels(GtkTextTagTable * table)
 	item->get_vector = poldiff_get_level_vector;
 	item->get_form = poldiff_level_get_form;
 	item->get_string = poldiff_level_to_string;
+	item->get_buffer = result_item_level_get_buffer;
 	item->policy_changed = result_item_level_policy_changed;
 	return item;
+}
+
+/**
+ * Print an appropriate error message if categories are not supported.
+ */
+static GtkTextBuffer *result_item_category_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	if (!result_item_is_supported(item)) {
+		gtk_text_buffer_set_text(single_buffer,
+					 "Category diffs are not supported because one of the policies is not a MLS policy.", -1);
+		return single_buffer;
+	} else {
+		return result_item_single_get_buffer(item, form);
+	}
 }
 
 /**
@@ -534,6 +600,7 @@ result_item_t *result_item_create_categories(GtkTextTagTable * table)
 	item->get_vector = poldiff_get_cat_vector;
 	item->get_form = poldiff_cat_get_form;
 	item->get_string = poldiff_cat_to_string;
+	item->get_buffer = result_item_category_get_buffer;
 	item->policy_changed = result_item_level_policy_changed;	/* [sic] */
 	item->get_forms = result_item_category_get_forms;
 	return item;
@@ -592,6 +659,21 @@ static void result_item_attribute_policy_changed(result_item_t * item, apol_poli
 	}
 }
 
+/**
+ * Print an appropriate error message if attributes are not supported.
+ */
+static GtkTextBuffer *result_item_attribute_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	if (!result_item_is_supported(item)) {
+		gtk_text_buffer_set_text(single_buffer,
+					 "Attribute diffs are not supported because one of the policies does not contain attribute names.",
+					 -1);
+		return single_buffer;
+	} else {
+		return result_item_single_get_buffer(item, form);
+	}
+}
+
 /* the attribute result item is a subclass of single item.  it differs
    in that it might not exist if attributes are not supported in
    either policy */
@@ -606,6 +688,7 @@ result_item_t *result_item_create_attributes(GtkTextTagTable * table)
 	item->get_vector = poldiff_get_attrib_vector;
 	item->get_form = poldiff_attrib_get_form;
 	item->get_string = poldiff_attrib_to_string;
+	item->get_buffer = result_item_attribute_get_buffer;
 	item->policy_changed = result_item_attribute_policy_changed;
 	return item;
 }
@@ -770,12 +853,36 @@ static GtkTextBuffer *result_item_multi_get_buffer(result_item_t * item, poldiff
 	} else {
 		tb = item->data.multi.buffers[form_reverse_map[form]];
 		if (!item->data.multi.cached[form_reverse_map[form]]) {
+			util_text_buffer_clear(tb);
 			result_item_print_header(item, tb, form);
-			result_item_print_rule_diff(item, tb, form);
+			item->data.multi.print_diff(item, tb, form);
 			item->data.multi.cached[form_reverse_map[form]] = 1;
 		}
 	}
 	return tb;
+}
+
+/**
+ * If the item is cached or if there are less than 50 things to show,
+ * then rendering is considered to be fast.
+ */
+static int result_item_multi_is_render_slow(result_item_t * item, poldiff_form_e form)
+{
+	if (form == POLDIFF_FORM_NONE || item->data.multi.cached[form_reverse_map[form]]
+	    || result_item_get_num_differences(item, form) < 50) {
+		return 0;
+	}
+	return 1;
+}
+
+static void result_item_multi_set_current_sort(result_item_t * item, poldiff_form_e form, results_sort_e sort,
+					       results_sort_dir_e dir)
+{
+	if (item->sorts[form_reverse_map[form]] != sort || item->sort_dirs[form_reverse_map[form]] != dir) {
+		item->sorts[form_reverse_map[form]] = sort;
+		item->sort_dirs[form_reverse_map[form]] = dir;
+		item->data.multi.cached[form_reverse_map[form]] = 0;
+	}
 }
 
 /**
@@ -796,153 +903,26 @@ static result_item_t *result_item_multi_create(GtkTextTagTable * table)
 	item->policy_changed = result_item_multi_policy_changed;
 	item->poldiff_run = result_item_multi_poldiff_run;
 	item->get_buffer = result_item_multi_get_buffer;
+	item->is_render_slow = result_item_multi_is_render_slow;
 	item->get_forms = result_item_role_trans_get_forms;	/* [sic] */
+	item->set_current_sort = result_item_multi_set_current_sort;
 	int i;
 	for (i = 0; i < 5; i++) {
 		item->data.multi.buffers[i] = gtk_text_buffer_new(table);
+		item->sorts[i] = RESULTS_SORT_DEFAULT;
+		item->sort_dirs[i] = RESULTS_SORT_ASCEND;
 	}
 	return item;
 }
-
-result_item_t *result_item_create_avrules(GtkTextTagTable * table)
-{
-	result_item_t *item = result_item_multi_create(table);
-	if (item == NULL) {
-		return item;
-	}
-	item->label = "AV Rules";
-	item->bit_pos = POLDIFF_DIFF_AVRULES;
-	item->get_vector = poldiff_get_avrule_vector;
-	item->get_form = poldiff_avrule_get_form;
-	item->get_string = poldiff_avrule_to_string;
-	return item;
-}
-
-result_item_t *result_item_create_terules(GtkTextTagTable * table)
-{
-	result_item_t *item = result_item_multi_create(table);
-	if (item == NULL) {
-		return item;
-	}
-	item->label = "Type Rules";
-	item->bit_pos = POLDIFF_DIFF_TERULES;
-	item->get_vector = poldiff_get_terule_vector;
-	item->get_form = poldiff_terule_get_form;
-	item->get_string = poldiff_terule_to_string;
-	return item;
-}
-
-/******************** public methods below ********************/
-
-void result_item_destroy(result_item_t ** item)
-{
-	if (item != NULL && *item != NULL) {
-		free(*item);
-		*item = NULL;
-	}
-}
-
-const char *result_item_get_label(const result_item_t * item)
-{
-	return item->label;
-}
-
-void result_item_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
-{
-	if (item->policy_changed != NULL) {
-		item->policy_changed(item, orig_pol, mod_pol);
-	}
-}
-
-GtkTextBuffer *result_item_get_buffer(result_item_t * item, poldiff_form_e form)
-{
-	return item->get_buffer(item, form);
-}
-
-void result_item_poldiff_run(result_item_t * item, poldiff_t * diff, int incremental)
-{
-	item->poldiff_run(item, diff, incremental);
-}
-
-int result_item_is_supported(const result_item_t * item)
-{
-	return item->supported;
-}
-
-void result_item_get_forms(result_item_t * item, int forms[5])
-{
-	item->get_forms(item, forms);
-}
-
-size_t result_item_get_num_differences(result_item_t * item, poldiff_form_e form)
-{
-	switch (form) {
-	case POLDIFF_FORM_ADDED:
-		return item->stats[0];
-	case POLDIFF_FORM_REMOVED:
-		return item->stats[1];
-	case POLDIFF_FORM_MODIFIED:
-		return item->stats[2];
-	case POLDIFF_FORM_ADD_TYPE:
-		return item->stats[3];
-	case POLDIFF_FORM_REMOVE_TYPE:
-		return item->stats[4];
-	default:		       /* should never get here */
-		assert(0);
-		return 0;
-	}
-}
-
-int result_item_get_current_sort(result_item_t * item, results_sort_e * sort, results_sort_dir_e * dir)
-{
-	if (item->set_current_sort == NULL) {
-		return 0;
-	}
-	*sort = item->current_sort;
-	*dir = item->current_sort_dir;
-	return 1;
-}
-
-void result_item_set_current_sort(result_item_t * item, results_sort_e sort, results_sort_dir_e dir)
-{
-	if (item->set_current_sort != NULL) {
-		item->set_current_sort(item, sort, dir);
-		/* FIX ME */
-	}
-}
-
-void result_item_save_current_line(result_item_t * item, poldiff_form_e form, gint offset)
-{
-	/* don't care about the summary page */
-	if (form != POLDIFF_FORM_NONE) {
-		item->offsets[form_reverse_map[form]] = offset;
-	}
-}
-
-gint result_item_get_current_line(result_item_t * item, poldiff_form_e form)
-{
-	/* don't care about the summary page */
-	if (form == POLDIFF_FORM_NONE) {
-		return 0;
-	}
-	return item->offsets[form_reverse_map[form]];
-}
-
-#if 0
-static const struct poldiff_item_record poldiff_items[] = {
-	NULL, NULL, NULL /* special case because this is from two data */
-}, {
-NULL, 13, 0, 0, NULL, NULL, NULL}      /* must have highest id value */
-};
 
 struct sort_opts
 {
 	poldiff_t *diff;
-	int field;
-	int direction;
+	results_sort_e field;
+	results_sort_dir_e direction;
 };
 
-static int results_avsort_comp(const void *a, const void *b, void *data)
+static int result_item_avrule_comp(const void *a, const void *b, void *data)
 {
 	const poldiff_avrule_t *a1 = a;
 	const poldiff_avrule_t *a2 = b;
@@ -985,13 +965,13 @@ static int results_avsort_comp(const void *a, const void *b, void *data)
 	return opts->direction * strcmp(s1, s2);
 }
 
-static apol_vector_t *results_avsort(poldiff_t * diff, poldiff_form_e form, int field, int direction)
+static apol_vector_t *result_item_avrule_sort(result_item_t * item, poldiff_form_e form)
 {
 	apol_vector_t *orig_v, *v;
 	size_t i;
 	void *elem;
-	struct sort_opts opts = { diff, field, direction };
-	orig_v = poldiff_get_avrule_vector(diff);
+	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
+	orig_v = poldiff_get_avrule_vector(item->diff);
 	if ((v = apol_vector_create()) == NULL) {
 		return NULL;
 	}
@@ -1002,13 +982,76 @@ static apol_vector_t *results_avsort(poldiff_t * diff, poldiff_form_e form, int 
 			return NULL;
 		}
 	}
-	if (field != RESULTS_SORT_DEFAULT) {
-		apol_vector_sort(v, results_avsort_comp, &opts);
+	if (opts.field != RESULTS_SORT_DEFAULT) {
+		apol_vector_sort(v, result_item_avrule_comp, &opts);
 	}
 	return v;
 }
 
-static int results_tesort_comp(const void *a, const void *b, void *data)
+static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
+{
+	GtkTextIter iter;
+	size_t i;
+	void *elem;
+	char *s;
+	GString *string = g_string_new("");
+	apol_vector_t *syn_linenos;
+	apol_vector_t *rules = result_item_avrule_sort(item, form);
+
+	gtk_text_buffer_get_end_iter(tb, &iter);
+	if (apol_vector_get_size(rules) > 0) {
+		poldiff_enable_line_numbers(item->diff);
+	}
+	for (i = 0; i < apol_vector_get_size(rules); i++) {
+		elem = apol_vector_get_element(rules, i);
+		if ((s = poldiff_avrule_to_string(item->diff, elem)) == NULL) {
+			goto cleanup;
+		}
+		if (form != POLDIFF_FORM_MODIFIED) {
+			result_item_print_string(tb, &iter, s, 1);
+			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
+			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
+			}
+			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
+			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
+			}
+		} else {
+			result_item_print_rule_modified(tb, &iter, s, 1);
+			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
+			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				result_item_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
+			}
+			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
+			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+				result_item_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-pol_mod", string);
+			}
+		}
+		free(s);
+		gtk_text_buffer_insert(tb, &iter, "\n", -1);
+	}
+      cleanup:
+	apol_vector_destroy(&rules, NULL);
+	g_string_free(string, TRUE);
+}
+
+result_item_t *result_item_create_avrules(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_multi_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "AV Rules";
+	item->bit_pos = POLDIFF_DIFF_AVRULES;
+	item->get_vector = poldiff_get_avrule_vector;
+	item->get_form = poldiff_avrule_get_form;
+	item->get_string = poldiff_avrule_to_string;
+	item->data.multi.print_diff = result_item_avrule_print_diff;
+	return item;
+}
+
+static int result_item_terule_comp(const void *a, const void *b, void *data)
 {
 	const poldiff_terule_t *a1 = a;
 	const poldiff_terule_t *a2 = b;
@@ -1051,13 +1094,13 @@ static int results_tesort_comp(const void *a, const void *b, void *data)
 	return opts->direction * strcmp(s1, s2);
 }
 
-static apol_vector_t *results_tesort(poldiff_t * diff, poldiff_form_e form, int field, int direction)
+static apol_vector_t *result_item_terule_sort(result_item_t * item, poldiff_form_e form)
 {
 	apol_vector_t *orig_v, *v;
 	size_t i;
 	void *elem;
-	struct sort_opts opts = { diff, field, direction };
-	orig_v = poldiff_get_terule_vector(diff);
+	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
+	orig_v = poldiff_get_terule_vector(item->diff);
 	if ((v = apol_vector_create()) == NULL) {
 		return NULL;
 	}
@@ -1068,189 +1111,171 @@ static apol_vector_t *results_tesort(poldiff_t * diff, poldiff_form_e form, int 
 			return NULL;
 		}
 	}
-	if (field != RESULTS_SORT_DEFAULT) {
-		apol_vector_sort(v, results_tesort_comp, &opts);
+	if (opts.field != RESULTS_SORT_DEFAULT) {
+		apol_vector_sort(v, result_item_terule_comp, &opts);
 	}
 	return v;
 }
 
-/**
- * Given a vector of unsigned long integers, write to the text buffer
- * those line numbers using the given tag.
- */
-static void results_print_linenos(GtkTextBuffer * tb, GtkTextIter * iter,
-				  const gchar * prefix, apol_vector_t * linenos, const gchar * tag, GString * string)
+static void result_item_terule_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
 {
-	size_t i;
-	unsigned long lineno;
-	gtk_text_buffer_insert(tb, iter, "  [", -1);
-	if (prefix != NULL) {
-		gtk_text_buffer_insert(tb, iter, prefix, -1);
-	}
-	for (i = 0; i < apol_vector_get_size(linenos); i++) {
-		lineno = (unsigned long)apol_vector_get_element(linenos, i);
-		if (i > 0) {
-			gtk_text_buffer_insert(tb, iter, ", ", -1);
-		}
-		g_string_printf(string, "%lu", lineno);
-		gtk_text_buffer_insert_with_tags_by_name(tb, iter, string->str, -1, tag, NULL);
-	}
-	gtk_text_buffer_insert(tb, iter, "]", -1);
-}
-
-static void results_print_rules(results_t * r, GtkTextBuffer * tb,
-				const struct poldiff_item_record *item_record,
-				poldiff_form_e form, apol_vector_t * av, apol_vector_t * te)
-{
-	poldiff_t *diff = toplevel_get_poldiff(r->top);
 	GtkTextIter iter;
 	size_t i;
 	void *elem;
 	char *s;
-	apol_vector_t *syn_linenos;
 	GString *string = g_string_new("");
+	apol_vector_t *syn_linenos;
+	apol_vector_t *rules = result_item_terule_sort(item, form);
 
-	results_print_item_header(r, tb, item_record, form);
 	gtk_text_buffer_get_end_iter(tb, &iter);
-
-	if (apol_vector_get_size(av) > 0 || apol_vector_get_size(te) > 0) {
-		poldiff_enable_line_numbers(diff);
+	if (apol_vector_get_size(rules) > 0) {
+		poldiff_enable_line_numbers(item->diff);
 	}
-	for (i = 0; i < apol_vector_get_size(av); i++) {
-		elem = apol_vector_get_element(av, i);
-		if ((s = poldiff_avrule_to_string(diff, elem)) == NULL) {
-			util_message(toplevel_get_window(r->top), GTK_MESSAGE_ERROR, "Out of memory.");
-			g_string_free(string, TRUE);
-			return;
+	for (i = 0; i < apol_vector_get_size(rules); i++) {
+		elem = apol_vector_get_element(rules, i);
+		if ((s = poldiff_terule_to_string(item->diff, elem)) == NULL) {
+			goto cleanup;
 		}
 		if (form != POLDIFF_FORM_MODIFIED) {
-			results_print_string(tb, &iter, s, 1);
-			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_ORIG) &&
-			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				results_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
+			result_item_print_string(tb, &iter, s, 1);
+			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
+			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
 			}
-			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_MOD) &&
-			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				results_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
+			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
+			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
 			}
 		} else {
-			results_print_rule_modified(tb, &iter, s, 1);
-			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_ORIG) &&
-			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
+			result_item_print_rule_modified(tb, &iter, s, 1);
+			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
+			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				result_item_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
 			}
-			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_MOD) &&
-			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-pol_mod", string);
+			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
+			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+				result_item_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-pol_mod", string);
 			}
 		}
 		free(s);
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
 	}
-
-	for (i = 0; i < apol_vector_get_size(te); i++) {
-		elem = apol_vector_get_element(te, i);
-		if ((s = poldiff_terule_to_string(diff, elem)) == NULL) {
-			util_message(toplevel_get_window(r->top), GTK_MESSAGE_ERROR, "Out of memory.");
-			g_string_free(string, TRUE);
-			return;
-		}
-		if (form != POLDIFF_FORM_MODIFIED) {
-			results_print_string(tb, &iter, s, 1);
-			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_ORIG) &&
-			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				results_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
-			}
-			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_MOD) &&
-			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				results_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
-			}
-		} else {
-			results_print_rule_modified(tb, &iter, s, 1);
-			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_ORIG) &&
-			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				results_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
-			}
-			if (toplevel_is_policy_capable_line_numbers(r->top, SEDIFFX_POLICY_MOD) &&
-			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				results_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-pol_mod", string);
-			}
-		}
-		free(s);
-		gtk_text_buffer_insert(tb, &iter, "\n", -1);
-	}
-
+      cleanup:
+	apol_vector_destroy(&rules, NULL);
 	g_string_free(string, TRUE);
 }
 
-struct run_datum
+result_item_t *result_item_create_terules(GtkTextTagTable * table)
 {
-	results_t *r;
-	poldiff_form_e form;
-	progress_t *progress;
-	apol_vector_t *av, *te;
-	int result;
-};
-
-static gpointer results_sort_rule_runner(gpointer data)
-{
-	struct run_datum *run = (struct run_datum *)data;
-	progress_update(run->progress, "sorting rules");
-	poldiff_t *diff = toplevel_get_poldiff(run->r->top);
-	if ((run->av =
-	     results_avsort(diff, run->form, run->r->te_sort_field[run->form], run->r->te_sort_direction[run->form])) == NULL
-	    || (run->te =
-		results_tesort(diff, run->form, run->r->te_sort_field[run->form], run->r->te_sort_direction[run->form])) == NULL) {
-		apol_vector_destroy(&run->av, NULL);
-		apol_vector_destroy(&run->te, NULL);
-		progress_abort(run->progress, "%s", strerror(errno));
-		run->result = -1;
-	} else {
-		progress_update(run->progress, "printing rules");
-		run->result = 0;
-		progress_done(run->progress);
+	result_item_t *item = result_item_multi_create(table);
+	if (item == NULL) {
+		return item;
 	}
-	return NULL;
+	item->label = "Type Rules";
+	item->bit_pos = POLDIFF_DIFF_TERULES;
+	item->get_vector = poldiff_get_terule_vector;
+	item->get_form = poldiff_terule_get_form;
+	item->get_string = poldiff_terule_to_string;
+	item->data.multi.print_diff = result_item_terule_print_diff;
+	return item;
 }
 
-/**
- * Show the results for AV and TE rules diff.
- */
-static void results_select_rules(results_t * r, const struct poldiff_item_record *item_record, poldiff_form_e form)
+/******************** public methods below ********************/
+
+void result_item_destroy(result_item_t ** item)
 {
-	GtkTextBuffer *tb;
+	if (item != NULL && *item != NULL) {
+		free(*item);
+		*item = NULL;
+	}
+}
+
+const char *result_item_get_label(const result_item_t * item)
+{
+	return item->label;
+}
+
+void result_item_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
+{
+	if (item->policy_changed != NULL) {
+		item->policy_changed(item, orig_pol, mod_pol);
+	}
+}
+
+GtkTextBuffer *result_item_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	return item->get_buffer(item, form);
+}
+
+int result_item_is_render_slow(result_item_t * item, poldiff_form_e form)
+{
+	return item->is_render_slow(item, form);
+}
+
+void result_item_poldiff_run(result_item_t * item, poldiff_t * diff, int incremental)
+{
+	item->poldiff_run(item, diff, incremental);
+}
+
+int result_item_is_supported(const result_item_t * item)
+{
+	return item->supported;
+}
+
+void result_item_get_forms(result_item_t * item, int forms[5])
+{
+	item->get_forms(item, forms);
+}
+
+size_t result_item_get_num_differences(result_item_t * item, poldiff_form_e form)
+{
+	switch (form) {
+	case POLDIFF_FORM_ADDED:
+		return item->stats[0];
+	case POLDIFF_FORM_REMOVED:
+		return item->stats[1];
+	case POLDIFF_FORM_MODIFIED:
+		return item->stats[2];
+	case POLDIFF_FORM_ADD_TYPE:
+		return item->stats[3];
+	case POLDIFF_FORM_REMOVE_TYPE:
+		return item->stats[4];
+	default:		       /* should never get here */
+		assert(0);
+		return 0;
+	}
+}
+
+int result_item_get_current_sort(result_item_t * item, poldiff_form_e form, results_sort_e * sort, results_sort_dir_e * dir)
+{
+	if (item->set_current_sort == NULL || form == POLDIFF_FORM_NONE) {
+		return 0;
+	}
+	*sort = item->sorts[form_reverse_map[form]];
+	*dir = item->sort_dirs[form_reverse_map[form]];
+	return 1;
+}
+
+void result_item_set_current_sort(result_item_t * item, poldiff_form_e form, results_sort_e sort, results_sort_dir_e dir)
+{
+	if (item->set_current_sort != NULL && form != POLDIFF_FORM_NONE) {
+		item->set_current_sort(item, form, sort, dir);
+	}
+}
+
+void result_item_save_current_line(result_item_t * item, poldiff_form_e form, gint offset)
+{
+	/* don't care about the summary page */
+	if (form != POLDIFF_FORM_NONE) {
+		item->offsets[form_reverse_map[form]] = offset;
+	}
+}
+
+gint result_item_get_current_line(result_item_t * item, poldiff_form_e form)
+{
+	/* don't care about the summary page */
 	if (form == POLDIFF_FORM_NONE) {
-		tb = r->buffers[RESULTS_BUFFER_MAIN];
-		gtk_text_view_set_buffer(r->view, tb);
-		util_text_buffer_clear(tb);
-		results_print_summary(r, tb, item_record);
-		return;
+		return 0;
 	}
-	tb = r->buffers[form];
-	gtk_text_view_set_buffer(r->view, tb);
-	toplevel_set_sort_menu_sensitivity(r->top, TRUE);
-	if (!r->te_buffered[form]) {
-		struct run_datum run;
-		run.r = r;
-		run.form = form;
-		run.progress = toplevel_get_progress(r->top);
-		run.av = run.te = NULL;
-		run.result = 0;
-
-		util_text_buffer_clear(tb);
-		util_cursor_wait(GTK_WIDGET(toplevel_get_window(r->top)));
-		progress_show(run.progress, "Rendering Rules");
-		g_thread_create(results_sort_rule_runner, &run, FALSE, NULL);
-		progress_wait(run.progress);
-		util_cursor_clear(GTK_WIDGET(toplevel_get_window(r->top)));
-		if (run.result == 0) {
-			results_print_rules(r, tb, item_record, form, run.av, run.te);
-			apol_vector_destroy(&run.av, NULL);
-			apol_vector_destroy(&run.te, NULL);
-		}
-		progress_hide(run.progress);
-		r->te_buffered[form] = 1;
-	}
+	return item->offsets[form_reverse_map[form]];
 }
-
-#endif

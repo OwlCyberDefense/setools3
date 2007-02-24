@@ -55,9 +55,6 @@ struct toplevel
 	GtkWindow *w;
 	/** toplevel notebook widget */
 	GtkNotebook *notebook;
-	/** non-zero if the currently opened policies are capable of
-	 * diffing attributes */
-	int can_diff_attributes;
 };
 
 /**
@@ -295,13 +292,8 @@ int toplevel_open_policies(toplevel_t * top, apol_policy_path_t * orig_path, apo
 		apol_policy_path_destroy(&run.paths[1]);
 		return -1;
 	}
-	top->can_diff_attributes = 1;
 	results_open_policies(top->results, run.policies[SEDIFFX_POLICY_ORIG], run.policies[SEDIFFX_POLICY_MOD]);
 	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
-		qpol_policy_t *q = apol_policy_get_qpol(run.policies[i]);
-		if (!qpol_policy_has_capability(q, QPOL_CAP_ATTRIB_NAMES)) {
-			top->can_diff_attributes = 0;
-		}
 		policy_view_update(top->views[i], run.policies[i], run.paths[i]);
 		sediffx_set_policy(top->s, i, run.policies[i], run.paths[i]);
 	}
@@ -340,26 +332,14 @@ static gpointer toplevel_run_diff_runner(gpointer data)
 void toplevel_run_diff(toplevel_t * top)
 {
 	struct run_datum r;
-	GtkWidget *dialog = NULL;
 
 	r.top = top;
 	r.run_flags = POLDIFF_DIFF_ALL;
 	r.result = 0;
-	if (!top->can_diff_attributes) {
-		dialog = gtk_message_dialog_new(top->w, GTK_DIALOG_DESTROY_WITH_PARENT,
-						GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
-						"Attribute diffs are not supported for the currently loaded policies.");
-		g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
-		r.run_flags &= ~POLDIFF_DIFF_ATTRIBS;
-	}
 	results_clear(top->results);
 
 	util_cursor_wait(GTK_WIDGET(top->w));
 	progress_show(top->progress, "Running Diff");
-	/* pop the attribute warning over the progress dialog */
-	if (dialog != NULL) {
-		gtk_widget_show(dialog);
-	}
 	g_thread_create(toplevel_run_diff_runner, &r, FALSE, NULL);
 	progress_wait(top->progress);
 	progress_hide(top->progress);

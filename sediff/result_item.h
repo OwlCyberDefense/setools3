@@ -102,6 +102,22 @@ void result_item_poldiff_run(result_item_t * item, poldiff_t * diff, int increme
 GtkTextBuffer *result_item_get_buffer(result_item_t * item, poldiff_form_e form);
 
 /**
+ * If it will take a "significant" amount of time (where "significant"
+ * is some arbitrary amount) to render a buffer then sediffx will
+ * display a progress dialog while working.  This function returns
+ * non-zero if it will be significantly long, 0 or not.  This function
+ * will be called prior to result_item_get_buffer().
+ *
+ * @param item Result item to query.
+ * @param form Form that will be displayed, or POLDIFF_FORM_NONE if
+ * just the summary is requested.
+ *
+ * @return Non-zero if a progress dialog should be displayed, zero if
+ * not.
+ */
+int result_item_is_render_slow(result_item_t * item, poldiff_form_e form);
+
+/**
  * Determine if a result item is capable of being run according to the
  * given policies.  For example, for binary policies prior to version
  * 20, it is not possible to have modified types.  Note that this does
@@ -153,24 +169,27 @@ size_t result_item_get_num_differences(result_item_t * item, poldiff_form_e form
  * result item.
  *
  * @param item Result item to query.
+ * @param form Form whose sort algorithm and direction to get.
  * @param sort Reference to where to write the current sorting algorithm.
  * @param dir Reference to where to write the current sorting direction.
  *
  * @return Non-zero if the result item supports sorting, zero if it
  * does not.
  */
-int result_item_get_current_sort(result_item_t * item, results_sort_e * sort, results_sort_dir_e * dir);
+int result_item_get_current_sort(result_item_t * item, poldiff_form_e form, results_sort_e * sort, results_sort_dir_e * dir);
 
 /**
  * Set the current sorting algorithm and sort direction for the given
- * result item.  This will re-render the item's text buffer as
- * necessary.
+ * result item.  The next time result_item_get_buffer() is called the
+ * contents of the buffer will be updated as necessary.  (This
+ * function does not update the buffer.)
  *
  * @param item Result item to modify.
+ * @param form Form whose sort algorithm and direction to set.
  * @param sort New sorting algorithm.
  * @param dir New sorting direction.
  */
-void result_item_set_current_sort(result_item_t * item, results_sort_e sort, results_sort_dir_e dir);
+void result_item_set_current_sort(result_item_t * item, poldiff_form_e form, results_sort_e sort, results_sort_dir_e dir);
 
 /**
  * Tell the result item to store a particular line offset for the
