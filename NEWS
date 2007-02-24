@@ -1,3 +1,31 @@
+SETools 3.2:
+
+libapol, libqpol, libesaudit:
+
+  * If --enable-swig-python is given during configure time, the build
+    system will create Python SWIG wrappers for these libraries.
+
+libpoldiff:
+
+  * Now able to diff levels, categories, and range_transition
+    statements.  Able to diff modifications to a user's default level
+    and permitted MLS range, assuming the policies are MLS
+    
+sesearch, apol:
+
+  * Full support for version 21 policy (i.e., object classes for
+    range_transition statements).
+
+sediff:
+
+  * Now shows MLS diffs.
+
+sediffx:
+
+  * Now shows MLS diffs.
+
+==================================================
+
 SETools 3.1:
 
 SETools:
