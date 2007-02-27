@@ -61,7 +61,7 @@ This package includes the following run-time libraries:
 %package devel
 Summary: Policy analysis development files for SELinux.
 Group: System Environment/Libraries
-Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
+Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-devel = 3.2
 
 %description devel
 SETools is a collection of graphical tools, command-line tools, and
@@ -125,7 +125,6 @@ make
 %install
 rm -rf ${RPM_BUILD_ROOT}
 %makeinstall
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/lib*so
 mkdir -p ${RPM_BUILD_ROOT}/usr/share/pixmaps
 install -d -m 755 ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d
 install -m 644 packages/rpm/seaudit.pam ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d/seaudit
@@ -146,13 +145,18 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files libs
 %defattr(-,root,root)
-%{_libdir}/libqpol.so.1
-%{_libdir}/libapol.so.3.1
-%{_libdir}/libpoldiff.so.1.1
+%{_libdir}/libqpol.so.1.2
+%{_libdir}/libqpol.so
+%{_libdir}/libapol.so.3.2
+%{_libdir}/libapol.so
+%{_libdir}/libpoldiff.so.1.2
+%{_libdir}/libpoldiff.so
 %{_libdir}/libsefs.so.3
+%{_libdir}/libsefs.so
 %{_libdir}/libseaudit.so.4
-%{_datadir}/setools-3.1/seaudit-report.conf
-%{_datadir}/setools-3.1/seaudit-report.css
+%{_libdir}/libseaudit.so
+%{_datadir}/setools-%{version}/seaudit-report.conf
+%{_datadir}/setools-%{version}/seaudit-report.css
 %doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
 
 %files devel
@@ -168,7 +172,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/qpol/cond_query.h
 %{_includedir}/qpol/constraint_query.h
 %{_includedir}/qpol/context_query.h
-%{_includedir}/qpol/expand.h
 %{_includedir}/qpol/fs_use_query.h
 %{_includedir}/qpol/genfscon_query.h
 %{_includedir}/qpol/isid_query.h
@@ -220,7 +223,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/poldiff/poldiff.h
 %{_includedir}/poldiff/attrib_diff.h
 %{_includedir}/poldiff/bool_diff.h
+%{_includedir}/poldiff/cat_diff.h
 %{_includedir}/poldiff/class_diff.h
+%{_includedir}/poldiff/level_diff.h
 %{_includedir}/poldiff/rbac_diff.h
 %{_includedir}/poldiff/role_diff.h
 %{_includedir}/poldiff/rule_diff.h
@@ -254,12 +259,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/sechecker
 %{_bindir}/sediff
 %{_bindir}/seaudit-report
-%{_datadir}/setools-3.1/sechecker-profiles/all-checks.sechecker
-%{_datadir}/setools-3.1/sechecker-profiles/analysis-checks.sechecker
-%{_datadir}/setools-3.1/sechecker-profiles/devel-checks.sechecker
-%{_datadir}/setools-3.1/sechecker-profiles/sechecker.dtd
-%{_datadir}/setools-3.1/sechecker_help.txt
-%{_datadir}/setools-3.1/seaudit-report-service
+%{_datadir}/setools-%{version}/sechecker-profiles/all-checks.sechecker
+%{_datadir}/setools-%{version}/sechecker-profiles/analysis-checks.sechecker
+%{_datadir}/setools-%{version}/sechecker-profiles/devel-checks.sechecker
+%{_datadir}/setools-%{version}/sechecker-profiles/sechecker.dtd
+%{_datadir}/setools-%{version}/sechecker_help.txt
+%{_datadir}/setools-%{version}/seaudit-report-service
 %{_mandir}/man1/findcon.1.gz
 %{_mandir}/man1/indexcon.1.gz
 %{_mandir}/man1/replcon.1.gz
@@ -275,30 +280,30 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/sediffx
 %{_bindir}/apol
 %{_bindir}/awish
-%{_datadir}/setools-3.1/sediff_help.txt
-%{_datadir}/setools-3.1/sediffx.glade
-%{_datadir}/setools-3.1/sediffx.png
-%{_datadir}/setools-3.1/sediffx-small.png
-%{_datadir}/setools-3.1/apol_help.txt
-%{_datadir}/setools-3.1/domaintrans_help.txt
-%{_datadir}/setools-3.1/file_relabel_help.txt
-%{_datadir}/setools-3.1/infoflow_help.txt
-%{_datadir}/setools-3.1/types_relation_help.txt
-%{_datadir}/setools-3.1/apol_perm_mapping_ver12
-%{_datadir}/setools-3.1/apol_perm_mapping_ver15
-%{_datadir}/setools-3.1/apol_perm_mapping_ver16
-%{_datadir}/setools-3.1/apol_perm_mapping_ver17
-%{_datadir}/setools-3.1/apol_perm_mapping_ver18
-%{_datadir}/setools-3.1/apol_perm_mapping_ver19
-%{_datadir}/setools-3.1/apol_perm_mapping_ver20
-%{_datadir}/setools-3.1/apol_perm_mapping_ver21
-%{_datadir}/setools-3.1/apol.gif
-%{_datadir}/setools-3.1/apol.tcl
-%{_datadir}/setools-3.1/seaudit.glade
-%{_datadir}/setools-3.1/seaudit_help.txt
-%{_datadir}/setools-3.1/seaudit.png
-%{_datadir}/setools-3.1/seaudit-small.png
-%{_datadir}/setools-3.1/dot_seaudit
+%{_datadir}/setools-%{version}/sediff_help.txt
+%{_datadir}/setools-%{version}/sediffx.glade
+%{_datadir}/setools-%{version}/sediffx.png
+%{_datadir}/setools-%{version}/sediffx-small.png
+%{_datadir}/setools-%{version}/apol_help.txt
+%{_datadir}/setools-%{version}/domaintrans_help.txt
+%{_datadir}/setools-%{version}/file_relabel_help.txt
+%{_datadir}/setools-%{version}/infoflow_help.txt
+%{_datadir}/setools-%{version}/types_relation_help.txt
+%{_datadir}/setools-%{version}/apol_perm_mapping_ver12
+%{_datadir}/setools-%{version}/apol_perm_mapping_ver15
+%{_datadir}/setools-%{version}/apol_perm_mapping_ver16
+%{_datadir}/setools-%{version}/apol_perm_mapping_ver17
+%{_datadir}/setools-%{version}/apol_perm_mapping_ver18
+%{_datadir}/setools-%{version}/apol_perm_mapping_ver19
+%{_datadir}/setools-%{version}/apol_perm_mapping_ver20
+%{_datadir}/setools-%{version}/apol_perm_mapping_ver21
+%{_datadir}/setools-%{version}/apol.gif
+%{_datadir}/setools-%{version}/apol.tcl
+%{_datadir}/setools-%{version}/seaudit.glade
+%{_datadir}/setools-%{version}/seaudit_help.txt
+%{_datadir}/setools-%{version}/seaudit.png
+%{_datadir}/setools-%{version}/seaudit-small.png
+%{_datadir}/setools-%{version}/dot_seaudit
 %{_mandir}/man1/apol.1.gz
 %{_mandir}/man1/sediffx.1.gz
 %{_mandir}/man8/seaudit.8.gz
