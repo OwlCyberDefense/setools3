@@ -1186,9 +1186,16 @@ static int load_policy_msg_is_old_load_policy_string(seaudit_log_t * log, apol_v
 static void load_policy_msg_get_policy_components(seaudit_load_message_t * load, apol_vector_t * tokens, size_t * position)
 {
 	char *arg = apol_vector_get_element(tokens, *position);
+	char *endptr;
+	unsigned int val = (unsigned int)strtoul(arg, &endptr, 10);
+	if (*endptr != '\0') {
+		/* found a key-value pair where the key is not a
+		   number, so skip this */
+		(*position)++;
+		return;
+	}
 	char *id = apol_vector_get_element(tokens, *position + 1);
 	assert(id != NULL && arg != NULL);
-	unsigned int val = (unsigned int)strtoul(arg, NULL, 10);
 	if (load->classes == 0 && strstr(id, "classes")) {
 		load->classes = val;
 	} else if (load->rules == 0 && strstr(id, "rules")) {
