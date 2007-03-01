@@ -162,6 +162,120 @@ char *seaudit_avc_message_get_path(seaudit_avc_message_t * avc)
 	return avc->path;
 }
 
+char *seaudit_avc_message_get_dev(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->dev;
+}
+
+char *seaudit_avc_message_get_netif(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->netif;
+}
+
+char *seaudit_avc_message_get_laddr(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->laddr;
+}
+
+int seaudit_avc_message_get_lport(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->lport;
+}
+
+char *seaudit_avc_message_get_faddr(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->faddr;
+}
+
+int seaudit_avc_message_get_fport(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->fport;
+}
+
+char *seaudit_avc_message_get_saddr(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->saddr;
+}
+
+int seaudit_avc_message_get_sport(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->source;
+}
+
+char *seaudit_avc_message_get_daddr(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->daddr;
+}
+
+int seaudit_avc_message_get_dport(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->dest;
+}
+
+int seaudit_avc_message_get_key(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (!avc->is_key) {
+		return -1;
+	}
+	return avc->key;
+}
+
+int seaudit_avc_message_get_cap(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (!avc->is_capability) {
+		return -1;
+	}
+	return avc->capability;
+}
+
 /******************** protected functions below ********************/
 
 seaudit_avc_message_t *avc_message_create(void)
