@@ -226,6 +226,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/poldiff/cat_diff.h
 %{_includedir}/poldiff/class_diff.h
 %{_includedir}/poldiff/level_diff.h
+%{_includedir}/poldiff/range_trans_diff.h
 %{_includedir}/poldiff/rbac_diff.h
 %{_includedir}/poldiff/role_diff.h
 %{_includedir}/poldiff/rule_diff.h
@@ -324,7 +325,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun -p /sbin/ldconfig
 
 %changelog
-* Mon Oct 30 2006 Dan Jason Tang <jtang@tresys.com> 3.1-0
+* Mon Feb 02 2007 Jason Tang <jtang@tresys.com> 3.1-1
 - update to SETools 3.1 release
 
 * Mon Oct 30 2006 Dan Walsh <dwalsh@redhat.com> 3.0-2.fc6

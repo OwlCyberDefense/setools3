@@ -27,12 +27,12 @@
 
 #include "poldiff_internal.h"
 
-#include <apol/util.h>
 #include <apol/bst.h>
+#include <apol/util.h>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 struct poldiff_role_allow_summary
 {
@@ -740,8 +740,8 @@ static const char *get_valid_name(poldiff_t * diff, uint32_t pseudo_val)
 		v = type_map_lookup_reverse(diff, pseudo_val, pol);
 	}
 	if (!apol_vector_get_size(v)) {
-		ERR(diff, "%s", strerror(ERANGE));
-		errno = ERANGE;
+		/* should never get here */
+		assert(0);
 		return NULL;
 	}
 	t = apol_vector_get_element(v, 0);
@@ -905,7 +905,8 @@ int role_trans_comp(const void *x, const void *y, poldiff_t * diff __attribute__
  *  @param tgt Name of the target type.
  *
  *  @return A newly allocated and initialised diff or NULL upon error.
- *  The caller is responsible for calling free() upon the returned value.
+ *  The caller is responsible for calling free() upon the returned
+ *  value.
  */
 static poldiff_role_trans_t *make_rt_diff(poldiff_t * diff, poldiff_form_e form, char *src, char *tgt)
 {

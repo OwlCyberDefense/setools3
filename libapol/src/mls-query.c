@@ -2,7 +2,6 @@
  *  @file
  *  Implementation for querying MLS components.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -23,7 +22,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define _GNU_SOURCE
+#include <config.h>
+
 #include <ctype.h>
 #include <errno.h>
 #include <regex.h>
@@ -119,27 +119,26 @@ static int apol_mls_level_validate(apol_policy_t * p, apol_mls_level_t * level)
 	return retval;
 }
 
-/**
- * Equivalent to the non-ANSI strdup() function.
- * @param p Policy handler.
- * @param s String to duplicate.
- * @return Pointer to newly allocated string, or NULL on error.
- */
-static char *apol_strdup(apol_policy_t * p, const char *s)
-{
-	char *t;
-	if ((t = malloc(strlen(s) + 1)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
-		return NULL;
-	}
-	return strcpy(t, s);
-}
-
 /********************* level *********************/
 
 apol_mls_level_t *apol_mls_level_create(void)
 {
 	return calloc(1, sizeof(apol_mls_level_t));
+}
+
+apol_mls_level_t *apol_mls_level_create_from_mls_level(apol_mls_level_t * level)
+{
+	apol_mls_level_t *l;
+	if ((l = apol_mls_level_create()) == NULL) {
+		return NULL;
+	}
+	if (level != NULL &&
+	    ((l->sens = strdup(level->sens)) == NULL ||
+	     (l->cats = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL)) == NULL)) {
+		apol_mls_level_destroy(&l);
+		return NULL;
+	}
+	return l;
 }
 
 apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, char *mls_level_string)
@@ -457,7 +456,7 @@ int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, cons
 		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
-	if ((new_cat = apol_strdup(p, cats)) == NULL || apol_vector_append(level->cats, (void *)new_cat) < 0) {
+	if ((new_cat = strdup(cats)) == NULL || apol_vector_append(level->cats, (void *)new_cat) < 0) {
 		ERR(p, "%s", strerror(ENOMEM));
 		free(new_cat);
 		return -1;
@@ -554,7 +553,7 @@ char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level)
 	if (!cat_name)
 		goto cleanup;
 
-	if (apol_str_append(&rt, &sz, ":") || apol_str_append(&rt, &sz, cat_name)) {
+	if (apol_str_appendf(&rt, &sz, ":%s", cat_name)) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -578,7 +577,7 @@ char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level)
 			if (i + 1 == n_cats) {	/* last category is next; append "." */
 				if (qpol_cat_get_name(p->p, next_cat, &name))
 					goto cleanup;
-				if (apol_str_append(&rt, &sz, ".") || apol_str_append(&rt, &sz, name)) {
+				if (apol_str_appendf(&rt, &sz, ".%s", name)) {
 					ERR(p, "%s", strerror(ENOMEM));
 					goto cleanup;
 				}
@@ -595,7 +594,7 @@ char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level)
 				} else {	/* far_cat isn't consecutive wrt cur/next_cat; append it */
 					if (qpol_cat_get_name(p->p, next_cat, &name))
 						goto cleanup;
-					if (apol_str_append(&rt, &sz, ".") || apol_str_append(&rt, &sz, name)) {
+					if (apol_str_appendf(&rt, &sz, ".%s", name)) {
 						ERR(p, "%s", strerror(ENOMEM));
 						goto cleanup;
 					}
@@ -605,7 +604,7 @@ char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level)
 		} else {	       /* next_cat isn't consecutive to cur_cat; append it */
 			if (qpol_cat_get_name(p->p, next_cat, &name))
 				goto cleanup;
-			if (apol_str_append(&rt, &sz, ", ") || apol_str_append(&rt, &sz, name)) {
+			if (apol_str_appendf(&rt, &sz, ", %s", name)) {
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -668,6 +667,21 @@ int apol_mls_cat_name_compare(const void *a, const void *b, void *data)
 apol_mls_range_t *apol_mls_range_create(void)
 {
 	return calloc(1, sizeof(apol_mls_range_t));
+}
+
+apol_mls_range_t *apol_mls_range_create_from_mls_range(const apol_mls_range_t * range)
+{
+	apol_mls_range_t *r;
+	if ((r = apol_mls_range_create()) == NULL) {
+		return NULL;
+	}
+	if (range != NULL &&
+	    ((r->low = apol_mls_level_create_from_mls_level(range->low)) == NULL ||
+	     (r->high = apol_mls_level_create_from_mls_level(range->high)) == NULL)) {
+		apol_mls_range_destroy(&r);
+		return NULL;
+	}
+	return r;
 }
 
 apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t * p, qpol_mls_range_t * qpol_range)
@@ -890,7 +904,7 @@ char *apol_mls_range_render(apol_policy_t * p, apol_mls_range_t * range)
 		sub_str = apol_mls_level_render(p, range->high);
 		if (!sub_str)
 			goto cleanup;
-		if (apol_str_append(&rt, &sz, " - ") || apol_str_append(&rt, &sz, sub_str)) {
+		if (apol_str_appendf(&rt, &sz, " - %s", sub_str)) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}

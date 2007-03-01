@@ -2,7 +2,6 @@
  *  @file
  *  Public Interface for computing a semantic policy difference.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -66,16 +65,17 @@ extern "C"
 		POLDIFF_FORM_REMOVE_TYPE
 	} poldiff_form_e;
 
+#include <poldiff/attrib_diff.h>
+#include <poldiff/cat_diff.h>
 #include <poldiff/bool_diff.h>
 #include <poldiff/class_diff.h>
+#include <poldiff/level_diff.h>
+#include <poldiff/rangetrans_diff.h>
+#include <poldiff/rbac_diff.h>
 #include <poldiff/role_diff.h>
 #include <poldiff/rule_diff.h>
-#include <poldiff/user_diff.h>
 #include <poldiff/type_diff.h>
-#include <poldiff/attrib_diff.h>
-#include <poldiff/rbac_diff.h>
-#include <poldiff/level_diff.h>
-#include <poldiff/cat_diff.h>
+#include <poldiff/user_diff.h>
 #include <poldiff/type_map.h>
 #include <poldiff/util.h>
 

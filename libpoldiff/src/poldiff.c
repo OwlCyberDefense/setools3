@@ -2,7 +2,6 @@
  *  @file
  *  Implementation for computing a semantic policy difference.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -232,6 +231,20 @@ static const poldiff_item_record_t item_records[] = {
 	 attrib_comp,
 	 attrib_new_diff,
 	 attrib_deep_diff,
+	 },
+	{
+	 "range transition",
+	 POLDIFF_DIFF_RANGE_TRANS,
+	 poldiff_range_trans_get_stats,
+	 poldiff_get_range_trans_vector,
+	 poldiff_range_trans_get_form,
+	 poldiff_range_trans_to_string,
+	 range_trans_reset,
+	 range_trans_get_items,
+	 range_trans_free_item,
+	 range_trans_comp,
+	 range_trans_new_diff,
+	 range_trans_deep_diff,
 	 }
 };
 
@@ -280,7 +293,8 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->role_trans_diffs = role_trans_create()) == NULL ||
 	    (diff->user_diffs = user_create()) == NULL ||
-	    (diff->type_diffs = type_summary_create()) == NULL || (diff->attrib_diffs = attrib_summary_create()) == NULL) {
+	    (diff->type_diffs = type_summary_create()) == NULL ||
+	    (diff->attrib_diffs = attrib_summary_create()) == NULL || (diff->range_trans_diffs = range_trans_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
 		errno = ENOMEM;
@@ -309,6 +323,7 @@ void poldiff_destroy(poldiff_t ** diff)
 	user_destroy(&(*diff)->user_diffs);
 	type_summary_destroy(&(*diff)->type_diffs);
 	attrib_summary_destroy(&(*diff)->attrib_diffs);
+	range_trans_destroy(&(*diff)->range_trans_diffs);
 	free(*diff);
 	*diff = NULL;
 }

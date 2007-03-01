@@ -1190,7 +1190,7 @@ static void load_policy_msg_get_policy_components(seaudit_load_message_t * load,
 	unsigned int val = (unsigned int)strtoul(arg, &endptr, 10);
 	if (*endptr != '\0') {
 		/* found a key-value pair where the key is not a
-		   number, so skip this */
+		 * number, so skip this */
 		(*position)++;
 		return;
 	}

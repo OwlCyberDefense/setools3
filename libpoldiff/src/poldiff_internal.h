@@ -32,16 +32,17 @@ extern "C"
 
 #include <poldiff/poldiff.h>
 
+#include "attrib_internal.h"
 #include "bool_internal.h"
+#include "cat_internal.h"
 #include "class_internal.h"
+#include "level_internal.h"
+#include "rangetrans_internal.h"
 #include "rbac_internal.h"
 #include "role_internal.h"
 #include "rule_internal.h"
 #include "user_internal.h"
 #include "type_internal.h"
-#include "attrib_internal.h"
-#include "level_internal.h"
-#include "cat_internal.h"
 
 #include "type_map_internal.h"
 
@@ -58,22 +59,22 @@ extern "C"
 	struct poldiff_rule_summary;
 	struct poldiff_role_allow_summary;
 	struct poldiff_role_trans_summary;
-	struct range_trans_summary;
+	struct poldiff_range_trans_summary;
 /* and so forth for ocon_summary structs */
 
 	struct poldiff
 	{
-	/** The "original" policy */
+		/** the "original" policy */
 		apol_policy_t *orig_pol;
-	/** The "modified" policy */
+		/** the "modified" policy */
 		apol_policy_t *mod_pol;
-	/** pointer to original's qpol policy within orig_pol */
+		/** pointer to original's qpol policy within orig_pol */
 		qpol_policy_t *orig_qpol;
-	/** pointer to modified's qpol policy within mod_pol */
+		/** pointer to modified's qpol policy within mod_pol */
 		qpol_policy_t *mod_qpol;
 		poldiff_handle_fn_t fn;
 		void *handle_arg;
-	/** set of POLDIF_DIFF_* for diffs run */
+		/** set of POLDIF_DIFF_* bits for diffs run */
 		uint32_t diff_status;
 		struct poldiff_class_summary *class_diffs;
 		struct poldiff_common_summary *common_diffs;
@@ -90,7 +91,7 @@ extern "C"
 		struct poldiff_range_trans_summary *range_trans_diffs;
 		/* and so forth if we want ocon_diffs */
 		type_map_t *type_map;
-	/** set if type mapping was changed since last run */
+		/** set if type mapping was changed since last run */
 		int remapped;
 	};
 

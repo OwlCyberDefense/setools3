@@ -1,3 +1,11 @@
+2007-02-28  J. Tang  <jtang@tresys.com>
+
+	* added apol_mls_level_create_from_mls_level() and
+	apol_mls_range_create_from_mls_range() copy constructors.
+
+	* Fixed segfault when libseaudit attempts to parse certaan load
+	policy messages.
+
 2007-02-23  J. Tang  <jtang@tresys.com>
 
 	* Implemented new sediffx results design.  Results are implemented

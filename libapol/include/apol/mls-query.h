@@ -67,6 +67,18 @@ extern "C"
 	extern apol_mls_level_t *apol_mls_level_create(void);
 
 /**
+ * Allocate and return an MLS level structure, initialized by an
+ * existing apol_mls_level_t object.  The caller must call
+ * apol_mls_level_destroy() upon the return value afterwards.
+ *
+ * @param level Level to copy.  If NULL then the returned MLS level
+ * will be initialized to nothing.
+ *
+ * @return An initialized MLS level structure, or NULL upon error.
+ */
+	extern apol_mls_level_t *apol_mls_level_create_from_mls_level(apol_mls_level_t * level);
+
+/**
  * Take a MLS level string (e.g., <b>S0:C0.C127</b>) and parse it.
  * Fill in a newly allocated apol_mls_level_t and return it.  This
  * function needs a policy to resolve dots within categories.  If the
@@ -170,11 +182,11 @@ extern "C"
 /**
  * Creates a string containing the textual representation of
  * a MLS level.
- * @param p Reference to a policy.
+ * @param p Policy from which the MLS level is a member.
  * @param level MLS level to render.
  *
- * @return A newly allocated string on success, caller must free;
- * NULL on error.
+ * @return A newly allocated string, or NULL upon error.  The caller
+ * is responsible for calling free() upon the return value.
  */
 	extern char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level);
 
@@ -229,6 +241,18 @@ extern "C"
  * @return An initialized MLS range structure, or NULL upon error.
  */
 	extern apol_mls_range_t *apol_mls_range_create(void);
+
+/**
+ * Allocate and return a new MLS range structure, initialized by an
+ * existing apol_mls_range_t.  The caller must call
+ * apol_mls_range_destroy() upon the return value afterwards.
+ *
+ * @param range Range to copy.  If NULL then the returned MLS range
+ * will be initialized to nothing.
+ *
+ * @return An initialized MLS range structure, or NULL upon error.
+ */
+	extern apol_mls_range_t *apol_mls_range_create_from_mls_range(const apol_mls_range_t * range);
 
 /**
  * Create a new apol_mls_range_t and initialize it with a
@@ -327,11 +351,11 @@ extern "C"
 /**
  * Creates a string containing the textual representation of
  * a MLS range.
- * @param p Reference to a policy.
+ * @param p Policy from which the MLS range is a member.
  * @param range MLS range to render.
  *
- * @return A newly allocated string on success, caller must free;
- * NULL on error.
+ * @return A newly allocated string, or NULL upon error.  The caller
+ * is responsible for calling free() upon the return value.
  */
 	extern char *apol_mls_range_render(apol_policy_t * p, apol_mls_range_t * range);
 
