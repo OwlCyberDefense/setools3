@@ -226,7 +226,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/poldiff/cat_diff.h
 %{_includedir}/poldiff/class_diff.h
 %{_includedir}/poldiff/level_diff.h
-%{_includedir}/poldiff/range_trans_diff.h
+%{_includedir}/poldiff/rangetrans_diff.h
 %{_includedir}/poldiff/rbac_diff.h
 %{_includedir}/poldiff/role_diff.h
 %{_includedir}/poldiff/rule_diff.h

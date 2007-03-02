@@ -167,9 +167,9 @@ extern "C"
  *  @param avrule The av rule diff from which to get the permissions
  *  vector.
  *
- *  @return A vector of permissions strings (type char *) added to the
- *  rule in the modified policy.  If no permissions were added the
- *  size of the returned vector will be 0.  The caller must not
+ *  @return A vector of permissions strings (type char *) that both
+ *  policies have.  If no permissions are common to both policies then
+ *  the sizof of the returned vector will be 0.  The caller must not
  *  destroy this vector.
  */
 	extern apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule);

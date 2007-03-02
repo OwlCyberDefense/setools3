@@ -50,7 +50,7 @@ extern "C"
 	extern void poldiff_level_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
- *  Get the vector of user differences from the level difference
+ *  Get the vector of level differences from the level difference
  *  summary.
  *
  *  @param diff The policy difference structure associated with the
@@ -76,7 +76,7 @@ extern "C"
 	extern char *poldiff_level_to_string(poldiff_t * diff, const void *level);
 
 /**
- *  Get the name of the level from a level diff.
+ *  Get the name of the level (i.e., the sensitivity) from a level diff.
  *
  *  @param level The level from which to get the name.
  *
@@ -97,19 +97,21 @@ extern "C"
 	extern poldiff_form_e poldiff_level_get_form(const void *level);
 
 /**
- *  Get a vector of categories added to the level.
+ *  Get a vector of categories added to the level.  These will be
+ *  sorted in the same order as given by the modified policy.
  *
- *  @param level The level diff from which to get the category vector.
+ *  @param level The level diff from which to get the categories.
  *
- *  @return A vector of category names (type char *) that are assigned to
- *  the level in the modified policy.  If no categories were added the size
- *  of the returned vector will be 0.  The caller must not destroy
- *  this vector.  On error, errno will be set.
+ *  @return A vector of category names (type char *) that are assigned
+ *  to the level in the modified policy.  If no categories were added
+ *  the size of the returned vector will be 0.  The caller must not
+ *  modify this vector.  On error, errno will be set.
  */
 	extern apol_vector_t *poldiff_level_get_added_cats(const poldiff_level_t * level);
 
 /**
- *  Get a vector of categories removed from the level.
+ *  Get a vector of categories removed from the level.  These will be
+ *  sorted in the same order as given by the original policy.
  *
  *  @param level The level diff from which to get the category vector.
  *

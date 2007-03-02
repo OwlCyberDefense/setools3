@@ -57,6 +57,15 @@ extern "C"
 	extern seaudit_avc_message_type_e seaudit_avc_message_get_message_type(seaudit_avc_message_t * avc);
 
 /**
+ * Return the avc message's timestamp, measured in nanoseconds.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Timestamp, in nanoseconds, or 0 upon error or if unknown.
+ */
+	extern long seaudit_avc_message_get_timestamp_nano(seaudit_avc_message_t * avc);
+
+/**
  * Return the source context's user of an avc message.
  *
  * @param avc AVC message to check.

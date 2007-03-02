@@ -39,6 +39,15 @@ seaudit_avc_message_type_e seaudit_avc_message_get_message_type(seaudit_avc_mess
 	return avc->msg;
 }
 
+long seaudit_avc_message_get_timestamp_nano(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->tm_stmp_sec;
+}
+
 char *seaudit_avc_message_get_source_user(seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {

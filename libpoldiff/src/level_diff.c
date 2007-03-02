@@ -27,6 +27,7 @@
 #include "poldiff_internal.h"
 
 #include <apol/util.h>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -167,7 +168,6 @@ apol_vector_t *poldiff_level_get_added_cats(const poldiff_level_t * level)
 		errno = EINVAL;
 		return NULL;
 	}
-
 	return level->added_cats;
 }
 
@@ -199,8 +199,8 @@ static void level_free(void *elem)
 	if (!elem)
 		return;
 	free(s->name);
-	apol_vector_destroy(&s->added_cats, NULL);
-	apol_vector_destroy(&s->removed_cats, NULL);
+	apol_vector_destroy(&s->added_cats, free);
+	apol_vector_destroy(&s->removed_cats, free);
 	free(s);
 }
 
@@ -395,6 +395,24 @@ static apol_vector_t *level_get_cats(poldiff_t * diff, apol_policy_t * p, qpol_l
 	return v;
 }
 
+/**
+ * Comparison function for two categories names from the same policy.
+ */
+static int level_cat_comp(const void *a, const void *b, void *data)
+{
+	const char *name1 = (const char *)a;
+	const char *name2 = (const char *)b;
+	qpol_policy_t *q = (qpol_policy_t *) data;
+	qpol_cat_t *cat1, *cat2;
+	qpol_policy_get_cat_by_name(q, name1, &cat1);
+	qpol_policy_get_cat_by_name(q, name2, &cat2);
+	assert(cat1 != NULL && cat2 != NULL);
+	uint32_t val1, val2;
+	qpol_cat_get_value(q, cat1, &val1);
+	qpol_cat_get_value(q, cat2, &val2);
+	return val1 - val2;
+}
+
 int level_deep_diff(poldiff_t * diff, const void *x, const void *y)
 {
 	qpol_level_t *l1 = (qpol_level_t *) x;
@@ -476,8 +494,8 @@ int level_deep_diff(poldiff_t * diff, const void *x, const void *y)
 		}
 	}
 	if (l != NULL) {
-		apol_vector_sort(l->removed_cats, apol_str_strcmp, NULL);
-		apol_vector_sort(l->added_cats, apol_str_strcmp, NULL);
+		apol_vector_sort(l->removed_cats, level_cat_comp, diff->orig_qpol);
+		apol_vector_sort(l->added_cats, level_cat_comp, diff->mod_qpol);
 		if (apol_vector_append(diff->level_diffs->diffs, l) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
