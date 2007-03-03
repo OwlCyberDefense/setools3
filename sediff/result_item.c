@@ -527,7 +527,7 @@ static GtkTextBuffer *result_item_level_get_buffer(result_item_t * item, poldiff
 {
 	if (!result_item_is_supported(item)) {
 		gtk_text_buffer_set_text(single_buffer,
-					 "Level diffs are not supported because one of the policies is not a MLS policy.", -1);
+					 "Level diffs are not supported because neither policy is a MLS policy.", -1);
 		return single_buffer;
 	} else {
 		return result_item_single_get_buffer(item, form);
@@ -571,7 +571,7 @@ static GtkTextBuffer *result_item_category_get_buffer(result_item_t * item, pold
 {
 	if (!result_item_is_supported(item)) {
 		gtk_text_buffer_set_text(single_buffer,
-					 "Category diffs are not supported because one of the policies is not a MLS policy.", -1);
+					 "Category diffs are not supported because neither policy is a MLS policy.", -1);
 		return single_buffer;
 	} else {
 		return result_item_single_get_buffer(item, form);

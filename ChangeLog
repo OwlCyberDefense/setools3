@@ -1,3 +1,9 @@
+2007-03-02  J. Tang  <jtang@tresys.com>
+
+	* qpol_user_get_range() and qpol_user_get_dfltlevel() now return
+	NULL if the policy is not MLS.  (It used to return a garbage
+	pointer.)
+
 2007-03-01  J. Tang  <jtang@tresys.com>
 
 	* added additional accessors to the seaudit_avc_message_t object.

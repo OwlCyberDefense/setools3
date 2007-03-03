@@ -1361,18 +1361,10 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 		for (; argc - optind; optind++) {
-			char *tmp = NULL;
-			if (!(tmp = strdup(argv[optind]))) {
+			if (apol_vector_append(mod_paths, (void *)argv[optind])) {
 				ERR(policydb, "Error loading module %s", argv[optind]);
 				free(policy_file);
-				apol_vector_destroy(&mod_paths, free);
-				exit(1);
-			}
-			if (apol_vector_append(mod_paths, (void *)tmp)) {
-				ERR(policydb, "Error loading module %s", argv[optind]);
-				free(policy_file);
-				free(tmp);
-				apol_vector_destroy(&mod_paths, free);
+				apol_vector_destroy(&mod_paths, NULL);
 				exit(1);
 			}
 		}
@@ -1382,10 +1374,10 @@ int main(int argc, char **argv)
 	if (!pol_path) {
 		ERR(policydb, "%s", strerror(ENOMEM));
 		free(policy_file);
-		apol_vector_destroy(&mod_paths, free);
+		apol_vector_destroy(&mod_paths, NULL);
 		exit(1);
 	}
-	apol_vector_destroy(&mod_paths, free);
+	apol_vector_destroy(&mod_paths, NULL);
 
 	policydb = apol_policy_create_from_policy_path(pol_path, ((stats || all) ? 0 : APOL_POLICY_OPTION_NO_RULES), NULL, NULL);
 	if (!policydb) {

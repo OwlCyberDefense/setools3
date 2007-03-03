@@ -1211,14 +1211,8 @@ int main(int argc, char **argv)
 			optind++;
 			break;
 		}
-		char *tmp = NULL;
-		if (!(tmp = strdup(argv[optind]))) {
+		if (apol_vector_append(orig_module_paths, (void *)argv[optind])) {
 			ERR(NULL, "Error loading module %s", argv[optind]);
-			goto err;
-		}
-		if (apol_vector_append(orig_module_paths, (void *)tmp)) {
-			ERR(NULL, "Error loading module %s", argv[optind]);
-			free(tmp);
 			goto err;
 		}
 		orig_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
@@ -1228,7 +1222,7 @@ int main(int argc, char **argv)
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
-	orig_module_paths = NULL;
+	apol_vector_destroy(&orig_module_paths, NULL);
 
 	if (argc - optind == 0) {
 		ERR(NULL, "%s", "Missing path to modified policy.");
@@ -1242,14 +1236,8 @@ int main(int argc, char **argv)
 		goto err;
 	}
 	for (; argc - optind; optind++) {
-		char *tmp = NULL;
-		if (!(tmp = strdup(argv[optind]))) {
+		if (apol_vector_append(mod_module_paths, (void *)argv[optind])) {
 			ERR(NULL, "Error loading module %s", argv[optind]);
-			goto err;
-		}
-		if (apol_vector_append(mod_module_paths, (void *)tmp)) {
-			ERR(NULL, "Error loading module %s", argv[optind]);
-			free(tmp);
 			goto err;
 		}
 		mod_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
@@ -1259,7 +1247,7 @@ int main(int argc, char **argv)
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
-	mod_module_paths = NULL;
+	apol_vector_destroy(&mod_module_paths, NULL);
 
 	orig_policy =
 		apol_policy_create_from_policy_path(orig_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : APOL_POLICY_OPTION_NO_RULES),
@@ -1315,8 +1303,6 @@ int main(int argc, char **argv)
 
 	apol_policy_path_destroy(&orig_pol_path);
 	apol_policy_path_destroy(&mod_pol_path);
-	apol_vector_destroy(&orig_module_paths, free);
-	apol_vector_destroy(&mod_module_paths, free);
 	poldiff_destroy(&diff);
 
 	if (total)
@@ -1329,8 +1315,8 @@ int main(int argc, char **argv)
 	apol_policy_destroy(&mod_policy);
 	apol_policy_path_destroy(&orig_pol_path);
 	apol_policy_path_destroy(&mod_pol_path);
-	apol_vector_destroy(&orig_module_paths, free);
-	apol_vector_destroy(&mod_module_paths, free);
+	apol_vector_destroy(&orig_module_paths, NULL);
+	apol_vector_destroy(&mod_module_paths, NULL);
 	poldiff_destroy(&diff);
 	return 1;
 }

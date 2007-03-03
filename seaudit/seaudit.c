@@ -327,6 +327,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 			exit(EXIT_FAILURE);
 		}
 	}
+	apol_vector_destroy(&modules, NULL);
 }
 
 /*

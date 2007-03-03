@@ -33,13 +33,14 @@ extern "C"
 
 #include <stddef.h>
 #include <stdint.h>
-#include <qpol/iterator.h>
-#include <qpol/policy.h>
 
 	typedef struct qpol_level qpol_level_t;
 	typedef struct qpol_cat qpol_cat_t;
 	typedef struct qpol_mls_range qpol_mls_range_t;
 	typedef struct qpol_mls_level qpol_mls_level_t;
+
+#include <qpol/iterator.h>
+#include <qpol/policy.h>
 
 /* level */
 /**

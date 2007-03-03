@@ -27,6 +27,7 @@
 #include "poldiff_internal.h"
 
 #include <apol/util.h>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -55,7 +56,11 @@ struct poldiff_user
 	apol_vector_t *added_roles;
 	apol_vector_t *removed_roles;
 	/** if not diffing a MLS policy, this will be NULL */
-	user_level_diff_t *default_level;
+	user_level_diff_t *orig_default_level;
+	/** if not diffing a MLS policy, this will be NULL; this is
+	    also NULL if orig_default_level->form is
+	    POLDIFF_FORM_MODIFIED */
+	user_level_diff_t *mod_default_level;
 	/** a vector of user_level_diff_t; if not diffing MLS policies
 	    then the vector is NULL */
 	apol_vector_t *range;
@@ -76,12 +81,70 @@ void poldiff_user_get_stats(poldiff_t * diff, size_t stats[5])
 }
 
 /**
+ * Generate the to_string for a level.
+ */
+static int user_level_to_modified_string(poldiff_t * diff, user_level_diff_t * level, char **s, size_t * len)
+{
+	char t, *cat, *sep = "";
+	size_t i;
+	switch (level->form) {
+	case POLDIFF_FORM_ADDED:
+		t = '+';
+		break;
+	case POLDIFF_FORM_REMOVED:
+		t = '-';
+		break;
+	case POLDIFF_FORM_MODIFIED:
+		t = '*';
+		break;
+	default:
+		/* don't show unmodified levels */
+		return 0;
+	}
+	if (apol_str_appendf(s, len, "     %c %s", t, level->sens) < 0) {
+		return -1;
+	}
+	if ((level->unmodified_cats != NULL && apol_vector_get_size(level->unmodified_cats) > 0) ||
+	    (level->added_cats != NULL && apol_vector_get_size(level->added_cats) > 0) ||
+	    (level->removed_cats != NULL && apol_vector_get_size(level->removed_cats) > 0)) {
+		if (apol_str_append(s, len, " : ") < 0) {
+			return -1;
+		}
+		for (i = 0; level->unmodified_cats != NULL && i < apol_vector_get_size(level->unmodified_cats); i++) {
+			cat = apol_vector_get_element(level->unmodified_cats, i);
+			if (apol_str_appendf(s, len, "%s%s", sep, cat) < 0) {
+				return -1;
+			}
+			sep = ",";
+		}
+		for (i = 0; level->added_cats != NULL && i < apol_vector_get_size(level->added_cats); i++) {
+			cat = apol_vector_get_element(level->added_cats, i);
+			if (apol_str_appendf(s, len, "%s+%s", sep, cat) < 0) {
+				return -1;
+			}
+			sep = ",";
+		}
+		for (i = 0; level->removed_cats != NULL && i < apol_vector_get_size(level->removed_cats); i++) {
+			cat = apol_vector_get_element(level->removed_cats, i);
+			if (apol_str_appendf(s, len, "%s-%s", sep, cat) < 0) {
+				return -1;
+			}
+			sep = ",";
+		}
+	}
+	if (apol_str_append(s, len, "\n") < 0) {
+		return -1;
+	}
+	return 0;
+}
+
+/**
  * Generate the to_string for a modified user.
  */
 static char *user_to_modified_string(poldiff_t * diff, poldiff_user_t * u)
 {
 	size_t len = 0, i;
-	char *s = NULL, *role, *cat;
+	char *s = NULL, *role;
 	size_t num_added_roles = apol_vector_get_size(u->added_roles);
 	size_t num_removed_roles = apol_vector_get_size(u->removed_roles);
 	size_t num_ranges = (u->range != NULL ? apol_vector_get_size(u->range) : 0);
@@ -114,56 +177,23 @@ static char *user_to_modified_string(poldiff_t * diff, poldiff_user_t * u)
 			goto err;
 		}
 	}
-	if (u->default_level != NULL && u->default_level->form != POLDIFF_FORM_NONE) {
-		if (apol_str_append(&s, &len, "   level:\n") < 0) {
-			goto err;
-		}
-		/* FIX ME */
+	if ((u->mod_default_level != NULL || u->orig_default_level != NULL) && apol_str_append(&s, &len, "   level:\n") < 0) {
+		goto err;
+	}
+	if (u->mod_default_level != NULL && user_level_to_modified_string(diff, u->mod_default_level, &s, &len) < 0) {
+		goto err;
+	}
+	if (u->orig_default_level != NULL && user_level_to_modified_string(diff, u->orig_default_level, &s, &len) < 0) {
+		goto err;
 	}
 	if (num_ranges != 0) {
 		if (apol_str_append(&s, &len, "   range:\n") < 0) {
 			goto err;
 		}
 		for (i = 0; i < num_ranges; i++) {
-			user_level_diff_t *r = (user_level_diff_t *) apol_vector_get_element(u->range, i);
-			char *t, *sep = "";
-			switch (r->form) {
-			case POLDIFF_FORM_ADDED:
-				t = "+";
-				break;
-			case POLDIFF_FORM_REMOVED:
-				t = "-";
-				break;
-			case POLDIFF_FORM_MODIFIED:
-				t = "*";
-				break;
-			default:
-				/* don't show unmodified levels */
-				continue;
-			}
-			if (apol_str_appendf(&s, &len, "     %s %s : ", t, r->sens), 0) {
+			user_level_diff_t *level = apol_vector_get_element(u->range, i);
+			if (user_level_to_modified_string(diff, level, &s, &len) < 0) {
 				goto err;
-			}
-			for (i = 0; i < apol_vector_get_size(r->unmodified_cats); i++) {
-				cat = apol_vector_get_element(r->unmodified_cats, i);
-				if (apol_str_appendf(&s, &len, "%s%s", sep, cat) < 0) {
-					goto err;
-				}
-				sep = ",";
-			}
-			for (i = 0; i < apol_vector_get_size(r->added_cats); i++) {
-				cat = apol_vector_get_element(r->added_cats, i);
-				if (apol_str_appendf(&s, &len, "%s+%s", sep, cat) < 0) {
-					goto err;
-				}
-				sep = ",";
-			}
-			for (i = 0; i < apol_vector_get_size(r->removed_cats); i++) {
-				cat = apol_vector_get_element(r->removed_cats, i);
-				if (apol_str_appendf(&s, &len, "%s+%s", sep, cat) < 0) {
-					goto err;
-				}
-				sep = ",";
 			}
 		}
 	}
@@ -296,7 +326,8 @@ static void user_free(void *elem)
 		apol_vector_destroy(&u->added_roles, free);
 		apol_vector_destroy(&u->removed_roles, free);
 		apol_vector_destroy(&u->unmodified_roles, free);
-		user_level_free(u->default_level);
+		user_level_free(u->orig_default_level);
+		user_level_free(u->mod_default_level);
 		apol_vector_destroy(&u->range, user_level_free);
 		free(u);
 	}
@@ -582,22 +613,313 @@ static int user_deep_diff_roles(poldiff_t * diff, qpol_user_t * u1, qpol_user_t 
 	return retval;
 }
 
+/**
+ * Allocate and return a user_level_diff_t object.  If the form is
+ * added or removed, set its unmodified_cats vector to be all of the
+ * categories from the given level.
+ */
+static user_level_diff_t *user_level_diff_create(qpol_policy_t * q, qpol_mls_level_t * level, poldiff_form_e form)
+{
+	char *sens;
+	qpol_iterator_t *cats;
+	user_level_diff_t *uld = NULL;
+	if (qpol_mls_level_get_sens_name(q, level, &sens) < 0 ||
+	    qpol_mls_level_get_cat_iter(q, level, &cats) < 0 ||
+	    (uld = calloc(1, sizeof(*uld))) == NULL ||
+	    (uld->sens = strdup(sens)) == NULL || (uld->unmodified_cats = apol_vector_create()) == NULL) {
+		user_level_free(uld);
+		return NULL;;
+	}
+	uld->form = form;
+	for (; !qpol_iterator_end(cats); qpol_iterator_next(cats)) {
+		qpol_cat_t *cat;
+		char *c, *c2 = NULL;
+		if (qpol_iterator_get_item(cats, (void **)&cat) < 0 ||
+		    qpol_cat_get_name(q, cat, &c) < 0 ||
+		    (c2 = strdup(c)) == NULL || apol_vector_append(uld->unmodified_cats, c2) < 0) {
+			free(c2);
+			user_level_free(uld);
+			qpol_iterator_destroy(&cats);
+			return NULL;
+		}
+	}
+	qpol_iterator_destroy(&cats);
+	return uld;
+}
+
+/**
+ * Comparison function for two categories names from the same policy.
+ */
+static int level_cat_comp(const void *a, const void *b, void *data)
+{
+	const char *name1 = (const char *)a;
+	const char *name2 = (const char *)b;
+	qpol_policy_t *q = (qpol_policy_t *) data;
+	qpol_cat_t *cat1, *cat2;
+	qpol_policy_get_cat_by_name(q, name1, &cat1);
+	qpol_policy_get_cat_by_name(q, name2, &cat2);
+	assert(cat1 != NULL && cat2 != NULL);
+	uint32_t val1, val2;
+	qpol_cat_get_value(q, cat1, &val1);
+	qpol_cat_get_value(q, cat2, &val2);
+	return val1 - val2;
+}
+
+/**
+ * Perform a deep diff of two levels.  This will first compare the
+ * sensitivity names; if they match then it compares the vectors of
+ * category names.  If the sensitivities do not match, then generate
+ * two user_level_diffs, one for the original level and one for
+ * modified level.  If they do match then create just one
+ * user_level_diffs and write it to orig_uld.
+ *
+ * @param diff Poldiff object, used for error reporting and for
+ * sorting the categories to policy order.
+ * @param sens1 Sensitivity name for the original level.
+ * @param cats1 Vector of categories (type char *) for the original
+ * level.  Note that this vector will be modified.
+ * @param sens2 Sensitivity name for the modified level.
+ * @param cats2 Vector of categories (type char *) for the modified
+ * level.  Note that this vector will be modified.
+ * @param orig_uld Destination to where to write the user_level_diff,
+ * if the sensitivites do not match or if the categories do not match.
+ * @param mod_uld Destination to where to write the user_level_diff,
+ * if the sensitivities do not match.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int user_level_deep_diff(poldiff_t * diff, const char *sens1, apol_vector_t * cats1, const char *sens2,
+				apol_vector_t * cats2, user_level_diff_t ** orig_uld, user_level_diff_t ** mod_uld)
+{
+	user_level_diff_t *u1 = NULL, *u2 = NULL;
+	size_t i, j;
+	char *cat1, *cat2, *s;
+	apol_vector_t *added, *removed, *unmodified;
+	int retval = -1, compval;
+
+	if (strcmp(sens1, sens2) != 0) {
+		/* sensitivities do not match, so don't check categories */
+		if ((u1 = calloc(1, sizeof(*u1))) == NULL ||
+		    (u1->sens = strdup(sens1)) == NULL ||
+		    (u1->unmodified_cats = apol_vector_create_from_vector(cats1, apol_str_strdup, NULL)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			user_level_free(u1);
+			user_level_free(u2);
+			return -1;
+		}
+		if ((u2 = calloc(1, sizeof(*u2))) == NULL ||
+		    (u2->sens = strdup(sens2)) == NULL ||
+		    (u2->unmodified_cats = apol_vector_create_from_vector(cats2, apol_str_strdup, NULL)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			user_level_free(u1);
+			user_level_free(u2);
+			return -1;
+		}
+		apol_vector_sort(u1->unmodified_cats, level_cat_comp, diff->orig_qpol);
+		apol_vector_sort(u2->unmodified_cats, level_cat_comp, diff->mod_qpol);
+		u1->form = POLDIFF_FORM_REMOVED;
+		u2->form = POLDIFF_FORM_ADDED;
+		*orig_uld = u1;
+		*mod_uld = u2;
+		return 0;
+	}
+
+	apol_vector_sort(cats1, apol_str_strcmp, NULL);
+	apol_vector_sort(cats2, apol_str_strcmp, NULL);
+	/* diff the categories from cats1 and cats2 */
+	if ((added = apol_vector_create()) == NULL ||
+	    (removed = apol_vector_create()) == NULL || (unmodified = apol_vector_create()) == NULL) {
+		goto cleanup;
+	}
+	for (i = j = 0; i < apol_vector_get_size(cats1);) {
+		if (j >= apol_vector_get_size(cats2))
+			break;
+		cat1 = (char *)apol_vector_get_element(cats1, i);
+		cat2 = (char *)apol_vector_get_element(cats2, j);
+		compval = strcmp(cat1, cat2);
+		if (compval < 0) {
+			if ((s = strdup(cat1)) == NULL || apol_vector_append(removed, s) < 0) {
+				ERR(diff, "%s", strerror(errno));
+				free(s);
+				goto cleanup;
+			}
+			i++;
+		} else if (compval > 0) {
+			if ((s = strdup(cat2)) == NULL || apol_vector_append(added, s) < 0) {
+				ERR(diff, "%s", strerror(errno));
+				free(s);
+				goto cleanup;
+			}
+			j++;
+		} else {
+			if ((s = strdup(cat1)) == NULL || apol_vector_append(unmodified, s) < 0) {
+				ERR(diff, "%s", strerror(errno));
+				free(s);
+				goto cleanup;
+			}
+			i++;
+			j++;
+		}
+	}
+	for (; i < apol_vector_get_size(cats1); i++) {
+		cat1 = (char *)apol_vector_get_element(cats1, i);
+		if ((s = strdup(cat1)) == NULL || apol_vector_append(removed, s) < 0) {
+			ERR(diff, "%s", strerror(errno));
+			free(s);
+			goto cleanup;
+		}
+	}
+	for (; j < apol_vector_get_size(cats2); j++) {
+		cat2 = (char *)apol_vector_get_element(cats2, j);
+		if ((s = strdup(cat2)) == NULL || apol_vector_append(added, s) < 0) {
+			ERR(diff, "%s", strerror(errno));
+			free(s);
+			goto cleanup;
+		}
+	}
+	if (apol_vector_get_size(added) > 0 || apol_vector_get_size(removed) > 0) {
+		if ((u1 = calloc(1, sizeof(*u1))) == NULL || (u1->sens = strdup(sens1)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			user_level_free(u1);
+			goto cleanup;
+		}
+		apol_vector_sort(added, level_cat_comp, diff->mod_qpol);
+		apol_vector_sort(removed, level_cat_comp, diff->orig_qpol);
+		apol_vector_sort(unmodified, level_cat_comp, diff->orig_qpol);
+		u1->added_cats = added;
+		u1->removed_cats = removed;
+		u1->unmodified_cats = unmodified;
+		u1->form = POLDIFF_FORM_MODIFIED;
+		*orig_uld = u1;
+		return 0;
+	}
+	/* if reached this point, then no differences were found */
+	retval = 0;
+      cleanup:
+	apol_vector_destroy(&added, free);
+	apol_vector_destroy(&removed, free);
+	apol_vector_destroy(&unmodified, free);
+	return retval;
+}
+
+/**
+ * Perform a deep diff of the default MLS levels assigned to the two
+ * users.
+ *
+ * @param diff Diff structure containing the original and modified
+ * policies.
+ * @param u1 User from original policy to examine.
+ * @param u2 User from modified policy to examine.
+ * @param u Result structure where differences are to be recorded.
+ *
+ * @return Greater than zero if a diff was found, zero if none found,
+ * less than zero for errors.
+ */
+static int user_deep_diff_default_levels(poldiff_t * diff, qpol_user_t * u1, qpol_user_t * u2, poldiff_user_t * u)
+{
+	qpol_mls_level_t *l1 = NULL, *l2 = NULL;
+	user_level_diff_t *uld = NULL;
+	char *sens1 = "", *sens2 = "";
+	qpol_iterator_t *cats1 = NULL, *cats2 = NULL;
+	apol_vector_t *v1 = NULL, *v2 = NULL;
+	int retval = -1;
+	if (qpol_user_get_dfltlevel(diff->orig_qpol, u1, &l1) < 0 || qpol_user_get_dfltlevel(diff->mod_qpol, u2, &l2) < 0) {
+		return -1;
+	}
+	if (l1 == NULL && l2 == NULL) {
+		/* neither policy is MLS */
+		return 0;
+	}
+	if (l1 == NULL) {
+		if ((uld = user_level_diff_create(diff->mod_qpol, l2, POLDIFF_FORM_ADDED)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		u->mod_default_level = uld;
+		retval = 1;
+	} else if (l2 == NULL) {
+		if ((uld = user_level_diff_create(diff->orig_qpol, l1, POLDIFF_FORM_REMOVED)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		u->orig_default_level = uld;
+		retval = 1;
+	} else {
+		size_t size1, size2;
+		/* do a deep diff of the given level */
+		if (qpol_mls_level_get_sens_name(diff->orig_qpol, l1, &sens1) < 0 ||
+		    qpol_mls_level_get_sens_name(diff->mod_qpol, l2, &sens2) < 0 ||
+		    qpol_mls_level_get_cat_iter(diff->orig_qpol, l1, &cats1) < 0 ||
+		    qpol_mls_level_get_cat_iter(diff->mod_qpol, l2, &cats2) < 0 ||
+		    qpol_iterator_get_size(cats1, &size1) < 0 || qpol_iterator_get_size(cats2, &size2) < 0) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		if ((v1 = apol_vector_create_with_capacity(size1)) == NULL ||
+		    (v2 = apol_vector_create_with_capacity(size2)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		for (; !qpol_iterator_end(cats1); qpol_iterator_next(cats1)) {
+			qpol_cat_t *cat;
+			char *c, *c2 = NULL;
+			if (qpol_iterator_get_item(cats1, (void **)&cat) < 0 ||
+			    qpol_cat_get_name(diff->orig_qpol, cat, &c) < 0 ||
+			    (c2 = strdup(c)) == NULL || apol_vector_append(v1, c2) < 0) {
+				ERR(diff, "%s", strerror(errno));
+				free(c2);
+				goto cleanup;
+			}
+		}
+		for (; !qpol_iterator_end(cats2); qpol_iterator_next(cats2)) {
+			qpol_cat_t *cat;
+			char *c, *c2 = NULL;
+			if (qpol_iterator_get_item(cats2, (void **)&cat) < 0 ||
+			    qpol_cat_get_name(diff->mod_qpol, cat, &c) < 0 ||
+			    (c2 = strdup(c)) == NULL || apol_vector_append(v2, c2) < 0) {
+				ERR(diff, "%s", strerror(errno));
+				free(c2);
+				goto cleanup;
+			}
+		}
+		if (user_level_deep_diff(diff, sens1, v1, sens2, v2, &u->orig_default_level, &u->mod_default_level) < 0) {
+			goto cleanup;
+		}
+		if (u->orig_default_level != NULL) {
+			retval = 1;
+		}
+	}
+	if (retval == -1) {
+		/* if reach this point, then no differences were found */
+		retval = 0;
+	}
+      cleanup:
+	qpol_iterator_destroy(&cats1);
+	qpol_iterator_destroy(&cats2);
+	apol_vector_destroy(&v1, free);
+	apol_vector_destroy(&v2, free);
+	if (retval != 0) {
+		user_level_free(uld);
+	}
+	return retval;
+}
+
 int user_deep_diff(poldiff_t * diff, const void *x, const void *y)
 {
 	qpol_user_t *u1 = (qpol_user_t *) x;
 	qpol_user_t *u2 = (qpol_user_t *) y;
 	char *name;
 	poldiff_user_t *u = NULL;
-	int retval = -1, r1, error = 0;
+	int retval = -1, r1 = 0, r2 = 0, error = 0;
 	if (qpol_user_get_name(diff->orig_qpol, u1, &name) < 0 || (u = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
-	if ((r1 = user_deep_diff_roles(diff, u1, u2, u)) < 0) {
+	if ((r1 = user_deep_diff_roles(diff, u1, u2, u)) < 0 || (r2 = user_deep_diff_default_levels(diff, u1, u2, u)) < 0) {
 		error = errno;
 		goto cleanup;
 	}
-	if (r1 > 0) {
+	if (r1 > 0 || r2 > 0) {
 		if (apol_vector_append(diff->user_diffs->diffs, u) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
