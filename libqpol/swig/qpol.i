@@ -80,9 +80,11 @@ const char *libqpol_get_version(void);
 	}
 %}
 
+%inline %{
 const char * to_str(void *x) {
 	return (const char *)x;
 }
+%}
 
 /* qpol_module */
 #define QPOL_MODULE_UNKNOWN 0
@@ -235,6 +237,7 @@ typedef enum qpol_capability
 		if (qpol_policy_get_module_iter(self, &iter)) {
 			SWIG_exception(SWIG_MemoryError, "Out of Memory");
 		}
+		return iter;
 	fail:
 		return NULL;
 	};
@@ -244,8 +247,9 @@ typedef enum qpol_capability
 		if (qpol_policy_get_type_iter(self, &iter)) {
 			SWIG_exception(SWIG_MemoryError, "Out of Memory");
 		}
+		return iter;
 	fail:
-			return NULL;
+		return NULL;
 	};
 	%newobject get_role_iter();
 	qpol_iterator_t *get_role_iter() {
@@ -253,8 +257,9 @@ typedef enum qpol_capability
 		if (qpol_policy_get_role_iter(self, &iter)) {
 			SWIG_exception(SWIG_MemoryError, "Out of Memory");
 		}
+		return iter;
 	fail:
-			return NULL;
+		return NULL;
 	};
 	%newobject get_level_iter();
 	qpol_iterator_t *get_level_iter() {
@@ -262,8 +267,9 @@ typedef enum qpol_capability
 		if (qpol_policy_get_level_iter(self, &iter)) {
 			SWIG_exception(SWIG_MemoryError, "Out of Memory");
 		}
+		return iter;
 	fail:
-			return NULL;
+		return NULL;
 	};
 	%newobject get_cat_iter();
 	qpol_iterator_t *get_cat_iter() {
@@ -271,8 +277,9 @@ typedef enum qpol_capability
 		if (qpol_policy_get_cat_iter(self, &iter)) {
 			SWIG_exception(SWIG_MemoryError, "Out of Memory");
 		}
+		return iter;
 	fail:
-			return NULL;
+		return NULL;
 	};
 	%newobject get_user_iter();
 	qpol_iterator_t *get_user_iter() {
@@ -280,8 +287,9 @@ typedef enum qpol_capability
 		if (qpol_policy_get_user_iter(self, &iter)) {
 			SWIG_exception(SWIG_MemoryError, "Out of Memory");
 		}
+		return iter;
 	fail:
-			return NULL;
+		return NULL;
 	};
 	%newobject get_bool_iter();
 	qpol_iterator_t *get_bool_iter() {
@@ -289,8 +297,9 @@ typedef enum qpol_capability
 		if (qpol_policy_get_bool_iter(self, &iter)) {
 			SWIG_exception(SWIG_MemoryError, "Out of Memory");
 		}
+		return iter;
 	fail:
-			return NULL;
+		return NULL;
 	};
 	%newobject get_class_iter();
 	qpol_iterator_t *get_class_iter(char *perm=NULL) {
@@ -304,8 +313,9 @@ typedef enum qpol_capability
 				SWIG_exception(SWIG_MemoryError, "Out of Memory");
 			}
 		}
+		return iter;
 	fail:
-			return NULL;
+		return NULL;
 	};
 	%newobject get_common_iter();
 	qpol_iterator_t *get_common_iter(char *perm=NULL) {
@@ -319,6 +329,57 @@ typedef enum qpol_capability
 				SWIG_exception(SWIG_MemoryError, "Out of Memory");
 			}
 		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_fs_use_iter();
+	qpol_iterator_t *get_fs_use_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_fs_use_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_genfscon_iter();
+	qpol_iterator_t *get_genfscon_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_genfscon_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_isid_iter();
+	qpol_iterator_t *get_isid_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_isid_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_netifcon_iter();
+	qpol_iterator_t *get_netifcon_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_netifcon_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+			return NULL;
+	};
+	%newobject get_nodecon_iter();
+	qpol_iterator_t *get_nodecon_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_nodecon_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
 	fail:
 			return NULL;
 	};
@@ -404,20 +465,20 @@ typedef struct qpol_type {} qpol_type_t;
 		return v;
 	};
 	int get_isattr(qpol_policy_t *p) {
-		int i;
-		if (qpol_type_get_is_attr(p, self, &i)) {
+		unsigned char i;
+		if (qpol_type_get_isattr(p, self, &i)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine whether type is an attribute");
 		}
 	fail:
-		return i;
+			return (int)i;
 	};
 	int get_isalias(qpol_policy_t *p) {
-		int i;
-		if (qpol_type_get_is_alias(p, self, &i)) {
+		unsigned char i;
+		if (qpol_type_get_isalias(p, self, &i)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine whether type is an alias");
 		}
 	fail:
-			return i;
+			return (int)i;
 	};
 	%newobject get_type_iter;
 	qpol_iterator_t *get_type_iter(qpol_policy_t *p) {
@@ -530,12 +591,12 @@ typedef struct qpol_level {} qpol_level_t;
 		return;
 	};
 	int get_isalias(qpol_policy_t *p) {
-		int i;
-		if (qpol_level_get_is_alias(p, self, &i)) {
+		unsigned char i;
+		if (qpol_level_get_isalias(p, self, &i)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine whether level is an alias");
 		}
 	fail:
-			return i;
+			return (int)i;
 	};
 	int get_value(qpol_policy_t *p) {
 		int v;
@@ -594,12 +655,12 @@ typedef struct qpol_cat {} qpol_cat_t;
 		return;
 	};
 	int get_isalias(qpol_policy_t *p) {
-		int i;
-		if (qpol_cat_get_is_alias(p, self, &i)) {
+		unsigned char i;
+		if (qpol_cat_get_isalias(p, self, &i)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine whether category is an alias");
 		}
 	fail:
-			return i;
+			return (int)i;
 	};
 	int get_value(qpol_policy_t *p) {
 		int v;
@@ -723,7 +784,7 @@ typedef struct qpol_user {} qpol_user_t;
 	};
 	qpol_mls_range_t *get_range(qpol_policy_t *p) {
 		qpol_mls_range_t *r;
-		if (qpol_user_get_mls_range(p, self, &r)) {
+		if (qpol_user_get_range(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get user range");
 		}
 	fail:
@@ -789,7 +850,7 @@ typedef struct qpol_bool {} qpol_bool_t;
 		return;
 	};
 	void set_state_no_eval(qpol_policy_t *p, int state) {
-		if (qpol_bool_set_state_no_evel(p, self, state)) {
+		if (qpol_bool_set_state_no_eval(p, self, state)) {
 			SWIG_exception(SWIG_RuntimeError, "Error setting boolean state");
 		}
 	fail:
@@ -944,6 +1005,258 @@ typedef struct qpol_common {} qpol_common_t;
 		}
 	fail:
 		return name;
+	};
+};
+
+/* qpol fs_use */
+/* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are 
+ * copied from sepol/policydb/services.h.
+ * QPOL_FS_USE_PSID is an extension to support v12 policies. */
+#define QPOL_FS_USE_XATTR 1
+#define QPOL_FS_USE_TRANS 2
+#define QPOL_FS_USE_TASK  3
+#define QPOL_FS_USE_GENFS 4
+#define QPOL_FS_USE_NONE  5
+#define QPOL_FS_USE_PSID  6
+typedef struct qpol_fs_use {} qpol_fs_use_t;
+%extend qpol_fs_use_t {
+	qpol_fs_use_t(qpol_policy_t *p, char *name) {
+		qpol_fs_use_t *f;
+		if (qpol_policy_get_fs_use_by_name(p, name, &f)) {
+			SWIG_exception(SWIG_RuntimeError, "FS Use Statement does not exist");
+		}
+	fail:
+		return f;
+	};
+	qpol_fs_use_t(void *x) {
+		return (qpol_fs_use_t*)x;
+	};
+	~qpol_fs_use_t() {
+		/* no op */
+		return;
+	};
+	const char *get_name(qpol_policy_t *p) {
+		char *name;
+		if (qpol_fs_use_get_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get file system name");
+		}
+	fail:
+		return name;
+	};
+	int get_behavior(qpol_policy_t *p) {
+		int behav;
+		if (qpol_fs_use_get_behavior(p, self, &behav)) {
+			SWIG_exception(SWIG_ValueError, "Could not get file system labeling behavior");
+		}
+	fail:
+		return behav;
+	};
+	qpol_context_t *get_context(qpol_policy_t *p) {
+		int behav;
+		qpol_context_t *ctx = NULL;
+		qpol_fs_use_get_behavior(p, self, &behav);
+		if (behav == QPOL_FS_USE_PSID) {
+			SWIG_exception(SWIG_TypeError, "Cannot get context for fs_use_psid statements");
+		} else if (qpol_fs_use_get_context(p, self, &ctx)) {
+			SWIG_exception(SWIG_ValueError, "Could not get file system context");
+		}
+	fail:
+		return ctx;
+	};
+};
+
+/* qpol genfscon */
+/* values from flask do not change */
+#define QPOL_CLASS_ALL        0
+#define QPOL_CLASS_BLK_FILE  11
+#define QPOL_CLASS_CHR_FILE  10
+#define QPOL_CLASS_DIR        7
+#define QPOL_CLASS_FIFO_FILE 13
+#define QPOL_CLASS_FILE       6
+#define QPOL_CLASS_LNK_FILE   9
+#define QPOL_CLASS_SOCK_FILE 12
+typedef struct qpol_genfscon {} qpol_genfscon_t;
+%extend qpol_genfscon_t {
+	qpol_genfscon_t(qpol_policy_t *p, char *name, char *path) {
+		qpol_genfscon_t *g;
+		if (qpol_policy_get_genfscon_by_name(p, name, path, &g)) {
+			SWIG_exception(SWIG_RuntimeError, "Genfscon statement does not exist");
+		}
+	fail:
+		return g;
+	};
+	qpol_genfscon_t(void *x) {
+		return (qpol_genfscon_t*)x;
+	};
+	~qpol_genfscon_t() {
+		free(self);
+	};
+	const char *get_name(qpol_policy_t *p) {
+		char *name;
+		if (qpol_genfscon_get_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get file system name");
+		}
+	fail:
+		return name;
+	};
+	const char *get_path(qpol_policy_t *p) {
+		char *path;
+		if (qpol_genfscon_get_path(p, self, &path)) {
+			SWIG_exception(SWIG_ValueError, "Could not get file system path");
+		}
+	fail:
+		return path;
+	};
+	int get_class(qpol_policy_t *p) {
+		int cls;
+		if (qpol_genfscon_get_class(p, self, &cls)) {
+			SWIG_exception(SWIG_ValueError, "Could not get genfscon statement class");
+		}
+	fail:
+		return cls;
+	};
+	qpol_context_t *get_context(qpol_policy_t *p) {
+		qpol_context_t *ctx;
+		if (qpol_genfscon_get_context(p, self, &ctx)) {
+			SWIG_exception(SWIG_ValueError, "Could not get context for genfscon statement");
+		}
+	fail:
+		return ctx;
+	};
+};
+
+/* qpol isid */
+typedef struct qpol_isid {} qpol_isid_t;
+%extend qpol_isid_t {
+	qpol_isid_t(qpol_policy_t *p, char *name) {
+		qpol_isid_t *i;
+		if (qpol_policy_get_isid_by_name(p, name, &i)) {
+			SWIG_exception(SWIG_RuntimeError, "Isid does not exist");
+		}
+	fail:
+		return i;
+	};
+	qpol_isid_t(void *x) {
+		return (qpol_isid_t*)x;
+	};
+	~qpol_isid_t() {
+		/* no op */
+		return;
+	};
+	const char *get_name(qpol_policy_t *p) {
+		char *name;
+		if (qpol_isid_get_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get name for initial sid");
+		}
+	fail:
+		return name;
+	};
+	qpol_context_t *get_context(qpol_policy_t *p) {
+		qpol_context_t *ctx;
+		if (qpol_isid_get_context(p, self, &ctx)) {
+			SWIG_exception(SWIG_ValueError, "Could not get context for initial sid");
+		}
+	fail:
+		return ctx;
+	};
+};
+
+/* qpol netifcon */
+typedef struct qpol_netifcon {} qpol_netifcon_t;
+%extend qpol_netifcon_t {
+	qpol_netifcon_t(qpol_policy_t *p, char *name) {
+		qpol_netifcon_t *n;
+		if (qpol_policy_get_netifcon_by_name(p, name, &n)) {
+			SWIG_exception(SWIG_RuntimeError, "Netifcon statement does not exist");
+		}
+	fail:
+		return n;
+	};
+	qpol_netifcon_t(void *x) {
+		return (qpol_netifcon_t*)x;
+	};
+	~qpol_netifcon_t() {
+		/* no op */
+		return;
+	};
+	const char *get_name(qpol_policy_t *p) {
+		char *name;
+		if (qpol_netifcon_get_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get name for netifcon statement");
+		}
+	fail:
+		return name;
+	};
+	qpol_context_t *get_msg_con(qpol_policy_t *p) {
+		qpol_context_t *ctx;
+		if (qpol_netifcon_get_msg_con(p, self, &ctx)) {
+			SWIG_exception(SWIG_ValueError, "Could not get message context for netifcon statement");
+		}
+	fail:
+		return ctx;
+	};
+	qpol_context_t *get_if_con(qpol_policy_t *p) {
+		qpol_context_t *ctx;
+		if (qpol_netifcon_get_if_con(p, self, &ctx)) {
+			SWIG_exception(SWIG_ValueError, "Could not get interface context for netifcon statement");
+		}
+	fail:
+		return ctx;
+	};
+};
+
+/* qpol nodecon */
+#define QPOL_IPV4 0
+#define QPOL_IPV6 1
+typedef struct qpol_nodecon {} qpol_nodecon_t;
+%extend qpol_nodecon_t {
+	qpol_nodecon_t(qpol_policy_t *p, int addr[4], int mask[4], int protocol) {
+		qpol_nodecon_t *n;
+		if (qpol_policy_get_nodecon_by_node(p, addr, mask, protocol, &n)) {
+			SWIG_exception(SWIG_RuntimeError, "Nodecon statement does not exist");
+		}
+	fail:
+		return n;
+	}
+	qpol_nodecon_t(void *x) {
+		return (qpol_nodecon_t*)x;
+	};
+	~qpol_nodecon_t() {
+		free(self);
+	};
+	int *get_addr(qpol_policy_t *p) {
+		uint32_t *a;
+		unsigned char proto; /* currently dropped; stores the protocol - call get_protocol() */
+		if (qpol_nodecon_get_addr(p, self, &a, &proto)) {
+			SWIG_exception(SWIG_ValueError, "Could not get address of nodecon statement");
+		}
+	fail:
+		return (int*)a;
+	};
+	int *get_mask(qpol_policy_t *p) {
+		uint32_t *m;
+		unsigned char proto; /* currently dropped; stores the protocol - call get_protocol() */
+		if (qpol_nodecon_get_mask(p, self, &m, &proto)) {
+			SWIG_exception(SWIG_ValueError, "Could not get mask of nodecon statement");
+		}
+	fail:
+			return (int*)m;
+	};
+	int get_protocol(qpol_policy_t *p) {
+		unsigned char proto;
+		if (qpol_nodecon_get_protocol(p, self, &proto)) {
+			SWIG_exception(SWIG_ValueError, "Could not get protocol for nodecon statement");
+		}
+	fail:
+		return proto;
+	};
+	qpol_context_t *get_context(qpol_policy_t *p) {
+		qpol_context_t *ctx;
+		if (qpol_nodecon_get_context(p, self, &ctx)) {
+			SWIG_exception(SWIG_ValueError, "Could not get context for nodecon statement");
+		}
+	fail:
+		return ctx;
 	};
 };
 
