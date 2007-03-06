@@ -97,8 +97,25 @@ extern "C"
 	extern poldiff_form_e poldiff_level_get_form(const void *level);
 
 /**
+ *  Get a vector of unmodified categories from the level.  These will
+ *  be sorted in the same order as given by the original policy.  If
+ *  the level was added or removed by the policy, then this vector
+ *  will hold all of the categories that were added or removed.
+ *
+ *  @param level The level diff from which to get the category vector.
+ *
+ *  @return A vector of category names (type char *) that are assigned to
+ *  the level in the original policy.  If no categories were removed the
+ *  size of the returned vector will be 0.  The caller must not
+ *  destroy this vector.  On error, errno will be set.
+ */
+	extern apol_vector_t *poldiff_level_get_unmodified_cats(const poldiff_level_t * level);
+
+/**
  *  Get a vector of categories added to the level.  These will be
- *  sorted in the same order as given by the modified policy.
+ *  sorted in the same order as given by the modified policy.  Note
+ *  that this vector will be non-NULL and non-empty only if the form
+ *  is POLDIFF_FORM_MODIFIED.
  *
  *  @param level The level diff from which to get the categories.
  *
@@ -111,7 +128,9 @@ extern "C"
 
 /**
  *  Get a vector of categories removed from the level.  These will be
- *  sorted in the same order as given by the original policy.
+ *  sorted in the same order as given by the original policy.  Note
+ *  that this vector will be non-NULL and non-empty only if the form
+ *  is POLDIFF_FORM_MODIFIED.
  *
  *  @param level The level diff from which to get the category vector.
  *

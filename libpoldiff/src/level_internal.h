@@ -1,6 +1,8 @@
 /**
  *  @file
- *  Protected Interface for computing a semantic differences in levels.
+ *  Protected Interface for computing a semantic differences in
+ *  levels, either from level declarations, user's default level,
+ *  user's permitted range, or a range_transition's target range.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -31,6 +33,15 @@ extern "C"
 #endif
 
 	typedef struct poldiff_level_summary poldiff_level_summary_t;
+
+	struct poldiff_level
+	{
+		char *name;
+		poldiff_form_e form;
+		apol_vector_t *added_cats;
+		apol_vector_t *removed_cats;
+		apol_vector_t *unmodified_cats;
+	};
 
 /**
  * Allocate and return a new poldiff_level_summary_t object.
@@ -113,6 +124,27 @@ extern "C"
  * and leave the policy difference structure unchanged.
  */
 	int level_deep_diff(poldiff_t * diff, const void *x, const void *y);
+
+/**
+ * Deallocate all space associated with a poldiff_level_t,
+ * including the pointer itself.
+ *
+ * @param elem Pointer to a poldiff_level_t object.  If NULL then do
+ * nothing.
+ */
+	void level_free(void *elem);
+
+/**
+ * Comparison function for two category names from the same policy.
+ *
+ * @param a Name of a category.
+ * @param b Name of another category.
+ * @param data qpol policy from which the categories originate.
+ *
+ * @return Less than zero, zero, or greater than zero based upon the
+ * categories' order within the policy.
+ */
+	int level_cat_comp(const void *a, const void *b, void *data);
 
 #ifdef	__cplusplus
 }

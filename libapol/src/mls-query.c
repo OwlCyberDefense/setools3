@@ -24,6 +24,7 @@
 
 #include <config.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <regex.h>
@@ -426,11 +427,18 @@ void apol_mls_level_destroy(apol_mls_level_t ** level)
 {
 	if (!level || !(*level))
 		return;
-
-	free((*level)->sens);
-	apol_vector_destroy(&(*level)->cats, free);
-	free(*level);
+	apol_mls_level_free(*level);
 	*level = NULL;
+}
+
+void apol_mls_level_free(void *level)
+{
+	if (level != NULL) {
+		apol_mls_level_t *l = level;
+		free(l->sens);
+		apol_vector_destroy(&l->cats, free);
+		free(l);
+	}
 }
 
 int apol_mls_level_set_sens(apol_policy_t * p, apol_mls_level_t * level, const char *sens)
@@ -692,6 +700,7 @@ apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t * p, q
 	int error = 0;
 
 	if (!p || !qpol_range) {
+		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}
@@ -706,6 +715,7 @@ apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t * p, q
 	if (qpol_mls_range_get_low_level(p->p, qpol_range, &tmp) ||
 	    !(tmp_lvl = apol_mls_level_create_from_qpol_mls_level(p, tmp)) || apol_mls_range_set_low(p, apol_range, tmp_lvl)) {
 		error = errno;
+		apol_mls_level_destroy(&tmp_lvl);
 		goto err;
 	}
 	tmp_lvl = NULL;
@@ -714,6 +724,7 @@ apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t * p, q
 	if (qpol_mls_range_get_high_level(p->p, qpol_range, &tmp) ||
 	    !(tmp_lvl = apol_mls_level_create_from_qpol_mls_level(p, tmp)) || apol_mls_range_set_high(p, apol_range, tmp_lvl)) {
 		error = errno;
+		apol_mls_level_destroy(&tmp_lvl);
 		goto err;
 	}
 
@@ -874,6 +885,84 @@ int apol_mls_range_validate(apol_policy_t * p, apol_mls_range_t * range)
 	}
 
 	return 1;
+}
+
+static int mls_range_comp(const void *a, const void *b, void *data)
+{
+	const apol_mls_level_t *l1 = (const apol_mls_level_t *)a;
+	const apol_mls_level_t *l2 = (const apol_mls_level_t *)b;
+	qpol_policy_t *q = (qpol_policy_t *) data;
+	qpol_level_t *l;
+	uint32_t low_value, high_value;
+	qpol_policy_get_level_by_name(q, l1->sens, &l);
+	qpol_level_get_value(q, l, &low_value);
+	qpol_policy_get_level_by_name(q, l2->sens, &l);
+	qpol_level_get_value(q, l, &high_value);
+	assert(low_value != 0 && high_value != 0);
+	return low_value - high_value;
+}
+
+apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, apol_mls_range_t * range)
+{
+	qpol_policy_t *q = apol_policy_get_qpol(p);
+	apol_vector_t *v = NULL;
+	qpol_level_t *l;
+	uint32_t low_value, high_value, value;
+	int error = 0;
+	qpol_iterator_t *iter = NULL;
+
+	if (p == NULL || range == NULL) {
+		error = EINVAL;
+		ERR(p, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_policy_get_level_by_name(q, range->low->sens, &l) < 0 || qpol_level_get_value(q, l, &low_value) < 0) {
+		error = errno;
+		goto err;
+	}
+	if (qpol_policy_get_level_by_name(q, range->high->sens, &l) < 0 || qpol_level_get_value(q, l, &high_value) < 0) {
+		error = errno;
+		goto err;
+	}
+	assert(low_value <= high_value);
+	if ((v = apol_vector_create()) == NULL) {
+		error = errno;
+		ERR(p, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_policy_get_level_iter(q, &iter) < 0) {
+		error = errno;
+		goto err;
+	}
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		char *name;
+		apol_mls_level_t *ml;
+		if (qpol_iterator_get_item(iter, (void **)&l) < 0 ||
+		    qpol_level_get_value(q, l, &value) < 0 || qpol_level_get_name(q, l, &name) < 0) {
+			error = errno;
+			goto err;
+		}
+		if (value < low_value || value > high_value) {
+			continue;
+		}
+		if ((ml = calloc(1, sizeof(*ml))) == NULL ||
+		    (ml->sens = strdup(name)) == NULL ||
+		    (ml->cats = apol_vector_create_from_vector(range->high->cats, apol_str_strdup, NULL)) == NULL ||
+		    apol_vector_append(v, ml) < 0) {
+			error = errno;
+			apol_mls_level_destroy(&ml);
+			ERR(p, "%s", strerror(error));
+			goto err;
+		}
+	}
+	apol_vector_sort(v, mls_range_comp, q);
+	qpol_iterator_destroy(&iter);
+	return v;
+      err:
+	qpol_iterator_destroy(&iter);
+	apol_vector_destroy(&v, apol_mls_level_free);
+	errno = error;
+	return NULL;
 }
 
 char *apol_mls_range_render(apol_policy_t * p, apol_mls_range_t * range)

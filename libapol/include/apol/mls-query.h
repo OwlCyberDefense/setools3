@@ -133,6 +133,15 @@ extern "C"
 	extern void apol_mls_level_destroy(apol_mls_level_t ** level);
 
 /**
+ * Deallocate all memory associated with a MLS level structure,
+ * including the pointer itself.  Does nothing if the pointer is
+ * already NULL.
+ *
+ * @param level Pointer to a MLS level structure to destroy.
+ */
+	extern void apol_mls_level_free(void *level);
+
+/**
  * Set the sensitivity component of an MLS level structure.  This
  * function duplicates the incoming string.
  *
@@ -347,6 +356,19 @@ extern "C"
  * @return 1 If range is legal, 0 if not; -1 on error.
  */
 	extern int apol_mls_range_validate(apol_policy_t * p, apol_mls_range_t * range);
+
+/**
+ * Given a range, return a vector of levels (type apol_mls_level_t *)
+ * that constitutes that range.  The vector will be sorted in policy order.
+ *
+ * @param p Policy from which the level and category definitions reside.
+ * @param range Range to expand.
+ *
+ * @return Vector of levels, or NULL upon error.  The caller is
+ * responsible for calling apol_vector_destroy() upon the returned
+ * value, passing apol_mls_level_free() as the second parameter.
+ */
+	extern apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, apol_mls_range_t * range);
 
 /**
  * Creates a string containing the textual representation of

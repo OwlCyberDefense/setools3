@@ -1,3 +1,7 @@
+2007-03-05  J. Tang  <jtang@tresys.com>
+
+	* added apol_mls_level_free() and apol_mls_range_get_levels()
+
 2007-03-02  J. Tang  <jtang@tresys.com>
 
 	* qpol_user_get_range() and qpol_user_get_dfltlevel() now return

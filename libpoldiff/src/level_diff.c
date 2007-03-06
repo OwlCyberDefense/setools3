@@ -40,14 +40,6 @@ struct poldiff_level_summary
 	apol_vector_t *diffs;
 };
 
-struct poldiff_level
-{
-	char *name;
-	poldiff_form_e form;
-	apol_vector_t *added_cats;
-	apol_vector_t *removed_cats;
-};
-
 void poldiff_level_get_stats(poldiff_t * diff, size_t stats[5])
 {
 	if (diff == NULL || stats == NULL) {
@@ -181,6 +173,16 @@ apol_vector_t *poldiff_level_get_removed_cats(const poldiff_level_t * level)
 	return level->removed_cats;
 }
 
+apol_vector_t *poldiff_level_get_unmodified_cats(const poldiff_level_t * level)
+{
+	if (level == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	return level->unmodified_cats;
+}
+
 poldiff_level_summary_t *level_create(void)
 {
 	poldiff_level_summary_t *ls = calloc(1, sizeof(poldiff_level_summary_t));
@@ -193,7 +195,7 @@ poldiff_level_summary_t *level_create(void)
 	return ls;
 }
 
-static void level_free(void *elem)
+void level_free(void *elem)
 {
 	poldiff_level_t *s = elem;
 	if (!elem)
@@ -201,6 +203,7 @@ static void level_free(void *elem)
 	free(s->name);
 	apol_vector_destroy(&s->added_cats, free);
 	apol_vector_destroy(&s->removed_cats, free);
+	apol_vector_destroy(&s->unmodified_cats, free);
 	free(s);
 }
 
@@ -299,10 +302,7 @@ static poldiff_level_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *n
 {
 	poldiff_level_t *pl;
 	int error;
-	if ((pl = calloc(1, sizeof(*pl))) == NULL ||
-	    (pl->name = strdup(name)) == NULL ||
-	    (pl->added_cats = apol_vector_create_with_capacity(1)) == NULL ||
-	    (pl->removed_cats = apol_vector_create_with_capacity(1)) == NULL) {
+	if ((pl = calloc(1, sizeof(*pl))) == NULL || (pl->name = strdup(name)) == NULL) {
 		error = errno;
 		level_free(pl);
 		ERR(diff, "%s", strerror(error));
@@ -313,40 +313,9 @@ static poldiff_level_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *n
 	return pl;
 }
 
-int level_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
-{
-	qpol_level_t *l = (qpol_level_t *) item;
-	char *name = NULL;
-	poldiff_level_t *pl;
-	int error;
-	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_level_get_name(diff->mod_qpol, l, &name) < 0) ||
-	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_level_get_name(diff->orig_qpol, l, &name) < 0)) {
-		return -1;
-	}
-	pl = make_diff(diff, form, name);
-	if (pl == NULL) {
-		return -1;
-	}
-	if (apol_vector_append(diff->level_diffs->diffs, pl) < 0) {
-		error = errno;
-		ERR(diff, "%s", strerror(error));
-		level_free(pl);
-		errno = error;
-		return -1;
-	}
-	if (form == POLDIFF_FORM_ADDED) {
-		diff->level_diffs->num_added++;
-	} else {
-		diff->level_diffs->num_removed++;
-	}
-	return 0;
-}
-
 /**
- * Given a level, return a vector of its allowed categories (in the form of
- * strings).
+ * Given a level, return a vector of its allowed categories (in the
+ * form of strings).  These will be sorted in policy order.
  *
  * @param diff Policy diff error handler.
  * @param p Policy from which the level came.
@@ -395,10 +364,152 @@ static apol_vector_t *level_get_cats(poldiff_t * diff, apol_policy_t * p, qpol_l
 	return v;
 }
 
-/**
- * Comparison function for two categories names from the same policy.
- */
-static int level_cat_comp(const void *a, const void *b, void *data)
+int level_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
+{
+	qpol_level_t *l = (qpol_level_t *) item;
+	char *name = NULL;
+	poldiff_level_t *pl = NULL;
+	apol_policy_t *p;
+	qpol_policy_t *q;
+	apol_vector_t *v;
+	int error;
+	if (form == POLDIFF_FORM_ADDED) {
+		p = diff->mod_pol;
+		q = diff->mod_qpol;
+	} else {
+		p = diff->orig_pol;
+		q = diff->orig_qpol;
+	}
+	if (qpol_level_get_name(q, l, &name) < 0 || (pl = make_diff(diff, form, name)) == NULL) {
+		level_free(pl);
+		return -1;
+	}
+	if ((v = level_get_cats(diff, p, l)) == NULL ||
+	    (pl->unmodified_cats = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL ||
+	    apol_vector_append(diff->level_diffs->diffs, pl) < 0) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		apol_vector_destroy(&v, NULL);
+		level_free(pl);
+		errno = error;
+		return -1;
+	}
+	apol_vector_destroy(&v, NULL);
+	if (form == POLDIFF_FORM_ADDED) {
+		diff->level_diffs->num_added++;
+	} else {
+		diff->level_diffs->num_removed++;
+	}
+	return 0;
+}
+
+int level_deep_diff(poldiff_t * diff, const void *x, const void *y)
+{
+	qpol_level_t *l1 = (qpol_level_t *) x;
+	qpol_level_t *l2 = (qpol_level_t *) y;
+	apol_vector_t *v1 = NULL, *v2 = NULL;
+	apol_vector_t *added = NULL, *removed = NULL, *unmodified = NULL;
+	char *cat1, *cat2, *name;
+	poldiff_level_t *l = NULL;
+	size_t i, j;
+	int retval = -1, error = 0, compval;
+
+	if (qpol_level_get_name(diff->orig_qpol, l1, &name) < 0 ||
+	    (v1 = level_get_cats(diff, diff->orig_pol, l1)) == NULL || (v2 = level_get_cats(diff, diff->mod_pol, l2)) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	if ((added = apol_vector_create()) == NULL ||
+	    (removed = apol_vector_create()) == NULL || (unmodified = apol_vector_create()) == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		goto cleanup;
+	}
+	apol_vector_sort(v1, apol_str_strcmp, NULL);
+	apol_vector_sort(v2, apol_str_strcmp, NULL);
+	for (i = j = 0; i < apol_vector_get_size(v1);) {
+		if (j >= apol_vector_get_size(v2))
+			break;
+		cat1 = (char *)apol_vector_get_element(v1, i);
+		cat2 = (char *)apol_vector_get_element(v2, j);
+		compval = strcmp(cat1, cat2);
+		if (compval < 0) {
+			if (apol_vector_append(removed, cat1) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
+			i++;
+		} else if (compval > 0) {
+			if (apol_vector_append(added, cat2) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
+			j++;
+		} else {
+			if (apol_vector_append(unmodified, cat1) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
+			i++;
+			j++;
+		}
+	}
+	for (; i < apol_vector_get_size(v1); i++) {
+		cat1 = (char *)apol_vector_get_element(v1, i);
+		if (apol_vector_append(removed, cat1) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+	}
+	for (; j < apol_vector_get_size(v2); j++) {
+		cat2 = (char *)apol_vector_get_element(v2, j);
+		if (apol_vector_append(added, cat2) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+	}
+	if (apol_vector_get_size(added) > 0 || apol_vector_get_size(removed) > 0) {
+		if ((l = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
+			error = errno;
+			goto cleanup;
+		}
+		if ((l->added_cats = apol_vector_create_from_vector(added, apol_str_strdup, NULL)) == NULL ||
+		    (l->removed_cats = apol_vector_create_from_vector(removed, apol_str_strdup, NULL)) == NULL ||
+		    (l->unmodified_cats = apol_vector_create_from_vector(unmodified, apol_str_strdup, NULL)) == NULL) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+		apol_vector_sort(l->removed_cats, level_cat_comp, diff->orig_qpol);
+		apol_vector_sort(l->added_cats, level_cat_comp, diff->mod_qpol);
+		apol_vector_sort(l->unmodified_cats, level_cat_comp, diff->orig_qpol);
+		if (apol_vector_append(diff->level_diffs->diffs, l) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+		diff->level_diffs->num_modified++;
+	}
+	retval = 0;
+      cleanup:
+	apol_vector_destroy(&v1, NULL);
+	apol_vector_destroy(&v2, NULL);
+	apol_vector_destroy(&added, NULL);
+	apol_vector_destroy(&removed, NULL);
+	apol_vector_destroy(&unmodified, NULL);
+	if (retval != 0) {
+		level_free(l);
+	}
+	errno = error;
+	return retval;
+}
+
+int level_cat_comp(const void *a, const void *b, void *data)
 {
 	const char *name1 = (const char *)a;
 	const char *name2 = (const char *)b;
@@ -411,105 +522,4 @@ static int level_cat_comp(const void *a, const void *b, void *data)
 	qpol_cat_get_value(q, cat1, &val1);
 	qpol_cat_get_value(q, cat2, &val2);
 	return val1 - val2;
-}
-
-int level_deep_diff(poldiff_t * diff, const void *x, const void *y)
-{
-	qpol_level_t *l1 = (qpol_level_t *) x;
-	qpol_level_t *l2 = (qpol_level_t *) y;
-	apol_vector_t *v1 = NULL, *v2 = NULL;
-	char *cat1, *cat2, *name;
-	poldiff_level_t *l = NULL;
-	size_t i, j;
-	int retval = -1, error = 0, compval;
-
-	if (qpol_level_get_name(diff->orig_qpol, l1, &name) < 0 ||
-	    (v1 = level_get_cats(diff, diff->orig_pol, l1)) == NULL || (v2 = level_get_cats(diff, diff->mod_pol, l2)) == NULL) {
-		error = errno;
-		goto cleanup;
-	}
-	apol_vector_sort(v1, apol_str_strcmp, NULL);
-	apol_vector_sort(v2, apol_str_strcmp, NULL);
-	for (i = j = 0; i < apol_vector_get_size(v1);) {
-		if (j >= apol_vector_get_size(v2))
-			break;
-		cat1 = (char *)apol_vector_get_element(v1, i);
-		cat2 = (char *)apol_vector_get_element(v2, j);
-		compval = strcmp(cat1, cat2);
-		if (compval != 0 && l == NULL) {
-			if ((l = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
-				error = errno;
-				goto cleanup;
-			}
-		}
-		if (compval < 0) {
-			if ((cat1 = strdup(cat1)) == NULL || apol_vector_append(l->removed_cats, cat1) < 0) {
-				error = errno;
-				free(cat1);
-				ERR(diff, "%s", strerror(error));
-				goto cleanup;
-			}
-			i++;
-		} else if (compval > 0) {
-			if ((cat2 = strdup(cat2)) == NULL || apol_vector_append(l->added_cats, cat2) < 0) {
-				error = errno;
-				free(cat2);
-				ERR(diff, "%s", strerror(error));
-				goto cleanup;
-			}
-			j++;
-		} else {
-			i++;
-			j++;
-		}
-	}
-	for (; i < apol_vector_get_size(v1); i++) {
-		cat1 = (char *)apol_vector_get_element(v1, i);
-		if (l == NULL) {
-			if ((l = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
-				error = errno;
-				goto cleanup;
-			}
-		}
-		if ((cat1 = strdup(cat1)) == NULL || apol_vector_append(l->removed_cats, cat1) < 0) {
-			error = errno;
-			free(cat1);
-			ERR(diff, "%s", strerror(error));
-			goto cleanup;
-		}
-	}
-	for (; j < apol_vector_get_size(v2); j++) {
-		cat2 = (char *)apol_vector_get_element(v2, j);
-		if (l == NULL) {
-			if ((l = make_diff(diff, POLDIFF_FORM_MODIFIED, name)) == NULL) {
-				error = errno;
-				goto cleanup;
-			}
-		}
-		if ((cat2 = strdup(cat2)) == NULL || apol_vector_append(l->added_cats, cat2) < 0) {
-			error = errno;
-			free(cat2);
-			ERR(diff, "%s", strerror(error));
-			goto cleanup;
-		}
-	}
-	if (l != NULL) {
-		apol_vector_sort(l->removed_cats, level_cat_comp, diff->orig_qpol);
-		apol_vector_sort(l->added_cats, level_cat_comp, diff->mod_qpol);
-		if (apol_vector_append(diff->level_diffs->diffs, l) < 0) {
-			error = errno;
-			ERR(diff, "%s", strerror(error));
-			goto cleanup;
-		}
-		diff->level_diffs->num_modified++;
-	}
-	retval = 0;
-      cleanup:
-	apol_vector_destroy(&v1, NULL);
-	apol_vector_destroy(&v2, NULL);
-	if (retval != 0) {
-		level_free(l);
-	}
-	errno = error;
-	return retval;
 }

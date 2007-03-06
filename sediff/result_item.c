@@ -708,13 +708,38 @@ result_item_t *result_item_create_roles(GtkTextTagTable * table)
 }
 
 /**
- * Printing a modified user is special; the result depends upon if a
- * MLS policy is loaded or not.
+ * Printing a modified user is special, for it spans multiple lines
+ * and has inline markers.
  */
 static GtkTextBuffer *result_item_user_get_buffer(result_item_t * item, poldiff_form_e form)
 {
-	/* FIX ME */
-	return result_item_single_get_buffer(item, form);
+	if (form == POLDIFF_FORM_MODIFIED) {
+		util_text_buffer_clear(single_buffer);
+		result_item_print_header(item, single_buffer, form);
+		GtkTextIter iter;
+		apol_vector_t *v;
+		size_t i;
+		void *elem;
+		char *orig_s, *s, *next_s = NULL;
+
+		gtk_text_buffer_get_end_iter(single_buffer, &iter);
+		v = item->get_vector(item->diff);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			elem = apol_vector_get_element(v, i);
+			if (item->get_form(elem) == form) {
+				orig_s = next_s = item->get_string(item->diff, elem);
+				while (next_s != NULL) {
+					s = strsep(&next_s, "\n");
+					result_item_print_rule_modified(single_buffer, &iter, s, 1);
+					gtk_text_buffer_insert(single_buffer, &iter, "\n", -1);
+				}
+				free(orig_s);
+			}
+		}
+		return single_buffer;
+	} else {
+		return result_item_single_get_buffer(item, form);
+	}
 }
 
 /* the user result item is a subclass of a single item. */
