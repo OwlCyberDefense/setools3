@@ -1,3 +1,14 @@
+2007-03-06  J. Tang  <jtang@tresys.com>
+
+	* apol_mls_level_create() will now always return an allocated (and
+	empty) category vector as part of the level.  Before it would
+	initialize the field as NULL.
+
+	* poldiff_avrule_get_unmodified_perms() no longer returns all
+	permissions whenever a rule is added or removed; it only returns
+	permissions when the form is POLDIFF_FORM_MODIFIED.  The new
+	behavior matches the other policy components.
+
 2007-03-05  J. Tang  <jtang@tresys.com>
 
 	* added apol_mls_level_free() and apol_mls_range_get_levels()
@@ -17,7 +28,7 @@
 	* added apol_mls_level_create_from_mls_level() and
 	apol_mls_range_create_from_mls_range() copy constructors.
 
-	* Fixed segfault when libseaudit attempts to parse certaan load
+	* Fixed segfault when libseaudit attempts to parse certain load
 	policy messages.
 
 2007-02-23  J. Tang  <jtang@tresys.com>

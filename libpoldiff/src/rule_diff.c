@@ -313,7 +313,7 @@ char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule)
 	const char *rule_type;
 	char *diff_char = "", *s = NULL, *perm_name, *cond_expr = NULL;
 	size_t i, len = 0;
-	int error;
+	int show_perm_sym = 0, error;
 	if (diff == NULL || avrule == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -335,6 +335,7 @@ char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule)
 	case POLDIFF_FORM_MODIFIED:{
 			diff_char = "*";
 			p = diff->orig_pol;
+			show_perm_sym = 1;
 			break;
 		}
 	default:{
@@ -357,14 +358,14 @@ char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule)
 	}
 	for (i = 0; pa->added_perms != NULL && i < apol_vector_get_size(pa->added_perms); i++) {
 		perm_name = (char *)apol_vector_get_element(pa->added_perms, i);
-		if (apol_str_appendf(&s, &len, " +%s", perm_name) < 0) {
+		if (apol_str_appendf(&s, &len, " %s%s", (show_perm_sym ? "+" : ""), perm_name) < 0) {
 			error = errno;
 			goto err;
 		}
 	}
 	for (i = 0; pa->removed_perms != NULL && i < apol_vector_get_size(pa->removed_perms); i++) {
 		perm_name = (char *)apol_vector_get_element(pa->removed_perms, i);
-		if (apol_str_appendf(&s, &len, " -%s", perm_name) < 0) {
+		if (apol_str_appendf(&s, &len, " %s%s", (show_perm_sym ? "-" : ""), perm_name) < 0) {
 			error = errno;
 			goto err;
 		}
@@ -1567,7 +1568,7 @@ int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	pseudo_avrule_t *rule = (pseudo_avrule_t *) item;
 	poldiff_avrule_t *pa = NULL;
-	apol_vector_t *v1, *v2;
+	apol_vector_t *v1, *v2, **target;
 	apol_policy_t *p;
 	size_t i;
 	int retval = -1, error = errno;
@@ -1602,19 +1603,36 @@ int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 		return -1;
 	}
 
-	if ((pa->unmodified_perms = apol_vector_create_with_capacity(rule->num_perms)) == NULL) {
+	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
+		if ((pa->removed_perms = apol_vector_create_with_capacity(1)) == NULL ||
+		    (pa->unmodified_perms = apol_vector_create_with_capacity(1)) == NULL) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+		target = &pa->added_perms;
+	} else {
+		if ((pa->added_perms = apol_vector_create_with_capacity(1)) == NULL ||
+		    (pa->unmodified_perms = apol_vector_create_with_capacity(1)) == NULL) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+		target = &pa->removed_perms;
+	}
+	if ((*target = apol_vector_create_with_capacity(rule->num_perms)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
 	for (i = 0; i < rule->num_perms; i++) {
-		if (apol_vector_append(pa->unmodified_perms, rule->perms[i]) < 0) {
+		if (apol_vector_append(*target, rule->perms[i]) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
 	}
-	apol_vector_sort(pa->unmodified_perms, apol_str_strcmp, NULL);
+	apol_vector_sort(*target, apol_str_strcmp, NULL);
 
 	if (qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_LINE_NUMBERS)) {
 		/* calculate line numbers */

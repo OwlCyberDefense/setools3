@@ -98,9 +98,7 @@ extern "C"
 
 /**
  *  Get a vector of unmodified categories from the level.  These will
- *  be sorted in the same order as given by the original policy.  If
- *  the level was added or removed by the policy, then this vector
- *  will hold all of the categories that were added or removed.
+ *  be sorted in the same order as given by the original policy.
  *
  *  @param level The level diff from which to get the category vector.
  *
@@ -113,9 +111,9 @@ extern "C"
 
 /**
  *  Get a vector of categories added to the level.  These will be
- *  sorted in the same order as given by the modified policy.  Note
- *  that this vector will be non-NULL and non-empty only if the form
- *  is POLDIFF_FORM_MODIFIED.
+ *  sorted in the same order as given by the modified policy.  If the
+ *  level was added by modified policy then this vector will hold all
+ *  of the categories.
  *
  *  @param level The level diff from which to get the categories.
  *
@@ -128,9 +126,9 @@ extern "C"
 
 /**
  *  Get a vector of categories removed from the level.  These will be
- *  sorted in the same order as given by the original policy.  Note
- *  that this vector will be non-NULL and non-empty only if the form
- *  is POLDIFF_FORM_MODIFIED.
+ *  sorted in the same order as given by the original policy.  If the
+ *  level was removed by modified policy then this vector will hold
+ *  all of the categories.
  *
  *  @param level The level diff from which to get the category vector.
  *

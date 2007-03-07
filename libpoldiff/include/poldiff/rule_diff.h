@@ -160,9 +160,9 @@ extern "C"
 					    qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p);
 
 /**
- *  Get a vector of permissions unmodified by the av rule.  If the
- *  avrule was added or removed by the policy, then this vector will
- *  hold all of the permissions that were added or removed.
+ *  Get a vector of permissions unmodified by the av rule.  This
+ *  vector will be non-empty only if the form is
+ *  POLDIFF_FORM_MODIFIED.
  *
  *  @param avrule The av rule diff from which to get the permissions
  *  vector.
@@ -175,9 +175,9 @@ extern "C"
 	extern apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule);
 
 /**
- *  Get a vector of permissions added to the av rule.  Note that this
- *  vector will be non-NULL and non-empty only if the form is
- *  POLDIFF_FORM_MODIFIED.
+ *  Get a vector of permissions added to the av rule.  If the rule was
+ *  added by modified policy then this vector will hold all of the
+ *  permissions.
  *
  *  @param avrule The av rule diff from which to get the permissions
  *  vector.
@@ -190,9 +190,9 @@ extern "C"
 	extern apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule);
 
 /**
- *  Get a vector of permissions removed from the av rule.  Note that
- *  this vector will be non-NULL and non-empty only if the form is
- *  POLDIFF_FORM_MODIFIED.
+ *  Get a vector of permissions removed from the av rule.  If the rule
+ *  was removed by modified policy then this vector will hold all of
+ *  the permissions.
  *
  *  @param avrule The av rule diff from which to get the permissions
  *  vector.
