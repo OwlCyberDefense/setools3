@@ -381,9 +381,88 @@ typedef enum qpol_capability
 		}
 		return iter;
 	fail:
-			return NULL;
+		return NULL;
 	};
-	//other get_*_iter functions here
+	%newobject get_constraint_iter();
+	qpol_iterator_t *get_constraint_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_constraint_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+	}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_validatetrans_iter();
+	qpol_iterator_t *get_validatetrans_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_validatetrans_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+	}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_role_allow_iter();
+	qpol_iterator_t *get_role_allow_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_role_allow_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_role_trans_iter();
+	qpol_iterator_t *get_role_trans_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_role_trans_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_range_trans_iter();
+	qpol_iterator_t *get_range_trans_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_range_trans_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_avrule_iter();
+	qpol_iterator_t *get_avrule_iter(int rule_types) {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_avrule_iter(self, rule_types, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_terule_iter();
+	qpol_iterator_t *get_terule_iter(int rule_types) {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_terule_iter(self, rule_types, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
+	%newobject get_cond_iter();
+	qpol_iterator_t *get_cond_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_cond_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
 };
 
 /* qpol iterator */
@@ -953,6 +1032,24 @@ typedef struct qpol_class {} qpol_class_t;
 	fail:
 		return iter;
 	};
+	%newobject get_constraint_iter();
+	qpol_iterator_t *get_constraint_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if(qpol_class_get_constraint_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not get class constraints");
+		}
+	fail:
+		return iter;
+	};
+	%newobject get_validatetrans_iter();
+	qpol_iterator_t *get_validatetrans_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if(qpol_class_get_validatetrans_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not get class validatetrans statements");
+		}
+	fail:
+			return iter;
+	};
 	const char *get_name(qpol_policy_t *p) {
 		char *name;
 		if (qpol_class_get_name(p, self, &name)) {
@@ -1260,3 +1357,735 @@ typedef struct qpol_nodecon {} qpol_nodecon_t;
 	};
 };
 
+/* qpol constraint */
+typedef struct qpol_constraint {} qpol_constraint_t;
+%extend qpol_constraint_t {
+	qpol_constraint_t(void *x) {
+		return (qpol_constraint_t*)x;
+	};
+	~qpol_constraint_t() {
+		free(self);
+	};
+	qpol_class_t *get_class(qpol_policy_t *p) {
+		qpol_class_t *cls;
+		if (qpol_constraint_get_class(p, self, &cls)) {
+			SWIG_exception(SWIG_ValueError, "Could not get class for constraint");
+		}
+	fail:
+		return cls;
+	};
+	%newobject get_perm_iter();
+	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_constraint_get_perm_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	%newobject get_expr_iter;
+	qpol_iterator_t *get_expr_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_constraint_get_expr_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+			return iter;
+	};
+};
+
+/* qpol validatetrans */
+typedef struct qpol_constraint {} qpol_validatetrans_t;
+%extend qpol_validatetrans_t {
+	qpol_validatetrans_t(void *x) {
+		return (qpol_validatetrans_t*)x;
+	};
+	~qpol_validatetrans_t() {
+		free(self);
+	};
+	qpol_class_t *get_class(qpol_policy_t *p) {
+		qpol_class_t *cls;
+		if (qpol_validatetrans_get_class(p, self, &cls)) {
+			SWIG_exception(SWIG_ValueError, "Could not get class for constraint");
+		}
+	fail:
+		return cls;
+	};
+	%newobject get_expr_iter();
+	qpol_iterator_t *get_expr_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_validatetrans_get_expr_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+			return iter;
+	};
+};
+
+/* qpol constraint expression node */
+/* expr_type values */
+#define QPOL_CEXPR_TYPE_NOT   1
+#define QPOL_CEXPR_TYPE_AND   2
+#define QPOL_CEXPR_TYPE_OR    3
+#define QPOL_CEXPR_TYPE_ATTR  4
+#define QPOL_CEXPR_TYPE_NAMES 5
+/* symbol type values */
+#define QPOL_CEXPR_SYM_USER       1
+#define QPOL_CEXPR_SYM_ROLE       2
+#define QPOL_CEXPR_SYM_TYPE       4
+#define QPOL_CEXPR_SYM_TARGET     8
+#define QPOL_CEXPR_SYM_XTARGET   16
+#define QPOL_CEXPR_SYM_L1L2      32
+#define QPOL_CEXPR_SYM_L1H2      64
+#define QPOL_CEXPR_SYM_H1L2     128
+#define QPOL_CEXPR_SYM_H1H2     256
+#define QPOL_CEXPR_SYM_L1H1     512
+#define QPOL_CEXPR_SYM_L2H2    1024
+/* op values */
+#define QPOL_CEXPR_OP_EQ     1
+#define QPOL_CEXPR_OP_NEQ    2
+#define QPOL_CEXPR_OP_DOM    3
+#define QPOL_CEXPR_OP_DOMBY  4
+#define QPOL_CEXPR_OP_INCOMP 5
+typedef struct qpol_constraint_expr_node {} qpol_constraint_expr_node_t;
+%extend qpol_constraint_expr_node_t {
+	qpol_constraint_expr_node_t(void *x) {
+		return (qpol_constraint_expr_node_t*)x;
+	};
+	~qpol_constraint_expr_node_t() {
+		/* no op */
+		return;
+	};
+	int get_expr_type(qpol_policy_t *p) {
+		int et;
+		if (qpol_constraint_expr_node_get_expr_type(p, self, &et)) {
+			SWIG_exception(SWIG_ValueError, "Could not get expression type for node");
+		}
+	fail:
+		return et;
+	};
+	int get_sym_type(qpol_policy_t *p) {
+		int st;
+		if (qpol_constraint_expr_node_get_sym_type(p, self, &st)) {
+			SWIG_exception(SWIG_ValueError, "Could not get symbol type for node");
+		}
+	fail:
+		return st;
+	};
+	int get_op(qpol_policy_t *p) {
+		int op;
+		if (qpol_constraint_expr_node_get_op(p, self, &op)) {
+			SWIG_exception(SWIG_ValueError, "Could not get operator for node");
+		}
+	fail:
+		return op;
+	};
+	%newobject get_names_iter;
+	qpol_iterator_t *get_names_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_constraint_expr_node_get_names_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+};
+
+/* qpol role allow */
+typedef struct qpol_role_allow {} qpol_role_allow_t;
+%extend qpol_role_allow_t {
+	qpol_role_allow_t(void *x) {
+		return (qpol_role_allow_t*)x;
+	};
+	~qpol_role_allow_t() {
+		/* no op */
+		return;
+	};
+	qpol_role_t *get_source_role(qpol_policy_t *p) {
+		qpol_role_t *r;
+		if (qpol_role_allow_get_source_role(p, self, &r)) {
+			SWIG_exception(SWIG_ValueError, "Could not get source for role allow rule");
+		}
+	fail:
+		return r;
+	};
+	qpol_role_t *get_target_role(qpol_policy_t *p) {
+		qpol_role_t *r;
+		if (qpol_role_allow_get_target_role(p, self, &r)) {
+			SWIG_exception(SWIG_ValueError, "Could not get target for role allow rule");
+		}
+	fail:
+		return r;
+	};
+};
+
+/* qpol role trans */
+typedef struct qpol_role_trans {} qpol_role_trans_t;
+%extend qpol_role_trans_t {
+	qpol_role_trans_t(void *x) {
+		return (qpol_role_trans_t*)x;
+	};
+	~qpol_role_trans_t() {
+		/* no op */
+		return;
+	};
+	qpol_role_t *get_source_role(qpol_policy_t *p) {
+		qpol_role_t *r;
+		if (qpol_role_trans_get_source_role(p, self, &r)) {
+			SWIG_exception(SWIG_ValueError, "Could not get source for role_transition rule");
+		}
+	fail:
+		return r;
+	};
+	qpol_type_t *get_target_type(qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_role_trans_get_target_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get target for role_transition rule");
+		}
+	fail:
+		return t;
+	};
+	qpol_role_t *get_default_role(qpol_policy_t *p) {
+		qpol_role_t *r;
+		if (qpol_role_trans_get_default_role(p, self, &r)) {
+			SWIG_exception(SWIG_ValueError, "Could not get default for role_transition rule");
+		}
+	fail:
+		return r;
+	};
+};
+
+/* qpol range trans */
+typedef struct qpol_range_trans {} qpol_range_trans_t;
+%extend qpol_range_trans_t {
+	qpol_range_trans_t(void *x) {
+		return (qpol_range_trans_t*)x;
+	};
+	~qpol_range_trans_t() {
+		/* no op */
+		return;
+	};
+	qpol_type_t *get_source_type (qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_range_trans_get_source_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get source for range_transition rule");
+		}
+	fail:
+		return t;
+	};
+	qpol_type_t *get_target_type (qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_range_trans_get_target_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get target for range_transition rule");		}
+	fail:
+		return t;
+	};
+	qpol_class_t *get_target_class(qpol_policy_t *p) {
+		qpol_class_t *cls;
+		if (qpol_range_trans_get_target_class(p, self, &cls)) {
+			SWIG_exception(SWIG_ValueError, "Could not get class for range_transition rule");		}
+	fail:
+		return cls;
+	};
+	qpol_mls_range_t *get_range(qpol_policy_t *p) {
+		qpol_mls_range_t *r;
+		if (qpol_range_trans_get_range(p, self, &r)) {
+			SWIG_exception(SWIG_ValueError, "Could not get range for range_transition rule");
+		}
+	fail:
+		return r;
+	};
+};
+
+/* qpol av rule */
+#define QPOL_RULE_ALLOW         1
+#define QPOL_RULE_NEVERALLOW  128
+#define QPOL_RULE_AUDITALLOW    2
+#define QPOL_RULE_DONTAUDIT     4
+typedef struct qpol_avrule {} qpol_avrule_t;
+%extend qpol_avrule_t {
+	qpol_avrule_t(void *x) {
+		return (qpol_avrule_t*)x;
+	};
+	~qpol_avrule_t() {
+		/* no op */
+		return;
+	};
+	int get_rule_type(qpol_policy_t *p) {
+		int rt;
+		if (qpol_avrule_get_rule_type(p, self, &rt)) {
+			SWIG_exception(SWIG_ValueError, "Could not get rule type for av rule");
+		}
+	fail:
+		return rt;
+	};
+	qpol_type_t *get_source_type(qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_avrule_get_source_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get source for av rule");
+		}
+	fail:
+		return t;
+	};
+	qpol_type_t *get_target_type(qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_avrule_get_target_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get target for av rule");
+		}
+	fail:
+		return t;
+	};
+	qpol_class_t *get_object_class(qpol_policy_t *p) {
+		qpol_class_t *cls;
+		if (qpol_avrule_get_object_class(p, self, &cls)) {
+			SWIG_exception(SWIG_ValueError, "Could not get class for av rule");
+		}
+	fail:
+		return cls;
+	};
+	%newobject get_perm_iter(qpol_policy_t *p);
+	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_avrule_get_perm_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	qpol_cond_t *get_cond(qpol_policy_t *p) {
+		qpol_cond_t *c;
+		if (qpol_avrule_get_cond(p, self, &c)) {
+			SWIG_exception(SWIG_ValueError, "Could not get conditional for av rule");
+		}
+	fail:
+		return c;
+	};
+	int get_is_enabled(qpol_policy_t *p) {
+		int e;
+		if (qpol_avrule_get_is_enabled(p, self, &e)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if av rule is enabled");
+		}
+	fail:
+		return e;
+	};
+	int get_which_list(qpol_policy_t *p) {
+		qpol_cond_t *c;
+		int which = 0;
+		qpol_avrule_get_cond(p, self, &c);
+		if (c == NULL) {
+			SWIG_exception(SWIG_TypeError, "Rule is not conditional");
+		} else if (qpol_avrule_get_which_list(p, self, &which)) {
+			SWIG_exception(SWIG_ValueError, "Could not get conditional list for av rule");
+		}
+	fail:
+		return which;
+	};
+	%newobject get_syn_avrule_iter();
+	qpol_iterator_t *get_syn_avrule_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_avrule_get_syn_avrule_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+};
+
+/* qpol te rule */
+#define QPOL_RULE_TYPE_TRANS   16
+#define QPOL_RULE_TYPE_CHANGE  64
+#define QPOL_RULE_TYPE_MEMBER  32
+typedef struct qpol_terule {} qpol_terule_t;
+%extend qpol_terule_t {
+	qpol_terule_t(void *x) {
+		return (qpol_terule_t*)x;
+	};
+	~qpol_terule_t() {
+		/* no op */
+		return;
+	};
+	int get_rule_type(qpol_policy_t *p) {
+		int rt;
+		if (qpol_terule_get_rule_type(p, self, &rt)) {
+			SWIG_exception(SWIG_ValueError, "Could not get rule type for te rule");
+		}
+	fail:
+		return rt;
+	};
+	qpol_type_t *get_source_type(qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_terule_get_source_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get source for te rule");
+		}
+	fail:
+		return t;
+	};
+	qpol_type_t *get_target_type(qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_terule_get_target_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get target for te rule");
+		}
+	fail:
+		return t;
+	};
+	qpol_class_t *get_object_class(qpol_policy_t *p) {
+		qpol_class_t *cls;
+		if (qpol_terule_get_object_class(p, self, &cls)) {
+			SWIG_exception(SWIG_ValueError, "Could not get class for te rule");
+		}
+	fail:
+		return cls;
+	};
+	qpol_type_t *get_default_type(qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_terule_get_default_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get default for te rule");
+		}
+	fail:
+		return t;
+	};
+	qpol_cond_t *get_cond(qpol_policy_t *p) {
+		qpol_cond_t *c;
+		if (qpol_terule_get_cond(p, self, &c)) {
+			SWIG_exception(SWIG_ValueError, "Could not get conditional for te rule");
+		}
+	fail:
+		return c;
+	};
+	int get_is_enabled(qpol_policy_t *p) {
+		int e;
+		if (qpol_terule_get_is_enabled(p, self, &e)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if te rule is enabled");
+		}
+	fail:
+		return e;
+	};
+	int get_which_list(qpol_policy_t *p) {
+		qpol_cond_t *c;
+		int which = 0;
+		qpol_terule_get_cond(p, self, &c);
+		if (c == NULL) {
+			SWIG_exception(SWIG_TypeError, "Rule is not conditional");
+		} else if (qpol_terule_get_which_list(p, self, &which)) {
+			SWIG_exception(SWIG_ValueError, "Could not get conditional list for te rule");
+		}
+	fail:
+		return which;
+	};
+	%newobject get_syn_terule_iter();
+	qpol_iterator_t *get_syn_terule_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_terule_get_syn_terule_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+};
+
+/* qpol conditional */
+typedef struct qpol_cond {} qpol_cond_t;
+%extend qpol_cond_t {
+	qpol_cond_t(void *x) {
+		return (qpol_cond_t*)x;
+	};
+	~qpol_cond_t() {
+		/* no op */
+		return;
+	};
+	%newobject get_expr_nde_iter();
+	qpol_iterator_t *get_expr_nde_iter(qpol_policy_t *p) {
+	};
+	%newobject get_av_true_iter();
+	qpol_iterator_t *get_av_true_iter(qpol_policy_t *p, int rule_types) {
+		qpol_iterator_t *iter;
+		if (qpol_cond_get_av_true_iter(p, self, rule_types, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	%newobject get_av_false_iter();
+	qpol_iterator_t *get_av_false_iter(qpol_policy_t *p, int rule_types) {
+		qpol_iterator_t *iter;
+		if (qpol_cond_get_av_false_iter(p, self, rule_types, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	%newobject get_te_true_iter();
+	qpol_iterator_t *get_te_true_iter(qpol_policy_t *p, int rule_types) {
+		qpol_iterator_t *iter;
+		if (qpol_cond_get_te_true_iter(p, self, rule_types, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	%newobject get_te_false_iter();
+	qpol_iterator_t *get_te_false_iter(qpol_policy_t *p, int rule_types) {
+		qpol_iterator_t *iter;
+		if (qpol_cond_get_te_false_iter(p, self, rule_types, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+			return iter;
+	};
+	int eval(qpol_policy_t *p) {
+		int e;
+		if (qpol_cond_eval(p, self, &e)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not evaluate conditional");
+		}
+	fail:
+		return e;
+	};
+};
+
+/* qpol conditional expression node */
+#define QPOL_COND_EXPR_BOOL 1      /* plain bool */
+#define QPOL_COND_EXPR_NOT  2      /* !bool */
+#define QPOL_COND_EXPR_OR   3      /* bool || bool */
+#define QPOL_COND_EXPR_AND  4      /* bool && bool */
+#define QPOL_COND_EXPR_XOR  5      /* bool ^ bool */
+#define QPOL_COND_EXPR_EQ   6      /* bool == bool */
+#define QPOL_COND_EXPR_NEQ  7      /* bool != bool */
+typedef struct qpol_cond_expr_node {} qpol_cond_expr_node_t;
+%extend qpol_cond_expr_node_t {
+	qpol_cond_expr_node_t(void *x) {
+		return (qpol_cond_expr_node_t*)x;
+	};
+	~qpol_cond_expr_node_t() {
+		/* no op */
+		return;
+	};
+	int get_expr_type(qpol_policy_t *p) {
+		int et;
+		if (qpol_cond_expr_node_get_expr_type(p, self, &et)) {
+			SWIG_exception(SWIG_ValueError, "Could not get node expression type");
+		}
+	fail:
+		return et;
+	};
+	qpol_bool_t *get_bool(qpol_policy_t *p) {
+		int et;
+		qpol_bool_t *b = NULL;
+		qpol_cond_expr_node_get_expr_type(p, self, &et);
+		if (et != QPOL_COND_EXPR_BOOL) {
+			SWIG_exception(SWIG_TypeError, "Node does not contain a boolean");
+		} else if (qpol_cond_expr_node_get_bool(p, self, &b)) {
+			SWIG_exception(SWIG_ValueError, "Could not get boolean for node");
+		}
+	fail:
+		return b;
+	};
+};
+
+/* qpol type set */
+typedef struct qpol_type_set {} qpol_type_set_t;
+%extend qpol_type_set_t {
+	qpol_type_set_t(void *x) {
+		return (qpol_type_set_t*)x;
+	};
+	~qpol_type_set_t() {
+		/* no op */
+		return;
+	};
+	%newobject get_included_types_iter();
+	qpol_iterator_t *get_included_types_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_type_set_get_included_types_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	%newobject get_subtracted_types_iter();
+	qpol_iterator_t *get_subtracted_types_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_type_set_get_subtracted_types_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	int get_is_star(qpol_policy_t *p) {
+		int s;
+		if (qpol_type_set_get_is_star(p, self, &s)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if type set contains star");
+		}
+	fail:
+		return s;
+	};
+	int get_is_comp(qpol_policy_t *p) {
+		int c;
+		if (qpol_type_set_get_is_comp(p, self, &c)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if type set is complemented");
+		}
+	fail:
+		return c;
+	};
+};
+
+/* qpol syn av rule */
+typedef struct qpol_syn_rule {} qpol_syn_avrule_t;
+%extend qpol_syn_avrule_t {
+	qpol_syn_avrule_t(void *x) {
+		return (qpol_syn_avrule_t*)x;
+	};
+	~qpol_syn_avrule_t() {
+		/* no op */
+		return;
+	};
+	int get_rule_type(qpol_policy_t *p) {
+		int rt;
+		if (qpol_syn_avrule_get_rule_type(p, self, &rt)) {
+			SWIG_exception(SWIG_ValueError, "Could not get rule type for syn av rule");
+		}
+	fail:
+		return rt;
+	};
+	qpol_type_set_t *get_source_type_set(qpol_policy_t *p) {
+		qpol_type_set_t *ts;
+		if (qpol_syn_avrule_get_source_type_set(p, self, &ts)) {
+			SWIG_exception(SWIG_ValueError, "Could not get source type set for syn av rule");
+		}
+	fail:
+		return ts;
+	};
+	qpol_type_set_t *get_target_type_set(qpol_policy_t *p) {
+		qpol_type_set_t *ts;
+		if (qpol_syn_avrule_get_target_type_set(p, self, &ts)) {
+			SWIG_exception(SWIG_ValueError, "Could not get target type set for syn av rule");
+		}
+	fail:
+		return ts;
+	};
+	int get_is_target_self(qpol_policy_t *p) {
+		int i;
+		if (qpol_syn_avrule_get_is_target_self(p, self, &i)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if target is self for syn av rule");
+		}
+	fail:
+		return i;
+	};
+	%newobject get_class_iter();
+	qpol_iterator_t *get_class_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_syn_avrule_get_class_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	%newobject get_perm_iter();
+	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_syn_avrule_get_perm_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
+	};
+	long get_lineno(qpol_policy_t *p) {
+		unsigned long l;
+		if (qpol_syn_avrule_get_lineno(p, self, &l)) {
+			SWIG_exception(SWIG_ValueError, "Could not get line number for syn av rule");
+		}
+	fail:
+		return (long)l;
+	};
+	qpol_cond_t *get_cond(qpol_policy_t *p) {
+		qpol_cond_t *c;
+		if (qpol_syn_avrule_get_cond(p, self, &c)) {
+			SWIG_exception(SWIG_ValueError, "Could not get conditional for syn av rule");
+		}
+	fail:
+		return c;
+	};
+	int get_is_enabled(qpol_policy_t *p) {
+		int e;
+		if (qpol_syn_avrule_get_is_enabled(p, self, &e)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if syn av rule is enabled");
+		}
+	fail:
+		return e;
+	};
+};
+
+/* qpol syn te rule */
+typedef struct qpol_syn_rule {} qpol_syn_terule_t;
+%extend qpol_syn_terule_t {
+	qpol_syn_terule_t(void *x) {
+		return (qpol_syn_terule_t*)x;
+	};
+	~qpol_syn_terule_t() {
+		/* no op */
+		return;
+	};
+	int get_rule_type(qpol_policy_t *p) {
+		int rt;
+		if (qpol_syn_terule_get_rule_type(p, self, &rt)) {
+			SWIG_exception(SWIG_ValueError, "Could not get rule type for syn te rule");
+		}
+	fail:
+		return rt;
+	};
+	qpol_type_set_t *get_source_type_set(qpol_policy_t *p) {
+		qpol_type_set_t *ts;
+		if (qpol_syn_terule_get_source_type_set(p, self, &ts)) {
+			SWIG_exception(SWIG_ValueError, "Could not get source type set for syn te rule");
+		}
+	fail:
+		return ts;
+	};
+	qpol_type_set_t *get_target_type_set(qpol_policy_t *p) {
+		qpol_type_set_t *ts;
+		if (qpol_syn_terule_get_target_type_set(p, self, &ts)) {
+			SWIG_exception(SWIG_ValueError, "Could not get target type set for syn te rule");
+		}
+	fail:
+		return ts;
+	};
+	%newobject get_class_iter();
+	qpol_iterator_t *get_class_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_syn_terule_get_class_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+			return iter;
+	};
+	qpol_type_t *get_default_type(qpol_policy_t *p) {
+		qpol_type_t *t;
+		if (qpol_syn_terule_get_default_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get default type for syn te rule");
+		}
+	fail:
+		return t;
+	};
+	long get_lineno(qpol_policy_t *p) {
+		unsigned long l;
+		if (qpol_syn_terule_get_lineno(p, self, &l)) {
+			SWIG_exception(SWIG_ValueError, "Could not get line number for syn te rule");
+		}
+	fail:
+		return (long)l;
+	};
+	qpol_cond_t *get_cond(qpol_policy_t *p) {
+		qpol_cond_t *c;
+		if (qpol_syn_terule_get_cond(p, self, &c)) {
+			SWIG_exception(SWIG_ValueError, "Could not get conditional for syn te rule");
+		}
+	fail:
+		return c;
+	};
+	int get_is_enabled(qpol_policy_t *p) {
+		int e;
+		if (qpol_syn_terule_get_is_enabled(p, self, &e)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if syn te rule is enabled");
+		}
+	fail:
+		return e;
+	};
+};
