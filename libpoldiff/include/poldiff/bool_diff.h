@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Public Interface for computing a semantic differences in bools.
+ *  Public interface for computing a semantic differences in booleans.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *  @author Randy Wicks rwicks@tresys.com
@@ -34,8 +33,6 @@ extern "C"
 
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
-
-/************************ booleans **********************/
 
 	typedef struct poldiff_bool poldiff_bool_t;
 

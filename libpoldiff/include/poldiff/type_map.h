@@ -1,9 +1,8 @@
 /**
  *  @file
- *  Public Interface for type equivalence mapping for semantic
+ *  Public interface for type equivalence mapping for semantic
  *  difference calculations.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

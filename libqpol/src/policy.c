@@ -587,11 +587,7 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 	return retv;
 
       err:
-	if (*policy != NULL) {
-		sepol_policydb_free((*policy)->p);
-		free(*policy);
-		*policy = NULL;
-	}
+	qpol_policy_destroy(policy);
 	qpol_module_destroy(&mod);
 	sepol_policy_file_free(pfile);
 	if (infile)
@@ -757,9 +753,6 @@ int qpol_policy_open_from_file_no_rules(const char *path, qpol_policy_t ** polic
 
       err:
 	qpol_policy_destroy(policy);
-	*policy = NULL;
-	sepol_policydb_free((*policy)->p);
-	*policy = NULL;
 	sepol_policy_file_free(pfile);
 	if (infile)
 		fclose(infile);
@@ -833,9 +826,7 @@ int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, 
 
 	return 0;
       err:
-	sepol_policydb_free((*policy)->p);
-	free(*policy);
-	*policy = NULL;
+	qpol_policy_destroy(policy);
 	errno = error;
 	return -1;
 
@@ -852,9 +843,7 @@ extern void qpol_extended_image_destroy(struct qpol_extended_image **ext);
 
 void qpol_policy_destroy(qpol_policy_t ** policy)
 {
-	if (policy == NULL) {
-		errno = EINVAL;
-	} else if (*policy != NULL) {
+	if (policy != NULL && *policy != NULL) {
 		sepol_policydb_free((*policy)->p);
 		sepol_handle_destroy((*policy)->sh);
 		qpol_extended_image_destroy(&((*policy)->ext));

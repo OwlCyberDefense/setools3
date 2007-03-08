@@ -14,6 +14,7 @@ libpoldiff_a_SOURCES = \
 	cat_diff.c cat_internal.h \
 	class_diff.c class_internal.h \
 	level_diff.c level_internal.h \
+	range_diff.c range_internal.h \
 	rangetrans_diff.c rangetrans_internal.h \
 	rbac_diff.c rbac_internal.h \
 	role_diff.c role_internal.h \

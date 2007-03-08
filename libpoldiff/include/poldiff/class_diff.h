@@ -1,9 +1,8 @@
 /**
  *  @file
- *  Public Interface for computing a semantic differences in classes
+ *  Public interface for computing a semantic differences in classes
  *  and commons.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

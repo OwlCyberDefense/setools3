@@ -1,5 +1,13 @@
 2007-03-07  J. Tang  <jtang@tresys.com>
 
+	* in libpoldiff, if either policy is MLS then when diffing users,
+	those users' default MLS level and assigned ranges are also
+	diffed.
+
+	* added poldiff_range_t object
+
+	* fixed segfault in libqpol when loading an invalid source policy
+
 	* error messages were not being shown correctly in apol's open
 	policy dialog; fixed.
 

@@ -320,7 +320,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t * p, q
 	apol_mls_level_t *lvl = NULL;
 	qpol_iterator_t *iter = NULL;
 	qpol_cat_t *tmp_cat = NULL;
-	char *tmp = NULL, *s;
+	char *tmp = NULL;
 	int error = 0;
 
 	if (!p || !qpol_level) {
@@ -350,14 +350,12 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t * p, q
 	}
 
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		s = NULL;
 		if (qpol_iterator_get_item(iter, (void **)&tmp_cat) < 0 || qpol_cat_get_name(p->p, tmp_cat, &tmp) < 0) {
 			error = errno;
 			goto err;
 		}
-		if ((s = strdup(tmp)) == NULL || apol_mls_level_append_cats(p, lvl, s) < 0) {
+		if (apol_mls_level_append_cats(p, lvl, tmp) < 0) {
 			error = errno;
-			free(s);
 			ERR(p, "%s", strerror(error));
 			goto err;
 		}

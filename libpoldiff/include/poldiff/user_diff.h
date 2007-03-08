@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Public Interface for computing a semantic differences in users.
+ *  Public interface for computing a semantic differences in users.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

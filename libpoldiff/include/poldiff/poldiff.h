@@ -1,6 +1,12 @@
 /**
  *  @file
- *  Public Interface for computing a semantic policy difference.
+ *  Public interface for computing a semantic policy difference
+ *  between two policies.  The user loads two policies, the "original"
+ *  and "modified" policies, and then calls poldiff_create() to obtain
+ *  a poldiff object.  Next call poldiff_run() to actually execute the
+ *  differencing algorithm.  Results are retrieved via
+ *  poldiff_get_type_vector(), poldiff_get_avrule_vector(), and so
+ *  forth.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -70,6 +76,7 @@ extern "C"
 #include <poldiff/bool_diff.h>
 #include <poldiff/class_diff.h>
 #include <poldiff/level_diff.h>
+#include <poldiff/range_diff.h>
 #include <poldiff/rangetrans_diff.h>
 #include <poldiff/rbac_diff.h>
 #include <poldiff/role_diff.h>

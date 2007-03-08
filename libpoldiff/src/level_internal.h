@@ -125,9 +125,28 @@ extern "C"
  */
 	int level_deep_diff(poldiff_t * diff, const void *x, const void *y);
 
+/*********************
+ * The remainder are protected functions that operate upon a single
+ * poldiff_level_t.  These are used by user's default level, user's
+ * assigned range, etc.
+ *********************/
+
 /**
- * Deallocate all space associated with a poldiff_level_t,
- * including the pointer itself.
+ * Allocate and return a poldiff_level_t object.  If the form is added
+ * or removed, set that respective vector to be all of the categories
+ * from the given level.
+ *
+ * @param level Level object to use as a template.
+ * @param form Form of difference for the level.
+ *
+ * @return Initialized level, or NULL upon error.  Caller must call
+ * level_free() upon the returned value.
+ */
+	poldiff_level_t *level_create_from_apol_mls_level(apol_mls_level_t * level, poldiff_form_e form);
+
+/**
+ * Deallocate all space associated with a poldiff_level_t, including
+ * the pointer itself.
  *
  * @param elem Pointer to a poldiff_level_t object.  If NULL then do
  * nothing.
@@ -135,16 +154,70 @@ extern "C"
 	void level_free(void *elem);
 
 /**
- * Comparison function for two category names from the same policy.
+ * Perform a deep diff of two levels.  This will first compare the
+ * sensitivity names; if they match then it compares the vectors of
+ * category names.  If the sensitivities do not match, then generate
+ * two poldiff_level_ts, one for the original level and one for
+ * modified level.  If they do match then create just one
+ * poldiff_level_t and write it to orig_uld.
  *
- * @param a Name of a category.
- * @param b Name of another category.
- * @param data qpol policy from which the categories originate.
+ * @param diff Poldiff object, used for error reporting and for
+ * sorting the categories to policy order.
+ * @param level1 Original level.  Note that this object will be
+ * modified.
+ * @param level2 Modified level.  Note that this object will be
+ * modified.
+ * @param orig_pl Destination to where to write the poldiff_level_t,
+ * if the sensitivites do not match or if the categories do not match.
+ * @param mod_pl Destination to where to write the poldiff_level_t,
+ * if the sensitivities do not match.
  *
- * @return Less than zero, zero, or greater than zero based upon the
- * categories' order within the policy.
+ * @return 0 on success, < 0 on error.
  */
-	int level_cat_comp(const void *a, const void *b, void *data);
+	int level_deep_diff_apol_mls_levels(poldiff_t * diff, apol_mls_level_t * level1, apol_mls_level_t * level2,
+					    poldiff_level_t ** orig_pl, poldiff_level_t ** mod_pl);
+
+/**
+ * Calculate the differences between two sorted vectors of category
+ * names.  Allocate the vectors added, removed, and unmodified; fill
+ * them with appropriate category names.  The returned vectors'
+ * categories will be sorted alphabetically.
+ *
+ * @param diff Error handler.
+ * @param v1 First vector of category names, sorted alphabetically.
+ * @param v2 Other vector of category names, sorted alphabetically.
+ * @param added Reference to where to store added categories.  The
+ * caller is responsible for calling apol_vector_destroy() upon the
+ * value, passing NULL as the second parameter.  If no differences are
+ * found then this will be set to NULL.
+ * @param removed Reference to where to store removed categories.  The
+ * caller is responsible for calling apol_vector_destroy() upon the
+ * value, passing NULL as the second parameter.  If no differences are
+ * found then this will be set to NULL.
+ * @param unmodified Reference to where to store unmodified
+ * categories.  The caller is responsible for calling
+ * apol_vector_destroy() upon the value, passing NULL as the second
+ * parameter.  If no differences are found then this will be set to
+ * NULL.
+ *
+ * @return Greater than zero if a difference was found, zero upon no
+ * differences, less than zero on error.
+ */
+	int level_deep_diff_cats(poldiff_t * diff, apol_vector_t * v1, apol_vector_t * v2, apol_vector_t ** added,
+				 apol_vector_t ** removed, apol_vector_t ** unmodified);
+
+/**
+ * Allocate and return a string rendering of a poldiff_level_t,
+ * suitable for embedding within some other component's to_string
+ * function (e.g., a user's default level).
+ *
+ * @param diff Poldiff object, for error handling.
+ * @param level Level diff object to render.
+ *
+ * @return String rendering of level, or NULL upon error.  Caller must
+ * free() string afterwards.
+ */
+	char *level_to_string(poldiff_t * diff, poldiff_level_t * level);
 
 #ifdef	__cplusplus
 }

@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Protected Interface for attrib differences.
+ *  Protected Interface for attribute differences.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

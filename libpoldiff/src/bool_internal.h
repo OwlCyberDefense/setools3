@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Protected Interface for bool differences.
+ *  Protected interface for boolean differences.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *  @author Randy Wicks rwicks@tresys.com

@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Public Interface for computing a semantic differences in attribs.
+ *  Public interface for computing a semantic differences in attributes.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
