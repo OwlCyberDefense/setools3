@@ -74,7 +74,8 @@ static int is_permmap_loaded = 0;
  * than previous, else ignore the message.
  */
 static void apol_tcl_route_handle_to_string(void *varg
-					    __attribute__ ((unused)), apol_policy_t * p, int level, const char *fmt, va_list ap)
+					    __attribute__ ((unused)), apol_policy_t * p
+					    __attribute__ ((unused)), int level, const char *fmt, va_list ap)
 {
 	char *s, *t;
 	if (level == APOL_MSG_INFO && msg_level >= APOL_MSG_INFO) {
@@ -438,13 +439,13 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 				goto cleanup;
 			}
 			if ((modules = apol_vector_create()) == NULL) {
-				ERR(policydb, "%s", strerror(errno));
+				Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
 				goto cleanup;
 			}
 			while (--num_modules >= 0) {
 				char *m;
 				if ((m = strdup(module_paths[num_modules])) == NULL || apol_vector_append(modules, m) < 0) {
-					ERR(policydb, "%s", strerror(errno));
+					Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
 					free(m);
 					goto cleanup;
 				}
@@ -453,7 +454,7 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 	}
 	primary_path = argv[2];
 	if ((path = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
-		ERR(policydb, "%s", strerror(errno));
+		Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
 		goto cleanup;
 	}
 
@@ -513,7 +514,7 @@ static int Apol_ClosePolicy(ClientData clientData, Tcl_Interp * interp, int argc
 static int Apol_GetModuleInfo(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
 {
 	qpol_module_t *module = NULL;
-	char *module_name, *version;
+	char *module_name, *version, *s;
 	int module_type;
 	Tcl_Obj *result_obj, *objs[2];
 	int retval = TCL_ERROR;
@@ -524,16 +525,25 @@ static int Apol_GetModuleInfo(ClientData clientData, Tcl_Interp * interp, int ar
 		goto cleanup;
 	}
 	if ((qpol_module_create_from_file(argv[1], &module)) < 0) {
-		ERR(policydb, "Error opening module: %s", strerror(errno));
+		if (asprintf(&s, "Error opening module: %s", strerror(errno)) < 0) {
+			fprintf(stderr, "%s", strerror(errno));
+		}
+		message = s;
 		goto cleanup;
 	}
 	if (qpol_module_get_name(module, &module_name) < 0 ||
 	    qpol_module_get_version(module, &version) < 0 || qpol_module_get_type(module, &module_type) < 0) {
-		ERR(policydb, "Error reading module: %s", strerror(errno));
+		if (asprintf(&s, "Error reading module: %s", strerror(errno)) < 0) {
+			fprintf(stderr, "%s", strerror(errno));
+		}
+		message = s;
 		goto cleanup;
 	}
 	if (module_type != QPOL_MODULE_OTHER) {
-		ERR(policydb, "%s is not a loadable module.", argv[1]);
+		if (asprintf(&s, "%s is not a loadable module.", argv[1]) < 0) {
+			fprintf(stderr, "%s", strerror(errno));
+		}
+		message = s;
 		goto cleanup;
 	}
 	objs[0] = Tcl_NewStringObj(module_name, -1);

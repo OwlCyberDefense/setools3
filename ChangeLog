@@ -1,3 +1,8 @@
+2007-03-07  J. Tang  <jtang@tresys.com>
+
+	* error messages were not being shown correctly in apol's open
+	policy dialog; fixed.
+
 2007-03-06  J. Tang  <jtang@tresys.com>
 
 	* apol_mls_level_create() will now always return an allocated (and
