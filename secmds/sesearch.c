@@ -158,7 +158,7 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		return -1;
 	}
 
-	if (!opt->all && !opt->allow && !opt->nallow && !opt->auditallow && opt->dontaudit) {
+	if (!opt->all && !opt->allow && !opt->nallow && !opt->auditallow && !opt->dontaudit) {
 		*v = NULL;
 		return 0;	       /* no search to do */
 	}
