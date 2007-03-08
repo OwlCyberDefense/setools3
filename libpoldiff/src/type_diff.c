@@ -96,12 +96,14 @@ char *poldiff_type_to_string(poldiff_t * diff, const void *type)
 				break;
 			}
 			if (num_added > 0) {
-				if (apol_str_appendf(&s, &len, "%zd Added Attributes", num_added) < 0) {
+				if (apol_str_appendf(&s, &len, "%zd Added Attribute%s", num_added, (num_added == 1 ? "" : "s")) < 0) {
 					break;
 				}
 			}
 			if (num_removed > 0) {
-				if (apol_str_appendf(&s, &len, "%s%zd Removed Attributes", (num_added > 0 ? ", " : ""), num_removed)
+				if (apol_str_appendf
+				    (&s, &len, "%s%zd Removed Attribute%s", (num_added > 0 ? ", " : ""), num_removed,
+				     (num_removed == 1 ? "" : "s"))
 				    < 0) {
 					break;
 				}

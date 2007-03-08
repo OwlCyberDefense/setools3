@@ -13,6 +13,7 @@
 		poldiff_class_*;
 		poldiff_common_*;
 		poldiff_level_*;
+                poldiff_range_*;
 		poldiff_range_trans_*;
 		poldiff_role_*;	     
 		poldiff_role_allow_*;	   

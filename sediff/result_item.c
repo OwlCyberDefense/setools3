@@ -105,77 +105,59 @@ static const poldiff_form_e form_reverse_map[] = {
 
 /**
  * Show a single diff item string.  This will add the appropriate
- * color tags based upon the item's first character.
+ * color tags based upon the item's first non-space character.
  */
 static void result_item_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
 {
-	const char *c = s;
+	const char *c;
 	unsigned int i;
 	size_t start = 0, end = 0;
 	static const char *indent = "\t";
-	const gchar *current_tag = NULL;
+	const gchar *tag = NULL;
 	for (i = 0; i < indent_level; i++) {
 		gtk_text_buffer_insert(tb, iter, indent, -1);
 	}
-	for (; *c; c++, end++) {
+	for (c = s; *c && tag == NULL; c++) {
 		switch (*c) {
 		case '+':{
-				if (*(c + 1) == ' ') {
-					if (end > 0) {
-						gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start,
-											 current_tag, NULL);
-					}
-					start = end;
-					current_tag = "added";
-					break;
-				}
+				tag = "added";
+				break;
 			}
 		case '-':{
-				if (*(c + 1) == ' ') {
-					if (end > 0) {
-						gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start,
-											 current_tag, NULL);
-					}
-					start = end;
-					current_tag = "removed";
-				}
+				tag = "removed";
 				break;
 			}
-		case '*':{
-				if (*(c + 1) == ' ') {
-					if (end > 0) {
-						gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start,
-											 current_tag, NULL);
-					}
-					start = end;
-					current_tag = "modified";
-				}
-				break;
-			}
+		case ' ':
+		case '\t':
 		case '\n':{
-				if (*(c + 1) != '\0') {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
-										 NULL);
-					for (i = 0; i < indent_level; i++) {
-						gtk_text_buffer_insert(tb, iter, indent, -1);
-					}
-					start = end + 1;
-				}
+				break;
+			}
+		default:{
+				tag = "modified";
 				break;
 			}
 		}
 	}
+	for (c = s; *c; c++, end++) {
+		if (*c == '\n' && *(c + 1) != '\0') {
+			gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, tag, NULL);
+			for (i = 0; i < indent_level; i++) {
+				gtk_text_buffer_insert(tb, iter, indent, -1);
+			}
+			start = end + 1;
+		}
+	}
 	if (start < end) {
-		gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
+		gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, tag, NULL);
 	}
 }
 
 /**
- * Print a modified rule.  Note that this differs from the more
- * general results_print_string() because there are inline '+' and '-'
- * markers.
+ * Print a string to a text buffer.  Note that this differs from the
+ * more general results_print_string() because there are inline '+'
+ * and '-' markers.
  */
-static void result_item_print_rule_modified(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
+static void result_item_print_string_inline(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
 {
 	const char *c = s;
 	unsigned int i;
@@ -386,7 +368,7 @@ static void result_item_print_rule_diff(result_item_t * item, GtkTextBuffer * tb
 			if (form != POLDIFF_FORM_MODIFIED) {
 				result_item_print_string(tb, &iter, s, 1);
 			} else {
-				result_item_print_rule_modified(tb, &iter, s, 1);
+				result_item_print_string_inline(tb, &iter, s, 1);
 			}
 			free(s);
 			gtk_text_buffer_insert(tb, &iter, "\n", -1);
@@ -708,37 +690,115 @@ result_item_t *result_item_create_roles(GtkTextTagTable * table)
 }
 
 /**
+ * Construct a string, similar to poldiff_user_to_string(), but with
+ * the proper color coding enabled.
+ */
+static void result_item_user_print_modified(result_item_t * item, poldiff_user_t * user, GtkTextBuffer * tb, GtkTextIter * iter)
+{
+	GString *string = g_string_new("");
+	g_string_printf(string, "* %s\n", poldiff_user_get_name(user));
+	result_item_print_string(tb, iter, string->str, 1);
+
+	apol_vector_t *added = poldiff_user_get_added_roles(user);
+	apol_vector_t *removed = poldiff_user_get_removed_roles(user);
+	apol_vector_t *unmodified = poldiff_user_get_unmodified_roles(user);
+	size_t i;
+	char *s;
+	if (apol_vector_get_size(added) > 0 || apol_vector_get_size(removed) > 0) {
+		g_string_assign(string, "   roles {");
+		for (i = 0; i < apol_vector_get_size(unmodified); i++) {
+			s = (char *)apol_vector_get_element(unmodified, i);
+			g_string_append_printf(string, " %s", s);
+		}
+		for (i = 0; i < apol_vector_get_size(added); i++) {
+			s = (char *)apol_vector_get_element(added, i);
+			g_string_append_printf(string, " +%s", s);
+		}
+		for (i = 0; i < apol_vector_get_size(removed); i++) {
+			s = (char *)apol_vector_get_element(removed, i);
+			g_string_append_printf(string, " -%s", s);
+		}
+		g_string_append(string, " }\n");
+		result_item_print_string_inline(tb, iter, string->str, 1);
+	}
+
+	poldiff_level_t *orig = poldiff_user_get_original_dfltlevel(user);
+	poldiff_level_t *mod = poldiff_user_get_modified_dfltlevel(user);
+	if (orig != NULL) {
+		result_item_print_string_inline(tb, iter, "   level:\n", 1);
+		s = poldiff_level_to_string_brief(item->diff, orig);
+		g_string_printf(string, "     %s", s);
+		if (poldiff_level_get_form(orig) != POLDIFF_FORM_MODIFIED) {
+			result_item_print_string(tb, iter, string->str, 1);
+		} else {
+			result_item_print_string_inline(tb, iter, string->str, 1);
+		}
+		free(s);
+		if (mod != NULL) {
+			s = poldiff_level_to_string_brief(item->diff, mod);
+			g_string_printf(string, "     %s", s);
+			if (poldiff_level_get_form(mod) != POLDIFF_FORM_MODIFIED) {
+				result_item_print_string(tb, iter, string->str, 1);
+			} else {
+				result_item_print_string_inline(tb, iter, string->str, 1);
+			}
+			free(s);
+		}
+	}
+
+	poldiff_range_t *range = poldiff_user_get_range(user);
+	if (range != NULL) {
+		char *orig_s = poldiff_range_to_string_brief(item->diff, range);
+		/* first line should always be printed with normal font */
+		char *next_s = orig_s;
+		s = strsep(&next_s, "\n");
+		g_string_printf(string, "%s\n", s);
+		result_item_print_string(tb, iter, string->str, 1);
+		/* all subsequent lines are printed as normal (yes, this
+		 * discarded lines form poldiff_render_to_string_brief() */
+		free(orig_s);
+		apol_vector_t *levels = poldiff_range_get_levels(range);
+		for (i = 0; i < apol_vector_get_size(levels); i++) {
+			poldiff_level_t *l = apol_vector_get_element(levels, i);
+			s = poldiff_level_to_string_brief(item->diff, l);
+			g_string_printf(string, "     %s", s);
+			if (poldiff_level_get_form(l) != POLDIFF_FORM_MODIFIED) {
+				result_item_print_string(tb, iter, string->str, 1);
+			} else {
+				result_item_print_string_inline(tb, iter, string->str, 1);
+			}
+			free(s);
+		}
+	}
+	result_item_print_string(tb, iter, "\n", 0);
+	g_string_free(string, TRUE);
+}
+
+/**
  * Printing a modified user is special, for it spans multiple lines
  * and has inline markers.
  */
 static GtkTextBuffer *result_item_user_get_buffer(result_item_t * item, poldiff_form_e form)
 {
-	if (form == POLDIFF_FORM_MODIFIED) {
+	if (form != POLDIFF_FORM_MODIFIED) {
+		return result_item_single_get_buffer(item, form);
+	} else {
 		util_text_buffer_clear(single_buffer);
 		result_item_print_header(item, single_buffer, form);
 		GtkTextIter iter;
 		apol_vector_t *v;
 		size_t i;
-		void *elem;
-		char *orig_s, *s, *next_s = NULL;
+		poldiff_user_t *user;
 
 		gtk_text_buffer_get_end_iter(single_buffer, &iter);
 		v = item->get_vector(item->diff);
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			elem = apol_vector_get_element(v, i);
-			if (item->get_form(elem) == form) {
-				orig_s = next_s = item->get_string(item->diff, elem);
-				while (next_s != NULL) {
-					s = strsep(&next_s, "\n");
-					result_item_print_rule_modified(single_buffer, &iter, s, 1);
-					gtk_text_buffer_insert(single_buffer, &iter, "\n", -1);
-				}
-				free(orig_s);
+			user = (poldiff_user_t *) apol_vector_get_element(v, i);
+			if (item->get_form(user) == form) {
+				result_item_user_print_modified(item, user, single_buffer, &iter);
 			}
 		}
 		return single_buffer;
-	} else {
-		return result_item_single_get_buffer(item, form);
 	}
 }
 
@@ -1043,7 +1103,7 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
 			}
 		} else {
-			result_item_print_rule_modified(tb, &iter, s, 1);
+			result_item_print_string_inline(tb, &iter, s, 1);
 			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
 			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
 				result_item_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
@@ -1172,7 +1232,7 @@ static void result_item_terule_print_diff(result_item_t * item, GtkTextBuffer * 
 				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
 			}
 		} else {
-			result_item_print_rule_modified(tb, &iter, s, 1);
+			result_item_print_string_inline(tb, &iter, s, 1);
 			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
 			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
 				result_item_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);

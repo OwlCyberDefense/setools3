@@ -76,6 +76,19 @@ extern "C"
 	extern char *poldiff_level_to_string(poldiff_t * diff, const void *level);
 
 /**
+ * Allocate and return a string rendering of a poldiff_level_t,
+ * suitable for embedding within some other component's to_string
+ * function (e.g., a user's default level).
+ *
+ * @param diff Poldiff object, for error handling.
+ * @param level Level diff object to render.
+ *
+ * @return String rendering of level, or NULL upon error.  Caller must
+ * free() string afterwards.
+ */
+	char *poldiff_level_to_string_brief(poldiff_t * diff, poldiff_level_t * level);
+
+/**
  *  Get the name of the level (i.e., the sensitivity) from a level diff.
  *
  *  @param level The level from which to get the name.
@@ -112,8 +125,8 @@ extern "C"
 /**
  *  Get a vector of categories added to the level.  These will be
  *  sorted in the same order as given by the modified policy.  If the
- *  level was added by modified policy then this vector will hold all
- *  of the categories.
+ *  level was added by the modified policy then this vector will hold
+ *  all of the categories.
  *
  *  @param level The level diff from which to get the categories.
  *
@@ -127,8 +140,8 @@ extern "C"
 /**
  *  Get a vector of categories removed from the level.  These will be
  *  sorted in the same order as given by the original policy.  If the
- *  level was removed by modified policy then this vector will hold
- *  all of the categories.
+ *  level was removed by the modified policy then this vector will
+ *  hold all of the categories.
  *
  *  @param level The level diff from which to get the category vector.
  *

@@ -90,11 +90,13 @@ char *poldiff_attrib_to_string(poldiff_t * diff, const void *attrib)
 			if (apol_str_appendf(&s, &len, "* %s (", at->name) < 0) {
 				break;
 			}
-			if (num_added > 0 && apol_str_appendf(&s, &len, "%zd Added Types", num_added) < 0) {
+			if (num_added > 0
+			    && apol_str_appendf(&s, &len, "%zd Added Type%s", num_added, (num_added == 1 ? "" : "s")) < 0) {
 				break;
 			}
 			if (num_removed > 0
-			    && apol_str_appendf(&s, &len, "%s%zd Removed Types", (num_added > 0 ? ", " : ""), num_removed) < 0) {
+			    && apol_str_appendf(&s, &len, "%s%zd Removed Type%s", (num_added > 0 ? ", " : ""), num_removed,
+						(num_removed == 1 ? "" : "s")) < 0) {
 				break;
 			}
 			if (apol_str_append(&s, &len, ")\n") < 0) {

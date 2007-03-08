@@ -95,13 +95,15 @@ char *poldiff_class_to_string(poldiff_t * diff, const void *cls)
 				break;
 			}
 			if (num_added > 0) {
-				if (apol_str_appendf(&s, &len, "%zd Added Permissions", num_added) < 0) {
+				if (apol_str_appendf(&s, &len, "%zd Added Permission%s", num_added, (num_added == 1 ? "" : "s")) <
+				    0) {
 					break;
 				}
 			}
 			if (num_removed > 0) {
 				if (apol_str_appendf
-				    (&s, &len, "%s%zd Removed Permissions", (num_added > 0 ? ", " : ""), num_removed)
+				    (&s, &len, "%s%zd Removed Permission%s", (num_added > 0 ? ", " : ""), num_removed,
+				     (num_removed == 1 ? "" : "s"))
 				    < 0) {
 					break;
 				}
@@ -578,13 +580,15 @@ char *poldiff_common_to_string(poldiff_t * diff, const void *cls)
 				break;
 			}
 			if (num_added > 0) {
-				if (apol_str_appendf(&s, &len, "%zd Added Permissions", num_added) < 0) {
+				if (apol_str_appendf(&s, &len, "%zd Added Permission%s", num_added, (num_added == 1 ? "" : "s")) <
+				    0) {
 					break;
 				}
 			}
 			if (num_removed > 0) {
 				if (apol_str_appendf
-				    (&s, &len, "%s%zd Removed Permissions", (num_added > 0 ? ", " : ""), num_removed)
+				    (&s, &len, "%s%zd Removed Permission%s", (num_added > 0 ? ", " : ""), num_removed,
+				     (num_removed == 1 ? "" : "s"))
 				    < 0) {
 					break;
 				}

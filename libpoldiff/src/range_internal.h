@@ -38,8 +38,10 @@ extern "C"
  * were added/removed.
  *
  * @param diff Diff object containing policies.
- * @param orig_range Range from original policy.
- * @param mod_range Range from modified policy.
+ * @param orig_range Range from original policy, or NULL if there is
+ * no original range.
+ * @param mod_range Range from modified policy, or NULL if there is no
+ * modified range.
  * @param form Form of the range.
  *
  * @return An initialized range, or NULL upon error.  Caller must call
@@ -55,18 +57,6 @@ extern "C"
  * @param range Reference to a range to destroy.
  */
 	void range_destroy(poldiff_range_t ** range);
-
-/**
- * Allocate and return a string that represents the differences
- * encoded by the given range.
- *
- * @param diff Poldiff diff structure containing policies.
- * @param range Range object to render.
- *
- * @return Rendered string, or NULL upon error.  Caller must free()
- * string afterwards.
- */
-	char *range_to_string(poldiff_t * diff, poldiff_range_t * range);
 
 /**
  * Calculate the differences between two ranges (that are stored

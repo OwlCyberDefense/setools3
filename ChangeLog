@@ -1,3 +1,11 @@
+2007-03-08  J. Tang  <jtang@tresys.com>
+
+	* poldiff_user_get_added_roles() and
+	poldiff_user_get_removed_roles() now return all roles when the
+	form is POLDIFF_FORM_ADDED / POLDIFF_FORM_REMOVED.
+
+	* sediffx updated to show users' MLS differences
+
 2007-03-07  J. Tang  <jtang@tresys.com>
 
 	* in libpoldiff, if either policy is MLS then when diffing users,

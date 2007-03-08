@@ -48,13 +48,72 @@ apol_vector_t *poldiff_range_get_levels(poldiff_range_t * range)
 	return range->levels;
 }
 
-/**
- * Allocate and return a poldiff_range_t object.  This will fill in
- * the orig_range and mod_range strings.  If the form is modified,
- * then this will allocate the levels vector but leave it empty.
- * Otherwise the levels vector will be filled with the levels that
- * were added/removed.
- */
+apol_mls_range_t *poldiff_range_get_original_range(poldiff_range_t * range)
+{
+	if (range == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->orig_range;
+}
+
+apol_mls_range_t *poldiff_range_get_modified_range(poldiff_range_t * range)
+{
+	if (range == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->mod_range;
+}
+
+char *poldiff_range_to_string_brief(poldiff_t * diff, poldiff_range_t * range)
+{
+	char *r1 = NULL, *r2 = NULL;
+	char *s = NULL, *t = NULL;
+	size_t len = 0, i;
+	if (range->orig_range != NULL && (r1 = apol_mls_range_render(diff->orig_pol, range->orig_range)) == NULL) {
+		ERR(diff, "%s", strerror(errno));
+		goto cleanup;
+	}
+	if (range->mod_range != NULL && (r2 = apol_mls_range_render(diff->mod_pol, range->mod_range)) == NULL) {
+		ERR(diff, "%s", strerror(errno));
+		goto cleanup;
+	}
+	if (r1 == NULL) {
+		if (apol_str_appendf(&s, &len, "   range: %s\n", r2) < 0) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+	} else if (r2 == NULL) {
+		if (apol_str_appendf(&s, &len, "   range: %s\n", r1) < 0) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+	} else {
+		if (apol_str_appendf(&s, &len, "   range: %s  ->  %s\n", r1, r2) < 0) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+	}
+	for (i = 0; i < apol_vector_get_size(range->levels); i++) {
+		poldiff_level_t *level = apol_vector_get_element(range->levels, i);
+		if ((t = poldiff_level_to_string_brief(diff, level)) == NULL) {
+			goto cleanup;
+		}
+		if (apol_str_appendf(&s, &len, "     %s", t) < 0) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		free(t);
+		t = NULL;
+	}
+      cleanup:
+	free(r1);
+	free(r2);
+	free(t);
+	return s;
+}
+
 poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, qpol_mls_range_t * mod_range, poldiff_form_e form)
 {
 	poldiff_range_t *pr = NULL;
@@ -137,54 +196,6 @@ void range_destroy(poldiff_range_t ** range)
 		free(*range);
 		*range = NULL;
 	}
-}
-
-char *range_to_string(poldiff_t * diff, poldiff_range_t * range)
-{
-	char *r1 = NULL, *r2 = NULL;
-	char *s = NULL, *t = NULL;
-	size_t len = 0, i;
-	if (range->orig_range != NULL && (r1 = apol_mls_range_render(diff->orig_pol, range->orig_range)) == NULL) {
-		ERR(diff, "%s", strerror(errno));
-		goto cleanup;
-	}
-	if (range->mod_range != NULL && (r2 = apol_mls_range_render(diff->mod_pol, range->mod_range)) == NULL) {
-		ERR(diff, "%s", strerror(errno));
-		goto cleanup;
-	}
-	if (r1 == NULL) {
-		if (apol_str_appendf(&s, &len, "   range: %s\n", r2) < 0) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-	} else if (r2 == NULL) {
-		if (apol_str_appendf(&s, &len, "   range: %s\n", r1) < 0) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-	} else {
-		if (apol_str_appendf(&s, &len, "   range: %s -> %s\n", r1, r2) < 0) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-	}
-	for (i = 0; i < apol_vector_get_size(range->levels); i++) {
-		poldiff_level_t *level = apol_vector_get_element(range->levels, i);
-		if ((t = level_to_string(diff, level)) == NULL) {
-			goto cleanup;
-		}
-		if (apol_str_append(&s, &len, t) < 0) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-		free(t);
-		t = NULL;
-	}
-      cleanup:
-	free(r1);
-	free(r2);
-	free(t);
-	return s;
 }
 
 /**

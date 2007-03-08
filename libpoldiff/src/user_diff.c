@@ -114,10 +114,10 @@ static char *user_to_modified_string(poldiff_t * diff, poldiff_user_t * u)
 		goto err;
 	}
 	if (u->mod_default_level != NULL) {
-		if ((t = level_to_string(diff, u->mod_default_level)) == NULL) {
+		if ((t = poldiff_level_to_string_brief(diff, u->mod_default_level)) == NULL) {
 			goto err;
 		}
-		if (apol_str_append(&s, &len, t) < 0) {
+		if (apol_str_appendf(&s, &len, "     %s", t) < 0) {
 			ERR(diff, "%s", strerror(errno));
 			goto err;
 		}
@@ -125,10 +125,10 @@ static char *user_to_modified_string(poldiff_t * diff, poldiff_user_t * u)
 		t = NULL;
 	}
 	if (u->orig_default_level != NULL) {
-		if ((t = level_to_string(diff, u->orig_default_level)) == NULL) {
+		if ((t = poldiff_level_to_string_brief(diff, u->orig_default_level)) == NULL) {
 			goto err;
 		}
-		if (apol_str_append(&s, &len, t) < 0) {
+		if (apol_str_appendf(&s, &len, "     %s", t) < 0) {
 			ERR(diff, "%s", strerror(errno));
 			goto err;
 		}
@@ -136,7 +136,8 @@ static char *user_to_modified_string(poldiff_t * diff, poldiff_user_t * u)
 		t = NULL;
 	}
 	if (u->range != NULL) {
-		if ((range = range_to_string(diff, u->range)) == NULL || (apol_str_appendf(&s, &len, "%s", range) < 0)) {
+		if ((range = poldiff_range_to_string_brief(diff, u->range)) == NULL
+		    || (apol_str_appendf(&s, &len, "%s", range) < 0)) {
 			free(range);
 			goto err;
 		}
@@ -219,6 +220,15 @@ poldiff_form_e poldiff_user_get_form(const void *user)
 	return ((const poldiff_user_t *)user)->form;
 }
 
+apol_vector_t *poldiff_user_get_unmodified_roles(const poldiff_user_t * user)
+{
+	if (user == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return user->unmodified_roles;
+}
+
 apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t * user)
 {
 	if (user == NULL) {
@@ -235,6 +245,33 @@ apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t * user)
 		return NULL;
 	}
 	return user->removed_roles;
+}
+
+poldiff_level_t *poldiff_user_get_original_dfltlevel(const poldiff_user_t * user)
+{
+	if (user == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return user->orig_default_level;
+}
+
+poldiff_level_t *poldiff_user_get_modified_dfltlevel(const poldiff_user_t * user)
+{
+	if (user == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return user->mod_default_level;
+}
+
+poldiff_range_t *poldiff_user_get_range(const poldiff_user_t * user)
+{
+	if (user == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return user->range;
 }
 
 /*************** protected functions for users ***************/
@@ -377,37 +414,6 @@ static poldiff_user_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *na
 	return pu;
 }
 
-int user_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
-{
-	qpol_user_t *u = (qpol_user_t *) item;
-	char *name = NULL;
-	poldiff_user_t *pu;
-	int error;
-	if ((form == POLDIFF_FORM_ADDED &&
-	     qpol_user_get_name(diff->mod_qpol, u, &name) < 0) ||
-	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_user_get_name(diff->orig_qpol, u, &name) < 0)) {
-		return -1;
-	}
-	pu = make_diff(diff, form, name);
-	if (pu == NULL) {
-		return -1;
-	}
-	if (apol_vector_append(diff->user_diffs->diffs, pu) < 0) {
-		error = errno;
-		ERR(diff, "%s", strerror(error));
-		user_free(pu);
-		errno = error;
-		return -1;
-	}
-	if (form == POLDIFF_FORM_ADDED) {
-		diff->user_diffs->num_added++;
-	} else {
-		diff->user_diffs->num_removed++;
-	}
-	return 0;
-}
-
 /**
  * Given a user, return a vector of its allowed roles (in the form of
  * strings).
@@ -457,6 +463,193 @@ static apol_vector_t *user_get_roles(poldiff_t * diff, apol_policy_t * p, qpol_u
 		return NULL;
 	}
 	return v;
+}
+
+/**
+ * Perform a deep diff of the default MLS levels assigned to the two
+ * users.
+ *
+ * @param diff Diff structure containing the original and modified
+ * policies.
+ * @param u1 User from original policy to examine, or NULL if the user
+ * was added.
+ * @param u2 User from modified policy to examine, or NULL if the user
+ * was removed.
+ * @param u Result structure where differences are to be recorded.
+ *
+ * @return Greater than zero if a diff was found, zero if none found,
+ * less than zero for errors.
+ */
+static int user_deep_diff_default_levels(poldiff_t * diff, qpol_user_t * u1, qpol_user_t * u2, poldiff_user_t * u)
+{
+	qpol_mls_level_t *ql1 = NULL, *ql2 = NULL;
+	poldiff_level_t *pl = NULL;
+	apol_mls_level_t *l1 = NULL, *l2 = NULL;
+	int retval = -1;
+	if (u1 != NULL && qpol_user_get_dfltlevel(diff->orig_qpol, u1, &ql1) < 0) {
+		return -1;
+	}
+	if (u2 != NULL && qpol_user_get_dfltlevel(diff->mod_qpol, u2, &ql2) < 0) {
+		return -1;
+	}
+	if (ql1 == NULL && ql2 == NULL) {
+		/* neither policy is MLS */
+		return 0;
+	}
+	if (ql1 == NULL) {
+		if ((l2 = apol_mls_level_create_from_qpol_mls_level(diff->mod_pol, ql2)) == NULL ||
+		    (pl = level_create_from_apol_mls_level(l2, POLDIFF_FORM_ADDED)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		u->mod_default_level = pl;
+		retval = 1;
+	} else if (ql2 == NULL) {
+		if ((l1 = apol_mls_level_create_from_qpol_mls_level(diff->orig_pol, ql1)) == NULL ||
+		    (pl = level_create_from_apol_mls_level(l1, POLDIFF_FORM_REMOVED)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		u->orig_default_level = pl;
+		retval = 1;
+	} else {
+		if ((l1 = apol_mls_level_create_from_qpol_mls_level(diff->orig_pol, ql1)) == NULL ||
+		    (l2 = apol_mls_level_create_from_qpol_mls_level(diff->mod_pol, ql2)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		if (level_deep_diff_apol_mls_levels(diff, l1, l2, &u->orig_default_level, &u->mod_default_level) < 0) {
+			goto cleanup;
+		}
+		if (u->orig_default_level != NULL) {
+			retval = 1;
+		}
+	}
+	if (retval == -1) {
+		/* if reach this point, then no differences were found */
+		retval = 0;
+	}
+      cleanup:
+	apol_mls_level_destroy(&l1);
+	apol_mls_level_destroy(&l2);
+	if (retval < 0) {
+		level_free(pl);
+	}
+	return retval;
+}
+
+/**
+ * Perform a deep diff of the MLS ranges assigned to the two users.
+ *
+ * @param diff Diff structure containing the original and modified
+ * policies.
+ * @param u1 User from original policy to examine, or NULL if the user
+ * was added.
+ * @param u2 User from modified policy to examine, or NULL if the user
+ * was removed.
+ * @param u Result structure where differences are to be recorded.
+ *
+ * @return Greater than zero if a diff was found, zero if none found,
+ * less than zero for errors.
+ */
+static int user_deep_diff_ranges(poldiff_t * diff, qpol_user_t * u1, qpol_user_t * u2, poldiff_user_t * u)
+{
+	qpol_mls_range_t *r1 = NULL, *r2 = NULL;
+	poldiff_range_t *pr = NULL;
+	int retval = -1;
+	if (u1 != NULL && qpol_user_get_range(diff->orig_qpol, u1, &r1) < 0) {
+		return -1;
+	}
+	if (u2 != NULL && qpol_user_get_range(diff->mod_qpol, u2, &r2) < 0) {
+		return -1;
+	}
+	if (r1 == NULL && r2 == NULL) {
+		/* neither policy is MLS */
+		return 0;
+	}
+	if (r1 == NULL) {
+		if ((pr = range_create(diff, r1, r2, POLDIFF_FORM_ADDED)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		u->range = pr;
+		pr = NULL;
+		retval = 1;
+	} else if (r2 == NULL) {
+		if ((pr = range_create(diff, r1, r2, POLDIFF_FORM_REMOVED)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		u->range = pr;
+		pr = NULL;
+		retval = 1;
+	} else {
+		if ((pr = range_create(diff, r1, r2, POLDIFF_FORM_MODIFIED)) == NULL) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		if ((retval = range_deep_diff(diff, pr)) < 0) {
+			goto cleanup;
+		}
+		if (retval > 0) {
+			u->range = pr;
+			pr = NULL;
+		}
+	}
+      cleanup:
+	range_destroy(&pr);
+	return retval;
+}
+
+int user_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
+{
+	qpol_user_t *u = (qpol_user_t *) item;
+	char *name = NULL;
+	poldiff_user_t *pu;
+	int error;
+	if ((form == POLDIFF_FORM_ADDED &&
+	     qpol_user_get_name(diff->mod_qpol, u, &name) < 0) ||
+	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
+	     qpol_user_get_name(diff->orig_qpol, u, &name) < 0)) {
+		return -1;
+	}
+	if ((pu = make_diff(diff, form, name)) == NULL) {
+		return -1;
+	}
+	if (form == POLDIFF_FORM_ADDED) {
+		apol_vector_destroy(&pu->added_roles, free);
+		if ((pu->added_roles = user_get_roles(diff, diff->mod_pol, u)) == NULL ||
+		    user_deep_diff_default_levels(diff, u, NULL, pu) < 0 || user_deep_diff_ranges(diff, u, NULL, pu) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			user_free(pu);
+			errno = error;
+			return -1;
+		}
+	} else {
+		apol_vector_destroy(&pu->removed_roles, free);
+		if ((pu->removed_roles = user_get_roles(diff, diff->orig_pol, u)) == NULL ||
+		    user_deep_diff_default_levels(diff, NULL, u, pu) < 0 || user_deep_diff_ranges(diff, NULL, u, pu) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			user_free(pu);
+			errno = error;
+			return -1;
+		}
+	}
+	if (apol_vector_append(diff->user_diffs->diffs, pu) < 0) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		user_free(pu);
+		errno = error;
+		return -1;
+	}
+	if (form == POLDIFF_FORM_ADDED) {
+		diff->user_diffs->num_added++;
+	} else {
+		diff->user_diffs->num_removed++;
+	}
+	return 0;
 }
 
 /**
@@ -544,132 +737,6 @@ static int user_deep_diff_roles(poldiff_t * diff, qpol_user_t * u1, qpol_user_t 
 	apol_vector_destroy(&v1, NULL);
 	apol_vector_destroy(&v2, NULL);
 	errno = error;
-	return retval;
-}
-
-/**
- * Perform a deep diff of the default MLS levels assigned to the two
- * users.
- *
- * @param diff Diff structure containing the original and modified
- * policies.
- * @param u1 User from original policy to examine.
- * @param u2 User from modified policy to examine.
- * @param u Result structure where differences are to be recorded.
- *
- * @return Greater than zero if a diff was found, zero if none found,
- * less than zero for errors.
- */
-static int user_deep_diff_default_levels(poldiff_t * diff, qpol_user_t * u1, qpol_user_t * u2, poldiff_user_t * u)
-{
-	qpol_mls_level_t *ql1 = NULL, *ql2 = NULL;
-	poldiff_level_t *pl = NULL;
-	apol_mls_level_t *l1 = NULL, *l2 = NULL;
-	int retval = -1;
-	if (qpol_user_get_dfltlevel(diff->orig_qpol, u1, &ql1) < 0 || qpol_user_get_dfltlevel(diff->mod_qpol, u2, &ql2) < 0) {
-		return -1;
-	}
-	if (ql1 == NULL && ql2 == NULL) {
-		/* neither policy is MLS */
-		return 0;
-	}
-	if (ql1 == NULL) {
-		if ((l2 = apol_mls_level_create_from_qpol_mls_level(diff->mod_pol, ql2)) == NULL ||
-		    (pl = level_create_from_apol_mls_level(l2, POLDIFF_FORM_ADDED)) == NULL) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-		u->mod_default_level = pl;
-		retval = 1;
-	} else if (ql2 == NULL) {
-		if ((l1 = apol_mls_level_create_from_qpol_mls_level(diff->orig_pol, ql1)) == NULL ||
-		    (pl = level_create_from_apol_mls_level(l1, POLDIFF_FORM_REMOVED)) == NULL) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-		u->orig_default_level = pl;
-		retval = 1;
-	} else {
-		if ((l1 = apol_mls_level_create_from_qpol_mls_level(diff->orig_pol, ql1)) == NULL ||
-		    (l2 = apol_mls_level_create_from_qpol_mls_level(diff->mod_pol, ql2)) == NULL) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-		if (level_deep_diff_apol_mls_levels(diff, l1, l2, &u->orig_default_level, &u->mod_default_level) < 0) {
-			goto cleanup;
-		}
-		if (u->orig_default_level != NULL) {
-			retval = 1;
-		}
-	}
-	if (retval == -1) {
-		/* if reach this point, then no differences were found */
-		retval = 0;
-	}
-      cleanup:
-	apol_mls_level_destroy(&l1);
-	apol_mls_level_destroy(&l2);
-	if (retval < 0) {
-		level_free(pl);
-	}
-	return retval;
-}
-
-/**
- * Perform a deep diff of the MLS ranges assigned to the two users.
- *
- * @param diff Diff structure containing the original and modified
- * policies.
- * @param u1 User from original policy to examine.
- * @param u2 User from modified policy to examine.
- * @param u Result structure where differences are to be recorded.
- *
- * @return Greater than zero if a diff was found, zero if none found,
- * less than zero for errors.
- */
-static int user_deep_diff_ranges(poldiff_t * diff, qpol_user_t * u1, qpol_user_t * u2, poldiff_user_t * u)
-{
-	qpol_mls_range_t *r1 = NULL, *r2 = NULL;
-	poldiff_range_t *pr = NULL;
-	int retval = -1;
-	if (qpol_user_get_range(diff->orig_qpol, u1, &r1) < 0 || qpol_user_get_range(diff->mod_qpol, u2, &r2) < 0) {
-		return -1;
-	}
-	if (r1 == NULL && r2 == NULL) {
-		/* neither policy is MLS */
-		return 0;
-	}
-	if (r1 == NULL) {
-		if ((pr = range_create(diff, r1, r2, POLDIFF_FORM_ADDED)) == NULL) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-		u->range = pr;
-		pr = NULL;
-		retval = 1;
-	} else if (r2 == NULL) {
-		if ((pr = range_create(diff, r1, r2, POLDIFF_FORM_REMOVED)) == NULL) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-		u->range = pr;
-		pr = NULL;
-		retval = 1;
-	} else {
-		if ((pr = range_create(diff, r1, r2, POLDIFF_FORM_MODIFIED)) == NULL) {
-			ERR(diff, "%s", strerror(errno));
-			goto cleanup;
-		}
-		if ((retval = range_deep_diff(diff, pr)) < 0) {
-			goto cleanup;
-		}
-		if (retval > 0) {
-			u->range = pr;
-			pr = NULL;
-		}
-	}
-      cleanup:
-	range_destroy(&pr);
 	return retval;
 }
 

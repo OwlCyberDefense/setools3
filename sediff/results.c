@@ -148,24 +148,20 @@ results_t *results_create(toplevel_t * top)
 
 	tag_table = gtk_text_tag_table_new();
 	r->main_buffer = gtk_text_buffer_new(tag_table);
-	gtk_text_buffer_create_tag(r->main_buffer, "header", "style", PANGO_STYLE_ITALIC, "weight", PANGO_WEIGHT_BOLD, NULL);
-	gtk_text_buffer_create_tag(r->main_buffer, "subheader",
-				   "family", "monospace", "weight", PANGO_WEIGHT_BOLD, "underline", PANGO_UNDERLINE_SINGLE, NULL);
-	gtk_text_buffer_create_tag(r->main_buffer, "removed-header",
-				   "family", "monospace", "foreground", "red", "weight", PANGO_WEIGHT_BOLD, NULL);
-	gtk_text_buffer_create_tag(r->main_buffer, "added-header",
-				   "family", "monospace", "foreground", "dark green", "weight", PANGO_WEIGHT_BOLD, NULL);
-	gtk_text_buffer_create_tag(r->main_buffer, "modified-header",
-				   "family", "monospace", "foreground", "dark blue", "weight", PANGO_WEIGHT_BOLD, NULL);
-	gtk_text_buffer_create_tag(r->main_buffer, "removed", "family", "monospace", "foreground", "red", NULL);
-	gtk_text_buffer_create_tag(r->main_buffer, "added", "family", "monospace", "foreground", "dark green", NULL);
-	gtk_text_buffer_create_tag(r->main_buffer, "modified", "family", "monospace", "foreground", "dark blue", NULL);
+	gtk_text_buffer_create_tag(r->main_buffer, "header", "style", PANGO_STYLE_ITALIC, "weight", PANGO_WEIGHT_BOLD, "family",
+				   NULL, NULL);
+	gtk_text_buffer_create_tag(r->main_buffer, "subheader", "weight", PANGO_WEIGHT_BOLD, "underline", PANGO_UNDERLINE_SINGLE,
+				   "family", NULL, NULL);
+	gtk_text_buffer_create_tag(r->main_buffer, "removed-header", "foreground", "red", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(r->main_buffer, "added-header", "foreground", "dark green", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(r->main_buffer, "modified-header", "foreground", "dark blue", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(r->main_buffer, "removed", "foreground", "red", NULL);
+	gtk_text_buffer_create_tag(r->main_buffer, "added", "foreground", "dark green", NULL);
+	gtk_text_buffer_create_tag(r->main_buffer, "modified", "foreground", "dark blue", NULL);
 	r->policy_orig_tag = gtk_text_buffer_create_tag(r->main_buffer, "line-pol_orig",
-							"family", "monospace",
 							"foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
 	g_signal_connect_after(G_OBJECT(r->policy_orig_tag), "event", G_CALLBACK(results_on_line_event), r);
 	r->policy_mod_tag = gtk_text_buffer_create_tag(r->main_buffer, "line-pol_mod",
-						       "family", "monospace",
 						       "foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
 	g_signal_connect_after(G_OBJECT(r->policy_mod_tag), "event", G_CALLBACK(results_on_line_event), r);
 
@@ -185,6 +181,12 @@ results_t *results_create(toplevel_t * top)
 	text_view = GTK_TEXT_VIEW(glade_xml_get_widget(r->xml, "toplevel key view"));
 	assert(text_view != NULL);
 	gtk_text_view_set_buffer(text_view, r->key_buffer);
+
+	PangoFontDescription *font_desc = pango_font_description_new();
+	pango_font_description_set_family_static(font_desc, "monospace");
+	gtk_widget_modify_font(GTK_WIDGET(r->view), font_desc);
+	gtk_widget_modify_font(GTK_WIDGET(text_view), font_desc);
+	pango_font_description_free(font_desc);
 
 	r->stats = GTK_LABEL((glade_xml_get_widget(r->xml, "toplevel stats label")));
 	assert(r->stats != NULL);

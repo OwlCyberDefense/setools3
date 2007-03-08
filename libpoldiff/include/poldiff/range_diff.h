@@ -33,10 +33,24 @@ extern "C"
 {
 #endif
 
+#include <apol/mls-query.h>
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
 
 	typedef struct poldiff_range poldiff_range_t;
+
+/**
+ * Allocate and return a string that represents the differences
+ * encoded by the given range.  The returned string is suitable for
+ * embedding within another item's to_string() display.
+ *
+ * @param diff Poldiff diff structure containing policies.
+ * @param range Range object to render.
+ *
+ * @return Rendered string, or NULL upon error.  Caller must free()
+ * string afterwards.
+ */
+	char *poldiff_range_to_string_brief(poldiff_t * diff, poldiff_range_t * range);
 
 /**
  *  Get the vector of level differences from a range diffence object.
@@ -47,6 +61,32 @@ extern "C"
  *  error.  The caller should <b>not</b> modify the returned vector.
  */
 	extern apol_vector_t *poldiff_range_get_levels(poldiff_range_t * range);
+
+/**
+ *  Get the original item's range.  This could represent a user's
+ *  original assigned range or the original target range for a
+ *  range_transition.  If there was no original range (such as for
+ *  items that are added) then this returns NULL.
+ *
+ *  @param range Range object to query.
+ *
+ *  @return Original range, or NULL upon error or no range available.
+ *  The caller should <b>not</b> modify the returned object.
+ */
+	extern apol_mls_range_t *poldiff_range_get_original_range(poldiff_range_t * range);
+
+/**
+ *  Get the modified item's range.  This could represent a user's
+ *  modified assigned range or the modified target range for a
+ *  range_transition.  If there was no original range (such as for
+ *  items that are removed) then this returns NULL.
+ *
+ *  @param range Range object to query.
+ *
+ *  @return Modified range, or NULL upon error or no range available.
+ *  The caller should <b>not</b> modify the returned object.
+ */
+	extern apol_mls_range_t *poldiff_range_get_modified_range(poldiff_range_t * range);
 
 #ifdef	__cplusplus
 }

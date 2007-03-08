@@ -206,19 +206,6 @@ extern "C"
 	int level_deep_diff_cats(poldiff_t * diff, apol_vector_t * v1, apol_vector_t * v2, apol_vector_t ** added,
 				 apol_vector_t ** removed, apol_vector_t ** unmodified);
 
-/**
- * Allocate and return a string rendering of a poldiff_level_t,
- * suitable for embedding within some other component's to_string
- * function (e.g., a user's default level).
- *
- * @param diff Poldiff object, for error handling.
- * @param level Level diff object to render.
- *
- * @return String rendering of level, or NULL upon error.  Caller must
- * free() string afterwards.
- */
-	char *level_to_string(poldiff_t * diff, poldiff_level_t * level);
-
 #ifdef	__cplusplus
 }
 #endif

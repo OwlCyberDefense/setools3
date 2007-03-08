@@ -97,7 +97,20 @@ extern "C"
 	extern poldiff_form_e poldiff_user_get_form(const void *user);
 
 /**
- *  Get a vector of roles added to the user.
+ *  Get a vector of unmodified roles for the user.
+ *
+ *  @param user The user diff from which to get the roles vector.
+ *
+ *  @return A vector of role names (type char *) that are assigned to
+ *  the user in the modified policy.  If no roles were added the size
+ *  of the returned vector will be 0.  The caller must not destroy
+ *  this vector.  On error, errno will be set.
+ */
+	extern apol_vector_t *poldiff_user_get_unmodified_roles(const poldiff_user_t * user);
+
+/**
+ *  Get a vector of roles added to the user.  If a user was added by
+ *  the modified policy then this vector will hold all of the roles.
  *
  *  @param user The user diff from which to get the roles vector.
  *
@@ -109,7 +122,9 @@ extern "C"
 	extern apol_vector_t *poldiff_user_get_added_roles(const poldiff_user_t * user);
 
 /**
- *  Get a vector of roles removed from the user.
+ *  Get a vector of roles removed from the user.  If a user was
+ *  removed by the modified policy then this vector will hold all of
+ *  the roles.
  *
  *  @param user The user diff from which to get the roles vector.
  *
@@ -119,6 +134,55 @@ extern "C"
  *  destroy this vector.  On error, errno will be set.
  */
 	extern apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t * user);
+
+/**
+ *  Get the original user's default MLS level.  That is, this is the
+ *  level assigned to the user in the original policy.  If the level
+ *  has the form POLDIFF_FORM_MODIFIED, then this indiciates that the
+ *  user had the same sensitivity between the two policies but
+ *  different categories.
+ *
+ *  If neither policy is MLS or there are no differences in default
+ *  level, then the return value is NULL.
+ *
+ *  @param user The user diff from which to get default level.
+ *
+ *  @return User's original default MLS level.  Returns NULL upon
+ *  error or if there is no difference in level.
+ */
+	extern poldiff_level_t *poldiff_user_get_original_dfltlevel(const poldiff_user_t * user);
+
+/**
+ *  Get the modified user's MLS level.  That is, this is the level
+ *  assigned to the user in the modified policy.  If the level had the
+ *  same sensitivity but different categories call
+ *  poldiff_user_get_original_dfltlevel() to get the difference; this
+ *  function will return NULL.
+ *
+ *  If neither policy is MLS or there are no differences in
+ *  default level, then the return value is NULL.
+ *
+ *  @param user The user diff from which to get default level.
+ *
+ *  @return User's modified default MLS level.  Returns NULL upon
+ *  error, if there is no difference in level, or if the sensitivity
+ *  was unchanged.
+ */
+	extern poldiff_level_t *poldiff_user_get_modified_dfltlevel(const poldiff_user_t * user);
+
+/**
+ *  Get the change in user's assigned MLS range.
+ *
+ *  If neither policy is MLS or there are no differences in range,
+ *  then the return value is NULL.
+ *
+ *  @param user The user diff from which to get assigned range
+ *  differences.
+ *
+ *  @return User's MLS range differences.  Returns NULL upon error or
+ *  if there is no difference in range
+ */
+	extern poldiff_range_t *poldiff_user_get_range(const poldiff_user_t * user);
 
 #ifdef	__cplusplus
 }
