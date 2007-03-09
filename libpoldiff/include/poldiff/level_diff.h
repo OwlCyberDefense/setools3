@@ -86,7 +86,7 @@ extern "C"
  * @return String rendering of level, or NULL upon error.  Caller must
  * free() string afterwards.
  */
-	char *poldiff_level_to_string_brief(poldiff_t * diff, poldiff_level_t * level);
+	char *poldiff_level_to_string_brief(poldiff_t * diff, const poldiff_level_t * level);
 
 /**
  *  Get the name of the level (i.e., the sensitivity) from a level diff.

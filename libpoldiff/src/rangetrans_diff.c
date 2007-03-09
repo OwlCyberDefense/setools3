@@ -46,15 +46,11 @@ struct poldiff_range_trans_summary
 
 struct poldiff_range_trans
 {
-	/* keep track of both the original policy's and modified
-	 * policy's range transition.  note that this cannot have just
-	 * qpol_range_trans_t, for multiple transitions could be
-	 * merged into one due to the type map */
-	char *source_type[2];
-	char *target_type[2];
-	char *target_class[2];
+	char *source;
+	char *target;
+	char *target_class;
 	poldiff_form_e form;
-	apol_mls_range_t *range[2];
+	poldiff_range_t *range;
 };
 
 void poldiff_range_trans_get_stats(poldiff_t * diff, size_t stats[5])
@@ -75,7 +71,7 @@ char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
 {
 	const poldiff_range_trans_t *rt = range_trans;
 	size_t len = 0;
-	char *range[2] = { NULL, NULL }, *s = NULL;
+	char *s = NULL;
 	if (diff == NULL || range_trans == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -85,37 +81,29 @@ char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
 	case POLDIFF_FORM_ADDED:
 	case POLDIFF_FORM_ADD_TYPE:
 		{
-			if ((range[1] = apol_mls_range_render(diff->mod_pol, rt->range[1])) == NULL ||
-			    apol_str_appendf(&s, &len, "+ range_transition %s %s : %s %s;", rt->source_type[1], rt->target_type[1],
-					     rt->target_class[1], range[1]) < 0) {
-				break;
+			if (apol_str_appendf(&s, &len, "+ range_transition %s %s : %s %s;", rt->source, rt->target,
+					     rt->target_class, "<stuff>") < 0) {
+				goto cleanup;
 			}
-			goto cleanup;
+			return s;
 		}
 	case POLDIFF_FORM_REMOVED:
 	case POLDIFF_FORM_REMOVE_TYPE:
 		{
-			if ((range[0] = apol_mls_range_render(diff->orig_pol, rt->range[0])) == NULL ||
-			    apol_str_appendf(&s, &len, "- range_transition %s %s : %s %s;", rt->source_type[0], rt->target_type[0],
-					     rt->target_class[0], range[0]) < 0) {
-				break;
+			if (apol_str_appendf(&s, &len, "- range_transition %s %s : %s %s;", rt->source, rt->target,
+					     rt->target_class, "<stuff>") < 0) {
+				goto cleanup;
 			}
-			goto cleanup;
+			return s;
 		}
 	case POLDIFF_FORM_MODIFIED:
 		{
-			if ((range[0] = apol_mls_range_render(diff->orig_pol, rt->range[0])) == NULL ||
-			    (range[1] = apol_mls_range_render(diff->mod_pol, rt->range[1])) == NULL) {
-				break;
-			}
 			if (apol_str_appendf
-			    (&s, &len, "* range_transition %s %s : %s %s\n", rt->source_type[0], rt->target_type[0],
-			     rt->target_class[0], range[0]) < 0
-			    || apol_str_appendf(&s, &len, "  range_transition %s %s : %s %s\n<FIXME>", rt->source_type[0],
-						rt->target_type[0], rt->target_class[0], range[1]) < 0) {
-				break;
+			    (&s, &len, "* range_transition %s %s : %s { %s  -->  %s };\n", rt->source, rt->target,
+			     rt->target_class, "<stuff1>", "<stuff2>") < 0) {
+				goto cleanup;;
 			}
-			goto cleanup;
+			return s;
 		}
 	default:
 		{
@@ -124,15 +112,12 @@ char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
 			return NULL;
 		}
 	}
-	/* if this is reached then an error occurred */
-	free(s);
-	s = NULL;
-	ERR(diff, "%s", strerror(ENOMEM));
-	errno = ENOMEM;
       cleanup:
-	free(range[0]);
-	free(range[1]);
-	return s;
+	/* if this is reached then an error occurred */
+	ERR(diff, "%s", strerror(ENOMEM));
+	free(s);
+	errno = ENOMEM;
+	return NULL;
 }
 
 apol_vector_t *poldiff_get_range_trans_vector(poldiff_t * diff)
@@ -151,10 +136,7 @@ const char *poldiff_range_trans_get_source_type(const poldiff_range_trans_t * ra
 		errno = EINVAL;
 		return NULL;
 	}
-	if (range_trans->source_type[0] != NULL) {
-		return range_trans->source_type[0];
-	}
-	return range_trans->source_type[1];
+	return range_trans->source;
 }
 
 const char *poldiff_range_trans_get_target_type(const poldiff_range_trans_t * range_trans)
@@ -163,10 +145,7 @@ const char *poldiff_range_trans_get_target_type(const poldiff_range_trans_t * ra
 		errno = EINVAL;
 		return NULL;
 	}
-	if (range_trans->target_type[0] != NULL) {
-		return range_trans->target_type[0];
-	}
-	return range_trans->target_type[1];
+	return range_trans->target;
 }
 
 const char *poldiff_range_trans_get_target_class(const poldiff_range_trans_t * range_trans)
@@ -175,28 +154,16 @@ const char *poldiff_range_trans_get_target_class(const poldiff_range_trans_t * r
 		errno = EINVAL;
 		return NULL;
 	}
-	if (range_trans->target_class[0] != NULL) {
-		return range_trans->target_class[0];
-	}
-	return range_trans->target_class[1];
+	return range_trans->target_class;
 }
 
-const apol_mls_range_t *poldiff_range_trans_get_original_range(const poldiff_range_trans_t * range_trans)
+poldiff_range_t *poldiff_range_trans_get_range(const poldiff_range_trans_t * range_trans)
 {
 	if (range_trans == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
-	return range_trans->range[0];
-}
-
-const apol_mls_range_t *poldiff_range_trans_get_modified_range(const poldiff_range_trans_t * range_trans)
-{
-	if (range_trans == NULL) {
-		errno = EINVAL;
-		return NULL;
-	}
-	return range_trans->range[1];
+	return range_trans->range;
 }
 
 poldiff_form_e poldiff_range_trans_get_form(const void *range_trans)
@@ -225,13 +192,10 @@ static void range_trans_free(void *elem)
 {
 	if (elem != NULL) {
 		poldiff_range_trans_t *rt = (poldiff_range_trans_t *) elem;
-		size_t i;
-		for (i = 0; i < 2; i++) {
-			free(rt->source_type[i]);
-			free(rt->target_type[i]);
-			free(rt->target_class[i]);
-			apol_mls_range_destroy(&rt->range[i]);
-		}
+		free(rt->source);
+		free(rt->target);
+		free(rt->target_class);
+		range_destroy(&rt->range);
 		free(rt);
 	}
 }
@@ -250,15 +214,14 @@ typedef struct pseudo_range_trans
 	uint32_t source_type, target_type;
 	/* pointer into a policy's class's symbol table */
 	char *target_class;
-	apol_mls_range_t *range;
+	qpol_mls_range_t *range;
 } pseudo_range_trans_t;
 
 void range_trans_free_item(void *item)
 {
 	if (item != NULL) {
 		pseudo_range_trans_t *prt = item;
-		apol_mls_range_destroy(&prt->range);
-		free(item);
+		free(prt);
 	}
 }
 
@@ -299,86 +262,81 @@ int range_trans_reset(poldiff_t * diff)
 }
 
 /**
- * Get the first valid name that can be found for a pseudo type value.
- *
- * @param diff Policy difference structure associated with the value.
- * @param pseudo_val Value for which to get a name.
- * @param pol The policy to use, either POLDIFF_POLICY_ORIG or
- * POLDIFF_POLICY_MOD.
- *
- * @return A valid name of a type from either policy that maps to the
- * specified value.  The caller must free() this string afterwards.
+ * Allocate and return a new range trans difference object.  If the
+ * pseudo-range trans's source and/or target expands to multiple read
+ * types, then just choose the first one for display.
  */
-static char *get_valid_name(poldiff_t * diff, const uint32_t pseudo_val, int pol)
+static poldiff_range_trans_t *make_range_trans_diff(poldiff_t * diff, poldiff_form_e form, const pseudo_range_trans_t * prt)
 {
-	apol_vector_t *v = NULL;
-	char *name = NULL;
-	qpol_type_t *t;
-
-	v = type_map_lookup_reverse(diff, pseudo_val, pol);
-	if (apol_vector_get_size(v) == 0) {
-		/* should never get here */
-		assert(0);
+	poldiff_range_trans_t *rt = NULL;
+	const char *n1, *n2;
+	int error;
+	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
+		n1 = type_map_get_name(diff, prt->source_type, POLDIFF_POLICY_MOD);
+		n2 = type_map_get_name(diff, prt->target_type, POLDIFF_POLICY_MOD);
+	} else {
+		n1 = type_map_get_name(diff, prt->source_type, POLDIFF_POLICY_ORIG);
+		n2 = type_map_get_name(diff, prt->target_type, POLDIFF_POLICY_ORIG);
+	}
+	assert(n1 != NULL && n2 != NULL);
+	if ((rt = calloc(1, sizeof(*rt))) == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		errno = error;
 		return NULL;
 	}
-	t = apol_vector_get_element(v, 0);
-	if (pol == POLDIFF_POLICY_ORIG)
-		qpol_type_get_name(diff->orig_qpol, t, &name);
-	else
-		qpol_type_get_name(diff->mod_qpol, t, &name);
-	if ((name = strdup(name)) == NULL) {
+	if ((rt->source = strdup(n1)) == NULL ||
+	    (rt->target = strdup(n2)) == NULL || (rt->target_class = strdup(prt->target_class)) == NULL) {
+		error = errno;
 		ERR(diff, "%s", strerror(errno));
+		range_trans_free(rt);
+		errno = error;
 		return NULL;
 	}
-	return name;
+	return rt;
 }
 
 int range_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	const pseudo_range_trans_t *prt = (const pseudo_range_trans_t *)item;
-	poldiff_range_trans_t *rt;
+	apol_vector_t *v1, *v2;
+	qpol_mls_range_t *orig_range = NULL, *mod_range = NULL;
+	poldiff_range_trans_t *rt = NULL;
+	int error;
 
-	if ((rt = calloc(1, sizeof(*rt))) == NULL) {
-		int error = errno;
-		ERR(diff, "%s", strerror(error));
-		errno = error;
-		return -1;
-	}
-	/* convert the prt's source and target pseudo-types to actual
-	 * names */
-	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE || form == POLDIFF_FORM_MODIFIED) {
-		rt->source_type[1] = get_valid_name(diff, prt->source_type, POLDIFF_POLICY_MOD);
-		rt->target_type[1] = get_valid_name(diff, prt->target_type, POLDIFF_POLICY_MOD);
-		rt->target_class[1] = prt->target_class;
-		/* FIX ME: for a modified range trans, range[0] is not
-		 * necessarily range[1].  also, need to keep track of
-		 * which sensitivities are actually different */
-		if ((rt->range[1] = apol_mls_range_create_from_mls_range(prt->range)) == NULL) {
-			int error = errno;
-			ERR(diff, "%s", strerror(error));
-			range_trans_free(rt);
-			errno = error;
-			return -1;
+	/* check if form should really become ADD_TYPE / REMOVE_TYPE,
+	 * by seeing if the /other/ policy's reverse lookup is
+	 * empty */
+	if (form == POLDIFF_FORM_ADDED) {
+		if ((v1 = type_map_lookup_reverse(diff, prt->source_type, POLDIFF_POLICY_ORIG)) == NULL ||
+		    (v2 = type_map_lookup_reverse(diff, prt->target_type, POLDIFF_POLICY_ORIG)) == NULL) {
+			error = errno;
+			goto cleanup;
 		}
-	}
-	if (form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_REMOVE_TYPE || form == POLDIFF_FORM_MODIFIED) {
-		rt->source_type[0] = get_valid_name(diff, prt->source_type, POLDIFF_POLICY_ORIG);
-		rt->target_type[0] = get_valid_name(diff, prt->target_type, POLDIFF_POLICY_ORIG);
-		rt->target_class[0] = prt->target_class;
-		if ((rt->range[0] = apol_mls_range_create_from_mls_range(prt->range)) == NULL) {
-			int error = errno;
-			ERR(diff, "%s", strerror(error));
-			range_trans_free(rt);
-			errno = error;
-			return -1;
+		if (apol_vector_get_size(v1) == 0 || apol_vector_get_size(v2) == 0) {
+			form = POLDIFF_FORM_ADD_TYPE;
 		}
+		mod_range = prt->range;
+	} else {
+		if ((v1 = type_map_lookup_reverse(diff, prt->source_type, POLDIFF_POLICY_MOD)) == NULL ||
+		    (v2 = type_map_lookup_reverse(diff, prt->target_type, POLDIFF_POLICY_MOD)) == NULL) {
+			error = errno;
+			goto cleanup;
+		}
+		if (apol_vector_get_size(v1) == 0 || apol_vector_get_size(v2) == 0) {
+			form = POLDIFF_FORM_REMOVE_TYPE;
+		}
+		orig_range = prt->range;
+	}
+	if ((rt = make_range_trans_diff(diff, form, prt)) == NULL ||
+	    (rt->range = range_create(diff, orig_range, mod_range, form)) == NULL) {
+		error = errno;
+		goto cleanup;
 	}
 	if (apol_vector_append(diff->range_trans_diffs->diffs, rt) < 0) {
-		int error = errno;
+		error = errno;
 		ERR(diff, "%s", strerror(error));
-		range_trans_free(rt);
-		errno = error;
-		return -1;
+		goto cleanup;
 	}
 	/* increment appropriate counter */
 	switch (form) {
@@ -402,12 +360,6 @@ int range_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item
 			diff->range_trans_diffs->num_removed_type++;
 			break;
 		}
-	case POLDIFF_FORM_MODIFIED:
-		{
-			diff->range_trans_diffs->num_modified++;
-			break;
-		}
-	case POLDIFF_FORM_NONE:
 	default:
 		{
 			/* not reachable */
@@ -415,6 +367,10 @@ int range_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item
 		}
 	}
 	return 0;
+      cleanup:
+	range_trans_free(rt);
+	errno = error;
+	return -1;
 }
 
 /**
@@ -435,7 +391,9 @@ static int pseudo_range_trans_comp(const void *x, const void *y, void *arg)
 	const pseudo_range_trans_t *a = x;
 	const pseudo_range_trans_t *b = y;
 	poldiff_t *diff = arg;
-	return range_trans_comp(a, b, diff);
+	int retval = range_trans_comp(a, b, diff);
+	/* FIX ME: WARN() if types conflict */
+	return retval;
 }
 
 /**
@@ -450,7 +408,7 @@ static apol_vector_t *range_trans_get_type_vector(poldiff_t * diff, int which_po
         qpol_type_get_isattr(q, tmp_type, &isattr);
         if (!isattr) {
                 if ((v = apol_vector_create_with_capacity(1)) == NULL ||
-                    apol_vector_append(v, type) < 0) { 
+                    apol_vector_append(v, type) < 0) {
                         error = errno;
                         apol_vector_destroy(&v, NULL);
                         ERR(diff, "%s", strerror(error));
@@ -502,7 +460,7 @@ apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 		if (qpol_range_trans_get_source_type(q, qrt, &source_type) < 0 ||
 		    qpol_range_trans_get_target_type(q, qrt, &target_type) < 0 ||
 		    qpol_range_trans_get_target_class(q, qrt, &target_class) < 0 ||
-		    qpol_range_trans_get_range(q, qrt, &range) < 0 || qpol_class_get_name(q, target_class, &class_name) < 0) {
+		    qpol_class_get_name(q, target_class, &class_name) < 0 || qpol_range_trans_get_range(q, qrt, &range) < 0) {
 			error = errno;
 			goto err;
 		}
@@ -514,10 +472,7 @@ apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 		prt->source_type = type_map_lookup(diff, source_type, which_pol);
 		prt->target_type = type_map_lookup(diff, target_type, which_pol);
 		prt->target_class = class_name;
-		if ((prt->range = apol_mls_range_create_from_qpol_mls_range(policy, range)) == NULL) {
-			error = errno;
-			goto err;
-		}
+		prt->range = range;
 		if (apol_vector_append(v, prt)) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));

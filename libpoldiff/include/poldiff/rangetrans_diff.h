@@ -113,32 +113,14 @@ extern "C"
 	extern const char *poldiff_range_trans_get_target_class(const poldiff_range_trans_t * range_trans);
 
 /**
- *  Get the original target range from a range transition diff.  Note
- *  that if this rule was added (form POLDIFF_FORM_ADDED or
- *  POLDIFF_FORM_ADD_TYPE) then the return value will be NULL.
+ *  Get the change in target range from a range transition diff.
  *
- *  @param range_trans The rule from which to get the original target
- *  range.
+ *  @param range_trans The rule from which to get the target range.
  *
- *  @return Original policy's target range on success.  If there
- *  was no original target range or upon error then return NULL.  The
- *  caller should not modify this structure.
+ *  @return Rule's target range on success, or NULL upon error or if
+ *  there is no difference in range.
  */
-	extern const apol_mls_range_t *poldiff_range_trans_get_original_range(const poldiff_range_trans_t * range_trans);
-
-/**
- *  Get the modified target range from a range transition diff.  Note
- *  that if this rule was removed (form POLDIFF_FORM_REMOVED or
- *  POLDIFF_FORM_REMOVE_TYPE) then the return value will be NULL.
- *
- *  @param range_trans The rule from which to get the modified target
- *  range.
- *
- *  @return Modified policy's target range on success.  If there was
- *  no modified target range or upon error then return NULL.  The
- *  caller should not modify this structure.
- */
-	extern const apol_mls_range_t *poldiff_range_trans_get_modified_range(const poldiff_range_trans_t * range_trans);
+	extern poldiff_range_t *poldiff_range_trans_get_range(const poldiff_range_trans_t * range_trans);
 
 /**
  *  Get the form of difference from a range transition diff.

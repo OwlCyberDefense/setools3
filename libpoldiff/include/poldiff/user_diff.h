@@ -180,7 +180,7 @@ extern "C"
  *  differences.
  *
  *  @return User's MLS range differences.  Returns NULL upon error or
- *  if there is no difference in range
+ *  if there is no difference in range.
  */
 	extern poldiff_range_t *poldiff_user_get_range(const poldiff_user_t * user);
 

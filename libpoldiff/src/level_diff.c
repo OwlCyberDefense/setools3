@@ -137,7 +137,7 @@ char *poldiff_level_to_string(poldiff_t * diff, const void *level)
 	return NULL;
 }
 
-char *poldiff_level_to_string_brief(poldiff_t * diff, poldiff_level_t * level)
+char *poldiff_level_to_string_brief(poldiff_t * diff, const poldiff_level_t * level)
 {
 	char *s = NULL, t, *cat, *sep = "";
 	int show_cat_sym = 0;

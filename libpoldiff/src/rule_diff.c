@@ -60,7 +60,7 @@ struct poldiff_avrule
 {
 	uint32_t spec;
 	/* pointer into policy's symbol table */
-	char *source, *target;
+	const char *source, *target;
 	/** the class string is pointer into the class_bst BST */
 	char *cls;
 	poldiff_form_e form;
@@ -90,12 +90,12 @@ struct poldiff_terule
 {
 	uint32_t spec;
 	/* pointer into policy's symbol table */
-	char *source, *target;
+	const char *source, *target;
 	/** the class string is pointer into the class_bst BST */
 	char *cls;
 	poldiff_form_e form;
 	/* pointer into policy's symbol table */
-	char *orig_default, *mod_default;
+	const char *orig_default, *mod_default;
 	/** pointer into policy's conditional list, needed to render
 	 * conditional expressions */
 	qpol_cond_t *cond;
@@ -1511,38 +1511,16 @@ int avrule_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((u
 static poldiff_avrule_t *make_avdiff(poldiff_t * diff, poldiff_form_e form, pseudo_avrule_t * rule)
 {
 	poldiff_avrule_t *pa = NULL;
-	apol_vector_t *v1, *v2;
-	qpol_type_t *t1, *t2;
-	char *n1, *n2;
+	const char *n1, *n2;
 	int error = 0;
 	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
-		v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_MOD);
-		v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_MOD);
+		n1 = type_map_get_name(diff, rule->source, POLDIFF_POLICY_MOD);
+		n2 = type_map_get_name(diff, rule->target, POLDIFF_POLICY_MOD);
 	} else {
-		v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_ORIG);
-		v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_ORIG);
+		n1 = type_map_get_name(diff, rule->source, POLDIFF_POLICY_ORIG);
+		n2 = type_map_get_name(diff, rule->target, POLDIFF_POLICY_ORIG);
 	}
-	if (v1 == NULL || apol_vector_get_size(v1) == 0 || v2 == NULL || apol_vector_get_size(v2) == 0) {
-		error = EBADRQC;       /* should never get here */
-		ERR(diff, "%s", strerror(error));
-		assert(0);
-		goto cleanup;
-	}
-	/* only generate one missing rule, for the case where the type
-	 * map reverse lookup yielded multiple types */
-	t1 = apol_vector_get_element(v1, 0);
-	t2 = apol_vector_get_element(v2, 0);
-	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
-		if (qpol_type_get_name(diff->mod_qpol, t1, &n1) < 0 || qpol_type_get_name(diff->mod_qpol, t2, &n2) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-	} else {
-		if (qpol_type_get_name(diff->orig_qpol, t1, &n1) < 0 || qpol_type_get_name(diff->orig_qpol, t2, &n2) < 0) {
-			error = errno;
-			goto cleanup;
-		}
-	}
+	assert(n1 != NULL && n2 != NULL);
 	if ((pa = calloc(1, sizeof(*pa))) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -1838,40 +1816,6 @@ int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 /******************** protected functions for terules ********************/
 
 /**
- *  Get the first valid name that can be found for a pseudo type value.
- *
- *  @param diff Policy difference structure associated with the value.
- *  @param pseudo_val Value for which to get a name.
- *
- *  @return A valid name of a type from either policy that maps to the
- *  specified value. Original policy is searched first, then modified.
- */
-static const char *get_valid_name(poldiff_t * diff, uint32_t pseudo_val)
-{
-	apol_vector_t *v = NULL;
-	char *name = NULL;
-	qpol_type_t *t;
-	int pol = POLDIFF_POLICY_ORIG;
-
-	v = type_map_lookup_reverse(diff, pseudo_val, pol);
-	if (!apol_vector_get_size(v)) {
-		pol = POLDIFF_POLICY_MOD;
-		v = type_map_lookup_reverse(diff, pseudo_val, pol);
-	}
-	if (!apol_vector_get_size(v)) {
-		ERR(diff, "%s", strerror(ERANGE));
-		errno = ERANGE;
-		return NULL;
-	}
-	t = apol_vector_get_element(v, 0);
-	if (pol == POLDIFF_POLICY_ORIG)
-		qpol_type_get_name(diff->orig_qpol, t, &name);
-	else
-		qpol_type_get_name(diff->mod_qpol, t, &name);
-	return name;
-}
-
-/**
  * Apply an ordering scheme to two pseudo-te rules.
  *
  * <ul>
@@ -1944,7 +1888,8 @@ static int terule_bst_comp(const void *x, const void *y, void *data)
 	retv = pseudo_terule_comp(r1, r2, 1);
 	if (!retv && r1->default_type != r2->default_type)
 		WARN(diff, "Multiple %s rules for %s %s %s with different default types", apol_rule_type_to_str(r1->spec),
-		     get_valid_name(diff, r1->source), get_valid_name(diff, r1->target), r1->cls);
+		     type_map_get_name(diff, r1->source, POLDIFF_POLICY_ORIG), type_map_get_name(diff, r1->target,
+												 POLDIFF_POLICY_ORIG), r1->cls);
 	return retv;
 }
 
@@ -2331,36 +2276,16 @@ int terule_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((u
 static poldiff_terule_t *make_tediff(poldiff_t * diff, poldiff_form_e form, pseudo_terule_t * rule)
 {
 	poldiff_terule_t *pt;
-	apol_vector_t *v1, *v2;
-	qpol_type_t *t1, *t2;
-	char *n1, *n2;
+	const char *n1, *n2;
 	int error;
 	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
-		v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_MOD);
-		v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_MOD);
+		n1 = type_map_get_name(diff, rule->source, POLDIFF_POLICY_MOD);
+		n2 = type_map_get_name(diff, rule->target, POLDIFF_POLICY_MOD);
 	} else {
-		v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_ORIG);
-		v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_ORIG);
+		n1 = type_map_get_name(diff, rule->source, POLDIFF_POLICY_ORIG);
+		n2 = type_map_get_name(diff, rule->target, POLDIFF_POLICY_ORIG);
 	}
-	if (v1 == NULL || apol_vector_get_size(v1) == 0 || v2 == NULL || apol_vector_get_size(v2) == 0) {
-		error = EBADRQC;       /* should never get here */
-		ERR(diff, "%s", strerror(error));
-		assert(0);
-		return NULL;
-	}
-	/* only generate one missing rule, for the case where the type
-	 * map reverse lookup yielded multiple types */
-	t1 = apol_vector_get_element(v1, 0);
-	t2 = apol_vector_get_element(v2, 0);
-	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
-		if (qpol_type_get_name(diff->mod_qpol, t1, &n1) < 0 || qpol_type_get_name(diff->mod_qpol, t2, &n2) < 0) {
-			return NULL;
-		}
-	} else {
-		if (qpol_type_get_name(diff->orig_qpol, t1, &n1) < 0 || qpol_type_get_name(diff->orig_qpol, t2, &n2) < 0) {
-			return NULL;
-		}
-	}
+	assert(n1 != NULL && n2 != NULL);
 	if ((pt = calloc(1, sizeof(*pt))) == NULL) {
 		error = errno;
 		poldiff_terule_free(pt);
@@ -2382,10 +2307,9 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	pseudo_terule_t *rule = (pseudo_terule_t *) item;
 	poldiff_terule_t *pt = NULL;
-	apol_vector_t *v1, *v2, *v3;
+	apol_vector_t *v1, *v2;
 	apol_policy_t *p;
-	qpol_type_t *default_type;
-	char *orig_default = NULL, *mod_default = NULL;
+	const char *orig_default = NULL, *mod_default = NULL;
 	int retval = -1, error = errno;
 
 	/* check if form should really become ADD_TYPE / REMOVE_TYPE,
@@ -2394,13 +2318,7 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	if (form == POLDIFF_FORM_ADDED) {
 		if ((v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_ORIG)) == NULL ||
 		    (v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_ORIG)) == NULL ||
-		    (v3 = type_map_lookup_reverse(diff, rule->default_type, POLDIFF_POLICY_MOD)) == NULL) {
-			error = errno;
-			goto cleanup;
-		}
-		default_type = apol_vector_get_element(v3, 0);
-		assert(default_type != NULL);
-		if (qpol_type_get_name(diff->mod_qpol, default_type, &mod_default) < 0) {
+		    (orig_default = type_map_get_name(diff, rule->default_type, POLDIFF_POLICY_MOD)) == NULL) {
 			error = errno;
 			goto cleanup;
 		}
@@ -2411,13 +2329,7 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	} else {
 		if ((v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_MOD)) == NULL ||
 		    (v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_MOD)) == NULL ||
-		    (v3 = type_map_lookup_reverse(diff, rule->default_type, POLDIFF_POLICY_ORIG)) == NULL) {
-			error = errno;
-			goto cleanup;
-		}
-		default_type = apol_vector_get_element(v3, 0);
-		assert(default_type != NULL);
-		if (qpol_type_get_name(diff->orig_qpol, default_type, &orig_default) < 0) {
+		    (mod_default = type_map_get_name(diff, rule->default_type, POLDIFF_POLICY_ORIG)) == NULL) {
 			error = errno;
 			goto cleanup;
 		}
@@ -2508,8 +2420,6 @@ int terule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	pseudo_terule_t *r1 = (pseudo_terule_t *) x;
 	pseudo_terule_t *r2 = (pseudo_terule_t *) y;
 	poldiff_terule_t *pt = NULL;
-	apol_vector_t *v1, *v2;
-	qpol_type_t *t1, *t2;
 	int retval = -1, error = 0;
 
 	if (r1->default_type != r2->default_type) {
@@ -2517,18 +2427,8 @@ int terule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			error = errno;
 			goto cleanup;
 		}
-		if ((v1 = type_map_lookup_reverse(diff, r1->default_type, POLDIFF_POLICY_ORIG)) == NULL ||
-		    (v2 = type_map_lookup_reverse(diff, r2->default_type, POLDIFF_POLICY_MOD)) == NULL) {
-			error = errno;
-			goto cleanup;
-		}
-		t1 = apol_vector_get_element(v1, 0);
-		t2 = apol_vector_get_element(v2, 0);
-		if (qpol_type_get_name(diff->orig_qpol, t1, &pt->orig_default) < 0 ||
-		    qpol_type_get_name(diff->mod_qpol, t2, &pt->mod_default) < 0) {
-			error = errno;
-			goto cleanup;
-		}
+		pt->orig_default = type_map_get_name(diff, r1->default_type, POLDIFF_POLICY_ORIG);
+		pt->mod_default = type_map_get_name(diff, r2->default_type, POLDIFF_POLICY_MOD);
 
 		/* calculate line numbers */
 		if (qpol_policy_has_capability(apol_policy_get_qpol(diff->orig_pol), QPOL_CAP_LINE_NUMBERS)) {

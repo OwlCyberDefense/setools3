@@ -50,7 +50,7 @@ extern "C"
  * @return Rendered string, or NULL upon error.  Caller must free()
  * string afterwards.
  */
-	char *poldiff_range_to_string_brief(poldiff_t * diff, poldiff_range_t * range);
+	char *poldiff_range_to_string_brief(poldiff_t * diff, const poldiff_range_t * range);
 
 /**
  *  Get the vector of level differences from a range diffence object.
@@ -60,7 +60,7 @@ extern "C"
  *  @return A vector of elements of type poldiff_level_t, or NULL on
  *  error.  The caller should <b>not</b> modify the returned vector.
  */
-	extern apol_vector_t *poldiff_range_get_levels(poldiff_range_t * range);
+	extern apol_vector_t *poldiff_range_get_levels(const poldiff_range_t * range);
 
 /**
  *  Get the original item's range.  This could represent a user's
@@ -73,7 +73,7 @@ extern "C"
  *  @return Original range, or NULL upon error or no range available.
  *  The caller should <b>not</b> modify the returned object.
  */
-	extern apol_mls_range_t *poldiff_range_get_original_range(poldiff_range_t * range);
+	extern apol_mls_range_t *poldiff_range_get_original_range(const poldiff_range_t * range);
 
 /**
  *  Get the modified item's range.  This could represent a user's
@@ -86,7 +86,7 @@ extern "C"
  *  @return Modified range, or NULL upon error or no range available.
  *  The caller should <b>not</b> modify the returned object.
  */
-	extern apol_mls_range_t *poldiff_range_get_modified_range(poldiff_range_t * range);
+	extern apol_mls_range_t *poldiff_range_get_modified_range(const poldiff_range_t * range);
 
 #ifdef	__cplusplus
 }

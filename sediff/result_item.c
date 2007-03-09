@@ -754,8 +754,16 @@ static void result_item_user_print_modified(result_item_t * item, poldiff_user_t
 		s = strsep(&next_s, "\n");
 		g_string_printf(string, "%s\n", s);
 		result_item_print_string(tb, iter, string->str, 1);
-		/* all subsequent lines are printed as normal (yes, this
-		 * discarded lines form poldiff_render_to_string_brief() */
+		/* if the next line is minimum category set
+		 * differences then display it */
+		if (strncmp(next_s, "     minimum categories:", strlen("     minimum categories:")) == 0) {
+			s = strsep(&next_s, "\n");
+			g_string_printf(string, "%s\n", s);
+			result_item_print_string_inline(tb, iter, string->str, 1);
+		}
+		/* all subsequent lines are printed as normal (yes,
+		 * this discarded lines form
+		 * poldiff_render_to_string_brief() */
 		free(orig_s);
 		apol_vector_t *levels = poldiff_range_get_levels(range);
 		for (i = 0; i < apol_vector_get_size(levels); i++) {

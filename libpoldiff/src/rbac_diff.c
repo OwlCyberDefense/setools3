@@ -680,10 +680,19 @@ poldiff_role_trans_summary_t *role_trans_create(void)
 	return rts;
 }
 
+static void role_trans_free(void *elem)
+{
+	if (elem != NULL) {
+		poldiff_role_trans_t *rt = elem;
+		free(rt->target_type);
+		free(rt);
+	}
+}
+
 void role_trans_destroy(poldiff_role_trans_summary_t ** rts)
 {
 	if (rts != NULL && *rts != NULL) {
-		apol_vector_destroy(&(*rts)->diffs, free);
+		apol_vector_destroy(&(*rts)->diffs, role_trans_free);
 		free(*rts);
 		*rts = NULL;
 	}
@@ -719,40 +728,6 @@ typedef struct pseudo_role_trans
 } pseudo_role_trans_t;
 
 /**
- *  Get the first valid name that can be found for a pseudo type value.
- *
- *  @param diff Policy difference structure associated with the value.
- *  @param pseudo_val Value for which to get a name.
- *
- *  @return A valid name of a type from either policy that maps to the
- *  specified value. Original policy is searched first, then modified.
- */
-static const char *get_valid_name(poldiff_t * diff, uint32_t pseudo_val)
-{
-	apol_vector_t *v = NULL;
-	char *name = NULL;
-	qpol_type_t *t;
-	int pol = POLDIFF_POLICY_ORIG;
-
-	v = type_map_lookup_reverse(diff, pseudo_val, pol);
-	if (!apol_vector_get_size(v)) {
-		pol = POLDIFF_POLICY_MOD;
-		v = type_map_lookup_reverse(diff, pseudo_val, pol);
-	}
-	if (!apol_vector_get_size(v)) {
-		/* should never get here */
-		assert(0);
-		return NULL;
-	}
-	t = apol_vector_get_element(v, 0);
-	if (pol == POLDIFF_POLICY_ORIG)
-		qpol_type_get_name(diff->orig_qpol, t, &name);
-	else
-		qpol_type_get_name(diff->mod_qpol, t, &name);
-	return name;
-}
-
-/**
  *  Compare two pseudo role_transition rules from the same policy.
  *  Compares the source role name and then pseudo type value of the target.
  *
@@ -777,8 +752,8 @@ static int pseudo_role_trans_comp(const void *x, const void *y, void *arg)
 	else
 		return retv;
 	if (!retv && strcmp(a->default_role, b->default_role))
-		WARN(diff, "Multiple role_transition rules for %s %s with different default roles", a->source_role,
-		     get_valid_name(diff, a->pseudo_target));
+		WARN(diff, "Multiple role_transition rules for %s %s with different default roles.", a->source_role,
+		     type_map_get_name(diff, a->pseudo_target, POLDIFF_POLICY_ORIG));
 	return retv;
 }
 
@@ -908,13 +883,13 @@ int role_trans_comp(const void *x, const void *y, poldiff_t * diff __attribute__
  *  The caller is responsible for calling free() upon the returned
  *  value.
  */
-static poldiff_role_trans_t *make_rt_diff(poldiff_t * diff, poldiff_form_e form, char *src, char *tgt)
+static poldiff_role_trans_t *make_rt_diff(poldiff_t * diff, poldiff_form_e form, char *src, const char *tgt)
 {
 	poldiff_role_trans_t *rt = NULL;
 	int error = 0;
-	if ((rt = calloc(1, sizeof(*rt))) == NULL || (rt->source_role = src) == NULL || (rt->target_type = tgt) == NULL) {
+	if ((rt = calloc(1, sizeof(*rt))) == NULL || (rt->source_role = src) == NULL || (rt->target_type = strdup(tgt)) == NULL) {
 		error = errno;
-		free(rt);
+		role_trans_free(rt);
 		ERR(diff, "%s", strerror(error));
 		errno = error;
 		return NULL;
@@ -927,70 +902,36 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	const pseudo_role_trans_t *rt = item;
 	poldiff_role_trans_t *prt = NULL;
-	char *tgt_name = NULL;
-	qpol_type_t *tgt;
-	apol_vector_t *mapped_types, *other;
+	const char *tgt_name = NULL;
 	int error = 0;
 
 	/* get tgt_name from type_map */
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-	case POLDIFF_FORM_ADD_TYPE:
 		{
-			mapped_types = type_map_lookup_reverse(diff, rt->pseudo_target, POLDIFF_POLICY_MOD);
-			other = type_map_lookup_reverse(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG);
-			if (!apol_vector_get_size(other))
+			tgt_name = type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_MOD);
+			if (type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG) == NULL) {
 				form = POLDIFF_FORM_ADD_TYPE;
+			}
 			break;
 		}
 	case POLDIFF_FORM_REMOVED:
-	case POLDIFF_FORM_REMOVE_TYPE:
 		{
-			mapped_types = type_map_lookup_reverse(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG);
-			other = type_map_lookup_reverse(diff, rt->pseudo_target, POLDIFF_POLICY_MOD);
-			if (!apol_vector_get_size(other))
+			tgt_name = type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG);
+			if (type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_MOD) == NULL) {
 				form = POLDIFF_FORM_REMOVE_TYPE;
+			}
 			break;
 		}
 	case POLDIFF_FORM_MODIFIED:   /* not supported here */
 	case POLDIFF_FORM_NONE:
 	default:
 		{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
+			assert(0);
 			return -1;
 		}
 	}
-	if (!mapped_types)
-		return -1;
-	tgt = apol_vector_get_element(mapped_types, 0);
-	if (!tgt) {
-		error = errno;
-		ERR(diff, "%s", strerror(error));
-		errno = error;
-		return -1;
-	}
-	switch (form) {
-	case POLDIFF_FORM_ADDED:
-	case POLDIFF_FORM_ADD_TYPE:
-		{
-			qpol_type_get_name(diff->mod_qpol, tgt, &tgt_name);
-			break;
-		}
-	case POLDIFF_FORM_REMOVED:
-	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			qpol_type_get_name(diff->orig_qpol, tgt, &tgt_name);
-			break;
-		}
-	case POLDIFF_FORM_MODIFIED:
-	case POLDIFF_FORM_NONE:
-	default:
-		{
-			/* not reachable */
-			assert(0);
-		}
-	}
+	assert(tgt_name != NULL);
 
 	/* create a new diff */
 	prt = make_rt_diff(diff, form, rt->source_role, tgt_name);
@@ -1011,8 +952,6 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 			prt->orig_default = rt->default_role;
 			break;
 		}
-	case POLDIFF_FORM_MODIFIED:
-	case POLDIFF_FORM_NONE:
 	default:
 		{
 			/* not reachable */
@@ -1022,7 +961,7 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	if (apol_vector_append(diff->role_trans_diffs->diffs, prt)) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
-		free(prt);
+		role_trans_free(prt);
 		errno = error;
 		return -1;
 	};
@@ -1049,8 +988,6 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 			diff->role_trans_diffs->num_removed_type++;
 			break;
 		}
-	case POLDIFF_FORM_MODIFIED:
-	case POLDIFF_FORM_NONE:
 	default:
 		{
 			/* not reachable */
@@ -1067,9 +1004,7 @@ int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	const pseudo_role_trans_t *prt2 = y;
 	char *default1 = NULL, *default2 = NULL;
 	poldiff_role_trans_t *rt = NULL;
-	apol_vector_t *mapped_tgts = NULL;
-	qpol_type_t *tgt_type = NULL;
-	char *tgt = NULL;
+	const char *tgt = NULL;
 	int error = 0;
 
 	default1 = prt1->default_role;
@@ -1078,17 +1013,8 @@ int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	if (!strcmp(default1, default2))
 		return 0;	       /* no difference */
 
-	mapped_tgts = type_map_lookup_reverse(diff, prt1->pseudo_target, POLDIFF_POLICY_ORIG);
-	if (!mapped_tgts)
-		return -1;	       /* errors already reported */
-	tgt_type = apol_vector_get_element(mapped_tgts, 0);
-	if (!tgt_type) {
-		error = errno;
-		ERR(diff, "%s", strerror(error));
-		errno = error;
-		return -1;
-	}
-	qpol_type_get_name(diff->orig_qpol, tgt_type, &tgt);
+	tgt = type_map_get_name(diff, prt1->pseudo_target, POLDIFF_POLICY_ORIG);
+	assert(tgt != NULL);
 	rt = make_rt_diff(diff, POLDIFF_FORM_MODIFIED, prt1->source_role, tgt);
 	if (!rt)
 		return -1;	       /* errors already reported */
@@ -1097,7 +1023,7 @@ int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	if (apol_vector_append(diff->role_trans_diffs->diffs, rt)) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
-		free(rt);
+		role_trans_free(rt);
 		errno = error;
 		return -1;
 	};

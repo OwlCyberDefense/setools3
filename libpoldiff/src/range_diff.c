@@ -41,7 +41,7 @@ struct poldiff_range
 	apol_vector_t *min_unmodified_cats;
 };
 
-apol_vector_t *poldiff_range_get_levels(poldiff_range_t * range)
+apol_vector_t *poldiff_range_get_levels(const poldiff_range_t * range)
 {
 	if (range == NULL) {
 		errno = EINVAL;
@@ -50,7 +50,7 @@ apol_vector_t *poldiff_range_get_levels(poldiff_range_t * range)
 	return range->levels;
 }
 
-apol_mls_range_t *poldiff_range_get_original_range(poldiff_range_t * range)
+apol_mls_range_t *poldiff_range_get_original_range(const poldiff_range_t * range)
 {
 	if (range == NULL) {
 		errno = EINVAL;
@@ -59,7 +59,7 @@ apol_mls_range_t *poldiff_range_get_original_range(poldiff_range_t * range)
 	return range->orig_range;
 }
 
-apol_mls_range_t *poldiff_range_get_modified_range(poldiff_range_t * range)
+apol_mls_range_t *poldiff_range_get_modified_range(const poldiff_range_t * range)
 {
 	if (range == NULL) {
 		errno = EINVAL;
@@ -68,7 +68,7 @@ apol_mls_range_t *poldiff_range_get_modified_range(poldiff_range_t * range)
 	return range->mod_range;
 }
 
-char *poldiff_range_to_string_brief(poldiff_t * diff, poldiff_range_t * range)
+char *poldiff_range_to_string_brief(poldiff_t * diff, const poldiff_range_t * range)
 {
 	char *r1 = NULL, *r2 = NULL;
 	char *s = NULL, *t = NULL, *sep = "", *cat;
@@ -172,10 +172,10 @@ poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, q
 	if (mod_range != NULL && (pr->mod_range = apol_mls_range_create_from_qpol_mls_range(diff->mod_pol, mod_range)) == NULL) {
 		goto cleanup;
 	}
-	if (form == POLDIFF_FORM_ADDED) {
+	if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
 		p = diff->mod_pol;
 		range = pr->mod_range;
-	} else if (form == POLDIFF_FORM_REMOVED) {
+	} else if (form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_REMOVE_TYPE) {
 		p = diff->orig_pol;
 		range = pr->orig_range;
 	} else if (form == POLDIFF_FORM_MODIFIED) {

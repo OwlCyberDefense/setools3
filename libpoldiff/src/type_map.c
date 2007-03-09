@@ -8,7 +8,6 @@
  *  account both inferred and user specified mappings of types and may
  *  contain holes where a type does not exist in one of the policies.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -824,11 +823,6 @@ int type_map_infer(poldiff_t * diff)
 	poldiff_type_remap_entry_t *entry = NULL;
 	int retval = -1, error = 0;
 
-	if (diff == NULL || diff->type_map == NULL || diff->type_map->remap == NULL) {
-		error = EINVAL;
-		ERR(diff, "%s", strerror(error));
-		goto cleanup;
-	}
 	INFO(diff, "%s", "Inferring type remap.");
 	if (apol_type_get_by_query(diff->orig_pol, NULL, &ov) < 0 || apol_type_get_by_query(diff->mod_pol, NULL, &mv) < 0) {
 		error = errno;
@@ -971,11 +965,6 @@ int type_map_infer(poldiff_t * diff)
 uint32_t type_map_lookup(poldiff_t * diff, qpol_type_t * type, int which_pol)
 {
 	uint32_t val;
-	if (diff == NULL || type == NULL) {
-		ERR(diff, "%s", strerror(EINVAL));
-		errno = EINVAL;
-		return 0;
-	}
 	if (which_pol == POLDIFF_POLICY_ORIG) {
 		if (qpol_type_get_value(diff->orig_qpol, type, &val) < 0) {
 			return 0;
@@ -995,14 +984,27 @@ uint32_t type_map_lookup(poldiff_t * diff, qpol_type_t * type, int which_pol)
 
 apol_vector_t *type_map_lookup_reverse(poldiff_t * diff, uint32_t val, int which_pol)
 {
-	if (diff == NULL || val == 0) {
-		ERR(diff, "%s", strerror(EINVAL));
-		errno = EINVAL;
-		return 0;
-	}
 	if (which_pol == POLDIFF_POLICY_ORIG) {
 		return apol_vector_get_element(diff->type_map->pseudo_to_orig, val - 1);
 	} else {
 		return apol_vector_get_element(diff->type_map->pseudo_to_mod, val - 1);
 	}
+}
+
+const char *type_map_get_name(poldiff_t * diff, const uint32_t pseudo_val, int pol)
+{
+	apol_vector_t *v = NULL;
+	char *name = NULL;
+	qpol_type_t *t;
+
+	v = type_map_lookup_reverse(diff, pseudo_val, pol);
+	if (apol_vector_get_size(v) == 0) {
+		return NULL;
+	}
+	t = apol_vector_get_element(v, 0);
+	if (pol == POLDIFF_POLICY_ORIG)
+		qpol_type_get_name(diff->orig_qpol, t, &name);
+	else
+		qpol_type_get_name(diff->mod_qpol, t, &name);
+	return name;
 }

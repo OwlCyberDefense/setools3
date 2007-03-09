@@ -48,6 +48,7 @@ static struct option const longopts[] = {
 	{"terules", no_argument, NULL, 'T'},
 	{"roleallows", no_argument, NULL, 'A'},
 	{"roletrans", no_argument, NULL, 'R'},
+	{"rangetrans", no_argument, NULL, 'E'},
 	{"stats", no_argument, NULL, 's'},
 	{"gui", no_argument, NULL, 'X'},
 	{"quiet", no_argument, NULL, 'q'},
@@ -76,6 +77,7 @@ static void usage(const char *prog_name, int brief)
 	printf("  -T, --terules     type enforcement rules\n");
 	printf("  -R, --roletrans   role transition rules\n");
 	printf("  -A, --roleallows  role allow rules\n");
+	printf("  -E, --rangetrans  range transition rules\n");
 	printf("\n");
 	printf("  -q, --quiet       suppress status output for elements with no differences\n");
 	printf("  -s, --stats       print only statistics\n");
@@ -903,6 +905,108 @@ static void print_role_trans_diffs(poldiff_t * diff, int stats_only)
 	return;
 }
 
+static void print_range_trans_diffs(poldiff_t * diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
+	char *str = NULL;
+	const poldiff_range_trans_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_RANGE_TRANS, stats);
+	printf("Range Transitions (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n", stats[0],
+	       stats[3], stats[1], stats[4], stats[2]);
+	if (stats_only)
+		return;
+	v = poldiff_get_range_trans_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Range Transitions: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+	printf("   Added Range Transitions because of new type: %zd\n", stats[3]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_ADD_TYPE) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Range Transitions: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Range Transitions because of missing type: %zd\n", stats[4]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_REMOVE_TYPE) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Range Transitions: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
 /** compare the names for two poldiff_type_t objects.
  * used to sort items prior to display. */
 static int type_name_cmp(const void *a, const void *b, void *user_data)
@@ -1113,6 +1217,9 @@ static void print_diff(poldiff_t * diff, uint32_t flags, int stats, int quiet)
 	if (flags & POLDIFF_DIFF_ROLE_TRANS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLE_TRANS))) {
 		print_role_trans_diffs(diff, stats);
 	}
+	if (flags & POLDIFF_DIFF_RANGE_TRANS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_RANGE_TRANS))) {
+		print_range_trans_diffs(diff, stats);
+	}
 }
 
 int main(int argc, char **argv)
@@ -1131,7 +1238,7 @@ int main(int argc, char **argv)
 	poldiff_t *diff = NULL;
 	size_t total = 0;
 
-	while ((optc = getopt_long(argc, argv, "clCtarubTARsqhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "clCtarubTAREsqhv", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -1167,6 +1274,9 @@ int main(int argc, char **argv)
 			break;
 		case 'R':
 			flags |= POLDIFF_DIFF_ROLE_TRANS;
+			break;
+		case 'E':
+			flags |= POLDIFF_DIFF_RANGE_TRANS;
 			break;
 		case 's':
 			stats = 1;
