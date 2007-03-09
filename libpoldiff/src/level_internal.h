@@ -189,16 +189,19 @@ extern "C"
  * @param added Reference to where to store added categories.  The
  * caller is responsible for calling apol_vector_destroy() upon the
  * value, passing NULL as the second parameter.  If no differences are
- * found then this will be set to NULL.
+ * found then this will be set to NULL.  (The vector will reference
+ * the same strings in vectors v1 and v2).
  * @param removed Reference to where to store removed categories.  The
  * caller is responsible for calling apol_vector_destroy() upon the
  * value, passing NULL as the second parameter.  If no differences are
- * found then this will be set to NULL.
+ * found then this will be set to NULL.  (The vector will reference
+ * the same strings in vectors v1 and v2).
  * @param unmodified Reference to where to store unmodified
  * categories.  The caller is responsible for calling
  * apol_vector_destroy() upon the value, passing NULL as the second
  * parameter.  If no differences are found then this will be set to
- * NULL.
+ * NULL.  (The vector will reference the same strings in vectors v1
+ * and v2).
  *
  * @return Greater than zero if a difference was found, zero upon no
  * differences, less than zero on error.

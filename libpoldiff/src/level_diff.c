@@ -597,6 +597,7 @@ poldiff_level_t *level_create_from_apol_mls_level(apol_mls_level_t * level, pold
 			level_free(pl);
 			return NULL;
 		}
+		return pl;
 	}
 	if ((*target = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL)) == NULL) {
 		level_free(pl);

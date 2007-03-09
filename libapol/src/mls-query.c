@@ -326,29 +326,23 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t * p, q
 	if (!p || !qpol_level) {
 		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
-		return NULL;
+		goto err;
 	}
 
 	if ((lvl = apol_mls_level_create()) == NULL) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
-		return NULL;
+		goto err;
 	}
-	if (qpol_mls_level_get_sens_name(p->p, qpol_level, &tmp)) {
+	if (qpol_mls_level_get_sens_name(p->p, qpol_level, &tmp) || qpol_mls_level_get_cat_iter(p->p, qpol_level, &iter)) {
 		error = errno;
 		goto err;
 	}
-	if ((lvl->sens = strdup(tmp)) == NULL) {
+	if (apol_mls_level_set_sens(p, lvl, tmp) < 0) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto err;
 	}
-
-	if (qpol_mls_level_get_cat_iter(p->p, qpol_level, &iter)) {
-		error = errno;
-		goto err;
-	}
-
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, (void **)&tmp_cat) < 0 || qpol_cat_get_name(p->p, tmp_cat, &tmp) < 0) {
 			error = errno;

@@ -605,51 +605,57 @@ int user_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	qpol_user_t *u = (qpol_user_t *) item;
 	char *name = NULL;
+	apol_vector_t *v = NULL;
 	poldiff_user_t *pu;
-	int error;
+	int error, retval = -1;
 	if ((form == POLDIFF_FORM_ADDED &&
 	     qpol_user_get_name(diff->mod_qpol, u, &name) < 0) ||
 	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
 	     qpol_user_get_name(diff->orig_qpol, u, &name) < 0)) {
-		return -1;
+		error = errno;
+		goto cleanup;
 	}
 	if ((pu = make_diff(diff, form, name)) == NULL) {
-		return -1;
+		error = errno;
+		goto cleanup;
 	}
 	if (form == POLDIFF_FORM_ADDED) {
 		apol_vector_destroy(&pu->added_roles, free);
-		if ((pu->added_roles = user_get_roles(diff, diff->mod_pol, u)) == NULL ||
-		    user_deep_diff_default_levels(diff, u, NULL, pu) < 0 || user_deep_diff_ranges(diff, u, NULL, pu) < 0) {
-			error = errno;
-			ERR(diff, "%s", strerror(error));
-			user_free(pu);
-			errno = error;
-			return -1;
-		}
-	} else {
-		apol_vector_destroy(&pu->removed_roles, free);
-		if ((pu->removed_roles = user_get_roles(diff, diff->orig_pol, u)) == NULL ||
+		if ((v = user_get_roles(diff, diff->mod_pol, u)) == NULL ||
+		    (pu->added_roles = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL ||
 		    user_deep_diff_default_levels(diff, NULL, u, pu) < 0 || user_deep_diff_ranges(diff, NULL, u, pu) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
-			user_free(pu);
-			errno = error;
-			return -1;
+			goto cleanup;
+		}
+	} else {
+		apol_vector_destroy(&pu->removed_roles, free);
+		if ((v = user_get_roles(diff, diff->orig_pol, u)) == NULL ||
+		    (pu->removed_roles = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL ||
+		    user_deep_diff_default_levels(diff, u, NULL, pu) < 0 || user_deep_diff_ranges(diff, u, NULL, pu) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
 		}
 	}
 	if (apol_vector_append(diff->user_diffs->diffs, pu) < 0) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
-		user_free(pu);
-		errno = error;
-		return -1;
+		goto cleanup;
 	}
 	if (form == POLDIFF_FORM_ADDED) {
 		diff->user_diffs->num_added++;
 	} else {
 		diff->user_diffs->num_removed++;
 	}
-	return 0;
+	retval = 0;
+      cleanup:
+	apol_vector_destroy(&v, NULL);
+	if (retval < 0) {
+		user_free(pu);
+		errno = error;
+	}
+	return retval;
 }
 
 /**

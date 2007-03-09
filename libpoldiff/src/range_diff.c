@@ -36,7 +36,9 @@ struct poldiff_range
 	apol_mls_range_t *mod_range;
 	/** a vector of poldiff_level_t */
 	apol_vector_t *levels;
-	int mincats_differ;
+	apol_vector_t *min_added_cats;
+	apol_vector_t *min_removed_cats;
+	apol_vector_t *min_unmodified_cats;
 };
 
 apol_vector_t *poldiff_range_get_levels(poldiff_range_t * range)
@@ -69,7 +71,7 @@ apol_mls_range_t *poldiff_range_get_modified_range(poldiff_range_t * range)
 char *poldiff_range_to_string_brief(poldiff_t * diff, poldiff_range_t * range)
 {
 	char *r1 = NULL, *r2 = NULL;
-	char *s = NULL, *t = NULL;
+	char *s = NULL, *t = NULL, *sep = "", *cat;
 	size_t len = 0, i;
 	if (range->orig_range != NULL && (r1 = apol_mls_range_render(diff->orig_pol, range->orig_range)) == NULL) {
 		ERR(diff, "%s", strerror(errno));
@@ -79,6 +81,7 @@ char *poldiff_range_to_string_brief(poldiff_t * diff, poldiff_range_t * range)
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
+	assert(r1 != NULL || r2 != NULL);
 	if (r1 == NULL) {
 		if (apol_str_appendf(&s, &len, "   range: %s\n", r2) < 0) {
 			ERR(diff, "%s", strerror(errno));
@@ -90,9 +93,45 @@ char *poldiff_range_to_string_brief(poldiff_t * diff, poldiff_range_t * range)
 			goto cleanup;
 		}
 	} else {
-		if (apol_str_appendf(&s, &len, "   range: %s  ->  %s\n", r1, r2) < 0) {
+		if (apol_str_appendf(&s, &len, "   range: %s  -->  %s\n", r1, r2) < 0) {
 			ERR(diff, "%s", strerror(errno));
 			goto cleanup;
+		}
+	}
+	if ((range->min_added_cats != NULL && apol_vector_get_size(range->min_added_cats) > 0) ||
+	    (range->min_removed_cats != NULL && apol_vector_get_size(range->min_removed_cats) > 0) ||
+	    (range->min_unmodified_cats != NULL && apol_vector_get_size(range->min_unmodified_cats) > 0)) {
+		if (apol_str_append(&s, &len, "     minimum categories: ") < 0) {
+			ERR(diff, "%s", strerror(errno));
+			goto cleanup;
+		}
+		for (i = 0; range->min_unmodified_cats != NULL && i < apol_vector_get_size(range->min_unmodified_cats); i++) {
+			cat = apol_vector_get_element(range->min_unmodified_cats, i);
+			if (apol_str_appendf(&s, &len, "%s%s", sep, cat) < 0) {
+				ERR(diff, "%s", strerror(errno));
+				return NULL;
+			}
+			sep = ",";
+		}
+		for (i = 0; range->min_added_cats != NULL && i < apol_vector_get_size(range->min_added_cats); i++) {
+			cat = apol_vector_get_element(range->min_added_cats, i);
+			if (apol_str_appendf(&s, &len, "%s+%s", sep, cat) < 0) {
+				ERR(diff, "%s", strerror(errno));
+				return NULL;
+			}
+			sep = ",";
+		}
+		for (i = 0; range->min_removed_cats != NULL && i < apol_vector_get_size(range->min_removed_cats); i++) {
+			cat = apol_vector_get_element(range->min_removed_cats, i);
+			if (apol_str_appendf(&s, &len, "%s-%s", sep, cat) < 0) {
+				ERR(diff, "%s", strerror(errno));
+				return NULL;
+			}
+			sep = ",";
+		}
+		if (apol_str_append(&s, &len, "\n") < 0) {
+			ERR(diff, "%s", strerror(errno));
+			return NULL;
 		}
 	}
 	for (i = 0; i < apol_vector_get_size(range->levels); i++) {
@@ -193,6 +232,9 @@ void range_destroy(poldiff_range_t ** range)
 		apol_mls_range_destroy(&(*range)->orig_range);
 		apol_mls_range_destroy(&(*range)->mod_range);
 		apol_vector_destroy(&(*range)->levels, level_free);
+		apol_vector_destroy(&(*range)->min_added_cats, NULL);
+		apol_vector_destroy(&(*range)->min_removed_cats, NULL);
+		apol_vector_destroy(&(*range)->min_unmodified_cats, NULL);
 		free(*range);
 		*range = NULL;
 	}
@@ -317,8 +359,13 @@ int range_deep_diff(poldiff_t * diff, poldiff_range_t * range)
 	if (compval < 0) {
 		goto cleanup;
 	} else if (compval > 0) {
-		range->mincats_differ = 1;
 		differences_found = 1;
+		range->min_added_cats = added;
+		range->min_removed_cats = removed;
+		range->min_unmodified_cats = unmodified;
+		added = NULL;
+		removed = NULL;
+		unmodified = NULL;
 	}
 	if (differences_found) {
 		apol_vector_sort(range->levels, range_comp, diff);
