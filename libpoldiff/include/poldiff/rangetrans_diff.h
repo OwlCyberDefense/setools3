@@ -118,9 +118,9 @@ extern "C"
  *  @param range_trans The rule from which to get the target range.
  *
  *  @return Rule's target range on success, or NULL upon error or if
- *  there is no difference in range.
+ *  there is no difference in range.  Do not modify the returned value.
  */
-	extern poldiff_range_t *poldiff_range_trans_get_range(const poldiff_range_trans_t * range_trans);
+	extern const poldiff_range_t *poldiff_range_trans_get_range(const poldiff_range_trans_t * range_trans);
 
 /**
  *  Get the form of difference from a range transition diff.

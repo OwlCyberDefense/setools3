@@ -50,7 +50,7 @@ apol_vector_t *poldiff_range_get_levels(const poldiff_range_t * range)
 	return range->levels;
 }
 
-apol_mls_range_t *poldiff_range_get_original_range(const poldiff_range_t * range)
+const apol_mls_range_t *poldiff_range_get_original_range(const poldiff_range_t * range)
 {
 	if (range == NULL) {
 		errno = EINVAL;
@@ -59,7 +59,7 @@ apol_mls_range_t *poldiff_range_get_original_range(const poldiff_range_t * range
 	return range->orig_range;
 }
 
-apol_mls_range_t *poldiff_range_get_modified_range(const poldiff_range_t * range)
+const apol_mls_range_t *poldiff_range_get_modified_range(const poldiff_range_t * range)
 {
 	if (range == NULL) {
 		errno = EINVAL;

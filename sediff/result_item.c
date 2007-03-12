@@ -376,6 +376,47 @@ static void result_item_print_rule_diff(result_item_t * item, GtkTextBuffer * tb
 	}
 }
 
+/**
+ * Show the results for a modified range.
+ */
+static void result_item_print_modified_range(result_item_t * item, const poldiff_range_t * range, GtkTextBuffer * tb,
+					     GtkTextIter * iter)
+{
+	char *orig_s = poldiff_range_to_string_brief(item->diff, range);
+	char *next_s = orig_s;
+	GString *string = g_string_new("");
+
+	/* first line should always be printed with normal font */
+	char *s = strsep(&next_s, "\n");
+	g_string_printf(string, "%s\n", s);
+	result_item_print_string(tb, iter, string->str, 1);
+
+	/* if the next line is minimum category set differences then
+	 * display it */
+	if (strncmp(next_s, "     minimum categories:", strlen("     minimum categories:")) == 0) {
+		s = strsep(&next_s, "\n");
+		g_string_printf(string, "%s\n", s);
+		result_item_print_string_inline(tb, iter, string->str, 1);
+	}
+	/* all subsequent lines are printed as normal (yes, this
+	 * discards lines from poldiff_range_to_string_brief() */
+	free(orig_s);
+	apol_vector_t *levels = poldiff_range_get_levels(range);
+	size_t i;
+	for (i = 0; i < apol_vector_get_size(levels); i++) {
+		poldiff_level_t *l = apol_vector_get_element(levels, i);
+		s = poldiff_level_to_string_brief(item->diff, l);
+		g_string_printf(string, "     %s", s);
+		if (poldiff_level_get_form(l) != POLDIFF_FORM_MODIFIED) {
+			result_item_print_string(tb, iter, string->str, 1);
+		} else {
+			result_item_print_string_inline(tb, iter, string->str, 1);
+		}
+		free(s);
+	}
+	g_string_free(string, TRUE);
+}
+
 /******************** single buffer functions ********************/
 
 /* below is the implementation of the 'single buffer result item'
@@ -722,8 +763,8 @@ static void result_item_user_print_modified(result_item_t * item, poldiff_user_t
 		result_item_print_string_inline(tb, iter, string->str, 1);
 	}
 
-	poldiff_level_t *orig = poldiff_user_get_original_dfltlevel(user);
-	poldiff_level_t *mod = poldiff_user_get_modified_dfltlevel(user);
+	const poldiff_level_t *orig = poldiff_user_get_original_dfltlevel(user);
+	const poldiff_level_t *mod = poldiff_user_get_modified_dfltlevel(user);
 	if (orig != NULL) {
 		result_item_print_string_inline(tb, iter, "   level:\n", 1);
 		s = poldiff_level_to_string_brief(item->diff, orig);
@@ -746,37 +787,9 @@ static void result_item_user_print_modified(result_item_t * item, poldiff_user_t
 		}
 	}
 
-	poldiff_range_t *range = poldiff_user_get_range(user);
+	const poldiff_range_t *range = poldiff_user_get_range(user);
 	if (range != NULL) {
-		char *orig_s = poldiff_range_to_string_brief(item->diff, range);
-		/* first line should always be printed with normal font */
-		char *next_s = orig_s;
-		s = strsep(&next_s, "\n");
-		g_string_printf(string, "%s\n", s);
-		result_item_print_string(tb, iter, string->str, 1);
-		/* if the next line is minimum category set
-		 * differences then display it */
-		if (strncmp(next_s, "     minimum categories:", strlen("     minimum categories:")) == 0) {
-			s = strsep(&next_s, "\n");
-			g_string_printf(string, "%s\n", s);
-			result_item_print_string_inline(tb, iter, string->str, 1);
-		}
-		/* all subsequent lines are printed as normal (yes,
-		 * this discarded lines form
-		 * poldiff_render_to_string_brief() */
-		free(orig_s);
-		apol_vector_t *levels = poldiff_range_get_levels(range);
-		for (i = 0; i < apol_vector_get_size(levels); i++) {
-			poldiff_level_t *l = apol_vector_get_element(levels, i);
-			s = poldiff_level_to_string_brief(item->diff, l);
-			g_string_printf(string, "     %s", s);
-			if (poldiff_level_get_form(l) != POLDIFF_FORM_MODIFIED) {
-				result_item_print_string(tb, iter, string->str, 1);
-			} else {
-				result_item_print_string_inline(tb, iter, string->str, 1);
-			}
-			free(s);
-		}
+		result_item_print_modified_range(item, range, tb, iter);
 	}
 	result_item_print_string(tb, iter, "\n", 0);
 	g_string_free(string, TRUE);
@@ -901,6 +914,76 @@ result_item_t *result_item_create_role_trans(GtkTextTagTable * table)
 	item->get_string = poldiff_role_trans_to_string;
 	item->get_forms = result_item_role_trans_get_forms;
 	item->get_buffer = result_item_single_get_rule_buffer;
+	return item;
+}
+
+/**
+ * Construct a string, similar to poldiff_range_trans_to_string(), but
+ * with the proper color coding enabled.
+ */
+static void result_item_range_trans_print_modified(result_item_t * item, const poldiff_range_trans_t * rt, GtkTextBuffer * tb,
+						   GtkTextIter * iter)
+{
+	GString *string = g_string_new("");
+	char *orig_s = poldiff_range_trans_to_string(item->diff, rt);
+	char *next_s = orig_s;
+	const poldiff_range_t *range = poldiff_range_trans_get_range(rt);
+
+	/* first line should always be printed with normal font */
+	char *s = strsep(&next_s, "\n");
+	g_string_printf(string, "%s\n", s);
+	result_item_print_string(tb, iter, string->str, 1);
+
+	/* all subsequent lines are printed as normal (yes, this
+	 * discards lines from poldiff_range_trans_to_string() */
+	free(orig_s);
+	result_item_print_modified_range(item, range, tb, iter);
+}
+
+/**
+ * Printing a modified range_transition is special, for it spans
+ * multiple lines and has inline markers.
+ */
+static GtkTextBuffer *result_item_range_trans_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	if (form != POLDIFF_FORM_MODIFIED) {
+		return result_item_single_get_buffer(item, form);
+	} else {
+		util_text_buffer_clear(single_buffer);
+		result_item_print_header(item, single_buffer, form);
+		GtkTextIter iter;
+		apol_vector_t *v;
+		size_t i;
+		poldiff_range_trans_t *rt;
+
+		gtk_text_buffer_get_end_iter(single_buffer, &iter);
+		v = item->get_vector(item->diff);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			rt = (poldiff_range_trans_t *) apol_vector_get_element(v, i);
+			if (item->get_form(rt) == form) {
+				result_item_range_trans_print_modified(item, rt, single_buffer, &iter);
+			}
+		}
+		return single_buffer;
+	}
+}
+
+/* range trans are a subclass of single buffer item, in that they have
+   a special rendering function for modified items and that they have
+   add-type and remove-type forms */
+result_item_t *result_item_create_range_trans(GtkTextTagTable * table)
+{
+	result_item_t *item = result_item_single_create(table);
+	if (item == NULL) {
+		return item;
+	}
+	item->label = "Range Transitions";
+	item->bit_pos = POLDIFF_DIFF_RANGE_TRANS;
+	item->get_vector = poldiff_get_range_trans_vector;
+	item->get_form = poldiff_range_trans_get_form;
+	item->get_string = poldiff_range_trans_to_string;
+	item->get_forms = result_item_role_trans_get_forms;	/* [sic] */
+	item->get_buffer = result_item_range_trans_get_buffer;
 	return item;
 }
 

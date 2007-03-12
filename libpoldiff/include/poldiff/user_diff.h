@@ -150,7 +150,7 @@ extern "C"
  *  @return User's original default MLS level.  Returns NULL upon
  *  error or if there is no difference in level.
  */
-	extern poldiff_level_t *poldiff_user_get_original_dfltlevel(const poldiff_user_t * user);
+	extern const poldiff_level_t *poldiff_user_get_original_dfltlevel(const poldiff_user_t * user);
 
 /**
  *  Get the modified user's MLS level.  That is, this is the level
@@ -168,7 +168,7 @@ extern "C"
  *  error, if there is no difference in level, or if the sensitivity
  *  was unchanged.
  */
-	extern poldiff_level_t *poldiff_user_get_modified_dfltlevel(const poldiff_user_t * user);
+	extern const poldiff_level_t *poldiff_user_get_modified_dfltlevel(const poldiff_user_t * user);
 
 /**
  *  Get the change in user's assigned MLS range.
@@ -182,7 +182,7 @@ extern "C"
  *  @return User's MLS range differences.  Returns NULL upon error or
  *  if there is no difference in range.
  */
-	extern poldiff_range_t *poldiff_user_get_range(const poldiff_user_t * user);
+	extern const poldiff_range_t *poldiff_user_get_range(const poldiff_user_t * user);
 
 #ifdef	__cplusplus
 }

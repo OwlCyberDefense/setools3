@@ -70,6 +70,9 @@ void poldiff_range_trans_get_stats(poldiff_t * diff, size_t stats[5])
 char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
 {
 	const poldiff_range_trans_t *rt = range_trans;
+	const poldiff_range_t *range = poldiff_range_trans_get_range(rt);
+	const apol_mls_range_t *orig_range = poldiff_range_get_original_range(range);
+	const apol_mls_range_t *mod_range = poldiff_range_get_modified_range(range);
 	size_t len = 0;
 	char *s = NULL;
 	if (diff == NULL || range_trans == NULL) {
@@ -81,28 +84,39 @@ char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
 	case POLDIFF_FORM_ADDED:
 	case POLDIFF_FORM_ADD_TYPE:
 		{
-			if (apol_str_appendf(&s, &len, "+ range_transition %s %s : %s %s;", rt->source, rt->target,
-					     rt->target_class, "<stuff>") < 0) {
+			char *t = NULL;
+			if ((t = apol_mls_range_render(diff->mod_pol, mod_range)) == NULL ||
+			    apol_str_appendf(&s, &len, "+ range_transition %s %s : %s %s;", rt->source, rt->target,
+					     rt->target_class, t) < 0) {
+				free(t);
 				goto cleanup;
 			}
+			free(t);
 			return s;
 		}
 	case POLDIFF_FORM_REMOVED:
 	case POLDIFF_FORM_REMOVE_TYPE:
 		{
-			if (apol_str_appendf(&s, &len, "- range_transition %s %s : %s %s;", rt->source, rt->target,
-					     rt->target_class, "<stuff>") < 0) {
+			char *t = NULL;
+			if ((t = apol_mls_range_render(diff->orig_pol, orig_range)) == NULL ||
+			    apol_str_appendf(&s, &len, "- range_transition %s %s : %s %s;", rt->source, rt->target,
+					     rt->target_class, t) < 0) {
+				free(t);
 				goto cleanup;
 			}
+			free(t);
 			return s;
 		}
 	case POLDIFF_FORM_MODIFIED:
 		{
-			if (apol_str_appendf
-			    (&s, &len, "* range_transition %s %s : %s { %s  -->  %s };\n", rt->source, rt->target,
-			     rt->target_class, "<stuff1>", "<stuff2>") < 0) {
-				goto cleanup;;
+			char *t;
+			if ((t = poldiff_range_to_string_brief(diff, range)) == NULL ||
+			    apol_str_appendf(&s, &len, "* range_transition %s %s : %s\n%s", rt->source, rt->target,
+					     rt->target_class, t) < 0) {
+				free(t);
+				goto cleanup;
 			}
+			free(t);
 			return s;
 		}
 	default:
@@ -157,7 +171,7 @@ const char *poldiff_range_trans_get_target_class(const poldiff_range_trans_t * r
 	return range_trans->target_class;
 }
 
-poldiff_range_t *poldiff_range_trans_get_range(const poldiff_range_trans_t * range_trans)
+const poldiff_range_t *poldiff_range_trans_get_range(const poldiff_range_trans_t * range_trans)
 {
 	if (range_trans == NULL) {
 		errno = EINVAL;
@@ -188,6 +202,10 @@ poldiff_range_trans_summary_t *range_trans_create(void)
 	return rts;
 }
 
+/**
+ * Destroy all space used by a poldiff_range_trans_t, including the
+ * pointer itself.
+ */
 static void range_trans_free(void *elem)
 {
 	if (elem != NULL) {
@@ -293,6 +311,7 @@ static poldiff_range_trans_t *make_range_trans_diff(poldiff_t * diff, poldiff_fo
 		errno = error;
 		return NULL;
 	}
+	rt->form = form;
 	return rt;
 }
 
@@ -392,41 +411,8 @@ static int pseudo_range_trans_comp(const void *x, const void *y, void *arg)
 	const pseudo_range_trans_t *b = y;
 	poldiff_t *diff = arg;
 	int retval = range_trans_comp(a, b, diff);
-	/* FIX ME: WARN() if types conflict */
 	return retval;
 }
-
-/**
- * Convert a type to a vector of one element, or an attribute into a
- * vector of its types.
- */
-/* FIX ME
-static apol_vector_t *range_trans_get_type_vector(poldiff_t * diff, int which_pol, qpol_type_t * type) {
-	unsigned char isattr = 0;
-        apol_vector_t *v = NULL;
-        int error;
-        qpol_type_get_isattr(q, tmp_type, &isattr);
-        if (!isattr) {
-                if ((v = apol_vector_create_with_capacity(1)) == NULL ||
-                    apol_vector_append(v, type) < 0) {
-                        error = errno;
-                        apol_vector_destroy(&v, NULL);
-                        ERR(diff, "%s", strerror(error));
-                        errno = error;
-                        return NULL;
-                }
-        }
-        qpol_iterator_t *attr_types = NULL;
-        qpol_type_get_type_iter(q, type, &attr_types);
-        if ((v = apol_vector_create_from_iter(attr_types)) == NULL) {
-                error = errno;
-                ERR(diff, "%s", strerror(error));
-                errno = error;
-                return NULL;
-        }
-        return v;
-}
-*/
 
 apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
@@ -494,47 +480,41 @@ apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 
 int range_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 {
-#if 0
-	/* FIX ME */
-	const pseudo_role_trans_t *prt1 = x;
-	const pseudo_role_trans_t *prt2 = y;
-	char *default1 = NULL, *default2 = NULL;
-	poldiff_role_trans_t *rt = NULL;
-	apol_vector_t *mapped_tgts = NULL;
-	qpol_type_t *tgt_type = NULL;
-	char *tgt = NULL;
-	int error = 0;
+	const pseudo_range_trans_t *prt1 = x;
+	const pseudo_range_trans_t *prt2 = y;
+	poldiff_range_t *range = NULL;
+	poldiff_range_trans_t *rt = NULL;
+	int error = 0, retval = -1;
 
-	default1 = prt1->default_role;
-	default2 = prt2->default_role;
-
-	if (!strcmp(default1, default2))
-		return 0;	       /* no difference */
-
-	mapped_tgts = type_map_lookup_reverse(diff, prt1->pseudo_target, POLDIFF_POLICY_ORIG);
-	if (!mapped_tgts)
-		return -1;	       /* errors already reported */
-	tgt_type = apol_vector_get_element(mapped_tgts, 0);
-	if (!tgt_type) {
+	if ((range = range_create(diff, prt1->range, prt2->range, POLDIFF_FORM_MODIFIED)) == NULL) {
 		error = errno;
-		ERR(diff, "%s", strerror(error));
-		errno = error;
-		return -1;
+		goto cleanup;
 	}
-	qpol_type_get_name(diff->orig_qpol, tgt_type, &tgt);
-	rt = make_rt_diff(diff, POLDIFF_FORM_MODIFIED, prt1->source_role, tgt);
-	if (!rt)
-		return -1;	       /* errors already reported */
-	rt->orig_default = default1;
-	rt->mod_default = default2;
-	if (apol_vector_append(diff->role_trans_diffs->diffs, rt)) {
+	if ((retval = range_deep_diff(diff, range)) < 0) {
 		error = errno;
-		ERR(diff, "%s", strerror(error));
-		free(rt);
+		goto cleanup;
+	}
+	if (retval > 0) {
+		if ((rt = make_range_trans_diff(diff, POLDIFF_FORM_MODIFIED, prt1)) == NULL) {
+			error = errno;
+			goto cleanup;
+		}
+		rt->range = range;
+		range = NULL;
+		if (apol_vector_append(diff->range_trans_diffs->diffs, rt) < 0) {
+			error = errno;
+			ERR(diff, "%s", strerror(error));
+			goto cleanup;
+		}
+		diff->range_trans_diffs->num_modified++;
+		rt = NULL;
+	}
+	retval = 0;
+      cleanup:
+	range_destroy(&range);
+	range_trans_free(rt);
+	if (retval != 0) {
 		errno = error;
-		return -1;
-	};
-	diff->role_trans_diffs->num_modified++;
-#endif
-	return 0;
+	}
+	return retval;
 }

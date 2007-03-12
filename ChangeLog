@@ -1,3 +1,11 @@
+2007-03-12  J. Tang  <jtang@tresys.com>
+
+	* sediffx now diffs and displays range transitions
+
+	* sediff -E now diffs range transitions
+
+	* range transition diff added libpoldiff
+
 2007-03-08  J. Tang  <jtang@tresys.com>
 
 	* poldiff_user_get_added_roles() and
@@ -21,8 +29,8 @@
 
 2007-03-06  J. Mowery <jmowery@tresys.com>
 
-   * added SWIG wrapper for libqpol. The wrapper treats all libqpol structs 
-     as classes in the target language.
+	* added SWIG wrapper for libqpol. The wrapper treats all libqpol
+	structs as classes in the target language.
 
 2007-03-06  J. Tang  <jtang@tresys.com>
 

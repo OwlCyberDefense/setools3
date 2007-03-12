@@ -247,7 +247,7 @@ apol_vector_t *poldiff_user_get_removed_roles(const poldiff_user_t * user)
 	return user->removed_roles;
 }
 
-poldiff_level_t *poldiff_user_get_original_dfltlevel(const poldiff_user_t * user)
+const poldiff_level_t *poldiff_user_get_original_dfltlevel(const poldiff_user_t * user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
@@ -256,7 +256,7 @@ poldiff_level_t *poldiff_user_get_original_dfltlevel(const poldiff_user_t * user
 	return user->orig_default_level;
 }
 
-poldiff_level_t *poldiff_user_get_modified_dfltlevel(const poldiff_user_t * user)
+const poldiff_level_t *poldiff_user_get_modified_dfltlevel(const poldiff_user_t * user)
 {
 	if (user == NULL) {
 		errno = EINVAL;
@@ -265,7 +265,7 @@ poldiff_level_t *poldiff_user_get_modified_dfltlevel(const poldiff_user_t * user
 	return user->mod_default_level;
 }
 
-poldiff_range_t *poldiff_user_get_range(const poldiff_user_t * user)
+const poldiff_range_t *poldiff_user_get_range(const poldiff_user_t * user)
 {
 	if (user == NULL) {
 		errno = EINVAL;

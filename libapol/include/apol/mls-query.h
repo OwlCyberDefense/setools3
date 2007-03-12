@@ -76,7 +76,7 @@ extern "C"
  *
  * @return An initialized MLS level structure, or NULL upon error.
  */
-	extern apol_mls_level_t *apol_mls_level_create_from_mls_level(apol_mls_level_t * level);
+	extern apol_mls_level_t *apol_mls_level_create_from_mls_level(const apol_mls_level_t * level);
 
 /**
  * Take a MLS level string (e.g., <b>S0:C0.C127</b>) and parse it.
@@ -88,12 +88,11 @@ extern "C"
  *
  * @param p Policy within which to validate mls_level_string.
  * @param mls_level_string Pointer to a string representing a valid
- * MLS level.  Caller is responsible for memory management of this
- * string.
+ * MLS level.
  *
  * @return A filled in MLS level structure, or NULL upon error.
  */
-	extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, char *mls_level_string);
+	extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, const char *mls_level_string);
 
 /**
  * Create a new apol_mls_level_t and initialize it with a
@@ -186,7 +185,7 @@ extern "C"
  * @return One of APOL_MLS_EQ, APOL_MLS_DOM, APOL_MLS_DOMBY, or
  * APOL_MLS_INCOMP; < 0 on error.
  */
-	extern int apol_mls_level_compare(apol_policy_t * p, apol_mls_level_t * level1, apol_mls_level_t * level2);
+	extern int apol_mls_level_compare(apol_policy_t * p, const apol_mls_level_t * level1, const apol_mls_level_t * level2);
 
 /**
  * Creates a string containing the textual representation of
@@ -197,7 +196,7 @@ extern "C"
  * @return A newly allocated string, or NULL upon error.  The caller
  * is responsible for calling free() upon the return value.
  */
-	extern char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level);
+	extern char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level);
 
 /**
  * Determine if two sensitivities are actually the same.  Either level
@@ -331,7 +330,8 @@ extern "C"
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
 	extern int apol_mls_range_compare(apol_policy_t * p,
-					  apol_mls_range_t * target, apol_mls_range_t * search, unsigned int range_compare_type);
+					  const apol_mls_range_t * target, const apol_mls_range_t * search,
+					  unsigned int range_compare_type);
 
 /**
  * Determine if a range completely contains a subrange given a certain
@@ -344,7 +344,8 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-	extern int apol_mls_range_contain_subrange(apol_policy_t * p, apol_mls_range_t * range, apol_mls_range_t * subrange);
+	extern int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range,
+						   const apol_mls_range_t * subrange);
 /**
  * Given a range, determine if it is legal according to the supplied
  * policy.  This function will convert from aliases to canonical forms
@@ -355,7 +356,7 @@ extern "C"
  *
  * @return 1 If range is legal, 0 if not; -1 on error.
  */
-	extern int apol_mls_range_validate(apol_policy_t * p, apol_mls_range_t * range);
+	extern int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range);
 
 /**
  * Given a range, return a vector of levels (type apol_mls_level_t *)
@@ -368,7 +369,7 @@ extern "C"
  * responsible for calling apol_vector_destroy() upon the returned
  * value, passing apol_mls_level_free() as the second parameter.
  */
-	extern apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, apol_mls_range_t * range);
+	extern apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range_t * range);
 
 /**
  * Creates a string containing the textual representation of
@@ -379,7 +380,7 @@ extern "C"
  * @return A newly allocated string, or NULL upon error.  The caller
  * is responsible for calling free() upon the return value.
  */
-	extern char *apol_mls_range_render(apol_policy_t * p, apol_mls_range_t * range);
+	extern char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range);
 
 /******************** level queries ********************/
 
