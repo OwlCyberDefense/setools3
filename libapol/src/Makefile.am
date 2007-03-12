@@ -1,7 +1,7 @@
 lib_LIBRARIES = libapol.a
 setoolsdir = @setoolsdir@
 
-apolso_DATA = @libapol_soname@
+apolso_DATA = libapol.so.@libapol_version@
 apolsodir = $(libdir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \

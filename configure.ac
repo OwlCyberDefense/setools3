@@ -5,19 +5,19 @@ AM_INIT_AUTOMAKE(setools, 3.2)
 
 dnl *** update these variables as versions change; also update AC_INIT ***
 libqpol_version=1.2
-libqpol_soname=libqpol.so.1.2
+libqpol_soname=libqpol.so.1
 
 libapol_version=3.2
-libapol_soname=libapol.so.3.2
-libapol_tcl_soname=libapol-tcl.so.3.2
+libapol_soname=libapol.so.3
+libapol_tcl_soname=libapol-tcl.so.3
 
 libpoldiff_version=1.2
-libpoldiff_soname=libpoldiff.so.1.2
+libpoldiff_soname=libpoldiff.so.1
 
 libsefs_version=3.0.2
 libsefs_soname=libsefs.so.3
 
-libseaudit_version=4.0.0
+libseaudit_version=4.1
 libseaudit_soname=libseaudit.so.4
 
 setoolsdir='${prefix}/share/setools-3.2'

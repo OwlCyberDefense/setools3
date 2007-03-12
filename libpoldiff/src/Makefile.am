@@ -1,6 +1,6 @@
 lib_LIBRARIES = libpoldiff.a
 
-poldiffso_DATA = @libpoldiff_soname@
+poldiffso_DATA = libpoldiff.so.@libpoldiff_version@
 poldiffsodir = $(libdir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \

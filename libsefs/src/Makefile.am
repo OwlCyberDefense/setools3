@@ -1,6 +1,6 @@
 lib_LIBRARIES = libsefs.a
 
-sefsso_DATA = @libsefs_soname@
+sefsso_DATA = libsefs.so.@libsefs_version@
 sefssodir = $(libdir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \

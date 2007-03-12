@@ -151,9 +151,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libapol.so
 %{_libdir}/libpoldiff.so.1.2
 %{_libdir}/libpoldiff.so
-%{_libdir}/libsefs.so.3
+%{_libdir}/libsefs.so.3.0.2
 %{_libdir}/libsefs.so
-%{_libdir}/libseaudit.so.4
+%{_libdir}/libseaudit.so.4.1
 %{_libdir}/libseaudit.so
 %{_datadir}/setools-%{version}/seaudit-report.conf
 %{_datadir}/setools-%{version}/seaudit-report.css

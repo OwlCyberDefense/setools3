@@ -1,7 +1,7 @@
 sepol_srcdir = @sepol_srcdir@
 
 lib_LIBRARIES = libqpol.a
-qpolso_DATA = @libqpol_soname@
+qpolso_DATA = libqpol.so.@libqpol_version@
 qpolsodir = $(libdir)
 
 tmp_sepol = ./tmp_sepol

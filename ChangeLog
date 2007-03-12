@@ -1,5 +1,10 @@
 2007-03-12  J. Tang  <jtang@tresys.com>
 
+	* fixed share libraries's soname, such that SETools's programs
+	depend upon the correct name.  For example, seaudit's .dynamic
+	section should have as a dependency on libseaudit.so.4, not
+	libseaudit.so.4.1.
+
 	* sediffx now diffs and displays range transitions
 
 	* sediff -E now diffs range transitions

@@ -1,6 +1,6 @@
 lib_LIBRARIES = libseaudit.a
 
-seauditso_DATA = @libseaudit_soname@
+seauditso_DATA = libseaudit.so.@libseaudit_version@
 seauditsodir = $(libdir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ \
