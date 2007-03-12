@@ -30,6 +30,7 @@ dist_noinst_DATA = libseaudit.map
 
 $(seauditso_DATA): $(libseaudit_so_OBJS) libseaudit.map
 	$(CC) -shared -o $@ $(libseaudit_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBSEAUDIT_SONAME),--version-script=$(srcdir)/libseaudit.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so $(XML_LIBS)
+	$(LN_S) -f $@ @libseaudit_soname@
 	$(LN_S) -f $@ libseaudit.so
 
 libseaudit.so: $(seauditso_DATA)
@@ -41,7 +42,7 @@ install-data-hook:
 	cd $(DESTDIR)$(seauditsodir) && $(LN_S) -f $(seauditso_DATA) libseaudit.so
 
 mostlyclean-local:
-	-rm -rf *.gcno *.gcda *.gprof *.gcov libseaudit.so $(seauditso_DATA)
+	-rm -rf *.gcno *.gcda *.gprof *.gcov libseaudit.so @libseaudit_soname@ $(seauditso_DATA)
 
 uninstall-local:
 	-rm -rf $(DESTDIR)$(seauditsodir)/$(seauditso_DATA)

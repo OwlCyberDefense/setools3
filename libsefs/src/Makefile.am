@@ -47,6 +47,7 @@ dist_noinst_DATA = libsefs.map
 
 $(sefsso_DATA): $(libsefs_so_OBJS) libsefs.map
 	$(CC) -shared -o $@ $(libsefs_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs $(top_builddir)/libapol/src/libapol.so @SELINUX_LIB_FLAG@ -lselinux -lsepol
+	$(LN_S) -f $@ @libsefs_soname@
 	$(LN_S) -f $@ libsefs.so
 
 libsefs.so: $(sefso_DATA)
@@ -54,12 +55,11 @@ libsefs.so: $(sefso_DATA)
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 
-
 install-data-hook:
 	cd $(DESTDIR)$(sefssodir) && $(LN_S) -f $(sefsso_DATA) libsefs.so
 
 mostlyclean-local:
-	-rm -rf *.gcno *.gcda *.gprof *.gcov libsefs.so $(sefsso_DATA)
+	-rm -rf *.gcno *.gcda *.gprof *.gcov libsefs.so @libsefs_soname@ $(sefsso_DATA)
 
 uninstall-local:
 	-rm -rf $(DESTDIR)$(sefssodir)/$(sefsso_DATA)

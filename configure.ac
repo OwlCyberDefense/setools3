@@ -9,7 +9,6 @@ libqpol_soname=libqpol.so.1
 
 libapol_version=3.2
 libapol_soname=libapol.so.3
-libapol_tcl_soname=libapol-tcl.so.3
 
 libpoldiff_version=1.2
 libpoldiff_soname=libpoldiff.so.1
@@ -542,7 +541,6 @@ AC_SUBST(libqpol_version)
 AC_SUBST(libqpol_soname)
 AC_SUBST(libapol_version)
 AC_SUBST(libapol_soname)
-AC_SUBST(libapol_tcl_soname)
 AC_SUBST(libpoldiff_version)
 AC_SUBST(libpoldiff_soname)
 AC_SUBST(libsefs_version)

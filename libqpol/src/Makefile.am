@@ -67,6 +67,7 @@ $(tmp_sepol): $(sepol_srcdir)/libsepol.a
 
 $(qpolso_DATA): $(tmp_sepol) $(libqpol_so_OBJS) libqpol.map
 	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/libsepol.a -Wl,--no-whole-archive @SELINUX_LIB_FLAG@ -lselinux -lsepol
+	$(LN_S) -f $@ @libqpol_soname@
 	$(LN_S) -f $@ libqpol.so
 
 libqpol.so: $(qpolso_DATA)
@@ -80,7 +81,7 @@ clean-local:
 	-rm -rf $(tmp_sepol)
 
 mostlyclean-local:
-	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so $(qpolso_DATA)
+	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so @libqpol_soname@ $(qpolso_DATA)
 
 uninstall-local:
 	-rm -rf $(DESTDIR)$(qpolsodir)/$(qpolso_DATA)

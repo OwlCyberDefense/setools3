@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.2
-Release: 0
+Release: pre-0
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -61,7 +61,7 @@ This package includes the following run-time libraries:
 %package devel
 Summary: Policy analysis development files for SELinux.
 Group: System Environment/Libraries
-Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-devel = 3.2
+Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-libs = 3.2
 
 %description devel
 SETools is a collection of graphical tools, command-line tools, and
@@ -146,14 +146,19 @@ rm -rf ${RPM_BUILD_ROOT}
 %files libs
 %defattr(-,root,root)
 %{_libdir}/libqpol.so.1.2
+%{_libdir}/libqpol.so.1
 %{_libdir}/libqpol.so
 %{_libdir}/libapol.so.3.2
+%{_libdir}/libapol.so.3
 %{_libdir}/libapol.so
 %{_libdir}/libpoldiff.so.1.2
+%{_libdir}/libpoldiff.so.1
 %{_libdir}/libpoldiff.so
 %{_libdir}/libsefs.so.3.0.2
+%{_libdir}/libsefs.so.3
 %{_libdir}/libsefs.so
 %{_libdir}/libseaudit.so.4.1
+%{_libdir}/libseaudit.so.4
 %{_libdir}/libseaudit.so
 %{_datadir}/setools-%{version}/seaudit-report.conf
 %{_datadir}/setools-%{version}/seaudit-report.css

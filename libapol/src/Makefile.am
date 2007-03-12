@@ -52,6 +52,7 @@ dist_noinst_DATA = libapol.map
 
 $(apolso_DATA): $(libapol_so_OBJS) libapol.map
 	$(CC) -shared -o $@ $(libapol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBAPOL_SONAME),--version-script=$(srcdir)/libapol.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so
+	$(LN_S) -f $@ @libapol_soname@
 	$(LN_S) -f $@ libapol.so
 
 libapol.so: $(apolso_DATA)
@@ -63,7 +64,7 @@ install-data-hook:
 	cd $(DESTDIR)$(apolsodir) && $(LN_S) -f $(apolso_DATA) libapol.so
 
 mostlyclean-local:
-	-rm -rf *.gcno *.gcda *.gprof *.gcov libapol.so $(apolso_DATA)
+	-rm -rf *.gcno *.gcda *.gprof *.gcov libapol.so @libapol_soname@ $(apolso_DATA)
 
 uninstall-local:
 	-rm -rf $(DESTDIR)$(apolsodir)/$(apolso_DATA)
