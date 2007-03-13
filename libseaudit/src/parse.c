@@ -945,12 +945,16 @@ static int avc_parse(seaudit_log_t * log, apol_vector_t * tokens)
 	} else if (ret > 0) {
 		has_warnings = 1;
 	}
+	if (position >= num_tokens) {
+		WARN(log, "%s", "Message appears to be truncated.");
+		return 1;
+	}
 	token = apol_vector_get_element(tokens, position);
 
 	if (strcmp(token, "for") != 0) {
 		/* Hold the position */
 		has_warnings = 1;
-		WARN(log, "%s", "Expected a for token here.");
+		WARN(log, "%s", "Expected a 'for' token here.");
 	} else {
 		position++;
 		if (position >= num_tokens) {
