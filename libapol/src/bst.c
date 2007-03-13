@@ -150,7 +150,7 @@ int apol_bst_get_element(const apol_bst_t * b, void *elem, void *data, void **re
 {
 	bst_node_t *node;
 	int compval;
-	if (!b || !elem || !result) {
+	if (!b || !result) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -237,15 +237,15 @@ static bst_node_t *bst_rotate_double(bst_node_t * root, int dir)
 }
 
 static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void **elem, void *data, apol_bst_free_func * fr,
-					int *uniq)
+					int *not_uniq)
 {
 	int compval, dir;
 	if (root == NULL) {
 		if ((root = bst_node_make(b, *elem)) == NULL) {
-			*uniq = -1;
+			*not_uniq = -1;
 			return NULL;
 		}
-		*uniq = 1;
+		*not_uniq = 0;
 	} else {
 		if (b->cmp != NULL) {
 			compval = b->cmp(root->elem, *elem, data);
@@ -266,15 +266,15 @@ static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void 
 				fr(*elem);
 			}
 			*elem = root->elem;
-			*uniq = 0;
+			*not_uniq = 0;
 			return root;
 		} else if (compval > 0) {
 			dir = 0;
 		} else {
 			dir = 1;
 		}
-		root->child[dir] = bst_insert_recursive(b, root->child[dir], elem, data, fr, uniq);
-		if (*uniq != 1) {
+		root->child[dir] = bst_insert_recursive(b, root->child[dir], elem, data, fr, not_uniq);
+		if (*not_uniq != 0) {
 			return root;
 		}
 
@@ -301,7 +301,7 @@ static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void 
 
 int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data, apol_bst_free_func * fr)
 {
-	int retval;
+	int retval = -1;
 	if (!b || !elem) {
 		errno = EINVAL;
 		return -1;

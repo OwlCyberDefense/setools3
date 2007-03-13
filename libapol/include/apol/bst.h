@@ -99,7 +99,7 @@ extern "C"
  *  Find an element within a BST and return it.
  *
  *  @param b The BST from which to get the element.
- *  @param key The element to find.  (This will be the second
+ *  @param elem The element to find.  (This will be the second
  *  parameter to the comparison function given in apol_bst_create().)
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater (the function given in apol_bst_create()).

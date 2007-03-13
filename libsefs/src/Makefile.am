@@ -56,6 +56,7 @@ $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 
 install-data-hook:
+	cd $(DESTDIR)$(sefssodir) && $(LN_S) -f $(sefsso_DATA) @libsefs_soname@
 	cd $(DESTDIR)$(sefssodir) && $(LN_S) -f $(sefsso_DATA) libsefs.so
 
 mostlyclean-local:

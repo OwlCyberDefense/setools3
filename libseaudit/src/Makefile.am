@@ -39,6 +39,7 @@ $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 
 install-data-hook:
+	cd $(DESTDIR)$(seauditsodir) && $(LN_S) -f $(seauditso_DATA) @libseaudit_soname@
 	cd $(DESTDIR)$(seauditsodir) && $(LN_S) -f $(seauditso_DATA) libseaudit.so
 
 mostlyclean-local:

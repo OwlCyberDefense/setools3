@@ -1,3 +1,22 @@
+2007-03-13  J. Tang  <jtang@tresys.com>
+
+	* fixed segfault in libseaudit when, while parsing an AVC
+	message's permissions list it does not encounter a closing brace.
+
+	* information flow graphs are now being constructed via a BST and
+	its O(log n), rather than via a vector and O(n).  It should be
+	noticeably faster now.
+
+	* fixed error in information flow analysis, transitive mode.  The
+	returned flows were mistakenly all set to be the same object
+	class.  For example if a step was foo_t -> bar_t by way of class
+	baz_c, subsequent flows were accidentally being constrained to
+	also be of baz_c.
+
+	* fixed error in apol_bst_insert() and apol_bst_insert_and_get(),
+	where the return values of 0 and 1 were flipped.  The comment was
+	correct, but the code was not.
+
 2007-03-12  J. Tang  <jtang@tresys.com>
 
 	* fixed share libraries's soname, such that SETools's programs

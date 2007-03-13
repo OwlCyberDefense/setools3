@@ -228,16 +228,17 @@ extern "C"
 
 /**
  * Set an information flow analysis to return only rules with this
- * object (non-comman) class and permission.  If more than one
- * class/perm pair is appended to the query, rule's class and
+ * object (non-common) class and permission.  If more than one
+ * class/perm pair is appended to the query, every rule's class and
  * permissions must be one of those appended.  (I.e., the rule will be
  * a member of the analysis's class/perm pairs.)
  *
  * @param policy Policy handler, to report errors.
  * @param ia Infoflow analysis to set.
- * @param class_name The class to which a result must have access.
+ * @param class_name The class to which a result must have access.  If
+ * NULL, then accept all class/perm pairs.
  * @param perm_name The permission which a result must have for the
- * given class.
+ * given class.  This may be NULL if class_name is also NULL.
  * @return 0 on success, negative on error.
  */
 	extern int apol_infoflow_analysis_append_class_perm(apol_policy_t * p,

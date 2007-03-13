@@ -61,6 +61,7 @@ $(top_builddir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
 install-data-hook:
+	cd $(DESTDIR)$(apolsodir) && $(LN_S) -f $(apolso_DATA) @libapol_soname@
 	cd $(DESTDIR)$(apolsodir) && $(LN_S) -f $(apolso_DATA) libapol.so
 
 mostlyclean-local:

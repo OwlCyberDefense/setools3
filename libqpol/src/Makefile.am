@@ -73,6 +73,7 @@ $(qpolso_DATA): $(tmp_sepol) $(libqpol_so_OBJS) libqpol.map
 libqpol.so: $(qpolso_DATA)
 
 install-data-hook:
+	cd $(DESTDIR)$(qpolsodir) && $(LN_S) -f $(qpolso_DATA) @libqpol_soname@
 	cd $(DESTDIR)$(qpolsodir) && $(LN_S) -f $(qpolso_DATA) libqpol.so
 
 CLEANFILES = policy_parse.h policy_scan.c policy_parse.c

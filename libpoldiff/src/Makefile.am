@@ -46,6 +46,7 @@ $(top_builddir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_builddir)/libqpol/src $(notdir $@)
 
 install-data-hook:
+	cd $(DESTDIR)$(poldiffsodir) && $(LN_S) -f $(poldiffso_DATA) @libpoldiff_soname@
 	cd $(DESTDIR)$(poldiffsodir) && $(LN_S) -f $(poldiffso_DATA) libpoldiff.so
 
 mostlyclean-local:
