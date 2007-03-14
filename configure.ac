@@ -6,18 +6,23 @@ AM_INIT_AUTOMAKE(setools, 3.2)
 dnl *** update these variables as versions change; also update AC_INIT ***
 libqpol_version=1.2
 libqpol_soname=libqpol.so.1
+libqpol_pyswig_soname=_qpol.so.1
 
 libapol_version=3.2
 libapol_soname=libapol.so.3
+libapol_pyswig_soname=_apol.so.3
 
 libpoldiff_version=1.2
 libpoldiff_soname=libpoldiff.so.1
+libpoldiff_pyswig_soname=_poldiff.so.1
 
 libsefs_version=3.0.2
 libsefs_soname=libsefs.so.3
+dnl libsefs will not be swigified
 
 libseaudit_version=4.1
 libseaudit_soname=libseaudit.so.4
+libseaudit_pyswig_soname=_seaudit.so.4
 
 setoolsdir='${prefix}/share/setools-3.2'
 
@@ -539,14 +544,18 @@ AC_SUBST(VERSION)
 AC_SUBST(sepol_srcdir)
 AC_SUBST(libqpol_version)
 AC_SUBST(libqpol_soname)
+AC_SUBST(libqpol_pyswig_soname)
 AC_SUBST(libapol_version)
 AC_SUBST(libapol_soname)
+AC_SUBST(libapol_pyswig_soname)
 AC_SUBST(libpoldiff_version)
 AC_SUBST(libpoldiff_soname)
+AC_SUBST(libpoldiff_pyswig_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
 AC_SUBST(libseaudit_version)
 AC_SUBST(libseaudit_soname)
+AC_SUBST(libseaudit_pyswig_soname)
 AC_SUBST(setoolsdir)
 AC_SUBST(selinux_policy_dir)
 AC_SUBST(selinux_default_policy)

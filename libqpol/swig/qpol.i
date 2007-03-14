@@ -212,9 +212,9 @@ typedef enum qpol_capability
 		return;
 	};
 	int get_version () {
-		int v;
+		unsigned int v;
 		(void)qpol_policy_get_policy_version(self, &v); /* only error is on null parameters neither can be here */
-		return v;
+		return (int) v;
 	};
 	int get_type () {
 		int t;
@@ -536,12 +536,12 @@ typedef struct qpol_type {} qpol_type_t;
 		return NULL;
 	};
 	int get_value(qpol_policy_t *p) {
-		int v;
+		uint32_t v;
 		if (qpol_type_get_value(p, self, &v)) {
 			SWIG_exception(SWIG_ValueError, "Could not get type value");
 		}
 	fail:
-		return v;
+		return (int) v;
 	};
 	int get_isattr(qpol_policy_t *p) {
 		unsigned char i;
@@ -614,12 +614,12 @@ typedef struct qpol_role {} qpol_role_t;
 		return;
 	};
 	int get_value (qpol_policy_t *p) {
-		int v;
+		uint32_t v;
 		if (qpol_role_get_value(p, self, &v)) {
 			SWIG_exception(SWIG_ValueError, "Could not get role value");
 		}
 	fail:
-		return v;
+		return (int) v;
 	};
 	const char *get_name(qpol_policy_t *p) {
 		char *name;
@@ -678,12 +678,12 @@ typedef struct qpol_level {} qpol_level_t;
 			return (int)i;
 	};
 	int get_value(qpol_policy_t *p) {
-		int v;
+		uint32_t v;
 		if (qpol_level_get_value(p, self, &v)) {
 			SWIG_exception(SWIG_ValueError, "Could not get level sensitivity value");
 		}
 	fail:
-		return v;
+		return (int) v;
 	};
 	const char *get_name(qpol_policy_t *p) {
 		char *name;
@@ -742,12 +742,12 @@ typedef struct qpol_cat {} qpol_cat_t;
 			return (int)i;
 	};
 	int get_value(qpol_policy_t *p) {
-		int v;
+		uint32_t v;
 		if (qpol_cat_get_value(p, self, &v)) {
 			SWIG_exception(SWIG_ValueError, "Could not get category value");
 		}
 	fail:
-		return v;
+		return (int) v;
 	};
 	const char *get_name(qpol_policy_t *p) {
 		char *name;
@@ -846,17 +846,18 @@ typedef struct qpol_user {} qpol_user_t;
 		return;
 	};
 	int get_value(qpol_policy_t *p) {
-		int v;
+		uint32_t v;
 		if (qpol_user_get_value(p, self, &v)) {
 			SWIG_exception(SWIG_ValueError, "Could not get user value");
 		}
 	fail:
-		return v;
+		return (int) v;
 	};
 	%newobject get_role_iter;
 	qpol_iterator_t *get_role_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_user_get_role_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
 		}
 	fail:
 		return iter;
@@ -906,12 +907,12 @@ typedef struct qpol_bool {} qpol_bool_t;
 		return;
 	};
 	int get_value(qpol_policy_t *p) {
-		int v;
+		uint32_t v;
 		if (qpol_bool_get_value(p, self, &v)) {
 			SWIG_exception(SWIG_ValueError, "Could not get boolean value");
 		}
 	fail:
-		return v;
+		return (int) v;
 	};
 	int get_state(qpol_policy_t *p) {
 		int s;
@@ -1008,12 +1009,12 @@ typedef struct qpol_class {} qpol_class_t;
 		return;
 	};
 	int get_value(qpol_policy_t *p) {
-		int v;
+		uint32_t v;
 		if (qpol_class_get_value(p, self, &v)) {
 			SWIG_exception(SWIG_ValueError, "Could not get value for class");
 		}
 	fail:
-		return v;
+		return (int) v;
 	};
 	qpol_common_t *get_common(qpol_policy_t *p) {
 		qpol_common_t *c;
@@ -1079,12 +1080,12 @@ typedef struct qpol_common {} qpol_common_t;
 		return;
 	};
 	int get_value(qpol_policy_t *p) {
-		int v;
+		uint32_t v;
 		if (qpol_common_get_value(p, self, &v)) {
 			SWIG_exception(SWIG_ValueError, "Could not get value for common");
 		}
 	fail:
-		return v;
+		return (int) v;
 	};
 	%newobject get_perm_iter();
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
@@ -1141,15 +1142,15 @@ typedef struct qpol_fs_use {} qpol_fs_use_t;
 		return name;
 	};
 	int get_behavior(qpol_policy_t *p) {
-		int behav;
+		uint32_t behav;
 		if (qpol_fs_use_get_behavior(p, self, &behav)) {
 			SWIG_exception(SWIG_ValueError, "Could not get file system labeling behavior");
 		}
 	fail:
-		return behav;
+		return (int) behav;
 	};
 	qpol_context_t *get_context(qpol_policy_t *p) {
-		int behav;
+		uint32_t behav;
 		qpol_context_t *ctx = NULL;
 		qpol_fs_use_get_behavior(p, self, &behav);
 		if (behav == QPOL_FS_USE_PSID) {
@@ -1205,12 +1206,12 @@ typedef struct qpol_genfscon {} qpol_genfscon_t;
 		return path;
 	};
 	int get_class(qpol_policy_t *p) {
-		int cls;
+		uint32_t cls;
 		if (qpol_genfscon_get_class(p, self, &cls)) {
 			SWIG_exception(SWIG_ValueError, "Could not get genfscon statement class");
 		}
 	fail:
-		return cls;
+		return (int) cls;
 	};
 	qpol_context_t *get_context(qpol_policy_t *p) {
 		qpol_context_t *ctx;
@@ -1308,8 +1309,13 @@ typedef struct qpol_netifcon {} qpol_netifcon_t;
 typedef struct qpol_nodecon {} qpol_nodecon_t;
 %extend qpol_nodecon_t {
 	qpol_nodecon_t(qpol_policy_t *p, int addr[4], int mask[4], int protocol) {
+		uint32_t a[4], m[4];
 		qpol_nodecon_t *n;
-		if (qpol_policy_get_nodecon_by_node(p, addr, mask, protocol, &n)) {
+		a[0] = (uint32_t) addr[0]; a[1] = (uint32_t) addr[1];
+		a[2] = (uint32_t) addr[2]; a[3] = (uint32_t) addr[3];
+		m[0] = (uint32_t) mask[0]; m[1] = (uint32_t) mask[1];
+		m[2] = (uint32_t) mask[2]; m[3] = (uint32_t) mask[3];
+		if (qpol_policy_get_nodecon_by_node(p, a, m, protocol, &n)) {
 			SWIG_exception(SWIG_RuntimeError, "Nodecon statement does not exist");
 		}
 	fail:
@@ -1457,28 +1463,28 @@ typedef struct qpol_constraint_expr_node {} qpol_constraint_expr_node_t;
 		return;
 	};
 	int get_expr_type(qpol_policy_t *p) {
-		int et;
+		uint32_t et;
 		if (qpol_constraint_expr_node_get_expr_type(p, self, &et)) {
 			SWIG_exception(SWIG_ValueError, "Could not get expression type for node");
 		}
 	fail:
-		return et;
+		return (int) et;
 	};
 	int get_sym_type(qpol_policy_t *p) {
-		int st;
+		uint32_t st;
 		if (qpol_constraint_expr_node_get_sym_type(p, self, &st)) {
 			SWIG_exception(SWIG_ValueError, "Could not get symbol type for node");
 		}
 	fail:
-		return st;
+		return (int) st;
 	};
 	int get_op(qpol_policy_t *p) {
-		int op;
+		uint32_t op;
 		if (qpol_constraint_expr_node_get_op(p, self, &op)) {
 			SWIG_exception(SWIG_ValueError, "Could not get operator for node");
 		}
 	fail:
-		return op;
+		return (int) op;
 	};
 	%newobject get_names_iter;
 	qpol_iterator_t *get_names_iter(qpol_policy_t *p) {
@@ -1612,12 +1618,12 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 		return;
 	};
 	int get_rule_type(qpol_policy_t *p) {
-		int rt;
+		uint32_t rt;
 		if (qpol_avrule_get_rule_type(p, self, &rt)) {
 			SWIG_exception(SWIG_ValueError, "Could not get rule type for av rule");
 		}
 	fail:
-		return rt;
+		return (int) rt;
 	};
 	qpol_type_t *get_source_type(qpol_policy_t *p) {
 		qpol_type_t *t;
@@ -1661,16 +1667,16 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 		return c;
 	};
 	int get_is_enabled(qpol_policy_t *p) {
-		int e;
+		uint32_t e;
 		if (qpol_avrule_get_is_enabled(p, self, &e)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if av rule is enabled");
 		}
 	fail:
-		return e;
+		return (int) e;
 	};
 	int get_which_list(qpol_policy_t *p) {
 		qpol_cond_t *c;
-		int which = 0;
+		uint32_t which = 0;
 		qpol_avrule_get_cond(p, self, &c);
 		if (c == NULL) {
 			SWIG_exception(SWIG_TypeError, "Rule is not conditional");
@@ -1678,7 +1684,7 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 			SWIG_exception(SWIG_ValueError, "Could not get conditional list for av rule");
 		}
 	fail:
-		return which;
+		return (int) which;
 	};
 	%newobject get_syn_avrule_iter();
 	qpol_iterator_t *get_syn_avrule_iter(qpol_policy_t *p) {
@@ -1705,12 +1711,12 @@ typedef struct qpol_terule {} qpol_terule_t;
 		return;
 	};
 	int get_rule_type(qpol_policy_t *p) {
-		int rt;
+		uint32_t rt;
 		if (qpol_terule_get_rule_type(p, self, &rt)) {
 			SWIG_exception(SWIG_ValueError, "Could not get rule type for te rule");
 		}
 	fail:
-		return rt;
+		return (int) rt;
 	};
 	qpol_type_t *get_source_type(qpol_policy_t *p) {
 		qpol_type_t *t;
@@ -1753,16 +1759,16 @@ typedef struct qpol_terule {} qpol_terule_t;
 		return c;
 	};
 	int get_is_enabled(qpol_policy_t *p) {
-		int e;
+		uint32_t e;
 		if (qpol_terule_get_is_enabled(p, self, &e)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if te rule is enabled");
 		}
 	fail:
-		return e;
+		return (int) e;
 	};
 	int get_which_list(qpol_policy_t *p) {
 		qpol_cond_t *c;
-		int which = 0;
+		uint32_t which = 0;
 		qpol_terule_get_cond(p, self, &c);
 		if (c == NULL) {
 			SWIG_exception(SWIG_TypeError, "Rule is not conditional");
@@ -1770,7 +1776,7 @@ typedef struct qpol_terule {} qpol_terule_t;
 			SWIG_exception(SWIG_ValueError, "Could not get conditional list for te rule");
 		}
 	fail:
-		return which;
+		return (int) which;
 	};
 	%newobject get_syn_terule_iter();
 	qpol_iterator_t *get_syn_terule_iter(qpol_policy_t *p) {
@@ -1793,8 +1799,14 @@ typedef struct qpol_cond {} qpol_cond_t;
 		/* no op */
 		return;
 	};
-	%newobject get_expr_nde_iter();
-	qpol_iterator_t *get_expr_nde_iter(qpol_policy_t *p) {
+	%newobject get_expr_node_iter();
+	qpol_iterator_t *get_expr_node_iter(qpol_policy_t *p) {
+		qpol_iterator_t *iter;
+		if (qpol_cond_get_expr_node_iter(p, self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return iter;
 	};
 	%newobject get_av_true_iter();
 	qpol_iterator_t *get_av_true_iter(qpol_policy_t *p, int rule_types) {
@@ -1833,12 +1845,12 @@ typedef struct qpol_cond {} qpol_cond_t;
 			return iter;
 	};
 	int eval(qpol_policy_t *p) {
-		int e;
+		uint32_t e;
 		if (qpol_cond_eval(p, self, &e)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not evaluate conditional");
 		}
 	fail:
-		return e;
+		return (int) e;
 	};
 };
 
@@ -1860,15 +1872,15 @@ typedef struct qpol_cond_expr_node {} qpol_cond_expr_node_t;
 		return;
 	};
 	int get_expr_type(qpol_policy_t *p) {
-		int et;
+		uint32_t et;
 		if (qpol_cond_expr_node_get_expr_type(p, self, &et)) {
 			SWIG_exception(SWIG_ValueError, "Could not get node expression type");
 		}
 	fail:
-		return et;
+		return (int) et;
 	};
 	qpol_bool_t *get_bool(qpol_policy_t *p) {
-		int et;
+		uint32_t et;
 		qpol_bool_t *b = NULL;
 		qpol_cond_expr_node_get_expr_type(p, self, &et);
 		if (et != QPOL_COND_EXPR_BOOL) {
@@ -1910,20 +1922,20 @@ typedef struct qpol_type_set {} qpol_type_set_t;
 		return iter;
 	};
 	int get_is_star(qpol_policy_t *p) {
-		int s;
+		uint32_t s;
 		if (qpol_type_set_get_is_star(p, self, &s)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if type set contains star");
 		}
 	fail:
-		return s;
+		return (int) s;
 	};
 	int get_is_comp(qpol_policy_t *p) {
-		int c;
+		uint32_t c;
 		if (qpol_type_set_get_is_comp(p, self, &c)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if type set is complemented");
 		}
 	fail:
-		return c;
+		return (int) c;
 	};
 };
 
@@ -1938,12 +1950,12 @@ typedef struct qpol_syn_rule {} qpol_syn_avrule_t;
 		return;
 	};
 	int get_rule_type(qpol_policy_t *p) {
-		int rt;
+		uint32_t rt;
 		if (qpol_syn_avrule_get_rule_type(p, self, &rt)) {
 			SWIG_exception(SWIG_ValueError, "Could not get rule type for syn av rule");
 		}
 	fail:
-		return rt;
+		return (int) rt;
 	};
 	qpol_type_set_t *get_source_type_set(qpol_policy_t *p) {
 		qpol_type_set_t *ts;
@@ -1962,12 +1974,12 @@ typedef struct qpol_syn_rule {} qpol_syn_avrule_t;
 		return ts;
 	};
 	int get_is_target_self(qpol_policy_t *p) {
-		int i;
+		uint32_t i;
 		if (qpol_syn_avrule_get_is_target_self(p, self, &i)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if target is self for syn av rule");
 		}
 	fail:
-		return i;
+		return (int) i;
 	};
 	%newobject get_class_iter();
 	qpol_iterator_t *get_class_iter(qpol_policy_t *p) {
@@ -2004,7 +2016,7 @@ typedef struct qpol_syn_rule {} qpol_syn_avrule_t;
 		return c;
 	};
 	int get_is_enabled(qpol_policy_t *p) {
-		int e;
+		uint32_t e;
 		if (qpol_syn_avrule_get_is_enabled(p, self, &e)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if syn av rule is enabled");
 		}
@@ -2024,7 +2036,7 @@ typedef struct qpol_syn_rule {} qpol_syn_terule_t;
 		return;
 	};
 	int get_rule_type(qpol_policy_t *p) {
-		int rt;
+		uint32_t rt;
 		if (qpol_syn_terule_get_rule_type(p, self, &rt)) {
 			SWIG_exception(SWIG_ValueError, "Could not get rule type for syn te rule");
 		}
@@ -2081,11 +2093,11 @@ typedef struct qpol_syn_rule {} qpol_syn_terule_t;
 		return c;
 	};
 	int get_is_enabled(qpol_policy_t *p) {
-		int e;
+		uint32_t e;
 		if (qpol_syn_terule_get_is_enabled(p, self, &e)) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if syn te rule is enabled");
 		}
 	fail:
-		return e;
+		return (int) e;
 	};
 };

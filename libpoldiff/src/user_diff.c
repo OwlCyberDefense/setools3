@@ -606,7 +606,7 @@ int user_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	qpol_user_t *u = (qpol_user_t *) item;
 	char *name = NULL;
 	apol_vector_t *v = NULL;
-	poldiff_user_t *pu;
+	poldiff_user_t *pu = NULL;
 	int error, retval = -1;
 	if ((form == POLDIFF_FORM_ADDED &&
 	     qpol_user_get_name(diff->mod_qpol, u, &name) < 0) ||

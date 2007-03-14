@@ -68,4 +68,4 @@ mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libapol.so @libapol_soname@ $(apolso_DATA)
 
 uninstall-local:
-	-rm -rf $(DESTDIR)$(apolsodir)/$(apolso_DATA)
+	-rm -rf $(DESTDIR)$(apolsodir)/$(apolso_DATA) $(DESTDIR)$(apolsodir)/@libapol_soname@ $(DESTDIR)$(apolsodir)/libapol.so

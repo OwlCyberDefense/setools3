@@ -63,4 +63,4 @@ mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libsefs.so @libsefs_soname@ $(sefsso_DATA)
 
 uninstall-local:
-	-rm -rf $(DESTDIR)$(sefssodir)/$(sefsso_DATA)
+	-rm -rf $(DESTDIR)$(sefssodir)/$(sefsso_DATA) $(DESTDIR)$(sefssodir)/@libsefs_soname@ $(DESTDIR)$(sefssodir)/libsefs.so

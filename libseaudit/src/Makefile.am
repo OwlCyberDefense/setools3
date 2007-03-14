@@ -46,4 +46,4 @@ mostlyclean-local:
 	-rm -rf *.gcno *.gcda *.gprof *.gcov libseaudit.so @libseaudit_soname@ $(seauditso_DATA)
 
 uninstall-local:
-	-rm -rf $(DESTDIR)$(seauditsodir)/$(seauditso_DATA)
+	-rm -rf $(DESTDIR)$(seauditsodir)/$(seauditso_DATA) $(DESTDIR)$(seauditsodir)/@libseaudit_soname@ $(DESTDIR)$(seauditsodir)/libseaudit.so

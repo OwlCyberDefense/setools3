@@ -1,30 +1,34 @@
-wrappedso_DATA = $(wrappedso_SONAME)
-wrappedso_SONAME = _qpol.so.@libqpol_version@
+wrappedso_DATA = _qpol.so.@libqpol_version@
+wrappedso_SONAME = @libqpol_pyswig_soname@
+wrappedsodir = $(pkgpyexecdir)
+
+wrappedpy_DATA = qpol.py
+wrappedpydir = $(pkgpythondir)
+
 dist_noinst_DATA = qpol.i
 BUILT_SOURCES = qpol_wrap.c
-wrappedsodir = $(libdir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	-I$(top_builddir) -fpic \
 	-I$(srcdir)/../include -D__attribute__\(x\)=''
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @QPOL_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so
-OBJS = $(patsubst %.c,%.o,$(BUILT_SOURCES))
 
 $(BUILT_SOURCES): $(dist_noinst_DATA)
 	$(SWIG) $(SWIG_PYTHON_OPT) -o $@ $<
 
-$(OBJS): $(BUILT_SOURCES)
-	$(CC) -o $@ -c $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_PYTHON_CPPFLAGS)
-
-$(wrappedso_DATA): $(OBJS)
-	$(CC) -shared -o $@ $^ $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
+$(wrappedso_DATA): $(BUILT_SOURCES)
+	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_PYTHON_CPPFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
+	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ _qpol.so
 
+$(wrappedpy_DATA): $(BUILT_SOURCES)
+
 install-data-hook:
+	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(wrappedso_SONAME)
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) _qpol.so
 
 uninstall-local:
-	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_DATA)
+	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_SONAME) $(DESTDIR)$(wrappedsodir)/_qpol.so
 
-CLEANFILES = $(BUILT_SOURCES) $(OBJS) $(patsubst %.i,%.py,$(dist_noinst_DATA)) $(patsubst %.i,%.pyc,$(dist_noinst_DATA)) _qpol.so $(wrappedso_DATA)
+MOSTLYCLEANFILES = $(BUILT_SOURCES) $(wrappedso_DATA) $(wrappedpy_DATA) $(wrappedso_SONAME) _qpol.so

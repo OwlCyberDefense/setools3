@@ -206,7 +206,7 @@ typedef struct apol_vector {} apol_vector_t;
 	int wrap_apol_vector_compare(apol_vector_t *a, apol_vector_t *b) {
 		size_t idx; /* tracks first difference - currently dropped */
 		return apol_vector_compare(a, b, NULL, NULL, &idx);
-	};
+	}
 %}
 typedef struct apol_vector {} apol_string_vector_t;
 %extend apol_string_vector_t {
