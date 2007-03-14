@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.2
-Release: pre-0
+Release: pre0
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -43,6 +43,7 @@ BuildPrereq: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
 BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
+BuildRequires: autoconf >= 2.59 automake
 Prereq: /sbin/ldconfig
 Conflicts: setools
 
@@ -58,9 +59,29 @@ This package includes the following run-time libraries:
   libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux filesystem database library
 
+%package libs-python
+License: LGPL
+Summary: Python bindings for SELinux policy analysis.
+Group: Development/Languages
+Requires: setools-libs = 3.2 python2 >= 2.3
+Provides: libqpol-python = 1.2 libapol-python = 3.2 libpoldiff-python = 1.2 libseaudit-python = 4.1
+BuildRequires: python2-devel >= 2.3 swig >= 1.3.21
+
+%description libs-python
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes Python bindings for the following libraries:
+
+  libapol       policy analysis library
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    parse and filter SELinux audit messages in log files
+
 %package devel
+License: LGPL
 Summary: Policy analysis development files for SELinux.
-Group: System Environment/Libraries
+Group: Development/Libraries
 Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-libs = 3.2
 
 %description devel
@@ -119,7 +140,7 @@ This package includes the following graphical tools:
 %setup -q
 
 %build
-%configure --disable-bwidget-check --disable-selinux-check
+%configure --disable-bwidget-check --disable-selinux-check --enable-swig-python
 make
 
 %install
@@ -144,7 +165,7 @@ ln -sf consolehelper seaudit
 rm -rf ${RPM_BUILD_ROOT}
 
 %files libs
-%defattr(-,root,root)
+%defattr(755,root,root)
 %{_libdir}/libqpol.so.1.2
 %{_libdir}/libqpol.so.1
 %{_libdir}/libqpol.so
@@ -160,11 +181,31 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libseaudit.so.4.1
 %{_libdir}/libseaudit.so.4
 %{_libdir}/libseaudit.so
+%defattr(-, root, root)
 %{_datadir}/setools-%{version}/seaudit-report.conf
 %{_datadir}/setools-%{version}/seaudit-report.css
 %doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
 
+%files libs-python
+%defattr(-,root,root)
+%{_libdir}/python?.?/site-packages/setools/__init__.py
+%{_libdir}/python?.?/site-packages/setools/__init__.pyc
+%{_libdir}/python?.?/site-packages/setools/__init__.pyo
+%{_libdir}/python?.?/site-packages/setools/qpol.py
+%{_libdir}/python?.?/site-packages/setools/qpol.pyc
+%{_libdir}/python?.?/site-packages/setools/qpol.pyo
+%{_libdir}/python?.?/site-packages/setools/_qpol.so.1.2
+%{_libdir}/python?.?/site-packages/setools/_qpol.so.1
+%attr(755,root,root) %{_libdir}/python?.?/site-packages/setools/_qpol.so
+%{_libdir}/python?.?/site-packages/setools/apol.py
+%{_libdir}/python?.?/site-packages/setools/apol.pyc
+%{_libdir}/python?.?/site-packages/setools/apol.pyo
+%{_libdir}/python?.?/site-packages/setools/_apol.so.3.2
+%{_libdir}/python?.?/site-packages/setools/_apol.so.3
+%attr(755,root,root) %{_libdir}/python?.?/site-packages/setools/_apol.so
+
 %files devel
+%defattr(-,root,root)
 %{_libdir}/libqpol.a
 %{_libdir}/libapol.a
 %{_libdir}/libpoldiff.a
@@ -231,6 +272,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/poldiff/cat_diff.h
 %{_includedir}/poldiff/class_diff.h
 %{_includedir}/poldiff/level_diff.h
+%{_includedir}/poldiff/range_diff.h
 %{_includedir}/poldiff/rangetrans_diff.h
 %{_includedir}/poldiff/rbac_diff.h
 %{_includedir}/poldiff/role_diff.h
@@ -256,6 +298,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/seaudit/util.h
 
 %files console
+%defattr(-,root,root)
 %{_bindir}/seinfo
 %{_bindir}/sesearch
 %{_bindir}/indexcon
@@ -282,6 +325,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_mandir}/man8/seaudit-report.8.gz
 
 %files gui
+%defattr(-,root,root)
 %{_bindir}/seaudit
 %{_bindir}/sediffx
 %{_bindir}/apol
