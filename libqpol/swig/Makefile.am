@@ -2,6 +2,7 @@ wrappedso_DATA = _qpol.so.@libqpol_version@
 wrappedso_SONAME = @libqpol_pyswig_soname@
 wrappedsodir = $(pkgpyexecdir)
 
+pkgpython_PYTHON = __init__.py
 wrappedpy_DATA = qpol.py
 wrappedpydir = $(pkgpythondir)
 

@@ -156,8 +156,8 @@ You can customize your SETools build using the flags given to
   --disable-bwidget-check
       Assume that BWidget 1.8 is installed on the system.  The
       configure script normally tries to launch a Tcl script that
-      loads BWidget, which requires a running X session.  Use this
-      flag if you are compiling in a non-X environment.
+      loads BWidget, which requires a running X session.  You will
+      need this flag if compiling in a non-X environment.
 
   --disable-selinux-check
       Disable the build-time check for SELinux.  In rare
@@ -174,7 +174,7 @@ You can customize your SETools build using the flags given to
   --enable-swig-python
       Build SWIG interfaces for Python.  This permits third-party
       developers who prefer Python to use the SETools libraries for
-      their own products.
+      their own projects.
 
   --enable-sepol-src=PATH
       Look for libsepol source files in PATH.  Use this flag when
@@ -389,14 +389,13 @@ maintain compatibility beginning with SETools version 3.0.
           obtain detailed results via qpol/policy_query.h
           close the policy via apol_policy_destroy()
 
-  libapol-tcl:
-      Glue code that provides bindings between apol (a Tcl/Tk
-      application) and libapol/libqpol.  The functions within are
-      not meant to be used by any other program.
-
   libseaudit:
       Parse and store SELinux audit messages.  Its chief users are
       seaudit and seaudit-report.
+
+  libpoldiff:
+      Accept two SELinux policies and finds differences between
+      them.  Its main users are sediff and sediffx.
 
   libsefs:
       Create a snapshot of SELinux filesystem security contexts and
@@ -404,10 +403,15 @@ maintain compatibility beginning with SETools version 3.0.
       and execute SQL queries into the database.  This library also
       has functions to parse the system's default file_contexts.
 
-  libpoldiff:
-      Accept two SELinux policies and finds differences between
-      them.  Its main users are sediff and sediffx.
-    
+  libapol-tcl:
+      Glue code that provides bindings between apol (a Tcl/Tk
+      application) and libapol/libqpol.  The functions within are
+      not meant to be used by any other program.
+
+The first four libraries have SWIG wrappers that are built if
+--enable-swig-python is given during configuration time.  Their Python
+wrappers will be installed to Python's site-packages directory.
+
 
 4. Obtaining SETools
 --------------------

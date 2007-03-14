@@ -1,6 +1,6 @@
 SETools 3.2:
 
-libapol, libqpol, libesaudit:
+libapol, libqpol, libesaudit, libpoldiff:
 
   * If --enable-swig-python is given during configure time, the build
     system will create Python SWIG wrappers for these libraries.
