@@ -10,6 +10,7 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 libpoldiff_a_SOURCES = \
 	poldiff.c \
 	attrib_diff.c attrib_internal.h \
+	avrule_diff.c avrule_internal.h \
 	bool_diff.c bool_internal.h \
 	cat_diff.c cat_internal.h \
 	class_diff.c class_internal.h \
@@ -18,7 +19,7 @@ libpoldiff_a_SOURCES = \
 	range_trans_diff.c range_trans_internal.h \
 	rbac_diff.c rbac_internal.h \
 	role_diff.c role_internal.h \
-	rule_diff.c rule_internal.h \
+	terule_diff.c terule_internal.h \
 	user_diff.c user_internal.h \
 	type_diff.c type_internal.h \
 	poldiff_internal.h \

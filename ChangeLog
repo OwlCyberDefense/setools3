@@ -1,5 +1,10 @@
 2007-03-15  J. Tang  <jtang@tresys.com>
 
+	* Split libpoldiff/include/rule_diff.h into
+	libpoldiff/include/avrule_diff.h and
+	libpoldiff/include/terule_diff.h.  None of the function names were
+	changed.
+
 	* Re-standardized all programs' command line options.  -V always
 	shows the version, -c always deals with object classes, and so
 	forth.  Man pages updated.

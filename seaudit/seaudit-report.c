@@ -131,7 +131,7 @@ static void parse_command_line_args(int argc, char **argv)
 		case 'o':	       /* output file name */
 			outfile = optarg;
 			break;
-		case OPT_CONFIG:       /* Alternate config file path */
+		case OPT_CONFIG:      /* Alternate config file path */
 			configfile = optarg;
 			break;
 		case OPT_HTML:	       /* Set the output to format to html */

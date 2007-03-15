@@ -72,6 +72,7 @@ extern "C"
 	} poldiff_form_e;
 
 #include <poldiff/attrib_diff.h>
+#include <poldiff/avrule_diff.h>
 #include <poldiff/cat_diff.h>
 #include <poldiff/bool_diff.h>
 #include <poldiff/class_diff.h>
@@ -80,7 +81,7 @@ extern "C"
 #include <poldiff/range_trans_diff.h>
 #include <poldiff/rbac_diff.h>
 #include <poldiff/role_diff.h>
-#include <poldiff/rule_diff.h>
+#include <poldiff/terule_diff.h>
 #include <poldiff/type_diff.h>
 #include <poldiff/user_diff.h>
 #include <poldiff/type_map.h>
@@ -177,6 +178,18 @@ extern "C"
  *  @return 0 on success and < 0 on error; if the call fails, errno will be set.
  */
 	extern int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5]);
+
+/**
+ *  Enable line numbers for all rule differences. If not called, line numbers
+ *  will not be available when displaying differences. This function is
+ *  safe to call multiple times and will have no effect after the first time.
+ *
+ *  @param diff The policy difference structure.
+ *
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and the difference structure should be destroyed.
+ */
+	extern int poldiff_enable_line_numbers(poldiff_t * diff);
 
 #ifdef	__cplusplus
 }

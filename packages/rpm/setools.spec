@@ -255,7 +255,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/apol/policy.h
 %{_includedir}/apol/policy-path.h
 %{_includedir}/apol/policy-query.h
-%{_includedir}/apol/rangetrans-query.h
+%{_includedir}/apol/range_trans-query.h
 %{_includedir}/apol/rbacrule-query.h
 %{_includedir}/apol/relabel-analysis.h
 %{_includedir}/apol/render.h
@@ -268,15 +268,16 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/apol/vector.h
 %{_includedir}/poldiff/poldiff.h
 %{_includedir}/poldiff/attrib_diff.h
+%{_includedir}/poldiff/avrule_diff.h
 %{_includedir}/poldiff/bool_diff.h
 %{_includedir}/poldiff/cat_diff.h
 %{_includedir}/poldiff/class_diff.h
 %{_includedir}/poldiff/level_diff.h
 %{_includedir}/poldiff/range_diff.h
-%{_includedir}/poldiff/rangetrans_diff.h
+%{_includedir}/poldiff/range_trans_diff.h
 %{_includedir}/poldiff/rbac_diff.h
 %{_includedir}/poldiff/role_diff.h
-%{_includedir}/poldiff/rule_diff.h
+%{_includedir}/poldiff/terule_diff.h
 %{_includedir}/poldiff/user_diff.h
 %{_includedir}/poldiff/type_diff.h
 %{_includedir}/poldiff/type_map.h

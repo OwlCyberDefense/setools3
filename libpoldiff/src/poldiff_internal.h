@@ -31,8 +31,10 @@ extern "C"
 #endif
 
 #include <poldiff/poldiff.h>
+#include <apol/bst.h>
 
 #include "attrib_internal.h"
+#include "avrule_internal.h"
 #include "bool_internal.h"
 #include "cat_internal.h"
 #include "class_internal.h"
@@ -41,26 +43,27 @@ extern "C"
 #include "range_trans_internal.h"
 #include "rbac_internal.h"
 #include "role_internal.h"
-#include "rule_internal.h"
+#include "terule_internal.h"
 #include "user_internal.h"
 #include "type_internal.h"
 
 #include "type_map_internal.h"
 
 /* forward declarations */
+	struct poldiff_attrib_summary;
+	struct poldiff_avrule_summary;
+	struct poldiff_bool_summary;
+	struct poldiff_cat_summary;
 	struct poldiff_class_summary;
 	struct poldiff_common_summary;
-	struct poldiff_type_summary;
-	struct poldiff_attrib_summary;
-	struct poldiff_role_summary;
-	struct poldiff_user_summary;
-	struct poldiff_bool_summary;
 	struct poldiff_level_summary;
-	struct poldiff_cat_summary;
-	struct poldiff_rule_summary;
+	struct poldiff_range_trans_summary;
+	struct poldiff_role_summary;
 	struct poldiff_role_allow_summary;
 	struct poldiff_role_trans_summary;
-	struct poldiff_range_trans_summary;
+	struct poldiff_terule_summary;
+	struct poldiff_type_summary;
+	struct poldiff_user_summary;
 /* and so forth for ocon_summary structs */
 
 	struct poldiff
@@ -73,23 +76,30 @@ extern "C"
 		qpol_policy_t *orig_qpol;
 		/** pointer to modified's qpol policy within mod_pol */
 		qpol_policy_t *mod_qpol;
+	/** BST of duplicated strings, used when making pseudo-rules */
+		apol_bst_t *class_bst;
+		/** BST of duplicated strings, used when making pseudo-rules */
+		apol_bst_t *perm_bst;
+		/** BST of duplicated strings, used when making pseudo-rules */
+		apol_bst_t *bool_bst;
 		poldiff_handle_fn_t fn;
 		void *handle_arg;
 		/** set of POLDIF_DIFF_* bits for diffs run */
 		uint32_t diff_status;
+		struct poldiff_attrib_summary *attrib_diffs;
+		struct poldiff_avrule_summary *avrule_diffs;
+		struct poldiff_bool_summary *bool_diffs;
+		struct poldiff_cat_summary *cat_diffs;
 		struct poldiff_class_summary *class_diffs;
 		struct poldiff_common_summary *common_diffs;
-		struct poldiff_type_summary *type_diffs;
-		struct poldiff_attrib_summary *attrib_diffs;
-		struct poldiff_role_summary *role_diffs;
-		struct poldiff_user_summary *user_diffs;
-		struct poldiff_bool_summary *bool_diffs;
 		struct poldiff_level_summary *level_diffs;
-		struct poldiff_cat_summary *cat_diffs;
-		struct poldiff_rule_summary *rule_diffs;
+		struct poldiff_range_trans_summary *range_trans_diffs;
+		struct poldiff_role_summary *role_diffs;
 		struct poldiff_role_allow_summary *role_allow_diffs;
 		struct poldiff_role_trans_summary *role_trans_diffs;
-		struct poldiff_range_trans_summary *range_trans_diffs;
+		struct poldiff_terule_summary *terule_diffs;
+		struct poldiff_type_summary *type_diffs;
+		struct poldiff_user_summary *user_diffs;
 		/* and so forth if we want ocon_diffs */
 		type_map_t *type_map;
 		/** set if type mapping was changed since last run */
@@ -215,6 +225,17 @@ extern "C"
  *  leave the policy difference structure unchanged.
  */
 	typedef int (*poldiff_deep_diff_fn_t) (poldiff_t * diff, const void *x, const void *y);
+
+/**
+ * Build the BST for classes, permissions, and booleans if the
+ * policies have changed.  This effectively provides a partial mapping
+ * of rules from one policy to the other.
+ *
+ * @param diff Policy difference structure containing policies to diff.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	int poldiff_build_bsts(poldiff_t * diff);
 
 /******************** error handling code below ********************/
 
