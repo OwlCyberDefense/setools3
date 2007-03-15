@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Protected Interface for range transition rule differences.
+ *  Protected interface for range transition rule differences.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -22,8 +22,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLDIFF_RANGETRANS_INTERNAL_H
-#define POLDIFF_RANGETRANS_INTERNAL_H
+#ifndef POLDIFF_RANGE_TRANS_INTERNAL_H
+#define POLDIFF_RANGE_TRANS_INTERNAL_H
 
 #ifdef	__cplusplus
 extern "C"
@@ -129,4 +129,4 @@ extern "C"
 }
 #endif
 
-#endif				       /* POLDIFF_RANGETRANS_INTERNAL_H */
+#endif				       /* POLDIFF_RANGE_TRANS_INTERNAL_H */

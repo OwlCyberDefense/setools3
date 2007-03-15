@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Public interface for computing a semantic difference of primary
+ *  Public interface for computing semantic differences of primary
  *  types.  Aliases are resolved by the type mapping system
  *  (type_map.h); attributes are found in the attrib_diff.h header
  *  file.

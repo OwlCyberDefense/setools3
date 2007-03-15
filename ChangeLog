@@ -1,3 +1,10 @@
+2007-03-15  J. Tang  <jtang@tresys.com>
+
+	* Renamed libapol/include/rangetrans-query.h to
+	libapol/include/range_trans-query.h.  Likewise renamed
+	libpoldiff's rangetrans_diff.h  None of the function names were
+	changed.
+
 2007-03-13  J. Tang  <jtang@tresys.com>
 
 	* fixed segfault in libseaudit when, while parsing an AVC

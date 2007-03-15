@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef APOL_RANGETRANS_QUERY_H
-#define APOL_RANGETRANS_QUERY_H
+#ifndef APOL_RANGE_TRANS_QUERY_H
+#define APOL_RANGE_TRANS_QUERY_H
 
 #ifdef	__cplusplus
 extern "C"

@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Protected Interface for attribute differences.
+ *  Protected interface for attribute differences.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

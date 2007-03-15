@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in users.
+ *  Implementation for computing semantic differences in users.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

@@ -34,7 +34,7 @@ will print an error message and exit.
 sesearch
 is capable of searching multiple types of rules. At least one of the following
 must be provided to specify the desired type(s) of rules to search.
-.IP "--allow"
+.IP "-A, --allow"
 Search for allow rules.
 .IP "--neverallow"
 Search for neverallow rules.
@@ -42,15 +42,15 @@ Search for neverallow rules.
 Search for auditallow rules.
 .IP "--dontaudit"
 Search for dontaudit rules.
-.IP "--type"
+.IP "-T, --type"
 Search for type_transition, type_member, and type_change rules.
-.IP "--rangetrans"
-Search for range_transition rules.
 .IP "--role_allow"
 Search for role allow rules.
 .IP "--role_trans"
 Search for role_transition rules.
-.IP "-a, --all"
+.IP "--range_trans"
+Search for range_transition rules.
+.IP "--all"
 Search all rule types.
 .SH EXPRESSIONS
 .P
@@ -70,31 +70,36 @@ Find rules with role NAME (regex) as their source.
 Find rules with role NAME (regex) as their target.
 .IP "-c NAME, --class=NAME"
 Find rules with class NAME as their object class.
-.IP "-p P1[,P2,...] --perms=P1[,P2...]"
+.IP "-p P1[,P2,...] --perm=P1[,P2...]"
 Find rules with at least one of the specified permissions.
 Multiple permissions may be specified as a comma separated list;
 it is recommended that this list be quoted for shells that interpret comma as a special character.
-.IP "-b NAME, --boolean=NAME"
+.IP "-b NAME, --bool=NAME"
 Find conditional rules with NAME in their conditional expression.
 This option will include rules in both the true and false lists of the conditional.
 .SH OPTIONS
 .P
 The following additional options exist to modify how the search is performed and the amount of information printed for each result.
-.IP "-i, --indirect"
-When searching rules also consider rules using a specified type's attributes (or an attribute's types) as a match to that type (or attribute).
-This option also considers types used in complemented sets and the special set "*".
-.IP "-n, --noregex"
-Do not use regular expressions to match symbol names; only exact string matches will be considered.
-.IP "-l, --lineno"
+.IP "-d, --direct"
+Normally rules are matched using the type given or any of that type's
+attributes (or an attribute's types).  This "indirect" matching also
+considers types used in complemented sets, the special set "*", and
+the special target "self".  When the direct flag is given, matching is
+done literally.  The rule must explicitly contain the given type (or
+attribute) for it to be returned.
+.IP "-R, --regex"
+Use regular expressions to match symbol names.  By default only exact
+string matches will be considered.
+.IP "-n, --linenum"
 Print the line number for each rule.  This option is ignored if using the --semantic option or if line numbers are not available for the given policy.
-.IP "--semantic"
+.IP "-S, --semantic"
 Search rules semantically instead of syntactically. This option is implied for policies for which syntactic rules are not available.
 .IP "-C, --show_cond"
 Print the conditional expression and state for all conditional rules found.
 This option has no effect on unconditional rules.
 .IP "-h, --help"
 Print help information and exit.
-.IP "-v, --version"
+.IP "-V, --version"
 Print version information and exit.
 .SH AUTHOR
 This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.

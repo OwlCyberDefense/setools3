@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in classes and
+ *  Implementation for computing semantic differences in classes and
  *  commons.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in roles.
+ *  Implementation for computing semantic differences in roles.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

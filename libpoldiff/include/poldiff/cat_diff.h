@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Public interface for computing a semantic differences in categories.
+ *  Public interface for computing semantic differences in categories.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

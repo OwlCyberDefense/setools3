@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in levels.
+ *  Implementation for computing semantic differences in levels.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

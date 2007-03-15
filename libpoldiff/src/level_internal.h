@@ -1,8 +1,8 @@
 /**
  *  @file
- *  Protected Interface for computing a semantic differences in
- *  levels, either from level declarations, user's default level,
- *  user's permitted range, or a range_transition's target range.
+ *  Protected interface for computing semantic differences in levels,
+ *  either from level declarations, user's default level, user's
+ *  permitted range, or a range_transition's target range.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

@@ -8,7 +8,7 @@ poldiff_HEADERS = \
 	class_diff.h \
 	level_diff.h \
 	range_diff.h \
-	rangetrans_diff.h \
+	range_trans_diff.h \
 	rbac_diff.h \
 	role_diff.h \
 	rule_diff.h \

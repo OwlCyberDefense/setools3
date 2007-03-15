@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Protected Interface for role differences.
+ *  Protected interface for role differences.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in av and te
+ *  Implementation for computing semantic differences in AV and Type
  *  rules.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

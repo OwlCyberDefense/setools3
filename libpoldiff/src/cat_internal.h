@@ -1,6 +1,7 @@
 /**
  *  @file
- *  Protected Interface for computing a semantic differences in categories.
+ *  Protected interface for computing semantic differences in
+ *  categories.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

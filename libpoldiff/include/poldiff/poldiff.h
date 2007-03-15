@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Public interface for computing a semantic policy difference
+ *  Public interface for computing semantic policy differences
  *  between two policies.  The user loads two policies, the "original"
  *  and "modified" policies, and then calls poldiff_create() to obtain
  *  a poldiff object.  Next call poldiff_run() to actually execute the
@@ -77,7 +77,7 @@ extern "C"
 #include <poldiff/class_diff.h>
 #include <poldiff/level_diff.h>
 #include <poldiff/range_diff.h>
-#include <poldiff/rangetrans_diff.h>
+#include <poldiff/range_trans_diff.h>
 #include <poldiff/rbac_diff.h>
 #include <poldiff/role_diff.h>
 #include <poldiff/rule_diff.h>

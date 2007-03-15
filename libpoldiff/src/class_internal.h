@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Protected Interface for class and common differences.
+ *  Protected interface for class and common differences.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

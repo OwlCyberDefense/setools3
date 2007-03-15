@@ -47,11 +47,14 @@ Find differences in the default values of booleans.
 .IP "-T, --terules"
 Find differences in type enforcement rules.
 These rules are allow, neverallow, auditallow, dontaudit, type_transition, type_member, and type_change rules.
-.IP "-R, --roletrans"
-Find differences in role transition rules.
+.IP "-R, --role_trans"
+Find differences in role_transition rules.
 This includes differences in the default role.
-.IP "-A, --roleallows"
+.IP "-A, --role_allows"
 Find differences in role allow rules.
+.IP "-E, --range_trans"
+Find differences in range_transition rules.  This includes the target
+MLS range.
 .SH OPTIONS
 .IP "-q, --quiet"
 If there are no differences for elements of a given kind,

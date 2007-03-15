@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Public interface for computing a semantic differences in classes
+ *  Public interface for computing semantic differences in classes
  *  and commons.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

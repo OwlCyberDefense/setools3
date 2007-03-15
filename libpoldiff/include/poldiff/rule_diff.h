@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Public interface for computing a semantic differences in av rules
+ *  Public interface for computing semantic differences in av rules
  *  (allow, neverallow, auditallow, dontaudit) and in te rules
  *  (type_transition, type_change, type_member).
  *

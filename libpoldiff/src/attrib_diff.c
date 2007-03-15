@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in attribs.
+ *  Implementation for computing semantic differences in attributes.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

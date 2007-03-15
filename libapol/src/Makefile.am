@@ -31,7 +31,7 @@ libapol_a_SOURCES = \
 	policy-path.c \
 	policy-query.c \
 	queue.c \
-	rangetrans-query.c \
+	range_trans-query.c \
 	rbacrule-query.c \
 	relabel-analysis.c \
 	render.c \

@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Protected Interface for type equivalence mapping for semantic
+ *  Protected interface for type equivalence mapping for semantic
  *  difference calculations.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com

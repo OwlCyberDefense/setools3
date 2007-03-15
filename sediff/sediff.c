@@ -46,9 +46,9 @@ static struct option const longopts[] = {
 	{"users", no_argument, NULL, 'u'},
 	{"booleans", no_argument, NULL, 'b'},
 	{"terules", no_argument, NULL, 'T'},
-	{"roleallows", no_argument, NULL, 'A'},
-	{"roletrans", no_argument, NULL, 'R'},
-	{"rangetrans", no_argument, NULL, 'E'},
+	{"role_allows", no_argument, NULL, 'A'},
+	{"role_trans", no_argument, NULL, 'R'},
+	{"range_trans", no_argument, NULL, 'E'},
 	{"stats", no_argument, NULL, 's'},
 	{"gui", no_argument, NULL, 'X'},
 	{"quiet", no_argument, NULL, 'q'},
@@ -66,23 +66,23 @@ static void usage(const char *prog_name, int brief)
 	}
 	printf("Semantically differentiate two policies.  By default, all supported\n");
 	printf("policy elements are examined.  The following options are available:\n\n");
-	printf("  -c, --classes     object class and common permission definitions\n");
-	printf("  -l, --levels      MLS level definitions\n");
-	printf("  -C, --categories  MLS category definitions\n");
-	printf("  -t, --types       type definitions\n");
-	printf("  -a, --attributes  attribute definitions\n");
-	printf("  -r, --roles       role definitions\n");
-	printf("  -u, --users       user definitions\n");
-	printf("  -b, --booleans    boolean definitions and default values\n");
-	printf("  -T, --terules     type enforcement rules\n");
-	printf("  -R, --roletrans   role transition rules\n");
-	printf("  -A, --roleallows  role allow rules\n");
-	printf("  -E, --rangetrans  range transition rules\n");
+	printf("  -c, --classes      object class and common permission definitions\n");
+	printf("  -l, --levels       MLS level definitions\n");
+	printf("  -C, --categories   MLS category definitions\n");
+	printf("  -t, --types        type definitions\n");
+	printf("  -a, --attributes   attribute definitions\n");
+	printf("  -r, --roles        role definitions\n");
+	printf("  -u, --users        user definitions\n");
+	printf("  -b, --booleans     boolean definitions and default values\n");
+	printf("  -T, --terules      type enforcement rules\n");
+	printf("  -R, --role_trans   role_transition rules\n");
+	printf("  -A, --role_allows  role allow rules\n");
+	printf("  -E, --range_trans  range_transition rules\n");
 	printf("\n");
-	printf("  -q, --quiet       suppress status output for elements with no differences\n");
-	printf("  -s, --stats       print only statistics\n");
-	printf("  -h, --help        print this help text and exit\n");
-	printf("  -v, --version     print version information and exit\n\n");
+	printf("  -q, --quiet        suppress status output for elements with no differences\n");
+	printf("  -s, --stats        print only statistics\n");
+	printf("  -h, --help         print this help text and exit\n");
+	printf("  -v, --version      print version information and exit\n\n");
 }
 
 static void print_diff_string(const char *str, unsigned int indent_level)

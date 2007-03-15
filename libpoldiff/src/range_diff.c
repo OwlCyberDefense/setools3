@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in ranges.
+ *  Implementation for computing semantic differences in ranges.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com

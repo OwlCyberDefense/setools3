@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Protected Interface for computing a semantic policy difference.
+ *  Protected interface for computing semantic policy difference.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -38,7 +38,7 @@ extern "C"
 #include "class_internal.h"
 #include "level_internal.h"
 #include "range_internal.h"
-#include "rangetrans_internal.h"
+#include "range_trans_internal.h"
 #include "rbac_internal.h"
 #include "role_internal.h"
 #include "rule_internal.h"

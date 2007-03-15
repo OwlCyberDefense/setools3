@@ -1,4 +1,5 @@
 /**
+ * @file
  * SWIG declarations for libapol.
  *
  * @author Jeremy A. Mowery jmowery@tresys.com
@@ -44,7 +45,7 @@
 #include "../include/apol/policy.h"
 #include "../include/apol/policy-path.h"
 #include "../include/apol/policy-query.h"
-#include "../include/apol/rangetrans-query.h"
+#include "../include/apol/range_trans-query.h"
 #include "../include/apol/rbacrule-query.h"
 #include "../include/apol/relabel-analysis.h"
 #include "../include/apol/render.h"
@@ -650,7 +651,7 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 %include "../include/apol/mls-query.h"
 %include "../include/apol/netcon-query.h"
 %include "../include/apol/perm-map.h"
-%include "../include/apol/rangetrans-query.h"
+%include "../include/apol/range_trans-query.h"
 %include "../include/apol/rbacrule-query.h"
 %include "../include/apol/relabel-analysis.h"
 %include "../include/apol/terule-query.h"

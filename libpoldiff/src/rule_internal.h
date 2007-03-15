@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Protected Interface for rule differences (both av and te rules).
+ *  Protected interface for rule differences, both AV and Type rules.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
