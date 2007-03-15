@@ -109,16 +109,21 @@ extern int lgetfilecon_raw(const char *, security_context_t *)
 extern int lsetfilecon_raw(const char *, security_context_t)
 	__attribute__ ((weak));
 
+enum opt_values
+{
+	OPT_RAW = 256
+};
+
 static struct option const longopts[] = {
-	{"raw", no_argument, NULL, 'a'},
+	{"raw", no_argument, NULL, OPT_RAW},
 	{"recursive", no_argument, NULL, 'r'},
 	{"object", required_argument, NULL, 'o'},
 	{"context", required_argument, NULL, 'c'},
 	{"stdin", no_argument, NULL, 's'},
 	{"quiet", no_argument, NULL, 'q'},
-	{"verbose", no_argument, NULL, 'V'},
-	{"version", no_argument, NULL, 'v'},
+	{"verbose", no_argument, NULL, 'v'},
 	{"help", no_argument, NULL, 'h'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -515,9 +520,9 @@ void replcon_usage(const char *program_name, int brief)
 	printf("  -r, --recursive        recurse through directories\n");
 	printf("  -s, --stdin            read FILENAMES from standard input\n");
 	printf("  -q, --quiet            suppress progress output\n");
-	printf("  -V, --verbose          display context information\n");
-	printf("  -v, --version          print version information and exit\n");
+	printf("  -v, --verbose          display context information\n");
 	printf("  -h, --help             print this help text and exit\n");
+	printf("  -V, --version          print version information and exit\n");
 	printf("\n");
 	if (is_selinux_mls_enabled()) {
 		printf("A context may be specified as a colon separated list of user, role, type, and\n");
@@ -1243,7 +1248,7 @@ void replcon_parse_command_line(int argc, char **argv)
 	int optc, i;
 
 	/* get option arguments */
-	while ((optc = getopt_long(argc, argv, "o:c:rsVqvh", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "o:c:rsvqVh", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -1272,7 +1277,7 @@ void replcon_parse_command_line(int argc, char **argv)
 			}
 #endif
 			break;
-		case 'a':
+		case OPT_RAW:
 			replcon_info.use_raw = TRUE;
 			break;
 		case 'r':	       /* recursive directory parsing */
@@ -1288,14 +1293,14 @@ void replcon_parse_command_line(int argc, char **argv)
 			}
 			replcon_info.quiet = TRUE;
 			break;
-		case 'V':	       /* verbose program execution */
+		case 'v':	       /* verbose program execution */
 			if (replcon_info.quiet) {
 				fprintf(stderr, "Error: Can not specify -q and -V\n");
 				goto err;
 			}
 			replcon_info.verbose = TRUE;
 			break;
-		case 'v':	       /* version */
+		case 'V':	       /* version */
 #ifndef FINDCON
 			printf("replcon %s\n%s\n", VERSION, COPYRIGHT_INFO);
 #else

@@ -46,7 +46,7 @@ see PROFILE OPTIONS below for more information about creating profiles.
 Run only the module named MODULE (see --list).
 .IP "--min-sev=SEVERITY"
 Report only results with the minimum severity of SEVERITY.
-SEVERITY may have one of the following values:
+SEVERITY must have one of the following values:
 .RS
 .IP "low"
 The module's results indicate a flaw in the policy that does not affect the manner in which the policy is enforced, but is considered to be improper.
@@ -57,13 +57,17 @@ The module's results indicate a flaw in the policy that presents an identifiable
 .RE
 .IP "--fcfile=FILE"
 Use FILE for the file_contexts file instead of the system default.
+This flag is only applicable if sechecker was configured with the
+.B
+--enable-sefs
+flag.
 .IP "-l, --list"
 Print a list of the name and a brief description of all known profiles and modules and exit.
-.IP "--version"
-Print version information and exit.
 .IP "-h[MODULE], --help[=MODULE]"
 Print general help information and exit.
 If MODULE is provided, print help information for the module named MODULE and exit.
+.IP "-V, --version"
+Print version information and exit.
 .SS REPORT GENERATION OPTIONS
 .P
 Only one of the following may be provided to specify the length of the report for all modules.

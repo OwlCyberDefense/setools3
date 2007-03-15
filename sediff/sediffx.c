@@ -46,9 +46,9 @@ struct sediffx
 };
 
 static struct option const longopts[] = {
-	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
 	{"run-diff", no_argument, NULL, 'd'},
+	{"help", no_argument, NULL, 'h'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -113,11 +113,11 @@ static void usage(const char *program_name, int brief)
 		return;
 	}
 	printf("Semantically differentiate two policies.  All supported policy elements\n");
-	printf("are examined.  The following options are available:\n\n");
+	printf("are examined.  The following options are available:\n");
 	printf("\n");
 	printf("  -d, --diff-now   load policies and diff immediately\n");
 	printf("  -h, --help       print this help text and exit\n");
-	printf("  -v, --version    print version information and exit\n\n");
+	printf("  -V, --version    print version information and exit\n\n");
 }
 
 struct delayed_main_data
@@ -163,7 +163,7 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 	*orig_path = NULL;
 	*mod_path = NULL;
 	*run_diff = 0;
-	while ((optc = getopt_long(argc, argv, "hvd", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "dhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -173,7 +173,7 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 		case 'h':	       /* help */
 			usage(argv[0], 0);
 			exit(EXIT_SUCCESS);
-		case 'v':	       /* version */
+		case 'V':	       /* version */
 			print_version_info();
 			exit(EXIT_SUCCESS);
 		default:

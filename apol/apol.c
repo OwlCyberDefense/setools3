@@ -40,8 +40,7 @@
 
 static struct option const opts[] = {
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
-	{"policy", required_argument, NULL, 'p'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -119,8 +118,8 @@ static void usage(const char *program_name, bool_t brief)
 		return;
 	}
 	printf("Policy Analysis tool for Security Enhanced Linux.\n\n");
-	printf("   -v, --version           print version information and exit\n");
-	printf("   -h, --help              print this help text and exit\n\n");
+	printf("   -h, --help              print this help text and exit\n");
+	printf("   -V, --version           print version information and exit\n\n");
 }
 
 void print_version_info(void)
@@ -134,23 +133,17 @@ void parse_command_line(int argc, char **argv)
 	bool_t help, ver;
 
 	help = ver = FALSE;
-	while ((optc = getopt_long(argc, argv, "pvh", opts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "hV", opts, NULL)) != -1) {
 		switch (optc) {
-		case 'p':
-			/* flag is deprecated and is now ignored */
-			WARN(NULL, "%s", "The --policy flag is deprecated and will be ignored.");
-			break;
 		case 'h':
 			help = TRUE;
 			break;
-		case 'v':
+		case 'V':
 			ver = TRUE;
 			break;
-		case '?':
+		default:
 			usage(argv[0], TRUE);
 			exit(1);
-		default:
-			break;
 		}
 	}
 	if (help || ver) {

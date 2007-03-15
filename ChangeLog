@@ -1,5 +1,9 @@
 2007-03-15  J. Tang  <jtang@tresys.com>
 
+	* Re-standardized all programs' command line options.  -V always
+	shows the version, -c always deals with object classes, and so
+	forth.  Man pages updated.
+
 	* Renamed libapol/include/rangetrans-query.h to
 	libapol/include/range_trans-query.h.  Likewise renamed
 	libpoldiff's rangetrans_diff.h  None of the function names were

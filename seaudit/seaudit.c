@@ -56,9 +56,8 @@ struct seaudit
 
 static struct option const opts[] = {
 	{"log", required_argument, NULL, 'l'},
-	{"policy", required_argument, NULL, 'p'},
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -251,7 +250,7 @@ static void print_usage_info(const char *program_name, int brief)
 	printf("Audit Log analysis tool for Security Enhanced Linux.\n\n");
 	printf("   -l FILE, --log=FILE     open the log FILE\n");
 	printf("   -h, --help              print this help text and exit\n");
-	printf("   -v, --version           print version information and exit\n\n");
+	printf("   -V, --version           print version information and exit\n\n");
 }
 
 static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, const char **log, apol_policy_path_t ** policy)
@@ -262,15 +261,10 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 	char *primary_path = NULL;
 	apol_vector_t *modules = NULL;
-	while ((optc = getopt_long(argc, argv, "l:p:hv", opts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "l:hV", opts, NULL)) != -1) {
 		switch (optc) {
 		case 'l':{
 				*log = optarg;
-				break;
-			}
-		case 'p':{
-				primary_path = optarg;
-				WARN(NULL, "%s", "Use of --policy is deprecated.");
 				break;
 			}
 		case 'h':{
@@ -278,12 +272,11 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 				seaudit_destroy(&seaudit);
 				exit(EXIT_SUCCESS);
 			}
-		case 'v':{
+		case 'V':{
 				print_version_info();
 				seaudit_destroy(&seaudit);
 				exit(EXIT_SUCCESS);
 			}
-		case '?':
 		default:{
 				/* unrecognized argument give full usage */
 				print_usage_info(argv[0], 1);
