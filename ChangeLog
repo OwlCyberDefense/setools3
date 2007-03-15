@@ -118,6 +118,11 @@
 	* added to apol_range_trans_query_append_class() to
 	libapol/include/apol/rangetrans-query.h
 
+2007-02-07  J. Mowery <jmowery@tresys.com>
+
+	* split --audit flag in sesearch to --auditallow and --dontaudit;
+	  the --audit flag is now deprecated.
+
 2007-02-06  J. Tang  <jtang@tresys.com>
 
 	* Official release of SETools-3.1.
