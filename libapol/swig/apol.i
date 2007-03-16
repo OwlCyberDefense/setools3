@@ -92,6 +92,7 @@ const char *libapol_get_version(void);
 #define IPPROTO_TCP  6
 #define IPPROTO_UDP 17
 const char *apol_protocol_to_str(uint8_t protocol);
+%typemap(newfree) uint32_t * "free($1);";
 %rename(apol_str_to_internal_ipv6) wrap_apol_str_to_internal_ipv6;
 %newobject wrap_apol_str_to_internal_ipv6;
 %rename(apol_str_to_internal_ipv4) wrap_apol_str_to_internal_ipv4;
@@ -139,6 +140,7 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 /* derived vector types here */
 %inline %{
 	typedef struct apol_vector apol_string_vector_t;
+	typedef struct apol_vector apol_level_vector_t;
 %}
 typedef struct apol_vector {} apol_vector_t;
 %extend apol_vector_t {
@@ -275,6 +277,24 @@ typedef struct apol_vector {} apol_string_vector_t;
 	};
 	void sort_uniquify() {
 		apol_vector_sort_uniquify(self, apol_str_strcmp, NULL, free);
+	};
+};
+typedef struct apol_vector {} apol_level_vector_t;
+%extend apol_level_vector_t {
+	apol_level_vector_t() {
+		return (apol_level_vector_t*)apol_vector_create();
+	};
+	size_t get_size() {
+		return apol_vector_get_size(self);
+	};
+	size_t get_capacity() {
+		return apol_vector_get_capacity(self);
+	};
+	const apol_mls_level_t *get_element(size_t i) {
+		return (const apol_mls_level_t*)apol_vector_get_element(self, i);
+	};
+	~apol_level_vector_t() {
+		apol_vector_destroy(&self, apol_mls_level_free);
 	};
 };
 
@@ -639,6 +659,304 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 	};
 };
 
+/* apol mls level */
+typedef struct apol_mls_level {} apol_mls_level_t;
+%extend apol_mls_level_t {
+	apol_mls_level_t() {
+		apol_mls_level_t *aml;
+		aml = apol_mls_level_create();
+		if (!aml) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return aml;
+	};
+	apol_mls_level_t(apol_mls_level_t *in) {
+		apol_mls_level_t *aml;
+		aml = apol_mls_level_create_from_mls_level(in);
+		if (!aml) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return aml;
+	};
+	apol_mls_level_t(apol_policy_t *p, char *str) {
+		apol_mls_level_t *aml;
+		aml = apol_mls_level_create_from_string(p, str);
+		if (!aml) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return aml;
+	};
+	apol_mls_level_t(apol_policy_t *p, qpol_mls_level_t *qml) {
+		apol_mls_level_t *aml;
+		aml = apol_mls_level_create_from_qpol_mls_level(p, qml);
+		if (!aml) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return aml;
+	};
+	apol_mls_level_t(apol_policy_t *p, qpol_level_t *ql) {
+		apol_mls_level_t *aml;
+		aml = apol_mls_level_create_from_qpol_level_datum(p, ql);
+		if (!aml) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return aml;
+	};
+	apol_mls_level_t(void *x) {
+		return (apol_mls_level_t*)x;
+	};
+	~apol_mls_level_t() {
+		apol_mls_level_destroy(&self);
+	};
+	void set_sens(apol_policy_t *p, char *sens) {
+		if (apol_mls_level_set_sens(p, self, sens)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set level sensitivity");
+		}
+	fail:
+		return;
+	};
+	void append_cats(apol_policy_t *p, char *cats) {
+		if (apol_mls_level_append_cats(p, self, cats)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append level category");
+		}
+	fail:
+		return;
+	};
+	%newobject render();
+	char *render(apol_policy_t *p) {
+		char *str;
+		str = apol_mls_level_render(p, self);
+		if (!str) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return str;
+	};
+};
+#define APOL_MLS_EQ 0
+#define APOL_MLS_DOM 1
+#define APOL_MLS_DOMBY 2
+#define APOL_MLS_INCOMP 3
+int apol_mls_level_compare(apol_policy_t * p, const apol_mls_level_t * level1, const apol_mls_level_t * level2);
+int apol_mls_sens_compare(apol_policy_t * p, const char *sens1, const char *sens2);
+int apol_mls_cats_compare(apol_policy_t * p, const char *cat1, const char *cat2);
+
+/* apol mls range */
+typedef struct apol_mls_range {} apol_mls_range_t;
+%extend apol_mls_range_t {
+	apol_mls_range_t() {
+		apol_mls_range_t *amr;
+		amr = apol_mls_range_create();
+		if (!amr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return amr;
+	};
+	apol_mls_range_t(apol_mls_range_t *in) {
+		apol_mls_range_t *amr;
+		amr = apol_mls_range_create_from_mls_range(in);
+		if (!amr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return amr;
+	};
+	apol_mls_range_t(apol_policy_t *p, qpol_mls_range_t *in) {
+		apol_mls_range_t *amr;
+		amr = apol_mls_range_create_from_qpol_mls_range(p, in);
+		if (!amr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return amr;
+	};
+	apol_mls_range_t(void *x) {
+		return (apol_mls_range_t*)x;
+	};
+	~apol_mls_range_t() {
+		apol_mls_range_destroy(&self);
+	};
+	void set_low(apol_policy_t *p, apol_mls_level_t *lvl) {
+		if (apol_mls_range_set_low(p, self, lvl)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set low level");
+		}
+	fail:
+		return;
+	};
+	void set_high(apol_policy_t *p, apol_mls_level_t *lvl) {
+		if (apol_mls_range_set_high(p, self, lvl)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set high level");
+		}
+	fail:
+			return;
+	};
+	%newobject render();
+	char *render(apol_policy_t *p) {
+		char *str;
+		str = apol_mls_range_render(p, self);
+		if (!str) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return str;
+	};
+	%newobject get_levels();
+	apol_level_vector_t *get_levels(apol_policy_t *p) {
+		apol_vector_t *v;
+		v = apol_mls_range_get_levels(p, self);
+		if (!v) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+			return (apol_level_vector_t*)v;
+	};
+};
+int apol_mls_range_compare(apol_policy_t * p, const apol_mls_range_t * target, const apol_mls_range_t * search, unsigned int range_compare_type);
+int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range,	const apol_mls_range_t * subrange);
+int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range);
+
+/* apol level query */
+typedef struct apol_level_query {} apol_level_query_t;
+%extend apol_level_query_t {
+	apol_level_query_t() {
+		apol_level_query_t * alq;
+		alq = apol_level_query_create();
+		if (!alq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return alq;
+	};
+	~apol_level_query_t() {
+		apol_level_query_destroy(&self);
+	};
+	%newobject run();
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_level_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run level query");
+		}
+	fail:
+		return v;
+	};
+	void set_sens(apol_policy_t *p, char *name) {
+		if (apol_level_query_set_sens(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_cat(apol_policy_t *p, char *name) {
+		if (apol_level_query_set_cat(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+			return;
+	};
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_level_query_set_regex(p, self, regex);
+	};
+};
+
+/* apol cat query */
+typedef struct apol_cat_query {} apol_cat_query_t;
+%extend apol_cat_query_t {
+	apol_cat_query_t() {
+		apol_cat_query_t * acq;
+		acq = apol_cat_query_create();
+		if (!acq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return acq;
+	};
+	~apol_cat_query_t() {
+		apol_cat_query_destroy(&self);
+	};
+	%newobject run();
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_cat_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run category query");
+		}
+	fail:
+		return v;
+	};
+	void set_cat(apol_policy_t *p, char *name) {
+		if (apol_cat_query_set_cat(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_cat_query_set_regex(p, self, regex);
+	};
+};
+
+/* apol user query */
+typedef struct apol_user_query {} apol_user_query_t;
+%extend apol_user_query_t {
+	apol_user_query_t() {
+		apol_user_query_t *auq;
+		auq = apol_user_query_create();
+		if (!auq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return auq;
+	};
+	~apol_user_query_t() {
+		apol_user_query_destroy(&self);
+	};
+	%newobject run();
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_user_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run user query");
+		}
+	fail:
+		return v;
+	};
+	void set_user(apol_policy_t *p, char *name) {
+		if (apol_user_query_set_user(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_role(apol_policy_t *p, char *name) {
+		if (apol_user_query_set_role(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_default_level(apol_policy_t *p, apol_mls_level_t *lvl) {
+		if (apol_user_query_set_default_level(p, self, lvl)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_range(apol_policy_t *p, apol_mls_range_t *rng, int range_match) {
+		if (apol_user_query_set_range(p, self, rng, range_match)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_user_query_set_regex(p, self, regex);
+	};
+};
+
 /* TODO */
 %include "../include/apol/avrule-query.h"
 %include "../include/apol/condrule-query.h"
@@ -648,7 +966,6 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 %include "../include/apol/fscon-query.h"
 %include "../include/apol/infoflow-analysis.h"
 %include "../include/apol/isid-query.h"
-%include "../include/apol/mls-query.h"
 %include "../include/apol/netcon-query.h"
 %include "../include/apol/perm-map.h"
 %include "../include/apol/range_trans-query.h"
@@ -656,4 +973,3 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 %include "../include/apol/relabel-analysis.h"
 %include "../include/apol/terule-query.h"
 %include "../include/apol/types-relation-analysis.h"
-%include "../include/apol/user-query.h"
