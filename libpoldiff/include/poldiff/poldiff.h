@@ -180,9 +180,11 @@ extern "C"
 	extern int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5]);
 
 /**
- *  Enable line numbers for all rule differences. If not called, line numbers
- *  will not be available when displaying differences. This function is
- *  safe to call multiple times and will have no effect after the first time.
+ *  Enable line numbers for all rule differences.  If not called, line
+ *  numbers will not be available when displaying differences. This
+ *  function is safe to call multiple times and will have no effect
+ *  after the first time.  Be aware that if line numbers will need to
+ *  be re-enabled each time poldiff_run() is called.
  *
  *  @param diff The policy difference structure.
  *

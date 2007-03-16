@@ -25,10 +25,10 @@
 #include <config.h>
 
 #include "result_item.h"
+#include "result_item_render.h"
 #include "utilgui.h"
 
 #include <assert.h>
-#include <errno.h>
 
 typedef void (*policy_changed_fn_t) (result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol);
 typedef void (*poldiff_run_fn_t) (result_item_t * item, poldiff_t * diff, int incremental);
@@ -81,341 +81,10 @@ struct result_item
 	} data;
 };
 
-/******************** common rendering functions ********************/
-
-static const char *form_name_map[] = {
-	"Added", "Added New Type", "Removed", "Removed Missing Type", "Modified"
-};
-static const char *form_name_long_map[] = {
-	"Added", "Added because of new type", "Removed", "Removed because of missing type", "Modified"
-};
-static const char *tag_map[] = {
-	"added-header", "added-header", "removed-header", "removed-header", "modified-header"
-};
-static const poldiff_form_e form_map[] = {
-	POLDIFF_FORM_ADDED, POLDIFF_FORM_ADD_TYPE,
-	POLDIFF_FORM_REMOVED, POLDIFF_FORM_REMOVE_TYPE,
-	POLDIFF_FORM_MODIFIED
-};
-
 /** map from a poldiff_form_e to an integer */
 static const poldiff_form_e form_reverse_map[] = {
 	-1, 0, 2, 4, 1, 3
 };
-
-/**
- * Show a single diff item string.  This will add the appropriate
- * color tags based upon the item's first non-space character.
- */
-static void result_item_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
-{
-	const char *c;
-	unsigned int i;
-	size_t start = 0, end = 0;
-	static const char *indent = "\t";
-	const gchar *tag = NULL;
-	for (i = 0; i < indent_level; i++) {
-		gtk_text_buffer_insert(tb, iter, indent, -1);
-	}
-	for (c = s; *c && tag == NULL; c++) {
-		switch (*c) {
-		case '+':{
-				tag = "added";
-				break;
-			}
-		case '-':{
-				tag = "removed";
-				break;
-			}
-		case ' ':
-		case '\t':
-		case '\n':{
-				break;
-			}
-		default:{
-				tag = "modified";
-				break;
-			}
-		}
-	}
-	for (c = s; *c; c++, end++) {
-		if (*c == '\n' && *(c + 1) != '\0') {
-			gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, tag, NULL);
-			for (i = 0; i < indent_level; i++) {
-				gtk_text_buffer_insert(tb, iter, indent, -1);
-			}
-			start = end + 1;
-		}
-	}
-	if (start < end) {
-		gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, tag, NULL);
-	}
-}
-
-/**
- * Print a string to a text buffer.  Note that this differs from the
- * more general results_print_string() because there are inline '+'
- * and '-' markers.
- */
-static void result_item_print_string_inline(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level)
-{
-	const char *c = s;
-	unsigned int i;
-	size_t start = 0, end = 0;
-	static const char *indent = "\t";
-	const gchar *current_tag = "modified";
-	for (i = 0; i < indent_level; i++) {
-		gtk_text_buffer_insert(tb, iter, indent, -1);
-	}
-	for (; *c; c++, end++) {
-		switch (*c) {
-		case '+':{
-				if (end > 0) {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag,
-										 NULL);
-				}
-				start = end;
-				current_tag = "added";
-				break;
-			}
-		case '-':{
-				if (end > 0) {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag,
-										 NULL);
-				}
-				start = end;
-				current_tag = "removed";
-				break;
-			}
-		case '\n':{
-				if (*(c + 1) != '\0') {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
-										 NULL);
-					for (i = 0; i < indent_level; i++) {
-						gtk_text_buffer_insert(tb, iter, indent, -1);
-					}
-					start = end + 1;
-				}
-				break;
-			}
-		case ' ':{
-				if (current_tag != "modified") {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
-										 NULL);
-					start = end + 1;
-					current_tag = "modified";
-				}
-				break;
-			}
-		}
-	}
-	if (start < end) {
-		gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
-	}
-}
-
-/**
- * Show a summary of the diff for a particular policy component.
- */
-static void result_item_print_summary(result_item_t * item, GtkTextBuffer * tb)
-{
-	GtkTextIter iter;
-	int i, forms[5];
-	GString *string = g_string_new("");
-
-	gtk_text_buffer_get_end_iter(tb, &iter);
-	g_string_printf(string, "%s:\n", result_item_get_label(item));
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "subheader", NULL);
-
-	result_item_get_forms(item, forms);
-	for (i = 0; i < 5; i++) {
-		if (forms[i] > 0) {
-			g_string_printf(string, "\t%s: %zd\n",
-					form_name_long_map[i], result_item_get_num_differences(item, form_map[i]));
-			gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, tag_map[i], NULL);
-		}
-	}
-	g_string_free(string, TRUE);
-}
-
-/**
- * Show a common header when printing a policy component diff.
- */
-static void result_item_print_header(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
-{
-	GtkTextIter iter;
-	int i, forms[5];
-	GString *string = g_string_new("");
-	char *tag = NULL;
-	const char *label = result_item_get_label(item);
-	int add_separator = 0;
-
-	gtk_text_buffer_get_end_iter(tb, &iter);
-	result_item_get_forms(item, forms);
-	g_string_printf(string, "%s (", label);
-	for (i = 0; i < 5; i++) {
-		if (forms[i] > 0) {
-			g_string_append_printf(string, "%s%zd %s",
-					       (add_separator ? ", " : ""),
-					       result_item_get_num_differences(item, form_map[i]), form_name_map[i]);
-			add_separator = 1;
-		}
-	}
-	g_string_append_printf(string, ")\n\n");
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "header", NULL);
-
-	switch (form) {
-	case POLDIFF_FORM_ADDED:{
-			g_string_printf(string, "Added %s:", label);
-			tag = "added-header";
-			break;
-		}
-	case POLDIFF_FORM_ADD_TYPE:{
-			g_string_printf(string, "Added %s because of new type:", label);
-			tag = "added-header";
-			break;
-		}
-	case POLDIFF_FORM_REMOVED:{
-			g_string_printf(string, "Removed %s:", label);
-			tag = "removed-header";
-			break;
-		}
-	case POLDIFF_FORM_REMOVE_TYPE:{
-			g_string_printf(string, "Removed %s because of missing type:", label);
-			tag = "removed-header";
-			break;
-		}
-	case POLDIFF_FORM_MODIFIED:{
-			g_string_printf(string, "Modified %s:", label);
-			tag = "modified-header";
-			break;
-		}
-	default:{
-			assert(0);
-			tag = NULL;
-		}
-	}
-	g_string_append_printf(string, " %zd\n", result_item_get_num_differences(item, form));
-	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, tag, NULL);
-	g_string_free(string, TRUE);
-}
-
-/**
- * Show the results for non-rules diff components.
- */
-static void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
-{
-	GtkTextIter iter;
-	apol_vector_t *v;
-	size_t i;
-	void *elem;
-	char *s = NULL;
-
-	gtk_text_buffer_get_end_iter(tb, &iter);
-	v = item->get_vector(item->diff);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		elem = apol_vector_get_element(v, i);
-		if (item->get_form(elem) == form) {
-			s = item->get_string(item->diff, elem);
-			result_item_print_string(tb, &iter, s, 1);
-			free(s);
-			gtk_text_buffer_insert(tb, &iter, "\n", -1);
-		}
-	}
-}
-
-/**
- * Given a vector of unsigned long integers, write to the text buffer
- * those line numbers using the given tag.
- */
-static void result_item_print_linenos(GtkTextBuffer * tb, GtkTextIter * iter,
-				      const gchar * prefix, apol_vector_t * linenos, const gchar * tag, GString * string)
-{
-	size_t i;
-	unsigned long lineno;
-	gtk_text_buffer_insert(tb, iter, "  [", -1);
-	if (prefix != NULL) {
-		gtk_text_buffer_insert(tb, iter, prefix, -1);
-	}
-	for (i = 0; i < apol_vector_get_size(linenos); i++) {
-		lineno = (unsigned long)apol_vector_get_element(linenos, i);
-		if (i > 0) {
-			gtk_text_buffer_insert(tb, iter, ", ", -1);
-		}
-		g_string_printf(string, "%lu", lineno);
-		gtk_text_buffer_insert_with_tags_by_name(tb, iter, string->str, -1, tag, NULL);
-	}
-	gtk_text_buffer_insert(tb, iter, "]", -1);
-}
-
-/**
- * Show the results for rules diff components.
- */
-static void result_item_print_rule_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
-{
-	GtkTextIter iter;
-	apol_vector_t *v;
-	size_t i;
-	void *elem;
-	char *s = NULL;
-
-	gtk_text_buffer_get_end_iter(tb, &iter);
-	v = item->get_vector(item->diff);
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		elem = apol_vector_get_element(v, i);
-		if (item->get_form(elem) == form) {
-			s = item->get_string(item->diff, elem);
-			if (form != POLDIFF_FORM_MODIFIED) {
-				result_item_print_string(tb, &iter, s, 1);
-			} else {
-				result_item_print_string_inline(tb, &iter, s, 1);
-			}
-			free(s);
-			gtk_text_buffer_insert(tb, &iter, "\n", -1);
-		}
-	}
-}
-
-/**
- * Show the results for a modified range.
- */
-static void result_item_print_modified_range(result_item_t * item, const poldiff_range_t * range, GtkTextBuffer * tb,
-					     GtkTextIter * iter)
-{
-	char *orig_s = poldiff_range_to_string_brief(item->diff, range);
-	char *next_s = orig_s;
-	GString *string = g_string_new("");
-
-	/* first line should always be printed with normal font */
-	char *s = strsep(&next_s, "\n");
-	g_string_printf(string, "%s\n", s);
-	result_item_print_string(tb, iter, string->str, 1);
-
-	/* if the next line is minimum category set differences then
-	 * display it */
-	if (strncmp(next_s, "     minimum categories:", strlen("     minimum categories:")) == 0) {
-		s = strsep(&next_s, "\n");
-		g_string_printf(string, "%s\n", s);
-		result_item_print_string_inline(tb, iter, string->str, 1);
-	}
-	/* all subsequent lines are printed as normal (yes, this
-	 * discards lines from poldiff_range_to_string_brief() */
-	free(orig_s);
-	apol_vector_t *levels = poldiff_range_get_levels(range);
-	size_t i;
-	for (i = 0; i < apol_vector_get_size(levels); i++) {
-		poldiff_level_t *l = apol_vector_get_element(levels, i);
-		s = poldiff_level_to_string_brief(item->diff, l);
-		g_string_printf(string, "     %s", s);
-		if (poldiff_level_get_form(l) != POLDIFF_FORM_MODIFIED) {
-			result_item_print_string(tb, iter, string->str, 1);
-		} else {
-			result_item_print_string_inline(tb, iter, string->str, 1);
-		}
-		free(s);
-	}
-	g_string_free(string, TRUE);
-}
 
 /******************** single buffer functions ********************/
 
@@ -1454,4 +1123,26 @@ gint result_item_get_current_line(result_item_t * item, poldiff_form_e form)
 		return 0;
 	}
 	return item->offsets[form_reverse_map[form]];
+}
+
+/******************** friend methods below ********************/
+
+poldiff_t *result_item_get_diff(result_item_t * item)
+{
+	return item->diff;
+}
+
+apol_vector_t *result_item_get_vector(result_item_t * item)
+{
+	return item->get_vector(item->diff);
+}
+
+poldiff_form_e result_item_get_form(result_item_t * item, void *elem)
+{
+	return item->get_form(elem);
+}
+
+char *result_item_get_string(result_item_t * item, void *elem)
+{
+	return item->get_string(item->diff, elem);
 }

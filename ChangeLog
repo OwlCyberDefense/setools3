@@ -1,3 +1,8 @@
+2007-03-16  J. Tang  <jtang@tresys.com>
+
+	* Added poldiff_avrule_get_orig_line_numbers_for_perm() and
+	poldiff_avrule_get_mod_line_numbers_for_perm().
+
 2007-03-15  J. Tang  <jtang@tresys.com>
 
 	* Split libpoldiff/include/rule_diff.h into

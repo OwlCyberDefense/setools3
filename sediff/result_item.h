@@ -212,4 +212,12 @@ void result_item_save_current_line(result_item_t * item, poldiff_form_e form, gi
  */
 gint result_item_get_current_line(result_item_t * item, poldiff_form_e form);
 
+/* these next three functions exist because C has no concept of
+ * 'friend' like in C++; result_item_render needs access to three
+ * fields within the result_item. */
+poldiff_t *result_item_get_diff(result_item_t * item);
+apol_vector_t *result_item_get_vector(result_item_t * item);
+poldiff_form_e result_item_get_form(result_item_t * item, void *elem);
+char *result_item_get_string(result_item_t * item, void *elem);
+
 #endif

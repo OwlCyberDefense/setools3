@@ -462,6 +462,7 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 		return -1;
 	}
 
+	diff->line_numbers_enabled = 0;
 	for (i = 0; i < num_items; i++) {
 		/* item requested but not yet run */
 		if ((flags & item_records[i].flag_bit) && !(item_records[i].flag_bit & diff->diff_status)) {
@@ -518,15 +519,22 @@ int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5])
 int poldiff_enable_line_numbers(poldiff_t * diff)
 {
 	int retval;
-	if (qpol_policy_build_syn_rule_table(diff->orig_qpol))
+	if (diff == NULL) {
+		errno = EINVAL;
 		return -1;
-	if (qpol_policy_build_syn_rule_table(diff->mod_qpol))
-		return -1;
-	if ((retval = avrule_enable_line_numbers(diff)) < 0) {
-		return retval;
 	}
-	if ((retval = terule_enable_line_numbers(diff)) < 0) {
-		return retval;
+	if (!diff->line_numbers_enabled) {
+		if (qpol_policy_build_syn_rule_table(diff->orig_qpol))
+			return -1;
+		if (qpol_policy_build_syn_rule_table(diff->mod_qpol))
+			return -1;
+		if ((retval = avrule_enable_line_numbers(diff)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff)) < 0) {
+			return retval;
+		}
+		diff->line_numbers_enabled = 1;
 	}
 	return 0;
 }

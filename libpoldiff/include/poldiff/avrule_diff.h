@@ -200,7 +200,8 @@ extern "C"
  *  @param avrule The av rule diff from which to get line numbers.
  *
  *  @return A vector of line numbers (type unsigned long) for the rule
- *  in the original policy, or NULL if no numbers are available.
+ *  in the original policy, or NULL if no numbers are available.  Do
+ *  not destroy or otherwise modify this vector.
  */
 	extern apol_vector_t *poldiff_avrule_get_orig_line_numbers(const poldiff_avrule_t * avrule);
 
@@ -215,9 +216,60 @@ extern "C"
  *  @param avrule The av rule diff from which to get line numbers.
  *
  *  @return A vector of line numbers (type unsigned long) for the rule
- *  in the modified policy, or NULL if no numbers are available.
+ *  in the modified policy, or NULL if no numbers are available.  Do
+ *  not destroy or otherwise modify this vector.
  */
 	extern apol_vector_t *poldiff_avrule_get_mod_line_numbers(const poldiff_avrule_t * avrule);
+
+/**
+ *  Given an av rule difference and a permission name, return a vector
+ *  of all line numbers (of type unsigned long) from the original
+ *  policy; these line numbers correspond to rules that contributed to
+ *  the av rule difference and have the given permission.  Be aware
+ *  that the vector could be empty if the permission was not found.
+ *  Note that if the form is POLDIFF_FORM_ADDED or
+ *  POLDIFF_FORM_ADD_TYPE then this will return NULL.  Also, if the
+ *  original policy is a binary policy or line numbers are not yet
+ *  enabled then this returns NULL.
+ *
+ *  @see poldiff_enable_line_numbers() to enable line numbers.
+ *
+ *  @param diff Difference object containing policies to query.
+ *  @param avrule The av rule diff from which to get line numbers.
+ *  @param perm Permission to look up.
+ *
+ *  @return A vector of line numbers (type unsigned long) for the rule
+ *  in the original policy, or NULL if no numbers are available.  It
+ *  is the caller's responsiblity to call apol_vector_destroy() upon
+ *  the returned value, passing NULL as the second parameter.
+ */
+	extern apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule,
+									    const char *perm);
+
+/**
+ *  Given an av rule difference and a permission name, return a vector
+ *  of all line numbers (of type unsigned long) from the modified
+ *  policy; these line numbers correspond to rules that contributed to
+ *  the av rule difference and have the given permission.  Be aware
+ *  that the vector could be empty if the permission was not found.
+ *  Note that if the form is POLDIFF_FORM_REMOVED or
+ *  POLDIFF_FORM_REMOVE_TYPE then this will return NULL.  Also, if the
+ *  modified policy is a binary policy or line numbers are not yet
+ *  enabled then this returns NULL.
+ *
+ *  @see poldiff_enable_line_numbers() to enable line numbers.
+ *
+ *  @param diff Difference object containing policies to query.
+ *  @param avrule The av rule diff from which to get line numbers.
+ *  @param perm Permission to look up.
+ *
+ *  @return A vector of line numbers (type unsigned long) for the rule
+ *  in the modified policy, or NULL if no numbers are available.  It
+ *  is the caller's responsiblity to call apol_vector_destroy() upon
+ *  the returned value, passing NULL as the second parameter.
+ */
+	extern apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule,
+									   const char *perm);
 
 #ifdef	__cplusplus
 }

@@ -37,6 +37,7 @@ sediffx_SOURCES = \
 	progress.c progress.h \
 	remap_types_dialog.c remap_types_dialog.h \
 	result_item.c result_item.h \
+	result_item_render.c result_item_render.h \
 	results.c results.h \
 	toplevel.c toplevel.h \
 	utilgui.c utilgui.h \

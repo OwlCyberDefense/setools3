@@ -76,7 +76,9 @@ extern "C"
 		qpol_policy_t *orig_qpol;
 		/** pointer to modified's qpol policy within mod_pol */
 		qpol_policy_t *mod_qpol;
-	/** BST of duplicated strings, used when making pseudo-rules */
+		/** non-zero if rules' line numbers are accurate */
+		int line_numbers_enabled;
+		/** BST of duplicated strings, used when making pseudo-rules */
 		apol_bst_t *class_bst;
 		/** BST of duplicated strings, used when making pseudo-rules */
 		apol_bst_t *perm_bst;
