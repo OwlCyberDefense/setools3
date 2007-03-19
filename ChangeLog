@@ -1,3 +1,11 @@
+2007-03-19  J. Tang  <jtang@tresys.com>
+
+	* When viewing AV rule differences, click (either left or right) a
+	permission name.  This will now popup a menu that gives line
+	numbers for rules that contributed just that permission, rather
+	than the entire AV rule.  This is enabled when source policies are
+	used.
+
 2007-03-16  J. Tang  <jtang@tresys.com>
 
 	* Added poldiff_avrule_get_orig_line_numbers_for_perm() and

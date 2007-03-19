@@ -390,9 +390,10 @@ static apol_vector_t *avrule_get_line_numbers_for_perm(poldiff_t * diff, const c
 			}
 			for (; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
 				char *syn_perm;
-				unsigned long lineno;
 				qpol_iterator_get_item(perm_iter, (void **)&syn_perm);
 				if (strcmp(perm, syn_perm) == 0) {
+					unsigned long lineno;
+					qpol_syn_avrule_get_lineno(q, syn_rule, &lineno);
 					if (apol_vector_append(v, (void *)lineno) < 0) {
 						ERR(diff, "%s", strerror(errno));
 					}
@@ -425,7 +426,9 @@ apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(poldiff_t * diff, c
 	if (!diff->line_numbers_enabled || avrule->form == POLDIFF_FORM_ADDED || avrule->form == POLDIFF_FORM_ADD_TYPE) {
 		return NULL;
 	}
-	assert(avrule->num_orig_rules > 0);
+	if (avrule->num_orig_rules == 0) {
+		return NULL;
+	}
 	return avrule_get_line_numbers_for_perm(diff, perm, diff->orig_qpol, avrule->orig_rules, avrule->num_orig_rules);
 }
 
@@ -439,7 +442,9 @@ apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(poldiff_t * diff, co
 	if (!diff->line_numbers_enabled || avrule->form == POLDIFF_FORM_REMOVED || avrule->form == POLDIFF_FORM_REMOVE_TYPE) {
 		return NULL;
 	}
-	assert(avrule->num_mod_rules > 0);
+	if (avrule->num_mod_rules == 0) {
+		return NULL;
+	}
 	return avrule_get_line_numbers_for_perm(diff, perm, diff->mod_qpol, avrule->mod_rules, avrule->num_mod_rules);
 }
 

@@ -24,6 +24,9 @@ sediffx:
 
   * Now shows MLS diffs.
 
+  * Click upon AV rules' permissions to show line numbers that
+    contributed just that permission, rather than the entire AV rule.
+
 ==================================================
 
 SETools 3.1:

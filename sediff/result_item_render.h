@@ -40,6 +40,11 @@ void result_item_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const char
 void result_item_print_string_inline(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level);
 
 /**
+ * Show the results for a single AV rule diff string.
+ */
+void result_item_print_string_avrule(GtkTextBuffer * tb, GtkTextIter * iter, const char *s, unsigned int indent_level);
+
+/**
  * Show the results for non-rules diff components.
  */
 void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form);

@@ -30,6 +30,7 @@
 
 #include <assert.h>
 
+typedef void (*destructor_fn_t) (result_item_t * item);
 typedef void (*policy_changed_fn_t) (result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol);
 typedef void (*poldiff_run_fn_t) (result_item_t * item, poldiff_t * diff, int incremental);
 typedef GtkTextBuffer *(*get_buffer_fn_t) (result_item_t * item, poldiff_form_e form);
@@ -57,6 +58,7 @@ struct result_item
 	 poldiff_form_e(*get_form) (const void *);
 	char *(*get_string) (poldiff_t *, const void *);
 	/* below is a virtual function table */
+	destructor_fn_t destructor;
 	/** if the result item does not care about the type of
 	    policies are loaded then this can be NULL */
 	policy_changed_fn_t policy_changed;
@@ -76,6 +78,7 @@ struct result_item
 			int has_line_numbers[SEDIFFX_POLICY_NUM];
 			int cached[5];
 			GtkTextBuffer *buffers[5];
+			apol_vector_t *items[5];
 			print_diff_fn_t print_diff;
 		} multi;
 	} data;
@@ -730,6 +733,14 @@ static void result_item_multi_set_current_sort(result_item_t * item, poldiff_for
 	}
 }
 
+static void result_item_multi_destructor(result_item_t * item)
+{
+	size_t i;
+	for (i = 0; i < 5; i++) {
+		apol_vector_destroy(&item->data.multi.items[i], NULL);
+	}
+}
+
 /**
  * Constructor for the abstract multi buffer item class.  Multi-buffer
  * items are capable of sorting and potentially take some time to
@@ -745,6 +756,7 @@ static result_item_t *result_item_multi_create(GtkTextTagTable * table)
 		single_buffer = gtk_text_buffer_new(table);
 	}
 	item->supported = 1;
+	item->destructor = result_item_multi_destructor;
 	item->policy_changed = result_item_multi_policy_changed;
 	item->poldiff_run = result_item_multi_poldiff_run;
 	item->get_buffer = result_item_multi_get_buffer;
@@ -843,6 +855,8 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 	apol_vector_t *syn_linenos;
 	apol_vector_t *rules = result_item_avrule_sort(item, form);
 
+	apol_vector_destroy(&item->data.multi.items[form_reverse_map[form]], NULL);
+	item->data.multi.items[form_reverse_map[form]] = rules;
 	gtk_text_buffer_get_end_iter(tb, &iter);
 	if (apol_vector_get_size(rules) > 0) {
 		poldiff_enable_line_numbers(item->diff);
@@ -852,8 +866,8 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 		if ((s = poldiff_avrule_to_string(item->diff, elem)) == NULL) {
 			goto cleanup;
 		}
+		result_item_print_string_avrule(tb, &iter, s, 1);
 		if (form != POLDIFF_FORM_MODIFIED) {
-			result_item_print_string(tb, &iter, s, 1);
 			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
 			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
 				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
@@ -863,7 +877,6 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
 			}
 		} else {
-			result_item_print_string_inline(tb, &iter, s, 1);
 			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
 			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
 				result_item_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
@@ -877,7 +890,6 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
 	}
       cleanup:
-	apol_vector_destroy(&rules, NULL);
 	g_string_free(string, TRUE);
 }
 
@@ -1030,7 +1042,11 @@ result_item_t *result_item_create_terules(GtkTextTagTable * table)
 void result_item_destroy(result_item_t ** item)
 {
 	if (item != NULL && *item != NULL) {
-		free(*item);
+		if ((*item)->destructor != NULL) {
+			(*item)->destructor(*item);
+		} else {
+			free(*item);
+		}
 		*item = NULL;
 	}
 }
@@ -1123,6 +1139,114 @@ gint result_item_get_current_line(result_item_t * item, poldiff_form_e form)
 		return 0;
 	}
 	return item->offsets[form_reverse_map[form]];
+}
+
+static void result_item_on_orig_activate(GtkMenuItem * menuitem, gpointer user_data)
+{
+	toplevel_t *top = (toplevel_t *) user_data;
+	GtkWidget *label = gtk_bin_get_child(GTK_BIN(menuitem));
+	unsigned long line = atoi(gtk_label_get_label(GTK_LABEL(label))) - 1;
+	toplevel_show_policy_line(top, SEDIFFX_POLICY_ORIG, line);
+}
+
+static void result_item_on_mod_activate(GtkMenuItem * menuitem, gpointer user_data)
+{
+	toplevel_t *top = (toplevel_t *) user_data;
+	GtkWidget *label = gtk_bin_get_child(GTK_BIN(menuitem));
+	unsigned long line = atoi(gtk_label_get_label(GTK_LABEL(label))) - 1;
+	toplevel_show_policy_line(top, SEDIFFX_POLICY_MOD, line);
+}
+
+void result_item_inline_link_event(result_item_t * item, toplevel_t * top, GtkWidget * container, GdkEventButton * event,
+				   poldiff_form_e form, int line_num, const char *s)
+{
+	/* for now, inline links only work for avrule items */
+	assert(item->bit_pos == POLDIFF_DIFF_AVRULES);
+	const char *perm;
+	poldiff_form_e perm_form = form;
+	if (*s == '+' || *s == '-' || *s == '*') {
+		if (*s == '+') {
+			perm_form = POLDIFF_FORM_ADDED;
+		} else if (*s == '-') {
+			perm_form = POLDIFF_FORM_REMOVED;
+		}
+		perm = s + 1;
+	} else {
+		perm = s;
+	}
+	apol_vector_t *rules = item->data.multi.items[form_reverse_map[form]];
+	size_t i = line_num - 3;       /* subtract 3 because the header consume
+				        * three lines in the text buffer */
+	poldiff_avrule_t *rule = apol_vector_get_element(rules, i);
+	assert(rule != NULL);
+
+	GtkMenu *menu = GTK_MENU(gtk_menu_new());
+	GtkWidget *menuitem;
+	GString *string = g_string_new("");
+	int button, event_time;
+	gtk_menu_set_title(menu, perm);
+	menuitem = gtk_menu_item_new_with_label(perm);
+	gtk_widget_set_sensitive(menuitem, FALSE);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
+	menuitem = gtk_separator_menu_item_new();
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	menuitem = gtk_menu_item_new_with_label("Original Policy");
+	gtk_widget_set_sensitive(menuitem, FALSE);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	if (perm_form == POLDIFF_FORM_REMOVED || perm_form == POLDIFF_FORM_REMOVE_TYPE || perm_form == POLDIFF_FORM_MODIFIED) {
+		if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG]) {
+			apol_vector_t *v = poldiff_avrule_get_orig_line_numbers_for_perm(item->diff, rule, perm);
+			if (v != NULL && apol_vector_get_size(v) > 0) {
+				for (i = 0; i < apol_vector_get_size(v); i++) {
+					unsigned long line = (unsigned long)apol_vector_get_element(v, i);
+					g_string_printf(string, "  %lu", line);
+					menuitem = gtk_menu_item_new_with_label(string->str);
+					g_signal_connect(menuitem, "activate", G_CALLBACK(result_item_on_orig_activate), top);
+					gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+				}
+			}
+		} else {
+			menuitem = gtk_menu_item_new_with_label("  not a source policy");
+			gtk_widget_set_sensitive(menuitem, FALSE);
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+		}
+	}
+
+	menuitem = gtk_separator_menu_item_new();
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	menuitem = gtk_menu_item_new_with_label("Modified Policy");
+	gtk_widget_set_sensitive(menuitem, FALSE);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	if (perm_form == POLDIFF_FORM_ADDED || perm_form == POLDIFF_FORM_ADD_TYPE || perm_form == POLDIFF_FORM_MODIFIED) {
+		if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD]) {
+			apol_vector_t *v = poldiff_avrule_get_mod_line_numbers_for_perm(item->diff, rule, perm);
+			if (v != NULL && apol_vector_get_size(v) > 0) {
+				for (i = 0; i < apol_vector_get_size(v); i++) {
+					unsigned long line = (unsigned long)apol_vector_get_element(v, i);
+					g_string_printf(string, "  %lu", line);
+					menuitem = gtk_menu_item_new_with_label(string->str);
+					g_signal_connect(menuitem, "activate", G_CALLBACK(result_item_on_mod_activate), top);
+					gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+				}
+			}
+		} else {
+			menuitem = gtk_menu_item_new_with_label("  not a source policy");
+			gtk_widget_set_sensitive(menuitem, FALSE);
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+		}
+	}
+	g_string_free(string, TRUE);
+	if (event != NULL) {
+		button = event->button;
+		event_time = event->time;
+	} else {
+		button = 0;
+		event_time = gtk_get_current_event_time();
+	}
+	gtk_menu_attach_to_widget(menu, container, NULL);
+	gtk_widget_show_all(GTK_WIDGET(menu));
+	gtk_menu_popup(menu, NULL, NULL, NULL, NULL, button, event_time);
 }
 
 /******************** friend methods below ********************/

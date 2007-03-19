@@ -90,8 +90,11 @@ result_item_create_classes, result_item_create_commons,
 
 static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data);
 
+static gboolean results_on_inline_link_event(GtkTextTag * tag, GObject * event_object,
+					     GdkEvent * event, const GtkTextIter * iter, gpointer user_data);
 static gboolean results_on_line_event(GtkTextTag * tag, GObject * event_object,
 				      GdkEvent * event, const GtkTextIter * iter, gpointer user_data);
+static gboolean results_on_popup_menu(GtkWidget * widget, gpointer user_data);
 static gboolean results_on_text_view_motion(GtkWidget * widget, GdkEventMotion * event, gpointer user_data);
 /**
  * Callback whenever the user double-clicks a row in the summary tree.
@@ -158,6 +161,8 @@ results_t *results_create(toplevel_t * top)
 	gtk_text_buffer_create_tag(r->main_buffer, "removed", "foreground", "red", NULL);
 	gtk_text_buffer_create_tag(r->main_buffer, "added", "foreground", "dark green", NULL);
 	gtk_text_buffer_create_tag(r->main_buffer, "modified", "foreground", "dark blue", NULL);
+	GtkTextTag *inline_tag = gtk_text_buffer_create_tag(r->main_buffer, "inline-link", NULL);
+	g_signal_connect_after(G_OBJECT(inline_tag), "event", G_CALLBACK(results_on_inline_link_event), r);
 	r->policy_orig_tag = gtk_text_buffer_create_tag(r->main_buffer, "line-pol_orig",
 							"foreground", "blue", "underline", PANGO_UNDERLINE_SINGLE, NULL);
 	g_signal_connect_after(G_OBJECT(r->policy_orig_tag), "event", G_CALLBACK(results_on_line_event), r);
@@ -167,6 +172,7 @@ results_t *results_create(toplevel_t * top)
 
 	r->view = GTK_TEXT_VIEW(glade_xml_get_widget(r->xml, "toplevel results view"));
 	assert(r->view != NULL);
+	g_signal_connect(G_OBJECT(r->view), "popup-menu", G_CALLBACK(results_on_popup_menu), r);
 	g_signal_connect(G_OBJECT(r->view), "motion-notify-event", G_CALLBACK(results_on_text_view_motion), r);
 	attr = gtk_text_view_get_default_attributes(r->view);
 	size = pango_font_description_get_size(attr->font);
@@ -512,6 +518,32 @@ static void results_summary_on_row_activate(GtkTreeView * tree_view, GtkTreePath
 }
 
 /**
+ * Callback invoked when the user clicks on an inlink link.  This will
+ * spawn a pop-up menu where the user and get more information on the
+ * clicked string (which is hopefully an AV rule's permission).
+ */
+static gboolean results_on_inline_link_event(GtkTextTag * tag, GObject * event_object
+					     __attribute__ ((unused)), GdkEvent * event, const GtkTextIter * iter,
+					     gpointer user_data)
+{
+	results_t *r = (results_t *) user_data;
+	if (event->type == GDK_BUTTON_PRESS) {
+		GtkTextIter *start = gtk_text_iter_copy(iter);
+		while (!gtk_text_iter_begins_tag(start, tag))
+			gtk_text_iter_backward_char(start);
+		GtkTextIter *end = gtk_text_iter_copy(start);
+		while (!gtk_text_iter_ends_tag(end, tag))
+			gtk_text_iter_forward_char(end);
+		gint line = gtk_text_iter_get_line(start);
+		char *s = gtk_text_iter_get_slice(start, end);
+		result_item_inline_link_event(r->current_item, r->top, GTK_WIDGET(r->view), (GdkEventButton *) event,
+					      r->current_form, line, s);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+/**
  * Callback invoked when the user clicks on a line number tag.  This
  * will flip to the appropriate policy's source page and jump to that
  * line.
@@ -520,13 +552,11 @@ static gboolean results_on_line_event(GtkTextTag * tag, GObject * event_object _
 				      GdkEvent * event, const GtkTextIter * iter, gpointer user_data)
 {
 	results_t *r = (results_t *) user_data;
-	int offset;
 	sediffx_policy_e which_pol = -1;
 	unsigned long line;
 	GtkTextIter *start, *end;
 	if (event->type == GDK_BUTTON_PRESS) {
 		start = gtk_text_iter_copy(iter);
-		offset = gtk_text_iter_get_line_offset(start);
 
 		while (!gtk_text_iter_starts_word(start))
 			gtk_text_iter_backward_char(start);
@@ -548,6 +578,43 @@ static gboolean results_on_line_event(GtkTextTag * tag, GObject * event_object _
 		toplevel_show_policy_line(r->top, which_pol, line);
 		return TRUE;
 	}
+	return FALSE;
+}
+
+static gboolean results_on_popup_menu(GtkWidget * widget, gpointer user_data)
+{
+	results_t *r = (results_t *) user_data;
+	GtkTextView *textview = GTK_TEXT_VIEW(widget);
+	gint ex, ey, x, y;
+	GtkTextBuffer *buffer;
+	GtkTextIter iter;
+	GSList *tags, *tagp;
+	gboolean hovering = FALSE;
+	gdk_window_at_pointer(&ex, &ey);
+	gtk_text_view_window_to_buffer_coords(textview, GTK_TEXT_WINDOW_WIDGET, ex, ey, &x, &y);
+	buffer = gtk_text_view_get_buffer(textview);
+	gtk_text_view_get_iter_at_location(textview, &iter, x, y);
+	tags = gtk_text_iter_get_tags(&iter);
+	for (tagp = tags; tagp != NULL; tagp = tagp->next) {
+		if (strcmp(GTK_TEXT_TAG(tagp->data)->name, "inline-link") == 0) {
+			hovering = TRUE;
+			break;
+		}
+	}
+	if (hovering) {
+		GtkTextIter *start = gtk_text_iter_copy(&iter);
+		while (!gtk_text_iter_begins_tag(start, GTK_TEXT_TAG(tagp->data)))
+			gtk_text_iter_backward_char(start);
+		GtkTextIter *end = gtk_text_iter_copy(start);
+		while (!gtk_text_iter_ends_tag(end, GTK_TEXT_TAG(tagp->data)))
+			gtk_text_iter_forward_char(end);
+		gint line = gtk_text_iter_get_line(start);
+		char *s = gtk_text_iter_get_slice(start, end);
+		g_slist_free(tags);
+		result_item_inline_link_event(r->current_item, r->top, widget, NULL, r->current_form, line, s);
+		return TRUE;
+	}
+	g_slist_free(tags);
 	return FALSE;
 }
 
@@ -579,12 +646,12 @@ static gboolean results_on_text_view_motion(GtkWidget * widget, GdkEventMotion *
 	gtk_text_view_get_iter_at_location(textview, &iter, x, y);
 	tags = gtk_text_iter_get_tags(&iter);
 	for (tagp = tags; tagp != NULL; tagp = tagp->next) {
-		if (strncmp(GTK_TEXT_TAG(tagp->data)->name, "line", 4) == 0) {
+		if (strncmp(GTK_TEXT_TAG(tagp->data)->name, "line", 4) == 0 ||
+		    strcmp(GTK_TEXT_TAG(tagp->data)->name, "inline-link") == 0) {
 			hovering = TRUE;
 			break;
 		}
 	}
-
 	if (hovering) {
 		cursor = gdk_cursor_new(GDK_HAND2);
 		gdk_window_set_cursor(event->window, cursor);

@@ -238,10 +238,12 @@ extern "C"
  *  @param avrule The av rule diff from which to get line numbers.
  *  @param perm Permission to look up.
  *
- *  @return A vector of line numbers (type unsigned long) for the rule
- *  in the original policy, or NULL if no numbers are available.  It
- *  is the caller's responsiblity to call apol_vector_destroy() upon
- *  the returned value, passing NULL as the second parameter.
+ *  @return A vector of sorted line numbers (type unsigned long) for
+ *  the rule in the original policy, or NULL if no numbers are
+ *  available.  Note that the vector could be empty if the permission
+ *  was not found.  It is the caller's responsiblity to call
+ *  apol_vector_destroy() upon the returned value, passing NULL as the
+ *  second parameter.
  */
 	extern apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule,
 									    const char *perm);
@@ -263,10 +265,12 @@ extern "C"
  *  @param avrule The av rule diff from which to get line numbers.
  *  @param perm Permission to look up.
  *
- *  @return A vector of line numbers (type unsigned long) for the rule
- *  in the modified policy, or NULL if no numbers are available.  It
- *  is the caller's responsiblity to call apol_vector_destroy() upon
- *  the returned value, passing NULL as the second parameter.
+ *  @return A vector of sorted line numbers (type unsigned long) for
+ *  the rule in the modified policy, or NULL if no numbers are
+ *  available.  Note that the vector could be empty if the permission
+ *  was not found.  It is the caller's responsiblity to call
+ *  apol_vector_destroy() upon the returned value, passing NULL as the
+ *  second parameter.
  */
 	extern apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule,
 									   const char *perm);
