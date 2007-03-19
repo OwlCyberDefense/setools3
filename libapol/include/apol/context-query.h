@@ -45,7 +45,7 @@ extern "C"
  * initialized to nothing.  The caller must call
  * apol_context_destroy() upon the return value afterwards.
  *
- * @return An initialized MLS range structure, or NULL upon error.
+ * @return An initialized context structure, or NULL upon error.
  */
 	extern apol_context_t *apol_context_create(void);
 
@@ -58,7 +58,7 @@ extern "C"
  * @param context The libqpol context for which to create a new apol
  * context.  This context will not be altered by this call.
  *
- * @return An initialized MLS range structure, or NULL upon error.
+ * @return An initialized context structure, or NULL upon error.
  */
 	extern apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_context_t * context);
 
@@ -125,7 +125,7 @@ extern "C"
  * search context may have empty elements that indicate not to compare
  * that field.	Types will be matched if the two or any of their
  * aliases are the same.  The last parameter gives how to match ranges
- * (assuming that context2 has a range); it must be one of
+ * (assuming that search has a range); it must be one of
  * APOL_QUERY_SUB, APOL_QUERY_SUPER, APOL_QUERY_EXACT or
  * APOL_QUERY_INTERSECT as per apol_mls_range_compare().  If a context
  * is not valid according to the policy then this function returns -1.

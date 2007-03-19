@@ -141,6 +141,9 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 %inline %{
 	typedef struct apol_vector apol_string_vector_t;
 	typedef struct apol_vector apol_level_vector_t;
+	typedef struct apol_vector apol_constraint_vector_t;
+	typedef struct apol_vector apol_validatetrans_vector_t;
+	typedef struct apol_vector apol_genfscon_vector_t;
 %}
 typedef struct apol_vector {} apol_vector_t;
 %extend apol_vector_t {
@@ -295,6 +298,60 @@ typedef struct apol_vector {} apol_level_vector_t;
 	};
 	~apol_level_vector_t() {
 		apol_vector_destroy(&self, apol_mls_level_free);
+	};
+};
+typedef struct apol_vector {} apol_constraint_vector_t;
+%extend apol_constraint_vector_t {
+	apol_constraint_vector_t() {
+		return (apol_constraint_vector_t*)apol_vector_create();
+	};
+	size_t get_size() {
+		return apol_vector_get_size(self);
+	};
+	size_t get_capacity() {
+		return apol_vector_get_capacity(self);
+	};
+	const qpol_constraint_t *get_element(size_t i) {
+		return (const qpol_constraint_t*)apol_vector_get_element(self, i);
+	};
+	~apol_level_vector_t() {
+		apol_vector_destroy(&self, free);
+	};
+};
+typedef struct apol_vector {} apol_validatetrans_vector_t;
+%extend apol_validatetrans_vector_t {
+	apol_validatetrans_vector_t() {
+		return (apol_validatetrans_vector_t*)apol_vector_create();
+	};
+	size_t get_size() {
+		return apol_vector_get_size(self);
+	};
+	size_t get_capacity() {
+		return apol_vector_get_capacity(self);
+	};
+	const qpol_validatetrans_t *get_element(size_t i) {
+		return (const qpol_validatetrans_t*)apol_vector_get_element(self, i);
+	};
+	~apol_level_vector_t() {
+		apol_vector_destroy(&self, free);
+	};
+};
+typedef struct apol_vector {} apol_genfscon_vector_t;
+%extend apol_genfscon_vector_t {
+	apol_genfscon_vector_t() {
+		return (apol_genfscon_vector_t*)apol_vector_create();
+	};
+	size_t get_size() {
+		return apol_vector_get_size(self);
+	};
+	size_t get_capacity() {
+		return apol_vector_get_capacity(self);
+	};
+	const qpol_genfscon_t *get_element(size_t i) {
+		return (const qpol_genfscon_t*)apol_vector_get_element(self, i);
+	};
+	~apol_level_vector_t() {
+		apol_vector_destroy(&self, free);
 	};
 };
 
@@ -957,13 +1014,265 @@ typedef struct apol_user_query {} apol_user_query_t;
 	};
 };
 
+/* apol context */
+typedef struct apol_context {} apol_context_t;
+%extend apol_context_t {
+	apol_context_t() {
+		apol_context_t *ctx;
+		ctx = apol_context_create();
+		if (!ctx) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return ctx;
+	};
+	apol_context_t(apol_policy_t *p, qpol_context_t *in) {
+		apol_context_t *ctx;
+		ctx = apol_context_create_from_qpol_context(p, in);
+		if (!ctx) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+	return ctx;
+	};
+	~apol_context_t() {
+		apol_context_destroy(&self);
+	};
+	void set_user(apol_policy_t *p, char *name) {
+		if (apol_context_set_user(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	const char *get_user() {
+		return self->user;
+	};
+	void set_role(apol_policy_t *p, char *name) {
+		if (apol_context_set_role(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	const char *get_role() {
+		return self->role;
+	};
+	void set_type(apol_policy_t *p, char *name) {
+		if (apol_context_set_type(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	const char *get_type() {
+		return self->type;
+	};
+	void set_range(apol_policy_t *p, apol_mls_range_t *rng) {
+		if (apol_context_set_range(p, self, rng)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	const apol_mls_range_t *get_range() {
+		return self->range;
+	};
+	%newobject render();
+	char *render(apol_policy_t *p) {
+		char *str;
+		str = apol_context_render(p, self);
+		if (!str) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return str;
+	};
+};
+int apol_context_compare(apol_policy_t * p, apol_context_t * target, apol_context_t * search, unsigned int range_compare_type);
+int apol_context_validate(apol_policy_t * p, apol_context_t * context);
+int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context);
+
+/* apol constraint query */
+typedef struct apol_constraint_query {} apol_constraint_query_t;
+%extend apol_constraint_query_t {
+	apol_constraint_query_t() {
+		apol_constraint_query_t *acq;
+		acq = apol_constraint_query_create();
+		if (!acq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return acq;
+	};
+	~apol_constraint_query_t() {
+		apol_constraint_query_destroy(&self);
+	};
+	%newobject run();
+	apol_constraint_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_constraint_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run constraint query");
+		}
+	fail:
+		return (apol_constraint_vector_t*)v;
+	};
+	void set_class(apol_policy_t *p, char *name) {
+		if (apol_constraint_query_set_class(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	}
+	void set_perm(apol_policy_t *p, char *name) {
+		if (apol_constraint_query_set_perm(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	}
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_constraint_query_set_regex(p, self, regex);
+	};
+};
+
+/* apol validatetrans query */
+typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
+%extend apol_validatetrans_query_t {
+	apol_validatetrans_query_t() {
+		apol_validatetrans_query_t *avq;
+		avq = apol_validatetrans_query_create();
+		if (!avq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return avq;
+	};
+	~apol_validatetrans_query_t() {
+		apol_validatetrans_query_destroy(&self);
+	};
+	%newobject run();
+	apol_validatetrans_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_validatetrans_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run validatetrans query");
+		}
+	fail:
+		return (apol_validatetrans_vector_t*)v;
+	};
+	void set_class(apol_policy_t *p, char *name) {
+		if (apol_validatetrans_query_set_class(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	}
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_validatetrans_query_set_regex(p, self, regex);
+	};
+};
+
+/* apol genfscon query */
+typedef struct apol_genfscon_query {} apol_genfscon_query_t;
+%extend apol_genfscon_query_t {
+	apol_genfscon_query_t() {
+		apol_genfscon_query_t *agq;
+		agq = apol_genfscon_query_create();
+		if (!agq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return agq;
+	};
+	~apol_genfscon_query_t() {
+		apol_genfscon_query_destroy(&self);
+	};
+	%newobject run();
+	apol_genfscon_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_genfscon_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run validatetrans query");
+		}
+	fail:
+		return (apol_genfscon_vector_t*)v;
+	};
+	void set_filesystem(apol_policy_t *p, char *fs) {
+		if (apol_genfscon_query_set_filesystem(p, self, fs)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_path(apol_policy_t *p, char *path) {
+		if (apol_genfscon_query_set_path(p, self, path)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_objclass(apol_policy_t *p, int objclass) {
+		if (apol_genfscon_query_set_objclass(p, self, objclass)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set object class for genfscon query");
+		}
+	fail:
+		return;
+	};
+	void set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+		apol_genfscon_query_set_context(p, self, ctx, range_match);
+	};
+};
+%newobject apol_genfscon_render();
+char *apol_genfscon_render(apol_policy_t * p, qpol_genfscon_t * genfscon);
+
+/* apol fs_use query */
+typedef struct apol_fs_use_query {} apol_fs_use_query_t;
+%extend apol_fs_use_query_t {
+	apol_fs_use_query_t() {
+		apol_fs_use_query_t *afq;
+		afq = apol_fs_use_query_create();
+		if (!afq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return afq;
+	};
+	~apol_fs_use_query_t() {
+		apol_fs_use_query_destroy(&self);
+	};
+	%newobject run();
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_fs_use_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run fs_use query");
+		}
+	fail:
+		return v;
+	};
+	void set_filesystem(apol_policy_t *p, char *fs) {
+		if (apol_fs_use_query_set_filesystem(p, self, fs)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_behavior(apol_policy_t *p, int behavior) {
+		if (apol_fs_use_query_set_behavior(p, self, behavior)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set behavior for fs_use query");
+		}
+	fail:
+		return;
+	};
+	void set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+		apol_fs_use_query_set_context(p, self, ctx, range_match);
+	};
+};
+%newobject apol_fs_use_render();
+char *apol_fs_use_render(apol_policy_t * p, qpol_fs_use_t * fsuse);
+
 /* TODO */
 %include "../include/apol/avrule-query.h"
 %include "../include/apol/condrule-query.h"
-%include "../include/apol/constraint-query.h"
-%include "../include/apol/context-query.h"
 %include "../include/apol/domain-trans-analysis.h"
-%include "../include/apol/fscon-query.h"
 %include "../include/apol/infoflow-analysis.h"
 %include "../include/apol/isid-query.h"
 %include "../include/apol/netcon-query.h"
