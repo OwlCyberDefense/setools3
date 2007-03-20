@@ -85,10 +85,11 @@ extern "C"
 	extern void poldiff_type_remap_entry_remove(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
 /**
- *  Allocate and return a vector of type names (char *) corresponding
- *  to the original types within a poldiff_type_remap_entry_t object.
- *  The strings themselves are to be considered immutable; if the
- *  caller needs them for future use it should duplicate them.
+ *  Allocate and return a sorted vector of type names (char *)
+ *  corresponding to the original types within a
+ *  poldiff_type_remap_entry_t object.  The strings themselves are to
+ *  be considered immutable; if the caller needs them for future use
+ *  it should duplicate them.
  *
  *  @param diff Difference structure, for error reporting.
  *  @param entry Remap entry from which to get type names.
@@ -100,10 +101,11 @@ extern "C"
 	extern apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
 /**
- *  Allocate and return a vector of type names (char *) corresponding
- *  to the modified types within a poldiff_type_remap_entry_t object.
- *  The strings themselves are to be considered immutable; if the
- *  caller needs them for future use it should duplicate them.
+ *  Allocate and return a sorted vector of type names (char *)
+ *  corresponding to the modified types within a
+ *  poldiff_type_remap_entry_t object.  The strings themselves are to
+ *  be considered immutable; if the caller needs them for future use
+ *  it should duplicate them.
  *
  *  @param diff Difference structure, for error reporting.
  *  @param entry Remap entry from which to get type names.

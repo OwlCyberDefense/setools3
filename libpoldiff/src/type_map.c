@@ -156,6 +156,7 @@ int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names
 			goto cleanup;
 		}
 	}
+	apol_vector_sort_uniquify(entry->orig_types, NULL, NULL, NULL);
 	for (i = 0; i < apol_vector_get_size(mod_names); i++) {
 		name = (char *)apol_vector_get_element(mod_names, i);
 		if (qpol_policy_get_type_by_name(diff->mod_qpol, name, &type) < 0 ||
@@ -175,6 +176,7 @@ int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names
 			goto cleanup;
 		}
 	}
+	apol_vector_sort_uniquify(entry->mod_types, NULL, NULL, NULL);
 	entry->enabled = 1;
 	if (apol_vector_append(diff->type_map->remap, entry) < 0) {
 		error = ENOMEM;
@@ -251,6 +253,7 @@ apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t * diff, pol
 			return NULL;
 		}
 	}
+	apol_vector_sort(v, apol_str_strcmp, NULL);
 	return v;
 }
 
@@ -287,6 +290,7 @@ apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, pol
 			return NULL;
 		}
 	}
+	apol_vector_sort(v, apol_str_strcmp, NULL);
 	return v;
 }
 

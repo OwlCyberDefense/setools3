@@ -1207,7 +1207,7 @@ void result_item_inline_link_event(result_item_t * item, toplevel_t * top, GtkWi
 				}
 			}
 		} else {
-			menuitem = gtk_menu_item_new_with_label("  not a source policy");
+			menuitem = gtk_menu_item_new_with_label("  line numbers not available");
 			gtk_widget_set_sensitive(menuitem, FALSE);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 		}
@@ -1231,7 +1231,7 @@ void result_item_inline_link_event(result_item_t * item, toplevel_t * top, GtkWi
 				}
 			}
 		} else {
-			menuitem = gtk_menu_item_new_with_label("  not a source policy");
+			menuitem = gtk_menu_item_new_with_label("  line numbers not available");
 			gtk_widget_set_sensitive(menuitem, FALSE);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 		}
