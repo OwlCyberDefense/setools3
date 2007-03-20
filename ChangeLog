@@ -1,3 +1,9 @@
+2007-03-20  J. Mowery  <jmowery@tresys.com>
+
+	* Renamed apol_domain_trans_table_destroy to domain_trans_table_destroy
+	  and moved to policy-query-internal.h; this function was not intended
+	  for external use.
+
 2007-03-19  J. Tang  <jtang@tresys.com>
 
 	* When viewing AV rule differences, click (either left or right) a

@@ -183,7 +183,7 @@ void apol_policy_destroy(apol_policy_t ** policy)
 	if (policy != NULL && *policy != NULL) {
 		qpol_policy_destroy(&((*policy)->p));
 		permmap_destroy(&(*policy)->pmap);
-		apol_domain_trans_table_destroy(&(*policy)->domain_trans_table);
+		domain_trans_table_destroy(&(*policy)->domain_trans_table);
 		free(*policy);
 		*policy = NULL;
 	}

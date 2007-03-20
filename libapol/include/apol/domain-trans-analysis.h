@@ -37,7 +37,6 @@ extern "C"
 
 	typedef struct apol_domain_trans_analysis apol_domain_trans_analysis_t;
 	typedef struct apol_domain_trans_result apol_domain_trans_result_t;
-	typedef struct apol_domain_trans_table apol_domain_trans_table_t;
 
 #define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0x01
 #define APOL_DOMAIN_TRANS_DIRECTION_REVERSE 0x02
@@ -70,12 +69,6 @@ extern "C"
  *  should be reset.
  */
 	extern void apol_domain_trans_table_reset(apol_policy_t * policy);
-
-/**
- *  Destroy the domain transition table freeing all memory used.
- *  @param table Reference pointer to the table to be destroyed.
- */
-	extern void apol_domain_trans_table_destroy(apol_domain_trans_table_t ** table);
 
 /*************** functions to do domain transition anslysis ***************/
 

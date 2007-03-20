@@ -153,7 +153,7 @@ extern "C"
 	extern int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class);
 
 /**
- * Set a range trans query to return only users matching a MLS range.
+ * Set a range trans query to return only rules matching a MLS range.
  * This function takes ownership of the range, such that the caller
  * must not modify nor destroy it afterwards.
  *

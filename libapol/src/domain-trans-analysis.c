@@ -25,6 +25,7 @@
  */
 
 #include "policy-query-internal.h"
+#include <apol/domain-trans-analysis.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,7 +185,7 @@ static apol_domain_trans_table_t *apol_domain_trans_table_new(apol_policy_t * po
 
 	return new_table;
       cleanup:
-	apol_domain_trans_table_destroy(&new_table);
+	domain_trans_table_destroy(&new_table);
 	errno = error;
 	return NULL;
 }
@@ -1356,12 +1357,12 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 	apol_terule_query_destroy(&teq);
 	apol_avrule_query_destroy(&avq);
 	qpol_iterator_destroy(&iter);
-	apol_domain_trans_table_destroy(&policy->domain_trans_table);
+	domain_trans_table_destroy(&policy->domain_trans_table);
 	errno = error;
 	return -1;
 }
 
-void apol_domain_trans_table_destroy(apol_domain_trans_table_t ** table)
+void domain_trans_table_destroy(apol_domain_trans_table_t ** table)
 {
 	int i;
 

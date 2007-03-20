@@ -160,6 +160,8 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 	typedef struct apol_vector apol_validatetrans_vector_t;
 	typedef struct apol_vector apol_genfscon_vector_t;
 	typedef struct apol_vector apol_nodecon_vector_t;
+	typedef struct apol_vector apol_domain_trans_result_vector_t;
+	typedef struct apol_vector apol_infoflow_result_vector_t;
 %}
 typedef struct apol_vector {} apol_vector_t;
 %extend apol_vector_t {
@@ -388,6 +390,42 @@ typedef struct apol_vector {} apol_nodecon_vector_t;
 		apol_vector_destroy(&self, free);
 	};
 };
+typedef struct apol_vector {} apol_domain_trans_result_vector_t;
+%extend apol_domain_trans_result_vector_t {
+	apol_domain_trans_result_vector_t() {
+		return (apol_domain_trans_result_vector_t*)apol_vector_create();
+	};
+	size_t get_size() {
+		return apol_vector_get_size(self);
+	};
+	size_t get_capacity() {
+		return apol_vector_get_capacity(self);
+	};
+	const apol_domain_trans_result_t *get_element(size_t i) {
+		return (const apol_domain_trans_result_t*)apol_vector_get_element(self, i);
+	};
+	~apol_nodecon_vector_t() {
+		apol_vector_destroy(&self, apol_domain_trans_result_free);
+	};
+};
+typedef struct apol_vector {} apol_infoflow_result_vector_t;
+%extend apol_infoflow_result_vector_t {
+	apol_infoflow_result_vector_t() {
+		return (apol_infoflow_result_vector_t*)apol_vector_create();
+	};
+	size_t get_size() {
+		return apol_vector_get_size(self);
+	};
+	size_t get_capacity() {
+		return apol_vector_get_capacity(self);
+	};
+	const apol_infoflow_result_t *get_element(size_t i) {
+		return (const apol_infoflow_result_t*)apol_vector_get_element(self, i);
+	};
+	~apol_nodecon_vector_t() {
+		apol_vector_destroy(&self, apol_infoflow_result_free);
+	};
+};
 
 /* apol policy path */
 	typedef enum apol_policy_path_type
@@ -448,6 +486,13 @@ int apol_policy_path_compare(const apol_policy_path_t * a, const apol_policy_pat
 
 /* apol policy */
 typedef struct apol_policy {} apol_policy_t;
+#define APOL_PERMMAP_MAX_WEIGHT 10
+#define APOL_PERMMAP_MIN_WEIGHT 1
+#define APOL_PERMMAP_UNMAPPED	0x00
+#define	APOL_PERMMAP_READ	0x01
+#define APOL_PERMMAP_WRITE	0x02
+#define APOL_PERMMAP_BOTH	(APOL_PERMMAP_READ | APOL_PERMMAP_WRITE)
+#define APOL_PERMMAP_NONE	0x10
 %extend apol_policy_t {
 	apol_policy_t(apol_policy_path_t *path, int options = 0) {
 		apol_policy_t *p;
@@ -481,6 +526,53 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return str;
 	};
+	void load_permmap(char *path) {
+		if (apol_permmap_load(self, path) < 0) {
+			SWIG_exception(SWIG_RuntimeError, "Error loading permission map");
+		}
+	fail:
+		return;
+	};
+	void save_permmap(char *path) {
+		if (apol_permmap_save(self, path)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not save permission map");
+		}
+	fail:
+		return;
+	};
+	int get_permmap_weight(char *class_name, char *perm_name) {
+		int dir, weight;
+		if (apol_permmap_get(self, class_name, perm_name, &dir, &weight)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not get permission map weight");
+		}
+	fail:
+		return weight;
+	};
+	int get_permmap_direction(char *class_name, char *perm_name) {
+		int dir, weight;
+		if (apol_permmap_get(self, class_name, perm_name, &dir, &weight)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not get permission map direction");
+		}
+	fail:
+		return dir;
+	};
+	void permmap_set(char *class_name, char *perm_name, int direction, int weight) {
+		if (apol_permmap_set(self, class_name, perm_name, direction, weight)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set permission mapping");
+		}
+	fail:
+		return;
+	};
+	void build_domain_trans_table() {
+		if (apol_domain_trans_table_build(self)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not build domain transition table");
+		}
+	fail:
+		return;
+	};
+	void reset_domain_trans_table() {
+		apol_domain_trans_table_reset(self);
+	}
 };
 
 /* apol type query */
@@ -1787,12 +1879,435 @@ typedef struct apol_role_allow_query {} apol_role_allow_query_t;
 char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule);
 
 /* apol role transition rule query */
+typedef struct apol_role_trans_query {} apol_role_trans_query_t;
+%extend apol_role_trans_query_t {
+	apol_role_trans_query_t() {
+		apol_role_trans_query_t *arq;
+		arq = apol_role_trans_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return arq;
+	};
+	~apol_role_trans_query_t() {
+		apol_role_trans_query_destroy(&self);
+	};
+	%newobject run();
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_role_trans_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run role transition query");
+		}
+	fail:
+		return v;
+	};
+	void set_source(apol_policy_t *p, char *name) {
+		if (apol_role_trans_query_set_source(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_target(apol_policy_t *p, char *name, int indirect) {
+		if (apol_role_trans_query_set_target(p, self, name, indirect)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_default(apol_policy_t *p, char *name) {
+		if (apol_role_trans_query_set_default(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_source_any(apol_policy_t *p, int is_any) {
+		apol_role_trans_query_set_source_any(p, self, is_any);
+	};
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_role_trans_query_set_regex(p, self, regex);
+	};
+};
+%newobject apol_role_trans_render();
+char *apol_role_trans_render(apol_policy_t * policy, qpol_role_trans_t * rule);
+
+/* apol range transition rule query */
+typedef struct apol_range_trans_query {} apol_range_trans_query_t;
+%extend apol_range_trans_query_t {
+	apol_range_trans_query_t() {
+		apol_range_trans_query_t *arq;
+		arq = apol_range_trans_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return arq;
+	};
+	~apol_range_trans_query_t() {
+		apol_range_trans_query_destroy(&self);
+	};
+	%newobject run();
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_range_trans_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run range transition query");
+		}
+	fail:
+		return v;
+	};
+	void set_source(apol_policy_t *p, char *name, int indirect) {
+		if (apol_range_trans_query_set_source(p, self, name, indirect)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_target(apol_policy_t *p, char *name, int indirect) {
+		if (apol_range_trans_query_set_target(p, self, name, indirect)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void append_class(apol_policy_t *p, char *name) {
+		if (apol_range_trans_query_append_class(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append class to range transition query");
+		}
+	fail:
+		return;
+	};
+	void set_range(apol_policy_t *p, apol_mls_range_t *rng, int range_match) {
+		if (apol_range_trans_query_set_range(p, self, rng, range_match)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_source_any(apol_policy_t *p, int is_any) {
+		apol_range_trans_query_set_source_any(p, self, is_any);
+	};
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_range_trans_query_set_regex(p, self, regex);
+	};
+};
+%newobject apol_range_trans_render();
+char *apol_range_trans_render(apol_policy_t * policy, qpol_range_trans_t * rule);
+
+/* domain transition analysis */
+#define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0x01
+#define APOL_DOMAIN_TRANS_DIRECTION_REVERSE 0x02
+#define APOL_DOMAIN_TRANS_SEARCH_VALID		0x01
+#define APOL_DOMAIN_TRANS_SEARCH_INVALID	0x02
+#define APOL_DOMAIN_TRANS_SEARCH_BOTH		(APOL_DOMAIN_TRANS_SEARCH_VALID|APOL_DOMAIN_TRANS_SEARCH_INVALID)
+typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
+%extend apol_domain_trans_analysis_t {
+	apol_domain_trans_analysis_t() {
+		apol_domain_trans_analysis_t *dta;
+		dta = apol_domain_trans_analysis_create();
+		if (!dta) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return dta;
+	};
+	~apol_domain_trans_analysis_t() {
+		apol_domain_trans_analysis_destroy(&self);
+	};
+	void set_direction(apol_policy_t *p, int direction) {
+		if (apol_domain_trans_analysis_set_direction(p, self, (unsigned char)direction)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set direction for domain transition analysis");
+		}
+	fail:
+		return;
+	};
+	void set_valid(apol_policy_t *p, int valid) {
+		if (apol_domain_trans_analysis_set_valid(p, self, (unsigned char)valid)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set valid flag for domain transition analysis");
+		}
+	fail:
+		return;
+	};
+	void set_start_type(apol_policy_t *p, char *name) {
+		if (apol_domain_trans_analysis_set_start_type(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void set_result_regex(apol_policy_t *p, char *regex) {
+		if (apol_domain_trans_analysis_set_result_regex(p, self, regex)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return;
+	};
+	void append_access_type(apol_policy_t *p, char *name) {
+		if (apol_domain_trans_analysis_append_access_type(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append access type for domain transition analysis");
+		}
+	fail:
+		return;
+	};
+	void append_class_perm(apol_policy_t *p, char *class_name, char *perm_name) {
+		if (apol_domain_trans_analysis_append_class_perm(p, self, class_name, perm_name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append access class and permission for domain transition analysis");
+		}
+	fail:
+		return;
+	};
+	%newobject run();
+	apol_domain_trans_result_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_domain_trans_analysis_do(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run domain transition analysis");
+		}
+	fail:
+		return (apol_domain_trans_result_vector_t*)v;
+	};
+};
+
+typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
+%extend apol_domain_trans_result_t {
+	apol_domain_trans_result_t(void *x) {
+		return (apol_domain_trans_result_t*)x;
+	};
+	apol_domain_trans_result_t(apol_domain_trans_result_t *in) {
+		apol_domain_trans_result_t *dtr;
+		dtr = apol_domain_trans_result_create_from_result(in);
+		if (!dtr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return dtr;
+	};
+	~apol_domain_trans_result_t() {
+		/* no op - vector will destroy these */
+		return;
+	};
+	const qpol_type_t *get_start_type() {
+		return apol_domain_trans_result_get_start_type(self);
+	};
+	const qpol_type_t *get_entrypoint_type() {
+		return apol_domain_trans_result_get_entrypoint_type(self);
+	};
+	const qpol_type_t *get_end_type() {
+		return apol_domain_trans_result_get_end_type(self);
+	};
+	int get_is_valid() {
+		return apol_domain_trans_result_is_trans_valid(self);
+	};
+	const apol_vector_t *get_proc_trans_rules() {
+		return apol_domain_trans_result_get_proc_trans_rules(self);
+	};
+	const apol_vector_t *get_entrypoint_rules() {
+		return apol_domain_trans_result_get_entrypoint_rules(self);
+	};
+	const apol_vector_t *get_exec_rules() {
+		return apol_domain_trans_result_get_exec_rules(self);
+	};
+	const apol_vector_t *get_setexec_rules() {
+		return apol_domain_trans_result_get_setexec_rules(self);
+	};
+	const apol_vector_t *get_type_trans_rules() {
+		return apol_domain_trans_result_get_type_trans_rules(self);
+	};
+	const apol_vector_t *get_access_rules() {
+		return apol_domain_trans_result_get_access_rules(self);
+	};
+};
+#define APOL_DOMAIN_TRANS_RULE_PROC_TRANS       0x01
+#define APOL_DOMAIN_TRANS_RULE_EXEC             0x02
+#define APOL_DOMAIN_TRANS_RULE_EXEC_NO_TRANS    0x04
+#define APOL_DOMAIN_TRANS_RULE_ENTRYPOINT       0x08
+#define APOL_DOMAIN_TRANS_RULE_TYPE_TRANS       0x10
+#define APOL_DOMAIN_TRANS_RULE_SETEXEC          0x20
+int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * start_dom, qpol_type_t * ep_type,	qpol_type_t * end_dom);
+
+/* apol infoflow analysis */
+%{
+	typedef struct apol_infoflow {
+		apol_infoflow_graph_t *g;
+		apol_vector_t *v;
+	} apol_infoflow_t;
+	apol_infoflow_t *apol_infoflow_create() {
+		return calloc(1, sizeof(apol_infoflow_t));
+	};
+	void apol_infoflow_destroy(apol_infoflow_t **in) {
+		if (!in || !(*in)) {
+			return;
+		}
+		free(*in); /* NOTE: does not free contents intentionally */
+		*in = NULL;
+	};
+%}
+typedef struct apol_infoflow {} apol_infoflow_t;
+%extend apol_infoflow_t {
+	apol_infoflow_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_t objects");
+	fail:
+		return NULL;
+	};
+	~apol_infoflow_t() {
+		apol_infoflow_destroy(&self);
+	};
+	%newobject extract_graph();
+	apol_infoflow_graph_t *extract_graph() {
+		apol_infoflow_graph_t *g = self->g;
+		self->g = NULL;
+		return g;
+	};
+	%newobject extract_result_vector();
+	apol_infoflow_result_vector_t *extract_result_vector() {
+		apol_vector_t *v = self->v;
+		self->v = NULL;
+		return (apol_infoflow_result_vector_t*)v;
+	};
+};
+typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
+%extend apol_infoflow_analysis_t {
+	apol_infoflow_analysis_t() {
+		apol_infoflow_analysis_t *aia;
+		aia = apol_infoflow_analysis_create();
+		if (!aia) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return aia;
+	};
+	~apol_infoflow_analysis_t() {
+		apol_infoflow_analysis_destroy(&self);
+	};
+	%newobject run();
+	apol_infoflow_t *run(apol_policy_t *p) {
+		apol_infoflow_t *ai = apol_infoflow_create();
+		if (!ai) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		if (apol_infoflow_analysis_do(p, self, &ai->v, &ai->g)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run information flow analysis");
+		}
+		return ai;
+	fail:
+		apol_vector_destroy(&ai->v, apol_infoflow_result_free);
+		apol_infoflow_graph_destroy(&ai->g);
+		apol_infoflow_destroy(&ai);
+		return NULL;
+	};
+	void set_mode(apol_policy_t *p, int mode) {
+		if (apol_infoflow_analysis_set_mode(p, self, (unsigned int)mode)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set mode for information flow analysis");
+		}
+	fail:
+		return;
+	};
+	void set_direction(apol_policy_t *p, int direction) {
+		if (apol_infoflow_analysis_set_direction(p, self, (unsigned int)direction)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set direction for information flow analysis");
+		}
+	fail:
+		return;
+	};
+	void set_type(apol_policy_t *p, char *name) {
+		if (apol_infoflow_analysis_set_type(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set type for information flow analysis");
+		}
+	fail:
+		return;
+	};
+	void append_intermediate(apol_policy_t *p, char *name) {
+		if (apol_infoflow_analysis_append_intermediate(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append intermediate type for information flow analysis");
+		}
+	fail:
+		return;
+	};
+	void append_class_perm(apol_policy_t *p, char *class_name, char *perm_name) {
+		if (apol_infoflow_analysis_append_class_perm(p, self, class_name, perm_name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append class and permission for information flow analysis");
+		}
+	fail:
+		return;
+	};
+	void set_min_weight(apol_policy_t *p, int weight) {
+		apol_infoflow_analysis_set_min_weight(p, self, weight);
+	};
+	void set_result_regex(apol_policy_t *p, char *regex) {
+		if (apol_infoflow_analysis_set_result_regex(p, self, regex)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set result regular expression for information flow analysis");
+		}
+	fail:
+		return;
+	};
+};
+typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
+%extend apol_infoflow_graph_t {
+	apol_infoflow_graph_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_graph_t objects");
+	fail:
+		return NULL;
+	};
+	~apol_infoflow_graph_t() {
+		apol_infoflow_graph_destroy(&self);
+	};
+	%newobject do_more();
+	apol_infoflow_result_vector_t *do_more(apol_policy_t *p, char *type) {
+		apol_vector_t *v;
+		if (apol_infoflow_analysis_do_more(p, self, type, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not do more analysis of information flow graph");
+		}
+	fail:
+		return (apol_infoflow_result_vector_t*)v;
+	};
+	void further_prepare(apol_policy_t *p, char *start_type, char *end_type) {
+		if (apol_infoflow_analysis_further_prepare(p, self, start_type, end_type)) {
+			SWIG_exception(SWIG_MemoryError, "Error preparing graph for further information flow analysis");
+		}
+	fail:
+		return;
+	};
+	void further_next(apol_policy_t *p, apol_infoflow_result_vector_t *v) {
+		if (apol_infoflow_analysis_further_next(p, self, (apol_vector_t*)v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run further analysis");
+		}
+	fail:
+		return;
+	};
+};
+typedef struct apol_infoflow_result {} apol_infoflow_result_t;
+%extend apol_infoflow_result_t {
+	apol_infoflow_result_t(apol_infoflow_result_t *in) {
+		apol_infoflow_result_t *air;
+		air = apol_infoflow_result_create_from_result(in);
+		if (!air) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return air;
+	};
+	~apol_infoflow_result_t() {
+		/* no op - vector will destroy */
+		return;
+	};
+	int get_dir() {
+		return (int)apol_infoflow_result_get_dir(self);
+	};
+	const qpol_type_t *get_start_type() {
+		return apol_infoflow_result_get_start_type(self);
+	};
+	const qpol_type_t *get_end_type() {
+		return apol_infoflow_result_get_end_type(self);
+	};
+	int get_length() {
+		return (int) apol_infoflow_result_get_length(self);
+	}
+	//step vector accessor
+};
+//infoflow_step_t
+
 
 /* TODO */
-%include "../include/apol/domain-trans-analysis.h"
-%include "../include/apol/infoflow-analysis.h"
-%include "../include/apol/perm-map.h"
-%include "../include/apol/range_trans-query.h"
-//%include "../include/apol/rbacrule-query.h"
+//%include "../include/apol/infoflow-analysis.h"
 %include "../include/apol/relabel-analysis.h"
 %include "../include/apol/types-relation-analysis.h"
