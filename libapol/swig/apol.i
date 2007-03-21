@@ -564,7 +564,7 @@ typedef struct apol_policy {} apol_policy_t;
 		return;
 	};
 	void build_domain_trans_table() {
-		if (apol_domain_trans_table_build(self)) {
+		if (apol_policy_domain_trans_table_build(self)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not build domain transition table");
 		}
 	fail:
@@ -2203,7 +2203,7 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 		return;
 	};
 	void set_direction(apol_policy_t *p, int direction) {
-		if (apol_infoflow_analysis_set_direction(p, self, (unsigned int)direction)) {
+		if (apol_infoflow_analysis_set_dir(p, self, (unsigned int)direction)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set direction for information flow analysis");
 		}
 	fail:
@@ -2260,15 +2260,15 @@ typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
 	fail:
 		return (apol_infoflow_result_vector_t*)v;
 	};
-	void further_prepare(apol_policy_t *p, char *start_type, char *end_type) {
-		if (apol_infoflow_analysis_further_prepare(p, self, start_type, end_type)) {
+	void trans_further_prepare(apol_policy_t *p, char *start_type, char *end_type) {
+		if (apol_infoflow_analysis_trans_further_prepare(p, self, start_type, end_type)) {
 			SWIG_exception(SWIG_MemoryError, "Error preparing graph for further information flow analysis");
 		}
 	fail:
 		return;
 	};
-	void further_next(apol_policy_t *p, apol_infoflow_result_vector_t *v) {
-		if (apol_infoflow_analysis_further_next(p, self, (apol_vector_t*)v)) {
+	void trans_further_next(apol_policy_t *p, apol_infoflow_result_vector_t *v) {
+		if (apol_infoflow_analysis_trans_further_next(p, self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run further analysis");
 		}
 	fail:
