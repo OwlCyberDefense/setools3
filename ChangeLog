@@ -1,3 +1,9 @@
+2007-03-21  J. Tang  <jtang@tresys.com>
+
+	* Added ability for user to specify type joins and splits in
+	sediffx.  The libpoldiff library had always supported this
+	feature; it just was not available through the user interface.
+
 2007-03-20  J. Mowery  <jmowery@tresys.com>
 
 	* Renamed apol_domain_trans_table_destroy to domain_trans_table_destroy

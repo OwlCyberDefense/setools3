@@ -218,6 +218,15 @@ was a type in one policy but became an alias in the other.  There may
 be instances where the operator has special knowledge of the remaining
 unmapped types.  From sediffx's main interface, select "Remap Types"
 from the Tools menu to open a dialog box.  Add additional remappings
-between types as necessary.  Note that sediffx will only list explicit
-mappings; it does not display mappings that it inferred when the two
-policies were loaded.
+between types as necessary.
+
+There are times when a one-to-one mapping is not sufficient for
+analysis purposes.  Occasionally a type is "split" into two or more
+types; conversely multiple types are "joined" into a single type.  For
+example, a policy use the type "games_t" for a number of programs.  At
+some point in the future the policy writer decides to give NetHack its
+own type, "nethack_t".  To represent this type split in sediffx, go to
+the Remap Types dialog.  There should already be an inferred mapping
+from the original policy's games_t to the modified policy.  Add a new
+mapping from games_t to nethack_t.  The mappings list will be updated
+to show that games_t now maps to both games_t and nethack_t.

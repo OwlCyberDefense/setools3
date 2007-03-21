@@ -45,10 +45,11 @@ struct remap_types
 	GtkCheckButton *show_inferred;
 	/** drop-down combo boxes that allow user to add new remap */
 	GtkComboBoxEntry *combo[SEDIFFX_POLICY_NUM];
+	GtkCheckButton *show_unmapped_types;
 	GtkButton *add, *remove;
 	GtkListStore *remaps;
-	GtkTreeModelSort *sort;
 	GtkTreeModelFilter *filter;
+	GtkTreeModelSort *sort;
 	/** non-zero if a type map was added or removed */
 	int changed;
 };
@@ -58,7 +59,9 @@ enum
 	ORIG_NAME_COL = 0, MOD_NAME_COL, ORIG_HIGHLIGHT_VALUE_COL, MOD_HIGHLIGHT_VALUE_COL, ENTRY_COL, NUM_COLUMNS
 };
 
+static GtkTreeModelFilter *types_filter[SEDIFFX_POLICY_NUM] = { NULL, NULL };
 static GtkListStore *types[SEDIFFX_POLICY_NUM] = { NULL, NULL };
+static gboolean show_only_unmapped = TRUE;
 
 /**
  * Go through all entries in the list store; for those that map the
@@ -112,16 +115,21 @@ static void remap_types_highlight_entries(struct remap_types *rt)
 }
 
 /**
- * Populate the main text view with all type remaps currently within
+ * Populate the main tree model with all type remaps currently within
  * the poldiff object.
  */
 static void remap_types_update_view(struct remap_types *rt)
 {
 	apol_vector_t *entries = poldiff_type_remap_get_entries(rt->diff);
 	apol_vector_t *origs = NULL, *mods = NULL;
-	char *orig_string = NULL, *mod_string = NULL;
-	size_t i;
+	apol_vector_t *used_origs = NULL, *used_mods = NULL;
+	char *orig_string = NULL, *mod_string = NULL, *s, *t;
+	size_t i, j;
 	GtkTreeIter iter;
+	if ((used_origs = apol_vector_create()) == NULL || (used_mods = apol_vector_create()) == NULL) {
+		toplevel_ERR(rt->top, "%s", strerror(errno));
+		goto cleanup;
+	}
 	gtk_list_store_clear(rt->remaps);
 	for (i = 0; i < apol_vector_get_size(entries); i++) {
 		poldiff_type_remap_entry_t *e = apol_vector_get_element(entries, i);
@@ -129,11 +137,21 @@ static void remap_types_update_view(struct remap_types *rt)
 		    (mods = poldiff_type_remap_entry_get_modified_types(rt->diff, e)) == NULL ||
 		    (orig_string = apol_str_join(origs, ", ")) == NULL || (mod_string = apol_str_join(mods, ", ")) == NULL) {
 			toplevel_ERR(rt->top, "%s", strerror(errno));
-			apol_vector_destroy(&origs, NULL);
-			apol_vector_destroy(&mods, NULL);
-			free(orig_string);
-			free(mod_string);
-			return;
+			goto cleanup;
+		}
+		for (j = 0; j < apol_vector_get_size(origs); j++) {
+			s = apol_vector_get_element(origs, j);
+			if (apol_vector_append(used_origs, s) < 0) {
+				toplevel_ERR(rt->top, "%s", strerror(errno));
+				goto cleanup;
+			}
+		}
+		for (j = 0; j < apol_vector_get_size(mods); j++) {
+			s = apol_vector_get_element(mods, j);
+			if (apol_vector_append(used_mods, s) < 0) {
+				toplevel_ERR(rt->top, "%s", strerror(errno));
+				goto cleanup;
+			}
 		}
 		gtk_list_store_append(rt->remaps, &iter);
 		gtk_list_store_set(rt->remaps, &iter, ORIG_NAME_COL, orig_string, MOD_NAME_COL, mod_string, ENTRY_COL, e, -1);
@@ -141,14 +159,70 @@ static void remap_types_update_view(struct remap_types *rt)
 		apol_vector_destroy(&mods, NULL);
 		free(orig_string);
 		free(mod_string);
+		orig_string = NULL;
+		mod_string = NULL;
 	}
+
+	/* mark entries in the 'types' list store that are used.  the
+	 * algorithm works only because the types list store was
+	 * sorted by remap_types_update().  */
+	apol_vector_sort_uniquify(used_origs, apol_str_strcmp, NULL, NULL);
+	apol_vector_sort_uniquify(used_mods, apol_str_strcmp, NULL, NULL);
+	i = 0;
+	s = apol_vector_get_element(used_origs, i);
+	gboolean iter_valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(types[SEDIFFX_POLICY_ORIG]), &iter);
+	while (iter_valid && s != NULL) {
+		gtk_tree_model_get(GTK_TREE_MODEL(types[SEDIFFX_POLICY_ORIG]), &iter, 0, &t, -1);
+		if (strcmp(s, t) == 0) {
+			gtk_list_store_set(types[SEDIFFX_POLICY_ORIG], &iter, 1, TRUE, -1);
+			i++;
+			s = apol_vector_get_element(used_origs, i);
+		} else {
+			gtk_list_store_set(types[SEDIFFX_POLICY_ORIG], &iter, 1, FALSE, -1);
+		}
+		iter_valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(types[SEDIFFX_POLICY_ORIG]), &iter);
+	}
+	assert(i >= apol_vector_get_size(used_origs));
+
+	i = 0;
+	s = apol_vector_get_element(used_mods, i);
+	iter_valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(types[SEDIFFX_POLICY_MOD]), &iter);
+	while (iter_valid && s != NULL) {
+		gtk_tree_model_get(GTK_TREE_MODEL(types[SEDIFFX_POLICY_MOD]), &iter, 0, &t, -1);
+		if (strcmp(s, t) == 0) {
+			gtk_list_store_set(types[SEDIFFX_POLICY_MOD], &iter, 1, TRUE, -1);
+			i++;
+			s = apol_vector_get_element(used_mods, i);
+		} else {
+			gtk_list_store_set(types[SEDIFFX_POLICY_MOD], &iter, 1, FALSE, -1);
+		}
+		iter_valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(types[SEDIFFX_POLICY_MOD]), &iter);
+	}
+	assert(i >= apol_vector_get_size(used_mods));
+
 	remap_types_highlight_entries(rt);
+	gtk_tree_model_filter_refilter(types_filter[SEDIFFX_POLICY_ORIG]);
+	gtk_tree_model_filter_refilter(types_filter[SEDIFFX_POLICY_MOD]);
+      cleanup:
+	apol_vector_destroy(&used_origs, NULL);
+	apol_vector_destroy(&used_mods, NULL);
+	apol_vector_destroy(&origs, NULL);
+	apol_vector_destroy(&mods, NULL);
+	free(orig_string);
+	free(mod_string);
 }
 
 static void remap_types_on_show_inferred_toggle(GtkToggleButton * toggle __attribute__ ((unused)), gpointer user_data)
 {
 	struct remap_types *rt = (struct remap_types *)user_data;
 	gtk_tree_model_filter_refilter(rt->filter);
+}
+
+static void remap_types_on_show_unmapped_types_toggle(GtkToggleButton * toggle, gpointer user_data __attribute__ ((unused)))
+{
+	show_only_unmapped = gtk_toggle_button_get_active(toggle);
+	gtk_tree_model_filter_refilter(types_filter[SEDIFFX_POLICY_ORIG]);
+	gtk_tree_model_filter_refilter(types_filter[SEDIFFX_POLICY_MOD]);
 }
 
 static void remap_types_on_selection_change(GtkTreeSelection * selection, gpointer user_data)
@@ -245,10 +319,7 @@ static void remap_types_on_remove_click(GtkButton * button __attribute__ ((unuse
 		poldiff_type_remap_entry_t *entry;
 		gtk_tree_model_get(GTK_TREE_MODEL(rt->sort), &iter, ENTRY_COL, &entry, -1);
 		poldiff_type_remap_entry_remove(rt->diff, entry);
-		GtkTreeIter filteriter, listiter;
-		gtk_tree_model_sort_convert_iter_to_child_iter(rt->sort, &filteriter, &iter);
-		gtk_tree_model_filter_convert_iter_to_child_iter(rt->filter, &listiter, &filteriter);
-		gtk_list_store_remove(rt->remaps, &listiter);
+		remap_types_update_view(rt);
 		rt->changed = 1;
 	}
 }
@@ -275,7 +346,7 @@ static gboolean remap_types_filter_visible(GtkTreeModel * model, GtkTreeIter * i
 {
 	struct remap_types *rt = (struct remap_types *)user_data;
 	poldiff_type_remap_entry_t *entry;
-	gtk_tree_model_get(GTK_TREE_MODEL(model), iter, ENTRY_COL, &entry, -1);
+	gtk_tree_model_get(model, iter, ENTRY_COL, &entry, -1);
 	if (poldiff_type_remap_entry_get_is_inferred(entry)) {
 		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rt->show_inferred))) {
 			return TRUE;
@@ -300,9 +371,12 @@ static void remap_types_init_widgets(struct remap_types *rt)
 	rt->show_inferred = GTK_CHECK_BUTTON(glade_xml_get_widget(rt->xml, "remap_types inferred checkbutton"));
 	rt->combo[SEDIFFX_POLICY_ORIG] = GTK_COMBO_BOX_ENTRY(glade_xml_get_widget(rt->xml, "remap_types orig combo"));
 	rt->combo[SEDIFFX_POLICY_MOD] = GTK_COMBO_BOX_ENTRY(glade_xml_get_widget(rt->xml, "remap_types mod combo"));
+	rt->show_unmapped_types = GTK_CHECK_BUTTON(glade_xml_get_widget(rt->xml, "remap_types only unmapped checkbutton"));
 	assert(rt->view != NULL && rt->show_inferred && rt->combo[SEDIFFX_POLICY_ORIG] != NULL
-	       && rt->combo[SEDIFFX_POLICY_MOD] != NULL);
+	       && rt->combo[SEDIFFX_POLICY_MOD] != NULL && rt->show_unmapped_types != NULL);
 	g_signal_connect(rt->show_inferred, "toggled", G_CALLBACK(remap_types_on_show_inferred_toggle), rt);
+	g_signal_connect(rt->show_unmapped_types, "toggled", G_CALLBACK(remap_types_on_show_unmapped_types_toggle), rt);
+	show_only_unmapped = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rt->show_unmapped_types));
 
 	rt->add = GTK_BUTTON(glade_xml_get_widget(rt->xml, "remap_types add button"));
 	rt->remove = GTK_BUTTON(glade_xml_get_widget(rt->xml, "remap_types remove button"));
@@ -346,6 +420,8 @@ static void remap_types_init_widgets(struct remap_types *rt)
 	gtk_tree_view_append_column(GTK_TREE_VIEW(rt->view), column);
 }
 
+static gboolean remap_types_types_filter_visible(GtkTreeModel * model, GtkTreeIter * iter, gpointer user_data);
+
 /**
  * Set up the combo boxes to show only types unique to that policy.
  * (The lists of types were calculated by remap_types_update().)
@@ -354,7 +430,7 @@ static void remap_types_init_combos(struct remap_types *rt)
 {
 	sediffx_policy_e i;
 	for (i = SEDIFFX_POLICY_ORIG; i < SEDIFFX_POLICY_NUM; i++) {
-		gtk_combo_box_set_model(GTK_COMBO_BOX(rt->combo[i]), GTK_TREE_MODEL(types[i]));
+		gtk_combo_box_set_model(GTK_COMBO_BOX(rt->combo[i]), GTK_TREE_MODEL(types_filter[i]));
 		gtk_combo_box_entry_set_text_column(rt->combo[i], 0);
 		g_signal_connect(rt->combo[i], "changed", G_CALLBACK(remap_types_on_combo_change), rt);
 	}
@@ -377,8 +453,22 @@ int remap_types_run(toplevel_t * top)
 	response = gtk_dialog_run(rt.dialog);
 
 	gtk_widget_destroy(GTK_WIDGET(rt.dialog));
+	g_object_unref(rt.sort);
+	g_object_unref(rt.filter);
 	g_object_unref(rt.remaps);
 	return rt.changed;
+}
+
+static gboolean remap_types_types_filter_visible(GtkTreeModel * model, GtkTreeIter * iter, gpointer user_data
+						 __attribute__ ((unused)))
+{
+	gboolean in_use;
+	if (!show_only_unmapped) {
+		return TRUE;
+	}
+	/* otherwise show types that are not being used */
+	gtk_tree_model_get(model, iter, 1, &in_use, -1);
+	return !in_use;
 }
 
 /**
@@ -400,17 +490,23 @@ int remap_types_update(apol_policy_t * orig_policy, apol_policy_t * mod_policy)
 	qpol_policy_t *oq = apol_policy_get_qpol(orig_policy);
 	qpol_policy_t *mq = apol_policy_get_qpol(mod_policy);
 	apol_vector_t *v = NULL;
+	sediffx_policy_e which;
 	size_t i;
 	qpol_type_t *t;
 	char *type_name;
 	GtkTreeIter iter;
 	int error = 0, retval = -1;
 
-	if (types[SEDIFFX_POLICY_ORIG] == NULL) {
-		types[SEDIFFX_POLICY_ORIG] = gtk_list_store_new(1, G_TYPE_STRING);
-	} else {
-		gtk_list_store_clear(types[SEDIFFX_POLICY_ORIG]);
+	for (which = SEDIFFX_POLICY_ORIG; which < SEDIFFX_POLICY_NUM; which++) {
+		if (types[which] == NULL) {
+			types[which] = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_BOOLEAN);
+			types_filter[which] = GTK_TREE_MODEL_FILTER(gtk_tree_model_filter_new(GTK_TREE_MODEL(types[which]), NULL));
+			gtk_tree_model_filter_set_visible_func(types_filter[which], remap_types_types_filter_visible, NULL, NULL);
+		} else {
+			gtk_list_store_clear(types[which]);
+		}
 	}
+
 	if (apol_type_get_by_query(orig_policy, NULL, &v) < 0) {
 		error = errno;
 		goto cleanup;
@@ -424,11 +520,6 @@ int remap_types_update(apol_policy_t * orig_policy, apol_policy_t * mod_policy)
 	}
 	apol_vector_destroy(&v, NULL);
 
-	if (types[SEDIFFX_POLICY_MOD] == NULL) {
-		types[SEDIFFX_POLICY_MOD] = gtk_list_store_new(1, G_TYPE_STRING);
-	} else {
-		gtk_list_store_clear(types[SEDIFFX_POLICY_MOD]);
-	}
 	if (apol_type_get_by_query(mod_policy, NULL, &v) < 0) {
 		error = errno;
 		goto cleanup;
