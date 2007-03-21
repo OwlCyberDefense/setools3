@@ -49,7 +49,6 @@
 #define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
 static char *policy_file = NULL;
-static int portconset, protoset;
 
 static void print_type_attrs(FILE * fp, qpol_type_t * type_datum, apol_policy_t * policydb, const int expand);
 static void print_attr_types(FILE * fp, qpol_type_t * type_datum, apol_policy_t * policydb, const int expand);
@@ -83,8 +82,8 @@ static struct option const longopts[] = {
 	{"genfscon", optional_argument, NULL, OPT_GENFSCON},
 	{"netifcon", optional_argument, NULL, OPT_NETIFCON},
 	{"nodecon", optional_argument, NULL, OPT_NODECON},
-	{"portcon", optional_argument, &portconset, OPT_PORTCON},
-	{"protocol", required_argument, &protoset, OPT_PROTOCOL},
+	{"portcon", optional_argument, NULL, OPT_PORTCON},
+	{"protocol", required_argument, NULL, OPT_PROTOCOL},
 	{"stats", no_argument, NULL, OPT_STATS},
 	{"all", no_argument, NULL, OPT_ALL},
 	{"expand", no_argument, NULL, 'x'},
