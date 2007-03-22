@@ -1,3 +1,8 @@
+2007-03-22  J. Mowery  <jmowery@tresys.com>
+
+	* Libapol SWIG wrapper updated to treat all structures as classes
+	  in the target language.
+
 2007-03-21  J. Tang  <jtang@tresys.com>
 
 	* Added ability for user to specify type joins and splits in

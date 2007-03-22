@@ -162,6 +162,7 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 	typedef struct apol_vector apol_nodecon_vector_t;
 	typedef struct apol_vector apol_domain_trans_result_vector_t;
 	typedef struct apol_vector apol_infoflow_result_vector_t;
+	typedef struct apol_vector apol_relabel_result_vector_t;
 %}
 typedef struct apol_vector {} apol_vector_t;
 %extend apol_vector_t {
@@ -404,7 +405,7 @@ typedef struct apol_vector {} apol_domain_trans_result_vector_t;
 	const apol_domain_trans_result_t *get_element(size_t i) {
 		return (const apol_domain_trans_result_t*)apol_vector_get_element(self, i);
 	};
-	~apol_nodecon_vector_t() {
+	~apol_domain_trans_result_vector_t() {
 		apol_vector_destroy(&self, apol_domain_trans_result_free);
 	};
 };
@@ -422,8 +423,26 @@ typedef struct apol_vector {} apol_infoflow_result_vector_t;
 	const apol_infoflow_result_t *get_element(size_t i) {
 		return (const apol_infoflow_result_t*)apol_vector_get_element(self, i);
 	};
-	~apol_nodecon_vector_t() {
+	~apol_infoflow_result_vector_t() {
 		apol_vector_destroy(&self, apol_infoflow_result_free);
+	};
+};
+typedef struct apol_vector {} apol_relabel_result_vector_t;
+%extend apol_relabel_result_vector_t {
+	apol_relabel_result_vector_t() {
+		return (apol_relabel_result_vector_t*)apol_vector_create();
+	};
+	size_t get_size() {
+		return apol_vector_get_size(self);
+	};
+	size_t get_capacity() {
+		return apol_vector_get_capacity(self);
+	};
+	const apol_relabel_result_t *get_element(size_t i) {
+		return (const apol_relabel_result_t*)apol_vector_get_element(self, i);
+	};
+	~apol_relabel_result_vector_t() {
+		apol_vector_destroy(&self, apol_relabel_result_free);
 	};
 };
 
@@ -2067,7 +2086,6 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 		return (apol_domain_trans_result_vector_t*)v;
 	};
 };
-
 typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
 %extend apol_domain_trans_result_t {
 	apol_domain_trans_result_t(void *x) {
@@ -2286,6 +2304,9 @@ typedef struct apol_infoflow_result {} apol_infoflow_result_t;
 	fail:
 		return air;
 	};
+	apol_infoflow_result_t(void *x) {
+		return (apol_infoflow_result_t*)x;
+	};
 	~apol_infoflow_result_t() {
 		/* no op - vector will destroy */
 		return;
@@ -2302,12 +2323,265 @@ typedef struct apol_infoflow_result {} apol_infoflow_result_t;
 	int get_length() {
 		return (int) apol_infoflow_result_get_length(self);
 	}
-	//step vector accessor
+	const apol_vector_t *get_steps() {
+		return apol_infoflow_result_get_steps(self);
+	};
 };
-//infoflow_step_t
+typedef struct apol_infoflow_step {} apol_infoflow_step_t;
+%extend apol_infoflow_step_t {
+	apol_infoflow_step_t(void *x) {
+		return (apol_infoflow_step_t*)x;
+	};
+	~apol_infoflow_step_t() {
+		/* no op */
+		return;
+	};
+	const qpol_type_t *get_start_type() {
+		return apol_infoflow_step_get_start_type(self);
+	};
+	const qpol_type_t *get_end_type() {
+		return apol_infoflow_step_get_end_type(self);
+	};
+	int get_weight() {
+		return apol_infoflow_step_get_weight(self);
+	};
+	const apol_vector_t *get_rules() {
+		return apol_infoflow_step_get_rules(self);
+	};
+};
 
+/* apol relabel analysis */
+#define APOL_RELABEL_DIR_TO      0x01
+#define APOL_RELABEL_DIR_FROM    0x02
+#define APOL_RELABEL_DIR_BOTH    (APOL_RELABEL_DIR_TO|APOL_RELABEL_DIR_FROM)
+#define APOL_RELABEL_DIR_SUBJECT 0x04
+typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
+%extend apol_relabel_analysis_t {
+	apol_relabel_analysis_t() {
+		apol_relabel_analysis_t *ara;
+		ara = apol_relabel_analysis_create();
+		if (!ara) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return ara;
+	};
+	~apol_relabel_analysis_t() {
+		apol_relabel_analysis_destroy(&self);
+	};
+	%newobject run();
+	apol_relabel_result_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		if (apol_relabel_analysis_do(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run relabel analysis");
+		}
+	fail:
+		return (apol_relabel_result_vector_t*)v;
+	};
+	void set_dir(apol_policy_t *p, int direction) {
+		if (apol_relabel_analysis_set_dir(p, self, (unsigned int)direction)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set direction for relabel analysis");
+		}
+	fail:
+		return;
+	};
+	void set_type(apol_policy_t *p, char *name) {
+		if (apol_relabel_analysis_set_type(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set type for relabel analysis");
+		}
+	fail:
+		return;
+	};
+	void append_class(apol_policy_t *p, char *name) {
+		if (apol_relabel_analysis_append_class(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append class to relabel analysis");
+		}
+	fail:
+		return;
+	};
+	void append_subject(apol_policy_t *p, char *name) {
+		if (apol_relabel_analysis_append_subject(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append subject to relabel analysis");
+		}
+	fail:
+		return;
+	};
+	void set_result_regex(apol_policy_t *p, char *regex) {
+		if (apol_relabel_analysis_set_result_regex(p, self, regex)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set result regular expression for relabel analysis");
+		}
+	fail:
+		return;
+	};
+};
+typedef struct apol_relabel_result {} apol_relabel_result_t;
+%extend apol_relabel_result_t {
+	apol_relabel_result_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_relabel_result_t objects");
+	fail:
+		return NULL;
+	};
+	~apol_relabel_result_t() {
+		/* no op - vector will destroy */
+		return;
+	};
+	const apol_vector_t *get_to() {
+		return apol_relabel_result_get_to(self);
+	};
+	const apol_vector_t *get_from() {
+		return apol_relabel_result_get_from(self);
+	};
+	const apol_vector_t *get_both() {
+		return apol_relabel_result_get_both(self);
+	};
+	const qpol_type_t *get_result_type() {
+		return apol_relabel_result_get_result_type(self);
+	};
+};
+typedef struct apol_relabel_result_pair {} apol_relabel_result_pair_t;
+%extend apol_relabel_result_pair_t {
+	apol_relabel_result_pair_t(void *x) {
+		return (apol_relabel_result_pair_t*)x;
+	};
+	~apol_relabel_result_pair_t() {
+		/* no op - owned and free()'d by apol_relabel_result_t */
+		return;
+	};
+	const qpol_avrule_t *get_ruleA() {
+		return apol_relabel_result_pair_get_ruleA(self);
+	};
+	const qpol_avrule_t *get_ruleB() {
+		return apol_relabel_result_pair_get_ruleB(self);
+	};
+	const qpol_type_t *get_intermediate_type() {
+		return apol_relabel_result_pair_get_intermediate_type(self);
+	};
+};
 
-/* TODO */
-//%include "../include/apol/infoflow-analysis.h"
-%include "../include/apol/relabel-analysis.h"
-%include "../include/apol/types-relation-analysis.h"
+/* apol type relation analysis */
+#define APOL_TYPES_RELATION_COMMON_ATTRIBS 0x0001
+#define APOL_TYPES_RELATION_COMMON_ROLES 0x0002
+#define APOL_TYPES_RELATION_COMMON_USERS 0x0004
+#define APOL_TYPES_RELATION_SIMILAR_ACCESS 0x0010
+#define APOL_TYPES_RELATION_DISSIMILAR_ACCESS 0x0020
+#define APOL_TYPES_RELATION_ALLOW_RULES 0x0100
+#define APOL_TYPES_RELATION_TYPE_RULES 0x0200
+#define APOL_TYPES_RELATION_DOMAIN_TRANS_AB 0x0400
+#define APOL_TYPES_RELATION_DOMAIN_TRANS_BA 0x0800
+#define APOL_TYPES_RELATION_DIRECT_FLOW 0x1000
+#define APOL_TYPES_RELATION_TRANS_FLOW_AB 0x4000
+#define APOL_TYPES_RELATION_TRANS_FLOW_BA 0x8000
+typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
+%extend apol_types_relation_analysis_t {
+	apol_types_relation_analysis_t() {
+		apol_types_relation_analysis_t *atr;
+		atr = apol_types_relation_analysis_create();
+		if (!atr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return atr;
+	};
+	~apol_types_relation_analysis_t() {
+		apol_types_relation_analysis_destroy(&self);
+	}
+	%newobject run();
+	apol_types_relation_result_t *run(apol_policy_t *p) {
+		apol_types_relation_result_t *res;
+		if (apol_types_relation_analysis_do(p, self, &res)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run types relation analysis");
+		}
+	fail:
+		return res;
+	};
+	void set_first_type(apol_policy_t *p, char *name) {
+		if (apol_types_relation_analysis_set_first_type(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set first type for types relation analysis");
+		}
+	fail:
+		return;
+	};
+	void set_other_type(apol_policy_t *p, char *name) {
+		if (apol_types_relation_analysis_set_other_type(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set other type for types relation analysis");
+		}
+	fail:
+		return;
+	};
+	void set_analyses(apol_policy_t *p, int analyses) {
+		if (apol_types_relation_analysis_set_analyses(p, self, (unsigned int)analyses)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set analyses to run for types relation analysis");
+		}
+	fail:
+		return;
+	};
+};
+typedef struct apol_types_relation_result {} apol_types_relation_result_t;
+%extend apol_types_relation_result_t {
+	apol_types_relation_result_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_types_relation_result_t objects");
+	fail:
+		return NULL;
+	};
+	~apol_types_relation_result_t() {
+		apol_types_relation_result_destroy(&self);
+	};
+	const apol_vector_t *get_attributes() {
+		return apol_types_relation_result_get_attributes(self);
+	};
+	const apol_vector_t *get_roles() {
+		return apol_types_relation_result_get_roles(self);
+	};
+	const apol_vector_t *get_users() {
+		return apol_types_relation_result_get_users(self);
+	};
+	const apol_vector_t *get_similar_first() {
+		return apol_types_relation_result_get_similar_first(self);
+	};
+	const apol_vector_t *get_similar_other() {
+		return apol_types_relation_result_get_similar_other(self);
+	};
+	const apol_vector_t *get_dissimilar_first() {
+		return apol_types_relation_result_get_dissimilar_first(self);
+	};
+	const apol_vector_t *get_similar_other() {
+		return apol_types_relation_result_get_dissimilar_other(self);
+	};
+	const apol_vector_t *get_allowrules() {
+		return apol_types_relation_result_get_allowrules(self);
+	};
+	const apol_vector_t *get_typerules() {
+		return apol_types_relation_result_get_typerules(self);
+	};
+	const apol_vector_t *get_directflows() {
+		return apol_types_relation_result_get_directflows(self);
+	};
+	const apol_vector_t *get_transflowsAB() {
+		return apol_types_relation_result_get_transflowsAB(self);
+	};
+	const apol_vector_t *get_transflowsBA() {
+		return apol_types_relation_result_get_transflowsBA(self);
+	};
+	const apol_vector_t*get_domainsAB() {
+		return apol_types_relation_result_get_domainsAB(self);
+	};
+	const apol_vector_t*get_domainsBA() {
+		return apol_types_relation_result_get_domainsBA(self);
+	};
+};
+typedef struct apol_types_relation_access {} apol_types_relation_access_t;
+%extend apol_types_relation_access_t {
+	apol_types_relation_access_t(void *x) {
+		return (apol_types_relation_access_t*)x;
+	};
+	~apol_types_relation_access_t() {
+		/* no op - vector will destroy */
+		return;
+	};
+	const qpol_type_t *get_type() {
+		return apol_types_relation_access_get_type(self);
+	};
+	const apol_vector_t *get_rules() {
+		return apol_types_relation_access_get_rules(self);
+	};
+};
