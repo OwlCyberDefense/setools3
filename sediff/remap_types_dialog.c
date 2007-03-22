@@ -85,6 +85,12 @@ static void remap_types_highlight_entries(struct remap_types *rt)
 			if (apol_vector_get_index(v, orig_text, apol_str_strcmp, NULL, &idx) == 0) {
 				gtk_list_store_set(rt->remaps, &iter, ORIG_HIGHLIGHT_VALUE_COL, PANGO_WEIGHT_BOLD, -1);
 				num_orig_matches++;
+				if (apol_vector_get_size(v) > 1) {
+					/* this will disallow the
+					 * original type from being
+					 * added again */
+					num_orig_matches++;
+				}
 			} else {
 				gtk_list_store_set(rt->remaps, &iter, ORIG_HIGHLIGHT_VALUE_COL, PANGO_WEIGHT_NORMAL, -1);
 			}
@@ -95,6 +101,12 @@ static void remap_types_highlight_entries(struct remap_types *rt)
 			if (apol_vector_get_index(v, mod_text, apol_str_strcmp, NULL, &idx) == 0) {
 				gtk_list_store_set(rt->remaps, &iter, MOD_HIGHLIGHT_VALUE_COL, PANGO_WEIGHT_BOLD, -1);
 				num_mod_matches++;
+				if (apol_vector_get_size(v) > 1) {
+					/* this will disallow the
+					 * modified type from being
+					 * added again */
+					num_mod_matches++;
+				}
 			} else {
 				gtk_list_store_set(rt->remaps, &iter, MOD_HIGHLIGHT_VALUE_COL, PANGO_WEIGHT_NORMAL, -1);
 			}
