@@ -42,7 +42,7 @@ Provides: libqpol = 1.2 libapol = 3.2 libpoldiff = 1.2 libsefs = 3.0.2 libseaudi
 BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
-BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
+BuildRequires: gtk2-devel >= 2.8 libglade2-devel libxml2-devel
 BuildRequires: autoconf >= 2.59 automake
 Conflicts: setools
 
@@ -122,7 +122,7 @@ Summary: Policy analysis graphical tools for SELinux
 Group: System Environment/Base
 Requires: libqpol >= 1.1 libapol >= 3.2 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
-Requires: glib >= 1.2 gtk2 >= 2.4 gdk-pixbuf libxml2 libglade2
+Requires: glib2 gtk2 >= 2.8 libxml2 libglade2
 
 %description gui
 SETools is a collection of graphical tools, command-line tools, and

@@ -79,10 +79,9 @@ compilation:
 The following are not strictly required but highly recommended:
   tcl-8.4.9-devel or greater
   tk-8.4.9-devel or greater
-  glib-1.2
-  gtk+-2.4
-  gdk-pixbuf-2.0
-  libglade-2.0
+  glib2-2.0
+  gtk2-2.8
+  libglade2
 These packages are needed to build SETools's graphical tools.
 
 Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is

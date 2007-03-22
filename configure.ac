@@ -448,11 +448,11 @@ if test ${has_pkg_config} = "no"; then
 fi
 
 if test "x${build_gui}" = xyes; then
-  dnl check for GTK
+  dnl check for GTK+
   AC_MSG_CHECKING([for GTK])
-  pkg-config --exists 'gtk+-2.0 >= 2.4'
+  pkg-config --exists 'gtk+-2.0 >= 2.8'
   if test $? -ne 0; then
-     AC_MSG_ERROR([setools requires GTK+ 2.4 or greater])
+     AC_MSG_ERROR([setools requires GTK+ 2.8 or greater])
   fi
   GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
   if test -z "${GTK_CFLAGS}"; then
