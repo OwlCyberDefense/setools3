@@ -187,18 +187,35 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files libs-python
 %defattr(-,root,root)
-%define pkgpythondir ${exec_prefix}/lib*
-%{pkgpythondir}/python?.?/site-packages/setools/__init__.py
-%{pkgpythondir}/python?.?/site-packages/setools/__init__.pyc
-%{pkgpythondir}/python?.?/site-packages/setools/__init__.pyo
-%{pkgpythondir}/python?.?/site-packages/setools/qpol.py
-%{_libdir}/python?.?/site-packages/setools/_qpol.so.1.2
-%{_libdir}/python?.?/site-packages/setools/_qpol.so.1
-%attr(755,root,root) %{_libdir}/python?.?/site-packages/setools/_qpol.so
-%{pkgpythondir}/python?.?/site-packages/setools/apol.py
-%{_libdir}/python?.?/site-packages/setools/_apol.so.3.2
-%{_libdir}/python?.?/site-packages/setools/_apol.so.3
-%attr(755,root,root) %{_libdir}/python?.?/site-packages/setools/_apol.so
+%define pkgpyexecdir %{_libdir}/python?.?/site-packages/setools
+%define pkgpythondir %{_exec_prefix}/lib*/python?.?/site-packages/setools
+%{pkgpythondir}/__init__.py
+%{pkgpythondir}/__init__.pyc
+%{pkgpythondir}/__init__.pyo
+%{pkgpythondir}/qpol.py
+%{pkgpythondir}/qpol.pyc
+%{pkgpythondir}/qpol.pyo
+%{pkgpyexecdir}/_qpol.so.1.2
+%{pkgpyexecdir}/_qpol.so.1
+%attr(755,root,root) %{pkgpyexecdir}/_qpol.so
+%{pkgpythondir}/apol.py
+%{pkgpythondir}/apol.pyc
+%{pkgpythondir}/apol.pyo
+%{pkgpyexecdir}/_apol.so.3.2
+%{pkgpyexecdir}/_apol.so.3
+%attr(755,root,root) %{pkgpyexecdir}/_apol.so
+%{pkgpythondir}/poldiff.py
+%{pkgpythondir}/poldiff.pyc
+%{pkgpythondir}/poldiff.pyo
+%{pkgpyexecdir}/_poldiff.so.1.2
+%{pkgpyexecdir}/_poldiff.so.1
+%attr(755,root,root) %{pkgpyexecdir}/_poldiff.so
+%{pkgpythondir}/seaudit.py
+%{pkgpythondir}/seaudit.pyc
+%{pkgpythondir}/seaudit.pyo
+%{pkgpyexecdir}/_seaudit.so.4.1
+%{pkgpyexecdir}/_seaudit.so.4
+%attr(755,root,root) %{pkgpyexecdir}/_seaudit.so
 
 %files devel
 %defattr(-,root,root)

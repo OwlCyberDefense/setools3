@@ -1217,5 +1217,5 @@ int sechk_proof_with_element_compare(const void *in_proof, const void *elem, voi
 		return 1;
 
 	/* explicit pointer to integer cast */
-	return ((int)(proof->elem) - (int)elem);
+	return (int)((char *)proof->elem - (char *)elem);
 }

@@ -389,7 +389,7 @@ static apol_vector_t *attrib_get_types(poldiff_t * diff, qpol_type_t * attrib, i
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_vector_append(v, (void *)new_val) < 0) {
+		if (apol_vector_append(v, (void *)((size_t) new_val)) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -435,17 +435,17 @@ int attrib_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	for (i = j = 0; i < apol_vector_get_size(v1);) {
 		if (j >= apol_vector_get_size(v2))
 			break;
-		t1 = (uint32_t) apol_vector_get_element(v1, i);
-		t2 = (uint32_t) apol_vector_get_element(v2, j);
+		t1 = (uint32_t) ((size_t) apol_vector_get_element(v1, i));
+		t2 = (uint32_t) ((size_t) apol_vector_get_element(v2, j));
 		if (t2 > t1) {
-			if (apol_vector_append(removed_types, (void *)t1) < 0) {
+			if (apol_vector_append(removed_types, (void *)((size_t) t1)) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
 			i++;
 		} else if (t1 > t2) {
-			if (apol_vector_append(added_types, (void *)t2) < 0) {
+			if (apol_vector_append(added_types, (void *)((size_t) t2)) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -457,16 +457,16 @@ int attrib_deep_diff(poldiff_t * diff, const void *x, const void *y)
 		}
 	}
 	for (; i < apol_vector_get_size(v1); i++) {
-		t1 = (uint32_t) apol_vector_get_element(v1, i);
-		if (apol_vector_append(removed_types, (void *)t1) < 0) {
+		t1 = (uint32_t) ((size_t) apol_vector_get_element(v1, i));
+		if (apol_vector_append(removed_types, (void *)((size_t) t1)) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
 	}
 	for (; j < apol_vector_get_size(v2); j++) {
-		t2 = (uint32_t) apol_vector_get_element(v2, j);
-		if (apol_vector_append(added_types, (void *)t2) < 0) {
+		t2 = (uint32_t) ((size_t) apol_vector_get_element(v2, j));
+		if (apol_vector_append(added_types, (void *)((size_t) t2)) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -478,7 +478,7 @@ int attrib_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(removed_types); i++) {
-			t1 = (uint32_t) apol_vector_get_element(removed_types, i);
+			t1 = (uint32_t) ((size_t) apol_vector_get_element(removed_types, i));
 			if ((reverse_v = type_map_lookup_reverse(diff, t1, POLDIFF_POLICY_ORIG)) == NULL) {
 				error = errno;
 				goto cleanup;
@@ -498,7 +498,7 @@ int attrib_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			}
 		}
 		for (i = 0; i < apol_vector_get_size(added_types); i++) {
-			t2 = (uint32_t) apol_vector_get_element(added_types, i);
+			t2 = (uint32_t) ((size_t) apol_vector_get_element(added_types, i));
 			if ((reverse_v = type_map_lookup_reverse(diff, t2, POLDIFF_POLICY_MOD)) == NULL) {
 				error = errno;
 				goto cleanup;

@@ -2,7 +2,6 @@ wrappedso_DATA = _seaudit.so.@libseaudit_version@
 wrappedso_SONAME = @libseaudit_pyswig_soname@
 wrappedsodir = $(pkgpyexecdir)
 
-pkgpython_PYTHON = __init__.py
 wrappedpy_DATA = seaudit.py
 wrappedpydir = $(pkgpythondir)
 

@@ -83,7 +83,7 @@ static int apol_infoflow_graph_to_tcl_obj(Tcl_Interp * interp, apol_infoflow_gra
 	*o = Tcl_NewStringObj(handle_name, -1);
 	(*o)->typePtr = &infoflow_tcl_obj_type;
 	(*o)->internalRep.twoPtrValue.ptr1 = infoflow_tcl;
-	(*o)->internalRep.twoPtrValue.ptr2 = (void *)infoflow_graph_epoch;
+	(*o)->internalRep.twoPtrValue.ptr2 = (void *)((size_t) infoflow_graph_epoch);
 
 	infoflow_tcl->obj = *o;
 	infoflow_tcl->g = g;
@@ -109,7 +109,7 @@ static int apol_infoflow_graph_to_tcl_obj(Tcl_Interp * interp, apol_infoflow_gra
  */
 static int tcl_obj_to_infoflow_tcl(Tcl_Interp * interp, Tcl_Obj * o, infoflow_tcl_t ** i)
 {
-	if (o->typePtr != &infoflow_tcl_obj_type || (int)o->internalRep.twoPtrValue.ptr2 != infoflow_graph_epoch) {
+	if (o->typePtr != &infoflow_tcl_obj_type || (int)((size_t) o->internalRep.twoPtrValue.ptr2) != infoflow_graph_epoch) {
 		char *name;
 		Tcl_HashEntry *entry;
 		name = Tcl_GetString(o);
@@ -122,7 +122,7 @@ static int tcl_obj_to_infoflow_tcl(Tcl_Interp * interp, Tcl_Obj * o, infoflow_tc
 		/* shimmer the object back to an infoflow_tcl */
 		o->typePtr = &infoflow_tcl_obj_type;
 		o->internalRep.twoPtrValue.ptr1 = *i;
-		o->internalRep.twoPtrValue.ptr2 = (void *)infoflow_graph_epoch;
+		o->internalRep.twoPtrValue.ptr2 = (void *)((size_t) infoflow_graph_epoch);
 	} else {
 		*i = (infoflow_tcl_t *) o->internalRep.twoPtrValue.ptr1;
 	}

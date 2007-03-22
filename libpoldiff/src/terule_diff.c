@@ -781,7 +781,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_vector_append(bool_states, (void *)state) < 0) {
+		if (apol_vector_append(bool_states, (void *)((size_t) state)) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -818,7 +818,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 	/* restore boolean states */
 	for (i = 0; bools != NULL && i < apol_vector_get_size(bools); i++) {
 		qpol_bool_t *bool = apol_vector_get_element(bools, i);
-		int state = (int)apol_vector_get_element(bool_states, i);
+		int state = (int)((size_t) apol_vector_get_element(bool_states, i));
 		qpol_bool_set_state_no_eval(q, bool, state);
 	}
 	apol_vector_destroy(&bools, NULL);

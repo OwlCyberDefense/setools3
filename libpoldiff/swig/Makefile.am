@@ -2,7 +2,6 @@ wrappedso_DATA = _poldiff.so.@libpoldiff_version@
 wrappedso_SONAME = @libpoldiff_pyswig_soname@
 wrappedsodir = $(pkgpyexecdir)
 
-pkgpython_PYTHON = __init__.py
 wrappedpy_DATA = poldiff.py
 wrappedpydir = $(pkgpythondir)
 

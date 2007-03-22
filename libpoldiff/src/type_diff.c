@@ -272,7 +272,7 @@ apol_vector_t *type_get_items(poldiff_t * diff, apol_policy_t * policy)
 		if (isattr || isalias)
 			continue;
 		val = type_map_lookup(diff, t, policy == diff->orig_pol ? POLDIFF_POLICY_ORIG : POLDIFF_POLICY_MOD);
-		apol_vector_append(v, (void *)val);
+		apol_vector_append(v, (void *)((size_t) val));
 	}
 	qpol_iterator_destroy(&iter);
 	apol_vector_sort_uniquify(v, NULL, NULL, NULL);
@@ -312,8 +312,8 @@ int type_reset(poldiff_t * diff)
  */
 int type_comp(const void *x, const void *y, poldiff_t * diff)
 {
-	uint32_t p1val = (uint32_t) x;
-	uint32_t p2val = (uint32_t) y;
+	uint32_t p1val = (uint32_t) ((size_t) x);
+	uint32_t p2val = (uint32_t) ((size_t) y);
 
 	/* p1val == p2val means the types are semantically equivalent */
 	return p1val - p2val;
@@ -446,7 +446,7 @@ static char *type_get_name(poldiff_t * diff, uint32_t tval)
 
 int type_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	uint32_t tval = (uint32_t) item;
+	uint32_t tval = (uint32_t) ((size_t) item);
 	char *name = NULL;
 	poldiff_type_t *pt;
 	int error;
@@ -542,8 +542,8 @@ static apol_vector_t *type_get_attrib_names(poldiff_t * diff, apol_policy_t * p,
 
 int type_deep_diff(poldiff_t * diff, const void *x, const void *y)
 {
-	uint32_t tval1 = (uint32_t) x;
-	uint32_t tval2 = (uint32_t) y;
+	uint32_t tval1 = (uint32_t) ((size_t) x);
+	uint32_t tval2 = (uint32_t) ((size_t) y);
 	apol_vector_t *v1 = NULL, *v2 = NULL;
 	char *attrib1 = NULL, *attrib2 = NULL, *name = NULL;
 	poldiff_type_t *t = NULL;
