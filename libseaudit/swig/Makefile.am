@@ -12,9 +12,9 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ -I$(top_builddir) -fpic \
 	-I$(srcdir)/../include -D__attribute__\(x\)=''
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
-	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ 
+	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @SEAUDIT_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
-	$(top_builddir)/libapol/src/libapol.so
+	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libseaudit/src/libseaudit.so
 
 $(BUILT_SOURCES): $(dist_noinst_DATA)

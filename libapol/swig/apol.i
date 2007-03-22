@@ -2151,14 +2151,14 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 	} apol_infoflow_t;
 	apol_infoflow_t *apol_infoflow_create() {
 		return calloc(1, sizeof(apol_infoflow_t));
-	};
+	}
 	void apol_infoflow_destroy(apol_infoflow_t **in) {
 		if (!in || !(*in)) {
 			return;
 		}
 		free(*in); /* NOTE: does not free contents intentionally */
 		*in = NULL;
-	};
+	}
 %}
 typedef struct apol_infoflow {} apol_infoflow_t;
 %extend apol_infoflow_t {
