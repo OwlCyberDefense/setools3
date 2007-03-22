@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.2
-Release: pre0
+Release: pre3
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -8,7 +8,7 @@ URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Source: setools-3.2.tar.gz
 AutoReqProv: no
-Summary: Policy analysis tools for SELinux.
+Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
 
 # disable auto dependency generation because they are explicitly listed
@@ -35,16 +35,15 @@ following are included:
 
 %package libs
 License: LGPL
-Summary: Policy analysis support libraries for SELinux.
+Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
 Provides: libqpol = 1.2 libapol = 3.2 libpoldiff = 1.2 libsefs = 3.0.2 libseaudit = 4.1
-BuildPrereq: flex, bison, pkgconfig
+BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
 BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
 BuildRequires: autoconf >= 2.59 automake
-Prereq: /sbin/ldconfig
 Conflicts: setools
 
 %description libs
@@ -61,7 +60,7 @@ This package includes the following run-time libraries:
 
 %package libs-python
 License: LGPL
-Summary: Python bindings for SELinux policy analysis.
+Summary: Python bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = 3.2 python2 >= 2.3
 Provides: libqpol-python = 1.2 libapol-python = 3.2 libpoldiff-python = 1.2 libseaudit-python = 4.1
@@ -80,7 +79,7 @@ This package includes Python bindings for the following libraries:
 
 %package devel
 License: LGPL
-Summary: Policy analysis development files for SELinux.
+Summary: Policy analysis development files for SELinux
 Group: Development/Libraries
 Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-libs = 3.2
 
@@ -100,7 +99,7 @@ libraries:
 
 %package console
 AutoReqProv: no
-Summary: Policy analysis command-line tools for SELinux.
+Summary: Policy analysis command-line tools for SELinux
 Group: System Environment/Base
 Requires: libqpol >= 1.1 libapol >= 3.2 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
 Requires: libselinux >= 1.30
@@ -119,7 +118,7 @@ This package includes the following console tools:
 
 %package gui
 AutoReqProv: no
-Summary: Policy analysis graphical tools for SELinux.
+Summary: Policy analysis graphical tools for SELinux
 Group: System Environment/Base
 Requires: libqpol >= 1.1 libapol >= 3.2 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
@@ -141,11 +140,11 @@ This package includes the following graphical tools:
 
 %build
 %configure --disable-bwidget-check --disable-selinux-check --enable-swig-python
-make
+make %{?_smp_mflags}
 
 %install
 rm -rf ${RPM_BUILD_ROOT}
-%makeinstall
+make DESTDIR=${RPM_BUILD_ROOT} install
 mkdir -p ${RPM_BUILD_ROOT}/usr/share/pixmaps
 install -d -m 755 ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d
 install -m 644 packages/rpm/seaudit.pam ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d/seaudit
@@ -188,18 +187,15 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files libs-python
 %defattr(-,root,root)
-%{_libdir}/python?.?/site-packages/setools/__init__.py
-%{_libdir}/python?.?/site-packages/setools/__init__.pyc
-%{_libdir}/python?.?/site-packages/setools/__init__.pyo
-%{_libdir}/python?.?/site-packages/setools/qpol.py
-%{_libdir}/python?.?/site-packages/setools/qpol.pyc
-%{_libdir}/python?.?/site-packages/setools/qpol.pyo
+%define pkgpythondir ${exec_prefix}/lib*
+%{pkgpythondir}/python?.?/site-packages/setools/__init__.py
+%{pkgpythondir}/python?.?/site-packages/setools/__init__.pyc
+%{pkgpythondir}/python?.?/site-packages/setools/__init__.pyo
+%{pkgpythondir}/python?.?/site-packages/setools/qpol.py
 %{_libdir}/python?.?/site-packages/setools/_qpol.so.1.2
 %{_libdir}/python?.?/site-packages/setools/_qpol.so.1
 %attr(755,root,root) %{_libdir}/python?.?/site-packages/setools/_qpol.so
-%{_libdir}/python?.?/site-packages/setools/apol.py
-%{_libdir}/python?.?/site-packages/setools/apol.pyc
-%{_libdir}/python?.?/site-packages/setools/apol.pyo
+%{pkgpythondir}/python?.?/site-packages/setools/apol.py
 %{_libdir}/python?.?/site-packages/setools/_apol.so.3.2
 %{_libdir}/python?.?/site-packages/setools/_apol.so.3
 %attr(755,root,root) %{_libdir}/python?.?/site-packages/setools/_apol.so
