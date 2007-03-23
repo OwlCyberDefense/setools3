@@ -289,8 +289,7 @@ extern "C"
  *
  * @return Vector of unique qpol_type_t pointers (relative to policy
  * within p), or NULL upon error.  Caller is responsible for calling
- * apol_vector_destroy() afterwards, passing NULL as the second
- * parameter.
+ * apol_vector_destroy() afterwards.
  */
 	apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
 							     unsigned int ta_flag);

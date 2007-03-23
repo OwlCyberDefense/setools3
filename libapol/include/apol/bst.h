@@ -35,11 +35,12 @@ extern "C"
 
 #include <stdlib.h>
 
-	struct apol_vector;	       /* declared in apol/vector.h */
 	typedef struct apol_bst apol_bst_t;
 
 	typedef int (apol_bst_comp_func) (const void *a, const void *b, void *data);
 	typedef void (apol_bst_free_func) (void *elem);
+
+#include "vector.h"
 
 /**
  *  Allocate and initialize an empty binary search tree.  The tree
@@ -51,22 +52,26 @@ extern "C"
  *  than, equal to, or greater than 0 if the first argument is less
  *  than, equal to, or greater than the second respectively.  If this
  *  is NULL then do pointer address comparison.
+ *  @param fr Function to call when destroying the tree.  Each
+ *  element of the tree will be passed into this function; it should
+ *  free the memory used by that element.  If this parameter is NULL,
+ *  the elements will not be freed.
  *
  *  @return A pointer to a newly created BST on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_bst_destroy() to free memory used.
  */
-	extern apol_bst_t *apol_bst_create(apol_bst_comp_func * cmp);
+	extern apol_bst_t *apol_bst_create(apol_bst_comp_func * cmp, apol_bst_free_func * fr);
 
 /**
- *  Free a BST and any memory used by it.
+ *  Free a BST and any memory used by it.  This will recursively
+ *  invoke the free function that was stored within the tree when it
+ *  was created.
  *
  *  @param b Pointer to the BST to free.  The pointer will be set to
- *  NULL afterwards.
- *  @param fr Function to call to free the memory used by an element.
- *  If NULL, the elements will not be freed.
+ *  NULL afterwards.  If already NULL then this function does nothing.
  */
-	extern void apol_bst_destroy(apol_bst_t ** b, apol_bst_free_func * fr);
+	extern void apol_bst_destroy(apol_bst_t ** b);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -77,12 +82,16 @@ extern "C"
  *  comparison function.)
  *
  *  @param b Binary search tree from which to copy.
+ *  @param fr Function to call when destroying the vector.  Each
+ *  element of the array will be passed into this function; it should
+ *  free the memory used by that element.  If this parameter is NULL,
+ *  the elements will not be freed.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-	extern struct apol_vector *apol_bst_get_vector(const struct apol_bst *b);
+	extern apol_vector_t *apol_bst_get_vector(const struct apol_bst *b, apol_vector_free_func * fr);
 
 /**
  *  Get the number of elements stored in the BST.

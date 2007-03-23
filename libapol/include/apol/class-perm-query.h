@@ -71,9 +71,8 @@ extern "C"
  * NULL then return all object classes.
  * @param v Reference to a vector of qpol_class_t.  The vector will be
  * allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -170,9 +169,8 @@ extern "C"
  * NULL then return all common classes.
  * @param v Reference to a vector of qpol_common_t.  The vector will
  * be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -263,9 +261,8 @@ extern "C"
  * NULL then return all permissions.
  * @param v Reference to a vector of character pointers.  The vector
  * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

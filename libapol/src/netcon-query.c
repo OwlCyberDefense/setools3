@@ -8,7 +8,6 @@
  * fields of the search query must match for a datum to be added to
  * the results query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -73,8 +72,8 @@ int apol_portcon_get_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol
 	if (qpol_policy_get_portcon_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -116,7 +115,7 @@ int apol_portcon_get_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;
@@ -245,8 +244,8 @@ int apol_netifcon_get_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apo
 	if (qpol_policy_get_netifcon_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -290,7 +289,7 @@ int apol_netifcon_get_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apo
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;
@@ -395,8 +394,8 @@ int apol_nodecon_get_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_
 	if (qpol_policy_get_nodecon_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(free)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -448,7 +447,7 @@ int apol_nodecon_get_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, free);
+		apol_vector_destroy(v);
 		free(nodecon);
 	}
 	qpol_iterator_destroy(&iter);

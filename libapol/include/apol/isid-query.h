@@ -68,10 +68,9 @@ extern "C"
  * @param i Structure containing parameters for query.	If this is
  * NULL then return all isids.
  * @param v Reference to a vector of qpol_isid_t.  The vector will be
- * allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

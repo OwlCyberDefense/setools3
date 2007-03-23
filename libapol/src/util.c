@@ -41,6 +41,9 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>		       /* needed for portcon's protocol */
 
+/* use 8k line size */
+#define APOL_LINE_SZ 8192
+
 const char *libapol_get_version(void)
 {
 	return LIBAPOL_VERSION_STRING;
@@ -391,71 +394,6 @@ char *apol_config_get_var(const char *var, FILE * fp)
 	return NULL;
 }
 
-char **apol_config_get_varlist(const char *var, FILE * file, size_t * list_sz)
-{
-	char *values = NULL, *token;
-	char **results = NULL, **ptr = NULL;
-	int rt = -1;
-
-	assert(var != NULL || file != NULL || list_sz != NULL);
-	*list_sz = 0;
-	if ((values = apol_config_get_var(var, file)) == NULL) {
-		goto cleanup;
-	}
-	while ((token = strsep(&values, ":")) != NULL) {
-		if (strcmp(token, "") && !apol_str_is_only_white_space(token)) {
-			ptr = (char **)realloc(results, sizeof(char *) * (*list_sz + 1));
-			if (ptr == NULL) {
-				goto cleanup;
-			}
-			results = ptr;
-			(*list_sz)++;
-			if ((results[(*list_sz) - 1] = strdup(token)) == NULL) {
-				goto cleanup;
-			}
-		}
-	}
-	rt = 0;
-      cleanup:
-	free(values);
-	if (rt < 0) {
-		size_t i;
-		for (i = 0; i < *list_sz; i++) {
-			free(results[i]);
-		}
-		free(results);
-		*list_sz = 0;
-		results = NULL;
-	}
-	return results;
-}
-
-char *apol_config_varlist_to_str(const char **list, size_t size)
-{
-	char *val;
-	size_t i;
-
-	if (list == NULL)
-		return NULL;
-	val = (char *)malloc(sizeof(char) * (2 + strlen(list[0])));
-	if (val == NULL) {
-		return NULL;
-	}
-	val = strcpy(val, list[0]);
-	val = strcat(val, ":");
-	for (i = 1; i < size; i++) {
-		char *v = realloc(val, 2 + strlen(val) + strlen(list[i]));
-		if (val == NULL) {
-			free(val);
-			return NULL;
-		}
-		val = v;
-		val = strcat(val, list[i]);
-		val = strcat(val, ":");
-	}
-	return val;
-}
-
 apol_vector_t *apol_str_split(const char *s, const char *delim)
 {
 	char *orig_s = NULL, *dup_s = NULL, *v, *token;
@@ -466,7 +404,7 @@ apol_vector_t *apol_str_split(const char *s, const char *delim)
 		error = EINVAL;
 		goto cleanup;
 	}
-	if ((list = apol_vector_create()) == NULL || (orig_s = strdup(s)) == NULL) {
+	if ((list = apol_vector_create(free)) == NULL || (orig_s = strdup(s)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -483,7 +421,7 @@ apol_vector_t *apol_str_split(const char *s, const char *delim)
       cleanup:
 	free(orig_s);
 	if (error != 0) {
-		apol_vector_destroy(&list, free);
+		apol_vector_destroy(&list);
 		errno = error;
 		return NULL;
 	}

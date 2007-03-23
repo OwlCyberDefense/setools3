@@ -57,7 +57,7 @@ apol_policy_path_t *apol_policy_path_create(apol_policy_path_type_e path_type, c
 	}
 	if (p->path_type == APOL_POLICY_PATH_TYPE_MODULAR) {
 		if (modules == NULL) {
-			p->modules = apol_vector_create();
+			p->modules = apol_vector_create(free);
 		} else {
 			p->modules = apol_vector_create_from_vector(modules, apol_str_strdup, NULL);
 		}
@@ -65,7 +65,7 @@ apol_policy_path_t *apol_policy_path_create(apol_policy_path_type_e path_type, c
 			apol_policy_path_destroy(&p);
 			return NULL;
 		}
-		apol_vector_sort_uniquify(p->modules, apol_str_strcmp, NULL, free);
+		apol_vector_sort_uniquify(p->modules, apol_str_strcmp, NULL);
 	}
 	return p;
 }
@@ -98,7 +98,7 @@ apol_policy_path_t *apol_policy_path_create_from_string(const char *path_string)
 
 	/* first token identifies the path type */
 	if (apol_vector_get_size(tokens) < 2) {
-		apol_vector_destroy(&tokens, free);
+		apol_vector_destroy(&tokens);
 		return NULL;
 	}
 	s = apol_vector_get_element(tokens, 0);
@@ -107,7 +107,7 @@ apol_policy_path_t *apol_policy_path_create_from_string(const char *path_string)
 	} else if (strcmp(s, "modular") == 0) {
 		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	} else {
-		apol_vector_destroy(&tokens, free);
+		apol_vector_destroy(&tokens);
 		errno = EINVAL;
 		return NULL;
 	}
@@ -115,7 +115,7 @@ apol_policy_path_t *apol_policy_path_create_from_string(const char *path_string)
 	/* second token identifies gives base path */
 	s = apol_vector_get_element(tokens, 1);
 	if ((p = apol_policy_path_create(path_type, s, NULL)) == NULL) {
-		apol_vector_destroy(&tokens, free);
+		apol_vector_destroy(&tokens);
 		return NULL;
 	}
 
@@ -125,12 +125,12 @@ apol_policy_path_t *apol_policy_path_create_from_string(const char *path_string)
 			s = apol_vector_get_element(tokens, i);
 			if ((s = strdup(s)) == NULL || apol_vector_append(p->modules, s) < 0) {
 				free(s);
-				apol_vector_destroy(&tokens, free);
+				apol_vector_destroy(&tokens);
 				apol_policy_path_destroy(&p);
 				return NULL;
 			}
 		}
-		apol_vector_sort_uniquify(p->modules, apol_str_strcmp, NULL, free);
+		apol_vector_sort_uniquify(p->modules, apol_str_strcmp, NULL);
 	}
 	return p;
 }
@@ -139,7 +139,7 @@ void apol_policy_path_destroy(apol_policy_path_t ** path)
 {
 	if (path != NULL && *path != NULL) {
 		free((*path)->base);
-		apol_vector_destroy(&(*path)->modules, free);
+		apol_vector_destroy(&(*path)->modules);
 		free(*path);
 		*path = NULL;
 	}

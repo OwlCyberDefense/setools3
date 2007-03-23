@@ -372,7 +372,16 @@ static void *model_filter_dup(const void *elem, void *data)
 static void *model_sort_dup(const void *elem, void *data __attribute__ ((unused)))
 {
 	const seaudit_sort_t *sort = elem;
-	return sort_create_from_sort(sort);
+	seaudit_model_t *model = data;
+	seaudit_sort_t *s;
+	if ((s = sort_create_from_sort(sort)) == NULL) {
+		return NULL;
+	}
+	if (seaudit_model_append_sort(model, s) < 0) {
+		seaudit_sort_destroy(&s);
+		return NULL;
+	}
+	return s;
 }
 
 seaudit_model_t *seaudit_model_create_from_model(const seaudit_model_t * model)

@@ -36,6 +36,17 @@
 #include "policy-query-internal.h"
 #include <apol/vector.h>
 
+struct apol_mls_level
+{
+	char *sens;
+	apol_vector_t *cats;
+};
+
+struct apol_mls_range
+{
+	apol_mls_level_t *low, *high;
+};
+
 struct apol_level_query
 {
 	char *sens_name, *cat_name;
@@ -100,8 +111,8 @@ static int apol_mls_level_validate(apol_policy_t * p, const apol_mls_level_t * l
 	    qpol_level_get_cat_iter(p->p, level_datum, &iter) < 0) {
 		return -1;
 	}
-	if ((cat_vector = apol_vector_create_from_iter(iter)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((cat_vector = apol_vector_create_from_iter(iter, NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 
@@ -116,7 +127,7 @@ static int apol_mls_level_validate(apol_policy_t * p, const apol_mls_level_t * l
 	retval = 1;
       cleanup:
 	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&cat_vector, NULL);
+	apol_vector_destroy(&cat_vector);
 	return retval;
 }
 
@@ -125,7 +136,7 @@ static int apol_mls_level_validate(apol_policy_t * p, const apol_mls_level_t * l
 apol_mls_level_t *apol_mls_level_create(void)
 {
 	apol_mls_level_t *l;
-	if ((l = calloc(1, sizeof(*l))) == NULL || (l->cats = apol_vector_create()) == NULL) {
+	if ((l = calloc(1, sizeof(*l))) == NULL || (l->cats = apol_vector_create(free)) == NULL) {
 		apol_mls_level_destroy(&l);
 		return NULL;
 	}
@@ -422,22 +433,22 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t * p,
 	return NULL;
 }
 
-void apol_mls_level_destroy(apol_mls_level_t ** level)
-{
-	if (!level || !(*level))
-		return;
-	apol_mls_level_free(*level);
-	*level = NULL;
-}
-
-void apol_mls_level_free(void *level)
+static void mls_level_free(void *level)
 {
 	if (level != NULL) {
 		apol_mls_level_t *l = level;
 		free(l->sens);
-		apol_vector_destroy(&l->cats, free);
+		apol_vector_destroy(&l->cats);
 		free(l);
 	}
+}
+
+void apol_mls_level_destroy(apol_mls_level_t ** level)
+{
+	if (!level || !(*level))
+		return;
+	mls_level_free(*level);
+	*level = NULL;
 }
 
 int apol_mls_level_set_sens(apol_policy_t * p, apol_mls_level_t * level, const char *sens)
@@ -459,12 +470,12 @@ int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, cons
 		return -1;
 	}
 
-	if (level->cats == NULL && (level->cats = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if (level->cats == NULL && (level->cats = apol_vector_create(free)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		return -1;
 	}
 	if ((new_cat = strdup(cats)) == NULL || apol_vector_append(level->cats, (void *)new_cat) < 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		free(new_cat);
 		return -1;
 	}
@@ -544,8 +555,8 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 	}
 
 	if (level->cats != NULL) {
-		if ((cats = apol_vector_create_from_vector(level->cats, NULL, NULL)) == NULL) {
-			ERR(p, "%s", strerror(ENOMEM));
+		if ((cats = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL)) == NULL) {
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 		n_cats = apol_vector_get_size(cats);
@@ -621,7 +632,7 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 
 	retval = rt;
       cleanup:
-	apol_vector_destroy(&cats, NULL);
+	apol_vector_destroy(&cats);
 	if (retval != rt) {
 		free(rt);
 	}
@@ -926,7 +937,7 @@ apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range
 		goto err;
 	}
 	assert(low_value <= high_value);
-	if ((v = apol_vector_create()) == NULL) {
+	if ((v = apol_vector_create(mls_level_free)) == NULL) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto err;
@@ -961,7 +972,7 @@ apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range
 	return v;
       err:
 	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&v, apol_mls_level_free);
+	apol_vector_destroy(&v);
 	errno = error;
 	return NULL;
 }
@@ -1023,8 +1034,8 @@ int apol_level_get_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vect
 	if (qpol_policy_get_level_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -1074,7 +1085,7 @@ int apol_level_get_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vect
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&cat_iter);
@@ -1128,8 +1139,8 @@ int apol_cat_get_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t
 	if (qpol_policy_get_cat_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -1160,7 +1171,7 @@ int apol_cat_get_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;

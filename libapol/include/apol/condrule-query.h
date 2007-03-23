@@ -66,11 +66,10 @@ extern "C"
  * @param p Policy within which to look up expressions.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all expressions.
- * @param v Reference to a vector of qpol_cond_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of qpol_cond_t.  The vector will be
+ * allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

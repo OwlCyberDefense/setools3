@@ -64,11 +64,10 @@ extern "C"
  * @param p Policy within which to look up avrules.
  * @param a Structure containing parameters for query.	If this is
  * NULL then return all avrules.
- * @param v Reference to a vector of qpol_avrule_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of qpol_avrule_t.  The vector will
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -101,10 +100,10 @@ extern "C"
  * source policy.</b>
  * @param a Structure containing parameters for query. If this is
  * NULL then return all avrules.
- * @param v Reference to a vector of qpol_syn_avrule_t. The vector will be
- * allocated by this function.  The caller must call apol_vector_destroy()
- * afterwards, but <b>must not</b> free the elements within it.  This will be
- * set to NULL upon no results or upon error.
+ * @param v Reference to a vector of qpol_syn_avrule_t.  The vector
+ * will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -316,8 +315,7 @@ extern "C"
  * common with this list.
  *
  * @return A newly allocated vector of syn_avrule_t pointers.  The
- * caller is responsible for calling apol_vector_destroy() afterwards,
- * passing NULL as the second parameter.
+ * caller is responsible for calling apol_vector_destroy() afterwards.
  */
 	extern apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t * p, qpol_avrule_t * rule, apol_vector_t * perms);
 
@@ -337,8 +335,7 @@ extern "C"
  * common with this list.
  *
  * @return A newly allocated vector of syn_avrule_t pointers.  The
- * caller is responsible for calling apol_vector_destroy() afterwards,
- * passing NULL as the second parameter.
+ * caller is responsible for calling apol_vector_destroy() afterwards.
  */
 	extern apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t * rules, apol_vector_t * perms);
 

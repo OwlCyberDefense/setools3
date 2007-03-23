@@ -8,7 +8,6 @@
  * fields of the search query must match for a datum to be added to
  * the results.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -62,8 +61,8 @@ int apol_constraint_get_by_query(apol_policy_t * p, apol_constraint_query_t * c,
 	if (qpol_policy_get_constraint_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -108,7 +107,7 @@ int apol_constraint_get_by_query(apol_policy_t * p, apol_constraint_query_t * c,
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&perm_iter);
@@ -162,8 +161,8 @@ int apol_validatetrans_get_by_query(apol_policy_t * p, apol_validatetrans_query_
 	if (qpol_policy_get_validatetrans_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -196,7 +195,7 @@ int apol_validatetrans_get_by_query(apol_policy_t * p, apol_validatetrans_query_
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;

@@ -8,7 +8,6 @@
  * fields of the search query must match for a datum to be added to
  * the results query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -67,8 +66,8 @@ int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apo
 	if (qpol_policy_get_genfscon_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(EINVAL));
+	if ((*v = apol_vector_create(free)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -120,7 +119,7 @@ int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apo
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, free);
+		apol_vector_destroy(v);
 		free(genfscon);
 	}
 	qpol_iterator_destroy(&iter);
@@ -297,8 +296,8 @@ int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_ve
 	if (qpol_policy_get_fs_use_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(EINVAL));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -347,7 +346,7 @@ int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_ve
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;

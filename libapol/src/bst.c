@@ -45,19 +45,22 @@ struct apol_bst
 {
 	/** Comparison function for nodes. */
 	apol_bst_comp_func *cmp;
+	/** Destroy function for the nodes, or NULL to not free each node. */
+	apol_bst_free_func *fr;
 	/** The number of elements currently stored in the bst. */
 	size_t size;
 	/** Pointer to top of the tree. */
 	bst_node_t *head;
 };
 
-apol_bst_t *apol_bst_create(apol_bst_comp_func * cmp)
+apol_bst_t *apol_bst_create(apol_bst_comp_func * cmp, apol_bst_free_func * fr)
 {
 	apol_bst_t *b = NULL;
 	if ((b = calloc(1, sizeof(*b))) == NULL) {
 		return NULL;
 	}
 	b->cmp = cmp;
+	b->fr = fr;
 	return b;
 }
 
@@ -81,14 +84,12 @@ static void bst_node_free(bst_node_t * node, apol_bst_free_func * fr)
 	}
 }
 
-void apol_bst_destroy(apol_bst_t ** b, apol_bst_free_func * fr)
+void apol_bst_destroy(apol_bst_t ** b)
 {
 	if (!b || !(*b))
 		return;
-	bst_node_free((*b)->head, fr);
-	(*b)->head = NULL;	       /* this will catch instances when there
-				        * are multpile pointers to the same
-				        * BST object */
+	bst_node_free((*b)->head, (*b)->fr);
+	(*b)->head = NULL;
 	free(*b);
 	*b = NULL;
 }
@@ -117,19 +118,19 @@ static int bst_node_to_vector(bst_node_t * node, apol_vector_t * v)
 	return bst_node_to_vector(node->child[1], v);
 }
 
-apol_vector_t *apol_bst_get_vector(const struct apol_bst * b)
+apol_vector_t *apol_bst_get_vector(const struct apol_bst * b, apol_vector_free_func * fr)
 {
 	apol_vector_t *v = NULL;
 	if (!b) {
 		errno = EINVAL;
 		return NULL;
 	}
-	if ((v = apol_vector_create_with_capacity(b->size)) == NULL) {
+	if ((v = apol_vector_create_with_capacity(b->size, fr)) == NULL) {
 		return NULL;
 	}
 	if (bst_node_to_vector(b->head, v) < 0) {
 		int error = errno;
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		errno = error;
 		return NULL;
 	}

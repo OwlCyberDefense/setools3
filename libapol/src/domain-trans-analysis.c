@@ -3,7 +3,6 @@
  *
  * Routines to perform a domain transition analysis.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *

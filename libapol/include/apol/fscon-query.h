@@ -52,7 +52,7 @@ extern "C"
  * @param g Structure containing parameters for query.	If this is
  * NULL then return all genfscons.
  * @param v Reference to a vector of qpol_genfscon_t. The vector will
- * be allocated by this function. The caller must call
+ * be allocated by this function.  The caller must call
  * apol_vector_destroy() afterwards, <b>passing free() as the second
  * parameter</b>.  This will be set to NULL upon no results or upon
  * error.
@@ -70,10 +70,9 @@ extern "C"
  * @param g Structure containing parameters for query.	If this is
  * NULL then return all genfscons.
  * @param v Reference to a vector of qpol_genfscon_t. The vector will
- * be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, <b>passing free() as the second
- * parameter</b>.  This will be set to NULL upon no results or upon
- * error.
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -200,10 +199,9 @@ extern "C"
  * @param f Structure containing parameters for query.	If this is
  * NULL then return all fs_use statements.
  * @param v Reference to a vector of qpol_fs_use_t.  The vector will
- * be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.	This will be set to NULL upon no results or
- * upon error.
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards. This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

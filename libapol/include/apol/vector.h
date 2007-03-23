@@ -41,14 +41,19 @@ extern "C"
 	typedef void *(apol_vector_dup_func) (const void *elem, void *data);
 
 /**
- *  Allocate and initialize an empty vector with default start
+ *  Allocate and initialize an empty vector with default
  *  capacity.
+ *
+ *  @param fr Function to call when destroying the vector.  Each
+ *  element of the array will be passed into this function; it should
+ *  free the memory used by that element.  If this parameter is NULL,
+ *  the elements will not be freed.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-	extern apol_vector_t *apol_vector_create(void);
+	extern apol_vector_t *apol_vector_create(apol_vector_free_func * fr);
 
 /**
  *  Allocate and initialize an empty vector with starting capacity of
@@ -56,12 +61,16 @@ extern "C"
  *
  *  @param cap The starting capacity to allocate for the internal
  *  array.
+ *  @param fr Function to call when destroying the vector.  Each
+ *  element of the array will be passed into this function; it should
+ *  free the memory used by that element.  If this parameter is NULL,
+ *  the elements will not be freed.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-	extern apol_vector_t *apol_vector_create_with_capacity(size_t cap);
+	extern apol_vector_t *apol_vector_create_with_capacity(size_t cap, apol_vector_free_func * fr);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -73,16 +82,21 @@ extern "C"
  *  afterwards.
  *
  *  @param iter qpol iterator from which to obtain vector's contents.
+ *  @param fr Function to call when destroying the vector.  Each
+ *  element of the array will be passed into this function; it should
+ *  free the memory used by that element.  If this parameter is NULL,
+ *  the elements will not be freed.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-	extern apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter);
+	extern apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter, apol_vector_free_func * fr);
 
 /**
  *  Allocate and return a vector that has been initialized with the
- *  contents of another vector.
+ *  contents of another vector.  The new vector will also have the
+ *  same free function as the original vector.
  *
  *  @param v Vector from which to copy.
  *  @param dup If NULL, then make a shallow copy of the original
@@ -116,6 +130,10 @@ extern "C"
  *  this is NULL then do pointer address comparison.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
+ *  @param fr Function to call when destroying the vector.  Each
+ *  element of the array will be passed into this function; it should
+ *  free the memory used by that element.  If this parameter is NULL,
+ *  the elements will not be freed.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
@@ -123,17 +141,18 @@ extern "C"
  */
 	extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t * v1,
 								   const apol_vector_t * v2, apol_vector_comp_func * cmp,
-								   void *data);
+								   void *data, apol_vector_free_func * fr);
 
 /**
- *  Free a vector and any memory used by it.
+ *  Free a vector and any memory used by it.  This will recursively
+ *  invoke the free function that was stored within the vector when it
+ *  was created.
  *
  *  @param v Pointer to the vector to free.  The pointer will be set
- *  to NULL afterwards.
- *  @param fr Function to call to free the memory used by an element.
- *  If NULL, the elements will not be freed.
+ *  to NULL afterwards.  If already NULL then this function does
+ *  nothing.
  */
-	extern void apol_vector_destroy(apol_vector_t ** v, apol_vector_free_func * fr);
+	extern void apol_vector_destroy(apol_vector_t ** v);
 
 /**
  *  Get the number of elements in the vector.
@@ -293,7 +312,9 @@ extern "C"
 
 /**
  *  Sort the vector's elements within place (see apol_vector_sort()),
- *  and then compact vector by removing duplicate entries.
+ *  and then compact vector by removing duplicate entries.  The stored
+ *  free function will be used to free the memory used by non-unique
+ *  elements.
  *
  *  @param v The vector to sort.
  *  @param cmp A comparison call back for the type of element stored
@@ -304,11 +325,8 @@ extern "C"
  *  and sort in increasing order.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
- *  @param fr Function to call to free the memory used by a non-unique
- *  element.  If NULL, those excess elements will not be freed.
  */
-	extern void apol_vector_sort_uniquify(apol_vector_t * v, apol_vector_comp_func * cmp, void *data,
-					      apol_vector_free_func * fr);
+	extern void apol_vector_sort_uniquify(apol_vector_t * v, apol_vector_comp_func * cmp, void *data);
 
 #ifdef	__cplusplus
 }

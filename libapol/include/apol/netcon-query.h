@@ -53,10 +53,9 @@ extern "C"
  * @param po Structure containing parameters for query.	 If this is
  * NULL then return all portcons.
  * @param v Reference to a vector of qpol_portcon_t.  The vector will
- * be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -138,9 +137,9 @@ extern "C"
 	extern int apol_portcon_query_set_high(apol_policy_t * p, apol_portcon_query_t * po, int high);
 
 /**
- * Set a portcon query to return only portcons matching a
- * context. This function takes ownership of the context, such that
- * the caller must not modify nor destroy it afterwards.
+ * Set a portcon query to return only portcons matching a context.
+ * This function takes ownership of the context, such that the caller
+ * must not modify nor destroy it afterwards.
  *
  * @param p Policy handler, to report errors.
  * @param po Portcon query to set.
@@ -197,10 +196,9 @@ extern "C"
  * @param n Structure containing parameters for query.	If this is
  * NULL then return all netifcons.
  * @param v Reference to a vector of qpol_netifcon_t.  The vector will
- * be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards,.  This will be set to NULL upon
+ * no results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -319,9 +317,8 @@ extern "C"
  * NULL then return all nodecons.
  * @param v Reference to a vector of qpol_nodecon_t.  The vector will
  * be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, <b>passing free() as the second
- * parameter</b>.  This will be set to NULL upon no results or upon
- * error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

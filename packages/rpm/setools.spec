@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.2
-Release: pre3
+Release: pre4
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -38,7 +38,7 @@ License: LGPL
 Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
-Provides: libqpol = 1.2 libapol = 3.2 libpoldiff = 1.2 libsefs = 3.0.2 libseaudit = 4.1
+Provides: libqpol = 1.2 libapol = 4.0 libpoldiff = 1.2 libsefs = 3.0.2 libseaudit = 4.1
 BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
@@ -63,7 +63,7 @@ License: LGPL
 Summary: Python bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = 3.2 python2 >= 2.3
-Provides: libqpol-python = 1.2 libapol-python = 3.2 libpoldiff-python = 1.2 libseaudit-python = 4.1
+Provides: libqpol-python = 1.2 libapol-python = 4.0 libpoldiff-python = 1.2 libseaudit-python = 4.1
 BuildRequires: python2-devel >= 2.3 swig >= 1.3.28
 
 %description libs-python
@@ -101,7 +101,7 @@ libraries:
 AutoReqProv: no
 Summary: Policy analysis command-line tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 3.2 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
 Requires: libselinux >= 1.30
 
 %description console
@@ -120,7 +120,7 @@ This package includes the following console tools:
 AutoReqProv: no
 Summary: Policy analysis graphical tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 3.2 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
 Requires: glib2 gtk2 >= 2.8 libxml2 libglade2
 
@@ -168,8 +168,8 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libqpol.so.1.2
 %{_libdir}/libqpol.so.1
 %{_libdir}/libqpol.so
-%{_libdir}/libapol.so.3.2
-%{_libdir}/libapol.so.3
+%{_libdir}/libapol.so.4.0
+%{_libdir}/libapol.so.4
 %{_libdir}/libapol.so
 %{_libdir}/libpoldiff.so.1.2
 %{_libdir}/libpoldiff.so.1

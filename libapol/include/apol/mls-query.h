@@ -35,22 +35,8 @@ extern "C"
 #include "vector.h"
 #include <qpol/policy.h>
 
-/**
- * Declaration of a MLS level.  Users of this struct are free
- * to manipulate its fields directly; alternatively one may use the
- * convenience functions below.  Note that the category vector only
- * holds strings.
- */
-	typedef struct apol_mls_level
-	{
-		char *sens;
-		apol_vector_t *cats;
-	} apol_mls_level_t;
-
-	typedef struct apol_mls_range
-	{
-		apol_mls_level_t *low, *high;
-	} apol_mls_range_t;
+	typedef struct apol_mls_level apol_mls_level_t;
+	typedef struct apol_mls_range apol_mls_range_t;
 
 	typedef struct apol_level_query apol_level_query_t;
 	typedef struct apol_cat_query apol_cat_query_t;
@@ -130,15 +116,6 @@ extern "C"
  * @param level Reference to a MLS level structure to destroy.
  */
 	extern void apol_mls_level_destroy(apol_mls_level_t ** level);
-
-/**
- * Deallocate all memory associated with a MLS level structure,
- * including the pointer itself.  Does nothing if the pointer is
- * already NULL.
- *
- * @param level Pointer to a MLS level structure to destroy.
- */
-	extern void apol_mls_level_free(void *level);
 
 /**
  * Set the sensitivity component of an MLS level structure.  This
@@ -414,11 +391,10 @@ extern "C"
  * @param p Policy within which to look up levels.
  * @param l Structure containing parameters for query.	If this is
  * NULL then return all levels.
- * @param v Reference to a vector of qpol_level_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of qpol_level_t.  The vector will be
+ * allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -516,11 +492,10 @@ extern "C"
  * @param p Policy within which to look up categories.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all categories.
- * @param v Reference to a vector of qpol_cat_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of qpol_cat_t.  The vector will be
+ * allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

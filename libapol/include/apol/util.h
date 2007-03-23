@@ -39,9 +39,6 @@ extern "C"
 #include <stdio.h>
 #include <stdlib.h>
 
-/* use 8k line size */
-#define APOL_LINE_SZ 8192
-
 #define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
 
 #undef FALSE
@@ -207,43 +204,6 @@ extern "C"
 	extern char *apol_config_get_var(const char *var, FILE * fp);
 
 /**
- * Given a file pointer into a config file, read and return a list of
- * values associated with the given config var.  The variable's value
- * is expected to be a ':' separated string.  The caller must free()
- * the returned array of strings afterwards, as well as the pointer
- * itself.
- *
- * @deprecated Do not use this function; use apol_str_split() instead.
- *
- * @param var Name of configuration variable to obtain.
- * @param fp An open file pointer into a configuration file.  This
- * function will not maintain the pointer's current location.
- * @param list_sz Reference to the number of elements within the
- * returned array.
- *
- * @return A newly allocated array of strings containing the
- * variable's values, or NULL if not found or error.
- */
-	extern char **apol_config_get_varlist(const char *var, FILE * file, size_t * list_sz)
-		__attribute__ ((deprecated));
-
-/**
- * Given a list of configuration variables, as returned by
- * apol_config_list(), allocate and return a string that joins the
- * list using ':' as the separator.  The caller is responsible for
- * free()ing the string afterwards.
- *
- * @deprecated Do not use this function; use apol_str_join() instead.
- *
- * @param list Array of strings.
- * @param size Number of elements within the list.
- *
- * @return An allocated concatenated string, or NULL upon error.
- */
-	extern char *apol_config_varlist_to_str(const char **list, size_t size)
-		__attribute__ ((deprecated));
-
-/**
  * Given a string of tokens, allocate and return a vector of strings
  * initialized to those tokens.
  *
@@ -254,7 +214,7 @@ extern "C"
  * variable's values, or NULL if not found or error.  Note that the
  * vector could be empty if the config var does not exist or has an
  * empty value.  The caller must call apol_vector_destroy()
- * afterwards, passing free as the second parameter.
+ * afterwards.
  */
 	extern apol_vector_t *apol_str_split(const char *s, const char *delim);
 

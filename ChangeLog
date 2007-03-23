@@ -5,6 +5,8 @@
 
 2007-03-23  J. Tang  <jtang@tresys.com>
 
+	* apol_mls_level_t and apol_mls_range_t are now opaque structures.
+
 	* fixed error in seaudit_model_create_from_model(), where the
 	duplicate's filters and sorts were being linked to the original
 	model, not the newly created one.

@@ -8,9 +8,9 @@ libqpol_version=1.2
 libqpol_soname=libqpol.so.1
 libqpol_pyswig_soname=_qpol.so.1
 
-libapol_version=3.2
-libapol_soname=libapol.so.3
-libapol_pyswig_soname=_apol.so.3
+libapol_version=4.0
+libapol_soname=libapol.so.4
+libapol_pyswig_soname=_apol.so.4
 
 libpoldiff_version=1.2
 libpoldiff_soname=libpoldiff.so.1

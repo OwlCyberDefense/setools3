@@ -20,9 +20,7 @@ libapol_a_SOURCES = \
 	condrule-query.c \
 	constraint-query.c \
 	context-query.c \
-	domain-trans-analysis.c \
 	fscon-query.c \
-	infoflow-analysis.c \
 	isid-query.c \
 	mls-query.c \
 	netcon-query.c \
@@ -31,18 +29,22 @@ libapol_a_SOURCES = \
 	policy-path.c \
 	policy-query.c \
 	queue.c \
-	range_trans-query.c \
-	rbacrule-query.c \
-	relabel-analysis.c \
-	render.c \
-	role-query.c \
-	terule-query.c \
 	type-query.c \
 	types-relation-analysis.c \
 	user-query.c \
 	util.c \
 	vector.c \
 	policy-query-internal.h queue.h
+
+#	domain-trans-analysis.c \
+#	infoflow-analysis.c \
+#	range_trans-query.c \
+#	rbacrule-query.c \
+#	relabel-analysis.c \
+#	render.c \
+#	role-query.c \
+#	terule-query.c
+
 libapol_a_DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so
 
 libapol_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libapol_a_SOURCES)))

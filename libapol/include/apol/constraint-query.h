@@ -3,7 +3,6 @@
  *
  * Routines to query constraint and validatetrans statements in a policy.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -68,9 +67,8 @@ extern "C"
  * NULL then return all constraints.
  * @param v Reference to a vector of qpol_constraint_t.  The vector
  * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, <b>passing free() as the second
- * parameter</b>.  This will be set to NULL upon no results or upon
- * error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -169,9 +167,8 @@ extern "C"
  * NULL then return all validatetrans statements.
  * @param v Reference to a vector of qpol_validatetrans_t.  The vector
  * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, <b>passing free() as the second
- * parameter</b>.  This will be set to NULL upon no results or upon
- * error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

@@ -8,7 +8,6 @@
  * fields of the search query must match for a datum to be added to
  * the results query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -69,8 +68,8 @@ int apol_class_get_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vect
 	if (qpol_policy_get_class_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -120,7 +119,7 @@ int apol_class_get_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vect
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&perm_iter);
@@ -174,8 +173,8 @@ int apol_common_get_by_query(apol_policy_t * p, apol_common_query_t * c, apol_ve
 	if (qpol_policy_get_common_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -205,7 +204,7 @@ int apol_common_get_by_query(apol_policy_t * p, apol_common_query_t * c, apol_ve
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;
@@ -252,8 +251,8 @@ int apol_perm_get_by_query(apol_policy_t * p, apol_perm_query_t * pq, apol_vecto
 	if (qpol_policy_get_class_iter(p->p, &class_iter) < 0 || qpol_policy_get_common_iter(p->p, &common_iter) < 0) {
 		goto cleanup;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
@@ -309,7 +308,7 @@ int apol_perm_get_by_query(apol_policy_t * p, apol_perm_query_t * pq, apol_vecto
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&class_iter);
 	qpol_iterator_destroy(&common_iter);

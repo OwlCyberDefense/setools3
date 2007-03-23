@@ -285,8 +285,8 @@ int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context)
       cleanup:
 	apol_user_query_destroy(&user_query);
 	apol_role_query_destroy(&role_query);
-	apol_vector_destroy(&user_v, NULL);
-	apol_vector_destroy(&role_v, NULL);
+	apol_vector_destroy(&user_v);
+	apol_vector_destroy(&role_v);
 	apol_mls_range_destroy(&user_apol_range);
 	return retval;
 }
