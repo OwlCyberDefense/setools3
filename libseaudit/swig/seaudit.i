@@ -43,15 +43,17 @@
 
 %include exception.i
 
-%typemap(python,in) FILE * {
-	if (!PyFile_Check($source)) {
+%typedef unsigned long size_t;
+
+#ifdef SWIGPYTHON
+%typemap(in) FILE * {
+	if (!PyFile_Check($input)) {
 		PyErr_SetString(PyExc_TypeError, "Need a file!");
 		return NULL;
 	}
-	$target = PyFile_AsFile($source);
+	$1 = PyFile_AsFile($input);
 }
-
-
+#endif
 
 /* from <time.h> */
 %{
@@ -336,8 +338,200 @@ typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 
 int seaudit_log_parse(seaudit_log_t * log, FILE * syslog);
 
+/* seaudit filter */
+typedef enum seaudit_filter_match
+{
+	SEAUDIT_FILTER_MATCH_ALL = 0,
+	SEAUDIT_FILTER_MATCH_ANY
+} seaudit_filter_match_e;
+typedef enum seaudit_filter_visible
+{
+	SEAUDIT_FILTER_VISIBLE_SHOW = 0,
+	SEAUDIT_FILTER_VISIBLE_HIDE
+} seaudit_filter_visible_e;
+typedef enum seaudit_filter_date_match
+{
+	SEAUDIT_FILTER_DATE_MATCH_BEFORE = 0,
+	SEAUDIT_FILTER_DATE_MATCH_AFTER,
+	SEAUDIT_FILTER_DATE_MATCH_BETWEEN
+} seaudit_filter_date_match_e;
+typedef struct seaudit_filter {} seaudit_filter_t;
+%extend seaudit_filter_t {
+	seaudit_filter_t(char *name = NULL) {
+		seaudit_filter_t *sf = seaudit_filter_create(name);
+		if (!sf) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return sf;
+	};
+	seaudit_filter_t(seaudit_filter_t *in) {
+		seaudit_filter_t *sf = seaudit_filter_create_from_filter(in);
+		if (!sf) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return sf;
+	};
+/*	seaudit_filter_t(char *path) {
+		seaudit_filter_t *sf = seaudit_filter_create_from_file(path);
+		if (!sf) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return sf;
+	};*/
+	seaudit_filter_t(void *x) {
+		return (seaudit_filter_t*)x;
+	};
+	~seaudit_filter_t() {
+		seaudit_filter_destroy(&self);
+	};
+};
+
+/* seaudit model */
+typedef struct seaudit_model {} seaudit_model_t;
+%extend seaudit_model_t {
+	seaudit_model_t(char *name = NULL, seaudit_log_t *slog = NULL) {
+		seaudit_model_t *smod = seaudit_model_create(name, slog);
+		if (!smod) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return smod;
+	};
+	seaudit_model_t(seaudit_model_t *in) {
+		seaudit_model_t *smod = seaudit_model_create_from_model(in);
+		if (!smod) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return smod;
+	};
+	seaudit_model_t(char *path) {	
+		seaudit_model_t *smod = seaudit_model_create_from_file(path);
+		if (!smod) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return smod;
+	}
+	~seaudit_model_t() {
+		seaudit_model_destroy(&self);
+	};
+	void save(char *path) {
+		if (seaudit_model_save_to_file(self, path)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not save seaudit model");
+		}
+	fail:
+		return;
+	}
+	const char *get_name() {
+		return seaudit_model_get_name(self);
+	};
+	void set_name(char *name) {
+		if (seaudit_model_set_name(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set model name");
+		}
+	fail:
+		return;
+	};
+	void append_log(seaudit_log_t *slog) {
+		if (seaudit_model_append_log(self, slog)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append log to model");
+		}
+	fail:
+		return;
+	};
+	void append_filter(seaudit_filter_t *filter) {
+		if (seaudit_model_append_filter(self, filter)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append filter to model");
+		}
+	fail:
+		return;
+	};
+	const apol_vector_t *get_filters() {
+		return seaudit_model_get_filters(self);
+	};
+	%delobject remove_filter();
+	void remove_filter(seaudit_filter_t *filter) {
+		if (seaudit_model_remove_filter(self, filter)) {
+			SWIG_exception(SWIG_ValueError, "Could not remove filter");
+		}
+	fail:
+		return;
+	};
+	void set_filter_match(seaudit_filter_match_e match) {
+		if (seaudit_model_set_filter_match(self, match)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set filter matching method for model");
+		}
+	fail:
+		return;
+	};
+	seaudit_filter_match_e get_filter_match() {
+		return seaudit_model_get_filter_match(self);
+	};
+	void set_filter_visible(seaudit_filter_visible_e vis) {
+		if (seaudit_model_set_filter_visible(self, vis)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set filter visibility for model");
+		}
+	fail:
+		return;
+	};
+	seaudit_filter_visible_e get_filter_visible() {
+		return seaudit_model_get_filter_visible(self);
+	};
+	void append_sort(seaudit_sort_t *ssort) {
+		if (seaudit_model_append_sort(self, ssort)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append sort to model");
+		}
+	fail:
+		return;
+	};
+	void clear_sorts() {
+		if (seaudit_model_clear_sorts(self)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not clear model sorting criteria");
+		}
+	fail:
+		return;
+	};
+	int is_changed() {
+		return seaudit_model_is_changed(self);
+	};
+	%newobject get_messages();
+	apol_vector_t *get_messages(seaudit_log_t *slog) {
+		apol_vector_t *v = seaudit_model_get_messages(slog, self);
+		if (!v) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return v;
+	};
+	%newobject get_malformed_messages();
+	apol_vector_t *get_malformed_messages(seaudit_log_t *slog) {
+		apol_vector_t *v = seaudit_model_get_malformed_messages(slog, self);
+		if (!v) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return v;
+	};
+	size_t get_num_allows(seaudit_log_t *slog) {
+		return seaudit_model_get_num_allows(slog, self);
+	};
+	size_t get_num_denies(seaudit_log_t *slog) {
+		return seaudit_model_get_num_denies(slog, self);
+	};
+	size_t get_num_bools(seaudit_log_t *slog) {
+		return seaudit_model_get_num_bools(slog, self);
+	};
+	size_t get_num_loads(seaudit_log_t *slog) {
+		return seaudit_model_get_num_loads(slog, self);
+	};
+};
+
 //TODO
-%include "../include/seaudit/filter.h"
-%include "../include/seaudit/model.h"
+//%include "../include/seaudit/filter.h"
+//%include "../include/seaudit/model.h"
 %include "../include/seaudit/report.h"
 %include "../include/seaudit/sort.h"

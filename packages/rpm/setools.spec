@@ -64,7 +64,7 @@ Summary: Python bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = 3.2 python2 >= 2.3
 Provides: libqpol-python = 1.2 libapol-python = 3.2 libpoldiff-python = 1.2 libseaudit-python = 4.1
-BuildRequires: python2-devel >= 2.3 swig >= 1.3.21
+BuildRequires: python2-devel >= 2.3 swig >= 1.3.28
 
 %description libs-python
 SETools is a collection of graphical tools, command-line tools, and

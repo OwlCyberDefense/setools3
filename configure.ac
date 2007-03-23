@@ -148,7 +148,7 @@ AC_ARG_ENABLE(swig-python,
               enable_pyswig="$enableval")
 if test "x${enable_pyswig}" = xyes; then
    AM_PATH_PYTHON(2.3)
-   AC_PROG_SWIG(1.3.21)
+   AC_PROG_SWIG(1.3.28)
    SWIG_PYTHON
    do_swigify_python=yes
    do_swigify=yes
