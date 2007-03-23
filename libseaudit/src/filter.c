@@ -243,14 +243,17 @@ seaudit_filter_match_e seaudit_filter_get_match(seaudit_filter_t * filter)
 
 int seaudit_filter_set_name(seaudit_filter_t * filter, const char *name)
 {
+	char *new_name = NULL;
 	if (filter == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	free(filter->name);
-	filter->name = NULL;
-	if (name != NULL && (filter->name = strdup(name)) == NULL) {
-		return -1;
+	if (name != filter->name) {
+		if (name != NULL && (new_name = strdup(name)) == NULL) {
+			return -1;
+		}
+		free(filter->name);
+		filter->name = new_name;;
 	}
 	return 0;
 }
@@ -262,14 +265,17 @@ char *seaudit_filter_get_name(seaudit_filter_t * filter)
 
 int seaudit_filter_set_description(seaudit_filter_t * filter, const char *desc)
 {
+	char *new_desc = NULL;
 	if (filter == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	free(filter->desc);
-	filter->desc = NULL;
-	if (desc != NULL && (filter->desc = strdup(desc)) == NULL) {
-		return -1;
+	if (desc != filter->desc) {
+		if (desc != NULL && (new_desc = strdup(desc)) == NULL) {
+			return -1;
+		}
+		free(filter->desc);
+		filter->desc = new_desc;
 	}
 	return 0;
 }

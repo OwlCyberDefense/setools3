@@ -402,11 +402,11 @@ seaudit_model_t *seaudit_model_create_from_model(const seaudit_model_t * model)
 		error = errno;
 		goto cleanup;
 	}
-	if ((m->filters = apol_vector_create_from_vector(model->filters, model_filter_dup, (void *)model)) == NULL) {
+	if ((m->filters = apol_vector_create_from_vector(model->filters, model_filter_dup, (void *)m)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
-	if ((m->sorts = apol_vector_create_from_vector(model->sorts, model_sort_dup, (void *)model)) == NULL) {
+	if ((m->sorts = apol_vector_create_from_vector(model->sorts, model_sort_dup, (void *)m)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}

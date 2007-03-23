@@ -1,3 +1,13 @@
+2007-03-23  J. Tang  <jtang@tresys.com>
+
+	* fixed error in seaudit_model_create_from_model(), where the
+	duplicate's filters and sorts were being linked to the original
+	model, not the newly created one.
+
+	* fixed potential segfault in seaudit_filter_set_name() and
+	seaudit_filter_set_description() if the passed in pointer was the
+	same one obtained by the respecitve accessor function.
+
 2007-03-22  J. Mowery  <jmowery@tresys.com>
 
 	* Libapol SWIG wrapper updated to treat all structures as classes
