@@ -440,13 +440,229 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	const apol_string_vector_t *get_source_user() {
 		return seaudit_filter_get_source_user(self);
 	};
+	void set_source_role(apol_string_vector_t *v) {
+		if (seaudit_filter_set_source_role(self, (apol_vector_t*)v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set source role list for filter");
+		}
+	fail:
+		return;
+	};
+	const apol_string_vector_t *get_source_role() {
+		return seaudit_filter_get_source_role(self);
+	};
+	void set_source_type(apol_string_vector_t *v) {
+		if (seaudit_filter_set_source_type(self, (apol_vector_t*)v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set source type list for filter");
+		}
+	fail:
+		return;
+	};
+	const apol_string_vector_t *get_source_type() {
+		return seaudit_filter_get_source_type(self);
+	};
+	void set_target_user(apol_string_vector_t *v) {
+		if (seaudit_filter_set_target_user(self, (apol_vector_t*)v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set target user list for filter");
+		}
+	fail:
+		return;
+	};
+	const apol_string_vector_t *get_target_user() {
+		return seaudit_filter_get_target_user(self);
+	};
+	void set_target_role(apol_string_vector_t *v) {
+		if (seaudit_filter_set_target_role(self, (apol_vector_t*)v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set target role list for filter");
+		}
+	fail:
+		return;
+	};
+	const apol_string_vector_t *get_target_role() {
+		return seaudit_filter_get_target_role(self);
+	};
+	void set_target_type(apol_string_vector_t *v) {
+		if (seaudit_filter_set_target_type(self, (apol_vector_t*)v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set target type list for filter");
+		}
+	fail:
+		return;
+	};
+	const apol_string_vector_t *get_target_type() {
+		return seaudit_filter_get_target_type(self);
+	};
+	void set_target_class(apol_string_vector_t *v) {
+		if (seaudit_filter_set_target_class(self, (apol_vector_t*)v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set target class list for filter");
+		}
+	fail:
+		return;
+	};
+	const apol_string_vector_t *get_target_class() {
+		return seaudit_filter_get_target_class(self);
+	};
+	void set_executable(char *name) {
+		if (seaudit_filter_set_executable(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set executable for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_executable() {
+		return seaudit_filter_get_executable(self);
+	};
+	void set_host(char *name) {
+		if (seaudit_filter_set_host(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set host for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_host() {
+		return seaudit_filter_get_host(self);
+	};
+	void set_path(char *path) {
+		if (seaudit_filter_set_path(self, path)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set path for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_path() {
+		return seaudit_filter_get_path(self);
+	};
+	void set_command(char *name) {
+		if (seaudit_filter_set_command(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set command for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_command() {
+		return seaudit_filter_get_command(self);
+	};
+	void set_ipaddress(char *name) {
+		if (seaudit_filter_set_ipaddress(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set ip address for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_ipaddress() {
+		return seaudit_filter_get_ipaddress(self);
+	};
+	void set_port(int port) {
+		if (seaudit_filter_set_port(self, port)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set port for filter");
+		}
+	fail:
+		return;
+	};
+	int get_port() {
+		return seaudit_filter_get_port(self);
+	};
+	void set_netif(char *name) {
+		if (seaudit_filter_set_netif(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set network interface for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_netif() {
+		return seaudit_filter_get_netif(self);
+	};
+	void set_message_type(seaudit_message_type_e mtype) {
+		if (seaudit_filter_set_message_type(self, mtype)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set message type for filter");
+		}
+	fail:
+		return;
+	};
+	seaudit_message_type_e get_message_type() {
+		return seaudit_filter_get_message_type(self);
+	};
+	void set_date(struct tm *start, struct tm *end, seaudit_filter_date_match_e match) {
+		if (seaudit_filter_set_date(self, start, end, match)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set date for filter");
+		}
+	fail:
+		return;
+	};
+	const struct tm *get_start_date() {
+		struct tm *s;
+		struct tm *e;
+		seaudit_filter_date_match_e m;
+		seaudit_filter_get_date(self, &s, &e, &m);
+		return s;
+	};
+	const struct tm *get_end_date() {
+		struct tm *s;
+		struct tm *e;
+		seaudit_filter_date_match_e m;
+		seaudit_filter_get_date(self, &s, &e, &m);
+		return e;
+	};
+	seaudit_filter_date_match_e get_date_match() {
+		struct tm *s;
+		struct tm *e;
+		seaudit_filter_date_match_e m;
+		seaudit_filter_get_date(self, &s, &e, &m);
+		return m;
+	};
 };
+
+/* seaudit sort */
+typedef struct seaudit_sort {} seaudit_sort_t;
+%extend seaudit_sort_t {
+	seaudit_sort_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_sort_t objects");
+	fail:
+		return NULL;
+	};
+	~seaudit_sort_t() {
+		seaudit_sort_destroy(&self);
+	};
+};
+%newobject seaudit_sort_by_message_type();
+seaudit_sort_t *seaudit_sort_by_message_type(int direction);
+%newobject seaudit_sort_by_date();
+seaudit_sort_t *seaudit_sort_by_date(int direction);
+%newobject seaudit_sort_by_host();
+seaudit_sort_t *seaudit_sort_by_host(int direction);
+%newobject seaudit_sort_by_permission();
+seaudit_sort_t *seaudit_sort_by_permission(int direction);
+%newobject seaudit_sort_by_source_user();
+seaudit_sort_t *seaudit_sort_by_source_user(int direction);
+%newobject seaudit_sort_by_source_role();
+seaudit_sort_t *seaudit_sort_by_source_role(int direction);
+%newobject seaudit_sort_by_source_type();
+seaudit_sort_t *seaudit_sort_by_source_type(int direction);
+%newobject seaudit_sort_by_target_user();
+seaudit_sort_t *seaudit_sort_by_target_user(int direction);
+%newobject seaudit_sort_by_target_role();
+seaudit_sort_t *seaudit_sort_by_target_role(int direction);
+%newobject seaudit_sort_by_target_type();
+seaudit_sort_t *seaudit_sort_by_target_type(int direction);
+%newobject seaudit_sort_by_object_class();
+seaudit_sort_t *seaudit_sort_by_object_class(int direction);
+%newobject seaudit_sort_by_executable();
+seaudit_sort_t *seaudit_sort_by_executable(int direction);
+%newobject seaudit_sort_by_command();
+seaudit_sort_t *seaudit_sort_by_command(int direction);
+%newobject seaudit_sort_by_path();
+seaudit_sort_t *seaudit_sort_by_path(int direction);
+%newobject seaudit_sort_by_device();
+seaudit_sort_t *seaudit_sort_by_device(int direction);
+%newobject seaudit_sort_by_inode();
+seaudit_sort_t *seaudit_sort_by_inode(int direction);
+%newobject seaudit_sort_by_pid();
+seaudit_sort_t *seaudit_sort_by_pid(int direction);
 
 /* seaudit model */
 typedef struct seaudit_model {} seaudit_model_t;
 %extend seaudit_model_t {
 	seaudit_model_t(char *name = NULL, seaudit_log_t *slog = NULL) {
-		seaudit_model_t *smod = seaudit_model_create(name, slog);
+		seaudit_model_t *smod;
+		smod = seaudit_model_create(name, slog);
 		if (!smod) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
@@ -454,7 +670,8 @@ typedef struct seaudit_model {} seaudit_model_t;
 		return smod;
 	};
 	seaudit_model_t(seaudit_model_t *in) {
-		seaudit_model_t *smod = seaudit_model_create_from_model(in);
+		seaudit_model_t *smod;
+		smod = seaudit_model_create_from_model(in);
 		if (!smod) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
@@ -462,7 +679,8 @@ typedef struct seaudit_model {} seaudit_model_t;
 		return smod;
 	};
 	seaudit_model_t(char *path) {	
-		seaudit_model_t *smod = seaudit_model_create_from_file(path);
+		seaudit_model_t *smod;
+		smod = seaudit_model_create_from_file(path);
 		if (!smod) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
@@ -583,7 +801,59 @@ typedef struct seaudit_model {} seaudit_model_t;
 	};
 };
 
-//TODO
-//%include "../include/seaudit/filter.h"
-%include "../include/seaudit/report.h"
-%include "../include/seaudit/sort.h"
+/* seaudit report */
+typedef enum seaudit_report_format
+{
+	SEAUDIT_REPORT_FORMAT_TEXT,
+	SEAUDIT_REPORT_FORMAT_HTML
+} seaudit_report_format_e;
+typedef struct seaudit_report {} seaudit_report_t;
+%extend seaudit_report_t {
+	seaudit_report_t(seaudit_model_t *m) {
+		seaudit_report_t *sr;
+		sr = seaudit_report_create(m);
+		if (!sr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return sr;
+	};
+	~seaudit_report_t() {
+		seaudit_report_destroy(&self);
+	};
+	void write(seaudit_log_t *slog, char *path) {
+		if (seaudit_report_write(slog, self, path)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not write report to file");
+		}
+	fail:
+		return;
+	};
+	void set_format(seaudit_log_t *slog, seaudit_report_format_e format) {
+		if (seaudit_report_set_format(slog, self, format)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set report format");
+		}
+	fail:
+		return;
+	};
+	void set_configuration(seaudit_log_t *slog, char *path) {
+		if (seaudit_report_set_configuration(slog, self, path)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set report configuration file");
+		}
+	fail:
+		return;
+	};
+	void set_stylesheet(seaudit_log_t *slog, char *path, int use_stylesheet) {
+		if (seaudit_report_set_stylesheet(slog, self, path, use_stylesheet)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set report stylesheet");
+		}
+	fail:
+		return;
+	};
+	void set_malformed(seaudit_log_t *slog, int do_malformed) {
+		if (seaudit_report_set_malformed(slog, self, do_malformed)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set report malformed flag");
+		}
+	fail:
+		return;
+	};
+};
