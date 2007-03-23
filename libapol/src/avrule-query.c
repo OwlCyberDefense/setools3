@@ -183,11 +183,6 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 	return retv;
 }
 
-int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
-{
-	return apol_avrule_get_by_query(p, a, v);
-}
-
 int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
 {
 	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL, *perm_list = NULL;
@@ -255,11 +250,6 @@ int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_ve
 	apol_vector_destroy(&class_list);
 	/* don't destroy perm_list - it points to query's permission list */
 	return retval;
-}
-
-int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
-{
-	return apol_syn_avrule_get_by_query(p, a, v);
 }
 
 int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
@@ -522,8 +512,7 @@ int apol_avrule_query_append_class(apol_policy_t * p, apol_avrule_query_t * a, c
 	char *s = NULL;
 	if (obj_class == NULL) {
 		apol_vector_destroy(&a->classes);
-	} else if ((s = strdup(obj_class)) == NULL ||
-		   (a->classes == NULL && (a->classes = apol_vector_create(free)) == NULL)
+	} else if ((s = strdup(obj_class)) == NULL || (a->classes == NULL && (a->classes = apol_vector_create(free)) == NULL)
 		   || apol_vector_append(a->classes, s) < 0) {
 		ERR(p, "%s", strerror(errno));
 		free(s);
@@ -681,7 +670,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t 
 		}
 		qpol_iterator_destroy(&iter);
 	}
-	if ((tmp_v = apol_bst_get_vector(b, NULL)) == NULL) {
+	if ((tmp_v = apol_bst_get_vector(b)) == NULL) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;

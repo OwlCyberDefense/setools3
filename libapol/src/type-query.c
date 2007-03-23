@@ -48,11 +48,6 @@ struct apol_attr_query
 
 /******************** type queries ********************/
 
-int apol_get_type_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v)
-{
-	return apol_type_get_by_query(p, t, v);
-}
-
 int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
@@ -128,11 +123,6 @@ int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, int is_r
 }
 
 /******************** attribute queries ********************/
-
-int apol_get_attr_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v)
-{
-	return apol_attr_get_by_query(p, a, v);
-}
 
 int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v)
 {

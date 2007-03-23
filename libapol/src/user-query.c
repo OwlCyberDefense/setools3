@@ -42,11 +42,6 @@ struct apol_user_query
 
 /******************** user queries ********************/
 
-int apol_get_user_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v)
-{
-	return apol_user_get_by_query(p, u, v);
-}
-
 int apol_user_get_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *role_iter = NULL;

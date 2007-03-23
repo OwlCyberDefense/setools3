@@ -52,11 +52,6 @@ struct apol_fs_use_query
 
 /******************** genfscon queries ********************/
 
-int apol_get_genfscon_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apol_vector_t ** v)
-{
-	return apol_genfscon_get_by_query(p, g, v);
-}
-
 int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
@@ -281,11 +276,6 @@ char *apol_genfscon_render(apol_policy_t * p, qpol_genfscon_t * genfscon)
 }
 
 /******************** fs_use queries ********************/
-
-int apol_get_fs_use_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_vector_t ** v)
-{
-	return apol_fs_use_get_by_query(p, f, v);
-}
 
 int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_vector_t ** v)
 {

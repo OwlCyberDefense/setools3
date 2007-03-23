@@ -118,14 +118,14 @@ static int bst_node_to_vector(bst_node_t * node, apol_vector_t * v)
 	return bst_node_to_vector(node->child[1], v);
 }
 
-apol_vector_t *apol_bst_get_vector(const struct apol_bst * b, apol_vector_free_func * fr)
+apol_vector_t *apol_bst_get_vector(const struct apol_bst * b)
 {
 	apol_vector_t *v = NULL;
 	if (!b) {
 		errno = EINVAL;
 		return NULL;
 	}
-	if ((v = apol_vector_create_with_capacity(b->size, fr)) == NULL) {
+	if ((v = apol_vector_create_with_capacity(b->size, NULL)) == NULL) {
 		return NULL;
 	}
 	if (bst_node_to_vector(b->head, v) < 0) {

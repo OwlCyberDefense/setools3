@@ -39,11 +39,6 @@ struct apol_range_trans_query
 	unsigned int flags;
 };
 
-int apol_get_range_trans_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v)
-{
-	return apol_range_trans_get_by_query(p, r, v);
-}
-
 int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
@@ -77,8 +72,8 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 		}
 	}
 
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (qpol_policy_get_range_trans_iter(p->p, &iter) < 0) {
@@ -161,13 +156,13 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
-	apol_vector_destroy(&source_list, NULL);
+	apol_vector_destroy(&source_list);
 	if (!source_as_any) {
-		apol_vector_destroy(&target_list, NULL);
+		apol_vector_destroy(&target_list);
 	}
-	apol_vector_destroy(&class_list, NULL);
+	apol_vector_destroy(&class_list);
 	qpol_iterator_destroy(&iter);
 	apol_mls_range_destroy(&range);
 	return retval;
@@ -183,7 +178,7 @@ void apol_range_trans_query_destroy(apol_range_trans_query_t ** r)
 	if (*r != NULL) {
 		free((*r)->source);
 		free((*r)->target);
-		apol_vector_destroy(&(*r)->classes, free);
+		apol_vector_destroy(&(*r)->classes);
 		apol_mls_range_destroy(&((*r)->range));
 		free(*r);
 		*r = NULL;
@@ -206,9 +201,10 @@ int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_quer
 {
 	char *s = NULL;
 	if (obj_class == NULL) {
-		apol_vector_destroy(&r->classes, free);
+		apol_vector_destroy(&r->classes);
 	} else if ((s = strdup(obj_class)) == NULL ||
-		   (r->classes == NULL && (r->classes = apol_vector_create()) == NULL) || apol_vector_append(r->classes, s) < 0) {
+		   (r->classes == NULL && (r->classes = apol_vector_create(free)) == NULL)
+		   || apol_vector_append(r->classes, s) < 0) {
 		ERR(p, "%s", strerror(errno));
 		free(s);
 		return -1;

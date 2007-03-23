@@ -2,7 +2,6 @@
  * @file
  * Implementation of the direct relabelling analysis.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -124,14 +123,23 @@ static int relabel_result_comp_func(const void *a, const void *b, void *data __a
 	return (int)((char *)r->type - (char *)t);
 }
 
+static void relabel_result_free(void *result)
+{
+	if (result != NULL) {
+		apol_relabel_result_t *r = (apol_relabel_result_t *) result;
+		apol_vector_destroy(&r->to);
+		apol_vector_destroy(&r->from);
+		apol_vector_destroy(&r->both);
+		free(result);
+	}
+}
+
 /**
  * Given a qpol_type_t pointer, find and return the first
  * apol_relabel_result_t node within vector v that matches the type.
  * If there does not exist a node with that type, then allocate a new
  * one, append it to the vector, and return it.  The caller is
- * expected to eventually call apol_vector_destroy() upon the vector
- * with the parameter apoL_relabel_result_free(); the caller should
- * not free the individual nodes.
+ * expected to eventually call apol_vector_destroy() upon the vector.
  *
  * @param p Policy, used for error handling.
  * @param results A vector of apol_relabel_result_t nodes.
@@ -149,11 +157,11 @@ static apol_relabel_result_t *relabel_result_get_node(apol_policy_t * p, apol_ve
 	}
 	/* make a new result node */
 	if ((result = calloc(1, sizeof(*result))) == NULL ||
-	    (result->to = apol_vector_create()) == NULL ||
-	    (result->from = apol_vector_create()) == NULL ||
-	    (result->both = apol_vector_create()) == NULL || apol_vector_append(results, result) < 0) {
-		apol_relabel_result_free(result);
-		ERR(p, "%s", strerror(ENOMEM));
+	    (result->to = apol_vector_create(free)) == NULL ||
+	    (result->from = apol_vector_create(free)) == NULL ||
+	    (result->both = apol_vector_create(free)) == NULL || apol_vector_append(results, result) < 0) {
+		ERR(p, "%s", strerror(errno));
+		relabel_result_free(result);
 		return NULL;
 	}
 	result->type = type;
@@ -170,8 +178,8 @@ static apol_relabel_result_t *relabel_result_get_node(apol_policy_t * p, apol_ve
  * @param v Vector of strings.
  *
  * @return A newly allocated apol_vector_t, which the caller must free
- * with apol_vector_destroy(), passing NULL as the second parameter.
- * If a type name was not found or upon other error return NULL.
+ * with apol_vector_destroy().  If a type name was not found or upon
+ * other error return NULL.
  */
 static apol_vector_t *relabel_analysis_get_type_vector(apol_policy_t * p, apol_vector_t * v)
 {
@@ -179,14 +187,18 @@ static apol_vector_t *relabel_analysis_get_type_vector(apol_policy_t * p, apol_v
 	size_t i;
 	int retval = -1;
 
-	if ((types = apol_vector_create_with_capacity(apol_vector_get_size(v))) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((types = apol_vector_create_with_capacity(apol_vector_get_size(v), NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		char *s = (char *)apol_vector_get_element(v, i);
 		qpol_type_t *type;
-		if (apol_query_get_type(p, s, &type) < 0 || apol_vector_append(types, type)) {
+		if (apol_query_get_type(p, s, &type) < 0) {
+			goto cleanup;
+		}
+		if (apol_vector_append(types, type)) {
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 	}
@@ -194,7 +206,7 @@ static apol_vector_t *relabel_analysis_get_type_vector(apol_policy_t * p, apol_v
 	retval = 0;
       cleanup:
 	if (retval == -1) {
-		apol_vector_destroy(&types, NULL);
+		apol_vector_destroy(&types);
 		return NULL;
 	}
 	return types;
@@ -334,7 +346,7 @@ static int append_avrules_to_subject_vector(apol_policy_t * p,
 	retval = 0;
       cleanup:
 	free(pair);
-	apol_vector_destroy(&target_v, NULL);
+	apol_vector_destroy(&target_v);
 	return retval;
 }
 
@@ -400,12 +412,12 @@ static int relabel_analysis_matchup(apol_policy_t * p,
 				goto cleanup;
 			}
 		}
-		apol_vector_destroy(&start_v, NULL);
+		apol_vector_destroy(&start_v);
 	}
 
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&start_v, NULL);
+	apol_vector_destroy(&start_v);
 	return retval;
 }
 
@@ -480,9 +492,9 @@ static int relabel_analysis_object(apol_policy_t * p,
 	retval = 0;
       cleanup:
 	apol_avrule_query_destroy(&a);
-	apol_vector_destroy(&a_rules, NULL);
+	apol_vector_destroy(&a_rules);
 	apol_avrule_query_destroy(&b);
-	apol_vector_destroy(&b_rules, NULL);
+	apol_vector_destroy(&b_rules);
 	return retval;
 }
 
@@ -557,7 +569,7 @@ static int append_avrule_to_subject_vector(apol_policy_t * p,
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&target_v, NULL);
+	apol_vector_destroy(&target_v);
 	free(pair);
 	return retval;
 }
@@ -610,7 +622,7 @@ static int relabel_analysis_subject(apol_policy_t * p, apol_relabel_analysis_t *
 	retval = 0;
       cleanup:
 	apol_avrule_query_destroy(&a);
-	apol_vector_destroy(&avrules_v, NULL);
+	apol_vector_destroy(&avrules_v);
 	return retval;
 }
 
@@ -631,7 +643,7 @@ int apol_relabel_analysis_do(apol_policy_t * p, apol_relabel_analysis_t * r, apo
 		goto cleanup;
 	}
 
-	if ((*v = apol_vector_create()) == NULL) {
+	if ((*v = apol_vector_create(relabel_result_free)) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -655,9 +667,9 @@ int apol_relabel_analysis_do(apol_policy_t * p, apol_relabel_analysis_t * r, apo
 
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&subjects_v, NULL);
+	apol_vector_destroy(&subjects_v);
 	if (retval != 0) {
-		apol_vector_destroy(v, apol_relabel_result_free);
+		apol_vector_destroy(v);
 	}
 	return retval;
 }
@@ -669,11 +681,11 @@ apol_relabel_analysis_t *apol_relabel_analysis_create(void)
 
 void apol_relabel_analysis_destroy(apol_relabel_analysis_t ** r)
 {
-	if (*r != NULL) {
+	if (r != NULL && *r != NULL) {
 		free((*r)->type);
 		free((*r)->result);
-		apol_vector_destroy(&(*r)->classes, NULL);
-		apol_vector_destroy(&(*r)->subjects, NULL);
+		apol_vector_destroy(&(*r)->classes);
+		apol_vector_destroy(&(*r)->subjects);
 		apol_regex_destroy(&(*r)->result_regex);
 		free(*r);
 		*r = NULL;
@@ -682,6 +694,11 @@ void apol_relabel_analysis_destroy(apol_relabel_analysis_t ** r)
 
 int apol_relabel_analysis_set_dir(apol_policy_t * p, apol_relabel_analysis_t * r, unsigned int dir)
 {
+	if (p == NULL || r == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		return -1;
+	}
+
 	switch (dir) {
 	case APOL_RELABEL_DIR_BOTH:
 	case APOL_RELABEL_DIR_TO:
@@ -705,7 +722,7 @@ int apol_relabel_analysis_set_dir(apol_policy_t * p, apol_relabel_analysis_t * r
 
 int apol_relabel_analysis_set_type(apol_policy_t * p, apol_relabel_analysis_t * r, const char *name)
 {
-	if (name == NULL) {
+	if (p == NULL || r == NULL || name == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
 		return -1;
 	}
@@ -715,11 +732,16 @@ int apol_relabel_analysis_set_type(apol_policy_t * p, apol_relabel_analysis_t * 
 int apol_relabel_analysis_append_class(apol_policy_t * p, apol_relabel_analysis_t * r, const char *obj_class)
 {
 	char *s;
+	if (p == NULL || r == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		return -1;
+	}
 	if (obj_class == NULL) {
-		apol_vector_destroy(&r->classes, free);
+		apol_vector_destroy(&r->classes);
 	} else if ((s = strdup(obj_class)) == NULL ||
-		   (r->classes == NULL && (r->classes = apol_vector_create()) == NULL) || apol_vector_append(r->classes, s) < 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+		   (r->classes == NULL && (r->classes = apol_vector_create(free)) == NULL)
+		   || apol_vector_append(r->classes, s) < 0) {
+		ERR(p, "%s", strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -728,12 +750,16 @@ int apol_relabel_analysis_append_class(apol_policy_t * p, apol_relabel_analysis_
 int apol_relabel_analysis_append_subject(apol_policy_t * p, apol_relabel_analysis_t * r, const char *subject)
 {
 	char *s;
+	if (p == NULL || r == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		return -1;
+	}
 	if (subject == NULL) {
-		apol_vector_destroy(&r->subjects, free);
+		apol_vector_destroy(&r->subjects);
 	} else if ((s = strdup(subject)) == NULL ||
-		   (r->subjects == NULL && (r->subjects = apol_vector_create()) == NULL) ||
+		   (r->subjects == NULL && (r->subjects = apol_vector_create(free)) == NULL) ||
 		   apol_vector_append(r->subjects, s) < 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -745,17 +771,6 @@ int apol_relabel_analysis_set_result_regex(apol_policy_t * p, apol_relabel_analy
 }
 
 /******************** functions to access relabel results ********************/
-
-void apol_relabel_result_free(void *result)
-{
-	if (result != NULL) {
-		apol_relabel_result_t *r = (apol_relabel_result_t *) result;
-		apol_vector_destroy(&r->to, free);
-		apol_vector_destroy(&r->from, free);
-		apol_vector_destroy(&r->both, free);
-		free(result);
-	}
-}
 
 apol_vector_t *apol_relabel_result_get_to(apol_relabel_result_t * r)
 {

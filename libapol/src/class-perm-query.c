@@ -55,11 +55,6 @@ struct apol_perm_query
 
 /******************** class queries ********************/
 
-int apol_get_class_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vector_t ** v)
-{
-	return apol_class_get_by_query(p, c, v);
-}
-
 int apol_class_get_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
@@ -160,11 +155,6 @@ int apol_class_query_set_regex(apol_policy_t * p, apol_class_query_t * c, int is
 
 /******************** common queries ********************/
 
-int apol_get_common_by_query(apol_policy_t * p, apol_common_query_t * c, apol_vector_t ** v)
-{
-	return apol_common_get_by_query(p, c, v);
-}
-
 int apol_common_get_by_query(apol_policy_t * p, apol_common_query_t * c, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
@@ -236,11 +226,6 @@ int apol_common_query_set_regex(apol_policy_t * p, apol_common_query_t * c, int 
 }
 
 /******************** permission queries ********************/
-
-int apol_get_perm_by_query(apol_policy_t * p, apol_perm_query_t * pq, apol_vector_t ** v)
-{
-	return apol_perm_get_by_query(p, pq, v);
-}
 
 int apol_perm_get_by_query(apol_policy_t * p, apol_perm_query_t * pq, apol_vector_t ** v)
 {

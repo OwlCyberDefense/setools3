@@ -1021,11 +1021,6 @@ char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range)
 
 /******************** level queries ********************/
 
-int apol_get_level_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vector_t ** v)
-{
-	return apol_level_get_by_query(p, l, v);
-}
-
 int apol_level_get_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter, *cat_iter = NULL;
@@ -1125,11 +1120,6 @@ int apol_level_query_set_regex(apol_policy_t * p, apol_level_query_t * l, int is
 }
 
 /******************** category queries ********************/
-
-int apol_get_cat_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t ** v)
-{
-	return apol_cat_get_by_query(p, c, v);
-}
 
 int apol_cat_get_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t ** v)
 {

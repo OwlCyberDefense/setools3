@@ -40,11 +40,6 @@ struct apol_isid_query
 
 /******************** genfscon queries ********************/
 
-int apol_get_isid_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v)
-{
-	return apol_isid_get_by_query(p, i, v);
-}
-
 int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;

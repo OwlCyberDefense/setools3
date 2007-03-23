@@ -40,11 +40,6 @@ struct apol_bool_query
 
 /******************** booleans queries ********************/
 
-int apol_get_bool_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v)
-{
-	return apol_bool_get_by_query(p, b, v);
-}
-
 int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;

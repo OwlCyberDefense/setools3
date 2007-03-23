@@ -64,9 +64,9 @@ extern "C"
  * graph, including the pointer itself.  Afterwards set the pointer to
  * NULL.
  *
- * @param flow Reference to an apol_infoflow_graph_t to destroy.
+ * @param g Reference to an apol_infoflow_graph_t to destroy.
  */
-	extern void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** flow);
+	extern void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** g);
 
 /********** functions to do information flow analysis **********/
 
@@ -79,9 +79,8 @@ extern "C"
  * @param ia A non-NULL structure containing parameters for analysis.
  * @param v Reference to a vector of apol_infoflow_result_t.  The
  * vector will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, <b>passing
- * apol_infoflow_result_free() as the second parameter</b>.  This will
- * be set to NULL upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon
+ * error.
  * @param g Reference to the information flow graph constructed for
  * the given infoflow analysis object.  The graph will be allocated by
  * this function; the caller is responsible for calling
@@ -104,9 +103,8 @@ extern "C"
  * @param type New string from which to begin analysis.
  * @param v Reference to a vector of apol_infoflow_result_t.  The
  * vector will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, <b>passing
- * apol_infoflow_result_free() as the second parameter</b>.  This will
- * be set to NULL upon no results or upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success, negative on error.
  */
@@ -275,26 +273,6 @@ extern "C"
 	extern int apol_infoflow_analysis_set_result_regex(apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *result);
 
 /*************** functions to access infoflow results ***************/
-
-/**
- * Do a deep copy (i.e., a clone) of an apol_infoflow_result_t object.
- * The caller is responsible for calling apol_infoflow_result_free()
- * upon the returned value.
- *
- * @param result Pointer to an infoflow result structure to destroy.
- *
- * @return A clone of the passed in result node, or NULL upon error.
- */
-	extern apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_infoflow_result_t * result);
-
-/**
- * Free all memory associated with an information flow analysis
- * result, including the pointer itself.  This function does nothing
- * if the result is already NULL.
- *
- * @param result Pointer to an infoflow result structure to destroy.
- */
-	extern void apol_infoflow_result_free(void *result);
 
 /**
  * Return the direction of an information flow result.  This will be

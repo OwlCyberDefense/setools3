@@ -23,6 +23,7 @@
  */
 
 #include "policy-query-internal.h"
+#include "infoflow-analysis-internal.h"
 #include "queue.h"
 #include <apol/bst.h>
 #include <apol/perm-map.h>
@@ -162,7 +163,7 @@ static void apol_infoflow_step_free(void *step)
 {
 	if (step != NULL) {
 		apol_infoflow_step_t *s = (apol_infoflow_step_t *) step;
-		apol_vector_destroy(&s->rules, NULL);
+		apol_vector_destroy(&s->rules);
 		free(s);
 	}
 }
@@ -218,8 +219,8 @@ static void apol_infoflow_node_free(void *data)
 	if (node != NULL) {
 		/* the edges themselves are owned by the graph, not by
 		 * the node */
-		apol_vector_destroy(&node->in_edges, NULL);
-		apol_vector_destroy(&node->out_edges, NULL);
+		apol_vector_destroy(&node->in_edges);
+		apol_vector_destroy(&node->out_edges);
 		free(node);
 	}
 }
@@ -273,8 +274,8 @@ static apol_infoflow_node_t *apol_infoflow_graph_create_node(apol_policy_t * p,
 		return node;
 	}
 	if ((node = calloc(1, sizeof(*node))) == NULL ||
-	    (node->in_edges = apol_vector_create()) == NULL ||
-	    (node->out_edges = apol_vector_create()) == NULL || apol_bst_insert(g->nodes_bst, node, &key) != 0) {
+	    (node->in_edges = apol_vector_create(NULL)) == NULL ||
+	    (node->out_edges = apol_vector_create(NULL)) == NULL || apol_bst_insert(g->nodes_bst, node, &key) != 0) {
 		ERR(p, "%s", strerror(errno));
 		apol_infoflow_node_free(node);
 		return NULL;
@@ -298,8 +299,7 @@ static apol_infoflow_node_t *apol_infoflow_graph_create_node(apol_policy_t * p,
  *
  * @return Vector of nodes (type apol_infoflow_node_t *) within the
  * infoflow graph, or NULL upon error.  The caller is responsible for
- * calling apol_vector_destroy() upon the return value, passing NULL
- * as the second parameter.
+ * calling apol_vector_destroy() upon the return value.
  */
 static apol_vector_t *apol_infoflow_graph_create_nodes(apol_policy_t * p,
 						       apol_infoflow_graph_t * g, qpol_type_t * type, int node_type)
@@ -315,16 +315,16 @@ static apol_vector_t *apol_infoflow_graph_create_nodes(apol_policy_t * p,
 		qpol_type_t *t;
 		size_t len;
 		if (qpol_type_get_type_iter(p->p, type, &iter) < 0 ||
-		    qpol_iterator_get_size(iter, &len) < 0 || (v = apol_vector_create_with_capacity(len)) == NULL) {
+		    qpol_iterator_get_size(iter, &len) < 0 || (v = apol_vector_create_with_capacity(len, NULL)) == NULL) {
 			qpol_iterator_destroy(&iter);
-			apol_vector_destroy(&v, NULL);
+			apol_vector_destroy(&v);
 			return NULL;
 		}
 		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 			qpol_iterator_get_item(iter, (void **)&t);
 			if ((node = apol_infoflow_graph_create_node(p, g, t, node_type)) == NULL || apol_vector_append(v, node) < 0) {
 				qpol_iterator_destroy(&iter);
-				apol_vector_destroy(&v, NULL);
+				apol_vector_destroy(&v);
 				return NULL;
 			}
 		}
@@ -335,11 +335,11 @@ static apol_vector_t *apol_infoflow_graph_create_nodes(apol_policy_t * p,
 		 * and apol_infoflow_analysis_direct_expand().  for transitive
 		 * searches it is necessary to expand the types so that the
 		 * graph is correctly connected */
-		if ((v = apol_vector_create_with_capacity(1)) == NULL) {
+		if ((v = apol_vector_create_with_capacity(1, NULL)) == NULL) {
 			return NULL;
 		}
 		if ((node = apol_infoflow_graph_create_node(p, g, type, node_type)) == NULL || apol_vector_append(v, node) < 0) {
-			apol_vector_destroy(&v, NULL);
+			apol_vector_destroy(&v);
 			return NULL;
 		}
 	}
@@ -359,7 +359,7 @@ static void apol_infoflow_edge_free(void *data)
 {
 	apol_infoflow_edge_t *edge = (apol_infoflow_edge_t *) data;
 	if (edge != NULL) {
-		apol_vector_destroy(&edge->rules, NULL);
+		apol_vector_destroy(&edge->rules);
 		free(edge);
 	}
 }
@@ -422,8 +422,7 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t * p,
 		}
 		return edge;
 	}
-	if ((edge = calloc(1, sizeof(*edge))) == NULL ||
-	    (edge->rules = apol_vector_create()) == NULL || apol_vector_append(g->edges, edge) < 0) {
+	if ((edge = calloc(1, sizeof(*edge))) == NULL || (edge->rules = apol_vector_create(NULL)) == NULL) {
 		apol_infoflow_edge_free(edge);
 		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
@@ -509,8 +508,8 @@ static int apol_infoflow_graph_connect_nodes(apol_policy_t * p,
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&src_nodes, NULL);
-	apol_vector_destroy(&tgt_nodes, NULL);
+	apol_vector_destroy(&src_nodes);
+	apol_vector_destroy(&tgt_nodes);
 	return retval;
 }
 
@@ -606,8 +605,8 @@ static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t * 
 	size_t i;
 	char *s;
 	int retval = -1;
-	if ((types = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((types = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -620,14 +619,14 @@ static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t * 
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
-		apol_vector_destroy(&expanded_types, NULL);
+		apol_vector_destroy(&expanded_types);
 	}
-	apol_vector_sort_uniquify(types, NULL, NULL, NULL);
+	apol_vector_sort_uniquify(types, NULL, NULL);
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&expanded_types, NULL);
+	apol_vector_destroy(&expanded_types);
 	if (retval != 0) {
-		apol_vector_destroy(&types, NULL);
+		apol_vector_destroy(&types);
 	}
 	return types;
 }
@@ -757,8 +756,7 @@ static int apol_infoflow_graph_create(apol_policy_t * p, apol_infoflow_analysis_
 	}
 
 	if ((*g = calloc(1, sizeof(**g))) == NULL ||
-	    ((*g)->nodes_bst = apol_bst_create(apol_infoflow_node_compare)) == NULL ||
-	    ((*g)->edges = apol_vector_create()) == NULL) {
+	    ((*g)->nodes_bst = apol_bst_create(apol_infoflow_node_compare, apol_infoflow_node_free)) == NULL) {
 		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
@@ -800,29 +798,26 @@ static int apol_infoflow_graph_create(apol_policy_t * p, apol_infoflow_analysis_
 		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
-	apol_bst_destroy(&(*g)->nodes_bst, NULL);
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&types, NULL);
+	apol_vector_destroy(&types);
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
 		apol_infoflow_graph_destroy(g);
-		*g = NULL;
 	}
 	return retval;
 }
 
-void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** flow)
+void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** g)
 {
-	if (*flow != NULL) {
-		apol_vector_destroy(&(*flow)->nodes, apol_infoflow_node_free);
-		apol_vector_destroy(&(*flow)->edges, apol_infoflow_edge_free);
-		apol_bst_destroy(&(*flow)->nodes_bst, apol_infoflow_node_free);
-		apol_vector_destroy(&(*flow)->further_start, NULL);
-		apol_vector_destroy(&(*flow)->further_end, NULL);
-		apol_regex_destroy(&(*flow)->regex);
-		free(*flow);
-		*flow = NULL;
+	if (g != NULL && *g != NULL) {
+		apol_bst_destroy(&(*g)->nodes_bst);
+		apol_vector_destroy(&(*g)->nodes);
+		apol_vector_destroy(&(*g)->further_start);
+		apol_vector_destroy(&(*g)->further_end);
+		apol_regex_destroy(&(*g)->regex);
+		free(*g);
+		*g = NULL;
 	}
 }
 
@@ -858,7 +853,7 @@ static int apol_infoflow_graph_get_nodes_for_type(apol_policy_t * p, apol_infofl
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&cand_list, NULL);
+	apol_vector_destroy(&cand_list);
 	return retval;
 }
 
@@ -886,9 +881,10 @@ static apol_infoflow_result_t *apol_infoflow_direct_get_result(apol_policy_t * p
 			return r;
 		}
 	}
-	if ((r = calloc(1, sizeof(*r))) == NULL || (r->steps = apol_vector_create()) == NULL || apol_vector_append(v, r) < 0) {
+	if ((r = calloc(1, sizeof(*r))) == NULL || (r->steps = apol_vector_create(apol_infoflow_step_free)) == NULL
+	    || apol_vector_append(v, r) < 0) {
 		ERR(p, "%s", strerror(ENOMEM));
-		apol_infoflow_result_free(r);
+		infoflow_result_free(r);
 		return NULL;
 	}
 	r->start_type = start_type;
@@ -913,7 +909,7 @@ static int apol_infoflow_direct_define(apol_policy_t * p,
 	apol_infoflow_step_t *step = NULL;
 	if (apol_vector_get_size(result->steps) == 0) {
 		if ((step = calloc(1, sizeof(*step))) == NULL ||
-		    (step->rules = apol_vector_create()) == NULL || apol_vector_append(result->steps, step) < 0) {
+		    (step->rules = apol_vector_create(NULL)) == NULL || apol_vector_append(result->steps, step) < 0) {
 			apol_infoflow_step_free(step);
 			ERR(p, "%s", strerror(ENOMEM));
 			return -1;
@@ -1008,7 +1004,7 @@ static int apol_infoflow_results_check_both(apol_policy_t * p,
 			memcpy(new_r, r, sizeof(*new_r));
 			r->steps = NULL;
 			if (apol_vector_append(results, new_r) < 0) {
-				apol_infoflow_result_free(new_r);
+				infoflow_result_free(new_r);
 				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
 			}
@@ -1117,7 +1113,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t * p,
 	apol_vector_t *working_results = NULL;
 	int retval = -1;
 
-	if ((nodes = apol_vector_create()) == NULL || (working_results = apol_vector_create()) == NULL) {
+	if ((nodes = apol_vector_create(NULL)) == NULL || (working_results = apol_vector_create(infoflow_result_free)) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -1154,8 +1150,8 @@ static int apol_infoflow_analysis_direct(apol_policy_t * p,
 
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&nodes, NULL);
-	apol_vector_destroy(&working_results, apol_infoflow_result_free);
+	apol_vector_destroy(&nodes);
+	apol_vector_destroy(&working_results);
 	return retval;
 }
 
@@ -1242,9 +1238,9 @@ static int apol_infoflow_graph_trans_further_init(apol_policy_t * p,
  * @param start_node Starting node for the path
  * @param end_node Ending node to which to find a path.
  * @param path Reference to a vector that will be allocated and filled
- * with apol_infoflow_node_t pointers.  The path will be in reverse
- * order (i.e., from end node to a start node).  Upon error this will
- * be set to NULL.
+ * with apol_infoflow_node_t pointers from the graph.  The path will
+ * be in reverse order (i.e., from end node to a start node).  Upon
+ * error this will be set to NULL.
  *
  * @return 0 on success, < 0 on error.
  */
@@ -1254,7 +1250,7 @@ static int apol_infoflow_trans_path(apol_policy_t * p,
 {
 	int retval = -1;
 	apol_infoflow_node_t *next_node = end_node;
-	if ((*path = apol_vector_create()) == NULL) {
+	if ((*path = apol_vector_create(NULL)) == NULL) {
 		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
@@ -1276,7 +1272,7 @@ static int apol_infoflow_trans_path(apol_policy_t * p,
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(path, NULL);
+		apol_vector_destroy(path);
 	}
 	return retval;
 }
@@ -1351,7 +1347,7 @@ static int apol_infoflow_trans_define(apol_policy_t * p,
 	*result = NULL;
 
 	if (((*result) = calloc(1, sizeof(**result))) == NULL ||
-	    ((*result)->steps = apol_vector_create_with_capacity(path_len)) == NULL) {
+	    ((*result)->steps = apol_vector_create_with_capacity(path_len, apol_infoflow_step_free)) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -1383,7 +1379,7 @@ static int apol_infoflow_trans_define(apol_policy_t * p,
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_infoflow_result_free(*result);
+		infoflow_result_free(*result);
 		*result = NULL;
 	}
 	return retval;
@@ -1452,7 +1448,7 @@ static int apol_infoflow_trans_append(apol_policy_t * p,
 		/* found a dup TODO - make certain all of the object
 		 * class / rules are kept */
 		if (compval == 0) {
-			apol_infoflow_result_free(new_r);
+			infoflow_result_free(new_r);
 			new_r = NULL;
 			retval = 0;
 			goto cleanup;
@@ -1466,7 +1462,7 @@ static int apol_infoflow_trans_append(apol_policy_t * p,
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_infoflow_result_free(new_r);
+		infoflow_result_free(new_r);
 	}
 	return retval;
 }
@@ -1516,7 +1512,7 @@ static int apol_infoflow_analysis_trans_expand(apol_policy_t * p,
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&path, NULL);
+	apol_vector_destroy(&path);
 	return retval;
 }
 
@@ -1658,8 +1654,8 @@ static int apol_infoflow_analysis_trans(apol_policy_t * p,
 		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
-	if ((start_nodes = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((start_nodes = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, start_nodes) < 0) {
@@ -1673,7 +1669,7 @@ static int apol_infoflow_analysis_trans(apol_policy_t * p,
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&start_nodes, NULL);
+	apol_vector_destroy(&start_nodes);
 	return retval;
 }
 
@@ -1697,8 +1693,8 @@ static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t * p, apo
 	apol_vector_t *new_v = NULL;
 	int retval = -1;
 	size = apol_vector_get_size(v);
-	if ((new_v = apol_vector_create_with_capacity(size)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((new_v = apol_vector_create_with_capacity(size, NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (size == 0) {
@@ -1706,7 +1702,7 @@ static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t * p, apo
 		goto cleanup;
 	}
 	if ((deck = malloc(size * sizeof(*deck))) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (i = 0; i < size; i++) {
@@ -1728,7 +1724,7 @@ static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t * p, apo
       cleanup:
 	free(deck);
 	if (retval != 0) {
-		apol_vector_destroy(&new_v, NULL);
+		apol_vector_destroy(&new_v);
 	}
 	return new_v;
 }
@@ -1784,11 +1780,11 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t * p,
 				}
 			}
 		}
-		apol_vector_destroy(&edge_list, NULL);
+		apol_vector_destroy(&edge_list);
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&edge_list, NULL);
+	apol_vector_destroy(&edge_list);
 	apol_queue_destroy(&queue);
 	return retval;
 }
@@ -1798,9 +1794,13 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t * p,
 int apol_infoflow_analysis_do(apol_policy_t * p, apol_infoflow_analysis_t * ia, apol_vector_t ** v, apol_infoflow_graph_t ** g)
 {
 	int retval = -1;
-	*v = NULL;
-	*g = NULL;
-	if (ia->mode == 0 || ia->direction == 0) {
+	if (v != NULL) {
+		*v = NULL;
+	}
+	if (g != NULL) {
+		*g = NULL;
+	}
+	if (p == NULL || ia == NULL || v == NULL || g == NULL || ia->mode == 0 || ia->direction == 0) {
 		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
@@ -1819,13 +1819,19 @@ int apol_infoflow_analysis_do_more(apol_policy_t * p, apol_infoflow_graph_t * g,
 {
 	qpol_type_t *start_type;
 	int retval = -1;
-	*v = NULL;
+	if (v != NULL) {
+		*v = NULL;
+	}
+	if (p == NULL || g == NULL || type == NULL || v == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		goto cleanup;
+	}
 
 	if (apol_query_get_type(p, type, &start_type) < 0) {
 		goto cleanup;
 	}
 
-	if ((*v = apol_vector_create()) == NULL) {
+	if ((*v = apol_vector_create(infoflow_result_free)) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -1839,7 +1845,7 @@ int apol_infoflow_analysis_do_more(apol_policy_t * p, apol_infoflow_graph_t * g,
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, apol_infoflow_result_free);
+		apol_vector_destroy(v);
 	}
 	return retval;
 }
@@ -1858,10 +1864,10 @@ int apol_infoflow_analysis_trans_further_prepare(apol_policy_t * p,
 		ERR(p, "%s", "May only perform further infoflow analysis when the graph is transitive.");
 		goto cleanup;
 	}
-	apol_vector_destroy(&g->further_start, NULL);
-	apol_vector_destroy(&g->further_end, NULL);
-	if ((g->further_start = apol_vector_create()) == NULL || (g->further_end = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	apol_vector_destroy(&g->further_start);
+	apol_vector_destroy(&g->further_end);
+	if ((g->further_start = apol_vector_create(NULL)) == NULL || (g->further_end = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, g->further_start) < 0 ||
@@ -1905,8 +1911,8 @@ void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t ** ia)
 	if (*ia != NULL) {
 		free((*ia)->type);
 		free((*ia)->result);
-		apol_vector_destroy(&(*ia)->intermed, free);
-		apol_vector_destroy(&(*ia)->class_perms, apol_obj_perm_free);
+		apol_vector_destroy(&(*ia)->intermed);
+		apol_vector_destroy(&(*ia)->class_perms);
 		free(*ia);
 		*ia = NULL;
 	}
@@ -1967,10 +1973,10 @@ int apol_infoflow_analysis_append_intermediate(apol_policy_t * policy, apol_info
 {
 	char *tmp = NULL;
 	if (type == NULL) {
-		apol_vector_destroy(&ia->intermed, free);
+		apol_vector_destroy(&ia->intermed);
 		return 0;
 	}
-	if (ia->intermed == NULL && (ia->intermed = apol_vector_create()) == NULL) {
+	if (ia->intermed == NULL && (ia->intermed = apol_vector_create(free)) == NULL) {
 		ERR(policy, "Error appending type to analysis: %s", strerror(ENOMEM));
 		return -1;
 	}
@@ -1994,7 +2000,7 @@ int apol_infoflow_analysis_append_class_perm(apol_policy_t * p,
 		return -1;
 	}
 	if (class_name == NULL) {
-		apol_vector_destroy(&ia->class_perms, apol_obj_perm_free);
+		apol_vector_destroy(&ia->class_perms);
 		return 0;
 	}
 	if (perm_name == NULL) {
@@ -2002,7 +2008,7 @@ int apol_infoflow_analysis_append_class_perm(apol_policy_t * p,
 		errno = EINVAL;
 		return -1;
 	}
-	if (ia->class_perms == NULL && (ia->class_perms = apol_vector_create()) == NULL) {
+	if (ia->class_perms == NULL && (ia->class_perms = apol_vector_create(apol_obj_perm_free)) == NULL) {
 		ERR(p, "%s", strerror(errno));
 		return -1;
 	}
@@ -2051,51 +2057,6 @@ int apol_infoflow_analysis_set_result_regex(apol_policy_t * p, apol_infoflow_ana
 
 /*************** functions to access infoflow results ***************/
 
-apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_infoflow_result_t * result)
-{
-	apol_infoflow_result_t *new_r = NULL;
-	apol_infoflow_step_t *step, *new_step;
-	size_t i;
-	int retval = -1;
-
-	if ((new_r = calloc(1, sizeof(*new_r))) == NULL ||
-	    (new_r->steps = apol_vector_create_with_capacity(apol_vector_get_size(result->steps))) == NULL) {
-		goto cleanup;
-	}
-	new_r->start_type = result->start_type;
-	new_r->end_type = result->end_type;
-	new_r->direction = result->direction;
-	new_r->length = result->length;
-	for (i = 0; i < apol_vector_get_size(result->steps); i++) {
-		step = (apol_infoflow_step_t *) apol_vector_get_element(result->steps, i);
-		if ((new_step = calloc(1, sizeof(*new_step))) == NULL ||
-		    (new_step->rules = apol_vector_create_from_vector(step->rules, NULL, NULL)) == NULL ||
-		    apol_vector_append(new_r->steps, new_step) < 0) {
-			apol_infoflow_step_free(new_step);
-			goto cleanup;
-		}
-		new_step->start_type = step->start_type;
-		new_step->end_type = step->end_type;
-		new_step->weight = step->weight;
-	}
-	retval = 0;
-      cleanup:
-	if (retval != 0) {
-		apol_infoflow_result_free(new_r);
-		return NULL;
-	}
-	return new_r;
-}
-
-void apol_infoflow_result_free(void *result)
-{
-	if (result != NULL) {
-		apol_infoflow_result_t *r = (apol_infoflow_result_t *) result;
-		apol_vector_destroy(&r->steps, apol_infoflow_step_free);
-		free(r);
-	}
-}
-
 unsigned int apol_infoflow_result_get_dir(apol_infoflow_result_t * result)
 {
 	return result->direction;
@@ -2139,4 +2100,52 @@ int apol_infoflow_step_get_weight(apol_infoflow_step_t * step)
 apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t * step)
 {
 	return step->rules;
+}
+
+/******************** protected functions ********************/
+
+apol_infoflow_result_t *infoflow_result_create_from_infoflow_result(apol_infoflow_result_t * result)
+{
+	apol_infoflow_result_t *new_r = NULL;
+	apol_infoflow_step_t *step, *new_step;
+	size_t i;
+	int retval = -1;
+
+	if ((new_r = calloc(1, sizeof(*new_r))) == NULL ||
+	    (new_r->steps =
+	     apol_vector_create_with_capacity(apol_vector_get_size(result->steps), apol_infoflow_step_free)) == NULL) {
+		goto cleanup;
+	}
+	new_r->start_type = result->start_type;
+	new_r->end_type = result->end_type;
+	new_r->direction = result->direction;
+	new_r->length = result->length;
+	for (i = 0; i < apol_vector_get_size(result->steps); i++) {
+		step = (apol_infoflow_step_t *) apol_vector_get_element(result->steps, i);
+		if ((new_step = calloc(1, sizeof(*new_step))) == NULL ||
+		    (new_step->rules = apol_vector_create_from_vector(step->rules, NULL, NULL)) == NULL ||
+		    apol_vector_append(new_r->steps, new_step) < 0) {
+			apol_infoflow_step_free(new_step);
+			goto cleanup;
+		}
+		new_step->start_type = step->start_type;
+		new_step->end_type = step->end_type;
+		new_step->weight = step->weight;
+	}
+	retval = 0;
+      cleanup:
+	if (retval != 0) {
+		infoflow_result_free(new_r);
+		return NULL;
+	}
+	return new_r;
+}
+
+void infoflow_result_free(void *result)
+{
+	if (result != NULL) {
+		apol_infoflow_result_t *r = (apol_infoflow_result_t *) result;
+		apol_vector_destroy(&r->steps);
+		free(r);
+	}
 }

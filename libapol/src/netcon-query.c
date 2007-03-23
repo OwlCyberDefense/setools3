@@ -59,11 +59,6 @@ struct apol_nodecon_query
 
 /******************** portcon queries ********************/
 
-int apol_get_portcon_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol_vector_t ** v)
-{
-	return apol_portcon_get_by_query(p, po, v);
-}
-
 int apol_portcon_get_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
@@ -231,11 +226,6 @@ char *apol_portcon_render(apol_policy_t * p, qpol_portcon_t * portcon)
 
 /******************** netifcon queries ********************/
 
-int apol_get_netifcon_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apol_vector_t ** v)
-{
-	return apol_netifcon_get_by_query(p, n, v);
-}
-
 int apol_netifcon_get_by_query(apol_policy_t * p, apol_netifcon_query_t * n, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
@@ -379,11 +369,6 @@ char *apol_netifcon_render(apol_policy_t * p, qpol_netifcon_t * netifcon)
 }
 
 /******************** nodecon queries ********************/
-
-int apol_get_nodecon_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_vector_t ** v)
-{
-	return apol_nodecon_get_by_query(p, n, v);
-}
 
 int apol_nodecon_get_by_query(apol_policy_t * p, apol_nodecon_query_t * n, apol_vector_t ** v)
 {

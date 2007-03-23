@@ -44,35 +44,14 @@ extern "C"
 
 /**
  * Execute a query against all (role) allow rules within the policy.
- * @deprecated This function has been renamed apol_role_allow_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up allow rules.
  * @param r Structure containing parameters for query.	If this is
  * NULL then return all allow rules.
  * @param v Reference to a vector of qpol_role_allow_t.  The vector
  * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_role_allow_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all (role) allow rules within the policy.
- *
- * @param p Policy within which to look up allow rules.
- * @param r Structure containing parameters for query.	If this is
- * NULL then return all allow rules.
- * @param v Reference to a vector of qpol_role_allow_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -170,36 +149,14 @@ extern "C"
 /**
  * Execute a query against all role_transition rules within the
  * policy.
- * @deprecated This function has been renamed apol_role_trans_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up role_transition rules.
  * @param r Structure containing parameters for query.	If this is
  * NULL then return all role_transition rules.
  * @param v Reference to a vector of qpol_role_trans_t.  The vector
  * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_role_trans_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all role_transition rules within the
- * policy.
- *
- * @param p Policy within which to look up role_transition rules.
- * @param r Structure containing parameters for query.	If this is
- * NULL then return all role_transition rules.
- * @param v Reference to a vector of qpol_role_trans_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

@@ -312,9 +312,9 @@ extern "C"
 
 /**
  *  Sort the vector's elements within place (see apol_vector_sort()),
- *  and then compact vector by removing duplicate entries.  The stored
- *  free function will be used to free the memory used by non-unique
- *  elements.
+ *  and then compact vector by removing duplicate entries.  The
+ *  vector's free function will be used to free the memory used by
+ *  non-unique elements.
  *
  *  @param v The vector to sort.
  *  @param cmp A comparison call back for the type of element stored

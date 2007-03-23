@@ -23,6 +23,7 @@
  */
 
 #include "policy-query-internal.h"
+#include "infoflow-analysis-internal.h"
 
 #include <errno.h>
 #include <string.h>
@@ -672,9 +673,9 @@ static int apol_types_relation_clone_infoflow(apol_policy_t * p, apol_vector_t *
 		res = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
 		target = apol_infoflow_result_get_end_type(res);
 		if (apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0) {
-			if ((new_res = apol_infoflow_result_create_from_result(res)) == NULL ||
+			if ((new_res = infoflow_result_create_from_infoflow_result(res)) == NULL ||
 			    apol_vector_append(results, new_res) < 0) {
-				apol_infoflow_result_free(new_res);
+				infoflow_result_free(new_res);
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -709,7 +710,7 @@ static int apol_types_relation_directflow(apol_policy_t * p,
 	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 || qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
-	if ((r->dirflows = apol_vector_create(apol_infoflow_result_free)) == NULL || (ia = apol_infoflow_analysis_create()) == NULL) {
+	if ((r->dirflows = apol_vector_create(infoflow_result_free)) == NULL || (ia = apol_infoflow_analysis_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -768,7 +769,7 @@ static int apol_types_relation_transflow(apol_policy_t * p,
 		if (apol_infoflow_analysis_set_type(p, ia, nameA) < 0 || apol_infoflow_analysis_do(p, ia, &v, &g) < 0) {
 			goto cleanup;
 		}
-		if ((r->transAB = apol_vector_create(apol_infoflow_result_free)) == NULL) {
+		if ((r->transAB = apol_vector_create(infoflow_result_free)) == NULL) {
 			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
@@ -784,7 +785,7 @@ static int apol_types_relation_transflow(apol_policy_t * p,
 		     (apol_infoflow_analysis_set_type(p, ia, nameB) < 0 || apol_infoflow_analysis_do(p, ia, &v, &g) < 0))) {
 			goto cleanup;
 		}
-		if ((r->transBA = apol_vector_create(apol_infoflow_result_free)) == NULL) {
+		if ((r->transBA = apol_vector_create(infoflow_result_free)) == NULL) {
 			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}

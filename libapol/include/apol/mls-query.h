@@ -365,28 +365,6 @@ extern "C"
  * Execute a query against all levels within the policy.  The results
  * will only contain levels, not sensitivity aliases.  The returned
  * levels will be unordered.
- * @deprecated This function has been renamed apol_level_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
- *
- * @param p Policy within which to look up levels.
- * @param l Structure containing parameters for query.	If this is
- * NULL then return all levels.
- * @param v Reference to a vector of qpol_level_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_level_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all levels within the policy.  The results
- * will only contain levels, not sensitivity aliases.  The returned
- * levels will be unordered.
  *
  * @param p Policy within which to look up levels.
  * @param l Structure containing parameters for query.	If this is
@@ -462,27 +440,6 @@ extern "C"
 	extern int apol_level_query_set_regex(apol_policy_t * p, apol_level_query_t * l, int is_regex);
 
 /******************** category queries ********************/
-
-/**
- * Execute a query against all categories within the policy.  The
- * results will only contain categories, not aliases.  The returned
- * categories will be unordered.
- * @deprecated This function has been renamed apol_cat_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
- *
- * @param p Policy within which to look up categories.
- * @param c Structure containing parameters for query.	If this is
- * NULL then return all categories.
- * @param v Reference to a vector of qpol_cat_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_cat_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t ** v) __attribute__ ((deprecated));
 
 /**
  * Execute a query against all categories within the policy.  The
