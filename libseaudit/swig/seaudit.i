@@ -45,6 +45,12 @@
 
 %typedef unsigned long size_t;
 
+/* from apol wrapper */
+%{
+	typedef struct apol_vector apol_string_vector_t;
+%}
+%typedef struct apol_vector apol_string_vector_t;
+
 #ifdef SWIGPYTHON
 %typemap(in) FILE * {
 	if (!PyFile_Check($input)) {
@@ -373,19 +379,66 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return sf;
 	};
-/*	seaudit_filter_t(char *path) {
-		seaudit_filter_t *sf = seaudit_filter_create_from_file(path);
-		if (!sf) {
-			SWIG_exception(SWIG_MemoryError, "Out of memory");
-		}
-	fail:
-		return sf;
-	};*/
+//	seaudit_filter_t(char *path) {
+//		seaudit_filter_t *sf = seaudit_filter_create_from_file(path);
+//		if (!sf) {
+//			SWIG_exception(SWIG_MemoryError, "Out of memory");
+//		}
+//	fail:
+//		return sf;
+//	};
 	seaudit_filter_t(void *x) {
 		return (seaudit_filter_t*)x;
 	};
 	~seaudit_filter_t() {
 		seaudit_filter_destroy(&self);
+	};
+	void save(char *path) {
+		if (seaudit_filter_save_to_file(self, path)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not save filter");
+		}
+	fail:
+		return;
+	};
+	void set_match(seaudit_filter_match_e match) {
+		if (seaudit_filter_set_match(self, match)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set filter matching method");
+		}
+	fail:
+		return;
+	}
+	seaudit_filter_match_e get_match() {
+		return seaudit_filter_get_match(self);
+	};
+	void set_name(char *name) {
+		if (seaudit_filter_set_name(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set filter name");
+		}
+	fail:
+		return;
+	};
+	const char *get_name() {
+		return seaudit_filter_get_name(self);
+	};
+	void set_description(char *description) {
+		if (seaudit_filter_set_description(self, description)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set filter description");
+		}
+	fail:
+		return;
+	};
+	const char *get_description() {
+		return seaudit_filter_get_description(self);
+	};
+	void set_source_user(apol_string_vector_t *v) {
+		if (seaudit_filter_set_source_user(self, (apol_vector_t*)v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set source user list for filter");
+		}
+	fail:
+		return;
+	};
+	const apol_string_vector_t *get_source_user() {
+		return seaudit_filter_get_source_user(self);
 	};
 };
 
@@ -532,6 +585,5 @@ typedef struct seaudit_model {} seaudit_model_t;
 
 //TODO
 //%include "../include/seaudit/filter.h"
-//%include "../include/seaudit/model.h"
 %include "../include/seaudit/report.h"
 %include "../include/seaudit/sort.h"
