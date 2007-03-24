@@ -20,6 +20,7 @@ libapol_a_SOURCES = \
 	condrule-query.c \
 	constraint-query.c \
 	context-query.c \
+	domain-trans-analysis.c domain-trans-analysis-internal.h \
 	fscon-query.c \
 	infoflow-analysis.c infoflow-analysis-internal.h \
 	isid-query.c \
@@ -42,8 +43,6 @@ libapol_a_SOURCES = \
 	util.c \
 	vector.c \
 	policy-query-internal.h queue.h
-
-#	domain-trans-analysis.c
 
 libapol_a_DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so
 

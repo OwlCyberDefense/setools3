@@ -1880,16 +1880,24 @@ int apol_infoflow_analysis_trans_further_prepare(apol_policy_t * p,
 	return retval;
 }
 
-int apol_infoflow_analysis_trans_further_next(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t * v)
+int apol_infoflow_analysis_trans_further_next(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t ** v)
 {
 	apol_infoflow_node_t *start_node;
 	int retval = -1;
+	if (p == NULL || g == NULL || v == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	if (*v == NULL) {
+		*v = apol_vector_create(infoflow_result_free);
+	}
 	if (g->further_start == NULL) {
 		ERR(p, "%s", "Infoflow graph was not prepared yet.");
 		goto cleanup;
 	}
 	start_node = apol_vector_get_element(g->further_start, g->current_start);
-	if (apol_infoflow_analysis_trans_further(p, g, start_node, v) < 0) {
+	if (apol_infoflow_analysis_trans_further(p, g, start_node, *v) < 0) {
 		goto cleanup;
 	}
 	g->current_start++;

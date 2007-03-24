@@ -172,7 +172,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp * interp, int argc, C
 	retval = TCL_OK;
       cleanup:
 	apol_type_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -298,7 +298,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp * interp, int argc,
 	retval = TCL_OK;
       cleanup:
 	apol_attr_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -426,7 +426,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp * interp, int argc,
 	retval = TCL_OK;
       cleanup:
 	apol_class_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -496,7 +496,7 @@ static int append_common_to_list(Tcl_Interp * interp, qpol_common_t * common_dat
       cleanup:
 	qpol_iterator_destroy(&perm_iter);
 	apol_class_query_destroy(&query);
-	apol_vector_destroy(&classes, NULL);
+	apol_vector_destroy(&classes);
 	return retval;
 }
 
@@ -570,7 +570,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp * interp, int argc,
 	retval = TCL_OK;
       cleanup:
 	apol_common_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -693,7 +693,7 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp * interp, int argc, C
 	retval = TCL_OK;
       cleanup:
 	apol_perm_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -835,7 +835,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp * interp, int argc, C
 	retval = TCL_OK;
       cleanup:
 	apol_role_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -894,8 +894,8 @@ static int append_user_to_list(Tcl_Interp * interp, qpol_user_t * user_datum, Tc
 		}
 
 		if (apol_level_to_tcl_obj(interp, apol_default, user_elem + 2) < 0 ||
-		    apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) < 0 ||
-		    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) < 0) {
+		    apol_level_to_tcl_obj(interp, apol_mls_range_get_low(apol_range), range_elem + 0) < 0 ||
+		    apol_level_to_tcl_obj(interp, apol_mls_range_get_high(apol_range), range_elem + 1) < 0) {
 			goto cleanup;
 		}
 		user_elem[3] = Tcl_NewListObj(2, range_elem);
@@ -1023,7 +1023,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp * interp, int argc, C
 	retval = TCL_OK;
       cleanup:
 	apol_user_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1124,7 +1124,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp * interp, int argc, C
 	retval = TCL_OK;
       cleanup:
 	apol_bool_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1308,7 +1308,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp * interp, int argc, 
 	retval = TCL_OK;
       cleanup:
 	apol_level_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1379,7 +1379,7 @@ static int append_cat_to_list(Tcl_Interp * interp, qpol_cat_t * cat_datum, Tcl_O
       cleanup:
 	qpol_iterator_destroy(&alias_iter);
 	apol_level_query_destroy(&query);
-	apol_vector_destroy(&levels, NULL);
+	apol_vector_destroy(&levels);
 	return retval;
 }
 
@@ -1455,7 +1455,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp * interp, int argc, CO
 	retval = TCL_OK;
       cleanup:
 	apol_cat_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1486,8 +1486,8 @@ static int qpol_context_to_tcl_obj(Tcl_Interp * interp, qpol_context_t * context
 	context_elem[1] = Tcl_NewStringObj(apol_context->role, -1);
 	context_elem[2] = Tcl_NewStringObj(apol_context->type, -1);
 	if (apol_policy_is_mls(policydb)) {
-		if (apol_level_to_tcl_obj(interp, apol_context->range->low, range_elem + 0) < 0 ||
-		    apol_level_to_tcl_obj(interp, apol_context->range->high, range_elem + 1) < 0) {
+		if (apol_level_to_tcl_obj(interp, apol_mls_range_get_low(apol_context->range), range_elem + 0) < 0 ||
+		    apol_level_to_tcl_obj(interp, apol_mls_range_get_high(apol_context->range), range_elem + 1) < 0) {
 			goto cleanup;
 		}
 		context_elem[3] = Tcl_NewListObj(2, range_elem);
@@ -1612,7 +1612,7 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp * interp, int a
       cleanup:
 	apol_context_destroy(&context);
 	apol_isid_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1779,7 +1779,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp * interp, int argc
       cleanup:
 	apol_context_destroy(&context);
 	apol_portcon_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1927,7 +1927,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp * interp, int arg
 	apol_context_destroy(&if_context);
 	apol_context_destroy(&msg_context);
 	apol_netifcon_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -2108,7 +2108,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp * interp, int argc
 	free(mask);
 	apol_context_destroy(&context);
 	apol_nodecon_query_destroy(&query);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -2248,7 +2248,7 @@ static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp * interp, int arg
       cleanup:
 	apol_context_destroy(&context);
 	apol_genfscon_query_destroy(&query);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -2393,7 +2393,7 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp * interp, int argc, 
       cleanup:
 	apol_context_destroy(&context);
 	apol_fs_use_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}

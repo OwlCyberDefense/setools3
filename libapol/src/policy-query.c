@@ -47,14 +47,16 @@ void apol_regex_destroy(regex_t ** regex)
 
 int apol_query_set(apol_policy_t * p, char **query_name, regex_t ** regex, const char *name)
 {
-	if (regex != NULL) {
-		apol_regex_destroy(regex);
-	}
-	free(*query_name);
-	*query_name = NULL;
-	if (name != NULL && name[0] != '\0' && ((*query_name) = strdup(name)) == NULL) {
-		ERR(p, "%s", strerror(errno));
-		return -1;
+	if (*query_name != name) {
+		if (regex != NULL) {
+			apol_regex_destroy(regex);
+		}
+		free(*query_name);
+		*query_name = NULL;
+		if (name != NULL && name[0] != '\0' && ((*query_name) = strdup(name)) == NULL) {
+			ERR(p, "%s", strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }

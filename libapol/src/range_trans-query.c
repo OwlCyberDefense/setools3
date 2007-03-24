@@ -202,8 +202,7 @@ int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_quer
 	char *s = NULL;
 	if (obj_class == NULL) {
 		apol_vector_destroy(&r->classes);
-	} else if ((s = strdup(obj_class)) == NULL ||
-		   (r->classes == NULL && (r->classes = apol_vector_create(free)) == NULL)
+	} else if ((s = strdup(obj_class)) == NULL || (r->classes == NULL && (r->classes = apol_vector_create(free)) == NULL)
 		   || apol_vector_append(r->classes, s) < 0) {
 		ERR(p, "%s", strerror(errno));
 		free(s);

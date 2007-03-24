@@ -159,24 +159,24 @@ void parse_command_line(int argc, char **argv)
 		apol_vector_t *mod_paths = NULL;
 		if (argc - optind > 1) {
 			path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-			if (!(mod_paths = apol_vector_create())) {
-				ERR(NULL, "%s", strerror(ENOMEM));
+			if (!(mod_paths = apol_vector_create(NULL))) {
+				ERR(NULL, "%s", strerror(errno));
 				exit(1);
 			}
 			for (optind++; argc - optind; optind++) {
 				if (apol_vector_append(mod_paths, argv[optind])) {
 					ERR(NULL, "Error loading module %s.", argv[optind]);
-					apol_vector_destroy(&mod_paths, NULL);
+					apol_vector_destroy(&mod_paths);
 					exit(1);
 				}
 			}
 		}
 		if ((path = apol_policy_path_create(path_type, policy_file, mod_paths)) == NULL) {
 			ERR(NULL, "Error loading module %s.", argv[optind]);
-			apol_vector_destroy(&mod_paths, NULL);
+			apol_vector_destroy(&mod_paths);
 			exit(1);
 		}
-		apol_vector_destroy(&mod_paths, NULL);
+		apol_vector_destroy(&mod_paths);
 	}
 }
 

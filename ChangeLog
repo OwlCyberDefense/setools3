@@ -1,3 +1,7 @@
+2007-03-23  J. Tang  <jtang@tresys.com>
+
+	* added apol_mls_level_get_sens() and apol_mls_level_get_cats().
+
 2007-03-23  J. Mowery <jmowery@tresys.com>
 
 	* Libseaudit SWIG wrapper added; wrapper treats all structures as

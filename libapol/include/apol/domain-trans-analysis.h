@@ -119,7 +119,7 @@ extern "C"
 
 /**
  *  Set the analysis to begin searching using a given type. This function
- *  must be called proir to running the analysis. If a previous type
+ *  must be called prior to running the analysis. If a previous type
  *  was set, it will be free()'d first.
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.
@@ -191,10 +191,9 @@ extern "C"
  *  @param policy Policy containing the table to use.
  *  @param dta A non-NULL structure containng parameters for analysis.
  *  @param results A reference pointer to a vector of
- *  apol_domain_trans_result_t. The vector will be allocated by this function.
- *  The caller must call apol_vector_destroy() afterwards, <b>passing
- *  apol_domain_trans_result_free()</b> as the second parameter. This will
- *  be set to NULL upon error.
+ *  apol_domain_trans_result_t. The vector will be allocated by this
+ *  function.  The caller must call apol_vector_destroy()
+ *  afterwards. This will be set to NULL upon error.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *results will be NULL.
  */
@@ -202,25 +201,6 @@ extern "C"
 						 apol_vector_t ** results);
 
 /***************** functions for accessing results ************************/
-
-/**
- * Do a deep copy (i.e., a clone) of an apol_domain_trans_result_t
- * object.  The caller is responsible for calling
- * apol_domain_trans_result_free() upon the returned value.
- *
- * @param result Pointer to a domain trans result structure to
- * destroy.
- *
- * @return A clone of the passed in result node, or NULL upon error.
- */
-	extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_domain_trans_result_t * result);
-
-/**
- *  Free all memory associated with a domain transition result, including
- *  the pointer itself. This function does nothing if the result is NULL.
- *  @param dtr Pointer to a domain transition result structure to free.
- */
-	extern void apol_domain_trans_result_free(void *dtr);
 
 /**
  *  Return the start type of the transition in an

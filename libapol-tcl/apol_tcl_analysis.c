@@ -402,7 +402,7 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp * int
 		Tcl_Free((char *)classperm_strings);
 	}
 	apol_domain_trans_analysis_destroy(&analysis);
-	apol_vector_destroy(&v, apol_domain_trans_result_free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -576,7 +576,7 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 		Tcl_Free((char *)class_strings);
 	}
 	apol_infoflow_analysis_destroy(&analysis);
-	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -632,7 +632,7 @@ static int Apol_DirectInformationFlowMore(ClientData clientData, Tcl_Interp * in
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
       cleanup:
-	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -854,7 +854,7 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 		Tcl_Free((char *)classperm_strings);
 	}
 	apol_infoflow_analysis_destroy(&analysis);
-	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -910,7 +910,7 @@ static int Apol_TransInformationFlowMore(ClientData clientData, Tcl_Interp * int
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
       cleanup:
-	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -964,9 +964,9 @@ static int Apol_TransInformationFurtherPrepare(ClientData clientData, Tcl_Interp
 }
 
 /**
- * Obtain some more results from a prepare transitive information flow
- * graph.  The analysis will use the same parameters as those that
- * were used to construct the graph.
+ * Obtain some more results from a prepared transitive information
+ * flow graph.  The analysis will use the same parameters as those
+ * that were used to construct the graph.
  *
  * @param argv This fuction takes one parameters:
  * <ol>
@@ -997,11 +997,7 @@ static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp * 
 		goto cleanup;
 	}
 	g = i_t->g;
-	if ((v = apol_vector_create()) == NULL) {
-		ERR(policydb, "%s", strerror(ENOMEM));
-		goto cleanup;
-	}
-	if (apol_infoflow_analysis_trans_further_next(policydb, g, v) < 0) {
+	if (apol_infoflow_analysis_trans_further_next(policydb, g, &v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1014,7 +1010,7 @@ static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp * 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
       cleanup:
-	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1252,7 +1248,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp * interp, int 
 		Tcl_Free((char *)subject_strings);
 	}
 	apol_relabel_analysis_destroy(&analysis);
-	apol_vector_destroy(&v, apol_relabel_result_free);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}

@@ -513,8 +513,7 @@ int apol_terule_query_append_class(apol_policy_t * p, apol_terule_query_t * t, c
 	char *s = NULL;
 	if (obj_class == NULL) {
 		apol_vector_destroy(&t->classes);
-	} else if ((s = strdup(obj_class)) == NULL ||
-		   (t->classes == NULL && (t->classes = apol_vector_create(free)) == NULL)
+	} else if ((s = strdup(obj_class)) == NULL || (t->classes == NULL && (t->classes = apol_vector_create(free)) == NULL)
 		   || apol_vector_append(t->classes, s) < 0) {
 		ERR(p, "%s", strerror(errno));
 		free(s);

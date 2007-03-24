@@ -45,7 +45,7 @@ extern "C"
  *
  * @return 0 if level was converted, <0 on error.
  */
-	extern int apol_level_to_tcl_obj(Tcl_Interp * interp, apol_mls_level_t * level, Tcl_Obj ** obj);
+	extern int apol_level_to_tcl_obj(Tcl_Interp * interp, const apol_mls_level_t * level, Tcl_Obj ** obj);
 
 	extern int apol_tcl_render_init(Tcl_Interp * interp);
 

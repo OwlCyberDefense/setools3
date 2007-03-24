@@ -131,6 +131,16 @@ extern "C"
 	extern int apol_mls_level_set_sens(apol_policy_t * p, apol_mls_level_t * level, const char *sens);
 
 /**
+ * Get the sensitivity component of an MLS level structure.
+ *
+ * @param level MLS level to query.
+ *
+ * @return The sensitivity, or NULL upon error if it has not yet been
+ * set.  Do not modify the return value.
+ */
+	extern const char *apol_mls_level_get_sens(const apol_mls_level_t * level);
+
+/**
  * Add a category component of an MLS level structure.	This function
  * duplicates the incoming string.
  *
@@ -141,6 +151,17 @@ extern "C"
  * @return 0 on success or < 0 on failure.
  */
 	extern int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, const char *cats);
+
+/**
+ * Get the category component of an MLS level structure.
+ *
+ * @param level MLS level to query.
+ *
+ * @return Vector of categories (type char *), or NULL upon error.  Be
+ * aware that the vector could be empty if no categories have been
+ * set.  Do not modify the return value.
+ */
+	extern const apol_vector_t *apol_mls_level_get_cats(const apol_mls_level_t * level);
 
 /* the next level compare function will return one of the following on
    success or -1 on error */
@@ -289,6 +310,26 @@ extern "C"
  * @return 0 on success or < 0 on failure.
  */
 	extern int apol_mls_range_set_high(apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level);
+
+/**
+ * Get the low level component of a MLS range structure.
+ *
+ * @param range MLS range to query.
+ *
+ * @return Low level, or NULL upon error or if not yet set.  Do not
+ * modify the return value.
+ */
+	extern const apol_mls_level_t *apol_mls_range_get_low(const apol_mls_range_t * range);
+
+/**
+ * Get the high level component of a MLS range structure.
+ *
+ * @param range MLS range to query.
+ *
+ * @return High level, or NULL upon error or if not yet set.  Do not
+ * modify the return value.
+ */
+	extern const apol_mls_level_t *apol_mls_range_get_high(const apol_mls_range_t * range);
 
 /**
  * Compare two ranges, determining if one matches the other.  The

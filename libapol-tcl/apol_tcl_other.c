@@ -178,10 +178,6 @@ int apol_tcl_string_to_level(Tcl_Interp * interp, const char *level_string, apol
 			return -1;
 		}
 	}
-	if (level->cats == NULL && (level->cats = apol_vector_create()) == NULL) {
-		ERR(policydb, "%s", strerror(ENOMEM));
-		return -1;
-	}
 	return 0;
 }
 
@@ -438,7 +434,7 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 			if (Tcl_SplitList(interp, argv[3], &num_modules, &module_paths) == TCL_ERROR) {
 				goto cleanup;
 			}
-			if ((modules = apol_vector_create()) == NULL) {
+			if ((modules = apol_vector_create(free)) == NULL) {
 				Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
 				goto cleanup;
 			}
@@ -479,7 +475,7 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 	}
 	retval = TCL_OK;
       cleanup:
-	apol_vector_destroy(&modules, free);
+	apol_vector_destroy(&modules);
 	apol_policy_path_destroy(&path);
 	if (module_paths != NULL) {
 		Tcl_Free((char *)module_paths);
@@ -763,19 +759,19 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp * interp, int argc, C
 	    append_stats(interp, "types", apol_vector_get_size(v), result_obj) < 0) {
 		goto cleanup;
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	if (apol_attr_get_by_query(policydb, attr_query, &v) < 0 ||
 	    append_stats(interp, "attribs", apol_vector_get_size(v), result_obj) < 0) {
 		goto cleanup;
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	if (apol_perm_get_by_query(policydb, perm_query, &v) < 0 ||
 	    append_stats(interp, "perms", apol_vector_get_size(v), result_obj) < 0) {
 		goto cleanup;
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	if (qpol_policy_get_avrule_iter(qpolicydb,
 					QPOL_RULE_ALLOW, &iter) < 0 ||
@@ -833,7 +829,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp * interp, int argc, C
 	apol_attr_query_destroy(&attr_query);
 	apol_perm_query_destroy(&perm_query);
 	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}

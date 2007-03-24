@@ -461,6 +461,15 @@ int apol_mls_level_set_sens(apol_policy_t * p, apol_mls_level_t * level, const c
 	return apol_query_set(p, &level->sens, NULL, sens);
 }
 
+const char *apol_mls_level_get_sens(const apol_mls_level_t * level)
+{
+	if (!level) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return level->sens;
+}
+
 int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, const char *cats)
 {
 	char *new_cat = NULL;
@@ -480,6 +489,15 @@ int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, cons
 		return -1;
 	}
 	return 0;
+}
+
+const apol_vector_t *apol_mls_level_get_cats(const apol_mls_level_t * level)
+{
+	if (!level) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return level->cats;
 }
 
 int apol_mls_level_compare(apol_policy_t * p, const apol_mls_level_t * l1, const apol_mls_level_t * l2)
@@ -787,6 +805,24 @@ int apol_mls_range_set_high(apol_policy_t * p, apol_mls_range_t * range, apol_ml
 	range->high = level;
 
 	return 0;
+}
+
+const apol_mls_level_t *apol_mls_range_get_low(const apol_mls_range_t * range)
+{
+	if (!range) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->low;
+}
+
+const apol_mls_level_t *apol_mls_range_get_high(const apol_mls_range_t * range)
+{
+	if (!range) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->high;
 }
 
 int apol_mls_range_compare(apol_policy_t * p, const apol_mls_range_t * target, const apol_mls_range_t * search,

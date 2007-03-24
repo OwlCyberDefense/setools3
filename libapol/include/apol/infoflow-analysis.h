@@ -139,13 +139,15 @@ extern "C"
  *
  * @param p Policy from which infoflow rules derived.
  * @param g Prepared transitive infoflow graph.
- * @param v Vector of existing apol_infoflow_result_t pointers.  If
- * this functions finds additional unique results it will append them
- * to this vector.
+ * @param v Pointer to a vector of existing apol_infoflow_result_t
+ * pointers.  If this functions finds additional unique results it
+ * will append them to this vector.  If the pointer is NULL then this
+ * will allocate and return a new vector.  It is the caller's
+ * responsibility to call apol_vector_destroy() afterwards.
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_infoflow_analysis_trans_further_next(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t * v);
+	extern int apol_infoflow_analysis_trans_further_next(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t ** v);
 
 /********** functions to create/modify an analysis object **********/
 
