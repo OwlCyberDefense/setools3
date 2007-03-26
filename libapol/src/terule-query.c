@@ -635,7 +635,7 @@ apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t * p, apol_vector_t 
 		}
 		qpol_iterator_destroy(&iter);
 	}
-	if ((v = apol_bst_get_vector(b)) == NULL) {
+	if ((v = apol_bst_get_vector(b, 1)) == NULL) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;

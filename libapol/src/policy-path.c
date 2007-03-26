@@ -59,7 +59,7 @@ apol_policy_path_t *apol_policy_path_create(apol_policy_path_type_e path_type, c
 		if (modules == NULL) {
 			p->modules = apol_vector_create(free);
 		} else {
-			p->modules = apol_vector_create_from_vector(modules, apol_str_strdup, NULL);
+			p->modules = apol_vector_create_from_vector(modules, apol_str_strdup, NULL, free);
 		}
 		if (p->modules == NULL) {
 			apol_policy_path_destroy(&p);

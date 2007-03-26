@@ -41,7 +41,7 @@ libapol_a_SOURCES = \
 	types-relation-analysis.c \
 	user-query.c \
 	util.c \
-	vector.c \
+	vector.c vector-internal.h \
 	policy-query-internal.h queue.h
 
 libapol_a_DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so

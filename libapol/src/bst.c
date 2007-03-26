@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "vector-internal.h"
+
 typedef struct bst_node
 {
 	void *elem;
@@ -118,7 +120,7 @@ static int bst_node_to_vector(bst_node_t * node, apol_vector_t * v)
 	return bst_node_to_vector(node->child[1], v);
 }
 
-apol_vector_t *apol_bst_get_vector(const struct apol_bst * b)
+apol_vector_t *apol_bst_get_vector(apol_bst_t * b, int change_owner)
 {
 	apol_vector_t *v = NULL;
 	if (!b) {
@@ -133,6 +135,10 @@ apol_vector_t *apol_bst_get_vector(const struct apol_bst * b)
 		apol_vector_destroy(&v);
 		errno = error;
 		return NULL;
+	}
+	if (change_owner) {
+		vector_set_free_func(v, b->fr);
+		b->fr = NULL;
 	}
 	return v;
 }
@@ -180,11 +186,6 @@ int apol_bst_get_element(const apol_bst_t * b, void *elem, void *data, void **re
 		}
 	}
 	return -1;
-}
-
-int apol_bst_insert(apol_bst_t * b, void *elem, void *data)
-{
-	return apol_bst_insert_and_get(b, &elem, data, NULL);
 }
 
 /**
@@ -300,14 +301,28 @@ static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void 
 	return root;
 }
 
-int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data, apol_bst_free_func * fr)
+int apol_bst_insert(apol_bst_t * b, void *elem, void *data)
 {
 	int retval = -1;
 	if (!b || !elem) {
 		errno = EINVAL;
 		return -1;
 	}
-	b->head = bst_insert_recursive(b, b->head, elem, data, fr, &retval);
+	b->head = bst_insert_recursive(b, b->head, elem, data, NULL, &retval);
+	if (retval >= 0) {
+		b->head->is_red = 0;
+	}
+	return retval;
+}
+
+int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data)
+{
+	int retval = -1;
+	if (!b || !elem) {
+		errno = EINVAL;
+		return -1;
+	}
+	b->head = bst_insert_recursive(b, b->head, elem, data, b->fr, &retval);
 	if (retval >= 0) {
 		b->head->is_red = 0;
 	}

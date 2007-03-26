@@ -151,7 +151,7 @@ apol_mls_level_t *apol_mls_level_create_from_mls_level(const apol_mls_level_t * 
 	}
 	if (level != NULL &&
 	    ((l->sens = strdup(level->sens)) == NULL ||
-	     (l->cats = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL)) == NULL)) {
+	     (l->cats = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL, free)) == NULL)) {
 		apol_mls_level_destroy(&l);
 		return NULL;
 	}
@@ -573,7 +573,7 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 	}
 
 	if (level->cats != NULL) {
-		if ((cats = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL)) == NULL) {
+		if ((cats = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL, free)) == NULL) {
 			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
@@ -995,7 +995,7 @@ apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range
 		}
 		if ((ml = calloc(1, sizeof(*ml))) == NULL ||
 		    (ml->sens = strdup(name)) == NULL ||
-		    (ml->cats = apol_vector_create_from_vector(range->high->cats, apol_str_strdup, NULL)) == NULL ||
+		    (ml->cats = apol_vector_create_from_vector(range->high->cats, apol_str_strdup, NULL, free)) == NULL ||
 		    apol_vector_append(v, ml) < 0) {
 			error = errno;
 			apol_mls_level_destroy(&ml);

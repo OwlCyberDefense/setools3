@@ -104,12 +104,16 @@ extern "C"
  *  for each element from the original vector; the return value will
  *  be the value stored in the new vector.
  *  @param data Arbitrary data to pass as dup's second parameter.
+ *  @param fr Function to call when destroying the new vector.  Each
+ *  element of the array will be passed into this function; it should
+ *  free the memory used by that element.  If this parameter is NULL,
+ *  the elements will not be freed.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-	extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data);
+	extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data, apol_vector_free_func *fr);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -130,10 +134,6 @@ extern "C"
  *  this is NULL then do pointer address comparison.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
- *  @param fr Function to call when destroying the vector.  Each
- *  element of the array will be passed into this function; it should
- *  free the memory used by that element.  If this parameter is NULL,
- *  the elements will not be freed.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
@@ -141,7 +141,7 @@ extern "C"
  */
 	extern apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t * v1,
 								   const apol_vector_t * v2, apol_vector_comp_func * cmp,
-								   void *data, apol_vector_free_func * fr);
+								   void *data);
 
 /**
  *  Free a vector and any memory used by it.  This will recursively

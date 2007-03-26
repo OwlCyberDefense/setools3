@@ -794,10 +794,11 @@ static int apol_infoflow_graph_create(apol_policy_t * p, apol_infoflow_analysis_
 		}
 	}
 
-	if (((*g)->nodes = apol_bst_get_vector((*g)->nodes_bst)) == NULL) {
+	if (((*g)->nodes = apol_bst_get_vector((*g)->nodes_bst, 1)) == NULL) {
 		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
+	apol_bst_destroy(&(*g)->nodes_bst);
 	retval = 0;
       cleanup:
 	apol_vector_destroy(&types);
@@ -1365,7 +1366,7 @@ static int apol_infoflow_trans_define(apol_policy_t * p,
 		}
 		length += edge->length;
 		if ((step = calloc(1, sizeof(*step))) == NULL ||
-		    (step->rules = apol_vector_create_from_vector(edge->rules, NULL, NULL)) == NULL ||
+		    (step->rules = apol_vector_create_from_vector(edge->rules, NULL, NULL, NULL)) == NULL ||
 		    apol_vector_append((*result)->steps, step) < 0) {
 			apol_infoflow_step_free(step);
 			ERR(p, "%s", strerror(ENOMEM));
@@ -2131,7 +2132,7 @@ apol_infoflow_result_t *infoflow_result_create_from_infoflow_result(apol_infoflo
 	for (i = 0; i < apol_vector_get_size(result->steps); i++) {
 		step = (apol_infoflow_step_t *) apol_vector_get_element(result->steps, i);
 		if ((new_step = calloc(1, sizeof(*new_step))) == NULL ||
-		    (new_step->rules = apol_vector_create_from_vector(step->rules, NULL, NULL)) == NULL ||
+		    (new_step->rules = apol_vector_create_from_vector(step->rules, NULL, NULL, NULL)) == NULL ||
 		    apol_vector_append(new_r->steps, new_step) < 0) {
 			apol_infoflow_step_free(new_step);
 			goto cleanup;

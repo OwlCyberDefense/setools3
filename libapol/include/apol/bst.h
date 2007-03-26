@@ -75,18 +75,24 @@ extern "C"
 
 /**
  *  Allocate and return a vector that has been initialized with the
- *  contents of a binary search tree.  <b>This function merely makes a
- *  shallow copy of the BST's contents</b>; the BST will still
- *  <em>own</em> the objects.  (The resulting vector will be sorted as
- *  per the BST's comparison function.)
+ *  contents of a binary search tree.  If change_owner is zero then
+ *  this function will make a <b> shallow copy of the BST's
+ *  contents</b>; the BST will still <em>own</em> the objects.
+ *  Otherwise the victor will gain ownership of the items; the BST can
+ *  then be destroyed safely without affecting the vector.  (The
+ *  resulting vector will be sorted as per the BST's comparison
+ *  function.)
  *
  *  @param b Binary search tree from which to copy.
+ *  @param change_owner If zero then do a shallow copy, else change
+ *  item ownership.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
- *  responsible for calling apol_vector_destroy() to free memory used.
+ *  responsible for calling apol_vector_destroy() to free memory used
+ *  by the vector.
  */
-	extern apol_vector_t *apol_bst_get_vector(const struct apol_bst *b);
+	extern apol_vector_t *apol_bst_get_vector(apol_bst_t * b, int change_owner);
 
 /**
  *  Get the number of elements stored in the BST.
@@ -133,7 +139,7 @@ extern "C"
  *  Insert an element into the BST, and then get the element back out.
  *  If the element did not already exist, then this function behaves
  *  the same as apol_bst_insert().  If however the element did exist,
- *  then the passed in element is freed (as per the given free
+ *  then the passed in element is freed (as per the BST's free
  *  function) and then the existing element is returned.
  *
  *  @param b The BST to which to add the element.
@@ -142,15 +148,12 @@ extern "C"
  *  reference to the element already within the tree.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater (the function given in apol_bst_create()).
- *  @param fr If the element already exists and this is non-NULL, then
- *  invoke this callback to free the new element.  Otherwise do not
- *  free the new element.
  *
  *  @return 0 if the item was inserted, 1 if the item already exists
  *  (and thus not inserted).  On failure return < 0, set errno, and b
  *  will be unchanged.
  */
-	extern int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data, apol_bst_free_func * fr);
+	extern int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data);
 
 #ifdef	__cplusplus
 }

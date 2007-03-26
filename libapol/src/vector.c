@@ -93,7 +93,7 @@ apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter, apol_vector_
 	return v;
 }
 
-apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data)
+apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data, apol_vector_free_func *fr)
 {
 	apol_vector_t *new_v;
 	size_t i;
@@ -101,7 +101,7 @@ apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vect
 		errno = EINVAL;
 		return NULL;
 	}
-	if ((new_v = apol_vector_create_with_capacity(v->capacity, v->fr)) == NULL) {
+	if ((new_v = apol_vector_create_with_capacity(v->capacity, fr)) == NULL) {
 		return NULL;
 	}
 	if (dup == NULL) {
@@ -116,8 +116,7 @@ apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vect
 }
 
 apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t * v1,
-						    const apol_vector_t * v2, apol_vector_comp_func * cmp, void *data,
-						    apol_vector_free_func * fr)
+						    const apol_vector_t * v2, apol_vector_comp_func * cmp, void *data)
 {
 	apol_vector_t *new_v;
 	size_t i, j;
@@ -125,7 +124,7 @@ apol_vector_t *apol_vector_create_from_intersection(const apol_vector_t * v1,
 		errno = EINVAL;
 		return NULL;
 	}
-	if ((new_v = apol_vector_create(fr)) == NULL) {
+	if ((new_v = apol_vector_create(NULL)) == NULL) {
 		return NULL;
 	}
 	for (i = 0; i < v1->size; i++) {
@@ -446,4 +445,11 @@ int apol_vector_remove(apol_vector_t * v, const size_t idx)
 	memmove(v->array + idx, v->array + idx + 1, sizeof(v->array[0]) * (v->size - idx - 1));
 	v->size--;
 	return 0;
+}
+
+/******************** friend function below ********************/
+
+void vector_set_free_func(apol_vector_t * v, apol_vector_free_func * fr)
+{
+	v->fr = fr;
 }

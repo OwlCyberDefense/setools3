@@ -360,7 +360,7 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 		}
 	}
 	if (target_list) {
-		target_types_list = apol_vector_create_from_vector(target_list, NULL, NULL);
+		target_types_list = apol_vector_create_from_vector(target_list, NULL, NULL, NULL);
 		if (!target_types_list) {
 			ERR(p, "%s", strerror(errno));
 			goto cleanup;
@@ -670,7 +670,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t 
 		}
 		qpol_iterator_destroy(&iter);
 	}
-	if ((tmp_v = apol_bst_get_vector(b)) == NULL) {
+	if ((tmp_v = apol_bst_get_vector(b, 1)) == NULL) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;
