@@ -1351,7 +1351,7 @@ int main(int argc, char **argv)
 	}
 	orig_base_path = argv[optind++];
 	orig_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
-	if (!(orig_module_paths = apol_vector_create())) {
+	if (!(orig_module_paths = apol_vector_create(NULL))) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
@@ -1371,7 +1371,7 @@ int main(int argc, char **argv)
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
-	apol_vector_destroy(&orig_module_paths, NULL);
+	apol_vector_destroy(&orig_module_paths);
 
 	if (argc - optind == 0) {
 		ERR(NULL, "%s", "Missing path to modified policy.");
@@ -1380,7 +1380,7 @@ int main(int argc, char **argv)
 
 	mod_base_path = argv[optind++];
 	mod_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
-	if (!(mod_module_paths = apol_vector_create())) {
+	if (!(mod_module_paths = apol_vector_create(NULL))) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
@@ -1396,7 +1396,7 @@ int main(int argc, char **argv)
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
-	apol_vector_destroy(&mod_module_paths, NULL);
+	apol_vector_destroy(&mod_module_paths);
 
 	orig_policy =
 		apol_policy_create_from_policy_path(orig_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : APOL_POLICY_OPTION_NO_RULES),
@@ -1467,8 +1467,8 @@ int main(int argc, char **argv)
 	apol_policy_destroy(&mod_policy);
 	apol_policy_path_destroy(&orig_pol_path);
 	apol_policy_path_destroy(&mod_pol_path);
-	apol_vector_destroy(&orig_module_paths, NULL);
-	apol_vector_destroy(&mod_module_paths, NULL);
+	apol_vector_destroy(&orig_module_paths);
+	apol_vector_destroy(&mod_module_paths);
 	poldiff_destroy(&diff);
 	return 1;
 }

@@ -177,7 +177,7 @@ static void parse_command_line_args(int argc, char **argv)
 		fprintf(stderr, "ERROR: %s\n", strerror(errno));
 		exit(-1);
 	}
-	if ((logs = apol_vector_create()) == NULL || apol_vector_append(logs, first_log) < 0) {
+	if ((logs = apol_vector_create(NULL)) == NULL || apol_vector_append(logs, first_log) < 0) {
 		fprintf(stderr, "ERROR: %s\n", strerror(errno));
 		exit(-1);
 	}
@@ -243,6 +243,6 @@ int main(int argc, char **argv)
 		seaudit_log_t *l = apol_vector_get_element(logs, i);
 		seaudit_log_destroy(&l);
 	}
-	apol_vector_destroy(&logs, NULL);
+	apol_vector_destroy(&logs);
 	return 0;
 }
