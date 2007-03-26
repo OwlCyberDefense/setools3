@@ -42,6 +42,22 @@
 #include <apol/policy-query.h>
 #include <apol/vector.h>
 
+static void fc_entry_free(void *fc)
+{
+	sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t *) fc;
+	if (!fc_entry)
+		return;
+	free(fc_entry->path);
+	if (fc_entry->context) {
+		free(fc_entry->context->user);
+		free(fc_entry->context->role);
+		free(fc_entry->context->type);
+		free(fc_entry->context->range);
+		free(fc_entry->context);
+	}
+	free(fc);
+}
+
 int sefs_fc_entry_parse_file_contexts(apol_policy_t * p, const char *fc_path, apol_vector_t ** contexts)
 {
 	char *line = NULL, *tmp = NULL;
@@ -63,7 +79,7 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t * p, const char *fc_path, ap
 		goto failure;
 	}
 
-	if (!(*contexts = apol_vector_create())) {
+	if (!(*contexts = apol_vector_create(fc_entry_free))) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto failure;
@@ -254,28 +270,12 @@ int sefs_fc_entry_parse_file_contexts(apol_policy_t * p, const char *fc_path, ap
 	fclose(fc_file);
 	return 0;
       failure:
-	apol_vector_destroy(contexts, sefs_fc_entry_free);
+	apol_vector_destroy(contexts);
 	free(line);
 	if (fc_file)
 		fclose(fc_file);
 	errno = error;
 	return -1;
-}
-
-void sefs_fc_entry_free(void *fc)
-{
-	sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t *) fc;
-	if (!fc_entry)
-		return;
-	free(fc_entry->path);
-	if (fc_entry->context) {
-		free(fc_entry->context->user);
-		free(fc_entry->context->role);
-		free(fc_entry->context->type);
-		free(fc_entry->context->range);
-		free(fc_entry->context);
-	}
-	free(fc);
 }
 
 int sefs_fc_find_default_file_contexts(char **path)

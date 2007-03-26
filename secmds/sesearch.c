@@ -234,7 +234,7 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_avrule_query_destroy(&avq);
 	free(tmp);
 	free(s);
@@ -418,7 +418,7 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_terule_query_destroy(&teq);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
@@ -590,7 +590,7 @@ static int perform_ra_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_role_allow_query_destroy(&raq);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
@@ -668,7 +668,7 @@ static int perform_rt_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_role_trans_query_destroy(&rtq);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
@@ -752,7 +752,7 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_range_trans_query_destroy(&rtq);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
@@ -867,7 +867,7 @@ int main(int argc, char **argv)
 				printf("Missing permissions for -p (--perm)\n");
 				exit(1);
 			}
-			if ((cmd_opts.permlist = strdup(optarg)) == NULL || (cmd_opts.perm_vector = apol_vector_create()) == NULL) {
+			if ((cmd_opts.permlist = strdup(optarg)) == NULL || (cmd_opts.perm_vector = apol_vector_create(free)) == NULL) {
 				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}
@@ -970,14 +970,14 @@ int main(int argc, char **argv)
 
 	if (argc - optind > 0) {
 		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-		if (!(mod_paths = apol_vector_create())) {
+		if (!(mod_paths = apol_vector_create(NULL))) {
 			ERR(policy, "%s", strerror(ENOMEM));
 			exit(1);
 		}
 		for (; argc - optind; optind++) {
 			if (apol_vector_append(mod_paths, (void *)argv[optind])) {
 				ERR(policy, "Error loading module %s", argv[optind]);
-				apol_vector_destroy(&mod_paths, NULL);
+				apol_vector_destroy(&mod_paths);
 				free(policy_file);
 				exit(1);
 			}
@@ -988,11 +988,11 @@ int main(int argc, char **argv)
 	if (!pol_path) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		free(policy_file);
-		apol_vector_destroy(&mod_paths, NULL);
+		apol_vector_destroy(&mod_paths);
 		exit(1);
 	}
 	free(policy_file);
-	apol_vector_destroy(&mod_paths, NULL);
+	apol_vector_destroy(&mod_paths);
 	policy = apol_policy_create_from_policy_path(pol_path, 0, NULL, NULL);
 	if (!policy) {
 		ERR(policy, "%s", strerror(errno));
@@ -1028,7 +1028,7 @@ int main(int argc, char **argv)
 			print_av_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (perform_te_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
@@ -1040,7 +1040,7 @@ int main(int argc, char **argv)
 			print_te_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (perform_ra_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
@@ -1049,7 +1049,7 @@ int main(int argc, char **argv)
 		print_ra_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (perform_rt_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
@@ -1058,7 +1058,7 @@ int main(int argc, char **argv)
 		print_rt_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (perform_range_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
@@ -1067,7 +1067,7 @@ int main(int argc, char **argv)
 		print_range_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	rt = 0;
       cleanup:
 	apol_policy_destroy(&policy);
@@ -1079,6 +1079,6 @@ int main(int argc, char **argv)
 	free(cmd_opts.bool_name);
 	free(cmd_opts.src_role_name);
 	free(cmd_opts.tgt_role_name);
-	apol_vector_destroy(&cmd_opts.perm_vector, free);
+	apol_vector_destroy(&cmd_opts.perm_vector);
 	exit(rt);
 }

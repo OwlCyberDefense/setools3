@@ -192,7 +192,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 
 	n_perms = apol_vector_get_size(perms);
 	apol_perm_query_destroy(&perm_query);
-	apol_vector_destroy(&perms, NULL);
+	apol_vector_destroy(&perms);
 	fprintf(fp, "\n   Classes:       %7zd    Permissions:   %7d\n", n_classes, n_perms);
 
 	/* sensitivities/categories */
@@ -218,7 +218,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 
 	n_types = apol_vector_get_size(v);
 	apol_type_query_destroy(&type_query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	attr_query = apol_attr_query_create();
 	if (!attr_query)
@@ -228,7 +228,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 
 	n_attrs = apol_vector_get_size(v);
 	apol_attr_query_destroy(&attr_query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	fprintf(fp, "   Types:         %7zd    Attributes:    %7zd\n", n_types, n_attrs);
 	qpol_iterator_destroy(&iter);
@@ -383,8 +383,8 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	apol_type_query_destroy(&type_query);
 	apol_attr_query_destroy(&attr_query);
 	apol_perm_query_destroy(&perm_query);
-	apol_vector_destroy(&v, NULL);
-	apol_vector_destroy(&perms, NULL);
+	apol_vector_destroy(&v);
+	apol_vector_destroy(&perms);
 	return retval;
 }
 
@@ -468,7 +468,7 @@ static int print_types(FILE * fp, const char *name, int expand, apol_policy_t * 
 	if (apol_type_get_by_query(policydb, NULL, &type_vector))
 		goto cleanup;
 	vector_sz = apol_vector_get_size(type_vector);
-	apol_vector_destroy(&type_vector, NULL);
+	apol_vector_destroy(&type_vector);
 
 	if (name == NULL) {
 		fprintf(fp, "\nTypes: %zd\n", vector_sz);
@@ -531,7 +531,7 @@ static int print_attribs(FILE * fp, const char *name, int expand, apol_policy_t 
 			goto cleanup;
 		apol_attr_query_destroy(&attr_query);
 		if (apol_vector_get_size(v) == 0) {
-			apol_vector_destroy(&v, NULL);
+			apol_vector_destroy(&v);
 			ERR(policydb, "Provided attribute (%s) is not a valid attribute name.", name);
 			goto cleanup;
 		}
@@ -556,12 +556,12 @@ static int print_attribs(FILE * fp, const char *name, int expand, apol_policy_t 
 			print_attr_types(fp, type_datum, policydb, expand);
 		}
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	retval = 0;
       cleanup:
 	apol_attr_query_destroy(&attr_query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -772,7 +772,7 @@ static int print_sens(FILE * fp, const char *name, int expand, apol_policy_t * p
 	retval = 0;
       cleanup:
 	apol_level_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -830,7 +830,7 @@ static int print_cats(FILE * fp, const char *name, int expand, apol_policy_t * p
 	retval = 0;
       cleanup:
 	apol_cat_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -884,7 +884,7 @@ static int print_fsuse(FILE * fp, const char *type, apol_policy_t * policydb)
 	retval = 0;
       cleanup:
 	apol_fs_use_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -940,7 +940,7 @@ static int print_genfscon(FILE * fp, const char *type, apol_policy_t * policydb)
 	retval = 0;
       cleanup:
 	apol_genfscon_query_destroy(&query);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 
 	return retval;
 }
@@ -1071,7 +1071,7 @@ static int print_nodecon(FILE * fp, const char *addr, apol_policy_t * policydb)
 	retval = 0;
       cleanup:
 	apol_nodecon_query_destroy(&query);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -1213,7 +1213,7 @@ static int print_isids(FILE * fp, const char *name, int expand, apol_policy_t * 
 	retval = 0;
       cleanup:
 	apol_isid_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -1362,7 +1362,7 @@ int main(int argc, char **argv)
 
 	if (argc - optind > 0) {
 		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-		if (!(mod_paths = apol_vector_create())) {
+		if (!(mod_paths = apol_vector_create(NULL))) {
 			ERR(policydb, "%s", strerror(ENOMEM));
 			free(policy_file);
 			exit(1);
@@ -1371,7 +1371,7 @@ int main(int argc, char **argv)
 			if (apol_vector_append(mod_paths, (void *)argv[optind])) {
 				ERR(policydb, "Error loading module %s", argv[optind]);
 				free(policy_file);
-				apol_vector_destroy(&mod_paths, NULL);
+				apol_vector_destroy(&mod_paths);
 				exit(1);
 			}
 		}
@@ -1381,10 +1381,10 @@ int main(int argc, char **argv)
 	if (!pol_path) {
 		ERR(policydb, "%s", strerror(ENOMEM));
 		free(policy_file);
-		apol_vector_destroy(&mod_paths, NULL);
+		apol_vector_destroy(&mod_paths);
 		exit(1);
 	}
-	apol_vector_destroy(&mod_paths, NULL);
+	apol_vector_destroy(&mod_paths);
 
 	policydb = apol_policy_create_from_policy_path(pol_path, ((stats || all) ? 0 : APOL_POLICY_OPTION_NO_RULES), NULL, NULL);
 	if (!policydb) {
@@ -1790,7 +1790,7 @@ static void print_cat_sens(FILE * fp, qpol_cat_t * cat_datum, apol_policy_t * po
 
       cleanup:
 	apol_level_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return;
 }
 
