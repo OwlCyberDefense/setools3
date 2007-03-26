@@ -2,7 +2,6 @@
  *  @file
  *  Implementation for the apol interface to search for policy components.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -1482,12 +1481,13 @@ static int qpol_context_to_tcl_obj(Tcl_Interp * interp, qpol_context_t * context
 		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	context_elem[0] = Tcl_NewStringObj(apol_context->user, -1);
-	context_elem[1] = Tcl_NewStringObj(apol_context->role, -1);
-	context_elem[2] = Tcl_NewStringObj(apol_context->type, -1);
+	context_elem[0] = Tcl_NewStringObj(apol_context_get_user(apol_context), -1);
+	context_elem[1] = Tcl_NewStringObj(apol_context_get_role(apol_context), -1);
+	context_elem[2] = Tcl_NewStringObj(apol_context_get_type(apol_context), -1);
 	if (apol_policy_is_mls(policydb)) {
-		if (apol_level_to_tcl_obj(interp, apol_mls_range_get_low(apol_context->range), range_elem + 0) < 0 ||
-		    apol_level_to_tcl_obj(interp, apol_mls_range_get_high(apol_context->range), range_elem + 1) < 0) {
+		const apol_mls_range_t *range = apol_context_get_range(apol_context);
+		if (apol_level_to_tcl_obj(interp, apol_mls_range_get_low(range), range_elem + 0) < 0 ||
+		    apol_level_to_tcl_obj(interp, apol_mls_range_get_high(range), range_elem + 1) < 0) {
 			goto cleanup;
 		}
 		context_elem[3] = Tcl_NewListObj(2, range_elem);

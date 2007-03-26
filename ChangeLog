@@ -1,3 +1,8 @@
+2007-03-26  J. Tang  <jtang@tresys.com>
+
+	* apol_context_t is now an opaque structure.  Accessors added to
+	the user, role, type, and range fields.
+
 2007-03-23  J. Tang  <jtang@tresys.com>
 
 	* added apol_mls_level_get_sens() and apol_mls_level_get_cats().

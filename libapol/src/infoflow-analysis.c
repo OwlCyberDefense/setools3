@@ -274,14 +274,18 @@ static apol_infoflow_node_t *apol_infoflow_graph_create_node(apol_policy_t * p,
 		return node;
 	}
 	if ((node = calloc(1, sizeof(*node))) == NULL ||
-	    (node->in_edges = apol_vector_create(NULL)) == NULL ||
-	    (node->out_edges = apol_vector_create(NULL)) == NULL || apol_bst_insert(g->nodes_bst, node, &key) != 0) {
+	    (node->in_edges = apol_vector_create(NULL)) == NULL || (node->out_edges = apol_vector_create(NULL)) == NULL) {
 		ERR(p, "%s", strerror(errno));
 		apol_infoflow_node_free(node);
 		return NULL;
 	}
 	node->type = type;
 	node->node_type = node_type;
+	if (apol_bst_insert(g->nodes_bst, node, &key) != 0) {
+		ERR(p, "%s", strerror(errno));
+		apol_infoflow_node_free(node);
+		return NULL;
+	}
 	return node;
 }
 

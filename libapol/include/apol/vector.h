@@ -113,7 +113,8 @@ extern "C"
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-	extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data, apol_vector_free_func *fr);
+	extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data,
+							     apol_vector_free_func * fr);
 
 /**
  *  Allocate and return a vector that has been initialized with the

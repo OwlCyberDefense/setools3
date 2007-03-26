@@ -4,7 +4,6 @@
  * This file takes various policy stuff and returns formatted Tcl
  * lists, suitable for displaying results in Apol.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -520,8 +519,9 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp * interp, int ar
 	}
 
 	/* check that all components exist */
-	if (context->user == NULL || context->role == NULL || context->type == NULL ||
-	    (apol_policy_is_mls(policydb) && context->range == NULL)) {
+	if (apol_context_get_user(context) == NULL || apol_context_get_role(context) == NULL
+	    || apol_context_get_type(context) == NULL || (apol_policy_is_mls(policydb)
+							  && apol_context_get_range(context) == NULL)) {
 		ERR(policydb, "Context string '%s' is not valid.", argv[1]);
 		goto cleanup;
 	}

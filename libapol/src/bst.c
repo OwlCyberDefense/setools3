@@ -268,7 +268,7 @@ static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void 
 				fr(*elem);
 			}
 			*elem = root->elem;
-			*not_uniq = 0;
+			*not_uniq = 1;
 			return root;
 		} else if (compval > 0) {
 			dir = 0;
@@ -308,7 +308,7 @@ int apol_bst_insert(apol_bst_t * b, void *elem, void *data)
 		errno = EINVAL;
 		return -1;
 	}
-	b->head = bst_insert_recursive(b, b->head, elem, data, NULL, &retval);
+	b->head = bst_insert_recursive(b, b->head, &elem, data, NULL, &retval);
 	if (retval >= 0) {
 		b->head->is_red = 0;
 	}

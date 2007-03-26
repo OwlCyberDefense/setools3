@@ -126,7 +126,8 @@ sechk_module_t *sechk_module_new(void)
 	/* create empty vectors */
 	if (!(mod->options = apol_vector_create(sechk_name_value_free)) ||
 	    !(mod->requirements = apol_vector_create(sechk_name_value_free)) ||
-			  !(mod->dependencies = apol_vector_create(sechk_name_value_free)) || !(mod->functions = apol_vector_create(sechk_fn_free))) {
+	    !(mod->dependencies = apol_vector_create(sechk_name_value_free))
+	    || !(mod->functions = apol_vector_create(sechk_fn_free))) {
 		error = errno;
 		apol_vector_destroy(&mod->options);
 		apol_vector_destroy(&mod->requirements);

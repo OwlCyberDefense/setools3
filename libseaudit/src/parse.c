@@ -375,8 +375,7 @@ static int avc_msg_insert_perms(seaudit_log_t * log, apol_vector_t * tokens, siz
 		}
 
 		if ((perm = strdup(s)) == NULL ||
-		    apol_bst_insert_and_get(log->perms, (void **)&perm, NULL) < 0 ||
-		    apol_vector_append(avc->perms, perm) < 0) {
+		    apol_bst_insert_and_get(log->perms, (void **)&perm, NULL) < 0 || apol_vector_append(avc->perms, perm) < 0) {
 			error = errno;
 			ERR(log, "%s", strerror(error));
 			errno = error;

@@ -1038,7 +1038,7 @@ typedef struct apol_context {} apol_context_t;
 		return;
 	};
 	const char *get_user() {
-		return self->user;
+		return apol_context_get_user(self);
 	};
 	void set_role(apol_policy_t *p, char *name) {
 		if (apol_context_set_role(p, self, name)) {
@@ -1048,7 +1048,7 @@ typedef struct apol_context {} apol_context_t;
 		return;
 	};
 	const char *get_role() {
-		return self->role;
+		return apol_context_get_role(self);
 	};
 	void set_type(apol_policy_t *p, char *name) {
 		if (apol_context_set_type(p, self, name)) {
@@ -1058,7 +1058,7 @@ typedef struct apol_context {} apol_context_t;
 		return;
 	};
 	const char *get_type() {
-		return self->type;
+		return apol_context_get_type(self);
 	};
 	void set_range(apol_policy_t *p, apol_mls_range_t *rng) {
 		if (apol_context_set_range(p, self, rng)) {
@@ -1068,7 +1068,7 @@ typedef struct apol_context {} apol_context_t;
 		return;
 	};
 	const apol_mls_range_t *get_range() {
-		return self->range;
+		return apol_context_get_range(self);
 	};
 	%newobject render();
 	char *render(apol_policy_t *p) {

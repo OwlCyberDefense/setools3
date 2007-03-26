@@ -93,7 +93,8 @@ apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t * iter, apol_vector_
 	return v;
 }
 
-apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data, apol_vector_free_func *fr)
+apol_vector_t *apol_vector_create_from_vector(const apol_vector_t * v, apol_vector_dup_func * dup, void *data,
+					      apol_vector_free_func * fr)
 {
 	apol_vector_t *new_v;
 	size_t i;
