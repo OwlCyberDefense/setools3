@@ -293,7 +293,7 @@ seaudit_avc_message_t *avc_message_create(void)
 	if (avc == NULL) {
 		return NULL;
 	}
-	if ((avc->perms = apol_vector_create_with_capacity(1)) == NULL) {
+	if ((avc->perms = apol_vector_create_with_capacity(1, NULL)) == NULL) {
 		int error = errno;
 		avc_message_free(avc);
 		errno = error;
@@ -316,7 +316,7 @@ void avc_message_free(seaudit_avc_message_t * avc)
 		free(avc->daddr);
 		free(avc->name);
 		free(avc->ipaddr);
-		apol_vector_destroy(&avc->perms, NULL);
+		apol_vector_destroy(&avc->perms);
 		free(avc);
 	}
 }

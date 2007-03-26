@@ -83,8 +83,7 @@ extern "C"
  * @param log Log file to access.
  *
  * @return Vector of sorted users, or NULL upon error.  The caller
- * must call apol_vector_destroy() upon the return value, passing NULL
- * as the second parameter.
+ * must call apol_vector_destroy() upon the return value.
  */
 	apol_vector_t *seaudit_log_get_users(seaudit_log_t * log);
 
@@ -95,8 +94,7 @@ extern "C"
  * @param log Log file to access.
  *
  * @return Vector of sorted roles, or NULL upon error.  The caller
- * must call apol_vector_destroy() upon the return value, passing NULL
- * as the second parameter.
+ * must call apol_vector_destroy() upon the return value.
  */
 	apol_vector_t *seaudit_log_get_roles(seaudit_log_t * log);
 
@@ -107,8 +105,7 @@ extern "C"
  * @param log Log file to access.
  *
  * @return Vector of sorted types, or NULL upon error.  The caller
- * must call apol_vector_destroy() upon the return value, passing NULL
- * as the second parameter.
+ * must call apol_vector_destroy() upon the return value.
  */
 	apol_vector_t *seaudit_log_get_types(seaudit_log_t * log);
 
@@ -120,8 +117,7 @@ extern "C"
  * @param log Log file to access.
  *
  * @return Vector of sorted classes, or NULL upon error.  The caller
- * must call apol_vector_destroy() upon the return value, passing NULL
- * as the second parameter.
+ * must call apol_vector_destroy() upon the return value.
  */
 	apol_vector_t *seaudit_log_get_classes(seaudit_log_t * log);
 

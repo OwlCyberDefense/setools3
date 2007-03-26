@@ -112,7 +112,7 @@ static int get_tokens(seaudit_log_t * log, char *line, apol_vector_t ** tokens)
 	*tokens = NULL;
 	int error = 0;
 
-	if ((*tokens = apol_vector_create()) == NULL) {
+	if ((*tokens = apol_vector_create(NULL)) == NULL) {
 		error = errno;
 		ERR(log, "%s", strerror(error));
 		goto cleanup;
@@ -130,7 +130,7 @@ static int get_tokens(seaudit_log_t * log, char *line, apol_vector_t ** tokens)
 	}
       cleanup:
 	if (error != 0) {
-		apol_vector_destroy(tokens, NULL);
+		apol_vector_destroy(tokens);
 		errno = error;
 		return -1;
 	}
@@ -1360,7 +1360,7 @@ int seaudit_log_parse(seaudit_log_t * log, FILE * syslog)
 		line = NULL;
 		free(line_dup);
 		line_dup = NULL;
-		apol_vector_destroy(&tokens, NULL);
+		apol_vector_destroy(&tokens);
 		if (get_line(log, audit_file, &line) < 0) {
 			error = errno;
 			ERR(log, "%s", strerror(error));
@@ -1438,7 +1438,7 @@ int seaudit_log_parse(seaudit_log_t * log, FILE * syslog)
       cleanup:
 	free(line);
 	free(line_dup);
-	apol_vector_destroy(&tokens, NULL);
+	apol_vector_destroy(&tokens);
 	for (i = 0; i < apol_vector_get_size(log->models); i++) {
 		seaudit_model_t *m = apol_vector_get_element(log->models, i);
 		model_notify_log_changed(m, log);

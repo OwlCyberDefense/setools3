@@ -41,16 +41,16 @@ seaudit_log_t *seaudit_log_create(seaudit_handle_fn_t fn, void *callback_arg)
 	}
 	log->fn = fn;
 	log->handle_arg = callback_arg;
-	if ((log->messages = apol_vector_create()) == NULL ||
-	    (log->malformed_msgs = apol_vector_create()) == NULL ||
-	    (log->models = apol_vector_create()) == NULL ||
-	    (log->types = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (log->classes = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (log->roles = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (log->users = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (log->perms = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (log->hosts = apol_bst_create(apol_str_strcmp)) == NULL || (log->bools = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (log->managers = apol_bst_create(apol_str_strcmp)) == NULL) {
+	if ((log->messages = apol_vector_create(message_free)) == NULL ||
+	    (log->malformed_msgs = apol_vector_create(free)) == NULL ||
+	    (log->models = apol_vector_create(NULL)) == NULL ||
+	    (log->types = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->classes = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->roles = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->users = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->perms = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->hosts = apol_bst_create(apol_str_strcmp, free)) == NULL || (log->bools = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->managers = apol_bst_create(apol_str_strcmp, free)) == NULL) {
 		error = errno;
 		seaudit_log_destroy(&log);
 		errno = error;
@@ -69,17 +69,17 @@ void seaudit_log_destroy(seaudit_log_t ** log)
 		seaudit_model_t *m = apol_vector_get_element((*log)->models, i);
 		model_remove_log(m, *log);
 	}
-	apol_vector_destroy(&(*log)->messages, message_free);
-	apol_vector_destroy(&(*log)->malformed_msgs, free);
-	apol_vector_destroy(&(*log)->models, NULL);
-	apol_bst_destroy(&(*log)->types, free);
-	apol_bst_destroy(&(*log)->classes, free);
-	apol_bst_destroy(&(*log)->roles, free);
-	apol_bst_destroy(&(*log)->users, free);
-	apol_bst_destroy(&(*log)->perms, free);
-	apol_bst_destroy(&(*log)->hosts, free);
-	apol_bst_destroy(&(*log)->bools, free);
-	apol_bst_destroy(&(*log)->managers, free);
+	apol_vector_destroy(&(*log)->messages);
+	apol_vector_destroy(&(*log)->malformed_msgs);
+	apol_vector_destroy(&(*log)->models);
+	apol_bst_destroy(&(*log)->types);
+	apol_bst_destroy(&(*log)->classes);
+	apol_bst_destroy(&(*log)->roles);
+	apol_bst_destroy(&(*log)->users);
+	apol_bst_destroy(&(*log)->perms);
+	apol_bst_destroy(&(*log)->hosts);
+	apol_bst_destroy(&(*log)->bools);
+	apol_bst_destroy(&(*log)->managers);
 	free(*log);
 	*log = NULL;
 }

@@ -184,14 +184,14 @@ apol_vector_t *seaudit_filter_create_from_file(const char *filename)
 	struct filter_parse_state state;
 	int retval, error;
 	memset(&state, 0, sizeof(state));
-	if ((state.filters = apol_vector_create()) == NULL) {
+	if ((state.filters = apol_vector_create(filter_free)) == NULL) {
 		return NULL;
 	}
 	retval = filter_parse_xml(&state, filename);
 	error = errno;
 	free(state.view_name);
 	if (retval < 0) {
-		apol_vector_destroy(&state.filters, filter_free);
+		apol_vector_destroy(&state.filters);
 		errno = error;
 		return NULL;
 	}
@@ -203,13 +203,13 @@ void seaudit_filter_destroy(seaudit_filter_t ** filter)
 	if (filter != NULL && *filter != NULL) {
 		free((*filter)->name);
 		free((*filter)->desc);
-		apol_vector_destroy(&(*filter)->src_users, free);
-		apol_vector_destroy(&(*filter)->src_roles, free);
-		apol_vector_destroy(&(*filter)->src_types, free);
-		apol_vector_destroy(&(*filter)->tgt_users, free);
-		apol_vector_destroy(&(*filter)->tgt_roles, free);
-		apol_vector_destroy(&(*filter)->tgt_types, free);
-		apol_vector_destroy(&(*filter)->tgt_classes, free);
+		apol_vector_destroy(&(*filter)->src_users);
+		apol_vector_destroy(&(*filter)->src_roles);
+		apol_vector_destroy(&(*filter)->src_types);
+		apol_vector_destroy(&(*filter)->tgt_users);
+		apol_vector_destroy(&(*filter)->tgt_roles);
+		apol_vector_destroy(&(*filter)->tgt_types);
+		apol_vector_destroy(&(*filter)->tgt_classes);
 		free((*filter)->exe);
 		free((*filter)->host);
 		free((*filter)->path);
@@ -298,7 +298,7 @@ static int filter_set_vector(seaudit_filter_t * filter, apol_vector_t ** tgt, ap
 			return -1;
 		}
 	}
-	apol_vector_destroy(tgt, free);
+	apol_vector_destroy(tgt);
 	*tgt = new_v;
 	if (filter->model != NULL) {
 		model_notify_filter_changed(filter->model, filter);
@@ -667,7 +667,7 @@ void seaudit_filter_get_date(seaudit_filter_t * filter, struct tm **start, struc
 static int filter_string_vector_read(apol_vector_t ** v, const xmlChar * ch)
 {
 	char *s;
-	if (*v == NULL && (*v = apol_vector_create_with_capacity(1)) == NULL) {
+	if (*v == NULL && (*v = apol_vector_create_with_capacity(1, free)) == NULL) {
 		return -1;
 	}
 	if ((s = xmlURIUnescapeString((const char *)ch, 0, NULL)) == NULL || apol_vector_append(*v, s) < 0) {

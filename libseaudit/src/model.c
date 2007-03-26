@@ -167,8 +167,8 @@ static int model_sort(seaudit_log_t * log, seaudit_model_t * model)
 		goto cleanup;
 	}
 
-	if ((sup = apol_vector_create_with_capacity(num_messages)) == NULL ||
-	    (unsup = apol_vector_create_with_capacity(num_messages)) == NULL) {
+	if ((sup = apol_vector_create_with_capacity(num_messages, NULL)) == NULL ||
+	    (unsup = apol_vector_create_with_capacity(num_messages, NULL)) == NULL) {
 		error = errno;
 		ERR(log, "%s", strerror(error));
 		goto cleanup;
@@ -194,13 +194,13 @@ static int model_sort(seaudit_log_t * log, seaudit_model_t * model)
 		ERR(log, "%s", strerror(error));
 		goto cleanup;
 	}
-	apol_vector_destroy(&model->messages, NULL);
+	apol_vector_destroy(&model->messages);
 	model->messages = sup;
 	sup = NULL;
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&sup, NULL);
-	apol_vector_destroy(&unsup, NULL);
+	apol_vector_destroy(&sup);
+	apol_vector_destroy(&unsup);
 	if (retval != 0) {
 		errno = error;
 	}
@@ -260,9 +260,9 @@ static int model_refresh(seaudit_log_t * log, seaudit_model_t * model)
 	if (!model->dirty) {
 		return 0;
 	}
-	apol_vector_destroy(&model->messages, NULL);
-	apol_vector_destroy(&model->malformed_messages, NULL);
-	if ((model->messages = apol_vector_create()) == NULL || (model->malformed_messages = apol_vector_create()) == NULL) {
+	apol_vector_destroy(&model->messages);
+	apol_vector_destroy(&model->malformed_messages);
+	if ((model->messages = apol_vector_create(NULL)) == NULL || (model->malformed_messages = apol_vector_create(NULL)) == NULL) {
 		error = errno;
 		ERR(log, "%s", strerror(error));
 		errno = error;
@@ -335,9 +335,9 @@ seaudit_model_t *seaudit_model_create(const char *name, seaudit_log_t * log)
 		name = DEFAULT_MODEL_NAME;
 	}
 	if ((m->name = strdup(name)) == NULL ||
-	    (m->logs = apol_vector_create_with_capacity(1)) == NULL ||
-	    (m->filters = apol_vector_create_with_capacity(1)) == NULL ||
-	    (m->sorts = apol_vector_create_with_capacity(1)) == NULL) {
+	    (m->logs = apol_vector_create_with_capacity(1, NULL)) == NULL ||
+	    (m->filters = apol_vector_create_with_capacity(1, filter_free)) == NULL ||
+	    (m->sorts = apol_vector_create_with_capacity(1, sort_free)) == NULL) {
 		error = errno;
 		seaudit_model_destroy(&m);
 		ERR(log, "%s", strerror(error));
@@ -444,26 +444,26 @@ seaudit_model_t *seaudit_model_create_from_file(const char *filename)
 	int retval, error;
 	seaudit_model_t *m;
 	memset(&state, 0, sizeof(state));
-	if ((state.filters = apol_vector_create()) == NULL) {
+	if ((state.filters = apol_vector_create(filter_free)) == NULL) {
 		return NULL;
 	}
 	retval = filter_parse_xml(&state, filename);
 	if (retval < 0) {
 		error = errno;
 		free(state.view_name);
-		apol_vector_destroy(&state.filters, filter_free);
+		apol_vector_destroy(&state.filters);
 		errno = errno;
 		return NULL;
 	}
 	if ((m = seaudit_model_create(state.view_name, NULL)) == NULL) {
 		error = errno;
 		free(state.view_name);
-		apol_vector_destroy(&state.filters, filter_free);
+		apol_vector_destroy(&state.filters);
 		errno = error;
 		return NULL;
 	}
 	free(state.view_name);
-	apol_vector_destroy(&m->filters, filter_free);
+	apol_vector_destroy(&m->filters);
 	m->filters = state.filters;
 	state.filters = NULL;
 	seaudit_model_set_filter_match(m, state.view_match);
@@ -482,11 +482,11 @@ void seaudit_model_destroy(seaudit_model_t ** model)
 		log_remove_model(l, *model);
 	}
 	free((*model)->name);
-	apol_vector_destroy(&(*model)->logs, NULL);
-	apol_vector_destroy(&(*model)->filters, filter_free);
-	apol_vector_destroy(&(*model)->sorts, sort_free);
-	apol_vector_destroy(&(*model)->messages, NULL);
-	apol_vector_destroy(&(*model)->malformed_messages, NULL);
+	apol_vector_destroy(&(*model)->logs);
+	apol_vector_destroy(&(*model)->filters);
+	apol_vector_destroy(&(*model)->sorts);
+	apol_vector_destroy(&(*model)->messages);
+	apol_vector_destroy(&(*model)->malformed_messages);
 	free(*model);
 	*model = NULL;
 }
@@ -662,8 +662,8 @@ int seaudit_model_clear_sorts(seaudit_model_t * model)
 		errno = EINVAL;
 		return -1;
 	}
-	apol_vector_destroy(&model->sorts, sort_free);
-	if ((model->sorts = apol_vector_create_with_capacity(1)) == NULL) {
+	apol_vector_destroy(&model->sorts);
+	if ((model->sorts = apol_vector_create_with_capacity(1, sort_free)) == NULL) {
 		return -1;
 	}
 	model->dirty = 1;
