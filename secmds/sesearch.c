@@ -867,7 +867,8 @@ int main(int argc, char **argv)
 				printf("Missing permissions for -p (--perm)\n");
 				exit(1);
 			}
-			if ((cmd_opts.permlist = strdup(optarg)) == NULL || (cmd_opts.perm_vector = apol_vector_create(free)) == NULL) {
+			if ((cmd_opts.permlist = strdup(optarg)) == NULL
+			    || (cmd_opts.perm_vector = apol_vector_create(free)) == NULL) {
 				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}

@@ -20,8 +20,8 @@ libpoldiff_a_SOURCES = \
 	rbac_diff.c rbac_internal.h \
 	role_diff.c role_internal.h \
 	terule_diff.c terule_internal.h \
-	user_diff.c user_internal.h \
 	type_diff.c type_internal.h \
+	user_diff.c user_internal.h \
 	poldiff_internal.h \
 	type_map.c type_map_internal.h \
 	util.c

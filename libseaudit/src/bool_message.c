@@ -58,7 +58,7 @@ int bool_change_append(seaudit_log_t * log, seaudit_bool_message_t * bool, char 
 	char *s = strdup(name);
 	seaudit_bool_message_change_t *bc = NULL;
 	int error;
-	if (s == NULL || apol_bst_insert_and_get(log->bools, (void **)&s, NULL, free) < 0) {
+	if (s == NULL || apol_bst_insert_and_get(log->bools, (void **)&s, NULL) < 0) {
 		error = errno;
 		free(s);
 		ERR(log, "%s", strerror(error));

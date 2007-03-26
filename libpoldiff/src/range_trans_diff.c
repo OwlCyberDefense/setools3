@@ -189,19 +189,6 @@ poldiff_form_e poldiff_range_trans_get_form(const void *range_trans)
 	return ((const poldiff_range_trans_t *)range_trans)->form;
 }
 
-poldiff_range_trans_summary_t *range_trans_create(void)
-{
-	poldiff_range_trans_summary_t *rts = calloc(1, sizeof(*rts));
-	if (rts == NULL) {
-		return NULL;
-	}
-	if ((rts->diffs = apol_vector_create()) == NULL) {
-		range_trans_destroy(&rts);
-		return NULL;
-	}
-	return rts;
-}
-
 /**
  * Destroy all space used by a poldiff_range_trans_t, including the
  * pointer itself.
@@ -218,10 +205,23 @@ static void range_trans_free(void *elem)
 	}
 }
 
+poldiff_range_trans_summary_t *range_trans_create(void)
+{
+	poldiff_range_trans_summary_t *rts = calloc(1, sizeof(*rts));
+	if (rts == NULL) {
+		return NULL;
+	}
+	if ((rts->diffs = apol_vector_create(range_trans_free)) == NULL) {
+		range_trans_destroy(&rts);
+		return NULL;
+	}
+	return rts;
+}
+
 void range_trans_destroy(poldiff_range_trans_summary_t ** rts)
 {
 	if (rts != NULL && *rts != NULL) {
-		apol_vector_destroy(&(*rts)->diffs, range_trans_free);
+		apol_vector_destroy(&(*rts)->diffs);
 		free(*rts);
 		*rts = NULL;
 	}
@@ -235,7 +235,7 @@ typedef struct pseudo_range_trans
 	qpol_mls_range_t *range;
 } pseudo_range_trans_t;
 
-void range_trans_free_item(void *item)
+static void range_trans_free_item(void *item)
 {
 	if (item != NULL) {
 		pseudo_range_trans_t *prt = item;
@@ -432,7 +432,7 @@ apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 		error = errno;
 		goto err;
 	}
-	if ((v = apol_vector_create()) == NULL) {
+	if ((v = apol_vector_create(range_trans_free_item)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto err;
@@ -467,12 +467,12 @@ apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 		prt = NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort_uniquify(v, pseudo_range_trans_comp, diff, range_trans_free_item);
+	apol_vector_sort_uniquify(v, pseudo_range_trans_comp, diff);
 	return v;
 
       err:
 	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	free(prt);
 	errno = error;
 	return NULL;

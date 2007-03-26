@@ -222,34 +222,33 @@ apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t *
 	return role_allow->removed_roles;
 }
 
+static void role_allow_free(void *elem)
+{
+	if (elem != NULL) {
+		poldiff_role_allow_t *r = (poldiff_role_allow_t *) elem;
+		apol_vector_destroy(&r->orig_roles);
+		apol_vector_destroy(&r->added_roles);
+		apol_vector_destroy(&r->removed_roles);
+		free(r);
+	}
+}
 poldiff_role_allow_summary_t *role_allow_create(void)
 {
 	poldiff_role_allow_summary_t *ras = calloc(1, sizeof(*ras));
 	if (ras == NULL) {
 		return NULL;
 	}
-	if ((ras->diffs = apol_vector_create()) == NULL) {
+	if ((ras->diffs = apol_vector_create(role_allow_free)) == NULL) {
 		role_allow_destroy(&ras);
 		return NULL;
 	}
 	return ras;
 }
 
-static void role_allow_free(void *elem)
-{
-	if (elem != NULL) {
-		poldiff_role_allow_t *r = (poldiff_role_allow_t *) elem;
-		apol_vector_destroy(&r->orig_roles, NULL);
-		apol_vector_destroy(&r->added_roles, NULL);
-		apol_vector_destroy(&r->removed_roles, NULL);
-		free(r);
-	}
-}
-
 void role_allow_destroy(poldiff_role_allow_summary_t ** ras)
 {
 	if (ras != NULL && *ras != NULL) {
-		apol_vector_destroy(&(*ras)->diffs, role_allow_free);
+		apol_vector_destroy(&(*ras)->diffs);
 		free(*ras);
 		*ras = NULL;
 	}
@@ -261,7 +260,7 @@ typedef struct pseudo_role_allow
 	apol_vector_t *target_roles;
 } pseudo_role_allow_t;
 
-void role_allow_free_item(void *item)
+static void role_allow_free_item(void *item)
 {
 	pseudo_role_allow_t *pra = item;
 
@@ -269,7 +268,7 @@ void role_allow_free_item(void *item)
 		return;
 
 	/* no need to free source name or target role names */
-	apol_vector_destroy(&pra->target_roles, NULL);
+	apol_vector_destroy(&pra->target_roles);
 	free(item);
 }
 
@@ -298,7 +297,7 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 		return NULL;
 	}
 
-	tmp = apol_vector_create_from_iter(iter);
+	tmp = apol_vector_create_from_iter(iter, NULL);
 	if (tmp == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -308,11 +307,11 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 	}
 	qpol_iterator_destroy(&iter);
 
-	bst = apol_bst_create(role_allow_source_comp);
+	bst = apol_bst_create(role_allow_source_comp, role_allow_free_item);
 
 	for (i = 0; i < apol_vector_get_size(tmp); i++) {
 		qra = apol_vector_get_element(tmp, i);
-		if (!(pra = calloc(1, sizeof(*pra))) || (!(pra->target_roles = apol_vector_create_with_capacity(1)))) {
+		if (!(pra = calloc(1, sizeof(*pra))) || (!(pra->target_roles = apol_vector_create_with_capacity(1, NULL)))) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto err;
@@ -330,7 +329,7 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 		}
 		tr = NULL;
 		pra->source_role = sr_name;
-		retv = apol_bst_insert_and_get(bst, (void **)&pra, NULL, role_allow_free_item);
+		retv = apol_bst_insert_and_get(bst, (void **)&pra, NULL);
 		if (retv < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
@@ -339,21 +338,21 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 		apol_vector_append_unique(pra->target_roles, tr_name, apol_str_strcmp, NULL);
 		pra = NULL;
 	}
-	apol_vector_destroy(&tmp, NULL);
+	apol_vector_destroy(&tmp);
 
-	v = apol_bst_get_vector(bst);
+	v = apol_bst_get_vector(bst, 1);
 	if (!v) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto err;
 	}
-	apol_bst_destroy(&bst, NULL);
+	apol_bst_destroy(&bst);
 
 	return v;
 
       err:
 	role_allow_free_item(pra);
-	apol_bst_destroy(&bst, role_allow_free_item);
+	apol_bst_destroy(&bst);
 	errno = error;
 	return NULL;
 }
@@ -405,9 +404,9 @@ static poldiff_role_allow_t *make_ra_diff(poldiff_t * diff, poldiff_form_e form,
 	int error = 0;
 	if ((ra = calloc(1, sizeof(*ra))) == NULL ||
 	    (ra->source_role = source_role) == NULL ||
-	    (ra->added_roles = apol_vector_create_with_capacity(1)) == NULL ||
-	    (ra->orig_roles = apol_vector_create_with_capacity(1)) == NULL ||
-	    (ra->removed_roles = apol_vector_create_with_capacity(1)) == NULL) {
+	    (ra->added_roles = apol_vector_create_with_capacity(1, NULL)) == NULL ||
+	    (ra->orig_roles = apol_vector_create_with_capacity(1, NULL)) == NULL ||
+	    (ra->removed_roles = apol_vector_create_with_capacity(1, NULL)) == NULL) {
 		error = errno;
 		role_allow_free(ra);
 		ERR(diff, "%s", strerror(error));
@@ -667,19 +666,6 @@ extern const char *poldiff_role_trans_get_modified_default(const poldiff_role_tr
 	return role_trans->mod_default;
 }
 
-poldiff_role_trans_summary_t *role_trans_create(void)
-{
-	poldiff_role_trans_summary_t *rts = calloc(1, sizeof(*rts));
-	if (rts == NULL) {
-		return NULL;
-	}
-	if ((rts->diffs = apol_vector_create()) == NULL) {
-		role_trans_destroy(&rts);
-		return NULL;
-	}
-	return rts;
-}
-
 static void role_trans_free(void *elem)
 {
 	if (elem != NULL) {
@@ -689,10 +675,23 @@ static void role_trans_free(void *elem)
 	}
 }
 
+poldiff_role_trans_summary_t *role_trans_create(void)
+{
+	poldiff_role_trans_summary_t *rts = calloc(1, sizeof(*rts));
+	if (rts == NULL) {
+		return NULL;
+	}
+	if ((rts->diffs = apol_vector_create(role_trans_free)) == NULL) {
+		role_trans_destroy(&rts);
+		return NULL;
+	}
+	return rts;
+}
+
 void role_trans_destroy(poldiff_role_trans_summary_t ** rts)
 {
 	if (rts != NULL && *rts != NULL) {
-		apol_vector_destroy(&(*rts)->diffs, role_trans_free);
+		apol_vector_destroy(&(*rts)->diffs);
 		free(*rts);
 		*rts = NULL;
 	}
@@ -757,6 +756,12 @@ static int pseudo_role_trans_comp(const void *x, const void *y, void *arg)
 	return retv;
 }
 
+static void role_trans_free_item(void *item)
+{
+	/* no need to free members of a pseudo role_transition */
+	free(item);
+}
+
 apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL, *attr_types = NULL;
@@ -775,7 +780,7 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 		error = errno;
 		goto err;
 	}
-	v = apol_vector_create();
+	v = apol_vector_create(role_trans_free_item);
 	if (!v) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -839,23 +844,17 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 		}
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort_uniquify(v, pseudo_role_trans_comp, diff, free);
+	apol_vector_sort_uniquify(v, pseudo_role_trans_comp, diff);
 
 	return v;
 
       err:
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&attr_types);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	free(tmp_prt);
 	errno = error;
 	return NULL;
-}
-
-void role_trans_free_item(void *item)
-{
-	/* no need to free members of a pseudo role_transition */
-	free(item);
 }
 
 int role_trans_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))

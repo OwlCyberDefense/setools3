@@ -70,18 +70,10 @@ extern "C"
  *
  * @return A newly allocated vector of all role allow rules (of type
  * pseudo_role_allow_t).  The caller is responsible for calling
- * apol_vector_destroy() afterwards, passing NULL as the second parameter. On
- * error, return NULL and set errno.
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
  */
 	apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy);
-
-/**
- * Free the space used by a pseudo_role_allow_t. Does nothing if the
- * pointer is already NULL.
- *
- *@param item Pointer to a pseudo_role_allow_t.
- */
-	void role_allow_free_item(void *item);
 
 /**
  * Compare two pseudo_role_allow_t objects, determining if they have the same
@@ -160,20 +152,12 @@ extern "C"
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
  *
- * @return A newly allocated vector of all role_transition rules (of type
- * pseudo_role_trans_t).  The caller is responsible for calling
- * apol_vector_destroy() afterwards, passing NULL as the second parameter. On
- * error, return NULL and set errno.
+ * @return A newly allocated vector of all role_transition rules (of
+ * type pseudo_role_trans_t).  The caller is responsible for calling
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
  */
 	apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy);
-
-/**
- * Free the space used by a pseudo_role_trans_t. Does nothing if the
- * pointer is already NULL.
- *
- *@param item Pointer to a pseudo_role_trans_t.
- */
-	void role_trans_free_item(void *item);
 
 /**
  * Compare two pseudo_role_trans_t objects, determining if they have the same

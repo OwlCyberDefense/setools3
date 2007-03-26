@@ -227,11 +227,9 @@ changes to libpoldiff/src/poldiff.c:
   * To enforce that all diff modules have the requisite public and
     protected functions, one must fulfill the requirements as given by
     a poldiff_item_record, as defined on line 37.  The first three
-    callbacks are satisfied by the first three public functions.  With
-    the exception of poldiff_free_item_fn_t, the remainder are met by
-    protected functions.  (The type diff will not need to free
-    individual items returned by type_get_items(); see section 3e.)
-    Thus add a new record to the item_records[] array like so:
+    callbacks are satisfied by the first three public functions, the
+    remainder are met by protected functions.  Thus add a new record
+    to the item_records[] array like so:
 
     /* ... */
     {
@@ -242,7 +240,6 @@ changes to libpoldiff/src/poldiff.c:
         poldiff_type_get_form,
         poldiff_type_to_string,
         type_get_items,
-        NULL,
         type_comp,
         type_new_diff,
         type_deep_diff

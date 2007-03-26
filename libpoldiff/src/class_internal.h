@@ -69,8 +69,8 @@ extern "C"
  * @param policy The policy from which to get the items.
  *
  * @return a newly allocated vector of all classes.  The caller is
- * responsible for calling apol_vector_destroy() afterwards, passing
- * NULL as the second parameter.  On error, return NULL and set errno.
+ * responsible for calling apol_vector_destroy() afterwards.  On
+ * error, return NULL and set errno.
  */
 	apol_vector_t *class_get_items(poldiff_t * diff, apol_policy_t * policy);
 
@@ -156,8 +156,8 @@ extern "C"
  * @param policy The policy from which to get the items.
  *
  * @return a newly allocated vector of all commons.  The caller is
- * responsible for calling apol_vector_destroy() afterwards, passing
- * NULL as the second parameter.  On error, return NULL and set errno.
+ * responsible for calling apol_vector_destroy() afterwards.  On
+ * error, return NULL and set errno.
  */
 	apol_vector_t *common_get_items(poldiff_t * diff, apol_policy_t * policy);
 

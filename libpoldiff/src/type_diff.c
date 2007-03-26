@@ -211,18 +211,9 @@ static void type_destroy(void *type)
 		return;
 	t = (poldiff_type_t *) type;
 	free(t->name);
-	apol_vector_destroy(&(t->added_attribs), &free);
-	apol_vector_destroy(&(t->removed_attribs), &free);
+	apol_vector_destroy(&(t->added_attribs));
+	apol_vector_destroy(&(t->removed_attribs));
 	free(t);
-}
-
-void type_summary_destroy(poldiff_type_summary_t ** type)
-{
-	if (type != NULL && *type != NULL) {
-		apol_vector_destroy(&(*type)->diffs, &type_destroy);
-		free(*type);
-		*type = NULL;
-	}
 }
 
 poldiff_type_summary_t *type_summary_create(void)
@@ -231,11 +222,20 @@ poldiff_type_summary_t *type_summary_create(void)
 	if (type == NULL) {
 		return NULL;
 	}
-	if ((type->diffs = apol_vector_create()) == NULL) {
+	if ((type->diffs = apol_vector_create(type_destroy)) == NULL) {
 		type_summary_destroy(&type);
 		return NULL;
 	}
 	return type;
+}
+
+void type_summary_destroy(poldiff_type_summary_t ** type)
+{
+	if (type != NULL && *type != NULL) {
+		apol_vector_destroy(&(*type)->diffs);
+		free(*type);
+		*type = NULL;
+	}
 }
 
 apol_vector_t *type_get_items(poldiff_t * diff, apol_policy_t * policy)
@@ -257,7 +257,7 @@ apol_vector_t *type_get_items(poldiff_t * diff, apol_policy_t * policy)
 	if (qpol_policy_get_type_iter(q, &iter) < 0) {
 		return NULL;
 	}
-	v = apol_vector_create();
+	v = apol_vector_create(NULL);
 	if (v == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -275,7 +275,7 @@ apol_vector_t *type_get_items(poldiff_t * diff, apol_policy_t * policy)
 		apol_vector_append(v, (void *)((size_t) val));
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort_uniquify(v, NULL, NULL, NULL);
+	apol_vector_sort_uniquify(v, NULL, NULL);
 	return v;
 }
 
@@ -337,8 +337,8 @@ static poldiff_type_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *na
 
 	if ((pt = calloc(1, sizeof(poldiff_type_t))) == NULL ||
 	    (pt->name = strdup(name)) == NULL ||
-	    (pt->added_attribs = apol_vector_create_with_capacity(1)) == NULL ||
-	    (pt->removed_attribs = apol_vector_create_with_capacity(1)) == NULL) {
+	    (pt->added_attribs = apol_vector_create_with_capacity(1, free)) == NULL ||
+	    (pt->removed_attribs = apol_vector_create_with_capacity(1, free)) == NULL) {
 		error = errno;
 		type_destroy(pt);
 		ERR(diff, "%s", strerror(error));
@@ -483,8 +483,8 @@ int type_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
  * @param type Type whose attributes to get.
  *
  * @return Vector of attribute strings for the type.  The caller is
- * responsible for calling apol_vector_destroy(), passing free as the
- * second parameter.  On error, return NULL.
+ * responsible for calling apol_vector_destroy().  On error, return
+ * NULL.
  */
 static apol_vector_t *type_get_attrib_names(poldiff_t * diff, apol_policy_t * p, uint32_t type)
 {
@@ -496,8 +496,7 @@ static apol_vector_t *type_get_attrib_names(poldiff_t * diff, apol_policy_t * p,
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1, i;
 
-	/* allocate vector to return */
-	if ((ret = apol_vector_create()) == NULL) {
+	if ((ret = apol_vector_create(free)) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		return NULL;
 	}
@@ -529,12 +528,12 @@ static apol_vector_t *type_get_attrib_names(poldiff_t * diff, apol_policy_t * p,
 			}
 		}
 	}
-	apol_vector_sort_uniquify(v, &apol_str_strcmp, NULL, NULL);
+	apol_vector_sort_uniquify(v, &apol_str_strcmp, NULL);
 	retval = 0;
       cleanup:
 	qpol_iterator_destroy(&attrib_iter);
 	if (retval < 0) {
-		apol_vector_destroy(&v, free);
+		apol_vector_destroy(&v);
 		return NULL;
 	}
 	return ret;
@@ -644,8 +643,8 @@ int type_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&v1, free);
-	apol_vector_destroy(&v2, free);
+	apol_vector_destroy(&v1);
+	apol_vector_destroy(&v2);
 	free(name);
 	if (retval != 0) {
 		type_destroy(t);

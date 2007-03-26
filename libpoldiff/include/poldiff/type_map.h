@@ -95,8 +95,8 @@ extern "C"
  *  @param entry Remap entry from which to get type names.
  *
  *  @return Vector of type names.  The caller is responsible for
- *  calling apol_vector_destroy() afterwards, passing NULL as the
- *  second parameter.  Upon error return NULL and set errno.
+ *  calling apol_vector_destroy() afterwards.  Upon error return NULL
+ *  and set errno.
  */
 	extern apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
@@ -111,8 +111,8 @@ extern "C"
  *  @param entry Remap entry from which to get type names.
  *
  *  @return Vector of type names.  The caller is responsible for
- *  calling apol_vector_destroy() afterwards, passing NULL as the
- *  second parameter.  Upon error return NULL and set errno.
+ *  calling apol_vector_destroy() afterwards.  Upon error return NULL
+ *  and set errno.
  */
 	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 

@@ -69,18 +69,10 @@ extern "C"
  *
  * @return A newly allocated vector of all range transition rules (of
  * type pseudo_range_trans_t).  The caller is responsible for calling
- * apol_vector_destroy() afterwards, passing NULL as the second
- * parameter.  On error, return NULL and set errno.
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
  */
 	apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy);
-
-/**
- * Free the space used by a pseudo_range_trans_t. Does nothing if the
- * pointer is already NULL.
- *
- *@param item Pointer to a pseudo_range_trans_t.
- */
-	void range_trans_free_item(void *item);
 
 /**
  * Compare two pseudo_range_trans_t objects, determining if they have

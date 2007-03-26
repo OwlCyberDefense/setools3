@@ -70,18 +70,10 @@ extern "C"
  *
  * @return A newly allocated vector of all te rules (of type
  * pseudo_terule_t).  The caller is responsible for calling
- * apol_vector_destroy() afterwards, passing terule_free_item() as the
- * second parameter.  On error, return NULL and set errno.
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
  */
 	apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy);
-
-/**
- * Free the space used by a pseudo_terule_t.  Does nothing if the
- * pointer is already NULL.
- *
- * @param item Pointer to a pseudo_terule_t.
- */
-	void terule_free_item(void *item);
 
 /**
  * Compare two pseudo_terule_t objects, determining if they have the

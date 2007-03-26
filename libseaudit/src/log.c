@@ -49,8 +49,9 @@ seaudit_log_t *seaudit_log_create(seaudit_handle_fn_t fn, void *callback_arg)
 	    (log->roles = apol_bst_create(apol_str_strcmp, free)) == NULL ||
 	    (log->users = apol_bst_create(apol_str_strcmp, free)) == NULL ||
 	    (log->perms = apol_bst_create(apol_str_strcmp, free)) == NULL ||
-	    (log->hosts = apol_bst_create(apol_str_strcmp, free)) == NULL || (log->bools = apol_bst_create(apol_str_strcmp, free)) == NULL ||
-	    (log->managers = apol_bst_create(apol_str_strcmp, free)) == NULL) {
+	    (log->hosts = apol_bst_create(apol_str_strcmp, free)) == NULL
+	    || (log->bools = apol_bst_create(apol_str_strcmp, free)) == NULL
+	    || (log->managers = apol_bst_create(apol_str_strcmp, free)) == NULL) {
 		error = errno;
 		seaudit_log_destroy(&log);
 		errno = error;
@@ -90,7 +91,7 @@ apol_vector_t *seaudit_log_get_users(seaudit_log_t * log)
 		errno = EINVAL;
 		return NULL;
 	}
-	return apol_bst_get_vector(log->users);
+	return apol_bst_get_vector(log->users, 0);
 }
 
 apol_vector_t *seaudit_log_get_roles(seaudit_log_t * log)
@@ -99,7 +100,7 @@ apol_vector_t *seaudit_log_get_roles(seaudit_log_t * log)
 		errno = EINVAL;
 		return NULL;
 	}
-	return apol_bst_get_vector(log->roles);
+	return apol_bst_get_vector(log->roles, 0);
 }
 
 apol_vector_t *seaudit_log_get_types(seaudit_log_t * log)
@@ -108,7 +109,7 @@ apol_vector_t *seaudit_log_get_types(seaudit_log_t * log)
 		errno = EINVAL;
 		return NULL;
 	}
-	return apol_bst_get_vector(log->types);
+	return apol_bst_get_vector(log->types, 0);
 }
 
 apol_vector_t *seaudit_log_get_classes(seaudit_log_t * log)
@@ -117,7 +118,7 @@ apol_vector_t *seaudit_log_get_classes(seaudit_log_t * log)
 		errno = EINVAL;
 		return NULL;
 	}
-	return apol_bst_get_vector(log->classes);
+	return apol_bst_get_vector(log->classes, 0);
 }
 
 /******************** protected functions below ********************/

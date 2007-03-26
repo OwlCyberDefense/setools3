@@ -2,7 +2,6 @@
  * @file
  * Implementation for the apol interface to analyze policy.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

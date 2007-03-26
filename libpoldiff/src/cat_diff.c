@@ -123,18 +123,6 @@ poldiff_form_e poldiff_cat_get_form(const void *cat)
 	return ((const poldiff_cat_t *)cat)->form;
 }
 
-poldiff_cat_summary_t *cat_create(void)
-{
-	poldiff_cat_summary_t *cs = calloc(1, sizeof(poldiff_cat_summary_t));
-	if (cs == NULL)
-		return NULL;
-	if ((cs->diffs = apol_vector_create()) == NULL) {
-		cat_destroy(&cs);
-		return NULL;
-	}
-	return cs;
-}
-
 static void cat_free(void *elem)
 {
 	poldiff_cat_t *s = elem;
@@ -144,11 +132,23 @@ static void cat_free(void *elem)
 	free(s);
 }
 
+poldiff_cat_summary_t *cat_create(void)
+{
+	poldiff_cat_summary_t *cs = calloc(1, sizeof(poldiff_cat_summary_t));
+	if (cs == NULL)
+		return NULL;
+	if ((cs->diffs = apol_vector_create(cat_free)) == NULL) {
+		cat_destroy(&cs);
+		return NULL;
+	}
+	return cs;
+}
+
 void cat_destroy(poldiff_cat_summary_t ** cs)
 {
 	if (cs == NULL || *cs == NULL)
 		return;
-	apol_vector_destroy(&(*cs)->diffs, cat_free);
+	apol_vector_destroy(&(*cs)->diffs);
 	free(*cs);
 	*cs = NULL;
 }
@@ -200,7 +200,7 @@ apol_vector_t *cat_get_items(poldiff_t * diff, apol_policy_t * policy)
 	if (qpol_policy_get_cat_iter(q, &iter) < 0) {
 		return NULL;
 	}
-	v = apol_vector_create_from_iter(iter);
+	v = apol_vector_create_from_iter(iter, NULL);
 	if (v == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -209,7 +209,7 @@ apol_vector_t *cat_get_items(poldiff_t * diff, apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort_uniquify(v, cat_name_comp, policy, NULL);
+	apol_vector_sort(v, cat_name_comp, policy);
 	return v;
 }
 

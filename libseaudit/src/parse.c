@@ -103,8 +103,8 @@ static int get_line(seaudit_log_t * log, FILE * audit_file, char **dest)
 /**
  * Given a line from an audit log, create and return a vector of
  * tokens from that line.  The caller is responsible for calling
- * apol_vector_destroy() upon that vector, passing NULL as the second
- * parameter.  Note that this function will modify the passed in line.
+ * apol_vector_destroy() upon that vector.  Note that this function
+ * will modify the passed in line.
  */
 static int get_tokens(seaudit_log_t * log, char *line, apol_vector_t ** tokens)
 {
@@ -231,7 +231,7 @@ static int insert_hostname(seaudit_log_t * log, apol_vector_t * tokens, size_t *
 		return 1;
 	}
 	(*position)++;
-	if ((host = strdup(s)) == NULL || apol_bst_insert_and_get(log->hosts, (void **)&host, NULL, free) < 0) {
+	if ((host = strdup(s)) == NULL || apol_bst_insert_and_get(log->hosts, (void **)&host, NULL) < 0) {
 		int error = errno;
 		ERR(log, "%s", strerror(error));
 		errno = error;
@@ -259,7 +259,7 @@ static int insert_standard_msg_header(seaudit_log_t * log, apol_vector_t * token
 static int insert_manager(seaudit_log_t * log, seaudit_message_t * msg, const char *manager)
 {
 	char *m;
-	if ((m = strdup(manager)) == NULL || apol_bst_insert_and_get(log->managers, (void **)&m, NULL, free) < 0) {
+	if ((m = strdup(manager)) == NULL || apol_bst_insert_and_get(log->managers, (void **)&m, NULL) < 0) {
 		int error = errno;
 		ERR(log, "%s", strerror(error));
 		errno = error;
@@ -288,7 +288,7 @@ static int parse_context(seaudit_log_t * log, char *token, char **user, char **r
 		return 1;
 	}
 
-	if ((s = strdup(fields[0])) == NULL || apol_bst_insert_and_get(log->users, (void **)&s, NULL, free) < 0) {
+	if ((s = strdup(fields[0])) == NULL || apol_bst_insert_and_get(log->users, (void **)&s, NULL) < 0) {
 		error = errno;
 		ERR(log, "%s", strerror(error));
 		errno = error;
@@ -296,7 +296,7 @@ static int parse_context(seaudit_log_t * log, char *token, char **user, char **r
 	}
 	*user = s;
 
-	if ((s = strdup(fields[1])) == NULL || apol_bst_insert_and_get(log->roles, (void **)&s, NULL, free) < 0) {
+	if ((s = strdup(fields[1])) == NULL || apol_bst_insert_and_get(log->roles, (void **)&s, NULL) < 0) {
 		error = errno;
 		ERR(log, "%s", strerror(error));
 		errno = error;
@@ -304,7 +304,7 @@ static int parse_context(seaudit_log_t * log, char *token, char **user, char **r
 	}
 	*role = s;
 
-	if ((s = strdup(fields[2])) == NULL || apol_bst_insert_and_get(log->types, (void **)&s, NULL, free) < 0) {
+	if ((s = strdup(fields[2])) == NULL || apol_bst_insert_and_get(log->types, (void **)&s, NULL) < 0) {
 		error = errno;
 		ERR(log, "%s", strerror(error));
 		errno = error;
@@ -375,7 +375,7 @@ static int avc_msg_insert_perms(seaudit_log_t * log, apol_vector_t * tokens, siz
 		}
 
 		if ((perm = strdup(s)) == NULL ||
-		    apol_bst_insert_and_get(log->perms, (void **)&perm, NULL, free) < 0 ||
+		    apol_bst_insert_and_get(log->perms, (void **)&perm, NULL) < 0 ||
 		    apol_vector_append(avc->perms, perm) < 0) {
 			error = errno;
 			ERR(log, "%s", strerror(error));
@@ -496,7 +496,7 @@ static int avc_msg_insert_tcon(seaudit_log_t * log, seaudit_avc_message_t * avc,
 static int avc_msg_insert_tclass(seaudit_log_t * log, seaudit_avc_message_t * avc, char *tmp)
 {
 	char *tclass;
-	if ((tclass = strdup(tmp)) == NULL || apol_bst_insert_and_get(log->classes, (void **)&tclass, NULL, free) < 0) {
+	if ((tclass = strdup(tmp)) == NULL || apol_bst_insert_and_get(log->classes, (void **)&tclass, NULL) < 0) {
 		int error = errno;
 		ERR(log, "%s", strerror(error));
 		errno = error;

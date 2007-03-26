@@ -66,8 +66,8 @@ extern "C"
  * @param policy The policy from which to get the items.
  *
  * @return A newly allocated vector of all attribs.  The caller is
- * responsible for calling apol_vector_destroy() afterwards, passing
- * NULL as the second parameter.  On error, return NULL and set errno.
+ * responsible for calling apol_vector_destroy() afterwards.  On
+ * error, return NULL and set errno.
  */
 	apol_vector_t *attrib_get_items(poldiff_t * diff, apol_policy_t * policy);
 

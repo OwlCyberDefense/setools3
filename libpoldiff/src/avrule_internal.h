@@ -70,18 +70,10 @@ extern "C"
  *
  * @return A newly allocated vector of all av rules (of type
  * pseudo_avrule_t).  The caller is responsible for calling
- * apol_vector_destroy() afterwards, passing avrule_free_item() as the
- * second parameter.  On error, return NULL and set errno.
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
  */
 	apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy);
-
-/**
- * Free the space used by a pseudo_avrule_t.  Does nothing if the
- * pointer is already NULL.
- *
- * @param item Pointer to a pseudo_avrule_t.
- */
-	void avrule_free_item(void *item);
 
 /**
  * Compare two pseudo_avrule_t objects, determining if they have the

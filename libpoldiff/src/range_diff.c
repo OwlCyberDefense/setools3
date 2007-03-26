@@ -162,7 +162,7 @@ poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, q
 	poldiff_level_t *pl = NULL;
 	size_t i;
 	int retval = -1;
-	if ((pr = calloc(1, sizeof(*pr))) == NULL || (pr->levels = apol_vector_create()) == NULL) {
+	if ((pr = calloc(1, sizeof(*pr))) == NULL || (pr->levels = apol_vector_create(level_free)) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
@@ -191,20 +191,23 @@ poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, q
 	}
 	for (i = 0; i < apol_vector_get_size(levels); i++) {
 		apol_mls_level_t *l = apol_vector_get_element(levels, i);
+		const char *sens = apol_mls_level_get_sens(l);
+		const apol_vector_t *cats = apol_mls_level_get_cats(l);
 		if ((pl = calloc(1, sizeof(*pl))) == NULL ||
-		    (pl->name = strdup(l->sens)) == NULL || (pl->unmodified_cats = apol_vector_create_with_capacity(1)) == NULL) {
+		    (pl->name = strdup(sens)) == NULL
+		    || (pl->unmodified_cats = apol_vector_create_with_capacity(1, free)) == NULL) {
 			ERR(diff, "%s", strerror(errno));
 			goto cleanup;
 		}
 		if (form == POLDIFF_FORM_ADDED) {
-			if ((pl->added_cats = apol_vector_create_from_vector(l->cats, apol_str_strdup, NULL)) == NULL ||
-			    (pl->removed_cats = apol_vector_create_with_capacity(1)) == NULL) {
+			if ((pl->added_cats = apol_vector_create_from_vector(cats, apol_str_strdup, NULL, free)) == NULL ||
+			    (pl->removed_cats = apol_vector_create_with_capacity(1, free)) == NULL) {
 				ERR(diff, "%s", strerror(errno));
 				goto cleanup;
 			}
 		} else if (form == POLDIFF_FORM_REMOVED) {
-			if ((pl->added_cats = apol_vector_create_with_capacity(1)) == NULL ||
-			    (pl->removed_cats = apol_vector_create_from_vector(l->cats, apol_str_strdup, NULL)) == NULL) {
+			if ((pl->added_cats = apol_vector_create_with_capacity(1, free)) == NULL ||
+			    (pl->removed_cats = apol_vector_create_from_vector(cats, apol_str_strdup, NULL, free)) == NULL) {
 				ERR(diff, "%s", strerror(errno));
 				goto cleanup;
 			}
@@ -217,7 +220,7 @@ poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, q
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&levels, apol_mls_level_free);
+	apol_vector_destroy(&levels);
 	if (retval != 0) {
 		level_free(pl);
 		range_destroy(&pr);
@@ -231,10 +234,10 @@ void range_destroy(poldiff_range_t ** range)
 	if (range != NULL && *range != NULL) {
 		apol_mls_range_destroy(&(*range)->orig_range);
 		apol_mls_range_destroy(&(*range)->mod_range);
-		apol_vector_destroy(&(*range)->levels, level_free);
-		apol_vector_destroy(&(*range)->min_added_cats, NULL);
-		apol_vector_destroy(&(*range)->min_removed_cats, NULL);
-		apol_vector_destroy(&(*range)->min_unmodified_cats, NULL);
+		apol_vector_destroy(&(*range)->levels);
+		apol_vector_destroy(&(*range)->min_added_cats);
+		apol_vector_destroy(&(*range)->min_removed_cats);
+		apol_vector_destroy(&(*range)->min_unmodified_cats);
 		free(*range);
 		*range = NULL;
 	}
@@ -249,7 +252,9 @@ static int range_comp_alphabetize(const void *a, const void *b, void *data __att
 {
 	const apol_mls_level_t *l1 = a;
 	const apol_mls_level_t *l2 = b;
-	return strcmp(l1->sens, l2->sens);
+	const char *sens1 = apol_mls_level_get_sens(l1);
+	const char *sens2 = apol_mls_level_get_sens(l2);
+	return strcmp(sens1, sens2);
 }
 
 /**
@@ -301,7 +306,9 @@ int range_deep_diff(poldiff_t * diff, poldiff_range_t * range)
 		l1 = (apol_mls_level_t *) apol_vector_get_element(orig_levels, i);
 		l2 = (apol_mls_level_t *) apol_vector_get_element(mod_levels, j);
 		pl1 = pl2 = NULL;
-		compval = strcmp(l1->sens, l2->sens);
+		const char *sens1 = apol_mls_level_get_sens(l1);
+		const char *sens2 = apol_mls_level_get_sens(l2);
+		compval = strcmp(sens1, sens2);
 		if (compval < 0) {
 			if ((pl1 = level_create_from_apol_mls_level(l1, POLDIFF_FORM_REMOVED)) == NULL
 			    || apol_vector_append(range->levels, pl1) < 0) {
@@ -353,9 +360,11 @@ int range_deep_diff(poldiff_t * diff, poldiff_range_t * range)
 		differences_found = 1;
 	}
 	/* now check minimum category sets */
-	compval =
-		level_deep_diff_cats(diff, range->orig_range->low->cats, range->mod_range->low->cats, &added, &removed,
-				     &unmodified);
+	const apol_mls_level_t *low1 = apol_mls_range_get_low(range->orig_range);
+	const apol_vector_t *cats1 = apol_mls_level_get_cats(low1);
+	const apol_mls_level_t *low2 = apol_mls_range_get_low(range->mod_range);
+	const apol_vector_t *cats2 = apol_mls_level_get_cats(low2);
+	compval = level_deep_diff_cats(diff, cats1, cats2, &added, &removed, &unmodified);
 	if (compval < 0) {
 		goto cleanup;
 	} else if (compval > 0) {
@@ -374,10 +383,10 @@ int range_deep_diff(poldiff_t * diff, poldiff_range_t * range)
 		retval = 0;
 	}
       cleanup:
-	apol_vector_destroy(&orig_levels, apol_mls_level_free);
-	apol_vector_destroy(&mod_levels, apol_mls_level_free);
-	apol_vector_destroy(&added, NULL);
-	apol_vector_destroy(&removed, NULL);
-	apol_vector_destroy(&unmodified, NULL);
+	apol_vector_destroy(&orig_levels);
+	apol_vector_destroy(&mod_levels);
+	apol_vector_destroy(&added);
+	apol_vector_destroy(&removed);
+	apol_vector_destroy(&unmodified);
 	return retval;
 }

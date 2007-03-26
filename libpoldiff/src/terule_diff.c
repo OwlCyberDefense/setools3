@@ -351,19 +351,6 @@ apol_vector_t *poldiff_terule_get_mod_line_numbers(const poldiff_terule_t * teru
 
 /*************** protected functions ***************/
 
-poldiff_terule_summary_t *terule_create(void)
-{
-	poldiff_terule_summary_t *rs = calloc(1, sizeof(*rs));
-	if (rs == NULL) {
-		return NULL;
-	}
-	if ((rs->diffs = apol_vector_create()) == NULL) {
-		terule_destroy(&rs);
-		return NULL;
-	}
-	return rs;
-}
-
 /**
  * Free all space used by a poldiff_terule_t, including the pointer
  * itself.  Does nothing if the pointer is already NULL.
@@ -374,18 +361,31 @@ static void poldiff_terule_free(void *elem)
 {
 	if (elem != NULL) {
 		poldiff_terule_t *t = elem;
-		apol_vector_destroy(&t->orig_linenos, NULL);
-		apol_vector_destroy(&t->mod_linenos, NULL);
+		apol_vector_destroy(&t->orig_linenos);
+		apol_vector_destroy(&t->mod_linenos);
 		free(t->orig_rules);
 		free(t->mod_rules);
 		free(elem);
 	}
 }
 
+poldiff_terule_summary_t *terule_create(void)
+{
+	poldiff_terule_summary_t *rs = calloc(1, sizeof(*rs));
+	if (rs == NULL) {
+		return NULL;
+	}
+	if ((rs->diffs = apol_vector_create(poldiff_terule_free)) == NULL) {
+		terule_destroy(&rs);
+		return NULL;
+	}
+	return rs;
+}
+
 void terule_destroy(poldiff_terule_summary_t ** rs)
 {
 	if (rs != NULL && *rs != NULL) {
-		apol_vector_destroy(&(*rs)->diffs, poldiff_terule_free);
+		apol_vector_destroy(&(*rs)->diffs);
 		free(*rs);
 		*rs = NULL;
 	}
@@ -403,6 +403,15 @@ int terule_reset(poldiff_t * diff)
 		return -1;
 	}
 	return 0;
+}
+
+static void terule_free_item(void *item)
+{
+	pseudo_terule_t *t = (pseudo_terule_t *) item;
+	if (item != NULL) {
+		free(t->rules);
+		free(t);
+	}
 }
 
 /**
@@ -642,7 +651,7 @@ static int terule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
 	}
 
 	/* insert this pseudo into the tree if not already there */
-	if ((compval = apol_bst_insert_and_get(b, (void **)&key, diff, terule_free_item)) < 0) {
+	if ((compval = apol_bst_insert_and_get(b, (void **)&key, diff)) < 0) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
@@ -769,7 +778,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 		error = errno;
 		goto cleanup;
 	}
-	if ((bool_states = apol_vector_create_with_capacity(apol_vector_get_size(bools))) == NULL) {
+	if ((bool_states = apol_vector_create_with_capacity(apol_vector_get_size(bools), NULL)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
@@ -787,7 +796,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 			goto cleanup;
 		}
 	}
-	if ((b = apol_bst_create(terule_bst_comp)) == NULL) {
+	if ((b = apol_bst_create(terule_bst_comp, terule_free_item)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
@@ -808,7 +817,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 			INFO(diff, "Computing TE rule difference: %02d%% complete", percent);
 		}
 	}
-	if ((v = apol_bst_get_vector(b)) == NULL) {
+	if ((v = apol_bst_get_vector(b, 1)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
@@ -821,26 +830,17 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 		int state = (int)((size_t) apol_vector_get_element(bool_states, i));
 		qpol_bool_set_state_no_eval(q, bool, state);
 	}
-	apol_vector_destroy(&bools, NULL);
-	apol_vector_destroy(&bool_states, NULL);
+	apol_vector_destroy(&bools);
+	apol_vector_destroy(&bool_states);
 	qpol_policy_reevaluate_conds(q);
-	apol_bst_destroy(&b, NULL);
+	apol_bst_destroy(&b);
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
-		apol_vector_destroy(&v, terule_free_item);
+		apol_vector_destroy(&v);
 		errno = error;
 		return NULL;
 	}
 	return v;
-}
-
-void terule_free_item(void *item)
-{
-	pseudo_terule_t *t = (pseudo_terule_t *) item;
-	if (item != NULL) {
-		free(t->rules);
-		free(t);
-	}
 }
 
 int terule_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))
@@ -938,7 +938,7 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 
 	/* calculate line numbers */
 	if (qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_LINE_NUMBERS)) {
-		if ((v1 = apol_vector_create()) == NULL) {
+		if ((v1 = apol_vector_create(NULL)) == NULL) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -1022,7 +1022,7 @@ int terule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 
 		/* calculate line numbers */
 		if (qpol_policy_has_capability(apol_policy_get_qpol(diff->orig_pol), QPOL_CAP_LINE_NUMBERS)) {
-			if ((pt->orig_linenos = apol_vector_create()) == NULL) {
+			if ((pt->orig_linenos = apol_vector_create(NULL)) == NULL) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -1039,7 +1039,7 @@ int terule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			memcpy(pt->orig_rules, r1->rules, r1->num_rules * sizeof(qpol_terule_t *));
 		}
 		if (qpol_policy_has_capability(apol_policy_get_qpol(diff->mod_pol), QPOL_CAP_LINE_NUMBERS)) {
-			if ((pt->mod_linenos = apol_vector_create()) == NULL) {
+			if ((pt->mod_linenos = apol_vector_create(NULL)) == NULL) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -1112,7 +1112,7 @@ int terule_enable_line_numbers(poldiff_t * diff)
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_sort_uniquify(terule->orig_linenos, NULL, NULL, NULL);
+		apol_vector_sort_uniquify(terule->orig_linenos, NULL, NULL);
 		for (j = 0; j < terule->num_mod_rules; j++) {
 			if (qpol_terule_get_syn_terule_iter(diff->mod_qpol, terule->mod_rules[j], &iter)) {
 				error = errno;
@@ -1136,7 +1136,7 @@ int terule_enable_line_numbers(poldiff_t * diff)
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_sort_uniquify(terule->mod_linenos, NULL, NULL, NULL);
+		apol_vector_sort_uniquify(terule->mod_linenos, NULL, NULL);
 	}
 
 	return 0;

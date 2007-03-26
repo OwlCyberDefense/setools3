@@ -131,19 +131,6 @@ poldiff_form_e poldiff_bool_get_form(const void *boolean)
 
 /******************** protected functions ********************/
 
-poldiff_bool_summary_t *bool_create(void)
-{
-	poldiff_bool_summary_t *bs = calloc(1, sizeof(*bs));
-	if (bs == NULL) {
-		return NULL;
-	}
-	if ((bs->diffs = apol_vector_create()) == NULL) {
-		bool_destroy(&bs);
-		return NULL;
-	}
-	return bs;
-}
-
 static void bool_free(void *elem)
 {
 	if (elem != NULL) {
@@ -153,10 +140,23 @@ static void bool_free(void *elem)
 	}
 }
 
+poldiff_bool_summary_t *bool_create(void)
+{
+	poldiff_bool_summary_t *bs = calloc(1, sizeof(*bs));
+	if (bs == NULL) {
+		return NULL;
+	}
+	if ((bs->diffs = apol_vector_create(bool_free)) == NULL) {
+		bool_destroy(&bs);
+		return NULL;
+	}
+	return bs;
+}
+
 void bool_destroy(poldiff_bool_summary_t ** bs)
 {
 	if (bs != NULL && *bs != NULL) {
-		apol_vector_destroy(&(*bs)->diffs, bool_free);
+		apol_vector_destroy(&(*bs)->diffs);
 		free(*bs);
 		*bs = NULL;
 	}
@@ -209,7 +209,7 @@ apol_vector_t *bool_get_items(poldiff_t * diff, apol_policy_t * policy)
 	if (qpol_policy_get_bool_iter(q, &iter) < 0) {
 		return NULL;
 	}
-	v = apol_vector_create_from_iter(iter);
+	v = apol_vector_create_from_iter(iter, NULL);
 	if (v == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));

@@ -115,19 +115,19 @@ seaudit_filter_t *seaudit_filter_create_from_filter(const seaudit_filter_t * fil
 		goto cleanup;
 	}
 	if ((filter->src_users != NULL
-	     && (f->src_users = apol_vector_create_from_vector(filter->src_users, apol_str_strdup, NULL)) == NULL)
+	     && (f->src_users = apol_vector_create_from_vector(filter->src_users, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->src_roles != NULL
-		&& (f->src_roles = apol_vector_create_from_vector(filter->src_roles, apol_str_strdup, NULL)) == NULL)
+		&& (f->src_roles = apol_vector_create_from_vector(filter->src_roles, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->src_types != NULL
-		&& (f->src_types = apol_vector_create_from_vector(filter->src_types, apol_str_strdup, NULL)) == NULL)
+		&& (f->src_types = apol_vector_create_from_vector(filter->src_types, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_users != NULL
-		&& (f->tgt_users = apol_vector_create_from_vector(filter->tgt_users, apol_str_strdup, NULL)) == NULL)
+		&& (f->tgt_users = apol_vector_create_from_vector(filter->tgt_users, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_roles != NULL
-		&& (f->tgt_roles = apol_vector_create_from_vector(filter->tgt_roles, apol_str_strdup, NULL)) == NULL)
+		&& (f->tgt_roles = apol_vector_create_from_vector(filter->tgt_roles, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_types != NULL
-		&& (f->tgt_types = apol_vector_create_from_vector(filter->tgt_types, apol_str_strdup, NULL)) == NULL)
+		&& (f->tgt_types = apol_vector_create_from_vector(filter->tgt_types, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_classes != NULL
-		&& (f->tgt_classes = apol_vector_create_from_vector(filter->tgt_classes, apol_str_strdup, NULL)) == NULL)) {
+		&& (f->tgt_classes = apol_vector_create_from_vector(filter->tgt_classes, apol_str_strdup, NULL, free)) == NULL)) {
 		error = errno;
 		goto cleanup;
 	}
@@ -294,7 +294,7 @@ static int filter_set_vector(seaudit_filter_t * filter, apol_vector_t ** tgt, ap
 {
 	apol_vector_t *new_v = NULL;
 	if (v != NULL) {
-		if ((new_v = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+		if ((new_v = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 			return -1;
 		}
 	}

@@ -172,16 +172,6 @@ extern "C"
 	typedef apol_vector_t *(*poldiff_get_items_fn_t) (poldiff_t * diff, apol_policy_t * policy);
 
 /**
- *  Callback function signature for destroying an element from the
- *  vector returned by poldiff_get_items_fn_t().  (This is the second
- *  parameter passed to apol_vector_destroy().)  This callback can be
- *  NULL.
- *
- *  @param Pointer to an element to free.
- */
-	typedef void (*poldiff_free_item_fn_t) (void *elem);
-
-/**
  *  Callback funtion signature for quickly comparing two items to
  *  determine if they are semantically the same item.  This operation
  *  should quickly determine if the two are obviously different or

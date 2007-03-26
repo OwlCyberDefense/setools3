@@ -45,7 +45,6 @@ typedef struct poldiff_item_record
 	poldiff_item_to_string_fn_t to_string;
 	poldiff_reset_fn_t reset;
 	poldiff_get_items_fn_t get_items;
-	poldiff_free_item_fn_t free_item;
 	poldiff_item_comp_fn_t comp;
 	poldiff_new_diff_fn_t new_diff;
 	poldiff_deep_diff_fn_t deep_diff;
@@ -61,7 +60,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_attrib_to_string,
 	 attrib_reset,
 	 attrib_get_items,
-	 NULL,
 	 attrib_comp,
 	 attrib_new_diff,
 	 attrib_deep_diff,
@@ -75,10 +73,22 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_avrule_to_string,
 	 avrule_reset,
 	 avrule_get_items,
-	 avrule_free_item,
 	 avrule_comp,
 	 avrule_new_diff,
 	 avrule_deep_diff,
+	 },
+	{
+	 "bool",
+	 POLDIFF_DIFF_BOOLS,
+	 poldiff_bool_get_stats,
+	 poldiff_get_bool_vector,
+	 poldiff_bool_get_form,
+	 poldiff_bool_to_string,
+	 bool_reset,
+	 bool_get_items,
+	 bool_comp,
+	 bool_new_diff,
+	 bool_deep_diff,
 	 },
 	{
 	 "category",
@@ -89,7 +99,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_cat_to_string,
 	 cat_reset,
 	 cat_get_items,
-	 NULL,
 	 cat_comp,
 	 cat_new_diff,
 	 cat_deep_diff,
@@ -103,24 +112,9 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_class_to_string,
 	 class_reset,
 	 class_get_items,
-	 NULL,
 	 class_comp,
 	 class_new_diff,
 	 class_deep_diff,
-	 },
-	{
-	 "bool",
-	 POLDIFF_DIFF_BOOLS,
-	 poldiff_bool_get_stats,
-	 poldiff_get_bool_vector,
-	 poldiff_bool_get_form,
-	 poldiff_bool_to_string,
-	 bool_reset,
-	 bool_get_items,
-	 NULL,
-	 bool_comp,
-	 bool_new_diff,
-	 bool_deep_diff,
 	 },
 	{
 	 "common",
@@ -131,7 +125,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_common_to_string,
 	 common_reset,
 	 common_get_items,
-	 NULL,
 	 common_comp,
 	 common_new_diff,
 	 common_deep_diff,
@@ -145,7 +138,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_level_to_string,
 	 level_reset,
 	 level_get_items,
-	 NULL,
 	 level_comp,
 	 level_new_diff,
 	 level_deep_diff,
@@ -159,7 +151,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_range_trans_to_string,
 	 range_trans_reset,
 	 range_trans_get_items,
-	 range_trans_free_item,
 	 range_trans_comp,
 	 range_trans_new_diff,
 	 range_trans_deep_diff,
@@ -173,7 +164,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_role_to_string,
 	 role_reset,
 	 role_get_items,
-	 NULL,
 	 role_comp,
 	 role_new_diff,
 	 role_deep_diff,
@@ -187,7 +177,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_role_allow_to_string,
 	 role_allow_reset,
 	 role_allow_get_items,
-	 role_allow_free_item,
 	 role_allow_comp,
 	 role_allow_new_diff,
 	 role_allow_deep_diff,
@@ -201,7 +190,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_role_trans_to_string,
 	 role_trans_reset,
 	 role_trans_get_items,
-	 role_trans_free_item,
 	 role_trans_comp,
 	 role_trans_new_diff,
 	 role_trans_deep_diff,
@@ -215,7 +203,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_terule_to_string,
 	 terule_reset,
 	 terule_get_items,
-	 terule_free_item,
 	 terule_comp,
 	 terule_new_diff,
 	 terule_deep_diff,
@@ -229,7 +216,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_type_to_string,
 	 type_reset,
 	 type_get_items,
-	 NULL,
 	 type_comp,
 	 type_new_diff,
 	 type_deep_diff,
@@ -243,7 +229,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_user_to_string,
 	 user_reset,
 	 user_get_items,
-	 NULL,
 	 user_comp,
 	 user_new_diff,
 	 user_deep_diff,
@@ -313,9 +298,9 @@ void poldiff_destroy(poldiff_t ** diff)
 		return;
 	apol_policy_destroy(&(*diff)->orig_pol);
 	apol_policy_destroy(&(*diff)->mod_pol);
-	apol_bst_destroy(&(*diff)->class_bst, free);
-	apol_bst_destroy(&(*diff)->perm_bst, free);
-	apol_bst_destroy(&(*diff)->bool_bst, free);
+	apol_bst_destroy(&(*diff)->class_bst);
+	apol_bst_destroy(&(*diff)->perm_bst);
+	apol_bst_destroy(&(*diff)->bool_bst);
 
 	type_map_destroy(&(*diff)->type_map);
 	attrib_summary_destroy(&(*diff)->attrib_diffs);
@@ -421,13 +406,13 @@ static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_item_record_t * 
 		}
 	}
 
-	apol_vector_destroy(&p1_v, item_record->free_item);
-	apol_vector_destroy(&p2_v, item_record->free_item);
+	apol_vector_destroy(&p1_v);
+	apol_vector_destroy(&p2_v);
 	diff->diff_status |= item_record->flag_bit;
 	return 0;
       err:
-	apol_vector_destroy(&p1_v, item_record->free_item);
-	apol_vector_destroy(&p2_v, item_record->free_item);
+	apol_vector_destroy(&p1_v);
+	apol_vector_destroy(&p2_v);
 	errno = error;
 	return -1;
 }
@@ -552,9 +537,9 @@ int poldiff_build_bsts(poldiff_t * diff)
 	if (diff->class_bst != NULL) {
 		return 0;
 	}
-	if ((diff->class_bst = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (diff->perm_bst = apol_bst_create(apol_str_strcmp)) == NULL ||
-	    (diff->bool_bst = apol_bst_create(apol_str_strcmp)) == NULL) {
+	if ((diff->class_bst = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (diff->perm_bst = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (diff->bool_bst = apol_bst_create(apol_str_strcmp, free)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
@@ -574,7 +559,7 @@ int poldiff_build_bsts(poldiff_t * diff)
 				goto cleanup;
 			}
 			if ((new_name = strdup(name)) == NULL ||
-			    apol_bst_insert_and_get(diff->class_bst, (void **)&new_name, NULL, free) < 0) {
+			    apol_bst_insert_and_get(diff->class_bst, (void **)&new_name, NULL) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -583,7 +568,7 @@ int poldiff_build_bsts(poldiff_t * diff)
 		for (j = 0; j < apol_vector_get_size(perms[i]); j++) {
 			name = (char *)apol_vector_get_element(perms[i], j);
 			if ((new_name = strdup(name)) == NULL ||
-			    apol_bst_insert_and_get(diff->perm_bst, (void **)&new_name, NULL, free) < 0) {
+			    apol_bst_insert_and_get(diff->perm_bst, (void **)&new_name, NULL) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -596,7 +581,7 @@ int poldiff_build_bsts(poldiff_t * diff)
 				goto cleanup;
 			}
 			if ((new_name = strdup(name)) == NULL ||
-			    apol_bst_insert_and_get(diff->bool_bst, (void **)&new_name, NULL, free) < 0) {
+			    apol_bst_insert_and_get(diff->bool_bst, (void **)&new_name, NULL) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -605,12 +590,12 @@ int poldiff_build_bsts(poldiff_t * diff)
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&classes[0], NULL);
-	apol_vector_destroy(&classes[1], NULL);
-	apol_vector_destroy(&perms[0], NULL);
-	apol_vector_destroy(&perms[1], NULL);
-	apol_vector_destroy(&bools[0], NULL);
-	apol_vector_destroy(&bools[1], NULL);
+	apol_vector_destroy(&classes[0]);
+	apol_vector_destroy(&classes[1]);
+	apol_vector_destroy(&perms[0]);
+	apol_vector_destroy(&perms[1]);
+	apol_vector_destroy(&bools[0]);
+	apol_vector_destroy(&bools[1]);
 	errno = error;
 	return retval;
 }

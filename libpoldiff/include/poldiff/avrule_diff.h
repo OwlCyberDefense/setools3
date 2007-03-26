@@ -203,7 +203,7 @@ extern "C"
  *  in the original policy, or NULL if no numbers are available.  Do
  *  not destroy or otherwise modify this vector.
  */
-	extern apol_vector_t *poldiff_avrule_get_orig_line_numbers(const poldiff_avrule_t * avrule);
+	extern const apol_vector_t *poldiff_avrule_get_orig_line_numbers(const poldiff_avrule_t * avrule);
 
 /**
  *  Get a vector of line numbers (of type unsigned long) for this av rule
@@ -219,7 +219,7 @@ extern "C"
  *  in the modified policy, or NULL if no numbers are available.  Do
  *  not destroy or otherwise modify this vector.
  */
-	extern apol_vector_t *poldiff_avrule_get_mod_line_numbers(const poldiff_avrule_t * avrule);
+	extern const apol_vector_t *poldiff_avrule_get_mod_line_numbers(const poldiff_avrule_t * avrule);
 
 /**
  *  Given an av rule difference and a permission name, return a vector
@@ -241,9 +241,8 @@ extern "C"
  *  @return A vector of sorted line numbers (type unsigned long) for
  *  the rule in the original policy, or NULL if no numbers are
  *  available.  Note that the vector could be empty if the permission
- *  was not found.  It is the caller's responsiblity to call
- *  apol_vector_destroy() upon the returned value, passing NULL as the
- *  second parameter.
+ *  was not found.  It is the caller's responsibility to call
+ *  apol_vector_destroy() upon the returned value.
  */
 	extern apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule,
 									    const char *perm);
@@ -268,9 +267,8 @@ extern "C"
  *  @return A vector of sorted line numbers (type unsigned long) for
  *  the rule in the modified policy, or NULL if no numbers are
  *  available.  Note that the vector could be empty if the permission
- *  was not found.  It is the caller's responsiblity to call
- *  apol_vector_destroy() upon the returned value, passing NULL as the
- *  second parameter.
+ *  was not found.  It is the caller's responsibility to call
+ *  apol_vector_destroy() upon the returned value.
  */
 	extern apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule,
 									   const char *perm);

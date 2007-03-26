@@ -77,8 +77,8 @@ extern "C"
  * @param policy The policy from which to get the items.
  *
  * @return a newly allocated vector of all levels.  The caller is
- * responsible for calling apol_vector_destroy() afterwards, passing
- * NULL as the second parameter.  On error, return NULL and set errno.
+ * responsible for calling apol_vector_destroy() afterwards.  On
+ * error, return NULL and set errno.
  */
 	apol_vector_t *level_get_items(poldiff_t * diff, apol_policy_t * policy);
 
@@ -163,10 +163,8 @@ extern "C"
  *
  * @param diff Poldiff object, used for error reporting and for
  * sorting the categories to policy order.
- * @param level1 Original level.  Note that this object will be
- * modified.
- * @param level2 Modified level.  Note that this object will be
- * modified.
+ * @param level1 Original level.
+ * @param level2 Modified level.
  * @param orig_pl Destination to where to write the poldiff_level_t,
  * if the sensitivites do not match or if the categories do not match.
  * @param mod_pl Destination to where to write the poldiff_level_t,
@@ -174,7 +172,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	int level_deep_diff_apol_mls_levels(poldiff_t * diff, apol_mls_level_t * level1, apol_mls_level_t * level2,
+	int level_deep_diff_apol_mls_levels(poldiff_t * diff, const apol_mls_level_t * level1, const apol_mls_level_t * level2,
 					    poldiff_level_t ** orig_pl, poldiff_level_t ** mod_pl);
 
 /**
@@ -188,25 +186,19 @@ extern "C"
  * @param v2 Other vector of category names, sorted alphabetically.
  * @param added Reference to where to store added categories.  The
  * caller is responsible for calling apol_vector_destroy() upon the
- * value, passing NULL as the second parameter.  If no differences are
- * found then this will be set to NULL.  (The vector will reference
- * the same strings in vectors v1 and v2).
+ * value.  If no differences are found then this will be set to NULL.
  * @param removed Reference to where to store removed categories.  The
  * caller is responsible for calling apol_vector_destroy() upon the
- * value, passing NULL as the second parameter.  If no differences are
- * found then this will be set to NULL.  (The vector will reference
- * the same strings in vectors v1 and v2).
+ * value.  If no differences are found then this will be set to NULL.
  * @param unmodified Reference to where to store unmodified
  * categories.  The caller is responsible for calling
- * apol_vector_destroy() upon the value, passing NULL as the second
- * parameter.  If no differences are found then this will be set to
- * NULL.  (The vector will reference the same strings in vectors v1
- * and v2).
+ * apol_vector_destroy() upon the value.  If no differences are found
+ * then this will be set to NULL.
  *
  * @return Greater than zero if a difference was found, zero upon no
  * differences, less than zero on error.
  */
-	int level_deep_diff_cats(poldiff_t * diff, apol_vector_t * v1, apol_vector_t * v2, apol_vector_t ** added,
+	int level_deep_diff_cats(poldiff_t * diff, const apol_vector_t * v1, const apol_vector_t * v2, apol_vector_t ** added,
 				 apol_vector_t ** removed, apol_vector_t ** unmodified);
 
 #ifdef	__cplusplus
