@@ -198,7 +198,7 @@ int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	mod->data = datum;
 
 	/* Parse default contexts file */
-	if (!(datum->ctx_vector = apol_vector_create())) {
+	if (!(datum->ctx_vector = apol_vector_create(free))) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -292,14 +292,13 @@ static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles,
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&user_v, NULL);
+		apol_vector_destroy(&user_v);
 	}
 
       exists_done:
 	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&user_v, NULL);
+	apol_vector_destroy(&user_v);
 	apol_user_query_destroy(&uq);
-	apol_vector_destroy(&user_v, NULL);
 	return retv;
 }
 
@@ -370,7 +369,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto unreachable_doms_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto unreachable_doms_run_fail;
@@ -385,7 +384,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 	find_domains_res = sechk_lib_get_module_result("find_domains", mod->parent_lib);
 	dom_results = find_domains_res->items;
-	if (!(dom_vector = apol_vector_create())) {
+	if (!(dom_vector = apol_vector_create(NULL))) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto unreachable_doms_run_fail;
@@ -473,7 +472,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			intersect_roles = apol_vector_create_from_intersection(dom_roles, start_roles, NULL, NULL);
 			if (apol_vector_get_size(intersect_roles) > 0) {
 				/* find user with role in intersect */
-				role_users = apol_vector_create();
+				role_users = apol_vector_create(NULL);
 				for (k = 0; k < apol_vector_get_size(intersect_roles); k++) {
 					last_role = apol_vector_get_element(intersect_roles, k);
 					qpol_role_get_name(q, last_role, &tmp_name);
@@ -484,13 +483,13 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 						ERR(policy, "%s", strerror(error));
 						goto unreachable_doms_run_fail;
 					}
-					apol_vector_destroy(&tmp_users, NULL);
+					apol_vector_destroy(&tmp_users);
 				}
 				if (apol_vector_get_size(role_users) > 0)
 					need = DONE;
 				else
 					need = USER;
-				apol_vector_destroy(&role_users, NULL);
+				apol_vector_destroy(&role_users);
 			}
 			if (need == DONE)
 				break;
@@ -518,7 +517,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 						last_role = src_role;
 						last_dflt = dflt_role;
 					}
-					apol_vector_destroy(&role_allow_vector, NULL);
+					apol_vector_destroy(&role_allow_vector);
 				} else {
 					need = COMMON_USER;
 					last_role = src_role;
@@ -536,7 +535,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 					need = RBAC;
 				}
 			}
-			apol_vector_destroy(&role_trans_vector, NULL);
+			apol_vector_destroy(&role_trans_vector);
 			if (need == DONE)
 				break;
 		}
@@ -556,14 +555,14 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		}
 		/* if no transition exists (valid or otherwise) check that at least one role and user pair is valid */
 		if (need == KEEP_SEARCHING) {
-			role_users = apol_vector_create();
+			role_users = apol_vector_create(NULL);
 			for (j = 0; j < apol_vector_get_size(dom_roles); j++) {
 				last_role = apol_vector_get_element(dom_roles, j);
 				qpol_role_get_name(q, last_role, &tmp_name);
 				apol_user_query_set_role(policy, user_q, tmp_name);
 				apol_user_get_by_query(policy, user_q, &tmp_users);
 				apol_vector_cat(role_users, tmp_users);
-				apol_vector_destroy(&tmp_users, NULL);
+				apol_vector_destroy(&tmp_users);
 			}
 			if (apol_vector_get_size(dom_roles) == 0) {
 				need = ROLE;
@@ -572,7 +571,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			} else {
 				need = TRANSITION;
 			}
-			apol_vector_destroy(&role_users, NULL);
+			apol_vector_destroy(&role_users);
 		}
 		/* if something needs to be reported do so now */
 		if (need != DONE) {
@@ -585,7 +584,7 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			}
 			item->item = (void *)cur_dom;
 			item->test_result = (unsigned char)need;
-			item->proof = apol_vector_create();
+			item->proof = apol_vector_create(sechk_proof_free);
 			if (!item->proof) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
@@ -728,12 +727,12 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			}
 			item = NULL;
 		}
-		apol_vector_destroy(&dom_roles, NULL);
-		apol_vector_destroy(&valid_rev_trans, apol_domain_trans_result_free);
-		apol_vector_destroy(&invalid_rev_trans, apol_domain_trans_result_free);
+		apol_vector_destroy(&dom_roles);
+		apol_vector_destroy(&valid_rev_trans);
+		apol_vector_destroy(&invalid_rev_trans);
 	}
 
-	apol_vector_destroy(&dom_vector, NULL);
+	apol_vector_destroy(&dom_vector);
 	apol_domain_trans_analysis_destroy(&dta);
 	apol_role_query_destroy(&role_q);
 	apol_user_query_destroy(&user_q);
@@ -746,18 +745,18 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	return 0;
 
       unreachable_doms_run_fail:
-	apol_vector_destroy(&dom_vector, NULL);
+	apol_vector_destroy(&dom_vector);
 	apol_domain_trans_analysis_destroy(&dta);
 	apol_role_query_destroy(&role_q);
 	apol_user_query_destroy(&user_q);
 	apol_role_trans_query_destroy(&rtq);
 	apol_role_allow_query_destroy(&raq);
-	apol_vector_destroy(&dom_roles, NULL);
-	apol_vector_destroy(&valid_rev_trans, apol_domain_trans_result_free);
-	apol_vector_destroy(&invalid_rev_trans, apol_domain_trans_result_free);
-	apol_vector_destroy(&tmp_users, NULL);
-	apol_vector_destroy(&role_users, NULL);
-	apol_vector_destroy(&role_trans_vector, NULL);
+	apol_vector_destroy(&dom_roles);
+	apol_vector_destroy(&valid_rev_trans);
+	apol_vector_destroy(&invalid_rev_trans);
+	apol_vector_destroy(&tmp_users);
+	apol_vector_destroy(&role_users);
+	apol_vector_destroy(&role_trans_vector);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_destroy(&res);
@@ -773,7 +772,7 @@ void unreachable_doms_data_free(void *data)
 		return;
 
 	free(d->ctx_file_path);
-	apol_vector_destroy(&d->ctx_vector, free);
+	apol_vector_destroy(&d->ctx_vector);
 	free(data);
 }
 

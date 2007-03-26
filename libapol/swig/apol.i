@@ -165,10 +165,10 @@ typedef struct apol_vector {} apol_vector_t;
 		return apol_vector_create_from_iter(iter, NULL);
 	};
 	apol_vector_t(apol_vector_t *v) {
-		return apol_vector_create_from_vector(v, NULL, NULL);
+		return apol_vector_create_from_vector(v, NULL, NULL, NULL);
 	};
 	apol_vector_t(apol_vector_t *a, apol_vector_t *b) {
-		return apol_vector_create_from_intersection(a, b, NULL, NULL, NULL);
+		return apol_vector_create_from_intersection(a, b, NULL, NULL);
 	};
 	size_t get_size() {
 		return apol_vector_get_size(self);
@@ -230,10 +230,10 @@ typedef struct {} apol_string_vector_t;
 		return (apol_string_vector_t*)apol_vector_create(free);
 	};
 	apol_string_vector_t(apol_string_vector_t *v) {
-		return (apol_string_vector_t*)apol_vector_create_from_vector((apol_vector_t*)v, apol_str_strdup, NULL);
+		return (apol_string_vector_t*)apol_vector_create_from_vector((apol_vector_t*)v, apol_str_strdup, NULL, free);
 	};
 	apol_string_vector_t(apol_string_vector_t *a, apol_string_vector_t *b) {
-		return (apol_string_vector_t*)apol_vector_create_from_intersection((apol_vector_t*)a, (apol_vector_t*)b, apol_str_strcmp, NULL, NULL);
+		return (apol_string_vector_t*)apol_vector_create_from_intersection((apol_vector_t*)a, (apol_vector_t*)b, apol_str_strcmp, NULL);
 	};
 	size_t get_size() {
 		return apol_vector_get_size(self);

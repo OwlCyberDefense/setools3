@@ -204,7 +204,7 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		goto find_node_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_node_types_run_fail;
@@ -269,7 +269,7 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 
 		item->item = (void *)context_type;
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
@@ -338,7 +338,7 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			}
 		}
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_node_types_run_fail;
@@ -351,14 +351,14 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 		item = NULL;
 	}
-	apol_vector_destroy(&nodecon_vector, free);
+	apol_vector_destroy(&nodecon_vector);
 
 	mod->result = res;
 
 	return 0;
 
       find_node_types_run_fail:
-	apol_vector_destroy(&nodecon_vector, free);
+	apol_vector_destroy(&nodecon_vector);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);

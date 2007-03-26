@@ -186,7 +186,7 @@ int find_net_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *ar
 		return -1;
 	}
 
-	if (!(datum->net_objs = apol_vector_create())) {
+	if (!(datum->net_objs = apol_vector_create(NULL))) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -256,7 +256,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto find_net_domains_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_net_domains_run_fail;
@@ -332,7 +332,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 					}
 				}
 				if (!item->proof) {
-					if (!(item->proof = apol_vector_create())) {
+					if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_net_domains_run_fail;
@@ -348,7 +348,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		}
 	}
 	apol_avrule_query_destroy(&avrule_query);
-	apol_vector_destroy(&avrule_vector, NULL);
+	apol_vector_destroy(&avrule_vector);
 	mod->result = res;
 
 	return 0;
@@ -365,7 +365,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 void find_net_domains_data_free(void *data)
 {
 	find_net_domains_data_t *d = data;
-	apol_vector_destroy(&d->net_objs, NULL);
+	apol_vector_destroy(&d->net_objs);
 	free(data);
 }
 

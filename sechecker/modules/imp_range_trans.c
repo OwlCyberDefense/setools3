@@ -221,7 +221,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		goto imp_range_trans_run_fail;
 	}
 	res->item_type = SECHK_ITEM_RANGETRANS;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto imp_range_trans_run_fail;
@@ -250,7 +250,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		apol_role_query_destroy(&role_query);
 
 		/* find users with the possible roles */
-		if ((users_w_roles = apol_vector_create()) == NULL) {
+		if ((users_w_roles = apol_vector_create(NULL)) == NULL) {
 			error = errno;
 			goto imp_range_trans_run_fail;
 		}
@@ -261,9 +261,9 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			apol_user_query_set_role(policy, user_query, role_name);
 			apol_user_get_by_query(policy, user_query, &tmp_v);
 			apol_vector_cat(users_w_roles, tmp_v);
-			apol_vector_destroy(&tmp_v, NULL);
+			apol_vector_destroy(&tmp_v);
 		}
-		apol_vector_sort_uniquify(users_w_roles, NULL, NULL, NULL);
+		apol_vector_sort_uniquify(users_w_roles, NULL, NULL);
 		apol_user_query_destroy(&user_query);
 
 		/* find users with the transition range */
@@ -309,7 +309,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			item->item = rule;
 			item->test_result = 1;
 			if (!item->proof) {
-				if (!(item->proof = apol_vector_create())) {
+				if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto imp_range_trans_run_fail;
@@ -322,7 +322,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			}
 			proof = NULL;
 		}
-		apol_vector_destroy(&rule_vector, NULL);
+		apol_vector_destroy(&rule_vector);
 
 		/* check RBAC */
 		if (!apol_vector_get_size(role_vector)) {
@@ -350,7 +350,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 				item->test_result = 1;
 			}
 			if (!item->proof) {
-				if (!(item->proof = apol_vector_create())) {
+				if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto imp_range_trans_run_fail;
@@ -398,7 +398,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 				item->test_result = 1;
 			}
 			if (!item->proof) {
-				if (!(item->proof = apol_vector_create())) {
+				if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto imp_range_trans_run_fail;
@@ -410,10 +410,10 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 				goto imp_range_trans_run_fail;
 			}
 		}
-		apol_vector_destroy(&role_vector, NULL);
-		apol_vector_destroy(&user_vector, NULL);
-		apol_vector_destroy(&users_w_roles, NULL);
-		apol_vector_destroy(&users_w_range, NULL);
+		apol_vector_destroy(&role_vector);
+		apol_vector_destroy(&user_vector);
+		apol_vector_destroy(&users_w_roles);
+		apol_vector_destroy(&users_w_range);
 
 		if (item) {
 			if (apol_vector_append(res->items, (void *)item) < 0) {
@@ -424,7 +424,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 		item = NULL;
 	}
-	apol_vector_destroy(&range_trans_vector, NULL);
+	apol_vector_destroy(&range_trans_vector);
 	mod->result = res;
 
 	if (apol_vector_get_size(res->items))
@@ -432,12 +432,12 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	return 0;
 
       imp_range_trans_run_fail:
-	apol_vector_destroy(&range_trans_vector, NULL);
-	apol_vector_destroy(&role_vector, NULL);
-	apol_vector_destroy(&rule_vector, NULL);
-	apol_vector_destroy(&user_vector, NULL);
-	apol_vector_destroy(&users_w_roles, NULL);
-	apol_vector_destroy(&users_w_range, NULL);
+	apol_vector_destroy(&range_trans_vector);
+	apol_vector_destroy(&role_vector);
+	apol_vector_destroy(&rule_vector);
+	apol_vector_destroy(&user_vector);
+	apol_vector_destroy(&users_w_roles);
+	apol_vector_destroy(&users_w_range);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_destroy(&res);

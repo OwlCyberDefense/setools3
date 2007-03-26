@@ -252,7 +252,7 @@ int main(int argc, char **argv)
 	}
 
 	/* initialize the policy */
-	if (!(policy_mods = apol_vector_create()))
+	if (!(policy_mods = apol_vector_create(NULL)))
 		goto exit_err;
 	if (argc - optind) {
 		if (old_pol_path) {
@@ -356,7 +356,7 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
-	apol_vector_destroy(&policy_mods, NULL);
+	apol_vector_destroy(&policy_mods);
 	free(minsev);
 	free(prof_name);
 	free(modname);
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
-	apol_vector_destroy(&policy_mods, NULL);
+	apol_vector_destroy(&policy_mods);
 	free(minsev);
 	free(prof_name);
 	free(modname);

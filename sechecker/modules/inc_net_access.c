@@ -252,11 +252,11 @@ static void net_state_destroy(net_state_t ** n)
 	if (!n || !(*n))
 		return;
 
-	apol_vector_destroy(&((*n)->netifs), free);
-	apol_vector_destroy(&((*n)->nodes), free);
-	apol_vector_destroy(&((*n)->tcpsocs), free);
-	apol_vector_destroy(&((*n)->udpsocs), free);
-	apol_vector_destroy(&((*n)->assocs), free);
+	apol_vector_destroy(&((*n)->netifs));
+	apol_vector_destroy(&((*n)->nodes));
+	apol_vector_destroy(&((*n)->tcpsocs));
+	apol_vector_destroy(&((*n)->udpsocs));
+	apol_vector_destroy(&((*n)->assocs));
 	free(*n);
 	*n = NULL;
 }
@@ -266,11 +266,11 @@ static net_state_t *net_state_create(void)
 	net_state_t *n = NULL;
 
 	n = calloc(1, sizeof(*n));
-	n->netifs = apol_vector_create();
-	n->nodes = apol_vector_create();
-	n->tcpsocs = apol_vector_create();
-	n->udpsocs = apol_vector_create();
-	n->assocs = apol_vector_create();
+	n->netifs = apol_vector_create(free);
+	n->nodes = apol_vector_create(free);
+	n->tcpsocs = apol_vector_create(free);
+	n->udpsocs = apol_vector_create(free);
+	n->assocs = apol_vector_create(free);
 
 	return n;
 }
@@ -1341,7 +1341,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		goto inc_net_access_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_net_access_run_fail;
@@ -1399,7 +1399,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* find any self tcp_socket perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
@@ -1422,7 +1422,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* find any self udp_socket perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
@@ -1445,7 +1445,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* find any if_t netif perms */
 		apol_avrule_query_set_target(policy, avrule_query, NULL, 0);
@@ -1477,7 +1477,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* find any node_t node perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
@@ -1508,7 +1508,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* find any port_t tcp_socket perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
@@ -1536,7 +1536,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* find any port_t udp_socket perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
@@ -1564,7 +1564,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* find any assoc_t association perms */
 		apol_avrule_query_append_class(policy, avrule_query, NULL);
@@ -1589,7 +1589,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			qpol_iterator_destroy(&iter);
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* if has tcp perms check for missing ones */
 		if ((state->perms & ((~(COMMON_ACCESS_SET)) & (TCP_FULL_PERM_SET))) &&
@@ -1607,7 +1607,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			item->item = net_domain;
 			item->test_result = 1;
-			item->proof = apol_vector_create();
+			item->proof = apol_vector_create(sechk_proof_free);
 			if (!item->proof) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
@@ -1647,7 +1647,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 				}
 				item->item = net_domain;
 				item->test_result = 1;
-				item->proof = apol_vector_create();
+				item->proof = apol_vector_create(sechk_proof_free);
 				if (!item->proof) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
@@ -1688,7 +1688,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 				}
 				item->item = net_domain;
 				item->test_result = 1;
-				item->proof = apol_vector_create();
+				item->proof = apol_vector_create(sechk_proof_free);
 				if (!item->proof) {
 					error = errno;
 					ERR(policy, "%s", strerror(error));
@@ -1722,7 +1722,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			}
 			item->item = net_domain;
 			item->test_result = 1;
-			item->proof = apol_vector_create();
+			item->proof = apol_vector_create(sechk_proof_free);
 			if (!item->proof) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
@@ -1764,7 +1764,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 
       inc_net_access_run_fail:
 	apol_avrule_query_destroy(&avrule_query);
-	apol_vector_destroy(&avrule_vector, NULL);
+	apol_vector_destroy(&avrule_vector);
 	qpol_iterator_destroy(&iter);
 	free(perm_name);
 	net_state_destroy(&state);
