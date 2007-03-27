@@ -138,46 +138,6 @@ apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * pa
 	return policy;
 }
 
-int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *varg)
-{
-	apol_policy_path_t *policy_path;
-	if (!path || !policy) {
-		errno = EINVAL;
-		return -1;
-	}
-	*policy = NULL;
-	if ((policy_path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, path, NULL)) == NULL) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	*policy = apol_policy_create_from_policy_path(policy_path, 0, msg_callback, varg);
-	apol_policy_path_destroy(&policy_path);
-	if (*policy == NULL) {
-		return -1;
-	}
-	return 0;
-}
-
-int apol_policy_open_no_rules(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *varg)
-{
-	apol_policy_path_t *policy_path;
-	if (!path || !policy) {
-		errno = EINVAL;
-		return -1;
-	}
-	*policy = NULL;
-	if ((policy_path = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, path, NULL)) == NULL) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		return -1;
-	}
-	*policy = apol_policy_create_from_policy_path(policy_path, APOL_POLICY_OPTION_NO_RULES, msg_callback, varg);
-	apol_policy_path_destroy(&policy_path);
-	if (*policy == NULL) {
-		return -1;
-	}
-	return 0;
-}
-
 void apol_policy_destroy(apol_policy_t ** policy)
 {
 	if (policy != NULL && *policy != NULL) {
@@ -213,11 +173,6 @@ int apol_policy_is_mls(apol_policy_t * p)
 		return -1;
 	}
 	return qpol_policy_has_capability(p->p, QPOL_CAP_MLS);
-}
-
-int apol_policy_is_binary(apol_policy_t * p)
-{
-	return (p->policy_type == QPOL_POLICY_KERNEL_BINARY);
 }
 
 char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
