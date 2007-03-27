@@ -2338,7 +2338,7 @@
 		  <property name="spacing">0</property>
 
 		  <child>
-		    <widget class="GtkLabel" id="label31">
+		    <widget class="GtkLabel" id="main filename label 1">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">&lt;b&gt;Modified Policy Filename:&lt;/b&gt;</property>
 		      <property name="use_underline">False</property>

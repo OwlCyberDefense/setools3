@@ -37,6 +37,7 @@ struct open_policy_pane
 {
 	struct open_policy *op;
 	GtkRadioButton *monolithic_radio, *modular_radio;
+	GtkLabel *main_label;
 
 	GtkHBox *bottom_hbox;
 	GtkListStore *module_store;
@@ -95,7 +96,9 @@ static void open_policy_init_pane(struct open_policy *op, sediffx_policy_e which
 	pane->monolithic_radio = GTK_RADIO_BUTTON(glade_xml_get_widget(op->xml, s->str));
 	g_string_printf(s, "modular radio%s", suffix);
 	pane->modular_radio = GTK_RADIO_BUTTON(glade_xml_get_widget(op->xml, s->str));
-	assert(pane->monolithic_radio != NULL && pane->modular_radio != NULL);
+	g_string_printf(s, "main filename label%s", suffix);
+	pane->main_label = GTK_LABEL(glade_xml_get_widget(op->xml, s->str));
+	assert(pane->monolithic_radio != NULL && pane->modular_radio != NULL && pane->main_label != NULL);
 
 	g_string_printf(s, "base entry%s", suffix);
 	pane->base_entry = GTK_ENTRY(glade_xml_get_widget(op->xml, s->str));
@@ -170,11 +173,23 @@ static void open_policy_on_policy_type_toggle(GtkToggleButton * widget, gpointer
 	if (!gtk_toggle_button_get_active(widget)) {
 		return;
 	}
+	char *prefix;
+	GString *s = g_string_new(NULL);
+	if (pane == &(pane->op->pane[SEDIFFX_POLICY_ORIG])) {
+		prefix = "Original";
+	} else {
+		prefix = "Modified";
+	}
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pane->monolithic_radio))) {
 		gtk_widget_set_sensitive(GTK_WIDGET(pane->bottom_hbox), FALSE);
+		g_string_printf(s, "<b>%s Policy Filename:</b>", prefix);
+		gtk_label_set_markup(pane->main_label, s->str);
 	} else {
 		gtk_widget_set_sensitive(GTK_WIDGET(pane->bottom_hbox), TRUE);
+		g_string_printf(s, "<b>%s Base Filename:</b>", prefix);
+		gtk_label_set_markup(pane->main_label, s->str);
 	}
+	g_string_free(s, TRUE);
 }
 
 static void open_policy_on_entry_event_after(GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
@@ -195,7 +210,7 @@ static void open_policy_on_base_browse_click(GtkButton * button __attribute__ ((
 	struct open_policy_pane *pane = (struct open_policy_pane *)user_data;
 	const char *current_path = gtk_entry_get_text(pane->base_entry);
 	char *title;
-	char *path;
+	apol_vector_t *paths;
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pane->monolithic_radio))) {
 		title = "Open Monolithic Policy";
 	} else {
@@ -204,10 +219,11 @@ static void open_policy_on_base_browse_click(GtkButton * button __attribute__ ((
 	if (strcmp(current_path, "") == 0) {
 		current_path = NULL;
 	}
-	if ((path = util_open_file(GTK_WINDOW(pane->op->dialog), title, current_path)) == NULL) {
+	if ((paths = util_open_file(GTK_WINDOW(pane->op->dialog), title, current_path, 0)) == NULL) {
 		return;
 	}
-	gtk_entry_set_text(pane->base_entry, path);
+	gtk_entry_set_text(pane->base_entry, apol_vector_get_element(paths, 0));
+	apol_vector_destroy(&paths);
 }
 
 /**
@@ -224,12 +240,12 @@ static int open_policy_load_module(struct open_policy *op, struct open_policy_pa
 	GtkTreeIter iter;
 
 	if ((qpol_module_create_from_file(path, &module)) < 0) {
-		toplevel_ERR(op->top, "Error opening module: %s", strerror(errno));
+		toplevel_ERR(op->top, "Error opening module %s: %s", path, strerror(errno));
 		return -1;
 	}
 	if (qpol_module_get_name(module, &module_name) < 0 ||
 	    qpol_module_get_version(module, &version_string) < 0 || qpol_module_get_type(module, &module_type) < 0) {
-		toplevel_ERR(op->top, "Error reading module: %s", strerror(errno));
+		toplevel_ERR(op->top, "Error reading module %s: %s", path, strerror(errno));
 		qpol_module_destroy(&module);
 		return -1;
 	}
@@ -248,25 +264,32 @@ static int open_policy_load_module(struct open_policy *op, struct open_policy_pa
 static void open_policy_on_add_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {
 	struct open_policy_pane *pane = (struct open_policy_pane *)user_data;
-	char *path;
-	const char *prev_path;
-
+	apol_vector_t *paths;
+	const char *path = NULL, *prev_path;
+	size_t i;
 	if ((prev_path = pane->last_module_path) == NULL) {
 		prev_path = gtk_entry_get_text(pane->base_entry);
 		if (strcmp(prev_path, "") == 0) {
 			prev_path = NULL;
 		}
 	}
-	path = util_open_file(GTK_WINDOW(pane->op->dialog), "Open Module", prev_path);
-	if (path == NULL) {
+	paths = util_open_file(GTK_WINDOW(pane->op->dialog), "Open Module", prev_path, 1);
+	if (paths == NULL) {
 		return;
 	}
-	if (open_policy_load_module(pane->op, pane, path) < 0) {
-		free(path);
-		return;
+	int all_succeed = 1;
+	for (i = 0; i < apol_vector_get_size(paths); i++) {
+		path = apol_vector_get_element(paths, i);
+		if (open_policy_load_module(pane->op, pane, path) < 0) {
+			all_succeed = 0;
+		}
 	}
-	free(pane->last_module_path);
-	pane->last_module_path = path;
+	if (all_succeed) {
+		assert(path != NULL);
+		free(pane->last_module_path);
+		pane->last_module_path = strdup(path);
+	}
+	apol_vector_destroy(&paths);
 }
 
 static void open_policy_on_remove_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)

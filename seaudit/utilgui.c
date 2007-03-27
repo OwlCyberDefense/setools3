@@ -51,7 +51,7 @@ void util_cursor_wait(GtkWidget * widget)
  * If we reset the pointer at the end of a callback, it gets reset too
  * soon (i.e. before all of the pending events have been processed. To
  * avoid this, this function is put in an idle handler by
- * clear_wait_cursor.
+ * util_clear_cursor().
  */
 static gboolean pointer_reset(gpointer data)
 {

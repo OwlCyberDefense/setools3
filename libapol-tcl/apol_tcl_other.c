@@ -521,7 +521,7 @@ static int Apol_GetModuleInfo(ClientData clientData, Tcl_Interp * interp, int ar
 		goto cleanup;
 	}
 	if ((qpol_module_create_from_file(argv[1], &module)) < 0) {
-		if (asprintf(&s, "Error opening module: %s", strerror(errno)) < 0) {
+		if (asprintf(&s, "Error opening module %s: %s", argv[1], strerror(errno)) < 0) {
 			fprintf(stderr, "%s", strerror(errno));
 		}
 		message = s;
@@ -529,7 +529,7 @@ static int Apol_GetModuleInfo(ClientData clientData, Tcl_Interp * interp, int ar
 	}
 	if (qpol_module_get_name(module, &module_name) < 0 ||
 	    qpol_module_get_version(module, &version) < 0 || qpol_module_get_type(module, &module_type) < 0) {
-		if (asprintf(&s, "Error reading module: %s", strerror(errno)) < 0) {
+		if (asprintf(&s, "Error reading module %s: %s", argv[1], strerror(errno)) < 0) {
 			fprintf(stderr, "%s", strerror(errno));
 		}
 		message = s;

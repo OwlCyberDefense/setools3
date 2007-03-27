@@ -87,8 +87,8 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
 
     set primary_f [frame $f.primary]
     pack $primary_f -padx 4 -pady 8 -expand 0 -fill x
-    set l [label $primary_f.l -text "Policy Filename:"]
-    pack $l -anchor w
+    set widgets(main_label) [label $primary_f.l -text "Policy Filename:"]
+    pack $widgets(main_label) -anchor w
     frame $primary_f.f
     pack $primary_f.f -expand 1 -fill x
     set e [entry $primary_f.f.e -width 32 -bg white \
@@ -156,9 +156,11 @@ proc Apol_Open_Policy_Dialog::togglePathType {labels disabled_bg bb name1 name2 
     if {$vars(path_type) == "modular"} {
         set state normal
         set bg white
+        $widgets(main_label) configure -text "Base Filename:"
     } else {
         set state disabled
         set bg $disabled_bg
+        $widgets(main_label) configure -text "Policy Filename:"
     }
     foreach w $labels {
         $w configure -state $state
@@ -194,31 +196,33 @@ proc Apol_Open_Policy_Dialog::browseModule {} {
     variable vars
     variable dialog
     variable widgets
-    set f [tk_getOpenFile -initialdir [file dirname $vars(last_module)] \
-               -initialfile $vars(last_module) -parent $dialog \
-               -title "Open Module"]
-    if {$f == {}} {
+    set paths [tk_getOpenFile -initialdir [file dirname $vars(last_module)] \
+                   -initialfile $vars(last_module) -parent $dialog \
+                   -title "Open Module" -multiple 1]
+    if {$paths == {}} {
         return
     }
-    if {[lsearch $vars(mod_paths) $f] >= 0} {
-        tk_messageBox -icon error -type ok -title "Open Module" -message "Module $f was already added."
-        return
-    }
-    if {[catch {apol_GetModuleInfo $f} info]} {
-        tk_messageBox -icon error -type ok -title "Open Module" -message $info
-    } else {
-        foreach {name vers} $info {break}
-        set vars(mod_names) [lsort [concat $vars(mod_names) $name]]
-        set i [lsearch $vars(mod_names) $name]
-        set vars(mod_vers) [linsert $vars(mod_vers) $i $vers]
-        set vars(mod_paths) [linsert $vars(mod_paths) $i $f]
-        foreach lb $widgets(listboxes) {
-            $lb selection clear 0 end
-            $lb selection set $i
+    foreach f $paths {
+        if {[lsearch $vars(mod_paths) $f] >= 0} {
+            tk_messageBox -icon error -type ok -title "Open Module" -message "Module $f was already added."
+            continue
         }
-        [lindex $widgets(listboxes) 0] see $i
-        set vars(last_module) $f
-        $widgets(bb) itemconfigure 1 -state normal
+        if {[catch {apol_GetModuleInfo $f} info]} {
+            tk_messageBox -icon error -type ok -title "Open Module" -message $info
+        } else {
+            foreach {name vers} $info {break}
+            set vars(mod_names) [lsort [concat $vars(mod_names) $name]]
+            set i [lsearch $vars(mod_names) $name]
+            set vars(mod_vers) [linsert $vars(mod_vers) $i $vers]
+            set vars(mod_paths) [linsert $vars(mod_paths) $i $f]
+            foreach lb $widgets(listboxes) {
+                $lb selection clear 0 end
+                $lb selection set $i
+            }
+            [lindex $widgets(listboxes) 0] see $i
+            set vars(last_module) $f
+            $widgets(bb) itemconfigure 1 -state normal
+        }
     }
 }
 
