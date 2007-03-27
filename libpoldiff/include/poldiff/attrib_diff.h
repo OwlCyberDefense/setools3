@@ -106,7 +106,7 @@ extern "C"
  *  of the returned vector will be 0.  The caller must not destroy
  *  this vector.  On error, errno will be set.
  */
-	extern apol_vector_t *poldiff_attrib_get_added_attribs(const poldiff_attrib_t * attrib);
+	extern apol_vector_t *poldiff_attrib_get_added_types(const poldiff_attrib_t * attrib);
 
 /**
  *  Get a vector of types removed from the attrib.
@@ -118,7 +118,7 @@ extern "C"
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-	extern apol_vector_t *poldiff_attrib_get_removed_attribs(const poldiff_attrib_t * attrib);
+	extern apol_vector_t *poldiff_attrib_get_removed_types(const poldiff_attrib_t * attrib);
 
 #ifdef	__cplusplus
 }
