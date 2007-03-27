@@ -138,7 +138,7 @@ static void policy_components_view_init_lists(struct polcomp_view *pv)
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *selection;
 
-	if ((pv->both_items = apol_vector_create_from_vector(pv->log_items, NULL, NULL)) == NULL) {
+	if ((pv->both_items = apol_vector_create_from_vector(pv->log_items, NULL, NULL, NULL)) == NULL) {
 		toplevel_ERR(pv->top, "Error generating union list: %s", strerror(errno));
 		return;
 	}
@@ -150,7 +150,7 @@ static void policy_components_view_init_lists(struct polcomp_view *pv)
 			toplevel_ERR(pv->top, "Error generating union list: %s", strerror(errno));
 			return;
 		}
-		apol_vector_sort_uniquify(pv->both_items, apol_str_strcmp, NULL, NULL);
+		apol_vector_sort_uniquify(pv->both_items, apol_str_strcmp, NULL);
 	}
 	pv->master_store =
 		gtk_list_store_new(ISINC_COLUMN + 1, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
@@ -294,7 +294,7 @@ static void policy_components_view_on_to_inc_click(GtkButton * widget __attribut
 		gtk_list_store_set(pv->master_store, &child_iter, ISINC_COLUMN, TRUE, -1);
 		apol_vector_append(pv->included_items, strdup(name));
 	}
-	apol_vector_sort_uniquify(pv->included_items, apol_str_strcmp, NULL, free);
+	apol_vector_sort_uniquify(pv->included_items, apol_str_strcmp, NULL);
 	g_list_foreach(refs, policy_components_gtk_tree_row_reference_free, NULL);
 	g_list_free(refs);
 	g_list_foreach(rows, policy_components_gtk_tree_path_free, NULL);
@@ -342,11 +342,11 @@ apol_vector_t *policy_components_view_run(toplevel_t * top, GtkWindow * parent, 
 	pv.log_items = log_items;
 	pv.policy_items = policy_items;
 	if (included == NULL) {
-		pv.included_items = apol_vector_create();
+		pv.included_items = apol_vector_create(free);
 	} else {
-		pv.included_items = apol_vector_create_from_vector(included, apol_str_strdup, NULL);
+		pv.included_items = apol_vector_create_from_vector(included, apol_str_strdup, NULL, free);
 	}
-	apol_vector_destroy(&included, free);
+	apol_vector_destroy(&included);
 	if (pv.included_items == NULL) {
 		toplevel_ERR(pv.top, "Error creating dialog: %s", strerror(errno));
 		return NULL;
@@ -364,9 +364,9 @@ apol_vector_t *policy_components_view_run(toplevel_t * top, GtkWindow * parent, 
 	g_object_unref(pv.master_store);
 	g_object_unref(pv.inc_store);
 	g_object_unref(pv.exc_store);
-	apol_vector_destroy(&pv.both_items, NULL);
+	apol_vector_destroy(&pv.both_items);
 	if (apol_vector_get_size(pv.included_items) == 0) {
-		apol_vector_destroy(&pv.included_items, NULL);
+		apol_vector_destroy(&pv.included_items);
 		return NULL;
 	}
 	return pv.included_items;

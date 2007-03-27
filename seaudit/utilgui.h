@@ -53,8 +53,8 @@ void util_cursor_wait(GtkWidget * widget);
 void util_cursor_clear(GtkWidget * widget);
 
 /**
- * Allow the user select an existing file.  Run the dialog and return
- * the selected filename.
+ * Allow the user select one or more existing files.  Run the dialog
+ * and return a vector of selected filenames.
  *
  * @param parent Parent window; this dialog will be centered upon the
  * parent.
@@ -65,7 +65,7 @@ void util_cursor_clear(GtkWidget * widget);
  *
  * @return Vector of filenames selected, or NULL if none were
  * selected.  The caller must call apol_vector_destroy() upon the
- * returned value, passing g_free as the second parameter.
+ * returned value.
  */
 apol_vector_t *util_open_file(GtkWindow * parent, const char *title, const char *init_path, gboolean multiple);
 

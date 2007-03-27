@@ -128,7 +128,7 @@ static int preferences_parse_old_recent_files(preferences_t * prefs, const char 
 	}
 
       cleanup:
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	if (error != 0) {
 		errno = error;
 		return -1;
@@ -176,8 +176,8 @@ preferences_t *preferences_create(void)
 	    (prefs->log = strdup("")) == NULL ||
 	    (prefs->report = strdup("")) == NULL ||
 	    (prefs->stylesheet = strdup("")) == NULL ||
-	    (prefs->recent_log_files = apol_vector_create()) == NULL ||
-	    (prefs->recent_policy_files = apol_vector_create()) == NULL ||
+	    (prefs->recent_log_files = apol_vector_create(free)) == NULL ||
+	    (prefs->recent_policy_files = apol_vector_create(preferences_apol_policy_path_free)) == NULL ||
 	    (prefs->fields = calloc(num_visible_fields, sizeof(struct visible_field))) == NULL) {
 		error = errno;
 		goto cleanup;
@@ -230,7 +230,7 @@ preferences_t *preferences_create(void)
 		goto cleanup;
 	}
 	free(value);
-	apol_vector_destroy(&prefs->recent_log_files, free);
+	apol_vector_destroy(&prefs->recent_log_files);
 	prefs->recent_log_files = v;
 
 	/* test if there exists the new recent list that contains
@@ -269,7 +269,7 @@ preferences_t *preferences_create(void)
 		}
 	}
 	free(value);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	value = apol_config_get_var("REAL_TIME_LOG_MONITORING", file);
 	if (value != NULL && value[0] != '0') {
 		prefs->real_time_log = 1;
@@ -300,8 +300,8 @@ void preferences_destroy(preferences_t ** prefs)
 		apol_policy_path_destroy(&(*prefs)->policy);
 		free((*prefs)->report);
 		free((*prefs)->stylesheet);
-		apol_vector_destroy(&(*prefs)->recent_log_files, free);
-		apol_vector_destroy(&(*prefs)->recent_policy_files, preferences_apol_policy_path_free);
+		apol_vector_destroy(&(*prefs)->recent_log_files);
+		apol_vector_destroy(&(*prefs)->recent_policy_files);
 		free((*prefs)->fields);
 		free(*prefs);
 		*prefs = NULL;
@@ -371,7 +371,7 @@ int preferences_write_to_conf_file(preferences_t * prefs)
 		free(value);
 	}
 
-	if ((hidden_fields = apol_vector_create()) == NULL) {
+	if ((hidden_fields = apol_vector_create(NULL)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -392,7 +392,7 @@ int preferences_write_to_conf_file(preferences_t * prefs)
 	retval = 0;
       cleanup:
 	free(conf_file);
-	apol_vector_destroy(&hidden_fields, NULL);
+	apol_vector_destroy(&hidden_fields);
 	if (file != NULL) {
 		fclose(file);
 	}

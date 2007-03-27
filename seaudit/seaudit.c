@@ -112,7 +112,7 @@ void seaudit_set_log(seaudit_t * s, seaudit_log_t * log, FILE * f, const char *f
 			toplevel_ERR(s->top, "%s", strerror(errno));
 			seaudit_log_destroy(&log);
 			seaudit_model_destroy(&model);
-			apol_vector_destroy(&messages, NULL);
+			apol_vector_destroy(&messages);
 			free(t);
 			return;
 		}
@@ -133,7 +133,7 @@ void seaudit_set_log(seaudit_t * s, seaudit_log_t * log, FILE * f, const char *f
 			s->last = seaudit_message_get_time(message);
 		}
 		seaudit_model_destroy(&model);
-		apol_vector_destroy(&messages, NULL);
+		apol_vector_destroy(&messages);
 	} else {
 		seaudit_log_destroy(&s->log);
 		free(s->log_path);
@@ -286,7 +286,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 		}
 	}
 	if (optind < argc) {	       /* modules */
-		if ((modules = apol_vector_create()) == NULL) {
+		if ((modules = apol_vector_create(NULL)) == NULL) {
 			ERR(NULL, "%s", strerror(ENOMEM));
 			seaudit_destroy(&seaudit);
 			exit(EXIT_FAILURE);
@@ -320,7 +320,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 			exit(EXIT_FAILURE);
 		}
 	}
-	apol_vector_destroy(&modules, NULL);
+	apol_vector_destroy(&modules);
 }
 
 /*
@@ -354,7 +354,6 @@ int main(int argc, char **argv)
 	seaudit_t *app;
 	const char *log;
 	apol_policy_path_t *policy;
-	apol_vector_t *modules;
 	struct delay_file_data file_data;
 
 	gtk_init(&argc, &argv);
@@ -366,10 +365,6 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	if ((app = seaudit_create(prefs)) == NULL) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		exit(EXIT_FAILURE);
-	}
-	if ((modules = apol_vector_create()) == NULL) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		exit(EXIT_FAILURE);
 	}
@@ -387,7 +382,6 @@ int main(int argc, char **argv)
 	if (preferences_write_to_conf_file(app->prefs) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 	}
-	apol_vector_destroy(&modules, NULL);
 	seaudit_destroy(&app);
 	exit(EXIT_SUCCESS);
 }

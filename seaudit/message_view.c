@@ -812,7 +812,7 @@ void message_view_destroy(message_view_t ** view)
 {
 	if (view != NULL && *view != NULL) {
 		seaudit_model_destroy(&(*view)->model);
-		apol_vector_destroy(&((*view)->store->messages), NULL);
+		apol_vector_destroy(&((*view)->store->messages));
 		g_free((*view)->filename);
 		g_free((*view)->export_filename);
 		/* let glib handle destruction of object */
@@ -869,7 +869,7 @@ void message_view_entire_message(message_view_t * view)
 	if (glist == NULL) {
 		return;
 	}
-	if ((messages = apol_vector_create()) == NULL) {
+	if ((messages = apol_vector_create(NULL)) == NULL) {
 		toplevel_ERR(view->top, "%s", strerror(errno));
 		g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 		g_list_free(glist);
@@ -883,14 +883,14 @@ void message_view_entire_message(message_view_t * view)
 			toplevel_ERR(view->top, "%s", strerror(errno));
 			g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 			g_list_free(glist);
-			apol_vector_destroy(&messages, NULL);
+			apol_vector_destroy(&messages);
 			return;
 		}
 	}
 	message_view_messages_vector(view, messages);
 	g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 	g_list_free(glist);
-	apol_vector_destroy(&messages, NULL);
+	apol_vector_destroy(&messages);
 }
 
 void message_view_save(message_view_t * view)
@@ -989,7 +989,7 @@ void message_view_export_selected_messages(message_view_t * view)
 	if (path == NULL) {
 		return;
 	}
-	if ((messages = apol_vector_create()) == NULL) {
+	if ((messages = apol_vector_create(NULL)) == NULL) {
 		toplevel_ERR(view->top, "%s", strerror(errno));
 		g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 		g_list_free(glist);
@@ -1003,14 +1003,14 @@ void message_view_export_selected_messages(message_view_t * view)
 			toplevel_ERR(view->top, "%s", strerror(errno));
 			g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 			g_list_free(glist);
-			apol_vector_destroy(&messages, NULL);
+			apol_vector_destroy(&messages);
 			return;
 		}
 	}
 	message_view_export_messages_vector(view, path, messages);
 	g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 	g_list_free(glist);
-	apol_vector_destroy(&messages, NULL);
+	apol_vector_destroy(&messages);
 }
 
 /**
@@ -1081,7 +1081,7 @@ void message_view_update_rows(message_view_t * view)
 	if (view->store->messages != NULL) {
 		num_old_messages = apol_vector_get_size(view->store->messages);
 	}
-	apol_vector_destroy(&view->store->messages, NULL);
+	apol_vector_destroy(&view->store->messages);
 	if (log != NULL) {
 		view->store->messages = seaudit_model_get_messages(log, view->model);
 		num_new_messages = apol_vector_get_size(view->store->messages);
