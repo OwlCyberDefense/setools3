@@ -315,6 +315,7 @@ void poldiff_destroy(poldiff_t ** diff)
 	role_allow_destroy(&(*diff)->role_allow_diffs);
 	role_trans_destroy(&(*diff)->role_trans_diffs);
 	user_destroy(&(*diff)->user_diffs);
+	terule_destroy(&(*diff)->terule_diffs);
 	type_summary_destroy(&(*diff)->type_diffs);
 	free(*diff);
 	*diff = NULL;

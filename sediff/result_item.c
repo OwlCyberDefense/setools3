@@ -737,7 +737,7 @@ static void result_item_multi_destructor(result_item_t * item)
 {
 	size_t i;
 	for (i = 0; i < 5; i++) {
-		apol_vector_destroy(&item->data.multi.items[i], NULL);
+		apol_vector_destroy(&item->data.multi.items[i]);
 	}
 }
 
@@ -829,13 +829,13 @@ static apol_vector_t *result_item_avrule_sort(result_item_t * item, poldiff_form
 	void *elem;
 	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
 	orig_v = poldiff_get_avrule_vector(item->diff);
-	if ((v = apol_vector_create()) == NULL) {
+	if ((v = apol_vector_create(NULL)) == NULL) {
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(orig_v); i++) {
 		elem = apol_vector_get_element(orig_v, i);
 		if (poldiff_avrule_get_form(elem) == form && apol_vector_append(v, elem) < 0) {
-			apol_vector_destroy(&v, NULL);
+			apol_vector_destroy(&v);
 			return NULL;
 		}
 	}
@@ -852,10 +852,10 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 	void *elem;
 	char *s;
 	GString *string = g_string_new("");
-	apol_vector_t *syn_linenos;
+	const apol_vector_t *syn_linenos;
 	apol_vector_t *rules = result_item_avrule_sort(item, form);
 
-	apol_vector_destroy(&item->data.multi.items[form_reverse_map[form]], NULL);
+	apol_vector_destroy(&item->data.multi.items[form_reverse_map[form]]);
 	item->data.multi.items[form_reverse_map[form]] = rules;
 	gtk_text_buffer_get_end_iter(tb, &iter);
 	if (apol_vector_get_size(rules) > 0) {
@@ -958,13 +958,13 @@ static apol_vector_t *result_item_terule_sort(result_item_t * item, poldiff_form
 	void *elem;
 	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
 	orig_v = poldiff_get_terule_vector(item->diff);
-	if ((v = apol_vector_create()) == NULL) {
+	if ((v = apol_vector_create(NULL)) == NULL) {
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(orig_v); i++) {
 		elem = apol_vector_get_element(orig_v, i);
 		if (poldiff_terule_get_form(elem) == form && apol_vector_append(v, elem) < 0) {
-			apol_vector_destroy(&v, NULL);
+			apol_vector_destroy(&v);
 			return NULL;
 		}
 	}
@@ -1018,7 +1018,7 @@ static void result_item_terule_print_diff(result_item_t * item, GtkTextBuffer * 
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
 	}
       cleanup:
-	apol_vector_destroy(&rules, NULL);
+	apol_vector_destroy(&rules);
 	g_string_free(string, TRUE);
 }
 

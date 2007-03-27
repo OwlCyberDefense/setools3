@@ -694,7 +694,7 @@ static void print_terule_diffs(poldiff_t * diff, int stats_only)
 	       stats[0], stats[3], stats[1], stats[4], stats[2]);
 	if (stats_only)
 		return;
-	if ((v = poldiff_get_avrule_vector(diff)) == NULL) {
+	if ((v = poldiff_get_terule_vector(diff)) == NULL) {
 		return;
 	}
 	printf("   Added TE Rules: %zd\n", stats[0]);

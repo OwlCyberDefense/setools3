@@ -341,7 +341,7 @@ void result_item_print_header(result_item_t * item, GtkTextBuffer * tb, poldiff_
 }
 
 void result_item_print_linenos(GtkTextBuffer * tb, GtkTextIter * iter,
-			       const gchar * prefix, apol_vector_t * linenos, const gchar * tag, GString * string)
+			       const gchar * prefix, const apol_vector_t * linenos, const gchar * tag, GString * string)
 {
 	size_t i;
 	unsigned long lineno;

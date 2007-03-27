@@ -229,7 +229,7 @@ static int poldiff_terule_cmp(const void *x, const void *y, void *data __attribu
 		return compval;
 	}
 	if (a->cond != b->cond) {
-		return (char *)a->cond - (char *)b->cond;
+		return (int)((char *)a->cond - (char *)b->cond);
 	}
 	/* sort true branch before false branch */
 	return b->branch - a->branch;

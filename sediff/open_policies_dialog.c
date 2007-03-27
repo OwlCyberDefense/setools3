@@ -351,7 +351,7 @@ static apol_policy_path_t *open_policy_build_path(struct open_policy *op, sediff
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pane->modular_radio))) {
 		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 		GtkTreeIter iter;
-		if ((modules = apol_vector_create()) == NULL) {
+		if ((modules = apol_vector_create(free)) == NULL) {
 			toplevel_ERR(op->top, "%s", strerror(errno));
 			return NULL;
 		}
@@ -365,7 +365,7 @@ static apol_policy_path_t *open_policy_build_path(struct open_policy *op, sediff
 				if (apol_vector_append(modules, module_path) < 0) {
 					toplevel_ERR(op->top, "%s", strerror(errno));
 					free(module_path);
-					apol_vector_destroy(&modules, free);
+					apol_vector_destroy(&modules);
 					return NULL;
 				}
 			}
@@ -373,7 +373,7 @@ static apol_policy_path_t *open_policy_build_path(struct open_policy *op, sediff
 		}
 	}
 	path = apol_policy_path_create(path_type, primary_path, modules);
-	apol_vector_destroy(&modules, free);
+	apol_vector_destroy(&modules);
 	if (path == NULL) {
 		toplevel_ERR(op->top, "%s", strerror(errno));
 		return NULL;

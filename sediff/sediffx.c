@@ -218,7 +218,7 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 	apol_policy_path_type_e mod_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 
 	orig_base_path = argv[optind++];
-	if (!(orig_module_paths = apol_vector_create())) {
+	if (!(orig_module_paths = apol_vector_create(NULL))) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
@@ -238,7 +238,7 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
-	apol_vector_destroy(&orig_module_paths, NULL);
+	apol_vector_destroy(&orig_module_paths);
 
 	if (argc - optind == 0) {
 		ERR(NULL, "%s", "Missing path to modified policy.");
@@ -246,7 +246,7 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 	}
 
 	mod_base_path = argv[optind++];
-	if (!(mod_module_paths = apol_vector_create())) {
+	if (!(mod_module_paths = apol_vector_create(NULL))) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
@@ -262,13 +262,13 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
-	apol_vector_destroy(&mod_module_paths, NULL);
+	apol_vector_destroy(&mod_module_paths);
 	return;
       err:
 	apol_policy_path_destroy(orig_path);
 	apol_policy_path_destroy(mod_path);
-	apol_vector_destroy(&orig_module_paths, NULL);
-	apol_vector_destroy(&mod_module_paths, NULL);
+	apol_vector_destroy(&orig_module_paths);
+	apol_vector_destroy(&mod_module_paths);
 }
 
 int main(int argc, char **argv)
