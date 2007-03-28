@@ -86,7 +86,7 @@ apol_policy_path_t *apol_policy_path_create_from_policy_path(const apol_policy_p
 apol_policy_path_t *apol_policy_path_create_from_file(const char *filename)
 {
 	FILE *f = NULL;
-	apol_policy_path_t *path;
+	apol_policy_path_t *path = NULL;
 	apol_policy_path_type_e path_type;
 	char *line = NULL, *s;
 	size_t len;
@@ -142,8 +142,7 @@ apol_policy_path_t *apol_policy_path_create_from_file(const char *filename)
 				error = EIO;
 				goto cleanup;
 			} else {
-				if ((s = strdup(line)) == NULL ||
-				    apol_vector_append(path->modules, s) < 0) {
+				if ((s = strdup(line)) == NULL || apol_vector_append(path->modules, s) < 0) {
 					error = errno;
 					free(s);
 					goto cleanup;

@@ -1325,10 +1325,10 @@ proc ApolTop::openPolicyFile {path} {
     variable policy_is_open
 
     ApolTop::closePolicy
-    foreach {path_type primary_file modules} $path {break}
 
     set policy_is_open 0
 
+    set primary_file [lindex $path 1]
     variable openDialogText "$primary_file:\n    Opening policy."
     variable openDialogVal -1
     if {[set dialog_width [string length $primary_file]] < 32} {
@@ -1342,7 +1342,7 @@ proc ApolTop::openPolicyFile {path} {
     . configure -cursor watch
     update idletasks
     after idle ApolTop::doOpenIdle
-    set retval [catch {apol_OpenPolicy $path_type $primary_file $modules} err]
+    set retval [catch {apol_OpenPolicy $path} err]
     . configure -cursor $orig_Cursor
     destroy .apol_policy_open
     if {$retval} {

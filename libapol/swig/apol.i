@@ -769,12 +769,18 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return;
 	};
+	const char *get_sens() {
+		return apol_mls_level_get_sens(self);
+	};
 	void append_cats(apol_policy_t *p, char *cats) {
 		if (apol_mls_level_append_cats(p, self, cats)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append level category");
 		}
 	fail:
 		return;
+	};
+	const apol_vector_t *get_cats() {
+		return apol_mls_level_get_cats(self);
 	};
 	%newobject render();
 	char *render(apol_policy_t *p) {
