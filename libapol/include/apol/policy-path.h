@@ -63,8 +63,8 @@ extern "C"
  *
  * @return An apol_policy_path object, or NULL upon error.
  */
-	apol_policy_path_t *apol_policy_path_create(apol_policy_path_type_e path_type, const char *path,
-						    const apol_vector_t * modules);
+	extern apol_policy_path_t *apol_policy_path_create(apol_policy_path_type_e path_type, const char *path,
+							   const apol_vector_t * modules);
 
 /**
  * Create a policy path, initialized from another policy path.  This
@@ -74,7 +74,18 @@ extern "C"
  *
  * @return An apol_policy_path object, or NULL upon error.
  */
-	apol_policy_path_t *apol_policy_path_create_from_policy_path(const apol_policy_path_t * path);
+	extern apol_policy_path_t *apol_policy_path_create_from_policy_path(const apol_policy_path_t * path);
+
+/**
+ * Create a policy path, initialize by the contents of a <em>policy
+ * path list</em> file.  Call apol_policy_path_to_filename() to write
+ * a policy path list to disk.
+ *
+ * @param filename Name of the file containing a policy path list.
+ *
+ * @return An apol_policy_path object, or NULL upon error.
+ */
+	extern apol_policy_path_t *apol_policy_path_create_from_file(const char *filename);
 
 /**
  * Create a policy path, initialized by a special path format string.
@@ -85,7 +96,7 @@ extern "C"
  *
  * @return An apol_policy_path object, or NULL upon error.
  */
-	apol_policy_path_t *apol_policy_path_create_from_string(const char *path_string);
+	extern apol_policy_path_t *apol_policy_path_create_from_string(const char *path_string);
 
 /**
  * Destroy the referencened policy path object.
@@ -93,7 +104,7 @@ extern "C"
  * @param path Policy path to destroy.  The pointer will be set to
  * NULL afterwards.  (If pointer is already NULL then do nothing.)
  */
-	void apol_policy_path_destroy(apol_policy_path_t ** path);
+	extern void apol_policy_path_destroy(apol_policy_path_t ** path);
 
 /**
  * Compare two policy paths, determining if one is different than the
@@ -107,7 +118,7 @@ extern "C"
  * @return < 0 if path A is "less than" B, > 0 if A is "greater than"
  * B, or 0 if equivalent or undeterminable.
  */
-	int apol_policy_path_compare(const apol_policy_path_t * a, const apol_policy_path_t * b);
+	extern int apol_policy_path_compare(const apol_policy_path_t * a, const apol_policy_path_t * b);
 
 /**
  * Get the type of policy this path object represents.
@@ -116,7 +127,7 @@ extern "C"
  *
  * @return Type of policy the object represents.
  */
-	apol_policy_path_type_e apol_policy_path_get_type(const apol_policy_path_t * path);
+	extern apol_policy_path_type_e apol_policy_path_get_type(const apol_policy_path_t * path);
 
 /**
  * Get the primary path name from a path object.  For monolithic
@@ -128,7 +139,7 @@ extern "C"
  * @return Primary path, or NULL upon error.  Do not modify
  * this string.
  */
-	const char *apol_policy_path_get_primary(const apol_policy_path_t * path);
+	extern const char *apol_policy_path_get_primary(const apol_policy_path_t * path);
 
 /**
  * Get the list of modules from a path object.  This will be a vector
@@ -140,7 +151,20 @@ extern "C"
  * @return Vector of module paths, or NULL upon error.  Do not modify
  * this vector or its contents.  Note that the vector could be empty.
  */
-	const apol_vector_t *apol_policy_path_get_modules(const apol_policy_path_t * path);
+	extern const apol_vector_t *apol_policy_path_get_modules(const apol_policy_path_t * path);
+
+/**
+ * Write a human-readable <em>policy path list</em> to disk.  This
+ * file describes a policy path and is suitable as input to
+ * apol_policy_path_create_from_file().
+ *
+ * @param path Policy path to write to disk.
+ * @param filename Name of the file to write policy path list.  If the
+ * file already exists it will be overwritten.
+ *
+ * @return 0 on successful write, < 0 on error.
+ */
+	extern int apol_policy_path_to_file(const apol_policy_path_t * path, const char *filename);
 
 /**
  * Encode a path object into a specially formatted string.  The
@@ -153,7 +177,7 @@ extern "C"
  * The caller is responsible for calling free() upon the returned
  * value.
  */
-	char *apol_policy_path_to_string(const apol_policy_path_t * path);
+	extern char *apol_policy_path_to_string(const apol_policy_path_t * path);
 
 #ifdef	__cplusplus
 }

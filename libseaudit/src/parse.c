@@ -1369,11 +1369,7 @@ int seaudit_log_parse(seaudit_log_t * log, FILE * syslog)
 			break;
 		}
 
-		if (apol_str_trim(&line) != 0) {
-			error = errno;
-			ERR(log, "%s", strerror(error));
-			goto cleanup;
-		}
+		apol_str_trim(line);
 		is_sel = is_selinux(line);
 		if (log->next_line) {
 			prev_message = apol_vector_get_element(log->messages, apol_vector_get_size(log->messages) - 1);

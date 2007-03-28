@@ -183,8 +183,10 @@ extern "C"
  *  Enable line numbers for all rule differences.  If not called, line
  *  numbers will not be available when displaying differences. This
  *  function is safe to call multiple times and will have no effect
- *  after the first time.  Be aware that if line numbers will need to
- *  be re-enabled each time poldiff_run() is called.
+ *  after the first time.  It also has no effect if one policy (or
+ *  both of them) does not support line numbers.  Be aware that if
+ *  line numbers will need to be re-enabled each time poldiff_run() is
+ *  called.
  *
  *  @param diff The policy difference structure.
  *

@@ -756,7 +756,13 @@ static gboolean filter_view_on_entry_focus_out(GtkWidget * widget, GdkEventFocus
 			toplevel_ERR(fv->top, "Could not interpret entry contents: %s", strerror(errno));
 			break;
 		}
-		if ((t = strdup(s)) == NULL || apol_str_trim(&t) < 0 || apol_vector_append(new_v, t) < 0) {
+		if ((t = strdup(s)) == NULL) {
+			toplevel_ERR(fv->top, "Could not interpret entry contents: %s", strerror(errno));
+			free(t);
+			break;
+		}
+		apol_str_trim(t);
+		if (apol_vector_append(new_v, t) < 0) {
 			toplevel_ERR(fv->top, "Could not interpret entry contents: %s", strerror(errno));
 			free(t);
 			break;

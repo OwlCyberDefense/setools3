@@ -233,16 +233,12 @@ extern "C"
 	extern char *apol_str_join(const apol_vector_t * list, const char *delim);
 
 /**
- * Given a dynamically allocated string, allocate a new string with
- * both starting and trailing whitespace characters removed.  The
- * caller is responsible for free()ing the resulting pointer.  The
- * original string will be free()d by this function.
+ * Given a mutable string, modify the string by removing both starting
+ * and trailing whitespace characters.
  *
- * @param str Reference to a dynamically allocated string.
- *
- * @return 0 on success, < 0 on out of memory.
+ * @param str String to modify.
  */
-	extern int apol_str_trim(char **str);
+	extern void apol_str_trim(char *str);
 
 /**
  * Append a string to an existing dynamic mutable string, expanding

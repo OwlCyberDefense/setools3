@@ -239,6 +239,17 @@ static int open_policy_load_module(struct open_policy *op, struct open_policy_pa
 	qpol_module_t *module = NULL;
 	GtkTreeIter iter;
 
+	/* check if modulue was already loaded */
+	gboolean iter_valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(pane->module_store), &iter);
+	while (iter_valid) {
+		char *s;
+		gtk_tree_model_get(GTK_TREE_MODEL(pane->module_store), &iter, PATH_COLUMN, &s, -1);
+		if (strcmp(s, path) == 0) {
+			toplevel_ERR(op->top, "Module %s was already added.", path);
+			return -1;
+		}
+		iter_valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(pane->module_store), &iter);
+	}
 	if ((qpol_module_create_from_file(path, &module)) < 0) {
 		toplevel_ERR(op->top, "Error opening module %s: %s", path, strerror(errno));
 		return -1;

@@ -245,7 +245,7 @@ static int report_import_html_stylesheet(seaudit_log_t * log, seaudit_report_t *
 		while (fgets(line, LINE_MAX, fp) != NULL) {
 			free(line_ptr);
 			line_ptr = NULL;
-			if ((line_ptr = strdup(line)) == NULL || apol_str_trim(&line_ptr) < 0) {
+			if ((line_ptr = strdup(line)) == NULL) {
 				int error = errno;
 				free(line_ptr);
 				fclose(fp);
@@ -253,6 +253,7 @@ static int report_import_html_stylesheet(seaudit_log_t * log, seaudit_report_t *
 				errno = error;
 				return -1;
 			}
+			apol_str_trim(line_ptr);
 			if (line_ptr[0] == '#' || apol_str_is_only_white_space(line_ptr))
 				continue;
 			fprintf(outfile, "%s\n", line_ptr);

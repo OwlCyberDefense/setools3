@@ -1,3 +1,17 @@
+2007-03-27  J. Tang  <jtang@tresys.com>
+
+	* added apol_policy_path_create_from_file() and
+	apol_policy_path_to_file().
+
+	* apol_str_trim() no longer has a return value; it also operates
+	directly on a string, rather than a reference to a string.
+
+	* apol_vector_t and apol_bst_t now require a destructor function
+	to be given during creation time, rather than being passed as a
+	second parameter respectively to apol_vector_destroy() and
+	apol_bst_destroy().  All of SETools has been updated to this
+	scheme.
+
 2007-03-26  J. Tang  <jtang@tresys.com>
 
 	* apol_context_t is now an opaque structure.  Accessors added to

@@ -32,6 +32,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static const char *POLICY_PATH_MAGIC = "setools policy path list";
+
 struct apol_policy_path
 {
 	apol_policy_path_type_e path_type;
@@ -79,6 +81,91 @@ apol_policy_path_t *apol_policy_path_create_from_policy_path(const apol_policy_p
 	}
 	p = apol_policy_path_create(path->path_type, path->base, path->modules);
 	return p;
+}
+
+apol_policy_path_t *apol_policy_path_create_from_file(const char *filename)
+{
+	FILE *f = NULL;
+	apol_policy_path_t *path;
+	apol_policy_path_type_e path_type;
+	char *line = NULL, *s;
+	size_t len;
+	int read_base = 0, retval = -1, error = 0;
+	if (filename == NULL) {
+		error = EINVAL;
+		goto cleanup;
+	}
+	if ((f = fopen(filename, "r")) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+
+	if (getline(&line, &len, f) < 0) {
+		error = EIO;
+		goto cleanup;
+	}
+	apol_str_trim(line);
+	if (strcmp(line, POLICY_PATH_MAGIC) != 0) {
+		error = EIO;
+		goto cleanup;
+	}
+
+	if (getline(&line, &len, f) < 0) {
+		error = EIO;
+		goto cleanup;
+	}
+	apol_str_trim(line);
+	if (strcmp(line, "monolithic") == 0) {
+		path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
+	} else if (strcmp(line, "modular") == 0) {
+		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+	} else {
+		error = EIO;
+		goto cleanup;
+	}
+
+	while (getline(&line, &len, f) >= 0) {
+		apol_str_trim(line);
+		if (line[0] == '#') {
+			continue;
+		}
+		if (!read_base) {
+			/* trying to parse a base policy / monolithic policy line */
+			if ((path = apol_policy_path_create(path_type, line, NULL)) == NULL) {
+				error = errno;
+				goto cleanup;
+			}
+			read_base = 1;
+		} else {
+			/* trying to parse a module line */
+			if (path_type == APOL_POLICY_PATH_TYPE_MONOLITHIC) {
+				error = EIO;
+				goto cleanup;
+			} else {
+				if ((s = strdup(line)) == NULL ||
+				    apol_vector_append(path->modules, s) < 0) {
+					error = errno;
+					free(s);
+					goto cleanup;
+				}
+			}
+		}
+	}
+	if (read_base == 0) {
+		error = EIO;
+		goto cleanup;
+	}
+	retval = 0;
+      cleanup:
+	if (f != NULL) {
+		fclose(f);
+	}
+	free(line);
+	if (retval != 0) {
+		apol_policy_path_destroy(&path);
+		errno = error;
+	}
+	return path;
 }
 
 apol_policy_path_t *apol_policy_path_create_from_string(const char *path_string)
@@ -194,6 +281,54 @@ const apol_vector_t *apol_policy_path_get_modules(const apol_policy_path_t * pat
 		return NULL;
 	}
 	return path->modules;
+}
+
+int apol_policy_path_to_file(const apol_policy_path_t * path, const char *filename)
+{
+	FILE *f = NULL;
+	char *path_type;
+	size_t i;
+	int retval = -1, error = 0;
+	if (path == NULL || filename == NULL) {
+		errno = EINVAL;
+		goto cleanup;
+	}
+	if ((f = fopen(filename, "w")) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	if (fprintf(f, "%s\n", POLICY_PATH_MAGIC) < 0) {
+		error = errno;
+		goto cleanup;
+	}
+	if (path->path_type == APOL_POLICY_PATH_TYPE_MODULAR) {
+		path_type = "modular";
+	} else {
+		path_type = "monolithic";
+	}
+	if (fprintf(f, "%s\n%s\n", path_type, path->base) < 0) {
+		error = errno;
+		goto cleanup;
+	}
+	if (path->path_type == APOL_POLICY_PATH_TYPE_MODULAR) {
+		for (i = 0; i < apol_vector_get_size(path->modules); i++) {
+			char *m = apol_vector_get_element(path->modules, i);
+			if (fprintf(f, "%s\n", m) < 0) {
+				error = errno;
+				goto cleanup;
+			}
+		}
+	}
+
+	retval = 0;
+      cleanup:
+	if (f != NULL) {
+		fclose(f);
+	}
+	if (retval != 0) {
+		error = errno;
+	}
+	return retval;
 }
 
 char *apol_policy_path_to_string(const apol_policy_path_t * path)

@@ -45,7 +45,7 @@ extern "C"
  *  capacity.
  *
  *  @param fr Function to call when destroying the vector.  Each
- *  element of the array will be passed into this function; it should
+ *  element of the vector will be passed into this function; it should
  *  free the memory used by that element.  If this parameter is NULL,
  *  the elements will not be freed.
  *
@@ -62,7 +62,7 @@ extern "C"
  *  @param cap The starting capacity to allocate for the internal
  *  array.
  *  @param fr Function to call when destroying the vector.  Each
- *  element of the array will be passed into this function; it should
+ *  element of the vector will be passed into this function; it should
  *  free the memory used by that element.  If this parameter is NULL,
  *  the elements will not be freed.
  *
@@ -83,7 +83,7 @@ extern "C"
  *
  *  @param iter qpol iterator from which to obtain vector's contents.
  *  @param fr Function to call when destroying the vector.  Each
- *  element of the array will be passed into this function; it should
+ *  element of the vector will be passed into this function; it should
  *  free the memory used by that element.  If this parameter is NULL,
  *  the elements will not be freed.
  *
@@ -95,8 +95,7 @@ extern "C"
 
 /**
  *  Allocate and return a vector that has been initialized with the
- *  contents of another vector.  The new vector will also have the
- *  same free function as the original vector.
+ *  contents of another vector.
  *
  *  @param v Vector from which to copy.
  *  @param dup If NULL, then make a shallow copy of the original
@@ -105,7 +104,7 @@ extern "C"
  *  be the value stored in the new vector.
  *  @param data Arbitrary data to pass as dup's second parameter.
  *  @param fr Function to call when destroying the new vector.  Each
- *  element of the array will be passed into this function; it should
+ *  element of the vector will be passed into this function; it should
  *  free the memory used by that element.  If this parameter is NULL,
  *  the elements will not be freed.
  *

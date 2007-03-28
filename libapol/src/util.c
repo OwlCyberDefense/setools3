@@ -379,10 +379,7 @@ char *apol_config_get_var(const char *var, FILE * fp)
 		if ((line_ptr = strdup(line)) == NULL) {
 			return NULL;
 		}
-		if (apol_str_trim(&line_ptr) != 0) {
-			free(line_ptr);
-			return NULL;
-		}
+		apol_str_trim(line_ptr);
 		if (line_ptr[0] == '#' || sscanf(line_ptr, "%s %[^\n]", t1, t2) != 2 || strcasecmp(var, t1) != 0) {
 			free(line_ptr);
 			continue;
@@ -472,29 +469,28 @@ static void trim_leading_whitespace(char *str)
 
 /**
  * Given a mutable string, replace trailing whitespace characters with
- * \0 characters.
+ * null characters.
  *
  * @param str Reference to a mutable string.
  */
-static void trim_trailing_whitespace(char **str)
+static void trim_trailing_whitespace(char *str)
 {
 	size_t length;
-	length = strlen(*str);
-	while (length > 0 && isspace((*str)[length - 1])) {
-		(*str)[length - 1] = '\0';
+	length = strlen(str);
+	while (length > 0 && isspace(str[length - 1])) {
+		str[length - 1] = '\0';
 		length--;
 	}
 }
 
-int apol_str_trim(char **str)
+void apol_str_trim(char *str)
 {
-	if (str == NULL || *str == NULL) {
+	if (str == NULL) {
 		errno = EINVAL;
-		return -1;
+		return;
 	}
-	trim_leading_whitespace(*str);
+	trim_leading_whitespace(str);
 	trim_trailing_whitespace(str);
-	return 0;
 }
 
 int apol_str_append(char **tgt, size_t * tgt_sz, const char *str)
