@@ -379,14 +379,6 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return sf;
 	};
-//	seaudit_filter_t(char *path) {
-//		seaudit_filter_t *sf = seaudit_filter_create_from_file(path);
-//		if (!sf) {
-//			SWIG_exception(SWIG_MemoryError, "Out of memory");
-//		}
-//	fail:
-//		return sf;
-//	};
 	seaudit_filter_t(void *x) {
 		return (seaudit_filter_t*)x;
 	};
@@ -609,6 +601,8 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return m;
 	};
 };
+%newobject seaudit_filter_create_from_file();
+apol_vector_t *seaudit_filter_create_from_file(const char *filename);
 
 /* seaudit sort */
 typedef struct seaudit_sort {} seaudit_sort_t;

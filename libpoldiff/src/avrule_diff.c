@@ -332,7 +332,7 @@ apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule)
 	return avrule->added_perms;
 }
 
-apol_vector_t *poldiff_avrule_get_removed_types(const poldiff_avrule_t * avrule)
+apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t * avrule)
 {
 	if (avrule == NULL) {
 		errno = EINVAL;

@@ -313,7 +313,7 @@ void poldiff_terule_get_cond(const poldiff_t * diff, const poldiff_terule_t * te
 	}
 }
 
-const char *poldiff_terule_get_original_target(const poldiff_terule_t * terule)
+const char *poldiff_terule_get_original_default(const poldiff_terule_t * terule)
 {
 	if (terule == NULL) {
 		errno = EINVAL;
@@ -322,7 +322,7 @@ const char *poldiff_terule_get_original_target(const poldiff_terule_t * terule)
 	return terule->orig_default;
 }
 
-const char *poldiff_terule_get_modified_target(const poldiff_terule_t * terule)
+const char *poldiff_terule_get_modified_default(const poldiff_terule_t * terule)
 {
 	if (terule == NULL) {
 		errno = EINVAL;

@@ -1,3 +1,8 @@
+2007-03-29  J. Mowery <jmowery@tresys.com>
+
+	* Libpoldiff SWIG wrapper added; wrapper treats all structures as
+	  classes in the target language.
+
 2007-03-28  J. Tang  <jtang@tresys.com>
 
 	* Introduced 'policy list' in apol, seaudit, and sediffx.  This is
