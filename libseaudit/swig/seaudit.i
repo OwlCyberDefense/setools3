@@ -658,6 +658,20 @@ seaudit_sort_t *seaudit_sort_by_inode(int direction);
 seaudit_sort_t *seaudit_sort_by_pid(int direction);
 
 /* seaudit model */
+#ifdef SWIGPYTHON
+%typemap(in) seaudit_filter_t *filter {
+	void *x = NULL;
+	Py_IncRef($input);
+	SWIG_ConvertPtr($input, &x,SWIGTYPE_p_seaudit_filter, 0 |  0 );
+	$1 = (seaudit_filter_t*)x;
+}
+%typemap(in) seaudit_sort_t *ssort {
+	void *x = NULL;
+	Py_IncRef($input);
+	SWIG_ConvertPtr($input, &x,SWIGTYPE_p_seaudit_sort, 0 |  0 );
+	$1 = (seaudit_sort_t*)x;
+}
+#endif
 typedef struct seaudit_model {} seaudit_model_t;
 %extend seaudit_model_t {
 	seaudit_model_t(char *name = NULL, seaudit_log_t *slog = NULL) {

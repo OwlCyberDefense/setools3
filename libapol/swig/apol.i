@@ -309,13 +309,21 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	fail:
 		return p;
 	};
-	apol_policy_path_t(char *str) {
+	apol_policy_path_t(char *path) {
+		apol_policy_path_t *p;
+		if ((p = apol_policy_path_create_from_file(path))) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return p;
+	};
+	apol_policy_path_t(char *str, int unused) {
 		apol_policy_path_t *p;
 		if ((p = apol_policy_path_create_from_string(str))) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
-		return p;
+			return p;
 	};
 	apol_policy_path_t(apol_policy_path_t *in) {
 		apol_policy_path_t *p;
@@ -346,6 +354,13 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 		}
 	fail:
 		return str;
+	};
+	void to_file(char *path) {
+		if (apol_policy_path_to_file(self, path)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not write policy path to file");
+		}
+	fail:
+		return;
 	};
 };
 int apol_policy_path_compare(const apol_policy_path_t * a, const apol_policy_path_t * b);
@@ -802,6 +817,14 @@ int apol_mls_sens_compare(apol_policy_t * p, const char *sens1, const char *sens
 int apol_mls_cats_compare(apol_policy_t * p, const char *cat1, const char *cat2);
 
 /* apol mls range */
+#ifdef SWIGPYTHON
+%typemap(in) apol_mls_level_t *lvl {
+	void *x = NULL;
+	Py_IncRef($input);
+	SWIG_ConvertPtr($input, &x,SWIGTYPE_p_apol_mls_level, 0 |  0 );
+	$1 = (apol_mls_level_t*)x;
+}
+#endif
 typedef struct apol_mls_range {} apol_mls_range_t;
 %extend apol_mls_range_t {
 	apol_mls_range_t() {
@@ -956,6 +979,14 @@ typedef struct apol_cat_query {} apol_cat_query_t;
 };
 
 /* apol user query */
+#ifdef SWIGPYTHON
+%typemap(in) apol_mls_range_t *rng {
+	void *x = NULL;
+	Py_IncRef($input);
+	SWIG_ConvertPtr($input, &x,SWIGTYPE_p_apol_mls_range, 0 |  0 );
+	$1 = (apol_mls_range_t*)x;
+}
+#endif
 typedef struct apol_user_query {} apol_user_query_t;
 %extend apol_user_query_t {
 	apol_user_query_t() {
@@ -1171,6 +1202,14 @@ typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
 };
 
 /* apol genfscon query */
+#ifdef SWIGPYTHON
+%typemap(in) apol_context_t *ctx {
+	void *x = NULL;
+	Py_IncRef($input);
+	SWIG_ConvertPtr($input, &x,SWIGTYPE_p_apol_context, 0 |  0 );
+	$1 = (apol_context_t*)x;
+}
+#endif
 typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 %extend apol_genfscon_query_t {
 	apol_genfscon_query_t() {
