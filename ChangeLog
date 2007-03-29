@@ -1,3 +1,9 @@
+2007-03-28  J. Tang  <jtang@tresys.com>
+
+	* Introduced 'policy list' in apol, seaudit, and sediffx.  This is
+	a small text file that contains references to a base policy and
+	any number of modules.
+
 2007-03-27  J. Tang  <jtang@tresys.com>
 
 	* added apol_policy_path_create_from_file() and

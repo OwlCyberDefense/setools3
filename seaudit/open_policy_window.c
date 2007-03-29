@@ -314,6 +314,7 @@ static void open_policy_init_values(struct open_policy *op, const apol_policy_pa
 		apol_policy_path_type_e path_type = apol_policy_path_get_type(path);
 		const char *primary_path = apol_policy_path_get_primary(path);
 		gtk_entry_set_text(op->base_entry, primary_path);
+		gtk_list_store_clear(op->module_store);
 		if (path_type == APOL_POLICY_PATH_TYPE_MONOLITHIC) {
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(op->monolithic_radio), TRUE);
 		} else if (path_type == APOL_POLICY_PATH_TYPE_MODULAR) {

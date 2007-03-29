@@ -260,6 +260,7 @@ proc Apol_Open_Policy_Dialog::removeModule {} {
 proc Apol_Open_Policy_Dialog::importList {} {
     variable vars
     variable dialog
+    variable widgets
     set f [tk_getOpenFile -initialdir [file dirname $vars(primary_file)] \
                -parent $dialog -title "Import Module List"]
     if {$f == {}} {
@@ -269,6 +270,9 @@ proc Apol_Open_Policy_Dialog::importList {} {
         tk_messageBox -icon error -type ok -title "Import Module List" \
             -message "Error importing module list $f: $ppath"
         return
+    }
+    foreach lb $widgets(listboxes) {
+        $lb delete 0 end
     }
     foreach {path_type base mods} $ppath {break}
     set vars(path_type) $path_type

@@ -11,6 +11,15 @@ libpoldiff:
     statements.  Able to diff modifications to a user's default level
     and permitted MLS range, assuming the policies are MLS
     
+apol, seaudit, sediffx:
+
+  * Introducing 'policy list', a small text file that contains
+    references to a base policy and any number of modules.  After
+    selecting the base policy and modules in a tool's open policy
+    dialog, click on 'Export' to write a policy list to disk.  The
+    same policy list may then be imported into that tool or any other
+    graphical SETools application.
+
 sesearch, apol:
 
   * Full support for version 21 policy (i.e., object classes for

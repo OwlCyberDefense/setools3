@@ -46,7 +46,7 @@ struct open_policy_pane
 	GtkButton *base_browse_button;
 
 	GtkTreeView *module_view;
-	GtkButton *add_button, *remove_button;
+	GtkButton *add_button, *remove_button, *import_button, *export_button;
 	char *last_module_path;
 };
 
@@ -120,7 +120,12 @@ static void open_policy_init_pane(struct open_policy *op, sediffx_policy_e which
 	pane->add_button = GTK_BUTTON(glade_xml_get_widget(op->xml, s->str));
 	g_string_printf(s, "module remove button%s", suffix);
 	pane->remove_button = GTK_BUTTON(glade_xml_get_widget(op->xml, s->str));
-	assert(pane->add_button != NULL && pane->remove_button != NULL);
+	g_string_printf(s, "module list import button%s", suffix);
+	pane->import_button = GTK_BUTTON(glade_xml_get_widget(op->xml, s->str));
+	g_string_printf(s, "module list export button%s", suffix);
+	pane->export_button = GTK_BUTTON(glade_xml_get_widget(op->xml, s->str));
+	assert(pane->add_button != NULL && pane->remove_button != NULL &&
+	       pane->import_button != NULL && pane->export_button != NULL);
 
 	g_string_free(s, TRUE);
 
@@ -196,11 +201,16 @@ static void open_policy_on_entry_event_after(GtkWidget * widget __attribute__ ((
 					     __attribute__ ((unused)), gpointer user_data)
 {
 	struct open_policy *op = (struct open_policy *)user_data;
-	gboolean sens = FALSE;
-	if (strcmp(gtk_entry_get_text(op->pane[SEDIFFX_POLICY_ORIG].base_entry), "") != 0
-	    && strcmp(gtk_entry_get_text(op->pane[SEDIFFX_POLICY_MOD].base_entry), "") != 0) {
-		sens = TRUE;
+	gboolean sens_orig = FALSE, sens_mod = FALSE;
+	if (strcmp(gtk_entry_get_text(op->pane[SEDIFFX_POLICY_ORIG].base_entry), "") != 0) {
+		sens_orig = TRUE;
 	}
+	if (strcmp(gtk_entry_get_text(op->pane[SEDIFFX_POLICY_MOD].base_entry), "") != 0) {
+		sens_mod = TRUE;
+	}
+	gboolean sens = sens_orig && sens_mod;
+	gtk_widget_set_sensitive(GTK_WIDGET(op->pane[SEDIFFX_POLICY_ORIG].export_button), sens_orig);
+	gtk_widget_set_sensitive(GTK_WIDGET(op->pane[SEDIFFX_POLICY_MOD].export_button), sens_mod);
 	gtk_widget_set_sensitive(GTK_WIDGET(op->ok_button), sens);
 	gtk_widget_set_sensitive(GTK_WIDGET(op->rundiff_button), sens);
 }
@@ -316,6 +326,9 @@ static void open_policy_on_remove_click(GtkButton * button __attribute__ ((unuse
 	gtk_list_store_remove(pane->module_store, &iter);
 }
 
+static void open_policy_on_import_click(GtkButton * button __attribute__ ((unused)), gpointer user_data);
+static void open_policy_on_export_click(GtkButton * button __attribute__ ((unused)), gpointer user_data);
+
 static void open_policy_on_selection_change(GtkTreeSelection * selection, gpointer user_data)
 {
 	struct open_policy_pane *pane = (struct open_policy_pane *)user_data;
@@ -336,6 +349,8 @@ static void open_policy_init_signals(struct open_policy *op)
 		g_signal_connect(selection, "changed", G_CALLBACK(open_policy_on_selection_change), pane);
 		g_signal_connect(pane->add_button, "clicked", G_CALLBACK(open_policy_on_add_click), pane);
 		g_signal_connect(pane->remove_button, "clicked", G_CALLBACK(open_policy_on_remove_click), pane);
+		g_signal_connect(pane->import_button, "clicked", G_CALLBACK(open_policy_on_import_click), pane);
+		g_signal_connect(pane->export_button, "clicked", G_CALLBACK(open_policy_on_export_click), pane);
 	}
 }
 
@@ -344,7 +359,10 @@ static void open_policy_init_value(struct open_policy *op, const apol_policy_pat
 	apol_policy_path_type_e path_type = apol_policy_path_get_type(path);
 	const char *primary_path = apol_policy_path_get_primary(path);
 	gtk_entry_set_text(pane->base_entry, primary_path);
-	if (path_type == APOL_POLICY_PATH_TYPE_MODULAR) {
+	gtk_list_store_clear(pane->module_store);
+	if (path_type == APOL_POLICY_PATH_TYPE_MONOLITHIC) {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pane->monolithic_radio), TRUE);
+	} else if (path_type == APOL_POLICY_PATH_TYPE_MODULAR) {
 		const apol_vector_t *modules = apol_policy_path_get_modules(path);
 		size_t i;
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pane->modular_radio), TRUE);
@@ -354,6 +372,9 @@ static void open_policy_init_value(struct open_policy *op, const apol_policy_pat
 				break;
 			}
 		}
+	} else {
+		/* should never get here */
+		toplevel_ERR(pane->op->top, "Unknown policy path type %d.", path_type);
 	}
 }
 
@@ -375,9 +396,8 @@ static void open_policy_init_values(struct open_policy *op, const apol_policy_pa
  * @return path for the dialog, or NULL upon error.  The caller must
  * call apol_policy_path_destroy() afterwards.
  */
-static apol_policy_path_t *open_policy_build_path(struct open_policy *op, sediffx_policy_e which)
+static apol_policy_path_t *open_policy_build_path(struct open_policy_pane *pane)
 {
-	struct open_policy_pane *pane = op->pane + which;
 	const char *primary_path = gtk_entry_get_text(pane->base_entry);
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 	apol_vector_t *modules = NULL;
@@ -386,7 +406,7 @@ static apol_policy_path_t *open_policy_build_path(struct open_policy *op, sediff
 		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 		GtkTreeIter iter;
 		if ((modules = apol_vector_create(free)) == NULL) {
-			toplevel_ERR(op->top, "%s", strerror(errno));
+			toplevel_ERR(pane->op->top, "%s", strerror(errno));
 			return NULL;
 		}
 		if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(pane->module_store), &iter)) {
@@ -397,7 +417,7 @@ static apol_policy_path_t *open_policy_build_path(struct open_policy *op, sediff
 				module_path = g_value_dup_string(&value);
 				g_value_unset(&value);
 				if (apol_vector_append(modules, module_path) < 0) {
-					toplevel_ERR(op->top, "%s", strerror(errno));
+					toplevel_ERR(pane->op->top, "%s", strerror(errno));
 					free(module_path);
 					apol_vector_destroy(&modules);
 					return NULL;
@@ -409,10 +429,60 @@ static apol_policy_path_t *open_policy_build_path(struct open_policy *op, sediff
 	path = apol_policy_path_create(path_type, primary_path, modules);
 	apol_vector_destroy(&modules);
 	if (path == NULL) {
-		toplevel_ERR(op->top, "%s", strerror(errno));
+		toplevel_ERR(pane->op->top, "%s", strerror(errno));
 		return NULL;
 	}
 	return path;
+}
+
+static void open_policy_on_import_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
+{
+	struct open_policy_pane *pane = (struct open_policy_pane *)user_data;
+	apol_vector_t *paths = NULL;
+	apol_policy_path_t *ppath = NULL;
+	const char *path = NULL, *prev_path;
+	if ((prev_path = pane->last_module_path) == NULL) {
+		prev_path = gtk_entry_get_text(pane->base_entry);
+		if (strcmp(prev_path, "") == 0) {
+			prev_path = NULL;
+		}
+	}
+	paths = util_open_file(GTK_WINDOW(pane->op->dialog), "Import Module List", prev_path, 1);
+	if (paths == NULL) {
+		return;
+	}
+	path = apol_vector_get_element(paths, 0);
+	ppath = apol_policy_path_create_from_file(path);
+	if (ppath == NULL) {
+		toplevel_ERR(pane->op->top, "Error importing module list %s: %s", path, strerror(errno));
+		goto cleanup;
+	}
+	open_policy_init_value(pane->op, ppath, pane);
+	free(pane->last_module_path);
+	pane->last_module_path = strdup(path);
+      cleanup:
+	apol_vector_destroy(&paths);
+	apol_policy_path_destroy(&ppath);
+}
+
+static void open_policy_on_export_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
+{
+	struct open_policy_pane *pane = (struct open_policy_pane *)user_data;
+	char *path = util_save_file(GTK_WINDOW(pane->op->dialog), "Export Module List", NULL);
+	apol_policy_path_t *ppath = NULL;
+	if (path == NULL) {
+		return;
+	}
+	ppath = open_policy_build_path(pane);
+	if (ppath == NULL) {
+		goto cleanup;
+	}
+	if (apol_policy_path_to_file(ppath, path) < 0) {
+		toplevel_ERR(pane->op->top, "Error exporting module list %s: %s", path, strerror(errno));
+	}
+      cleanup:
+	g_free(path);
+	apol_policy_path_destroy(&ppath);
 }
 
 void open_policies_dialog_run(toplevel_t * top, const apol_policy_path_t * orig_path, const apol_policy_path_t * mod_path)
@@ -437,8 +507,8 @@ void open_policies_dialog_run(toplevel_t * top, const apol_policy_path_t * orig_
 		if (response == GTK_RESPONSE_CANCEL || response == GTK_RESPONSE_DELETE_EVENT) {
 			break;
 		}
-		if ((input[SEDIFFX_POLICY_ORIG] = open_policy_build_path(&op, SEDIFFX_POLICY_ORIG)) == NULL ||
-		    (input[SEDIFFX_POLICY_MOD] = open_policy_build_path(&op, SEDIFFX_POLICY_MOD)) == NULL) {
+		if ((input[SEDIFFX_POLICY_ORIG] = open_policy_build_path(&op.pane[SEDIFFX_POLICY_ORIG])) == NULL ||
+		    (input[SEDIFFX_POLICY_MOD] = open_policy_build_path(&op.pane[SEDIFFX_POLICY_MOD])) == NULL) {
 			continue;
 		}
 		if (toplevel_open_policies(op.top, input[SEDIFFX_POLICY_ORIG], input[SEDIFFX_POLICY_MOD]) == 0) {
