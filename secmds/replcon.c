@@ -359,6 +359,7 @@ replcon_context_t *replcon_context_create_from_security_context(const security_c
 		}
 	}
 
+	context_free(ctxt);
 	return rcontext;
 
       err:
@@ -662,7 +663,7 @@ int replcon_info_has_object_class(replcon_info_t * info, sefs_classes_t obj_clas
 
 	assert(info != NULL);
 	for (i = 0; i < info->num_classes; i++)
-		if (info->obj_classes[i] == obj_class || replcon_info.obj_classes[i] == SEFS_ALL_FILES)
+		if (info->obj_classes[i] == obj_class)
 			return TRUE;
 	return FALSE;
 }
@@ -705,10 +706,9 @@ int replcon_is_valid_context_format(const char *ctx_str)
  *
  * @param info A reference to a replcon info object
  * @param str A string containing an object class
- * @param allow_all_files If non-zero, then str may be 'all_files'.
  * @return 0 on success, < 0 on error
  */
-int replcon_info_add_object_class(replcon_info_t * info, const char *str, const int allow_all_files)
+int replcon_info_add_object_class(replcon_info_t * info, const char *str)
 {
 	sefs_classes_t class_id;
 
@@ -739,12 +739,12 @@ int replcon_info_add_object_class(replcon_info_t * info, const char *str, const 
 		class_id = SEFS_FIFO_FILE;
 		break;
 	default:
-		class_id = SEFS_ALL_FILES;
+		class_id = -1;
 		break;
 	}
 
 	/* Check the object class */
-	if (class_id == -1 || (class_id == SEFS_ALL_FILES && !allow_all_files)) {
+	if (class_id == -1) {
 		fprintf(stderr, "Error: invalid object class \'%s\'\n", optarg);
 		return -1;
 	}
@@ -1246,6 +1246,8 @@ void remove_new_line_char(char *input)
 void replcon_parse_command_line(int argc, char **argv)
 {
 	int optc, i;
+	char **tmp_list;
+	int tmp_sz;
 
 	/* get option arguments */
 	while ((optc = getopt_long(argc, argv, "o:c:rsvqVh", longopts, NULL)) != -1) {
@@ -1253,7 +1255,7 @@ void replcon_parse_command_line(int argc, char **argv)
 		case 0:
 			break;
 		case 'o':
-			if (replcon_info_add_object_class(&replcon_info, optarg, 0)) {
+			if (replcon_info_add_object_class(&replcon_info, optarg)) {
 				fprintf(stderr, "Unable to add object class.\n");
 				goto err;
 			}
@@ -1319,10 +1321,17 @@ void replcon_parse_command_line(int argc, char **argv)
 	}
 	/* If no object class was specified revert to the default of all files */
 	if (replcon_info.num_classes == 0) {
-		if (replcon_info_add_object_class(&replcon_info, "all_files", 1)) {
-			fprintf(stderr, "Unable to add default object class.\n");
+		if (!(tmp_list = sefs_get_valid_object_classes(&tmp_sz)))
 			goto err;
+		for (i = 0; i < SEFS_NUM_OBJECT_CLASSES; i++) {
+			if (replcon_info_add_object_class(&replcon_info, tmp_list[i])) {
+				fprintf(stderr, "Unable to add default object class %s.\n", tmp_list[i]);
+				goto err;
+			}
+			free(tmp_list[i]);
+			tmp_list[i] = NULL;
 		}
+		free(tmp_list);
 	}
 
 	/* Make sure required arguments were supplied */
@@ -1350,6 +1359,12 @@ void replcon_parse_command_line(int argc, char **argv)
 	return;
 
       err:
+	if (tmp_list) {
+		for (i = 0; i < tmp_sz; i++) {
+			free(tmp_list[i]);
+		}
+	}
+	free(tmp_list);
 	replcon_usage(argv[0], 1);
 	replcon_info_free(&replcon_info);
 	exit(-1);
