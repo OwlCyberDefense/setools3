@@ -125,7 +125,6 @@ int main(int argc, char **argv)
 #endif
 	char *modname = NULL;
 	char *prof_name = NULL;
-	char *old_pol_path = NULL;
 	char *base_path = NULL;
 	apol_policy_path_t *pol_path = NULL;
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
@@ -252,37 +251,31 @@ int main(int argc, char **argv)
 	}
 
 	/* initialize the policy */
-	if (!(policy_mods = apol_vector_create(NULL)))
-		goto exit_err;
 	if (argc - optind) {
-		if (old_pol_path) {
-			fprintf(stderr, "Warning: Ignoring --policy option and using policy module list.");
-			free(old_pol_path);
-			old_pol_path = NULL;
-		}
 		base_path = argv[optind];
 		optind++;
-		while (argc - optind) {
-			if (apol_vector_append(policy_mods, argv[optind++]))
+		if (argc - optind) {
+			if (!(policy_mods = apol_vector_create(NULL)))
 				goto exit_err;
-			path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+			while (argc - optind) {
+				if (apol_vector_append(policy_mods, argv[optind++]))
+					goto exit_err;
+				path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+			}
+		} else if (apol_file_is_policy_path_list(base_path) > 0){
+			pol_path = apol_policy_path_create_from_file(base_path);
+			if (!pol_path)
+				goto exit_err;
 		}
-		pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
+		if (!pol_path)
+			pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
 		if (!pol_path)
 			goto exit_err;
 		if (sechk_lib_load_policy(pol_path, lib))
 			goto exit_err;
 	} else {
-		if (old_pol_path) {
-			pol_path = apol_policy_path_create(path_type, old_pol_path, policy_mods);
-			if (!pol_path)
-				goto exit_err;
-			if (sechk_lib_load_policy(pol_path, lib))
-				goto exit_err;
-		} else {
-			if (sechk_lib_load_policy(NULL, lib))
-				goto exit_err;
-		}
+		if (sechk_lib_load_policy(NULL, lib))
+			goto exit_err;
 	}
 	/* library now owns path object */
 	pol_path = NULL;
@@ -360,7 +353,6 @@ int main(int argc, char **argv)
 	free(minsev);
 	free(prof_name);
 	free(modname);
-	free(old_pol_path);
 	sechk_lib_destroy(&lib);
 	return 0;
 
@@ -372,7 +364,6 @@ int main(int argc, char **argv)
 	free(minsev);
 	free(prof_name);
 	free(modname);
-	free(old_pol_path);
 	apol_policy_path_destroy(&pol_path);
 	sechk_lib_destroy(&lib);
 	return 1;

@@ -307,10 +307,18 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 		*log = preferences_get_log(seaudit->prefs);
 	}
 	if (primary_path != NULL && strcmp(primary_path, "") != 0) {
-		if ((*policy = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
-			ERR(NULL, "%s", strerror(ENOMEM));
-			seaudit_destroy(&seaudit);
-			exit(EXIT_FAILURE);
+		if (apol_file_is_policy_path_list(primary_path)) {
+			if ((*policy = apol_policy_path_create_from_file(primary_path)) == NULL) {
+				ERR(NULL, "%s", strerror(ENOMEM));
+				seaudit_destroy(&seaudit);
+				exit(EXIT_FAILURE);
+			}
+		} else {
+			if ((*policy = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
+				ERR(NULL, "%s", strerror(ENOMEM));
+				seaudit_destroy(&seaudit);
+				exit(EXIT_FAILURE);
+			}
 		}
 	} else {
 		const apol_policy_path_t *path = preferences_get_policy(seaudit->prefs);

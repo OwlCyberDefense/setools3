@@ -233,7 +233,10 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 		}
 		orig_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	}
-	*orig_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
+	if (apol_file_is_policy_path_list(orig_base_path) > 0)
+		*orig_path = apol_policy_path_create_from_file(orig_base_path);
+	else
+		*orig_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
 	if (*orig_path == NULL) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
@@ -257,7 +260,10 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 		}
 		mod_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	}
-	*mod_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
+	if (apol_file_is_policy_path_list(mod_base_path) > 0)
+		*mod_path = apol_policy_path_create_from_file(mod_base_path);
+	else
+		*mod_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
 	if (*mod_path == NULL) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;

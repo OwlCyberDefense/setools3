@@ -364,6 +364,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	};
 };
 int apol_policy_path_compare(const apol_policy_path_t * a, const apol_policy_path_t * b);
+int apol_file_is_policy_path_list(const char *filename);
 
 /* apol policy */
 typedef struct apol_policy {} apol_policy_t;

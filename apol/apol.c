@@ -170,8 +170,12 @@ void parse_command_line(int argc, char **argv)
 					exit(1);
 				}
 			}
+		} else if (apol_file_is_policy_path_list(policy_file) > 0) {
+			path = apol_policy_path_create_from_file(policy_file);
 		}
-		if ((path = apol_policy_path_create(path_type, policy_file, mod_paths)) == NULL) {
+		if (!path)
+			path = apol_policy_path_create(path_type, policy_file, mod_paths);
+		if (!path) {
 			ERR(NULL, "Error loading module %s.", argv[optind]);
 			apol_vector_destroy(&mod_paths);
 			exit(1);

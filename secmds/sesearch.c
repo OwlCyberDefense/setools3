@@ -983,9 +983,17 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 		}
+	} else if (apol_file_is_policy_path_list(policy_file) > 0) {
+		pol_path = apol_policy_path_create_from_file(policy_file);
+		if (!pol_path) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			free(policy_file);
+			exit(1);
+		}
 	}
 
-	pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
+	if (!pol_path)
+		pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
 	if (!pol_path) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		free(policy_file);

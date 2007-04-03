@@ -179,6 +179,16 @@ extern "C"
  */
 	extern char *apol_policy_path_to_string(const apol_policy_path_t * path);
 
+/**
+ * Determine if a file is a policy path list.
+ *
+ * @param filename Name of the file to test.
+ *
+ * @return > 0 if the file is a policy path list, 0 if it is not,
+ * and < 0 on error.
+ */
+	extern int apol_file_is_policy_path_list(const char *filename);
+
 #ifdef	__cplusplus
 }
 #endif

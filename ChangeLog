@@ -1,3 +1,11 @@
+2007-04-03  J. Mowery <jmowery@tresys.com>
+
+	* Added apol_file_is_policy_path_list() to validate policy path
+	  list files.
+
+	* Added ability to specify policy path list files from command
+	  line for all tools taking a policy as an argument.
+
 2007-04-02  J. Mowery <jmowery@tresys.com>
 
 	* Removed the "all_files" symbol from libsefs; this symbol was

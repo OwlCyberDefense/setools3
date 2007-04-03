@@ -357,3 +357,37 @@ char *apol_policy_path_to_string(const apol_policy_path_t * path)
 	}
 	return s;
 }
+
+int apol_file_is_policy_path_list(const char *filename)
+{
+	FILE *f = NULL;
+	char *line = NULL;
+	size_t len = 0;
+	int retval = -1, error = 0;
+
+	if (filename == NULL) {
+		error = EINVAL;
+		goto cleanup;
+	}
+	if ((f = fopen(filename, "r")) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+
+	if (getline(&line, &len, f) < 0) {
+		error = EIO;
+		goto cleanup;
+	}
+	apol_str_trim(line);
+	if (strcmp(line, POLICY_PATH_MAGIC) != 0) {
+		retval = 0;
+		goto cleanup;
+	}
+	retval = 1;
+
+cleanup:
+	fclose(f);
+	if (retval < 0)
+		errno = error;
+	return retval;
+}
