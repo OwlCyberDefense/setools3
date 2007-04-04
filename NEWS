@@ -18,7 +18,8 @@ apol, seaudit, sediffx:
     selecting the base policy and modules in a tool's open policy
     dialog, click on 'Export' to write a policy list to disk.  The
     same policy list may then be imported into that tool or any other
-    graphical SETools application.
+    graphical SETools application. This file may also be specified
+    on the command line for all tools that load a policy.
 
 sesearch, apol:
 
