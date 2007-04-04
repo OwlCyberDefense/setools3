@@ -1,3 +1,8 @@
+2007-04-04  J. Tang  <jtang@tresys.com>
+
+	* New configure option --enable-swig-java to enable build of Java
+	SWIG wrappers.
+
 2007-04-03  J. Mowery <jmowery@tresys.com>
 
 	* Added apol_file_is_policy_path_list() to validate policy path

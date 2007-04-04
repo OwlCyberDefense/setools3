@@ -5,7 +5,6 @@
  * containing paths + file contexts.  Also contains routines to search
  * a created database.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -603,8 +602,10 @@ static const char *sefs_get_class_string(int flag_val)
 		return sefs_object_classes[5];
 	case SEFS_FIFO_FILE:
 		return sefs_object_classes[6];
-//	default:
-//		return sefs_object_classes[7];
+	default:
+		/* should never get here */
+		assert(0);
+		return NULL;
 	}
 }
 

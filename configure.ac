@@ -7,14 +7,17 @@ dnl *** update these variables as versions change; also update AC_INIT ***
 libqpol_version=1.2
 libqpol_soname=libqpol.so.1
 libqpol_pyswig_soname=_qpol.so.1
+libqpol_jswig_soname=libjqpol.so.1
 
 libapol_version=4.0
 libapol_soname=libapol.so.4
 libapol_pyswig_soname=_apol.so.4
+libapol_jswig_soname=libjapol.so.4
 
 libpoldiff_version=1.2
 libpoldiff_soname=libpoldiff.so.1
 libpoldiff_pyswig_soname=_poldiff.so.1
+libpoldiff_jswig_soname=libjpoldiff.so.1
 
 libsefs_version=3.0.2
 libsefs_soname=libsefs.so.3
@@ -23,6 +26,7 @@ dnl libsefs will not be swigified
 libseaudit_version=4.1
 libseaudit_soname=libseaudit.so.4
 libseaudit_pyswig_soname=_seaudit.so.4
+libseaudit_jswig_soname=libjseaudit.so.4
 
 setoolsdir='${prefix}/share/setools-3.2'
 
@@ -44,6 +48,8 @@ AC_PROG_INSTALL
 AC_CHECK_SIZEOF(char *)
 AC_C_BIGENDIAN
 AC_CHECK_FUNCS(rand_r)
+
+AC_CACHE_SAVE
 
 AC_ARG_ENABLE(shared,
               AC_HELP_STRING([--enable-shared],
@@ -142,17 +148,46 @@ AC_SUBST(PROFILECFLAGS)
 AC_SUBST(PROFILELDFLAGS)
 
 do_swigify=no
+do_swigify_python=no
+do_swigify_java=no
 AC_ARG_ENABLE(swig-python,
               AC_HELP_STRING([--enable-swig-python],
                              [build SWIG interfaces for Python]),
               enable_pyswig="$enableval")
 if test "x${enable_pyswig}" = xyes; then
-   AM_PATH_PYTHON(2.3)
    AC_PROG_SWIG(1.3.28)
+   AM_PATH_PYTHON(2.3)
    SWIG_PYTHON
    do_swigify_python=yes
    do_swigify=yes
 fi
+AC_ARG_ENABLE(swig-java,
+              AC_HELP_STRING([--enable-swig-java],
+                             [build SWIG interfaces for Java]),
+              enable_jswig="$enableval")
+if test "x${enable_jswig}" = xyes; then
+   AC_PROG_SWIG(1.3.28)
+   AC_JAVA_OPTIONS
+   if test "x$JAVAPREFIX" = x; then
+      JAVAPREFIX=/usr/lib/jvm/java-gcj
+   fi
+   AC_CHECK_CLASSPATH
+   AC_PROG_JAVAC
+   AC_PROG_JAVA
+   SWIG_JAVA_OPT=-java
+   java_save_CFLAGS="${CFLAGS}"
+   SWIG_JAVA_CFLAGS="-I${JAVAPREFIX}/include -I${JAVAPREFIX}/include/linux"
+   CFLAGS="${CFLAGS} ${SWIG_JAVA_CFLAGS}"
+   AC_CHECK_HEADER([jni.h], , AC_MSG_ERROR([Not found.  Specify a Java SDK with --with-java-prefix flag.]))
+   AC_CHECK_HEADER([jni_md.h], , AC_MSG_ERROR([Not found.  Specify a Java SDK with --with-java-prefix flag.]))
+   CFLAGS="${java_save_CFLAGS}"
+   AC_SUBST(SWIG_JAVA_OPT)
+   AC_SUBST(SWIG_JAVA_CFLAGS)
+   do_swigify_java=yes
+   do_swigify=yes
+fi
+
+AC_CACHE_SAVE
 
 AC_ARG_ENABLE(gui,
               AC_HELP_STRING([--disable-gui],
@@ -267,6 +302,8 @@ if test "x${enable_selinux_check}" = "xyes"; then
 else
       use_selinux=yes
 fi
+
+AC_CACHE_SAVE
 
 dnl ** find libselinux and libsepol
 
@@ -534,6 +571,8 @@ if test ${use_sefs} = "yes"; then
 fi
 
 AM_CONDITIONAL(DO_SWIGIFY, test ${do_swigify} = "yes")
+AM_CONDITIONAL(DO_SWIGIFY_PYTHON, test ${do_swigify_python} = "yes")
+AM_CONDITIONAL(DO_SWIGIFY_JAVA, test ${do_swigify_java} = "yes")
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
@@ -545,17 +584,21 @@ AC_SUBST(sepol_srcdir)
 AC_SUBST(libqpol_version)
 AC_SUBST(libqpol_soname)
 AC_SUBST(libqpol_pyswig_soname)
+AC_SUBST(libqpol_jswig_soname)
 AC_SUBST(libapol_version)
 AC_SUBST(libapol_soname)
 AC_SUBST(libapol_pyswig_soname)
+AC_SUBST(libapol_jswig_soname)
 AC_SUBST(libpoldiff_version)
 AC_SUBST(libpoldiff_soname)
 AC_SUBST(libpoldiff_pyswig_soname)
+AC_SUBST(libpoldiff_jswig_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
 AC_SUBST(libseaudit_version)
 AC_SUBST(libseaudit_soname)
 AC_SUBST(libseaudit_pyswig_soname)
+AC_SUBST(libseaudit_jswig_soname)
 AC_SUBST(setoolsdir)
 AC_SUBST(selinux_policy_dir)
 AC_SUBST(selinux_default_policy)
@@ -609,7 +652,8 @@ EOF
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile libqpol/swig/Makefile \
-                 libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile libapol/swig/Makefile \
+                 libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
+                 libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile libpoldiff/swig/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \

@@ -27,35 +27,35 @@
 #define __attribute__(x)
 
 %{
-#include "../include/apol/avl-util.h"
-#include "../include/apol/avrule-query.h"
-#include "../include/apol/bool-query.h"
-#include "../include/apol/bst.h"
-#include "../include/apol/class-perm-query.h"
-#include "../include/apol/condrule-query.h"
-#include "../include/apol/constraint-query.h"
-#include "../include/apol/context-query.h"
-#include "../include/apol/domain-trans-analysis.h"
-#include "../include/apol/fscon-query.h"
-#include "../include/apol/infoflow-analysis.h"
-#include "../include/apol/isid-query.h"
-#include "../include/apol/mls-query.h"
-#include "../include/apol/netcon-query.h"
-#include "../include/apol/perm-map.h"
-#include "../include/apol/policy.h"
-#include "../include/apol/policy-path.h"
-#include "../include/apol/policy-query.h"
-#include "../include/apol/range_trans-query.h"
-#include "../include/apol/rbacrule-query.h"
-#include "../include/apol/relabel-analysis.h"
-#include "../include/apol/render.h"
-#include "../include/apol/role-query.h"
-#include "../include/apol/terule-query.h"
-#include "../include/apol/type-query.h"
-#include "../include/apol/types-relation-analysis.h"
-#include "../include/apol/user-query.h"
-#include "../include/apol/util.h"
-#include "../include/apol/vector.h"
+#include <apol/avl-util.h>
+#include <apol/avrule-query.h>
+#include <apol/bool-query.h>
+#include <apol/bst.h>
+#include <apol/class-perm-query.h>
+#include <apol/condrule-query.h>
+#include <apol/constraint-query.h>
+#include <apol/context-query.h>
+#include <apol/domain-trans-analysis.h>
+#include <apol/fscon-query.h>
+#include <apol/infoflow-analysis.h>
+#include <apol/isid-query.h>
+#include <apol/mls-query.h>
+#include <apol/netcon-query.h>
+#include <apol/perm-map.h>
+#include <apol/policy.h>
+#include <apol/policy-path.h>
+#include <apol/policy-query.h>
+#include <apol/range_trans-query.h>
+#include <apol/rbacrule-query.h>
+#include <apol/relabel-analysis.h>
+#include <apol/render.h>
+#include <apol/role-query.h>
+#include <apol/terule-query.h>
+#include <apol/type-query.h>
+#include <apol/types-relation-analysis.h>
+#include <apol/user-query.h>
+#include <apol/util.h>
+#include <apol/vector.h>
 %}
 
 %include exception.i
@@ -150,7 +150,7 @@ const char *apol_rule_type_to_str(uint32_t rule_type);
 const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 
 /* directly include and wrap */
-%include "../include/apol/render.h"
+%include "apol/render.h"
 
 /* derived vector types here */
 %inline %{

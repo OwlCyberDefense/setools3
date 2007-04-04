@@ -82,8 +82,12 @@ The following are not strictly required but highly recommended:
   glib2-2.0
   gtk2-2.8
   libglade2
-  swig 1.3.28 or greater
 These packages are needed to build SETools's graphical tools.
+
+To build the SETools SWIG wrappers, these packages are required:
+  swig 1.3.28 or greater
+  python-devel 2.3 or greater
+  
 
 Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is
 part of the tcllib package and is often not present in Linux
@@ -174,6 +178,11 @@ You can customize your SETools build using the flags given to
   --enable-swig-python
       Build SWIG interfaces for Python.  This permits third-party
       developers who prefer Python to use the SETools libraries for
+      their own projects.
+
+  --enable-swig-java
+      Build SWIG interfaces for Java.  This permits third-party
+      developers who prefer Java to use the SETools libraries for
       their own projects.
 
   --enable-sepol-src=PATH

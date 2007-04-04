@@ -1246,7 +1246,7 @@ void remove_new_line_char(char *input)
 void replcon_parse_command_line(int argc, char **argv)
 {
 	int optc, i;
-	char **tmp_list;
+	char **tmp_list = NULL;
 	int tmp_sz;
 
 	/* get option arguments */
