@@ -161,13 +161,13 @@ static void filter_view_init_widgets_date(struct filter_view *fv)
 	}
 }
 
-static void filter_view_init_widgets(struct filter_view *fv)
+static void filter_view_init_widgets(struct filter_view *fv, GtkWindow * parent)
 {
 	GtkTextView *description_view;
 
 	fv->dialog = GTK_DIALOG(glade_xml_get_widget(fv->xml, "FilterWindow"));
 	assert(fv->dialog != NULL);
-	gtk_window_set_transient_for(GTK_WINDOW(fv->dialog), toplevel_get_window(fv->top));
+	gtk_window_set_transient_for(GTK_WINDOW(fv->dialog), parent);
 
 	fv->name_entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewNameEntry"));
 	fv->match_combo = GTK_COMBO_BOX(glade_xml_get_widget(fv->xml, "FilterViewMatchCombo"));
@@ -890,7 +890,7 @@ void filter_view_run(seaudit_filter_t * filter, toplevel_t * top, GtkWindow * pa
 	fv.top = top;
 	fv.filter = filter;
 	fv.xml = glade_xml_new(toplevel_get_glade_xml(top), "FilterWindow", NULL);
-	filter_view_init_widgets(&fv);
+	filter_view_init_widgets(&fv, parent);
 	filter_view_init_signals(&fv);
 	filter_view_init_dialog(&fv);
 	do {
