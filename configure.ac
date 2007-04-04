@@ -72,6 +72,7 @@ AC_ARG_ENABLE(debug,
 AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
     DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall -DSETOOLS_DEBUG=1"
+    DEBUGJFLAGS="-g"
     DEBUGLDFLAGS="-g"
     QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=$(top_builddir)/libqpol/src'
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
@@ -82,6 +83,7 @@ if test "x${enable_debug}" = xyes; then
 else
     AC_DEFINE(NDEBUG, 1, [disable calls to assert()])
     DEBUGCFLAGS="-fno-strict-aliasing"
+    DEBUGJFLAGS=""
     DEBUGLDFLAGS=""
     if test ${use_shared} = yes; then
         QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
@@ -99,6 +101,7 @@ else
     AC_MSG_RESULT(disabled)
 fi
 AC_SUBST(DEBUGCFLAGS)
+AC_SUBST(DEBUGJFLAGS)
 AC_SUBST(DEBUGLDFLAGS)
 QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
 APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
@@ -122,12 +125,15 @@ AC_ARG_ENABLE(warnall,
               enable_warnall="$enableval")
 if test "x${enable_warnall}" = xyes; then
     WARNCFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic-errors -Wuninitialized -fno-strict-aliasing -std=c99"
+    WARNJFLAGS=" -verbose"
     WARNLDFLAGS=""
 else
     WARNCFLAGS=""
+    WARNJFLAGS=""
     WARNLDFLAGS=""
 fi
 AC_SUBST(WARNCFLAGS)
+AC_SUBST(WARNJFLAGS)
 AC_SUBST(WARNLDFLAGS)
 
 AC_ARG_ENABLE(profiling,
@@ -651,7 +657,8 @@ EOF
 ]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; setoolsdir=${prefix}${setoolsdir}])
 
 AC_CONFIG_FILES([Makefile VERSION \
-                 libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile libqpol/swig/Makefile \
+                 libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
+                 libqpol/swig/Makefile libqpol/swig/python/Makefile libqpol/swig/java/Makefile \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
                  libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile \
                  libapol-tcl/Makefile \
