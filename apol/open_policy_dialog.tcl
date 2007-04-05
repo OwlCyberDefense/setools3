@@ -262,13 +262,13 @@ proc Apol_Open_Policy_Dialog::importList {} {
     variable dialog
     variable widgets
     set f [tk_getOpenFile -initialdir [file dirname $vars(primary_file)] \
-               -parent $dialog -title "Import Module List"]
+               -parent $dialog -title "Import Policy List"]
     if {$f == {}} {
         return
     }
     if {[catch {apol_OpenPolicyList $f} ppath]} {
-        tk_messageBox -icon error -type ok -title "Import Module List" \
-            -message "Error importing module list $f: $ppath"
+        tk_messageBox -icon error -type ok -title "Import Policy List" \
+            -message "Error importing policy list $f: $ppath"
         return
     }
     foreach lb $widgets(listboxes) {
@@ -288,14 +288,14 @@ proc Apol_Open_Policy_Dialog::importList {} {
 proc Apol_Open_Policy_Dialog::exportList {} {
     variable vars
     variable dialog
-    set f [tk_getSaveFile -parent $dialog -title "Export Module List"]
+    set f [tk_getSaveFile -parent $dialog -title "Export Policy List"]
     if {$f == {}} {
         return
     }
     set path [list $vars(path_type) $vars(primary_file) $vars(mod_paths)]
     if {[catch {apol_SavePolicyList $path $f} err]} {
-        tk_messageBox -icon error -type ok -title "Export Module List" \
-            -message "Error exporting module list $f: $err"
+        tk_messageBox -icon error -type ok -title "Export Policy List" \
+            -message "Error exporting policy list $f: $err"
     }
 }
 

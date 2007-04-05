@@ -447,14 +447,14 @@ static void open_policy_on_import_click(GtkButton * button __attribute__ ((unuse
 			prev_path = NULL;
 		}
 	}
-	paths = util_open_file(GTK_WINDOW(pane->op->dialog), "Import Module List", prev_path, 1);
+	paths = util_open_file(GTK_WINDOW(pane->op->dialog), "Import Policy List", prev_path, 1);
 	if (paths == NULL) {
 		return;
 	}
 	path = apol_vector_get_element(paths, 0);
 	ppath = apol_policy_path_create_from_file(path);
 	if (ppath == NULL) {
-		toplevel_ERR(pane->op->top, "Error importing module list %s: %s", path, strerror(errno));
+		toplevel_ERR(pane->op->top, "Error importing policy list %s: %s", path, strerror(errno));
 		goto cleanup;
 	}
 	open_policy_init_value(pane->op, ppath, pane);
@@ -468,7 +468,7 @@ static void open_policy_on_import_click(GtkButton * button __attribute__ ((unuse
 static void open_policy_on_export_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {
 	struct open_policy_pane *pane = (struct open_policy_pane *)user_data;
-	char *path = util_save_file(GTK_WINDOW(pane->op->dialog), "Export Module List", NULL);
+	char *path = util_save_file(GTK_WINDOW(pane->op->dialog), "Export Policy List", NULL);
 	apol_policy_path_t *ppath = NULL;
 	if (path == NULL) {
 		return;
@@ -478,7 +478,7 @@ static void open_policy_on_export_click(GtkButton * button __attribute__ ((unuse
 		goto cleanup;
 	}
 	if (apol_policy_path_to_file(ppath, path) < 0) {
-		toplevel_ERR(pane->op->top, "Error exporting module list %s: %s", path, strerror(errno));
+		toplevel_ERR(pane->op->top, "Error exporting policy list %s: %s", path, strerror(errno));
 	}
       cleanup:
 	g_free(path);
