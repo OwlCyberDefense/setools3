@@ -55,7 +55,7 @@
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
-#define SWIG_exception(code, msg) SWIG_JavaException(jenv, code, msg)
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
 #endif
 
 /* sized integer handling -
