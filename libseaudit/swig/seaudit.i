@@ -27,17 +27,17 @@
 #define __attribute__(x)
 
 %{
-#include "../include/seaudit/avc_message.h"
-#include "../include/seaudit/bool_message.h"
-#include "../include/seaudit/filter.h"
-#include "../include/seaudit/load_message.h"
-#include "../include/seaudit/log.h"
-#include "../include/seaudit/message.h"
-#include "../include/seaudit/model.h"
-#include "../include/seaudit/parse.h"
-#include "../include/seaudit/report.h"
-#include "../include/seaudit/sort.h"
-#include "../include/seaudit/util.h"
+#include <seaudit/avc_message.h>
+#include <seaudit/bool_message.h>
+#include <seaudit/filter.h>
+#include <seaudit/load_message.h>
+#include <seaudit/log.h>
+#include <seaudit/message.h>
+#include <seaudit/model.h>
+#include <seaudit/parse.h>
+#include <seaudit/report.h>
+#include <seaudit/sort.h>
+#include <seaudit/util.h>
 #include <time.h>
 %}
 
@@ -58,9 +58,8 @@
 
 /* from apol wrapper */
 %{
-	typedef struct apol_vector apol_string_vector_t;
+	typedef struct apol_string_vector apol_string_vector_t;
 %}
-%typedef struct apol_vector apol_string_vector_t;
 
 #ifdef SWIGPYTHON
 %typemap(in) FILE * {
@@ -441,7 +440,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return;
 	};
 	const apol_string_vector_t *get_source_user() {
-		return seaudit_filter_get_source_user(self);
+		return (apol_string_vector_t*)seaudit_filter_get_source_user(self);
 	};
 	void set_source_role(apol_string_vector_t *v) {
 		if (seaudit_filter_set_source_role(self, (apol_vector_t*)v)) {
@@ -451,7 +450,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return;
 	};
 	const apol_string_vector_t *get_source_role() {
-		return seaudit_filter_get_source_role(self);
+		return (apol_string_vector_t*)seaudit_filter_get_source_role(self);
 	};
 	void set_source_type(apol_string_vector_t *v) {
 		if (seaudit_filter_set_source_type(self, (apol_vector_t*)v)) {
@@ -461,7 +460,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return;
 	};
 	const apol_string_vector_t *get_source_type() {
-		return seaudit_filter_get_source_type(self);
+		return (apol_string_vector_t*)seaudit_filter_get_source_type(self);
 	};
 	void set_target_user(apol_string_vector_t *v) {
 		if (seaudit_filter_set_target_user(self, (apol_vector_t*)v)) {
@@ -471,7 +470,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return;
 	};
 	const apol_string_vector_t *get_target_user() {
-		return seaudit_filter_get_target_user(self);
+		return (apol_string_vector_t*)seaudit_filter_get_target_user(self);
 	};
 	void set_target_role(apol_string_vector_t *v) {
 		if (seaudit_filter_set_target_role(self, (apol_vector_t*)v)) {
@@ -481,7 +480,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return;
 	};
 	const apol_string_vector_t *get_target_role() {
-		return seaudit_filter_get_target_role(self);
+		return (apol_string_vector_t*)seaudit_filter_get_target_role(self);
 	};
 	void set_target_type(apol_string_vector_t *v) {
 		if (seaudit_filter_set_target_type(self, (apol_vector_t*)v)) {
@@ -491,7 +490,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return;
 	};
 	const apol_string_vector_t *get_target_type() {
-		return seaudit_filter_get_target_type(self);
+		return (apol_string_vector_t*)seaudit_filter_get_target_type(self);
 	};
 	void set_target_class(apol_string_vector_t *v) {
 		if (seaudit_filter_set_target_class(self, (apol_vector_t*)v)) {
@@ -501,7 +500,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return;
 	};
 	const apol_string_vector_t *get_target_class() {
-		return seaudit_filter_get_target_class(self);
+		return (apol_string_vector_t*)seaudit_filter_get_target_class(self);
 	};
 	void set_executable(char *name) {
 		if (seaudit_filter_set_executable(self, name)) {

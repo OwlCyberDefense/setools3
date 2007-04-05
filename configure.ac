@@ -662,9 +662,11 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
                  libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile \
                  libapol-tcl/Makefile \
-                 libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile libpoldiff/swig/Makefile \
+                 libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
+		           libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
-                 libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile libseaudit/swig/Makefile \
+                 libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile \
+		           libseaudit/swig/Makefile libseaudit/swig/python/Makefile libseaudit/swig/java/Makefile \
                  secmds/Makefile \
                  apol/Makefile \
                  awish/Makefile \

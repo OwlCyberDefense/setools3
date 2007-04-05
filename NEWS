@@ -5,6 +5,9 @@ libapol, libqpol, libesaudit, libpoldiff:
   * If --enable-swig-python is given during configure time, the build
     system will create Python SWIG wrappers for these libraries.
 
+  * If --enable-swig-java is given during configure time, the buil
+    system will create java SWIG wrappers for these libraries.
+
 libpoldiff:
 
   * Now able to diff levels, categories, and range_transition

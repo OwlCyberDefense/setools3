@@ -27,22 +27,22 @@
 #define __attribute__(x)
 
 %{
-#include "../include/poldiff/attrib_diff.h"
-#include "../include/poldiff/avrule_diff.h"
-#include "../include/poldiff/bool_diff.h"
-#include "../include/poldiff/cat_diff.h"
-#include "../include/poldiff/class_diff.h"
-#include "../include/poldiff/level_diff.h"
-#include "../include/poldiff/poldiff.h"
-#include "../include/poldiff/range_diff.h"
-#include "../include/poldiff/range_trans_diff.h"
-#include "../include/poldiff/rbac_diff.h"
-#include "../include/poldiff/role_diff.h"
-#include "../include/poldiff/terule_diff.h"
-#include "../include/poldiff/type_diff.h"
-#include "../include/poldiff/type_map.h"
-#include "../include/poldiff/user_diff.h"
-#include "../include/poldiff/util.h"
+#include <poldiff/attrib_diff.h>
+#include <poldiff/avrule_diff.h>
+#include <poldiff/bool_diff.h>
+#include <poldiff/cat_diff.h>
+#include <poldiff/class_diff.h>
+#include <poldiff/level_diff.h>
+#include <poldiff/poldiff.h>
+#include <poldiff/range_diff.h>
+#include <poldiff/range_trans_diff.h>
+#include <poldiff/rbac_diff.h>
+#include <poldiff/role_diff.h>
+#include <poldiff/terule_diff.h>
+#include <poldiff/type_diff.h>
+#include <poldiff/type_map.h>
+#include <poldiff/user_diff.h>
+#include <poldiff/util.h>
 %}
 
 #ifdef SWIGJAVA
@@ -56,6 +56,7 @@
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception_typemap(code, msg) {SWIG_JavaException(jenv, code, msg);}
 #endif
 
 /* sized integer handling -
@@ -65,7 +66,7 @@
 %typedef unsigned long size_t;
 
 %typedef struct apol_policy apol_policy_t;
-%{typedef struct apol_vector apol_string_vector_t;%} /* see apol.i */
+%{typedef struct apol_string_vector apol_string_vector_t;%} /* see apol.i */
 
 const char *libpoldiff_get_version (void);
 
@@ -95,7 +96,11 @@ const char *libpoldiff_get_version (void);
 
 %typemap(check) uint32_t flags {
 	if ($1 & ~(POLDIFF_DIFF_ALL)) {
+#ifdef SWIGJAVA
+		SWIG_exception_typemap(SWIG_ValueError, "Invalid diff flag specified");
+#else
 		SWIG_exception(SWIG_ValueError, "Invalid diff flag specified");
+#endif
 	}
 }
 
@@ -390,13 +395,13 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 		return which_pol;
 	};
 	const apol_string_vector_t *get_unmodified_perms() {
-		return poldiff_avrule_get_unmodified_perms(self);
+		return (apol_string_vector_t*)poldiff_avrule_get_unmodified_perms(self);
 	};
 	const apol_string_vector_t *get_added_perms() {
-		return poldiff_avrule_get_added_perms(self);
+		return (apol_string_vector_t*)poldiff_avrule_get_added_perms(self);
 	};
 	const apol_string_vector_t *get_removed_perms() {
-		return poldiff_avrule_get_removed_perms(self);
+		return (apol_string_vector_t*)poldiff_avrule_get_removed_perms(self);
 	};
 	const apol_vector_t *get_orig_line_numbers() {
 		return poldiff_avrule_get_orig_line_numbers(self);
@@ -867,10 +872,10 @@ typedef struct poldiff_type {} poldiff_type_t;
 		return poldiff_type_get_form(self);
 	};
 	const apol_string_vector_t *get_added_attribs() {
-		return poldiff_type_get_added_attribs(self);
+		return (apol_string_vector_t*)poldiff_type_get_added_attribs(self);
 	};
 	const apol_string_vector_t *get_removed_attribs() {
-		return poldiff_type_get_removed_attribs(self);
+		return (apol_string_vector_t*)poldiff_type_get_removed_attribs(self);
 	};
 };
 
@@ -901,13 +906,13 @@ typedef struct poldiff_user {} poldiff_user_t;
 		return poldiff_user_get_form(self);
 	};
 	const apol_string_vector_t *get_unmodified_roles() {
-		return poldiff_user_get_unmodified_roles(self);
+		return (apol_string_vector_t*)poldiff_user_get_unmodified_roles(self);
 	};
 	const apol_string_vector_t *get_added_roles() {
-		return poldiff_user_get_added_roles(self);
+		return (apol_string_vector_t*)poldiff_user_get_added_roles(self);
 	};
 	const apol_string_vector_t *get_removed_roles() {
-		return poldiff_user_get_removed_roles(self);
+		return (apol_string_vector_t*)poldiff_user_get_removed_roles(self);
 	};
 	const poldiff_level_t *get_original_dfltlevel() {
 		return poldiff_user_get_original_dfltlevel(self);
