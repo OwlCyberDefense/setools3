@@ -385,7 +385,7 @@ int apol_file_is_policy_path_list(const char *filename)
 	}
 	retval = 1;
 
-cleanup:
+      cleanup:
 	fclose(f);
 	if (retval < 0)
 		errno = error;

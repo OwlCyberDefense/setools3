@@ -508,7 +508,7 @@ int qpol_validatetrans_get_class(qpol_policy_t * policy, qpol_validatetrans_t * 
 		return STATUS_ERR;
 	}
 
-	*obj_class = ((qpol_constraint_t*)vtrans)->obj_class;
+	*obj_class = ((qpol_constraint_t *) vtrans)->obj_class;
 
 	return STATUS_SUCCESS;
 }
@@ -527,7 +527,7 @@ int qpol_validatetrans_get_expr_iter(qpol_policy_t * policy, qpol_validatetrans_
 		return STATUS_ERR;
 	}
 
-	internal_constr = (constraint_node_t *) ((qpol_constraint_t*)vtrans)->constr;
+	internal_constr = (constraint_node_t *) ((qpol_constraint_t *) vtrans)->constr;
 
 	if (!(ces = calloc(1, sizeof(constr_expr_state_t)))) {
 		ERR(policy, "%s", strerror(ENOMEM));
