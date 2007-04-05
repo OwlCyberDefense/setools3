@@ -547,7 +547,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy,
 	uint32_t start_val, ep_val, end_val;
 	size_t i, j;
 	apol_domain_trans_rule_t *rule_entry = NULL, *tmp_rule = NULL, *tmp_rule2 = NULL;
-	int error = 0;
+	int error = 0, is_modular;
 	unsigned char isattr = 0;
 	unsigned int policy_version = 0;
 
@@ -559,7 +559,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy,
 
 	table = policy->domain_trans_table;
 	qpol_policy_get_policy_version(policy->p, &policy_version);
-
+	is_modular = qpol_policy_has_capability(policy->p, QPOL_CAP_MODULES);
 	qpol_type_get_isattr(policy->p, start, &isattr);
 	if (isattr) {
 		ERR(policy, "%s", "Attributes are not valid here.");
@@ -628,7 +628,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy,
 		if (apol_vector_get_size(entry->exec_rules) &&
 		    apol_vector_get_size(entry->ep_rules) &&
 		    apol_vector_get_size(entry->proc_trans_rules) &&
-		    (policy_version >= 15 ?
+		    (policy_version >= 15 || is_modular ?
 		     (apol_vector_get_size(entry->type_trans_rules) || apol_vector_get_size(entry->setexec_rules)) : 1))
 			entry->valid = TRUE;
 		entry->next = cur_head;
@@ -698,7 +698,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy,
 			if (apol_vector_get_size(entry->exec_rules) &&
 			    apol_vector_get_size(entry->ep_rules) &&
 			    apol_vector_get_size(entry->proc_trans_rules) &&
-			    (policy_version >= 15 ?
+			    (policy_version >= 15 || is_modular ?
 			     (apol_vector_get_size(entry->type_trans_rules) || apol_vector_get_size(entry->setexec_rules)) : 1))
 				entry->valid = TRUE;
 			entry->next = cur_head;
@@ -752,7 +752,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy,
 	uint32_t start_val, ep_val, end_val, dflt_val;
 	size_t i, j;
 	apol_domain_trans_rule_t *rule_entry = NULL, *tmp_rule = NULL, *tmp_rule2 = NULL;
-	int error = 0, dead = 0;
+	int error = 0, dead = 0, is_modular;
 	unsigned char isattr = 0;
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
@@ -766,7 +766,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy,
 
 	table = policy->domain_trans_table;
 	qpol_policy_get_policy_version(policy->p, &policy_version);
-
+	is_modular = qpol_policy_has_capability(policy->p, QPOL_CAP_MODULES);
 	qpol_type_get_isattr(policy->p, end, &isattr);
 	if (isattr) {
 		ERR(policy, "%s", "Attributes are not valid here.");
@@ -854,7 +854,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy,
 			if (apol_vector_get_size(entry->exec_rules) &&
 			    apol_vector_get_size(entry->ep_rules) &&
 			    apol_vector_get_size(entry->proc_trans_rules) &&
-			    (policy_version >= 15 ?
+			    (policy_version >= 15 || is_modular ?
 			     (apol_vector_get_size(entry->type_trans_rules) || apol_vector_get_size(entry->setexec_rules)) : 1))
 				entry->valid = TRUE;
 			entry->next = cur_head;
@@ -1184,7 +1184,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 	qpol_iterator_t *iter = NULL;
 	char *tmp = NULL;
 	apol_vector_t *v = NULL;
-	int error = 0;
+	int error = 0, is_modular;
 	unsigned int policy_version = 0;
 
 	if (!policy) {
@@ -1204,7 +1204,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 	}
 
 	qpol_policy_get_policy_version(policy->p, &policy_version);
-
+	is_modular = qpol_policy_has_capability(policy->p, QPOL_CAP_MODULES);
 	avq = apol_avrule_query_create();
 	apol_avrule_query_set_rules(policy, avq, QPOL_RULE_ALLOW);
 	apol_avrule_query_append_class(policy, avq, "process");
@@ -1218,7 +1218,7 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 		}
 	}
 	apol_vector_destroy(&v);
-	if (policy_version >= 15) {
+	if (policy_version >= 15 || is_modular) {
 		apol_avrule_query_append_perm(policy, avq, NULL);
 		apol_avrule_query_append_perm(policy, avq, "setexec");
 		apol_avrule_get_by_query(policy, avq, &v);
@@ -1812,6 +1812,7 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 	int missing_rules = 0;
 	uint32_t start_val = 0, ep_val = 0, end_val = 0, dflt_val = 0;
 	unsigned int policy_version = 0;
+	int is_modular;
 	apol_domain_trans_rule_t *rule = NULL;
 
 	if (!policy) {
@@ -1821,12 +1822,12 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 	}
 
 	qpol_policy_get_policy_version(policy->p, &policy_version);
-
+	is_modular = qpol_policy_has_capability(policy->p, QPOL_CAP_MODULES);
 	if (!start_dom || !ep_type || !end_dom) {
 		missing_rules = APOL_DOMAIN_TRANS_RULE_TYPE_TRANS;
 		if (!start_dom) {
 			missing_rules |= (APOL_DOMAIN_TRANS_RULE_PROC_TRANS | APOL_DOMAIN_TRANS_RULE_EXEC);
-			if (policy_version >= 15)
+			if (policy_version >= 15 || is_modular)
 				missing_rules |= APOL_DOMAIN_TRANS_RULE_SETEXEC;
 		}
 		if (!ep_type)
@@ -1858,8 +1859,10 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 	if (!retv)
 		missing_rules |= APOL_DOMAIN_TRANS_RULE_ENTRYPOINT;
 
-	/* for version 15 and later you must either have a type_transition rule or setexec permission */
-	if (policy_version >= 15) {
+	/* for version 15 and later or any modular policy, there must
+	 * be either have a type_transition rule or setexec
+	 * permission */
+	if (policy_version >= 15 || is_modular) {
 		rule = apol_domain_trans_find_rule_for_type(policy, table->dom_list[start_val - 1].type_trans_rules, ep_type);
 		if (rule) {
 			qpol_type_get_value(policy->p, rule->dflt, &dflt_val);

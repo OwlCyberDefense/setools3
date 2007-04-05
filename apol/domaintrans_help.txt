@@ -1,7 +1,5 @@
 An overview of domain transition analysis
-apol, version 3.1
-Feburary 1, 2007
-selinux@tresys.com
+
 
 A key feature of Type Enforcement (TE) security is the ability to
 define domain types with which programs run, use that domain type to

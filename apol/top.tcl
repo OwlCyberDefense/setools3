@@ -718,7 +718,7 @@ proc ApolTop::create { } {
 	    {command "&General Help" {} "Show help on using apol" {} -command {ApolTop::helpDlg Help apol_help.txt}}
 	    {command "&Domain Transition Analysis" {} "Show help on domain transitions" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" domaintrans_help.txt}}
 	    {command "&Information Flow Analysis" {} "Show help on information flows" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" infoflow_help.txt}}
-	    {command "&Direct Relabel Analysis" {} "Show help on file relabeling" {} -command {ApolTop::helpDlg "Relabel Analysis Help" file_relabel_help.txt}}
+	    {command "Direct &Relabel Analysis" {} "Show help on file relabeling" {} -command {ApolTop::helpDlg "Relabel Analysis Help" file_relabel_help.txt}}
 	    {command "&Types Relationship Summary Analysis" {} "Show help on types relationships" {} -command {ApolTop::helpDlg "Types Relationship Summary Analysis Help" types_relation_help.txt}}
 	    {separator}
 	    {command "&About" {} "Show copyright information" {} -command ApolTop::aboutBox}
