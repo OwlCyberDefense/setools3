@@ -45,7 +45,18 @@
 #include "../include/poldiff/util.h"
 %}
 
+#ifdef SWIGJAVA
+%javaconst(1);
+%{extern JNIEnv*jenv;%}
+#endif
+
 %include exception.i
+
+#ifdef SWIGJAVA
+/* remove $null not valid outside of type map */
+#undef SWIG_exception
+#define SWIG_exception(code, msg) SWIG_JavaException(jenv, code, msg)
+#endif
 
 /* sized integer handling -
  * NOTE cannot include stdint.h here as seig does not parse it right

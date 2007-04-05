@@ -37,7 +37,7 @@ extern "C"
 #include <qpol/class_perm_query.h>
 
 	typedef struct qpol_constraint qpol_constraint_t;
-	typedef struct qpol_constraint qpol_validatetrans_t;
+	typedef struct qpol_validatetrans qpol_validatetrans_t;
 	typedef struct qpol_constraint_expr_node qpol_constraint_expr_node_t;
 
 /**

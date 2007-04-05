@@ -54,6 +54,7 @@ wrappedclass_DATA = \
         apol_user_query_t.class \
         apol_validatetrans_query_t.class \
         apol_vector_t.class \
+        SWIGTYPE_p_apol_string_vector.class \
         SWIGTYPE_p_qpol_avrule_t.class \
         SWIGTYPE_p_qpol_cond_t.class \
         SWIGTYPE_p_qpol_context_t.class \

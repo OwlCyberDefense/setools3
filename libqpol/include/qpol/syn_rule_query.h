@@ -38,8 +38,8 @@ extern "C"
 #include <stdint.h>
 
 	typedef struct qpol_type_set qpol_type_set_t;
-	typedef struct qpol_syn_rule qpol_syn_avrule_t;
-	typedef struct qpol_syn_rule qpol_syn_terule_t;
+	typedef struct qpol_syn_avrule qpol_syn_avrule_t;
+	typedef struct qpol_syn_terule qpol_syn_terule_t;
 
 /**
  *  Get an iterator of the included types in a type set.

@@ -53,7 +53,19 @@
 #include "../include/qpol/util.h"
 %}
 
+#ifdef SWIGJAVA
+%javaconst(1);
+%{extern JNIEnv*jenv;%}
+#endif
+
 %include exception.i
+
+#ifdef SWIGJAVA
+/* remove $null not valid outside of type map */
+#undef SWIG_exception
+#define SWIG_exception(code, msg) SWIG_JavaException(jenv, code, msg)
+#endif
+
 %typedef unsigned long size_t;
 
 //%include headers to wrap directly here
@@ -1401,7 +1413,7 @@ typedef struct qpol_constraint {} qpol_constraint_t;
 };
 
 /* qpol validatetrans */
-typedef struct qpol_constraint {} qpol_validatetrans_t;
+typedef struct qpol_validatetrans {} qpol_validatetrans_t;
 %extend qpol_validatetrans_t {
 	qpol_validatetrans_t(void *x) {
 		return (qpol_validatetrans_t*)x;
@@ -1940,7 +1952,7 @@ typedef struct qpol_type_set {} qpol_type_set_t;
 };
 
 /* qpol syn av rule */
-typedef struct qpol_syn_rule {} qpol_syn_avrule_t;
+typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 %extend qpol_syn_avrule_t {
 	qpol_syn_avrule_t(void *x) {
 		return (qpol_syn_avrule_t*)x;
@@ -2026,7 +2038,7 @@ typedef struct qpol_syn_rule {} qpol_syn_avrule_t;
 };
 
 /* qpol syn te rule */
-typedef struct qpol_syn_rule {} qpol_syn_terule_t;
+typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 %extend qpol_syn_terule_t {
 	qpol_syn_terule_t(void *x) {
 		return (qpol_syn_terule_t*)x;

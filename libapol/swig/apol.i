@@ -58,7 +58,18 @@
 #include <apol/vector.h>
 %}
 
+#ifdef SWIGJAVA
+%javaconst(1);
+%{extern JNIEnv*jenv;%}
+#endif
+
 %include exception.i
+
+#ifdef SWIGJAVA
+/* remove $null not valid outside of type map */
+#undef SWIG_exception
+#define SWIG_exception(code, msg) SWIG_JavaException(jenv, code, msg)
+#endif
 
 /* sized integer handling -
  * NOTE cannot include stdint.h here as seig does not parse it right
@@ -154,7 +165,7 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 
 /* derived vector types here */
 %inline %{
-	typedef struct apol_vector apol_string_vector_t;
+	typedef struct apol_string_vector apol_string_vector_t;
 %}
 typedef struct apol_vector {} apol_vector_t;
 %extend apol_vector_t {
@@ -184,14 +195,14 @@ typedef struct apol_vector {} apol_vector_t;
 	};
 	void append(void *x) {
 		if (apol_vector_append(self, x)) {
-			SWIG_exception(SWIG_MemoryError, "Oout of memory");
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
 		return;
 	};
 	void append_unique(void *x) {
 		if (apol_vector_append_unique(self, x, NULL, NULL)) {
-			SWIG_exception(SWIG_MemoryError, "Oout of memory");
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
 		return;
@@ -236,21 +247,21 @@ typedef struct {} apol_string_vector_t;
 		return (apol_string_vector_t*)apol_vector_create_from_intersection((apol_vector_t*)a, (apol_vector_t*)b, apol_str_strcmp, NULL);
 	};
 	size_t get_size() {
-		return apol_vector_get_size(self);
+		return apol_vector_get_size((apol_vector_t*)self);
 	};
 	size_t get_capacity() {
-		return apol_vector_get_capacity(self);
+		return apol_vector_get_capacity((apol_vector_t*)self);
 	};
 	char *get_element(size_t i) {
-		return (char*)apol_vector_get_element(self, i);
+		return (char*)apol_vector_get_element((apol_vector_t*)self, i);
 	};
 	~apol_string_vector_t() {
-		apol_vector_destroy(&self);
+		apol_vector_destroy((apol_vector_t**)&self);
 	};
 	size_t get_index(char *str) {
 		size_t idx;
-		if (apol_vector_get_index(self, str, apol_str_strcmp, NULL, &idx))
-			return apol_vector_get_size(self) + 1;
+		if (apol_vector_get_index((apol_vector_t*)self, str, apol_str_strcmp, NULL, &idx))
+			return apol_vector_get_size((apol_vector_t*)self) + 1;
 		return idx;
 	};
 	void append(char *str) {
@@ -278,7 +289,7 @@ typedef struct {} apol_string_vector_t;
 	};
 	void remove(size_t idx) {
 		char *x = apol_vector_get_element((apol_vector_t*)self, idx);
-		if (apol_vector_remove(self, idx)) {
+		if (apol_vector_remove((apol_vector_t*)self, idx)) {
 			SWIG_exception(SWIG_RuntimeError, "Error removing vector element");
 		}
 		free(x);
@@ -303,7 +314,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 %extend apol_policy_path_t {
 	apol_policy_path_t(apol_policy_path_type_e type, char * primary, apol_string_vector_t *modules = NULL) {
 		apol_policy_path_t *p;
-		if ((p = apol_policy_path_create(type, primary, modules))) {
+		if ((p = apol_policy_path_create(type, primary, (apol_vector_t*)modules))) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
@@ -343,7 +354,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 		return apol_policy_path_get_primary(self);
 	};
 	const apol_string_vector_t *get_modules() {
-		return apol_policy_path_get_modules(self);
+		return (apol_string_vector_t*)apol_policy_path_get_modules(self);
 	};
 	%newobject to_string();
 	char *to_string() {
