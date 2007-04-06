@@ -3,7 +3,6 @@
  * Defines the public interface for searching and iterating over
  * constraints
  *
- * @author Kevin Carr kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang jtang@tresys.com
  *

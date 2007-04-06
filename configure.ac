@@ -19,7 +19,7 @@ libpoldiff_soname=libpoldiff.so.1
 libpoldiff_pyswig_soname=_poldiff.so.1
 libpoldiff_jswig_soname=libjpoldiff.so.1
 
-libsefs_version=3.0.2
+libsefs_version=3.1
 libsefs_soname=libsefs.so.3
 dnl libsefs will not be swigified
 

@@ -3,7 +3,6 @@
  *  Defines the public interface for building a database of file
  *  contexts.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

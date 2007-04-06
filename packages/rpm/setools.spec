@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.2
-Release: pre4
+Release: pre5
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -13,6 +13,12 @@ Group: System Environment/Base
 
 # disable auto dependency generation because they are explicitly listed
 %define __find_requires %{nil}
+
+%define libqpol_ver 1.2
+%define libapol_ver 4.0
+%define libpoldiff_ver 1.2
+%define libsefs_ver 3.1
+%define libseaudit_ver 4.1
 
 %description
 SETools is a collection of graphical tools, command-line tools, and
@@ -38,7 +44,7 @@ License: LGPL
 Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
-Provides: libqpol = 1.2 libapol = 4.0 libpoldiff = 1.2 libsefs = 3.0.2 libseaudit = 4.1
+Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libsefs = %{libsefs_ver} libseaudit = %{libseaudit_ver}
 BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
@@ -62,8 +68,8 @@ This package includes the following run-time libraries:
 License: LGPL
 Summary: Python bindings for SELinux policy analysis
 Group: Development/Languages
-Requires: setools-libs = 3.2 python2 >= 2.3
-Provides: libqpol-python = 1.2 libapol-python = 4.0 libpoldiff-python = 1.2 libseaudit-python = 4.1
+Requires: setools-libs = %{version} python2 >= 2.3
+Provides: libqpol-python = %{libqpol_ver} libapol-python = %{libapol_ver} libpoldiff-python = %{libpoldiff_ver} libseaudit-python = %{libseaudit_ver}
 BuildRequires: python2-devel >= 2.3 swig >= 1.3.28
 
 %description libs-python
@@ -77,11 +83,30 @@ This package includes Python bindings for the following libraries:
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
 
+%package libs-java
+License: LGPL
+Summary: Java bindings for SELinux policy analysis
+Group: Development/Languages
+Requires: setools-libs = %{version} java >= 1.1
+Provides: libqpol-java = %{libqpol_ver} libapol-java = %{libapol_ver} libpoldiff-java = %{libpoldiff_ver} libseaudit-java = %{libseaudit_ver}
+BuildRequires: java-devel >= 1.1 swig >= 1.3.28
+
+%description libs-java
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes Java bindings for the following libraries:
+
+  libapol       policy analysis library
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    parse and filter SELinux audit messages in log files
+
 %package devel
 License: LGPL
 Summary: Policy analysis development files for SELinux
 Group: Development/Libraries
-Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-libs = 3.2
+Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-libs = %{version}
 
 %description devel
 SETools is a collection of graphical tools, command-line tools, and
@@ -101,7 +126,7 @@ libraries:
 AutoReqProv: no
 Summary: Policy analysis command-line tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.1 libseaudit >= 4.0
 Requires: libselinux >= 1.30
 
 %description console
@@ -135,11 +160,15 @@ This package includes the following graphical tools:
   seaudit       audit log analysis tool
   sediffx       semantic policy difference tool
 
+%define setoolsdir %{_datadir}/setools-%{version}
+%define pkgpyexecdir %{_libdir}/python?.?/site-packages/setools
+%define pkgpythondir %{_exec_prefix}/lib*/python?.?/site-packages/setools
+
 %prep
 %setup -q
 
 %build
-%configure --disable-bwidget-check --disable-selinux-check --enable-swig-python
+%configure --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java
 make %{?_smp_mflags}
 
 %install
@@ -181,14 +210,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libseaudit.so.4
 %{_libdir}/libseaudit.so
 %defattr(-, root, root)
-%{_datadir}/setools-%{version}/seaudit-report.conf
-%{_datadir}/setools-%{version}/seaudit-report.css
+%{setoolsdir}/seaudit-report.conf
+%{setoolsdir}/seaudit-report.css
 %doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
 
 %files libs-python
 %defattr(-,root,root)
-%define pkgpyexecdir %{_libdir}/python?.?/site-packages/setools
-%define pkgpythondir %{_exec_prefix}/lib*/python?.?/site-packages/setools
 %{pkgpythondir}/__init__.py
 %{pkgpythondir}/__init__.pyc
 %{pkgpythondir}/__init__.pyo
@@ -201,8 +228,8 @@ rm -rf ${RPM_BUILD_ROOT}
 %{pkgpythondir}/apol.py
 %{pkgpythondir}/apol.pyc
 %{pkgpythondir}/apol.pyo
-%{pkgpyexecdir}/_apol.so.3.2
-%{pkgpyexecdir}/_apol.so.3
+%{pkgpyexecdir}/_apol.so.4.0
+%{pkgpyexecdir}/_apol.so.4
 %attr(755,root,root) %{pkgpyexecdir}/_apol.so
 %{pkgpythondir}/poldiff.py
 %{pkgpythondir}/poldiff.pyc
@@ -216,6 +243,178 @@ rm -rf ${RPM_BUILD_ROOT}
 %{pkgpyexecdir}/_seaudit.so.4.1
 %{pkgpyexecdir}/_seaudit.so.4
 %attr(755,root,root) %{pkgpyexecdir}/_seaudit.so
+
+%files libs-java
+%defattr(-,root,root)
+%{setoolsdir}/com
+%{setoolsdir}/com/tresys
+%{setoolsdir}/com/tresys/setools
+%{setoolsdir}/com/tresys/setools/apol
+%{setoolsdir}/com/tresys/setools/apol/apol.class
+%{setoolsdir}/com/tresys/setools/apol/apolJNI.class
+%{setoolsdir}/com/tresys/setools/apol/apol_attr_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_avrule_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_bool_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_cat_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_class_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_common_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_cond_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apolConstants.class
+%{setoolsdir}/com/tresys/setools/apol/apol_constraint_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_context_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_domain_trans_analysis_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_domain_trans_result_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_fs_use_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_genfscon_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_infoflow_analysis_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_infoflow_graph_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_infoflow_result_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_infoflow_step_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_infoflow_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_isid_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_level_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_mls_level_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_mls_range_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_netifcon_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_nodecon_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_perm_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_policy_path_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_policy_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_policy_path_type_e.class
+%{setoolsdir}/com/tresys/setools/apol/apol_portcon_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_range_trans_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_relabel_analysis_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_relabel_result_pair_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_relabel_result_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_role_allow_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_role_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_role_trans_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_string_vector_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_terule_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_type_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_types_relation_access_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_types_relation_analysis_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_types_relation_result_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_user_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_validatetrans_query_t.class
+%{setoolsdir}/com/tresys/setools/apol/apol_vector_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_apol_string_vector.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_avrule_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_cond_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_context_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_fs_use_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_genfscon_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_iterator_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_level_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_mls_level_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_mls_range_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_netifcon_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_nodecon_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_policy_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_portcon_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_range_trans_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_role_allow_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_role_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_role_trans_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_syn_avrule_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_syn_terule_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_terule_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_type_t.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_unsigned_int.class
+%{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_void.class
+%{setoolsdir}/com/tresys/setools/qpol
+%{setoolsdir}/com/tresys/setools/qpol/qpol_avrule_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_bool_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_capability_e.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_cat_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_class_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_common_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_cond_expr_node_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_cond_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpolConstants.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_constraint_expr_node_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_constraint_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_context_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_fs_use_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_genfscon_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_isid_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_iterator_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol.class
+%{setoolsdir}/com/tresys/setools/qpol/qpolJNI.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_level_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_mls_level_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_mls_range_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_module_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_netifcon_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_nodecon_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_policy_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_range_trans_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_role_allow_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_role_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_role_trans_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_syn_avrule_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_syn_terule_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_terule_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_type_set_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_type_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_user_t.class
+%{setoolsdir}/com/tresys/setools/qpol/qpol_validatetrans_t.class
+%{setoolsdir}/com/tresys/setools/qpol/SWIGTYPE_p_f_p_void_p_struct_qpol_policy_int_p_q_const__char_va_list__void.class
+%{setoolsdir}/com/tresys/setools/qpol/SWIGTYPE_p_int.class
+%{setoolsdir}/com/tresys/setools/qpol/SWIGTYPE_p_void.class
+%{setoolsdir}/com/tresys/setools/poldiff
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_attrib_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_avrule_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_bool_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_cat_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_class_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_common_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiffConstants.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_form_e.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiffJNI.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_level_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_range_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_range_trans_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_role_allow_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_role_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_role_trans_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_stats_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_terule_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_type_remap_entry_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_type_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/poldiff_user_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_apol_mls_range_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_apol_policy.class
+%{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_apol_string_vector_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_apol_vector_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_qpol_cond_t.class
+%{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_void.class
+%{setoolsdir}/com/tresys/setools/seaudit
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_avc_message_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_avc_message_type_e.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_bool_message_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_filter_date_match_e.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_filter_match_e.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_filter_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_filter_visible_e.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit.class
+%{setoolsdir}/com/tresys/setools/seaudit/seauditJNI.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_load_message_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_log_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_log_type_e.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_message_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_message_type_e.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_model_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_report_format_e.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_report_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/seaudit_sort_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/SWIGTYPE_p_apol_string_vector_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/SWIGTYPE_p_apol_vector_t.class
+%{setoolsdir}/com/tresys/setools/seaudit/SWIGTYPE_p_FILE.class
+%{setoolsdir}/com/tresys/setools/seaudit/SWIGTYPE_p_void.class
+%{setoolsdir}/com/tresys/setools/seaudit/tm_t.class
 
 %files devel
 %defattr(-,root,root)
@@ -322,12 +521,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/sechecker
 %{_bindir}/sediff
 %{_bindir}/seaudit-report
-%{_datadir}/setools-%{version}/sechecker-profiles/all-checks.sechecker
-%{_datadir}/setools-%{version}/sechecker-profiles/analysis-checks.sechecker
-%{_datadir}/setools-%{version}/sechecker-profiles/devel-checks.sechecker
-%{_datadir}/setools-%{version}/sechecker-profiles/sechecker.dtd
-%{_datadir}/setools-%{version}/sechecker_help.txt
-%{_datadir}/setools-%{version}/seaudit-report-service
+%{setoolsdir}/sechecker-profiles/all-checks.sechecker
+%{setoolsdir}/sechecker-profiles/analysis-checks.sechecker
+%{setoolsdir}/sechecker-profiles/devel-checks.sechecker
+%{setoolsdir}/sechecker-profiles/sechecker.dtd
+%{setoolsdir}/sechecker_help.txt
+%{setoolsdir}/seaudit-report-service
 %{_mandir}/man1/findcon.1.gz
 %{_mandir}/man1/indexcon.1.gz
 %{_mandir}/man1/replcon.1.gz
@@ -344,30 +543,30 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/sediffx
 %{_bindir}/apol
 %{_bindir}/awish
-%{_datadir}/setools-%{version}/sediff_help.txt
-%{_datadir}/setools-%{version}/sediffx.glade
-%{_datadir}/setools-%{version}/sediffx.png
-%{_datadir}/setools-%{version}/sediffx-small.png
-%{_datadir}/setools-%{version}/apol_help.txt
-%{_datadir}/setools-%{version}/domaintrans_help.txt
-%{_datadir}/setools-%{version}/file_relabel_help.txt
-%{_datadir}/setools-%{version}/infoflow_help.txt
-%{_datadir}/setools-%{version}/types_relation_help.txt
-%{_datadir}/setools-%{version}/apol_perm_mapping_ver12
-%{_datadir}/setools-%{version}/apol_perm_mapping_ver15
-%{_datadir}/setools-%{version}/apol_perm_mapping_ver16
-%{_datadir}/setools-%{version}/apol_perm_mapping_ver17
-%{_datadir}/setools-%{version}/apol_perm_mapping_ver18
-%{_datadir}/setools-%{version}/apol_perm_mapping_ver19
-%{_datadir}/setools-%{version}/apol_perm_mapping_ver20
-%{_datadir}/setools-%{version}/apol_perm_mapping_ver21
-%{_datadir}/setools-%{version}/apol.gif
-%{_datadir}/setools-%{version}/apol.tcl
-%{_datadir}/setools-%{version}/seaudit.glade
-%{_datadir}/setools-%{version}/seaudit_help.txt
-%{_datadir}/setools-%{version}/seaudit.png
-%{_datadir}/setools-%{version}/seaudit-small.png
-%{_datadir}/setools-%{version}/dot_seaudit
+%{setoolsdir}/sediff_help.txt
+%{setoolsdir}/sediffx.glade
+%{setoolsdir}/sediffx.png
+%{setoolsdir}/sediffx-small.png
+%{setoolsdir}/apol_help.txt
+%{setoolsdir}/domaintrans_help.txt
+%{setoolsdir}/file_relabel_help.txt
+%{setoolsdir}/infoflow_help.txt
+%{setoolsdir}/types_relation_help.txt
+%{setoolsdir}/apol_perm_mapping_ver12
+%{setoolsdir}/apol_perm_mapping_ver15
+%{setoolsdir}/apol_perm_mapping_ver16
+%{setoolsdir}/apol_perm_mapping_ver17
+%{setoolsdir}/apol_perm_mapping_ver18
+%{setoolsdir}/apol_perm_mapping_ver19
+%{setoolsdir}/apol_perm_mapping_ver20
+%{setoolsdir}/apol_perm_mapping_ver21
+%{setoolsdir}/apol.gif
+%{setoolsdir}/apol.tcl
+%{setoolsdir}/seaudit.glade
+%{setoolsdir}/seaudit_help.txt
+%{setoolsdir}/seaudit.png
+%{setoolsdir}/seaudit-small.png
+%{setoolsdir}/dot_seaudit
 %{_mandir}/man1/apol.1.gz
 %{_mandir}/man1/sediffx.1.gz
 %{_mandir}/man8/seaudit.8.gz
