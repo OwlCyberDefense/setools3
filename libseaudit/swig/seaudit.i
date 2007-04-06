@@ -305,6 +305,9 @@ typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 	const char *get_comm() {
 		return seaudit_avc_message_get_comm(self);
 	};
+	const char *get_name() {
+		return seaudit_avc_message_get_name(self);
+	};
 	int get_pid() {
 		return (int)seaudit_avc_message_get_pid(self);
 	};
@@ -652,6 +655,8 @@ seaudit_sort_t *seaudit_sort_by_object_class(int direction);
 seaudit_sort_t *seaudit_sort_by_executable(int direction);
 %newobject seaudit_sort_by_command();
 seaudit_sort_t *seaudit_sort_by_command(int direction);
+%newobject seaudit_sort_by_name();
+seaudit_sort_t *seaudit_sort_by_name(int direction);
 %newobject seaudit_sort_by_path();
 seaudit_sort_t *seaudit_sort_by_path(int direction);
 %newobject seaudit_sort_by_device();

@@ -81,6 +81,7 @@ static const struct pref_toggle pref_toggle_map[] = {
 	{"PermissionCheck", PERM_FIELD},
 	{"ExecutableCheck", EXECUTABLE_FIELD},
 	{"CommandCheck", COMMAND_FIELD},
+	{"NameCheck", NAME_FIELD},
 	{"PIDCheck", PID_FIELD},
 	{"InodeCheck", INODE_FIELD},
 	{"PathCheck", PATH_FIELD},

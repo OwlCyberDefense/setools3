@@ -138,6 +138,15 @@ char *seaudit_avc_message_get_comm(seaudit_avc_message_t * avc)
 	return avc->comm;
 }
 
+char *seaudit_avc_message_get_name(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->name;
+}
+
 unsigned int seaudit_avc_message_get_pid(seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {

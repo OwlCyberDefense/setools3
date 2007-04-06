@@ -145,7 +145,7 @@ This package includes the following console tools:
 AutoReqProv: no
 Summary: Policy analysis graphical tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.1
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
 Requires: glib2 gtk2 >= 2.8 libxml2 libglade2
 

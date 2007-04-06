@@ -166,6 +166,16 @@ extern "C"
 	extern char *seaudit_avc_message_get_comm(seaudit_avc_message_t * avc);
 
 /**
+ * Return the name from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Name, or NULL upon error or if unknown.  Do not free() this
+ * string.
+ */
+	extern char *seaudit_avc_message_get_name(seaudit_avc_message_t * avc);
+
+/**
  * Return the process ID from an avc message.
  *
  * @param avc AVC message to check.

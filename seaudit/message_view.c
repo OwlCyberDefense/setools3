@@ -109,6 +109,7 @@ static const struct view_column_record column_data[] = {
 	{PERM_FIELD, "Permission", "Permission", seaudit_sort_by_permission},
 	{EXECUTABLE_FIELD, "Executable", "/usr/bin/cat", seaudit_sort_by_executable},
 	{COMMAND_FIELD, "Command", "/usr/bin/cat", seaudit_sort_by_command},
+	{NAME_FIELD, "Name", "iceweasel", seaudit_sort_by_name},
 	{PID_FIELD, "PID", "12345", seaudit_sort_by_pid},
 	{INODE_FIELD, "Inode", "123456", seaudit_sort_by_inode},
 	{PATH_FIELD, "Path", "/home/gburdell/foo", seaudit_sort_by_path},
@@ -458,6 +459,10 @@ static void message_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter 
 		}
 	case COMMAND_FIELD:{
 			message_view_to_utf8(value, seaudit_avc_message_get_comm(avc));
+			return;
+		}
+	case NAME_FIELD:{
+			message_view_to_utf8(value, seaudit_avc_message_get_name(avc));
 			return;
 		}
 	case PID_FIELD:{

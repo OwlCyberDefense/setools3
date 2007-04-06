@@ -1,5 +1,10 @@
 2007-04-06  J. Tang  <jtang@tresys.com>
 
+	* Added seaudit_avc_message_get_name() and
+	seaudit_sort_by_name().  seaudit now shows AVC messages' name
+	field; this column may be be hidden through the updated
+	preferences dialog.
+
 	* Updated libqpol to use libsepol >= 2.0.0 if available.
 	configure should be able to autodetect this.
 
