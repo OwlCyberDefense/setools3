@@ -721,7 +721,7 @@ proc ApolTop::create { } {
 	    {command "Direct &Relabel Analysis" {} "Show help on file relabeling" {} -command {ApolTop::helpDlg "Relabel Analysis Help" file_relabel_help.txt}}
 	    {command "&Types Relationship Summary Analysis" {} "Show help on types relationships" {} -command {ApolTop::helpDlg "Types Relationship Summary Analysis Help" types_relation_help.txt}}
 	    {separator}
-	    {command "&About" {} "Show copyright information" {} -command ApolTop::aboutBox}
+	    {command "&About apol" {} "Show copyright information" {} -command ApolTop::aboutBox}
 	}
     }
 
@@ -1170,12 +1170,25 @@ proc ApolTop::showPolicyStats {} {
 }
 
 proc ApolTop::aboutBox {} {
-    variable gui_ver
-    variable copyright_date
+    if {[winfo exists .apol_about]} {
+        raise .apol_about
+    } else {
+        variable gui_ver
+        variable copyright_date
+        variable apol_icon
 
-    set lib_ver [apol_GetVersion]
-    tk_messageBox -icon info -type ok -title "About SELinux Policy Analysis Tool" -message \
-	"Security Policy Analysis Tool for Security Enhanced Linux \n\nCopyright (c) $copyright_date\nTresys Technology, LLC\nhttp://oss.tresys.com/projects/setools\n\nVersion $gui_ver, libapol Version $lib_ver"
+        Dialog .apol_about -cancel 0 -default 0 -image $apol_icon \
+            -modal none -parent . -separator 1 -title "About apol"
+        set f [.apol_about getframe]
+        set l1 [label $f.l1 -text "apol $gui_ver" -height 2]
+        foreach {name size} [$l1 cget -font] {break}
+        incr size 6
+        $l1 configure -font [list $name $size bold]
+        set l2 [label $f.l2 -text "Security Policy Analysis Tool for Security Enhanced Linux\nCopyright (c) $copyright_date Tresys Technology, LLC\nhttp://oss.tresys.com/projects/setools"]
+        pack $l1 $l2
+        .apol_about add -text "Close" -command [list destroy .apol_about]
+        .apol_about draw
+    }
 }
 
 proc ApolTop::closePolicy {} {
@@ -1481,6 +1494,7 @@ proc ApolTop::main {} {
     if {![catch {image create photo -file $icon_file} icon]} {
         wm iconphoto . -default $icon
     }
+    variable apol_icon $icon
 
     set ApolTop::top_width [$notebook cget -width]
     set ApolTop::top_height [$notebook cget -height]

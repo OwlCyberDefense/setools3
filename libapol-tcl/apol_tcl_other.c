@@ -750,15 +750,6 @@ static int Apol_IsCapable(ClientData clientData, Tcl_Interp * interp, int argc, 
 }
 
 /**
- * Return a string that describes the current version if libapol.
- */
-static int Apol_GetVersion(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	Tcl_SetResult(interp, (char *)libapol_get_version(), TCL_STATIC);
-	return TCL_OK;
-}
-
-/**
  * Return a string describing the currently opened policy.  The string
  * gives the policy version, if it is source or binary, and if it is
  * MLS or not.
@@ -1435,7 +1426,6 @@ int apol_tcl_init(Tcl_Interp * interp)
 	Tcl_CreateCommand(interp, "apol_ClosePolicy", Apol_ClosePolicy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetModuleInfo", Apol_GetModuleInfo, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsCapable", Apol_IsCapable, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetVersion", Apol_GetVersion, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", Apol_GetPolicyVersionString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", Apol_GetPolicyVersionNumber, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetStats", Apol_GetStats, NULL, NULL);
