@@ -1,4 +1,12 @@
+2007-04-06  J. Tang  <jtang@tresys.com>
+
+	* Updated libqpol to use libsepol >= 2.0.0 if available.
+	configure should be able to autodetect this.
+
 2007-04-05  J. Tang  <jtang@tresys.com>
+
+	* sediffx now allows the user to select which components to diff,
+	rather than always diffing everything.
 
 	* fix to domain transition analysis, where setexec rules might not
 	be found correctly given certain policies.

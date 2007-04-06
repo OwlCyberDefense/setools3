@@ -429,6 +429,11 @@ AC_SUBST(SELINUX_LIB_FLAG)
 
 sepol_save_CFLAGS="${CFLAGS}"
 CFLAGS="${CFLAGS} ${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG}"
+
+dnl if using libsepol < 2.0.0, then map the old error codes to the new
+dnl format
+AC_CHECK_HEADER([sepol/errcodes.h], sepol_new_defines="yes", sepol_new_defines="no")
+
 AC_RUN_IFELSE([#include <sepol/policydb/policydb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -616,6 +621,10 @@ AC_DEFINE_UNQUOTED(LIBPOLDIFF_VERSION_STRING, "${libpoldiff_version}", [libpoldi
 AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
 AC_DEFINE(SQLITE_PTR_SZ, SIZEOF_CHAR_P, [size of a pointer, as used by SQLite3])
+if test ${sepol_new_defines} != "yes" ; then
+   AC_DEFINE(SEPOL_ENOMEM, HASHTAB_OVERFLOW, [remap of libsepol 1.x.x define to 2.x.x])
+   AC_DEFINE(SEPOL_EEXIST, HASHTAB_PRESENT, [remap of libsepol 1.x.x define to 2.x.x])
+fi
 
 # for older version of BWidget, overcome bug in NoteBook::bindtabs and
 # add a new -autopost option to ComboBox

@@ -205,7 +205,6 @@ typedef int (* require_func_t)();
 %token NOT AND OR XOR
 %token CTRUE CFALSE
 %token IDENTIFIER
-%token USER_IDENTIFIER
 %token NUMBER
 %token EQUALS
 %token NOTEQUAL
@@ -969,11 +968,6 @@ static int define_class(void)
 		yyerror("no class name for class definition?");
 		return -1;
 	}
-	if (id_has_dot(id)) {
-		free(id);
-		yyerror("class identifiers may not contain periods");
-		return -1;
-	}
 	datum = (class_datum_t *) malloc(sizeof(class_datum_t));
 	if (!datum) {
 		yyerror("out of memory");
@@ -1099,11 +1093,11 @@ static int define_common_perms(void)
 	ret = hashtab_insert(policydbp->p_commons.table,
 			     (hashtab_key_t) id, (hashtab_datum_t) comdatum);
 
-	if (ret == HASHTAB_PRESENT) {
+	if (ret == SEPOL_EEXIST) {
 		yyerror("duplicate common definition");
 		goto bad;
 	}
-	if (ret == HASHTAB_OVERFLOW) {
+	if (ret == SEPOL_ENOMEM) {
 		yyerror("hash table overflow");
 		goto bad;
 	}
@@ -1131,14 +1125,14 @@ static int define_common_perms(void)
 				     (hashtab_key_t) perm,
 				     (hashtab_datum_t) perdatum);
 
-		if (ret == HASHTAB_PRESENT) {
+		if (ret == SEPOL_EEXIST) {
 			sprintf(errormsg,
 				"duplicate permission %s in common %s", perm,
 				id);
 			yyerror(errormsg);
 			goto bad_perm;
 		}
-		if (ret == HASHTAB_OVERFLOW) {
+		if (ret == SEPOL_ENOMEM) {
 			yyerror("hash table overflow");
 			goto bad_perm;
 		}
@@ -1260,12 +1254,12 @@ static int define_av_perms(int inherits)
 				     (hashtab_key_t) id,
 				     (hashtab_datum_t) perdatum);
 
-		if (ret == HASHTAB_PRESENT) {
+		if (ret == SEPOL_EEXIST) {
 			sprintf(errormsg, "duplicate permission %s", id);
 			yyerror(errormsg);
 			goto bad;
 		}
-		if (ret == HASHTAB_OVERFLOW) {
+		if (ret == SEPOL_ENOMEM) {
 			yyerror("hash table overflow");
 			goto bad;
 		}
