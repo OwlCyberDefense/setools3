@@ -194,19 +194,19 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files libs
 %defattr(755,root,root)
-%{_libdir}/libqpol.so.1.2
+%{_libdir}/libqpol.so.%{libqpol_ver}
 %{_libdir}/libqpol.so.1
 %{_libdir}/libqpol.so
-%{_libdir}/libapol.so.4.0
+%{_libdir}/libapol.so.%{libapol_ver}
 %{_libdir}/libapol.so.4
 %{_libdir}/libapol.so
-%{_libdir}/libpoldiff.so.1.2
+%{_libdir}/libpoldiff.so.%{libpoldiff_ver}
 %{_libdir}/libpoldiff.so.1
 %{_libdir}/libpoldiff.so
-%{_libdir}/libsefs.so.3.0.2
+%{_libdir}/libsefs.so.%{libsefs_ver}
 %{_libdir}/libsefs.so.3
 %{_libdir}/libsefs.so
-%{_libdir}/libseaudit.so.4.1
+%{_libdir}/libseaudit.so.%{libseaudit_ver}
 %{_libdir}/libseaudit.so.4
 %{_libdir}/libseaudit.so
 %defattr(-, root, root)
@@ -222,34 +222,42 @@ rm -rf ${RPM_BUILD_ROOT}
 %{pkgpythondir}/qpol.py
 %{pkgpythondir}/qpol.pyc
 %{pkgpythondir}/qpol.pyo
-%{pkgpyexecdir}/_qpol.so.1.2
+%{pkgpyexecdir}/_qpol.so.%{libqpol_ver}
 %{pkgpyexecdir}/_qpol.so.1
 %attr(755,root,root) %{pkgpyexecdir}/_qpol.so
 %{pkgpythondir}/apol.py
 %{pkgpythondir}/apol.pyc
 %{pkgpythondir}/apol.pyo
-%{pkgpyexecdir}/_apol.so.4.0
+%{pkgpyexecdir}/_apol.so.%{libapol_ver}
 %{pkgpyexecdir}/_apol.so.4
 %attr(755,root,root) %{pkgpyexecdir}/_apol.so
 %{pkgpythondir}/poldiff.py
 %{pkgpythondir}/poldiff.pyc
 %{pkgpythondir}/poldiff.pyo
-%{pkgpyexecdir}/_poldiff.so.1.2
+%{pkgpyexecdir}/_poldiff.so.%{libpoldiff_ver}
 %{pkgpyexecdir}/_poldiff.so.1
 %attr(755,root,root) %{pkgpyexecdir}/_poldiff.so
 %{pkgpythondir}/seaudit.py
 %{pkgpythondir}/seaudit.pyc
 %{pkgpythondir}/seaudit.pyo
-%{pkgpyexecdir}/_seaudit.so.4.1
+%{pkgpyexecdir}/_seaudit.so.%{libseaudit_ver}
 %{pkgpyexecdir}/_seaudit.so.4
 %attr(755,root,root) %{pkgpyexecdir}/_seaudit.so
 
 %files libs-java
 %defattr(-,root,root)
-%{setoolsdir}/com
-%{setoolsdir}/com/tresys
-%{setoolsdir}/com/tresys/setools
-%{setoolsdir}/com/tresys/setools/apol
+%{_libdir}/libjqpol.so.%{libqpol_ver}
+%{_libdir}/libjqpol.so.1
+%{_libdir}/libjqpol.so
+%{_libdir}/libjapol.so.%{libapol_ver}
+%{_libdir}/libjapol.so.4
+%{_libdir}/libjapol.so
+%{_libdir}/libjpoldiff.so.%{libpoldiff_ver}
+%{_libdir}/libjpoldiff.so.1
+%{_libdir}/libjpoldiff.so
+%{_libdir}/libjseaudit.so.%{libseaudit_ver}
+%{_libdir}/libjseaudit.so.4
+%{_libdir}/libjseaudit.so
 %{setoolsdir}/com/tresys/setools/apol/apol.class
 %{setoolsdir}/com/tresys/setools/apol/apolJNI.class
 %{setoolsdir}/com/tresys/setools/apol/apol_attr_query_t.class
@@ -322,7 +330,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_qpol_type_t.class
 %{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_unsigned_int.class
 %{setoolsdir}/com/tresys/setools/apol/SWIGTYPE_p_void.class
-%{setoolsdir}/com/tresys/setools/qpol
 %{setoolsdir}/com/tresys/setools/qpol/qpol_avrule_t.class
 %{setoolsdir}/com/tresys/setools/qpol/qpol_bool_t.class
 %{setoolsdir}/com/tresys/setools/qpol/qpol_capability_e.class
@@ -362,7 +369,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{setoolsdir}/com/tresys/setools/qpol/SWIGTYPE_p_f_p_void_p_struct_qpol_policy_int_p_q_const__char_va_list__void.class
 %{setoolsdir}/com/tresys/setools/qpol/SWIGTYPE_p_int.class
 %{setoolsdir}/com/tresys/setools/qpol/SWIGTYPE_p_void.class
-%{setoolsdir}/com/tresys/setools/poldiff
 %{setoolsdir}/com/tresys/setools/poldiff/poldiff_attrib_t.class
 %{setoolsdir}/com/tresys/setools/poldiff/poldiff_avrule_t.class
 %{setoolsdir}/com/tresys/setools/poldiff/poldiff_bool_t.class
@@ -391,7 +397,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_apol_vector_t.class
 %{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_qpol_cond_t.class
 %{setoolsdir}/com/tresys/setools/poldiff/SWIGTYPE_p_void.class
-%{setoolsdir}/com/tresys/setools/seaudit
 %{setoolsdir}/com/tresys/setools/seaudit/seaudit_avc_message_t.class
 %{setoolsdir}/com/tresys/setools/seaudit/seaudit_avc_message_type_e.class
 %{setoolsdir}/com/tresys/setools/seaudit/seaudit_bool_message_t.class
