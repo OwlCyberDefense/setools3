@@ -31,6 +31,7 @@
 #include "policy_view.h"
 #include "remap_types_dialog.h"
 #include "sediffx.h"
+#include "select_diff_dialog.h"
 #include "toplevel.h"
 #include "utilgui.h"
 
@@ -333,11 +334,14 @@ void toplevel_run_diff(toplevel_t * top)
 {
 	struct run_datum r;
 
+	r.run_flags = select_diff_dialog_run(top);
+	if (r.run_flags == 0) {
+		return;
+	}
 	r.top = top;
-	r.run_flags = POLDIFF_DIFF_ALL;
 	r.result = 0;
-	results_clear(top->results);
 
+	results_clear(top->results);
 	util_cursor_wait(GTK_WIDGET(top->w));
 	progress_show(top->progress, "Running Diff");
 	g_thread_create(toplevel_run_diff_runner, &r, FALSE, NULL);

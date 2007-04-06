@@ -1,7 +1,4 @@
 Audit Log Analysis Tool for Security Enhanced Linux
-seaudit, version 3.1
-February 1, 2007
-selinux@tresys.com
 
 
 Overview:
@@ -256,11 +253,11 @@ case sensitive.
 Status Bar:
 -----------
 At the bottom of seaudit is a status bar.  In the left corner it
-displays the approximate version of the policy you have loaded along
-with the policy type.  The middle displays the number of log messages
-displayed and the total number of SELinux messages in the audit log.
-The next label shows the span of the dates in the audit log and the
-right-most label shows the status of the real-time log monitor.
+displays the approximate version of the policy loaded along with the
+policy type.  In the middle it displays the number of log messages in
+the current view and the total number of SELinux messages in the audit
+log.  The next label shows the span of the dates in the audit log and
+the right-most label shows the status of the real-time log monitor.
 
 
 Creating Reports:

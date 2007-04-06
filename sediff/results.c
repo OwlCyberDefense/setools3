@@ -80,7 +80,7 @@ static const poldiff_form_e form_map[] = {
  * tree.
  */
 static result_item_t *(*result_item_constructors[NUM_RESULT_ITEMS]) (GtkTextTagTable *) = {
-result_item_create_classes, result_item_create_commons,
+result_item_create_commons, result_item_create_classes,
 		result_item_create_levels, result_item_create_categories,
 		result_item_create_types, result_item_create_attributes,
 		result_item_create_roles, result_item_create_users,
@@ -276,6 +276,7 @@ static void results_update_summary(results_t * r)
 			sum_diffs = 0;
 			g_string_printf(s, "\n%s:\n", label);
 			gtk_text_buffer_insert_with_tags_by_name(r->main_buffer, &iter, s->str, -1, "subheader", NULL);
+			int was_run = 0;
 			for (j = 0; j < 5; j++) {
 				if (forms[j] > 0) {
 					size_t num_diffs;
@@ -290,9 +291,14 @@ static void results_update_summary(results_t * r)
 							   RESULTS_SUMMARY_COLUMN_LABEL, s->str,
 							   RESULTS_SUMMARY_COLUMN_FORM, form_map[j],
 							   RESULTS_SUMMARY_COLUMN_ITEM, r->items[i], -1);
+					was_run = 1;
 				}
 			}
-			g_string_printf(s, "%s (%zd)", label, sum_diffs);
+			if (!was_run) {
+				g_string_printf(s, "%s (\?\?\?)", label);
+			} else {
+				g_string_printf(s, "%s (%zd)", label, sum_diffs);
+			}
 			gtk_tree_store_set(r->summary_tree, &topiter,
 					   RESULTS_SUMMARY_COLUMN_LABEL, s->str, RESULTS_SUMMARY_COLUMN_STYLE, FALSE, -1);
 		} else {
@@ -518,7 +524,7 @@ static void results_summary_on_row_activate(GtkTreeView * tree_view, GtkTreePath
 }
 
 /**
- * Callback invoked when the user clicks on an inlink link.  This will
+ * Callback invoked when the user clicks on an inline link.  This will
  * spawn a pop-up menu where the user and get more information on the
  * clicked string (which is hopefully an AV rule's permission).
  */

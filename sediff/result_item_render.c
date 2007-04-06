@@ -267,13 +267,18 @@ void result_item_print_summary(result_item_t * item, GtkTextBuffer * tb)
 	g_string_printf(string, "%s:\n", result_item_get_label(item));
 	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "subheader", NULL);
 
+	int was_run = 0;
 	result_item_get_forms(item, forms);
 	for (i = 0; i < 5; i++) {
 		if (forms[i] > 0) {
 			g_string_printf(string, "\t%s: %zd\n",
 					form_name_long_map[i], result_item_get_num_differences(item, form_map[i]));
 			gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, tag_map[i], NULL);
+			was_run = 1;
 		}
+	}
+	if (!was_run && result_item_is_supported(item)) {
+		gtk_text_buffer_set_text(tb, "This component has not yet been run.", -1);
 	}
 	g_string_free(string, TRUE);
 }
