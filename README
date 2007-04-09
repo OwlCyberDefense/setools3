@@ -126,7 +126,7 @@ instead obtain the development version of SETools from the Subversion
 repository (see Section 4).
 
   $ cd setools
-  $ autoreconf --install
+  $ autoreconf
   $ ./configure
   $ make
   $ make install
