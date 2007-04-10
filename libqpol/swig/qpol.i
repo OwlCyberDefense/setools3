@@ -55,20 +55,33 @@
 
 #ifdef SWIGJAVA
 %javaconst(1);
-%{extern JNIEnv*jenv;%}
+%{
+#include <jni.h>
+	JNIEnv *jenv;
+	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
+		return JNI_VERSION_1_2;
+	}
+%}
 #endif
 
 %include exception.i
+%include stdint.i
+
+#ifdef SWIGWORDSIZE64
+%typedef uint64_t size_t;
+#else
+%typedef uint32_t size_t;
+#endif
 
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%typemap(out) size_t {
+	$result = (size_t)$1;
+}
 #endif
-
-%typedef unsigned long size_t;
-
-//%include headers to wrap directly here
 
 /* utility functions */
 const char *libqpol_get_version(void);
@@ -76,6 +89,10 @@ const char *libqpol_get_version(void);
 %rename(qpol_default_policy_find) wrap_qpol_default_policy_find;
 %newobject wrap_qpol_default_policy_find;
 %inline %{
+#ifdef SWIGJAVA
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#endif
 	char * wrap_qpol_default_policy_find() {
 		char *path;
 		int retv;
@@ -190,15 +207,24 @@ typedef enum qpol_capability
 
 %extend qpol_policy_t {
 	/* open no rules currently unavailable pending neverallow decision */
-	qpol_policy_t(const char *path, qpol_callback_fn_t fn=NULL, void *arg=NULL) {
+	qpol_policy_t(const char *path, qpol_callback_fn_t fn, void *arg) {
 		qpol_policy_t *p;
-		if (qpol_policy_open_from_file(path, &p, fn, arg)) {
+		if (qpol_policy_open_from_file(path, &p, fn, arg) < 0) {
 			SWIG_exception(SWIG_IOError, "Error opening policy");
 		}
 		return p;
 	fail:
 		return NULL;
 	};
+	qpol_policy_t(const char *path) {
+		qpol_policy_t *p;
+		if (qpol_policy_open_from_file(path, &p, NULL, NULL) < 0) {
+			SWIG_exception(SWIG_IOError, "Error opening policy");
+		}
+		return p;
+	fail:
+		return NULL;
+	}
 	~qpol_policy_t() {
 		qpol_policy_destroy(&self);
 	};
