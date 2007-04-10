@@ -65,7 +65,7 @@ static const struct visible_field default_visible_fields[] = {
 	{PERM_FIELD, "perm_field", 1},
 	{EXECUTABLE_FIELD, "exe_field", 1},
 	{COMMAND_FIELD, "comm_field", 1},
-	{NAME_FIELD, "name_field", 1},
+	{NAME_FIELD, "name_field", 0},
 	{PID_FIELD, "pid_field", 0},
 	{INODE_FIELD, "inode_field", 0},
 	{PATH_FIELD, "path_field", 0},
