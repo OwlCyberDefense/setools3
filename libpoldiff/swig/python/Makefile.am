@@ -10,7 +10,7 @@ BUILT_SOURCES = poldiff_wrap.c
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ -I$(top_builddir) -fpic \
-	-I$(top_srcdir)/libpoldiff/include -D__attribute__\(x\)=''
+	-I$(top_srcdir)/libpoldiff/include
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @POLDIFF_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \

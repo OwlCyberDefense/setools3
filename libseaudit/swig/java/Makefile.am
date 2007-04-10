@@ -36,7 +36,7 @@ BUILT_SOURCES = seaudit_wrap.c $(subst .class,.java,$(wrappedclass_DATA))
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \
-	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libseaudit/include -D__attribute__\(x\)=''
+	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libseaudit/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @POLDIFF_LIB_FLAG@

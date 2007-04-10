@@ -23,8 +23,6 @@
 
 %module qpol
 
-#define __attribute__(x)
-
 %{
 #include "../include/qpol/avrule_query.h"
 #include "../include/qpol/bool_query.h"
@@ -55,8 +53,8 @@
 
 #ifdef SWIGJAVA
 %javaconst(1);
+/* get the java environment so we can throw exceptions */
 %{
-#include <jni.h>
 	JNIEnv *jenv;
 	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
@@ -68,19 +66,21 @@
 %include exception.i
 %include stdint.i
 
-#ifdef SWIGWORDSIZE64
-%typedef uint64_t size_t;
-#else
-%typedef uint32_t size_t;
-#endif
-
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
-%typemap(out) size_t {
-	$result = (size_t)$1;
-}
+/* handle size_t correctly in java as architecture independent */
+%typemap(jni) size_t "jlong"
+%typemap(jtype) size_t "long"
+%typemap(jstype) size_t "long"
+#else
+/* not in java so handle size_t as architecture dependent */
+#ifdef SWIGWORDSIZE64
+typedef uint64_t size_t;
+#else
+typedef uint32_t size_t;
+#endif
 #endif
 
 /* utility functions */
@@ -89,6 +89,7 @@ const char *libqpol_get_version(void);
 %rename(qpol_default_policy_find) wrap_qpol_default_policy_find;
 %newobject wrap_qpol_default_policy_find;
 %inline %{
+/* if java, pass the new exception macro to C not just SWIG */
 #ifdef SWIGJAVA
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
@@ -110,6 +111,7 @@ const char *libqpol_get_version(void);
 %}
 
 %inline %{
+/* cast void * to char * as it can't have a constructor */
 const char * to_str(void *x) {
 	return (const char *)x;
 }

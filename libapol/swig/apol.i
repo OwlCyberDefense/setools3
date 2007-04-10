@@ -24,8 +24,6 @@
 
 %module apol
 
-#define __attribute__(x)
-
 %{
 #include <apol/avl-util.h>
 #include <apol/avrule-query.h>
@@ -60,23 +58,35 @@
 
 #ifdef SWIGJAVA
 %javaconst(1);
-%{extern JNIEnv*jenv;%}
+/* get the java environment so we can throw exceptions */
+%{
+	JNIEnv *jenv;
+	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
+		return JNI_VERSION_1_2;
+	}
+%}
 #endif
 
 %include exception.i
+%include stdint.i
 
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+/* handle size_t correctly in java as architecture independent */
+%typemap(jni) size_t "jlong"
+%typemap(jtype) size_t "long"
+%typemap(jstype) size_t "long"
+#else
+/* not in java so handle size_t as architecture dependent */
+#ifdef SWIGWORDSIZE64
+typedef uint64_t size_t;
+#else
+typedef uint32_t size_t;
 #endif
-
-/* sized integer handling -
- * NOTE cannot include stdint.h here as seig does not parse it right
- * also some integer types are treated identically in many target languages */
-%typedef unsigned char uint8_t;
-%typedef unsigned int uint32_t;
-%typedef unsigned long size_t;
+#endif
 
 /* defines from policy-query.h */
 /* Many libapol queries act upon MLS contexts.  Use these defines to
@@ -110,6 +120,11 @@ const char *apol_protocol_to_str(uint8_t protocol);
 %newobject wrap_apol_str_to_internal_ip;
 %rename(apol_str_to_internal_ip) wrap_apol_str_to_internal_ip;
 %inline %{
+/* if java, pass the new exception macro to C not just SWIG */
+#ifdef SWIGJAVA
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#endif
 	uint32_t *wrap_apol_str_to_internal_ipv6(char *str) {
 		uint32_t *ip = calloc(4, sizeof(uint32_t));
 		int retv = 0;
@@ -163,7 +178,7 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 /* directly include and wrap */
 %include "apol/render.h"
 
-/* derived vector types here */
+/* derived vector type here */
 %inline %{
 	typedef struct apol_string_vector apol_string_vector_t;
 %}

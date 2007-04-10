@@ -24,8 +24,6 @@
 
 %module seaudit
 
-#define __attribute__(x)
-
 %{
 #include <seaudit/avc_message.h>
 #include <seaudit/bool_message.h>
@@ -43,18 +41,35 @@
 
 #ifdef SWIGJAVA
 %javaconst(1);
-%{extern JNIEnv*jenv;%}
+/* get the java environment so we can throw exceptions */
+%{
+	JNIEnv *jenv;
+	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
+		return JNI_VERSION_1_2;
+	}
+%}
 #endif
 
 %include exception.i
+%include stdint.i
 
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+/* handle size_t correctly in java as architecture independent */
+%typemap(jni) size_t "jlong"
+%typemap(jtype) size_t "long"
+%typemap(jstype) size_t "long"
+#else
+/* not in java so handle size_t as architecture dependent */
+#ifdef SWIGWORDSIZE64
+typedef uint64_t size_t;
+#else
+typedef uint32_t size_t;
 #endif
-
-%typedef unsigned long size_t;
+#endif
 
 /* from apol wrapper */
 %{
@@ -62,6 +77,7 @@
 %}
 
 #ifdef SWIGPYTHON
+/* map python file to C FILE struct pointer */
 %typemap(in) FILE * {
 	if (!PyFile_Check($input)) {
 		PyErr_SetString(PyExc_TypeError, "Need a file!");
@@ -70,6 +86,14 @@
 	$1 = PyFile_AsFile($input);
 }
 #endif
+
+%inline %{
+/* if java, pass the new exception macro to C not just SWIG */
+#ifdef SWIGJAVA
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#endif
+%}
 
 /* from <time.h> */
 %{
@@ -668,6 +692,7 @@ seaudit_sort_t *seaudit_sort_by_pid(int direction);
 
 /* seaudit model */
 #ifdef SWIGPYTHON
+/* handle ownership of filters and sorts passed to the model */
 %typemap(in) seaudit_filter_t *filter {
 	void *x = NULL;
 	Py_IncRef($input);

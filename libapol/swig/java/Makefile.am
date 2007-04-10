@@ -85,7 +85,7 @@ BUILT_SOURCES = apol_wrap.c $(subst .class,.java,$(wrappedclass_DATA))
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \
-	-I$(top_srcdir)/libapol/include -D__attribute__\(x\)=''
+	-I$(top_srcdir)/libapol/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
@@ -96,7 +96,7 @@ $(BUILT_SOURCES): $(dist_noinst_DATA)
 	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ -I$(top_srcdir)/libapol/include $<
 
 $(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
-	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_JAVA_CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
+	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_JAVA_CFLAGS) -DSWIGJAVA=1 $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ $(short_name)
 

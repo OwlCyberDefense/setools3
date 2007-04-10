@@ -52,7 +52,7 @@ BUILT_SOURCES = qpol_wrap.c $(subst .class,.java,$(wrappedclass_DATA))
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	-I$(top_builddir) -fpic \
-	-I$(top_srcdir)/libqpol/include -D__attribute__\(x\)=''
+	-I$(top_srcdir)/libqpol/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @QPOL_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so 

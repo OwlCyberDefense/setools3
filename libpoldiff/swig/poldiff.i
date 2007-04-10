@@ -24,8 +24,6 @@
 
 %module poldiff
 
-#define __attribute__(x)
-
 %{
 #include <poldiff/attrib_diff.h>
 #include <poldiff/avrule_diff.h>
@@ -47,23 +45,36 @@
 
 #ifdef SWIGJAVA
 %javaconst(1);
-%{extern JNIEnv*jenv;%}
+/* get the java environment so we can throw exceptions */
+%{
+	JNIEnv *jenv;
+	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
+		return JNI_VERSION_1_2;
+	}
+%}
 #endif
 
 %include exception.i
+%include stdint.i
 
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
 #define SWIG_exception_typemap(code, msg) {SWIG_JavaException(jenv, code, msg);}
+/* handle size_t correctly in java as architecture independent */
+%typemap(jni) size_t "jlong"
+%typemap(jtype) size_t "long"
+%typemap(jstype) size_t "long"
+#else
+/* not in java so handle size_t as architecture dependent */
+#ifdef SWIGWORDSIZE64
+typedef uint64_t size_t;
+#else
+typedef uint32_t size_t;
 #endif
-
-/* sized integer handling -
- * NOTE cannot include stdint.h here as seig does not parse it right
- * also some integer types are treated identically in many target languages */
-%typedef unsigned int uint32_t;
-%typedef unsigned long size_t;
+#endif
 
 %typedef struct apol_policy apol_policy_t;
 %{typedef struct apol_string_vector apol_string_vector_t;%} /* see apol.i */
@@ -103,6 +114,14 @@ const char *libpoldiff_get_version (void);
 #endif
 	}
 }
+
+%inline %{
+/* if java, pass the new exception macro to C not just SWIG */
+#ifdef SWIGJAVA
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#endif
+%}
 
 /* poldiff form */
 typedef enum poldiff_form
@@ -187,6 +206,7 @@ unsigned long to_ulong(void *x);
 
 /* poldiff object */
 #ifdef SWIGPYTHON
+/* the following type maps handle the poldiff object taking ownership of the policies */
 %typemap(in) apol_policy_t *op {
 	void *x = NULL;
 	Py_IncRef($input);
