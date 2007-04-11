@@ -57,6 +57,7 @@
 
 %include exception.i
 %include stdint.i
+%import apol.i
 
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
@@ -67,6 +68,37 @@
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
 %typemap(jstype) size_t "long"
+%typemap("javaimports") SWIGTYPE %{
+import com.tresys.setools.qpol.*;
+import com.tresys.setools.apol.*;
+%}
+%typemap(javabody) SWIGTYPE %{
+    private long swigCPtr;
+    protected boolean swigCMemOwn;
+
+    public $javaclassname(long cPtr, boolean cMemoryOwn) {
+        swigCMemOwn = cMemoryOwn;
+        swigCPtr = cPtr;
+    }
+
+    public static long getCPtr($javaclassname obj) {
+        return (obj == null) ? 0 : obj.swigCPtr;
+    }
+%}
+/* the following handles the dependencies on qpol and apol */
+%pragma(java) jniclassimports=%{
+import com.tresys.setools.qpol.*;
+import com.tresys.setools.apol.*;
+%}
+%pragma(java) jniclasscode=%{
+	static {
+		System.loadLibrary("jpoldiff");
+	}
+%}
+%pragma(java) moduleimports=%{
+import com.tresys.setools.qpol.*;
+import com.tresys.setools.apol.*;
+%}
 #else
 /* not in java so handle size_t as architecture dependent */
 #ifdef SWIGWORDSIZE64
@@ -76,8 +108,9 @@ typedef uint32_t size_t;
 #endif
 #endif
 
-%typedef struct apol_policy apol_policy_t;
-%{typedef struct apol_string_vector apol_string_vector_t;%} /* see apol.i */
+%inline %{
+	typedef struct apol_string_vector apol_string_vector_t;
+%}
 
 const char *libpoldiff_get_version (void);
 

@@ -57,9 +57,9 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	-I$(top_srcdir)/libqpol/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @QPOL_LIB_FLAG@
-DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so 
+DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so
 
-$(BUILT_SOURCES): $(dist_noinst_DATA)
+$(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA)
 	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ -I$(top_srcdir)/libqpol/include $<
 
 $(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
@@ -78,6 +78,8 @@ $(firstword $(classes)): $(filter %.java, $(BUILT_SOURCES))
 	$(JAVAC) $(AM_JFLAGS) $(JAVAFLAGS) -d . $^
 
 $(wordlist 2,$(words $(classes)),$(classes)): $(firstword $(classes))
+
+$(wrappedjar_DATA): MANIFEST.MF
 
 $(wrappedjar_DATA): $(classes)
 	$(JAR) cf $@ -m MANIFEST.MF $^

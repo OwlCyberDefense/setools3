@@ -67,14 +67,14 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \
 	-I$(top_srcdir)/libapol/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@ \
-	-classpath $(top_srcdir)/libqpol/swig/java/qpol.jar
+	-classpath $(top_builddir)/libqpol/swig/java/qpol.jar
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so
 
-$(BUILT_SOURCES): $(dist_noinst_DATA)
-	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/swig/ $<
+$(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA)
+	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/swig $<
 
 $(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
 	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_JAVA_CFLAGS) -DSWIGJAVA=1 $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
@@ -92,6 +92,8 @@ $(firstword $(classes)): $(filter %.java, $(BUILT_SOURCES))
 	$(JAVAC) $(AM_JFLAGS) $(JAVAFLAGS) -d . $^
 
 $(wordlist 2,$(words $(classes)),$(classes)): $(firstword $(classes))
+
+$(wrappedjar_DATA): MANIFEST.MF
 
 $(wrappedjar_DATA): $(classes)
 	$(JAR) cf $@ -m MANIFEST.MF $^

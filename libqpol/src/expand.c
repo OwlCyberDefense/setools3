@@ -3,7 +3,6 @@
  *
  * Provides a way for setools to expand policy.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
