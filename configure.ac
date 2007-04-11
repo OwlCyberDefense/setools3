@@ -180,6 +180,7 @@ if test "x${enable_jswig}" = xyes; then
    AC_CHECK_CLASSPATH
    AC_PROG_JAVAC
    AC_PROG_JAVA
+   AC_PROG_JAR
    SWIG_JAVA_OPT=-java
    java_save_CFLAGS="${CFLAGS}"
    SWIG_JAVA_CFLAGS="-I${JAVAPREFIX}/include -I${JAVAPREFIX}/include/linux"
@@ -667,7 +668,7 @@ EOF
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
-                 libqpol/swig/Makefile libqpol/swig/python/Makefile libqpol/swig/java/Makefile \
+                 libqpol/swig/Makefile libqpol/swig/python/Makefile libqpol/swig/java/Makefile libqpol/swig/java/MANIFEST.MF \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
                  libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile \
                  libapol-tcl/Makefile \

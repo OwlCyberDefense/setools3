@@ -5,50 +5,51 @@ wrappedsodir = $(libdir)
 
 package_name = com.tresys.setools.qpol
 
-wrappedclass_DATA = \
-	qpol_avrule_t.class \
-	qpol_bool_t.class \
-	qpol_capability_e.class \
-	qpol_cat_t.class \
-	qpol_class_t.class \
-	qpol_common_t.class \
-	qpol_cond_expr_node_t.class \
-	qpol_cond_t.class \
-	qpolConstants.class \
-	qpol_constraint_expr_node_t.class \
-	qpol_constraint_t.class \
-	qpol_context_t.class \
-	qpol_fs_use_t.class \
-	qpol_genfscon_t.class \
-	qpol_isid_t.class \
-	qpol_iterator_t.class \
-	qpol.class \
-	qpolJNI.class \
-	qpol_level_t.class \
-	qpol_mls_level_t.class \
-	qpol_mls_range_t.class \
-	qpol_module_t.class \
-	qpol_netifcon_t.class \
-	qpol_nodecon_t.class \
-	qpol_policy_t.class \
-	qpol_range_trans_t.class \
-	qpol_role_allow_t.class \
-	qpol_role_t.class \
-	qpol_role_trans_t.class \
-	qpol_syn_avrule_t.class \
-	qpol_syn_terule_t.class \
-	qpol_terule_t.class \
-	qpol_type_set_t.class \
-	qpol_type_t.class \
-	qpol_user_t.class \
-	qpol_validatetrans_t.class \
-	SWIGTYPE_p_f_p_void_p_struct_qpol_policy_int_p_q_const__char_va_list__void.class \
-	SWIGTYPE_p_int.class \
-	SWIGTYPE_p_void.class
-wrappedclassdir = $(setoolsdir)/$(subst .,/,$(package_name))
+wrappedjar_DATA = qpol.jar
+
+wrappedjardir = $(libdir)/setools
 
 dist_noinst_DATA = $(srcdir)/../qpol.i
-BUILT_SOURCES = qpol_wrap.c $(subst .class,.java,$(wrappedclass_DATA))
+BUILT_SOURCES = qpol_wrap.c \
+	qpol_avrule_t.java \
+	qpol_bool_t.java \
+	qpol_capability_e.java \
+	qpol_cat_t.java \
+	qpol_class_t.java \
+	qpol_common_t.java \
+	qpol_cond_expr_node_t.java \
+	qpol_cond_t.java \
+	qpolConstants.java \
+	qpol_constraint_expr_node_t.java \
+	qpol_constraint_t.java \
+	qpol_context_t.java \
+	qpol_fs_use_t.java \
+	qpol_genfscon_t.java \
+	qpol_isid_t.java \
+	qpol_iterator_t.java \
+	qpol.java \
+	qpolJNI.java \
+	qpol_level_t.java \
+	qpol_mls_level_t.java \
+	qpol_mls_range_t.java \
+	qpol_module_t.java \
+	qpol_netifcon_t.java \
+	qpol_nodecon_t.java \
+	qpol_policy_t.java \
+	qpol_range_trans_t.java \
+	qpol_role_allow_t.java \
+	qpol_role_t.java \
+	qpol_role_trans_t.java \
+	qpol_syn_avrule_t.java \
+	qpol_syn_terule_t.java \
+	qpol_terule_t.java \
+	qpol_type_set_t.java \
+	qpol_type_t.java \
+	qpol_user_t.java \
+	qpol_validatetrans_t.java \
+	SWIGTYPE_p_f_p_void_p_struct_qpol_policy_int_p_q_const__char_va_list__void.java \
+	SWIGTYPE_p_int.java \
+	SWIGTYPE_p_void.java
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	-I$(top_builddir) -fpic \
@@ -65,8 +66,13 @@ $(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ $(short_name)
 
-$(wrappedclass_DATA): $(filter %.java, $(BUILT_SOURCES))
+classes = $(subst .java,.class,$(filter %.java, $(BUILT_SOURCES)))
+
+$(classes): $(filter %.java, $(BUILT_SOURCES))
 	$(JAVAC) $(AM_JFLAGS) $(JAVAFLAGS) $^
+
+$(wrappedjar_DATA): $(classes)
+	$(JAR) cf $@ -m MANIFEST.MF $^
 
 install-data-hook:
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(wrappedso_SONAME)
@@ -75,4 +81,4 @@ install-data-hook:
 uninstall-local:
 	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_SONAME) $(DESTDIR)$(wrappedsodir)/$(short_name)
 
-MOSTLYCLEANFILES = $(BUILT_SOURCES) $(wrappedso_DATA) $(wrappedclass_DATA) $(wrappedso_SONAME) $(short_name)
+MOSTLYCLEANFILES = $(BUILT_SOURCES) $(classes) $(wrappedso_DATA) $(wrappedjar_DATA) $(wrappedso_SONAME) $(short_name)
