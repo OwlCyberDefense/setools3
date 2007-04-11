@@ -70,6 +70,7 @@
 
 %include exception.i
 %include stdint.i
+%import qpol.i
 
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
@@ -79,6 +80,15 @@
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
 %typemap(jstype) size_t "long"
+/* the following handles the dependencies on qpol */
+%pragma(java) jniclassimports=%{import com.tresys.setools.qpol.*;%}
+%pragma(java) jniclasscode=%{
+	static {
+		System.loadLibrary("jqpol");
+		System.loadLibrary("japol");
+	}
+%}
+%pragma(java) moduleimports=%{import com.tresys.setools.qpol.*;%}
 #else
 /* not in java so handle size_t as architecture dependent */
 #ifdef SWIGWORDSIZE64

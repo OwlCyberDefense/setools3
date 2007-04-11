@@ -55,27 +55,6 @@ wrappedclass_DATA = \
         apol_validatetrans_query_t.class \
         apol_vector_t.class \
         SWIGTYPE_p_apol_string_vector.class \
-        SWIGTYPE_p_qpol_avrule_t.class \
-        SWIGTYPE_p_qpol_cond_t.class \
-        SWIGTYPE_p_qpol_context_t.class \
-        SWIGTYPE_p_qpol_fs_use_t.class \
-        SWIGTYPE_p_qpol_genfscon_t.class \
-        SWIGTYPE_p_qpol_iterator_t.class \
-        SWIGTYPE_p_qpol_level_t.class \
-        SWIGTYPE_p_qpol_mls_level_t.class \
-        SWIGTYPE_p_qpol_mls_range_t.class \
-        SWIGTYPE_p_qpol_netifcon_t.class \
-        SWIGTYPE_p_qpol_nodecon_t.class \
-        SWIGTYPE_p_qpol_policy_t.class \
-        SWIGTYPE_p_qpol_portcon_t.class \
-        SWIGTYPE_p_qpol_range_trans_t.class \
-        SWIGTYPE_p_qpol_role_allow_t.class \
-        SWIGTYPE_p_qpol_role_t.class \
-        SWIGTYPE_p_qpol_role_trans_t.class \
-        SWIGTYPE_p_qpol_syn_avrule_t.class \
-        SWIGTYPE_p_qpol_syn_terule_t.class \
-        SWIGTYPE_p_qpol_terule_t.class \
-        SWIGTYPE_p_qpol_type_t.class \
         SWIGTYPE_p_unsigned_int.class \
         SWIGTYPE_p_void.class
 wrappedclassdir = $(setoolsdir)/$(subst .,/,$(package_name))
@@ -86,14 +65,14 @@ BUILT_SOURCES = apol_wrap.c $(subst .class,.java,$(wrappedclass_DATA))
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \
 	-I$(top_srcdir)/libapol/include
-AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@
+AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@ -classpath $(top_srcdir)/libqpol/swig/java/qpol.jar
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so
 
 $(BUILT_SOURCES): $(dist_noinst_DATA)
-	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ -I$(top_srcdir)/libapol/include $<
+	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/swig/ $<
 
 $(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
 	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_JAVA_CFLAGS) -DSWIGJAVA=1 $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
