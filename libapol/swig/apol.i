@@ -80,11 +80,24 @@
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
 %typemap(jstype) size_t "long"
+%typemap("javaimports") SWIGTYPE %{import com.tresys.setools.qpol.*;%}
+%typemap(javabody) SWIGTYPE %{
+    private long swigCPtr;
+    protected boolean swigCMemOwn;
+
+    public $javaclassname(long cPtr, boolean cMemoryOwn) {
+        swigCMemOwn = cMemoryOwn;
+        swigCPtr = cPtr;
+    }
+
+    public static long getCPtr($javaclassname obj) {
+        return (obj == null) ? 0 : obj.swigCPtr;
+    }
+%}
 /* the following handles the dependencies on qpol */
 %pragma(java) jniclassimports=%{import com.tresys.setools.qpol.*;%}
 %pragma(java) jniclasscode=%{
 	static {
-		System.loadLibrary("jqpol");
 		System.loadLibrary("japol");
 	}
 %}
@@ -339,7 +352,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 %extend apol_policy_path_t {
 	apol_policy_path_t(apol_policy_path_type_e type, char * primary, apol_string_vector_t *modules = NULL) {
 		apol_policy_path_t *p;
-		if ((p = apol_policy_path_create(type, primary, (apol_vector_t*)modules))) {
+		if ((p = apol_policy_path_create(type, primary,	(apol_vector_t*)modules)) == NULL) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
@@ -347,7 +360,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	};
 	apol_policy_path_t(char *path) {
 		apol_policy_path_t *p;
-		if ((p = apol_policy_path_create_from_file(path))) {
+		if ((p = apol_policy_path_create_from_file(path)) == NULL) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
@@ -355,7 +368,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	};
 	apol_policy_path_t(char *str, int unused) {
 		apol_policy_path_t *p;
-		if ((p = apol_policy_path_create_from_string(str))) {
+		if ((p = apol_policy_path_create_from_string(str)) == NULL) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
@@ -363,7 +376,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	};
 	apol_policy_path_t(apol_policy_path_t *in) {
 		apol_policy_path_t *p;
-		if ((p = apol_policy_path_create_from_policy_path(in))) {
+		if ((p = apol_policy_path_create_from_policy_path(in)) == NULL) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:

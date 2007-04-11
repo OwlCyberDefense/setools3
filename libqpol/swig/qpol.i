@@ -67,6 +67,7 @@
 %include stdint.i
 
 #ifdef SWIGJAVA
+
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
@@ -74,6 +75,25 @@
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
 %typemap(jstype) size_t "long"
+%typemap(javabody) SWIGTYPE %{
+    private long swigCPtr;
+    protected boolean swigCMemOwn;
+
+    public $javaclassname(long cPtr, boolean cMemoryOwn) {
+        swigCMemOwn = cMemoryOwn;
+        swigCPtr = cPtr;
+    }
+
+    public static long getCPtr($javaclassname obj) {
+        return (obj == null) ? 0 : obj.swigCPtr;
+    }
+%}
+%pragma(java) jniclasscode=%{
+	static {
+		System.loadLibrary("jqpol");
+	}
+%}
+
 #else
 /* not in java so handle size_t as architecture dependent */
 #ifdef SWIGWORDSIZE64
@@ -1424,7 +1444,7 @@ typedef struct qpol_portcon {} qpol_portcon_t;
 	};
 	qpol_portcon_t(qpol_policy_t *p, uint16_t low, uint16_t high, uint8_t protocol) {
 		qpol_portcon_t *qp;
-		if (qpol_portcon_get_by_port(p, low, high, protocol, &qp)) {
+		if (qpol_policy_get_portcon_by_port(p, low, high, protocol, &qp)) {
 			SWIG_exception(SWIG_RuntimeError, "Portcon statement does not exist");
 		}
 	fail:

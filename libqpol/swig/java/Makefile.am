@@ -4,9 +4,9 @@ short_name = libjqpol.so
 wrappedsodir = $(libdir)
 
 package_name = com.tresys.setools.qpol
+package_dir = $(dir $(subst .,/,$(package_name)))qpol
 
 wrappedjar_DATA = qpol.jar
-
 wrappedjardir = $(libdir)/setools
 
 dist_noinst_DATA = $(srcdir)/../qpol.i
@@ -67,10 +67,17 @@ $(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ $(short_name)
 
-classes = $(subst .java,.class,$(filter %.java, $(BUILT_SOURCES)))
+classes = $(patsubst %.java,$(package_dir)/%.class,$(filter %.java, $(BUILT_SOURCES)))
 
-$(classes): $(filter %.java, $(BUILT_SOURCES))
-	$(JAVAC) $(AM_JFLAGS) $(JAVAFLAGS) $^
+# Because the Java compiler can generate multiple class files from the
+# same source .java file, putting all of the classes below will result
+# in repeated invocations of javac.  Therefore, an alternative is to
+# just depend upon the first class file, and let the Java compiler
+# create the rest of them.
+$(firstword $(classes)): $(filter %.java, $(BUILT_SOURCES))
+	$(JAVAC) $(AM_JFLAGS) $(JAVAFLAGS) -d . $^
+
+$(wordlist 2,$(words $(classes)),$(classes)): $(firstword $(classes))
 
 $(wrappedjar_DATA): $(classes)
 	$(JAR) cf $@ -m MANIFEST.MF $^
