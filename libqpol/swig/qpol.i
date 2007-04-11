@@ -423,6 +423,16 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
+	%newobject get_portcon_iter();
+	qpol_iterator_t *get_portcon_iter() {
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_portcon_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+		}
+		return iter;
+	fail:
+		return NULL;
+	};
 	%newobject get_constraint_iter();
 	qpol_iterator_t *get_constraint_iter() {
 		qpol_iterator_t *iter;
@@ -1402,6 +1412,61 @@ typedef struct qpol_nodecon {} qpol_nodecon_t;
 		return ctx;
 	};
 };
+
+/* qpol portcon */
+/* from netinet/in.h */
+#define IPPROTO_TCP 6
+#define IPPROTO_UDP 17
+typedef struct qpol_portcon {} qpol_portcon_t;
+%extend qpol_portcon_t {
+	qpol_portcon_t(void *x) {
+		return (qpol_portcon_t*)x;
+	};
+	qpol_portcon_t(qpol_policy_t *p, uint16_t low, uint16_t high, uint8_t protocol) {
+		qpol_portcon_t *qp;
+		if (qpol_portcon_get_by_port(p, low, high, protocol, &qp)) {
+			SWIG_exception(SWIG_RuntimeError, "Portcon statement does not exist");
+		}
+	fail:
+		return qp;
+	};
+	~qpol_portcon_t() {
+		/* no op */
+		return;
+	};
+	uint16_t get_low_port(qpol_policy_t *p) {
+		uint16_t port = 0;
+		if(qpol_portcon_get_low_port(p, self, &port)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not get low port for portcon statement");
+		}
+	fail:
+		return port;
+	};
+	uint16_t get_high_port(qpol_policy_t *p) {
+		uint16_t port = 0;
+		if(qpol_portcon_get_high_port(p, self, &port)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not get high port for portcon statement");
+		}
+	fail:
+		return port;
+	};
+	uint8_t get_protocol(qpol_policy_t *p) {
+		uint8_t proto = 0;
+		if (qpol_portcon_get_protocol(p, self, &proto)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not get protocol for portcon statement");
+		}
+	fail:
+		return proto;
+	};
+	qpol_context_t *get_context(qpol_policy_t *p) {
+		qpol_context_t *ctx;
+		if (qpol_portcon_get_context(p, self, &ctx)) {
+			SWIG_exception(SWIG_ValueError, "Could not get context for portcon statement");
+		}
+	fail:
+		return ctx;
+	};
+}
 
 /* qpol constraint */
 typedef struct qpol_constraint {} qpol_constraint_t;

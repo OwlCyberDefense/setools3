@@ -36,6 +36,7 @@ BUILT_SOURCES = qpol_wrap.c \
 	qpol_netifcon_t.java \
 	qpol_nodecon_t.java \
 	qpol_policy_t.java \
+	qpol_portcon_t.java \
 	qpol_range_trans_t.java \
 	qpol_role_allow_t.java \
 	qpol_role_t.java \
