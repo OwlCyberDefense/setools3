@@ -171,7 +171,7 @@ const char *apol_context_get_type(const apol_context_t * context)
 		errno = EINVAL;
 		return NULL;
 	}
-	return context->user;
+	return context->type;
 }
 
 const apol_mls_range_t *apol_context_get_range(const apol_context_t * context)
