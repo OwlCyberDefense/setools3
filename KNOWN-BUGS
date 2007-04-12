@@ -12,6 +12,12 @@ This file contains a description of the bugs of which we are currently
 aware. There are undoubtedly more; please report any new bugs you may
 find to setools-bugs@tresys.com.
 
+SETOOLS
+
+1. There is a critical error in libsepol version 2.0.2 that prevents
+   SETools from opening source policies.  The supplied configure
+   script will detect and abort if it found this particular version.
+
 APOL
    
 1. Double clicking on listbox items may not display popup windows in

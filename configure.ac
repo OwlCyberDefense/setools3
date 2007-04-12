@@ -38,7 +38,7 @@ dnl *** end of tunable values ***
 
 AC_GNU_SOURCE
 AC_PROG_CC
-AC_LANG_C
+AC_LANG([C])
 AC_HEADER_STDC
 AC_PROG_LIBTOOL
 AC_PROG_LN_S
@@ -341,25 +341,19 @@ for dir in lib64 lib ; do
 done
 AC_MSG_CHECKING([for sepol/sepol.h])
 selinux_save_CFLAGS="${CFLAGS}"
-SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
-CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir} ${SELINUX_LIB_FLAG} ${CFLAGS}"
-AC_TRY_RUN([#include <sepol/sepol.h>
-            #include <stdlib.h>
-            int main(void) { exit(0); }],
-           AC_MSG_RESULT(yes),
-           AC_MSG_ERROR([could not find sepol headers at $sepol_devel_incdir - make sure libsepol-devel is installed]))
-AC_CHECK_LIB(sepol,sepol_policydb_read,,
+selinux_save_CPPFLAGS="${CPPFLAGS}"
+CFLAGS="${CFLAGS} -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
+CPPFLAGS="${CPPFLAGS} -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
+AC_CHECK_HEADER([sepol/sepol.h], , AC_MSG_ERROR([could not find sepol headers at $sepol_devel_incdir - make sure libsepol-devel is installed]))
+AC_CHECK_LIB([sepol], [sepol_policydb_read], ,
              AC_MSG_ERROR([could not find libsepol at $sepol_devel_libdir]))
-AC_MSG_CHECKING([for selinux/selinux.h])
-AC_TRY_RUN([#include <selinux/selinux.h>
-            #include <stdlib.h>
-            int main(void) { exit(0); }],
-           AC_MSG_RESULT(yes),
-           AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
-AC_CHECK_LIB(selinux, selinux_policy_root,,
+AC_CHECK_HEADER([selinux/selinux.h], , AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
+AC_CHECK_LIB([selinux], [selinux_policy_root], ,
 AC_MSG_ERROR([could not find libselinux at $selinux_devel_libdir]),
              -lsepol)
+SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
 CFLAGS="${selinux_save_CFLAGS}"
+CPPFLAGS="${selinux_save_CPPFLAGS}"
 
 AC_ARG_ENABLE(sefs,
               AC_HELP_STRING([--disable-sefs],
@@ -410,32 +404,53 @@ else
       version_found_sepol="${version_sepol_major}.${version_sepol_minor}.${version_sepol_patch}"
       AC_MSG_ERROR([setools requires sepol version $version_min_sepol or greater (found $version_found_sepol)])
    fi
+   AC_MSG_RESULT([yes])
    sepol_srcdir="${sepol_srcdir}/src"
    sepol_src_save_CFLAGS="${CFLAGS}"
-   CFLAGS="${CFLAGS} -I${sepol_srcdir}/../include ${SELINUX_LIB_FLAG}"
-   AC_TRY_RUN([#include <sepol/policydb/policydb.h>
-#include <stdlib.h>
-   int main(void) { exit(0); }],,
-       AC_MSG_ERROR([could not find sepol source tree]))
+   sepol_src_save_CPPFLAGS="${CPPFLAGS}"
+   CFLAGS="${CFLAGS} -I${sepol_srcdir}/../include"
+   CPPFLAGS="${CPPFLAGS} -I${sepol_srcdir}/../include"
+   AC_CHECK_HEADER([sepol/policydb/policydb.h], , AC_MSG_ERROR([could not find sepol source tree]))
    CFLAGS="${sepol_src_save_CFLAGS}"
+   CPPFLAGS="${sepol_src_save_CPPFLAGS}"
    if test ! -f "${sepol_srcdir}/libsepol.a"; then
       AC_MSG_ERROR([could not find precompiled libsepol.a])
    fi
    sepol_devel_incdir="${sepol_srcdir}/../include"
-   AC_MSG_RESULT(yes)
 fi
 SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
 AC_SUBST(SELINUX_CFLAGS)
 AC_SUBST(SELINUX_LIB_FLAG)
 
 sepol_save_CFLAGS="${CFLAGS}"
+sepol_save_CPPFLAGS="${CPPFLAGS}"
 CFLAGS="${CFLAGS} ${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG}"
-
+CPPFLAGS="${CPPFLAGS} ${SELINUX_CFLAGS}"
 dnl if using libsepol < 2.0.0, then map the old error codes to the new
 dnl format
 AC_CHECK_HEADER([sepol/errcodes.h], sepol_new_defines="yes", sepol_new_defines="no")
 
-AC_RUN_IFELSE([#include <sepol/policydb/policydb.h>
+dnl check for broken boolmap behavior in libsepol version 2.0.2
+AC_CHECK_DECL([cond_node_create], sepol_check_boolmap="yes", sepol_check_boolmap="no", [#include <sepol/policydb/conditional.h>])
+if test ${sepol_check_boolmap} = "yes"; then
+    dnl check for boolmap parameter that is fixed in version 2.0.3
+    AC_MSG_CHECKING([correct libsepol expand behavior])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_SOURCE([
+#include <sepol/policydb/expand.h>
+int main () {
+  return expand_module_avrules(NULL, NULL, NULL, NULL, NULL, 0, 0);
+}])],
+    AC_MSG_RESULT([yes]),
+    AC_MSG_ERROR([this version of libsepol is incompatible with SETools]))
+  sepol_new_expand_boolmap="yes"
+else
+  sepol_new_expand_boolmap="no"
+fi
+
+AC_RUN_IFELSE(
+   [AC_LANG_SOURCE([
+#include <sepol/policydb/policydb.h>
 #include <stdio.h>
 #include <stdlib.h>
 int main(void) {
@@ -444,11 +459,13 @@ int main(void) {
        fclose(f);
        exit(EXIT_SUCCESS);
     }
-    exit(EXIT_FAILURE); }],
+    exit(EXIT_FAILURE);
+}])],
     sepol_policy_version_max=`cat conftest.data`,
     AC_MSG_FAILURE([could not determine maximum libsepol policy version]))
 AC_DEFINE_UNQUOTED(SEPOL_POLICY_VERSION_MAX, ${sepol_policy_version_max}, [maximum policy version supported by libsepol])
 CFLAGS="${sepol_save_CFLAGS}"
+CPPFLAGS="${sepol_save_CPPFLAGS}"
 
 if test ${use_selinux} = "yes"; then
 dnl Locate selinux policy root directory
@@ -489,6 +506,8 @@ if test ${use_selinux} = "yes"; then
       AC_MSG_RESULT(${selinux_default_policy})
    fi
 fi
+
+AC_CACHE_SAVE
 
 dnl check for pkg-config
 AC_CHECK_PROG(has_pkg_config, pkg-config, yes, no)
@@ -625,6 +644,10 @@ AC_DEFINE(SQLITE_PTR_SZ, SIZEOF_CHAR_P, [size of a pointer, as used by SQLite3])
 if test ${sepol_new_defines} != "yes" ; then
    AC_DEFINE(SEPOL_ENOMEM, HASHTAB_OVERFLOW, [remap of libsepol 1.x.x define to 2.x.x])
    AC_DEFINE(SEPOL_EEXIST, HASHTAB_PRESENT, [remap of libsepol 1.x.x define to 2.x.x])
+fi
+
+if test ${sepol_new_expand_boolmap} == "yes" ; then
+   AC_DEFINE(HAVE_SEPOL_BOOLMAP, 1, [sepol's new expand boolmap behavior])
 fi
 
 # for older version of BWidget, overcome bug in NoteBook::bindtabs and

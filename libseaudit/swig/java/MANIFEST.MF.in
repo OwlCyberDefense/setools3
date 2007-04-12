@@ -1,14 +1,12 @@
 Manifest-Version: 1.0
 
-Name: com/tresys/setools
+Name: com/tresys/setools/
 Specification-Title: "SETools Java Libraries"
 Specification-Version: "@VERSION@"
-Specification-Verndor: "Tresys Technology"
-
+Specification-Vendor: "Tresys Technology"
 Implementation-Title: "com.tresys.setools.seaudit"
-Implementation-Vendor: "@libseaudit_version@"
+Implementation-Version: "@libseaudit_version@"
 Implementation-Vendor: "Tresys Technology"
-
 Extension-List: qpol apol
 qpol-Extension-Name: com.tresys.setools.qpol
 qpol-Implementation-Version: @libqpol_version@

@@ -23,6 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 #include <sepol/policydb/expand.h>
 #include <sepol/policydb.h>
 #include <stdlib.h>
@@ -54,7 +56,7 @@ static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_dat
 int qpol_expand_module(qpol_policy_t * base)
 {
 	unsigned int i;
-	uint32_t *typemap = NULL;
+	uint32_t *typemap = NULL, *boolmap = NULL;
 	policydb_t *db;
 	int rt;
 
@@ -79,20 +81,33 @@ int qpol_expand_module(qpol_policy_t * base)
 	/* Build the typemap such that we can expand into the same policy */
 	typemap = (uint32_t *) calloc(db->p_types.nprim, sizeof(uint32_t));
 	if (typemap == NULL) {
-		ERR(base, "%s", strerror(ENOMEM));
+		ERR(base, "%s", strerror(errno));
 		goto err;
 	}
 	for (i = 0; i < db->p_types.nprim; i++) {
 		typemap[i] = i + 1;
 	}
-
-	if (expand_module_avrules(base->sh, db, db, typemap, 0, 1) < 0) {
+#ifdef HAVE_SEPOL_BOOLMAP
+	boolmap = (uint32_t *) calloc(db->p_bools.nprim, sizeof(uint32_t));
+	if (boolmap == NULL) {
+		ERR(base, "%s", strerror(errno));
+		goto err;
+	}
+	for (i = 0; i < db->p_bools.nprim; i++) {
+		boolmap[i] = i + 1;
+	}
+	rt = expand_module_avrules(base->sh, db, db, typemap, boolmap, 0, 1);
+#else
+	rt = expand_module_avrules(base->sh, db, db, typemap, 0, 1);
+#endif
+	if (rt < 0) {
 		goto err;
 	}
 	rt = 0;
 
       exit:
 	free(typemap);
+	free(boolmap);
 	return rt;
       err:
 	rt = -1;
