@@ -10,7 +10,7 @@ Implementation-Vendor: "@libseaudit_version@"
 Implementation-Vendor: "Tresys Technology"
 
 Extension-List: qpol apol
-qpol-Extenstion-Name: com.tresys.setools.qpol
+qpol-Extension-Name: com.tresys.setools.qpol
 qpol-Implementation-Version: @libqpol_version@
-apol-Extenstion-Name: com.tresys.setools.apol
+apol-Extension-Name: com.tresys.setools.apol
 apol-Implementation-Version: @libapol_version@

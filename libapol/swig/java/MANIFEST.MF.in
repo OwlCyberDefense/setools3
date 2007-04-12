@@ -10,5 +10,5 @@ Implementation-Vendor: "@libapol_version@"
 Implementation-Vendor: "Tresys Technology"
 
 Extension-List: qpol
-qpol-Extenstion-Name: com.tresys.setools.qpol
+qpol-Extension-Name: com.tresys.setools.qpol
 qpol-Implementation-Version: @libqpel_version@
