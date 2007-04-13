@@ -59,6 +59,7 @@
 /* remove $null not valid outside of type map */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception_typemap(code, msg) {SWIG_JavaException(jenv, code, msg);}
 /* handle size_t correctly in java as architecture independent */
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
@@ -103,10 +104,10 @@ typedef uint32_t size_t;
 #endif
 #endif
 
-/* from apol wrapper */
-%{
+%inline %{
 	typedef struct apol_string_vector apol_string_vector_t;
 %}
+
 
 #ifdef SWIGPYTHON
 /* map python file to C FILE struct pointer */
@@ -118,14 +119,6 @@ typedef uint32_t size_t;
 	$1 = PyFile_AsFile($input);
 }
 #endif
-
-%inline %{
-/* if java, pass the new exception macro to C not just SWIG */
-#ifdef SWIGJAVA
-#undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
-#endif
-%}
 
 /* from <time.h> */
 %{

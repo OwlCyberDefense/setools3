@@ -29,6 +29,7 @@ BUILT_SOURCES = seaudit_wrap.c \
         seaudit_report_format_e.java \
         seaudit_report_t.java \
         seaudit_sort_t.java \
+        SWIGTYPE_p_apol_string_vector.java \
         SWIGTYPE_p_FILE.java \
         SWIGTYPE_p_void.java \
         tm_t.java
@@ -37,9 +38,9 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \
 	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libseaudit/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@ \
-	-classpath $(top_builddir)/libqpol/swig/java/qpol.jar:$(top_builddir)/libqpol/swig/java/apol.jar
+	-classpath $(top_builddir)/libqpol/swig/java/qpol.jar:$(top_builddir)/libapol/swig/java/apol.jar
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
-	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @POLDIFF_LIB_FLAG@
+	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @SEAUDIT_LIB_FLAG@ @XML_LIBS@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libseaudit/src/seaudit.so
