@@ -908,7 +908,7 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	if (form == POLDIFF_FORM_ADDED) {
 		if ((v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_ORIG)) == NULL ||
 		    (v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_ORIG)) == NULL ||
-		    (orig_default = type_map_get_name(diff, rule->default_type, POLDIFF_POLICY_MOD)) == NULL) {
+		    (mod_default = type_map_get_name(diff, rule->default_type, POLDIFF_POLICY_MOD)) == NULL) {
 			error = errno;
 			goto cleanup;
 		}
@@ -919,7 +919,7 @@ int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	} else {
 		if ((v1 = type_map_lookup_reverse(diff, rule->source, POLDIFF_POLICY_MOD)) == NULL ||
 		    (v2 = type_map_lookup_reverse(diff, rule->target, POLDIFF_POLICY_MOD)) == NULL ||
-		    (mod_default = type_map_get_name(diff, rule->default_type, POLDIFF_POLICY_ORIG)) == NULL) {
+		    (orig_default = type_map_get_name(diff, rule->default_type, POLDIFF_POLICY_ORIG)) == NULL) {
 			error = errno;
 			goto cleanup;
 		}
