@@ -3,7 +3,7 @@ lib_LIBRARIES = libpoldiff.a
 poldiffso_DATA = libpoldiff.so.@libpoldiff_version@
 poldiffsodir = $(libdir)
 
-AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ \
 	@APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(srcdir)/../include -fpic
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
