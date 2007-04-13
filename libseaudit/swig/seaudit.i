@@ -53,6 +53,7 @@
 
 %include exception.i
 %include stdint.i
+%import apol.i
 
 #ifdef SWIGJAVA
 /* remove $null not valid outside of type map */
@@ -62,6 +63,37 @@
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
 %typemap(jstype) size_t "long"
+%typemap("javaimports") SWIGTYPE %{
+import com.tresys.setools.qpol.*;
+import com.tresys.setools.apol.*;
+%}
+%typemap(javabody) SWIGTYPE %{
+    private long swigCPtr;
+    protected boolean swigCMemOwn;
+
+    public $javaclassname(long cPtr, boolean cMemoryOwn) {
+        swigCMemOwn = cMemoryOwn;
+        swigCPtr = cPtr;
+    }
+
+    public static long getCPtr($javaclassname obj) {
+        return (obj == null) ? 0 : obj.swigCPtr;
+    }
+%}
+/* the following handles the dependencies on qpol and apol */
+%pragma(java) jniclassimports=%{
+import com.tresys.setools.qpol.*;
+import com.tresys.setools.apol.*;
+%}
+%pragma(java) jniclasscode=%{
+	static {
+		System.loadLibrary("jseaudit");
+	}
+%}
+%pragma(java) moduleimports=%{
+import com.tresys.setools.qpol.*;
+import com.tresys.setools.apol.*;
+%}
 #else
 /* not in java so handle size_t as architecture dependent */
 #ifdef SWIGWORDSIZE64
