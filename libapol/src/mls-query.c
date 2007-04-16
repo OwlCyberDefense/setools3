@@ -488,6 +488,7 @@ int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, cons
 		free(new_cat);
 		return -1;
 	}
+	apol_vector_sort(level->cats, apol_str_strcmp, NULL);
 	return 0;
 }
 

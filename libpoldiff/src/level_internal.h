@@ -159,7 +159,7 @@ extern "C"
  * category names.  If the sensitivities do not match, then generate
  * two poldiff_level_ts, one for the original level and one for
  * modified level.  If they do match then create just one
- * poldiff_level_t and write it to orig_uld.
+ * poldiff_level_t and write it to orig_pl.
  *
  * @param diff Poldiff object, used for error reporting and for
  * sorting the categories to policy order.

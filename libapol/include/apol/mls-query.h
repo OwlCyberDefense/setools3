@@ -153,13 +153,14 @@ extern "C"
 	extern int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, const char *cats);
 
 /**
- * Get the category component of an MLS level structure.
+ * Get the category component of an MLS level structure.  This will be
+ * a vector of strings, sorted alphabetically.
  *
  * @param level MLS level to query.
  *
- * @return Vector of categories (type char *), or NULL upon error.  Be
- * aware that the vector could be empty if no categories have been
- * set.  Do not modify the return value.
+ * @return Vector of categories, or NULL upon error.  Be aware that
+ * the vector could be empty if no categories have been set.  Do not
+ * modify the return value.
  */
 	extern const apol_vector_t *apol_mls_level_get_cats(const apol_mls_level_t * level);
 
