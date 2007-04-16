@@ -1,3 +1,13 @@
+2007-04-16  J. Tang  <jtang@tresys.com>
+
+	* apol_mls_range_get_levels() fixed so that its returned levels
+	only include categories that are valid for the given policy.
+	Before it just copied the categories for the high level, even if a
+	lower level could not actually have one of those categories.
+
+	* apol_mls_level_get_cats() now always returns categories in
+	alphabetical order.
+
 2007-04-06  J. Tang  <jtang@tresys.com>
 
 	* Added seaudit_avc_message_get_name() and

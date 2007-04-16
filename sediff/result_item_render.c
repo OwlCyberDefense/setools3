@@ -382,6 +382,7 @@ void result_item_print_modified_range(result_item_t * item, const poldiff_range_
 	if (strncmp(next_s, "     minimum categories:", strlen("     minimum categories:")) == 0) {
 		s = strsep(&next_s, "\n");
 		result_item_print_string_inline(tb, iter, s, 1);
+		gtk_text_buffer_insert(tb, iter, "\n", -1);
 	}
 	/* all subsequent lines are printed as normal (yes, this
 	 * discards lines from poldiff_range_to_string_brief() */

@@ -102,10 +102,10 @@ extern "C"
 	int range_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
- * Compute the semantic difference of two role allow rules for which
- * the compare callback returns 0.  If a difference is found then
- * allocate, initialize, and insert a new semantic difference entry
- * for that range transition rule.
+ * Compute the semantic difference of two range transition rules for
+ * which the compare callback returns 0.  If a difference is found
+ * then allocate, initialize, and insert a new semantic difference
+ * entry for that range transition rule.
  *
  * @param diff The policy difference structure associated with both
  * rules and to which to add an entry if needed.

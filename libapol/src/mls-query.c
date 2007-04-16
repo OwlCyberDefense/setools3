@@ -951,14 +951,24 @@ static int mls_range_comp(const void *a, const void *b, void *data)
 	return low_value - high_value;
 }
 
+static int mls_level_name_to_cat_comp(const void *a, const void *b, void *data)
+{
+	qpol_cat_t *cat = (qpol_cat_t *) a;
+	const char *name = (const char *)b;
+	qpol_policy_t *q = (qpol_policy_t *) data;
+	char *cat_name = "";
+	qpol_cat_get_name(q, cat, &cat_name);
+	return strcmp(name, cat_name);
+}
+
 apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range_t * range)
 {
 	qpol_policy_t *q = apol_policy_get_qpol(p);
-	apol_vector_t *v = NULL;
+	apol_vector_t *v = NULL, *catv = NULL;
 	qpol_level_t *l;
 	uint32_t low_value, high_value, value;
 	int error = 0;
-	qpol_iterator_t *iter = NULL;
+	qpol_iterator_t *iter = NULL, *catiter = NULL;
 
 	if (p == NULL || range == NULL) {
 		error = EINVAL;
@@ -1003,13 +1013,36 @@ apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range
 			ERR(p, "%s", strerror(error));
 			goto err;
 		}
+		/* now go through the category vector and remove those
+		 * are not members of the level */
+		size_t i, j;
+		for (i = 0; i < apol_vector_get_size(ml->cats); i++) {
+			name = apol_vector_get_element(ml->cats, i);
+			if (qpol_level_get_cat_iter(q, l, &catiter) < 0 ||
+			    (catv = apol_vector_create_from_iter(catiter, NULL)) == NULL) {
+				error = errno;
+				goto err;
+			}
+			if (apol_vector_get_index(catv, name, mls_level_name_to_cat_comp, q, &j) < 0) {
+				/* this category is not legal under the given policy */
+				free(name);
+				apol_vector_remove(ml->cats, i);
+				i--;
+			}
+			qpol_iterator_destroy(&catiter);
+			apol_vector_destroy(&catv);
+		}
 	}
 	apol_vector_sort(v, mls_range_comp, q);
 	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&catiter);
+	apol_vector_destroy(&catv);
 	return v;
       err:
 	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&catiter);
 	apol_vector_destroy(&v);
+	apol_vector_destroy(&catv);
 	errno = error;
 	return NULL;
 }
