@@ -56,7 +56,7 @@ sediff and sediffx Commands:
 ----------------------------
 Policies may be differentiated upon the command line (see "sediff
 --help") or in a graphical environment (see "sediffx --help").  The
-sediffx tool is recommend because it gives additional details about
+sediffx tool is recommended because it gives additional details about
 policy differences and affords type remappings.  The remainder of this
 document focuses on sediffx.
 
@@ -218,7 +218,7 @@ area:
   Range transitions have a STC much like AV rules.  A modified range
   transition indicates a difference in the rules' target ranges.  This
   could be either a difference in level or in minimal category set.
-  
+
 
 Policy Tabs:
 ------------

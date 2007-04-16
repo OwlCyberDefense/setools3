@@ -87,7 +87,7 @@ These packages are needed to build SETools's graphical tools.
 To build the SETools SWIG wrappers, these packages are required:
   swig 1.3.28 or greater
   python-devel 2.3 or greater
-  
+  Java JDK 1.1 or greater
 
 Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is
 part of the tcllib package and is often not present in Linux
@@ -418,8 +418,10 @@ maintain compatibility beginning with SETools version 3.0.
       not meant to be used by any other program.
 
 The first four libraries have SWIG wrappers that are built if
---enable-swig-python is given during configuration time.  Their Python
-wrappers will be installed to Python's site-packages directory.
+--enable-swig-python and/or --enable-swig-java are given during
+configuration time.  The generated Python wrappers will be installed
+to Python's site-packages directory; Java wrappers will be in placed
+in $PREFIX/lib and $PREFIX/lib/setools.
 
 
 4. Obtaining SETools
