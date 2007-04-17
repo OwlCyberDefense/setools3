@@ -1,4 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
+AUTOMAKE_OPTIONS = dist-bzip2
 
 if COPY_BWIDGET
   MAYBE_BWIDGET = packages

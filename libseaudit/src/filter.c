@@ -612,34 +612,47 @@ seaudit_avc_message_type_e seaudit_filter_get_message_type(seaudit_filter_t * fi
 int seaudit_filter_set_date(seaudit_filter_t * filter, const struct tm *start, const struct tm *end,
 			    seaudit_filter_date_match_e date_match)
 {
-	int retval = 0;
+	struct tm *new_tm = NULL;
 	if (filter == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	free(filter->start);
-	filter->start = NULL;
-	free(filter->end);
-	filter->end = NULL;
-	if (start != NULL) {
-		if ((filter->start = calloc(1, sizeof(*(filter->start)))) == NULL) {
-			retval = -1;
-		} else {
-			memmove(filter->start, start, sizeof(*start));
-		}
-		if ((filter->end = calloc(1, sizeof(*(filter->end)))) == NULL) {
-			retval = -1;
-		} else {
-			if (end != NULL) {
-				memmove(filter->end, end, sizeof(*end));
+	/* the following weird branching exists because start and end
+	 * could be shadowing filter->start and filter->end.  if
+	 * filters->start and filter->end are free()d to early, then
+	 * there may be a dereference of free()d memory */
+	if (filter->start != start) {
+		new_tm = NULL;
+		if (start != NULL) {
+			if ((new_tm = calloc(1, sizeof(*new_tm))) == NULL) {
+				return -1;
 			}
+			memcpy(new_tm, start, sizeof(*start));
 		}
+		free(filter->start);
+		filter->start = new_tm;
+	}
+	if (start != NULL) {
+		if (filter->end != end) {
+			new_tm = NULL;
+			if (end != NULL) {
+				if ((new_tm = calloc(1, sizeof(*new_tm))) == NULL) {
+					return -1;
+				}
+				memcpy(new_tm, end, sizeof(*end));
+			}
+			free(filter->end);
+			filter->end = new_tm;
+		}
+	} else {
+		free(filter->end);
+		filter->end = NULL;
 	}
 	filter->date_match = date_match;
 	if (filter->model != NULL) {
 		model_notify_filter_changed(filter->model, filter);
 	}
-	return retval;
+	return 0;
 }
 
 void seaudit_filter_get_date(seaudit_filter_t * filter, struct tm **start, struct tm **end, seaudit_filter_date_match_e * match)

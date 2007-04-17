@@ -1,3 +1,10 @@
+2007-04-17  J. Tang  <jtang@tresys.com>
+
+	* Fixed potential segfault in seaudit_filter_set_date() when
+	called using the same struct tm pointers that were returned by
+	seaudit_filter_get_date().  The old code would dereference
+	memory that was just free()d.
+
 2007-04-16  J. Tang  <jtang@tresys.com>
 
 	* apol_mls_range_get_levels() fixed so that its returned levels
