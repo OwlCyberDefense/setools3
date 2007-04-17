@@ -70,7 +70,7 @@ $(wordlist 2,$(words $(classes)),$(classes)): $(firstword $(classes))
 $(wrappedjar_DATA): MANIFEST.MF
 
 $(wrappedjar_DATA): $(classes)
-	$(JAR) cf $@ -m MANIFEST.MF $^
+	$(JAR) cfm $@ MANIFEST.MF $^
 
 install-data-hook:
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(wrappedso_SONAME)
