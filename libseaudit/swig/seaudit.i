@@ -64,7 +64,22 @@
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
 %typemap(jstype) size_t "long"
-%typemap("javaimports") SWIGTYPE %{
+/* handle needing FILE* for opening logs */
+%typemap(jni) FILE* "jobject"
+%typemap(jtype) FILE* "java.io.FileDescriptor"
+%typemap(jstype) FILE* "java.io.FileDescriptor"
+%typemap(in) FILE* %{
+	jclass cls = (*jenv)->GetObjectClass(jenv, $input);
+	/* This is not the recommended use, but it is necessary for opening logs.
+	 * If the java version being used changes the implementation of FileDescriptor,
+	 * this will not work. */
+	jfieldID fid = (*jenv)->GetFieldID(jenv, cls, "fd", "I");
+	jint fd = (*jenv)->GetIntField(jenv, $input, fid);
+	FILE *f = fdopen((int)fd, "r");
+	$1 = f;
+%}
+%typemap(javain) FILE* "$javainput"
+%typemap("javaimports") SWIGTYPE, FILE* %{
 import com.tresys.setools.qpol.*;
 import com.tresys.setools.apol.*;
 %}

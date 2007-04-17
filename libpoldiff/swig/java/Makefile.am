@@ -32,9 +32,7 @@ BUILT_SOURCES = poldiff_wrap.c \
         poldiff_t.java \
         poldiff_type_remap_entry_t.java \
         poldiff_type_t.java \
-        poldiff_user_t.java \
-        SWIGTYPE_p_apol_string_vector.java \
-        SWIGTYPE_p_void.java
+        poldiff_user_t.java
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \

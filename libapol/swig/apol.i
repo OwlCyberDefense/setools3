@@ -273,7 +273,7 @@ typedef struct apol_vector {} apol_vector_t;
 		return apol_vector_compare(a, b, NULL, NULL, &idx);
 	}
 %}
-typedef struct {} apol_string_vector_t;
+typedef struct apol_string_vector {} apol_string_vector_t;
 %extend apol_string_vector_t {
 	apol_string_vector_t() {
 		return (apol_string_vector_t*)apol_vector_create(free);

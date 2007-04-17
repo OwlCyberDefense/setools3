@@ -29,9 +29,6 @@ BUILT_SOURCES = seaudit_wrap.c \
         seaudit_report_format_e.java \
         seaudit_report_t.java \
         seaudit_sort_t.java \
-        SWIGTYPE_p_apol_string_vector.java \
-        SWIGTYPE_p_FILE.java \
-        SWIGTYPE_p_void.java \
         tm_t.java
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \

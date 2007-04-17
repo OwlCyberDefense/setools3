@@ -59,9 +59,7 @@ BUILT_SOURCES = apol_wrap.c \
         apol_user_query_t.java \
         apol_validatetrans_query_t.java \
         apol_vector_t.java \
-        SWIGTYPE_p_apol_string_vector.java \
-        SWIGTYPE_p_unsigned_int.java \
-        SWIGTYPE_p_void.java
+        SWIGTYPE_p_unsigned_int.java
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \

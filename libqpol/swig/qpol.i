@@ -75,7 +75,7 @@
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
 %typemap(jstype) size_t "long"
-%typemap(javabody) SWIGTYPE %{
+%typemap(javabody) SWIGTYPE, void* %{
     private long swigCPtr;
     protected boolean swigCMemOwn;
 
