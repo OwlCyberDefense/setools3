@@ -2033,9 +2033,17 @@ typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
 	apol_domain_trans_result_t(void *x) {
 		return (apol_domain_trans_result_t*)x;
 	};
+	apol_domain_trans_result_t(apol_domain_trans_result_t *in) {
+		apol_domain_trans_result_t *dtr;
+		dtr = apol_domain_trans_result_create_from_domain_trans_result(in);
+		if (!dtr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return dtr;
+	};
 	~apol_domain_trans_result_t() {
-		/* no op - vector will destroy these */
-		return;
+		apol_domain_trans_result_destroy(&self);
 	};
 	const qpol_type_t *get_start_type() {
 		return apol_domain_trans_result_get_start_type(self);

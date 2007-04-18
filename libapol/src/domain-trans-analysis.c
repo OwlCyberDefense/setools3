@@ -1882,9 +1882,7 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 	return missing_rules;
 }
 
-/******************** protected functions ********************/
-
-apol_domain_trans_result_t *domain_trans_result_create_from_domain_trans_result(apol_domain_trans_result_t * result)
+apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(apol_domain_trans_result_t * result)
 {
 	apol_domain_trans_result_t *new_r = NULL;
 	int retval = -1;
@@ -1928,6 +1926,8 @@ apol_domain_trans_result_t *domain_trans_result_create_from_domain_trans_result(
 	return new_r;
 }
 
+/******************** protected functions ********************/
+
 void domain_trans_result_free(void *dtr)
 {
 	apol_domain_trans_result_t *res = (apol_domain_trans_result_t *) dtr;
@@ -1942,4 +1942,12 @@ void domain_trans_result_free(void *dtr)
 	apol_vector_destroy(&res->type_trans_rules);
 	apol_vector_destroy(&res->access_rules);
 	free(res);
+}
+
+void apol_domain_trans_result_destroy(apol_domain_trans_result_t **res)
+{
+	if (!res || !(*res))
+		return;
+	domain_trans_result_free((void*)*res);
+	*res = NULL;
 }

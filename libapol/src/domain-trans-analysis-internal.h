@@ -27,18 +27,6 @@
 #define APOL_DOMAIN_TRANS_ANALYSIS_INTERNAL_H
 
 /**
- * Do a deep copy (i.e., a clone) of an apol_domain_trans_result_t
- * object.  The caller is responsible for calling
- * apol_domain_trans_result_free() upon the returned value.
- *
- * @param result Pointer to a domain trans result structure to
- * destroy.
- *
- * @return A clone of the passed in result node, or NULL upon error.
- */
-apol_domain_trans_result_t *domain_trans_result_create_from_domain_trans_result(apol_domain_trans_result_t * result);
-
-/**
  *  Free all memory associated with a domain transition result, including
  *  the pointer itself. This function does nothing if the result is NULL.
  *  @param dtr Pointer to a domain transition result structure to free.

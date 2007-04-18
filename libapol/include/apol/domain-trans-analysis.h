@@ -312,6 +312,28 @@ extern "C"
  */
 	extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_result_t * dtr);
 
+/**
+ * Do a deep copy (i.e., a clone) of an apol_domain_trans_result_t
+ * object.  The caller is responsible for calling
+ * apol_domain_trans_result_destroy() upon the returned value.
+ *
+ * @param result Pointer to a domain trans result structure to
+ * destroy.
+ *
+ * @return A clone of the passed in result node, or NULL upon error.
+ */
+	extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(apol_domain_trans_result_t *in);
+	
+/**
+ * Free all memory used by an apol_domain_trans_result_t object and
+ * set it to NULL. <b>This should only be called for results created by
+ * apol_domain_trans_result_create_from_domain_trans_result() and
+ * not those returned from within vectors.</b>
+ *
+ * @param res Reference pointer to a result to destroy.
+ */
+	extern void apol_domain_trans_result_destroy(apol_domain_trans_result_t **res);
+
 /************************ utility functions *******************************/
 /* define the following for rule type */
 #define APOL_DOMAIN_TRANS_RULE_PROC_TRANS       0x01

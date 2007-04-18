@@ -166,6 +166,12 @@ int inc_dom_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	return 0;
 }
 
+/* wrapper for apol_domain_trans_result_destroy() */
+void dtr_free_wrap(void*x)
+{
+	apol_domain_trans_result_destroy((apol_domain_trans_result_t**)&x);
+}
+
 /* The run function performs the check. This function runs only once
  * even if called multiple times. */
 int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
@@ -358,14 +364,14 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 					apol_vector_destroy(&rbac_vector);
 				}
 				if (!ok) {
-					item = sechk_item_new(NULL);
+					item = sechk_item_new(dtr_free_wrap);
 					if (!item) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					item->test_result = 1;
-					item->item = (void *)dtr;
+					item->item = (void *)apol_domain_trans_result_create_from_domain_trans_result(dtr);
 					if (apol_vector_append(res->items, (void *)item) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
@@ -373,14 +379,14 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 					}
 				}
 			} else {
-				item = sechk_item_new(NULL);
+				item = sechk_item_new(dtr_free_wrap);
 				if (!item) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
 				item->test_result = 1;
-				item->item = (void *)dtr;
+				item->item = (void *)apol_domain_trans_result_create_from_domain_trans_result(dtr);
 				if (apol_vector_append(res->items, (void *)item) < 0) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));

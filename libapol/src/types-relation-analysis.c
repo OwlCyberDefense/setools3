@@ -830,7 +830,7 @@ static int apol_types_relation_clone_domaintrans(apol_policy_t * p, apol_vector_
 		res = (apol_domain_trans_result_t *) apol_vector_get_element(v, i);
 		target = apol_domain_trans_result_get_end_type(res);
 		if (apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0) {
-			if ((new_res = domain_trans_result_create_from_domain_trans_result(res)) == NULL ||
+			if ((new_res = apol_domain_trans_result_create_from_domain_trans_result(res)) == NULL ||
 			    apol_vector_append(results, new_res) < 0) {
 				domain_trans_result_free(new_res);
 				ERR(p, "%s", strerror(ENOMEM));
