@@ -452,6 +452,8 @@ int remap_types_run(toplevel_t * top)
 {
 	struct remap_types rt;
 	gint response;
+	static gboolean prev_show_inferred = FALSE;
+	static gboolean prev_show_unmapped = TRUE;
 
 	memset(&rt, 0, sizeof(rt));
 	rt.top = top;
@@ -462,8 +464,13 @@ int remap_types_run(toplevel_t * top)
 	remap_types_init_combos(&rt);
 	remap_types_update_view(&rt);
 
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rt.show_inferred), prev_show_inferred);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rt.show_unmapped_types), prev_show_unmapped);
+
 	response = gtk_dialog_run(rt.dialog);
 
+	prev_show_inferred = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rt.show_inferred));
+	prev_show_unmapped = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(rt.show_unmapped_types));
 	gtk_widget_destroy(GTK_WIDGET(rt.dialog));
 	g_object_unref(rt.sort);
 	g_object_unref(rt.filter);
