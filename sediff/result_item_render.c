@@ -278,7 +278,7 @@ void result_item_print_summary(result_item_t * item, GtkTextBuffer * tb)
 		}
 	}
 	if (!was_run && result_item_is_supported(item)) {
-		gtk_text_buffer_set_text(tb, "This component has not yet been run.", -1);
+		gtk_text_buffer_set_text(tb, "This component has not yet been diffed.", -1);
 	}
 	g_string_free(string, TRUE);
 }
