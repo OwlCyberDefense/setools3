@@ -322,13 +322,14 @@ extern "C"
  *
  * @return A clone of the passed in result node, or NULL upon error.
  */
-	extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(apol_domain_trans_result_t *in);
-	
+	extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(const apol_domain_trans_result_t *in);
+
 /**
  * Free all memory used by an apol_domain_trans_result_t object and
- * set it to NULL. <b>This should only be called for results created by
- * apol_domain_trans_result_create_from_domain_trans_result() and
- * not those returned from within vectors.</b>
+ * set it to NULL.  This does nothing if the pointer is already NULL.
+ * <b>This should only be called for results created by
+ * apol_domain_trans_result_create_from_domain_trans_result() and not
+ * those returned from within vectors.</b>
  *
  * @param res Reference pointer to a result to destroy.
  */

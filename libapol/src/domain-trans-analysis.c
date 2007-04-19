@@ -1882,7 +1882,7 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 	return missing_rules;
 }
 
-apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(apol_domain_trans_result_t * result)
+apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(const apol_domain_trans_result_t * result)
 {
 	apol_domain_trans_result_t *new_r = NULL;
 	int retval = -1;
