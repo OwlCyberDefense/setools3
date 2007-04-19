@@ -87,9 +87,9 @@ This package includes Python bindings for the following libraries:
 License: LGPL
 Summary: Java bindings for SELinux policy analysis
 Group: Development/Languages
-Requires: setools-libs = %{version} java >= 1.1
+Requires: setools-libs = %{version} java >= 1.2
 Provides: libqpol-java = %{libqpol_ver} libapol-java = %{libapol_ver} libpoldiff-java = %{libpoldiff_ver} libseaudit-java = %{libseaudit_ver}
-BuildRequires: java-devel >= 1.1 swig >= 1.3.28
+BuildRequires: java-devel >= 1.2 swig >= 1.3.28
 
 %description libs-java
 SETools is a collection of graphical tools, command-line tools, and
