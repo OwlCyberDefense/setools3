@@ -309,7 +309,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 	if (primary_path != NULL && strcmp(primary_path, "") != 0) {
 		if (apol_file_is_policy_path_list(primary_path)) {
 			if ((*policy = apol_policy_path_create_from_file(primary_path)) == NULL) {
-				ERR(NULL, "%s", strerror(ENOMEM));
+				ERR(NULL, "%s", "invalid policy list");
 				seaudit_destroy(&seaudit);
 				exit(EXIT_FAILURE);
 			}

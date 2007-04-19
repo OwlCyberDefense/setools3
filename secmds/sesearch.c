@@ -986,7 +986,7 @@ int main(int argc, char **argv)
 	} else if (apol_file_is_policy_path_list(policy_file) > 0) {
 		pol_path = apol_policy_path_create_from_file(policy_file);
 		if (!pol_path) {
-			ERR(policy, "%s", strerror(ENOMEM));
+			ERR(policy, "%s", "invalid policy list");
 			free(policy_file);
 			exit(1);
 		}

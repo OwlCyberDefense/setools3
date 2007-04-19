@@ -1366,13 +1366,18 @@ int main(int argc, char **argv)
 		}
 		orig_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	}
-	if (apol_file_is_policy_path_list(orig_base_path) > 0)
+	if (apol_file_is_policy_path_list(orig_base_path) > 0) {
 		orig_pol_path = apol_policy_path_create_from_file(orig_base_path);
-	else
+		if (!orig_pol_path) {
+			ERR(NULL, "%s", "invalid policy list");
+			goto err;
+		}
+	} else {
 		orig_pol_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
-	if (!orig_pol_path) {
-		ERR(NULL, "%s", strerror(errno));
-		goto err;
+		if (!orig_pol_path) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
 	}
 	apol_vector_destroy(&orig_module_paths);
 
@@ -1394,13 +1399,18 @@ int main(int argc, char **argv)
 		}
 		mod_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	}
-	if (apol_file_is_policy_path_list(mod_base_path) > 0)
+	if (apol_file_is_policy_path_list(mod_base_path) > 0) {
 		mod_pol_path = apol_policy_path_create_from_file(mod_base_path);
-	else
+		if (!mod_pol_path) {
+			ERR(NULL, "%s", "invalid policy list");
+			goto err;
+		}
+	} else {
 		mod_pol_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
-	if (!mod_pol_path) {
-		ERR(NULL, "%s", strerror(errno));
-		goto err;
+		if (!mod_pol_path) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
 	}
 	apol_vector_destroy(&mod_module_paths);
 

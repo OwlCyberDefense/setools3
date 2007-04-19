@@ -264,8 +264,10 @@ int main(int argc, char **argv)
 			}
 		} else if (apol_file_is_policy_path_list(base_path) > 0) {
 			pol_path = apol_policy_path_create_from_file(base_path);
-			if (!pol_path)
+			if (!pol_path) {
+				fprintf(stderr, "Error: invalid policy list\n");
 				goto exit_err;
+			}
 		}
 		if (!pol_path)
 			pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
