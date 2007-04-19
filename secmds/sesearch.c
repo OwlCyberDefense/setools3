@@ -131,10 +131,10 @@ void usage(const char *program_name, int brief)
 	printf("  --range_trans             range_transition rules\n");
 	printf("  --all                     all rules regardless of type, class, or perms\n");
 	printf("EXPRESSIONS:\n");
-	printf("  -s NAME, --source=NAME    rules with type/attribute NAME (regex) as source\n");
-	printf("  -t NAME, --target=NAME    rules with type/attribute NAME (regex) as target\n");
-	printf("  --role_source=NAME        rules with role NAME (regex) as source\n");
-	printf("  --role_target=NAME        rules with role NAME (regex) as target\n");
+	printf("  -s NAME, --source=NAME    rules with type/attribute NAME as source\n");
+	printf("  -t NAME, --target=NAME    rules with type/attribute NAME as target\n");
+	printf("  --role_source=NAME        rules with role NAME as source\n");
+	printf("  --role_target=NAME        rules with role NAME as target\n");
 	printf("  -c NAME, --class=NAME     rules with class NAME as the object class\n");
 	printf("  -p P1[,P2,...], --perm=P1[,P2...]\n");
 	printf("                            rules with the specified permission\n");

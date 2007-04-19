@@ -59,17 +59,16 @@ Search all rule types.
 The user may specify an expression containing values for a given field(s) in a rule.
 Only those fields applicable to a given rule type will be used; all other fields will be ignored.
 (For example, type_transition rules will ignore the permissions field.)
-Where noted the value NAME is treated as a regular expression (see -n to disable this feature).
 If no expression is specified or if none of the specified fields apply to a given rule type,
 all rules of that type are considered to match the expression.
 .IP "-s NAME, --source=NAME"
-Find rules with type/attribute NAME (regex) as their source.
+Find rules with type/attribute NAME as their source.
 .IP "-t NAME, --target=NAME"
-Find rules with type/attribute NAME (regex) as their target.
+Find rules with type/attribute NAME as their target.
 .IP "--role_source=NAME"
-Find rules with role NAME (regex) as their source.
+Find rules with role NAME as their source.
 .IP "--role_target=NAME"
-Find rules with role NAME (regex) as their target.
+Find rules with role NAME as their target.
 .IP "-c NAME, --class=NAME"
 Find rules with class NAME as their object class.
 .IP "-p P1[,P2,...] --perm=P1[,P2...]"

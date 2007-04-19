@@ -24,7 +24,7 @@ Set output format to HTML instead of plain text.
 Specify the HTML stylesheet to use for formatting the HTML report.
 This option is ignored if --html is not given.
 See the default styesheet for an example (installed at @setoolsdir@/seaudit-report.css).
-.IP "-v, --version"
+.IP "-V, --version"
 Print version information and exit.
 .IP "-h, --help"
 Print help information and exit.
