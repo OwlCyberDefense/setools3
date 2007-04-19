@@ -32,7 +32,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *POLICY_PATH_MAGIC = "setools policy path list";
+static const char *POLICY_PATH_MAGIC = "policy_list";
+static const int POLICY_PATH_MAX_VERSION = 1;
 
 struct apol_policy_path
 {
@@ -89,8 +90,10 @@ apol_policy_path_t *apol_policy_path_create_from_file(const char *filename)
 	apol_policy_path_t *path = NULL;
 	apol_policy_path_type_e path_type;
 	char *line = NULL, *s;
+	apol_vector_t *header_tokens = NULL;
 	size_t len;
 	int read_base = 0, retval = -1, error = 0;
+
 	if (filename == NULL) {
 		error = EINVAL;
 		goto cleanup;
@@ -105,19 +108,29 @@ apol_policy_path_t *apol_policy_path_create_from_file(const char *filename)
 		goto cleanup;
 	}
 	apol_str_trim(line);
-	if (strcmp(line, POLICY_PATH_MAGIC) != 0) {
+	if (strncmp(line, POLICY_PATH_MAGIC, strlen(POLICY_PATH_MAGIC)) != 0) {
 		error = EIO;
 		goto cleanup;
 	}
 
-	if (getline(&line, &len, f) < 0) {
+	apol_str_trim(line);
+	if ((header_tokens = apol_str_split(line, " ")) == NULL) {
+		error = errno;
+		goto cleanup;
+	}
+	if (apol_vector_get_size(header_tokens) < 3) {
 		error = EIO;
 		goto cleanup;
 	}
-	apol_str_trim(line);
-	if (strcmp(line, "monolithic") == 0) {
+	s = apol_vector_get_element(header_tokens, 1);
+	if (atoi(s) == 0 || atoi(s) > POLICY_PATH_MAX_VERSION) {
+		error = ENOTSUP;
+		goto cleanup;
+	}
+	s = apol_vector_get_element(header_tokens, 2);
+	if (strcmp(s, "monolithic") == 0) {
 		path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
-	} else if (strcmp(line, "modular") == 0) {
+	} else if (strcmp(s, "modular") == 0) {
 		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	} else {
 		error = EIO;
@@ -160,6 +173,7 @@ apol_policy_path_t *apol_policy_path_create_from_file(const char *filename)
 		fclose(f);
 	}
 	free(line);
+	apol_vector_destroy(&header_tokens);
 	if (retval != 0) {
 		apol_policy_path_destroy(&path);
 		errno = error;
@@ -296,16 +310,16 @@ int apol_policy_path_to_file(const apol_policy_path_t * path, const char *filena
 		error = errno;
 		goto cleanup;
 	}
-	if (fprintf(f, "%s\n", POLICY_PATH_MAGIC) < 0) {
-		error = errno;
-		goto cleanup;
-	}
 	if (path->path_type == APOL_POLICY_PATH_TYPE_MODULAR) {
 		path_type = "modular";
 	} else {
 		path_type = "monolithic";
 	}
-	if (fprintf(f, "%s\n%s\n", path_type, path->base) < 0) {
+	if (fprintf(f, "%s %d %s\n", POLICY_PATH_MAGIC, POLICY_PATH_MAX_VERSION, path_type) < 0) {
+		error = errno;
+		goto cleanup;
+	}
+	if (fprintf(f, "%s\n", path->base) < 0) {
 		error = errno;
 		goto cleanup;
 	}
@@ -379,7 +393,7 @@ int apol_file_is_policy_path_list(const char *filename)
 		goto cleanup;
 	}
 	apol_str_trim(line);
-	if (strcmp(line, POLICY_PATH_MAGIC) != 0) {
+	if (strncmp(line, POLICY_PATH_MAGIC, strlen(POLICY_PATH_MAGIC)) != 0) {
 		retval = 0;
 		goto cleanup;
 	}

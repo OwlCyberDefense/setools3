@@ -1944,10 +1944,10 @@ void domain_trans_result_free(void *dtr)
 	free(res);
 }
 
-void apol_domain_trans_result_destroy(apol_domain_trans_result_t **res)
+void apol_domain_trans_result_destroy(apol_domain_trans_result_t ** res)
 {
 	if (!res || !(*res))
 		return;
-	domain_trans_result_free((void*)*res);
+	domain_trans_result_free((void *)*res);
 	*res = NULL;
 }

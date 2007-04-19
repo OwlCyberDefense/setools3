@@ -322,7 +322,8 @@ extern "C"
  *
  * @return A clone of the passed in result node, or NULL upon error.
  */
-	extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(const apol_domain_trans_result_t *in);
+	extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(const apol_domain_trans_result_t
+												    * in);
 
 /**
  * Free all memory used by an apol_domain_trans_result_t object and
@@ -333,7 +334,7 @@ extern "C"
  *
  * @param res Reference pointer to a result to destroy.
  */
-	extern void apol_domain_trans_result_destroy(apol_domain_trans_result_t **res);
+	extern void apol_domain_trans_result_destroy(apol_domain_trans_result_t ** res);
 
 /************************ utility functions *******************************/
 /* define the following for rule type */

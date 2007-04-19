@@ -167,9 +167,9 @@ int inc_dom_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 }
 
 /* wrapper for apol_domain_trans_result_destroy() */
-void dtr_free_wrap(void*x)
+void dtr_free_wrap(void *x)
 {
-	apol_domain_trans_result_destroy((apol_domain_trans_result_t**)&x);
+	apol_domain_trans_result_destroy((apol_domain_trans_result_t **) & x);
 }
 
 /* The run function performs the check. This function runs only once
