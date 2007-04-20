@@ -273,8 +273,10 @@ int main(int argc, char **argv)
 			pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
 		if (!pol_path)
 			goto exit_err;
-		if (sechk_lib_load_policy(pol_path, lib))
+		if (sechk_lib_load_policy(pol_path, lib)) {
+			pol_path = NULL;
 			goto exit_err;
+		}
 	} else {
 		if (sechk_lib_load_policy(NULL, lib))
 			goto exit_err;
