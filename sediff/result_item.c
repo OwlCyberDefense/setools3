@@ -879,11 +879,11 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 		} else {
 			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
 			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
+				result_item_print_linenos(tb, &iter, "op: ", syn_linenos, "line-pol_orig", string);
 			}
 			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
 			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-pol_mod", string);
+				result_item_print_linenos(tb, &iter, "mp: ", syn_linenos, "line-pol_mod", string);
 			}
 		}
 		free(s);
@@ -1007,11 +1007,11 @@ static void result_item_terule_print_diff(result_item_t * item, GtkTextBuffer * 
 			result_item_print_string_inline(tb, &iter, s, 1);
 			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
 			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, "p1: ", syn_linenos, "line-pol_orig", string);
+				result_item_print_linenos(tb, &iter, "op: ", syn_linenos, "line-pol_orig", string);
 			}
 			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
 			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, "p2: ", syn_linenos, "line-pol_mod", string);
+				result_item_print_linenos(tb, &iter, "mp: ", syn_linenos, "line-pol_mod", string);
 			}
 		}
 		free(s);
