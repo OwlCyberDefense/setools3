@@ -40,65 +40,11 @@
 #define AVCMSG " avc: "
 #define BOOLMSG "committed booleans"
 #define LOADMSG " security: "
-#define MEMORY_BLOCK_MAX_SIZE 1024
 #define NUM_TIME_COMPONENTS 3
 #define OLD_LOAD_POLICY_STRING "loadingpolicyconfigurationfrom"
 #define PARSE_NUM_CONTEXT_FIELDS 3
 #define PARSE_NUM_SYSCALL_FIELDS 3
 #define SYSCALL_STRING "audit("
-
-/**
- * Allocate a string and return the next line within the file pointer.
- * The caller is responsible for free()ing the string.
- */
-static int get_line(seaudit_log_t * log, FILE * audit_file, char **dest)
-{
-	char *line = NULL, *s, c = '\0';
-	int length = 0, i = 0, error;
-
-	*dest = NULL;
-	while ((c = fgetc(audit_file)) != EOF) {
-		if (i < length - 1) {
-			line[i] = c;
-		} else {
-			length += MEMORY_BLOCK_MAX_SIZE;
-			if ((s = (char *)realloc(line, length * sizeof(char))) == NULL) {
-				error = errno;
-				ERR(log, "%s", strerror(error));
-				errno = error;
-				return -1;
-			}
-			line = s;
-			line[i] = c;
-		}
-
-		if (c == '\n') {
-			line[i + 1] = '\0';
-			*dest = line;
-			return 0;
-		}
-		i++;
-	}
-
-	if (i > 0) {
-		if (i < length - 1) {
-			line[i] = '\0';
-			*dest = line;
-		} else {
-			length += MEMORY_BLOCK_MAX_SIZE;
-			if ((s = (char *)realloc(line, length * sizeof(char))) == NULL) {
-				error = errno;
-				ERR(log, "%s", strerror(error));
-				errno = error;
-				return -1;
-			}
-			line = s;
-			line[i] = '\0';
-			*dest = line;
-		}
-	}
-	return 0;
-}
 
 /**
  * Given a line from an audit log, create and return a vector of
@@ -1324,17 +1270,96 @@ static int load_parse(seaudit_log_t * log, apol_vector_t * tokens)
 	return has_warnings;
 }
 
+/**
+ * Parse a single nul-terminated line from an selinux audit log.
+ */
+static int seaudit_log_parse_line(seaudit_log_t * log, char *line)
+{
+	char *orig_line = NULL;
+	seaudit_message_t *prev_message;
+	seaudit_message_type_e is_sel, prev_message_type;
+	apol_vector_t *tokens = NULL;
+	int retval = -1, retval2, has_warnings = 0, error = 0;
+	size_t offset = 0, i;
+
+	is_sel = is_selinux(line);
+	if (log->next_line) {
+		prev_message = apol_vector_get_element(log->messages, apol_vector_get_size(log->messages) - 1);
+		seaudit_message_get_data(prev_message, &prev_message_type);
+		if (!(is_sel == SEAUDIT_MESSAGE_TYPE_INVALID && prev_message_type == SEAUDIT_MESSAGE_TYPE_BOOL) &&
+		    !(is_sel == SEAUDIT_MESSAGE_TYPE_LOAD && prev_message_type == SEAUDIT_MESSAGE_TYPE_LOAD)) {
+			WARN(log, "%s", "Parser was in the middle of a line, but next message was not the correct format.");
+			has_warnings = 1;
+			log->next_line = 0;
+		} else {
+			is_sel = prev_message_type;
+		}
+	}
+	if (is_sel == SEAUDIT_MESSAGE_TYPE_INVALID) {
+		/* unknown line, so ignore it */
+		return 0;
+	}
+
+	if ((orig_line = strdup(line)) == NULL) {
+		error = errno;
+		ERR(log, "%s", strerror(error));
+		goto cleanup;
+	}
+	if (get_tokens(log, line, &tokens) < 0) {
+		error = errno;
+		ERR(log, "%s", strerror(error));
+		goto cleanup;
+	}
+
+	switch (is_sel) {
+	case SEAUDIT_MESSAGE_TYPE_AVC:
+		retval2 = avc_parse(log, tokens);
+		break;
+	case SEAUDIT_MESSAGE_TYPE_BOOL:
+		retval2 = bool_parse(log, tokens);
+		break;
+	case SEAUDIT_MESSAGE_TYPE_LOAD:
+		retval2 = load_parse(log, tokens);
+		break;
+	default:
+		/* should never get here */
+		assert(0);
+		errno = EINVAL;
+		retval2 = -1;
+	}
+	if (retval2 < 0) {
+		error = errno;
+		ERR(log, "%s", strerror(error));
+		goto cleanup;
+	} else if (retval2 > 0) {
+		if (apol_vector_append(log->malformed_msgs, orig_line) < 0) {
+			error = errno;
+			ERR(log, "%s", strerror(error));
+			goto cleanup;
+		}
+		orig_line = NULL;
+		has_warnings = 1;
+	}
+
+	retval = 0;
+      cleanup:
+	free(orig_line);
+	apol_vector_destroy(&tokens);
+	if (retval < 0) {
+		errno = error;
+		return -1;
+	}
+	return has_warnings;
+}
+
 /******************** public functions below ********************/
 
 int seaudit_log_parse(seaudit_log_t * log, FILE * syslog)
 {
 	FILE *audit_file = syslog;
-	char *line = NULL, *line_dup = NULL;
-	seaudit_message_t *prev_message;
-	seaudit_message_type_e is_sel, prev_message_type;
-	apol_vector_t *tokens = NULL;
+	char *line = NULL;
 	int retval = -1, retval2, has_warnings = 0, error = 0;
-	size_t i;
+	size_t line_size = 0, i;
 
 	if (log == NULL || syslog == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -1348,83 +1373,22 @@ int seaudit_log_parse(seaudit_log_t * log, FILE * syslog)
 	}
 
 	clearerr(audit_file);
-	if (feof(audit_file)) {
-		ERR(log, "%s", strerror(EIO));
-		errno = EIO;
-		return -1;
-	}
 
 	while (1) {
-		free(line);
-		line = NULL;
-		free(line_dup);
-		line_dup = NULL;
-		apol_vector_destroy(&tokens);
-		if (get_line(log, audit_file, &line) < 0) {
+		if (getline(&line, &line_size, audit_file) < 0) {
 			error = errno;
-			ERR(log, "%s", strerror(error));
-			goto cleanup;
-		}
-		if (line == NULL) {
-			break;
-		}
-
-		apol_str_trim(line);
-		is_sel = is_selinux(line);
-		if (log->next_line) {
-			prev_message = apol_vector_get_element(log->messages, apol_vector_get_size(log->messages) - 1);
-			seaudit_message_get_data(prev_message, &prev_message_type);
-			if (!(is_sel == SEAUDIT_MESSAGE_TYPE_INVALID && prev_message_type == SEAUDIT_MESSAGE_TYPE_BOOL) &&
-			    !(is_sel == SEAUDIT_MESSAGE_TYPE_LOAD && prev_message_type == SEAUDIT_MESSAGE_TYPE_LOAD)) {
-				WARN(log, "%s", "Parser was in the middle of a line, but next message was not the correct format.");
-				has_warnings = 1;
-				log->next_line = 0;
-			} else {
-				is_sel = prev_message_type;
-			}
-		}
-		if (is_sel == SEAUDIT_MESSAGE_TYPE_INVALID) {
-			continue;
-		}
-
-		if ((line_dup = strdup(line)) == NULL) {
-			error = errno;
-			ERR(log, "%s", strerror(error));
-			goto cleanup;
-		}
-		if (get_tokens(log, line, &tokens) < 0) {
-			error = errno;
-			ERR(log, "%s", strerror(error));
-			goto cleanup;
-		}
-
-		switch (is_sel) {
-		case SEAUDIT_MESSAGE_TYPE_AVC:
-			retval2 = avc_parse(log, tokens);
-			break;
-		case SEAUDIT_MESSAGE_TYPE_BOOL:
-			retval2 = bool_parse(log, tokens);
-			break;
-		case SEAUDIT_MESSAGE_TYPE_LOAD:
-			retval2 = load_parse(log, tokens);
-			break;
-		default:
-			/* should never get here */
-			assert(0);
-			errno = EINVAL;
-			retval2 = -1;
-		}
-		if (retval2 < 0) {
-			error = errno;
-			ERR(log, "%s", strerror(error));
-			goto cleanup;
-		} else if (retval2 > 0) {
-			if (apol_vector_append(log->malformed_msgs, line_dup) < 0) {
-				error = errno;
+			if (!feof(audit_file)) {
 				ERR(log, "%s", strerror(error));
 				goto cleanup;
 			}
-			line_dup = NULL;
+			break;
+		}
+		apol_str_trim(line);
+		retval2 = seaudit_log_parse_line(log, line);
+		if (retval2 < 0) {
+			error = errno;
+			goto cleanup;
+		} else if (retval2 > 0) {
 			has_warnings = 1;
 		}
 	}
@@ -1432,8 +1396,71 @@ int seaudit_log_parse(seaudit_log_t * log, FILE * syslog)
 	retval = 0;
       cleanup:
 	free(line);
-	free(line_dup);
-	apol_vector_destroy(&tokens);
+	for (i = 0; i < apol_vector_get_size(log->models); i++) {
+		seaudit_model_t *m = apol_vector_get_element(log->models, i);
+		model_notify_log_changed(m, log);
+	}
+	if (retval < 0) {
+		errno = error;
+		return -1;
+	}
+	if (has_warnings) {
+		WARN(log, "%s", "Audit log was parsed, but there were one or more invalid message found within it.");
+	}
+	return has_warnings;
+}
+
+int seaudit_log_parse_buffer(seaudit_log_t * log, const char *buffer, const size_t bufsize)
+{
+	const char *s;
+	char *line = NULL, *l;
+	int retval = -1, retval2, has_warnings = 0, error = 0;
+	size_t offset = 0, line_size, i;
+
+	if (log == NULL || buffer == NULL) {
+		ERR(log, "%s", strerror(EINVAL));
+		error = EINVAL;
+		goto cleanup;
+	}
+
+	if (!log->tz_initialized) {
+		tzset();
+		log->tz_initialized = 1;
+	}
+
+	while (offset < bufsize) {
+		/* create a new string up to the first newline or end of
+		 * buffer, whichever comes first */
+		for (s = buffer + offset; s < buffer + bufsize && *s != '\n'; s++) ;
+		line_size = s - (buffer + offset);
+		assert(line_size > 0);
+		if ((l = realloc(line, line_size + 1)) == NULL) {
+			error = errno;
+			ERR(log, "%s", strerror(error));
+			goto cleanup;
+		}
+		line = l;
+		memcpy(line, buffer + offset, line_size);
+		line[line_size] = '\0';
+		offset += line_size;
+		if (s < buffer + bufsize) {
+			/* this branch can only be true if not at end of file */
+			assert(*s == '\n');
+			offset++;
+		}
+		apol_str_trim(line);
+		retval2 = seaudit_log_parse_line(log, line);
+		if (retval2 < 0) {
+			error = errno;
+			goto cleanup;
+		} else if (retval2 > 0) {
+			has_warnings = 1;
+		}
+	}
+
+	retval = 0;
+      cleanup:
+	free(line);
 	for (i = 0; i < apol_vector_get_size(log->models); i++) {
 		seaudit_model_t *m = apol_vector_get_element(log->models, i);
 		model_notify_log_changed(m, log);

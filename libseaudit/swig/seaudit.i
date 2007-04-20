@@ -64,21 +64,6 @@
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
 %typemap(jstype) size_t "long"
-/* handle needing FILE* for opening logs */
-%typemap(jni) FILE* "jobject"
-%typemap(jtype) FILE* "java.io.FileDescriptor"
-%typemap(jstype) FILE* "java.io.FileDescriptor"
-%typemap(in) FILE* %{
-	jclass cls = (*jenv)->GetObjectClass(jenv, $input);
-	/* This is not the recommended use, but it is necessary for opening logs.
-	 * If the java version being used changes the implementation of FileDescriptor,
-	 * this will not work. */
-	jfieldID fid = (*jenv)->GetFieldID(jenv, cls, "fd", "I");
-	jint fd = (*jenv)->GetIntField(jenv, $input, fid);
-	FILE *f = fdopen((int)fd, "r");
-	$1 = f;
-%}
-%typemap(javain) FILE* "$javainput"
 %typemap("javaimports") SWIGTYPE, FILE* %{
 import com.tresys.setools.qpol.*;
 import com.tresys.setools.apol.*;
@@ -132,6 +117,26 @@ typedef uint32_t size_t;
 		return NULL;
 	}
 	$1 = PyFile_AsFile($input);
+}
+/* map string into C-style memory buffer */
+%typemap(in) (const char *buffer, const size_t bufsize) {
+	$1 = PyString_AsString($input);
+	$2 = (size_t) PyString_Size($input);
+}
+#endif
+#ifdef SWIGJAVA
+/* map string into C-style memory buffer */
+%typemap(in, noblock=1) (const char *buffer, const size_t bufsize) {
+  $1 = 0;
+  $2 = 0;
+  if ($input) {
+    $1 = ($1_ltype)JCALL2(GetStringUTFChars, jenv, $input, 0);
+    if (!$1) return $null;
+    $2 = strlen($1);
+  }
+}
+%typemap(freearg, noblock=1) (const char *buffer, const size_t bufsize) {
+  if ($1) JCALL2(ReleaseStringUTFChars, jenv, $input, $1);
 }
 #endif
 
@@ -419,7 +424,12 @@ typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 	};
 };
 
+#ifdef SWIGPYTHON
 int seaudit_log_parse(seaudit_log_t * log, FILE * syslog);
+#endif
+/* Java does not permit parsing directly from a file; parsing may only
+   be done through a memory buffer. */
+int seaudit_log_parse_buffer(seaudit_log_t * log, const char *buffer, const size_t bufsize);
 
 /* seaudit filter */
 typedef enum seaudit_filter_match

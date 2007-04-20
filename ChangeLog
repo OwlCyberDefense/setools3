@@ -1,5 +1,8 @@
 2007-04-20  J. Tang  <jtang@tresys.com>
 
+	* Added seaudit_log_parse_buffer(), needed because
+	seaudit_log_parse() is not possible with the Java SWIG library.
+
 	* Build system updated to suppress warnings from automake
 	1.10, and for parallel compilation (i.e., make -j).
 
