@@ -1,3 +1,8 @@
+2007-04-20  J. Tang  <jtang@tresys.com>
+
+	* Build system updated to suppress warnings from automake
+	1.10, and for parallel compilation (i.e., make -j).
+
 2007-04-18  J. Mowery  <jmowery@tresys.com>
 
 	* The function apol_domain_trans_result_create_from_domain_trans_result()

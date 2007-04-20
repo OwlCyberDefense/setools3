@@ -1,7 +1,7 @@
 AC_INIT(setools, 3.2, [Tresys Technology <setools@tresys.com>], [setools])
 AC_CONFIG_SRCDIR(awish/awish.c)
 AC_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(setools, 3.2)
+AM_INIT_AUTOMAKE([-Wno-portability])
 
 dnl *** update these variables as versions change; also update AC_INIT ***
 libqpol_version=1.2

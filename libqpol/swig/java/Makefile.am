@@ -62,6 +62,8 @@ DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so
 $(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA)
 	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ -I$(top_srcdir)/libqpol/include $<
 
+$(wordlist 2,$(words $(BUILT_SOURCES)), $(BUILT_SOURCES)): $(firstword $(BUILT_SOURCES))
+
 $(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
 	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_JAVA_CFLAGS) -DSWIGJAVA=1 $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
 	$(LN_S) -f $@ $(wrappedso_SONAME)
