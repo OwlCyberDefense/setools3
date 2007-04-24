@@ -10,39 +10,39 @@ libapol, libqpol, libesaudit, libpoldiff:
 
 libpoldiff:
 
-  * Now able to diff levels, categories, and range_transition
-    statements.  Able to diff modifications to a user's default level
-    and permitted MLS range, assuming the policies are MLS
+  * Provides ability to diff levels, categories, and range_transition
+    statements.  Provides ability to diff modifications to a user's
+    default level and permitted MLS range, assuming the policies are MLS.
     
 apol, seaudit, sediffx:
 
-  * Introducing 'policy list', a small text file that contains
+  * Introduces 'policy list', a small text file that contains
     references to a base policy and any number of modules.  After
     selecting the base policy and modules in a tool's open policy
-    dialog, click on 'Export' to write a policy list to disk.  The
-    same policy list may then be imported into that tool or any other
-    graphical SETools application.  This file may also be specified
+    dialog, click on 'Export' to write a policy list to disk.  That
+    policy list then may be imported into the same tool or any other
+    graphical SETools application.  This file also may be specified
     on the command line for all tools that load a policy.
 
 sesearch, apol:
 
-  * Full support for version 21 policy (i.e., object classes for
+  * Provides full support for version 21 policy (i.e., object classes for
     range_transition statements).
 
 sediff:
 
-  * Now shows MLS diffs.
+  * Shows MLS diffs.
 
 sediffx:
 
-  * Now shows MLS diffs.
+  * Shows MLS diffs.
 
-  * Click upon AV rules' permissions to show line numbers that
-    contributed just that permission.  This is in addition to existing
-    sediffx behavior that showed all lines associated with a
-    particular rule difference.
+  * Provides option to show line numbers that contributed just to a
+    specific AV rule's permission by clicking that AV rule's permissions.
+    This is in addition to existing sediffx behavior that showed all lines
+    associated with a particular rule difference.
 
-  * Support for type joins and splits within the type remap dialog.
+  * Provides support for type joins and splits within the type remap dialog.
 
 ==================================================
 

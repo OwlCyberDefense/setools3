@@ -24,11 +24,11 @@ A list of policy packages each containing a loadable policy module. The first mo
 .IP "policy list"
 A single text file containing all the information needed to load a policy, usually exported by SETools graphical utilities.
 .PP
-If not provided
+If no policy file is provided,
 .B
 seaudit
-will search for the system default policy, checking first for a source policy, then a binary policy matching the running kernel's preferred version, then finally the highest version that can be found.
-If no policy can be found
+will search for the system default policy: checking first for a source policy, next for a binary policy matching the running kernel's preferred version, and finally for the highest version that can be found.
+If no policy can be found,
 .B
 seaudit
 will begin with no policy loaded.
