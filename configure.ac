@@ -1,26 +1,34 @@
-AC_INIT(setools, 3.1, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.2, [Tresys Technology <setools@tresys.com>], [setools])
 AC_CONFIG_SRCDIR(awish/awish.c)
 AC_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(setools, 3.1)
+AM_INIT_AUTOMAKE([-Wno-portability])
 
 dnl *** update these variables as versions change; also update AC_INIT ***
-libqpol_version=1.1
+libqpol_version=1.2
 libqpol_soname=libqpol.so.1
+libqpol_pyswig_soname=_qpol.so.1
+libqpol_jswig_soname=libjqpol.so.1
 
-libapol_version=3.1
-libapol_soname=libapol.so.3.1
-libapol_tcl_soname=libapol-tcl.so.3.1
+libapol_version=4.0
+libapol_soname=libapol.so.4
+libapol_pyswig_soname=_apol.so.4
+libapol_jswig_soname=libjapol.so.4
 
-libpoldiff_version=1.1
-libpoldiff_soname=libpoldiff.so.1.1
+libpoldiff_version=1.2
+libpoldiff_soname=libpoldiff.so.1
+libpoldiff_pyswig_soname=_poldiff.so.1
+libpoldiff_jswig_soname=libjpoldiff.so.1
 
-libsefs_version=3.0.2
+libsefs_version=3.1
 libsefs_soname=libsefs.so.3
+dnl libsefs will not be swigified
 
-libseaudit_version=4.0.0
+libseaudit_version=4.1
 libseaudit_soname=libseaudit.so.4
+libseaudit_pyswig_soname=_seaudit.so.4
+libseaudit_jswig_soname=libjseaudit.so.4
 
-setoolsdir='${prefix}/share/setools-3.1'
+setoolsdir='${prefix}/share/setools-3.2'
 
 version_min_sepol_major=1
 version_min_sepol_minor=12
@@ -30,9 +38,9 @@ dnl *** end of tunable values ***
 
 AC_GNU_SOURCE
 AC_PROG_CC
-AC_LANG_C
+AC_LANG([C])
 AC_HEADER_STDC
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_LN_S
 AM_PROG_LEX
 AC_PROG_YACC
@@ -40,6 +48,8 @@ AC_PROG_INSTALL
 AC_CHECK_SIZEOF(char *)
 AC_C_BIGENDIAN
 AC_CHECK_FUNCS(rand_r)
+
+AC_CACHE_SAVE
 
 AC_ARG_ENABLE(shared,
               AC_HELP_STRING([--enable-shared],
@@ -62,6 +72,7 @@ AC_ARG_ENABLE(debug,
 AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
     DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall -DSETOOLS_DEBUG=1"
+    DEBUGJFLAGS="-g"
     DEBUGLDFLAGS="-g"
     QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=$(top_builddir)/libqpol/src'
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
@@ -72,6 +83,7 @@ if test "x${enable_debug}" = xyes; then
 else
     AC_DEFINE(NDEBUG, 1, [disable calls to assert()])
     DEBUGCFLAGS="-fno-strict-aliasing"
+    DEBUGJFLAGS=""
     DEBUGLDFLAGS=""
     if test ${use_shared} = yes; then
         QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
@@ -89,6 +101,7 @@ else
     AC_MSG_RESULT(disabled)
 fi
 AC_SUBST(DEBUGCFLAGS)
+AC_SUBST(DEBUGJFLAGS)
 AC_SUBST(DEBUGLDFLAGS)
 QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
 APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
@@ -112,12 +125,15 @@ AC_ARG_ENABLE(warnall,
               enable_warnall="$enableval")
 if test "x${enable_warnall}" = xyes; then
     WARNCFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic-errors -Wuninitialized -fno-strict-aliasing -std=c99"
+    WARNJFLAGS=" -verbose"
     WARNLDFLAGS=""
 else
     WARNCFLAGS=""
+    WARNJFLAGS=""
     WARNLDFLAGS=""
 fi
 AC_SUBST(WARNCFLAGS)
+AC_SUBST(WARNJFLAGS)
 AC_SUBST(WARNLDFLAGS)
 
 AC_ARG_ENABLE(profiling,
@@ -136,6 +152,49 @@ else
 fi
 AC_SUBST(PROFILECFLAGS)
 AC_SUBST(PROFILELDFLAGS)
+
+do_swigify=no
+do_swigify_python=no
+do_swigify_java=no
+AC_ARG_ENABLE(swig-python,
+              AC_HELP_STRING([--enable-swig-python],
+                             [build SWIG interfaces for Python]),
+              enable_pyswig="$enableval")
+if test "x${enable_pyswig}" = xyes; then
+   AC_PROG_SWIG(1.3.28)
+   AM_PATH_PYTHON(2.3)
+   SWIG_PYTHON
+   do_swigify_python=yes
+   do_swigify=yes
+fi
+AC_ARG_ENABLE(swig-java,
+              AC_HELP_STRING([--enable-swig-java],
+                             [build SWIG interfaces for Java]),
+              enable_jswig="$enableval")
+if test "x${enable_jswig}" = xyes; then
+   AC_PROG_SWIG(1.3.28)
+   AC_JAVA_OPTIONS
+   if test "x$JAVAPREFIX" = x; then
+      JAVAPREFIX=/usr/lib/jvm/java-gcj
+   fi
+   AC_CHECK_CLASSPATH
+   AC_PROG_JAVAC
+   AC_PROG_JAVA
+   AC_PROG_JAR
+   SWIG_JAVA_OPT=-java
+   java_save_CFLAGS="${CFLAGS}"
+   SWIG_JAVA_CFLAGS="-I${JAVAPREFIX}/include -I${JAVAPREFIX}/include/linux"
+   CFLAGS="${CFLAGS} ${SWIG_JAVA_CFLAGS}"
+   AC_CHECK_HEADER([jni.h], , AC_MSG_ERROR([Not found.  Specify a Java SDK with --with-java-prefix flag.]))
+   AC_CHECK_HEADER([jni_md.h], , AC_MSG_ERROR([Not found.  Specify a Java SDK with --with-java-prefix flag.]))
+   CFLAGS="${java_save_CFLAGS}"
+   AC_SUBST(SWIG_JAVA_OPT)
+   AC_SUBST(SWIG_JAVA_CFLAGS)
+   do_swigify_java=yes
+   do_swigify=yes
+fi
+
+AC_CACHE_SAVE
 
 AC_ARG_ENABLE(gui,
               AC_HELP_STRING([--disable-gui],
@@ -251,6 +310,8 @@ else
       use_selinux=yes
 fi
 
+AC_CACHE_SAVE
+
 dnl ** find libselinux and libsepol
 
 AC_ARG_WITH(sepol-devel,
@@ -280,25 +341,19 @@ for dir in lib64 lib ; do
 done
 AC_MSG_CHECKING([for sepol/sepol.h])
 selinux_save_CFLAGS="${CFLAGS}"
-SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
-CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir} ${SELINUX_LIB_FLAG} ${CFLAGS}"
-AC_TRY_RUN([#include <sepol/sepol.h>
-            #include <stdlib.h>
-            int main(void) { exit(0); }],
-           AC_MSG_RESULT(yes),
-           AC_MSG_ERROR([could not find sepol headers at $sepol_devel_incdir - make sure libsepol-devel is installed]))
-AC_CHECK_LIB(sepol,sepol_policydb_read,,
+selinux_save_CPPFLAGS="${CPPFLAGS}"
+CFLAGS="${CFLAGS} -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
+CPPFLAGS="${CPPFLAGS} -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
+AC_CHECK_HEADER([sepol/sepol.h], , AC_MSG_ERROR([could not find sepol headers at $sepol_devel_incdir - make sure libsepol-devel is installed]))
+AC_CHECK_LIB([sepol], [sepol_policydb_read], ,
              AC_MSG_ERROR([could not find libsepol at $sepol_devel_libdir]))
-AC_MSG_CHECKING([for selinux/selinux.h])
-AC_TRY_RUN([#include <selinux/selinux.h>
-            #include <stdlib.h>
-            int main(void) { exit(0); }],
-           AC_MSG_RESULT(yes),
-           AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
-AC_CHECK_LIB(selinux, selinux_policy_root,,
+AC_CHECK_HEADER([selinux/selinux.h], , AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
+AC_CHECK_LIB([selinux], [selinux_policy_root], ,
 AC_MSG_ERROR([could not find libselinux at $selinux_devel_libdir]),
              -lsepol)
+SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
 CFLAGS="${selinux_save_CFLAGS}"
+CPPFLAGS="${selinux_save_CPPFLAGS}"
 
 AC_ARG_ENABLE(sefs,
               AC_HELP_STRING([--disable-sefs],
@@ -349,27 +404,53 @@ else
       version_found_sepol="${version_sepol_major}.${version_sepol_minor}.${version_sepol_patch}"
       AC_MSG_ERROR([setools requires sepol version $version_min_sepol or greater (found $version_found_sepol)])
    fi
+   AC_MSG_RESULT([yes])
    sepol_srcdir="${sepol_srcdir}/src"
    sepol_src_save_CFLAGS="${CFLAGS}"
-   CFLAGS="${CFLAGS} -I${sepol_srcdir}/../include ${SELINUX_LIB_FLAG}"
-   AC_TRY_RUN([#include <sepol/policydb/policydb.h>
-#include <stdlib.h>
-   int main(void) { exit(0); }],,
-       AC_MSG_ERROR([could not find sepol source tree]))
+   sepol_src_save_CPPFLAGS="${CPPFLAGS}"
+   CFLAGS="${CFLAGS} -I${sepol_srcdir}/../include"
+   CPPFLAGS="${CPPFLAGS} -I${sepol_srcdir}/../include"
+   AC_CHECK_HEADER([sepol/policydb/policydb.h], , AC_MSG_ERROR([could not find sepol source tree]))
    CFLAGS="${sepol_src_save_CFLAGS}"
+   CPPFLAGS="${sepol_src_save_CPPFLAGS}"
    if test ! -f "${sepol_srcdir}/libsepol.a"; then
       AC_MSG_ERROR([could not find precompiled libsepol.a])
    fi
    sepol_devel_incdir="${sepol_srcdir}/../include"
-   AC_MSG_RESULT(yes)
 fi
 SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
 AC_SUBST(SELINUX_CFLAGS)
 AC_SUBST(SELINUX_LIB_FLAG)
 
 sepol_save_CFLAGS="${CFLAGS}"
+sepol_save_CPPFLAGS="${CPPFLAGS}"
 CFLAGS="${CFLAGS} ${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG}"
-AC_RUN_IFELSE([#include <sepol/policydb/policydb.h>
+CPPFLAGS="${CPPFLAGS} ${SELINUX_CFLAGS}"
+dnl if using libsepol < 2.0.0, then map the old error codes to the new
+dnl format
+AC_CHECK_HEADER([sepol/errcodes.h], sepol_new_defines="yes", sepol_new_defines="no")
+
+dnl check for broken boolmap behavior in libsepol version 2.0.2
+AC_CHECK_DECL([cond_node_create], sepol_check_boolmap="yes", sepol_check_boolmap="no", [#include <sepol/policydb/conditional.h>])
+if test ${sepol_check_boolmap} = "yes"; then
+    dnl check for boolmap parameter that is fixed in version 2.0.3
+    AC_MSG_CHECKING([correct libsepol expand behavior])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_SOURCE([
+#include <sepol/policydb/expand.h>
+int main () {
+  return expand_module_avrules(NULL, NULL, NULL, NULL, NULL, 0, 0);
+}])],
+    AC_MSG_RESULT([yes]),
+    AC_MSG_ERROR([this version of libsepol is incompatible with SETools]))
+  sepol_new_expand_boolmap="yes"
+else
+  sepol_new_expand_boolmap="no"
+fi
+
+AC_RUN_IFELSE(
+   [AC_LANG_SOURCE([
+#include <sepol/policydb/policydb.h>
 #include <stdio.h>
 #include <stdlib.h>
 int main(void) {
@@ -378,11 +459,13 @@ int main(void) {
        fclose(f);
        exit(EXIT_SUCCESS);
     }
-    exit(EXIT_FAILURE); }],
+    exit(EXIT_FAILURE);
+}])],
     sepol_policy_version_max=`cat conftest.data`,
     AC_MSG_FAILURE([could not determine maximum libsepol policy version]))
 AC_DEFINE_UNQUOTED(SEPOL_POLICY_VERSION_MAX, ${sepol_policy_version_max}, [maximum policy version supported by libsepol])
 CFLAGS="${sepol_save_CFLAGS}"
+CPPFLAGS="${sepol_save_CPPFLAGS}"
 
 if test ${use_selinux} = "yes"; then
 dnl Locate selinux policy root directory
@@ -424,18 +507,20 @@ if test ${use_selinux} = "yes"; then
    fi
 fi
 
+AC_CACHE_SAVE
+
 dnl check for pkg-config
-AC_CHECK_PROG(pkg_config_dir, pkg-config, yes, no)
-if test ${pkg_config_dir} = "no"; then
+AC_CHECK_PROG(has_pkg_config, pkg-config, yes, no)
+if test ${has_pkg_config} = "no"; then
    AC_MSG_ERROR([pkg-config not found])
 fi
 
 if test "x${build_gui}" = xyes; then
-  dnl check for GTK
+  dnl check for GTK+
   AC_MSG_CHECKING([for GTK])
-  pkg-config --exists 'gtk+-2.0 >= 2.4'
+  pkg-config --exists 'gtk+-2.0 >= 2.8'
   if test $? -ne 0; then
-     AC_MSG_ERROR([setools requires GTK+ 2.4 or greater])
+     AC_MSG_ERROR([setools requires GTK+ 2.8 or greater])
   fi
   GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
   if test -z "${GTK_CFLAGS}"; then
@@ -516,6 +601,9 @@ if test ${use_sefs} = "yes"; then
    AC_SUBST(use_sefs)
 fi
 
+AM_CONDITIONAL(DO_SWIGIFY, test ${do_swigify} = "yes")
+AM_CONDITIONAL(DO_SWIGIFY_PYTHON, test ${do_swigify_python} = "yes")
+AM_CONDITIONAL(DO_SWIGIFY_JAVA, test ${do_swigify_java} = "yes")
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
@@ -526,15 +614,22 @@ AC_SUBST(VERSION)
 AC_SUBST(sepol_srcdir)
 AC_SUBST(libqpol_version)
 AC_SUBST(libqpol_soname)
+AC_SUBST(libqpol_pyswig_soname)
+AC_SUBST(libqpol_jswig_soname)
 AC_SUBST(libapol_version)
 AC_SUBST(libapol_soname)
-AC_SUBST(libapol_tcl_soname)
+AC_SUBST(libapol_pyswig_soname)
+AC_SUBST(libapol_jswig_soname)
 AC_SUBST(libpoldiff_version)
 AC_SUBST(libpoldiff_soname)
+AC_SUBST(libpoldiff_pyswig_soname)
+AC_SUBST(libpoldiff_jswig_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
 AC_SUBST(libseaudit_version)
 AC_SUBST(libseaudit_soname)
+AC_SUBST(libseaudit_pyswig_soname)
+AC_SUBST(libseaudit_jswig_soname)
 AC_SUBST(setoolsdir)
 AC_SUBST(selinux_policy_dir)
 AC_SUBST(selinux_default_policy)
@@ -546,6 +641,14 @@ AC_DEFINE_UNQUOTED(LIBPOLDIFF_VERSION_STRING, "${libpoldiff_version}", [libpoldi
 AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
 AC_DEFINE(SQLITE_PTR_SZ, SIZEOF_CHAR_P, [size of a pointer, as used by SQLite3])
+if test ${sepol_new_defines} != "yes" ; then
+   AC_DEFINE(SEPOL_ENOMEM, HASHTAB_OVERFLOW, [remap of libsepol 1.x.x define to 2.x.x])
+   AC_DEFINE(SEPOL_EEXIST, HASHTAB_PRESENT, [remap of libsepol 1.x.x define to 2.x.x])
+fi
+
+if test ${sepol_new_expand_boolmap} == "yes" ; then
+   AC_DEFINE(HAVE_SEPOL_BOOLMAP, 1, [sepol's new expand boolmap behavior])
+fi
 
 # for older version of BWidget, overcome bug in NoteBook::bindtabs and
 # add a new -autopost option to ComboBox
@@ -588,11 +691,15 @@ EOF
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
+                 libqpol/swig/Makefile libqpol/swig/python/Makefile libqpol/swig/java/Makefile libqpol/swig/java/MANIFEST.MF \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
+                 libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile libapol/swig/java/MANIFEST.MF \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
+                 libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
                  libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile \
+                 libseaudit/swig/Makefile libseaudit/swig/python/Makefile libseaudit/swig/java/Makefile libseaudit/swig/java/MANIFEST.MF \
                  secmds/Makefile \
                  apol/Makefile \
                  awish/Makefile \

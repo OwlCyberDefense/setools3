@@ -49,29 +49,40 @@
 
 static char *policy_file = NULL;
 
+enum opt_values
+{
+	RULE_NEVERALLOW = 256, RULE_AUDIT, RULE_AUDITALLOW, RULE_DONTAUDIT,
+	RULE_ROLE_ALLOW, RULE_ROLE_TRANS, RULE_RANGE_TRANS, RULE_ALL,
+	EXPR_ROLE_SOURCE, EXPR_ROLE_TARGET
+};
+
 static struct option const longopts[] = {
+	{"allow", no_argument, NULL, 'A'},
+	{"neverallow", no_argument, NULL, RULE_NEVERALLOW},
+	{"audit", no_argument, NULL, RULE_AUDIT},
+	{"auditallow", no_argument, NULL, RULE_AUDITALLOW},
+	{"dontaudit", no_argument, NULL, RULE_DONTAUDIT},
+	{"type", no_argument, NULL, 'T'},
+	{"role_allow", no_argument, NULL, RULE_ROLE_ALLOW},
+	{"role_trans", no_argument, NULL, RULE_ROLE_TRANS},
+	{"range_trans", no_argument, NULL, RULE_RANGE_TRANS},
+	{"all", no_argument, NULL, RULE_ALL},
+
 	{"source", required_argument, NULL, 's'},
 	{"target", required_argument, NULL, 't'},
-	{"role_source", required_argument, NULL, 'r'},
-	{"role_target", required_argument, NULL, 'g'},
+	{"role_source", required_argument, NULL, EXPR_ROLE_SOURCE},
+	{"role_target", required_argument, NULL, EXPR_ROLE_TARGET},
 	{"class", required_argument, NULL, 'c'},
-	{"perms", required_argument, NULL, 'p'},
-	{"boolean", required_argument, NULL, 'b'},
-	{"allow", no_argument, NULL, 'A'},
-	{"neverallow", no_argument, NULL, 'N'},
-	{"audit", no_argument, NULL, 'U'},
-	{"rangetrans", no_argument, NULL, 'R'},
-	{"all", no_argument, NULL, 'a'},
-	{"type", no_argument, NULL, 'T'},
-	{"role_allow", no_argument, NULL, 'L'},
-	{"role_trans", no_argument, NULL, 'o'},
-	{"lineno", no_argument, NULL, 'l'},
+	{"perm", required_argument, NULL, 'p'},
+	{"bool", required_argument, NULL, 'b'},
+
+	{"direct", no_argument, NULL, 'd'},
+	{"regex", no_argument, NULL, 'R'},
+	{"linenum", no_argument, NULL, 'n'},
 	{"semantic", no_argument, NULL, 'S'},
 	{"show_cond", no_argument, NULL, 'C'},
-	{"indirect", no_argument, NULL, 'i'},
-	{"noregex", no_argument, NULL, 'n'},
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -90,7 +101,8 @@ typedef struct options
 	bool_t indirect;
 	bool_t allow;
 	bool_t nallow;
-	bool_t audit;
+	bool_t auditallow;
+	bool_t dontaudit;
 	bool_t type;
 	bool_t rtrans;
 	bool_t role_allow;
@@ -109,31 +121,32 @@ void usage(const char *program_name, int brief)
 	}
 	printf("Search the rules in a SELinux policy.\n\n");
 	printf("RULE_TYPES:\n");
-	printf("  --allow                   allow rules\n");
+	printf("  -A, --allow               allow rules\n");
 	printf("  --neverallow              neverallow rules\n");
-	printf("  --audit                   auditallow and dontaudit rules\n");
-	printf("  --type                    type_trans, type_member, and type_change\n");
-	printf("  --rangetrans              range transition rules\n");
+	printf("  --auditallow              auditallow rules\n");
+	printf("  --dontaudit               dontaudit rules\n");
+	printf("  -T, --type                type_trans, type_member, and type_change\n");
 	printf("  --role_allow              role allow rules\n");
-	printf("  --role_trans              role transition rules\n");
-	printf("  -a, --all                 all rules regardless of type, class, or perms\n");
+	printf("  --role_trans              role_transition rules\n");
+	printf("  --range_trans             range_transition rules\n");
+	printf("  --all                     all rules regardless of type, class, or perms\n");
 	printf("EXPRESSIONS:\n");
-	printf("  -s NAME, --source=NAME    rules with type/attribute NAME (regex) as source\n");
-	printf("  -t NAME, --target=NAME    rules with type/attribute NAME (regex) as target\n");
-	printf("  --role_source=NAME        rules with role NAME (regex) as source\n");
-	printf("  --role_target=NAME        rules with role NAME (regex) as target\n");
+	printf("  -s NAME, --source=NAME    rules with type/attribute NAME as source\n");
+	printf("  -t NAME, --target=NAME    rules with type/attribute NAME as target\n");
+	printf("  --role_source=NAME        rules with role NAME as source\n");
+	printf("  --role_target=NAME        rules with role NAME as target\n");
 	printf("  -c NAME, --class=NAME     rules with class NAME as the object class\n");
-	printf("  -p P1[,P2,...], --perms=P1[,P2...]\n");
-	printf("                            rules with the specified permissions\n");
-	printf("  -b NAME, --boolean=NAME   conditional rules with NAME in the expression\n");
+	printf("  -p P1[,P2,...], --perm=P1[,P2...]\n");
+	printf("                            rules with the specified permission\n");
+	printf("  -b NAME, --bool=NAME      conditional rules with NAME in the expression\n");
 	printf("OPTIONS:\n");
-	printf("  -i, --indirect            also search for the type's attributes\n");
-	printf("  -n, --noregex             do not use regular expression matching\n");
-	printf("  -l, --lineno              show line number for each rule if available\n");
-	printf("  --semantic                search rules semantically instead of syntactically\n");
+	printf("  -d, --direct              do not search for type's attributes\n");
+	printf("  -R, --regex               use regular expression matching\n");
+	printf("  -n, --linenum             show line number for each rule if available\n");
+	printf("  -S, --semantic            search rules semantically instead of syntactically\n");
 	printf("  -C, --show_cond           show conditional expression for conditional rules\n");
 	printf("  -h, --help                print this help text and exit\n");
-	printf("  -v, --version             print version information and exit\n");
+	printf("  -V, --version             print version information and exit\n");
 	printf("\n");
 	printf("If no expression is specified, then all rules are shown.\n");
 	printf("\n");
@@ -154,7 +167,7 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		return -1;
 	}
 
-	if (!opt->all && !opt->allow && !opt->nallow && !opt->audit) {
+	if (!opt->all && !opt->allow && !opt->nallow && !opt->auditallow && !opt->dontaudit) {
 		*v = NULL;
 		return 0;	       /* no search to do */
 	}
@@ -170,8 +183,10 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 		rules |= QPOL_RULE_ALLOW;
 	if (opt->nallow || opt->all)
 		rules |= QPOL_RULE_NEVERALLOW;
-	if (opt->audit || opt->all)
-		rules |= (QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT);
+	if (opt->auditallow || opt->all)
+		rules |= QPOL_RULE_AUDITALLOW;
+	if (opt->dontaudit || opt->all)
+		rules |= QPOL_RULE_DONTAUDIT;
 	apol_avrule_query_set_rules(policy, avq, rules);
 
 	apol_avrule_query_set_regex(policy, avq, opt->useregex);
@@ -219,7 +234,7 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_avrule_query_destroy(&avq);
 	free(tmp);
 	free(s);
@@ -403,7 +418,7 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_terule_query_destroy(&teq);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
@@ -575,7 +590,7 @@ static int perform_ra_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_role_allow_query_destroy(&raq);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
@@ -653,7 +668,7 @@ static int perform_rt_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_role_trans_query_destroy(&rtq);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
@@ -721,6 +736,12 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 			goto err;
 		}
 	}
+	if (opt->class_name) {
+		if (apol_range_trans_query_append_class(policy, rtq, opt->class_name)) {
+			error = errno;
+			goto err;
+		}
+	}
 
 	if (apol_range_trans_get_by_query(policy, rtq, v)) {
 		error = errno;
@@ -731,7 +752,7 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 	return 0;
 
       err:
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	apol_range_trans_query_destroy(&rtq);
 	ERR(policy, "%s", strerror(error));
 	errno = error;
@@ -774,17 +795,9 @@ int main(int argc, char **argv)
 	apol_vector_t *mod_paths = NULL;
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 
-	cmd_opts.all = cmd_opts.lineno = cmd_opts.allow = FALSE;
-	cmd_opts.nallow = cmd_opts.audit = cmd_opts.type = FALSE;
-	cmd_opts.rtrans = cmd_opts.indirect = cmd_opts.show_cond = FALSE;
-	cmd_opts.useregex = TRUE;
-	cmd_opts.role_allow = cmd_opts.role_trans = cmd_opts.semantic = FALSE;
-	cmd_opts.src_name = cmd_opts.tgt_name = cmd_opts.class_name = NULL;
-	cmd_opts.permlist = cmd_opts.bool_name = cmd_opts.src_role_name = NULL;
-	cmd_opts.tgt_role_name = NULL;
-	cmd_opts.perm_vector = NULL;
-
-	while ((optc = getopt_long(argc, argv, "s:t:r:g:c:p:b:ANURaTLolCinhv0", longopts, NULL)) != -1) {
+	memset(&cmd_opts, 0, sizeof(cmd_opts));
+	cmd_opts.indirect = TRUE;
+	while ((optc = getopt_long(argc, argv, "ATs:t:c:p:b:dRnSChV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -796,7 +809,7 @@ int main(int argc, char **argv)
 			}
 			cmd_opts.src_name = strdup(optarg);
 			if (!cmd_opts.src_name) {
-				fprintf(stderr, "Memory error!\n");
+				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}
 			break;
@@ -808,11 +821,11 @@ int main(int argc, char **argv)
 			}
 			cmd_opts.tgt_name = strdup(optarg);
 			if (!cmd_opts.tgt_name) {
-				fprintf(stderr, "Memory error!\n");
+				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}
 			break;
-		case 'r':
+		case EXPR_ROLE_SOURCE:
 			if (optarg == 0) {
 				usage(argv[0], 1);
 				printf("Missing source role for --role_source\n");
@@ -820,11 +833,11 @@ int main(int argc, char **argv)
 			}
 			cmd_opts.src_role_name = strdup(optarg);
 			if (!cmd_opts.src_role_name) {
-				fprintf(stderr, "Memory error!\n");
+				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}
 			break;
-		case 'g':
+		case EXPR_ROLE_TARGET:
 			if (optarg == 0) {
 				usage(argv[0], 1);
 				printf("Missing target role for --role_target\n");
@@ -832,7 +845,7 @@ int main(int argc, char **argv)
 			}
 			cmd_opts.tgt_role_name = strdup(optarg);
 			if (!cmd_opts.tgt_role_name) {
-				fprintf(stderr, "Memory error!\n");
+				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}
 			break;
@@ -844,66 +857,73 @@ int main(int argc, char **argv)
 			}
 			cmd_opts.class_name = strdup(optarg);
 			if (!cmd_opts.class_name) {
-				fprintf(stderr, "Memory error!\n");
+				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}
 			break;
-		case 'p':	       /* permissions */
+		case 'p':	       /* permission */
 			if (optarg == 0) {
 				usage(argv[0], 1);
-				printf("Missing permissions for -p (--perms)\n");
+				printf("Missing permissions for -p (--perm)\n");
 				exit(1);
 			}
-			cmd_opts.permlist = strdup(optarg);
-			cmd_opts.perm_vector = apol_vector_create();
-			if (!cmd_opts.permlist || !cmd_opts.perm_vector) {
-				fprintf(stderr, "%s", strerror(ENOMEM));
+			if ((cmd_opts.permlist = strdup(optarg)) == NULL
+			    || (cmd_opts.perm_vector = apol_vector_create(free)) == NULL) {
+				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}
 			break;
 		case 'b':
 			if (optarg == 0) {
 				usage(argv[0], 1);
-				printf("Missing boolean for -b (--boolean)\n");
+				printf("Missing boolean for -b (--bool)\n");
 				exit(1);
 			}
 			cmd_opts.bool_name = strdup(optarg);
 			if (!cmd_opts.bool_name) {
-				fprintf(stderr, "Memory error!\n");
+				fprintf(stderr, "%s\n", strerror(errno));
 				exit(1);
 			}
 			break;
-		case 'i':	       /* indirect search */
-			cmd_opts.indirect = TRUE;
+		case 'd':	       /* direct search */
+			cmd_opts.indirect = FALSE;
 			break;
-		case 'n':	       /* no regex */
-			cmd_opts.useregex = FALSE;
+		case 'R':	       /* use regex */
+			cmd_opts.useregex = TRUE;
 			break;
 		case 'A':	       /* allow */
 			cmd_opts.allow = TRUE;
 			break;
-		case 'N':	       /* neverallow */
+		case RULE_NEVERALLOW: /* neverallow */
 			cmd_opts.nallow = TRUE;
 			break;
-		case 'U':	       /* audit */
-			cmd_opts.audit = TRUE;
+		case RULE_AUDIT:      /* audit */
+			cmd_opts.auditallow = TRUE;
+			cmd_opts.dontaudit = TRUE;
+			fprintf(stderr, "Use of --audit is depercated; use --auditallow and --dontaudit instead.\n");
+			break;
+		case RULE_AUDITALLOW:
+			cmd_opts.auditallow = TRUE;
+			break;
+		case RULE_DONTAUDIT:
+			cmd_opts.dontaudit = TRUE;
 			break;
 		case 'T':	       /* type */
 			cmd_opts.type = TRUE;
 			break;
-		case 'R':	       /* range transition */
-			cmd_opts.rtrans = TRUE;
-			break;
-		case 'L':
+		case RULE_ROLE_ALLOW:
 			cmd_opts.role_allow = TRUE;
 			break;
-		case 'o':
+		case RULE_ROLE_TRANS:
 			cmd_opts.role_trans = TRUE;
 			break;
-		case 'a':	       /* all */
+		case RULE_RANGE_TRANS:	/* range transition */
+			cmd_opts.rtrans = TRUE;
+			break;
+		case RULE_ALL:	       /* all */
 			cmd_opts.all = TRUE;
 			break;
-		case 'l':	       /* lineno */
+		case 'n':	       /* lineno */
 			cmd_opts.lineno = TRUE;
 			break;
 		case 'S':	       /* semantic */
@@ -915,7 +935,7 @@ int main(int argc, char **argv)
 		case 'h':	       /* help */
 			usage(argv[0], 0);
 			exit(0);
-		case 'v':	       /* version */
+		case 'V':	       /* version */
 			printf("sesearch %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
@@ -924,11 +944,11 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.audit || cmd_opts.role_allow ||
+	if (!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.auditallow || cmd_opts.dontaudit || cmd_opts.role_allow ||
 	      cmd_opts.type || cmd_opts.rtrans || cmd_opts.role_trans || cmd_opts.all)) {
 		usage(argv[0], 1);
-		printf("One of -a (--all), --allow, --neverallow, --audit, --rangetrans, "
-		       "--type, --role_allow, or --role_trans mustbe specified\n\n");
+		fprintf(stderr, "One of --all, --allow, --neverallow, --auditallow, --dontaudit,\n"
+			"--rangetrans, --type, --role_allow, or --role_trans must be specified.\n");
 		exit(1);
 	}
 
@@ -951,38 +971,37 @@ int main(int argc, char **argv)
 
 	if (argc - optind > 0) {
 		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-		if (!(mod_paths = apol_vector_create())) {
+		if (!(mod_paths = apol_vector_create(NULL))) {
 			ERR(policy, "%s", strerror(ENOMEM));
 			exit(1);
 		}
 		for (; argc - optind; optind++) {
-			char *tmp = NULL;
-			if (!(tmp = strdup(argv[optind]))) {
+			if (apol_vector_append(mod_paths, (void *)argv[optind])) {
 				ERR(policy, "Error loading module %s", argv[optind]);
+				apol_vector_destroy(&mod_paths);
 				free(policy_file);
-				apol_vector_destroy(&mod_paths, free);
-				exit(1);
-			}
-			if (apol_vector_append(mod_paths, (void *)tmp)) {
-				ERR(policy, "Error loading module %s", argv[optind]);
-				apol_vector_destroy(&mod_paths, free);
-				free(policy_file);
-				free(tmp);
 				exit(1);
 			}
 		}
+	} else if (apol_file_is_policy_path_list(policy_file) > 0) {
+		pol_path = apol_policy_path_create_from_file(policy_file);
+		if (!pol_path) {
+			ERR(policy, "%s", "invalid policy list");
+			free(policy_file);
+			exit(1);
+		}
 	}
 
-	pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
+	if (!pol_path)
+		pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
 	if (!pol_path) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		free(policy_file);
-		apol_vector_destroy(&mod_paths, free);
+		apol_vector_destroy(&mod_paths);
 		exit(1);
 	}
 	free(policy_file);
-	apol_vector_destroy(&mod_paths, free);
-
+	apol_vector_destroy(&mod_paths);
 	policy = apol_policy_create_from_policy_path(pol_path, 0, NULL, NULL);
 	if (!policy) {
 		ERR(policy, "%s", strerror(errno));
@@ -1018,8 +1037,7 @@ int main(int argc, char **argv)
 			print_av_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
-
+	apol_vector_destroy(&v);
 	if (perform_te_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
@@ -1031,8 +1049,7 @@ int main(int argc, char **argv)
 			print_te_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
-
+	apol_vector_destroy(&v);
 	if (perform_ra_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
@@ -1041,8 +1058,7 @@ int main(int argc, char **argv)
 		print_ra_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
-
+	apol_vector_destroy(&v);
 	if (perform_rt_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
@@ -1051,8 +1067,7 @@ int main(int argc, char **argv)
 		print_rt_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
-
+	apol_vector_destroy(&v);
 	if (perform_range_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
@@ -1061,9 +1076,8 @@ int main(int argc, char **argv)
 		print_range_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	rt = 0;
-
       cleanup:
 	apol_policy_destroy(&policy);
 	apol_policy_path_destroy(&pol_path);
@@ -1074,6 +1088,6 @@ int main(int argc, char **argv)
 	free(cmd_opts.bool_name);
 	free(cmd_opts.src_role_name);
 	free(cmd_opts.tgt_role_name);
-	apol_vector_destroy(&cmd_opts.perm_vector, free);
+	apol_vector_destroy(&cmd_opts.perm_vector);
 	exit(rt);
 }

@@ -261,12 +261,12 @@ int find_assoc_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	item->item = (void *)type;
 	proof->type = SECHK_ITEM_TYPE;
 	proof->text = buff;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;
 	}
-	if (!(item->proof = apol_vector_create())) {
+	if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_assoc_types_run_fail;

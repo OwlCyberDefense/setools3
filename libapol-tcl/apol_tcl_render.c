@@ -4,7 +4,6 @@
  * This file takes various policy stuff and returns formatted Tcl
  * lists, suitable for displaying results in Apol.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -34,14 +33,15 @@
 #include <errno.h>
 #include <tcl.h>
 
-int apol_level_to_tcl_obj(Tcl_Interp * interp, apol_mls_level_t * level, Tcl_Obj ** obj)
+int apol_level_to_tcl_obj(Tcl_Interp * interp, const apol_mls_level_t * level, Tcl_Obj ** obj)
 {
 	Tcl_Obj *level_elem[2], *cats_obj;
 	size_t i;
-	level_elem[0] = Tcl_NewStringObj(level->sens, -1);
+	level_elem[0] = Tcl_NewStringObj(apol_mls_level_get_sens(level), -1);
 	level_elem[1] = Tcl_NewListObj(0, NULL);
-	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
-		cats_obj = Tcl_NewStringObj((char *)apol_vector_get_element(level->cats, i), -1);
+	const apol_vector_t *cats = apol_mls_level_get_cats(level);
+	for (i = 0; i < apol_vector_get_size(cats); i++) {
+		cats_obj = Tcl_NewStringObj((char *)apol_vector_get_element(cats, i), -1);
 		if (Tcl_ListObjAppendElement(interp, level_elem[1], cats_obj) == TCL_ERROR) {
 			return -1;
 		}
@@ -519,8 +519,9 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp * interp, int ar
 	}
 
 	/* check that all components exist */
-	if (context->user == NULL || context->role == NULL || context->type == NULL ||
-	    (apol_policy_is_mls(policydb) && context->range == NULL)) {
+	if (apol_context_get_user(context) == NULL || apol_context_get_role(context) == NULL
+	    || apol_context_get_type(context) == NULL || (apol_policy_is_mls(policydb)
+							  && apol_context_get_range(context) == NULL)) {
 		ERR(policydb, "Context string '%s' is not valid.", argv[1]);
 		goto cleanup;
 	}

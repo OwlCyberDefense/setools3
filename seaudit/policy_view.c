@@ -195,7 +195,7 @@ static void policy_view_on_find_terules_click(GtkButton * button __attribute__ (
 	if (run.retval == 0) {
 		policy_view_display_avrule_results(pv, run.results, run.is_syn_rules);
 	}
-	apol_vector_destroy(&run.results, NULL);
+	apol_vector_destroy(&run.results);
 }
 
 static void policy_view_close(GtkButton * button __attribute__ ((unused)), gpointer user_data)
@@ -389,8 +389,8 @@ policy_view_t *policy_view_create(toplevel_t * top)
 void policy_view_destroy(policy_view_t ** pv)
 {
 	if (pv != NULL && *pv != NULL) {
-		apol_vector_destroy(&(*pv)->type_list, NULL);
-		apol_vector_destroy(&(*pv)->class_list, NULL);
+		apol_vector_destroy(&(*pv)->type_list);
+		apol_vector_destroy(&(*pv)->class_list);
 		free(*pv);
 		*pv = NULL;
 	}
@@ -464,10 +464,10 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 	apol_policy_t *policy = toplevel_get_policy(pv->top);
 	gtk_list_store_clear(pv->type_model);
 	gtk_list_store_clear(pv->class_model);
-	apol_vector_destroy(&pv->type_list, NULL);
-	apol_vector_destroy(&pv->class_list, NULL);
-	pv->type_list = apol_vector_create();
-	pv->class_list = apol_vector_create();
+	apol_vector_destroy(&pv->type_list);
+	apol_vector_destroy(&pv->class_list);
+	pv->type_list = apol_vector_create(NULL);
+	pv->class_list = apol_vector_create(NULL);
 	if (policy != NULL) {
 		qpol_policy_t *qp = apol_policy_get_qpol(policy);
 		size_t i;
@@ -482,7 +482,7 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 			qpol_type_get_name(qp, type, &s);
 			apol_vector_append(pv->type_list, s);
 		}
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		apol_vector_sort(pv->type_list, apol_str_strcmp, NULL);
 		for (i = 0; i < apol_vector_get_size(pv->type_list); i++) {
 			s = apol_vector_get_element(pv->type_list, i);
@@ -494,7 +494,7 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 			qpol_class_get_name(qp, obj_class, &s);
 			apol_vector_append(pv->class_list, s);
 		}
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		apol_vector_sort(pv->class_list, apol_str_strcmp, NULL);
 		for (i = 0; i < apol_vector_get_size(pv->class_list); i++) {
 			s = apol_vector_get_element(pv->class_list, i);

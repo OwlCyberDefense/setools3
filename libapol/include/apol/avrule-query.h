@@ -40,35 +40,14 @@ extern "C"
 
 /**
  * Execute a query against all access vector rules within the policy.
- * @deprecated This function has been renamed apol_avrule_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up avrules.
  * @param a Structure containing parameters for query.	If this is
  * NULL then return all avrules.
- * @param v Reference to a vector of qpol_avrule_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all access vector rules within the policy.
- *
- * @param p Policy within which to look up avrules.
- * @param a Structure containing parameters for query.	If this is
- * NULL then return all avrules.
- * @param v Reference to a vector of qpol_avrule_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of qpol_avrule_t.  The vector will
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -76,35 +55,15 @@ extern "C"
 
 /**
  * Execute a query against all syntactic access vector rules within the policy.
- * @deprecated This function has been renamed apol_syn_avrule_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up avrules. <b>Must be a
  * source policy.</b>
  * @param a Structure containing parameters for query. If this is
  * NULL then return all avrules.
- * @param v Reference to a vector of qpol_syn_avrule_t. The vector will be
- * allocated by this function.  The caller must call apol_vector_destroy()
- * afterwards, but <b>must not</b> free the elements within it.  This will be
- * set to NULL upon no results or upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all syntactic access vector rules within the policy.
- *
- * @param p Policy within which to look up avrules. <b>Must be a
- * source policy.</b>
- * @param a Structure containing parameters for query. If this is
- * NULL then return all avrules.
- * @param v Reference to a vector of qpol_syn_avrule_t. The vector will be
- * allocated by this function.  The caller must call apol_vector_destroy()
- * afterwards, but <b>must not</b> free the elements within it.  This will be
- * set to NULL upon no results or upon error.
+ * @param v Reference to a vector of qpol_syn_avrule_t.  The vector
+ * will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -217,12 +176,13 @@ extern "C"
  * class.  If more than one class are appended to the query, the
  * rule's class must be one of those appended.  (I.e., the rule's
  * class must be a member of the query's classes.)  Pass a NULL to
- * clear all classes.
+ * clear all classes.  Note that this performs straight string
+ * comparison, ignoring the regex flag.
  *
  * @param p Policy handler, to report errors.
  * @param a AV rule query to set.
- * @param class Name of object class to add to search set, or NULL to
- * clear all classes.
+ * @param obj_class Name of object class to add to search set, or NULL
+ * to clear all classes.
  *
  * @return 0 on success, negative on error.
  */
@@ -315,8 +275,7 @@ extern "C"
  * common with this list.
  *
  * @return A newly allocated vector of syn_avrule_t pointers.  The
- * caller is responsible for calling apol_vector_destroy() afterwards,
- * passing NULL as the second parameter.
+ * caller is responsible for calling apol_vector_destroy() afterwards.
  */
 	extern apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t * p, qpol_avrule_t * rule, apol_vector_t * perms);
 
@@ -336,8 +295,7 @@ extern "C"
  * common with this list.
  *
  * @return A newly allocated vector of syn_avrule_t pointers.  The
- * caller is responsible for calling apol_vector_destroy() afterwards,
- * passing NULL as the second parameter.
+ * caller is responsible for calling apol_vector_destroy() afterwards.
  */
 	extern apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t * rules, apol_vector_t * perms);
 

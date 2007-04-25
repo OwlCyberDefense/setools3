@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "vector-internal.h"
+
 typedef struct bst_node
 {
 	void *elem;
@@ -45,19 +47,22 @@ struct apol_bst
 {
 	/** Comparison function for nodes. */
 	apol_bst_comp_func *cmp;
+	/** Destroy function for the nodes, or NULL to not free each node. */
+	apol_bst_free_func *fr;
 	/** The number of elements currently stored in the bst. */
 	size_t size;
 	/** Pointer to top of the tree. */
 	bst_node_t *head;
 };
 
-apol_bst_t *apol_bst_create(apol_bst_comp_func * cmp)
+apol_bst_t *apol_bst_create(apol_bst_comp_func * cmp, apol_bst_free_func * fr)
 {
 	apol_bst_t *b = NULL;
 	if ((b = calloc(1, sizeof(*b))) == NULL) {
 		return NULL;
 	}
 	b->cmp = cmp;
+	b->fr = fr;
 	return b;
 }
 
@@ -81,14 +86,12 @@ static void bst_node_free(bst_node_t * node, apol_bst_free_func * fr)
 	}
 }
 
-void apol_bst_destroy(apol_bst_t ** b, apol_bst_free_func * fr)
+void apol_bst_destroy(apol_bst_t ** b)
 {
 	if (!b || !(*b))
 		return;
-	bst_node_free((*b)->head, fr);
-	(*b)->head = NULL;	       /* this will catch instances when there
-				        * are multpile pointers to the same
-				        * BST object */
+	bst_node_free((*b)->head, (*b)->fr);
+	(*b)->head = NULL;
 	free(*b);
 	*b = NULL;
 }
@@ -117,21 +120,25 @@ static int bst_node_to_vector(bst_node_t * node, apol_vector_t * v)
 	return bst_node_to_vector(node->child[1], v);
 }
 
-apol_vector_t *apol_bst_get_vector(const struct apol_bst * b)
+apol_vector_t *apol_bst_get_vector(apol_bst_t * b, int change_owner)
 {
 	apol_vector_t *v = NULL;
 	if (!b) {
 		errno = EINVAL;
 		return NULL;
 	}
-	if ((v = apol_vector_create_with_capacity(b->size)) == NULL) {
+	if ((v = apol_vector_create_with_capacity(b->size, NULL)) == NULL) {
 		return NULL;
 	}
 	if (bst_node_to_vector(b->head, v) < 0) {
 		int error = errno;
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		errno = error;
 		return NULL;
+	}
+	if (change_owner) {
+		vector_set_free_func(v, b->fr);
+		b->fr = NULL;
 	}
 	return v;
 }
@@ -150,7 +157,7 @@ int apol_bst_get_element(const apol_bst_t * b, void *elem, void *data, void **re
 {
 	bst_node_t *node;
 	int compval;
-	if (!b || !elem || !result) {
+	if (!b || !result) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -179,11 +186,6 @@ int apol_bst_get_element(const apol_bst_t * b, void *elem, void *data, void **re
 		}
 	}
 	return -1;
-}
-
-int apol_bst_insert(apol_bst_t * b, void *elem, void *data)
-{
-	return apol_bst_insert_and_get(b, &elem, data, NULL);
 }
 
 /**
@@ -237,15 +239,15 @@ static bst_node_t *bst_rotate_double(bst_node_t * root, int dir)
 }
 
 static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void **elem, void *data, apol_bst_free_func * fr,
-					int *uniq)
+					int *not_uniq)
 {
 	int compval, dir;
 	if (root == NULL) {
 		if ((root = bst_node_make(b, *elem)) == NULL) {
-			*uniq = -1;
+			*not_uniq = -1;
 			return NULL;
 		}
-		*uniq = 1;
+		*not_uniq = 0;
 	} else {
 		if (b->cmp != NULL) {
 			compval = b->cmp(root->elem, *elem, data);
@@ -266,15 +268,15 @@ static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void 
 				fr(*elem);
 			}
 			*elem = root->elem;
-			*uniq = 0;
+			*not_uniq = 1;
 			return root;
 		} else if (compval > 0) {
 			dir = 0;
 		} else {
 			dir = 1;
 		}
-		root->child[dir] = bst_insert_recursive(b, root->child[dir], elem, data, fr, uniq);
-		if (*uniq != 1) {
+		root->child[dir] = bst_insert_recursive(b, root->child[dir], elem, data, fr, not_uniq);
+		if (*not_uniq != 0) {
 			return root;
 		}
 
@@ -299,14 +301,28 @@ static bst_node_t *bst_insert_recursive(apol_bst_t * b, bst_node_t * root, void 
 	return root;
 }
 
-int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data, apol_bst_free_func * fr)
+int apol_bst_insert(apol_bst_t * b, void *elem, void *data)
 {
-	int retval;
+	int retval = -1;
 	if (!b || !elem) {
 		errno = EINVAL;
 		return -1;
 	}
-	b->head = bst_insert_recursive(b, b->head, elem, data, fr, &retval);
+	b->head = bst_insert_recursive(b, b->head, &elem, data, NULL, &retval);
+	if (retval >= 0) {
+		b->head->is_red = 0;
+	}
+	return retval;
+}
+
+int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data)
+{
+	int retval = -1;
+	if (!b || !elem) {
+		errno = EINVAL;
+		return -1;
+	}
+	b->head = bst_insert_recursive(b, b->head, elem, data, b->fr, &retval);
 	if (retval >= 0) {
 		b->head->is_red = 0;
 	}

@@ -2,7 +2,6 @@
  * @file
  * Implementation for the apol interface to search rules within a policy.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -605,8 +604,8 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 	free(sym_name);
 	apol_avrule_query_destroy(&avquery);
 	apol_terule_query_destroy(&tequery);
-	apol_vector_destroy(&av, NULL);
-	apol_vector_destroy(&te, NULL);
+	apol_vector_destroy(&av);
+	apol_vector_destroy(&te);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -853,7 +852,7 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp * inter
 		Tcl_Free((char *)other_opt_strings);
 	}
 	apol_cond_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1074,8 +1073,8 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp * interp, int 
 	}
 	apol_role_allow_query_destroy(&raquery);
 	apol_role_trans_query_destroy(&rtquery);
-	apol_vector_destroy(&rav, NULL);
-	apol_vector_destroy(&rtv, NULL);
+	apol_vector_destroy(&rav);
+	apol_vector_destroy(&rtv);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1117,8 +1116,8 @@ static int append_range_trans_to_list(Tcl_Interp * interp, qpol_range_trans_t * 
 	rule_elem[0] = Tcl_NewStringObj(source_name, -1);
 	rule_elem[1] = Tcl_NewStringObj(target_name, -1);
 	rule_elem[2] = Tcl_NewStringObj(target_class_name, -1);
-	if (apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) < 0 ||
-	    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) < 0) {
+	if (apol_level_to_tcl_obj(interp, apol_mls_range_get_low(apol_range), range_elem + 0) < 0 ||
+	    apol_level_to_tcl_obj(interp, apol_mls_range_get_high(apol_range), range_elem + 1) < 0) {
 		goto cleanup;
 	}
 	rule_elem[3] = Tcl_NewListObj(2, range_elem);
@@ -1146,13 +1145,17 @@ static int append_range_trans_to_list(Tcl_Interp * interp, qpol_range_trans_t * 
  * <ol>
  *   <li>source type
  *   <li>target type
+ *   <li>list of target classes
  *   <li>new range
  *   <li>range query type
  * </ol>
+ * For classes, the returned rule's class must be within this list.
  */
 static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp, int argc, const char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	CONST char **class_strings = NULL;
+	int num_opts;
 	qpol_range_trans_t *rule;
 	apol_range_trans_query_t *query = NULL;
 	apol_vector_t *v = NULL;
@@ -1164,8 +1167,8 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 5) {
-		ERR(policydb, "%s", "Need a source type, target type, range, and range type.");
+	if (argc != 6) {
+		ERR(policydb, "%s", "Need a source type, target type, target class, range, and range type.");
 		goto cleanup;
 	}
 
@@ -1178,17 +1181,26 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp
 	    apol_range_trans_query_set_target(policydb, query, argv[2], 0) < 0) {
 		goto cleanup;
 	}
-	if (*argv[3] != '\0') {
+	if (Tcl_SplitList(interp, argv[3], &num_opts, &class_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = class_strings[num_opts];
+		if (apol_range_trans_query_append_class(policydb, query, s) < 0) {
+			goto cleanup;
+		}
+	}
+	if (*argv[4] != '\0') {
 		apol_mls_range_t *range;
 		unsigned int range_match = 0;
-		if (apol_tcl_string_to_range_match(interp, argv[4], &range_match) < 0) {
+		if (apol_tcl_string_to_range_match(interp, argv[5], &range_match) < 0) {
 			goto cleanup;
 		}
 		if ((range = apol_mls_range_create()) == NULL) {
 			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
-		if (apol_tcl_string_to_range(interp, argv[3], range) != 0 ||
+		if (apol_tcl_string_to_range(interp, argv[4], range) != 0 ||
 		    apol_range_trans_query_set_range(policydb, query, range, range_match) < 0) {
 			apol_mls_range_destroy(&range);
 			goto cleanup;
@@ -1208,8 +1220,11 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp * interp
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
       cleanup:
+	if (class_strings != NULL) {
+		Tcl_Free((char *)class_strings);
+	}
 	apol_range_trans_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1247,8 +1262,8 @@ static int Apol_GetSynAVRules(ClientData clientData, Tcl_Interp * interp, int ob
 		goto cleanup;
 	}
 
-	if ((rules = apol_vector_create()) == NULL) {
-		ERR(policydb, "%s", strerror(ENOMEM));
+	if ((rules = apol_vector_create(NULL)) == NULL) {
+		ERR(policydb, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (Tcl_ListObjLength(interp, objv[1], &len) == TCL_ERROR) {
@@ -1265,7 +1280,7 @@ static int Apol_GetSynAVRules(ClientData clientData, Tcl_Interp * interp, int ob
 	}
 
 	if (objc >= 3) {
-		if ((perms = apol_vector_create()) == NULL) {
+		if ((perms = apol_vector_create(NULL)) == NULL) {
 			ERR(policydb, "%s", strerror(errno));
 			goto cleanup;
 		}
@@ -1302,9 +1317,9 @@ static int Apol_GetSynAVRules(ClientData clientData, Tcl_Interp * interp, int ob
 	Tcl_SetObjResult(interp, result_list);
 	retval = TCL_OK;
       cleanup:
-	apol_vector_destroy(&rules, NULL);
-	apol_vector_destroy(&perms, NULL);
-	apol_vector_destroy(&syn_rules, NULL);
+	apol_vector_destroy(&rules);
+	apol_vector_destroy(&perms);
+	apol_vector_destroy(&syn_rules);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1340,8 +1355,8 @@ static int Apol_GetSynTERules(ClientData clientData, Tcl_Interp * interp, int ob
 		goto cleanup;
 	}
 
-	if ((rules = apol_vector_create()) == NULL) {
-		ERR(policydb, "%s", strerror(ENOMEM));
+	if ((rules = apol_vector_create(NULL)) == NULL) {
+		ERR(policydb, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (Tcl_ListObjLength(interp, objv[1], &len) == TCL_ERROR) {
@@ -1376,8 +1391,8 @@ static int Apol_GetSynTERules(ClientData clientData, Tcl_Interp * interp, int ob
 	Tcl_SetObjResult(interp, result_list);
 	retval = TCL_OK;
       cleanup:
-	apol_vector_destroy(&rules, NULL);
-	apol_vector_destroy(&syn_rules, NULL);
+	apol_vector_destroy(&rules);
+	apol_vector_destroy(&syn_rules);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}

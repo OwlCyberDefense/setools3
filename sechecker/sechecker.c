@@ -124,14 +124,15 @@ sechk_module_t *sechk_module_new(void)
 		return NULL;
 
 	/* create empty vectors */
-	if (!(mod->options = apol_vector_create()) ||
-	    !(mod->requirements = apol_vector_create()) ||
-	    !(mod->dependencies = apol_vector_create()) || !(mod->functions = apol_vector_create())) {
+	if (!(mod->options = apol_vector_create(sechk_name_value_free)) ||
+	    !(mod->requirements = apol_vector_create(sechk_name_value_free)) ||
+	    !(mod->dependencies = apol_vector_create(sechk_name_value_free))
+	    || !(mod->functions = apol_vector_create(sechk_fn_free))) {
 		error = errno;
-		apol_vector_destroy(&mod->options, NULL);
-		apol_vector_destroy(&mod->requirements, NULL);
-		apol_vector_destroy(&mod->dependencies, NULL);
-		apol_vector_destroy(&mod->functions, NULL);
+		apol_vector_destroy(&mod->options);
+		apol_vector_destroy(&mod->requirements);
+		apol_vector_destroy(&mod->dependencies);
+		apol_vector_destroy(&mod->functions);
 		free(mod);
 		errno = error;
 		return NULL;
@@ -160,7 +161,7 @@ sechk_lib_t *sechk_lib_new(void)
 	/* create the module array from the known modules in register list */
 	num_known_modules = sechk_register_list_get_num_modules();
 	reg_list = sechk_register_list_get_modules();
-	lib->modules = apol_vector_create();
+	lib->modules = apol_vector_create(sechk_module_free);
 	if (!lib->modules) {
 		error = errno;
 		perror("Error adding modules");
@@ -213,10 +214,10 @@ void sechk_lib_destroy(sechk_lib_t ** lib)
 	if (lib == NULL || *lib == NULL)
 		return;
 
-	apol_vector_destroy(&((*lib)->modules), sechk_module_free);
+	apol_vector_destroy(&((*lib)->modules));
 	apol_policy_destroy(&((*lib)->policy));
 #ifdef LIBSEFS
-	apol_vector_destroy(&((*lib)->fc_entries), sefs_fc_entry_free);
+	apol_vector_destroy(&((*lib)->fc_entries));
 	free((*lib)->fc_path);
 #endif
 	free((*lib)->selinux_config_path);
@@ -234,9 +235,9 @@ void sechk_module_free(void *module)
 
 	/* do not free describtin fields */
 	sechk_result_destroy(&mod->result);
-	apol_vector_destroy(&mod->options, sechk_name_value_free);
-	apol_vector_destroy(&mod->requirements, sechk_name_value_free);
-	apol_vector_destroy(&mod->dependencies, sechk_name_value_free);
+	apol_vector_destroy(&mod->options);
+	apol_vector_destroy(&mod->requirements);
+	apol_vector_destroy(&mod->dependencies);
 	/* do not free severity */
 	if (mod->data) {
 		assert(mod->data_free);
@@ -244,7 +245,7 @@ void sechk_module_free(void *module)
 	}
 	free(mod->name);
 	mod->name = NULL;
-	apol_vector_destroy(&mod->functions, sechk_fn_free);
+	apol_vector_destroy(&mod->functions);
 	free(mod);
 }
 
@@ -276,7 +277,7 @@ void sechk_result_destroy(sechk_result_t ** res)
 		return;
 
 	free((*res)->test_name);
-	apol_vector_destroy(&((*res)->items), sechk_item_free);
+	apol_vector_destroy(&((*res)->items));
 	free(*res);
 	*res = NULL;
 }
@@ -288,7 +289,7 @@ void sechk_item_free(void *item)
 	if (!item)
 		return;
 
-	apol_vector_destroy(&it->proof, sechk_proof_free);
+	apol_vector_destroy(&it->proof);
 	if (it->item_free_fn)
 		it->item_free_fn(it->item);
 
@@ -1151,7 +1152,7 @@ int sechk_lib_module_clear_option(sechk_module_t * module, char *option)
 		return 0;
 	}
 
-	if (!(new_opts = apol_vector_create())) {
+	if (!(new_opts = apol_vector_create(sechk_name_value_free))) {
 		error = errno;
 		ERR(module->parent_lib->policy, "%s", strerror(error));
 		errno = error;
@@ -1177,7 +1178,7 @@ int sechk_lib_module_clear_option(sechk_module_t * module, char *option)
 	}
 
 	sechk_name_value_free(needle);
-	apol_vector_destroy(&module->options, sechk_name_value_free);
+	apol_vector_destroy(&module->options);
 	module->options = new_opts;
 
 	return 0;
@@ -1185,7 +1186,7 @@ int sechk_lib_module_clear_option(sechk_module_t * module, char *option)
       err:
 	sechk_name_value_free(tmp);
 	sechk_name_value_free(needle);
-	apol_vector_destroy(&new_opts, sechk_name_value_free);
+	apol_vector_destroy(&new_opts);
 	errno = error;
 	return -1;
 }
@@ -1217,5 +1218,5 @@ int sechk_proof_with_element_compare(const void *in_proof, const void *elem, voi
 		return 1;
 
 	/* explicit pointer to integer cast */
-	return ((int)(proof->elem) - (int)elem);
+	return (int)((char *)proof->elem - (char *)elem);
 }

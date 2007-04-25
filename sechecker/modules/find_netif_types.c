@@ -200,7 +200,7 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto find_netif_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_netif_types_run_fail;
@@ -263,7 +263,7 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 		item->item = (void *)context_type;
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_netif_types_run_fail;
@@ -343,7 +343,7 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			}
 		}
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto find_netif_types_run_fail;
@@ -356,7 +356,7 @@ int find_netif_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		}
 		item = NULL;
 	}
-	apol_vector_destroy(&netifcon_vector, NULL);
+	apol_vector_destroy(&netifcon_vector);
 
 	mod->result = res;
 

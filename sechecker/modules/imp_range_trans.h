@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Defines the interface for the impossible range_transition module. 
+ *  Defines the interface for the impossible range_transition module.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *  @author: David Windsor dwindsor@tresys.com
@@ -36,7 +35,7 @@ extern "C"
 #include <apol/policy.h>
 #include <apol/role-query.h>
 #include <apol/user-query.h>
-#include <apol/rangetrans-query.h>
+#include <apol/range_trans-query.h>
 #include <apol/rbacrule-query.h>
 #include <apol/domain-trans-analysis.h>
 #include <apol/policy-query.h>

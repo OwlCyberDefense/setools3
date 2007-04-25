@@ -146,32 +146,37 @@ static void modify_view_on_remove_click(GtkButton * button __attribute__ ((unuse
 static void modify_view_on_import_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {
 	struct modify_view *mv = (struct modify_view *)user_data;
-	char *path = util_open_file(GTK_WINDOW(mv->dialog), "Import Filter", mv->filter_filename);
+	apol_vector_t *paths = util_open_file(GTK_WINDOW(mv->dialog), "Import Filter", mv->filter_filename, 0);
 	apol_vector_t *filters;
 	size_t i;
-	if (path == NULL) {
+	if (paths == NULL) {
 		return;
 	}
-	g_free(mv->filter_filename);
-	mv->filter_filename = path;
+	free(mv->filter_filename);
+	if ((mv->filter_filename = strdup(apol_vector_get_element(paths, 0))) == NULL) {
+		toplevel_ERR(mv->top, "Error importing filter: %s", strerror(errno));
+		apol_vector_destroy(&paths);
+		return;
+	}
+	apol_vector_destroy(&paths);
 	if ((filters = seaudit_filter_create_from_file(mv->filter_filename)) == NULL) {
 		toplevel_ERR(mv->top, "Error importing filter: %s", strerror(errno));
+		apol_vector_destroy(&paths);
 		return;
 	}
 	for (i = 0; i < apol_vector_get_size(filters); i++) {
 		seaudit_filter_t *filter = apol_vector_get_element(filters, i);
-		if (seaudit_model_append_filter(mv->model, filter) < 0) {
+		seaudit_filter_t *new_f = NULL;
+		if ((new_f = seaudit_filter_create_from_filter(filter)) == NULL ||
+		    seaudit_model_append_filter(mv->model, new_f) < 0) {
 			toplevel_ERR(mv->top, "Error importing filter: %s", strerror(errno));
-			for (; i < apol_vector_get_size(filters); i++) {
-				filter = apol_vector_get_element(filters, i);
-				seaudit_filter_destroy(&filter);
-			}
-			apol_vector_destroy(&filters, NULL);
+			seaudit_filter_destroy(&new_f);
+			apol_vector_destroy(&filters);
 			return;
 		}
 		modify_view_update_filter_store(mv);
 	}
-	apol_vector_destroy(&filters, NULL);
+	apol_vector_destroy(&filters);
 }
 
 static void modify_view_on_export_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)

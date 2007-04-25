@@ -81,6 +81,7 @@ static const struct pref_toggle pref_toggle_map[] = {
 	{"PermissionCheck", PERM_FIELD},
 	{"ExecutableCheck", EXECUTABLE_FIELD},
 	{"CommandCheck", COMMAND_FIELD},
+	{"NameCheck", NAME_FIELD},
 	{"PIDCheck", PID_FIELD},
 	{"InodeCheck", INODE_FIELD},
 	{"PathCheck", PATH_FIELD},
@@ -96,10 +97,10 @@ static void preferences_view_on_browse_click(GtkWidget * widget, gpointer user_d
 	const char *current_path = gtk_entry_get_text(entry);
 	GtkWindow *parent = GTK_WINDOW(pv->dialog);
 	const char *title = pe->title;
-	char *new_path = util_open_file(parent, title, current_path);
-	if (new_path != NULL) {
-		gtk_entry_set_text(entry, new_path);
-		free(new_path);
+	apol_vector_t *new_paths = util_open_file(parent, title, current_path, 0);
+	if (new_paths != NULL) {
+		gtk_entry_set_text(entry, apol_vector_get_element(new_paths, 0));
+		apol_vector_destroy(&new_paths);
 	}
 }
 

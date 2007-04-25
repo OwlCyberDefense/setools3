@@ -167,7 +167,7 @@ static int qpol_policy_build_attrs_from_map(qpol_policy_t * policy)
 
 		retv = hashtab_insert(db->p_types.table, (hashtab_key_t) tmp_name, (hashtab_datum_t) tmp_type);
 		if (retv) {
-			if (retv == HASHTAB_OVERFLOW)
+			if (retv == SEPOL_ENOMEM)
 				error = db->p_types.table ? ENOMEM : EINVAL;
 			else
 				error = EEXIST;
@@ -243,7 +243,7 @@ static int qpol_policy_fill_attr_holes(qpol_policy_t * policy)
 
 		retv = hashtab_insert(db->p_types.table, (hashtab_key_t) tmp_name, (hashtab_datum_t) tmp_type);
 		if (retv) {
-			if (retv == HASHTAB_OVERFLOW)
+			if (retv == SEPOL_ENOMEM)
 				error = db->p_types.table ? ENOMEM : EINVAL;
 			else
 				error = EEXIST;

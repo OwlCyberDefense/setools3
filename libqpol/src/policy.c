@@ -49,7 +49,7 @@
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
-#include <qpol/expand.h>
+#include "expand.h"
 #include "queue.h"
 #include "iterator_internal.h"
 
@@ -459,6 +459,7 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 
 	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
 		error = errno;
+		ERR(NULL, "%s", strerror(error));
 		goto err;
 	}
 	(*policy)->rules_loaded = 1;
@@ -586,9 +587,8 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 	return retv;
 
       err:
-	sepol_policydb_free((*policy)->p);
+	qpol_policy_destroy(policy);
 	qpol_module_destroy(&mod);
-	*policy = NULL;
 	sepol_policy_file_free(pfile);
 	if (infile)
 		fclose(infile);
@@ -753,9 +753,6 @@ int qpol_policy_open_from_file_no_rules(const char *path, qpol_policy_t ** polic
 
       err:
 	qpol_policy_destroy(policy);
-	*policy = NULL;
-	sepol_policydb_free((*policy)->p);
-	*policy = NULL;
 	sepol_policy_file_free(pfile);
 	if (infile)
 		fclose(infile);
@@ -829,9 +826,7 @@ int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, 
 
 	return 0;
       err:
-	sepol_policydb_free((*policy)->p);
-	free(*policy);
-	*policy = NULL;
+	qpol_policy_destroy(policy);
 	errno = error;
 	return -1;
 
@@ -848,9 +843,7 @@ extern void qpol_extended_image_destroy(struct qpol_extended_image **ext);
 
 void qpol_policy_destroy(qpol_policy_t ** policy)
 {
-	if (policy == NULL) {
-		errno = EINVAL;
-	} else if (*policy != NULL) {
+	if (policy != NULL && *policy != NULL) {
 		sepol_policydb_free((*policy)->p);
 		sepol_handle_destroy((*policy)->sh);
 		qpol_extended_image_destroy(&((*policy)->ext));
@@ -1228,6 +1221,12 @@ int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
 	case QPOL_CAP_SOURCE:
 		{
 			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+				return 1;
+			break;
+		}
+	case QPOL_CAP_NEVERALLOW:
+		{
+			if (policy->type != QPOL_POLICY_KERNEL_BINARY)
 				return 1;
 			break;
 		}

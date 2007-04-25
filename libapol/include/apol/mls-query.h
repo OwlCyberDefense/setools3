@@ -35,22 +35,8 @@ extern "C"
 #include "vector.h"
 #include <qpol/policy.h>
 
-/**
- * Declaration of a MLS level.  Users of this struct are free
- * to manipulate its fields directly; alternatively one may use the
- * convenience functions below.  Note that the category vector only
- * holds strings.
- */
-	typedef struct apol_mls_level
-	{
-		char *sens;
-		apol_vector_t *cats;
-	} apol_mls_level_t;
-
-	typedef struct apol_mls_range
-	{
-		apol_mls_level_t *low, *high;
-	} apol_mls_range_t;
+	typedef struct apol_mls_level apol_mls_level_t;
+	typedef struct apol_mls_range apol_mls_range_t;
 
 	typedef struct apol_level_query apol_level_query_t;
 	typedef struct apol_cat_query apol_cat_query_t;
@@ -67,6 +53,18 @@ extern "C"
 	extern apol_mls_level_t *apol_mls_level_create(void);
 
 /**
+ * Allocate and return an MLS level structure, initialized by an
+ * existing apol_mls_level_t object.  The caller must call
+ * apol_mls_level_destroy() upon the return value afterwards.
+ *
+ * @param level Level to copy.  If NULL then the returned MLS level
+ * will be initialized to nothing.
+ *
+ * @return An initialized MLS level structure, or NULL upon error.
+ */
+	extern apol_mls_level_t *apol_mls_level_create_from_mls_level(const apol_mls_level_t * level);
+
+/**
  * Take a MLS level string (e.g., <b>S0:C0.C127</b>) and parse it.
  * Fill in a newly allocated apol_mls_level_t and return it.  This
  * function needs a policy to resolve dots within categories.  If the
@@ -76,12 +74,11 @@ extern "C"
  *
  * @param p Policy within which to validate mls_level_string.
  * @param mls_level_string Pointer to a string representing a valid
- * MLS level.  Caller is responsible for memory management of this
- * string.
+ * MLS level.
  *
  * @return A filled in MLS level structure, or NULL upon error.
  */
-	extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, char *mls_level_string);
+	extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, const char *mls_level_string);
 
 /**
  * Create a new apol_mls_level_t and initialize it with a
@@ -134,6 +131,16 @@ extern "C"
 	extern int apol_mls_level_set_sens(apol_policy_t * p, apol_mls_level_t * level, const char *sens);
 
 /**
+ * Get the sensitivity component of an MLS level structure.
+ *
+ * @param level MLS level to query.
+ *
+ * @return The sensitivity, or NULL upon error if it has not yet been
+ * set.  Do not modify the return value.
+ */
+	extern const char *apol_mls_level_get_sens(const apol_mls_level_t * level);
+
+/**
  * Add a category component of an MLS level structure.	This function
  * duplicates the incoming string.
  *
@@ -144,6 +151,18 @@ extern "C"
  * @return 0 on success or < 0 on failure.
  */
 	extern int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, const char *cats);
+
+/**
+ * Get the category component of an MLS level structure.  This will be
+ * a vector of strings, sorted alphabetically.
+ *
+ * @param level MLS level to query.
+ *
+ * @return Vector of categories, or NULL upon error.  Be aware that
+ * the vector could be empty if no categories have been set.  Do not
+ * modify the return value.
+ */
+	extern const apol_vector_t *apol_mls_level_get_cats(const apol_mls_level_t * level);
 
 /* the next level compare function will return one of the following on
    success or -1 on error */
@@ -165,18 +184,18 @@ extern "C"
  * @return One of APOL_MLS_EQ, APOL_MLS_DOM, APOL_MLS_DOMBY, or
  * APOL_MLS_INCOMP; < 0 on error.
  */
-	extern int apol_mls_level_compare(apol_policy_t * p, apol_mls_level_t * level1, apol_mls_level_t * level2);
+	extern int apol_mls_level_compare(apol_policy_t * p, const apol_mls_level_t * level1, const apol_mls_level_t * level2);
 
 /**
  * Creates a string containing the textual representation of
  * a MLS level.
- * @param p Reference to a policy.
+ * @param p Policy from which the MLS level is a member.
  * @param level MLS level to render.
  *
- * @return A newly allocated string on success, caller must free;
- * NULL on error.
+ * @return A newly allocated string, or NULL upon error.  The caller
+ * is responsible for calling free() upon the return value.
  */
-	extern char *apol_mls_level_render(apol_policy_t * p, apol_mls_level_t * level);
+	extern char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level);
 
 /**
  * Determine if two sensitivities are actually the same.  Either level
@@ -231,6 +250,18 @@ extern "C"
 	extern apol_mls_range_t *apol_mls_range_create(void);
 
 /**
+ * Allocate and return a new MLS range structure, initialized by an
+ * existing apol_mls_range_t.  The caller must call
+ * apol_mls_range_destroy() upon the return value afterwards.
+ *
+ * @param range Range to copy.  If NULL then the returned MLS range
+ * will be initialized to nothing.
+ *
+ * @return An initialized MLS range structure, or NULL upon error.
+ */
+	extern apol_mls_range_t *apol_mls_range_create_from_mls_range(const apol_mls_range_t * range);
+
+/**
  * Create a new apol_mls_range_t and initialize it with a
  * qpol_mls_range_t.  The caller must call apol_mls_range_destroy()
  * upon the return value afterwards.
@@ -282,6 +313,26 @@ extern "C"
 	extern int apol_mls_range_set_high(apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level);
 
 /**
+ * Get the low level component of a MLS range structure.
+ *
+ * @param range MLS range to query.
+ *
+ * @return Low level, or NULL upon error or if not yet set.  Do not
+ * modify the return value.
+ */
+	extern const apol_mls_level_t *apol_mls_range_get_low(const apol_mls_range_t * range);
+
+/**
+ * Get the high level component of a MLS range structure.
+ *
+ * @param range MLS range to query.
+ *
+ * @return High level, or NULL upon error or if not yet set.  Do not
+ * modify the return value.
+ */
+	extern const apol_mls_level_t *apol_mls_range_get_high(const apol_mls_range_t * range);
+
+/**
  * Compare two ranges, determining if one matches the other.  The
  * fifth parameter gives how to match the ranges.  For APOL_QUERY_SUB,
  * if search is a subset of target.  For APOL_QUERY_SUPER, if search
@@ -298,7 +349,8 @@ extern "C"
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
 	extern int apol_mls_range_compare(apol_policy_t * p,
-					  apol_mls_range_t * target, apol_mls_range_t * search, unsigned int range_compare_type);
+					  const apol_mls_range_t * target, const apol_mls_range_t * search,
+					  unsigned int range_compare_type);
 
 /**
  * Determine if a range completely contains a subrange given a certain
@@ -311,7 +363,8 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-	extern int apol_mls_range_contain_subrange(apol_policy_t * p, apol_mls_range_t * range, apol_mls_range_t * subrange);
+	extern int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range,
+						   const apol_mls_range_t * subrange);
 /**
  * Given a range, determine if it is legal according to the supplied
  * policy.  This function will convert from aliases to canonical forms
@@ -322,18 +375,31 @@ extern "C"
  *
  * @return 1 If range is legal, 0 if not; -1 on error.
  */
-	extern int apol_mls_range_validate(apol_policy_t * p, apol_mls_range_t * range);
+	extern int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range);
+
+/**
+ * Given a range, return a vector of levels (type apol_mls_level_t *)
+ * that constitutes that range.  The vector will be sorted in policy order.
+ *
+ * @param p Policy from which the level and category definitions reside.
+ * @param range Range to expand.
+ *
+ * @return Vector of levels, or NULL upon error.  The caller is
+ * responsible for calling apol_vector_destroy() upon the returned
+ * value, passing apol_mls_level_free() as the second parameter.
+ */
+	extern apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range_t * range);
 
 /**
  * Creates a string containing the textual representation of
  * a MLS range.
- * @param p Reference to a policy.
+ * @param p Policy from which the MLS range is a member.
  * @param range MLS range to render.
  *
- * @return A newly allocated string on success, caller must free;
- * NULL on error.
+ * @return A newly allocated string, or NULL upon error.  The caller
+ * is responsible for calling free() upon the return value.
  */
-	extern char *apol_mls_range_render(apol_policy_t * p, apol_mls_range_t * range);
+	extern char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range);
 
 /******************** level queries ********************/
 
@@ -341,37 +407,14 @@ extern "C"
  * Execute a query against all levels within the policy.  The results
  * will only contain levels, not sensitivity aliases.  The returned
  * levels will be unordered.
- * @deprecated This function has been renamed apol_level_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up levels.
  * @param l Structure containing parameters for query.	If this is
  * NULL then return all levels.
- * @param v Reference to a vector of qpol_level_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_level_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all levels within the policy.  The results
- * will only contain levels, not sensitivity aliases.  The returned
- * levels will be unordered.
- *
- * @param p Policy within which to look up levels.
- * @param l Structure containing parameters for query.	If this is
- * NULL then return all levels.
- * @param v Reference to a vector of qpol_level_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of qpol_level_t.  The vector will be
+ * allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -444,36 +487,14 @@ extern "C"
  * Execute a query against all categories within the policy.  The
  * results will only contain categories, not aliases.  The returned
  * categories will be unordered.
- * @deprecated This function has been renamed apol_cat_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up categories.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all categories.
- * @param v Reference to a vector of qpol_cat_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_cat_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t ** v) __attribute__ ((deprecated));
-
-/**
- * Execute a query against all categories within the policy.  The
- * results will only contain categories, not aliases.  The returned
- * categories will be unordered.
- *
- * @param p Policy within which to look up categories.
- * @param c Structure containing parameters for query.	If this is
- * NULL then return all categories.
- * @param v Reference to a vector of qpol_cat_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of qpol_cat_t.  The vector will be
+ * allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

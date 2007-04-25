@@ -221,7 +221,7 @@ int attribs_wo_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto attribs_wo_types_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ATTRIB;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_types_run_fail;
@@ -257,7 +257,7 @@ int attribs_wo_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			goto attribs_wo_types_run_fail;
 		}
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto attribs_wo_types_run_fail;
@@ -277,7 +277,7 @@ int attribs_wo_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		}
 	}
 	qpol_iterator_destroy(&types);
-	apol_vector_destroy(&attr_vector, NULL);
+	apol_vector_destroy(&attr_vector);
 
 	mod->result = res;
 

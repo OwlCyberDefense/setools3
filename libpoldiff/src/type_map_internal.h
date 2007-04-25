@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Protected Interface for type equivalence mapping for semantic
+ *  Protected interface for type equivalence mapping for semantic
  *  difference calculations.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -148,6 +148,21 @@ extern "C"
  *  errno will be set.
  */
 	apol_vector_t *type_map_lookup_reverse(poldiff_t * diff, uint32_t val, int which_pol);
+
+/**
+ * Get the first name that can be found for a pseudo type value.
+ *
+ * @param diff Policy difference structure associated with the value.
+ * @param pseudo_val Value for which to get a name.
+ * @param pol The policy to use, either POLDIFF_POLICY_ORIG or
+ * POLDIFF_POLICY_MOD.
+ *
+ * @return A valid name of a type from either policy that maps to the
+ * specified value.  If the type does not exist then return NULL.  Do
+ * not modify the string; it is a pointer into the policy's symbol
+ * table.
+ */
+	const char *type_map_get_name(poldiff_t * diff, const uint32_t pseudo_val, int pol);
 
 #ifdef	__cplusplus
 }

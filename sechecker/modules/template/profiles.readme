@@ -10,7 +10,7 @@ Table of Contents
    2.2 <module>
    2.3 <output>
    2.4 <option>
-3. Example profile
+3. Example Profile
 
 1. Use of Profiles
 ==========================
@@ -21,12 +21,12 @@ these modules easier, several profiles are defined.
 A profile is used to run a set of modules with options set in a way 
 that the resulting report reflects a specific security goal.
 
-To write your own profile, create a new xml file named <profile name>.prof.
+To write your own profile, create a new XML file named <profile name>.prof.
 The format of the file is detailed below.
 
 2. Format of the Profile
 =========================
-A profile is an xml file loaded by SEChecker to run a specific set of tests.
+A profile is an XML file loaded by SEChecker to run a specific set of tests.
 The profile recognizes the following tags
 
 2.0 <sechecker>
@@ -76,7 +76,7 @@ This tag should close itself.  The valid values are:
    verbose  -  print all possible output including the header, stats,
                a list of items and a list of items with proof
 
-NOTE: any of the above values other than "none" are overriden by the
+NOTE: any of the above values other than "none" are overridden by the
       command line output flags.  Setting an output value in a profile
       overrides the default setting in the configuration file for this
       profile only.
@@ -91,9 +91,9 @@ to those in the configuration file.
 
 <option name="option_name" value="some_value"/>
 
-This tag closes itself. As its name implies this tag is optional. 
+This tag closes itself.  As its name implies this tag is optional. 
 
-3. Example
+3. Example Profile
 ======================
 The following is a brief example of a profile 
 
@@ -124,16 +124,16 @@ The following is a brief example of a profile
 </profile>
 </sechecker>
 
-The result of this profile would be.
--  run mod1 with default configuration
+The result of this profile would be:
+-  run mod1 with default configuration;
    print with default settings
--  run mod2 with the additional attribute my_attrib 
+-  run mod2 with the additional attribute my_attrib,
    but don't print its results
--  run mod3 with option foo set to bar (in addition to any other settings)
+-  run mod3 with option foo set to bar (in addition to any other settings);
    print with default settings
--  run mod4 
+-  run mod4;
    print in short output 
--  run mod5 with additional type shadow_t
+-  run mod5 with additional type shadow_t;
    print using quiet output
 
 If there are also modules mod6 and mod7, neither would be run unless 

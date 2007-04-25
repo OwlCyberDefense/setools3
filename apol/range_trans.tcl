@@ -32,9 +32,12 @@ proc Apol_Range::set_Focus_to_Text {} {
 }
 
 proc Apol_Range::open {} {
+    variable vals
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(source_type)
     Apol_Widget::resetTypeComboboxToPolicy $widgets(target_type)
+    set vals(classes) $Apol_Class_Perms::class_list
+    $widgets(classes) configure -bg white -state normal
 }
 
 proc Apol_Range::close {} {
@@ -42,6 +45,8 @@ proc Apol_Range::close {} {
     variable widgets
     Apol_Widget::clearTypeCombobox $widgets(source_type)
     Apol_Widget::clearTypeCombobox $widgets(target_type)
+    set vals(classes) {}
+    $widgets(classes) configure -bg $ApolTop::default_bg_color -state disabled
     Apol_Widget::clearRangeSelector $widgets(range)
     Apol_Widget::clearSearchResults $widgets(results)
     set vals(enable_source) 0
@@ -72,7 +77,8 @@ proc Apol_Range::create {nb} {
     # Create the options widgets
     set source_frame [frame [$obox getframe].source]
     set target_frame [frame [$obox getframe].target]
-    pack $source_frame $target_frame -side left -padx 4 -pady 2 -expand 0 -anchor nw
+    set classes_frame [frame [$obox getframe].classes]
+    pack $source_frame $target_frame $classes_frame -side left -padx 4 -pady 2 -expand 0 -anchor nw
 
     # source type
     set vals(enable_source) 0
@@ -95,6 +101,19 @@ proc Apol_Range::create {nb} {
         [list Apol_Range::toggleTypeCombobox $widgets(target_type)]
     pack $target_cb -side top -expand 0 -anchor nw
     pack $widgets(target_type) -side top -expand 0 -anchor nw -padx 4
+
+    # object classes
+    set l [label $classes_frame.l -text "Target Classes"]
+    set sw [ScrolledWindow $classes_frame.sw -auto both]
+    set widgets(classes) [listbox [$sw getframe].lb -height 5 -width 24 \
+                              -highlightthickness 0 -selectmode multiple \
+                              -exportselection 0 -state disabled \
+                              -bg $ApolTop::default_bg_color \
+                              -listvar Apol_Range::vals(classes)]
+    $sw setwidget $widgets(classes)
+    update
+    grid propagate $sw 0
+    pack $l $sw -side top -expand 0 -anchor nw
 
     # range display
     set widgets(range) [Apol_Widget::makeRangeSelector [$obox getframe].range Rules]
@@ -138,6 +157,10 @@ proc Apol_Range::searchRanges {} {
     } else {
         set target {}
     }
+    set classes {}
+    foreach c [$widgets(classes) curselection] {
+        lappend classes [$widgets(classes) get $c]
+    }
     set range_enabled [Apol_Widget::getRangeSelectorState $widgets(range)]
     foreach {range range_match} [Apol_Widget::getRangeSelectorValue $widgets(range)] break
     if {$range_enabled} {
@@ -149,7 +172,7 @@ proc Apol_Range::searchRanges {} {
         set range {}
     }
 
-    if {[catch {apol_SearchRangeTransRules $source $target $range $range_match} results]} {
+    if {[catch {apol_SearchRangeTransRules $source $target $classes $range $range_match} results]} {
         tk_messageBox -icon error -type ok -title "Error" -message "Error searching range transitions:\n$results"
         return
     }

@@ -56,9 +56,8 @@ struct seaudit
 
 static struct option const opts[] = {
 	{"log", required_argument, NULL, 'l'},
-	{"policy", required_argument, NULL, 'p'},
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -113,7 +112,7 @@ void seaudit_set_log(seaudit_t * s, seaudit_log_t * log, FILE * f, const char *f
 			toplevel_ERR(s->top, "%s", strerror(errno));
 			seaudit_log_destroy(&log);
 			seaudit_model_destroy(&model);
-			apol_vector_destroy(&messages, NULL);
+			apol_vector_destroy(&messages);
 			free(t);
 			return;
 		}
@@ -134,7 +133,7 @@ void seaudit_set_log(seaudit_t * s, seaudit_log_t * log, FILE * f, const char *f
 			s->last = seaudit_message_get_time(message);
 		}
 		seaudit_model_destroy(&model);
-		apol_vector_destroy(&messages, NULL);
+		apol_vector_destroy(&messages);
 	} else {
 		seaudit_log_destroy(&s->log);
 		free(s->log_path);
@@ -251,7 +250,7 @@ static void print_usage_info(const char *program_name, int brief)
 	printf("Audit Log analysis tool for Security Enhanced Linux.\n\n");
 	printf("   -l FILE, --log=FILE     open the log FILE\n");
 	printf("   -h, --help              print this help text and exit\n");
-	printf("   -v, --version           print version information and exit\n\n");
+	printf("   -V, --version           print version information and exit\n\n");
 }
 
 static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **argv, const char **log, apol_policy_path_t ** policy)
@@ -262,15 +261,10 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 	char *primary_path = NULL;
 	apol_vector_t *modules = NULL;
-	while ((optc = getopt_long(argc, argv, "l:p:hv", opts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "l:hV", opts, NULL)) != -1) {
 		switch (optc) {
 		case 'l':{
 				*log = optarg;
-				break;
-			}
-		case 'p':{
-				primary_path = optarg;
-				WARN(NULL, "%s", "Use of --policy is deprecated.");
 				break;
 			}
 		case 'h':{
@@ -278,12 +272,11 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 				seaudit_destroy(&seaudit);
 				exit(EXIT_SUCCESS);
 			}
-		case 'v':{
+		case 'V':{
 				print_version_info();
 				seaudit_destroy(&seaudit);
 				exit(EXIT_SUCCESS);
 			}
-		case '?':
 		default:{
 				/* unrecognized argument give full usage */
 				print_usage_info(argv[0], 1);
@@ -293,7 +286,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 		}
 	}
 	if (optind < argc) {	       /* modules */
-		if ((modules = apol_vector_create()) == NULL) {
+		if ((modules = apol_vector_create(NULL)) == NULL) {
 			ERR(NULL, "%s", strerror(ENOMEM));
 			seaudit_destroy(&seaudit);
 			exit(EXIT_FAILURE);
@@ -314,10 +307,18 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 		*log = preferences_get_log(seaudit->prefs);
 	}
 	if (primary_path != NULL && strcmp(primary_path, "") != 0) {
-		if ((*policy = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
-			ERR(NULL, "%s", strerror(ENOMEM));
-			seaudit_destroy(&seaudit);
-			exit(EXIT_FAILURE);
+		if (apol_file_is_policy_path_list(primary_path)) {
+			if ((*policy = apol_policy_path_create_from_file(primary_path)) == NULL) {
+				ERR(NULL, "%s", "invalid policy list");
+				seaudit_destroy(&seaudit);
+				exit(EXIT_FAILURE);
+			}
+		} else {
+			if ((*policy = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
+				ERR(NULL, "%s", strerror(ENOMEM));
+				seaudit_destroy(&seaudit);
+				exit(EXIT_FAILURE);
+			}
 		}
 	} else {
 		const apol_policy_path_t *path = preferences_get_policy(seaudit->prefs);
@@ -327,6 +328,7 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 			exit(EXIT_FAILURE);
 		}
 	}
+	apol_vector_destroy(&modules);
 }
 
 /*
@@ -360,7 +362,6 @@ int main(int argc, char **argv)
 	seaudit_t *app;
 	const char *log;
 	apol_policy_path_t *policy;
-	apol_vector_t *modules;
 	struct delay_file_data file_data;
 
 	gtk_init(&argc, &argv);
@@ -372,10 +373,6 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	if ((app = seaudit_create(prefs)) == NULL) {
-		ERR(NULL, "%s", strerror(ENOMEM));
-		exit(EXIT_FAILURE);
-	}
-	if ((modules = apol_vector_create()) == NULL) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 		exit(EXIT_FAILURE);
 	}
@@ -393,7 +390,6 @@ int main(int argc, char **argv)
 	if (preferences_write_to_conf_file(app->prefs) < 0) {
 		ERR(NULL, "%s", strerror(ENOMEM));
 	}
-	apol_vector_destroy(&modules, NULL);
 	seaudit_destroy(&app);
 	exit(EXIT_SUCCESS);
 }

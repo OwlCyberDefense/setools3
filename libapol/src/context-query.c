@@ -2,7 +2,6 @@
  *  @file
  *  Implementation for querying aspects of a context.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -31,7 +30,11 @@
 
 #include <apol/render.h>
 
-/********************* miscellaneous routines *********************/
+struct apol_context
+{
+	char *user, *role, *type;
+	apol_mls_range_t *range;
+};
 
 /**
  * Equivalent to the non-ANSI strdup() function.
@@ -42,11 +45,11 @@
 static char *apol_strdup(apol_policy_t * p, const char *s)
 {
 	char *t;
-	if ((t = malloc(strlen(s) + 1)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((t = strdup(s)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		return NULL;
 	}
-	return strcpy(t, s);
+	return t;
 }
 
 apol_context_t *apol_context_create(void)
@@ -144,7 +147,44 @@ int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls
 	return 0;
 }
 
-int apol_context_compare(apol_policy_t * p, apol_context_t * target, apol_context_t * search, unsigned int range_compare_type)
+const char *apol_context_get_user(const apol_context_t * context)
+{
+	if (context == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return context->user;
+}
+
+const char *apol_context_get_role(const apol_context_t * context)
+{
+	if (context == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return context->role;
+}
+
+const char *apol_context_get_type(const apol_context_t * context)
+{
+	if (context == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return context->type;
+}
+
+const apol_mls_range_t *apol_context_get_range(const apol_context_t * context)
+{
+	if (context == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return context->range;
+}
+
+int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const apol_context_t * search,
+			 unsigned int range_compare_type)
 {
 	uint32_t value0, value1;
 	if (p == NULL || target == NULL || search == NULL) {
@@ -285,8 +325,8 @@ int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context)
       cleanup:
 	apol_user_query_destroy(&user_query);
 	apol_role_query_destroy(&role_query);
-	apol_vector_destroy(&user_v, NULL);
-	apol_vector_destroy(&role_v, NULL);
+	apol_vector_destroy(&user_v);
+	apol_vector_destroy(&role_v);
 	apol_mls_range_destroy(&user_apol_range);
 	return retval;
 }
@@ -296,30 +336,37 @@ char *apol_context_render(apol_policy_t * p, apol_context_t * context)
 	char *buf = NULL, *range_str = NULL;
 	size_t buf_sz = 0;
 
-	/* render context */
-	if (apol_str_append(&buf, &buf_sz, context->user) != 0 || apol_str_append(&buf, &buf_sz, ":") != 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if (p == NULL || context == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->user != NULL ? context->user : "")) != 0) {
+		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	if (apol_str_append(&buf, &buf_sz, context->role) != 0 || apol_str_append(&buf, &buf_sz, ":") != 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->role != NULL ? context->role : "")) != 0) {
+		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	if (apol_str_append(&buf, &buf_sz, context->type) != 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if (apol_str_append(&buf, &buf_sz, (context->type != NULL ? context->type : "")) != 0) {
+		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	/* render range */
 	if (apol_policy_is_mls(p)) {
-		if ((range_str = apol_mls_range_render(p, context->range)) == NULL) {
+		if (context->range == NULL) {
+			range_str = strdup("");
+		} else {
+			range_str = apol_mls_range_render(p, context->range);
+		}
+		if (range_str == NULL) {
 			goto err_return;
 		}
-		if (apol_str_append(&buf, &buf_sz, ":") || apol_str_append(&buf, &buf_sz, range_str) != 0) {
-			ERR(p, "%s", strerror(ENOMEM));
+		if (apol_str_appendf(&buf, &buf_sz, ":%s", range_str) != 0) {
+			ERR(p, "%s", strerror(errno));
 			goto err_return;
 		}
+		free(range_str);
 	}
-	free(range_str);
 	return buf;
 
       err_return:

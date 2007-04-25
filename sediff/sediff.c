@@ -36,22 +36,32 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2004-2007 Tresys Technology, LLC"
 
+enum opt_values
+{
+	DIFF_LEVEL = 256, DIFF_CATEGORY,
+	DIFF_ROLE_TRANS, DIFF_ROLE_ALLOW, DIFF_RANGE_TRANS,
+	OPT_STATS
+};
+
 /* command line options struct */
 static struct option const longopts[] = {
-	{"classes", no_argument, NULL, 'c'},
-	{"types", no_argument, NULL, 't'},
-	{"attributes", no_argument, NULL, 'a'},
-	{"roles", no_argument, NULL, 'r'},
-	{"users", no_argument, NULL, 'u'},
-	{"booleans", no_argument, NULL, 'b'},
-	{"terules", no_argument, NULL, 'T'},
-	{"roleallows", no_argument, NULL, 'A'},
-	{"roletrans", no_argument, NULL, 'R'},
-	{"stats", no_argument, NULL, 's'},
-	{"gui", no_argument, NULL, 'X'},
+	{"class", no_argument, NULL, 'c'},
+	{"level", no_argument, NULL, DIFF_LEVEL},
+	{"category", no_argument, NULL, DIFF_CATEGORY},
+	{"type", no_argument, NULL, 't'},
+	{"attribute", no_argument, NULL, 'a'},
+	{"role", no_argument, NULL, 'r'},
+	{"user", no_argument, NULL, 'u'},
+	{"bool", no_argument, NULL, 'b'},
+	{"avrule", no_argument, NULL, 'A'},
+	{"terule", no_argument, NULL, 'T'},
+	{"role_trans", no_argument, NULL, DIFF_ROLE_TRANS},
+	{"role_allow", no_argument, NULL, DIFF_ROLE_ALLOW},
+	{"range_trans", no_argument, NULL, DIFF_RANGE_TRANS},
+	{"stats", no_argument, NULL, OPT_STATS},
 	{"quiet", no_argument, NULL, 'q'},
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -64,20 +74,24 @@ static void usage(const char *prog_name, int brief)
 	}
 	printf("Semantically differentiate two policies.  By default, all supported\n");
 	printf("policy elements are examined.  The following options are available:\n\n");
-	printf("  -c, --classes     object class and common permission definitions\n");
-	printf("  -t, --types       type definitions\n");
-	printf("  -a, --attributes  attribute definitions\n");
-	printf("  -r, --roles       role definitions\n");
-	printf("  -u, --users       user definitions\n");
-	printf("  -b, --booleans    boolean definitions and default values\n");
-	printf("  -T, --terules     type enforcement rules\n");
-	printf("  -R, --roletrans   role transition rules\n");
-	printf("  -A, --roleallows  role allow rules\n");
+	printf("  -c, --class        object class and common permission definitions\n");
+	printf("  --level            MLS level definitions\n");
+	printf("  --category         MLS category definitions\n");
+	printf("  -t, --type         type definitions\n");
+	printf("  -a, --attribute    attribute definitions\n");
+	printf("  -r, --role         role definitions\n");
+	printf("  -u, --user         user definitions\n");
+	printf("  -b, --bool         boolean definitions and default values\n");
+	printf("  -A, --avrule       access vector rules\n");
+	printf("  -T, --terule       type enforcement rules\n");
+	printf("  --role_trans       role_transition rules\n");
+	printf("  --role_allow       role allow rules\n");
+	printf("  --range_trans      range_transition rules\n");
 	printf("\n");
-	printf("  -q, --quiet       suppress status output for elements with no differences\n");
-	printf("  -s, --stats       print only statistics\n");
-	printf("  -h, --help        print this help text and exit\n");
-	printf("  -v, --version     print version information and exit\n\n");
+	printf("  -q, --quiet        suppress status output for elements with no differences\n");
+	printf("  --stats            print only statistics\n");
+	printf("  -h, --help         print this help text and exit\n");
+	printf("  -V, --version      print version information and exit\n\n");
 }
 
 static void print_diff_string(const char *str, unsigned int indent_level)
@@ -313,6 +327,130 @@ static void print_common_diffs(poldiff_t * diff, int stats_only)
 	return;
 }
 
+static void print_level_diffs(poldiff_t * diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
+	char *str = NULL;
+	const poldiff_level_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_LEVELS, stats);
+	printf("Levels (Added %zd, Removed %zd, Modified %zd)\n", stats[0], stats[1], stats[2]);
+	if (stats_only)
+		return;
+	v = poldiff_get_level_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Levels: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Levels: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Levels: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
+static void print_cat_diffs(poldiff_t * diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
+	char *str = NULL;
+	const poldiff_level_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_CATS, stats);
+	printf("Categories (Added %zd, Removed %zd)\n", stats[0], stats[1]);
+	if (stats_only)
+		return;
+	v = poldiff_get_level_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Categories: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Categories: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_level_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_level_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
 static void print_role_diffs(poldiff_t * diff, int stats_only)
 {
 	apol_vector_t *v = NULL;
@@ -453,28 +591,27 @@ static void print_user_diffs(poldiff_t * diff, int stats_only)
 	return;
 }
 
-static void print_rule_diffs(poldiff_t * diff, int stats_only)
+static void print_avrule_diffs(poldiff_t * diff, int stats_only)
 {
-	apol_vector_t *v1 = NULL, *v2 = NULL;
+	apol_vector_t *v = NULL;
 	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
 	char *str = NULL;
 	const poldiff_avrule_t *item1 = NULL;
-	const poldiff_terule_t *item2 = NULL;
 
 	if (!diff)
 		return;
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES, stats);
-	printf("TE Rules (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n",
+	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES, stats);
+	printf("AV Rules (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n",
 	       stats[0], stats[3], stats[1], stats[4], stats[2]);
 	if (stats_only)
 		return;
-	if ((v1 = poldiff_get_avrule_vector(diff)) == NULL || (v2 = poldiff_get_terule_vector(diff)) == NULL) {
+	if ((v = poldiff_get_avrule_vector(diff)) == NULL) {
 		return;
 	}
-	printf("   Added TE Rules: %zd\n", stats[0]);
-	for (i = 0; i < apol_vector_get_size(v1); i++) {
-		item1 = apol_vector_get_element(v1, i);
+	printf("   Added AV Rules: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item1 = apol_vector_get_element(v, i);
 		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_ADDED) {
 			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
 				return;
@@ -485,8 +622,84 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			str = NULL;
 		}
 	}
-	for (i = 0; i < apol_vector_get_size(v2); i++) {
-		item2 = apol_vector_get_element(v2, i);
+	printf("   Added AV Rules because of new type: %zd\n", stats[3]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item1 = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_ADD_TYPE) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+	printf("   Removed AV Rules: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item1 = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_REMOVED) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+	printf("   Removed AV Rules because of missing type: %zd\n", stats[4]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item1 = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_REMOVE_TYPE) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+	printf("   Modified AV Rules: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item1 = apol_vector_get_element(v, i);
+		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_MODIFIED) {
+			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
+				return;
+			}
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+	return;
+}
+
+static void print_terule_diffs(poldiff_t * diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
+	char *str = NULL;
+	const poldiff_terule_t *item2 = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_TERULES, stats);
+	printf("TE Rules (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n",
+	       stats[0], stats[3], stats[1], stats[4], stats[2]);
+	if (stats_only)
+		return;
+	if ((v = poldiff_get_terule_vector(diff)) == NULL) {
+		return;
+	}
+	printf("   Added TE Rules: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item2 = apol_vector_get_element(v, i);
 		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_ADDED) {
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
@@ -498,20 +711,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 		}
 	}
 	printf("   Added TE Rules because of new type: %zd\n", stats[3]);
-	for (i = 0; i < apol_vector_get_size(v1); i++) {
-		item1 = apol_vector_get_element(v1, i);
-		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_ADD_TYPE) {
-			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
-				return;
-			}
-			print_diff_string(str, 1);
-			printf("\n");
-			free(str);
-			str = NULL;
-		}
-	}
-	for (i = 0; i < apol_vector_get_size(v2); i++) {
-		item2 = apol_vector_get_element(v2, i);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item2 = apol_vector_get_element(v, i);
 		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_ADD_TYPE) {
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
@@ -522,22 +723,9 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			str = NULL;
 		}
 	}
-
 	printf("   Removed TE Rules: %zd\n", stats[1]);
-	for (i = 0; i < apol_vector_get_size(v1); i++) {
-		item1 = apol_vector_get_element(v1, i);
-		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_REMOVED) {
-			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
-				return;
-			}
-			print_diff_string(str, 1);
-			printf("\n");
-			free(str);
-			str = NULL;
-		}
-	}
-	for (i = 0; i < apol_vector_get_size(v2); i++) {
-		item2 = apol_vector_get_element(v2, i);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item2 = apol_vector_get_element(v, i);
 		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_REMOVED) {
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
@@ -549,20 +737,8 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 		}
 	}
 	printf("   Removed TE Rules because of missing type: %zd\n", stats[4]);
-	for (i = 0; i < apol_vector_get_size(v1); i++) {
-		item1 = apol_vector_get_element(v1, i);
-		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_REMOVE_TYPE) {
-			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
-				return;
-			}
-			print_diff_string(str, 1);
-			printf("\n");
-			free(str);
-			str = NULL;
-		}
-	}
-	for (i = 0; i < apol_vector_get_size(v2); i++) {
-		item2 = apol_vector_get_element(v2, i);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item2 = apol_vector_get_element(v, i);
 		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_REMOVE_TYPE) {
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
@@ -573,22 +749,9 @@ static void print_rule_diffs(poldiff_t * diff, int stats_only)
 			str = NULL;
 		}
 	}
-
 	printf("   Modified TE Rules: %zd\n", stats[2]);
-	for (i = 0; i < apol_vector_get_size(v1); i++) {
-		item1 = apol_vector_get_element(v1, i);
-		if (poldiff_avrule_get_form(item1) == POLDIFF_FORM_MODIFIED) {
-			if ((str = poldiff_avrule_to_string(diff, item1)) == NULL) {
-				return;
-			}
-			print_diff_string(str, 1);
-			printf("\n");
-			free(str);
-			str = NULL;
-		}
-	}
-	for (i = 0; i < apol_vector_get_size(v2); i++) {
-		item2 = apol_vector_get_element(v2, i);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item2 = apol_vector_get_element(v, i);
 		if (poldiff_terule_get_form(item2) == POLDIFF_FORM_MODIFIED) {
 			if ((str = poldiff_terule_to_string(diff, item2)) == NULL) {
 				return;
@@ -762,6 +925,108 @@ static void print_role_trans_diffs(poldiff_t * diff, int stats_only)
 			return;
 		if (poldiff_role_trans_get_form(item) == POLDIFF_FORM_MODIFIED) {
 			str = poldiff_role_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("\n");
+
+	return;
+}
+
+static void print_range_trans_diffs(poldiff_t * diff, int stats_only)
+{
+	apol_vector_t *v = NULL;
+	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
+	char *str = NULL;
+	const poldiff_range_trans_t *item = NULL;
+
+	if (!diff)
+		return;
+
+	poldiff_get_stats(diff, POLDIFF_DIFF_RANGE_TRANS, stats);
+	printf("Range Transitions (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n", stats[0],
+	       stats[3], stats[1], stats[4], stats[2]);
+	if (stats_only)
+		return;
+	v = poldiff_get_range_trans_vector(diff);
+	if (!v)
+		return;
+	printf("   Added Range Transitions: %zd\n", stats[0]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_ADDED) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+	printf("   Added Range Transitions because of new type: %zd\n", stats[3]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_ADD_TYPE) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Range Transitions: %zd\n", stats[1]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_REMOVED) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Removed Range Transitions because of missing type: %zd\n", stats[4]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_REMOVE_TYPE) {
+			str = poldiff_range_trans_to_string(diff, item);
+			if (!str)
+				return;
+			print_diff_string(str, 1);
+			printf("\n");
+			free(str);
+			str = NULL;
+		}
+	}
+
+	printf("   Modified Range Transitions: %zd\n", stats[2]);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		item = apol_vector_get_element(v, i);
+		if (!item)
+			return;
+		if (poldiff_range_trans_get_form(item) == POLDIFF_FORM_MODIFIED) {
+			str = poldiff_range_trans_to_string(diff, item);
 			if (!str)
 				return;
 			print_diff_string(str, 1);
@@ -955,6 +1220,12 @@ static void print_diff(poldiff_t * diff, uint32_t flags, int stats, int quiet)
 	if (flags & POLDIFF_DIFF_COMMONS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_COMMONS))) {
 		print_common_diffs(diff, stats);
 	}
+	if (flags & POLDIFF_DIFF_LEVELS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_LEVELS))) {
+		print_level_diffs(diff, stats);
+	}
+	if (flags & POLDIFF_DIFF_CATS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_CATS))) {
+		print_cat_diffs(diff, stats);
+	}
 	if (flags & POLDIFF_DIFF_TYPES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TYPES))) {
 		print_type_diffs(diff, stats);
 	}
@@ -970,9 +1241,11 @@ static void print_diff(poldiff_t * diff, uint32_t flags, int stats, int quiet)
 	if (flags & POLDIFF_DIFF_BOOLS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_BOOLS))) {
 		print_bool_diffs(diff, stats);
 	}
-	if (flags & (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES)
-	    && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVRULES))) {
-		print_rule_diffs(diff, stats);
+	if (flags & POLDIFF_DIFF_AVRULES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVRULES))) {
+		print_avrule_diffs(diff, stats);
+	}
+	if (flags & POLDIFF_DIFF_TERULES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TERULES))) {
+		print_terule_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_ROLE_ALLOWS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLE_ALLOWS))) {
 		print_role_allow_diffs(diff, stats);
@@ -980,11 +1253,14 @@ static void print_diff(poldiff_t * diff, uint32_t flags, int stats, int quiet)
 	if (flags & POLDIFF_DIFF_ROLE_TRANS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_ROLE_TRANS))) {
 		print_role_trans_diffs(diff, stats);
 	}
+	if (flags & POLDIFF_DIFF_RANGE_TRANS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_RANGE_TRANS))) {
+		print_range_trans_diffs(diff, stats);
+	}
 }
 
 int main(int argc, char **argv)
 {
-	int optc = 0, quiet = 0, stats = 0;
+	int optc = 0, quiet = 0, stats = 0, default_all = 0;
 	uint32_t flags = 0;
 	apol_policy_t *orig_policy = NULL, *mod_policy = NULL;
 	apol_policy_path_type_e orig_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
@@ -998,12 +1274,18 @@ int main(int argc, char **argv)
 	poldiff_t *diff = NULL;
 	size_t total = 0;
 
-	while ((optc = getopt_long(argc, argv, "ctarubTARsqhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "ctarubATqhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
 		case 'c':
 			flags |= (POLDIFF_DIFF_CLASSES | POLDIFF_DIFF_COMMONS);
+			break;
+		case DIFF_LEVEL:
+			flags |= POLDIFF_DIFF_LEVELS;
+			break;
+		case DIFF_CATEGORY:
+			flags |= POLDIFF_DIFF_CATS;
 			break;
 		case 't':
 			flags |= POLDIFF_DIFF_TYPES;
@@ -1020,16 +1302,22 @@ int main(int argc, char **argv)
 		case 'b':
 			flags |= POLDIFF_DIFF_BOOLS;
 			break;
-		case 'T':
-			flags |= (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES);
-			break;
 		case 'A':
+			flags |= POLDIFF_DIFF_AVRULES;
+			break;
+		case 'T':
+			flags |= POLDIFF_DIFF_TERULES;
+			break;
+		case DIFF_ROLE_ALLOW:
 			flags |= POLDIFF_DIFF_ROLE_ALLOWS;
 			break;
-		case 'R':
+		case DIFF_ROLE_TRANS:
 			flags |= POLDIFF_DIFF_ROLE_TRANS;
 			break;
-		case 's':
+		case DIFF_RANGE_TRANS:
+			flags |= POLDIFF_DIFF_RANGE_TRANS;
+			break;
+		case OPT_STATS:
 			stats = 1;
 			break;
 		case 'q':
@@ -1038,7 +1326,7 @@ int main(int argc, char **argv)
 		case 'h':
 			usage(argv[0], 0);
 			exit(0);
-		case 'v':
+		case 'V':
 			printf("sediff %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
@@ -1047,8 +1335,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!flags)
+	if (!flags) {
 		flags = POLDIFF_DIFF_ALL;
+		default_all = 1;
+	}
 
 	if (argc - optind < 2) {
 		usage(argv[0], 1);
@@ -1061,7 +1351,7 @@ int main(int argc, char **argv)
 	}
 	orig_base_path = argv[optind++];
 	orig_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
-	if (!(orig_module_paths = apol_vector_create())) {
+	if (!(orig_module_paths = apol_vector_create(NULL))) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
@@ -1070,24 +1360,26 @@ int main(int argc, char **argv)
 			optind++;
 			break;
 		}
-		char *tmp = NULL;
-		if (!(tmp = strdup(argv[optind]))) {
+		if (apol_vector_append(orig_module_paths, (void *)argv[optind])) {
 			ERR(NULL, "Error loading module %s", argv[optind]);
-			goto err;
-		}
-		if (apol_vector_append(orig_module_paths, (void *)tmp)) {
-			ERR(NULL, "Error loading module %s", argv[optind]);
-			free(tmp);
 			goto err;
 		}
 		orig_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	}
-	orig_pol_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
-	if (!orig_pol_path) {
-		ERR(NULL, "%s", strerror(errno));
-		goto err;
+	if (apol_file_is_policy_path_list(orig_base_path) > 0) {
+		orig_pol_path = apol_policy_path_create_from_file(orig_base_path);
+		if (!orig_pol_path) {
+			ERR(NULL, "%s", "invalid policy list");
+			goto err;
+		}
+	} else {
+		orig_pol_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
+		if (!orig_pol_path) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
 	}
-	orig_module_paths = NULL;
+	apol_vector_destroy(&orig_module_paths);
 
 	if (argc - optind == 0) {
 		ERR(NULL, "%s", "Missing path to modified policy.");
@@ -1096,29 +1388,31 @@ int main(int argc, char **argv)
 
 	mod_base_path = argv[optind++];
 	mod_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
-	if (!(mod_module_paths = apol_vector_create())) {
+	if (!(mod_module_paths = apol_vector_create(NULL))) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
 	for (; argc - optind; optind++) {
-		char *tmp = NULL;
-		if (!(tmp = strdup(argv[optind]))) {
+		if (apol_vector_append(mod_module_paths, (void *)argv[optind])) {
 			ERR(NULL, "Error loading module %s", argv[optind]);
-			goto err;
-		}
-		if (apol_vector_append(mod_module_paths, (void *)tmp)) {
-			ERR(NULL, "Error loading module %s", argv[optind]);
-			free(tmp);
 			goto err;
 		}
 		mod_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	}
-	mod_pol_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
-	if (!mod_pol_path) {
-		ERR(NULL, "%s", strerror(errno));
-		goto err;
+	if (apol_file_is_policy_path_list(mod_base_path) > 0) {
+		mod_pol_path = apol_policy_path_create_from_file(mod_base_path);
+		if (!mod_pol_path) {
+			ERR(NULL, "%s", "invalid policy list");
+			goto err;
+		}
+	} else {
+		mod_pol_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
+		if (!mod_pol_path) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
 	}
-	mod_module_paths = NULL;
+	apol_vector_destroy(&mod_module_paths);
 
 	orig_policy =
 		apol_policy_create_from_policy_path(orig_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : APOL_POLICY_OPTION_NO_RULES),
@@ -1135,13 +1429,28 @@ int main(int argc, char **argv)
 		goto err;
 	}
 
-	/* we disable attribute diffs if either policy does not support attribute
-	 * names because the fake attribute names won't make sense */
+	qpol_policy_t *orig_qpol = apol_policy_get_qpol(orig_policy);
+	qpol_policy_t *mod_qpol = apol_policy_get_qpol(mod_policy);
+	/* we disable attribute diffs if either policy does not
+	 * support attribute names because the fake attribute names
+	 * won't make sense */
 	if ((flags & POLDIFF_DIFF_ATTRIBS)
-	    && (!(qpol_policy_has_capability(apol_policy_get_qpol(orig_policy), QPOL_CAP_ATTRIB_NAMES))
-		|| !(qpol_policy_has_capability(apol_policy_get_qpol(mod_policy), QPOL_CAP_ATTRIB_NAMES)))) {
+	    && (!(qpol_policy_has_capability(orig_qpol, QPOL_CAP_ATTRIB_NAMES))
+		|| !(qpol_policy_has_capability(mod_qpol, QPOL_CAP_ATTRIB_NAMES)))) {
 		flags &= ~POLDIFF_DIFF_ATTRIBS;
 		WARN(NULL, "%s", "Attribute diffs are not supported for current policies.");
+	}
+
+	/* we disable MLS diffs if both policies do not support MLS
+	 * but do not warn if it was implicitly requested for two
+	 * non-MLS policies */
+	if ((flags & POLDIFF_DIFF_MLS)
+	    && (!(qpol_policy_has_capability(orig_qpol, QPOL_CAP_MLS))
+		&& !(qpol_policy_has_capability(mod_qpol, QPOL_CAP_MLS)))) {
+		flags &= ~(POLDIFF_DIFF_MLS);
+		if (!default_all) {
+			WARN(NULL, "%s", "MLS diffs are not supported for current policies.");
+		}
 	}
 
 	/* default callback for error handling is sufficient here */
@@ -1162,8 +1471,6 @@ int main(int argc, char **argv)
 
 	apol_policy_path_destroy(&orig_pol_path);
 	apol_policy_path_destroy(&mod_pol_path);
-	apol_vector_destroy(&orig_module_paths, free);
-	apol_vector_destroy(&mod_module_paths, free);
 	poldiff_destroy(&diff);
 
 	if (total)
@@ -1176,8 +1483,8 @@ int main(int argc, char **argv)
 	apol_policy_destroy(&mod_policy);
 	apol_policy_path_destroy(&orig_pol_path);
 	apol_policy_path_destroy(&mod_pol_path);
-	apol_vector_destroy(&orig_module_paths, free);
-	apol_vector_destroy(&mod_module_paths, free);
+	apol_vector_destroy(&orig_module_paths);
+	apol_vector_destroy(&mod_module_paths);
 	poldiff_destroy(&diff);
 	return 1;
 }

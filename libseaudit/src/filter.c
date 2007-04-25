@@ -115,19 +115,19 @@ seaudit_filter_t *seaudit_filter_create_from_filter(const seaudit_filter_t * fil
 		goto cleanup;
 	}
 	if ((filter->src_users != NULL
-	     && (f->src_users = apol_vector_create_from_vector(filter->src_users, apol_str_strdup, NULL)) == NULL)
+	     && (f->src_users = apol_vector_create_from_vector(filter->src_users, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->src_roles != NULL
-		&& (f->src_roles = apol_vector_create_from_vector(filter->src_roles, apol_str_strdup, NULL)) == NULL)
+		&& (f->src_roles = apol_vector_create_from_vector(filter->src_roles, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->src_types != NULL
-		&& (f->src_types = apol_vector_create_from_vector(filter->src_types, apol_str_strdup, NULL)) == NULL)
+		&& (f->src_types = apol_vector_create_from_vector(filter->src_types, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_users != NULL
-		&& (f->tgt_users = apol_vector_create_from_vector(filter->tgt_users, apol_str_strdup, NULL)) == NULL)
+		&& (f->tgt_users = apol_vector_create_from_vector(filter->tgt_users, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_roles != NULL
-		&& (f->tgt_roles = apol_vector_create_from_vector(filter->tgt_roles, apol_str_strdup, NULL)) == NULL)
+		&& (f->tgt_roles = apol_vector_create_from_vector(filter->tgt_roles, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_types != NULL
-		&& (f->tgt_types = apol_vector_create_from_vector(filter->tgt_types, apol_str_strdup, NULL)) == NULL)
+		&& (f->tgt_types = apol_vector_create_from_vector(filter->tgt_types, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_classes != NULL
-		&& (f->tgt_classes = apol_vector_create_from_vector(filter->tgt_classes, apol_str_strdup, NULL)) == NULL)) {
+		&& (f->tgt_classes = apol_vector_create_from_vector(filter->tgt_classes, apol_str_strdup, NULL, free)) == NULL)) {
 		error = errno;
 		goto cleanup;
 	}
@@ -184,14 +184,14 @@ apol_vector_t *seaudit_filter_create_from_file(const char *filename)
 	struct filter_parse_state state;
 	int retval, error;
 	memset(&state, 0, sizeof(state));
-	if ((state.filters = apol_vector_create()) == NULL) {
+	if ((state.filters = apol_vector_create(filter_free)) == NULL) {
 		return NULL;
 	}
 	retval = filter_parse_xml(&state, filename);
 	error = errno;
 	free(state.view_name);
 	if (retval < 0) {
-		apol_vector_destroy(&state.filters, filter_free);
+		apol_vector_destroy(&state.filters);
 		errno = error;
 		return NULL;
 	}
@@ -203,13 +203,13 @@ void seaudit_filter_destroy(seaudit_filter_t ** filter)
 	if (filter != NULL && *filter != NULL) {
 		free((*filter)->name);
 		free((*filter)->desc);
-		apol_vector_destroy(&(*filter)->src_users, free);
-		apol_vector_destroy(&(*filter)->src_roles, free);
-		apol_vector_destroy(&(*filter)->src_types, free);
-		apol_vector_destroy(&(*filter)->tgt_users, free);
-		apol_vector_destroy(&(*filter)->tgt_roles, free);
-		apol_vector_destroy(&(*filter)->tgt_types, free);
-		apol_vector_destroy(&(*filter)->tgt_classes, free);
+		apol_vector_destroy(&(*filter)->src_users);
+		apol_vector_destroy(&(*filter)->src_roles);
+		apol_vector_destroy(&(*filter)->src_types);
+		apol_vector_destroy(&(*filter)->tgt_users);
+		apol_vector_destroy(&(*filter)->tgt_roles);
+		apol_vector_destroy(&(*filter)->tgt_types);
+		apol_vector_destroy(&(*filter)->tgt_classes);
 		free((*filter)->exe);
 		free((*filter)->host);
 		free((*filter)->path);
@@ -243,14 +243,17 @@ seaudit_filter_match_e seaudit_filter_get_match(seaudit_filter_t * filter)
 
 int seaudit_filter_set_name(seaudit_filter_t * filter, const char *name)
 {
+	char *new_name = NULL;
 	if (filter == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	free(filter->name);
-	filter->name = NULL;
-	if (name != NULL && (filter->name = strdup(name)) == NULL) {
-		return -1;
+	if (name != filter->name) {
+		if (name != NULL && (new_name = strdup(name)) == NULL) {
+			return -1;
+		}
+		free(filter->name);
+		filter->name = new_name;;
 	}
 	return 0;
 }
@@ -262,14 +265,17 @@ char *seaudit_filter_get_name(seaudit_filter_t * filter)
 
 int seaudit_filter_set_description(seaudit_filter_t * filter, const char *desc)
 {
+	char *new_desc = NULL;
 	if (filter == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	free(filter->desc);
-	filter->desc = NULL;
-	if (desc != NULL && (filter->desc = strdup(desc)) == NULL) {
-		return -1;
+	if (desc != filter->desc) {
+		if (desc != NULL && (new_desc = strdup(desc)) == NULL) {
+			return -1;
+		}
+		free(filter->desc);
+		filter->desc = new_desc;
 	}
 	return 0;
 }
@@ -288,11 +294,11 @@ static int filter_set_vector(seaudit_filter_t * filter, apol_vector_t ** tgt, ap
 {
 	apol_vector_t *new_v = NULL;
 	if (v != NULL) {
-		if ((new_v = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+		if ((new_v = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 			return -1;
 		}
 	}
-	apol_vector_destroy(tgt, free);
+	apol_vector_destroy(tgt);
 	*tgt = new_v;
 	if (filter->model != NULL) {
 		model_notify_filter_changed(filter->model, filter);
@@ -606,34 +612,47 @@ seaudit_avc_message_type_e seaudit_filter_get_message_type(seaudit_filter_t * fi
 int seaudit_filter_set_date(seaudit_filter_t * filter, const struct tm *start, const struct tm *end,
 			    seaudit_filter_date_match_e date_match)
 {
-	int retval = 0;
+	struct tm *new_tm = NULL;
 	if (filter == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	free(filter->start);
-	filter->start = NULL;
-	free(filter->end);
-	filter->end = NULL;
-	if (start != NULL) {
-		if ((filter->start = calloc(1, sizeof(*(filter->start)))) == NULL) {
-			retval = -1;
-		} else {
-			memmove(filter->start, start, sizeof(*start));
-		}
-		if ((filter->end = calloc(1, sizeof(*(filter->end)))) == NULL) {
-			retval = -1;
-		} else {
-			if (end != NULL) {
-				memmove(filter->end, end, sizeof(*end));
+	/* the following weird branching exists because start and end
+	 * could be shadowing filter->start and filter->end.  if
+	 * filters->start and filter->end are free()d to early, then
+	 * there may be a dereference of free()d memory */
+	if (filter->start != start) {
+		new_tm = NULL;
+		if (start != NULL) {
+			if ((new_tm = calloc(1, sizeof(*new_tm))) == NULL) {
+				return -1;
 			}
+			memcpy(new_tm, start, sizeof(*start));
 		}
+		free(filter->start);
+		filter->start = new_tm;
+	}
+	if (start != NULL) {
+		if (filter->end != end) {
+			new_tm = NULL;
+			if (end != NULL) {
+				if ((new_tm = calloc(1, sizeof(*new_tm))) == NULL) {
+					return -1;
+				}
+				memcpy(new_tm, end, sizeof(*end));
+			}
+			free(filter->end);
+			filter->end = new_tm;
+		}
+	} else {
+		free(filter->end);
+		filter->end = NULL;
 	}
 	filter->date_match = date_match;
 	if (filter->model != NULL) {
 		model_notify_filter_changed(filter->model, filter);
 	}
-	return retval;
+	return 0;
 }
 
 void seaudit_filter_get_date(seaudit_filter_t * filter, struct tm **start, struct tm **end, seaudit_filter_date_match_e * match)
@@ -661,7 +680,7 @@ void seaudit_filter_get_date(seaudit_filter_t * filter, struct tm **start, struc
 static int filter_string_vector_read(apol_vector_t ** v, const xmlChar * ch)
 {
 	char *s;
-	if (*v == NULL && (*v = apol_vector_create_with_capacity(1)) == NULL) {
+	if (*v == NULL && (*v = apol_vector_create_with_capacity(1, free)) == NULL) {
 		return -1;
 	}
 	if ((s = xmlURIUnescapeString((const char *)ch, 0, NULL)) == NULL || apol_vector_append(*v, s) < 0) {

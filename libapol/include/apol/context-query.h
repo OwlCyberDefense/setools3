@@ -34,18 +34,14 @@ extern "C"
 #include "mls-query.h"
 #include <qpol/policy.h>
 
-	typedef struct apol_context
-	{
-		char *user, *role, *type;
-		apol_mls_range_t *range;
-	} apol_context_t;
+	typedef struct apol_context apol_context_t;
 
 /**
  * Allocate and return a new context structure.	 All fields are
  * initialized to nothing.  The caller must call
  * apol_context_destroy() upon the return value afterwards.
  *
- * @return An initialized MLS range structure, or NULL upon error.
+ * @return An initialized context structure, or NULL upon error.
  */
 	extern apol_context_t *apol_context_create(void);
 
@@ -58,7 +54,7 @@ extern "C"
  * @param context The libqpol context for which to create a new apol
  * context.  This context will not be altered by this call.
  *
- * @return An initialized MLS range structure, or NULL upon error.
+ * @return An initialized context structure, or NULL upon error.
  */
 	extern apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_context_t * context);
 
@@ -121,11 +117,51 @@ extern "C"
 	extern int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range);
 
 /**
+ * Get the user field of a context structure.
+ *
+ * @param context Context to query.
+ *
+ * @return Context's user, or NULL if not set or upon error.  Do not
+ * modify this string.
+ */
+	extern const char *apol_context_get_user(const apol_context_t * context);
+
+/**
+ * Get the role field of a context structure.
+ *
+ * @param context Context to query.
+ *
+ * @return Context's role, or NULL if not set or upon error.  Do not
+ * modify this string.
+ */
+	extern const char *apol_context_get_role(const apol_context_t * context);
+
+/**
+ * Get the type field of a context structure.
+ *
+ * @param context Context to query.
+ *
+ * @return Context's type, or NULL if not set or upon error.  Do not
+ * modify this string.
+ */
+	extern const char *apol_context_get_type(const apol_context_t * context);
+
+/**
+ * Get the range field of a context structure.
+ *
+ * @param context Context to query.
+ *
+ * @return Context's range, or NULL if not set or upon error.  Do not
+ * modify this structure.
+ */
+	extern const apol_mls_range_t *apol_context_get_range(const apol_context_t * context);
+
+/**
  * Compare two contexts, determining if one matches the other.	The
  * search context may have empty elements that indicate not to compare
  * that field.	Types will be matched if the two or any of their
  * aliases are the same.  The last parameter gives how to match ranges
- * (assuming that context2 has a range); it must be one of
+ * (assuming that search has a range); it must be one of
  * APOL_QUERY_SUB, APOL_QUERY_SUPER, APOL_QUERY_EXACT or
  * APOL_QUERY_INTERSECT as per apol_mls_range_compare().  If a context
  * is not valid according to the policy then this function returns -1.
@@ -139,7 +175,8 @@ extern "C"
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
 	extern int apol_context_compare(apol_policy_t * p,
-					apol_context_t * target, apol_context_t * search, unsigned int range_compare_type);
+					const apol_context_t * target, const apol_context_t * search,
+					unsigned int range_compare_type);
 
 /**
  * Given a complete context (user, role, type, and range if policy is
@@ -171,9 +208,10 @@ extern "C"
 	extern int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context);
 
 /**
- * Given a complete context (user, role, type, and range if policy is
- * MLS), allocate and return a string that represents that context.
- * This function does not check if the context is valid or not.
+ * Given a context, allocate and return a string that represents the
+ * context.  This function does not check if the context is valid or
+ * not.  For fields that have not been set, leave that part of the
+ * string empty.
  *
  * @param p Policy within which to look up context information.
  * @param context Context to render.

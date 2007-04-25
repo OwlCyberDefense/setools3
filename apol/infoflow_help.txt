@@ -1,7 +1,4 @@
 An overview of information flow analysis
-apol, version 3.1
-February 1, 2007
-selinux@tresys.com
 
 
 Apol supports the ability to automate the search for overt information

@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in classes and
+ *  Implementation for computing semantic differences in classes and
  *  commons.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -95,13 +95,15 @@ char *poldiff_class_to_string(poldiff_t * diff, const void *cls)
 				break;
 			}
 			if (num_added > 0) {
-				if (apol_str_appendf(&s, &len, "%zd Added Permissions", num_added) < 0) {
+				if (apol_str_appendf(&s, &len, "%zd Added Permission%s", num_added, (num_added == 1 ? "" : "s")) <
+				    0) {
 					break;
 				}
 			}
 			if (num_removed > 0) {
 				if (apol_str_appendf
-				    (&s, &len, "%s%zd Removed Permissions", (num_added > 0 ? ", " : ""), num_removed)
+				    (&s, &len, "%s%zd Removed Permission%s", (num_added > 0 ? ", " : ""), num_removed,
+				     (num_removed == 1 ? "" : "s"))
 				    < 0) {
 					break;
 				}
@@ -184,34 +186,34 @@ apol_vector_t *poldiff_class_get_removed_perms(const poldiff_class_t * cls)
 
 /*************** protected functions for object classes ***************/
 
+static void class_free(void *elem)
+{
+	if (elem != NULL) {
+		poldiff_class_t *c = (poldiff_class_t *) elem;
+		free(c->name);
+		apol_vector_destroy(&c->added_perms);
+		apol_vector_destroy(&c->removed_perms);
+		free(c);
+	}
+}
+
 poldiff_class_summary_t *class_create(void)
 {
 	poldiff_class_summary_t *cs = calloc(1, sizeof(*cs));
 	if (cs == NULL) {
 		return NULL;
 	}
-	if ((cs->diffs = apol_vector_create()) == NULL) {
+	if ((cs->diffs = apol_vector_create(class_free)) == NULL) {
 		class_destroy(&cs);
 		return NULL;
 	}
 	return cs;
 }
 
-static void class_free(void *elem)
-{
-	if (elem != NULL) {
-		poldiff_class_t *c = (poldiff_class_t *) elem;
-		free(c->name);
-		apol_vector_destroy(&c->added_perms, free);
-		apol_vector_destroy(&c->removed_perms, free);
-		free(c);
-	}
-}
-
 void class_destroy(poldiff_class_summary_t ** cs)
 {
 	if (cs != NULL && *cs != NULL) {
-		apol_vector_destroy(&(*cs)->diffs, class_free);
+		apol_vector_destroy(&(*cs)->diffs);
 		free(*cs);
 		*cs = NULL;
 	}
@@ -264,7 +266,7 @@ apol_vector_t *class_get_items(poldiff_t * diff, apol_policy_t * policy)
 	if (qpol_policy_get_class_iter(q, &iter) < 0) {
 		return NULL;
 	}
-	v = apol_vector_create_from_iter(iter);
+	v = apol_vector_create_from_iter(iter, NULL);
 	if (v == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -305,8 +307,8 @@ static poldiff_class_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *n
 	int error;
 	if ((pc = calloc(1, sizeof(*pc))) == NULL ||
 	    (pc->name = strdup(name)) == NULL ||
-	    (pc->added_perms = apol_vector_create_with_capacity(1)) == NULL ||
-	    (pc->removed_perms = apol_vector_create_with_capacity(1)) == NULL) {
+	    (pc->added_perms = apol_vector_create_with_capacity(1, free)) == NULL ||
+	    (pc->removed_perms = apol_vector_create_with_capacity(1, free)) == NULL) {
 		error = errno;
 		class_free(pc);
 		ERR(diff, "%s", strerror(error));
@@ -358,8 +360,8 @@ int class_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
  * @param class Class whose permissions to get.
  *
  * @return Vector of permissions strings for the class.  The caller is
- * responsible for calling apol_vector_destroy(), passing NULL as the
- * second parameter.  On error, return NULL.
+ * responsible for calling apol_vector_destroy().  On error, return
+ * NULL.
  */
 static apol_vector_t *class_get_perms(poldiff_t * diff, apol_policy_t * p, qpol_class_t * class)
 {
@@ -370,7 +372,7 @@ static apol_vector_t *class_get_perms(poldiff_t * diff, apol_policy_t * p, qpol_
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1;
 
-	if ((v = apol_vector_create()) == NULL) {
+	if ((v = apol_vector_create(NULL)) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
@@ -406,7 +408,7 @@ static apol_vector_t *class_get_perms(poldiff_t * diff, apol_policy_t * p, qpol_
 	qpol_iterator_destroy(&perm_iter);
 	qpol_iterator_destroy(&common_iter);
 	if (retval < 0) {
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		return NULL;
 	}
 	return v;
@@ -504,8 +506,8 @@ int class_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&v1, NULL);
-	apol_vector_destroy(&v2, NULL);
+	apol_vector_destroy(&v1);
+	apol_vector_destroy(&v2);
 	if (retval != 0) {
 		class_free(c);
 	}
@@ -578,13 +580,15 @@ char *poldiff_common_to_string(poldiff_t * diff, const void *cls)
 				break;
 			}
 			if (num_added > 0) {
-				if (apol_str_appendf(&s, &len, "%zd Added Permissions", num_added) < 0) {
+				if (apol_str_appendf(&s, &len, "%zd Added Permission%s", num_added, (num_added == 1 ? "" : "s")) <
+				    0) {
 					break;
 				}
 			}
 			if (num_removed > 0) {
 				if (apol_str_appendf
-				    (&s, &len, "%s%zd Removed Permissions", (num_added > 0 ? ", " : ""), num_removed)
+				    (&s, &len, "%s%zd Removed Permission%s", (num_added > 0 ? ", " : ""), num_removed,
+				     (num_removed == 1 ? "" : "s"))
 				    < 0) {
 					break;
 				}
@@ -667,34 +671,34 @@ apol_vector_t *poldiff_common_get_removed_perms(const poldiff_common_t * cls)
 
 /*************** protected functions for common classes ***************/
 
+static void common_free(void *elem)
+{
+	if (elem != NULL) {
+		poldiff_common_t *c = (poldiff_common_t *) elem;
+		free(c->name);
+		apol_vector_destroy(&c->added_perms);
+		apol_vector_destroy(&c->removed_perms);
+		free(c);
+	}
+}
+
 poldiff_common_summary_t *common_create(void)
 {
 	poldiff_common_summary_t *cs = calloc(1, sizeof(*cs));
 	if (cs == NULL) {
 		return NULL;
 	}
-	if ((cs->diffs = apol_vector_create()) == NULL) {
+	if ((cs->diffs = apol_vector_create(common_free)) == NULL) {
 		common_destroy(&cs);
 		return NULL;
 	}
 	return cs;
 }
 
-static void common_free(void *elem)
-{
-	if (elem != NULL) {
-		poldiff_common_t *c = (poldiff_common_t *) elem;
-		free(c->name);
-		apol_vector_destroy(&c->added_perms, free);
-		apol_vector_destroy(&c->removed_perms, free);
-		free(c);
-	}
-}
-
 void common_destroy(poldiff_common_summary_t ** cs)
 {
 	if (cs != NULL && *cs != NULL) {
-		apol_vector_destroy(&(*cs)->diffs, common_free);
+		apol_vector_destroy(&(*cs)->diffs);
 		free(*cs);
 		*cs = NULL;
 	}
@@ -747,7 +751,7 @@ apol_vector_t *common_get_items(poldiff_t * diff, apol_policy_t * policy)
 	if (qpol_policy_get_common_iter(q, &iter) < 0) {
 		return NULL;
 	}
-	v = apol_vector_create_from_iter(iter);
+	v = apol_vector_create_from_iter(iter, NULL);
 	if (v == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -788,8 +792,8 @@ static poldiff_common_t *make_common_diff(poldiff_t * diff, poldiff_form_e form,
 	int error;
 	if ((pc = calloc(1, sizeof(*pc))) == NULL ||
 	    (pc->name = strdup(name)) == NULL ||
-	    (pc->added_perms = apol_vector_create_with_capacity(1)) == NULL ||
-	    (pc->removed_perms = apol_vector_create_with_capacity(1)) == NULL) {
+	    (pc->added_perms = apol_vector_create_with_capacity(1, free)) == NULL ||
+	    (pc->removed_perms = apol_vector_create_with_capacity(1, free)) == NULL) {
 		error = errno;
 		common_free(pc);
 		ERR(diff, "%s", strerror(error));
@@ -840,8 +844,8 @@ int common_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
  * @param common Common whose permissions to get.
  *
  * @return Vector of permissions strings for the common.  The caller
- * is responsible for calling apol_vector_destroy(), passing NULL as
- * the second parameter.  On error, return NULL.
+ * is responsible for calling apol_vector_destroy().  On error, return
+ * NULL.
  */
 static apol_vector_t *common_get_perms(poldiff_t * diff, apol_policy_t * p, qpol_common_t * common)
 {
@@ -851,7 +855,7 @@ static apol_vector_t *common_get_perms(poldiff_t * diff, apol_policy_t * p, qpol
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1;
 
-	if ((v = apol_vector_create()) == NULL) {
+	if ((v = apol_vector_create(NULL)) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
@@ -872,7 +876,7 @@ static apol_vector_t *common_get_perms(poldiff_t * diff, apol_policy_t * p, qpol
       cleanup:
 	qpol_iterator_destroy(&perm_iter);
 	if (retval < 0) {
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		return NULL;
 	}
 	return v;
@@ -970,8 +974,8 @@ int common_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&v1, NULL);
-	apol_vector_destroy(&v2, NULL);
+	apol_vector_destroy(&v1);
+	apol_vector_destroy(&v2);
 	if (retval != 0) {
 		common_free(c);
 	}

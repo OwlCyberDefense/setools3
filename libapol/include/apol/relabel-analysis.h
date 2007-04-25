@@ -54,9 +54,8 @@ extern "C"
  * @param r A non-NULL structure containing parameters for analysis.
  * @param v Reference to a vector of apol_relabel_result_t.  The
  * vector will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, <b>passing
- * apol_relabel_result_free() as the second parameter</b>.  This will
- * be set to NULL upon no results or upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success, negative on error.
  */
@@ -84,15 +83,13 @@ extern "C"
 
 /**
  * Set a relabel analysis to search in a specific direction.  This
- * must be one of the values APOL_RELABEL_DIR_TO,
- * APOL_RELABEL_DIR_FROM, APOL_RELABEL_DIR_BOTH, or
- * APOL_RELABEL_DIR_SUBJECT.  This function must be called prior to
- * running the analysis.
+ * function must be called prior to running the analysis.
  *
  * @param p Policy handler, to report errors.
  * @param r Relabel analysis to set.
- * @param dir Direction to analyze, using one of the
- * APOL_RELABEL_DIR_* defines.
+ * @param dir Direction to analyze, one of the APOL_RELABEL_DIR_TO,
+ * APOL_RELABEL_DIR_FROM, APOL_RELABEL_DIR_BOTH, or
+ * APOL_RELABEL_DIR_SUBJECT.
  *
  * @return 0 on success, negative on error.
  */
@@ -157,15 +154,6 @@ extern "C"
 	extern int apol_relabel_analysis_set_result_regex(apol_policy_t * p, apol_relabel_analysis_t * r, const char *result);
 
 /******************** functions to access relabel results ********************/
-
-/**
- * Free all memory associated with a relabel result, including the
- * pointer itself.  This function does nothing if the result is
- * already NULL.
- *
- * @param result Pointer to a relabel result structure to destroy.
- */
-	extern void apol_relabel_result_free(void *result);
 
 /**
  * Return the relabelto vector embedded within an apol_relabel_result

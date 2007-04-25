@@ -47,15 +47,20 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2004-2007 Tresys Technology, LLC"
 
+enum opts
+{
+	OPT_HTML = 256, OPT_STYLESHEET, OPT_CONFIG
+};
+
 static struct option const longopts[] = {
-	{"html", no_argument, NULL, 'H'},
+	{"html", no_argument, NULL, OPT_HTML},
 	{"malformed", no_argument, NULL, 'm'},
 	{"output", required_argument, NULL, 'o'},
-	{"stylesheet", required_argument, NULL, 'S'},
+	{"stylesheet", required_argument, NULL, OPT_STYLESHEET},
 	{"stdin", no_argument, NULL, 's'},
-	{"config", no_argument, NULL, 'c'},
+	{"config", no_argument, NULL, OPT_CONFIG},
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -96,13 +101,13 @@ static void seaudit_report_info_usage(const char *program_name, int brief)
 	printf("Generate a customized SELinux log report.\n\n");
 	printf("  -s, --stdin              read log data from standard input\n");
 	printf("  -m, --malformed          include malformed log messages\n");
-	printf("  -oFILE, --output=FILE    output to FILE\n");
-	printf("  -cFILE, --config=FILE    read configuration from FILE\n");
+	printf("  -o FILE, --output=FILE   output to FILE\n");
+	printf("  --config=FILE            read configuration from FILE\n");
 	printf("  --html                   set output format to HTML\n");
 	printf("  --stylesheet=FILE        HTML style sheet for formatting HTML report\n");
 	printf("                           (ignored if --html is not given)\n");
-	printf("  -v, --version            print version information and exit\n");
 	printf("  -h, --help               print this help text and exit\n");
+	printf("  -V, --version            print version information and exit\n");
 	printf("\n");
 	printf("Default style sheet is at %s.\n", APOL_INSTALL_DIR);
 }
@@ -115,37 +120,35 @@ static void parse_command_line_args(int argc, char **argv)
 	char *configfile = NULL, *stylesheet = NULL;
 
 	/* get option arguments */
-	while ((optc = getopt_long(argc, argv, "o:c:t:msvh", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "smo:hV", longopts, NULL)) != -1) {
 		switch (optc) {
-		case 0:
-			break;
-		case 'o':	       /* output file name */
-			outfile = optarg;
-			break;
-		case 'c':	       /* Alternate config file path */
-			configfile = optarg;
-			break;
-		case 'S':	       /* HTML style sheet file path */
-			stylesheet = optarg;
-			do_style = 1;
+		case 's':	       /* read LOGFILES from standard input */
+			read_stdin = 1;
 			break;
 		case 'm':	       /* include malformed messages */
 			do_malformed = 1;
 			break;
-		case 's':	       /* read LOGFILES from standard input */
-			read_stdin = 1;
+		case 'o':	       /* output file name */
+			outfile = optarg;
 			break;
-		case 'H':	       /* Set the output to format to html */
+		case OPT_CONFIG:      /* Alternate config file path */
+			configfile = optarg;
+			break;
+		case OPT_HTML:	       /* Set the output to format to html */
 			format = SEAUDIT_REPORT_FORMAT_HTML;
 			do_style = 1;
 			break;
-		case 'v':
-			/* display version */
-			printf("seaudit-report %s\n%s\n", VERSION, COPYRIGHT_INFO);
-			exit(0);
+		case OPT_STYLESHEET:  /* HTML stylesheet file path */
+			stylesheet = optarg;
+			do_style = 1;
+			break;
 		case 'h':
 			/* display help */
 			seaudit_report_info_usage(argv[0], 0);
+			exit(0);
+		case 'V':
+			/* display version */
+			printf("seaudit-report %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
 			/* display usage and handle error */
@@ -174,7 +177,7 @@ static void parse_command_line_args(int argc, char **argv)
 		fprintf(stderr, "ERROR: %s\n", strerror(errno));
 		exit(-1);
 	}
-	if ((logs = apol_vector_create()) == NULL || apol_vector_append(logs, first_log) < 0) {
+	if ((logs = apol_vector_create(NULL)) == NULL || apol_vector_append(logs, first_log) < 0) {
 		fprintf(stderr, "ERROR: %s\n", strerror(errno));
 		exit(-1);
 	}
@@ -240,6 +243,6 @@ int main(int argc, char **argv)
 		seaudit_log_t *l = apol_vector_get_element(logs, i);
 		seaudit_log_destroy(&l);
 	}
-	apol_vector_destroy(&logs, NULL);
+	apol_vector_destroy(&logs);
 	return 0;
 }

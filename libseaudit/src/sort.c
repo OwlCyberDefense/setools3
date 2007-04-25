@@ -318,6 +318,21 @@ seaudit_sort_t *seaudit_sort_by_command(int direction)
 	return sort_create("command", sort_command_comp, sort_command_support, direction);
 }
 
+static int sort_name_comp(seaudit_sort_t * sort __attribute__ ((unused)), const seaudit_message_t * a, const seaudit_message_t * b)
+{
+	return strcmp(a->data.avc->name, b->data.avc->name);
+}
+
+static int sort_name_support(seaudit_sort_t * sort __attribute__ ((unused)), const seaudit_message_t * msg)
+{
+	return msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->name != NULL;
+}
+
+seaudit_sort_t *seaudit_sort_by_name(int direction)
+{
+	return sort_create("name", sort_name_comp, sort_name_support, direction);
+}
+
 static int sort_path_comp(seaudit_sort_t * sort __attribute__ ((unused)), const seaudit_message_t * a, const seaudit_message_t * b)
 {
 	return strcmp(a->data.avc->path, b->data.avc->path);
@@ -410,6 +425,7 @@ static const struct sort_name_map create_map[] = {
 	{"target_type", seaudit_sort_by_target_type},
 	{"object_class", seaudit_sort_by_object_class},
 	{"executable", seaudit_sort_by_executable},
+	{"name", seaudit_sort_by_name},
 	{"command", seaudit_sort_by_command},
 	{"path", seaudit_sort_by_path},
 	{"device", seaudit_sort_by_device},

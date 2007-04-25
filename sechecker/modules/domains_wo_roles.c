@@ -201,7 +201,7 @@ int domains_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto domains_wo_roles_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "Error: %s\n", strerror(error));
 		goto domains_wo_roles_run_fail;
@@ -246,10 +246,10 @@ int domains_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		apol_role_query_set_type(policy, role_query, domain_name);
 		apol_role_get_by_query(policy, role_query, &role_vector);
 		if (apol_vector_get_size(role_vector) > 0) {
-			apol_vector_destroy(&role_vector, NULL);
+			apol_vector_destroy(&role_vector);
 			continue;
 		}
-		apol_vector_destroy(&role_vector, NULL);
+		apol_vector_destroy(&role_vector);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -273,7 +273,7 @@ int domains_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		}
 		item->item = (void *)domain;
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto domains_wo_roles_run_fail;

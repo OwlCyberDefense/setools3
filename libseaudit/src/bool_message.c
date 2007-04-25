@@ -32,13 +32,21 @@
 
 /******************** protected functions below ********************/
 
+static void seaudit_bool_change_free(void *elem)
+{
+	if (elem != NULL) {
+		seaudit_bool_message_change_t *b = elem;
+		free(b);
+	}
+}
+
 seaudit_bool_message_t *bool_message_create(void)
 {
 	seaudit_bool_message_t *bool = calloc(1, sizeof(seaudit_bool_message_t));
 	if (bool == NULL) {
 		return NULL;
 	}
-	if ((bool->changes = apol_vector_create()) == NULL) {
+	if ((bool->changes = apol_vector_create(seaudit_bool_change_free)) == NULL) {
 		bool_message_free(bool);
 		return NULL;
 	}
@@ -50,7 +58,7 @@ int bool_change_append(seaudit_log_t * log, seaudit_bool_message_t * bool, char 
 	char *s = strdup(name);
 	seaudit_bool_message_change_t *bc = NULL;
 	int error;
-	if (s == NULL || apol_bst_insert_and_get(log->bools, (void **)&s, NULL, free) < 0) {
+	if (s == NULL || apol_bst_insert_and_get(log->bools, (void **)&s, NULL) < 0) {
 		error = errno;
 		free(s);
 		ERR(log, "%s", strerror(error));
@@ -69,18 +77,10 @@ int bool_change_append(seaudit_log_t * log, seaudit_bool_message_t * bool, char 
 	return 0;
 }
 
-static void seaudit_bool_change_free(void *elem)
-{
-	if (elem != NULL) {
-		seaudit_bool_message_change_t *b = elem;
-		free(b);
-	}
-}
-
 void bool_message_free(seaudit_bool_message_t * bool)
 {
 	if (bool != NULL) {
-		apol_vector_destroy(&bool->changes, seaudit_bool_change_free);
+		apol_vector_destroy(&bool->changes);
 		free(bool);
 	}
 }

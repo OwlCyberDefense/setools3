@@ -7,7 +7,6 @@
  * results.  Searches are conjunctive -- all fields of the search
  * query must match for a datum to be added to the results query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -47,11 +46,6 @@ struct apol_role_trans_query
 
 /******************** (role) allow queries ********************/
 
-int apol_get_role_allow_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v)
-{
-	return apol_role_allow_get_by_query(p, r, v);
-}
-
 int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
@@ -76,8 +70,8 @@ int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r,
 	if (qpol_policy_get_role_allow_iter(p->p, &iter) < 0) {
 		goto cleanup;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -131,11 +125,11 @@ int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r,
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
-	apol_vector_destroy(&source_list, NULL);
+	apol_vector_destroy(&source_list);
 	if (!source_as_any) {
-		apol_vector_destroy(&target_list, NULL);
+		apol_vector_destroy(&target_list);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;
@@ -256,11 +250,6 @@ char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule)
 
 /******************** role_transition queries ********************/
 
-int apol_get_role_trans_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v)
-{
-	return apol_role_trans_get_by_query(p, r, v);
-}
-
 int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
@@ -292,8 +281,8 @@ int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r,
 	if (qpol_policy_get_role_trans_iter(p->p, &iter) < 0) {
 		goto cleanup;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -362,12 +351,12 @@ int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r,
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
-	apol_vector_destroy(&source_list, NULL);
-	apol_vector_destroy(&target_list, NULL);
+	apol_vector_destroy(&source_list);
+	apol_vector_destroy(&target_list);
 	if (!source_as_any) {
-		apol_vector_destroy(&default_list, NULL);
+		apol_vector_destroy(&default_list);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;

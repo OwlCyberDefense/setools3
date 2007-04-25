@@ -183,11 +183,6 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 	return retv;
 }
 
-int apol_get_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
-{
-	return apol_avrule_get_by_query(p, a, v);
-}
-
 int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
 {
 	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL, *perm_list = NULL;
@@ -234,8 +229,8 @@ int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_ve
 		}
 	}
 
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 
@@ -246,20 +241,15 @@ int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_ve
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
-	apol_vector_destroy(&source_list, NULL);
+	apol_vector_destroy(&source_list);
 	if (!source_as_any) {
-		apol_vector_destroy(&target_list, NULL);
+		apol_vector_destroy(&target_list);
 	}
-	apol_vector_destroy(&class_list, NULL);
+	apol_vector_destroy(&class_list);
 	/* don't destroy perm_list - it points to query's permission list */
 	return retval;
-}
-
-int apol_get_syn_avrule_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
-{
-	return apol_syn_avrule_get_by_query(p, a, v);
 }
 
 int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v)
@@ -318,8 +308,8 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 		}
 	}
 
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 
@@ -331,7 +321,7 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 	if (!syn_v) {
 		goto cleanup;
 	}
-	apol_vector_destroy(v, NULL);
+	apol_vector_destroy(v);
 	*v = syn_v;
 	syn_v = NULL;
 
@@ -347,7 +337,7 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 	}
 
 	if (source_list && !(a->flags & APOL_QUERY_SOURCE_INDIRECT)) {
-		apol_vector_destroy(&source_list, NULL);
+		apol_vector_destroy(&source_list);
 		source_list =
 			apol_query_create_candidate_type_list(p, a->source, is_regex, 0,
 							      ((a->flags & (APOL_QUERY_SOURCE_TYPE | APOL_QUERY_SOURCE_ATTRIBUTE)) /
@@ -359,7 +349,7 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 		if (source_as_any) {
 			target_list = source_list;
 		} else {
-			apol_vector_destroy(&target_list, NULL);
+			apol_vector_destroy(&target_list);
 			target_list =
 				apol_query_create_candidate_type_list(p, a->target, is_regex, 0,
 								      ((a->flags & (APOL_QUERY_SOURCE_TYPE |
@@ -370,9 +360,9 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 		}
 	}
 	if (target_list) {
-		target_types_list = apol_vector_create_from_vector(target_list, NULL, NULL);
+		target_types_list = apol_vector_create_from_vector(target_list, NULL, NULL, NULL);
 		if (!target_types_list) {
-			ERR(p, "%s", strerror(ENOMEM));
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 		qpol_type_t *type = NULL;
@@ -430,15 +420,15 @@ int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apo
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
-	apol_vector_destroy(&syn_v, NULL);
-	apol_vector_destroy(&source_list, NULL);
-	apol_vector_destroy(&target_types_list, NULL);
+	apol_vector_destroy(&syn_v);
+	apol_vector_destroy(&source_list);
+	apol_vector_destroy(&target_types_list);
 	if (!source_as_any) {
-		apol_vector_destroy(&target_list, NULL);
+		apol_vector_destroy(&target_list);
 	}
-	apol_vector_destroy(&class_list, NULL);
+	apol_vector_destroy(&class_list);
 	/* don't destroy perm_list - it points to query's permission list */
 	apol_regex_destroy(&bool_regex);
 	qpol_iterator_destroy(&iter);
@@ -464,8 +454,8 @@ void apol_avrule_query_destroy(apol_avrule_query_t ** a)
 		free((*a)->source);
 		free((*a)->target);
 		free((*a)->bool_name);
-		apol_vector_destroy(&(*a)->classes, free);
-		apol_vector_destroy(&(*a)->perms, free);
+		apol_vector_destroy(&(*a)->classes);
+		apol_vector_destroy(&(*a)->perms);
 		free(*a);
 		*a = NULL;
 	}
@@ -519,12 +509,13 @@ int apol_avrule_query_set_target_component(apol_policy_t * p, apol_avrule_query_
 
 int apol_avrule_query_append_class(apol_policy_t * p, apol_avrule_query_t * a, const char *obj_class)
 {
-	char *s;
+	char *s = NULL;
 	if (obj_class == NULL) {
-		apol_vector_destroy(&a->classes, free);
-	} else if ((s = strdup(obj_class)) == NULL ||
-		   (a->classes == NULL && (a->classes = apol_vector_create()) == NULL) || apol_vector_append(a->classes, s) < 0) {
-		ERR(p, "%s", strerror(ENOMEM));
+		apol_vector_destroy(&a->classes);
+	} else if ((s = strdup(obj_class)) == NULL || (a->classes == NULL && (a->classes = apol_vector_create(free)) == NULL)
+		   || apol_vector_append(a->classes, s) < 0) {
+		ERR(p, "%s", strerror(errno));
+		free(s);
 		return -1;
 	}
 	return 0;
@@ -534,9 +525,9 @@ int apol_avrule_query_append_perm(apol_policy_t * p, apol_avrule_query_t * a, co
 {
 	char *s;
 	if (perm == NULL) {
-		apol_vector_destroy(&a->perms, free);
+		apol_vector_destroy(&a->perms);
 	} else if ((s = strdup(perm)) == NULL ||
-		   (a->perms == NULL && (a->perms = apol_vector_create()) == NULL) || apol_vector_append(a->perms, s) < 0) {
+		   (a->perms == NULL && (a->perms = apol_vector_create(free)) == NULL) || apol_vector_append(a->perms, s) < 0) {
 		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
@@ -594,7 +585,7 @@ apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t * p, qpol_avrule_t * rul
 		error = errno;
 		goto cleanup;
 	}
-	if ((v = apol_vector_create()) == NULL) {
+	if ((v = apol_vector_create(NULL)) == NULL) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;
@@ -630,13 +621,13 @@ apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t * p, qpol_avrule_t * rul
 			goto cleanup;
 		}
 	}
-	apol_vector_sort_uniquify(v, apol_syn_avrule_comp, p, NULL);
+	apol_vector_sort_uniquify(v, apol_syn_avrule_comp, p);
 	retval = 0;
       cleanup:
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&perm_iter);
 	if (retval != 0) {
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		errno = error;
 		return NULL;
 	}
@@ -654,7 +645,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t 
 	size_t i, x;
 	int retval = -1, error = 0, found_perm = 0;
 
-	if ((b = apol_bst_create(apol_syn_avrule_comp)) == NULL) {
+	if ((b = apol_bst_create(apol_syn_avrule_comp, NULL)) == NULL) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;
@@ -679,7 +670,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t 
 		}
 		qpol_iterator_destroy(&iter);
 	}
-	if ((tmp_v = apol_bst_get_vector(b)) == NULL) {
+	if ((tmp_v = apol_bst_get_vector(b, 1)) == NULL) {
 		error = errno;
 		ERR(p, "%s", strerror(error));
 		goto cleanup;
@@ -688,7 +679,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t 
 		v = tmp_v;
 		tmp_v = NULL;
 	} else {
-		if ((v = apol_vector_create()) == NULL) {
+		if ((v = apol_vector_create(NULL)) == NULL) {
 			error = errno;
 			ERR(p, "%s", strerror(error));
 			goto cleanup;
@@ -720,11 +711,11 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t 
 	}
 	retval = 0;
       cleanup:
-	apol_bst_destroy(&b, NULL);
+	apol_bst_destroy(&b);
 	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&tmp_v, NULL);
+	apol_vector_destroy(&tmp_v);
 	if (retval != 0) {
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		errno = error;
 		return NULL;
 	}

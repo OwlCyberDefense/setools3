@@ -70,22 +70,6 @@ extern "C"
 								  apol_callback_fn_t msg_callback, void *varg);
 
 /**
- * Open a monolithic policy from disk.
- *
- * @deprecated Use apol_policy_create_from_policy_path() instead.
- */
-	extern int apol_policy_open(const char *path, apol_policy_t ** policy, apol_callback_fn_t msg_callback, void *varg)
-		__attribute__ ((deprecated));
-
-/**
- * Open a monolithic policy and load all components except rules.
- *
- * @deprecated Use apol_policy_create_from_policy_path() instead.
- */
-	extern int apol_policy_open_no_rules(const char *path, apol_policy_t ** policy,
-					     apol_callback_fn_t msg_callback, void *varg) __attribute__ ((deprecated));
-
-/**
  * Deallocate all memory associated with a policy, including all
  * auxillary data structures, and then set it to NULL.  Does nothing
  * if the pointer is already NULL.
@@ -126,19 +110,6 @@ extern "C"
  * @return 1 if policy is MLS, 0 if not, < 0 upon error.
  */
 	extern int apol_policy_is_mls(apol_policy_t * p);
-
-/**
- * Given a policy, return 1 if the policy is binary, 0 if not.  If it
- * cannot be determined or upon error, return < 0.
- *
- * @deprecated Instead of checking if a policy is "binary" or not, one
- * typically really wants to know if the policy is capable of showing
- * rules or something else.  See qpol_policy_has_capability().
- *
- * @param p Policy to which check.
- * @return 1 if policy is binary, 0 if not, < 0 upon error.
- */
-	extern int apol_policy_is_binary(apol_policy_t * p) __attribute__ ((deprecated));
 
 /**
  * Given a policy, allocate and return a string that describes the

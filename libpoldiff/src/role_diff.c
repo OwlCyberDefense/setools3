@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in roles.
+ *  Implementation for computing semantic differences in roles.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -94,12 +94,14 @@ char *poldiff_role_to_string(poldiff_t * diff, const void *role)
 				break;
 			}
 			if (num_added > 0) {
-				if (apol_str_appendf(&s, &len, "%zd Added Types", num_added) < 0) {
+				if (apol_str_appendf(&s, &len, "%zd Added Type%s", num_added, (num_added == 1 ? "" : "s")) < 0) {
 					break;
 				}
 			}
 			if (num_removed > 0) {
-				if (apol_str_appendf(&s, &len, "%s%zd Removed Types", (num_added > 0 ? ", " : ""), num_removed) < 0) {
+				if (apol_str_appendf
+				    (&s, &len, "%s%zd Removed Type%s", (num_added > 0 ? ", " : ""), num_removed,
+				     (num_removed == 1 ? "" : "s")) < 0) {
 					break;
 				}
 			}
@@ -181,34 +183,34 @@ apol_vector_t *poldiff_role_get_removed_types(const poldiff_role_t * role)
 
 /*************** protected functions for roles ***************/
 
+static void role_free(void *elem)
+{
+	if (elem != NULL) {
+		poldiff_role_t *r = (poldiff_role_t *) elem;
+		free(r->name);
+		apol_vector_destroy(&r->added_types);
+		apol_vector_destroy(&r->removed_types);
+		free(r);
+	}
+}
+
 poldiff_role_summary_t *role_create(void)
 {
 	poldiff_role_summary_t *rs = calloc(1, sizeof(*rs));
 	if (rs == NULL) {
 		return NULL;
 	}
-	if ((rs->diffs = apol_vector_create()) == NULL) {
+	if ((rs->diffs = apol_vector_create(role_free)) == NULL) {
 		role_destroy(&rs);
 		return NULL;
 	}
 	return rs;
 }
 
-static void role_free(void *elem)
-{
-	if (elem != NULL) {
-		poldiff_role_t *r = (poldiff_role_t *) elem;
-		free(r->name);
-		apol_vector_destroy(&r->added_types, free);
-		apol_vector_destroy(&r->removed_types, free);
-		free(r);
-	}
-}
-
 void role_destroy(poldiff_role_summary_t ** rs)
 {
 	if (rs != NULL && *rs != NULL) {
-		apol_vector_destroy(&(*rs)->diffs, role_free);
+		apol_vector_destroy(&(*rs)->diffs);
 		free(*rs);
 		*rs = NULL;
 	}
@@ -261,7 +263,7 @@ apol_vector_t *role_get_items(poldiff_t * diff, apol_policy_t * policy)
 	if (qpol_policy_get_role_iter(q, &iter) < 0) {
 		return NULL;
 	}
-	v = apol_vector_create_from_iter(iter);
+	v = apol_vector_create_from_iter(iter, NULL);
 	if (v == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -302,8 +304,8 @@ static poldiff_role_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *na
 	int error;
 	if ((pr = calloc(1, sizeof(*pr))) == NULL ||
 	    (pr->name = strdup(name)) == NULL ||
-	    (pr->added_types = apol_vector_create_with_capacity(1)) == NULL ||
-	    (pr->removed_types = apol_vector_create_with_capacity(1)) == NULL) {
+	    (pr->added_types = apol_vector_create_with_capacity(1, free)) == NULL ||
+	    (pr->removed_types = apol_vector_create_with_capacity(1, free)) == NULL) {
 		error = errno;
 		role_free(pr);
 		ERR(diff, "%s", strerror(error));
@@ -354,9 +356,8 @@ int role_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
  * @param which Which policy, one of POLDIFF_POLICY_ORIG or
  * POLDIFF_POLICY_MOD.
  *
- * @return Vector of .  The caller is
- * responsible for calling apol_vector_destroy(), passing NULL as the
- * second parameter.  On error, return NULL.
+ * @return Vector of pseudo-type values.  The caller is responsible
+ * for calling apol_vector_destroy().  On error, return NULL.
  */
 static apol_vector_t *role_get_types(poldiff_t * diff, qpol_role_t * role, int which)
 {
@@ -366,7 +367,7 @@ static apol_vector_t *role_get_types(poldiff_t * diff, qpol_role_t * role, int w
 	apol_vector_t *v = NULL;
 	int retval = -1, error = 0;
 
-	if ((v = apol_vector_create()) == NULL) {
+	if ((v = apol_vector_create(NULL)) == NULL) {
 		ERR(diff, "%s", strerror(errno));
 		goto cleanup;
 	}
@@ -384,7 +385,7 @@ static apol_vector_t *role_get_types(poldiff_t * diff, qpol_role_t * role, int w
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_vector_append(v, (void *)new_val) < 0) {
+		if (apol_vector_append(v, (void *)((size_t) new_val)) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -395,7 +396,7 @@ static apol_vector_t *role_get_types(poldiff_t * diff, qpol_role_t * role, int w
       cleanup:
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		errno = error;
 		return NULL;
 	}
@@ -421,9 +422,9 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 		error = errno;
 		goto cleanup;
 	}
-	apol_vector_sort_uniquify(v1, NULL, NULL, NULL);
-	apol_vector_sort_uniquify(v2, NULL, NULL, NULL);
-	if ((added_types = apol_vector_create()) == NULL || (removed_types = apol_vector_create()) == NULL) {
+	apol_vector_sort_uniquify(v1, NULL, NULL);
+	apol_vector_sort_uniquify(v2, NULL, NULL);
+	if ((added_types = apol_vector_create(NULL)) == NULL || (removed_types = apol_vector_create(NULL)) == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
@@ -431,17 +432,17 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	for (i = j = 0; i < apol_vector_get_size(v1);) {
 		if (j >= apol_vector_get_size(v2))
 			break;
-		t1 = (uint32_t) apol_vector_get_element(v1, i);
-		t2 = (uint32_t) apol_vector_get_element(v2, j);
+		t1 = (uint32_t) ((size_t) apol_vector_get_element(v1, i));
+		t2 = (uint32_t) ((size_t) apol_vector_get_element(v2, j));
 		if (t2 > t1) {
-			if (apol_vector_append(removed_types, (void *)t1) < 0) {
+			if (apol_vector_append(removed_types, (void *)((size_t) t1)) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
 			}
 			i++;
 		} else if (t1 > t2) {
-			if (apol_vector_append(added_types, (void *)t2) < 0) {
+			if (apol_vector_append(added_types, (void *)((size_t) t2)) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -453,16 +454,16 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 		}
 	}
 	for (; i < apol_vector_get_size(v1); i++) {
-		t1 = (uint32_t) apol_vector_get_element(v1, i);
-		if (apol_vector_append(removed_types, (void *)t1) < 0) {
+		t1 = (uint32_t) ((size_t) apol_vector_get_element(v1, i));
+		if (apol_vector_append(removed_types, (void *)((size_t) t1)) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
 	}
 	for (; j < apol_vector_get_size(v2); j++) {
-		t2 = (uint32_t) apol_vector_get_element(v2, j);
-		if (apol_vector_append(added_types, (void *)t2) < 0) {
+		t2 = (uint32_t) ((size_t) apol_vector_get_element(v2, j));
+		if (apol_vector_append(added_types, (void *)((size_t) t2)) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -474,7 +475,7 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(removed_types); i++) {
-			t1 = (uint32_t) apol_vector_get_element(removed_types, i);
+			t1 = (uint32_t) ((size_t) apol_vector_get_element(removed_types, i));
 			if ((reverse_v = type_map_lookup_reverse(diff, t1, POLDIFF_POLICY_ORIG)) == NULL) {
 				error = errno;
 				goto cleanup;
@@ -494,7 +495,7 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			}
 		}
 		for (i = 0; i < apol_vector_get_size(added_types); i++) {
-			t2 = (uint32_t) apol_vector_get_element(added_types, i);
+			t2 = (uint32_t) ((size_t) apol_vector_get_element(added_types, i));
 			if ((reverse_v = type_map_lookup_reverse(diff, t2, POLDIFF_POLICY_MOD)) == NULL) {
 				error = errno;
 				goto cleanup;
@@ -524,10 +525,10 @@ int role_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&v1, NULL);
-	apol_vector_destroy(&v2, NULL);
-	apol_vector_destroy(&added_types, NULL);
-	apol_vector_destroy(&removed_types, NULL);
+	apol_vector_destroy(&v1);
+	apol_vector_destroy(&v2);
+	apol_vector_destroy(&added_types);
+	apol_vector_destroy(&removed_types);
 	if (retval != 0) {
 		role_free(r);
 	}

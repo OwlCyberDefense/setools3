@@ -80,10 +80,10 @@ static void report_window_on_output_format_toggle(GtkToggleButton * toggle, gpoi
 static void report_window_browse(GtkEntry * entry, GtkWindow * parent, const char *title)
 {
 	const char *current_path = gtk_entry_get_text(entry);
-	char *new_path = util_open_file(parent, title, current_path);
-	if (new_path != NULL) {
-		gtk_entry_set_text(entry, new_path);
-		g_free(new_path);
+	apol_vector_t *new_paths = util_open_file(parent, title, current_path, 0);
+	if (new_paths != NULL) {
+		gtk_entry_set_text(entry, apol_vector_get_element(new_paths, 0));
+		apol_vector_destroy(&new_paths);
 	}
 }
 

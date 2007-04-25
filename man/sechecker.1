@@ -19,19 +19,21 @@ Profiles exist to group modules together and allow modification of module settin
 .PP
 .B
 sechecker
-supports loading a SELinux policy in one of three formats.
+supports loading a SELinux policy in one of four formats.
 .IP "source"
 A single text file containing policy source for versions 12 through 21. This file is usually named policy.conf.
 .IP "binary"
 A single file containing a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
 .IP "modular"
 A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
+.IP "policy list"
+A single text file containing all the information needed to load a policy, usually exported by SETools graphical utilities.
 .PP
-If not provided
+If no policy file is provided,
 .B
 sechecker
-will search for the system default policy, checking first for a source policy, then a binary policy matching the running kernel's preferred version, then finally the highest version that can be found.
-If no policy can be found
+will search for the system default policy: checking first for a source policy, next for a binary policy matching the running kernel's preferred version, and finally for the highest version that can be found.
+If no policy can be found,
 .B
 sechecker
 will print an error message and exit.
@@ -46,7 +48,7 @@ see PROFILE OPTIONS below for more information about creating profiles.
 Run only the module named MODULE (see --list).
 .IP "--min-sev=SEVERITY"
 Report only results with the minimum severity of SEVERITY.
-SEVERITY may have one of the following values:
+SEVERITY must have one of the following values:
 .RS
 .IP "low"
 The module's results indicate a flaw in the policy that does not affect the manner in which the policy is enforced, but is considered to be improper.
@@ -57,13 +59,17 @@ The module's results indicate a flaw in the policy that presents an identifiable
 .RE
 .IP "--fcfile=FILE"
 Use FILE for the file_contexts file instead of the system default.
+This flag is only applicable if sechecker was configured with the
+.B
+--enable-sefs
+flag.
 .IP "-l, --list"
 Print a list of the name and a brief description of all known profiles and modules and exit.
-.IP "--version"
-Print version information and exit.
 .IP "-h[MODULE], --help[=MODULE]"
 Print general help information and exit.
 If MODULE is provided, print help information for the module named MODULE and exit.
+.IP "-V, --version"
+Print version information and exit.
 .SS REPORT GENERATION OPTIONS
 .P
 Only one of the following may be provided to specify the length of the report for all modules.

@@ -48,7 +48,7 @@ extern "C"
 	struct apol_permmap;
 
 /* forward declaration. the definition resides within domain-trans-analysis.c */
-	struct apol_domain_trans_table;
+	typedef struct apol_domain_trans_table apol_domain_trans_table_t;
 
 /* declared in perm-map.c */
 	typedef struct apol_permmap apol_permmap_t;
@@ -289,8 +289,7 @@ extern "C"
  *
  * @return Vector of unique qpol_type_t pointers (relative to policy
  * within p), or NULL upon error.  Caller is responsible for calling
- * apol_vector_destroy() afterwards, passing NULL as the second
- * parameter.
+ * apol_vector_destroy() afterwards.
  */
 	apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
 							     unsigned int ta_flag);
@@ -455,6 +454,12 @@ extern "C"
  * @param p Reference to an apol_permmap_t to destroy.
  */
 	void permmap_destroy(apol_permmap_t ** p);
+
+/**
+ *  Destroy the domain transition table freeing all memory used.
+ *  @param table Reference pointer to the table to be destroyed.
+ */
+	void domain_trans_table_destroy(apol_domain_trans_table_t ** table);
 
 #ifdef	__cplusplus
 }

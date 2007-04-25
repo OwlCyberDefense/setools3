@@ -1,9 +1,8 @@
 /**
  *  @file
- *  Public Interface for computing a semantic differences in roles allow rules
- *  and role_transition rules.
+ *  Public interface for computing semantic differences in role
+ *  allow rules and role_transition rules.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

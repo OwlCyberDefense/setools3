@@ -73,17 +73,21 @@ compilation:
   bison
   pkg-config-0.20
   libselinux-1.30.27 or greater
-  libsepol-1.12.27 or greater
+  libsepol-1.12.27 or greater, but NOT libsepol-2.0.2
   libxml-2.0
 
 The following are not strictly required but highly recommended:
   tcl-8.4.9-devel or greater
   tk-8.4.9-devel or greater
-  glib-1.2
-  gtk+-2.4
-  gdk-pixbuf-2.0
-  libglade-2.0
+  glib2-2.0
+  gtk2-2.8
+  libglade2
 These packages are needed to build SETools's graphical tools.
+
+To build the SETools SWIG wrappers, these packages are required:
+  swig 1.3.28 or greater
+  python-devel 2.3 or greater
+  Java JDK 1.2 or greater
 
 Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is
 part of the tcllib package and is often not present in Linux
@@ -103,13 +107,13 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.1
+  $ cd setools-3.2
   $ ./configure
   $ make
   $ make install
 
 This will put the binaries in /usr/local/bin, data files in
-/usr/local/share/setool-3.1, and libraries in /usr/local/lib.
+/usr/local/share/setool-3.2, and libraries in /usr/local/lib.
 Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
 $LD_LIBRARY_PATH everything should now work.
 
@@ -122,7 +126,7 @@ instead obtain the development version of SETools from the Subversion
 repository (see Section 4).
 
   $ cd setools
-  $ autoreconf
+  $ autoreconf -i -s
   $ ./configure
   $ make
   $ make install
@@ -156,8 +160,8 @@ You can customize your SETools build using the flags given to
   --disable-bwidget-check
       Assume that BWidget 1.8 is installed on the system.  The
       configure script normally tries to launch a Tcl script that
-      loads BWidget, which requires a running X session.  Use this
-      flag if you are compiling in a non-X environment.
+      loads BWidget, which requires a running X session.  You will
+      need this flag if compiling in a non-X environment.
 
   --disable-selinux-check
       Disable the build-time check for SELinux.  In rare
@@ -170,6 +174,16 @@ You can customize your SETools build using the flags given to
       Disable sefs support.  Use this flag if SETools will be
       deployed on systems not running SELinux.  For example, sediff
       does not need an SELinux-enabled kernel to operate.
+
+  --enable-swig-python
+      Build SWIG interfaces for Python.  This permits third-party
+      developers who prefer Python to use the SETools libraries for
+      their own projects.
+
+  --enable-swig-java
+      Build SWIG interfaces for Java.  This permits third-party
+      developers who prefer Java to use the SETools libraries for
+      their own projects.
 
   --enable-sepol-src=PATH
       Look for libsepol source files in PATH.  Use this flag when
@@ -384,14 +398,13 @@ maintain compatibility beginning with SETools version 3.0.
           obtain detailed results via qpol/policy_query.h
           close the policy via apol_policy_destroy()
 
-  libapol-tcl:
-      Glue code that provides bindings between apol (a Tcl/Tk
-      application) and libapol/libqpol.  The functions within are
-      not meant to be used by any other program.
-
   libseaudit:
       Parse and store SELinux audit messages.  Its chief users are
       seaudit and seaudit-report.
+
+  libpoldiff:
+      Accept two SELinux policies and finds differences between
+      them.  Its main users are sediff and sediffx.
 
   libsefs:
       Create a snapshot of SELinux filesystem security contexts and
@@ -399,10 +412,17 @@ maintain compatibility beginning with SETools version 3.0.
       and execute SQL queries into the database.  This library also
       has functions to parse the system's default file_contexts.
 
-  libpoldiff:
-      Accept two SELinux policies and finds differences between
-      them.  Its main users are sediff and sediffx.
-    
+  libapol-tcl:
+      Glue code that provides bindings between apol (a Tcl/Tk
+      application) and libapol/libqpol.  The functions within are
+      not meant to be used by any other program.
+
+The first four libraries have SWIG wrappers that are built if
+--enable-swig-python and/or --enable-swig-java are given during
+configuration time.  The generated Python wrappers will be installed
+to Python's site-packages directory; Java wrappers will be in placed
+in $PREFIX/lib and $PREFIX/lib/setools.
+
 
 4. Obtaining SETools
 --------------------

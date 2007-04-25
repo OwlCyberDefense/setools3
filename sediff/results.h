@@ -33,8 +33,10 @@ typedef enum results_sort
 	RESULTS_SORT_CLASS, RESULTS_SORT_COND
 } results_sort_e;
 
-#define RESULTS_SORT_ASCEND 1
-#define RESULTS_SORT_DESCEND -1
+typedef enum results_sort_dir
+{
+	RESULTS_SORT_DESCEND = -1, RESULTS_SORT_ASCEND = 1
+} results_sort_dir_e;
 
 #include "toplevel.h"
 
@@ -63,6 +65,15 @@ results_t *results_create(toplevel_t * top);
  * will be set to NULL.
  */
 void results_destroy(results_t ** r);
+
+/**
+ * Notify the results object that the policies have been changed.
+ *
+ * @param r Results object to notify.
+ * @param orig The (possibly newly loaded) original policy to diff.
+ * @param mod The (possibly newly loaded) modified policy to diff.
+ */
+void results_open_policies(results_t * r, apol_policy_t * orig, apol_policy_t * mod);
 
 /**
  * Clear all text from the results object.  This should be done prior
@@ -96,7 +107,7 @@ void results_switch_to_page(results_t * r);
  * @param direction Direction of sort, either RESULTS_SORT_ASCEND or
  * RESULTS_SORT_DESCEND.
  */
-void results_sort(results_t * r, results_sort_e field, int direction);
+void results_sort(results_t * r, results_sort_e field, results_sort_dir_e direction);
 
 /**
  * Get the currently showing text view for the results object.

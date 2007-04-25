@@ -39,6 +39,15 @@ seaudit_avc_message_type_e seaudit_avc_message_get_message_type(seaudit_avc_mess
 	return avc->msg;
 }
 
+long seaudit_avc_message_get_timestamp_nano(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->tm_stmp_sec;
+}
+
 char *seaudit_avc_message_get_source_user(seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
@@ -129,6 +138,15 @@ char *seaudit_avc_message_get_comm(seaudit_avc_message_t * avc)
 	return avc->comm;
 }
 
+char *seaudit_avc_message_get_name(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->name;
+}
+
 unsigned int seaudit_avc_message_get_pid(seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
@@ -162,6 +180,120 @@ char *seaudit_avc_message_get_path(seaudit_avc_message_t * avc)
 	return avc->path;
 }
 
+char *seaudit_avc_message_get_dev(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->dev;
+}
+
+char *seaudit_avc_message_get_netif(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->netif;
+}
+
+char *seaudit_avc_message_get_laddr(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->laddr;
+}
+
+int seaudit_avc_message_get_lport(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->lport;
+}
+
+char *seaudit_avc_message_get_faddr(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->faddr;
+}
+
+int seaudit_avc_message_get_fport(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->fport;
+}
+
+char *seaudit_avc_message_get_saddr(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->saddr;
+}
+
+int seaudit_avc_message_get_sport(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->source;
+}
+
+char *seaudit_avc_message_get_daddr(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return avc->daddr;
+}
+
+int seaudit_avc_message_get_dport(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->dest;
+}
+
+int seaudit_avc_message_get_key(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (!avc->is_key) {
+		return -1;
+	}
+	return avc->key;
+}
+
+int seaudit_avc_message_get_cap(seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (!avc->is_capability) {
+		return -1;
+	}
+	return avc->capability;
+}
+
 /******************** protected functions below ********************/
 
 seaudit_avc_message_t *avc_message_create(void)
@@ -170,7 +302,7 @@ seaudit_avc_message_t *avc_message_create(void)
 	if (avc == NULL) {
 		return NULL;
 	}
-	if ((avc->perms = apol_vector_create_with_capacity(1)) == NULL) {
+	if ((avc->perms = apol_vector_create_with_capacity(1, NULL)) == NULL) {
 		int error = errno;
 		avc_message_free(avc);
 		errno = error;
@@ -193,7 +325,7 @@ void avc_message_free(seaudit_avc_message_t * avc)
 		free(avc->daddr);
 		free(avc->name);
 		free(avc->ipaddr);
-		apol_vector_destroy(&avc->perms, NULL);
+		apol_vector_destroy(&avc->perms);
 		free(avc);
 	}
 }

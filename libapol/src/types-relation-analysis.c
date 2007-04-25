@@ -2,7 +2,6 @@
  * @file
  * Implementation of the two-types relationship analysis.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -24,6 +23,8 @@
  */
 
 #include "policy-query-internal.h"
+#include "domain-trans-analysis-internal.h"
+#include "infoflow-analysis-internal.h"
 
 #include <errno.h>
 #include <string.h>
@@ -97,18 +98,18 @@ static int apol_types_relation_common_attribs(apol_policy_t * p,
 	if (qpol_type_get_attr_iter(p->p, typeA, &iA) < 0 || qpol_type_get_attr_iter(p->p, typeB, &iB) < 0) {
 		goto cleanup;
 	}
-	if ((vA = apol_vector_create_from_iter(iA)) == NULL ||
-	    (vB = apol_vector_create_from_iter(iB)) == NULL ||
+	if ((vA = apol_vector_create_from_iter(iA, NULL)) == NULL ||
+	    (vB = apol_vector_create_from_iter(iB, NULL)) == NULL ||
 	    (r->attribs = apol_vector_create_from_intersection(vA, vB, NULL, NULL)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 	}
 
 	retval = 0;
       cleanup:
 	qpol_iterator_destroy(&iA);
 	qpol_iterator_destroy(&iB);
-	apol_vector_destroy(&vA, NULL);
-	apol_vector_destroy(&vB, NULL);
+	apol_vector_destroy(&vA);
+	apol_vector_destroy(&vB);
 	return retval;
 }
 
@@ -146,14 +147,14 @@ static int apol_types_relation_common_roles(apol_policy_t * p,
 		goto cleanup;
 	}
 	if ((r->roles = apol_vector_create_from_intersection(vA, vB, NULL, NULL)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 	}
 
 	retval = 0;
       cleanup:
 	apol_role_query_destroy(&rq);
-	apol_vector_destroy(&vA, NULL);
-	apol_vector_destroy(&vB, NULL);
+	apol_vector_destroy(&vA);
+	apol_vector_destroy(&vB);
 	return retval;
 }
 
@@ -192,8 +193,8 @@ static int apol_types_relation_common_users(apol_policy_t * p,
 		goto cleanup;
 	}
 
-	if ((r->users = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((r->users = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (qpol_policy_get_user_iter(p->p, &iter) < 0) {
@@ -231,8 +232,8 @@ static int apol_types_relation_common_users(apol_policy_t * p,
 	retval = 0;
       cleanup:
 	apol_role_query_destroy(&rq);
-	apol_vector_destroy(&vA, NULL);
-	apol_vector_destroy(&vB, NULL);
+	apol_vector_destroy(&vA);
+	apol_vector_destroy(&vB);
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&riter);
 	return retval;
@@ -257,7 +258,7 @@ static int apol_types_relation_access_compfunc(const void *a, const void *b, voi
 
 /**
  * Comparison function for a vector of apol_types_relation_access_t
- * pointers.  Returns 0 if the access type a matches the accest type b.
+ * pointers.  Returns 0 if the access type a matches the access type b.
  *
  * @param a Pointer to an existing apol_types_relation_access_t.
  * @param b Pointer to another existing apol_types_relation_access_t.
@@ -283,7 +284,7 @@ static void apol_types_relation_access_free(void *data)
 {
 	apol_types_relation_access_t *a = (apol_types_relation_access_t *) data;
 	if (a != NULL) {
-		apol_vector_destroy(&a->rules, NULL);
+		apol_vector_destroy(&a->rules);
 		free(a);
 	}
 }
@@ -314,9 +315,9 @@ static int apol_types_relation_access_append_rule(apol_policy_t * p, qpol_avrule
 			a = (apol_types_relation_access_t *) apol_vector_get_element(access, j);
 		} else {
 			if ((a = calloc(1, sizeof(*a))) == NULL ||
-			    (a->rules = apol_vector_create()) == NULL || apol_vector_append(access, a) < 0) {
+			    (a->rules = apol_vector_create(NULL)) == NULL || apol_vector_append(access, a) < 0) {
+				ERR(p, "%s", strerror(errno));
 				apol_types_relation_access_free(a);
-				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			a->type = t;
@@ -328,16 +329,16 @@ static int apol_types_relation_access_append_rule(apol_policy_t * p, qpol_avrule
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&expanded, NULL);
+	apol_vector_destroy(&expanded);
 	return retval;
 }
 
 /**
  * The following builds separate databases to hold rules for typeA and
  * typeB respectively.  The database holds a vector of pointers to
- * apol_types_relation_access_t objects.  We can then compare access
- * lists for typeA and typeB, determine common and unique access and
- * have easy access to the relevant rules.
+ * apol_types_relation_access_t objects.  Then compare access lists
+ * for typeA and typeB, determine common and unique access and have
+ * easy access to the relevant rules.
  *
  * @param p Policy to look up av rules.
  * @param typeA First type to build access list.
@@ -386,8 +387,8 @@ static int apol_types_relation_create_access_pools(apol_policy_t * p,
 	retval = 0;
       cleanup:
 	apol_avrule_query_destroy(&aq);
-	apol_vector_destroy(&vA, NULL);
-	apol_vector_destroy(&vB, NULL);
+	apol_vector_destroy(&vA);
+	apol_vector_destroy(&vB);
 	return retval;
 }
 
@@ -407,8 +408,8 @@ static int apol_types_relation_access_append(apol_policy_t * p, apol_types_relat
 	apol_types_relation_access_t *new_a;
 	int retval = -1;
 	if ((new_a = calloc(1, sizeof(*new_a))) == NULL
-	    || (new_a->rules = apol_vector_create_from_vector(a->rules, NULL, NULL)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	    || (new_a->rules = apol_vector_create_from_vector(a->rules, NULL, NULL, NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	new_a->type = a->type;
@@ -446,8 +447,9 @@ static int apol_types_relation_accesses(apol_policy_t * p,
 	size_t i, j;
 	int retval = -1;
 
-	if ((accessesA = apol_vector_create()) == NULL || (accessesB = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((accessesA = apol_vector_create(apol_types_relation_access_free)) == NULL
+	    || (accessesB = apol_vector_create(apol_types_relation_access_free)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (apol_types_relation_create_access_pools(p, typeA, typeB, accessesA, accessesB) < 0) {
@@ -457,14 +459,16 @@ static int apol_types_relation_accesses(apol_policy_t * p,
 	apol_vector_sort(accessesB, apol_types_relation_access_compfunc2, NULL);
 
 	if (do_similar) {
-		if ((r->simA = apol_vector_create()) == NULL || (r->simB = apol_vector_create()) == NULL) {
-			ERR(p, "%s", strerror(ENOMEM));
+		if ((r->simA = apol_vector_create(apol_types_relation_access_free)) == NULL
+		    || (r->simB = apol_vector_create(apol_types_relation_access_free)) == NULL) {
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 	}
 	if (do_dissimilar) {
-		if ((r->disA = apol_vector_create()) == NULL || (r->disB = apol_vector_create()) == NULL) {
-			ERR(p, "%s", strerror(ENOMEM));
+		if ((r->disA = apol_vector_create(apol_types_relation_access_free)) == NULL
+		    || (r->disB = apol_vector_create(apol_types_relation_access_free)) == NULL) {
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 	}
@@ -514,8 +518,8 @@ static int apol_types_relation_accesses(apol_policy_t * p,
 
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&accessesA, apol_types_relation_access_free);
-	apol_vector_destroy(&accessesB, apol_types_relation_access_free);
+	apol_vector_destroy(&accessesA);
+	apol_vector_destroy(&accessesB);
 	return retval;
 }
 
@@ -561,7 +565,7 @@ static int apol_types_relation_allows(apol_policy_t * p, qpol_type_t * typeA, qp
 	retval = 0;
       cleanup:
 	apol_avrule_query_destroy(&aq);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -591,7 +595,7 @@ static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpo
 	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 || qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
-	if ((r->types = apol_vector_create()) == NULL || (tq = apol_terule_query_create()) == NULL) {
+	if ((r->types = apol_vector_create(NULL)) == NULL || (tq = apol_terule_query_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -615,8 +619,8 @@ static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpo
 		}
 	}
 
-	apol_vector_destroy(&v, NULL);
-	apol_vector_destroy(&candidate_types, NULL);
+	apol_vector_destroy(&v);
+	apol_vector_destroy(&candidate_types);
 	if (apol_terule_query_set_source(p, tq, nameB, 1) < 0 ||
 	    apol_terule_get_by_query(p, tq, &v) < 0 ||
 	    (candidate_types = apol_query_create_candidate_type_list(p, nameA, 0, 1, APOL_QUERY_SYMBOL_IS_BOTH)) == NULL) {
@@ -639,8 +643,8 @@ static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpo
 	retval = 0;
       cleanup:
 	apol_terule_query_destroy(&tq);
-	apol_vector_destroy(&v, NULL);
-	apol_vector_destroy(&candidate_types, NULL);
+	apol_vector_destroy(&v);
+	apol_vector_destroy(&candidate_types);
 	return retval;
 }
 
@@ -670,9 +674,9 @@ static int apol_types_relation_clone_infoflow(apol_policy_t * p, apol_vector_t *
 		res = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
 		target = apol_infoflow_result_get_end_type(res);
 		if (apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0) {
-			if ((new_res = apol_infoflow_result_create_from_result(res)) == NULL ||
+			if ((new_res = infoflow_result_create_from_infoflow_result(res)) == NULL ||
 			    apol_vector_append(results, new_res) < 0) {
-				apol_infoflow_result_free(new_res);
+				infoflow_result_free(new_res);
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -680,7 +684,7 @@ static int apol_types_relation_clone_infoflow(apol_policy_t * p, apol_vector_t *
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&candidate_types, NULL);
+	apol_vector_destroy(&candidate_types);
 	return retval;
 }
 
@@ -707,7 +711,7 @@ static int apol_types_relation_directflow(apol_policy_t * p,
 	if (qpol_type_get_name(p->p, typeA, &nameA) < 0 || qpol_type_get_name(p->p, typeB, &nameB) < 0) {
 		goto cleanup;
 	}
-	if ((r->dirflows = apol_vector_create()) == NULL || (ia = apol_infoflow_analysis_create()) == NULL) {
+	if ((r->dirflows = apol_vector_create(infoflow_result_free)) == NULL || (ia = apol_infoflow_analysis_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
@@ -722,7 +726,7 @@ static int apol_types_relation_directflow(apol_policy_t * p,
 
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_vector_destroy(&v);
 	apol_infoflow_analysis_destroy(&ia);
 	apol_infoflow_graph_destroy(&g);
 	return retval;
@@ -766,8 +770,8 @@ static int apol_types_relation_transflow(apol_policy_t * p,
 		if (apol_infoflow_analysis_set_type(p, ia, nameA) < 0 || apol_infoflow_analysis_do(p, ia, &v, &g) < 0) {
 			goto cleanup;
 		}
-		if ((r->transAB = apol_vector_create()) == NULL) {
-			ERR(p, "%s", strerror(ENOMEM));
+		if ((r->transAB = apol_vector_create(infoflow_result_free)) == NULL) {
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 		if (apol_types_relation_clone_infoflow(p, v, nameB, r->transAB) < 0) {
@@ -775,15 +779,15 @@ static int apol_types_relation_transflow(apol_policy_t * p,
 		}
 	}
 	if (do_transBA) {
-		apol_vector_destroy(&v, apol_infoflow_result_free);
+		apol_vector_destroy(&v);
 		if ((do_transAB &&
 		     apol_infoflow_analysis_do_more(p, g, nameB, &v) < 0) ||
 		    (!do_transAB &&
 		     (apol_infoflow_analysis_set_type(p, ia, nameB) < 0 || apol_infoflow_analysis_do(p, ia, &v, &g) < 0))) {
 			goto cleanup;
 		}
-		if ((r->transBA = apol_vector_create()) == NULL) {
-			ERR(p, "%s", strerror(ENOMEM));
+		if ((r->transBA = apol_vector_create(infoflow_result_free)) == NULL) {
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 		if (apol_types_relation_clone_infoflow(p, v, nameA, r->transBA) < 0) {
@@ -792,7 +796,7 @@ static int apol_types_relation_transflow(apol_policy_t * p,
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&v, apol_infoflow_result_free);
+	apol_vector_destroy(&v);
 	apol_infoflow_analysis_destroy(&ia);
 	apol_infoflow_graph_destroy(&g);
 	return retval;
@@ -826,9 +830,9 @@ static int apol_types_relation_clone_domaintrans(apol_policy_t * p, apol_vector_
 		res = (apol_domain_trans_result_t *) apol_vector_get_element(v, i);
 		target = apol_domain_trans_result_get_end_type(res);
 		if (apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0) {
-			if ((new_res = apol_domain_trans_result_create_from_result(res)) == NULL ||
+			if ((new_res = apol_domain_trans_result_create_from_domain_trans_result(res)) == NULL ||
 			    apol_vector_append(results, new_res) < 0) {
-				apol_domain_trans_result_free(new_res);
+				domain_trans_result_free(new_res);
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -836,7 +840,7 @@ static int apol_types_relation_clone_domaintrans(apol_policy_t * p, apol_vector_
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&candidate_types, NULL);
+	apol_vector_destroy(&candidate_types);
 	return retval;
 }
 
@@ -877,8 +881,8 @@ static int apol_types_relation_domain(apol_policy_t * p,
 		if (apol_domain_trans_analysis_set_start_type(p, dta, nameA) < 0 || apol_domain_trans_analysis_do(p, dta, &v) < 0) {
 			goto cleanup;
 		}
-		if ((r->domsAB = apol_vector_create()) == NULL) {
-			ERR(p, "%s", strerror(ENOMEM));
+		if ((r->domsAB = apol_vector_create(domain_trans_result_free)) == NULL) {
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 		if (apol_types_relation_clone_domaintrans(p, v, nameB, r->domsAB) < 0) {
@@ -886,15 +890,15 @@ static int apol_types_relation_domain(apol_policy_t * p,
 		}
 	}
 	if (do_domainsBA) {
-		apol_vector_destroy(&v, apol_domain_trans_result_free);
+		apol_vector_destroy(&v);
 		if (do_domainsAB) {
 			apol_domain_trans_table_reset(p);
 		}
 		if (apol_domain_trans_analysis_set_start_type(p, dta, nameB) < 0 || apol_domain_trans_analysis_do(p, dta, &v) < 0) {
 			goto cleanup;
 		}
-		if ((r->domsBA = apol_vector_create()) == NULL) {
-			ERR(p, "%s", strerror(ENOMEM));
+		if ((r->domsBA = apol_vector_create(domain_trans_result_free)) == NULL) {
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 		if (apol_types_relation_clone_domaintrans(p, v, nameA, r->domsBA) < 0) {
@@ -903,7 +907,7 @@ static int apol_types_relation_domain(apol_policy_t * p,
 	}
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&v, apol_domain_trans_result_free);
+	apol_vector_destroy(&v);
 	apol_domain_trans_analysis_destroy(&dta);
 	return retval;
 }
@@ -1033,20 +1037,20 @@ int apol_types_relation_analysis_set_analyses(apol_policy_t * p __attribute__ ((
 void apol_types_relation_result_destroy(apol_types_relation_result_t ** result)
 {
 	if (*result != NULL) {
-		apol_vector_destroy(&(*result)->attribs, NULL);
-		apol_vector_destroy(&(*result)->roles, NULL);
-		apol_vector_destroy(&(*result)->users, NULL);
-		apol_vector_destroy(&(*result)->simA, apol_types_relation_access_free);
-		apol_vector_destroy(&(*result)->simB, apol_types_relation_access_free);
-		apol_vector_destroy(&(*result)->disA, apol_types_relation_access_free);
-		apol_vector_destroy(&(*result)->disB, apol_types_relation_access_free);
-		apol_vector_destroy(&(*result)->allows, NULL);
-		apol_vector_destroy(&(*result)->types, NULL);
-		apol_vector_destroy(&(*result)->dirflows, apol_infoflow_result_free);
-		apol_vector_destroy(&(*result)->transAB, apol_infoflow_result_free);
-		apol_vector_destroy(&(*result)->transBA, apol_infoflow_result_free);
-		apol_vector_destroy(&(*result)->domsAB, apol_domain_trans_result_free);
-		apol_vector_destroy(&(*result)->domsBA, apol_domain_trans_result_free);
+		apol_vector_destroy(&(*result)->attribs);
+		apol_vector_destroy(&(*result)->roles);
+		apol_vector_destroy(&(*result)->users);
+		apol_vector_destroy(&(*result)->simA);
+		apol_vector_destroy(&(*result)->simB);
+		apol_vector_destroy(&(*result)->disA);
+		apol_vector_destroy(&(*result)->disB);
+		apol_vector_destroy(&(*result)->allows);
+		apol_vector_destroy(&(*result)->types);
+		apol_vector_destroy(&(*result)->dirflows);
+		apol_vector_destroy(&(*result)->transAB);
+		apol_vector_destroy(&(*result)->transBA);
+		apol_vector_destroy(&(*result)->domsAB);
+		apol_vector_destroy(&(*result)->domsBA);
 		free(*result);
 		*result = NULL;
 	}

@@ -182,7 +182,7 @@ int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		errno = ENOMEM;
 		return -1;
 	}
-	if (!(datum->file_type_attribs = apol_vector_create())) {
+	if (!(datum->file_type_attribs = apol_vector_create(NULL))) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -204,7 +204,7 @@ int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg
 					return -1;
 				}
 			}
-			apol_vector_destroy(&attr_vector, NULL);
+			apol_vector_destroy(&attr_vector);
 		}
 	}
 	apol_attr_query_destroy(&attr_query);
@@ -262,7 +262,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_file_types_run_fail;
 	}
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_file_types_run_fail;
@@ -330,7 +330,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 						item->test_result = 1;
 					}
 					if (!item->proof) {
-						if (!(item->proof = apol_vector_create())) {
+						if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 							error = errno;
 							ERR(policy, "%s", strerror(ENOMEM));
 							goto find_file_types_run_fail;
@@ -379,7 +379,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 					item->test_result = 1;
 				}
 				if (!item->proof) {
-					if (!(item->proof = apol_vector_create())) {
+					if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
@@ -393,7 +393,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 				}
 			}
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 		apol_avrule_query_destroy(&avrule_query);
 
 		/* type rule check file object */
@@ -432,7 +432,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 					item->test_result = 1;
 				}
 				if (!item->proof) {
-					if (!(item->proof = apol_vector_create())) {
+					if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_file_types_run_fail;
@@ -446,7 +446,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 				}
 			}
 		}
-		apol_vector_destroy(&terule_vector, NULL);
+		apol_vector_destroy(&terule_vector);
 		apol_terule_query_destroy(&terule_query);
 
 #ifdef LIBSEFS
@@ -552,7 +552,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 						item->test_result = 1;
 					}
 					if (!item->proof) {
-						if (!(item->proof = apol_vector_create())) {
+						if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 							error = errno;
 							ERR(policy, "%s", strerror(ENOMEM));
 							goto find_file_types_run_fail;
@@ -580,7 +580,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		type = NULL;
 		type_name = NULL;
 	}
-	apol_vector_destroy(&type_vector, NULL);
+	apol_vector_destroy(&type_vector);
 
 	/* results are valid at this point */
 	mod->result = res;
@@ -591,7 +591,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	free(buff);
-	apol_vector_destroy(&type_vector, NULL);
+	apol_vector_destroy(&type_vector);
 	sechk_result_destroy(&res);
 	errno = error;
 	return -1;
@@ -602,7 +602,7 @@ void find_file_types_data_free(void *data)
 	find_file_types_data_t *datum = (find_file_types_data_t *) data;
 
 	if (datum) {
-		apol_vector_destroy(&datum->file_type_attribs, NULL);
+		apol_vector_destroy(&datum->file_type_attribs);
 	}
 	free(data);
 }

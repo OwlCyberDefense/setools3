@@ -35,7 +35,7 @@ extern "C"
 #include <stdio.h>
 
 /**
- * Parse the file specified by syslog and puts all selinux audit
+ * Parse the file specified by syslog and put all selinux audit
  * messages into the log.  It is assumed that log will be created
  * before this function.  If the log already has messages, new
  * messages will be appended to it.  Afterwards all models watching
@@ -48,6 +48,22 @@ extern "C"
  * be set.
  */
 	extern int seaudit_log_parse(seaudit_log_t * log, FILE * syslog);
+
+/**
+ * Parse a string buffer representing a syslog (or just lines from it)
+ * and put all selinux audit messages into the log.  It is assumed
+ * that log will be created before this function.  If the log already
+ * has messages, new messages will be appended to it.  Afterwards all
+ * models watching this log will be notified of the changes.
+ *
+ * @param log Audit log to which append messages.
+ * @param buffer Buffer containing SELinux audit messages.
+ * @param bufsize Number of bytes in the buffer.
+ *
+ * @return 0 on success, > 0 on warnings, < 0 on error and errno will
+ * be set.
+ */
+	extern int seaudit_log_parse_buffer(seaudit_log_t * log, const char *buffer, const size_t bufsize);
 
 #ifdef  __cplusplus
 }

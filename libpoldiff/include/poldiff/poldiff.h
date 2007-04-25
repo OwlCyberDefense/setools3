@@ -1,8 +1,13 @@
 /**
  *  @file
- *  Public Interface for computing a semantic policy difference.
+ *  Public interface for computing semantic policy differences
+ *  between two policies.  The user loads two policies, the "original"
+ *  and "modified" policies, and then calls poldiff_create() to obtain
+ *  a poldiff object.  Next call poldiff_run() to actually execute the
+ *  differencing algorithm.  Results are retrieved via
+ *  poldiff_get_type_vector(), poldiff_get_avrule_vector(), and so
+ *  forth.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -66,18 +71,23 @@ extern "C"
 		POLDIFF_FORM_REMOVE_TYPE
 	} poldiff_form_e;
 
+#include <poldiff/attrib_diff.h>
+#include <poldiff/avrule_diff.h>
+#include <poldiff/cat_diff.h>
 #include <poldiff/bool_diff.h>
 #include <poldiff/class_diff.h>
-#include <poldiff/role_diff.h>
-#include <poldiff/rule_diff.h>
-#include <poldiff/user_diff.h>
-#include <poldiff/type_diff.h>
-#include <poldiff/attrib_diff.h>
+#include <poldiff/level_diff.h>
+#include <poldiff/range_diff.h>
+#include <poldiff/range_trans_diff.h>
 #include <poldiff/rbac_diff.h>
+#include <poldiff/role_diff.h>
+#include <poldiff/terule_diff.h>
+#include <poldiff/type_diff.h>
+#include <poldiff/user_diff.h>
 #include <poldiff/type_map.h>
 #include <poldiff/util.h>
 
-/* NOTE: while defined MLS amd OCONS are not currently supported */
+/* NOTE: while defined OCONS are not currently supported */
 #define POLDIFF_DIFF_CLASSES     0x00000001
 #define POLDIFF_DIFF_COMMONS     0x00000002
 #define POLDIFF_DIFF_TYPES       0x00000004
@@ -85,7 +95,7 @@ extern "C"
 #define POLDIFF_DIFF_ROLES       0x00000010
 #define POLDIFF_DIFF_USERS       0x00000020
 #define POLDIFF_DIFF_BOOLS       0x00000040
-#define POLDIFF_DIFF_SENS        0x00000080
+#define POLDIFF_DIFF_LEVELS      0x00000080
 #define POLDIFF_DIFF_CATS        0x00000100
 #define POLDIFF_DIFF_AVRULES     0x00000200
 #define POLDIFF_DIFF_TERULES     0x00000400
@@ -98,8 +108,8 @@ extern "C"
  */
 #define POLDIFF_DIFF_SYMBOLS (POLDIFF_DIFF_CLASSES|POLDIFF_DIFF_COMMONS|POLDIFF_DIFF_TYPES|POLDIFF_DIFF_ATTRIBS|POLDIFF_DIFF_ROLES|POLDIFF_DIFF_USERS|POLDIFF_DIFF_BOOLS)
 #define POLDIFF_DIFF_RULES (POLDIFF_DIFF_AVRULES|POLDIFF_DIFF_TERULES|POLDIFF_DIFF_ROLE_ALLOWS|POLDIFF_DIFF_ROLE_TRANS)
-#define POLDIFF_DIFF_RBAC (POLDIFF_DIFF_ROLES|POLDIFF_DIFF_ROLE_ALLOWS|POLDIFF_DIFF_ROLE_ALLOWS)
-#define POLDIFF_DIFF_MLS (POLDIFF_DIFF_SENS|POLDIFF_DIFF_CATS|POLDIFF_DIFF_RANGE_TRANS)
+#define POLDIFF_DIFF_RBAC (POLDIFF_DIFF_ROLES|POLDIFF_DIFF_ROLE_ALLOWS|POLDIFF_DIFF_ROLE_TRANS)
+#define POLDIFF_DIFF_MLS (POLDIFF_DIFF_LEVELS|POLDIFF_DIFF_CATS|POLDIFF_DIFF_RANGE_TRANS)
 #define POLDIFF_DIFF_OCONS 0
 #define POLDIFF_DIFF_REMAPPED (POLDIFF_DIFF_TYPES|POLDIFF_DIFF_ATTRIBS|POLDIFF_DIFF_AVRULES|POLDIFF_DIFF_TERULES|POLDIFF_DIFF_ROLES|POLDIFF_DIFF_ROLE_TRANS|POLDIFF_DIFF_RANGE_TRANS|POLDIFF_DIFF_OCONS)
 #define POLDIFF_DIFF_ALL (POLDIFF_DIFF_SYMBOLS|POLDIFF_DIFF_RULES|POLDIFF_DIFF_MLS|POLDIFF_DIFF_OCONS)
@@ -165,9 +175,25 @@ extern "C"
  *  number of items of form POLDIFF_FORM_ADDED, number of POLDIFF_FORM_REMOVED,
  *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
  *  number of POLDIFF_FORM_REMOVE_TYPE.
- *  @return 0 on success an < 0 on error; if the call fails, errno will be set.
+ *  @return 0 on success and < 0 on error; if the call fails, errno will be set.
  */
 	extern int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5]);
+
+/**
+ *  Enable line numbers for all rule differences.  If not called, line
+ *  numbers will not be available when displaying differences. This
+ *  function is safe to call multiple times and will have no effect
+ *  after the first time.  It also has no effect if one policy (or
+ *  both of them) does not support line numbers.  Be aware that if
+ *  line numbers will need to be re-enabled each time poldiff_run() is
+ *  called.
+ *
+ *  @param diff The policy difference structure.
+ *
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and the difference structure should be destroyed.
+ */
+	extern int poldiff_enable_line_numbers(poldiff_t * diff);
 
 #ifdef	__cplusplus
 }
