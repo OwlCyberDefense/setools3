@@ -132,8 +132,7 @@ char *seaudit_get_log_path(seaudit_t * s);
  * @param s seaudit object to query.
  *
  * @return Vector of sorted users, or NULL if no log is loaded.  The
- * caller must call apol_vector_destroy() upon the return value,
- * passing NULL as the second parameter.
+ * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *seaudit_get_log_users(seaudit_t * s);
 
@@ -145,8 +144,7 @@ apol_vector_t *seaudit_get_log_users(seaudit_t * s);
  * @param s seaudit object to query.
  *
  * @return Vector of sorted roles, or NULL if no log is loaded.  The
- * caller must call apol_vector_destroy() upon the return value,
- * passing NULL as the second parameter.
+ * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *seaudit_get_log_roles(seaudit_t * s);
 
@@ -158,8 +156,7 @@ apol_vector_t *seaudit_get_log_roles(seaudit_t * s);
  * @param s seaudit object to query.
  *
  * @return Vector of sorted types, or NULL if no log is loaded.  The
- * caller must call apol_vector_destroy() upon the return value,
- * passing NULL as the second parameter.
+ * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *seaudit_get_log_types(seaudit_t * s);
 
@@ -171,8 +168,7 @@ apol_vector_t *seaudit_get_log_types(seaudit_t * s);
  * @param s seaudit object to query.
  *
  * @return Vector of sorted classes, or NULL if no log is loaded.  The
- * caller must call apol_vector_destroy() upon the return value,
- * passing NULL as the second parameter.
+ * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *seaudit_get_log_classes(seaudit_t * s);
 

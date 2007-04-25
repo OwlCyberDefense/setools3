@@ -320,7 +320,7 @@ int qpol_syn_avrule_get_rule_type(qpol_policy_t * policy, qpol_syn_avrule_t * ru
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	if (internal_rule->specified == AVRULE_DONTAUDIT)
 		*rule_type = QPOL_RULE_DONTAUDIT;
@@ -343,7 +343,7 @@ int qpol_syn_avrule_get_source_type_set(qpol_policy_t * policy, qpol_syn_avrule_
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	*source_set = (qpol_type_set_t *) (&internal_rule->stypes);
 
@@ -363,7 +363,7 @@ int qpol_syn_avrule_get_target_type_set(qpol_policy_t * policy, qpol_syn_avrule_
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	*target_set = (qpol_type_set_t *) (&internal_rule->ttypes);
 
@@ -383,7 +383,7 @@ int qpol_syn_avrule_get_is_target_self(qpol_policy_t * policy, qpol_syn_avrule_t
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	if (internal_rule->flags & RULE_SELF)
 		*is_self = 1;
@@ -413,7 +413,7 @@ int qpol_syn_avrule_get_class_iter(qpol_policy_t * policy, qpol_syn_avrule_t * r
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 	srcs->head = srcs->cur = internal_rule->perms;
 
 	if (qpol_iterator_create(policy, (void *)srcs,
@@ -449,7 +449,7 @@ int qpol_syn_avrule_get_perm_iter(qpol_policy_t * policy, qpol_syn_avrule_t * ru
 	}
 
 	db = &policy->p->p;
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 	for (node = internal_rule->perms; node; node = node->next)
 		node_num++;
 
@@ -539,14 +539,14 @@ int qpol_syn_avrule_get_lineno(qpol_policy_t * policy, qpol_syn_avrule_t * rule,
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	*lineno = internal_rule->line;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_cond(qpol_policy_t * policy, qpol_syn_terule_t * rule, qpol_cond_t ** cond)
+int qpol_syn_avrule_get_cond(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_cond_t ** cond)
 {
 	if (cond)
 		*cond = NULL;
@@ -557,7 +557,7 @@ int qpol_syn_avrule_get_cond(qpol_policy_t * policy, qpol_syn_terule_t * rule, q
 		return STATUS_ERR;
 	}
 
-	*cond = (qpol_cond_t *) rule->cond;
+	*cond = (qpol_cond_t *) ((struct qpol_syn_rule *)rule)->cond;
 	return STATUS_SUCCESS;
 }
 
@@ -573,16 +573,16 @@ int qpol_syn_avrule_get_is_enabled(qpol_policy_t * policy, qpol_syn_avrule_t * r
 		return STATUS_ERR;
 	}
 
-	if (!rule->cond)
+	if (!((struct qpol_syn_rule *)rule)->cond)
 		*is_enabled = 1;
 	else {
-		truth = cond_evaluate_expr(&policy->p->p, rule->cond->expr);
+		truth = cond_evaluate_expr(&policy->p->p, ((struct qpol_syn_rule *)rule)->cond->expr);
 		if (truth < 0) {
 			ERR(policy, "%s", strerror(ERANGE));
 			errno = ERANGE;
 			return STATUS_ERR;
 		}
-		if (!rule->cond_branch)
+		if (!((struct qpol_syn_rule *)rule)->cond_branch)
 			*is_enabled = truth;
 		else
 			*is_enabled = truth ? 0 : 1;
@@ -605,7 +605,7 @@ int qpol_syn_terule_get_rule_type(qpol_policy_t * policy, qpol_syn_terule_t * ru
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	*rule_type = internal_rule->specified;
 
@@ -625,7 +625,7 @@ int qpol_syn_terule_get_source_type_set(qpol_policy_t * policy, qpol_syn_terule_
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	*source_set = (qpol_type_set_t *) (&internal_rule->stypes);
 
@@ -645,7 +645,7 @@ int qpol_syn_terule_get_target_type_set(qpol_policy_t * policy, qpol_syn_terule_
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	*target_set = (qpol_type_set_t *) (&internal_rule->ttypes);
 
@@ -674,7 +674,7 @@ int qpol_syn_terule_get_class_iter(qpol_policy_t * policy, qpol_syn_terule_t * r
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 	srcs->head = srcs->cur = internal_rule->perms;
 
 	if (qpol_iterator_create(policy, (void *)srcs,
@@ -704,7 +704,7 @@ int qpol_syn_terule_get_default_type(qpol_policy_t * policy, qpol_syn_terule_t *
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 	db = &policy->p->p;
 
 	/* since it is required that default be the same for all classes just return the first */
@@ -726,7 +726,7 @@ int qpol_syn_terule_get_lineno(qpol_policy_t * policy, qpol_syn_terule_t * rule,
 		return STATUS_ERR;
 	}
 
-	internal_rule = rule->rule;
+	internal_rule = ((struct qpol_syn_rule *)rule)->rule;
 
 	*lineno = internal_rule->line;
 
@@ -744,7 +744,7 @@ int qpol_syn_terule_get_cond(qpol_policy_t * policy, qpol_syn_terule_t * rule, q
 		return STATUS_ERR;
 	}
 
-	*cond = (qpol_cond_t *) rule->cond;
+	*cond = (qpol_cond_t *) ((struct qpol_syn_rule *)rule)->cond;
 	return STATUS_SUCCESS;
 }
 
@@ -760,16 +760,16 @@ int qpol_syn_terule_get_is_enabled(qpol_policy_t * policy, qpol_syn_terule_t * r
 		return STATUS_ERR;
 	}
 
-	if (!rule->cond)
+	if (!((struct qpol_syn_rule *)rule)->cond)
 		*is_enabled = 1;
 	else {
-		truth = cond_evaluate_expr(&policy->p->p, rule->cond->expr);
+		truth = cond_evaluate_expr(&policy->p->p, ((struct qpol_syn_rule *)rule)->cond->expr);
 		if (truth < 0) {
 			ERR(policy, "%s", strerror(ERANGE));
 			errno = ERANGE;
 			return STATUS_ERR;
 		}
-		if (!rule->cond_branch)
+		if (!((struct qpol_syn_rule *)rule)->cond_branch)
 			*is_enabled = truth;
 		else
 			*is_enabled = truth ? 0 : 1;

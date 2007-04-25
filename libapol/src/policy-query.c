@@ -7,7 +7,6 @@
  * results.  Searches are conjunctive -- all fields of the search
  * query must match for a datum to be added to the results query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -37,22 +36,6 @@
 
 /******************** misc helpers ********************/
 
-/**
- * Equivalent to the non-ANSI strdup() function.
- * @param p Policy handler.
- * @param s String to duplicate.
- * @return Pointer to newly allocated string, or NULL on error.
- */
-static char *apol_strdup(apol_policy_t * p, const char *s)
-{
-	char *t;
-	if ((t = malloc(strlen(s) + 1)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
-		return NULL;
-	}
-	return strcpy(t, s);
-}
-
 void apol_regex_destroy(regex_t ** regex)
 {
 	if (*regex != NULL) {
@@ -64,13 +47,16 @@ void apol_regex_destroy(regex_t ** regex)
 
 int apol_query_set(apol_policy_t * p, char **query_name, regex_t ** regex, const char *name)
 {
-	if (regex != NULL) {
-		apol_regex_destroy(regex);
-	}
-	free(*query_name);
-	*query_name = NULL;
-	if (name != NULL && name[0] != '\0' && ((*query_name) = apol_strdup(p, name)) == NULL) {
-		return -1;
+	if (*query_name != name) {
+		if (regex != NULL) {
+			apol_regex_destroy(regex);
+		}
+		free(*query_name);
+		*query_name = NULL;
+		if (name != NULL && name[0] != '\0' && ((*query_name) = strdup(name)) == NULL) {
+			ERR(p, "%s", strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -307,7 +293,7 @@ static int apol_query_append_type(apol_policy_t * p, apol_vector_t * v, qpol_typ
 apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
 						     unsigned int ta_flag)
 {
-	apol_vector_t *list = apol_vector_create();
+	apol_vector_t *list = apol_vector_create(NULL);
 	qpol_type_t *type;
 	regex_t *regex = NULL;
 	qpol_iterator_t *iter = NULL, *alias_iter = NULL;
@@ -428,7 +414,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 		}
 	}
 
-	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
+	apol_vector_sort_uniquify(list, NULL, NULL);
 	retval = 0;
       cleanup:
 	if (regex != NULL) {
@@ -438,8 +424,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&alias_iter);
 	if (retval < 0) {
-		apol_vector_destroy(&list, NULL);
-		list = NULL;
+		apol_vector_destroy(&list);
 		errno = error;
 	}
 	return list;
@@ -448,7 +433,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
 							 unsigned int ta_flag)
 {
-	apol_vector_t *list = apol_vector_create();
+	apol_vector_t *list = apol_vector_create(NULL);
 	qpol_type_t *type;
 	regex_t *regex = NULL;
 	qpol_iterator_t *iter = NULL, *alias_iter = NULL;
@@ -575,7 +560,7 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 		qpol_iterator_destroy(&iter);
 	}
 
-	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
+	apol_vector_sort_uniquify(list, NULL, NULL);
 	retval = 0;
       cleanup:
 	if (regex != NULL) {
@@ -585,7 +570,7 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&alias_iter);
 	if (retval < 0) {
-		apol_vector_destroy(&list, NULL);
+		apol_vector_destroy(&list);
 		list = NULL;
 		errno = error;
 	}
@@ -594,14 +579,14 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 
 apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *symbol, int do_regex)
 {
-	apol_vector_t *list = apol_vector_create();
+	apol_vector_t *list = apol_vector_create(NULL);
 	qpol_role_t *role;
 	regex_t *regex = NULL;
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
 
 	if (list == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 
@@ -633,7 +618,7 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *sy
 		}
 		qpol_iterator_destroy(&iter);
 	}
-	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
+	apol_vector_sort_uniquify(list, NULL, NULL);
 	retval = 0;
       cleanup:
 	if (regex != NULL) {
@@ -642,7 +627,7 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *sy
 	}
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
-		apol_vector_destroy(&list, NULL);
+		apol_vector_destroy(&list);
 		list = NULL;
 	}
 	return list;
@@ -650,12 +635,12 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *sy
 
 apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t * p, apol_vector_t * classes)
 {
-	apol_vector_t *list = apol_vector_create();
+	apol_vector_t *list = apol_vector_create(NULL);
 	size_t i;
 	int retval = -1;
 
 	if (list == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 
@@ -669,11 +654,11 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t * p, apol_ve
 			}
 		}
 	}
-	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
+	apol_vector_sort_uniquify(list, NULL, NULL);
 	retval = 0;
       cleanup:
 	if (retval < 0) {
-		apol_vector_destroy(&list, NULL);
+		apol_vector_destroy(&list);
 		list = NULL;
 	}
 	return list;
@@ -686,8 +671,8 @@ apol_vector_t *apol_query_expand_type(apol_policy_t * p, qpol_type_t * t)
 	unsigned char isattr;
 	qpol_iterator_t *iter = NULL;
 
-	if ((v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (qpol_type_get_isattr(p->p, t, &isattr) < 0) {
@@ -717,7 +702,7 @@ apol_vector_t *apol_query_expand_type(apol_policy_t * p, qpol_type_t * t)
       cleanup:
 	qpol_iterator_destroy(&iter);
 	if (retval != 0) {
-		apol_vector_destroy(&v, NULL);
+		apol_vector_destroy(&v);
 		return NULL;
 	}
 	return v;
@@ -737,7 +722,7 @@ apol_obj_perm_t *apol_obj_perm_create(void)
 	if (!op)
 		return NULL;
 
-	op->perms = apol_vector_create();
+	op->perms = apol_vector_create(free);
 	if (!(op->perms)) {
 		free(op);
 		return NULL;
@@ -751,7 +736,7 @@ void apol_obj_perm_free(void *op)
 	apol_obj_perm_t *inop = (apol_obj_perm_t *) op;
 	if (inop != NULL) {
 		free(inop->obj_class);
-		apol_vector_destroy(&inop->perms, free);
+		apol_vector_destroy(&inop->perms);
 		free(inop);
 	}
 }
@@ -798,14 +783,16 @@ int apol_obj_perm_append_perm(apol_obj_perm_t * op, const char *perm)
 	}
 
 	if (perm) {
-		if (!(tmp = strdup(perm)))
+		if ((tmp = strdup(perm)) == NULL || (op->perms == NULL && (op->perms = apol_vector_create(free)) == NULL)) {
+			free(tmp);
 			return -1;
+		}
 		if (apol_vector_append_unique(op->perms, tmp, apol_str_strcmp, NULL) < 0) {
 			free(tmp);
 			return -1;
 		}
 	} else {
-		apol_vector_destroy(&op->perms, free);
+		apol_vector_destroy(&op->perms);
 	}
 
 	return 0;

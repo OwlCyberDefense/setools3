@@ -182,15 +182,15 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 
 	apol_class_get_by_query(p, NULL, &vec);
 	num_classes = apol_vector_get_size(vec);
-	apol_vector_destroy(&vec, NULL);
+	apol_vector_destroy(&vec);
 
 	apol_common_get_by_query(p, NULL, &vec);
 	num_commons = apol_vector_get_size(vec);
-	apol_vector_destroy(&vec, NULL);
+	apol_vector_destroy(&vec);
 
 	apol_perm_get_by_query(p, NULL, &vec);
 	num_perms = apol_vector_get_size(vec);
-	apol_vector_destroy(&vec, NULL);
+	apol_vector_destroy(&vec);
 
 	contents = g_strdup_printf("\nNumber of Classes and Permissions:\n"
 				   "\tObject Classes: %zd\n"
@@ -200,11 +200,11 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 
 	apol_type_get_by_query(p, NULL, &vec);
 	num_types = apol_vector_get_size(vec);
-	apol_vector_destroy(&vec, NULL);
+	apol_vector_destroy(&vec);
 
 	apol_attr_get_by_query(p, NULL, &vec);
 	num_attribs = apol_vector_get_size(vec);
-	apol_vector_destroy(&vec, NULL);
+	apol_vector_destroy(&vec);
 
 	contents = g_strdup_printf("\nNumber of Types and Attributes:\n"
 				   "\tTypes: %zd\n" "\tAttributes: %zd\n", num_types, num_attribs);
@@ -248,7 +248,7 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 
 	apol_role_get_by_query(p, NULL, &vec);
 	num_roles = apol_vector_get_size(vec);
-	apol_vector_destroy(&vec, NULL);
+	apol_vector_destroy(&vec);
 
 	qpol_policy_get_role_allow_iter(q, &i);
 	qpol_iterator_get_size(i, &num_roleallow);
@@ -266,11 +266,11 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 
 	apol_user_get_by_query(p, NULL, &vec);
 	num_users = apol_vector_get_size(vec);
-	apol_vector_destroy(&vec, NULL);
+	apol_vector_destroy(&vec);
 
 	apol_bool_get_by_query(p, NULL, &vec);
 	num_bools = apol_vector_get_size(vec);
-	apol_vector_destroy(&vec, NULL);
+	apol_vector_destroy(&vec);
 
 	contents = g_strdup_printf("\nNumber of Users: %d\n" "\nNumber of Booleans: %d\n", num_users, num_bools);
 	gtk_text_buffer_insert(view->stats, &iter, contents, -1);

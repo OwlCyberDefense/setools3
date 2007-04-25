@@ -87,8 +87,8 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
 
     set primary_f [frame $f.primary]
     pack $primary_f -padx 4 -pady 8 -expand 0 -fill x
-    set l [label $primary_f.l -text "Policy Filename:"]
-    pack $l -anchor w
+    set widgets(main_label) [label $primary_f.l -text "Policy Filename:"]
+    pack $widgets(main_label) -anchor w
     frame $primary_f.f
     pack $primary_f.f -expand 1 -fill x
     set e [entry $primary_f.f.e -width 32 -bg white \
@@ -121,6 +121,8 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     set widgets(bb) [ButtonBox $modules_f.bb -homogeneous 1 -orient vertical -pady 2]
     $widgets(bb) add -text "Add" -command Apol_Open_Policy_Dialog::browseModule
     $widgets(bb) add -text "Remove" -command Apol_Open_Policy_Dialog::removeModule -state disabled
+    $widgets(bb) add -text "Import" -command Apol_Open_Policy_Dialog::importList
+    $widgets(bb) add -text "Export" -command Apol_Open_Policy_Dialog::exportList -state disabled
     pack $widgets(bb) -side right -expand 0 -anchor n -padx 4 -pady 10
 
     set widgets(listboxes) [list $ml $vl $pl]
@@ -134,31 +136,41 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
 
     trace add variable Apol_Open_Policy_Dialog::vars(path_type) write \
         [list Apol_Open_Policy_Dialog::togglePathType \
-             [list $mlabel $vlabel $plabel] $dis_bg $widgets(bb)]
+             [list $mlabel $vlabel $plabel] $dis_bg]
     $dialog add -text "Ok" -command Apol_Open_Policy_Dialog::tryOpenPolicy \
         -state disabled
     $dialog add -text "Cancel"
 }
 
 proc Apol_Open_Policy_Dialog::validateEntryKey {newvalue} {
+    variable vars
     variable dialog
+    variable widgets
     if {$newvalue == {}} {
         $dialog itemconfigure 0 -state disabled
+        $widgets(bb) itemconfigure 3 -state disabled
     } else {
         $dialog itemconfigure 0 -state normal
+        if {$vars(path_type) == "modular"} {
+            $widgets(bb) itemconfigure 3 -state normal
+        } else {
+            $widgets(bb) itemconfigure 3 -state disabled
+        }
     }
     return 1
 }
 
-proc Apol_Open_Policy_Dialog::togglePathType {labels disabled_bg bb name1 name2 op} {
+proc Apol_Open_Policy_Dialog::togglePathType {labels disabled_bg name1 name2 op} {
     variable vars
     variable widgets
     if {$vars(path_type) == "modular"} {
         set state normal
         set bg white
+        $widgets(main_label) configure -text "Base Filename:"
     } else {
         set state disabled
         set bg $disabled_bg
+        $widgets(main_label) configure -text "Policy Filename:"
     }
     foreach w $labels {
         $w configure -state $state
@@ -166,11 +178,16 @@ proc Apol_Open_Policy_Dialog::togglePathType {labels disabled_bg bb name1 name2 
     foreach w $widgets(listboxes) {
         $w configure -state $state -bg $bg
     }
-    $bb configure -state $state
+    $widgets(bb) configure -state $state
     if {$state == "normal" && [[lindex $widgets(listboxes) 0] curselection] > 0} {
-        $bb itemconfigure 1 -state normal
+        $widgets(bb) itemconfigure 1 -state normal
     } else {
-        $bb itemconfigure 1 -state disabled
+        $widgets(bb) itemconfigure 1 -state disabled
+    }
+    if {$state == "normal" && $vars(primary_file) != {}} {
+        $widgets(bb) itemconfigure 3 -state normal
+    } else {
+        $widgets(bb) itemconfigure 3 -state disabled
     }
 }
 
@@ -193,13 +210,20 @@ proc Apol_Open_Policy_Dialog::browsePrimary {} {
 proc Apol_Open_Policy_Dialog::browseModule {} {
     variable vars
     variable dialog
-    variable widgets
-    set f [tk_getOpenFile -initialdir [file dirname $vars(last_module)] \
-               -initialfile $vars(last_module) -parent $dialog \
-               -title "Open Module"]
-    if {$f == {}} {
+    set paths [tk_getOpenFile -initialdir [file dirname $vars(last_module)] \
+                   -initialfile $vars(last_module) -parent $dialog \
+                   -title "Open Module" -multiple 1]
+    if {$paths == {}} {
         return
     }
+    foreach f $paths {
+        addModule $f
+    }
+}
+
+proc Apol_Open_Policy_Dialog::addModule {f} {
+    variable vars
+    variable widgets
     if {[lsearch $vars(mod_paths) $f] >= 0} {
         tk_messageBox -icon error -type ok -title "Open Module" -message "Module $f was already added."
         return
@@ -231,6 +255,48 @@ proc Apol_Open_Policy_Dialog::removeModule {} {
         }
     }
     $widgets(bb) itemconfigure 1 -state disabled
+}
+
+proc Apol_Open_Policy_Dialog::importList {} {
+    variable vars
+    variable dialog
+    variable widgets
+    set f [tk_getOpenFile -initialdir [file dirname $vars(primary_file)] \
+               -parent $dialog -title "Import Policy List"]
+    if {$f == {}} {
+        return
+    }
+    if {[catch {apol_OpenPolicyList $f} ppath]} {
+        tk_messageBox -icon error -type ok -title "Import Policy List" \
+            -message "Error importing policy list $f: $ppath"
+        return
+    }
+    foreach lb $widgets(listboxes) {
+        $lb delete 0 end
+    }
+    foreach {path_type base mods} $ppath {break}
+    set vars(path_type) $path_type
+    set vars(primary_file) $base
+    validateEntryKey $base
+    if {$path_type == "modular"} {
+        foreach m $mods {
+            addModule $m
+        }
+    }
+}
+
+proc Apol_Open_Policy_Dialog::exportList {} {
+    variable vars
+    variable dialog
+    set f [tk_getSaveFile -parent $dialog -title "Export Policy List"]
+    if {$f == {}} {
+        return
+    }
+    set path [list $vars(path_type) $vars(primary_file) $vars(mod_paths)]
+    if {[catch {apol_SavePolicyList $path $f} err]} {
+        tk_messageBox -icon error -type ok -title "Export Policy List" \
+            -message "Error exporting policy list $f: $err"
+    }
 }
 
 proc Apol_Open_Policy_Dialog::multiscroll {args} {

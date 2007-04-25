@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Public Interface for computing a semantic differences in attribs.
+ *  Public interface for computing semantic differences in attributes.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -38,7 +37,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for attribs.
+ *  form for attributes.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -51,11 +50,11 @@ extern "C"
 	extern void poldiff_attrib_get_stats(poldiff_t * diff, size_t stats[5]);
 
 /**
- *  Get the vector of attrib differences from the attrib difference
- *  summary.
+ *  Get the vector of attribute differences from the attribute
+ *  difference summary.
  *
  *  @param diff The policy difference structure associated with the
- *  attrib difference summary.
+ *  attribute difference summary.
  *
  *  @return A vector of elements of type poldiff_attrib_t, or NULL on
  *  error.  The caller should <b>not</b> destroy the vector
@@ -65,32 +64,33 @@ extern "C"
 
 /**
  *  Obtain a newly allocated string representation of a difference in
- *  a attrib.
+ *  a attribute.
  *
- *  @param diff The policy difference structure associated with the attrib.
- *  @param attrib The attrib from which to generate the string.
+ *  @param diff The policy difference structure associated with the
+ *  attribute.
+ *  @param attrib The attribute from which to generate the string.
  *
- *  @return A string representation of attrib difference; the caller is
- *  responsible for free()ing this string.  On error, return NULL and
- *  set errno.
+ *  @return A string representation of attribute difference; the
+ *  caller is responsible for free()ing this string.  On error, return
+ *  NULL and set errno.
  */
 	extern char *poldiff_attrib_to_string(poldiff_t * diff, const void *attrib);
 
 /**
- *  Get the name of the attrib from a attrib diff.
+ *  Get the name of the attribute from an attribute diff.
  *
- *  @param attrib The attrib from which to get the name.
+ *  @param attrib The attribute from which to get the name.
  *
- *  @return Name of the attrib on success and NULL on failure; if the
- *  call fails, errno will be set.  The caller should not free the
+ *  @return Name of the attribute on success and NULL on failure; if
+ *  the call fails, errno will be set.  The caller should not free the
  *  returned string.
  */
 	extern const char *poldiff_attrib_get_name(const poldiff_attrib_t * attrib);
 
 /**
- *  Get the form of difference from a attrib diff.
+ *  Get the form of difference from an attribute diff.
  *
- *  @param attrib The attrib from which to get the difference form.
+ *  @param attrib The attribute from which to get the difference form.
  *
  *  @return The form of difference (one of POLDIFF_FORM_*) or
  *  POLDIFF_FORM_NONE on error.  If the call fails, errno will be set.
@@ -98,28 +98,30 @@ extern "C"
 	extern poldiff_form_e poldiff_attrib_get_form(const void *attrib);
 
 /**
- *  Get a vector of types added to the attrib.
+ *  Get a vector of types added to the attribute.
  *
- *  @param attrib The attrib diff from which to get the types vector.
+ *  @param attrib The attribute diff from which to get the types
+ *  vector.
  *
- *  @return A vector of type names (type char *) that are allowed to
- *  the attrib in the modified policy.  If no types were added the size
- *  of the returned vector will be 0.  The caller must not destroy
- *  this vector.  On error, errno will be set.
- */
-	extern apol_vector_t *poldiff_attrib_get_added_attribs(const poldiff_attrib_t * attrib);
-
-/**
- *  Get a vector of types removed from the attrib.
- *
- *  @param attrib The attrib diff from which to get the types vector.
- *
- *  @return A vector of type names (type char *) that are allowed to
- *  the attrib in the original policy.  If no types were removed the
+ *  @return A vector of type names (type char *) that are members of
+ *  the attribute in the modified policy.  If no types were added the
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-	extern apol_vector_t *poldiff_attrib_get_removed_attribs(const poldiff_attrib_t * attrib);
+	extern apol_vector_t *poldiff_attrib_get_added_types(const poldiff_attrib_t * attrib);
+
+/**
+ *  Get a vector of types removed from the attribute.
+ *
+ *  @param attrib The attribute diff from which to get the types
+ *  vector.
+ *
+ *  @return A vector of type names (type char *) that are members of
+ *  the attribute in the original policy.  If no types were removed
+ *  the size of the returned vector will be 0.  The caller must not
+ *  destroy this vector.  On error, errno will be set.
+ */
+	extern apol_vector_t *poldiff_attrib_get_removed_types(const poldiff_attrib_t * attrib);
 
 #ifdef	__cplusplus
 }

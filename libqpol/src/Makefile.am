@@ -1,7 +1,7 @@
 sepol_srcdir = @sepol_srcdir@
 
 lib_LIBRARIES = libqpol.a
-qpolso_DATA = @libqpol_soname@
+qpolso_DATA = libqpol.so.@libqpol_version@
 qpolsodir = $(libdir)
 
 tmp_sepol = ./tmp_sepol
@@ -22,6 +22,7 @@ libqpol_a_SOURCES = \
 	constraint_query.c \
 	context_query.c \
 	expand.c \
+	expand.h \
 	fs_use_query.c \
 	genfscon_query.c \
 	isid_query.c \
@@ -66,11 +67,13 @@ $(tmp_sepol): $(sepol_srcdir)/libsepol.a
 
 $(qpolso_DATA): $(tmp_sepol) $(libqpol_so_OBJS) libqpol.map
 	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/libsepol.a -Wl,--no-whole-archive @SELINUX_LIB_FLAG@ -lselinux -lsepol
+	$(LN_S) -f $@ @libqpol_soname@
 	$(LN_S) -f $@ libqpol.so
 
 libqpol.so: $(qpolso_DATA)
 
 install-data-hook:
+	cd $(DESTDIR)$(qpolsodir) && $(LN_S) -f $(qpolso_DATA) @libqpol_soname@
 	cd $(DESTDIR)$(qpolsodir) && $(LN_S) -f $(qpolso_DATA) libqpol.so
 
 CLEANFILES = policy_parse.h policy_scan.c policy_parse.c
@@ -79,7 +82,7 @@ clean-local:
 	-rm -rf $(tmp_sepol)
 
 mostlyclean-local:
-	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so $(qpolso_DATA)
+	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so @libqpol_soname@ $(qpolso_DATA)
 
 uninstall-local:
-	-rm -rf $(DESTDIR)$(qpolsodir)/libqpol.so
+	-rm -rf $(DESTDIR)$(qpolsodir)/$(qpolso_DATA) $(DESTDIR)$(qpolsodir)/@libqpol_soname@ $(DESTDIR)$(qpolsodir)/libqpol.so

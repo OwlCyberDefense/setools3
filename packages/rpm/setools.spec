@@ -1,50 +1,44 @@
 Name: setools
-Version: 3.1
-Release: 1
+Version: 3.2
+Release: 0
 Vendor: Tresys Technology, LLC
-Packager: Jason Tang <jtang@tresys.com>
+Packager: Jason Tang <selinux@tresys.com>
 License: GPL
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Source: setools-3.1.tar.gz
+Source: setools-3.2.tar.gz
 AutoReqProv: no
-Summary: Policy analysis tools for SELinux.
+Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
+Requires: setools-libs = %{version} setools-gui = %{version} setools-console = %{version}
 
 # disable auto dependency generation because they are explicitly listed
 %define __find_requires %{nil}
 
+%define libqpol_ver 1.2
+%define libapol_ver 4.0
+%define libpoldiff_ver 1.2
+%define libsefs_ver 3.1
+%define libseaudit_ver 4.1
+
 %description
 SETools is a collection of graphical tools, command-line tools, and
-libraries designed to facilitate SELinux policy analysis.  The
-following are included:
+libraries designed to facilitate SELinux policy analysis.
 
-  apol          Tcl/Tk-based policy analysis tool
-  awish         customized wish interpreter
-  libapol       policy analysis library
-  libapol-tcl   bindings between apol and libapol
-  libpoldiff    semantic policy difference library
-  libqpol       library that abstracts policy internals
-  libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
-  seaudit       audit log analysis tools: seaudit and seaudit-report
-  sechecker     SELinux policy checking tool
-  secmds        command line tools: seinfo, sesearch, findcon,
-                replcon, indexcon, and searchcon
-  sediff        semantic policy difference tools: sediff and sediffx
+This meta-package depends upon the main packages necessary to run
+SETools.
 
 %package libs
 License: LGPL
-Summary: Policy analysis support libraries for SELinux.
+Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
-Provides: libqpol = 1.1 libapol = 3.1 libpoldiff = 1.1 libsefs = 3.0.2 libseaudit = 4.0.0
-BuildPrereq: flex, bison, pkgconfig
+Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libsefs = %{libsefs_ver} libseaudit = %{libseaudit_ver}
+BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
-BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
-Prereq: /sbin/ldconfig
-Conflicts: setools
+BuildRequires: gtk2-devel >= 2.8 libglade2-devel libxml2-devel
+BuildRequires: autoconf >= 2.59 automake
 
 %description libs
 SETools is a collection of graphical tools, command-line tools, and
@@ -58,10 +52,49 @@ This package includes the following run-time libraries:
   libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux filesystem database library
 
+%package libs-python
+License: LGPL
+Summary: Python bindings for SELinux policy analysis
+Group: Development/Languages
+Requires: setools-libs = %{version} python2 >= 2.3
+Provides: libqpol-python = %{libqpol_ver} libapol-python = %{libapol_ver} libpoldiff-python = %{libpoldiff_ver} libseaudit-python = %{libseaudit_ver}
+BuildRequires: python2-devel >= 2.3 swig >= 1.3.28
+
+%description libs-python
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes Python bindings for the following libraries:
+
+  libapol       policy analysis library
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    parse and filter SELinux audit messages in log files
+
+%package libs-java
+License: LGPL
+Summary: Java bindings for SELinux policy analysis
+Group: Development/Languages
+Requires: setools-libs = %{version} java >= 1.2
+Provides: libqpol-java = %{libqpol_ver} libapol-java = %{libapol_ver} libpoldiff-java = %{libpoldiff_ver} libseaudit-java = %{libseaudit_ver}
+BuildRequires: java-devel >= 1.2 swig >= 1.3.28
+
+%description libs-java
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes Java bindings for the following libraries:
+
+  libapol       policy analysis library
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    parse and filter SELinux audit messages in log files
+
 %package devel
-Summary: Policy analysis development files for SELinux.
-Group: System Environment/Libraries
-Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
+License: LGPL
+Summary: Policy analysis development files for SELinux
+Group: Development/Libraries
+Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-libs = %{version}
 
 %description devel
 SETools is a collection of graphical tools, command-line tools, and
@@ -70,6 +103,7 @@ libraries designed to facilitate SELinux policy analysis.
 This package includes header files and archives for the following
 libraries:
 
+  awish         customized wish interpreter for apol development
   libapol       policy analysis library
   libapol-tcl   bindings between apol and libapol
   libpoldiff    semantic policy difference library
@@ -79,9 +113,9 @@ libraries:
 
 %package console
 AutoReqProv: no
-Summary: Policy analysis command-line tools for SELinux.
+Summary: Policy analysis command-line tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 3.1 libpoldiff >= 1.1 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.1 libseaudit >= 4.0
 Requires: libselinux >= 1.30
 
 %description console
@@ -98,11 +132,11 @@ This package includes the following console tools:
 
 %package gui
 AutoReqProv: no
-Summary: Policy analysis graphical tools for SELinux.
+Summary: Policy analysis graphical tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 3.1 libpoldiff >= 1.1 libsefs >= 3.0 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.1
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
-Requires: glib >= 1.2 gtk2 >= 2.4 gdk-pixbuf libxml2 libglade2
+Requires: glib2 gtk2 >= 2.8 libxml2 libglade2
 
 %description gui
 SETools is a collection of graphical tools, command-line tools, and
@@ -111,21 +145,24 @@ libraries designed to facilitate SELinux policy analysis.
 This package includes the following graphical tools:
 
   apol          Tcl/Tk-based policy analysis tool
-  awish         customized wish interpreter
   seaudit       audit log analysis tool
   sediffx       semantic policy difference tool
+
+%define setoolsdir %{_datadir}/setools-%{version}
+%define pkgpyexecdir %{_libdir}/python?.?/site-packages/setools
+%define pkgpythondir %{_exec_prefix}/lib*/python?.?/site-packages/setools
+%define javalibdir %{_libdir}/setools
 
 %prep
 %setup -q
 
 %build
-%configure --disable-bwidget-check --disable-selinux-check
-make
+%configure --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java
+make %{?_smp_mflags}
 
 %install
 rm -rf ${RPM_BUILD_ROOT}
-%makeinstall
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/lib*so
+make DESTDIR=${RPM_BUILD_ROOT} install
 mkdir -p ${RPM_BUILD_ROOT}/usr/share/pixmaps
 install -d -m 755 ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d
 install -m 644 packages/rpm/seaudit.pam ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d/seaudit
@@ -144,18 +181,82 @@ ln -sf consolehelper seaudit
 %clean
 rm -rf ${RPM_BUILD_ROOT}
 
-%files libs
-%defattr(-,root,root)
-%{_libdir}/libqpol.so.1
-%{_libdir}/libapol.so.3.1
-%{_libdir}/libpoldiff.so.1.1
-%{_libdir}/libsefs.so.3
-%{_libdir}/libseaudit.so.4
-%{_datadir}/setools-3.1/seaudit-report.conf
-%{_datadir}/setools-3.1/seaudit-report.css
+%files
 %doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
 
+%files libs
+%defattr(755,root,root)
+%{_libdir}/libqpol.so.%{libqpol_ver}
+%{_libdir}/libqpol.so.1
+%{_libdir}/libqpol.so
+%{_libdir}/libapol.so.%{libapol_ver}
+%{_libdir}/libapol.so.4
+%{_libdir}/libapol.so
+%{_libdir}/libpoldiff.so.%{libpoldiff_ver}
+%{_libdir}/libpoldiff.so.1
+%{_libdir}/libpoldiff.so
+%{_libdir}/libsefs.so.%{libsefs_ver}
+%{_libdir}/libsefs.so.3
+%{_libdir}/libsefs.so
+%{_libdir}/libseaudit.so.%{libseaudit_ver}
+%{_libdir}/libseaudit.so.4
+%{_libdir}/libseaudit.so
+%defattr(-, root, root)
+%{setoolsdir}/seaudit-report.conf
+%{setoolsdir}/seaudit-report.css
+
+%files libs-python
+%defattr(-,root,root)
+%{pkgpythondir}/__init__.py
+%{pkgpythondir}/__init__.pyc
+%{pkgpythondir}/__init__.pyo
+%{pkgpythondir}/qpol.py
+%{pkgpythondir}/qpol.pyc
+%{pkgpythondir}/qpol.pyo
+%{pkgpyexecdir}/_qpol.so.%{libqpol_ver}
+%{pkgpyexecdir}/_qpol.so.1
+%attr(755,root,root) %{pkgpyexecdir}/_qpol.so
+%{pkgpythondir}/apol.py
+%{pkgpythondir}/apol.pyc
+%{pkgpythondir}/apol.pyo
+%{pkgpyexecdir}/_apol.so.%{libapol_ver}
+%{pkgpyexecdir}/_apol.so.4
+%attr(755,root,root) %{pkgpyexecdir}/_apol.so
+%{pkgpythondir}/poldiff.py
+%{pkgpythondir}/poldiff.pyc
+%{pkgpythondir}/poldiff.pyo
+%{pkgpyexecdir}/_poldiff.so.%{libpoldiff_ver}
+%{pkgpyexecdir}/_poldiff.so.1
+%attr(755,root,root) %{pkgpyexecdir}/_poldiff.so
+%{pkgpythondir}/seaudit.py
+%{pkgpythondir}/seaudit.pyc
+%{pkgpythondir}/seaudit.pyo
+%{pkgpyexecdir}/_seaudit.so.%{libseaudit_ver}
+%{pkgpyexecdir}/_seaudit.so.4
+%attr(755,root,root) %{pkgpyexecdir}/_seaudit.so
+
+%files libs-java
+%defattr(-,root,root)
+%{_libdir}/libjqpol.so.%{libqpol_ver}
+%{_libdir}/libjqpol.so.1
+%{_libdir}/libjqpol.so
+%{_libdir}/libjapol.so.%{libapol_ver}
+%{_libdir}/libjapol.so.4
+%{_libdir}/libjapol.so
+%{_libdir}/libjpoldiff.so.%{libpoldiff_ver}
+%{_libdir}/libjpoldiff.so.1
+%{_libdir}/libjpoldiff.so
+%{_libdir}/libjseaudit.so.%{libseaudit_ver}
+%{_libdir}/libjseaudit.so.4
+%{_libdir}/libjseaudit.so
+%{javalibdir}/qpol.jar
+%{javalibdir}/apol.jar
+%{javalibdir}/poldiff.jar
+%{javalibdir}/seaudit.jar
+
 %files devel
+%defattr(-,root,root)
+%{_bindir}/awish
 %{_libdir}/libqpol.a
 %{_libdir}/libapol.a
 %{_libdir}/libpoldiff.a
@@ -168,7 +269,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/qpol/cond_query.h
 %{_includedir}/qpol/constraint_query.h
 %{_includedir}/qpol/context_query.h
-%{_includedir}/qpol/expand.h
 %{_includedir}/qpol/fs_use_query.h
 %{_includedir}/qpol/genfscon_query.h
 %{_includedir}/qpol/isid_query.h
@@ -206,7 +306,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/apol/policy.h
 %{_includedir}/apol/policy-path.h
 %{_includedir}/apol/policy-query.h
-%{_includedir}/apol/rangetrans-query.h
+%{_includedir}/apol/range_trans-query.h
 %{_includedir}/apol/rbacrule-query.h
 %{_includedir}/apol/relabel-analysis.h
 %{_includedir}/apol/render.h
@@ -219,11 +319,16 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/apol/vector.h
 %{_includedir}/poldiff/poldiff.h
 %{_includedir}/poldiff/attrib_diff.h
+%{_includedir}/poldiff/avrule_diff.h
 %{_includedir}/poldiff/bool_diff.h
+%{_includedir}/poldiff/cat_diff.h
 %{_includedir}/poldiff/class_diff.h
+%{_includedir}/poldiff/level_diff.h
+%{_includedir}/poldiff/range_diff.h
+%{_includedir}/poldiff/range_trans_diff.h
 %{_includedir}/poldiff/rbac_diff.h
 %{_includedir}/poldiff/role_diff.h
-%{_includedir}/poldiff/rule_diff.h
+%{_includedir}/poldiff/terule_diff.h
 %{_includedir}/poldiff/user_diff.h
 %{_includedir}/poldiff/type_diff.h
 %{_includedir}/poldiff/type_map.h
@@ -245,6 +350,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/seaudit/util.h
 
 %files console
+%defattr(-,root,root)
 %{_bindir}/seinfo
 %{_bindir}/sesearch
 %{_bindir}/indexcon
@@ -254,12 +360,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/sechecker
 %{_bindir}/sediff
 %{_bindir}/seaudit-report
-%{_datadir}/setools-3.1/sechecker-profiles/all-checks.sechecker
-%{_datadir}/setools-3.1/sechecker-profiles/analysis-checks.sechecker
-%{_datadir}/setools-3.1/sechecker-profiles/devel-checks.sechecker
-%{_datadir}/setools-3.1/sechecker-profiles/sechecker.dtd
-%{_datadir}/setools-3.1/sechecker_help.txt
-%{_datadir}/setools-3.1/seaudit-report-service
+%{setoolsdir}/sechecker-profiles/all-checks.sechecker
+%{setoolsdir}/sechecker-profiles/analysis-checks.sechecker
+%{setoolsdir}/sechecker-profiles/devel-checks.sechecker
+%{setoolsdir}/sechecker-profiles/sechecker.dtd
+%{setoolsdir}/sechecker_help.txt
+%{setoolsdir}/seaudit-report-service
 %{_mandir}/man1/findcon.1.gz
 %{_mandir}/man1/indexcon.1.gz
 %{_mandir}/man1/replcon.1.gz
@@ -271,34 +377,34 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_mandir}/man8/seaudit-report.8.gz
 
 %files gui
+%defattr(-,root,root)
 %{_bindir}/seaudit
 %{_bindir}/sediffx
 %{_bindir}/apol
-%{_bindir}/awish
-%{_datadir}/setools-3.1/sediff_help.txt
-%{_datadir}/setools-3.1/sediffx.glade
-%{_datadir}/setools-3.1/sediffx.png
-%{_datadir}/setools-3.1/sediffx-small.png
-%{_datadir}/setools-3.1/apol_help.txt
-%{_datadir}/setools-3.1/domaintrans_help.txt
-%{_datadir}/setools-3.1/file_relabel_help.txt
-%{_datadir}/setools-3.1/infoflow_help.txt
-%{_datadir}/setools-3.1/types_relation_help.txt
-%{_datadir}/setools-3.1/apol_perm_mapping_ver12
-%{_datadir}/setools-3.1/apol_perm_mapping_ver15
-%{_datadir}/setools-3.1/apol_perm_mapping_ver16
-%{_datadir}/setools-3.1/apol_perm_mapping_ver17
-%{_datadir}/setools-3.1/apol_perm_mapping_ver18
-%{_datadir}/setools-3.1/apol_perm_mapping_ver19
-%{_datadir}/setools-3.1/apol_perm_mapping_ver20
-%{_datadir}/setools-3.1/apol_perm_mapping_ver21
-%{_datadir}/setools-3.1/apol.gif
-%{_datadir}/setools-3.1/apol.tcl
-%{_datadir}/setools-3.1/seaudit.glade
-%{_datadir}/setools-3.1/seaudit_help.txt
-%{_datadir}/setools-3.1/seaudit.png
-%{_datadir}/setools-3.1/seaudit-small.png
-%{_datadir}/setools-3.1/dot_seaudit
+%{setoolsdir}/sediff_help.txt
+%{setoolsdir}/sediffx.glade
+%{setoolsdir}/sediffx.png
+%{setoolsdir}/sediffx-small.png
+%{setoolsdir}/apol_help.txt
+%{setoolsdir}/domaintrans_help.txt
+%{setoolsdir}/file_relabel_help.txt
+%{setoolsdir}/infoflow_help.txt
+%{setoolsdir}/types_relation_help.txt
+%{setoolsdir}/apol_perm_mapping_ver12
+%{setoolsdir}/apol_perm_mapping_ver15
+%{setoolsdir}/apol_perm_mapping_ver16
+%{setoolsdir}/apol_perm_mapping_ver17
+%{setoolsdir}/apol_perm_mapping_ver18
+%{setoolsdir}/apol_perm_mapping_ver19
+%{setoolsdir}/apol_perm_mapping_ver20
+%{setoolsdir}/apol_perm_mapping_ver21
+%{setoolsdir}/apol.gif
+%{setoolsdir}/apol.tcl
+%{setoolsdir}/seaudit.glade
+%{setoolsdir}/seaudit_help.txt
+%{setoolsdir}/seaudit.png
+%{setoolsdir}/seaudit-small.png
+%{setoolsdir}/dot_seaudit
 %{_mandir}/man1/apol.1.gz
 %{_mandir}/man1/sediffx.1.gz
 %{_mandir}/man8/seaudit.8.gz
@@ -319,7 +425,10 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun -p /sbin/ldconfig
 
 %changelog
-* Mon Oct 30 2006 Dan Jason Tang <jtang@tresys.com> 3.1-0
+* Wed Apr 25 2007 Jason Tang <jtang@tresys.com> 3.2-0
+- update to SETools 3.2 release
+
+* Mon Feb 02 2007 Jason Tang <jtang@tresys.com> 3.1-1
 - update to SETools 3.1 release
 
 * Mon Oct 30 2006 Dan Walsh <dwalsh@redhat.com> 3.0-2.fc6

@@ -92,17 +92,6 @@ void toplevel_run_diff(toplevel_t * top);
 void toplevel_show_policy_line(toplevel_t * top, sediffx_policy_e which, unsigned long line);
 
 /**
- * Check if a loaded policy can show line numbers or not.  Note that
- * this is different than if a policy can show syntactic rules.
- *
- * @param top Toplevel object to query.
- * @param which Which loadad policy to check.
- *
- * @return Non-zero if the policy can show line numbers, zero if not.
- */
-int toplevel_is_policy_capable_line_numbers(toplevel_t * top, sediffx_policy_e which);
-
-/**
  * Enable or disable the toplevel's sort menu.  The sort menu should
  * be enabled only when showing the differences for TE rules;
  * otherwise it should be disabled.
@@ -118,9 +107,9 @@ void toplevel_set_sort_menu_sensitivity(toplevel_t * top, gboolean sens);
  *
  * @param top Toplevel object containing sort menu.
  * @param field Sort field to select.
- * @param direction Sort direction to select.
+ * @param dir Sort direction to select.
  */
-void toplevel_set_sort_menu_selection(toplevel_t * top, results_sort_e field, int direction);
+void toplevel_set_sort_menu_selection(toplevel_t * top, results_sort_e field, results_sort_dir_e dir);
 
 /**
  * Return the filename containing sediffx's glade file.

@@ -5,7 +5,6 @@
  * containing paths + file contexts.  Also contains routines to search
  * a created database.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -228,7 +227,7 @@ static regex_t range_re;
 			  "
 
 static const char *sefs_object_classes[] = { "file", "dir", "lnk_file", "chr_file", "blk_file", "sock_file",
-	"fifo_file", "all_files"
+	"fifo_file"
 };
 
 static int sefs_count_callback(void *NotUsed, int argc, char **argv, char **azColName)
@@ -580,8 +579,6 @@ static int sefs_get_class_int(const char *class)
 		return SEFS_SOCK_FILE;
 	else if (strcmp(class, "fifo_file") == 0)
 		return SEFS_FIFO_FILE;
-	else if (strcmp(class, "all_files") == 0)
-		return SEFS_ALL_FILES;
 	else
 		return -1;
 
@@ -606,7 +603,9 @@ static const char *sefs_get_class_string(int flag_val)
 	case SEFS_FIFO_FILE:
 		return sefs_object_classes[6];
 	default:
-		return sefs_object_classes[7];
+		/* should never get here */
+		assert(0);
+		return NULL;
 	}
 }
 
@@ -627,7 +626,7 @@ int sefs_get_file_class(const struct stat64 *statptr)
 		return SEFS_SOCK_FILE;
 	if (S_ISFIFO(statptr->st_mode))
 		return SEFS_FIFO_FILE;
-	return SEFS_ALL_FILES;
+	return -1;
 }
 
 int sefs_filesystem_find_mount_points(const char *dir, int rw, sefs_hash_t * hashtab, char ***mounts, unsigned int *num_mounts)
@@ -1181,7 +1180,7 @@ char **sefs_get_valid_object_classes(int *size)
 		fprintf(stderr, "out of memory\n");
 		return NULL;
 	}
-	for (i = 0; i < SEFS_NUM_OBJECT_CLASSES - 1; i++) {
+	for (i = 0; i < SEFS_NUM_OBJECT_CLASSES; i++) {
 		num_objs_on_line++;
 		if ((local_list[i] = (char *)malloc((strlen(sefs_object_classes[i]) + 1) * sizeof(char))) == NULL) {
 			sefs_double_array_destroy(local_list, i);

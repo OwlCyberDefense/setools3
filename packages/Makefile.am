@@ -8,7 +8,7 @@ install-data-local:
 	tar jxf BWidget-1.8.0.tar.bz2
 	test -z "$(bwidget_destdir)" || $(mkdir_p) "$(bwidget_destdir)"
 	cd BWidget-1.8.0 && find . -type d -exec $(mkdir_p) "$(bwidget_destdir)/{}" \;
-	cd BWidget-1.8.0 && find . -type f -exec $(INSTALL_DATA) '{}' $(bwidget_destdir) \;
+	cd BWidget-1.8.0 && find . -type f -exec $(INSTALL_DATA) '{}' $(bwidget_destdir)/'{}' \;
 
 uninstall-local:
 	-rm -rf $(bwidget_destdir)/BWidget-1.8.0

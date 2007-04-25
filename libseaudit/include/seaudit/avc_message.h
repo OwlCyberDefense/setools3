@@ -51,9 +51,19 @@ extern "C"
  *
  * @param avc AVC message to check.
  *
- * @return AVC message type, or SEAUDIT_AVC_UNKNOWN upon error or if unknown.
+ * @return One of SEAUDIT_AVC_DENIED or SEAUDIT_AVC_GRANTED, or
+ * SEAUDIT_AVC_UNKNOWN upon error or if unknown.
  */
 	extern seaudit_avc_message_type_e seaudit_avc_message_get_message_type(seaudit_avc_message_t * avc);
+
+/**
+ * Return the avc message's timestamp, measured in nanoseconds.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Timestamp, in nanoseconds, or 0 upon error or if unknown.
+ */
+	extern long seaudit_avc_message_get_timestamp_nano(seaudit_avc_message_t * avc);
 
 /**
  * Return the source context's user of an avc message.
@@ -156,6 +166,16 @@ extern "C"
 	extern char *seaudit_avc_message_get_comm(seaudit_avc_message_t * avc);
 
 /**
+ * Return the name from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Name, or NULL upon error or if unknown.  Do not free() this
+ * string.
+ */
+	extern char *seaudit_avc_message_get_name(seaudit_avc_message_t * avc);
+
+/**
  * Return the process ID from an avc message.
  *
  * @param avc AVC message to check.
@@ -182,6 +202,120 @@ extern "C"
  * free() this string.
  */
 	extern char *seaudit_avc_message_get_path(seaudit_avc_message_t * avc);
+
+/**
+ * Return the device for the object from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Object's device, or NULL upon error or if unknown.  Do not
+ * free() this string.
+ */
+	extern char *seaudit_avc_message_get_dev(seaudit_avc_message_t * avc);
+
+/**
+ * Return the network interface for the object from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Network interface, or NULL upon error or if unknown.  Do
+ * not free() this string.
+ */
+	extern char *seaudit_avc_message_get_netif(seaudit_avc_message_t * avc);
+
+/**
+ * Return the local address from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Local address, or NULL upon error or if unknown.  Do not
+ * free() this string.
+ */
+	extern char *seaudit_avc_message_get_laddr(seaudit_avc_message_t * avc);
+
+/**
+ * Return the local port from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Local port, or 0 upon error or if unknown.
+ */
+	extern int seaudit_avc_message_get_lport(seaudit_avc_message_t * avc);
+
+/**
+ * Return the foreign address from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Foreign address, or NULL upon error or if unknown.  Do not
+ * free() this string.
+ */
+	extern char *seaudit_avc_message_get_faddr(seaudit_avc_message_t * avc);
+
+/**
+ * Return the foreign port from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Foreign port, or 0 upon error or if unknown.
+ */
+	extern int seaudit_avc_message_get_fport(seaudit_avc_message_t * avc);
+
+/**
+ * Return the source address from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Source address, or NULL upon error or if unknown.  Do not
+ * free() this string.
+ */
+	extern char *seaudit_avc_message_get_saddr(seaudit_avc_message_t * avc);
+
+/**
+ * Return the source port from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Source port, or 0 upon error or if unknown.
+ */
+	extern int seaudit_avc_message_get_sport(seaudit_avc_message_t * avc);
+
+/**
+ * Return the destination address from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Destination address, or NULL upon error or if unknown.  Do
+ * not free() this string.
+ */
+	extern char *seaudit_avc_message_get_daddr(seaudit_avc_message_t * avc);
+
+/**
+ * Return the destination port from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Destination port, or 0 upon error or if unknown.
+ */
+	extern int seaudit_avc_message_get_dport(seaudit_avc_message_t * avc);
+
+/**
+ * Return the IPC key from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Key, or -1 upon error or if unknown.
+ */
+	extern int seaudit_avc_message_get_key(seaudit_avc_message_t * avc);
+
+/**
+ * Return the process capability from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Capability, or -1 upon error or if unknown.
+ */
+	extern int seaudit_avc_message_get_cap(seaudit_avc_message_t * avc);
 
 #ifdef  __cplusplus
 }

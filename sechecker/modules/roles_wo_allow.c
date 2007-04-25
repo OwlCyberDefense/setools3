@@ -213,7 +213,7 @@ int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	}
 	res->item_type = SECHK_ITEM_ROLE;
 
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto roles_wo_allow_run_fail;
@@ -244,10 +244,10 @@ int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		apol_role_allow_query_set_source_any(policy, role_allow_query, 1);
 		apol_role_allow_get_by_query(policy, role_allow_query, &role_allow_vector);
 		if (apol_vector_get_size(role_allow_vector) > 0) {
-			apol_vector_destroy(&role_allow_vector, NULL);
+			apol_vector_destroy(&role_allow_vector);
 			continue;
 		}
-		apol_vector_destroy(&role_allow_vector, NULL);
+		apol_vector_destroy(&role_allow_vector);
 
 		proof = sechk_proof_new(NULL);
 		if (!proof) {
@@ -265,7 +265,7 @@ int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		}
 		item->item = (void *)role;
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto roles_wo_allow_run_fail;
@@ -284,8 +284,8 @@ int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		item = NULL;
 		proof = NULL;
 	}
-	apol_vector_destroy(&role_vector, NULL);
-	apol_vector_destroy(&role_allow_vector, NULL);
+	apol_vector_destroy(&role_vector);
+	apol_vector_destroy(&role_allow_vector);
 	apol_role_allow_query_destroy(&role_allow_query);
 	mod->result = res;
 
@@ -294,8 +294,8 @@ int roles_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	return 0;
 
       roles_wo_allow_run_fail:
-	apol_vector_destroy(&role_vector, NULL);
-	apol_vector_destroy(&role_allow_vector, NULL);
+	apol_vector_destroy(&role_vector);
+	apol_vector_destroy(&role_allow_vector);
 	apol_role_allow_query_destroy(&role_allow_query);
 	sechk_proof_free(proof);
 	sechk_item_free(item);

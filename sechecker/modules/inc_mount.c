@@ -203,7 +203,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 		goto inc_mount_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_mount_run_fail;
@@ -303,7 +303,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 					item->item = (void *)mount_source;
 				}
 				if (!item->proof) {
-					if (!(item->proof = apol_vector_create())) {
+					if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_mount_run_fail;
@@ -391,7 +391,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 					item->item = (void *)mounton_source;
 				}
 				if (!item->proof) {
-					if (!(item->proof = apol_vector_create())) {
+					if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_mount_run_fail;
@@ -414,8 +414,8 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 			proof = NULL;
 		}
 	}
-	apol_vector_destroy(&mount_vector, NULL);
-	apol_vector_destroy(&mounton_vector, NULL);
+	apol_vector_destroy(&mount_vector);
+	apol_vector_destroy(&mounton_vector);
 
 	mod->result = res;
 	apol_avrule_query_destroy(&mount_avrule_query);
@@ -426,8 +426,8 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 	return 0;
 
       inc_mount_run_fail:
-	apol_vector_destroy(&mount_vector, NULL);
-	apol_vector_destroy(&mounton_vector, NULL);
+	apol_vector_destroy(&mount_vector);
+	apol_vector_destroy(&mounton_vector);
 	apol_avrule_query_destroy(&mount_avrule_query);
 	apol_avrule_query_destroy(&mounton_avrule_query);
 	sechk_proof_free(proof);

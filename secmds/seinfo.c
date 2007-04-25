@@ -49,7 +49,6 @@
 #define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
 static char *policy_file = NULL;
-static int portconset, protoset;
 
 static void print_type_attrs(FILE * fp, qpol_type_t * type_datum, apol_policy_t * policydb, const int expand);
 static void print_attr_types(FILE * fp, qpol_type_t * type_datum, apol_policy_t * policydb, const int expand);
@@ -61,27 +60,35 @@ static void print_cat_sens(FILE * fp, qpol_cat_t * cat_datum, apol_policy_t * po
 static int qpol_cat_datum_compare(const void *datum1, const void *datum2, void *data);
 static int qpol_level_datum_compare(const void *datum1, const void *datum2, void *data);
 
+enum opt_values
+{
+	OPT_SENSITIVITY = 256, OPT_CATEGORY,
+	OPT_INITIALSID, OPT_FS_USE, OPT_GENFSCON,
+	OPT_NETIFCON, OPT_NODECON, OPT_PORTCON, OPT_PROTOCOL,
+	OPT_ALL, OPT_STATS
+};
+
 static struct option const longopts[] = {
-	{"classes", optional_argument, NULL, 'c'},
-	{"types", optional_argument, NULL, 't'},
-	{"attribs", optional_argument, NULL, 'a'},
-	{"roles", optional_argument, NULL, 'r'},
-	{"users", optional_argument, NULL, 'u'},
-	{"booleans", optional_argument, NULL, 'b'},
-	{"sensitivities", optional_argument, NULL, 'S'},
-	{"categories", optional_argument, NULL, 'C'},
-	{"fs_use", optional_argument, NULL, 'f'},
-	{"genfscon", optional_argument, NULL, 'g'},
-	{"netifcon", optional_argument, NULL, 'n'},
-	{"nodecon", optional_argument, NULL, 'o'},
-	{"portcon", optional_argument, &portconset, 'p'},
-	{"protocol", required_argument, &protoset, 'l'},
-	{"initialsids", optional_argument, NULL, 'i'},
-	{"stats", no_argument, NULL, 's'},
-	{"all", no_argument, NULL, 'A'},
+	{"class", optional_argument, NULL, 'c'},
+	{"sensitivity", optional_argument, NULL, OPT_SENSITIVITY},
+	{"category", optional_argument, NULL, OPT_CATEGORY},
+	{"type", optional_argument, NULL, 't'},
+	{"attribute", optional_argument, NULL, 'a'},
+	{"role", optional_argument, NULL, 'r'},
+	{"user", optional_argument, NULL, 'u'},
+	{"bool", optional_argument, NULL, 'b'},
+	{"initialsid", optional_argument, NULL, OPT_INITIALSID},
+	{"fs_use", optional_argument, NULL, OPT_FS_USE},
+	{"genfscon", optional_argument, NULL, OPT_GENFSCON},
+	{"netifcon", optional_argument, NULL, OPT_NETIFCON},
+	{"nodecon", optional_argument, NULL, OPT_NODECON},
+	{"portcon", optional_argument, NULL, OPT_PORTCON},
+	{"protocol", required_argument, NULL, OPT_PROTOCOL},
+	{"stats", no_argument, NULL, OPT_STATS},
+	{"all", no_argument, NULL, OPT_ALL},
 	{"expand", no_argument, NULL, 'x'},
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -101,27 +108,27 @@ void usage(const char *program_name, int brief)
 	}
 	printf("Print information about the components of a SELinux policy.\n\n");
 	printf("EXPRESSIONS:\n");
-	printf("  -c[NAME], --classes[=NAME]       print object classes\n");
-	printf("  -t[NAME], --types[=NAME]         print types (no aliases or attributes)\n");
-	printf("  -a[NAME], --attribs[=NAME]       print type attributes\n");
-	printf("  -r[NAME], --roles[=NAME]         print roles\n");
-	printf("  -u[NAME], --users[=NAME]         print users\n");
-	printf("  -b[NAME], --boolean[=NAME]       print conditional booleans\n");
-	printf("  -S[NAME], --sensitivities[=NAME] print sensitivities\n");
-	printf("  -C[NAME], --categories[=NAME]    print categories\n");
-	printf("  -f[TYPE], --fs_use[=TYPE]        print fs_use statements\n");
-	printf("  -g[TYPE], --genfscon[=TYPE]      print genfscon statements\n");
-	printf("  -n[NAME], --netifcon[=NAME]      print netif contexts\n");
-	printf("  -o[ADDR], --nodecon[=ADDR]       print node contexts\n");
-	printf("  -p[PORT], --portcon[=PORT]       print port contexts\n");
-	printf("  -lPROTO,  --protocol=PROTO       specify a protocol for portcons\n");
-	printf("  -i[NAME], --initialsid[=NAME]    print initial SIDs\n");
-	printf("  -A, --all                        print all of the above\n");
+	printf("  -c[NAME], --class[=NAME]         print object classes\n");
+	printf("  --sensitivity[=NAME]             print sensitivities\n");
+	printf("  --category[=NAME]                print categories\n");
+	printf("  -t[NAME], --type[=NAME]          print types (no aliases or attributes)\n");
+	printf("  -a[NAME], --attribute[=NAME]     print type attributes\n");
+	printf("  -r[NAME], --role[=NAME]          print roles\n");
+	printf("  -u[NAME], --user[=NAME]          print users\n");
+	printf("  -b[NAME], --bool[=NAME]          print conditional booleans\n");
+	printf("  --initialsid[=NAME]              print initial SIDs\n");
+	printf("  --fs_use[=TYPE]                  print fs_use statements\n");
+	printf("  --genfscon[=TYPE]                print genfscon statements\n");
+	printf("  --netifcon[=NAME]                print netif contexts\n");
+	printf("  --nodecon[=ADDR]                 print node contexts\n");
+	printf("  --portcon[=PORT]                 print port contexts\n");
+	printf("  --protocol=PROTO                 specify a protocol for portcons\n");
+	printf("  --all                            print all of the above\n");
 	printf("OPTIONS:\n");
 	printf("  -x, --expand                     show more info for specified components\n");
-	printf("  -s, --stats                      print useful policy statistics\n");
-	printf("  -h, --help                       print this help and exit\n");
-	printf("  -v, --version                    print version information and exit\n");
+	printf("  --stats                          print useful policy statistics\n");
+	printf("  -h, --help                       print this help text and exit\n");
+	printf("  -V, --version                    print version information and exit\n");
 	printf("\n");
 	printf("For component options, if NAME is provided, then only show info for\n");
 	printf("NAME.  Specifying a name is most useful when used with the -x option.\n");
@@ -185,8 +192,22 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 
 	n_perms = apol_vector_get_size(perms);
 	apol_perm_query_destroy(&perm_query);
-	apol_vector_destroy(&perms, NULL);
+	apol_vector_destroy(&perms);
 	fprintf(fp, "\n   Classes:       %7zd    Permissions:   %7d\n", n_classes, n_perms);
+
+	/* sensitivities/categories */
+	if (qpol_policy_get_level_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_levels))
+		goto cleanup;
+
+	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_cat_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_cats))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Sensitivities: %7zd    Categories:    %7zd\n", n_levels, n_cats);
 
 	/* types */
 	type_query = apol_type_query_create();
@@ -197,7 +218,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 
 	n_types = apol_vector_get_size(v);
 	apol_type_query_destroy(&type_query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	attr_query = apol_attr_query_create();
 	if (!attr_query)
@@ -207,7 +228,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 
 	n_attrs = apol_vector_get_size(v);
 	apol_attr_query_destroy(&attr_query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	fprintf(fp, "   Types:         %7zd    Attributes:    %7zd\n", n_types, n_attrs);
 	qpol_iterator_destroy(&iter);
@@ -238,20 +259,6 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Booleans:      %7zd    Cond. Expr.:   %7zd\n", n_bools, n_conds);
 
-	/* sensitivities/categories */
-	if (qpol_policy_get_level_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_levels))
-		goto cleanup;
-
-	qpol_iterator_destroy(&iter);
-	if (qpol_policy_get_cat_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_cats))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Sensitivities: %7zd    Categories:    %7zd\n", n_levels, n_cats);
-
 	/* allow/neverallow */
 	if (qpol_policy_get_avrule_iter(q, QPOL_RULE_ALLOW, &iter))
 		goto cleanup;
@@ -278,19 +285,6 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Auditallow:    %7zd    Dontaudit:     %7zd\n", n_auditallows, n_dontaudits);
 
-	/* role_allow/role_trans */
-	if (qpol_policy_get_role_allow_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_roleallows))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
-	if (qpol_policy_get_role_trans_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_roletrans))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Role allow:    %7zd    Role trans:    %7zd\n", n_roleallows, n_roletrans);
-
 	/* type_transition/type_change */
 	if (qpol_policy_get_terule_iter(q, QPOL_RULE_TYPE_TRANS, &iter))
 		goto cleanup;
@@ -304,10 +298,23 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Type_trans:    %7zd    Type_change:   %7zd\n", n_typetrans, n_typechanges);
 
-	/* type_member/range_trans */
+	/* type_member/role allow */
 	if (qpol_policy_get_terule_iter(q, QPOL_RULE_TYPE_MEMBER, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_typemembers))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_role_allow_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_roleallows))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Type_member:   %7zd    Role allow:    %7zd\n", n_typemembers, n_roleallows);
+
+	/* role_trans/range_trans */
+	if (qpol_policy_get_role_trans_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_roletrans))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
 	if (qpol_policy_get_range_trans_iter(q, &iter))
@@ -315,7 +322,7 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	if (qpol_iterator_get_size(iter, &n_rangetrans))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Type_member:   %7zd    Range_trans:   %7zd\n", n_typemembers, n_rangetrans);
+	fprintf(fp, "   Role_trans:    %7zd    Range_trans:   %7zd\n", n_roletrans, n_rangetrans);
 
 	/* constraints/validatetrans */
 	if (qpol_policy_get_constraint_iter(q, &iter))
@@ -330,44 +337,44 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Constraints:   %7zd    Validatetrans: %7zd\n", n_constr, n_vtrans);
 
-	/* fs_use/genfscon */
-	if (qpol_policy_get_fs_use_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_fsuses))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
-	if (qpol_policy_get_genfscon_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_genfscons))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Fs_use:        %7zd    Genfscon:      %7zd\n", n_fsuses, n_genfscons);
-
-	/* portcon/netifcon */
-	if (qpol_policy_get_portcon_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_portcons))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
-	if (qpol_policy_get_netifcon_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_netifcons))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Portcon:       %7zd    Netifcon:      %7zd\n", n_portcons, n_netifcons);
-
-	/* nodecon/isids */
-	if (qpol_policy_get_nodecon_iter(q, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_nodecons))
-		goto cleanup;
-	qpol_iterator_destroy(&iter);
+	/* isids/fs_use */
 	if (qpol_policy_get_isid_iter(q, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_isids))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Nodecon:       %7zd    Initial SIDs:  %7zd\n", n_nodecons, n_isids);
+	if (qpol_policy_get_fs_use_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_fsuses))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Initial SIDs:  %7zd    Fs_use:        %7zd\n", n_isids, n_fsuses);
+
+	/* genfscon/portcon */
+	if (qpol_policy_get_genfscon_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_genfscons))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_portcon_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_portcons))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Genfscon:      %7zd    Portcon:       %7zd\n", n_genfscons, n_portcons);
+
+	/* netifcon/nodecon */
+	if (qpol_policy_get_netifcon_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_netifcons))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_nodecon_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_nodecons))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Netifcon:      %7zd    Nodecon:       %7zd\n", n_netifcons, n_nodecons);
 	fprintf(fp, "\n");
 
 	retval = 0;
@@ -376,8 +383,8 @@ static int print_stats(FILE * fp, apol_policy_t * policydb)
 	apol_type_query_destroy(&type_query);
 	apol_attr_query_destroy(&attr_query);
 	apol_perm_query_destroy(&perm_query);
-	apol_vector_destroy(&v, NULL);
-	apol_vector_destroy(&perms, NULL);
+	apol_vector_destroy(&v);
+	apol_vector_destroy(&perms);
 	return retval;
 }
 
@@ -461,7 +468,7 @@ static int print_types(FILE * fp, const char *name, int expand, apol_policy_t * 
 	if (apol_type_get_by_query(policydb, NULL, &type_vector))
 		goto cleanup;
 	vector_sz = apol_vector_get_size(type_vector);
-	apol_vector_destroy(&type_vector, NULL);
+	apol_vector_destroy(&type_vector);
 
 	if (name == NULL) {
 		fprintf(fp, "\nTypes: %zd\n", vector_sz);
@@ -524,7 +531,7 @@ static int print_attribs(FILE * fp, const char *name, int expand, apol_policy_t 
 			goto cleanup;
 		apol_attr_query_destroy(&attr_query);
 		if (apol_vector_get_size(v) == 0) {
-			apol_vector_destroy(&v, NULL);
+			apol_vector_destroy(&v);
 			ERR(policydb, "Provided attribute (%s) is not a valid attribute name.", name);
 			goto cleanup;
 		}
@@ -549,12 +556,12 @@ static int print_attribs(FILE * fp, const char *name, int expand, apol_policy_t 
 			print_attr_types(fp, type_datum, policydb, expand);
 		}
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 
 	retval = 0;
       cleanup:
 	apol_attr_query_destroy(&attr_query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -765,7 +772,7 @@ static int print_sens(FILE * fp, const char *name, int expand, apol_policy_t * p
 	retval = 0;
       cleanup:
 	apol_level_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -823,7 +830,7 @@ static int print_cats(FILE * fp, const char *name, int expand, apol_policy_t * p
 	retval = 0;
       cleanup:
 	apol_cat_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -877,7 +884,7 @@ static int print_fsuse(FILE * fp, const char *type, apol_policy_t * policydb)
 	retval = 0;
       cleanup:
 	apol_fs_use_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -933,7 +940,7 @@ static int print_genfscon(FILE * fp, const char *type, apol_policy_t * policydb)
 	retval = 0;
       cleanup:
 	apol_genfscon_query_destroy(&query);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 
 	return retval;
 }
@@ -1064,7 +1071,7 @@ static int print_nodecon(FILE * fp, const char *addr, apol_policy_t * policydb)
 	retval = 0;
       cleanup:
 	apol_nodecon_query_destroy(&query);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -1206,7 +1213,7 @@ static int print_isids(FILE * fp, const char *name, int expand, apol_policy_t * 
 	retval = 0;
       cleanup:
 	apol_isid_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return retval;
 }
 
@@ -1226,7 +1233,7 @@ int main(int argc, char **argv)
 		genfs_type = netif_name = node_addr = port_num = NULL;
 	classes = types = attribs = roles = users = all = expand = stats = isids = bools = sens = cats = fsuse = genfs = netif =
 		node = port = 0;
-	while ((optc = getopt_long(argc, argv, "c::t::a::r::u::b::S::C::f::g::n::o::p::l:i::d:sAxhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "c::t::a::r::u::b::xhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -1234,6 +1241,16 @@ int main(int argc, char **argv)
 			classes = 1;
 			if (optarg != 0)
 				class_name = optarg;
+			break;
+		case OPT_SENSITIVITY:
+			sens = 1;
+			if (optarg != 0)
+				sens_name = optarg;
+			break;
+		case OPT_CATEGORY:
+			cats = 1;
+			if (optarg != 0)
+				cat_name = optarg;
 			break;
 		case 't':	       /* types */
 			types = 1;
@@ -1260,63 +1277,53 @@ int main(int argc, char **argv)
 			if (optarg != 0)
 				bool_name = optarg;
 			break;
-		case 'S':	       /* sensitivities */
-			sens = 1;
-			if (optarg != 0)
-				sens_name = optarg;
-			break;
-		case 'C':	       /* categories */
-			cats = 1;
-			if (optarg != 0)
-				cat_name = optarg;
-			break;
-		case 'f':	       /* fs_use */
-			fsuse = 1;
-			if (optarg != 0)
-				fsuse_type = optarg;
-			break;
-		case 'g':	       /* genfscon */
-			genfs = 1;
-			if (optarg != 0)
-				genfs_type = optarg;
-			break;
-		case 'n':	       /* netifcon */
-			netif = 1;
-			if (optarg != 0)
-				netif_name = optarg;
-			break;
-		case 'o':	       /* nodecons */
-			node = 1;
-			if (optarg != 0)
-				node_addr = optarg;
-			break;
-		case 'p':	       /* portcons */
-			port = 1;
-			if (optarg != 0)
-				port_num = optarg;
-			break;
-		case 'l':	       /* protocol */
-			if (optarg != 0)
-				protocol = optarg;
-			break;
-		case 'i':	       /* initial SIDs */
+		case OPT_INITIALSID:
 			isids = 1;
 			if (optarg != 0)
 				isid_name = optarg;
 			break;
-		case 'A':	       /* all */
+		case OPT_FS_USE:
+			fsuse = 1;
+			if (optarg != 0)
+				fsuse_type = optarg;
+			break;
+		case OPT_GENFSCON:
+			genfs = 1;
+			if (optarg != 0)
+				genfs_type = optarg;
+			break;
+		case OPT_NETIFCON:
+			netif = 1;
+			if (optarg != 0)
+				netif_name = optarg;
+			break;
+		case OPT_NODECON:
+			node = 1;
+			if (optarg != 0)
+				node_addr = optarg;
+			break;
+		case OPT_PORTCON:
+			port = 1;
+			if (optarg != 0)
+				port_num = optarg;
+			break;
+		case OPT_PROTOCOL:
+			if (optarg != 0)
+				protocol = optarg;
+			break;
+		case OPT_ALL:
 			all = 1;
 			break;
 		case 'x':	       /* expand */
 			expand = 1;
 			break;
-		case 's':	       /* stats */
+		case OPT_STATS:
 			stats = 1;
 			break;
 		case 'h':	       /* help */
 			usage(argv[0], 0);
 			exit(0);
-		case 'v':	       /* version */
+		case 'V':	       /* version */
 			printf("seinfo %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
@@ -1327,7 +1334,7 @@ int main(int argc, char **argv)
 
 	/* check for naked -l */
 	if (protocol && !(port || all)) {
-		fprintf(stderr, "The -l flag requires either -p or -A.\n");
+		fprintf(stderr, "The --protocol flag requires either --portcon or --ALL.\n");
 		exit(1);
 	}
 	/* if no options, then show stats */
@@ -1355,37 +1362,37 @@ int main(int argc, char **argv)
 
 	if (argc - optind > 0) {
 		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-		if (!(mod_paths = apol_vector_create())) {
+		if (!(mod_paths = apol_vector_create(NULL))) {
 			ERR(policydb, "%s", strerror(ENOMEM));
 			free(policy_file);
 			exit(1);
 		}
 		for (; argc - optind; optind++) {
-			char *tmp = NULL;
-			if (!(tmp = strdup(argv[optind]))) {
+			if (apol_vector_append(mod_paths, (void *)argv[optind])) {
 				ERR(policydb, "Error loading module %s", argv[optind]);
 				free(policy_file);
-				apol_vector_destroy(&mod_paths, free);
-				exit(1);
-			}
-			if (apol_vector_append(mod_paths, (void *)tmp)) {
-				ERR(policydb, "Error loading module %s", argv[optind]);
-				free(policy_file);
-				free(tmp);
-				apol_vector_destroy(&mod_paths, free);
+				apol_vector_destroy(&mod_paths);
 				exit(1);
 			}
 		}
+	} else if (apol_file_is_policy_path_list(policy_file) > 0) {
+		pol_path = apol_policy_path_create_from_file(policy_file);
+		if (!pol_path) {
+			ERR(policydb, "%s", "invalid policy list");
+			free(policy_file);
+			exit(1);
+		}
 	}
 
-	pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
+	if (!pol_path)
+		pol_path = apol_policy_path_create(path_type, policy_file, mod_paths);
 	if (!pol_path) {
 		ERR(policydb, "%s", strerror(ENOMEM));
 		free(policy_file);
-		apol_vector_destroy(&mod_paths, free);
+		apol_vector_destroy(&mod_paths);
 		exit(1);
 	}
-	apol_vector_destroy(&mod_paths, free);
+	apol_vector_destroy(&mod_paths);
 
 	policydb = apol_policy_create_from_policy_path(pol_path, ((stats || all) ? 0 : APOL_POLICY_OPTION_NO_RULES), NULL, NULL);
 	if (!policydb) {
@@ -1791,7 +1798,7 @@ static void print_cat_sens(FILE * fp, qpol_cat_t * cat_datum, apol_policy_t * po
 
       cleanup:
 	apol_level_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	return;
 }
 

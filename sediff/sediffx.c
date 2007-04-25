@@ -46,9 +46,9 @@ struct sediffx
 };
 
 static struct option const longopts[] = {
-	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
 	{"run-diff", no_argument, NULL, 'd'},
+	{"help", no_argument, NULL, 'h'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -113,11 +113,11 @@ static void usage(const char *program_name, int brief)
 		return;
 	}
 	printf("Semantically differentiate two policies.  All supported policy elements\n");
-	printf("are examined.  The following options are available:\n\n");
+	printf("are examined.  The following options are available:\n");
 	printf("\n");
 	printf("  -d, --diff-now   load policies and diff immediately\n");
 	printf("  -h, --help       print this help text and exit\n");
-	printf("  -v, --version    print version information and exit\n\n");
+	printf("  -V, --version    print version information and exit\n\n");
 }
 
 struct delayed_main_data
@@ -163,7 +163,7 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 	*orig_path = NULL;
 	*mod_path = NULL;
 	*run_diff = 0;
-	while ((optc = getopt_long(argc, argv, "hvd", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "dhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -173,7 +173,7 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 		case 'h':	       /* help */
 			usage(argv[0], 0);
 			exit(EXIT_SUCCESS);
-		case 'v':	       /* version */
+		case 'V':	       /* version */
 			print_version_info();
 			exit(EXIT_SUCCESS);
 		default:
@@ -218,7 +218,7 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 	apol_policy_path_type_e mod_path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 
 	orig_base_path = argv[optind++];
-	if (!(orig_module_paths = apol_vector_create())) {
+	if (!(orig_module_paths = apol_vector_create(NULL))) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
@@ -227,24 +227,26 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 			optind++;
 			break;
 		}
-		char *tmp = NULL;
-		if (!(tmp = strdup(argv[optind]))) {
+		if (apol_vector_append(orig_module_paths, (void *)argv[optind])) {
 			ERR(NULL, "Error loading module %s", argv[optind]);
-			goto err;
-		}
-		if (apol_vector_append(orig_module_paths, (void *)tmp)) {
-			ERR(NULL, "Error loading module %s", argv[optind]);
-			free(tmp);
 			goto err;
 		}
 		orig_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	}
-	*orig_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
-	if (*orig_path == NULL) {
-		ERR(NULL, "%s", strerror(errno));
-		goto err;
+	if (apol_file_is_policy_path_list(orig_base_path) > 0) {
+		*orig_path = apol_policy_path_create_from_file(orig_base_path);
+		if (*orig_path == NULL) {
+			ERR(NULL, "%s", "invalid policy list");
+			goto err;
+		}
+	} else {
+		*orig_path = apol_policy_path_create(orig_path_type, orig_base_path, orig_module_paths);
+		if (*orig_path == NULL) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
 	}
-	orig_module_paths = NULL;
+	apol_vector_destroy(&orig_module_paths);
 
 	if (argc - optind == 0) {
 		ERR(NULL, "%s", "Missing path to modified policy.");
@@ -252,34 +254,37 @@ static void sediffx_parse_command_line(int argc, char **argv, apol_policy_path_t
 	}
 
 	mod_base_path = argv[optind++];
-	if (!(mod_module_paths = apol_vector_create())) {
+	if (!(mod_module_paths = apol_vector_create(NULL))) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
 	for (; argc - optind; optind++) {
-		char *tmp = NULL;
-		if (!(tmp = strdup(argv[optind]))) {
+		if (apol_vector_append(mod_module_paths, (void *)argv[optind])) {
 			ERR(NULL, "Error loading module %s", argv[optind]);
-			goto err;
-		}
-		if (apol_vector_append(mod_module_paths, (void *)tmp)) {
-			ERR(NULL, "Error loading module %s", argv[optind]);
-			free(tmp);
 			goto err;
 		}
 		mod_path_type = APOL_POLICY_PATH_TYPE_MODULAR;
 	}
-	*mod_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
-	if (*mod_path == NULL) {
-		ERR(NULL, "%s", strerror(errno));
-		goto err;
+	if (apol_file_is_policy_path_list(mod_base_path) > 0) {
+		*mod_path = apol_policy_path_create_from_file(mod_base_path);
+		if (*mod_path == NULL) {
+			ERR(NULL, "%s", "invalid policy list");
+			goto err;
+		}
+	} else {
+		*mod_path = apol_policy_path_create(mod_path_type, mod_base_path, mod_module_paths);
+		if (*mod_path == NULL) {
+			ERR(NULL, "%s", strerror(errno));
+			goto err;
+		}
 	}
+	apol_vector_destroy(&mod_module_paths);
 	return;
       err:
 	apol_policy_path_destroy(orig_path);
 	apol_policy_path_destroy(mod_path);
-	apol_vector_destroy(&orig_module_paths, free);
-	apol_vector_destroy(&mod_module_paths, free);
+	apol_vector_destroy(&orig_module_paths);
+	apol_vector_destroy(&mod_module_paths);
 }
 
 int main(int argc, char **argv)

@@ -77,20 +77,11 @@ extern "C"
  * @param fc_path Path to the file_contexts.
  * @param contexts Reference to a vector of sefs_fc_t objects.  Upon
  * error this will be set to NULL.  The caller is responsible for
- * calling apol_vector_destroy(), passing in sefs_fc_entry free() as
- * the second parameter.
+ * calling apol_vector_destroy().
  *
  * @return 0 on success, < 0 on error.
  */
 	extern int sefs_fc_entry_parse_file_contexts(apol_policy_t * policy, const char *fc_path, apol_vector_t ** contexts);
-
-/**
- * Free all space associated with a file context entry, including the
- * pointer itself.  If the pointer is NULL then do nothing.
- *
- * @param fc fc_entry to free.
- */
-	extern void sefs_fc_entry_free(void *fc);
 
 /**
  * Write to the referenced string the pathname of the file_contexts

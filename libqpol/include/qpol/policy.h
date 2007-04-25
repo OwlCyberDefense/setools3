@@ -88,7 +88,9 @@ extern "C"
 		/** The policy was loaded with av/te rules. */
 		QPOL_CAP_RULES_LOADED,
 		/** The policy source may be displayed. */
-		QPOL_CAP_SOURCE
+		QPOL_CAP_SOURCE,
+		/** The policy format stores neverallow rules. */
+		QPOL_CAP_NEVERALLOW
 	} qpol_capability_e;
 
 /**

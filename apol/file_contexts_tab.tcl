@@ -82,8 +82,6 @@ proc Apol_File_Contexts::populate_combo_boxes {} {
             -message "Error getting object classes from file context database: $classes.\n"
         return
     }
-    # remove the special class "all_files"
-    set i [lsearch -exact $classes "all_files"]
     $widgets(objclass) configure -values [lsort [lreplace $classes $i $i]]
 }
 

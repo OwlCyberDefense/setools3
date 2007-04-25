@@ -1,7 +1,7 @@
 /**
  *  @file
- *  Implementation for computing a semantic differences in roles allow rules
- *  and role_transition rules.
+ *  Implementation for computing semantic differences in role allow
+ *  rules and role_transition rules.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -27,12 +27,12 @@
 
 #include "poldiff_internal.h"
 
-#include <apol/util.h>
 #include <apol/bst.h>
+#include <apol/util.h>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 struct poldiff_role_allow_summary
 {
@@ -222,34 +222,33 @@ apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t *
 	return role_allow->removed_roles;
 }
 
+static void role_allow_free(void *elem)
+{
+	if (elem != NULL) {
+		poldiff_role_allow_t *r = (poldiff_role_allow_t *) elem;
+		apol_vector_destroy(&r->orig_roles);
+		apol_vector_destroy(&r->added_roles);
+		apol_vector_destroy(&r->removed_roles);
+		free(r);
+	}
+}
 poldiff_role_allow_summary_t *role_allow_create(void)
 {
 	poldiff_role_allow_summary_t *ras = calloc(1, sizeof(*ras));
 	if (ras == NULL) {
 		return NULL;
 	}
-	if ((ras->diffs = apol_vector_create()) == NULL) {
+	if ((ras->diffs = apol_vector_create(role_allow_free)) == NULL) {
 		role_allow_destroy(&ras);
 		return NULL;
 	}
 	return ras;
 }
 
-static void role_allow_free(void *elem)
-{
-	if (elem != NULL) {
-		poldiff_role_allow_t *r = (poldiff_role_allow_t *) elem;
-		apol_vector_destroy(&r->orig_roles, NULL);
-		apol_vector_destroy(&r->added_roles, NULL);
-		apol_vector_destroy(&r->removed_roles, NULL);
-		free(r);
-	}
-}
-
 void role_allow_destroy(poldiff_role_allow_summary_t ** ras)
 {
 	if (ras != NULL && *ras != NULL) {
-		apol_vector_destroy(&(*ras)->diffs, role_allow_free);
+		apol_vector_destroy(&(*ras)->diffs);
 		free(*ras);
 		*ras = NULL;
 	}
@@ -261,7 +260,7 @@ typedef struct pseudo_role_allow
 	apol_vector_t *target_roles;
 } pseudo_role_allow_t;
 
-void role_allow_free_item(void *item)
+static void role_allow_free_item(void *item)
 {
 	pseudo_role_allow_t *pra = item;
 
@@ -269,7 +268,7 @@ void role_allow_free_item(void *item)
 		return;
 
 	/* no need to free source name or target role names */
-	apol_vector_destroy(&pra->target_roles, NULL);
+	apol_vector_destroy(&pra->target_roles);
 	free(item);
 }
 
@@ -298,7 +297,7 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 		return NULL;
 	}
 
-	tmp = apol_vector_create_from_iter(iter);
+	tmp = apol_vector_create_from_iter(iter, NULL);
 	if (tmp == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -308,11 +307,11 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 	}
 	qpol_iterator_destroy(&iter);
 
-	bst = apol_bst_create(role_allow_source_comp);
+	bst = apol_bst_create(role_allow_source_comp, role_allow_free_item);
 
 	for (i = 0; i < apol_vector_get_size(tmp); i++) {
 		qra = apol_vector_get_element(tmp, i);
-		if (!(pra = calloc(1, sizeof(*pra))) || (!(pra->target_roles = apol_vector_create_with_capacity(1)))) {
+		if (!(pra = calloc(1, sizeof(*pra))) || (!(pra->target_roles = apol_vector_create_with_capacity(1, NULL)))) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto err;
@@ -330,7 +329,7 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 		}
 		tr = NULL;
 		pra->source_role = sr_name;
-		retv = apol_bst_insert_and_get(bst, (void **)&pra, NULL, role_allow_free_item);
+		retv = apol_bst_insert_and_get(bst, (void **)&pra, NULL);
 		if (retv < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
@@ -339,21 +338,21 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 		apol_vector_append_unique(pra->target_roles, tr_name, apol_str_strcmp, NULL);
 		pra = NULL;
 	}
-	apol_vector_destroy(&tmp, NULL);
+	apol_vector_destroy(&tmp);
 
-	v = apol_bst_get_vector(bst);
+	v = apol_bst_get_vector(bst, 1);
 	if (!v) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto err;
 	}
-	apol_bst_destroy(&bst, NULL);
+	apol_bst_destroy(&bst);
 
 	return v;
 
       err:
 	role_allow_free_item(pra);
-	apol_bst_destroy(&bst, role_allow_free_item);
+	apol_bst_destroy(&bst);
 	errno = error;
 	return NULL;
 }
@@ -405,9 +404,9 @@ static poldiff_role_allow_t *make_ra_diff(poldiff_t * diff, poldiff_form_e form,
 	int error = 0;
 	if ((ra = calloc(1, sizeof(*ra))) == NULL ||
 	    (ra->source_role = source_role) == NULL ||
-	    (ra->added_roles = apol_vector_create_with_capacity(1)) == NULL ||
-	    (ra->orig_roles = apol_vector_create_with_capacity(1)) == NULL ||
-	    (ra->removed_roles = apol_vector_create_with_capacity(1)) == NULL) {
+	    (ra->added_roles = apol_vector_create_with_capacity(1, NULL)) == NULL ||
+	    (ra->orig_roles = apol_vector_create_with_capacity(1, NULL)) == NULL ||
+	    (ra->removed_roles = apol_vector_create_with_capacity(1, NULL)) == NULL) {
 		error = errno;
 		role_allow_free(ra);
 		ERR(diff, "%s", strerror(error));
@@ -667,13 +666,22 @@ extern const char *poldiff_role_trans_get_modified_default(const poldiff_role_tr
 	return role_trans->mod_default;
 }
 
+static void role_trans_free(void *elem)
+{
+	if (elem != NULL) {
+		poldiff_role_trans_t *rt = elem;
+		free(rt->target_type);
+		free(rt);
+	}
+}
+
 poldiff_role_trans_summary_t *role_trans_create(void)
 {
 	poldiff_role_trans_summary_t *rts = calloc(1, sizeof(*rts));
 	if (rts == NULL) {
 		return NULL;
 	}
-	if ((rts->diffs = apol_vector_create()) == NULL) {
+	if ((rts->diffs = apol_vector_create(role_trans_free)) == NULL) {
 		role_trans_destroy(&rts);
 		return NULL;
 	}
@@ -683,7 +691,7 @@ poldiff_role_trans_summary_t *role_trans_create(void)
 void role_trans_destroy(poldiff_role_trans_summary_t ** rts)
 {
 	if (rts != NULL && *rts != NULL) {
-		apol_vector_destroy(&(*rts)->diffs, free);
+		apol_vector_destroy(&(*rts)->diffs);
 		free(*rts);
 		*rts = NULL;
 	}
@@ -719,40 +727,6 @@ typedef struct pseudo_role_trans
 } pseudo_role_trans_t;
 
 /**
- *  Get the first valid name that can be found for a pseudo type value.
- *
- *  @param diff Policy difference structure associated with the value.
- *  @param pseudo_val Value for which to get a name.
- *
- *  @return A valid name of a type from either policy that maps to the
- *  specified value. Original policy is searched first, then modified.
- */
-static const char *get_valid_name(poldiff_t * diff, uint32_t pseudo_val)
-{
-	apol_vector_t *v = NULL;
-	char *name = NULL;
-	qpol_type_t *t;
-	int pol = POLDIFF_POLICY_ORIG;
-
-	v = type_map_lookup_reverse(diff, pseudo_val, pol);
-	if (!apol_vector_get_size(v)) {
-		pol = POLDIFF_POLICY_MOD;
-		v = type_map_lookup_reverse(diff, pseudo_val, pol);
-	}
-	if (!apol_vector_get_size(v)) {
-		ERR(diff, "%s", strerror(ERANGE));
-		errno = ERANGE;
-		return NULL;
-	}
-	t = apol_vector_get_element(v, 0);
-	if (pol == POLDIFF_POLICY_ORIG)
-		qpol_type_get_name(diff->orig_qpol, t, &name);
-	else
-		qpol_type_get_name(diff->mod_qpol, t, &name);
-	return name;
-}
-
-/**
  *  Compare two pseudo role_transition rules from the same policy.
  *  Compares the source role name and then pseudo type value of the target.
  *
@@ -777,9 +751,15 @@ static int pseudo_role_trans_comp(const void *x, const void *y, void *arg)
 	else
 		return retv;
 	if (!retv && strcmp(a->default_role, b->default_role))
-		WARN(diff, "Multiple role_transition rules for %s %s with different default roles", a->source_role,
-		     get_valid_name(diff, a->pseudo_target));
+		WARN(diff, "Multiple role_transition rules for %s %s with different default roles.", a->source_role,
+		     type_map_get_name(diff, a->pseudo_target, POLDIFF_POLICY_ORIG));
 	return retv;
+}
+
+static void role_trans_free_item(void *item)
+{
+	/* no need to free members of a pseudo role_transition */
+	free(item);
 }
 
 apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
@@ -800,7 +780,7 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 		error = errno;
 		goto err;
 	}
-	v = apol_vector_create();
+	v = apol_vector_create(role_trans_free_item);
 	if (!v) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
@@ -864,23 +844,17 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 		}
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort_uniquify(v, pseudo_role_trans_comp, diff, free);
+	apol_vector_sort_uniquify(v, pseudo_role_trans_comp, diff);
 
 	return v;
 
       err:
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&attr_types);
-	apol_vector_destroy(&v, free);
+	apol_vector_destroy(&v);
 	free(tmp_prt);
 	errno = error;
 	return NULL;
-}
-
-void role_trans_free_item(void *item)
-{
-	/* no need to free members of a pseudo role_transition */
-	free(item);
 }
 
 int role_trans_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))
@@ -905,15 +879,16 @@ int role_trans_comp(const void *x, const void *y, poldiff_t * diff __attribute__
  *  @param tgt Name of the target type.
  *
  *  @return A newly allocated and initialised diff or NULL upon error.
- *  The caller is responsible for calling free() upon the returned value.
+ *  The caller is responsible for calling free() upon the returned
+ *  value.
  */
-static poldiff_role_trans_t *make_rt_diff(poldiff_t * diff, poldiff_form_e form, char *src, char *tgt)
+static poldiff_role_trans_t *make_rt_diff(poldiff_t * diff, poldiff_form_e form, char *src, const char *tgt)
 {
 	poldiff_role_trans_t *rt = NULL;
 	int error = 0;
-	if ((rt = calloc(1, sizeof(*rt))) == NULL || (rt->source_role = src) == NULL || (rt->target_type = tgt) == NULL) {
+	if ((rt = calloc(1, sizeof(*rt))) == NULL || (rt->source_role = src) == NULL || (rt->target_type = strdup(tgt)) == NULL) {
 		error = errno;
-		free(rt);
+		role_trans_free(rt);
 		ERR(diff, "%s", strerror(error));
 		errno = error;
 		return NULL;
@@ -926,70 +901,36 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	const pseudo_role_trans_t *rt = item;
 	poldiff_role_trans_t *prt = NULL;
-	char *tgt_name = NULL;
-	qpol_type_t *tgt;
-	apol_vector_t *mapped_types, *other;
+	const char *tgt_name = NULL;
 	int error = 0;
 
 	/* get tgt_name from type_map */
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-	case POLDIFF_FORM_ADD_TYPE:
 		{
-			mapped_types = type_map_lookup_reverse(diff, rt->pseudo_target, POLDIFF_POLICY_MOD);
-			other = type_map_lookup_reverse(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG);
-			if (!apol_vector_get_size(other))
+			tgt_name = type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_MOD);
+			if (type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG) == NULL) {
 				form = POLDIFF_FORM_ADD_TYPE;
+			}
 			break;
 		}
 	case POLDIFF_FORM_REMOVED:
-	case POLDIFF_FORM_REMOVE_TYPE:
 		{
-			mapped_types = type_map_lookup_reverse(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG);
-			other = type_map_lookup_reverse(diff, rt->pseudo_target, POLDIFF_POLICY_MOD);
-			if (!apol_vector_get_size(other))
+			tgt_name = type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG);
+			if (type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_MOD) == NULL) {
 				form = POLDIFF_FORM_REMOVE_TYPE;
+			}
 			break;
 		}
 	case POLDIFF_FORM_MODIFIED:   /* not supported here */
 	case POLDIFF_FORM_NONE:
 	default:
 		{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
+			assert(0);
 			return -1;
 		}
 	}
-	if (!mapped_types)
-		return -1;
-	tgt = apol_vector_get_element(mapped_types, 0);
-	if (!tgt) {
-		error = errno;
-		ERR(diff, "%s", strerror(error));
-		errno = error;
-		return -1;
-	}
-	switch (form) {
-	case POLDIFF_FORM_ADDED:
-	case POLDIFF_FORM_ADD_TYPE:
-		{
-			qpol_type_get_name(diff->mod_qpol, tgt, &tgt_name);
-			break;
-		}
-	case POLDIFF_FORM_REMOVED:
-	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			qpol_type_get_name(diff->orig_qpol, tgt, &tgt_name);
-			break;
-		}
-	case POLDIFF_FORM_MODIFIED:
-	case POLDIFF_FORM_NONE:
-	default:
-		{
-			/* not reachable */
-			assert(0);
-		}
-	}
+	assert(tgt_name != NULL);
 
 	/* create a new diff */
 	prt = make_rt_diff(diff, form, rt->source_role, tgt_name);
@@ -1010,8 +951,6 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 			prt->orig_default = rt->default_role;
 			break;
 		}
-	case POLDIFF_FORM_MODIFIED:
-	case POLDIFF_FORM_NONE:
 	default:
 		{
 			/* not reachable */
@@ -1021,7 +960,7 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	if (apol_vector_append(diff->role_trans_diffs->diffs, prt)) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
-		free(prt);
+		role_trans_free(prt);
 		errno = error;
 		return -1;
 	};
@@ -1048,8 +987,6 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 			diff->role_trans_diffs->num_removed_type++;
 			break;
 		}
-	case POLDIFF_FORM_MODIFIED:
-	case POLDIFF_FORM_NONE:
 	default:
 		{
 			/* not reachable */
@@ -1066,9 +1003,7 @@ int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	const pseudo_role_trans_t *prt2 = y;
 	char *default1 = NULL, *default2 = NULL;
 	poldiff_role_trans_t *rt = NULL;
-	apol_vector_t *mapped_tgts = NULL;
-	qpol_type_t *tgt_type = NULL;
-	char *tgt = NULL;
+	const char *tgt = NULL;
 	int error = 0;
 
 	default1 = prt1->default_role;
@@ -1077,17 +1012,8 @@ int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	if (!strcmp(default1, default2))
 		return 0;	       /* no difference */
 
-	mapped_tgts = type_map_lookup_reverse(diff, prt1->pseudo_target, POLDIFF_POLICY_ORIG);
-	if (!mapped_tgts)
-		return -1;	       /* errors already reported */
-	tgt_type = apol_vector_get_element(mapped_tgts, 0);
-	if (!tgt_type) {
-		error = errno;
-		ERR(diff, "%s", strerror(error));
-		errno = error;
-		return -1;
-	}
-	qpol_type_get_name(diff->orig_qpol, tgt_type, &tgt);
+	tgt = type_map_get_name(diff, prt1->pseudo_target, POLDIFF_POLICY_ORIG);
+	assert(tgt != NULL);
 	rt = make_rt_diff(diff, POLDIFF_FORM_MODIFIED, prt1->source_role, tgt);
 	if (!rt)
 		return -1;	       /* errors already reported */
@@ -1096,7 +1022,7 @@ int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	if (apol_vector_append(diff->role_trans_diffs->diffs, rt)) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
-		free(rt);
+		role_trans_free(rt);
 		errno = error;
 		return -1;
 	};

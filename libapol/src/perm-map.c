@@ -3,7 +3,6 @@
  *
  * Implementation of permission mapping routines.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -32,6 +31,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+
+/* use 8k line size */
+#define APOL_LINE_SZ 8192
 
 struct apol_permmap
 {
@@ -84,7 +86,7 @@ typedef struct apol_permmap_perm
  *
  * @param elem Pointer to free.  If NULL then do nothing.
  */
-static void apol_permmap_perm_free(void *elem)
+static void permmap_perm_free(void *elem)
 {
 	if (elem != NULL) {
 		apol_permmap_perm_t *p = (apol_permmap_perm_t *) elem;
@@ -99,11 +101,11 @@ static void apol_permmap_perm_free(void *elem)
  *
  * @param elem Pointer to free.  If NULL then do nothing.
  */
-static void apol_permmap_class_free(void *elem)
+static void permmap_class_free(void *elem)
 {
 	if (elem != NULL) {
 		apol_permmap_class_t *c = (apol_permmap_class_t *) elem;
-		apol_vector_destroy(&c->perms, apol_permmap_perm_free);
+		apol_vector_destroy(&c->perms);
 		free(c);
 	}
 }
@@ -139,7 +141,7 @@ static apol_permmap_perm_t *apol_permmap_perm_create(const char *name, unsigned 
 
 /**
  * Allocate and return a new permission map from a policy, and
- * allocates spaced for defined object classes.
+ * allocates space for defined object classes.
  *
  * @param p Policy from which to create permission map.
  *
@@ -158,15 +160,15 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
 	}
 
 	if ((t = (apol_permmap_t *) calloc(1, sizeof(*t))) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (qpol_policy_get_class_iter(p->p, &class_iter) < 0 || qpol_iterator_get_size(class_iter, &num_obj_classes) < 0) {
 		goto cleanup;
 	}
 	t->mapped = 0;
-	if ((t->classes = apol_vector_create_with_capacity(num_obj_classes)) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((t->classes = apol_vector_create_with_capacity(num_obj_classes, permmap_class_free)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
@@ -188,12 +190,12 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
 		}
 		if ((pc = calloc(1, sizeof(*pc))) == NULL || apol_vector_append(t->classes, pc) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
-			apol_permmap_class_free(pc);
+			permmap_class_free(pc);
 			goto cleanup;
 		}
 		pc->mapped = 0;
 		pc->c = c;
-		if ((pc->perms = apol_vector_create_with_capacity(num_unique_perms + num_common_perms)) == NULL) {
+		if ((pc->perms = apol_vector_create_with_capacity(num_unique_perms + num_common_perms, permmap_perm_free)) == NULL) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -206,7 +208,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
 			if ((pp = apol_permmap_perm_create(name, 0, (char)APOL_PERMMAP_MIN_WEIGHT)) == NULL ||
 			    apol_vector_append(pc->perms, pp) < 0) {
 				ERR(p, "%s", strerror(ENOMEM));
-				apol_permmap_perm_free(pp);
+				permmap_perm_free(pp);
 				goto cleanup;
 			}
 		}
@@ -218,7 +220,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
 			if ((pp = apol_permmap_perm_create(name, 0, (char)APOL_PERMMAP_MIN_WEIGHT)) == NULL ||
 			    apol_vector_append(pc->perms, pp) < 0) {
 				ERR(p, "%s", strerror(ENOMEM));
-				apol_permmap_perm_free(pp);
+				permmap_perm_free(pp);
 				goto cleanup;
 			}
 		}
@@ -241,7 +243,7 @@ void permmap_destroy(apol_permmap_t ** p)
 {
 	if (p == NULL || *p == NULL)
 		return;
-	apol_vector_destroy(&(*p)->classes, apol_permmap_class_free);
+	apol_vector_destroy(&(*p)->classes);
 	free(*p);
 	*p = NULL;
 }
@@ -405,8 +407,7 @@ static int parse_permmap_class(apol_policy_t * p, FILE * fp, size_t num_perms, a
 		apol_permmap_perm_t *pp;
 
 		line_ptr = line;
-		if (apol_str_trim(&line_ptr) != 0)
-			return -1;
+		apol_str_trim(line_ptr);
 		if (line_ptr[0] == '#' || apol_str_is_only_white_space(line_ptr))
 			continue;
 		perms_read++;
@@ -478,9 +479,7 @@ static int parse_permmap(apol_policy_t * p, FILE * fp)
 	/* first read number of classes */
 	while (fgets(line, sizeof(line), fp) != NULL) {
 		line_ptr = line;;
-		if (apol_str_trim(&line_ptr) != 0) {
-			return -1;
-		}
+		apol_str_trim(line_ptr);
 		if (line_ptr[0] != '#' && (sscanf(line_ptr, "%zu", &num_classes) == 1)) {
 			break;
 		}
@@ -496,9 +495,7 @@ static int parse_permmap(apol_policy_t * p, FILE * fp)
 		int found_class_decl = 0, rt;
 		while (fgets(line, APOL_LINE_SZ, fp) != NULL) {
 			line_ptr = line;
-			if (apol_str_trim(&line_ptr) != 0) {
-				return -1;
-			}
+			apol_str_trim(line_ptr);
 			if (line_ptr[0] != '#' && (sscanf(line_ptr, "%*s %s %zu", class_name, &num_perms) == 2)) {
 				found_class_decl = 1;
 				break;

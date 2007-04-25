@@ -36,7 +36,10 @@ sediffx_SOURCES = \
 	policy_view.c policy_view.h \
 	progress.c progress.h \
 	remap_types_dialog.c remap_types_dialog.h \
+	result_item.c result_item.h \
+	result_item_render.c result_item_render.h \
 	results.c results.h \
+	select_diff_dialog.c select_diff_dialog.h \
 	toplevel.c toplevel.h \
 	utilgui.c utilgui.h \
 	sediffx.c sediffx.h

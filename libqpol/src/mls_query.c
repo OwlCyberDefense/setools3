@@ -1,9 +1,8 @@
 /**
  *  @file
- *  Implementation of the interface for searching and iterating over  
+ *  Implementation of the interface for searching and iterating over
  *  policy MLS components.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *

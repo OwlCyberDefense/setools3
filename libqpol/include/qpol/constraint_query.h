@@ -3,7 +3,6 @@
  * Defines the public interface for searching and iterating over
  * constraints
  *
- * @author Kevin Carr kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang jtang@tresys.com
  *
@@ -37,7 +36,7 @@ extern "C"
 #include <qpol/class_perm_query.h>
 
 	typedef struct qpol_constraint qpol_constraint_t;
-	typedef struct qpol_constraint qpol_validatetrans_t;
+	typedef struct qpol_validatetrans qpol_validatetrans_t;
 	typedef struct qpol_constraint_expr_node qpol_constraint_expr_node_t;
 
 /**
@@ -169,7 +168,7 @@ extern "C"
 
 /**
  *  Get the code for the symbol type used by an expression node.
- *  @patam policy The policy from which the expression comes.
+ *  @param policy The policy from which the expression comes.
  *  @param expr The expression node from which to get the symbol type.
  *  Must be of expression type QPOL_CEXPR_TYPE_ATTR or QPOL_CEXPR_TYPE_NAMES.
  *  @param sym_type Integer in which to store the symbol type; the value
@@ -189,7 +188,7 @@ extern "C"
 
 /**
  *  Get the operator used by an expression node.
- *  @patam policy The policy from which the expression comes.
+ *  @param policy The policy from which the expression comes.
  *  @param expr The expression node from which to get the operator.
  *  Must be of expression type QPOL_CEXPR_TYPE_ATTR or QPOL_CEXPR_TYPE_NAMES.
  *  @param op Integer in which to store the operator; the value
@@ -201,7 +200,7 @@ extern "C"
 
 /**
  *  Get an iterator of the names in an expression node.
- *  @patam policy The policy from which the expression comes.
+ *  @param policy The policy from which the expression comes.
  *  @param expr The expression node from which to create the iterator.
  *  Must be of expression type QPOL_CEXPR_TYPE_NAMES.
  *  @param iter Iterator over items of type char* returned.

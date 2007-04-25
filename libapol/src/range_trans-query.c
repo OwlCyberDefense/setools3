@@ -7,7 +7,6 @@
  * results.  Searches are conjunctive -- all fields of the search
  * query must match for a datum to be added to the results query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -35,19 +34,15 @@
 struct apol_range_trans_query
 {
 	char *source, *target;
+	apol_vector_t *classes;
 	apol_mls_range_t *range;
 	unsigned int flags;
 };
 
-int apol_get_range_trans_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v)
-{
-	return apol_range_trans_get_by_query(p, r, v);
-}
-
 int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
-	apol_vector_t *source_list = NULL, *target_list = NULL;
+	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL;
 	apol_mls_range_t *range = NULL;
 	int retval = -1, source_as_any = 0;
 	*v = NULL;
@@ -70,10 +65,15 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 								  APOL_QUERY_SYMBOL_IS_BOTH)) == NULL) {
 			goto cleanup;
 		}
+		if (r->classes != NULL &&
+		    apol_vector_get_size(r->classes) > 0 &&
+		    (class_list = apol_query_create_candidate_class_list(p, r->classes)) == NULL) {
+			goto cleanup;
+		}
 	}
 
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	if (qpol_policy_get_range_trans_iter(p->p, &iter) < 0) {
@@ -122,6 +122,16 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 			continue;
 		}
 
+		if (class_list != NULL) {
+			qpol_class_t *obj_class;
+			if (qpol_range_trans_get_target_class(p->p, rule, &obj_class) < 0) {
+				goto cleanup;
+			}
+			if (apol_vector_get_index(class_list, obj_class, NULL, NULL, &i) < 0) {
+				continue;
+			}
+		}
+
 		if (qpol_range_trans_get_range(p->p, rule, &mls_range) < 0 ||
 		    (range = apol_mls_range_create_from_qpol_mls_range(p, mls_range)) == NULL) {
 			goto cleanup;
@@ -146,12 +156,13 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
-	apol_vector_destroy(&source_list, NULL);
+	apol_vector_destroy(&source_list);
 	if (!source_as_any) {
-		apol_vector_destroy(&target_list, NULL);
+		apol_vector_destroy(&target_list);
 	}
+	apol_vector_destroy(&class_list);
 	qpol_iterator_destroy(&iter);
 	apol_mls_range_destroy(&range);
 	return retval;
@@ -167,6 +178,7 @@ void apol_range_trans_query_destroy(apol_range_trans_query_t ** r)
 	if (*r != NULL) {
 		free((*r)->source);
 		free((*r)->target);
+		apol_vector_destroy(&(*r)->classes);
 		apol_mls_range_destroy(&((*r)->range));
 		free(*r);
 		*r = NULL;
@@ -183,6 +195,20 @@ int apol_range_trans_query_set_target(apol_policy_t * p, apol_range_trans_query_
 {
 	apol_query_set_flag(p, &r->flags, is_indirect, APOL_QUERY_TARGET_INDIRECT);
 	return apol_query_set(p, &r->target, NULL, symbol);
+}
+
+int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class)
+{
+	char *s = NULL;
+	if (obj_class == NULL) {
+		apol_vector_destroy(&r->classes);
+	} else if ((s = strdup(obj_class)) == NULL || (r->classes == NULL && (r->classes = apol_vector_create(free)) == NULL)
+		   || apol_vector_append(r->classes, s) < 0) {
+		ERR(p, "%s", strerror(errno));
+		free(s);
+		return -1;
+	}
+	return 0;
 }
 
 int apol_range_trans_query_set_range(apol_policy_t * p __attribute__ ((unused)),

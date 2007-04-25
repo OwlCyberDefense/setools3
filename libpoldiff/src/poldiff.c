@@ -2,7 +2,6 @@
  *  @file
  *  Implementation for computing a semantic policy difference.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -25,6 +24,8 @@
 
 #include "poldiff_internal.h"
 
+#include <apol/util.h>
+#include <qpol/policy_extend.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -44,7 +45,6 @@ typedef struct poldiff_item_record
 	poldiff_item_to_string_fn_t to_string;
 	poldiff_reset_fn_t reset;
 	poldiff_get_items_fn_t get_items;
-	poldiff_free_item_fn_t free_item;
 	poldiff_item_comp_fn_t comp;
 	poldiff_new_diff_fn_t new_diff;
 	poldiff_deep_diff_fn_t deep_diff;
@@ -52,32 +52,30 @@ typedef struct poldiff_item_record
 
 static const poldiff_item_record_t item_records[] = {
 	{
+	 "attribute",
+	 POLDIFF_DIFF_ATTRIBS,
+	 poldiff_attrib_get_stats,
+	 poldiff_get_attrib_vector,
+	 poldiff_attrib_get_form,
+	 poldiff_attrib_to_string,
+	 attrib_reset,
+	 attrib_get_items,
+	 attrib_comp,
+	 attrib_new_diff,
+	 attrib_deep_diff,
+	 },
+	{
 	 "avrule",
 	 POLDIFF_DIFF_AVRULES,
 	 poldiff_avrule_get_stats,
 	 poldiff_get_avrule_vector,
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
-	 rule_reset,
+	 avrule_reset,
 	 avrule_get_items,
-	 avrule_free_item,
 	 avrule_comp,
 	 avrule_new_diff,
 	 avrule_deep_diff,
-	 },
-	{
-	 "class",
-	 POLDIFF_DIFF_CLASSES,
-	 poldiff_class_get_stats,
-	 poldiff_get_class_vector,
-	 poldiff_class_get_form,
-	 poldiff_class_to_string,
-	 class_reset,
-	 class_get_items,
-	 NULL,
-	 class_comp,
-	 class_new_diff,
-	 class_deep_diff,
 	 },
 	{
 	 "bool",
@@ -88,10 +86,35 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_bool_to_string,
 	 bool_reset,
 	 bool_get_items,
-	 NULL,
 	 bool_comp,
 	 bool_new_diff,
 	 bool_deep_diff,
+	 },
+	{
+	 "category",
+	 POLDIFF_DIFF_CATS,
+	 poldiff_cat_get_stats,
+	 poldiff_get_cat_vector,
+	 poldiff_cat_get_form,
+	 poldiff_cat_to_string,
+	 cat_reset,
+	 cat_get_items,
+	 cat_comp,
+	 cat_new_diff,
+	 cat_deep_diff,
+	 },
+	{
+	 "class",
+	 POLDIFF_DIFF_CLASSES,
+	 poldiff_class_get_stats,
+	 poldiff_get_class_vector,
+	 poldiff_class_get_form,
+	 poldiff_class_to_string,
+	 class_reset,
+	 class_get_items,
+	 class_comp,
+	 class_new_diff,
+	 class_deep_diff,
 	 },
 	{
 	 "common",
@@ -102,10 +125,48 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_common_to_string,
 	 common_reset,
 	 common_get_items,
-	 NULL,
 	 common_comp,
 	 common_new_diff,
 	 common_deep_diff,
+	 },
+	{
+	 "level",
+	 POLDIFF_DIFF_LEVELS,
+	 poldiff_level_get_stats,
+	 poldiff_get_level_vector,
+	 poldiff_level_get_form,
+	 poldiff_level_to_string,
+	 level_reset,
+	 level_get_items,
+	 level_comp,
+	 level_new_diff,
+	 level_deep_diff,
+	 },
+	{
+	 "range transition",
+	 POLDIFF_DIFF_RANGE_TRANS,
+	 poldiff_range_trans_get_stats,
+	 poldiff_get_range_trans_vector,
+	 poldiff_range_trans_get_form,
+	 poldiff_range_trans_to_string,
+	 range_trans_reset,
+	 range_trans_get_items,
+	 range_trans_comp,
+	 range_trans_new_diff,
+	 range_trans_deep_diff,
+	 },
+	{
+	 "role",
+	 POLDIFF_DIFF_ROLES,
+	 poldiff_role_get_stats,
+	 poldiff_get_role_vector,
+	 poldiff_role_get_form,
+	 poldiff_role_to_string,
+	 role_reset,
+	 role_get_items,
+	 role_comp,
+	 role_new_diff,
+	 role_deep_diff,
 	 },
 	{
 	 "role_allow",
@@ -116,7 +177,6 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_role_allow_to_string,
 	 role_allow_reset,
 	 role_allow_get_items,
-	 role_allow_free_item,
 	 role_allow_comp,
 	 role_allow_new_diff,
 	 role_allow_deep_diff,
@@ -130,38 +190,9 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_role_trans_to_string,
 	 role_trans_reset,
 	 role_trans_get_items,
-	 role_trans_free_item,
 	 role_trans_comp,
 	 role_trans_new_diff,
 	 role_trans_deep_diff,
-	 },
-	{
-	 "role",
-	 POLDIFF_DIFF_ROLES,
-	 poldiff_role_get_stats,
-	 poldiff_get_role_vector,
-	 poldiff_role_get_form,
-	 poldiff_role_to_string,
-	 role_reset,
-	 role_get_items,
-	 NULL,
-	 role_comp,
-	 role_new_diff,
-	 role_deep_diff,
-	 },
-	{
-	 "user",
-	 POLDIFF_DIFF_USERS,
-	 poldiff_user_get_stats,
-	 poldiff_get_user_vector,
-	 poldiff_user_get_form,
-	 poldiff_user_to_string,
-	 user_reset,
-	 user_get_items,
-	 NULL,
-	 user_comp,
-	 user_new_diff,
-	 user_deep_diff,
 	 },
 	{
 	 "terule",
@@ -170,9 +201,8 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_get_terule_vector,
 	 poldiff_terule_get_form,
 	 poldiff_terule_to_string,
-	 rule_reset,
+	 terule_reset,
 	 terule_get_items,
-	 terule_free_item,
 	 terule_comp,
 	 terule_new_diff,
 	 terule_deep_diff,
@@ -186,24 +216,22 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_type_to_string,
 	 type_reset,
 	 type_get_items,
-	 NULL,
 	 type_comp,
 	 type_new_diff,
 	 type_deep_diff,
 	 },
 	{
-	 "attribute",
-	 POLDIFF_DIFF_ATTRIBS,
-	 poldiff_attrib_get_stats,
-	 poldiff_get_attrib_vector,
-	 poldiff_attrib_get_form,
-	 poldiff_attrib_to_string,
-	 attrib_reset,
-	 attrib_get_items,
-	 NULL,
-	 attrib_comp,
-	 attrib_new_diff,
-	 attrib_deep_diff,
+	 "user",
+	 POLDIFF_DIFF_USERS,
+	 poldiff_user_get_stats,
+	 poldiff_get_user_vector,
+	 poldiff_user_get_form,
+	 poldiff_user_to_string,
+	 user_reset,
+	 user_get_items,
+	 user_comp,
+	 user_new_diff,
+	 user_deep_diff,
 	 }
 };
 
@@ -242,15 +270,19 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 		return NULL;
 	}
 
-	if ((diff->rule_diffs = rule_create()) == NULL ||
+	if ((diff->attrib_diffs = attrib_summary_create()) == NULL ||
+	    (diff->avrule_diffs = avrule_create()) == NULL ||
 	    (diff->bool_diffs = bool_create()) == NULL ||
+	    (diff->cat_diffs = cat_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
 	    (diff->common_diffs = common_create()) == NULL ||
+	    (diff->level_diffs = level_create()) == NULL ||
+	    (diff->range_trans_diffs = range_trans_create()) == NULL ||
 	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->role_trans_diffs = role_trans_create()) == NULL ||
-	    (diff->user_diffs = user_create()) == NULL ||
-	    (diff->type_diffs = type_summary_create()) == NULL || (diff->attrib_diffs = attrib_summary_create()) == NULL) {
+	    (diff->terule_diffs = terule_create()) == NULL ||
+	    (diff->type_diffs = type_summary_create()) == NULL || (diff->user_diffs = user_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
 		errno = ENOMEM;
@@ -266,17 +298,25 @@ void poldiff_destroy(poldiff_t ** diff)
 		return;
 	apol_policy_destroy(&(*diff)->orig_pol);
 	apol_policy_destroy(&(*diff)->mod_pol);
+	apol_bst_destroy(&(*diff)->class_bst);
+	apol_bst_destroy(&(*diff)->perm_bst);
+	apol_bst_destroy(&(*diff)->bool_bst);
+
 	type_map_destroy(&(*diff)->type_map);
-	rule_destroy(&(*diff)->rule_diffs);
+	attrib_summary_destroy(&(*diff)->attrib_diffs);
+	avrule_destroy(&(*diff)->avrule_diffs);
 	bool_destroy(&(*diff)->bool_diffs);
+	cat_destroy(&(*diff)->cat_diffs);
 	class_destroy(&(*diff)->class_diffs);
 	common_destroy(&(*diff)->common_diffs);
+	level_destroy(&(*diff)->level_diffs);
+	range_trans_destroy(&(*diff)->range_trans_diffs);
 	role_destroy(&(*diff)->role_diffs);
 	role_allow_destroy(&(*diff)->role_allow_diffs);
 	role_trans_destroy(&(*diff)->role_trans_diffs);
 	user_destroy(&(*diff)->user_diffs);
+	terule_destroy(&(*diff)->terule_diffs);
 	type_summary_destroy(&(*diff)->type_diffs);
-	attrib_summary_destroy(&(*diff)->attrib_diffs);
 	free(*diff);
 	*diff = NULL;
 }
@@ -367,13 +407,13 @@ static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_item_record_t * 
 		}
 	}
 
-	apol_vector_destroy(&p1_v, item_record->free_item);
-	apol_vector_destroy(&p2_v, item_record->free_item);
+	apol_vector_destroy(&p1_v);
+	apol_vector_destroy(&p2_v);
 	diff->diff_status |= item_record->flag_bit;
 	return 0;
       err:
-	apol_vector_destroy(&p1_v, item_record->free_item);
-	apol_vector_destroy(&p2_v, item_record->free_item);
+	apol_vector_destroy(&p1_v);
+	apol_vector_destroy(&p2_v);
 	errno = error;
 	return -1;
 }
@@ -408,6 +448,7 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 		return -1;
 	}
 
+	diff->line_numbers_enabled = 0;
 	for (i = 0; i < num_items; i++) {
 		/* item requested but not yet run */
 		if ((flags & item_records[i].flag_bit) && !(item_records[i].flag_bit & diff->diff_status)) {
@@ -459,6 +500,105 @@ int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5])
 	}
 
 	return 0;
+}
+
+int poldiff_enable_line_numbers(poldiff_t * diff)
+{
+	int retval;
+	if (diff == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (!diff->line_numbers_enabled) {
+		if (qpol_policy_build_syn_rule_table(diff->orig_qpol))
+			return -1;
+		if (qpol_policy_build_syn_rule_table(diff->mod_qpol))
+			return -1;
+		if ((retval = avrule_enable_line_numbers(diff)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff)) < 0) {
+			return retval;
+		}
+		diff->line_numbers_enabled = 1;
+	}
+	return 0;
+}
+
+int poldiff_build_bsts(poldiff_t * diff)
+{
+	apol_vector_t *classes[2] = { NULL, NULL };
+	apol_vector_t *perms[2] = { NULL, NULL };
+	apol_vector_t *bools[2] = { NULL, NULL };
+	size_t i, j;
+	qpol_class_t *cls;
+	qpol_bool_t *bool;
+	char *name, *new_name;
+	int retval = -1, error = 0;
+	if (diff->class_bst != NULL) {
+		return 0;
+	}
+	if ((diff->class_bst = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (diff->perm_bst = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (diff->bool_bst = apol_bst_create(apol_str_strcmp, free)) == NULL) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		goto cleanup;
+	}
+	for (i = 0; i < 2; i++) {
+		apol_policy_t *p = (i == 0 ? diff->orig_pol : diff->mod_pol);
+		qpol_policy_t *q = apol_policy_get_qpol(p);
+		if (apol_class_get_by_query(p, NULL, &classes[i]) < 0 ||
+		    apol_perm_get_by_query(p, NULL, &perms[i]) < 0 || apol_bool_get_by_query(p, NULL, &bools[i]) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+		for (j = 0; j < apol_vector_get_size(classes[i]); j++) {
+			cls = (qpol_class_t *) apol_vector_get_element(classes[i], j);
+			if (qpol_class_get_name(q, cls, &name) < 0) {
+				error = errno;
+				goto cleanup;
+			}
+			if ((new_name = strdup(name)) == NULL ||
+			    apol_bst_insert_and_get(diff->class_bst, (void **)&new_name, NULL) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
+		}
+		for (j = 0; j < apol_vector_get_size(perms[i]); j++) {
+			name = (char *)apol_vector_get_element(perms[i], j);
+			if ((new_name = strdup(name)) == NULL ||
+			    apol_bst_insert_and_get(diff->perm_bst, (void **)&new_name, NULL) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
+		}
+		for (j = 0; j < apol_vector_get_size(bools[i]); j++) {
+			bool = (qpol_bool_t *) apol_vector_get_element(bools[i], j);
+			if (qpol_bool_get_name(q, bool, &name) < 0) {
+				error = errno;
+				goto cleanup;
+			}
+			if ((new_name = strdup(name)) == NULL ||
+			    apol_bst_insert_and_get(diff->bool_bst, (void **)&new_name, NULL) < 0) {
+				error = errno;
+				ERR(diff, "%s", strerror(error));
+				goto cleanup;
+			}
+		}
+	}
+	retval = 0;
+      cleanup:
+	apol_vector_destroy(&classes[0]);
+	apol_vector_destroy(&classes[1]);
+	apol_vector_destroy(&perms[0]);
+	apol_vector_destroy(&perms[1]);
+	apol_vector_destroy(&bools[0]);
+	apol_vector_destroy(&bools[1]);
+	errno = error;
+	return retval;
 }
 
 static void poldiff_handle_default_callback(void *arg __attribute__ ((unused)),

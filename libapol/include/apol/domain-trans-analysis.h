@@ -37,7 +37,6 @@ extern "C"
 
 	typedef struct apol_domain_trans_analysis apol_domain_trans_analysis_t;
 	typedef struct apol_domain_trans_result apol_domain_trans_result_t;
-	typedef struct apol_domain_trans_table apol_domain_trans_table_t;
 
 #define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0x01
 #define APOL_DOMAIN_TRANS_DIRECTION_REVERSE 0x02
@@ -70,12 +69,6 @@ extern "C"
  *  should be reset.
  */
 	extern void apol_domain_trans_table_reset(apol_policy_t * policy);
-
-/**
- *  Destroy the domain transition table freeing all memory used.
- *  @param table Reference pointer to the table to be destroyed.
- */
-	extern void apol_domain_trans_table_destroy(apol_domain_trans_table_t ** table);
 
 /*************** functions to do domain transition anslysis ***************/
 
@@ -126,7 +119,7 @@ extern "C"
 
 /**
  *  Set the analysis to begin searching using a given type. This function
- *  must be called proir to running the analysis. If a previous type
+ *  must be called prior to running the analysis. If a previous type
  *  was set, it will be free()'d first.
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.
@@ -198,10 +191,9 @@ extern "C"
  *  @param policy Policy containing the table to use.
  *  @param dta A non-NULL structure containng parameters for analysis.
  *  @param results A reference pointer to a vector of
- *  apol_domain_trans_result_t. The vector will be allocated by this function.
- *  The caller must call apol_vector_destroy() afterwards, <b>passing
- *  apol_domain_trans_result_free()</b> as the second parameter. This will
- *  be set to NULL upon error.
+ *  apol_domain_trans_result_t. The vector will be allocated by this
+ *  function.  The caller must call apol_vector_destroy()
+ *  afterwards. This will be set to NULL upon error.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *results will be NULL.
  */
@@ -209,25 +201,6 @@ extern "C"
 						 apol_vector_t ** results);
 
 /***************** functions for accessing results ************************/
-
-/**
- * Do a deep copy (i.e., a clone) of an apol_domain_trans_result_t
- * object.  The caller is responsible for calling
- * apol_domain_trans_result_free() upon the returned value.
- *
- * @param result Pointer to a domain trans result structure to
- * destroy.
- *
- * @return A clone of the passed in result node, or NULL upon error.
- */
-	extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_result(apol_domain_trans_result_t * result);
-
-/**
- *  Free all memory associated with a domain transition result, including
- *  the pointer itself. This function does nothing if the result is NULL.
- *  @param dtr Pointer to a domain transition result structure to free.
- */
-	extern void apol_domain_trans_result_free(void *dtr);
 
 /**
  *  Return the start type of the transition in an
@@ -338,6 +311,30 @@ extern "C"
  *  used to generate the results.
  */
 	extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_result_t * dtr);
+
+/**
+ * Do a deep copy (i.e., a clone) of an apol_domain_trans_result_t
+ * object.  The caller is responsible for calling
+ * apol_domain_trans_result_destroy() upon the returned value.
+ *
+ * @param result Pointer to a domain trans result structure to
+ * destroy.
+ *
+ * @return A clone of the passed in result node, or NULL upon error.
+ */
+	extern apol_domain_trans_result_t *apol_domain_trans_result_create_from_domain_trans_result(const apol_domain_trans_result_t
+												    * in);
+
+/**
+ * Free all memory used by an apol_domain_trans_result_t object and
+ * set it to NULL.  This does nothing if the pointer is already NULL.
+ * <b>This should only be called for results created by
+ * apol_domain_trans_result_create_from_domain_trans_result() and not
+ * those returned from within vectors.</b>
+ *
+ * @param res Reference pointer to a result to destroy.
+ */
+	extern void apol_domain_trans_result_destroy(apol_domain_trans_result_t ** res);
 
 /************************ utility functions *******************************/
 /* define the following for rule type */

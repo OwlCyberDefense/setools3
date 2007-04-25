@@ -37,7 +37,6 @@ extern "C"
 
 #include "policy.h"
 #include "mls-query.h"
-#include "vector.h"
 #include <qpol/policy.h>
 #include <stdlib.h>
 

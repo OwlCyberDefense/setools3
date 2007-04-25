@@ -3,7 +3,6 @@
  *  Public interface for querying syntactic rules from the extended
  *  policy image.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -38,8 +37,8 @@ extern "C"
 #include <stdint.h>
 
 	typedef struct qpol_type_set qpol_type_set_t;
-	typedef struct qpol_syn_rule qpol_syn_avrule_t;
-	typedef struct qpol_syn_rule qpol_syn_terule_t;
+	typedef struct qpol_syn_avrule qpol_syn_avrule_t;
+	typedef struct qpol_syn_terule qpol_syn_terule_t;
 
 /**
  *  Get an iterator of the included types in a type set.

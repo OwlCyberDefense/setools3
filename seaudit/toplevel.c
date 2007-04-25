@@ -409,13 +409,19 @@ static void init_icons(toplevel_t * top)
 	gtk_window_set_icon_list(top->w, icon_list);
 }
 
+static void message_view_free(void *elem)
+{
+	message_view_t *view = elem;
+	message_view_destroy(&view);
+}
+
 toplevel_t *toplevel_create(seaudit_t * s)
 {
 	toplevel_t *top;
 	GtkWidget *vbox;
 	int error = 0;
 
-	if ((top = calloc(1, sizeof(*top))) == NULL || (top->views = apol_vector_create()) == NULL) {
+	if ((top = calloc(1, sizeof(*top))) == NULL || (top->views = apol_vector_create(message_view_free)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -460,12 +466,6 @@ toplevel_t *toplevel_create(seaudit_t * s)
 	return top;
 }
 
-static void message_view_free(void *elem)
-{
-	message_view_t *view = elem;
-	message_view_destroy(&view);
-}
-
 void toplevel_destroy(toplevel_t ** top)
 {
 	if (top != NULL && *top != NULL) {
@@ -473,7 +473,7 @@ void toplevel_destroy(toplevel_t ** top)
 			g_source_remove((*top)->monitor_id);
 		}
 		policy_view_destroy(&(*top)->pv);
-		apol_vector_destroy(&(*top)->views, message_view_free);
+		apol_vector_destroy(&(*top)->views);
 		free((*top)->xml_filename);
 		g_free((*top)->view_filename);
 		progress_destroy(&(*top)->progress);
@@ -922,10 +922,10 @@ void toplevel_on_destroy(gpointer user_data, GtkObject * object __attribute__ ((
 void toplevel_on_open_log_activate(gpointer user_data, GtkWidget * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
-	char *path = util_open_file(top->w, "Open Log", seaudit_get_log_path(top->s));
-	if (path != NULL) {
-		toplevel_open_log(top, path);
-		g_free(path);
+	apol_vector_t *paths = util_open_file(top->w, "Open Log", seaudit_get_log_path(top->s), 0);
+	if (paths != NULL) {
+		toplevel_open_log(top, apol_vector_get_element(paths, 0));
+		apol_vector_destroy(&paths);
 	}
 }
 
@@ -963,14 +963,16 @@ void toplevel_on_new_view_activate(gpointer user_data, GtkWidget * widget __attr
 void toplevel_on_open_view_activate(gpointer user_data, GtkWidget * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
-	char *path = util_open_file(top->w, "Open View", top->view_filename);
+	apol_vector_t *paths = util_open_file(top->w, "Open View", top->view_filename, 0);
 	seaudit_model_t *model = NULL;
-	if (path == NULL) {
+	if (paths == NULL) {
 		return;
 	}
-	g_free(top->view_filename);
-	top->view_filename = path;
-	if ((model = seaudit_model_create_from_file(top->view_filename)) == NULL ||
+	free(top->view_filename);
+	top->view_filename = strdup(apol_vector_get_element(paths, 0));
+	apol_vector_destroy(&paths);
+	if (top->view_filename == NULL ||
+	    (model = seaudit_model_create_from_file(top->view_filename)) == NULL ||
 	    seaudit_model_append_log(model, seaudit_get_log(top->s)) < 0) {
 		toplevel_ERR(top, "Error opening view: %s", strerror(errno));
 		seaudit_model_destroy(&model);

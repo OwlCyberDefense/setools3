@@ -1,3 +1,51 @@
+SETools 3.2:
+
+libapol, libqpol, libesaudit, libpoldiff:
+
+  * If --enable-swig-python is given during configure time, the build
+    system will create Python SWIG wrappers for these libraries.
+
+  * If --enable-swig-java is given during configure time, the build
+    system will create Java SWIG wrappers for these libraries.
+
+libpoldiff:
+
+  * Provides ability to diff levels, categories, and range_transition
+    statements.  Provides ability to diff modifications to a user's
+    default level and permitted MLS range, assuming the policies are MLS.
+    
+apol, seaudit, sediffx:
+
+  * Introduces 'policy list', a small text file that contains
+    references to a base policy and any number of modules.  After
+    selecting the base policy and modules in a tool's open policy
+    dialog, click on 'Export' to write a policy list to disk.  That
+    policy list then may be imported into the same tool or any other
+    graphical SETools application.  This file also may be specified
+    on the command line for all tools that load a policy.
+
+sesearch, apol:
+
+  * Provides full support for version 21 policy (i.e., object classes for
+    range_transition statements).
+
+sediff:
+
+  * Shows MLS diffs.
+
+sediffx:
+
+  * Shows MLS diffs.
+
+  * Provides option to show line numbers that contributed just to a
+    specific AV rule's permission by clicking that AV rule's permissions.
+    This is in addition to existing sediffx behavior that showed all lines
+    associated with a particular rule difference.
+
+  * Provides support for type joins and splits within the type remap dialog.
+
+==================================================
+
 SETools 3.1:
 
 SETools:

@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef APOL_RANGETRANS_QUERY_H
-#define APOL_RANGETRANS_QUERY_H
+#ifndef APOL_RANGE_TRANS_QUERY_H
+#define APOL_RANGE_TRANS_QUERY_H
 
 #ifdef	__cplusplus
 extern "C"
@@ -40,36 +40,14 @@ extern "C"
 /**
  * Execute a query against all range transition rules within the
  * policy.
- * @deprecated This function has been renamed apol_range_trans_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up terules.
  * @param r Structure containing parameters for query.  If this is
  * NULL then return all range transitions.
  * @param v Reference to a vector of qpol_range_trans_t.  The vector
  * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_range_trans_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all range transition rules within the
- * policy.
- *
- * @param p Policy within which to look up terules.
- * @param r Structure containing parameters for query.  If this is
- * NULL then return all range transitions.
- * @param v Reference to a vector of qpol_range_trans_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -136,7 +114,24 @@ extern "C"
 						     int is_indirect);
 
 /**
- * Set a range trans query to return only users matching a MLS range.
+ * Set a range trans query to return rules whose object class matches
+ * symbol.  If more than one class are appended to the query, the
+ * rule's class must be one of those appended.  (I.e., the rule's
+ * class must be a member of the query's classes.)  Pass a NULL to
+ * clear all classes.  Note that this performs straight string
+ * comparison, ignoring the regex flag.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Range trans query to set.
+ * @param obj_class Name of object class to add to search set, or NULL
+ * to clear all classes.
+ *
+ * @return 0 on success, negative on error.
+ */
+	extern int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class);
+
+/**
+ * Set a range trans query to return only rules matching a MLS range.
  * This function takes ownership of the range, such that the caller
  * must not modify nor destroy it afterwards.
  *

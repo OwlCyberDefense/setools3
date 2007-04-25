@@ -7,7 +7,6 @@
  * results.  Searches are conjunctive -- all fields of the search
  * query must match for a datum to be added to the results query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -43,11 +42,6 @@ struct apol_user_query
 
 /******************** user queries ********************/
 
-int apol_get_user_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v)
-{
-	return apol_user_get_by_query(p, u, v);
-}
-
 int apol_user_get_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *role_iter = NULL;
@@ -58,8 +52,8 @@ int apol_user_get_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector
 	if (qpol_policy_get_user_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -145,7 +139,7 @@ int apol_user_get_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&role_iter);

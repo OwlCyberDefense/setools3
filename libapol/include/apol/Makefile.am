@@ -19,7 +19,7 @@ apol_HEADERS = \
 	policy.h \
 	policy-path.h \
 	policy-query.h \
-	rangetrans-query.h \
+	range_trans-query.h \
 	rbacrule-query.h \
 	relabel-analysis.h \
 	render.h \

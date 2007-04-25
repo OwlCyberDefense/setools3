@@ -69,7 +69,7 @@ extern "C"
 #include "terule-query.h"
 #include "condrule-query.h"
 #include "rbacrule-query.h"
-#include "rangetrans-query.h"
+#include "range_trans-query.h"
 #include "constraint-query.h"
 
 #include "domain-trans-analysis.h"
