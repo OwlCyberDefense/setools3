@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.2
-Release: pre7
+Release: 0
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -435,6 +435,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun -p /sbin/ldconfig
 
 %changelog
+* Wed Apr 25 2007 Jason Tang <jtang@tresys.com> 3.2-0
+- update to SETools 3.2 release
+
 * Mon Feb 02 2007 Jason Tang <jtang@tresys.com> 3.1-1
 - update to SETools 3.1 release
 
