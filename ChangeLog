@@ -1,3 +1,296 @@
+2007-04-25  J. Tang  <jtang@tresys.com>
+
+	* Official release of SETools-3.2.
+
+2007-04-20  J. Tang  <jtang@tresys.com>
+
+	* Added seaudit_log_parse_buffer(), needed because
+	seaudit_log_parse() is not possible with the Java SWIG library.
+
+	* Build system updated to suppress warnings from automake
+	1.10, and for parallel compilation (i.e., make -j).
+
+2007-04-18  J. Mowery  <jmowery@tresys.com>
+
+	* The function apol_domain_trans_result_create_from_domain_trans_result()
+	  is now publicly exported. Also added is apol_domain_trans_result_destroy()
+	  to free memory used by duplicated results.
+
+2007-04-17  J. Tang  <jtang@tresys.com>
+
+	* Fixed potential segfault in seaudit_filter_set_date() when
+	called using the same struct tm pointers that were returned by
+	seaudit_filter_get_date().  The old code would dereference
+	memory that was just free()d.
+
+2007-04-16  J. Tang  <jtang@tresys.com>
+
+	* apol_mls_range_get_levels() fixed so that its returned levels
+	only include categories that are valid for the given policy.
+	Before it just copied the categories for the high level, even if a
+	lower level could not actually have one of those categories.
+
+	* apol_mls_level_get_cats() now always returns categories in
+	alphabetical order.
+
+2007-04-06  J. Tang  <jtang@tresys.com>
+
+	* Added seaudit_avc_message_get_name() and
+	seaudit_sort_by_name().  seaudit now shows AVC messages' name
+	field; this column may be be hidden through the updated
+	preferences dialog.
+
+	* Updated libqpol to use libsepol >= 2.0.0 if available.
+	configure should be able to autodetect this.
+
+2007-04-05  J. Tang  <jtang@tresys.com>
+
+	* sediffx now allows the user to select which components to diff,
+	rather than always diffing everything.
+
+	* fix to domain transition analysis, where setexec rules might not
+	be found correctly given certain policies.
+
+2007-04-04  J. Tang  <jtang@tresys.com>
+
+	* New configure option --enable-swig-java to enable build of Java
+	SWIG wrappers.
+
+2007-04-03  J. Mowery <jmowery@tresys.com>
+
+	* Added apol_file_is_policy_path_list() to validate policy path
+	  list files.
+
+	* Added ability to specify policy path list files from command
+	  line for all tools taking a policy as an argument.
+
+2007-04-02  J. Mowery <jmowery@tresys.com>
+
+	* Removed the "all_files" symbol from libsefs; this symbol was
+	  previously marked as deprecated.
+
+2007-03-29  J. Mowery <jmowery@tresys.com>
+
+	* Libpoldiff SWIG wrapper added; wrapper treats all structures as
+	  classes in the target language.
+
+2007-03-28  J. Tang  <jtang@tresys.com>
+
+	* Introduced 'policy list' in apol, seaudit, and sediffx.  This is
+	a small text file that contains references to a base policy and
+	any number of modules.
+
+2007-03-27  J. Tang  <jtang@tresys.com>
+
+	* added apol_policy_path_create_from_file() and
+	apol_policy_path_to_file().
+
+	* apol_str_trim() no longer has a return value; it also operates
+	directly on a string, rather than a reference to a string.
+
+	* apol_vector_t and apol_bst_t now require a destructor function
+	to be given during creation time, rather than being passed as a
+	second parameter respectively to apol_vector_destroy() and
+	apol_bst_destroy().  All of SETools has been updated to this
+	scheme.
+
+2007-03-26  J. Tang  <jtang@tresys.com>
+
+	* apol_context_t is now an opaque structure.  Accessors added to
+	the user, role, type, and range fields.
+
+2007-03-23  J. Tang  <jtang@tresys.com>
+
+	* added apol_mls_level_get_sens() and apol_mls_level_get_cats().
+
+2007-03-23  J. Mowery <jmowery@tresys.com>
+
+	* Libseaudit SWIG wrapper added; wrapper treats all structures as
+	  classes in the target language.
+
+2007-03-23  J. Tang  <jtang@tresys.com>
+
+	* apol_mls_level_t and apol_mls_range_t are now opaque structures.
+
+	* fixed error in seaudit_model_create_from_model(), where the
+	duplicate's filters and sorts were being linked to the original
+	model, not the newly created one.
+
+	* fixed potential segfault in seaudit_filter_set_name() and
+	seaudit_filter_set_description() if the passed in pointer was the
+	same one obtained by the respecitve accessor function.
+
+2007-03-22  J. Mowery  <jmowery@tresys.com>
+
+	* Libapol SWIG wrapper updated to treat all structures as classes
+	  in the target language.
+
+2007-03-21  J. Tang  <jtang@tresys.com>
+
+	* Added ability for user to specify type joins and splits in
+	sediffx.  The libpoldiff library had always supported this
+	feature; it just was not available through the user interface.
+
+2007-03-20  J. Mowery  <jmowery@tresys.com>
+
+	* Renamed apol_domain_trans_table_destroy to domain_trans_table_destroy
+	  and moved to policy-query-internal.h; this function was not intended
+	  for external use.
+
+2007-03-19  J. Tang  <jtang@tresys.com>
+
+	* When viewing AV rule differences, click (either left or right) a
+	permission name.  This will now popup a menu that gives line
+	numbers for rules that contributed just that permission, rather
+	than the entire AV rule.  This is enabled when source policies are
+	used.
+
+2007-03-16  J. Tang  <jtang@tresys.com>
+
+	* Added poldiff_avrule_get_orig_line_numbers_for_perm() and
+	poldiff_avrule_get_mod_line_numbers_for_perm().
+
+2007-03-15  J. Tang  <jtang@tresys.com>
+
+	* Split libpoldiff/include/rule_diff.h into
+	libpoldiff/include/avrule_diff.h and
+	libpoldiff/include/terule_diff.h.  None of the function names were
+	changed.
+
+	* Re-standardized all programs' command line options.  -V always
+	shows the version, -c always deals with object classes, and so
+	forth.  Man pages updated.
+
+	* Renamed libapol/include/rangetrans-query.h to
+	libapol/include/range_trans-query.h.  Likewise renamed
+	libpoldiff's rangetrans_diff.h  None of the function names were
+	changed.
+
+2007-03-13  J. Tang  <jtang@tresys.com>
+
+	* fixed segfault in libseaudit when, while parsing an AVC
+	message's permissions list it does not encounter a closing brace.
+
+	* information flow graphs are now being constructed via a BST and
+	its O(log n), rather than via a vector and O(n).  It should be
+	noticeably faster now.
+
+	* fixed error in information flow analysis, transitive mode.  The
+	returned flows were mistakenly all set to be the same object
+	class.  For example if a step was foo_t -> bar_t by way of class
+	baz_c, subsequent flows were accidentally being constrained to
+	also be of baz_c.
+
+	* fixed error in apol_bst_insert() and apol_bst_insert_and_get(),
+	where the return values of 0 and 1 were flipped.  The comment was
+	correct, but the code was not.
+
+2007-03-12  J. Tang  <jtang@tresys.com>
+
+	* fixed share libraries's soname, such that SETools's programs
+	depend upon the correct name.  For example, seaudit's .dynamic
+	section should have as a dependency on libseaudit.so.4, not
+	libseaudit.so.4.1.
+
+	* sediffx now diffs and displays range transitions
+
+	* sediff -E now diffs range transitions
+
+	* range transition diff added libpoldiff
+
+2007-03-08  J. Tang  <jtang@tresys.com>
+
+	* poldiff_user_get_added_roles() and
+	poldiff_user_get_removed_roles() now return all roles when the
+	form is POLDIFF_FORM_ADDED / POLDIFF_FORM_REMOVED.
+
+	* sediffx updated to show users' MLS differences
+
+2007-03-07  J. Tang  <jtang@tresys.com>
+
+	* in libpoldiff, if either policy is MLS then when diffing users,
+	those users' default MLS level and assigned ranges are also
+	diffed.
+
+	* added poldiff_range_t object
+
+	* fixed segfault in libqpol when loading an invalid source policy
+
+	* error messages were not being shown correctly in apol's open
+	policy dialog; fixed.
+
+2007-03-06  J. Mowery <jmowery@tresys.com>
+
+	* added SWIG wrapper for libqpol. The wrapper treats all libqpol
+	structs as classes in the target language.
+
+2007-03-06  J. Tang  <jtang@tresys.com>
+
+	* apol_mls_level_create() will now always return an allocated (and
+	empty) category vector as part of the level.  Before it would
+	initialize the field as NULL.
+
+	* poldiff_avrule_get_unmodified_perms() no longer returns all
+	permissions whenever a rule is added or removed; it only returns
+	permissions when the form is POLDIFF_FORM_MODIFIED.  The new
+	behavior matches the other policy components.
+
+2007-03-05  J. Tang  <jtang@tresys.com>
+
+	* added apol_mls_level_free() and apol_mls_range_get_levels()
+
+2007-03-02  J. Tang  <jtang@tresys.com>
+
+	* qpol_user_get_range() and qpol_user_get_dfltlevel() now return
+	NULL if the policy is not MLS.  (It used to return a garbage
+	pointer.)
+
+2007-03-01  J. Tang  <jtang@tresys.com>
+
+	* added additional accessors to the seaudit_avc_message_t object.
+
+2007-02-28  J. Tang  <jtang@tresys.com>
+
+	* added apol_mls_level_create_from_mls_level() and
+	apol_mls_range_create_from_mls_range() copy constructors.
+
+	* Fixed segfault when libseaudit attempts to parse certain load
+	policy messages.
+
+2007-02-23  J. Tang  <jtang@tresys.com>
+
+	* Implemented new sediffx results design.  Results are implemented
+	as subclasses of an abstract result_item_t class.  This will allow
+	easier future modifications of the sediffx interface.
+
+2007-02-21  J. Tang  <jtang@tresys.com>
+
+	* fixed segfault when opening a policy with
+	APOL_POLICY_OPTION_NO_RULES when the policy has an unconditional
+	type_transition rule.
+
+2007-02-16  J. Mowery  <jmowery@tresys.com>
+
+	* Moved libqpol/include/qpol/expand.h to libqpol/src/expand.h.
+	This header file was never supposed to be visible.
+
+	* added SWIG wrappers to libapol; build system updated.  configure
+	must be passed --enable-swig-python to build the wrappers.
+
+2007-02-14  J. Tang  <jtang@tresys.com>
+
+	* sesearch and apol now allow searching range transitions based
+	upon the target class.  (Target classes were introduced in version
+	21 policies.)
+
+	* added to apol_range_trans_query_append_class() to
+	libapol/include/apol/rangetrans-query.h
+
+2007-02-07  J. Mowery <jmowery@tresys.com>
+
+	* split --audit flag in sesearch to --auditallow and --dontaudit;
+	  the --audit flag is now deprecated.
+
 2007-02-06  J. Tang  <jtang@tresys.com>
 
 	* Official release of SETools-3.1.

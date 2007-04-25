@@ -36,7 +36,7 @@
 static struct option const longopts[] = {
 	{"directory", required_argument, NULL, 'd'},
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -50,7 +50,7 @@ void usage(const char *program_name, int brief)
 	printf("Index SELinux contexts on the filesystem.\n\n");
 	printf("  -d DIR, --directory=DIR  start scanning at directory DIR\n");
 	printf("  -h, --help               print this help text and exit\n");
-	printf("  -v, --version            print version information and exit\n\n");
+	printf("  -V, --version            print version information and exit\n\n");
 }
 
 int main(int argc, char **argv, char **envp)
@@ -62,7 +62,7 @@ int main(int argc, char **argv, char **envp)
 	fsdata.fsdh = NULL;
 	fsdata.dbh = NULL;
 
-	while ((optc = getopt_long(argc, argv, "d:hv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "d:hV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 'd':	       /* directory */
 			dir = optarg;
@@ -70,7 +70,7 @@ int main(int argc, char **argv, char **envp)
 		case 'h':	       /* help */
 			usage(argv[0], 0);
 			exit(0);
-		case 'v':	       /* version */
+		case 'V':	       /* version */
 			printf("indexcon %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:

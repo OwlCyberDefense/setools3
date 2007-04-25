@@ -217,7 +217,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 		goto types_wo_allow_run_fail;
 	}
 	res->item_type = SECHK_ITEM_TYPE;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto types_wo_allow_run_fail;
@@ -255,7 +255,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			if (rule_type == QPOL_RULE_ALLOW)
 				used = TRUE;
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 		if (used)
 			continue;
 
@@ -272,7 +272,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			if (rule_type == QPOL_RULE_ALLOW)
 				used = TRUE;
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 		apol_avrule_query_set_target(policy, avrule_query, NULL, 0);
 		if (used)
 			continue;
@@ -300,7 +300,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			goto types_wo_allow_run_fail;
 		}
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto types_wo_allow_run_fail;
@@ -317,8 +317,8 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			goto types_wo_allow_run_fail;
 		}
 	}
-	apol_vector_destroy(&type_vector, NULL);
-	apol_vector_destroy(&avrule_vector, NULL);
+	apol_vector_destroy(&type_vector);
+	apol_vector_destroy(&avrule_vector);
 	apol_avrule_query_destroy(&avrule_query);
 
 	mod->result = res;
@@ -328,8 +328,8 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	return 0;
 
       types_wo_allow_run_fail:
-	apol_vector_destroy(&type_vector, NULL);
-	apol_vector_destroy(&avrule_vector, NULL);
+	apol_vector_destroy(&type_vector);
+	apol_vector_destroy(&avrule_vector);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_destroy(&res);

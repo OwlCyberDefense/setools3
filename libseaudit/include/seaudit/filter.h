@@ -104,8 +104,7 @@ extern "C"
  * @param filename File containing one or more filter data.
  *
  * @return Vector of filters created from that file, or NULL upon
- * error.  The caller is responsible for apol_vector_destroy(),
- * passing seaudit_filter_destroy() as the second parameter.
+ * error.  The caller is responsible for apol_vector_destroy().
  *
  * @see seaudit_filter_save_to_file()
  */

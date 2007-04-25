@@ -1,9 +1,8 @@
 /**
  *  @file
- *  Public Interface for type equivalence mapping for semantic
+ *  Public interface for type equivalence mapping for semantic
  *  difference calculations.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -86,32 +85,34 @@ extern "C"
 	extern void poldiff_type_remap_entry_remove(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
 /**
- *  Allocate and return a vector of type names (char *) corresponding
- *  to the original types within a poldiff_type_remap_entry_t object.
- *  The strings themselves are to be considered immutable; if the
- *  caller needs them for future use it should duplicate them.
+ *  Allocate and return a sorted vector of type names (char *)
+ *  corresponding to the original types within a
+ *  poldiff_type_remap_entry_t object.  The strings themselves are to
+ *  be considered immutable; if the caller needs them for future use
+ *  it should duplicate them.
  *
  *  @param diff Difference structure, for error reporting.
  *  @param entry Remap entry from which to get type names.
  *
  *  @return Vector of type names.  The caller is responsible for
- *  calling apol_vector_destroy() afterwards, passing NULL as the
- *  second parameter.  Upon error return NULL and set errno.
+ *  calling apol_vector_destroy() afterwards.  Upon error return NULL
+ *  and set errno.
  */
 	extern apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 
 /**
- *  Allocate and return a vector of type names (char *) corresponding
- *  to the modified types within a poldiff_type_remap_entry_t object.
- *  The strings themselves are to be considered immutable; if the
- *  caller needs them for future use it should duplicate them.
+ *  Allocate and return a sorted vector of type names (char *)
+ *  corresponding to the modified types within a
+ *  poldiff_type_remap_entry_t object.  The strings themselves are to
+ *  be considered immutable; if the caller needs them for future use
+ *  it should duplicate them.
  *
  *  @param diff Difference structure, for error reporting.
  *  @param entry Remap entry from which to get type names.
  *
  *  @return Vector of type names.  The caller is responsible for
- *  calling apol_vector_destroy() afterwards, passing NULL as the
- *  second parameter.  Upon error return NULL and set errno.
+ *  calling apol_vector_destroy() afterwards.  Upon error return NULL
+ *  and set errno.
  */
 	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
 

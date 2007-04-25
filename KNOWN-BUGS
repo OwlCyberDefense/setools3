@@ -1,9 +1,9 @@
-SETools version 3.1
+SETools version 3.2
 Tresys Technology
 setools@tresys.com, http://oss.tresys.com/projects/setools
 
 
-February 1, 2007
+April 1, 2007
 
 
 CURRENT BUGS AND ISSUES
@@ -11,6 +11,13 @@ CURRENT BUGS AND ISSUES
 This file contains a description of the bugs of which we are currently
 aware. There are undoubtedly more; please report any new bugs you may
 find to setools-bugs@tresys.com.
+
+SETOOLS
+
+1. There is a critical error in libsepol versions 1.16.2 & 2.0.2 that
+   prevents SETools from opening source policies.  The supplied
+   configure script will detect and abort if it finds this particular
+   version.
 
 APOL
    
@@ -52,9 +59,8 @@ SELinux version:
   2.6
 
 SELinux monolithic policy versions:
-  12, 15, 16, 17, 18, 19, and 20 (with MLS support for versions 19 and 20)
-  Partial support for version 21 (policies will load, but range
-  transition classes are not searchable)
+  12, 15, 16, 17, 18
+  19, 20, and 21 (both with and without MLS support)
 
 SELinux modular policy versions:
   5, 6

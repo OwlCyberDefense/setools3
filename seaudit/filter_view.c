@@ -161,13 +161,13 @@ static void filter_view_init_widgets_date(struct filter_view *fv)
 	}
 }
 
-static void filter_view_init_widgets(struct filter_view *fv)
+static void filter_view_init_widgets(struct filter_view *fv, GtkWindow * parent)
 {
 	GtkTextView *description_view;
 
 	fv->dialog = GTK_DIALOG(glade_xml_get_widget(fv->xml, "FilterWindow"));
 	assert(fv->dialog != NULL);
-	gtk_window_set_transient_for(GTK_WINDOW(fv->dialog), toplevel_get_window(fv->top));
+	gtk_window_set_transient_for(GTK_WINDOW(fv->dialog), parent);
 
 	fv->name_entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewNameEntry"));
 	fv->match_combo = GTK_COMBO_BOX(glade_xml_get_widget(fv->xml, "FilterViewMatchCombo"));
@@ -225,37 +225,37 @@ static void filter_view_init_context(struct filter_view *fv)
 {
 	apol_vector_t *v;
 	v = seaudit_filter_get_source_user(fv->filter);
-	if (v != NULL && (fv->suser.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+	if (v != NULL && (fv->suser.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
 	v = seaudit_filter_get_source_role(fv->filter);
-	if (v != NULL && (fv->srole.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+	if (v != NULL && (fv->srole.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
 	v = seaudit_filter_get_source_type(fv->filter);
-	if (v != NULL && (fv->stype.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+	if (v != NULL && (fv->stype.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
 	v = seaudit_filter_get_target_user(fv->filter);
-	if (v != NULL && (fv->tuser.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+	if (v != NULL && (fv->tuser.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
 	v = seaudit_filter_get_target_role(fv->filter);
-	if (v != NULL && (fv->trole.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+	if (v != NULL && (fv->trole.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
 	v = seaudit_filter_get_target_type(fv->filter);
-	if (v != NULL && (fv->ttype.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+	if (v != NULL && (fv->ttype.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
 	v = seaudit_filter_get_target_class(fv->filter);
-	if (v != NULL && (fv->obj_class.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL)) == NULL) {
+	if (v != NULL && (fv->obj_class.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
@@ -524,9 +524,9 @@ static apol_vector_t *filter_view_get_policy_users(struct filter_view *fv)
 	if (p == NULL) {
 		return NULL;
 	}
-	if (apol_user_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create()) == NULL) {
+	if (apol_user_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create(NULL)) == NULL) {
 		toplevel_ERR(fv->top, "Error getting a list of policy users: %s", strerror(errno));
-		apol_vector_destroy(&policy_items, NULL);
+		apol_vector_destroy(&policy_items);
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -535,11 +535,11 @@ static apol_vector_t *filter_view_get_policy_users(struct filter_view *fv)
 		qpol_user_get_name(apol_policy_get_qpol(p), e, &name);
 		if (apol_vector_append(policy_items, name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy users: %s", strerror(errno));
-			apol_vector_destroy(&v, NULL);
-			apol_vector_destroy(&policy_items, NULL);
+			apol_vector_destroy(&v);
+			apol_vector_destroy(&policy_items);
 		}
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	apol_vector_sort(policy_items, apol_str_strcmp, NULL);
 	return policy_items;
 }
@@ -556,9 +556,9 @@ static apol_vector_t *filter_view_get_policy_roles(struct filter_view *fv)
 	if (p == NULL) {
 		return NULL;
 	}
-	if (apol_role_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create()) == NULL) {
+	if (apol_role_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create(NULL)) == NULL) {
 		toplevel_ERR(fv->top, "Error getting a list of policy roles: %s", strerror(errno));
-		apol_vector_destroy(&policy_items, NULL);
+		apol_vector_destroy(&policy_items);
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -567,11 +567,11 @@ static apol_vector_t *filter_view_get_policy_roles(struct filter_view *fv)
 		qpol_role_get_name(apol_policy_get_qpol(p), e, &name);
 		if (apol_vector_append(policy_items, name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy roles: %s", strerror(errno));
-			apol_vector_destroy(&v, NULL);
-			apol_vector_destroy(&policy_items, NULL);
+			apol_vector_destroy(&v);
+			apol_vector_destroy(&policy_items);
 		}
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	apol_vector_sort(policy_items, apol_str_strcmp, NULL);
 	return policy_items;
 }
@@ -589,9 +589,9 @@ static apol_vector_t *filter_view_get_policy_types(struct filter_view *fv)
 	if (p == NULL) {
 		return NULL;
 	}
-	if (apol_type_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create()) == NULL) {
+	if (apol_type_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create(NULL)) == NULL) {
 		toplevel_ERR(fv->top, "Error getting a list of policy types: %s", strerror(errno));
-		apol_vector_destroy(&policy_items, NULL);
+		apol_vector_destroy(&policy_items);
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -600,11 +600,11 @@ static apol_vector_t *filter_view_get_policy_types(struct filter_view *fv)
 		qpol_type_get_name(apol_policy_get_qpol(p), e, &name);
 		if (apol_vector_append(policy_items, name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy types: %s", strerror(errno));
-			apol_vector_destroy(&v, NULL);
-			apol_vector_destroy(&policy_items, NULL);
+			apol_vector_destroy(&v);
+			apol_vector_destroy(&policy_items);
 		}
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	apol_vector_sort(policy_items, apol_str_strcmp, NULL);
 	return policy_items;
 }
@@ -622,9 +622,9 @@ static apol_vector_t *filter_view_get_policy_classes(struct filter_view *fv)
 	if (p == NULL) {
 		return NULL;
 	}
-	if (apol_class_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create()) == NULL) {
+	if (apol_class_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create(NULL)) == NULL) {
 		toplevel_ERR(fv->top, "Error getting a list of policy classes: %s", strerror(errno));
-		apol_vector_destroy(&policy_items, NULL);
+		apol_vector_destroy(&policy_items);
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -633,11 +633,11 @@ static apol_vector_t *filter_view_get_policy_classes(struct filter_view *fv)
 		qpol_class_get_name(apol_policy_get_qpol(p), e, &name);
 		if (apol_vector_append(policy_items, name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy classes: %s", strerror(errno));
-			apol_vector_destroy(&v, NULL);
-			apol_vector_destroy(&policy_items, NULL);
+			apol_vector_destroy(&v);
+			apol_vector_destroy(&policy_items);
 		}
 	}
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v);
 	apol_vector_sort(policy_items, apol_str_strcmp, NULL);
 	return policy_items;
 }
@@ -650,8 +650,8 @@ static void filter_view_on_suser_context_click(GtkButton * widget __attribute__ 
 	fv->suser.items =
 		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Source User Items", log_items, policy_items,
 					   fv->suser.items);
-	apol_vector_destroy(&log_items, NULL);
-	apol_vector_destroy(&policy_items, NULL);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
 	filter_view_context_item_to_entry(fv, &fv->suser);
 }
 
@@ -663,8 +663,8 @@ static void filter_view_on_srole_context_click(GtkButton * widget __attribute__ 
 	fv->srole.items =
 		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Source Role Items", log_items, policy_items,
 					   fv->srole.items);
-	apol_vector_destroy(&log_items, NULL);
-	apol_vector_destroy(&policy_items, NULL);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
 	filter_view_context_item_to_entry(fv, &fv->srole);
 }
 
@@ -676,8 +676,8 @@ static void filter_view_on_stype_context_click(GtkButton * widget __attribute__ 
 	fv->stype.items =
 		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Source Type Items", log_items, policy_items,
 					   fv->stype.items);
-	apol_vector_destroy(&log_items, NULL);
-	apol_vector_destroy(&policy_items, NULL);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
 	filter_view_context_item_to_entry(fv, &fv->stype);
 }
 
@@ -689,8 +689,8 @@ static void filter_view_on_tuser_context_click(GtkButton * widget __attribute__ 
 	fv->tuser.items =
 		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Target User Items", log_items, policy_items,
 					   fv->tuser.items);
-	apol_vector_destroy(&log_items, NULL);
-	apol_vector_destroy(&policy_items, NULL);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
 	filter_view_context_item_to_entry(fv, &fv->tuser);
 }
 
@@ -702,8 +702,8 @@ static void filter_view_on_trole_context_click(GtkButton * widget __attribute__ 
 	fv->trole.items =
 		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Target Role Items", log_items, policy_items,
 					   fv->trole.items);
-	apol_vector_destroy(&log_items, NULL);
-	apol_vector_destroy(&policy_items, NULL);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
 	filter_view_context_item_to_entry(fv, &fv->trole);
 }
 
@@ -715,8 +715,8 @@ static void filter_view_on_ttype_context_click(GtkButton * widget __attribute__ 
 	fv->ttype.items =
 		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Target Type Items", log_items, policy_items,
 					   fv->ttype.items);
-	apol_vector_destroy(&log_items, NULL);
-	apol_vector_destroy(&policy_items, NULL);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
 	filter_view_context_item_to_entry(fv, &fv->ttype);
 }
 
@@ -728,8 +728,8 @@ static void filter_view_on_class_context_click(GtkButton * widget __attribute__ 
 	fv->obj_class.items =
 		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Object Class Items", log_items, policy_items,
 					   fv->obj_class.items);
-	apol_vector_destroy(&log_items, NULL);
-	apol_vector_destroy(&policy_items, NULL);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
 	filter_view_context_item_to_entry(fv, &fv->obj_class);
 }
 
@@ -752,18 +752,24 @@ static gboolean filter_view_on_entry_focus_out(GtkWidget * widget, GdkEventFocus
 		if (s == NULL) {
 			break;
 		}
-		if (new_v == NULL && (new_v = apol_vector_create()) == NULL) {
+		if (new_v == NULL && (new_v = apol_vector_create(free)) == NULL) {
 			toplevel_ERR(fv->top, "Could not interpret entry contents: %s", strerror(errno));
 			break;
 		}
-		if ((t = strdup(s)) == NULL || apol_str_trim(&t) < 0 || apol_vector_append(new_v, t) < 0) {
+		if ((t = strdup(s)) == NULL) {
+			toplevel_ERR(fv->top, "Could not interpret entry contents: %s", strerror(errno));
+			free(t);
+			break;
+		}
+		apol_str_trim(t);
+		if (apol_vector_append(new_v, t) < 0) {
 			toplevel_ERR(fv->top, "Could not interpret entry contents: %s", strerror(errno));
 			free(t);
 			break;
 		}
 	}
 	g_strfreev(strs);
-	apol_vector_destroy(&item->items, free);
+	apol_vector_destroy(&item->items);
 	item->items = new_v;
 	filter_view_context_item_to_entry(fv, item);
 	return FALSE;
@@ -771,13 +777,13 @@ static gboolean filter_view_on_entry_focus_out(GtkWidget * widget, GdkEventFocus
 
 static void filter_view_destroy_context_vectors(struct filter_view *fv)
 {
-	apol_vector_destroy(&fv->suser.items, free);
-	apol_vector_destroy(&fv->srole.items, free);
-	apol_vector_destroy(&fv->stype.items, free);
-	apol_vector_destroy(&fv->tuser.items, free);
-	apol_vector_destroy(&fv->trole.items, free);
-	apol_vector_destroy(&fv->ttype.items, free);
-	apol_vector_destroy(&fv->obj_class.items, free);
+	apol_vector_destroy(&fv->suser.items);
+	apol_vector_destroy(&fv->srole.items);
+	apol_vector_destroy(&fv->stype.items);
+	apol_vector_destroy(&fv->tuser.items);
+	apol_vector_destroy(&fv->trole.items);
+	apol_vector_destroy(&fv->ttype.items);
+	apol_vector_destroy(&fv->obj_class.items);
 }
 
 static void filter_view_on_context_clear_click(GtkButton * widget __attribute__ ((unused)), gpointer user_data)
@@ -884,7 +890,7 @@ void filter_view_run(seaudit_filter_t * filter, toplevel_t * top, GtkWindow * pa
 	fv.top = top;
 	fv.filter = filter;
 	fv.xml = glade_xml_new(toplevel_get_glade_xml(top), "FilterWindow", NULL);
-	filter_view_init_widgets(&fv);
+	filter_view_init_widgets(&fv, parent);
 	filter_view_init_signals(&fv);
 	filter_view_init_dialog(&fv);
 	do {

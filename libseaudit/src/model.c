@@ -167,8 +167,8 @@ static int model_sort(seaudit_log_t * log, seaudit_model_t * model)
 		goto cleanup;
 	}
 
-	if ((sup = apol_vector_create_with_capacity(num_messages)) == NULL ||
-	    (unsup = apol_vector_create_with_capacity(num_messages)) == NULL) {
+	if ((sup = apol_vector_create_with_capacity(num_messages, NULL)) == NULL ||
+	    (unsup = apol_vector_create_with_capacity(num_messages, NULL)) == NULL) {
 		error = errno;
 		ERR(log, "%s", strerror(error));
 		goto cleanup;
@@ -194,13 +194,13 @@ static int model_sort(seaudit_log_t * log, seaudit_model_t * model)
 		ERR(log, "%s", strerror(error));
 		goto cleanup;
 	}
-	apol_vector_destroy(&model->messages, NULL);
+	apol_vector_destroy(&model->messages);
 	model->messages = sup;
 	sup = NULL;
 	retval = 0;
       cleanup:
-	apol_vector_destroy(&sup, NULL);
-	apol_vector_destroy(&unsup, NULL);
+	apol_vector_destroy(&sup);
+	apol_vector_destroy(&unsup);
 	if (retval != 0) {
 		errno = error;
 	}
@@ -260,9 +260,9 @@ static int model_refresh(seaudit_log_t * log, seaudit_model_t * model)
 	if (!model->dirty) {
 		return 0;
 	}
-	apol_vector_destroy(&model->messages, NULL);
-	apol_vector_destroy(&model->malformed_messages, NULL);
-	if ((model->messages = apol_vector_create()) == NULL || (model->malformed_messages = apol_vector_create()) == NULL) {
+	apol_vector_destroy(&model->messages);
+	apol_vector_destroy(&model->malformed_messages);
+	if ((model->messages = apol_vector_create(NULL)) == NULL || (model->malformed_messages = apol_vector_create(NULL)) == NULL) {
 		error = errno;
 		ERR(log, "%s", strerror(error));
 		errno = error;
@@ -335,9 +335,9 @@ seaudit_model_t *seaudit_model_create(const char *name, seaudit_log_t * log)
 		name = DEFAULT_MODEL_NAME;
 	}
 	if ((m->name = strdup(name)) == NULL ||
-	    (m->logs = apol_vector_create_with_capacity(1)) == NULL ||
-	    (m->filters = apol_vector_create_with_capacity(1)) == NULL ||
-	    (m->sorts = apol_vector_create_with_capacity(1)) == NULL) {
+	    (m->logs = apol_vector_create_with_capacity(1, NULL)) == NULL ||
+	    (m->filters = apol_vector_create_with_capacity(1, filter_free)) == NULL ||
+	    (m->sorts = apol_vector_create_with_capacity(1, sort_free)) == NULL) {
 		error = errno;
 		seaudit_model_destroy(&m);
 		ERR(log, "%s", strerror(error));
@@ -372,7 +372,16 @@ static void *model_filter_dup(const void *elem, void *data)
 static void *model_sort_dup(const void *elem, void *data __attribute__ ((unused)))
 {
 	const seaudit_sort_t *sort = elem;
-	return sort_create_from_sort(sort);
+	seaudit_model_t *model = data;
+	seaudit_sort_t *s;
+	if ((s = sort_create_from_sort(sort)) == NULL) {
+		return NULL;
+	}
+	if (seaudit_model_append_sort(model, s) < 0) {
+		seaudit_sort_destroy(&s);
+		return NULL;
+	}
+	return s;
 }
 
 seaudit_model_t *seaudit_model_create_from_model(const seaudit_model_t * model)
@@ -398,15 +407,15 @@ seaudit_model_t *seaudit_model_create_from_model(const seaudit_model_t * model)
 		goto cleanup;
 	}
 	m->dirty = 1;
-	if ((m->logs = apol_vector_create_from_vector(model->logs, NULL, NULL)) == NULL) {
+	if ((m->logs = apol_vector_create_from_vector(model->logs, NULL, NULL, NULL)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
-	if ((m->filters = apol_vector_create_from_vector(model->filters, model_filter_dup, (void *)model)) == NULL) {
+	if ((m->filters = apol_vector_create_from_vector(model->filters, model_filter_dup, (void *)m, filter_free)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
-	if ((m->sorts = apol_vector_create_from_vector(model->sorts, model_sort_dup, (void *)model)) == NULL) {
+	if ((m->sorts = apol_vector_create_from_vector(model->sorts, model_sort_dup, (void *)m, sort_free)) == NULL) {
 		error = errno;
 		goto cleanup;
 	}
@@ -435,26 +444,26 @@ seaudit_model_t *seaudit_model_create_from_file(const char *filename)
 	int retval, error;
 	seaudit_model_t *m;
 	memset(&state, 0, sizeof(state));
-	if ((state.filters = apol_vector_create()) == NULL) {
+	if ((state.filters = apol_vector_create(filter_free)) == NULL) {
 		return NULL;
 	}
 	retval = filter_parse_xml(&state, filename);
 	if (retval < 0) {
 		error = errno;
 		free(state.view_name);
-		apol_vector_destroy(&state.filters, filter_free);
+		apol_vector_destroy(&state.filters);
 		errno = errno;
 		return NULL;
 	}
 	if ((m = seaudit_model_create(state.view_name, NULL)) == NULL) {
 		error = errno;
 		free(state.view_name);
-		apol_vector_destroy(&state.filters, filter_free);
+		apol_vector_destroy(&state.filters);
 		errno = error;
 		return NULL;
 	}
 	free(state.view_name);
-	apol_vector_destroy(&m->filters, filter_free);
+	apol_vector_destroy(&m->filters);
 	m->filters = state.filters;
 	state.filters = NULL;
 	seaudit_model_set_filter_match(m, state.view_match);
@@ -473,11 +482,11 @@ void seaudit_model_destroy(seaudit_model_t ** model)
 		log_remove_model(l, *model);
 	}
 	free((*model)->name);
-	apol_vector_destroy(&(*model)->logs, NULL);
-	apol_vector_destroy(&(*model)->filters, filter_free);
-	apol_vector_destroy(&(*model)->sorts, sort_free);
-	apol_vector_destroy(&(*model)->messages, NULL);
-	apol_vector_destroy(&(*model)->malformed_messages, NULL);
+	apol_vector_destroy(&(*model)->logs);
+	apol_vector_destroy(&(*model)->filters);
+	apol_vector_destroy(&(*model)->sorts);
+	apol_vector_destroy(&(*model)->messages);
+	apol_vector_destroy(&(*model)->malformed_messages);
 	free(*model);
 	*model = NULL;
 }
@@ -653,8 +662,8 @@ int seaudit_model_clear_sorts(seaudit_model_t * model)
 		errno = EINVAL;
 		return -1;
 	}
-	apol_vector_destroy(&model->sorts, sort_free);
-	if ((model->sorts = apol_vector_create_with_capacity(1)) == NULL) {
+	apol_vector_destroy(&model->sorts);
+	if ((model->sorts = apol_vector_create_with_capacity(1, sort_free)) == NULL) {
 		return -1;
 	}
 	model->dirty = 1;
@@ -680,7 +689,7 @@ apol_vector_t *seaudit_model_get_messages(seaudit_log_t * log, seaudit_model_t *
 	if (model_refresh(log, model) < 0) {
 		return NULL;
 	}
-	return apol_vector_create_from_vector(model->messages, NULL, NULL);
+	return apol_vector_create_from_vector(model->messages, NULL, NULL, NULL);
 }
 
 apol_vector_t *seaudit_model_get_malformed_messages(seaudit_log_t * log, seaudit_model_t * model)
@@ -693,7 +702,7 @@ apol_vector_t *seaudit_model_get_malformed_messages(seaudit_log_t * log, seaudit
 	if (model_refresh(log, model) < 0) {
 		return NULL;
 	}
-	return apol_vector_create_from_vector(model->malformed_messages, NULL, NULL);
+	return apol_vector_create_from_vector(model->malformed_messages, NULL, NULL, NULL);
 }
 
 size_t seaudit_model_get_num_allows(seaudit_log_t * log, seaudit_model_t * model)

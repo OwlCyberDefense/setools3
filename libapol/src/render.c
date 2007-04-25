@@ -3,9 +3,9 @@
  *
  * Routines to render various data structures used by libapol.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
+ * @author David Windsor dwindsor@tresys.com
  *
  * Copyright (C) 2003-2007 Tresys Technology, LLC
  *

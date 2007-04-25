@@ -2,7 +2,6 @@
  *  @file
  *  Implementation of the interface for searching and iterating over users.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -23,17 +22,21 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <qpol/iterator.h>
-#include <qpol/policy.h>
+
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/expand.h>
-#include "iterator_internal.h"
-#include <qpol/user_query.h>
-#include <qpol/role_query.h>
+
+#include <qpol/iterator.h>
 #include <qpol/mls_query.h>
+#include <qpol/policy.h>
+#include <qpol/role_query.h>
+#include <qpol/user_query.h>
+#include "iterator_internal.h"
 #include "qpol_internal.h"
 
 int qpol_policy_get_user_by_name(qpol_policy_t * policy, const char *name, qpol_user_t ** datum)
@@ -169,9 +172,12 @@ int qpol_user_get_range(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_ra
 		return STATUS_ERR;
 	}
 
-	internal_datum = (user_datum_t *) datum;
-	*range = (qpol_mls_range_t *) & internal_datum->exp_range;
-
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_MLS)) {
+		*range = NULL;
+	} else {
+		internal_datum = (user_datum_t *) datum;
+		*range = (qpol_mls_range_t *) & internal_datum->exp_range;
+	}
 	return STATUS_SUCCESS;
 }
 
@@ -187,9 +193,12 @@ int qpol_user_get_dfltlevel(qpol_policy_t * policy, qpol_user_t * datum, qpol_ml
 		return STATUS_ERR;
 	}
 
-	internal_datum = (user_datum_t *) datum;
-	*level = (qpol_mls_level_t *) & internal_datum->exp_dfltlevel;
-
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_MLS)) {
+		*level = NULL;
+	} else {
+		internal_datum = (user_datum_t *) datum;
+		*level = (qpol_mls_level_t *) & internal_datum->exp_dfltlevel;
+	}
 	return STATUS_SUCCESS;
 }
 

@@ -8,7 +8,6 @@
  * search query must match for a datum to be added to the results
  * query.
  *
- * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
@@ -49,11 +48,6 @@ struct apol_attr_query
 
 /******************** type queries ********************/
 
-int apol_get_type_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v)
-{
-	return apol_type_get_by_query(p, t, v);
-}
-
 int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
@@ -62,8 +56,8 @@ int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector
 	if (qpol_policy_get_type_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -97,7 +91,7 @@ int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;
@@ -130,11 +124,6 @@ int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, int is_r
 
 /******************** attribute queries ********************/
 
-int apol_get_attr_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v)
-{
-	return apol_attr_get_by_query(p, a, v);
-}
-
 int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
@@ -143,8 +132,8 @@ int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector
 	if (qpol_policy_get_type_iter(p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+	if ((*v = apol_vector_create(NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -181,7 +170,7 @@ int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector
 	retval = 0;
       cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v);
 	}
 	qpol_iterator_destroy(&iter);
 	return retval;

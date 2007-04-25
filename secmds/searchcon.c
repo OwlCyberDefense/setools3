@@ -38,15 +38,15 @@
 #define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
 static struct option const longopts[] = {
+	{"class", required_argument, NULL, 'c'},
 	{"type", required_argument, NULL, 't'},
 	{"user", required_argument, NULL, 'u'},
 	{"mls-range", required_argument, NULL, 'm'},
 	{"path", required_argument, NULL, 'p'},
 	{"list", no_argument, NULL, 'l'},
-	{"regex", no_argument, NULL, 'r'},
-	{"object", required_argument, NULL, 'o'},
+	{"regex", no_argument, NULL, 'R'},
 	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'v'},
+	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -94,12 +94,12 @@ void usage(const char *program_name, int brief)
 	printf("  -u USER,  --user=USER            search for contexts with user USER\n");
 	printf("  -m RANGE, --mls-range=RANGE      search for contexts with MLS range RANGE\n");
 	printf("  -p PATH,  --path=PATH            search for files in PATH\n");
-	printf("  -o CLASS, --object=CLASS         search for files of object class CLASS\n");
+	printf("  -c CLASS, --class=CLASS          search for files of object class CLASS\n");
 	printf("\n");
-	printf("  -r, --regex                      search using regular expressions\n");
+	printf("  -R, --regex                      search using regular expressions\n");
 	printf("  -l, --list                       list types in the snapshot\n");
 	printf("  -h, --help                       print this help text and exit\n");
-	printf("  -v, --version                    print version information and exit\n");
+	printf("  -V, --version                    print version information and exit\n");
 	printf("\n");
 	printf("If the index file does not contain any MLS ranges and -m was given,\n");
 	printf("then the search will return nothing.\n");
@@ -121,7 +121,7 @@ int main(int argc, char **argv, char **envp)
 
 	memset(&search_keys, 0, sizeof(search_keys));
 
-	while ((optc = getopt_long(argc, argv, "t:u:m:p:o:rlhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "t:u:m:p:c:RlhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 't':	       /* type */
 			if ((holder =
@@ -163,7 +163,7 @@ int main(int argc, char **argv, char **envp)
 			search_keys.path[search_keys.num_path] = optarg;
 			search_keys.num_path++;
 			break;
-		case 'o':	       /* object */
+		case 'c':	       /* object class */
 			if ((holder =
 			     (const char **)realloc(search_keys.object_class,
 						    sizeof(char *) * (search_keys.num_object_class + 1))) == NULL) {
@@ -177,7 +177,7 @@ int main(int argc, char **argv, char **envp)
 		case 'l':	       /* list */
 			list = 1;
 			break;
-		case 'r':	       /* regex */
+		case 'R':	       /* regex */
 			search_keys.do_type_regEx = 1;
 			search_keys.do_user_regEx = 1;
 			search_keys.do_range_regEx = 1;
@@ -186,7 +186,7 @@ int main(int argc, char **argv, char **envp)
 		case 'h':	       /* help */
 			usage(argv[0], 0);
 			exit(0);
-		case 'v':	       /* version */
+		case 'V':	       /* version */
 			printf("searchcon %s\n%s\n", VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:

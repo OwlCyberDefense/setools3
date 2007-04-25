@@ -52,7 +52,7 @@ void util_cursor_wait(GtkWidget * widget)
  * If we reset the pointer at the end of a callback, it gets reset too
  * soon (i.e. before all of the pending events have been processed. To
  * avoid this, this function is put in an idle handler by
- * clear_wait_cursor.
+ * util_cursor_clear().
  */
 static gboolean pointer_reset(gpointer data)
 {
@@ -74,20 +74,27 @@ void util_text_buffer_clear(GtkTextBuffer * txt)
 	gtk_text_buffer_delete(txt, &start, &end);
 }
 
-char *util_open_file(GtkWindow * parent, const char *title, const char *init_path)
+apol_vector_t *util_open_file(GtkWindow * parent, const char *title, const char *init_path, gboolean multiple)
 {
 	GtkWidget *dialog = gtk_file_chooser_dialog_new(title, parent, GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL,
 							GTK_RESPONSE_CANCEL,
 							GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
-	char *path = NULL;
+	apol_vector_t *paths = NULL;
 	if (init_path != NULL) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), init_path);
 	}
+	gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), multiple);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-		path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		GSList *files = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
+		GSList *f;
+		paths = apol_vector_create(g_free);
+		for (f = files; f != NULL; f = f->next) {
+			apol_vector_append(paths, f->data);
+		}
+		g_slist_free(files);
 	}
 	gtk_widget_destroy(dialog);
-	return path;
+	return paths;
 }
 
 char *util_save_file(GtkWindow * parent, const char *title, const char *init_path)

@@ -2,7 +2,6 @@
  *  @file
  *  Defines the public interface for searching and iterating over users.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -53,9 +52,9 @@ extern "C"
 /**
  *  Get an iterator for users declared in the policy.
  *  @param policy The policy from which to create the iterator.
- *  @param iter Iterator of type qpol_user_t* returned; 
- *  the caller is responsible for calling qpol_iterator_destroy to 
- *  free memory used; it is important to note that the iterator is 
+ *  @param iter Iterator of type qpol_user_t* returned;
+ *  the caller is responsible for calling qpol_iterator_destroy to
+ *  free memory used; it is important to note that the iterator is
  *  valid only as long as the policy is unchanged.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
@@ -77,9 +76,9 @@ extern "C"
  *  Get an iterator for the set of roles assigned to a user.
  *  @param policy The policy associated with the user.
  *  @param datum The user from which to get the roles.
- *  @param roles Iterator of type qpol_role_t* returned; 
- *  the caller is responsible for calling qpol_iterator_destroy to 
- *  free memory used; it is important to note that the iterator is 
+ *  @param roles Iterator of type qpol_role_t* returned;
+ *  the caller is responsible for calling qpol_iterator_destroy to
+ *  free memory used; it is important to note that the iterator is
  *  valid only as long as the policy is unchanged.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *roles will be NULL.
@@ -87,10 +86,12 @@ extern "C"
 	extern int qpol_user_get_role_iter(qpol_policy_t * policy, qpol_user_t * datum, qpol_iterator_t ** roles);
 
 /**
- *  Get the allowed MLS range of a user.
+ *  Get the allowed MLS range of a user.  If the policy is not MLS
+ *  then the returned level will be NULL.
  *  @param policy The policy associated with the user.
  *  @param datum The user from which to get the range.
- *  @param range Pointer in which to store the range; the caller
+ *  @param range Pointer in which to store the range.  If the policy
+ *  is not MLS then NULL will be assigned to the pointer.  The caller
  *  should not free this pointer.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *range will be NULL.
@@ -98,10 +99,12 @@ extern "C"
 	extern int qpol_user_get_range(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_range_t ** range);
 
 /**
- *  Get the default level for a user.
+ *  Get the default level for a user.  If the policy is not MLS then
+ *  the returned level will be NULL.
  *  @param policy The policy associated with the user.
  *  @param datum The user from which to get the level.
- *  @param level Pointer in which to store the level; the caller 
+ *  @param level Pointer in which to store the level.  If the policy
+ *  is not MLS then NULL will be assigned to the pointer.  The caller
  *  should not free this pointer.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *level will be NULL.

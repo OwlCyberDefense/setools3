@@ -3,7 +3,6 @@
  *  Defines the public interface for building a database of file
  *  contexts.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -50,7 +49,7 @@ extern "C"
 /* Predefined labels */
 #define SEFS_OBJECT_R 0
 
-#define SEFS_NUM_OBJECT_CLASSES 8
+#define SEFS_NUM_OBJECT_CLASSES 7
 #define SEFS_NORM_FILE	1
 #define SEFS_DIR	2
 #define SEFS_LNK_FILE	4
@@ -58,9 +57,6 @@ extern "C"
 #define SEFS_BLK_FILE	16
 #define	SEFS_SOCK_FILE	32
 #define SEFS_FIFO_FILE	64
-/** @deprecated SEFS_ALL_FILES will be dropped in a future release.
- * Do not use. */
-#define SEFS_ALL_FILES	(SEFS_NORM_FILE | SEFS_DIR | SEFS_LNK_FILE | SEFS_CHR_FILE | SEFS_BLK_FILE | SEFS_SOCK_FILE | SEFS_FIFO_FILE)
 
 #define SEFS_TYPES	1
 #define SEFS_USERS	2

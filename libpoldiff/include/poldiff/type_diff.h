@@ -1,8 +1,10 @@
 /**
  *  @file
- *  Public Interface for computing a semantic difference of types.
+ *  Public interface for computing semantic differences of primary
+ *  types.  Aliases are resolved by the type mapping system
+ *  (type_map.h); attributes are found in the attrib_diff.h header
+ *  file.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -33,8 +35,6 @@ extern "C"
 
 #include <apol/vector.h>
 #include <poldiff/poldiff.h>
-
-/******************** types ********************/
 
 	typedef struct poldiff_type poldiff_type_t;
 

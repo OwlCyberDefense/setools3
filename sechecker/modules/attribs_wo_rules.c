@@ -231,7 +231,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		goto attribs_wo_rules_run_fail;
 	}
 	res->item_type = SECHK_ITEM_ATTRIB;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto attribs_wo_rules_run_fail;
@@ -264,48 +264,48 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		apol_avrule_query_set_source(policy, avrule_query, attr_name, 0);
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		if (apol_vector_get_size(avrule_vector) > 0) {
-			apol_vector_destroy(&avrule_vector, NULL);
+			apol_vector_destroy(&avrule_vector);
 			continue;
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		apol_avrule_query_set_source(policy, avrule_query, NULL, 0);
 		apol_avrule_query_set_target(policy, avrule_query, attr_name, 0);
 		apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 		if (apol_vector_get_size(avrule_vector) > 0) {
-			apol_vector_destroy(&avrule_vector, NULL);
+			apol_vector_destroy(&avrule_vector);
 			continue;
 		}
 		apol_avrule_query_set_target(policy, avrule_query, NULL, 0);
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 
 		/* type rules */
 		apol_terule_query_set_source(policy, terule_query, attr_name, 0);
 		apol_terule_get_by_query(policy, terule_query, &terule_vector);
 		if (apol_vector_get_size(terule_vector) > 0) {
-			apol_vector_destroy(&terule_vector, NULL);
+			apol_vector_destroy(&terule_vector);
 			continue;
 		}
-		apol_vector_destroy(&terule_vector, NULL);
+		apol_vector_destroy(&terule_vector);
 
 		apol_terule_query_set_source(policy, terule_query, NULL, 0);
 		apol_terule_query_set_target(policy, terule_query, attr_name, 0);
 		apol_terule_get_by_query(policy, terule_query, &terule_vector);
 		if (apol_vector_get_size(terule_vector) > 0) {
-			apol_vector_destroy(&terule_vector, NULL);
+			apol_vector_destroy(&terule_vector);
 			continue;
 		}
 		apol_terule_query_set_target(policy, terule_query, NULL, 0);
-		apol_vector_destroy(&terule_vector, NULL);
+		apol_vector_destroy(&terule_vector);
 
 		/* role trans */
 		apol_role_query_set_type(policy, role_query, attr_name);
 		apol_role_get_by_query(policy, role_query, &role_vector);
 		if (apol_vector_get_size(role_vector) > 0) {
-			apol_vector_destroy(&role_vector, NULL);
+			apol_vector_destroy(&role_vector);
 			continue;
 		}
-		apol_vector_destroy(&role_vector, NULL);
+		apol_vector_destroy(&role_vector);
 
 		/* Check constraints */
 		constraint_iter = NULL;
@@ -379,7 +379,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			goto attribs_wo_rules_run_fail;
 		}
 		if (!item->proof) {
-			if (!(item->proof = apol_vector_create())) {
+			if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
 				goto attribs_wo_rules_run_fail;
@@ -399,7 +399,7 @@ int attribs_wo_rules_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	apol_avrule_query_destroy(&avrule_query);
 	apol_role_query_destroy(&role_query);
 	apol_terule_query_destroy(&terule_query);
-	apol_vector_destroy(&attr_vector, NULL);
+	apol_vector_destroy(&attr_vector);
 
 	mod->result = res;
 

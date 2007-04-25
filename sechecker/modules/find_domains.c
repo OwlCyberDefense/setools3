@@ -166,7 +166,7 @@ int find_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 		return -1;
 	}
 
-	if (!(datum->domain_attribs = apol_vector_create())) {
+	if (!(datum->domain_attribs = apol_vector_create(NULL))) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
@@ -184,14 +184,14 @@ int find_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 				attr = apol_vector_get_element(attr_vector, j);
 				qpol_type_get_name(q, attr, &domain_attrib);
 				if (apol_vector_append(datum->domain_attribs, (void *)domain_attrib) < 0) {
-					apol_vector_destroy(&attr_vector, NULL);
+					apol_vector_destroy(&attr_vector);
 					ERR(policy, "%s", strerror(ENOMEM));
 					errno = ENOMEM;
 					return -1;
 
 				}
 			}
-			apol_vector_destroy(&attr_vector, NULL);
+			apol_vector_destroy(&attr_vector);
 		}
 	}
 	apol_attr_query_destroy(&attr_query);
@@ -245,7 +245,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 		goto find_domains_run_fail;
 	}
 
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_domains_run_fail;
@@ -305,7 +305,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 						item->test_result = 1;
 					}
 					if (!item->proof) {
-						if (!(item->proof = apol_vector_create())) {
+						if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 							error = errno;
 							ERR(policy, "%s", strerror(ENOMEM));
 							goto find_domains_run_fail;
@@ -360,7 +360,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 					item->test_result = 1;
 				}
 				if (!item->proof) {
-					if (!(item->proof = apol_vector_create())) {
+					if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto find_domains_run_fail;
@@ -373,7 +373,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 				}
 			}
 		}
-		apol_vector_destroy(&avrule_vector, NULL);
+		apol_vector_destroy(&avrule_vector);
 		apol_avrule_query_destroy(&avrule_query);
 
 		/* type rule check file object */
@@ -415,7 +415,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 				item->test_result = 1;
 			}
 			if (!item->proof) {
-				if (!(item->proof = apol_vector_create())) {
+				if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_domains_run_fail;
@@ -427,7 +427,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 				goto find_domains_run_fail;
 			}
 		}
-		apol_vector_destroy(&terule_vector, NULL);
+		apol_vector_destroy(&terule_vector);
 		apol_terule_query_destroy(&terule_query);
 
 		/* Check Roles */
@@ -465,7 +465,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 				item->test_result = 1;
 			}
 			if (!item->proof) {
-				if (!(item->proof = apol_vector_create())) {
+				if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto find_domains_run_fail;
@@ -478,7 +478,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 				goto find_domains_run_fail;
 			}
 		}
-		apol_vector_destroy(&role_vector, NULL);
+		apol_vector_destroy(&role_vector);
 		apol_role_query_destroy(&role_query);
 
 		/* insert any results for this type */
@@ -494,7 +494,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 		type = NULL;
 		type_name = NULL;
 	}
-	apol_vector_destroy(&domain_vector, NULL);
+	apol_vector_destroy(&domain_vector);
 
 	/* results are valid at this point */
 	mod->result = res;
@@ -502,10 +502,10 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 
       find_domains_run_fail:
 	qpol_iterator_destroy(&domain_attr_iter);
-	apol_vector_destroy(&domain_vector, NULL);
-	apol_vector_destroy(&avrule_vector, NULL);
-	apol_vector_destroy(&terule_vector, NULL);
-	apol_vector_destroy(&role_vector, NULL);
+	apol_vector_destroy(&domain_vector);
+	apol_vector_destroy(&avrule_vector);
+	apol_vector_destroy(&terule_vector);
+	apol_vector_destroy(&role_vector);
 	apol_avrule_query_destroy(&avrule_query);
 	apol_terule_query_destroy(&terule_query);
 	apol_role_query_destroy(&role_query);
@@ -521,7 +521,7 @@ void find_domains_data_free(void *data)
 	find_domains_data_t *datum = (find_domains_data_t *) data;
 
 	if (datum) {
-		apol_vector_destroy(&datum->domain_attribs, NULL);
+		apol_vector_destroy(&datum->domain_attribs);
 	}
 	free(data);
 }

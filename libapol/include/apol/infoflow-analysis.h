@@ -64,9 +64,9 @@ extern "C"
  * graph, including the pointer itself.  Afterwards set the pointer to
  * NULL.
  *
- * @param flow Reference to an apol_infoflow_graph_t to destroy.
+ * @param g Reference to an apol_infoflow_graph_t to destroy.
  */
-	extern void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** flow);
+	extern void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** g);
 
 /********** functions to do information flow analysis **********/
 
@@ -79,9 +79,8 @@ extern "C"
  * @param ia A non-NULL structure containing parameters for analysis.
  * @param v Reference to a vector of apol_infoflow_result_t.  The
  * vector will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, <b>passing
- * apol_infoflow_result_free() as the second parameter</b>.  This will
- * be set to NULL upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon
+ * error.
  * @param g Reference to the information flow graph constructed for
  * the given infoflow analysis object.  The graph will be allocated by
  * this function; the caller is responsible for calling
@@ -104,9 +103,8 @@ extern "C"
  * @param type New string from which to begin analysis.
  * @param v Reference to a vector of apol_infoflow_result_t.  The
  * vector will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, <b>passing
- * apol_infoflow_result_free() as the second parameter</b>.  This will
- * be set to NULL upon no results or upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success, negative on error.
  */
@@ -141,13 +139,15 @@ extern "C"
  *
  * @param p Policy from which infoflow rules derived.
  * @param g Prepared transitive infoflow graph.
- * @param v Vector of existing apol_infoflow_result_t pointers.  If
- * this functions finds additional unique results it will append them
- * to this vector.
+ * @param v Pointer to a vector of existing apol_infoflow_result_t
+ * pointers.  If this functions finds additional unique results it
+ * will append them to this vector.  If the pointer is NULL then this
+ * will allocate and return a new vector.  It is the caller's
+ * responsibility to call apol_vector_destroy() afterwards.
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_infoflow_analysis_trans_further_next(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t * v);
+	extern int apol_infoflow_analysis_trans_further_next(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t ** v);
 
 /********** functions to create/modify an analysis object **********/
 
@@ -228,16 +228,17 @@ extern "C"
 
 /**
  * Set an information flow analysis to return only rules with this
- * object (non-comman) class and permission.  If more than one
- * class/perm pair is appended to the query, rule's class and
+ * object (non-common) class and permission.  If more than one
+ * class/perm pair is appended to the query, every rule's class and
  * permissions must be one of those appended.  (I.e., the rule will be
  * a member of the analysis's class/perm pairs.)
  *
  * @param policy Policy handler, to report errors.
  * @param ia Infoflow analysis to set.
- * @param class_name The class to which a result must have access.
+ * @param class_name The class to which a result must have access.  If
+ * NULL, then accept all class/perm pairs.
  * @param perm_name The permission which a result must have for the
- * given class.
+ * given class.  This may be NULL if class_name is also NULL.
  * @return 0 on success, negative on error.
  */
 	extern int apol_infoflow_analysis_append_class_perm(apol_policy_t * p,
@@ -274,26 +275,6 @@ extern "C"
 	extern int apol_infoflow_analysis_set_result_regex(apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *result);
 
 /*************** functions to access infoflow results ***************/
-
-/**
- * Do a deep copy (i.e., a clone) of an apol_infoflow_result_t object.
- * The caller is responsible for calling apol_infoflow_result_free()
- * upon the returned value.
- *
- * @param result Pointer to an infoflow result structure to destroy.
- *
- * @return A clone of the passed in result node, or NULL upon error.
- */
-	extern apol_infoflow_result_t *apol_infoflow_result_create_from_result(apol_infoflow_result_t * result);
-
-/**
- * Free all memory associated with an information flow analysis
- * result, including the pointer itself.  This function does nothing
- * if the result is already NULL.
- *
- * @param result Pointer to an infoflow result structure to destroy.
- */
-	extern void apol_infoflow_result_free(void *result);
 
 /**
  * Return the direction of an information flow result.  This will be

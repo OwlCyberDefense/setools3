@@ -1,19 +1,17 @@
 SELinux Policy Analysis Tool Help File
-apol, version 3.1
-February 1, 2007
-selinux@tresys.com
+
 
 Overview
 --------
 This file contains basic help information for using apol, a graphical
-policy analysis tools for Security Enhanced (SELinux) Type Enforcement
-(TE) security policies.  The tool provides the ability to:
+policy analysis tool for Security Enhanced (SELinux) policies.  The
+tool provides the ability to:
 
   + Examine, search, and relate policy components (types, type
     attributes, object classes, object permissions, roles, users,
     initials SIDs, MLS components, network and file system contexts,
-    and booleans), and policy rules (type allow, neverallow,
-    auditallow, dontaudit, type_transition, type_change, role allow,
+    and booleans), and policy rules (allow, neverallow, auditallow,
+    dontaudit, type_transition, type_change, role allow,
     role_transition, and range_transition).
 
   + Create and query an on-disk database that contains SELinux
@@ -60,12 +58,12 @@ statistics about the currently loaded policy.  A shorthand version of
 these statistics is always displayed on the status bar when a policy
 is opened.
 
-Permission mappings are managed through the Advanced.  The mappings
-are used by apol's direct and transitive information flow analyses.
-Although this dialog is not required to perform an information flow
-analysis, it provides additional control over those mappings.  See the
-separate help file on information flow for more information about
-permission mappings and their management.
+Permission mappings are managed through in the Advanced menu.  The
+mappings are used by apol's direct and transitive information flow
+analyses.  Although this dialog is not required to perform an
+information flow analysis, it provides additional control over those
+mappings.  See the separate help file on information flow for more
+information about permission mappings and their management.
 
 
 Policy Components tabs
@@ -77,8 +75,8 @@ relate the core components of an SELinux policy.
   ---------
   Use the Types tab to search through types and attributes.  Double
   click or right click on any type or attribute in the list boxes to
-  see full details for that type/attribute.  If a file index has been
-  loaded (see File Contexts tab description below), details will
+  see full details for that type or attribute.  If a file index has
+  been loaded (see File Contexts tab description below), details will
   include files labeled with that particular type or attribute.
 
   Use the search options and hit the OK button to perform searches for

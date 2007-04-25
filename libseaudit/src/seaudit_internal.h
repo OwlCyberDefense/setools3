@@ -168,6 +168,8 @@ typedef enum seaudit_avc_message_class
 struct seaudit_avc_message
 {
 	seaudit_avc_message_type_e msg;
+	/** type of avc message this is, either a deny or a granted
+	 * (i.e., auditallow) */
 	seaudit_avc_message_class_e avc_type;
 	/** executable and path - free() this */
 	char *exe;
@@ -179,9 +181,9 @@ struct seaudit_avc_message
 	char *dev;
 	/** network interface - free() this */
 	char *netif;
-	/** free() this */
+	/** local address - free() this */
 	char *laddr;
-	/** free() this */
+	/** foreign address - free() this */
 	char *faddr;
 	/** source address - free() this */
 	char *saddr;
@@ -226,7 +228,9 @@ struct seaudit_avc_message
 	int source;
 	/** destination port */
 	int dest;
+	/** local port */
 	int lport;
+	/** foreign port */
 	int fport;
 	int port;
 	/** source sid */

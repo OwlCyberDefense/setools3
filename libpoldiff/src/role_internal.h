@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Protected Interface for role differences.
+ *  Protected interface for role differences.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
@@ -67,8 +66,8 @@ extern "C"
  * @param policy The policy from which to get the items.
  *
  * @return a newly allocated vector of all roles.  The caller is
- * responsible for calling apol_vector_destroy() afterwards, passing
- * NULL as the second parameter.  On error, return NULL and set errno.
+ * responsible for calling apol_vector_destroy() afterwards.  On
+ * error, return NULL and set errno.
  */
 	apol_vector_t *role_get_items(poldiff_t * diff, apol_policy_t * policy);
 

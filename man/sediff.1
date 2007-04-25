@@ -12,13 +12,15 @@ allows the user to inspect the semantic differences between two SELinux policies
 .PP
 .B
 sediff
-supports loading SELinux policies in one of three formats.
+supports loading SELinux policies in one of four formats.
 .IP "source"
 A single text file containing policy source for versions 12 through 21. This file is usually named policy.conf.
 .IP "binary"
 A single file containing a monolithic kernel binary policy for versions 15 through 21. This file is usually named by version - for example, policy.20.
 .IP "modular"
 A list of policy packages each containing a loadable policy module. The first module listed must be a base module.
+.IP "policy list"
+A single text file containing all the information needed to load a policy, usually exported by SETools graphical utilities.
 .PP
 Policies do not need to be the same format. If not provided
 .B
@@ -28,35 +30,45 @@ will print an error message and exit.
 .P
 The user may specify an expression listing the policy elements to differentiate.
 If not provided, all supported policy elements are examined.
-.IP "-c, --classes"
+.IP "-c, --class"
 Find differences in permissions assigned to object classes and common permission sets.
-.IP "-t, --types"
+.IP "--level"
+Find differences in categories authorized for MLS levels.
+.IP "--category"
+Find differences in category definitions.
+.IP "-t, --type"
 Find differences in attributes associated with types.
-.IP "-a, --attributes"
+.IP "-a, --attribute"
 Find differences in types assigned to attributes.
-.IP "-r, --roles"
+.IP "-r, --role"
 Find differences in types authorized for roles.
-.IP "-u, --users"
+.IP "-u, --user"
 Find differences in roles authorized for users.
-.IP "-b, --booleans"
+.IP "-b, --bool"
 Find differences in the default values of booleans.
+.IP "-A, --avrule"
+Find differences in access vector rules.
+These rules are allow, neverallow, auditallow, and dontaudit rules.
 .IP "-T, --terules"
 Find differences in type enforcement rules.
-These rules are allow, neverallow, auditallow, dontaudit, type_transition, type_member, and type_change rules.
-.IP "-R, --roletrans"
-Find differences in role transition rules.
+These rules are type_transition, type_member, and type_change rules.
+.IP "--role_trans"
+Find differences in role_transition rules.
 This includes differences in the default role.
-.IP "-A, --roleallows"
+.IP "--role_allows"
 Find differences in role allow rules.
+.IP "--range_trans"
+Find differences in range_transition rules.  This includes differences
+in the target MLS range.
 .SH OPTIONS
 .IP "-q, --quiet"
 If there are no differences for elements of a given kind,
 suppress status output for that kind of element.
-.IP "-s, --stats"
+.IP "--stats"
 Print difference statistics only.
 .IP "-h, --help"
 Print help information and exit.
-.IP "-v, --version"
+.IP "-V, --version"
 Print version information and exit.
 .SH DIFFERENCES
 .PP

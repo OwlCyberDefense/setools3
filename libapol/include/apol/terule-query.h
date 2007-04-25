@@ -40,35 +40,14 @@ extern "C"
 
 /**
  * Execute a query against all type enforcement rules within the policy.
- * @deprecated This function has been renamed apol_terule_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up terules.
  * @param t Structure containing parameters for query.	If this is
  * NULL then return all terules.
- * @param v Reference to a vector of qpol_terule_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_terule_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all type enforcement rules within the policy.
- *
- * @param p Policy within which to look up terules.
- * @param t Structure containing parameters for query.	If this is
- * NULL then return all terules.
- * @param v Reference to a vector of qpol_terule_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of qpol_terule_t.  The vector will
+ * be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -77,9 +56,6 @@ extern "C"
 /**
  * Execute a query against all syntactic type enforcement rules
  * within the policy.
- * @deprecated This function has been renamed apol_syn_terule_get_by_query().
- * This name has been retained for compatibility but may be removed
- * in a future release.
  *
  * @param p Policy within which to look up terules. <b>Must be a
  * source policy.</b>
@@ -87,28 +63,8 @@ extern "C"
  * NULL then return all terules.
  * @param v Reference to a vector of qpol_syn_terule_t.  The vector
  * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-	extern int apol_get_syn_terule_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_vector_t ** v)
-		__attribute__ ((deprecated));
-
-/**
- * Execute a query against all syntactic type enforcement rules
- * within the policy.
- *
- * @param p Policy within which to look up terules. <b>Must be a
- * source policy.</b>
- * @param t Structure containing parameters for query.	If this is
- * NULL then return all terules.
- * @param v Reference to a vector of qpol_syn_terule_t.  The vector
- * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.  This will be set to NULL upon no results or
- * upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon no
+ * results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -233,11 +189,14 @@ extern "C"
  * Set at terule query to return rules with this object (non-common)
  * class.  If more than one class are appended to the query, the
  * rule's class must be one of those appended.  (I.e., the rule's
- * class must be a member of the query's classes.)
+ * class must be a member of the query's classes.)  Pass a NULL to
+ * clear all classes.  Note that this performs straight string
+ * comparison, ignoring the regex flag.
+
  *
  * @param p Policy handler, to report errors.
  * @param t TE rule query to set.
- * @param class Name of object class to add to search set.
+ * @param obj_class Name of object class to add to search set.
  *
  * @return 0 on success, negative on error.
  */
@@ -308,8 +267,7 @@ extern "C"
  * @param rule TE rule to convert.
  *
  * @return A newly allocated vector of syn_terule_t pointers.  The
- * caller is responsible for calling apol_vector_destroy() afterwards,
- * passing NULL as the second parameter.
+ * caller is responsible for calling apol_vector_destroy() afterwards.
  */
 	extern apol_vector_t *apol_terule_to_syn_terules(apol_policy_t * p, qpol_terule_t * rule);
 
@@ -324,8 +282,7 @@ extern "C"
  * @param rules Vector of TE rules to convert.
  *
  * @return A newly allocated vector of syn_terule_t pointers.  The
- * caller is responsible for calling apol_vector_destroy() afterwards,
- * passing NULL as the second parameter.
+ * caller is responsible for calling apol_vector_destroy() afterwards.
  */
 	extern apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t * p, apol_vector_t * rules);
 

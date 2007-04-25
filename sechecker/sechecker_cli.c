@@ -36,6 +36,11 @@
 
 extern sechk_module_name_reg_t sechk_register_list[];
 
+enum opt_values
+{
+	OPT_FCFILE = 256, OPT_MIN_SEV
+};
+
 /* command line options struct */
 static struct option const longopts[] = {
 	{"list", no_argument, NULL, 'l'},
@@ -45,12 +50,11 @@ static struct option const longopts[] = {
 	{"short", no_argument, NULL, 's'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"profile", required_argument, NULL, 'p'},
-	{"policy", required_argument, NULL, 'P'},
 #ifdef LIBSEFS
-	{"fcfile", required_argument, NULL, 'c'},
+	{"fcfile", required_argument, NULL, OPT_FCFILE},
 #endif
 	{"module", required_argument, NULL, 'm'},
-	{"min-sev", required_argument, NULL, 'M'},
+	{"min-sev", required_argument, NULL, OPT_MIN_SEV},
 	{NULL, 0, NULL, 0}
 };
 
@@ -66,21 +70,21 @@ void usage(const char *arg0, bool_t brief)
 	} else {
 		printf("Perform modular checks on a SELinux policy.\n");
 		printf("\n");
-		printf("   -p <prof>, --profile=<prof>  name or path of profile to load\n");
+		printf("   -p PROF, --profile=PROF      name or path of profile to load\n");
 		printf("                                if used without -m, run all modules in profile\n");
-		printf("   -m <mod>, --module=<mod>     name of module to run\n");
+		printf("   -m MODULE, --module=MODULE   MODULE to run\n");
 #ifdef LIBSEFS
-		printf("   --fcfile=<file>              file_contexts file to load\n");
+		printf("   --fcfile=FILE                file_contexts file to load\n");
 #endif
 		printf("\n");
 		printf("   -q, --quiet                  suppress output\n");
 		printf("   -s, --short                  print short output\n");
 		printf("   -v, --verbose                print verbose output\n");
-		printf("   --min-sev=<low|med|high>     set the minimum severity to report\n");
+		printf("   --min-sev={low|med|high}     set the minimum severity to report\n");
 		printf("\n");
 		printf("   -l, --list                   print a list of profiles and modules and exit\n");
-		printf("   -h[mod], --help[=module]     print this help text or help for a module\n");
-		printf("   --version                    print version information and exit\n");
+		printf("   -h[MODULE], --help[=MODULE]  print this help text or help for MODULE\n");
+		printf("   -V, --version                print version information and exit\n");
 		printf("\n");
 	}
 }
@@ -121,7 +125,6 @@ int main(int argc, char **argv)
 #endif
 	char *modname = NULL;
 	char *prof_name = NULL;
-	char *old_pol_path = NULL;
 	char *base_path = NULL;
 	apol_policy_path_t *pol_path = NULL;
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
@@ -133,60 +136,56 @@ int main(int argc, char **argv)
 	bool_t module_help = FALSE;
 	apol_vector_t *policy_mods = NULL;
 
-	while ((optc = getopt_long(argc, argv, "h::p:m:P:lqsv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "p:m:qsvlh::V", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 'p':
 			prof_name = strdup(optarg);
 			break;
+		case 'm':
+			if (minsev) {
+				fprintf(stderr, "Error: --min-sev does not work with --module.\n");
+				exit(1);
+			}
+			modname = strdup(optarg);
+			break;
 #ifdef LIBSEFS
-		case 'c':
+		case OPT_FCFILE:
 			fcpath = strdup(optarg);
 			break;
 #endif
-		case 'P':
-			old_pol_path = strdup(optarg);
-			fprintf(stderr, "Warning: Use of --policy is deprecated.");
-			break;
-		case 'M':
-			if (modname) {
-				fprintf(stderr, "Error: --min-sev does not work with -m\n");
-				exit(1);
-			}
-			minsev = strdup(optarg);
-			break;
-		case 'v':
-			if (output_override) {
-				fprintf(stderr, "Error: multiple output formats specified\n");
-				usage(argv[0], 1);
-				exit(1);
-			} else {
-				output_override = SECHK_OUT_VERBOSE;
-			}
-			break;
-		case 's':
-			if (output_override) {
-				fprintf(stderr, "Error: multiple output formats specified\n");
-				usage(argv[0], 1);
-				exit(1);
-			} else {
-				output_override = SECHK_OUT_SHORT;
-			}
-			break;
 		case 'q':
 			if (output_override) {
-				fprintf(stderr, "Error: multiple output formats specified\n\n");
+				fprintf(stderr, "Error: multiple output formats specified.\n");
 				usage(argv[0], 1);
 				exit(1);
 			} else {
 				output_override = SECHK_OUT_QUIET;
 			}
 			break;
-		case 'm':
-			if (minsev) {
-				fprintf(stderr, "Error: --min-sev does not work with -m\n");
+		case 's':
+			if (output_override) {
+				fprintf(stderr, "Error: multiple output formats specified.\n");
+				usage(argv[0], 1);
+				exit(1);
+			} else {
+				output_override = SECHK_OUT_SHORT;
+			}
+			break;
+		case 'v':
+			if (output_override) {
+				fprintf(stderr, "Error: multiple output formats specified.\n");
+				usage(argv[0], 1);
+				exit(1);
+			} else {
+				output_override = SECHK_OUT_VERBOSE;
+			}
+			break;
+		case OPT_MIN_SEV:
+			if (modname) {
+				fprintf(stderr, "Error: --min-sev does not work with --module.\n");
 				exit(1);
 			}
-			modname = strdup(optarg);
+			minsev = strdup(optarg);
 			break;
 		case 'l':
 			list_stop = TRUE;
@@ -252,37 +251,35 @@ int main(int argc, char **argv)
 	}
 
 	/* initialize the policy */
-	if (!(policy_mods = apol_vector_create()))
-		goto exit_err;
 	if (argc - optind) {
-		if (old_pol_path) {
-			fprintf(stderr, "Warning: Ignoring --policy option and using policy module list.");
-			free(old_pol_path);
-			old_pol_path = NULL;
-		}
 		base_path = argv[optind];
 		optind++;
-		while (argc - optind) {
-			if (apol_vector_append(policy_mods, argv[optind++]))
+		if (argc - optind) {
+			if (!(policy_mods = apol_vector_create(NULL)))
 				goto exit_err;
-			path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+			while (argc - optind) {
+				if (apol_vector_append(policy_mods, argv[optind++]))
+					goto exit_err;
+				path_type = APOL_POLICY_PATH_TYPE_MODULAR;
+			}
+		} else if (apol_file_is_policy_path_list(base_path) > 0) {
+			pol_path = apol_policy_path_create_from_file(base_path);
+			if (!pol_path) {
+				fprintf(stderr, "Error: invalid policy list\n");
+				goto exit_err;
+			}
 		}
-		pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
+		if (!pol_path)
+			pol_path = apol_policy_path_create(path_type, base_path, policy_mods);
 		if (!pol_path)
 			goto exit_err;
-		if (sechk_lib_load_policy(pol_path, lib))
+		if (sechk_lib_load_policy(pol_path, lib)) {
+			pol_path = NULL;
 			goto exit_err;
-	} else {
-		if (old_pol_path) {
-			pol_path = apol_policy_path_create(path_type, old_pol_path, policy_mods);
-			if (!pol_path)
-				goto exit_err;
-			if (sechk_lib_load_policy(pol_path, lib))
-				goto exit_err;
-		} else {
-			if (sechk_lib_load_policy(NULL, lib))
-				goto exit_err;
 		}
+	} else {
+		if (sechk_lib_load_policy(NULL, lib))
+			goto exit_err;
 	}
 	/* library now owns path object */
 	pol_path = NULL;
@@ -356,11 +353,10 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
-	apol_vector_destroy(&policy_mods, NULL);
+	apol_vector_destroy(&policy_mods);
 	free(minsev);
 	free(prof_name);
 	free(modname);
-	free(old_pol_path);
 	sechk_lib_destroy(&lib);
 	return 0;
 
@@ -368,11 +364,10 @@ int main(int argc, char **argv)
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
-	apol_vector_destroy(&policy_mods, NULL);
+	apol_vector_destroy(&policy_mods);
 	free(minsev);
 	free(prof_name);
 	free(modname);
-	free(old_pol_path);
 	apol_policy_path_destroy(&pol_path);
 	sechk_lib_destroy(&lib);
 	return 1;

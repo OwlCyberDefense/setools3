@@ -1,7 +1,4 @@
 An overview of types relationship summary analysis
-apol, version 3.1
-February 1, 2007
-selinux@tresys.com
 
 
 Understanding types relationship summary analysis

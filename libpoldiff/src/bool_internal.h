@@ -1,8 +1,7 @@
 /**
  *  @file
- *  Protected Interface for bool differences.
+ *  Protected interface for boolean differences.
  *
- *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *  @author Randy Wicks rwicks@tresys.com
@@ -68,8 +67,8 @@ extern "C"
  * @param policy The policy from which to get the items.
  *
  * @return a newly allocated vector of all bools.  The caller is
- * responsible for calling apol_vector_destroy() afterwards, passing
- * NULL as the second parameter.  On error, return NULL and set errno.
+ * responsible for calling apol_vector_destroy() afterwards.  On
+ * error, return NULL and set errno.
  */
 	apol_vector_t *bool_get_items(poldiff_t * diff, apol_policy_t * policy);
 

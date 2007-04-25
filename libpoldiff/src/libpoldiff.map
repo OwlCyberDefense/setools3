@@ -9,8 +9,12 @@
 		poldiff_attrib_*;
 		poldiff_avrule_*;
 		poldiff_bool_*;
+		poldiff_cat_*;
 		poldiff_class_*;
 		poldiff_common_*;
+		poldiff_level_*;
+                poldiff_range_*;
+		poldiff_range_trans_*;
 		poldiff_role_*;	     
 		poldiff_role_allow_*;	   
 		poldiff_role_trans_*;	   

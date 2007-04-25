@@ -68,11 +68,13 @@ void util_text_buffer_clear(GtkTextBuffer * txt);
  * parent.
  * @param title Name of the dialog.
  * @param init_path If not NULL, the default filename.
+ * @param multiple If true, allow the user to select multiple files.
+ * Otherwise only one file at a time may be chosen.
  *
  * @return Name of the file selected, or NULL if no file was selected.
  * The caller must free the returned value with g_free().
  */
-char *util_open_file(GtkWindow * parent, const char *title, const char *init_path);
+apol_vector_t *util_open_file(GtkWindow * parent, const char *title, const char *init_path, gboolean multiple);
 
 /**
  * Allow the user select an existing file or enter a new file for

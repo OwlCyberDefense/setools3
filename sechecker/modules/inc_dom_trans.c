@@ -166,6 +166,12 @@ int inc_dom_trans_init(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	return 0;
 }
 
+/* wrapper for apol_domain_trans_result_destroy() */
+void dtr_free_wrap(void *x)
+{
+	apol_domain_trans_result_destroy((apol_domain_trans_result_t **) & x);
+}
+
 /* The run function performs the check. This function runs only once
  * even if called multiple times. */
 int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
@@ -216,7 +222,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 		goto inc_dom_trans_run_fail;
 	}
 	res->item_type = SECHK_ITEM_DTR;
-	if (!(res->items = apol_vector_create())) {
+	if (!(res->items = apol_vector_create(sechk_item_free))) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
@@ -320,10 +326,10 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 						if (apol_vector_get_size(user_vector) > 0) {
 							ok = TRUE;
 						}
-						apol_vector_destroy(&user_vector, NULL);
+						apol_vector_destroy(&user_vector);
 					}
 				}
-				apol_vector_destroy(&role_vector, NULL);
+				apol_vector_destroy(&role_vector);
 				if (!ok) {
 					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
 					apol_role_trans_get_by_query(policy, role_trans_query, &rbac_vector);
@@ -345,27 +351,27 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 							apol_user_query_set_role(policy, user_query, source_role_name);
 							apol_user_get_by_query(policy, user_query, &user_vector);
 							if (apol_vector_get_size(user_vector) > 0) {
-								apol_vector_destroy(&user_vector, NULL);
+								apol_vector_destroy(&user_vector);
 								apol_user_query_set_role(policy, user_query, default_role_name);
 								apol_user_get_by_query(policy, user_query, &user_vector);
 								if (apol_vector_get_size(user_vector) > 0) {
 									ok = TRUE;
 								}
 							}
-							apol_vector_destroy(&user_vector, NULL);
+							apol_vector_destroy(&user_vector);
 						}
 					}
-					apol_vector_destroy(&rbac_vector, NULL);
+					apol_vector_destroy(&rbac_vector);
 				}
 				if (!ok) {
-					item = sechk_item_new(apol_domain_trans_result_free);
+					item = sechk_item_new(dtr_free_wrap);
 					if (!item) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
 					item->test_result = 1;
-					item->item = (void *)apol_domain_trans_result_create_from_result(dtr);
+					item->item = (void *)apol_domain_trans_result_create_from_domain_trans_result(dtr);
 					if (apol_vector_append(res->items, (void *)item) < 0) {
 						error = errno;
 						ERR(policy, "%s", strerror(ENOMEM));
@@ -373,20 +379,20 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 					}
 				}
 			} else {
-				item = sechk_item_new(apol_domain_trans_result_free);
+				item = sechk_item_new(dtr_free_wrap);
 				if (!item) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
 				item->test_result = 1;
-				item->item = (void *)apol_domain_trans_result_create_from_result(dtr);
+				item->item = (void *)apol_domain_trans_result_create_from_domain_trans_result(dtr);
 				if (apol_vector_append(res->items, (void *)item) < 0) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
 				}
-				if (!(item->proof = apol_vector_create())) {
+				if (!(item->proof = apol_vector_create(sechk_proof_free))) {
 					error = errno;
 					ERR(policy, "%s", strerror(ENOMEM));
 					goto inc_dom_trans_run_fail;
@@ -532,7 +538,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 				}
 			}
 		}
-		apol_vector_destroy(&domain_trans_vector, apol_domain_trans_result_free);
+		apol_vector_destroy(&domain_trans_vector);
 	}
 
 	mod->result = res;
@@ -546,8 +552,8 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 
       inc_dom_trans_run_fail:
 	sechk_item_free(item);
-	apol_vector_destroy(&user_vector, NULL);
-	apol_vector_destroy(&domain_trans_vector, apol_domain_trans_result_free);
+	apol_vector_destroy(&user_vector);
+	apol_vector_destroy(&domain_trans_vector);
 	sechk_result_destroy(&res);
 	errno = error;
 	return -1;

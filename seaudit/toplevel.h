@@ -127,8 +127,7 @@ seaudit_log_t *toplevel_get_log(toplevel_t * top);
  * @param top Toplevel containing seaudit log object.
  *
  * @return Vector of sorted users, or NULL if no log is loaded.  The
- * caller must call apol_vector_destroy() upon the return value,
- * passing NULL as the second parameter.
+ * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *toplevel_get_log_users(toplevel_t * top);
 
@@ -139,8 +138,7 @@ apol_vector_t *toplevel_get_log_users(toplevel_t * top);
  * @param top Toplevel containing seaudit log object.
  *
  * @return Vector of sorted roles, or NULL if no log is loaded.  The
- * caller must call apol_vector_destroy() upon the return value,
- * passing NULL as the second parameter.
+ * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *toplevel_get_log_roles(toplevel_t * top);
 
@@ -151,8 +149,7 @@ apol_vector_t *toplevel_get_log_roles(toplevel_t * top);
  * @param top Toplevel containing seaudit log object.
  *
  * @return Vector of sorted types, or NULL if no log is loaded.  The
- * caller must call apol_vector_destroy() upon the return value,
- * passing NULL as the second parameter.
+ * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *toplevel_get_log_types(toplevel_t * top);
 
@@ -164,8 +161,7 @@ apol_vector_t *toplevel_get_log_types(toplevel_t * top);
  * @param top Toplevel containing seaudit log object.
  *
  * @return Vector of sorted classes, or NULL if no log is loaded.  The
- * caller must call apol_vector_destroy() upon the return value,
- * passing NULL as the second parameter.
+ * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *toplevel_get_log_classes(toplevel_t * top);
 
