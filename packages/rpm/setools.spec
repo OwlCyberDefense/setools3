@@ -10,6 +10,7 @@ Source: setools-3.2.tar.gz
 AutoReqProv: no
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
+Requires: setools-libs = %{version} setools-gui = %{version} setools-console = %{version}
 
 # disable auto dependency generation because they are explicitly listed
 %define __find_requires %{nil}
@@ -22,22 +23,10 @@ Group: System Environment/Base
 
 %description
 SETools is a collection of graphical tools, command-line tools, and
-libraries designed to facilitate SELinux policy analysis.  The
-following are included:
+libraries designed to facilitate SELinux policy analysis.
 
-  apol          Tcl/Tk-based policy analysis tool
-  awish         customized wish interpreter
-  libapol       policy analysis library
-  libapol-tcl   bindings between apol and libapol
-  libpoldiff    semantic policy difference library
-  libqpol       library that abstracts policy internals
-  libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
-  seaudit       audit log analysis tools: seaudit and seaudit-report
-  sechecker     SELinux policy checking tool
-  secmds        command line tools: seinfo, sesearch, findcon,
-                replcon, indexcon, and searchcon
-  sediff        semantic policy difference tools: sediff and sediffx
+This meta-package depends upon the main packages necessary to run
+SETools.
 
 %package libs
 License: LGPL
@@ -50,7 +39,6 @@ BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
 BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
 BuildRequires: gtk2-devel >= 2.8 libglade2-devel libxml2-devel
 BuildRequires: autoconf >= 2.59 automake
-Conflicts: setools
 
 %description libs
 SETools is a collection of graphical tools, command-line tools, and
@@ -115,6 +103,7 @@ libraries designed to facilitate SELinux policy analysis.
 This package includes header files and archives for the following
 libraries:
 
+  awish         customized wish interpreter for apol development
   libapol       policy analysis library
   libapol-tcl   bindings between apol and libapol
   libpoldiff    semantic policy difference library
@@ -156,7 +145,6 @@ libraries designed to facilitate SELinux policy analysis.
 This package includes the following graphical tools:
 
   apol          Tcl/Tk-based policy analysis tool
-  awish         customized wish interpreter
   seaudit       audit log analysis tool
   sediffx       semantic policy difference tool
 
@@ -193,6 +181,9 @@ ln -sf consolehelper seaudit
 %clean
 rm -rf ${RPM_BUILD_ROOT}
 
+%files
+%doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
+
 %files libs
 %defattr(755,root,root)
 %{_libdir}/libqpol.so.%{libqpol_ver}
@@ -213,7 +204,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %defattr(-, root, root)
 %{setoolsdir}/seaudit-report.conf
 %{setoolsdir}/seaudit-report.css
-%doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
 
 %files libs-python
 %defattr(-,root,root)
@@ -266,6 +256,7 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files devel
 %defattr(-,root,root)
+%{_bindir}/awish
 %{_libdir}/libqpol.a
 %{_libdir}/libapol.a
 %{_libdir}/libpoldiff.a
@@ -390,7 +381,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/seaudit
 %{_bindir}/sediffx
 %{_bindir}/apol
-%{_bindir}/awish
 %{setoolsdir}/sediff_help.txt
 %{setoolsdir}/sediffx.glade
 %{setoolsdir}/sediffx.png
