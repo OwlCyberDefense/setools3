@@ -225,14 +225,14 @@ int cat_comp(const void *x, const void *y, poldiff_t * diff)
 }
 
 /**
- * Allocate and return a new level difference object.
+ * Allocate and return a new category difference object.
  *
  * @param diff Policy diff error handler.
  * @param form Form of the difference.
- * @param name Name of the level that is different.
+ * @param name Name of the category that is different.
  *
  * @return A newly allocated and initialized diff, or NULL upon error.
- * The caller is responsible for calling level_free() upon the returned
+ * The caller is responsible for calling cat_free() upon the returned
  * value.
  */
 static poldiff_cat_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *name)

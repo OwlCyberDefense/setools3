@@ -1,4 +1,4 @@
-AC_INIT(setools, 3.2, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.3, [Tresys Technology <setools@tresys.com>], [setools])
 AC_CONFIG_SRCDIR(awish/awish.c)
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([-Wno-portability])
@@ -28,7 +28,7 @@ libseaudit_soname=libseaudit.so.4
 libseaudit_pyswig_soname=_seaudit.so.4
 libseaudit_jswig_soname=libjseaudit.so.4
 
-setoolsdir='${prefix}/share/setools-3.2'
+setoolsdir='${prefix}/share/setools-3.3'
 
 version_min_sepol_major=1
 version_min_sepol_minor=12
