@@ -1280,7 +1280,6 @@ static int seaudit_log_parse_line(seaudit_log_t * log, char *line)
 	seaudit_message_type_e is_sel, prev_message_type;
 	apol_vector_t *tokens = NULL;
 	int retval = -1, retval2, has_warnings = 0, error = 0;
-	size_t offset = 0, i;
 
 	is_sel = is_selinux(line);
 	if (log->next_line) {

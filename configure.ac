@@ -8,11 +8,13 @@ libqpol_version=1.2
 libqpol_soname=libqpol.so.1
 libqpol_pyswig_soname=_qpol.so.1
 libqpol_jswig_soname=libjqpol.so.1
+libqpol_tswig_soname=libtqpol.so.1
 
 libapol_version=4.0
 libapol_soname=libapol.so.4
 libapol_pyswig_soname=_apol.so.4
 libapol_jswig_soname=libjapol.so.4
+libapol_tswig_soname=libtapol.so.4
 
 libpoldiff_version=1.2
 libpoldiff_soname=libpoldiff.so.1
@@ -51,11 +53,6 @@ AC_CHECK_FUNCS(rand_r)
 
 AC_CACHE_SAVE
 
-AC_ARG_ENABLE(shared,
-              AC_HELP_STRING([--enable-shared],
-                             [link against shared libapol (default)]),
-              enable_shared="$enableval",
-              enable_shared="yes")
 AC_MSG_CHECKING([for how to link against libraries])
 if test "x${enable_shared}" = xyes; then
     use_shared=yes
@@ -154,19 +151,8 @@ AC_SUBST(PROFILECFLAGS)
 AC_SUBST(PROFILELDFLAGS)
 
 do_swigify=no
-do_swigify_python=no
 do_swigify_java=no
-AC_ARG_ENABLE(swig-python,
-              AC_HELP_STRING([--enable-swig-python],
-                             [build SWIG interfaces for Python]),
-              enable_pyswig="$enableval")
-if test "x${enable_pyswig}" = xyes; then
-   AC_PROG_SWIG(1.3.28)
-   AM_PATH_PYTHON(2.3)
-   SWIG_PYTHON
-   do_swigify_python=yes
-   do_swigify=yes
-fi
+do_swigify_python=no
 AC_ARG_ENABLE(swig-java,
               AC_HELP_STRING([--enable-swig-java],
                              [build SWIG interfaces for Java]),
@@ -193,7 +179,32 @@ if test "x${enable_jswig}" = xyes; then
    do_swigify_java=yes
    do_swigify=yes
 fi
-
+AC_ARG_ENABLE(swig-python,
+              AC_HELP_STRING([--enable-swig-python],
+                             [build SWIG interfaces for Python]),
+              enable_pyswig="$enableval")
+if test "x${enable_pyswig}" = xyes; then
+   AC_PROG_SWIG(1.3.28)
+   AM_PATH_PYTHON(2.3)
+   SWIG_PYTHON
+   do_swigify_python=yes
+   do_swigify=yes
+fi
+if test ${do_swigify} = "yes"; then
+   AC_PROG_SWIG(1.3.28)
+fi
+build_apol=yes
+AC_ARG_ENABLE(swig-tcl,
+              AC_HELP_STRING([--enable-swig-tcl],
+                             [build SWIG interfaces for Tcl (default)]),
+              enable_tclswig="$enableval", enable_tclswig="yes")
+if test "x${enable_tclswig}" = xyes; then
+   AC_PROG_SWIG(1.3.28)
+   do_swigify_tcl=yes
+   do_swigify=yes
+else
+   build_apol=no
+fi
 AC_CACHE_SAVE
 
 AC_ARG_ENABLE(gui,
@@ -206,9 +217,10 @@ if test "x${build_gui}" = "xyes"; then
     AC_MSG_RESULT(all)
 else
     AC_MSG_RESULT(only command line tools)
+    build_apol=no
 fi
 
-if test "x${build_gui}" = "xyes"; then
+if test ${build_apol} = "yes"; then
   dnl ** find the Tcl/Tk development libraries, then find BWidget
 
   TEA_INIT(3.5)
@@ -237,7 +249,7 @@ AC_ARG_ENABLE(bwidget-check,
                              [do not check for BWidget 1.8, assume it exists]),
               enable_bwidget="$enableval",
               enable_bwidget="yes")
-if test "x${enable_gui}" = "xno"; then
+if test ${build_apol} = "no"; then
     enable_bwidget=no
 fi
 if test "x${enable_bwidget}" = "xyes"; then
@@ -606,6 +618,7 @@ AM_CONDITIONAL(DO_SWIGIFY_PYTHON, test ${do_swigify_python} = "yes")
 AM_CONDITIONAL(DO_SWIGIFY_JAVA, test ${do_swigify_java} = "yes")
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
+AM_CONDITIONAL(BUILD_APOL, test ${build_apol} = "yes")
 AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
 
 profile_install_dir='${setoolsdir}/sechecker-profiles'
@@ -616,20 +629,24 @@ AC_SUBST(libqpol_version)
 AC_SUBST(libqpol_soname)
 AC_SUBST(libqpol_pyswig_soname)
 AC_SUBST(libqpol_jswig_soname)
+AC_SUBST(libqpol_tswig_soname)
 AC_SUBST(libapol_version)
 AC_SUBST(libapol_soname)
 AC_SUBST(libapol_pyswig_soname)
 AC_SUBST(libapol_jswig_soname)
+AC_SUBST(libapol_tswig_soname)
 AC_SUBST(libpoldiff_version)
 AC_SUBST(libpoldiff_soname)
 AC_SUBST(libpoldiff_pyswig_soname)
 AC_SUBST(libpoldiff_jswig_soname)
+AC_SUBST(libpoldiff_tswig_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
 AC_SUBST(libseaudit_version)
 AC_SUBST(libseaudit_soname)
 AC_SUBST(libseaudit_pyswig_soname)
 AC_SUBST(libseaudit_jswig_soname)
+AC_SUBST(libseaudit_tswig_soname)
 AC_SUBST(setoolsdir)
 AC_SUBST(selinux_policy_dir)
 AC_SUBST(selinux_default_policy)
@@ -687,6 +704,13 @@ EOF
    echo "    set ApolTop::gui_ver ${apol_gui_version}" >> ./config.tcl
    echo "    set ApolTop::apol_install_dir \{${setoolsdir}\}" >> ./config.tcl
    echo "}" >> ./config.tcl
+   echo "proc tcl_config_load_library {} {" >> ./config.tcl
+   if test "x${enable_debug}" != xyes; then
+      echo "    load libtapol.so" >> ./config.tcl
+   else
+      echo "    load ${ac_abs_top_builddir}/libapol-tcl/libtapol.so" >> ./config.tcl
+   fi
+   echo "}" >> ./config.tcl
 ]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; setoolsdir=${prefix}${setoolsdir}])
 
 AC_CONFIG_FILES([Makefile VERSION \
@@ -711,4 +735,4 @@ AC_CONFIG_FILES([Makefile VERSION \
 
 AC_OUTPUT
 
-echo "*** Configuration complete.  Do \`make help' to get a list of setools targets."
+echo "*** Configuration complete.  Do \`make help' to get a list of SETools targets."
