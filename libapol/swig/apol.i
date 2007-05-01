@@ -1613,6 +1613,9 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	void set_enabled(apol_policy_t *p, int enabled) {
 		apol_avrule_query_set_enabled(p, self, enabled);
 	};
+	void set_all_perms(apol_policy_t *p, int all_perms) {
+		apol_avrule_query_set_all_perms(p, self, all_perms);
+	};
 	void set_source_any(apol_policy_t *p, int is_any) {
 		apol_avrule_query_set_source_any(p, self, is_any);
 	};

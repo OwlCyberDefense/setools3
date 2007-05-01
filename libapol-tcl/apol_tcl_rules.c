@@ -416,6 +416,8 @@ static int apol_tcl_string_to_typeset(Tcl_Interp * interp, CONST char *typeset, 
  *   <li>regex - treat all symbols as regular expression
  *   <li>source_any - treat source symbol as criteria for target and default
  *   <li>syn_search - perform syntactic search instead of semantic (default)
+ *   <li>match_all_perms - find rules that match all selected
+ *                         permissions instead of any permission
  * </ul>
  * For source/target/default types, these are each a list of four parameters:
  * <ol>
@@ -501,6 +503,8 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp * interp, int ar
 			apol_terule_query_set_source_any(policydb, tequery, 1);
 		} else if (strcmp(s, "syn_search") == 0) {
 			do_syn_search = 1;
+		} else if (strcmp(s, "match_all_perms") == 0) {
+			apol_avrule_query_set_all_perms(policydb, avquery, 1);
 		} else {
 			ERR(policydb, "Invalid option %s.", s);
 			goto cleanup;

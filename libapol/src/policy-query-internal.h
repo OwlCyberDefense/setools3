@@ -81,6 +81,8 @@ extern "C"
 #define APOL_QUERY_TARGET_TYPE 0x400
 #define APOL_QUERY_TARGET_ATTRIBUTE 0x800
 
+#define APOL_QUERY_MATCH_ALL_PERMS 0x1000
+
 /**
  * Destroy a compiled regular expression, setting it to NULL
  * afterwards.	Does nothing if the reference is NULL.

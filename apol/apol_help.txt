@@ -212,16 +212,19 @@ rules in a policy based on selected search criteria.
        'dir' and 'file', are selected, rules that apply to file OR
        directory object classes are selected).
 
-       This tab also includes a section for Allow and Audit Rule
-       Permissions, as a means to prune the list of permissions based
-       on the object classes selected.  However, if allow and/or audit
-       rules have not been selected, the Allow and Audit Rule
-       Permissions section will be disabled since permissions will not
-       apply in this case.  If "All for selected classes" is selected,
-       only permissions related to selected objects are shown.
-       "Common to selected classes" instead only shows permissions
-       that all selected classes have.
-	
+       This tab also includes a section for AV Rule Permissions, as a
+       means to prune the list of permissions based on the object
+       classes selected.  However, if none of the AV rules have been
+       selected the permissions section will be disabled.  If "All for
+       selected classes" is selected, only permissions related to
+       selected objects are shown.  "Common to selected classes"
+       instead only shows permissions that all selected classes have.
+       Below is a checkbox that changes permission matching behavior.
+       If more than one permission is selected, the default behavior
+       is to return rules that contain any of those selections.  When
+       the checkbox is enabled, returned rules instead will contain
+       all of them.
+
   In the Results Tab for a given search, all rules that meet the
   search criteria are displayed.  In addition, if the policy that is
   opened is capable of showing line numbers, a hyperlink for each rule

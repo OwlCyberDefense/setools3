@@ -10,7 +10,7 @@ libqpol_pyswig_soname=_qpol.so.1
 libqpol_jswig_soname=libjqpol.so.1
 libqpol_tswig_soname=libtqpol.so.1
 
-libapol_version=4.0
+libapol_version=4.1
 libapol_soname=libapol.so.4
 libapol_pyswig_soname=_apol.so.4
 libapol_jswig_soname=libjapol.so.4

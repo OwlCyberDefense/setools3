@@ -138,6 +138,7 @@ proc Apol_TE::reinitialize_default_search_options { } {
         cp:perms {}
         cp:perms_selected {}
         cp:perms_toshow all
+        cp:perms_matchall 0
     }
 
     variable enabled
@@ -515,7 +516,7 @@ proc Apol_TE::createClassesPermsTab {} {
 
     set objects_tab [$widgets(search_opts) insert end classperms -text "Classes/Permissions"]
     set fm_objs [TitleFrame $objects_tab.objs -text "Object Classes"]
-    set fm_perms [TitleFrame $objects_tab.perms -text "Allow and Audit Rule Permissions"]
+    set fm_perms [TitleFrame $objects_tab.perms -text "AV Rule Permissions"]
     pack $fm_objs -side left -expand 0 -fill both -padx 2 -pady 2
     pack $fm_perms -side left -expand 1 -fill both -padx 2 -pady 2
 
@@ -553,7 +554,8 @@ proc Apol_TE::createClassesPermsTab {} {
                    -command [list Apol_TE::clear_cp_listbox $widgets(cp:perms) perms]]
     set reverse [button $f.reverse -text "Reverse" \
                      -command [list Apol_TE::reverse_cp_listbox $widgets(cp:perms)]]
-    set perm_rb_f [frame $f.rb]
+    set perm_opts_f [frame $f.perms]
+    set perm_rb_f [frame $perm_opts_f.rb]
     set l [label $perm_rb_f.l -text "Permissions to show:" -state disabled]
     set all [radiobutton $perm_rb_f.all -text "All" \
                        -variable Apol_TE::vals(cp:perms_toshow) -value all]
@@ -563,15 +565,18 @@ proc Apol_TE::createClassesPermsTab {} {
                        -variable Apol_TE::vals(cp:perms_toshow) -value intersect]
     trace add variable Apol_TE::vals(cp:perms_toshow) write \
         Apol_TE::toggle_perms_toshow
-    pack $l $all $union $intersect -anchor w -padx 4
-    grid $sw - $perm_rb_f -sticky nsw
+    pack $l $all $union $intersect -anchor w
+    set all_perms [checkbutton $perm_opts_f.all -text "AV rule must have all selected permissions" \
+                       -variable Apol_TE::vals(cp:perms_matchall)]
+    pack $perm_rb_f $all_perms -anchor w -pady 4 -padx 4
+    grid $sw - $perm_opts_f -sticky nsw
     grid $clear $reverse ^ -pady 2 -sticky ew
     grid columnconfigure $f 0 -weight 0 -uniform 1 -pad 2
     grid columnconfigure $f 1 -weight 0 -uniform 1 -pad 2
     grid columnconfigure $f 2 -weight 1
     grid rowconfigure $f 0 -weight 1
     set widgets(cp:perms_widgets) \
-        [list $widgets(cp:perms) $clear $reverse $l $all $union $intersect]
+        [list $widgets(cp:perms) $clear $reverse $l $all $union $intersect $all_perms]
 
     trace add variable Apol_TE::vals(cp:classes_selected) write \
         [list Apol_TE::update_cp_tabname]
@@ -904,12 +909,15 @@ proc Apol_TE::search_terules {whichButton} {
     } else {
         set classes {}
     }
+    set other_opts {}
     if {$enabled(cp:perms)} {
         set perms $vals(cp:perms_selected)
+        if {$vals(cp:perms_matchall)} {
+            lappend other_opts "match_all_perms"
+        }
     } else {
         set perms {}
     }
-    set other_opts {}
     if {$vals(oo:enabled)} {
         lappend other_opts "only_enabled"
     }
@@ -922,7 +930,6 @@ proc Apol_TE::search_terules {whichButton} {
     if {[ApolTop::is_capable "syntactic rules"]} {
         lappend other_opts "syn_search"
     }
-
     foreach x {new update reset} {
         $widgets($x) configure -state disabled
     }

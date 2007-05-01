@@ -64,12 +64,16 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 		       apol_vector_t * perm_list, const char *bool_name)
 {
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
-	int only_enabled = flags & APOL_QUERY_ONLY_ENABLED;
-	int is_regex = flags & APOL_QUERY_REGEX;
-	int source_as_any = flags & APOL_QUERY_SOURCE_AS_ANY;
+	const int only_enabled = flags & APOL_QUERY_ONLY_ENABLED;
+	const int is_regex = flags & APOL_QUERY_REGEX;
+	const int source_as_any = flags & APOL_QUERY_SOURCE_AS_ANY;
+	size_t num_perms_to_match = 1;
 	int retv = -1;
 	regex_t *bool_regex = NULL;
 
+	if ((flags & APOL_QUERY_MATCH_ALL_PERMS) && perm_list != NULL) {
+		num_perms_to_match = apol_vector_get_size(perm_list);
+	}
 	if (qpol_policy_get_avrule_iter(p->p, rule_type, &iter) < 0) {
 		goto cleanup;
 	}
@@ -77,8 +81,8 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 		qpol_avrule_t *rule;
 		uint32_t is_enabled;
 		qpol_cond_t *cond = NULL;
-		int match_source = 0, match_target = 0, match_perm = 0, match_bool = 0;
-		size_t i;
+		int match_source = 0, match_target = 0, match_bool = 0;
+		size_t match_perm = 0, i;
 		if (qpol_iterator_get_item(iter, (void **)&rule) < 0) {
 			goto cleanup;
 		}
@@ -151,21 +155,23 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 		}
 
 		if (perm_list != NULL) {
-			for (i = 0; i < apol_vector_get_size(perm_list) && match_perm == 0; i++) {
+			for (i = 0; i < apol_vector_get_size(perm_list) && match_perm < num_perms_to_match; i++) {
 				char *perm = (char *)apol_vector_get_element(perm_list, i);
 				if (qpol_avrule_get_perm_iter(p->p, rule, &perm_iter) < 0) {
 					goto cleanup;
 				}
-				match_perm = apol_compare_iter(p, perm_iter, perm, 0, NULL, 1);
-				if (match_perm < 0) {
+				int match = apol_compare_iter(p, perm_iter, perm, 0, NULL, 1);
+				if (match < 0) {
 					goto cleanup;
+				} else if (match > 0) {
+					match_perm++;
 				}
 				qpol_iterator_destroy(&perm_iter);
 			}
 		} else {
-			match_perm = 1;
+			match_perm = num_perms_to_match;
 		}
-		if (!match_perm) {
+		if (match_perm < num_perms_to_match) {
 			continue;
 		}
 
@@ -542,6 +548,11 @@ int apol_avrule_query_set_bool(apol_policy_t * p, apol_avrule_query_t * a, const
 int apol_avrule_query_set_enabled(apol_policy_t * p, apol_avrule_query_t * a, int is_enabled)
 {
 	return apol_query_set_flag(p, &a->flags, is_enabled, APOL_QUERY_ONLY_ENABLED);
+}
+
+int apol_avrule_query_set_all_perms(apol_policy_t * p, apol_avrule_query_t * a, int match_all)
+{
+	return apol_query_set_flag(p, &a->flags, match_all, APOL_QUERY_MATCH_ALL_PERMS);
 }
 
 int apol_avrule_query_set_source_any(apol_policy_t * p, apol_avrule_query_t * a, int is_any)

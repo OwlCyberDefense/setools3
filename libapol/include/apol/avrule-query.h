@@ -56,8 +56,8 @@ extern "C"
 /**
  * Execute a query against all syntactic access vector rules within the policy.
  *
- * @param p Policy within which to look up avrules. <b>Must be a
- * source policy.</b>
+ * @param p Policy within which to look up avrules.  The policy must
+ * be capable of having syntactic rules.
  * @param a Structure containing parameters for query. If this is
  * NULL then return all avrules.
  * @param v Reference to a vector of qpol_syn_avrule_t.  The vector
@@ -189,11 +189,12 @@ extern "C"
 	extern int apol_avrule_query_append_class(apol_policy_t * p, apol_avrule_query_t * a, const char *obj_class);
 
 /**
- * Set an avrule query to return rules with this permission.  If more
- * than one permission are appended to the query, at least one of the
- * rule's permissions must be one of those appended.  (I.e., the
- * intersection of query's and rule's permissions must be non-empty.)
- * Pass a NULL to clear all permissions.
+ * Set an avrule query to return rules with this permission.  By
+ * default, if more than one permission are appended to the query, at
+ * least one of the rule's permissions must be one of those appended;
+ * that is, the intersection of query's and rule's permissions must be
+ * non-empty.  (This behavior can be changed.)  Pass a NULL to clear
+ * all permissions.
  *
  * @param p Policy handler, to report errors.
  * @param a AV rule query to set.
@@ -201,6 +202,8 @@ extern "C"
  * clear all permissions.
  *
  * @return 0 on success, negative on error.
+ *
+ * @see apol_avrule_query_set_all_perms()
  */
 	extern int apol_avrule_query_append_perm(apol_policy_t * p, apol_avrule_query_t * a, const char *perm);
 
@@ -231,6 +234,39 @@ extern "C"
  * @return Always 0.
  */
 	extern int apol_avrule_query_set_enabled(apol_policy_t * p, apol_avrule_query_t * a, int is_enabled);
+
+/**
+ * Normally, if more than one permission are added to the query then
+ * all returned rules will have <em>at least one</em> of those
+ * permissions.  If the all_perms flag is set, then returned rules
+ * will have <em>all</em> of the given permissions.  This flag does
+ * nothing if no permissions are given.
+ *
+ * <em>Note:</em> If calling apol_syn_avrule_get_by_query(), the
+ * returned results may not be what is expected.  For a given
+ * source-target-class triplet, all of the associated permissions are
+ * unioned together prior to executing the avrule query.  Although a
+ * given syntactic AV rule might not have all of the matched
+ * permissions, the union of the rules' permissions will them.  For
+ * example, consider these two allow rules:
+ *
+ *<pre>allow A B : C p1;
+ *allow A B : C p2;</pre>
+ *
+ * If the avrule query has both permissions p1 and p2 and the
+ * all_perms flag is set, then both of these syntactic rules will be
+ * returned by apol_syn_avrule_get_by_query().
+ *
+ * @param p Policy handler, to report errors.
+ * @param a AV rule query to set.
+ * @param all_perms Non-zero to match all permissions, zero to match
+ * any permission.
+ *
+ * @return Always 0.
+ *
+ * @see apol_avrule_query_append_perm()
+ */
+	extern int apol_avrule_query_set_all_perms(apol_policy_t * p, apol_avrule_query_t * a, int all_perms);
 
 /**
  * Set an avrule query to treat the source symbol as any.  That is,
