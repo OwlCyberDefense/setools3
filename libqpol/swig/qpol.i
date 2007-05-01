@@ -208,6 +208,8 @@ typedef struct qpol_module {} qpol_module_t;
 };
 
 /* qpol_policy */
+#define QPOL_POLICY_OPTION_NO_NEVERALLOWS 0x00000001
+#define QPOL_POLICY_OPTION_NO_RULES       0x00000002
 typedef struct qpol_policy {} qpol_policy_t;
 typedef void (*qpol_callback_fn_t) (void *varg, struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
 #define QPOL_POLICY_UNKNOWN       -1
@@ -228,19 +230,9 @@ typedef enum qpol_capability
 } qpol_capability_e;
 
 %extend qpol_policy_t {
-	/* open no rules currently unavailable pending neverallow decision */
-	qpol_policy_t(const char *path, qpol_callback_fn_t fn, void *arg) {
+	qpol_policy_t(const char *path, const int options) {
 		qpol_policy_t *p;
-		if (qpol_policy_open_from_file(path, &p, fn, arg) < 0) {
-			SWIG_exception(SWIG_IOError, "Error opening policy");
-		}
-		return p;
-	fail:
-		return NULL;
-	};
-	qpol_policy_t(const char *path) {
-		qpol_policy_t *p;
-		if (qpol_policy_open_from_file(path, &p, NULL, NULL) < 0) {
+		if (qpol_policy_open_from_file(path, &p, NULL, NULL, options) < 0) {
 			SWIG_exception(SWIG_IOError, "Error opening policy");
 		}
 		return p;
@@ -264,8 +256,8 @@ typedef enum qpol_capability
 	fail:
 		return;
 	};
-	void rebuild () {
-		if (qpol_policy_rebuild(self)) {
+	void rebuild (const int options) {
+		if (qpol_policy_rebuild(self, options)) {
 			SWIG_exception(SWIG_RuntimeError, "Failed rebuilding policy");
 		}
 	fail:

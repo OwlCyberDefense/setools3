@@ -48,7 +48,6 @@ BUILT_SOURCES = qpol_wrap.c \
 	qpol_type_t.java \
 	qpol_user_t.java \
 	qpol_validatetrans_t.java \
-	SWIGTYPE_p_f_p_void_p_struct_qpol_policy_int_p_q_const__char_va_list__void.java \
 	SWIGTYPE_p_int.java \
 	SWIGTYPE_p_void.java
 

@@ -46,8 +46,9 @@ extern "C"
  * When creating an apol_policy, load all components except rules
  * (both AV and TE rules).  For modular policies, this affects both
  * the base policy and subsequent modules.
+ * @deprecated use QPOL_POLICY_OPTION_NO_RULES instead
  */
-#define APOL_POLICY_OPTION_NO_RULES 1
+#define APOL_POLICY_OPTION_NO_RULES QPOL_POLICY_OPTION_NO_RULES
 
 /**
  * Create a new apol_policy initialized from one or more policy files.
@@ -55,8 +56,7 @@ extern "C"
  * @param path Policy path object specifying which policy file or
  * files to load.
  * @param options Bitfield specifying options for the returned policy.
- * Currently the only acceptable option is
- * APOL_POLICY_OPTION_NO_RULES.
+ * Valid options are QPOL_POLICY_OPTION_* from qpol.h.
  * @param msg_callback Callback to invoke as errors/warnings are
  * generated.  If NULL, then write messages to standard error.
  * @param varg Value to be passed as the first parameter to the

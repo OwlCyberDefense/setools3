@@ -47,7 +47,7 @@ int qpol_policy_get_terule_iter(qpol_policy_t * policy, uint32_t rule_type_mask,
 		return STATUS_ERR;
 	}
 
-	if (!(policy->rules_loaded)) {
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_RULES_LOADED)) {
 		ERR(policy, "%s", "Cannot get terules: Rules not loaded");
 		errno = ENOTSUP;
 		return STATUS_ERR;

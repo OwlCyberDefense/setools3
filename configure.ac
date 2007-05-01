@@ -4,7 +4,7 @@ AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([-Wno-portability])
 
 dnl *** update these variables as versions change; also update AC_INIT ***
-libqpol_version=1.2
+libqpol_version=1.3
 libqpol_soname=libqpol.so.1
 libqpol_pyswig_soname=_qpol.so.1
 libqpol_jswig_soname=libjqpol.so.1

@@ -35,7 +35,7 @@
 #include "qpol_internal.h"
 
 /* generic information about policydb*/
-int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
+static int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
 {
 	policydb_t *db = NULL;
 

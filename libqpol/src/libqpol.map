@@ -1,4 +1,4 @@
-{
+VERS_1.2{
 	global:
 		qpol_avrule_*;
 		qpol_bool_*;
@@ -21,9 +21,17 @@
 		qpol_module_*;
 		qpol_netifcon_*;
 		qpol_nodecon_*;
-		qpol_open_policy_*;
 		qpol_perm_*;
-		qpol_policy_*;
+		qpol_policy_append_module;
+		qpol_policy_build_syn_rule_table;
+		qpol_policy_destroy;
+		qpol_policy_get_*;
+		qpol_policy_has_capability;
+		qpol_policy_open_from_file;
+		qpol_policy_open_from_file_no_rules;
+		qpol_policy_open_from_memory;
+		qpol_policy_rebuild;
+		qpol_policy_reevaluate_conds;
 		qpol_portcon_*;
 		qpol_range_trans_*;
 		qpol_role_*;
@@ -36,4 +44,11 @@
 		libqpol_get_version;
 	local: *;
 };
+
+VERS_1.3{
+	global:
+		qpol_policy_open_from_file;
+		qpol_policy_open_from_memory;
+		qpol_policy_rebuild;
+} VERS_1.2;
  

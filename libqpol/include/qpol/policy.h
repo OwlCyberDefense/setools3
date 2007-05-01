@@ -67,6 +67,16 @@ extern "C"
 #define QPOL_POLICY_MODULE_BINARY  2
 
 /**
+ *  When loading the policy, do not load neverallow rules.
+ */
+#define QPOL_POLICY_OPTION_NO_NEVERALLOWS 0x00000001
+/**
+ *  When loading the policy, do not load any rules;
+ *  this option implies QPOL_POLICY_OPTION_NO_NEVERALLOWS.
+ */
+#define QPOL_POLICY_OPTION_NO_RULES       0x00000002
+
+/**
  *  List of capabilities a policy may have. This list represents
  *  features of policy that may differ from version to version or
  *  based upon the format of the policy file.
@@ -89,7 +99,7 @@ extern "C"
 		QPOL_CAP_RULES_LOADED,
 		/** The policy source may be displayed. */
 		QPOL_CAP_SOURCE,
-		/** The policy format stores neverallow rules. */
+		/** The policy supports and was loaded with neverallow rules. */
 		QPOL_CAP_NEVERALLOW
 	} qpol_capability_e;
 
@@ -100,18 +110,14 @@ extern "C"
  *  this pointer.
  *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
  *  @param varg (Optional) The argument needed by the handle callback.
+ *  @param options Options to control loading only portions of a policy;
+ *  must be a bitwise-or'd set of QPOL_POLICY_OPTION_* from above.
  *  @return Returns one of QPOL_POLICY_KERNEL_SOURCE,
  *  QPOL_POLICY_KERNEL_BINARY, or QPOL_POLICY_MODULE_BINARY on success
  *  and < 0 on failure; if the call fails, errno will be set and
  *  *policy will be NULL.
  */
-	extern int qpol_policy_open_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg);
-
-/**
- * @deprecated Use qpol_policy_open_from_file() instead.
- */
-	extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
-		__attribute__ ((deprecated));
+	extern int qpol_policy_open_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg, const int options);
 
 /**
  *  Open a policy from a passed in file path but do not load any rules.
@@ -122,15 +128,10 @@ extern "C"
  *  @param varg (Optional) The argument needed by the handle callback.
  *  @return Returns one of QPOL_POLICY_* above on success and < 0 on failure;
  *  if the call fails, errno will be set and *policy will be NULL.
+ *  @deprecated use qpol_policy_open_from_file() with the option QPOL_POLICY_OPTION_NO_RULES instead.
  */
 	extern int qpol_policy_open_from_file_no_rules(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn,
-						       void *varg);
-
-/**
- * @deprecated Use qpol_policy_open_from_file_no_rules() instead.
- */
-	extern int qpol_open_policy_from_file_no_rules(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn,
-						       void *varg) __attribute__ ((deprecated));
+						       void *varg) __attribute__((deprecated));
 
 /**
  *  Open a policy from a passed in buffer.
@@ -140,17 +141,13 @@ extern "C"
  *  @param size The size of filedata
  *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
  *  @param varg (Optional) The argument needed by the handle callback.
+ *  @param options Options to control loading only portions of a policy;
+ *  must be a bitwise-or'd set of QPOL_POLICY_OPTION_* from above.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL.
  */
 	extern int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn,
-						void *varg);
-
-/**
- * @deprecated Use qpol_policy_open_from_memory() instead.
- */
-	extern int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn,
-						void *varg) __attribute__ ((deprecated));
+						void *varg, const int options);
 
 /**
  *  Close a policy and deallocate its memory.  Does nothing if it is
@@ -187,14 +184,15 @@ extern "C"
 
 /**
  *  Rebuild the policy. Re-link all enabled modules with the base
- *  and then call expand. <b>This function should be called after
- *  appending new modules or changing which modules are enabled.</b>
- *  @param policy The policy to rebuild <b>(Must be a modular policy).</b>
+ *  and then call expand.
+ *  @param policy The policy to rebuild.
  *  This policy will be altered by this function.
+ *  @param options Options to control loading only portions of a policy;
+ *  must be a bitwise-or'd set of QPOL_POLICY_OPTION_* from above.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and the policy will be reverted to its previous state.
  */
-	extern int qpol_policy_rebuild(qpol_policy_t * policy);
+	extern int qpol_policy_rebuild(qpol_policy_t * policy, const int options);
 
 /**
  *  Get an iterator of all modules in a policy.
@@ -206,15 +204,6 @@ extern "C"
  *  errno will be set and *iter will be NULL.
  */
 	extern int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
-
-/**
- *  Determine if the policy is MLS enabled.
- *  @param policy The policy to check.
- *  @return Returns 1 if MLS is enabled, 0 if MLS is disabled, and
- *  < 0 if there was an error; if the call fails, errno will be set.
- * @deprecated use qpol_policy_has_capability() for QPOL_CAP_MLS instead.
- */
-	extern int qpol_policy_is_mls_enabled(qpol_policy_t * policy) __attribute__ ((deprecated));
 
 /**
  *  Get the version number of the policy.

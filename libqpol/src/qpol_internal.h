@@ -62,7 +62,7 @@ extern "C"
 		struct sepol_handle *sh;
 		qpol_callback_fn_t fn;
 		void *varg;
-		int rules_loaded;
+		int options;
 		int type;
 		int modified;
 		struct qpol_extended_image *ext;

@@ -28,6 +28,7 @@
 #include <apol/perm-map.h>
 #include <apol/domain-trans-analysis.h>
 
+#include <qpol/policy.h>
 #include <qpol/policy_extend.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -93,11 +94,7 @@ apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * pa
 	policy->msg_callback_arg = varg;
 	primary_path = apol_policy_path_get_primary(path);
 	INFO(policy, "Loading policy %s.", primary_path);
-	if (options & APOL_POLICY_OPTION_NO_RULES) {
-		policy_type = qpol_policy_open_from_file_no_rules(primary_path, &policy->p, qpol_handle_route_to_callback, policy);
-	} else {
-		policy_type = qpol_policy_open_from_file(primary_path, &policy->p, qpol_handle_route_to_callback, policy);
-	}
+	policy_type = qpol_policy_open_from_file(primary_path, &policy->p, qpol_handle_route_to_callback, policy, options);
 	if (policy_type < 0) {
 		ERR(policy, "Unable to open policy %s.", primary_path);
 		apol_policy_destroy(&policy);
@@ -130,7 +127,7 @@ apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * pa
 			}
 		}
 		INFO(policy, "%s", "Linking modules into base policy.");
-		if (qpol_policy_rebuild(policy->p)) {
+		if (qpol_policy_rebuild(policy->p, options)) {
 			apol_policy_destroy(&policy);
 			return NULL;
 		}

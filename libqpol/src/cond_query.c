@@ -119,7 +119,7 @@ int qpol_policy_get_cond_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 		return STATUS_ERR;
 	}
 
-	if (!(policy->rules_loaded)) {
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_RULES_LOADED)) {
 		ERR(policy, "%s", "Cannot get conditionals: Rules not loaded");
 		errno = ENOTSUP;
 		return STATUS_ERR;

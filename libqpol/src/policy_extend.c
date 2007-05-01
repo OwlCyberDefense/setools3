@@ -851,7 +851,7 @@ int qpol_policy_extend(qpol_policy_t * policy)
 		goto err;
 	}
 
-	if (!policy->rules_loaded)
+	if (policy->options & QPOL_POLICY_OPTION_NO_RULES)
 		return STATUS_SUCCESS;
 
 	retv = qpol_policy_add_cond_rule_traceback(policy);
