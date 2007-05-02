@@ -10,13 +10,13 @@ libqpol_pyswig_soname=_qpol.so.1
 libqpol_jswig_soname=libjqpol.so.1
 libqpol_tswig_soname=libtqpol.so.1
 
-libapol_version=4.1
+libapol_version=4.2
 libapol_soname=libapol.so.4
 libapol_pyswig_soname=_apol.so.4
 libapol_jswig_soname=libjapol.so.4
 libapol_tswig_soname=libtapol.so.4
 
-libpoldiff_version=1.2
+libpoldiff_version=1.3
 libpoldiff_soname=libpoldiff.so.1
 libpoldiff_pyswig_soname=_poldiff.so.1
 libpoldiff_jswig_soname=libjpoldiff.so.1
@@ -25,7 +25,7 @@ libsefs_version=3.1
 libsefs_soname=libsefs.so.3
 dnl libsefs will not be swigified
 
-libseaudit_version=4.1
+libseaudit_version=4.2
 libseaudit_soname=libseaudit.so.4
 libseaudit_pyswig_soname=_seaudit.so.4
 libseaudit_jswig_soname=libjseaudit.so.4

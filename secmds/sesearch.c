@@ -1002,7 +1002,11 @@ int main(int argc, char **argv)
 	}
 	free(policy_file);
 	apol_vector_destroy(&mod_paths);
-	policy = apol_policy_create_from_policy_path(pol_path, 0, NULL, NULL);
+
+	int pol_opt = 0;
+	if (!(cmd_opts.nallow || cmd_opts.all))
+		pol_opt = QPOL_POLICY_OPTION_NO_NEVERALLOWS;
+	policy = apol_policy_create_from_policy_path(pol_path, pol_opt, NULL, NULL);
 	if (!policy) {
 		ERR(policy, "%s", strerror(errno));
 		apol_policy_path_destroy(&pol_path);

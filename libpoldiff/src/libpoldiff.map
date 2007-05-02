@@ -1,4 +1,4 @@
-{
+VERS_1.3{
 	global:
 		poldiff_create;
 		poldiff_destroy;

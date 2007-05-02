@@ -1394,7 +1394,7 @@ int main(int argc, char **argv)
 	}
 	apol_vector_destroy(&mod_paths);
 
-	policydb = apol_policy_create_from_policy_path(pol_path, ((stats || all) ? 0 : APOL_POLICY_OPTION_NO_RULES), NULL, NULL);
+	policydb = apol_policy_create_from_policy_path(pol_path, ((stats || all) ? 0 : QPOL_POLICY_OPTION_NO_RULES), NULL, NULL);
 	if (!policydb) {
 		ERR(policydb, "%s", strerror(errno));
 		free(policy_file);

@@ -1,3 +1,12 @@
+2007-05.02  j. Mowery  <jmowery@tresys.com>
+
+	* Versioned symbols in other libraries.
+
+2007-05-01  J. Mowery  <jmowery@tresys.com>
+
+	* Versioned symbols in libqpol to allow conditional expansion
+	  of neverallow rules from qpol_policy_open_from_*.
+
 2007-05-01  J. Tang  <jtang@tresys.com>
 
 	* Added apol_avrule_query_set_all_perms().  This changes the

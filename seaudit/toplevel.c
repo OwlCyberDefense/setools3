@@ -688,7 +688,7 @@ static gpointer toplevel_open_policy_runner(gpointer data)
 {
 	struct policy_run_datum *run = (struct policy_run_datum *)data;
 	progress_update(run->top->progress, "Opening policy.");
-	run->policy = apol_policy_create_from_policy_path(run->path, 0, progress_apol_handle_func, run->top->progress);
+	run->policy = apol_policy_create_from_policy_path(run->path, QPOL_POLICY_OPTION_NO_NEVERALLOWS, progress_apol_handle_func, run->top->progress);
 	if (run->policy == NULL) {
 		run->result = -1;
 		progress_abort(run->top->progress, NULL);
