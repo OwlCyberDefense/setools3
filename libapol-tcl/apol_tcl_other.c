@@ -51,12 +51,6 @@
 apol_policy_t *policydb = NULL;
 qpol_policy_t *qpolicydb = NULL;
 
-/** location of the script directory, set by Apol_GetScriptDir() */
-static char *script_dir = NULL;
-
-/** location of the help file directory, set by Apol_GetHelpDir() */
-static char *help_dir = NULL;
-
 /** severity of most recent message */
 static int msg_level = INT_MAX;
 
@@ -315,75 +309,6 @@ static void apol_tcl_reset_globals(void)
 	apol_tcl_clear_error();
 	is_permmap_loaded = 0;
 	qpolicydb = NULL;
-}
-
-/**
- * Get the directory where the Tcl scripts are located.  This function
- * simply returns the value of the script_dir GLOBAL variable defined
- * above if has been set previously.  Otherwise it calls
- * apol_find_file() and then returns the variable.  Someone needs to
- * call this function during or prior to running scripts that use
- * these commands.
- *
- * There is one argument, the file name of the top-level Tcl script
- * (e.g., apol.tcl) which is located according to apol_find_file().
- * The assumption is that any other Tcl script will be in the same
- * directory.
- *
- * @param argv This function takes one parameter: file to find.
- */
-static int Apol_GetScriptDir(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Need a filename.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (script_dir == NULL) {
-		script_dir = apol_file_find(argv[1]);
-		if (script_dir == NULL) {
-			Tcl_SetResult(interp, "Problem locating Tcl startup script.", TCL_STATIC);
-			return TCL_ERROR;
-		}
-	}
-	Tcl_SetResult(interp, script_dir, TCL_STATIC);
-	return TCL_OK;
-}
-
-int apol_tcl_get_startup_script(Tcl_Interp * interp, char *name)
-{
-	CONST char *args[2] = { NULL, name };
-	return Apol_GetScriptDir(NULL, interp, 2, args);
-}
-
-/**
- * Get the directory where the help files are located.  This function
- * simply returns the value of the help_dir GLOBAL variable defined
- * above if has been set previously.  Otherwise it calls
- * apol_find_file() and then returns the variable.  Someone needs to
- * call this function during or prior to running scripts that use
- * these commands.
- *
- * @param argv This function takes one parameter: file to find.
- */
-static int Apol_GetHelpDir(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Need a filename.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (help_dir == NULL) {
-		help_dir = apol_file_find(argv[1]);
-		if (help_dir == NULL) {
-			Tcl_SetResult(interp, "Problem locating Tcl help file.", TCL_STATIC);
-			return TCL_ERROR;
-		}
-	}
-
-	assert(help_dir != NULL);
-	Tcl_SetResult(interp, help_dir, TCL_STATIC);
-	return TCL_OK;
 }
 
 /**
@@ -1417,8 +1342,6 @@ static int Apol_SetPermMap(ClientData clientData, Tcl_Interp * interp, int argc,
 /* Package initialization */
 int apol_tcl_init(Tcl_Interp * interp)
 {
-	Tcl_CreateCommand(interp, "apol_GetScriptDir", Apol_GetScriptDir, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetHelpDir", Apol_GetHelpDir, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetInfoString", Apol_GetInfoString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_OpenPolicyList", Apol_OpenPolicyList, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SavePolicyList", Apol_SavePolicyList, NULL, NULL);

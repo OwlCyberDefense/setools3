@@ -3,7 +3,7 @@ wrappedso_SONAME = @libqpol_tswig_soname@
 short_name = libtqpol.so
 wrappedsodir = $(libdir)/setools/qpol
 
-package_DATA = pkgIndex.tcl
+package_SCRIPTS = pkgIndex.tcl
 packagedir = $(wrappedsodir)
 
 dist_noinst_DATA = $(srcdir)/../qpol.i
@@ -23,8 +23,10 @@ $(wrappedso_DATA): $(BUILT_SOURCES)
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ $(short_name)
 
-$(package_DATA): $(wrappedso_DATA)
+$(package_SCRIPTS): $(wrappedso_DATA)
 	echo "pkg_mkIndex . $^" | $(TCLSH_PROG) > $@
+	$(mkdir_p) qpol
+	cp $(wrappedso_DATA) $@ qpol
 
 install-data-hook:
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(wrappedso_SONAME)
@@ -33,4 +35,6 @@ install-data-hook:
 uninstall-local:
 	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_SONAME) $(DESTDIR)$(wrappedsodir)/$(short_name)
 
-MOSTLYCLEANFILES = $(BUILT_SOURCES) $(wrappedso_DATA) $(wrappedso_SONAME) $(short_name) $(package_DATA)
+MOSTLYCLEANFILES = $(BUILT_SOURCES) $(wrappedso_DATA) $(wrappedso_SONAME) $(short_name) $(package_DATA) qpol/$(wrappedso_DATA) qpol/$(package_SCRIPTS)
+
+CLEANFILES = $(package_SCRIPTS)

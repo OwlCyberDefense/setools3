@@ -44,7 +44,8 @@ AC_LANG([C])
 AC_HEADER_STDC
 AC_PROG_LIBTOOL
 AC_PROG_LN_S
-AM_PROG_LEX
+AC_PROG_MKDIR_P
+AC_PROG_LEX
 AC_PROG_YACC
 AC_PROG_INSTALL
 AC_CHECK_SIZEOF(char *)
@@ -242,6 +243,13 @@ else
     AC_MSG_RESULT(only command line tools)
     build_apol=no
 fi
+
+if test "x${enable_debug}" = xyes; then
+   TCL_AUTOPATH='$(top_builddir)/libqpol/swig/tcl $(top_builddir)/libapol/swig/tcl'
+else
+   TCL_AUTOPATH='$(libdir)/setools'
+fi
+AC_SUBST(TCL_AUTOPATH)
 
 AC_ARG_ENABLE(bwidget-check,
               AC_HELP_STRING([--disable-bwidget-check],
@@ -667,8 +675,8 @@ if test ${sepol_new_expand_boolmap} == "yes" ; then
    AC_DEFINE(HAVE_SEPOL_BOOLMAP, 1, [sepol's new expand boolmap behavior])
 fi
 
-# for older version of BWidget, overcome bug in NoteBook::bindtabs and
-# add a new -autopost option to ComboBox
+# For older version of BWidget, overcome bug in NoteBook::bindtabs and
+# add a new -autopost option to ComboBox.
 AC_CONFIG_COMMANDS([config.tcl], [[
    echo "" > ./config.tcl
    if test ${bwidget_ver} = 1.7; then
@@ -702,16 +710,15 @@ EOF
    fi
    echo "proc tcl_config_init {} {" >> ./config.tcl
    echo "    set ApolTop::gui_ver ${apol_gui_version}" >> ./config.tcl
-   echo "    set ApolTop::apol_install_dir \{${setoolsdir}\}" >> ./config.tcl
    echo "}" >> ./config.tcl
-   echo "proc tcl_config_load_library {} {" >> ./config.tcl
-   if test "x${enable_debug}" != xyes; then
-      echo "    load libtapol.so" >> ./config.tcl
+   echo "proc tcl_config_use_sefs {} {" >> ./config.tcl
+   if test "x${use_sefs}" = "xyes"; then
+      echo "    return 1" >> ./config.tcl
    else
-      echo "    load ${ac_abs_top_builddir}/libapol-tcl/libtapol.so" >> ./config.tcl
+      echo "    return 0" >> ./config.tcl
    fi
    echo "}" >> ./config.tcl
-]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; setoolsdir=${prefix}${setoolsdir}])
+]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; use_sefs=${use_sefs}])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \

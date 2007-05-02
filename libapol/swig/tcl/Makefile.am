@@ -3,7 +3,7 @@ wrappedso_SONAME = @libapol_tswig_soname@
 short_name = libtapol.so
 wrappedsodir = $(libdir)/setools/apol
 
-package_DATA = pkgIndex.tcl
+package_SCRIPTS = pkgIndex.tcl
 packagedir = $(wrappedsodir)
 
 dist_noinst_DATA = $(srcdir)/../apol.i
@@ -25,8 +25,10 @@ $(wrappedso_DATA): $(BUILT_SOURCES)
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ $(short_name)
 
-$(package_DATA): $(wrappedso_DATA)
+$(package_SCRIPTS): $(wrappedso_DATA)
 	echo "pkg_mkIndex . $^" | $(TCLSH_PROG) > $@
+	$(mkdir_p) apol
+	cp $(wrappedso_DATA) $@ apol
 
 install-data-hook:
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(wrappedso_SONAME)
@@ -35,4 +37,6 @@ install-data-hook:
 uninstall-local:
 	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_SONAME) $(DESTDIR)$(wrappedsodir)/$(short_name)
 
-MOSTLYCLEANFILES = $(BUILT_SOURCES) $(wrappedso_DATA) $(wrappedso_SONAME) $(short_name) $(package_DATA)
+MOSTLYCLEANFILES = $(BUILT_SOURCES) $(wrappedso_DATA) $(wrappedso_SONAME) $(short_name) $(package_DATA) apol/$(wrappedso_DATA) apol/$(package_SCRIPTS)
+
+CLEANFILES = $(package_SCRIPTS)

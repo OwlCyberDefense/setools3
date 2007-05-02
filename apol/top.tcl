@@ -21,7 +21,7 @@ namespace eval ApolTop {
     variable polstats
     variable policy_stats_summary {}
 
-    # These two string are set within config.tcl.
+    # These two string are set by the configure script and Makefile.
     variable gui_ver
     variable apol_install_dir
 
@@ -45,7 +45,6 @@ namespace eval ApolTop {
     # Main window dimension defaults
     variable top_width          1000
     variable top_height         700
-    variable libsefs		0
 
     # Top-level dialog widgets
     variable helpDlg
@@ -676,10 +675,6 @@ proc ApolTop::displayGotoDialog {} {
     wm resizable $goto_Dialog 0 0
 }
 
-proc ApolTop::check_libsefs {} {
-    set ApolTop::libsefs [apol_IsLibsefs_BuiltIn]
-}
-
 proc ApolTop::create { } {
     variable notebook
     variable mainframe
@@ -749,7 +744,7 @@ proc ApolTop::create { } {
     set components_frame [$notebook insert end $ApolTop::components_tab -text "Policy Components"]
     set rules_frame [$notebook insert end $ApolTop::rules_tab -text "Policy Rules"]
 
-    if {$ApolTop::libsefs == 1} {
+    if {[tcl_config_use_sefs]} {
         Apol_File_Contexts::create $notebook
     }
     Apol_Analysis::create $notebook
@@ -1010,8 +1005,7 @@ proc ApolTop::buildRecentFilesMenu {} {
 }
 
 proc ApolTop::helpDlg {title file_name} {
-    set help_dir [apol_GetHelpDir "$file_name"]
-    set helpfile [file join $help_dir $file_name]
+    set helpfile [file join [get_install_dir] $file_name]
     if {[catch {open $helpfile} f]} {
         set info $f
     } else {
@@ -1402,19 +1396,19 @@ proc ApolTop::openPolicy {} {
     Apol_Open_Policy_Dialog::getPolicyPath $last_policy_path
 }
 
-proc ApolTop::apolExit { } {
+proc ApolTop::apolExit {} {
     variable policy_is_open
     if {$policy_is_open} {
-        ApolTop::closePolicy
+        closePolicy
     }
-    if {$ApolTop::libsefs == 1} {
+    if {[tcl_config_use_sefs]} {
         Apol_File_Contexts::close
     }
-    ApolTop::writeInitFile
+    writeInitFile
     exit
 }
 
-proc ApolTop::load_fonts { } {
+proc ApolTop::load_fonts {} {
     variable title_font
     variable dialog_font
     variable general_font
@@ -1441,12 +1435,17 @@ proc ApolTop::load_fonts { } {
     option add *text*font $text_font
 }
 
-proc ApolTop::main {} {
+proc ApolTop::main {argv} {
     variable top_width
     variable top_height
     variable notebook
 
     tcl_config_init
+
+    if {[catch {package require Tk}]} {
+        puts stderr "This program requires Tk to run."
+        exit -1
+    }
 
     # Prevent the application from responding to incoming send
     # requests and sending outgoing requests. This way any other
@@ -1461,11 +1460,10 @@ proc ApolTop::main {} {
         exit -1
     }
 
-    # Load the apol package into the interpreter
-    set rt [catch {package require apol} err]
-    if {$rt != 0 } {
-        tk_messageBox -icon error -type ok -title "Missing SELinux package" -message \
-            "Missing the SELinux package.  This script will not work correctly using the generic TK wish program.  You must either use the apol executable or the awish	interpreter."
+    if {[catch {tcl_config_init_libraries}]} {
+        global auto_path
+        tk_messageBox -icon error -type ok -title "Missing SETools Libraries" -message \
+            "The SETools libraries could not be found in one of these subdirectories:\n$auto_path"
         exit -1
     }
 
@@ -1473,38 +1471,38 @@ proc ApolTop::main {} {
     wm title . "SELinux Policy Analysis"
     wm protocol . WM_DELETE_WINDOW ApolTop::apolExit
 
-    set rt [catch {ApolTop::check_libsefs} err]
-    if {$rt != 0} {
-        tk_messageBox -icon error -type ok -title "Error" -message "$err"
-        return
-    }
-
     # Read apol's default settings file, gather all font information,
     # create the gui and then load recent files into the menu.
     catch {tcl_patch_bwidget}
-    ApolTop::load_fonts
-    ApolTop::readInitFile
-    ApolTop::create
+    load_fonts
+    readInitFile
+    create
     bind . <Button-1> {focus %W}
     bind . <Button-2> {focus %W}
     bind . <Button-3> {focus %W}
-    ApolTop::buildRecentFilesMenu
+    buildRecentFilesMenu
 
-    set icon_file [file join [apol_GetHelpDir apol.gif] apol.gif]
+    set icon_file [file join [get_install_dir] apol.gif]
     if {![catch {image create photo -file $icon_file} icon]} {
         wm iconphoto . -default $icon
     }
     variable apol_icon $icon
 
-    set ApolTop::top_width [$notebook cget -width]
-    set ApolTop::top_height [$notebook cget -height]
+    set top_width [$notebook cget -width]
+    set top_height [$notebook cget -height]
     wm geom . ${top_width}x${top_height}
 
     wm deiconify .
     raise .
     focus .
+
+    handle_args $argv
+}
+
+proc handle_args {argv} {
+    # do stuff here
 }
 
 #######################################################
 # Start script here
-ApolTop::main
+ApolTop::main $argv

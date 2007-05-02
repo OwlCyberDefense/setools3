@@ -63,7 +63,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
     } else {
         set info_ta [renderAttrib [lindex [apol_GetAttribs $ta 0] 0] 1 0]
     }
-    if {$ApolTop::libsefs == 1 && [Apol_File_Contexts::is_db_loaded]} {
+    if {[tcl_config_use_sefs] && [Apol_File_Contexts::is_db_loaded]} {
         set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]
         set index_file_loaded 1
     }
@@ -78,7 +78,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
     set notebook [NoteBook $top_f.nb]
 
     set ta_info_tab [$notebook insert end ta_info_tab]
-    if {$ApolTop::libsefs == 1} {
+    if {[tcl_config_use_sefs]} {
         set fc_info_tab [$notebook insert end fc_info_tab -text "Files"]
     }
 
@@ -91,7 +91,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
     set f_ta [text [$s_ta getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
     $s_ta setwidget $f_ta
 
-    if {$ApolTop::libsefs == 1} {
+    if {[tcl_config_use_sefs]} {
         if {$which != "type"} {
             set lbl [Label [$notebook getframe fc_info_tab].lbl \
                          -text "Files labeled with types that are members of this attribute:" \
@@ -113,7 +113,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
     $f_ta insert 0.0 $info_ta
     $f_ta configure -state disabled
 
-    if {$ApolTop::libsefs == 1} {
+    if {[tcl_config_use_sefs]} {
         if {$which != "type"} {
             pack $lbl -side top -side top -anchor nw
         }

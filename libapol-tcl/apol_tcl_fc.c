@@ -35,9 +35,7 @@
 #include <sefs/fsdata.h>
 	/* local global for file context DB */
 sefs_filesystem_db_t *fsdata = NULL;
-static bool_t is_libsefs_builtin = TRUE;
 #else
-static bool_t is_libsefs_builtin = FALSE;
 #endif
 
 /**
@@ -366,21 +364,6 @@ static int Apol_FC_Is_MLS(ClientData clientData, Tcl_Interp * interp, int argc, 
 #endif
 }
 
-/**
- * Returns 1 if libsefs was compiled into this library, 0 if not.
- */
-static int Apol_IsLibsefs_BuiltIn(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	Tcl_Obj *result_obj;
-	if (is_libsefs_builtin) {
-		result_obj = Tcl_NewIntObj(1);
-	} else {
-		result_obj = Tcl_NewIntObj(0);
-	}
-	Tcl_SetObjResult(interp, result_obj);
-	return TCL_OK;
-}
-
 int apol_tcl_fc_init(Tcl_Interp * interp)
 {
 	Tcl_CreateCommand(interp, "apol_Create_FC_Index_File", Apol_Create_FC_Index_File, NULL, NULL);
@@ -389,7 +372,5 @@ int apol_tcl_fc_init(Tcl_Interp * interp)
 	Tcl_CreateCommand(interp, "apol_Search_FC_Index_DB", Apol_Search_FC_Index_DB, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_FC_Index_DB_Get_Items", Apol_FC_Index_DB_Get_Items, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_FC_Is_MLS", Apol_FC_Is_MLS, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_IsLibsefs_BuiltIn", Apol_IsLibsefs_BuiltIn, NULL, NULL);
-
 	return TCL_OK;
 }
