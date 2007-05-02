@@ -10,13 +10,13 @@ libqpol_pyswig_soname=_qpol.so.1
 libqpol_jswig_soname=libjqpol.so.1
 libqpol_tswig_soname=libtqpol.so.1
 
-libapol_version=4.2
+libapol_version=4.1
 libapol_soname=libapol.so.4
 libapol_pyswig_soname=_apol.so.4
 libapol_jswig_soname=libjapol.so.4
 libapol_tswig_soname=libtapol.so.4
 
-libpoldiff_version=1.3
+libpoldiff_version=1.2
 libpoldiff_soname=libpoldiff.so.1
 libpoldiff_pyswig_soname=_poldiff.so.1
 libpoldiff_jswig_soname=libjpoldiff.so.1
@@ -25,7 +25,7 @@ libsefs_version=3.1
 libsefs_soname=libsefs.so.3
 dnl libsefs will not be swigified
 
-libseaudit_version=4.2
+libseaudit_version=4.1
 libseaudit_soname=libseaudit.so.4
 libseaudit_pyswig_soname=_seaudit.so.4
 libseaudit_jswig_soname=libjseaudit.so.4
@@ -169,7 +169,7 @@ if test "x${enable_jswig}" = xyes; then
    AC_PROG_JAR
    SWIG_JAVA_OPT=-java
    java_save_CFLAGS="${CFLAGS}"
-   SWIG_JAVA_CFLAGS="-I${JAVAPREFIX}/include -I${JAVAPREFIX}/include/linux"
+   SWIG_JAVA_CFLAGS="-I${JAVAPREFIX}/include -I${JAVAPREFIX}/include/linux -DSWIGJAVA=1"
    CFLAGS="${CFLAGS} ${SWIG_JAVA_CFLAGS}"
    AC_CHECK_HEADER([jni.h], , AC_MSG_ERROR([Not found.  Specify a Java SDK with --with-java-prefix flag.]))
    AC_CHECK_HEADER([jni_md.h], , AC_MSG_ERROR([Not found.  Specify a Java SDK with --with-java-prefix flag.]))
@@ -200,6 +200,29 @@ AC_ARG_ENABLE(swig-tcl,
               enable_tclswig="$enableval", enable_tclswig="yes")
 if test "x${enable_tclswig}" = xyes; then
    AC_PROG_SWIG(1.3.28)
+   TEA_INIT(3.5)
+   TEA_PATH_TCLCONFIG
+   TEA_LOAD_TCLCONFIG
+   AC_MSG_CHECKING([for Tcl 8.4 or greater])
+   if test \( "${TCL_MAJOR_VERSION}" -gt 8 \) -o \( "${TCL_MAJOR_VERSION}" -eq 8 -a "${TCL_MINOR_VERSION}" -ge 4 \); then
+      AC_MSG_RESULT(yes)
+   else
+      AC_MSG_ERROR([setools requires Tcl 8.4 or greater])
+   fi
+   TEA_PATH_TKCONFIG
+   TEA_LOAD_TKCONFIG
+   AC_MSG_CHECKING([for Tk 8.4 or greater])
+   if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "${TK_MINOR_VERSION}" -ge 4 \); then
+      AC_MSG_RESULT(yes)
+   else
+      AC_MSG_ERROR([setools requires Tk 8.4 or greater])
+   fi
+   TEA_PUBLIC_TCL_HEADERS
+   TEA_PUBLIC_TK_HEADERS
+   SWIG_TCL_OPT=-tcl
+   SWIG_TCL_CFLAGS="${TCL_INCLUDES} -DSWIGTCL=1"
+   AC_SUBST(SWIG_TCL_OPT)
+   AC_SUBST(SWIG_TCL_CFLAGS)
    do_swigify_tcl=yes
    do_swigify=yes
 else
@@ -218,30 +241,6 @@ if test "x${build_gui}" = "xyes"; then
 else
     AC_MSG_RESULT(only command line tools)
     build_apol=no
-fi
-
-if test ${build_apol} = "yes"; then
-  dnl ** find the Tcl/Tk development libraries, then find BWidget
-
-  TEA_INIT(3.5)
-  TEA_PATH_TCLCONFIG
-  TEA_LOAD_TCLCONFIG
-  AC_MSG_CHECKING([for Tcl 8.4 or greater])
-  if test \( "${TCL_MAJOR_VERSION}" -gt 8 \) -o \( "${TCL_MAJOR_VERSION}" -eq 8 -a "${TCL_MINOR_VERSION}" -ge 4 \); then
-      AC_MSG_RESULT(yes)
-  else
-      AC_MSG_ERROR([setools requires Tcl 8.4 or greater])
-  fi
-  TEA_PATH_TKCONFIG
-  TEA_LOAD_TKCONFIG
-  AC_MSG_CHECKING([for Tk 8.4 or greater])
-  if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "${TK_MINOR_VERSION}" -ge 4 \); then
-      AC_MSG_RESULT(yes)
-  else
-      AC_MSG_ERROR([setools requires Tk 8.4 or greater])
-  fi
-  TEA_PUBLIC_TCL_HEADERS
-  TEA_PUBLIC_TK_HEADERS
 fi
 
 AC_ARG_ENABLE(bwidget-check,
@@ -616,6 +615,7 @@ fi
 AM_CONDITIONAL(DO_SWIGIFY, test ${do_swigify} = "yes")
 AM_CONDITIONAL(DO_SWIGIFY_PYTHON, test ${do_swigify_python} = "yes")
 AM_CONDITIONAL(DO_SWIGIFY_JAVA, test ${do_swigify_java} = "yes")
+AM_CONDITIONAL(DO_SWIGIFY_TCL, test ${do_swigify_tcl} = "yes")
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 AM_CONDITIONAL(BUILD_APOL, test ${build_apol} = "yes")
@@ -715,9 +715,9 @@ EOF
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
-                 libqpol/swig/Makefile libqpol/swig/python/Makefile libqpol/swig/java/Makefile libqpol/swig/java/MANIFEST.MF \
+                 libqpol/swig/Makefile libqpol/swig/python/Makefile libqpol/swig/java/Makefile libqpol/swig/java/MANIFEST.MF libqpol/swig/tcl/Makefile \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
-                 libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile libapol/swig/java/MANIFEST.MF \
+                 libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile libapol/swig/java/MANIFEST.MF libapol/swig/tcl/Makefile \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
                  libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF \

@@ -73,9 +73,7 @@
 %import qpol.i
 
 #ifdef SWIGJAVA
-/* remove $null not valid outside of type map */
-#undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+
 /* handle size_t correctly in java as architecture independent */
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
@@ -111,6 +109,65 @@ typedef uint32_t size_t;
 #endif
 #endif
 
+#ifdef SWIGJAVA
+/* if java, pass the new exception macro to C not just SWIG */
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%inline %{
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%}
+#endif
+
+#ifdef SWIGTCL
+/* implement a custom non thread-safe error handler */
+%{
+static char *message = NULL;
+static void tcl_clear_error(void)
+{
+        free(message);
+        message = NULL;
+}
+static void tcl_throw_error(const char *s)
+{
+	free(message);
+	message = strdup(s);
+}
+static char *tcl_get_error(void)
+{
+	return message;
+}
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
+%}
+
+%wrapper %{
+/* Tcl module's initialization routine is expected to be named
+ * Apol_Init(), but the output file will be called libtapol.so instead
+ * of libapol.so.  Therefore add an alias from Tapol_Init() to the
+ * real Apol_Init().
+ */
+SWIGEXPORT int Tapol_Init(Tcl_Interp *interp) {
+	return SWIG_init(interp);
+}
+%}
+
+%exception {
+	char *err;
+	tcl_clear_error();
+	$action
+	if ((err = tcl_get_error()) != NULL) {
+                Tcl_Obj *obj = Tcl_NewStringObj(message, -1);
+                Tcl_ResetResult(interp);
+                Tcl_SetObjResult(interp, obj);
+		goto fail;
+	}
+}
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
+#endif
+
+
 /* defines from policy-query.h */
 /* Many libapol queries act upon MLS contexts.  Use these defines to
  * specify set operations upon contexts.
@@ -142,12 +199,8 @@ const char *apol_protocol_to_str(uint8_t protocol);
 %rename(apol_str_to_internal_ipv4) wrap_apol_str_to_internal_ipv4;
 %newobject wrap_apol_str_to_internal_ip;
 %rename(apol_str_to_internal_ip) wrap_apol_str_to_internal_ip;
+
 %inline %{
-/* if java, pass the new exception macro to C not just SWIG */
-#ifdef SWIGJAVA
-#undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
-#endif
 	uint32_t *wrap_apol_str_to_internal_ipv6(char *str) {
 		uint32_t *ip = calloc(4, sizeof(uint32_t));
 		int retv = 0;

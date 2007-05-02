@@ -1,4 +1,8 @@
-VERS_4.2{
+VERS_4.1{
+	global:
+        	apol_avrule_query_set_all_perms;
+};
+VERS_4.0{
         global:
                 apol_attr_*;
                 apol_avl_*;

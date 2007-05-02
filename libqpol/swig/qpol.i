@@ -55,7 +55,7 @@
 %javaconst(1);
 /* get the java environment so we can throw exceptions */
 %{
-	JNIEnv *jenv;
+	static JNIEnv *jenv;
 	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
 		return JNI_VERSION_1_2;
@@ -68,9 +68,6 @@
 
 #ifdef SWIGJAVA
 
-/* remove $null not valid outside of type map */
-#undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
 /* handle size_t correctly in java as architecture independent */
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
@@ -108,12 +105,71 @@ const char *libqpol_get_version(void);
 
 %rename(qpol_default_policy_find) wrap_qpol_default_policy_find;
 %newobject wrap_qpol_default_policy_find;
-%inline %{
+
 /* if java, pass the new exception macro to C not just SWIG */
 #ifdef SWIGJAVA
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%inline %{
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%}
 #endif
+
+#ifdef SWIGTCL
+/* implement a custom non thread-safe error handler */
+%{
+static char *message = NULL;
+static void tcl_clear_error(void)
+{
+        free(message);
+        message = NULL;
+}
+static void tcl_throw_error(const char *s)
+{
+	free(message);
+	message = strdup(s);
+}
+static char *tcl_get_error(void)
+{
+	return message;
+}
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
+%}
+
+%wrapper %{
+/* Tcl module's initialization routine is expected to be named
+ * Qpol_Init(), but the output file will be called libtqpol.so instead
+ * of libqpol.so.  Therefore add an alias from Tqpol_Init() to the
+ * real Qpol_Init().
+ */
+SWIGEXPORT int Tqpol_Init(Tcl_Interp *interp) {
+	return SWIG_init(interp);
+}
+%}
+
+%exception {
+	char *err;
+	tcl_clear_error();
+	$action
+	if ((err = tcl_get_error()) != NULL) {
+                Tcl_Obj *obj = Tcl_NewStringObj(message, -1);
+                Tcl_ResetResult(interp);
+                Tcl_SetObjResult(interp, obj);
+		goto fail;
+	}
+}
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
+#endif
+
+%inline %{
+	/* cast void * to char * as it can't have a constructor */
+	const char * to_str(void *x) {
+		return (const char *)x;
+	}
+
 	char * wrap_qpol_default_policy_find() {
 		char *path;
 		int retv;
@@ -128,13 +184,6 @@ const char *libqpol_get_version(void);
 	fail: /* SWIG_exception calls goto fail */
 		return NULL;
 	}
-%}
-
-%inline %{
-/* cast void * to char * as it can't have a constructor */
-const char * to_str(void *x) {
-	return (const char *)x;
-}
 %}
 
 /* qpol_module */
@@ -1169,7 +1218,7 @@ typedef struct qpol_common {} qpol_common_t;
 };
 
 /* qpol fs_use */
-/* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are 
+/* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are
  * copied from sepol/policydb/services.h.
  * QPOL_FS_USE_PSID is an extension to support v12 policies. */
 #define QPOL_FS_USE_XATTR 1
