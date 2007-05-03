@@ -13,30 +13,30 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+set COPYRIGHT_INFO "Copyright (C) 2001-2007 Tresys Technology, LLC"
+
 namespace eval ApolTop {
-    variable status {}
-    variable policy_version_string {}
-    variable last_policy_path {}
-    variable policyConf_lineno {}
+    variable policy {} ;# handle to an apol_policy, or {} if none opened
+    variable qpolicy {} ;# handle to policy's qpol_policy_t, or {} if none opened
     variable polstats
+
+    # these three are shown along the status line of the toplevel window
+    variable policy_version_string {}
+    variable policyConf_lineno {}
     variable policy_stats_summary {}
 
-    # These two string are set by the configure script and Makefile.
-    variable gui_ver
-    variable apol_install_dir
-
-    variable copyright_date "2001-2007"
+    # user's preferences
+    variable dot_apol_file	[file join $::env(HOME) .apol]
     variable recent_files {}
-    # The max # can be changed by the .apol file
+    variable last_policy_path {}
     variable max_recent_files	5
-    # env array element HOME is an environment variable
-    variable dot_apol_file	"[file join "$::env(HOME)" ".apol"]"
+    variable show_fake_attrib_warning 1 ;# warn if using fake attribute names
+
     variable goto_line_num
-    # Default GUI settings
     variable prevCursor		arrow
+
     # store the default background color for use when diabling widgets
     variable default_bg_color
-    set default_bg_color	[. cget -background]
     variable text_font		""
     variable title_font		""
     variable dialog_font	""
@@ -47,8 +47,6 @@ namespace eval ApolTop {
     variable top_height         700
 
     # Top-level dialog widgets
-    variable helpDlg
-    set helpDlg .apol_helpDlg
     variable searchDlg .apol_find_dialog
     variable goto_Dialog .apol_goto_dialog
     variable options_Dialog .apol_options_dialog
@@ -72,7 +70,6 @@ namespace eval ApolTop {
     variable case_sensitive     0
     variable regExpr		0
     variable srch_Direction	"down"
-    variable policy_is_open	0
 
     # Notebook tab IDENTIFIERS; NOTE: We name all tabs after their
     # related namespace qualified names.  We use the prefix 'Apol_'
@@ -110,17 +107,13 @@ namespace eval ApolTop {
         PolicyConf
     }
     variable tk_msgBox_Wait
-
-    # show warning for loading policy with fake attribute names
-    variable show_fake_attrib_warning 1
 }
 
 proc ApolTop::is_policy_open {} {
-    return $ApolTop::policy_is_open
-}
-
-proc ApolTop::get_install_dir {} {
-    return $ApolTop::apol_install_dir
+    if {$::ApolTop::policy == {}} {
+        return 0
+    }
+    return 1
 }
 
 proc ApolTop::get_toplevel_dialog {} {
@@ -162,9 +155,6 @@ proc ApolTop::load_default_perm_map_Dlg {} {
     }
 }
 
-########################################################################
-# ::configure_edit_pmap_menu_item --
-#	-
 proc ApolTop::configure_edit_pmap_menu_item {enable} {
     variable mainframe
 
@@ -208,14 +198,9 @@ proc ApolTop::popup_listbox_Menu { global x y popup callbacks list_box} {
     foreach callback $callbacks {
         $popup add command -label "[lindex $callback 0]" -command "[lindex $callback 1] $selected_item"
     }
-
-    # Posting the popup menu
     tk_popup $popup $cmx $cmy
 }
 
-# ------------------------------------------------------------------------------
-#  Command ApolTop::popup_Tab_Menu
-# ------------------------------------------------------------------------------
 proc ApolTop::popup_Tab_Menu { window x y popupMenu callbacks page } {
     if {$page == ""} {
         return
@@ -227,15 +212,13 @@ proc ApolTop::popup_Tab_Menu { window x y popupMenu callbacks page } {
 
     # Add the global coordinates for the application window to the current mouse coordinates
     # of %x & %y
-    set cmx [expr $gx + $x]
-    set cmy [expr $gy + $y]
+    set cmx [expr {$gx + $x}]
+    set cmy [expr {$gy + $y}]
 
     $popupMenu delete 0 end
     foreach callback $callbacks {
         $popupMenu add command -label [lindex $callback 0] -command [list [lindex $callback 1] $page]
     }
-
-    # Posting the popup menu
     tk_popup $popupMenu $cmx $cmy
 }
 
@@ -408,7 +391,7 @@ proc ApolTop::load_query_info {} {
     set query_file [tk_getOpenFile -filetypes $types -title "Select Query to Load..." \
                         -defaultextension $ApolTop::query_file_ext -parent $mainframe]
     if {$query_file != ""} {
-        if {[file exists $query_file] == 0 } {
+        if {[file exists $query_file] == 0} {
             tk_messageBox -icon error -type ok -title "Error" \
                 -message "File $query_file does not exist." -parent $mainframe
             return -1
@@ -720,7 +703,7 @@ proc ApolTop::create { } {
 	}
     }
 
-    set mainframe [MainFrame .mainframe -menu $descmenu -textvariable ApolTop::status]
+    set mainframe [MainFrame .mainframe -menu $descmenu -textvariable ApolTop::statu_line]
 
     #[$mainframe getmenu fc_index_menu] insert 0 command -label "Load Index... (Not loaded)" -command "ApolTop::load_fc_index_file"
     #[$mainframe getmenu fc_index_menu] insert 0 command -label "Create Index" -command "ApolTop::create_fc_index_file"
@@ -790,8 +773,6 @@ proc ApolTop::create { } {
     $notebook raise [$notebook page 0]
     $notebook bindtabs <Button-1> { ApolTop::set_Focus_to_Text }
     pack $mainframe -fill both -expand yes
-
-    return 0
 }
 
 # Saves user data in their $HOME/.apol file
@@ -810,8 +791,8 @@ proc ApolTop::writeInitFile { } {
     }
     puts $f "recent_files"
     puts $f [llength $recent_files]
-    foreach recent $recent_files {
-        puts $f $recent
+    foreach r $recent_files {
+        puts $f [policy_path_to_list $r]
     }
 
     puts $f "\n"
@@ -944,25 +925,32 @@ proc ApolTop::readInitFile { } {
             # ...
             "recent_files" {
                 if {[string is integer -strict $value] != 1} {
-                    puts "number of recent files was not given as an integer and is ignored"
-                    continue;
+                    puts stderr "Number of recent files was not given as an integer and was ignored."
+                    continue
                 } elseif {$value < 0} {
-                    puts "number of recent was less than 0 and is ignored"
+                    puts stderr "Number of recent was less than 0 and was ignored."
                     continue
                 }
                 while {$value > 0} {
                     incr value -1
                     set line [gets $f]
                     if {[eof $f]} {
-                        puts "EOF reached trying to read recent files."
+                        puts stderr "EOF reached trying to read recent files."
                         break
                     }
                     if {[llength $line] == 1} {
                         # reading older recent files, before advent of
                         # policy_path
-                        set line [list monolithic $line {}]
+                        set ppath [new_apol_policy_path_t $::APOL_POLICY_PATH_TYPE_MONOLITHIC $line {}]
+                        $ppath -acquire
+                    } else {
+                        foreach {path_type primary modules} $line {break}
+                        if {[catch {list_to_policy_path $path_type $primary $modules} ppath]} {
+                            puts stderr "Invalid policy path line: $line"
+                            continue
+                        }
                     }
-                    lappend recent_files $line
+                    lappend recent_files $ppath
                 }
             }
         }
@@ -990,7 +978,7 @@ proc ApolTop::buildRecentFilesMenu {} {
     set recent_menu [$mainframe getmenu recent]
     $recent_menu delete 0 $max_recent_files
     foreach r $recent_files {
-        foreach {path_type primary_file modules} $r {break}
+        foreach {path_type primary_file modules} [policy_path_to_list $r] {break}
         if {$path_type == "monolithic"} {
             set label $primary_file
         } else {
@@ -1005,7 +993,7 @@ proc ApolTop::buildRecentFilesMenu {} {
 }
 
 proc ApolTop::helpDlg {title file_name} {
-    set helpfile [file join [get_install_dir] $file_name]
+    set helpfile [file join [tcl_config_get_install_dir] $file_name]
     if {[catch {open $helpfile} f]} {
         set info $f
     } else {
@@ -1167,18 +1155,16 @@ proc ApolTop::aboutBox {} {
     if {[winfo exists .apol_about]} {
         raise .apol_about
     } else {
-        variable gui_ver
-        variable copyright_date
         variable apol_icon
 
         Dialog .apol_about -cancel 0 -default 0 -image $apol_icon \
             -modal none -parent . -separator 1 -title "About apol"
         set f [.apol_about getframe]
-        set l1 [label $f.l1 -text "apol $gui_ver" -height 2]
+        set l1 [label $f.l1 -text "apol [tcl_config_get_version]" -height 2]
         foreach {name size} [$l1 cget -font] {break}
         incr size 6
         $l1 configure -font [list $name $size bold]
-        set l2 [label $f.l2 -text "Security Policy Analysis Tool for Security Enhanced Linux\nCopyright (c) $copyright_date Tresys Technology, LLC\nhttp://oss.tresys.com/projects/setools"]
+        set l2 [label $f.l2 -text "Security Policy Analysis Tool for Security Enhanced Linux\n${::COPYRIGHT_INFO}\nhttp://oss.tresys.com/projects/setools"]
         pack $l1 $l2
         .apol_about add -text "Close" -command [list destroy .apol_about]
         .apol_about draw
@@ -1187,7 +1173,6 @@ proc ApolTop::aboutBox {} {
 
 proc ApolTop::closePolicy {} {
     variable policy_version_string {}
-    variable policy_is_open
     variable policy_stats_summary {}
 
     wm title . "SELinux Policy Analysis"
@@ -1198,23 +1183,26 @@ proc ApolTop::closePolicy {} {
     }
     Apol_Perms_Map::close
 
-    ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
-    if {[catch {apol_ClosePolicy} err]} {
-        tk_messageBox -icon error -type ok -title "Error closing policy" \
-            -message "There was an error closing the policy: $err."
+    set_Focus_to_Text [$ApolTop::notebook raise]
+
+    variable policy
+    if {$policy != {}} {
+        $policy -delete
+        set policy {}
+        variable qpolicy {}
     }
-    set policy_is_open 0
-    $ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
+
+    variable mainframe
+    $mainframe setmenustate Disable_SearchMenu_Tag disabled
     # Disable Edit perm map menu item since a perm map is not yet loaded.
-    $ApolTop::mainframe setmenustate Perm_Map_Tag disabled
-    $ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-    $ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
-    $ApolTop::mainframe setmenustate Disable_Summary disabled
-    ApolTop::enable_source_policy_tab
-    ApolTop::enable_disable_conditional_widgets 1
+    $mainframe setmenustate Perm_Map_Tag disabled
+    $mainframe setmenustate Disable_SaveQuery_Tag disabled
+    $mainframe setmenustate Disable_LoadQuery_Tag disabled
+    $mainframe setmenustate Disable_Summary disabled
+    enable_source_policy_tab
+    enable_disable_conditional_widgets 1
     set_mls_tabs_state normal
-    ApolTop::configure_edit_pmap_menu_item 0
-    #ApolTop::configure_load_index_menu_item 0
+    configure_edit_pmap_menu_item 0
 }
 
 proc ApolTop::open_apol_tabs {policy_path} {
@@ -1292,18 +1280,18 @@ proc ApolTop::set_mls_tabs_state {new_state} {
 }
 
 proc ApolTop::set_initial_open_policy_state {} {
-    if {![ApolTop::is_capable "conditionals"]} {
-        ApolTop::enable_disable_conditional_widgets 0
+    if {![is_capable "conditionals"]} {
+        enable_disable_conditional_widgets 0
     }
-    if {![ApolTop::is_capable "source"]} {
-        ApolTop::disable_source_policy_tab
+    if {![is_capable "source"]} {
+        disable_source_policy_tab
     }
-    if {![ApolTop::is_capable "mls"]} {
+    if {![is_capable "mls"]} {
         set_mls_tabs_state disabled
     }
-    if {![ApolTop::is_capable "attribute names"] && \
+    if {![is_capable "attribute names"] && \
             [llength $::Apol_Types::attriblist] > 0 && \
-            $ApolTop::show_fake_attrib_warning} {
+            $show_fake_attrib_warning} {
         set d [Dialog .fake_attribute_dialog -modal local -parent . \
                    -title "Warning - Attribute Names" -separator 1]
         $d add -text "OK"
@@ -1316,26 +1304,25 @@ proc ApolTop::set_initial_open_policy_state {} {
         destroy $d
     }
 
-    ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
+    set_Focus_to_Text [$ApolTop::notebook raise]
+
+    variable mainframe
     # Enable perm map menu items since a policy is now open.
-    $ApolTop::mainframe setmenustate Perm_Map_Tag normal
-    $ApolTop::mainframe setmenustate Disable_Summary normal
-    $ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal
+    $mainframe setmenustate Perm_Map_Tag normal
+    $mainframe setmenustate Disable_Summary normal
+    $mainframe setmenustate Disable_SearchMenu_Tag normal
 }
 
 # Open the given policy path.  Re-initialize all tabs and add the path
 # to the list of recently opened policies.
 #
-# @param path Policy path to open.
-proc ApolTop::openPolicyFile {path} {
+# @param ppath Policy path to open.
+proc ApolTop::openPolicyFile {ppath} {
     variable policy_version_string
-    variable policy_is_open
 
-    ApolTop::closePolicy
+    closePolicy
 
-    set policy_is_open 0
-
-    set primary_file [lindex $path 1]
+    set primary_file [$ppath get_primary]
     variable openDialogText "$primary_file:\n    Opening policy."
     variable openDialogVal -1
     if {[set dialog_width [string length $primary_file]] < 32} {
@@ -1397,8 +1384,8 @@ proc ApolTop::openPolicy {} {
 }
 
 proc ApolTop::apolExit {} {
-    variable policy_is_open
-    if {$policy_is_open} {
+    variable policy
+    if {$policy != {}} {
         closePolicy
     }
     if {[tcl_config_use_sefs]} {
@@ -1435,7 +1422,7 @@ proc ApolTop::load_fonts {} {
     option add *text*font $text_font
 }
 
-proc ApolTop::main {argv} {
+proc ApolTop::main {} {
     variable top_width
     variable top_height
     variable notebook
@@ -1453,13 +1440,6 @@ proc ApolTop::main {argv} {
     # harmful scripts to our application.
     rename send {}
 
-    # Load BWidget package into the interpreter
-    if {[catch {package require BWidget}]} {
-        tk_messageBox -icon error -type ok -title "Missing BWidget package" -message \
-            "Missing BWidget package.  Ensure that your installed version of Tcl/Tk includes BWidget, which can be found at http://sourceforge.net/projects/tcllib."
-        exit -1
-    }
-
     if {[catch {tcl_config_init_libraries}]} {
         global auto_path
         tk_messageBox -icon error -type ok -title "Missing SETools Libraries" -message \
@@ -1467,13 +1447,20 @@ proc ApolTop::main {argv} {
         exit -1
     }
 
+    if {[catch {package require BWidget}]} {
+        tk_messageBox -icon error -type ok -title "Missing BWidget package" -message \
+            "Missing BWidget package.  Ensure that your installed version of Tcl/Tk includes BWidget, which can be found at http://sourceforge.net/projects/tcllib."
+        exit -1
+    }
+
     wm withdraw .
     wm title . "SELinux Policy Analysis"
     wm protocol . WM_DELETE_WINDOW ApolTop::apolExit
+    variable default_bg_color   [. cget -background]
 
     # Read apol's default settings file, gather all font information,
     # create the gui and then load recent files into the menu.
-    catch {tcl_patch_bwidget}
+    catch {tcl_config_patch_bwidget}
     load_fonts
     readInitFile
     create
@@ -1482,7 +1469,7 @@ proc ApolTop::main {argv} {
     bind . <Button-3> {focus %W}
     buildRecentFilesMenu
 
-    set icon_file [file join [get_install_dir] apol.gif]
+    set icon_file [file join [tcl_config_get_install_dir] apol.gif]
     if {![catch {image create photo -file $icon_file} icon]} {
         wm iconphoto . -default $icon
     }
@@ -1495,14 +1482,72 @@ proc ApolTop::main {argv} {
     wm deiconify .
     raise .
     focus .
-
-    handle_args $argv
-}
-
-proc handle_args {argv} {
-    # do stuff here
 }
 
 #######################################################
 # Start script here
-ApolTop::main $argv
+
+proc handle_args {argv0 argv} {
+    set argvp 0
+    while {$argvp < [llength $argv]} {
+        set arg [lindex $argv $argvp]
+        switch -- $arg {
+            "-h" - "--help" { print_help $argv0 verbose; exit }
+            "-V" - "--version" { print_version_info; exit }
+            "--" { incr argvp; break }
+            default {
+                if {[string index $arg 0] != "-"} {
+                    break
+                } else {
+                    puts stderr "$argv0: unrecognized option `$arg'"
+                    print_help $argv0 brief
+                    exit 1
+                }
+            }
+        }
+        incr argvp
+    }
+    if {[llength $argv] - $argvp > 0} {
+        set path_type $::APOL_POLICY_PATH_TYPE_MONOLITHIC
+        set policy_file [lindex $argv $argvp]
+        set path {}
+        if {[llength $argv] - $argvp > 1} {
+            set path_type $::APOL_POLICY_PATH_TYPE_MODULAR
+            set mod_paths [list_to_str_vector [lrange $argv [exrp {$argvp + 1}] end]]
+        } elseif {[apol_file_is_policy_path_list $policy_file]} {
+            set path [new_apol_policy_path_t $policy_file]
+        }
+        if {$path == {}} {
+            set path [new_apol_policy_path_t $path_type $policy_file $mod_paths]
+        }
+        if {$path == {}} {
+            puts stderr "Error loading module $policy_file."
+        } else {
+            $path -acquire
+        }
+        return $path
+    } else {
+        return {}
+    }
+}
+
+proc print_help {program_name verbose} {
+    puts "Usage: $program_name \[OPTIONS\] \[POLICY ...\]\n"
+    if {$verbose != "verbose"} {
+        puts "\tTry $program_name --help for more help.\n"
+    } else {
+        puts "Policy Analysis tool for Security Enhanced Linux.\n"
+        puts "   -h, --help              print this help text and exit"
+        puts "   -V, --version           print version information and exit\n"
+    }
+}
+
+proc print_version_info {} {
+    puts "apol [tcl_config_get_version]\n$::COPYRIGHT_INFO"
+}
+
+set path [handle_args $argv0 $argv]
+ApolTop::main
+if {$path != {}} {
+    ApolTop::openPolicyFile $path
+}

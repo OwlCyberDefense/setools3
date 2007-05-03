@@ -6,7 +6,7 @@ if COPY_BWIDGET
 endif
 
 if BUILD_APOL
-  MAYBE_APOL = libapol-tcl apol awish
+  MAYBE_APOL = libapol-tcl apol
 endif
 
 if BUILD_GUI

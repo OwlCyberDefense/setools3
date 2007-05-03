@@ -1,5 +1,5 @@
 AC_INIT(setools, 3.3, [Tresys Technology <setools@tresys.com>], [setools])
-AC_CONFIG_SRCDIR(awish/awish.c)
+AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([-Wno-portability])
 
@@ -44,7 +44,6 @@ AC_LANG([C])
 AC_HEADER_STDC
 AC_PROG_LIBTOOL
 AC_PROG_LN_S
-AC_PROG_MKDIR_P
 AC_PROG_LEX
 AC_PROG_YACC
 AC_PROG_INSTALL
@@ -159,7 +158,9 @@ AC_ARG_ENABLE(swig-java,
                              [build SWIG interfaces for Java]),
               enable_jswig="$enableval")
 if test "x${enable_jswig}" = xyes; then
-   AC_PROG_SWIG(1.3.28)
+   if test ${do_swigify} = no; then
+      AC_PROG_SWIG(1.3.28)
+   fi
    AC_JAVA_OPTIONS
    if test "x$JAVAPREFIX" = x; then
       JAVAPREFIX=/usr/lib/jvm/java-gcj
@@ -185,7 +186,9 @@ AC_ARG_ENABLE(swig-python,
                              [build SWIG interfaces for Python]),
               enable_pyswig="$enableval")
 if test "x${enable_pyswig}" = xyes; then
-   AC_PROG_SWIG(1.3.28)
+   if test ${do_swigify} = no; then
+      AC_PROG_SWIG(1.3.28)
+   fi
    AM_PATH_PYTHON(2.3)
    SWIG_PYTHON
    do_swigify_python=yes
@@ -200,7 +203,9 @@ AC_ARG_ENABLE(swig-tcl,
                              [build SWIG interfaces for Tcl (default)]),
               enable_tclswig="$enableval", enable_tclswig="yes")
 if test "x${enable_tclswig}" = xyes; then
-   AC_PROG_SWIG(1.3.28)
+   if test ${do_swigify} = no; then
+      AC_PROG_SWIG(1.3.28)
+   fi
    TEA_INIT(3.5)
    TEA_PATH_TCLCONFIG
    TEA_LOAD_TCLCONFIG
@@ -245,7 +250,7 @@ else
 fi
 
 if test "x${enable_debug}" = xyes; then
-   TCL_AUTOPATH='$(top_builddir)/libqpol/swig/tcl $(top_builddir)/libapol/swig/tcl'
+   TCL_AUTOPATH='$(top_builddir)/libqpol/swig/tcl $(top_builddir)/libapol/swig/tcl $(top_builddir)/libapol-tcl'
 else
    TCL_AUTOPATH='$(libdir)/setools'
 fi
@@ -681,7 +686,7 @@ AC_CONFIG_COMMANDS([config.tcl], [[
    echo "" > ./config.tcl
    if test ${bwidget_ver} = 1.7; then
         cat >> ./config.tcl <<EOF
-proc tcl_patch_bwidget {} {
+proc tcl_config_patch_bwidget {} {
     # explicitly pull in old BWidget code before patching
     NoteBook .foo ; destroy .foo
     ComboBox .foo ; destroy .foo
@@ -692,24 +697,26 @@ EOF
 	cat ${ac_top_srcdir}/packages/notebook.tcl >> ./config.tcl
         echo "}" >> ./config.tcl
    fi
+   echo "proc tcl_config_init {} {" >> ./config.tcl
    if test "x${enable_debug}" = xyes; then
         cat >> ./config.tcl <<EOF
-namespace eval ::tkcon {
-    variable OPT
-    variable PRIV
-    set PRIV(showOnStartup) 0
-    set PRIV(root) .console
-    set PRIV(protocol) {tkcon hide}
-    set OPT(exec) ""
-}
-if {![catch {source tkcon.tcl}]} {
-    package require tkcon
-    bind . <F8> {tkcon show}
-}
+    namespace eval ::tkcon {
+        variable OPT
+        variable PRIV
+        set PRIV(showOnStartup) 0
+        set PRIV(root) .console
+        set PRIV(protocol) {tkcon hide}
+        set OPT(exec) ""
+    }
+    if {![catch {source tkcon.tcl}]} {
+        package require tkcon
+        bind . <F8> {tkcon show}
+    }
 EOF
    fi
-   echo "proc tcl_config_init {} {" >> ./config.tcl
-   echo "    set ApolTop::gui_ver ${apol_gui_version}" >> ./config.tcl
+   echo "}" >> ./config.tcl
+   echo "proc tcl_config_get_version {} {" >> ./config.tcl
+   echo "    return ${version}" >> ./config.tcl
    echo "}" >> ./config.tcl
    echo "proc tcl_config_use_sefs {} {" >> ./config.tcl
    if test "x${use_sefs}" = "xyes"; then
@@ -718,7 +725,7 @@ EOF
       echo "    return 0" >> ./config.tcl
    fi
    echo "}" >> ./config.tcl
-]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; apol_gui_version=$VERSION; use_sefs=${use_sefs}])
+]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; version=$VERSION; use_sefs=${use_sefs}])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
@@ -733,7 +740,6 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libseaudit/swig/Makefile libseaudit/swig/python/Makefile libseaudit/swig/java/Makefile libseaudit/swig/java/MANIFEST.MF \
                  secmds/Makefile \
                  apol/Makefile \
-                 awish/Makefile \
                  sechecker/Makefile \
                  seaudit/Makefile \
                  sediff/Makefile \

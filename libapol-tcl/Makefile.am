@@ -1,14 +1,31 @@
+lib_LIBRARIES = libapol_tcl.a
 setoolsdir = @setoolsdir@
 
-lib_LIBRARIES = libapol-tcl.a
+libapol_tcl_so_DATA = libapol_tcl.so.@libapol_version@
+libapol_tcl_sodir = $(libdir)/setools/apol_tcl
+
+package_SCRIPTS = pkgIndex.tcl
+packagedir = $(libapol_tcl_sodir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
-	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -DAPOL_INSTALL_DIR='"${setoolsdir}"' -fpic
+	@SEFS_CFLAGS@ @APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(top_builddir) -fpic \
+	-I$(top_srcdir)/libapol/include @TCL_INCLUDES@
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
+	@SEFS_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@
 
-libapol_tcl_a_SOURCES = apol_tcl_other.c apol_tcl_other.h \
-	apol_tcl_render.c apol_tcl_render.h \
-	apol_tcl_components.c apol_tcl_components.h \
-	apol_tcl_rules.c apol_tcl_rules.h \
-	apol_tcl_fc.c apol_tcl_fc.h \
-	apol_tcl_analysis.c apol_tcl_analysis.h
-libapol_tcl_a_CFLAGS = $(AM_CFLAGS) @TCL_INCLUDES@
+libapol_tcl_a_SOURCES = apol_tcl.c
+
+libapol_tcl_a_DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
+	$(top_builddir)/libapol/src/libapol.so
+
+libapol_tcl_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libapol_tcl_a_SOURCES)))
+
+$(libapol_tcl_so_DATA): $(libapol_tcl_so_OBJS)
+	$(CC) -shared -o $@ $^ $(AM_LDFLAGS) $(LDFLAGS)
+
+$(package_SCRIPTS): $(libapol_tcl_so_DATA)
+	echo "pkg_mkIndex . $^" | $(TCLSH_PROG) > $@
+	$(mkdir_p) apol_tcl
+	cp $< $@ apol_tcl
+
+MOSTLYCLEANFILES = $(libapol_tcl_so_DATA)

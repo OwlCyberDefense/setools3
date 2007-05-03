@@ -326,177 +326,6 @@ static int Apol_GetInfoString(ClientData clientData, Tcl_Interp * interp, int ar
 }
 
 /**
- * Convert an apol_policy_path_t object to a Tcl string.
- */
-static int apol_policy_path_to_tcl_obj(Tcl_Interp * interp, const apol_policy_path_t * path, Tcl_Obj ** obj)
-{
-	Tcl_Obj *path_elem[3];
-	int retval = TCL_ERROR;
-	switch (apol_policy_path_get_type(path)) {
-	case APOL_POLICY_PATH_TYPE_MONOLITHIC:{
-			path_elem[0] = Tcl_NewStringObj("monolithic", -1);
-			break;
-		}
-	case APOL_POLICY_PATH_TYPE_MODULAR:{
-			path_elem[0] = Tcl_NewStringObj("modular", -1);
-			break;
-		}
-	default:
-		Tcl_SetResult(interp, "Unknown policy type.", TCL_STATIC);
-	}
-	path_elem[1] = Tcl_NewStringObj(apol_policy_path_get_primary(path), -1);
-	path_elem[2] = Tcl_NewListObj(0, NULL);
-	if (apol_policy_path_get_type(path) == APOL_POLICY_PATH_TYPE_MODULAR) {
-		const apol_vector_t *mods = apol_policy_path_get_modules(path);
-		size_t i;
-		for (i = 0; i < apol_vector_get_size(mods); i++) {
-			const char *m = apol_vector_get_element(mods, i);
-			Tcl_Obj *o = Tcl_NewStringObj(m, -1);
-			if (Tcl_ListObjAppendElement(interp, path_elem[2], o) != TCL_OK) {
-				goto cleanup;
-			}
-		}
-	}
-	*obj = Tcl_NewListObj(3, path_elem);
-	retval = TCL_OK;
-      cleanup:
-	return retval;
-}
-
-/**
- * Convert a Tcl string representing a policy path into an
- * apol_policy_path_t object.
- */
-static apol_policy_path_t *apol_tcl_string_to_policy_path(Tcl_Interp * interp, CONST char *p)
-{
-	enum apol_policy_path_type path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
-	CONST char *primary_path;
-	CONST char **argv = NULL, **module_paths = NULL;
-	apol_vector_t *modules = NULL;
-	apol_policy_path_t *path = NULL;
-	int argc, num_modules, retval = TCL_ERROR;
-
-	if (Tcl_SplitList(interp, p, &argc, &argv) == TCL_ERROR) {
-		goto cleanup;
-	}
-	if (argc < 3) {
-		Tcl_SetResult(interp, strerror(EINVAL), TCL_STATIC);
-		goto cleanup;
-	}
-	if (strcmp(argv[0], "modular") == 0) {
-		path_type = APOL_POLICY_PATH_TYPE_MODULAR;
-		if (argc >= 3) {
-			if (Tcl_SplitList(interp, argv[2], &num_modules, &module_paths) == TCL_ERROR) {
-				goto cleanup;
-			}
-			if ((modules = apol_vector_create(free)) == NULL) {
-				Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
-				goto cleanup;
-			}
-			while (--num_modules >= 0) {
-				char *m = NULL;
-				if ((m = strdup(module_paths[num_modules])) == NULL || apol_vector_append(modules, m) < 0) {
-					Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
-					free(m);
-					goto cleanup;
-				}
-			}
-		}
-	} else if (strcmp(argv[0], "monolithic") != 0) {
-		Tcl_SetResult(interp, strerror(EINVAL), TCL_STATIC);
-		goto cleanup;
-	}
-	primary_path = argv[1];
-	if ((path = apol_policy_path_create(path_type, primary_path, modules)) == NULL) {
-		Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
-		goto cleanup;
-	}
-	retval = TCL_OK;
-      cleanup:
-	apol_vector_destroy(&modules);
-	if (module_paths != NULL) {
-		Tcl_Free((char *)module_paths);
-	}
-	if (retval != TCL_OK) {
-		apol_policy_path_destroy(&path);
-		apol_tcl_write_error(interp);
-	}
-	return path;
-}
-
-/**
- * Open and return a policy path, created by reading it from a policy
- * list file.
- *
- * @param argv This function takes one parameter:
- * <ol>
- *   <li>filename containing policy list
- * </ol>
- */
-static int Apol_OpenPolicyList(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	apol_policy_path_t *path = NULL;
-	Tcl_Obj *result_obj;
-	int retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a policy path filename.", TCL_STATIC);
-		goto cleanup;
-	}
-	if ((path = apol_policy_path_create_from_file(argv[1])) == NULL) {
-		Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
-		goto cleanup;
-	}
-	if (apol_policy_path_to_tcl_obj(interp, path, &result_obj) == TCL_ERROR) {
-		goto cleanup;
-	}
-	Tcl_SetObjResult(interp, result_obj);
-	retval = TCL_OK;
-      cleanup:
-	apol_policy_path_destroy(&path);
-	if (retval != TCL_OK) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
-/**
- * Save a policy path to disk.
- *
- * @param argv This function takes two parameters:
- * <ol>
- *   <li>policy path (3-ple of path type, primary path, and list of modules)
- *   <li>filename containing policy list
- * </ol>
- */
-static int Apol_SavePolicyList(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	apol_policy_path_t *path = NULL;
-	int retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (argc < 3) {
-		Tcl_SetResult(interp, "Need a policy path and a filename.", TCL_STATIC);
-		goto cleanup;
-	}
-	if ((path = apol_tcl_string_to_policy_path(interp, argv[1])) == NULL) {
-		goto cleanup;
-	}
-	if (apol_policy_path_to_file(path, argv[2]) < 0) {
-		Tcl_SetResult(interp, strerror(errno), TCL_STATIC);
-		goto cleanup;
-	}
-	retval = TCL_OK;
-      cleanup:
-	apol_policy_path_destroy(&path);
-	if (retval != TCL_OK) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
-/**
  * Open a policy file, either source or binary, on disk.  If the file
  * was opened successfully then set the global policydb pointer to it,
  * and set its error handler to apol_tcl_route_handle_to_string().
@@ -553,17 +382,6 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 		apol_tcl_write_error(interp);
 	}
 	return retval;
-}
-
-/**
- * Close the currently opened policy.  If no policy is opened then do
- * nothing.
- */
-static int Apol_ClosePolicy(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	apol_tcl_reset_globals();
-	apol_policy_destroy(&policydb);
-	return TCL_OK;
 }
 
 /**
@@ -1343,10 +1161,7 @@ static int Apol_SetPermMap(ClientData clientData, Tcl_Interp * interp, int argc,
 int apol_tcl_init(Tcl_Interp * interp)
 {
 	Tcl_CreateCommand(interp, "apol_GetInfoString", Apol_GetInfoString, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_OpenPolicyList", Apol_OpenPolicyList, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_SavePolicyList", Apol_SavePolicyList, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_OpenPolicy", Apol_OpenPolicy, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_ClosePolicy", Apol_ClosePolicy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetModuleInfo", Apol_GetModuleInfo, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsCapable", Apol_IsCapable, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", Apol_GetPolicyVersionString, NULL, NULL);

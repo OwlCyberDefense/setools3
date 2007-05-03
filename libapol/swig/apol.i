@@ -414,7 +414,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	apol_policy_path_t(char *path) {
 		apol_policy_path_t *p;
 		if ((p = apol_policy_path_create_from_file(path)) == NULL) {
-			SWIG_exception(SWIG_MemoryError, "Out of memory");
+			SWIG_exception(SWIG_RuntimeError, "Input/output error");
 		}
 	fail:
 		return p;
@@ -459,7 +459,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	};
 	void to_file(char *path) {
 		if (apol_policy_path_to_file(self, path)) {
-			SWIG_exception(SWIG_RuntimeError, "Could not write policy path to file");
+			SWIG_exception(SWIG_RuntimeError, "Input/outpet error");
 		}
 	fail:
 		return;
