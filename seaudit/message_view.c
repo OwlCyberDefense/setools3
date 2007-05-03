@@ -584,18 +584,36 @@ static gboolean message_view_store_iter_parent(GtkTreeModel * tree_model, GtkTre
  */
 static void message_view_messages_vector(message_view_t * view, apol_vector_t * messages)
 {
-	GtkWidget *window;
+	GtkWidget *window = NULL;
 	GtkWidget *scroll;
 	GtkWidget *text_view;
 	GtkTextBuffer *buffer;
 	GtkTextIter iter;
+	GtkTreePath *p;
 	size_t i;
-	window = gtk_dialog_new_with_buttons("View Messages",
-					     toplevel_get_window(view->top),
-					     GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, NULL);
+	gint   rc;
+
+#define LBACK    1
+#define LFORWARD 2
+
+	if(apol_vector_get_size(messages) == 1){
+		window = gtk_dialog_new_with_buttons("View Messages",
+							  toplevel_get_window(view->top),
+							  GTK_DIALOG_DESTROY_WITH_PARENT, 
+							  GTK_STOCK_GO_BACK, LBACK, 
+							  GTK_STOCK_GO_FORWARD, LFORWARD,
+							  GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, 
+							  NULL);
+	}else{
+		window = gtk_dialog_new_with_buttons("View Messages",
+							  toplevel_get_window(view->top),
+							  GTK_DIALOG_DESTROY_WITH_PARENT, 
+							  GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, 
+							  NULL);
+	}
 	gtk_dialog_set_default_response(GTK_DIALOG(window), GTK_RESPONSE_CLOSE);
 	gtk_window_set_modal(GTK_WINDOW(window), FALSE);
-	g_signal_connect_swapped(window, "response", G_CALLBACK(gtk_widget_destroy), window);
+	//g_signal_connect_swapped(window, "response", G_CALLBACK(gtk_widget_destroy), window);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	text_view = gtk_text_view_new();
 	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
@@ -604,23 +622,52 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
 	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_WORD);
 	gtk_widget_show(text_view);
 	gtk_widget_show(scroll);
-	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-	gtk_text_buffer_get_start_iter(buffer, &iter);
-	for (i = 0; i < apol_vector_get_size(messages); i++) {
-		seaudit_message_t *m = apol_vector_get_element(messages, i);
-		char *s;
-		if ((s = seaudit_message_to_string(m)) == NULL) {
-			toplevel_ERR(view->top, "%s", strerror(errno));
-			continue;
-		}
-		gtk_text_buffer_insert(buffer, &iter, s, -1);
-		gtk_text_buffer_insert(buffer, &iter, "\n", -1);
-		free(s);
-	}
+
 	gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
-	gtk_widget_show(window);
+	
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+	do{
+		gtk_text_buffer_get_start_iter(buffer, &iter);
+		for (i = 0; i < apol_vector_get_size(messages); i++) {
+			char *s;
+			GtkTreeIter *m = apol_vector_get_element(messages, i);
 
+			if ((s = seaudit_message_to_string(m->user_data)) == NULL) {
+				toplevel_ERR(view->top, "%s", strerror(errno));
+				continue;
+			}
+
+			gtk_text_buffer_insert(buffer, &iter, s, -1);
+			gtk_text_buffer_insert(buffer, &iter, "\n", -1);
+			free(s);
+		}
+
+		rc = gtk_dialog_run(GTK_DIALOG(window));
+		gtk_text_buffer_set_text(buffer,"",-1); /* clear the text */
+		switch(rc){
+			case LBACK:
+				p = gtk_tree_model_get_path(GTK_TREE_MODEL(view->store),
+						apol_vector_get_element(messages,0));
+				if(!p) break;
+				if(gtk_tree_path_prev(p)){
+					gtk_tree_model_get_iter(GTK_TREE_MODEL(view->store),
+							apol_vector_get_element(messages,0),p);
+				}
+				gtk_tree_path_free(p);
+				break;
+			case LFORWARD:
+				message_view_store_iter_next(GTK_TREE_MODEL(view->store),
+						apol_vector_get_element(messages,0));
+				break;
+			case GTK_RESPONSE_CLOSE:
+				gtk_widget_destroy(window);
+				return;
+			default:
+				fprintf(stderr, "Unhandled response type! (%d)\n", rc);
+				return;
+		}
+	}while(1);
 }
 
 /******************** handlers for  right click menu ********************/
@@ -870,6 +917,7 @@ void message_view_entire_message(message_view_t * view)
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(view->view);
 	GList *glist = gtk_tree_selection_get_selected_rows(selection, NULL);
 	GList *l;
+	gint i = 0;
 	apol_vector_t *messages;
 	if (glist == NULL) {
 		return;
@@ -882,12 +930,26 @@ void message_view_entire_message(message_view_t * view)
 	}
 	for (l = glist; l != NULL; l = l->next) {
 		GtkTreePath *path = (GtkTreePath *) l->data;
-		GtkTreeIter iter;
-		message_view_store_get_iter(GTK_TREE_MODEL(view->store), &iter, path);
-		if (apol_vector_append(messages, iter.user_data) < 0) {
+		GtkTreeIter *iter;
+		iter = g_malloc(sizeof(GtkTreeIter));
+		if(iter == NULL){
+			toplevel_ERR(view->top, "%s", strerror(errno));
+			g_list_foreach(glist,message_view_gtk_tree_path_free, NULL);
+			g_list_free(glist);
+			for(i = 0; i < apol_vector_get_size(messages); i++){
+				g_free(apol_vector_get_element(messages,i));
+			}
+			apol_vector_destroy(&messages);
+			return;
+		}
+		message_view_store_get_iter(GTK_TREE_MODEL(view->store), iter, path);
+		if (apol_vector_append(messages, iter) < 0) {
 			toplevel_ERR(view->top, "%s", strerror(errno));
 			g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 			g_list_free(glist);
+			for(i = 0; i < apol_vector_get_size(messages); i++){
+				g_free(apol_vector_get_element(messages,i));
+			}
 			apol_vector_destroy(&messages);
 			return;
 		}
@@ -895,6 +957,9 @@ void message_view_entire_message(message_view_t * view)
 	message_view_messages_vector(view, messages);
 	g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 	g_list_free(glist);
+	for(i = 0; i < apol_vector_get_size(messages); i++){
+		g_free(apol_vector_get_element(messages,i));
+	}
 	apol_vector_destroy(&messages);
 }
 
