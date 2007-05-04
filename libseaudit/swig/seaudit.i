@@ -43,7 +43,7 @@
 %javaconst(1);
 /* get the java environment so we can throw exceptions */
 %{
-	JNIEnv *jenv;
+	static JNIEnv *jenv;
 	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
 		return JNI_VERSION_1_2;
@@ -56,10 +56,7 @@
 %import apol.i
 
 #ifdef SWIGJAVA
-/* remove $null not valid outside of type map */
-#undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
-#define SWIG_exception_typemap(code, msg) {SWIG_JavaException(jenv, code, msg);}
+
 /* handle size_t correctly in java as architecture independent */
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
@@ -104,6 +101,64 @@ typedef uint32_t size_t;
 #endif
 #endif
 
+#ifdef SWIGJAVA
+/* if java, pass the new exception macro to C not just SWIG */
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%inline %{
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%}
+#endif
+
+#ifdef SWIGTCL
+/* implement a custom non thread-safe error handler */
+%{
+static char *message = NULL;
+static void tcl_clear_error(void)
+{
+        free(message);
+        message = NULL;
+}
+static void tcl_throw_error(const char *s)
+{
+	free(message);
+	message = strdup(s);
+}
+static char *tcl_get_error(void)
+{
+	return message;
+}
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
+%}
+
+%wrapper %{
+/* Tcl module's initialization routine is expected to be named
+ * Seaudit_Init(), but the output file will be called libtseaudit.so instead
+ * of libseaudit.so.  Therefore add an alias from Tseaudit_Init() to the
+ * real Seaudit_Init().
+ */
+SWIGEXPORT int Tseaudit_Init(Tcl_Interp *interp) {
+	return SWIG_init(interp);
+}
+%}
+
+%exception {
+	char *err;
+	tcl_clear_error();
+	$action
+	if ((err = tcl_get_error()) != NULL) {
+                Tcl_Obj *obj = Tcl_NewStringObj(message, -1);
+                Tcl_ResetResult(interp);
+                Tcl_SetObjResult(interp, obj);
+		goto fail;
+	}
+}
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
+#endif
+
 %inline %{
 	typedef struct apol_string_vector apol_string_vector_t;
 %}
@@ -137,6 +192,14 @@ typedef uint32_t size_t;
 }
 %typemap(freearg, noblock=1) (const char *buffer, const size_t bufsize) {
   if ($1) JCALL2(ReleaseStringUTFChars, jenv, $input, $1);
+}
+#endif
+#ifdef SWIGTCL
+%typemap(in) FILE * {
+	ClientData c;
+	if (Tcl_GetOpenFile(interp, Tcl_GetString($input), 0, 1, &c) == TCL_ERROR)
+		SWIG_exception(SWIG_RuntimeError, Tcl_GetStringResult(interp));
+	$1 = (FILE*)c;
 }
 #endif
 
@@ -424,11 +487,11 @@ typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 	};
 };
 
-#ifdef SWIGPYTHON
-int seaudit_log_parse(seaudit_log_t * log, FILE * syslog);
-#endif
 /* Java does not permit parsing directly from a file; parsing may only
    be done through a memory buffer. */
+#ifndef SWIGJAVA
+int seaudit_log_parse(seaudit_log_t * log, FILE * syslog);
+#endif
 int seaudit_log_parse_buffer(seaudit_log_t * log, const char *buffer, const size_t bufsize);
 
 /* seaudit filter */

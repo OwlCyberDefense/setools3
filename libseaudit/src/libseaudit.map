@@ -1,4 +1,4 @@
-VERS_4.2{
+VERS_4.1{
 	global:
 		seaudit_*;
 		libseaudit_get_version;

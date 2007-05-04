@@ -1,4 +1,8 @@
-2007-05.02  j. Mowery  <jmowery@tresys.com>
+2007-05-04  J. Mowery  <jmowery@tresys.com>
+
+	* Added SWIG wrappers for tcl to libpoldiff and libseaudit.
+
+2007-05.02  J. Mowery  <jmowery@tresys.com>
 
 	* Versioned symbols in other libraries.
 

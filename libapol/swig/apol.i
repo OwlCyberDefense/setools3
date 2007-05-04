@@ -60,7 +60,7 @@
 %javaconst(1);
 /* get the java environment so we can throw exceptions */
 %{
-	JNIEnv *jenv;
+	static JNIEnv *jenv;
 	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
 		return JNI_VERSION_1_2;

@@ -20,6 +20,7 @@ libpoldiff_version=1.2
 libpoldiff_soname=libpoldiff.so.1
 libpoldiff_pyswig_soname=_poldiff.so.1
 libpoldiff_jswig_soname=libjpoldiff.so.1
+libpoldiff_tswig_soname=libtpoldiff.so.1
 
 libsefs_version=3.1
 libsefs_soname=libsefs.so.3
@@ -29,6 +30,7 @@ libseaudit_version=4.1
 libseaudit_soname=libseaudit.so.4
 libseaudit_pyswig_soname=_seaudit.so.4
 libseaudit_jswig_soname=libjseaudit.so.4
+libseaudit_tswig_soname=libtseaudit.so.4
 
 setoolsdir='${prefix}/share/setools-3.3'
 
@@ -734,10 +736,10 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile libapol/swig/java/MANIFEST.MF libapol/swig/tcl/Makefile \
                  libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
-                 libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF \
+                 libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF libpoldiff/swig/tcl/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
                  libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile \
-                 libseaudit/swig/Makefile libseaudit/swig/python/Makefile libseaudit/swig/java/Makefile libseaudit/swig/java/MANIFEST.MF \
+                 libseaudit/swig/Makefile libseaudit/swig/python/Makefile libseaudit/swig/java/Makefile libseaudit/swig/java/MANIFEST.MF libseaudit/swig/tcl/Makefile \
                  secmds/Makefile \
                  apol/Makefile \
                  sechecker/Makefile \

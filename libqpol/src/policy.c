@@ -473,6 +473,10 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 		return STATUS_ERR;
 	}
 
+	/* if kernel binary do nothing */
+	if (policy->type == QPOL_POLICY_KERNEL_BINARY)
+		return STATUS_SUCCESS;
+
 	/* cache old policy in case of failure */
 	old_p = policy->p;
 	policy->p = NULL;
@@ -693,8 +697,8 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 		avtab_init(&((*policy)->p->p.te_avtab));
 		avtab_init(&((*policy)->p->p.te_cond_avtab));
 
-		/* expand :) */
-		if (qpol_expand_module(*policy, options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS))) {
+		/* expand */
+		if (qpol_expand_module(*policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
 			error = errno;
 			goto err;
 		}
