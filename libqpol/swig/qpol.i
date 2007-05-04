@@ -204,7 +204,7 @@ typedef struct qpol_module {} qpol_module_t;
 	~qpol_module_t() {
 		qpol_module_destroy(&self);
 	};
-	char *qpol_module_get_path() {
+	char *get_path() {
 		char *p;
 		if (qpol_module_get_path(self, &p)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module path");
@@ -213,7 +213,7 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 		return NULL;
 	};
-	char *qpol_module_get_name() {
+	char *get_name() {
 		char *n;
 		if (qpol_module_get_name(self, &n)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module name");
@@ -222,7 +222,7 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 			return NULL;
 	};
-	char *qpol_module_get_version() {
+	char *get_version() {
 		char *v;
 		if (qpol_module_get_version(self, &v)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module version");
@@ -231,7 +231,7 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 			return NULL;
 	};
-	int qpol_module_get_type() {
+	int get_type() {
 		int t;
 		if (qpol_module_get_type(self, &t)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module type");
@@ -239,7 +239,7 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 		return t;
 	};
-	int qpol_module_get_enabled() {
+	int get_enabled() {
 		int e;
 		if (qpol_module_get_enabled(self, &e)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module state");
@@ -247,7 +247,7 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 			return e;
 	};
-	void qpol_module_set_enabled(int state) {
+	void set_enabled(int state) {
 		if (qpol_module_set_enabled(self, state)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set module state");
 		}

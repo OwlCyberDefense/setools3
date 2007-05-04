@@ -1130,6 +1130,7 @@ proc ApolTop::popupPolicyStats {} {
 proc ApolTop::showPolicyStats {} {
     variable polstats
     variable policy_stats_summary
+    return
     if {[catch {apol_GetStats} pstats]} {
         tk_messageBox -icon error -type ok -title "Error" -message $pstats
         return
@@ -1323,59 +1324,23 @@ proc ApolTop::openPolicyFile {ppath} {
     closePolicy
 
     set primary_file [$ppath get_primary]
-    variable openDialogText "$primary_file:\n    Opening policy."
-    variable openDialogVal -1
-    if {[set dialog_width [string length $primary_file]] < 32} {
-        set dialog_width 32
-    }
-    ProgressDlg .apol_policy_open -title "Open Policy" \
-        -type normal -stop {} -separator 1 -parent . -maximum 2 \
-        -width $dialog_width -textvariable ApolTop::openDialogText \
-        -variable ApolTop::openDialogVal
-    set orig_Cursor [. cget -cursor]
-    . configure -cursor watch
-    update idletasks
-    after idle ApolTop::doOpenIdle
-    set retval [catch {apol_OpenPolicy $path} err]
-    . configure -cursor $orig_Cursor
-    destroy .apol_policy_open
-    if {$retval} {
+    if {[catch {Apol_Progress_Dialog::wait $primary_file "Opening policy." [list new_apol_policy_t $ppath]} p]} {
         tk_messageBox -icon error -type ok -title "Open Policy" \
-            -message "The selected file does not appear to be a valid SELinux Policy.\n\n$err"
+            -message "The selected file does not appear to be a valid SELinux Policy.\n\n$p"
         return -1
     }
 
-    if {[catch {apol_GetPolicyVersionString} policy_version_string]} {
-        tk_messageBox -icon error -type ok -title "Open Policy" -message "Could not determine policy version:\n$policy_version_string"
-        return -1
-    }
-    ApolTop::showPolicyStats
-    set policy_is_open 1
-    if {[catch {open_apol_tabs $path} err]} {
-        set policy_is_open 0
-        tk_messageBox -icon error -type ok -title "Open Policy" -message $err
-        return -1
-    }
-    if {[catch {set_initial_open_policy_state} err]} {
-        set policy_is_open 0
-        tk_messageBox -icon error -type ok -title "Open Policy" -message $err
-        return -1
-    }
+    variable policy $p
+    variable qpolicy [$p get_qpol]
+    variable policy_version_string [$p get_version_type_mls_str]
+    showPolicyStats
 
-    addRecent $path
-    variable last_policy_path $path
+    open_apol_tabs $ppath
+    set_initial_open_policy_state
+
+    addRecent $ppath
+    variable last_policy_path $ppath
     wm title . "SELinux Policy Analysis - $primary_file"
-    return 0
-}
-
-proc ApolTop::doOpenIdle {} {
-    variable openDialogText
-    if {[set infoString [apol_GetInfoString]] != {}} {
-        set openDialogText [lindex [split $openDialogText "\n"] 0]
-        append openDialogText "\n    $infoString"
-        update idletasks
-        after idle ApolTop::doOpenIdle
-    }
 }
 
 proc ApolTop::openPolicy {} {
@@ -1429,23 +1394,11 @@ proc ApolTop::main {} {
 
     tcl_config_init
 
-    if {[catch {package require Tk}]} {
-        puts stderr "This program requires Tk to run."
-        exit -1
-    }
-
     # Prevent the application from responding to incoming send
     # requests and sending outgoing requests. This way any other
     # applications that can connect to our X server cannot send
     # harmful scripts to our application.
     rename send {}
-
-    if {[catch {tcl_config_init_libraries}]} {
-        global auto_path
-        tk_messageBox -icon error -type ok -title "Missing SETools Libraries" -message \
-            "The SETools libraries could not be found in one of these subdirectories:\n$auto_path"
-        exit -1
-    }
 
     if {[catch {package require BWidget}]} {
         tk_messageBox -icon error -type ok -title "Missing BWidget package" -message \
@@ -1546,6 +1499,14 @@ proc print_version_info {} {
     puts "apol [tcl_config_get_version]\n$::COPYRIGHT_INFO"
 }
 
+if {[catch {tcl_config_init_libraries}]} {
+    puts stderr "The SETools libraries could not be found in one of these subdirectories:\n$auto_path"
+    exit -1
+}
+if {[catch {package require Tk}]} {
+    puts stderr "This program requires Tk to run."
+    exit -1
+}
 set path [handle_args $argv0 $argv]
 ApolTop::main
 if {$path != {}} {

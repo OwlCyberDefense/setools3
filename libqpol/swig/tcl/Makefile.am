@@ -24,7 +24,7 @@ $(wrappedso_DATA): $(BUILT_SOURCES)
 	$(LN_S) -f $@ $(short_name)
 
 $(package_SCRIPTS): $(wrappedso_DATA)
-	echo "pkg_mkIndex . $^" | $(TCLSH_PROG) > $@
+	echo "pkg_mkIndex . $^" | $(TCLSH_PROG)
 	$(mkdir_p) qpol
 	cp $(wrappedso_DATA) $@ qpol
 

@@ -16,7 +16,9 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 libapol_tcl_a_SOURCES = apol_tcl.c
 
 libapol_tcl_a_DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
-	$(top_builddir)/libapol/src/libapol.so
+	$(top_builddir)/libapol/src/libapol.so \
+	$(top_builddir)/libqpol/swig/tcl/libtqpol.so \
+	$(top_builddir)/libapol/swig/tcl/libtapol.so
 
 libapol_tcl_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libapol_tcl_a_SOURCES)))
 
@@ -24,7 +26,7 @@ $(libapol_tcl_so_DATA): $(libapol_tcl_so_OBJS)
 	$(CC) -shared -o $@ $^ $(AM_LDFLAGS) $(LDFLAGS)
 
 $(package_SCRIPTS): $(libapol_tcl_so_DATA)
-	echo "pkg_mkIndex . $^" | $(TCLSH_PROG) > $@
+	echo "lappend auto_path $(top_builddir)/libqpol/swig/tcl $(top_builddir)/libapol/swig/tcl ; package require apol ; pkg_mkIndex . $^" | $(TCLSH_PROG)
 	$(mkdir_p) apol_tcl
 	cp $< $@ apol_tcl
 

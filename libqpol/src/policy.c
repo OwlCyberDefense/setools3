@@ -739,7 +739,8 @@ int qpol_policy_open_from_file_no_rules(const char *path, qpol_policy_t ** polic
  * for version 1.3; this symbol name is not exported.
  * @see qpol_policy_open_from_memory()
  */
-int qpol_policy_open_from_memory_opt(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg, const int options)
+int qpol_policy_open_from_memory_opt(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg,
+				     const int options)
 {
 	int error = 0;
 	if (policy == NULL || filedata == NULL)
@@ -823,7 +824,7 @@ int qpol_policy_open_from_file_old(const char *path, qpol_policy_t ** policy, qp
  */
 int qpol_policy_open_from_memory_old(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg)
 {
-	return qpol_policy_open_from_memory_opt(policy,filedata, size, fn, varg, 0);
+	return qpol_policy_open_from_memory_opt(policy, filedata, size, fn, varg, 0);
 }
 
 void qpol_policy_destroy(qpol_policy_t ** policy)

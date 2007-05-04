@@ -170,9 +170,7 @@ extern "C"
  * @return returns the result of the last call to fn() (IE >= 0 on success
  *           < 0 on failure.
  */
-	extern int apol_bst_inorder_map(const struct apol_bst * node,
-			int(*fn)(const void *, void *),
-			void *data);
+	extern int apol_bst_inorder_map(const struct apol_bst *node, int (*fn) (const void *, void *), void *data);
 #ifdef	__cplusplus
 }
 #endif

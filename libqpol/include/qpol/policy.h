@@ -117,7 +117,8 @@ extern "C"
  *  and < 0 on failure; if the call fails, errno will be set and
  *  *policy will be NULL.
  */
-	extern int qpol_policy_open_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg, const int options);
+	extern int qpol_policy_open_from_file(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg,
+					      const int options);
 
 /**
  *  Open a policy from a passed in file path but do not load any rules.
@@ -131,7 +132,7 @@ extern "C"
  *  @deprecated use qpol_policy_open_from_file() with the option QPOL_POLICY_OPTION_NO_RULES instead.
  */
 	extern int qpol_policy_open_from_file_no_rules(const char *filename, qpol_policy_t ** policy, qpol_callback_fn_t fn,
-						       void *varg) __attribute__((deprecated));
+						       void *varg) __attribute__ ((deprecated));
 
 /**
  *  Open a policy from a passed in buffer.

@@ -385,64 +385,6 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 }
 
 /**
- * Retrieve information about a policy module file, either source or
- * binary, from disk.  This will be a 2-ple of module name and
- * version.  The policy module will be closed afterwards.
- *
- * @param argv This function takes one parameter:
- * <ol>
- *   <li>path to the module to open
- * </ol>
- */
-static int Apol_GetModuleInfo(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	qpol_module_t *module = NULL;
-	char *module_name, *version, *s;
-	int module_type;
-	Tcl_Obj *result_obj, *objs[2];
-	int retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Need a policy module path.", TCL_STATIC);
-		goto cleanup;
-	}
-	if ((qpol_module_create_from_file(argv[1], &module)) < 0) {
-		if (asprintf(&s, "Error opening module %s: %s", argv[1], strerror(errno)) < 0) {
-			fprintf(stderr, "%s", strerror(errno));
-		}
-		message = s;
-		goto cleanup;
-	}
-	if (qpol_module_get_name(module, &module_name) < 0 ||
-	    qpol_module_get_version(module, &version) < 0 || qpol_module_get_type(module, &module_type) < 0) {
-		if (asprintf(&s, "Error reading module %s: %s", argv[1], strerror(errno)) < 0) {
-			fprintf(stderr, "%s", strerror(errno));
-		}
-		message = s;
-		goto cleanup;
-	}
-	if (module_type != QPOL_MODULE_OTHER) {
-		if (asprintf(&s, "%s is not a loadable module.", argv[1]) < 0) {
-			fprintf(stderr, "%s", strerror(errno));
-		}
-		message = s;
-		goto cleanup;
-	}
-	objs[0] = Tcl_NewStringObj(module_name, -1);
-	objs[1] = Tcl_NewStringObj(version, -1);
-	result_obj = Tcl_NewListObj(2, objs);
-	Tcl_SetObjResult(interp, result_obj);
-	retval = TCL_OK;
-      cleanup:
-	qpol_module_destroy(&module);
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
-/**
  * Given a capability, return 1 if the currently loaded policy can do
  * that particular thing, 0 if not.
  *
@@ -1162,7 +1104,6 @@ int apol_tcl_init(Tcl_Interp * interp)
 {
 	Tcl_CreateCommand(interp, "apol_GetInfoString", Apol_GetInfoString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_OpenPolicy", Apol_OpenPolicy, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetModuleInfo", Apol_GetModuleInfo, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsCapable", Apol_IsCapable, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", Apol_GetPolicyVersionString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", Apol_GetPolicyVersionNumber, NULL, NULL);

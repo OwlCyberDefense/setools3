@@ -42,7 +42,7 @@ proc Apol_Open_Policy_Dialog::getPolicyPath {defaultPath} {
         }
         set vars(last_module) $vars(primary_file)
         foreach m $modules {
-            if {[catch {apol_GetModuleInfo $m} info]} {
+            if {[catch {getModuleInfo $m} info]} {
                 tk_messageBox -icon error -type ok -title "Open Module" -message $info
             } else {
                 foreach {name vers} $info {break}
@@ -228,7 +228,7 @@ proc Apol_Open_Policy_Dialog::addModule {f} {
         tk_messageBox -icon error -type ok -title "Open Module" -message "Module $f was already added."
         return
     }
-    if {[catch {apol_GetModuleInfo $f} info]} {
+    if {[catch {getModuleInfo $f} info]} {
         tk_messageBox -icon error -type ok -title "Open Module" -message $info
     } else {
         foreach {name vers} $info {break}
@@ -342,4 +342,14 @@ proc Apol_Open_Policy_Dialog::tryOpenPolicy {} {
     if {[ApolTop::openPolicyFile $ppath] == 0} {
         $dialog enddialog {}
     }
+}
+
+# Retrieve information about a policy module file, either source or
+# binary, from disk.  This will be a 2-ple of module name and version.
+# The policy module will be closed afterwards.
+proc Apol_Open_Policy_Dialog::getModuleInfo {f} {
+    set mod [new_qpol_module_t $f]
+    set retval [list [$mod get_name] [$mod get_version]]
+    $mod -delete
+    return $retval
 }

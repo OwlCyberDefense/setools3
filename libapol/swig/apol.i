@@ -54,6 +54,14 @@
 #include <apol/user-query.h>
 #include <apol/util.h>
 #include <apol/vector.h>
+
+/* Provide hooks so that language-specific modules can define the
+ * callback function, used by the handler in
+ * apol_policy_create_from_policy_path().
+ */
+SWIGEXPORT apol_callback_fn_t apol_swig_message_callback = NULL;
+SWIGEXPORT void * apol_swig_message_callback_arg = NULL;
+
 %}
 
 #ifdef SWIGJAVA
@@ -480,8 +488,7 @@ typedef struct apol_policy {} apol_policy_t;
 %extend apol_policy_t {
 	apol_policy_t(apol_policy_path_t *path, int options = 0) {
 		apol_policy_t *p;
-		/* TODO handle callback rather than force default */
-		p = apol_policy_create_from_policy_path(path, options, NULL, NULL);
+		p = apol_policy_create_from_policy_path(path, options, apol_swig_message_callback, apol_swig_message_callback_arg);
 		if (!p) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
