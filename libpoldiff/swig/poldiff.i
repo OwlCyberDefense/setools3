@@ -109,6 +109,7 @@ typedef uint32_t size_t;
 /* if java, pass the new exception macro to C not just SWIG */
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception_typemap(code, msg) {SWIG_JavaException(jenv, code, msg);}
 %inline %{
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
