@@ -37,6 +37,13 @@
 #include <seaudit/sort.h>
 #include <seaudit/util.h>
 #include <time.h>
+
+/* Provide hooks so that language-specific modules can define the
+ * callback function, used by the handler in seaudit_log_create().
+ */
+SWIGEXPORT seaudit_handle_fn_t seaudit_swig_message_callback = NULL;
+SWIGEXPORT void * seaudit_swig_message_callback_arg = NULL;
+
 %}
 
 #ifdef SWIGJAVA
@@ -247,8 +254,7 @@ typedef struct seaudit_log {} seaudit_log_t;
 %extend seaudit_log_t {
 	seaudit_log_t() {
 		seaudit_log_t *slog;
-		/* Using default callback for now */
-		slog = seaudit_log_create(NULL, NULL);
+		slog = seaudit_log_create(seaudit_swig_message_callback, seaudit_swig_message_callback_arg);
 		if (!slog) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}

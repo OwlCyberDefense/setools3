@@ -41,6 +41,13 @@
 #include <poldiff/type_map.h>
 #include <poldiff/user_diff.h>
 #include <poldiff/util.h>
+
+/* Provide hooks so that language-specific modules can define the
+ * callback function, used by the handler in poldiff_create().
+ */
+SWIGEXPORT poldiff_handle_fn_t poldiff_swig_message_callback = NULL;
+SWIGEXPORT void * poldiff_swig_message_callback_arg = NULL;
+
 %}
 
 #ifdef SWIGJAVA
@@ -313,8 +320,7 @@ typedef struct poldiff {} poldiff_t;
 %extend poldiff_t {
 	poldiff_t(apol_policy_t *op, apol_policy_t *mp) {
 		poldiff_t *p;
-		/* TODO handle callback rather than force default */
-		p = poldiff_create(op, mp, NULL, NULL);
+		p = poldiff_create(op, mp, poldiff_swig_message_callback, poldiff_swig_message_callback_arg);
 		if (!p) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}

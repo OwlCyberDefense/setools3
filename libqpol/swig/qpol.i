@@ -49,6 +49,14 @@
 #include "../include/qpol/type_query.h"
 #include "../include/qpol/user_query.h"
 #include "../include/qpol/util.h"
+
+/* Provide hooks so that language-specific modules can define the
+ * callback function, used by the handler in
+ * qpol_policy_open_from_file().
+ */
+SWIGEXPORT qpol_callback_fn_t qpol_swig_message_callback = NULL;
+SWIGEXPORT void * qpol_swig_message_callback_arg = NULL;
+
 %}
 
 #ifdef SWIGJAVA
@@ -281,7 +289,7 @@ typedef enum qpol_capability
 %extend qpol_policy_t {
 	qpol_policy_t(const char *path, const int options) {
 		qpol_policy_t *p;
-		if (qpol_policy_open_from_file(path, &p, NULL, NULL, options) < 0) {
+		if (qpol_policy_open_from_file(path, &p, qpol_swig_message_callback, qpol_swig_message_callback_arg, options) < 0) {
 			SWIG_exception(SWIG_IOError, "Error opening policy");
 		}
 		return p;
