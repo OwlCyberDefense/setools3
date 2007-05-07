@@ -1,3 +1,15 @@
+2007-05-07  J. Mowery  <jmowery@tresys.com>
+
+	* Changed SWIG wrapping for apol_perm_query_t::run() to return
+	  apol_string_vector_t instead of apol_vector_t.
+
+	* Added exported pointers to SWIG wrappers of each library
+	  to allow changing of the message handler callback and its
+	  void * argument.
+
+	* qpol_policy_rebuild() no longer requires a modular policy;
+	  it can safely be called for any type of policy.
+
 2007-05-04  J. Tang  <jtang@tresys.com>
 
 	* Fixed qpol_module function names in the libqpol SWIG wrappers.

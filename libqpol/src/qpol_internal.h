@@ -68,7 +68,18 @@ extern "C"
 		struct qpol_extended_image *ext;
 		struct qpol_module **modules;
 		size_t num_modules;
+		char *file_data;
+		size_t file_data_sz;
+		int file_data_type;
 	};
+/* qpol_policy_t.file_data_type will be one of the following to denote
+ * the proper method of destroying the data:
+ * _BIN if policy is from a binary source (modular or kernel) destroy is a no-op
+ * _MMAP if policy is from a file and destroy should call munmap
+ * _MEM if policy is from open_from_memory and destroy should call free */
+#define QPOL_POLICY_FILE_DATA_TYPE_BIN  0
+#define QPOL_POLICY_FILE_DATA_TYPE_MMAP 1
+#define QPOL_POLICY_FILE_DATA_TYPE_MEM  2
 
 	extern void qpol_handle_msg(qpol_policy_t * policy, int level, const char *fmt, ...);
 	int qpol_is_file_binpol(FILE * fp);

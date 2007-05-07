@@ -281,7 +281,7 @@ extern "C"
  * one of APOL_INFOFLOW_IN, APOL_INFOFLOW_OUT, or APOL_INFOFLOW_BOTH.
  *
  * @param result Infoflow result from which to get direction.
- * @return Direction of result.
+ * @return Direction of result or zero on error.
  */
 	extern unsigned int apol_infoflow_result_get_dir(apol_infoflow_result_t * result);
 
@@ -290,7 +290,7 @@ extern "C"
  * should not free the returned pointer.
  *
  * @param result Infoflow result from which to get start type.
- * @return Pointer to the start type of the infoflow.
+ * @return Pointer to the start type of the infoflow or NULL on error.
  */
 	extern qpol_type_t *apol_infoflow_result_get_start_type(apol_infoflow_result_t * result);
 
@@ -299,7 +299,7 @@ extern "C"
  * should not free the returned pointer.
  *
  * @param result Infoflow result from which to get end type.
- * @return Pointer to the start type of the infoflow.
+ * @return Pointer to the start type of the infoflow or NULL on error.
  */
 	extern qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t * result);
 
@@ -310,7 +310,7 @@ extern "C"
  * upon the weights assigned in the currently loaded permission map.
  *
  * @param result Infoflow result from which to get length.
- * @return Length of result.
+ * @return Length of result or zero on error.
  */
 	extern unsigned int apol_infoflow_result_get_length(apol_infoflow_result_t * result);
 
@@ -325,7 +325,7 @@ extern "C"
  * @param result Infoflow result from which to get steps.
  *
  * @return Pointer to a vector of steps found between the result's
- * start and end types.
+ * start and end types or NULL on error.
  */
 	extern apol_vector_t *apol_infoflow_result_get_steps(apol_infoflow_result_t * result);
 
@@ -334,7 +334,7 @@ extern "C"
  * should not free the returned pointer.
  *
  * @param step Infoflow step from which to get start type.
- * @return Pointer to the start type for this infoflow step.
+ * @return Pointer to the start type for this infoflow step or NULL on error.
  */
 	extern qpol_type_t *apol_infoflow_step_get_start_type(apol_infoflow_step_t * step);
 
@@ -343,13 +343,13 @@ extern "C"
  * should not free the returned pointer.
  *
  * @param step Infoflow step from which to get end type.
- * @return Pointer to the start type for this infoflow step.
+ * @return Pointer to the start type for this infoflow step or NULL on error.
  */
 	extern qpol_type_t *apol_infoflow_step_get_end_type(apol_infoflow_step_t * step);
 
 /**
  * Return the weight of an information flow step.  For a direct
- * transitive infoflow analysis the weight is zero.  For a transitive
+ * infoflow analysis the weight is zero.  For a transitive
  * analysis this is an integer value that quantatizes the amount of
  * information that could flow between the start and end types; it is
  * based upon the currently opened permission map.  It will be a value
@@ -357,7 +357,7 @@ extern "C"
  * inclusive.
  *
  * @param step Infoflow step from which to get weight.
- * @return Weight of step.
+ * @return Weight of step or < 0 on error.
  */
 	extern int apol_infoflow_step_get_weight(apol_infoflow_step_t * step);
 
@@ -370,7 +370,7 @@ extern "C"
  * @param step Infoflow flow step from which to get rules.
  *
  * @return Pointer to a vector of rules relative to the policy originally
- * used to generate the results.
+ * used to generate the results or NULL on error.
  */
 	extern apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t * step);
 

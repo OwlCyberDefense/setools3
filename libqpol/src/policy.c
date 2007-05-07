@@ -481,35 +481,66 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	old_p = policy->p;
 	policy->p = NULL;
 
-	/* allocate enough space for all modules then fill with list of enabled ones only */
-	if (!(modules = calloc(policy->num_modules, sizeof(sepol_policydb_t *)))) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	/* first module is base and cannot be disabled */
-	for (i = 1; i < policy->num_modules; i++) {
-		if ((policy->modules[i])->enabled) {
-			modules[num_modules++] = (policy->modules[i])->p;
+	if (policy->type == QPOL_POLICY_MODULE_BINARY) {
+		/* allocate enough space for all modules then fill with list of enabled ones only */
+		if (!(modules = calloc(policy->num_modules, sizeof(sepol_policydb_t *)))) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto err;
 		}
-	}
-	/* have to reopen the base since link alters it */
-	if (qpol_module_create_from_file((policy->modules[0])->path, &base)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	/* take the policy from base and use as new base into which to link */
-	policy->p = base->p;
-	base->p = NULL;
-	qpol_module_destroy(&base);
-	if (sepol_link_modules(policy->sh, policy->p, modules, num_modules, 0)) {
-		error = EIO;
-		goto err;
-	}
-	free(modules);
+		/* first module is base and cannot be disabled */
+		for (i = 1; i < policy->num_modules; i++) {
+			if ((policy->modules[i])->enabled) {
+				modules[num_modules++] = (policy->modules[i])->p;
+			}
+		}
+		/* have to reopen the base since link alters it */
+		if (qpol_module_create_from_file((policy->modules[0])->path, &base)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto err;
+		}
+		/* take the policy from base and use as new base into which to link */
+		policy->p = base->p;
+		base->p = NULL;
+		qpol_module_destroy(&base);
+		if (sepol_link_modules(policy->sh, policy->p, modules, num_modules, 0)) {
+			error = EIO;
+			goto err;
+		}
+		free(modules);
+	} else {
+		/* repeat open process as if qpol_policy_open_from_memory() */
+		if (sepol_policydb_create(&(policy->p))) {
+			error = errno;
+			goto err;
+		}
 
-	if (qpol_expand_module(policy, options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS))) {
+		qpol_src_input = policy->file_data;
+		qpol_src_inputptr = qpol_src_input;
+		qpol_src_inputlim = qpol_src_inputptr + policy->file_data_sz - 1;
+		qpol_src_originalinput = qpol_src_input;
+
+		/* read in source */
+		policy->p->p.policy_type = POLICY_BASE;
+		if (read_source_policy(policy, "parse", policy->options) < 0) {
+			error = errno;
+			goto err;
+		}
+
+		/* link the source */
+		INFO(policy, "%s", "Linking source policy. (Step 2 of 5)");
+		if (sepol_link_modules(policy->sh, policy->p, NULL, 0, 0)) {
+			error = EIO;
+			goto err;
+		}
+		avtab_destroy(&(policy->p->p.te_avtab));
+		avtab_destroy(&(policy->p->p.te_cond_avtab));
+		avtab_init(&(policy->p->p.te_avtab));
+		avtab_init(&(policy->p->p.te_cond_avtab));
+	}
+
+	if (qpol_expand_module(policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
 		error = errno;
 		goto err;
 	}
@@ -680,6 +711,11 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 		qpol_src_inputlim = &qpol_src_inputptr[sb.st_size - 1];
 		qpol_src_originalinput = qpol_src_input;
 
+		/* store mmaped version for rebuild() */
+		(*policy)->file_data = qpol_src_originalinput;
+		(*policy)->file_data_sz = sb.st_size;
+		(*policy)->file_data_type = QPOL_POLICY_FILE_DATA_TYPE_MMAP;
+
 		(*policy)->p->p.policy_type = POLICY_BASE;
 		if (read_source_policy(*policy, "libqpol", (*policy)->options) < 0) {
 			error = errno;
@@ -778,7 +814,17 @@ int qpol_policy_open_from_memory_opt(qpol_policy_t ** policy, const char *fileda
 	qpol_src_inputlim = qpol_src_inputptr + size - 1;
 	qpol_src_originalinput = qpol_src_input;
 
+	/* store filedata for rebuild() */
+	if (!((*policy)->file_data = malloc(size))) {
+		error = errno;
+		goto err;
+	}
+	memcpy((*policy)->file_data, filedata, size);
+	(*policy)->file_data_sz = size;
+	(*policy)->file_data_type = QPOL_POLICY_FILE_DATA_TYPE_MEM;
+
 	/* read in source */
+	(*policy)->p->p.policy_type = POLICY_BASE;
 	if (read_source_policy(*policy, "parse", (*policy)->options) < 0)
 		exit(1);
 
@@ -794,7 +840,7 @@ int qpol_policy_open_from_memory_opt(qpol_policy_t ** policy, const char *fileda
 	avtab_init(&((*policy)->p->p.te_cond_avtab));
 
 	/* expand :) */
-	if (qpol_expand_module(*policy, options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS))) {
+	if (qpol_expand_module(*policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
 		error = errno;
 		goto err;
 	}
@@ -839,6 +885,11 @@ void qpol_policy_destroy(qpol_policy_t ** policy)
 				qpol_module_destroy(&((*policy)->modules[i]));
 			}
 			free((*policy)->modules);
+		}
+		if ((*policy)->file_data_type == QPOL_POLICY_FILE_DATA_TYPE_MEM) {
+			free((*policy)->file_data);
+		} else if ((*policy)->file_data_type == QPOL_POLICY_FILE_DATA_TYPE_MMAP) {
+			munmap((*policy)->file_data, (*policy)->file_data_sz);
 		}
 		free(*policy);
 		*policy = NULL;

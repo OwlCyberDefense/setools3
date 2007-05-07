@@ -254,7 +254,7 @@ static int apol_infoflow_node_compare(const void *a, const void *b __attribute__
 /**
  * Attempt to allocate a new node, add it to the infoflow graph, and
  * return a pointer to it.  If there already exists a node with the
- * same type and object class then reuse that node.
+ * same type then reuse that node.
  *
  * @param p Policy handler, for reporting error.
  * @param g Infoflow to which add the node.
@@ -292,7 +292,7 @@ static apol_infoflow_node_t *apol_infoflow_graph_create_node(apol_policy_t * p,
 /**
  * Attempt to allocate a new node, add it to the infoflow graph, and
  * return a pointer to it.  If there already exists a node with the
- * same type and object class then reuse that node.
+ * same type then reuse that node.
  *
  * @param p Policy handler, for reporting error.
  * @param g Infoflow to which add the node.
@@ -389,7 +389,6 @@ static int apol_infoflow_edge_compare(const void *a, const void *b __attribute__
 	struct apol_infoflow_edge_key *key = (struct apol_infoflow_edge_key *)data;
 	if (key->start_node != NULL && edge->start_node != key->start_node) {
 		return (int)((char *)edge->start_node - (char *)key->start_node);
-		return -1;
 	}
 	if (key->end_node != NULL && edge->end_node != key->end_node) {
 		return (int)((char *)edge->end_node - (char *)key->end_node);
@@ -2072,46 +2071,83 @@ int apol_infoflow_analysis_set_result_regex(apol_policy_t * p, apol_infoflow_ana
 
 unsigned int apol_infoflow_result_get_dir(apol_infoflow_result_t * result)
 {
+	if (!result) {
+		errno = EINVAL;
+		return 0;
+	}
 	return result->direction;
 }
 
 qpol_type_t *apol_infoflow_result_get_start_type(apol_infoflow_result_t * result)
 {
+	if (!result) {
+		errno = EINVAL;
+		return NULL;
+	}
 	return result->start_type;
 }
 
 qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t * result)
 {
+	if (!result) {
+		errno = EINVAL;
+		return NULL;
+	}
 	return result->end_type;
 }
 
 unsigned int apol_infoflow_result_get_length(apol_infoflow_result_t * result)
 {
+	if (!result) {
+		errno = EINVAL;
+		return 0;
+	}
+	assert(result->length != 0);
 	return result->length;
 }
 
 apol_vector_t *apol_infoflow_result_get_steps(apol_infoflow_result_t * result)
 {
+	if (!result) {
+		errno = EINVAL;
+		return NULL;
+	}
 	return result->steps;
 }
 
 qpol_type_t *apol_infoflow_step_get_start_type(apol_infoflow_step_t * step)
 {
+	if (!step) {
+		errno = EINVAL;
+		return NULL;
+	}
 	return step->start_type;
 }
 
 qpol_type_t *apol_infoflow_step_get_end_type(apol_infoflow_step_t * step)
 {
+	if (!step) {
+		errno = EINVAL;
+		return NULL;
+	}
 	return step->end_type;
 }
 
 int apol_infoflow_step_get_weight(apol_infoflow_step_t * step)
 {
+	if (!step) {
+		errno = EINVAL;
+		return -1;
+	}
 	return step->weight;
 }
 
 apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t * step)
 {
+	if (!step) {
+		errno = EINVAL;
+		return NULL;
+	}
 	return step->rules;
 }
 
