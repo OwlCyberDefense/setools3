@@ -777,13 +777,13 @@ typedef struct apol_perm_query {} apol_perm_query_t;
 		apol_perm_query_destroy(&self);
 	};
 	%newobject run();
-	apol_vector_t *run(apol_policy_t *p) {
+	apol_string_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
 		if (apol_perm_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run permission query");
 		}
 	fail:
-		return v;
+		return (apol_string_vector_t*)v;
 	};
 	void set_perm(apol_policy_t *p, char *name) {
 		if (apol_perm_query_set_perm(p, self, name)) {
