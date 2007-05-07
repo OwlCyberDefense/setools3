@@ -1446,23 +1446,23 @@ typedef struct qpol_nodecon {} qpol_nodecon_t;
 	~qpol_nodecon_t() {
 		free(self);
 	};
-	int *get_addr(qpol_policy_t *p) {
+	uint32_t *get_addr(qpol_policy_t *p) {
 		uint32_t *a;
 		unsigned char proto; /* currently dropped; stores the protocol - call get_protocol() */
 		if (qpol_nodecon_get_addr(p, self, &a, &proto)) {
 			SWIG_exception(SWIG_ValueError, "Could not get address of nodecon statement");
 		}
 	fail:
-		return (int*)a;
+		return a;
 	};
-	int *get_mask(qpol_policy_t *p) {
+	uint32_t *get_mask(qpol_policy_t *p) {
 		uint32_t *m;
 		unsigned char proto; /* currently dropped; stores the protocol - call get_protocol() */
 		if (qpol_nodecon_get_mask(p, self, &m, &proto)) {
 			SWIG_exception(SWIG_ValueError, "Could not get mask of nodecon statement");
 		}
 	fail:
-			return (int*)m;
+			return m;
 	};
 	int get_protocol(qpol_policy_t *p) {
 		unsigned char proto;

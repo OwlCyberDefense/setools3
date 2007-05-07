@@ -1,6 +1,7 @@
 VERS_4.1{
 	global:
         	apol_avrule_query_set_all_perms;
+        	apol_ipv4_addr_render;
 };
 VERS_4.0{
         global:

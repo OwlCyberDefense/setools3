@@ -224,7 +224,7 @@ const char *apol_protocol_to_str(uint8_t protocol);
 	fail:
 		return ip;
 	}
-	uint32_t wrap_apol_str_to_internal_ipv4(char *str) {
+	uint32_t *wrap_apol_str_to_internal_ipv4(char *str) {
 		uint32_t *ip = calloc(4, sizeof(uint32_t));
 		int retv = 0;
 		if (!ip) {
@@ -237,7 +237,7 @@ const char *apol_protocol_to_str(uint8_t protocol);
 			SWIG_exception(SWIG_TypeError, "Address uses wrong protocol");
 		}
 	fail:
-		return ip[0];
+		return ip;
 	}
 	uint32_t *wrap_apol_str_to_internal_ip(char *str) {
 		uint32_t *ip = calloc(4, sizeof(uint32_t));

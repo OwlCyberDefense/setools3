@@ -38,7 +38,33 @@
 extern void swab(const void *from, void *to, ssize_t n);
 #endif
 
-char *apol_ipv4_addr_render(apol_policy_t * policydb, uint32_t addr)
+__asm__(".symver apol_ipv4_addr_render_old,apol_ipv4_addr_render@");
+__asm__(".symver apol_ipv4_addr_render_new,apol_ipv4_addr_render@@VERS_4.1");
+
+/**
+ * @brief Internal version of apol_ipv4_addr_render() version 4.1
+ *
+ * Implementation of the exported function apol_ipv4_addr_render()
+ * for version 4.1; this symbol name is not exported.
+ * @see apol_ipv4_addr_render()
+ */
+char *apol_ipv4_addr_render_new(apol_policy_t * policydb, uint32_t addr[4])
+{
+	char buf[40], *b;
+	unsigned char *p = (unsigned char *)&(addr[0]);
+	snprintf(buf, sizeof(buf), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
+	if ((b = strdup(buf)) == NULL) {
+		ERR(policydb, "%s", strerror(ENOMEM));
+	}
+	return b;
+}
+
+/**
+ * @brief Internal version of apol_ipv4_addr_render() version 4.0 or earlier
+ * @deprecated use the 4.1 version.
+ * @see apol_ipv4_addr_render()
+ */
+char *apol_ipv4_addr_render_old(apol_policy_t * policydb, uint32_t addr)
 {
 	char buf[40], *b;
 	unsigned char *p = (unsigned char *)&addr;

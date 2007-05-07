@@ -50,7 +50,7 @@ extern "C"
  * @return A newly allocated string, which the caller must free.
  * Returns NULL on error.
  */
-	extern char *apol_ipv4_addr_render(apol_policy_t * p, uint32_t addr);
+	extern char *apol_ipv4_addr_render(apol_policy_t * p, uint32_t addr[4]);
 
 /**
  * Given an IPv6 address (or mask) in qpol byte order, allocate and

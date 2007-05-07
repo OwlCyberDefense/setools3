@@ -1,5 +1,8 @@
 2007-05-07  J. Mowery  <jmowery@tresys.com>
 
+	* Changed apol_ipv4_addr_render so that it now takes an array
+	  of uint32_t's instead of a single uint32_t.
+
 	* Changed SWIG wrapping for apol_perm_query_t::run() to return
 	  apol_string_vector_t instead of apol_vector_t.
 
