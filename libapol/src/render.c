@@ -38,15 +38,16 @@
 extern void swab(const void *from, void *to, ssize_t n);
 #endif
 
+#if LINK_SHARED == 1
 __asm__(".symver apol_ipv4_addr_render_old,apol_ipv4_addr_render@");
 __asm__(".symver apol_ipv4_addr_render_new,apol_ipv4_addr_render@@VERS_4.1");
+#endif
 
 /**
  * @brief Internal version of apol_ipv4_addr_render() version 4.1
  *
  * Implementation of the exported function apol_ipv4_addr_render()
  * for version 4.1; this symbol name is not exported.
- * @see apol_ipv4_addr_render()
  */
 char *apol_ipv4_addr_render_new(apol_policy_t * policydb, uint32_t addr[4])
 {
@@ -58,6 +59,13 @@ char *apol_ipv4_addr_render_new(apol_policy_t * policydb, uint32_t addr[4])
 	}
 	return b;
 }
+
+#if LINK_SHARED == 0
+char *apol_ipv4_addr_render(apol_policy_t * policydb, uint32_t addr[4])
+{
+	return apol_ipv4_addr_render_new(policydb, addr);
+}
+#endif
 
 /**
  * @brief Internal version of apol_ipv4_addr_render() version 4.0 or earlier

@@ -445,12 +445,14 @@ static int infer_policy_version(qpol_policy_t * policy)
 struct qpol_extended_image;
 extern void qpol_extended_image_destroy(struct qpol_extended_image **ext);
 
+#if LINK_SHARED == 1
 __asm__(".symver qpol_policy_open_from_file_old,qpol_policy_open_from_file@");
 __asm__(".symver qpol_policy_open_from_file_opt,qpol_policy_open_from_file@@VERS_1.3");
 __asm__(".symver qpol_policy_open_from_memory_old,qpol_policy_open_from_memory@");
 __asm__(".symver qpol_policy_open_from_memory_opt,qpol_policy_open_from_memory@VERS_1.3");
 __asm__(".symver qpol_policy_rebuild_old,qpol_policy_rebuild@");
 __asm__(".symver qpol_policy_rebuild_opt,qpol_policy_rebuild@@VERS_1.3");
+#endif
 
 /**
  * @brief Internal version of qpol_policy_rebuild() version 1.3
@@ -566,6 +568,13 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	errno = error;
 	return STATUS_ERR;
 }
+
+#if LINK_SHARED == 0
+int qpol_policy_rebuild(qpol_policy_t * policy, int options)
+{
+	return qpol_policy_rebuild_opt(policy, options);
+}
+#endif
 
 /**
  * @brief Internal version of qpol_policy_rebuild() version 1.2 or earlier
@@ -763,6 +772,13 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 	return -1;
 }
 
+#if LINK_SHARED == 0
+int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg, const int options)
+{
+	return qpol_policy_open_from_file_opt(path, policy, fn, varg, options);
+}
+#endif
+
 int qpol_policy_open_from_file_no_rules(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
 {
 	return qpol_policy_open_from_file_opt(path, policy, fn, varg, QPOL_POLICY_OPTION_NO_RULES);
@@ -852,6 +868,14 @@ int qpol_policy_open_from_memory_opt(qpol_policy_t ** policy, const char *fileda
 	return -1;
 
 }
+
+#if LINK_SHARED == 0
+int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg,
+				 const int options)
+{
+	return qpol_policy_open_from_memory_opt(policy, filedata, size, fn, varg, options);
+}
+#endif
 
 /**
  * @brief Internal version of qpol_policy_open_from_file() version 1.2 or earlier

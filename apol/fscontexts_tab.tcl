@@ -13,15 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_FSContexts
-#
-#
-##############################################################
 namespace eval Apol_FSContexts {
     variable widgets
     variable vals
@@ -37,7 +28,7 @@ proc Apol_FSContexts::open {} {
     genfscon_open
     fsuse_open
 
-    # force a flip to the genfscon page
+    # force a flip to the genfscon page, via a trace on this variable
     set vals(context_type) genfscon
 }
 
@@ -69,12 +60,12 @@ proc Apol_FSContexts::initializeVars {} {
     }
 }
 
-proc Apol_FSContexts::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_FSContexts::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
-proc Apol_FSContexts::goto_line { line_num } {
+proc Apol_FSContexts::goto_line {line_num} {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
@@ -127,7 +118,6 @@ proc Apol_FSContexts::create {nb} {
     pack $widgets(options_pm) -expand 1 -fill both -side left
     $widgets(options_pm) raise genfscon
 
-    # add okay button to the top-right corner
     set ok [button [$optsbox getframe].ok -text "OK" -width 6 \
                 -command Apol_FSContexts::runSearch]
     pack $ok -side right -pady 5 -padx 5 -anchor ne
@@ -203,13 +193,15 @@ proc Apol_FSContexts::fscontext_sort {a b} {
 
 proc Apol_FSContexts::genfscon_open {} {
     variable vals
+
+    set q [new_apol_genfscon_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set vals(genfscon:items) [lsort [genfscon_vector_to_list $v]]
+    $v -delete
+
     variable widgets
-    set fstypes {}
-    foreach genfs [lsort -unique -index 0 [apol_GetGenFSCons {} {} {} 0]] {
-        lappend fstypes [lindex $genfs 0]
-    }
-    set vals(genfscon:items) $fstypes
-    $widgets(genfscon:fs) configure -values $fstypes
+    $widgets(genfscon:fs) configure -values $vals(genfscon:items)
 }
 
 proc Apol_FSContexts::genfscon_show {} {
@@ -325,19 +317,23 @@ proc Apol_FSContexts::genfscon_runSearch {} {
 
 proc Apol_FSContexts::fsuse_open {} {
     variable vals
-    variable widgets
-    set fsuses [apol_GetFSUses {} {} {} 0]
+
+    set q [new_apol_fs_use_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set vals(fsuse:items) [lsort [fs_use_vector_to_list $v]]
+    $v -delete
+
+    # get a list of all behaviors present in this policy
     set behavs {}
-    foreach fsuse [lsort -unique -index 0 $fsuses] {
-        lappend behavs [lindex $fsuse 0]
+    foreach fsuse $vals(fsuse:items) {
+        set f [new_qpol_fs_use_t $::ApolTop::qpolicy $fsuse]
+        lappend behavs [apol_fs_use_behavior_to_str [$f get_behavior $::ApolTop::qpolicy]]
     }
-    $widgets(fsuse:type) configure -values $behavs
-    set fstypes {}
-    foreach fsuse [lsort -unique -index 1 $fsuses] {
-        lappend fstypes [lindex $fsuse 1]
-    }
-    $widgets(fsuse:fs) configure -values $fstypes
-    set vals(fsuse:items) $fstypes
+
+    variable widgets
+    $widgets(fsuse:type) configure -values [lsort -unique $behavs]
+    $widgets(fsuse:fs) configure -values $vals(fsuse:items)
 }
 
 proc Apol_FSContexts::fsuse_show {} {

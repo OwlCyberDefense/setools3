@@ -39,8 +39,8 @@ proc attr_vector_to_list {v} {
 proc bool_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set c [new_qpol_bool_t [$v get_element $i]]
-        lappend list [$c get_name $::ApolTop::qpolicy]
+        set q [new_qpol_bool_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
 }
@@ -48,8 +48,8 @@ proc bool_vector_to_list {v} {
 proc cat_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set c [new_qpol_cat_t [$v get_element $i]]
-        lappend list [$c get_name $::ApolTop::qpolicy]
+        set q [new_qpol_cat_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
 }
@@ -57,8 +57,8 @@ proc cat_vector_to_list {v} {
 proc class_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set c [new_qpol_class_t [$v get_element $i]]
-        lappend list [$c get_name $::ApolTop::qpolicy]
+        set q [new_qpol_class_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
 }
@@ -66,8 +66,26 @@ proc class_vector_to_list {v} {
 proc common_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set c [new_qpol_common_t [$v get_element $i]]
-        lappend list [$c get_name $::ApolTop::qpolicy]
+        set q [new_qpol_common_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc fs_use_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [new_qpol_fs_use_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc genfscon_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [new_qpol_genfscon_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
 }
@@ -75,8 +93,8 @@ proc common_vector_to_list {v} {
 proc isid_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set c [new_qpol_isid_t [$v get_element $i]]
-        lappend list [$c get_name $::ApolTop::qpolicy]
+        set q [new_qpol_isid_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
 }
@@ -84,8 +102,52 @@ proc isid_vector_to_list {v} {
 proc level_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set c [new_qpol_level_t [$v get_element $i]]
-        lappend list [$c get_name $::ApolTop::qpolicy]
+        set q [new_qpol_level_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc netifcon_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [new_qpol_netifcon_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc nodecon_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [new_qpol_nodecon_t [$v get_element $i]]
+        set proto [$q get_protocol $::ApolTop::qpolicy]
+        set addr [$q get_addr $::ApolTop::qpolicy]
+        set mask [$q get_mask $::ApolTop::qpolicy]
+        if {$proto == $::QPOL_IPV4} {
+            set proto_str "ipv4"
+            set addr [apol_ipv4_addr_render $::ApolTop::policy $addr]
+            set mask [apol_ipv4_addr_render $::ApolTop::policy $mask]
+        } elseif {$proto == $::QPOL_IPV6} {
+            set proto_str "ipv6"
+            set addr [apol_ipv6_addr_render $::ApolTop::policy $addr]
+            set mask [apol_ipv6_addr_render $::ApolTop::policy $mask]
+        } else {
+            set proto_str "unknown"
+        }
+        lappend list [list $proto_str $addr $mask]
+    }
+    return $list
+}
+
+proc portcon_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [new_qpol_portcon_t [$v get_element $i]]
+        set low [$q get_low_port $::ApolTop::qpolicy]
+        set high [$q get_high_port $::ApolTop::qpolicy]
+        set proto [$q get_protocol $::ApolTop::qpolicy]
+        lappend list [list $low $high $proto]
     }
     return $list
 }
@@ -93,8 +155,8 @@ proc level_vector_to_list {v} {
 proc role_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set c [new_qpol_role_t [$v get_element $i]]
-        lappend list [$c get_name $::ApolTop::qpolicy]
+        set q [new_qpol_role_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
 }
@@ -102,8 +164,8 @@ proc role_vector_to_list {v} {
 proc type_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set t [new_qpol_type_t [$v get_element $i]]
-        lappend list [$t get_name $::ApolTop::qpolicy]
+        set q [new_qpol_type_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
 }
@@ -111,8 +173,8 @@ proc type_vector_to_list {v} {
 proc user_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set t [new_qpol_user_t [$v get_element $i]]
-        lappend list [$t get_name $::ApolTop::qpolicy]
+        set q [new_qpol_user_t [$v get_element $i]]
+        lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
 }

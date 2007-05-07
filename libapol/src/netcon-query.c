@@ -538,8 +538,7 @@ char *apol_nodecon_render(apol_policy_t * p, qpol_nodecon_t * nodecon)
 		goto cleanup;
 	switch (protocol) {
 	case QPOL_IPV4:
-		if ((addr_str = apol_ipv4_addr_render(p, addr)) == NULL ||
-		    (mask_str = apol_ipv4_addr_render(p, mask)) == NULL) {
+		if ((addr_str = apol_ipv4_addr_render(p, addr)) == NULL || (mask_str = apol_ipv4_addr_render(p, mask)) == NULL) {
 			goto cleanup;
 		}
 		break;

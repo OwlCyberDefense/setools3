@@ -55,13 +55,10 @@ AC_CHECK_FUNCS(rand_r)
 
 AC_CACHE_SAVE
 
-AC_MSG_CHECKING([for how to link against libraries])
 if test "x${enable_shared}" = xyes; then
     use_shared=yes
-    AC_MSG_RESULT(shared)
 else
     use_shared=no
-    AC_MSG_RESULT(static)
 fi
 
 AC_ARG_ENABLE(debug,
@@ -78,6 +75,7 @@ if test "x${enable_debug}" = xyes; then
     SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=$(top_builddir)/libsefs/src'
     POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=$(top_builddir)/libpoldiff/src'
     SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.a -Wl,-rpath=$(top_builddir)/libseaudit/src'
+    use_shared=no
     AC_MSG_RESULT(yes)
 else
     AC_DEFINE(NDEBUG, 1, [disable calls to assert()])
@@ -117,6 +115,13 @@ AC_SUBST(APOL_LIB_FLAG)
 AC_SUBST(SEFS_LIB_FLAG)
 AC_SUBST(POLDIFF_LIB_FLAG)
 AC_SUBST(SEAUDIT_LIB_FLAG)
+
+AC_MSG_CHECKING([for how to link against libraries])
+if test ${use_shared} = yes; then
+    AC_MSG_RESULT(shared)
+else
+    AC_MSG_RESULT(static)
+fi
 
 AC_ARG_ENABLE(warnall,
               AC_HELP_STRING([--enable-warnall],
@@ -680,6 +685,12 @@ fi
 
 if test ${sepol_new_expand_boolmap} == "yes" ; then
    AC_DEFINE(HAVE_SEPOL_BOOLMAP, 1, [sepol's new expand boolmap behavior])
+fi
+
+if test ${use_shared} == "yes"; then
+   AC_DEFINE(LINK_SHARED, 1, [link programs using shared libraries])
+else
+   AC_DEFINE(LINK_SHARED, 0, [link programs using shared libraries])
 fi
 
 # For older version of BWidget, overcome bug in NoteBook::bindtabs and

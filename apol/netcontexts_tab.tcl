@@ -13,15 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_NetContexts
-#  
-# 
-##############################################################
 namespace eval Apol_NetContexts {
     variable widgets
     variable vals
@@ -82,12 +73,12 @@ proc Apol_NetContexts::initializeVars {} {
     }
 }
 
-proc Apol_NetContexts::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_NetContexts::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
-proc Apol_NetContexts::goto_line { line_num } {
+proc Apol_NetContexts::goto_line {line_num} {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
@@ -214,19 +205,26 @@ proc Apol_NetContexts::runSearch {} {
 #### portcon private functions below ####
 
 proc Apol_NetContexts::portcon_open {} {
+    set q [new_apol_portcon_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set portcons [lsort [portcon_vector_to_list $v]]
+    $v -delete
+
     variable vals
     variable widgets
     set vals(portcon:items) {}
     set protos {}
-    foreach p [apol_GetPortcons -1 -1 {} {} 0] {
-        foreach {low high proto context} $p {break}
+    foreach p $portcons {
+        foreach {low high proto} $p {break}
         if {$low == $high} {
             lappend vals(portcon:items) $low
         } else {
             lappend vals(portcon:items) "$low-$high"
         }
-        lappend protos $proto
+        lappend protos [apol_protocol_to_str $proto]
     }
+
     set vals(portcon:items) [lsort -unique -dictionary $vals(portcon:items)]
     $widgets(portcon:proto) configure -values [lsort -unique -dictionary $protos]
 }
@@ -454,13 +452,15 @@ proc Apol_NetContexts::portcon_runSearch {} {
 
 proc Apol_NetContexts::netifcon_open {} {
     variable vals
+
+    set q [new_apol_netifcon_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set vals(netifcon:items) [lsort [netifcon_vector_to_list $v]]
+    $v -delete
+    
     variable widgets
-    set ifs {}
-    foreach if [lsort -unique -index 0 [apol_GetNetifcons {} {} {} {} {}]] {
-        lappend ifs [lindex $if 0]
-    }
-    $widgets(netifcon:dev) configure -values $ifs
-    set vals(netifcon:items) $ifs
+    $widgets(netifcon:dev) configure -values $vals(netifcon:items)
 }
 
 proc Apol_NetContexts::netifcon_show {} {
@@ -560,12 +560,15 @@ proc Apol_NetContexts::netifcon_runSearch {} {
 #### nodecon private functions below ####
 
 proc Apol_NetContexts::nodecon_open {} {
+    set q [new_apol_nodecon_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set nodecons [nodecon_vector_to_list $v]
+    $v -delete
+
     variable vals
     variable widgets
     set vals(nodecon:items) {}
-    if {[catch {apol_GetNodecons {} {} {} {} 0} nodecons]} {
-        return
-    }
     foreach n [lsort -command nodecon_sort $nodecons] {
         set addr [lindex $n 1]
         if {[lsearch $vals(nodecon:items) $addr] == -1} {
