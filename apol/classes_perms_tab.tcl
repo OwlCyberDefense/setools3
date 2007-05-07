@@ -13,38 +13,35 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-##############################################################
-# ::Apol_Class_Perms
-#
-# The Classes/Permissions page
-##############################################################
 namespace eval Apol_Class_Perms {
     variable class_list {}
-    variable common_perms_list {}
+    variable common_list {}
     variable perms_list {}
     variable opts
     variable widgets
 }
 
-proc Apol_Class_Perms::open { } {
-    variable class_list {}
-    foreach class [lsort -index 0 [apol_GetClasses {} 0]] {
-        lappend class_list [lindex $class 0]
-    }
-    variable common_perms_list {}
-    foreach common [lsort -index 0 [apol_GetCommons {} 0]] {
-        lappend common_perms_list [lindex $common 0]
-    }
-    variable perms_list {}
-    foreach perm [lsort -index 0 [apol_GetPerms {} 0]] {
-        lappend perms_list [lindex $perm 0]
-    }
+proc Apol_Class_Perms::open {} {
+    set q [new_apol_class_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable class_list [lsort [class_vector_to_list $v]]
+    $v -delete
+    
+    set q [new_apol_common_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable common_perms_list [lsort [common_vector_to_list $v]]
+    $v -delete
+
+    set q [new_apol_perm_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable perms_list [lsort [str_vector_to_list $v]]
+    $v -delete
 }
 
-proc Apol_Class_Perms::close { } {
+proc Apol_Class_Perms::close {} {
     variable class_list {}
     variable common_perms_list {}
     variable perms_list {}
@@ -67,10 +64,6 @@ proc Apol_Class_Perms::set_Focus_to_Text {} {
     focus $Apol_Class_Perms::widgets(results)
 }
 
-########################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
 proc Apol_Class_Perms::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
@@ -87,10 +80,6 @@ proc Apol_Class_Perms::popupInfo {which name} {
     Apol_Widget::showPopupText $name $text
 }
 
-##############################################################
-# ::search
-#	- Search text widget for a string
-#
 proc Apol_Class_Perms::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction

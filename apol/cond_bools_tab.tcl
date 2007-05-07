@@ -21,9 +21,6 @@ namespace eval Apol_Cond_Bools {
     variable widgets
 }
 
-###############################################################
-#  ::cond_bool_search_bools
-#
 proc Apol_Cond_Bools::search_bools {} {
     variable opts
     variable widgets
@@ -75,9 +72,6 @@ proc Apol_Cond_Bools::renderBool {bool_datum show_default show_current} {
     return $text
 }
 
-###############################################################
-#  ::cond_bool_set_bool_values_to_policy_defaults
-#
 proc Apol_Cond_Bools::reset_bools {} {
     variable cond_bools_defaults
     variable cond_bools_values
@@ -87,85 +81,65 @@ proc Apol_Cond_Bools::reset_bools {} {
     array set cond_bools_values [array get cond_bools_defaults]
 }
 
-###############################################################
-#  ::cond_bool_set_bool_value
-#
 proc Apol_Cond_Bools::set_bool_value {name1 name2 op} {
     variable cond_bools_values
     apol_SetBoolValue $name2 $cond_bools_values($name2)
 }
 
-################################################################
-#  ::insert_listbox_item
-#
-proc Apol_Cond_Bools::insert_listbox_item {bool_datum} {
+proc Apol_Cond_Bools::insert_listbox_item {bool initial_state} {
     variable widgets
     variable cond_bools_values
 
+    set cond_bools_values($bool) $initial_state
     set subf [$widgets(listbox) getframe]
-    foreach {bool_name bool_value} $bool_datum {break}
-    set cond_bools_values($bool_name) $bool_value
-    set rb_true [radiobutton $subf.t:$bool_name -bg white \
-                     -variable Apol_Cond_Bools::cond_bools_values($bool_name) \
+    set rb_true [radiobutton $subf.t:$bool -bg white \
+                     -variable Apol_Cond_Bools::cond_bools_values($bool) \
                      -value 1 -highlightthickness 0 -text "True"]
-    set rb_false [radiobutton $subf.f:$bool_name -bg white \
-                      -variable Apol_Cond_Bools::cond_bools_values($bool_name) \
+    set rb_false [radiobutton $subf.f:$bool -bg white \
+                      -variable Apol_Cond_Bools::cond_bools_values($bool) \
                       -value 0 -highlightthickness 0 -text "False"]
-    trace add variable Apol_Cond_Bools::cond_bools_values($bool_name) write \
+    trace add variable Apol_Cond_Bools::cond_bools_values($bool) write \
         [list Apol_Cond_Bools::set_bool_value]
-    set rb_label [label $subf.l:$bool_name -bg white -text "- $bool_name"]
+    set rb_label [label $subf.l:$bool -bg white -text "- $bool"]
     grid $rb_true $rb_false $rb_label -padx 2 -pady 5 -sticky w
 }
 
-################################################################
-# ::search
-#	- Search text widget for a string
-#
-proc Apol_Cond_Bools::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Cond_Bools::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
-################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
-proc Apol_Cond_Bools::goto_line { line_num } {
+proc Apol_Cond_Bools::goto_line {line_num} {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
 
-################################################################
-# ::set_Focus_to_Text
-#
 proc Apol_Cond_Bools::set_Focus_to_Text {} {
     focus $Apol_Cond_Bools::widgets(results)
 }
 
-################################################################
-#  ::open
-#
 proc Apol_Cond_Bools::open {} {
-    variable cond_bools_list {}
-    variable cond_bools_defaults
-    variable widgets
+    set q [new_apol_bool_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable cond_bools_list [lsort [bool_vector_to_list $v]]
+    $v -delete
 
-    foreach bool_datum [lsort [apol_GetBools {} 0]] {
-        foreach {name value} $bool_datum {break}
-        lappend cond_bools_list $name
-        set cond_bools_defaults($name) $value
-        insert_listbox_item $bool_datum
+    variable cond_bools_defaults
+    foreach bool $cond_bools_list {
+        set b [new_qpol_bool_t $::ApolTop::qpolicy $bool]
+        set cond_bools_defaults($bool) [$b get_state $::ApolTop::qpolicy]
+        insert_listbox_item $bool $cond_bools_defaults($bool)
     }
+
+    variable widgets
     $widgets(listbox) xview moveto 0
     $widgets(listbox) yview moveto 0
     $widgets(listbox) configure -areaheight 0 -areawidth 0
     $widgets(combo_box) configure -values $cond_bools_list
 }
 
-################################################################
-#  ::close
-#
-proc Apol_Cond_Bools::close { } {
+proc Apol_Cond_Bools::close {} {
     variable widgets
     variable cond_bools_list {}
     variable cond_bools_defaults
@@ -195,9 +169,6 @@ proc Apol_Cond_Bools::initializeVars {} {
     }
 }
 
-################################################################
-#  ::create
-#
 proc Apol_Cond_Bools::create {nb} {
     variable opts
     variable widgets

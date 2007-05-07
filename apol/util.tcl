@@ -32,6 +32,91 @@ proc str_vector_to_list {v} {
     return $list
 }
 
+proc attr_vector_to_list {v} {
+    type_vector_to_list $v
+}
+
+proc bool_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set c [new_qpol_bool_t [$v get_element $i]]
+        lappend list [$c get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc cat_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set c [new_qpol_cat_t [$v get_element $i]]
+        lappend list [$c get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc class_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set c [new_qpol_class_t [$v get_element $i]]
+        lappend list [$c get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc common_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set c [new_qpol_common_t [$v get_element $i]]
+        lappend list [$c get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc isid_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set c [new_qpol_isid_t [$v get_element $i]]
+        lappend list [$c get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc level_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set c [new_qpol_level_t [$v get_element $i]]
+        lappend list [$c get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc role_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set c [new_qpol_role_t [$v get_element $i]]
+        lappend list [$c get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc type_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set t [new_qpol_type_t [$v get_element $i]]
+        lappend list [$t get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc user_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set t [new_qpol_user_t [$v get_element $i]]
+        lappend list [$t get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
 proc list_to_policy_path {path_type primary modules} {
     if {$path_type == "monolithic"} {
         set path_type $::APOL_POLICY_PATH_TYPE_MONOLITHIC

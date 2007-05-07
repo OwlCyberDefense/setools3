@@ -13,42 +13,21 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_Users
-#
-# The Users page
-##############################################################
 namespace eval Apol_Users {
     variable opts
-    variable users_list ""
     variable widgets
+    variable users_list {}
 }
 
-##############################################################
-# ::search
-#	- Search text widget for a string
-#
 proc Apol_Users::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
-# ----------------------------------------------------------------------------------------
-#  Command Apol_Users::set_Focus_to_Text
-#
-#  Description:
-# ----------------------------------------------------------------------------------------
 proc Apol_Users::set_Focus_to_Text {} {
     focus $Apol_Users::widgets(results)
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::searchUsers
-# ------------------------------------------------------------------------------
 proc Apol_Users::searchUsers {} {
     variable opts
     variable widgets
@@ -136,16 +115,15 @@ proc Apol_Users::renderUser {user_datum show_all} {
     return $text
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::open
-# ------------------------------------------------------------------------------
-proc Apol_Users::open { } {
-    variable users_list {}
+proc Apol_Users::open {} {
+    set q [new_apol_user_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable users_list [lsort [user_vector_to_list $v]]
+    $v -delete
+
+    variable opts
     variable widgets
-    foreach u [apol_GetUsers {} {} {} {} {} 0] {
-        lappend users_list [lindex $u 0]
-    }
-    set users_list [lsort $users_list]
     $Apol_Users::widgets(role) configure -values $Apol_Roles::role_list
     if {[ApolTop::is_capable "mls"]} {
         Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
@@ -153,19 +131,16 @@ proc Apol_Users::open { } {
     } else {
         Apol_Widget::clearRangeSelector $widgets(range)
         Apol_Widget::setRangeSelectorCompleteState $widgets(range) disabled
-        set Apol_Users::opts(enable_default) 0
+        set opts(enable_default) 0
         $widgets(defaultCB) configure -state disabled
     }
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::close
-# ------------------------------------------------------------------------------
-proc Apol_Users::close { } {
+proc Apol_Users::close {} {
     variable widgets
 
     initializeVars
-    set Apol_Users::users_list ""
+    variable users_list {}
     $widgets(role) configure -values ""
     Apol_Widget::clearSearchResults $widgets(results)
     Apol_Widget::clearRangeSelector $widgets(range)
@@ -182,26 +157,16 @@ proc Apol_Users::initializeVars {} {
     }
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::popupUserInfo
-# ------------------------------------------------------------------------------
 proc Apol_Users::popupUserInfo {which user} {
     set user_datum [lindex [apol_GetUsers $user] 0]
     Apol_Widget::showPopupText $user [renderUser $user_datum 1]
 }
 
-########################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
 proc Apol_Users::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::create
-# ------------------------------------------------------------------------------
 proc Apol_Users::create {nb} {
     variable opts
     variable widgets

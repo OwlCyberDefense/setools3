@@ -227,6 +227,7 @@ if test "x${enable_tclswig}" = xyes; then
    fi
    TEA_PUBLIC_TCL_HEADERS
    TEA_PUBLIC_TK_HEADERS
+   TEA_PROG_TCLSH
    SWIG_TCL_OPT=-tcl
    SWIG_TCL_CFLAGS="${TCL_INCLUDES} -DSWIGTCL=1"
    AC_SUBST(SWIG_TCL_OPT)
@@ -267,7 +268,6 @@ if test ${build_apol} = "no"; then
     enable_bwidget=no
 fi
 if test "x${enable_bwidget}" = "xyes"; then
-    TEA_PROG_TCLSH
     AC_MSG_CHECKING([for BWidget 1.7 or greater])
     changequote(<<<,>>>)dnl
     cat > ./conftest.tcl <<EOF

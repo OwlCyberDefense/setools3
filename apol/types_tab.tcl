@@ -20,21 +20,21 @@ namespace eval Apol_Types {
     variable widgets
 }
 
-proc Apol_Types::open { } {
-    variable typelist {}
-    variable attriblist {}
-
-    foreach type_datum [apol_GetTypes {} 0] {
-        lappend typelist [lindex $type_datum 0]
-    }
-    set typelist [lsort $typelist]
-    foreach attrib_datum [apol_GetAttribs {} 0] {
-        lappend attriblist [lindex $attrib_datum 0]
-    }
-    set attriblist [lsort $attriblist]
+proc Apol_Types::open {} {
+    set q [new_apol_type_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable typelist [lsort [type_vector_to_list $v]]
+    $v -delete
+    
+    set q [new_apol_attr_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable attriblist [lsort [attr_vector_to_list $v]]
+    $v -delete
 }
 
-proc Apol_Types::close { } {
+proc Apol_Types::close {} {
     variable widgets
 
     initializeVars
@@ -97,7 +97,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
                          -text "Files labeled with types that are members of this attribute:" \
                          -justify left]
         }
-        set s_fc [ScrolledWindow [$notebook getframe fc_info_tab].s_fc  -scrollbar both -auto both]
+        set s_fc [ScrolledWindow [$notebook getframe fc_info_tab].s_fc -scrollbar both -auto both]
         set f_fc [text [$s_fc getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
         $s_fc setwidget $f_fc
     }
@@ -131,7 +131,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
                 $f_fc insert end "No files found."
             }
         } else {
-            $f_fc insert 0.0 "No index file is loaded. If you would like to load an index file, go to the File Context tab."
+            $f_fc insert 0.0 "No index file is loaded.  Load an index file through the File Context tab."
         }
         $f_fc configure -state disabled
     }
@@ -142,11 +142,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
     raise $w
 }
 
-##############################################################
-# ::search
-#	- Search text widget for a string
-#
-proc Apol_Types::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Types::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
@@ -246,10 +242,6 @@ proc Apol_Types::renderAttrib {attrib_datum show_types show_attribs} {
     return $text
 }
 
-########################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
 proc Apol_Types::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
@@ -260,7 +252,7 @@ proc Apol_Types::create {nb} {
     variable widgets
 
     initializeVars
-    # Layout frames
+
     set frame [$nb insert end $ApolTop::types_tab -text "Types"]
     set pw1   [PanedWindow $frame.pw -side top]
     set left_pane   [$pw1 add -weight 0]
@@ -268,13 +260,11 @@ proc Apol_Types::create {nb} {
     set tpane [frame $left_pane.t]
     set apane [frame $left_pane.a]
 
-    # Major subframes
     set tbox [TitleFrame $tpane.tbox -text "Types"]
     set abox [TitleFrame $apane.abox -text "Attributes"]
     set obox [TitleFrame $center_pane.obox -text "Search Options"]
     set rbox [TitleFrame $center_pane.rbox -text "Search Results"]
 
-    # Placing layout frames and major subframes
     pack $obox -side top -expand 0 -fill both -padx 2
     pack $rbox -expand yes -fill both -padx 2
     pack $tbox -fill both -expand yes
@@ -283,20 +273,17 @@ proc Apol_Types::create {nb} {
     pack $tpane -fill both -expand 1
     pack $apane -fill both -expand 1
 
-    # Types listbox
     set tlistbox [Apol_Widget::makeScrolledListbox [$tbox getframe].types \
                       -height 10 -width 20 -listvar Apol_Types::typelist]
     Apol_Widget::setListboxCallbacks $tlistbox \
         {{"Show Type Info" {Apol_Types::popupTypeInfo type}}}
     pack $tlistbox -expand 1 -fill both
 
-    # Attributes listbox
     set alistbox [Apol_Widget::makeScrolledListbox [$abox getframe].attribs \
                       -height 5 -width 20 -listvar Apol_Types::attriblist]
     Apol_Widget::setListboxCallbacks $alistbox {{"Show Attribute Info" {Apol_Types::popupTypeInfo attrib}}}
     pack $alistbox -expand 1 -fill both
 
-    # Search options section
     set ofm [$obox getframe]
     set fm_types_select [frame $ofm.to]
     set fm_attribs_select [frame $ofm.ao]
@@ -329,7 +316,6 @@ proc Apol_Types::create {nb} {
     set ok [button $ofm.ok -text OK -width 6 -command Apol_Types::searchTypes]
     pack $ok -side right -padx 5 -pady 5 -anchor ne
 
-    # Display results window
     set widgets(results) [Apol_Widget::makeSearchResults [$rbox getframe].results]
     pack $widgets(results) -expand yes -fill both
 

@@ -13,43 +13,20 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-#
-# Author: <don.patterson@tresys.com>
-#
-
-##############################################################
-# ::Apol_Initial_SIDS
-#
-# The Initial SIDS page
-##############################################################
 namespace eval Apol_Initial_SIDS {
     variable widgets
     variable vals
 }
 
-##############################################################
-# ::search
-#	- Search text widget for a string
-#
-proc Apol_Initial_SIDS::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Initial_SIDS::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
-# ----------------------------------------------------------------------------------------
-#  Command Apol_Initial_SIDS::set_Focus_to_Text
-#
-#  Description:
-# ----------------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::set_Focus_to_Text {} {
     focus $Apol_Initial_SIDS::widgets(results)
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Initial_SIDS::searchSIDs
-# ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::searchSIDs {} {
     variable vals
     variable widgets
@@ -80,21 +57,16 @@ proc Apol_Initial_SIDS::searchSIDs {} {
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Initial_SIDS::open
-# ------------------------------------------------------------------------------
-proc Apol_Initial_SIDS::open { } {
+proc Apol_Initial_SIDS::open {} {
     variable vals
-    set vals(items) {}
-    foreach sid [lsort -index 0 -dictionary [apol_GetInitialSIDs {} {} 0]] {
-        lappend vals(items) [lindex $sid 0]
-    }
+    set q [new_apol_isid_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set vals(items) [lsort [isid_vector_to_list $v]]
+    $v -delete
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Initial_SIDS::close
-# ------------------------------------------------------------------------------
-proc Apol_Initial_SIDS::close { } {
+proc Apol_Initial_SIDS::close {} {
     variable vals
     variable widgets
     set vals(items) {}
@@ -102,9 +74,6 @@ proc Apol_Initial_SIDS::close { } {
     Apol_Widget::clearContextSelector $widgets(context)
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Initial_SIDS::popupSIDInfo
-# ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::render_isid {isid {compact 0}} {
     foreach {name context} $isid {break}
     set context [apol_RenderContext $context]
@@ -124,18 +93,11 @@ proc Apol_Initial_SIDS::popupSIDInfo {sid} {
     Apol_Widget::showPopupText "$sid Context" $text
 }
 
-########################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
 proc Apol_Initial_SIDS::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Initial_SIDS::create
-# ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::create {nb} {
     variable widgets
     variable vals

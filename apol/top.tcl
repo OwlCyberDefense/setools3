@@ -120,11 +120,29 @@ proc ApolTop::get_toplevel_dialog {} {
     return $ApolTop::mainframe
 }
 
+# If a policy is open and it has the given capability then return
+# non-zero.  Valid capabilities are:
+#   "attribute names"
+#   "conditionals"
+#   "line numbers"
+#   "mls"
+#   "source"
+#   "syntactic rules"
 proc ApolTop::is_capable {capability} {
     if {![is_policy_open]} {
         return 0;
     }
-    return [apol_IsCapable $capability]
+    switch -- $capability {
+        "attribute names" { set cap $::QPOL_CAP_ATTRIB_NAMES }
+        "conditionals" { set cap $::QPOL_CAP_CONDITIONALS }
+        "line numbers" { set cap $::LINE_NUMBERS }
+        "mls" { set cap $::QPOL_CAP_MLS }
+        "source" { set cap $::QPOL_CAP_SOURCE }
+        "syntactic rules" { set cap $::QPOL_CAP_SYN_RUSE }
+        default { return 0 }
+    }
+    variable qpolicy
+    $qpolicy has_capability $cap
 }
 
 proc ApolTop::load_fc_index_file {} {
@@ -1463,22 +1481,25 @@ proc handle_args {argv0 argv} {
     if {[llength $argv] - $argvp > 0} {
         set path_type $::APOL_POLICY_PATH_TYPE_MONOLITHIC
         set policy_file [lindex $argv $argvp]
-        set path {}
+        set ppath {}
         if {[llength $argv] - $argvp > 1} {
             set path_type $::APOL_POLICY_PATH_TYPE_MODULAR
-            set mod_paths [list_to_str_vector [lrange $argv [exrp {$argvp + 1}] end]]
-        } elseif {[apol_file_is_policy_path_list $policy_file]} {
-            set path [new_apol_policy_path_t $policy_file]
-        }
-        if {$path == {}} {
-            set path [new_apol_policy_path_t $path_type $policy_file $mod_paths]
-        }
-        if {$path == {}} {
-            puts stderr "Error loading module $policy_file."
+            set mod_paths [list_to_str_vector [lrange $argv [expr {$argvp + 1}] end]]
         } else {
-            $path -acquire
+            set mod_paths [list_to_str_vector {}]
+            if {[apol_file_is_policy_path_list $policy_file]} {
+                set ppath [new_apol_policy_path_t $policy_file]
+            }
         }
-        return $path
+        if {$ppath == {}} {
+            set ppath [new_apol_policy_path_t $path_type $policy_file $mod_paths]
+        }
+        if {$ppath == {}} {
+            puts stderr "Error loading $policy_file."
+        } else {
+            $ppath -acquire
+        }
+        return $ppath
     } else {
         return {}
     }
@@ -1510,5 +1531,5 @@ if {[catch {package require Tk}]} {
 set path [handle_args $argv0 $argv]
 ApolTop::main
 if {$path != {}} {
-    ApolTop::openPolicyFile $path
+    after idle [list ApolTop::openPolicyFile $path]
 }

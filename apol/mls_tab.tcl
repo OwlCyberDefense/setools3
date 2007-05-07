@@ -13,15 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_MLS
-#
-#
-##############################################################
 namespace eval Apol_MLS {
     variable widgets
     variable vals
@@ -33,14 +24,18 @@ proc Apol_MLS::set_Focus_to_Text {} {
 
 proc Apol_MLS::open {} {
     variable vals
-    set vals(senslist) {}
-    foreach s [lsort -integer -index 3 [apol_GetLevels {} 0]] {
-        lappend vals(senslist) [lindex $s 0]
-    }
-    set vals(catslist) {}
-    foreach c [lsort -integer -index 3 [apol_GetCats {} 0]] {
-        lappend vals(catslist) [lindex $c 0]
-    }
+
+    set q [new_apol_level_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set vals(senslist) [lsort [level_vector_to_list $v]]
+    $v -delete
+
+    set q [new_apol_cat_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set vals(catslist) [lsort [cat_vector_to_list $v]]
+    $v -delete
 }
 
 proc Apol_MLS::close {} {
@@ -59,12 +54,12 @@ proc Apol_MLS::initializeVars {} {
     }
 }
 
-proc Apol_MLS::search { str case_Insensitive regExpr srch_Direction } {
-	variable widgets
-	ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
+proc Apol_MLS::search {str case_Insensitive regExpr srch_Direction} {
+    variable widgets
+    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
-proc Apol_MLS::goto_line { line_num } {
+proc Apol_MLS::goto_line {line_num} {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }

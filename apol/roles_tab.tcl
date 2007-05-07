@@ -13,41 +13,39 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_Roles
-#
-# The Roles page
-##############################################################
 namespace eval Apol_Roles {
     variable widgets
     variable opts
-    set opts(useType)		0
-    set opts(showSelection)     all
-    variable role_list		""
+    variable role_list {}
 }
 
-proc Apol_Roles::open { } {
+proc Apol_Roles::open {} {
+    set q [new_apol_role_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable role_list [lsort [role_vector_to_list $v]]
+    $v -delete
+
     variable widgets
-    variable role_list {}
-    foreach r [apol_GetRoles {} {} 0] {
-        lappend role_list [lindex $r 0]
-    }
-    set role_list [lsort $role_list]
     Apol_Widget::resetTypeComboboxToPolicy $widgets(combo_types)
 }
 
-proc Apol_Roles::close { } {
+proc Apol_Roles::close {} {
     variable widgets
     variable opts
-    set opts(useType)	0
-    set opts(showSelection)	all
-    set Apol_Roles::role_list	""
+    variable role_list {}
+
+    initializeVars
     Apol_Widget::clearTypeCombobox $widgets(combo_types)
     Apol_Widget::clearSearchResults $widgets(resultsbox)
+}
+
+proc Apol_Roles::initializeVars {} {
+    variable opts
+    array set opts {
+        useType 0
+        showSelection all
+    }
 }
 
 proc Apol_Roles::set_Focus_to_Text {} {
@@ -129,10 +127,6 @@ proc Apol_Roles::toggleTypeCombobox {path name1 name2 op} {
     Apol_Widget::setTypeComboboxState $path $Apol_Roles::opts(useType)
 }
 
-########################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
 proc Apol_Roles::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(resultsbox) $line_num
@@ -142,24 +136,21 @@ proc Apol_Roles::create {nb} {
     variable widgets
     variable opts
 
-    # Layout frames
+    initializeVars
+
     set frame [$nb insert end $ApolTop::roles_tab -text "Roles"]
     set pw [PanedWindow $frame.pw -side top]
     set leftf [$pw add -weight 0]
     set rightf [$pw add -weight 1]
     pack $pw -fill both -expand yes
 
-    # Title frames
     set rolebox [TitleFrame $leftf.rolebox -text "Roles"]
     set s_optionsbox [TitleFrame $rightf.obox -text "Search Options"]
     set resultsbox [TitleFrame $rightf.rbox -text "Search Results"]
-
-    # Placing title frames
     pack $rolebox -fill both -expand yes
     pack $s_optionsbox -padx 2 -fill both -expand 0
     pack $resultsbox -padx 2 -fill both -expand yes
 
-    # Roles listbox widget
     set rlistbox [Apol_Widget::makeScrolledListbox [$rolebox getframe].lb \
                       -width 20 -listvar Apol_Roles::role_list]
     Apol_Widget::setListboxCallbacks $rlistbox \
@@ -172,14 +163,12 @@ proc Apol_Roles::create {nb} {
     set cfm [frame $ofm.co]
     pack $lfm $cfm -side left -anchor nw -padx 4 -pady 2
 
-    # Set default state for combo boxes
     radiobutton $lfm.all_info -text "All information" \
         -variable Apol_Roles::opts(showSelection) -value all
     radiobutton $lfm.names_only -text "Names only" \
         -variable Apol_Roles::opts(showSelection) -value names
     pack $lfm.all_info $lfm.names_only -anchor w -padx 5 -pady 4
 
-    # Search options widget items
     set cb_type [checkbutton $cfm.cb -variable Apol_Roles::opts(useType) -text "Type"]
     set widgets(combo_types) [Apol_Widget::makeTypeCombobox $cfm.combo_types]
     Apol_Widget::setTypeComboboxState $widgets(combo_types) disabled
@@ -191,7 +180,6 @@ proc Apol_Roles::create {nb} {
     button $ofm.ok -text OK -width 6 -command {Apol_Roles::searchRoles}
     pack $ofm.ok -side top -anchor e -pady 5 -padx 5
 
-    # Display results window
     set widgets(resultsbox) [Apol_Widget::makeSearchResults [$resultsbox getframe].sw]
     pack $widgets(resultsbox) -expand 1 -fill both
 
