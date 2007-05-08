@@ -726,7 +726,7 @@ EOF
         set PRIV(protocol) {tkcon hide}
         set OPT(exec) ""
     }
-    if {![catch {source tkcon.tcl}]} {
+    if {![catch {uplevel \#0 source tkcon.tcl}]} {
         package require tkcon
         bind . <F8> {tkcon show}
     }

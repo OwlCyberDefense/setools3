@@ -1,6 +1,3 @@
-#############################################################
-#  relabel_module.tcl
-# -----------------------------------------------------------
 #  Copyright (C) 2003-2007 Tresys Technology, LLC
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,13 +12,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-#  Requires tcl and tk 8.4+, with BWidget
-#  Author: <jtang@tresys.com>
-# -----------------------------------------------------------
-#
-# This is the implementation of the interface for
-# Relabeling Analysis
 
 namespace eval Apol_Analysis_relabel {
     variable vals
@@ -35,7 +25,7 @@ proc Apol_Analysis_relabel::open {} {
     Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
     set vals(classes:inc) {}
     foreach class $Apol_Class_Perms::class_list {
-        set perms [apol_GetAllPermsForClass $class]
+        set perms [Apol_Analysis::getAllPermsForClass $class]
         if {[lsearch $perms "relabelto"] >= 0 && [lsearch $perms "relabelfrom"] >= 0} {
             lappend vals(classes:inc) $class
         }

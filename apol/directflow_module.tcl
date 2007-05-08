@@ -331,7 +331,7 @@ proc Apol_Analysis_directflow::analyze {} {
     set classes {}
     if {$vals(classes:enable)} {
         foreach c $vals(classes:selected) {
-            foreach p [apol_GetAllPermsForClass $c] {
+            foreach p [Apol_Analysis::getAllPermsForClass $c] {
                 lappend classes [list $c $p]
             }
         }

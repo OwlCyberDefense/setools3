@@ -1,6 +1,3 @@
-#############################################################
-#  analysis_tab.tcl
-# -----------------------------------------------------------
 #  Copyright (C) 2003-2007 Tresys Technology, LLC
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,9 +12,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-#  Requires tcl and tk 8.4+, with BWidget
-# -----------------------------------------------------------
 
 namespace eval Apol_Analysis {
     variable vals
@@ -25,9 +19,6 @@ namespace eval Apol_Analysis {
     variable tabs
 }
 
-#------------------------------------------------------------------------------
-#  Command Apol_Analysis::open
-#------------------------------------------------------------------------------
 proc Apol_Analysis::open {} {
     variable vals
     foreach m $vals(modules) {
@@ -35,9 +26,6 @@ proc Apol_Analysis::open {} {
     }
 }
 
-#------------------------------------------------------------------------------
-#  Command Apol_Analysis::close
-#------------------------------------------------------------------------------
 proc Apol_Analysis::close {} {
     variable vals
     variable widgets
@@ -101,9 +89,6 @@ proc Apol_Analysis::load_query_options {file_channel parentDlg} {
     $widgets(modules).lb selection set [lsearch $vals(module_names) $vals($module:name)]
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_Analysis::create
-# -----------------------------------------------------------------------------
 proc Apol_Analysis::create {nb} {
     variable vals
     variable widgets
@@ -205,6 +190,26 @@ proc Apol_Analysis::setResultTabCriteria {criteria} {
     if {$id != {}} {
         set tabs($id:vals) $criteria
     }
+}
+
+# Given an object class, return a sorted list of its permissions,
+# including those that the class inherits from its common.
+proc Apol_Analysis::getAllPermsForClass {class} {
+    if {![ApolTop::is_policy_open]} {
+        return {}
+    }
+    if {[set c [new_qpol_class_t $::ApolTop::qpolicy $class]] == {}} {
+        return {}
+    }
+    set i [$c get_perm_iter $::ApolTop::qpolicy]
+    set perms [iter_to_str_list $i]
+    $i -delete
+    if {[set common [$c get_common $::ApolTop::qpolicy]] != "NULL"} {
+        set i [$common get_perm_iter $::ApolTop::qpolicy]
+        set perms [lsort -unique [concat $perms [iter_to_str_list $i]]]
+        $i -delete
+    }
+    return $perms
 }
 
 #################### private functions ####################

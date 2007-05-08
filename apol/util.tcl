@@ -13,7 +13,26 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# Convenience routines to convert between Tcl and libapol/libqpol.
+# This file contains miscellaneous convenience routines to convert
+# between Tcl and libapol/libqpol.
+
+proc iter_to_list {iter} {
+    set list {}
+    while {![$iter end]} {
+        lappend list [$iter get_item]
+        $iter next
+    }
+    return $list
+}
+
+proc iter_to_str_list {iter} {
+    set list {}
+    while {![$iter end]} {
+        lappend list [to_str [$iter get_item]]
+        $iter next
+    }
+    return $list
+}
 
 proc list_to_str_vector {list} {
     set v [new_apol_string_vector_t]
@@ -185,7 +204,7 @@ proc list_to_policy_path {path_type primary modules} {
     } else {
         set path_type $::APOL_POLICY_PATH_TYPE_MODULAR
     }
-    set ppath [new_apol_policy_path_t $path_type $primary [list_to_str_vector modules]]
+    set ppath [new_apol_policy_path_t $path_type $primary [list_to_str_vector $modules]]
     $ppath -acquire
     return $ppath
 }

@@ -26,7 +26,7 @@ proc Apol_Analysis_domaintrans::open {} {
     set vals(targets:inc) $Apol_Types::typelist
     set vals(targets:inc_displayed) $Apol_Types::typelist
     foreach c $Apol_Class_Perms::class_list {
-        set vals(classes:$c) [lsort [apol_GetAllPermsForClass $c]]
+        set vals(classes:$c) [Apol_Analysis::getAllPermsForClass $c]
         set vals(classes:$c:enable) 1
     }
 }
@@ -269,7 +269,7 @@ proc Apol_Analysis_domaintrans::reinitializeVals {} {
     array unset vals classes:*
     array unset vals search:*
     foreach c $Apol_Class_Perms::class_list {
-        set vals(classes:$c) [lsort [apol_GetAllPermsForClass $c]]
+        set vals(classes:$c) [Apol_Analysis::getAllPermsForClass $c]
         set vals(classes:$c:enable) 1
     }
 }

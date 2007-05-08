@@ -38,7 +38,7 @@ proc Apol_Progress_Dialog::wait {title initialtext lambda} {
 
     set orig_cursor [. cget -cursor]
     . configure -cursor watch
-    update idletasks
+    update
     after idle Apol_Progress_Dialog::_do_idle
 
     apol_tcl_clear_info_string

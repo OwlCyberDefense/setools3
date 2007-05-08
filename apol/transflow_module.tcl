@@ -1,6 +1,3 @@
-#############################################################
-#  transflow_module.tcl
-# -----------------------------------------------------------
 #  Copyright (C) 2003-2007 Tresys Technology, LLC
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,13 +12,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-#  Requires tcl and tk 8.4+, with BWidget
-#  Author: <don.patterson@tresys.com, mayerf@tresys.com, kcarr@tresys>
-# -----------------------------------------------------------
-#
-# This is the implementation of the interface for Transitive
-# Information Flow analysis.
 
 namespace eval Apol_Analysis_transflow {
     variable vals
@@ -37,7 +27,7 @@ proc Apol_Analysis_transflow::open {} {
     set vals(intermed:inc_all) $Apol_Types::typelist
     set vals(classes:displayed) {}
     foreach class $Apol_Class_Perms::class_list {
-        foreach perm [apol_GetAllPermsForClass $class] {
+        foreach perm [Apol_Analysis::getAllPermsForClass $class] {
             set vals(perms:$class:$perm) 1
         }
         lappend vals(classes:displayed) $class
