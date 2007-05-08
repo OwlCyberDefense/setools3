@@ -158,6 +158,8 @@ static gboolean message_view_on_column_click(GtkTreeViewColumn * column, gpointe
 
 	view->store->sort_field = column_id;
 	view->store->sort_dir = dir;
+	/* emit rows reordered signal when rows are reordered! */
+	g_signal_emit_by_name(view->store, "rows-reordered");
 	message_view_update_rows(view);
 	return TRUE;
 }
@@ -579,8 +581,112 @@ static gboolean message_view_store_iter_parent(GtkTreeModel * tree_model, GtkTre
 
 /*************** end of custom GtkTreeModel implementation ***************/
 
+/*************** message_view_messages_vector callbacks ******************/
+#define LBACK    1
+#define LFORWARD 2
+#define LNOOP    255
+
+typedef struct _msg_user_data
+{
+	message_view_t *view;
+	apol_vector_t *messages;
+	GtkTextBuffer *buffer;
+} _msg_user_data_t;
+
+/* middle 3 pointers to this callback are ignored because I don't care about
+ * the path, tree iter or arg3
+ */
+static void cb_view_change(message_view_store_t * store,
+			   void *a __attribute__ ((unused)),
+			   void *b __attribute__ ((unused)), void *c __attribute__ ((unused)), GtkDialog * window)
+{
+	/* disconnect this signal handler after it fires.  It's one shot, nothing
+	 * should be able to bring the next and previous buttons back from
+	 * the dead.
+	 */
+	g_signal_handlers_disconnect_by_func(store, cb_view_change, window);
+
+	/* if window isn't a valid dialog, we are probably a stale callback */
+	if (!GTK_IS_DIALOG(window))
+		return;
+
+	gtk_dialog_set_response_sensitive(GTK_DIALOG(window), LBACK, FALSE);
+	gtk_dialog_set_response_sensitive(GTK_DIALOG(window), LFORWARD, FALSE);
+}
+
+static void cb_view_message(GtkWidget * window, int response, _msg_user_data_t * d)
+{
+	GtkTreePath *p;
+	GtkTextIter iter;
+	GtkTreeIter temp;
+	int i;
+	int go_back = 0;
+	int go_forward = 0;
+
+	gtk_text_buffer_set_text(d->buffer, "", -1);	/* clear the text */
+	switch (response) {
+	case LNOOP:
+		break;		       /* no-op response, display and test only */
+	case LBACK:
+		p = gtk_tree_model_get_path(GTK_TREE_MODEL(d->view->store), apol_vector_get_element(d->messages, 0));
+		if (!p)
+			break;
+		if (gtk_tree_path_prev(p)) {
+			gtk_tree_model_get_iter(GTK_TREE_MODEL(d->view->store), apol_vector_get_element(d->messages, 0), p);
+		}
+		gtk_tree_path_free(p);
+		break;
+	case LFORWARD:
+		message_view_store_iter_next(GTK_TREE_MODEL(d->view->store), apol_vector_get_element(d->messages, 0));
+		break;
+	case GTK_RESPONSE_DELETE_EVENT:
+	case GTK_RESPONSE_CLOSE:
+		for (i = 0; i < apol_vector_get_size(d->messages); i++) {
+			g_free(apol_vector_get_element(d->messages, i));
+		}
+		apol_vector_destroy(&d->messages);
+		free(d);
+		gtk_widget_destroy(window);
+		return;
+	default:
+		fprintf(stderr, "Unhandled response type! (%d)\n", response);
+		return;
+	}
+
+	temp = (*(GtkTreeIter *) apol_vector_get_element(d->messages, 0));
+	p = gtk_tree_model_get_path(GTK_TREE_MODEL(d->view->store), apol_vector_get_element(d->messages, 0));
+	if (p && gtk_tree_path_prev(p)) {
+		go_back = 1;
+	}
+	if (message_view_store_iter_next(GTK_TREE_MODEL(d->view->store), &temp)) {
+		go_forward = 1;
+	}
+	gtk_tree_path_free(p);
+
+	gtk_dialog_set_response_sensitive(GTK_DIALOG(window), LBACK, go_back);
+	gtk_dialog_set_response_sensitive(GTK_DIALOG(window), LFORWARD, go_forward);
+
+	gtk_text_buffer_get_start_iter(d->buffer, &iter);
+	for (i = 0; i < apol_vector_get_size(d->messages); i++) {
+		char *s;
+		GtkTreeIter *m = apol_vector_get_element(d->messages, i);
+
+		if ((s = seaudit_message_to_string(m->user_data)) == NULL) {
+			toplevel_ERR(d->view->top, "%s", strerror(errno));
+			continue;
+		}
+
+		gtk_text_buffer_insert(d->buffer, &iter, s, -1);
+		gtk_text_buffer_insert(d->buffer, &iter, "\n", -1);
+		free(s);
+	}
+}
+
 /**
- * Show all messages within the messages vector (type seaudit_message_t *)
+ * Show all messages within the messages vector (type GtkTreeIter)
+ *
+ * callback function cb_view_message takes ownership of messages and 
+ * state.
  */
 static void message_view_messages_vector(message_view_t * view, apol_vector_t * messages)
 {
@@ -588,13 +694,10 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
 	GtkWidget *scroll;
 	GtkWidget *text_view;
 	GtkTextBuffer *buffer;
-	GtkTextIter iter;
-	GtkTreePath *p;
-	size_t i;
-	gint rc;
+	_msg_user_data_t *state;
 
-#define LBACK    1
-#define LFORWARD 2
+	state = malloc(sizeof(_msg_user_data_t));
+	assert(state);
 
 	if (apol_vector_get_size(messages) == 1) {
 		window = gtk_dialog_new_with_buttons("View Messages",
@@ -609,7 +712,6 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
 	}
 	gtk_dialog_set_default_response(GTK_DIALOG(window), GTK_RESPONSE_CLOSE);
 	gtk_window_set_modal(GTK_WINDOW(window), FALSE);
-	//g_signal_connect_swapped(window, "response", G_CALLBACK(gtk_widget_destroy), window);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	text_view = gtk_text_view_new();
 	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
@@ -623,45 +725,17 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
 
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-	do {
-		gtk_text_buffer_get_start_iter(buffer, &iter);
-		for (i = 0; i < apol_vector_get_size(messages); i++) {
-			char *s;
-			GtkTreeIter *m = apol_vector_get_element(messages, i);
 
-			if ((s = seaudit_message_to_string(m->user_data)) == NULL) {
-				toplevel_ERR(view->top, "%s", strerror(errno));
-				continue;
-			}
+	state->view = view;
+	state->messages = messages;
+	state->buffer = buffer;
+	g_signal_connect(window, "response", G_CALLBACK(cb_view_message), state);
 
-			gtk_text_buffer_insert(buffer, &iter, s, -1);
-			gtk_text_buffer_insert(buffer, &iter, "\n", -1);
-			free(s);
-		}
+	g_signal_connect(view->store, "rows-reordered", G_CALLBACK(cb_view_change), window);
 
-		rc = gtk_dialog_run(GTK_DIALOG(window));
-		gtk_text_buffer_set_text(buffer, "", -1);	/* clear the text */
-		switch (rc) {
-		case LBACK:
-			p = gtk_tree_model_get_path(GTK_TREE_MODEL(view->store), apol_vector_get_element(messages, 0));
-			if (!p)
-				break;
-			if (gtk_tree_path_prev(p)) {
-				gtk_tree_model_get_iter(GTK_TREE_MODEL(view->store), apol_vector_get_element(messages, 0), p);
-			}
-			gtk_tree_path_free(p);
-			break;
-		case LFORWARD:
-			message_view_store_iter_next(GTK_TREE_MODEL(view->store), apol_vector_get_element(messages, 0));
-			break;
-		case GTK_RESPONSE_CLOSE:
-			gtk_widget_destroy(window);
-			return;
-		default:
-			fprintf(stderr, "Unhandled response type! (%d)\n", rc);
-			return;
-		}
-	} while (1);
+	cb_view_message(window, LNOOP, state);
+
+	gtk_widget_show_all(GTK_WIDGET(window));
 }
 
 /******************** handlers for  right click menu ********************/
@@ -948,13 +1022,10 @@ void message_view_entire_message(message_view_t * view)
 			return;
 		}
 	}
+	/* the following function takes ownership of messages */
 	message_view_messages_vector(view, messages);
 	g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 	g_list_free(glist);
-	for (i = 0; i < apol_vector_get_size(messages); i++) {
-		g_free(apol_vector_get_element(messages, i));
-	}
-	apol_vector_destroy(&messages);
 }
 
 void message_view_save(message_view_t * view)
