@@ -12,7 +12,11 @@ wrappedjardir = $(libdir)/setools
 dist_noinst_DATA = $(srcdir)/../sefs.i
 BUILT_SOURCES = sefs_wrap.c \
 	sefs.java \
+	sefsConstants.java \
 	sefsJNI.java \
+	sefs_fc_entry_t.java \
+	sefs_filesystem_db_t.java \
+	sefs_security_con_t.java \
 	SWIGTYPE_p_void.java
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
