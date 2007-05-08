@@ -702,7 +702,7 @@ static int bst_path_compare(const sefs_fileinfo_t * a, const sefs_fileinfo_t * b
 	return memcmp(&a->key, &b->key, sizeof(inode_key_t));
 }
 
-static int bst_path_free(sefs_fileinfo_t * a)
+static void bst_path_free(sefs_fileinfo_t * a)
 {
 	int j = 0;
 
@@ -812,8 +812,7 @@ static int split_context(security_context_t con, const char **user, const char *
 
 static int ftw_handler(const char *file, const struct stat64 *sb, int flag, struct FTW *s)
 {
-	inode_key_t *key = NULL;
-	int idx, rc = 0;
+	int rc = 0;
 	sefs_fileinfo_t *pi = NULL;
 	sefs_typeinfo_t *typeinfo = NULL;
 	security_context_t con = NULL;
@@ -1351,7 +1350,7 @@ static int INSERT_TYPES(const sefs_typeinfo_t * t, struct sefs_sql_data *d)
 {
 	int rc = 0;
 
-	sprintf(d->stmt, "insert into types (type_name,type_id) values " "(\"%s\",%d);", t->name, t);
+	sprintf(d->stmt, "insert into types (type_name,type_id) values " "(\"%s\",%d);", t->name, (size_t)t);
 	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
 	d->id++;
 	/* sqlite returns 0 for success and positive for
@@ -1363,7 +1362,7 @@ static int INSERT_TYPES(const sefs_typeinfo_t * t, struct sefs_sql_data *d)
 static int INSERT_USERS(const char *user, struct sefs_sql_data *d)
 {
 	int rc = 0;
-	sprintf(d->stmt, "insert into users (user_name,user_id) values " "(\"%s\",%d);", user, user);
+	sprintf(d->stmt, "insert into users (user_name,user_id) values " "(\"%s\",%d);", user, (size_t)user);
 
 	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
 	d->id++;
@@ -1374,7 +1373,7 @@ static int INSERT_USERS(const char *user, struct sefs_sql_data *d)
 static int INSERT_RANGE(const char *range, struct sefs_sql_data *d)
 {
 	int rc = 0;
-	sprintf(d->stmt, "insert into mls (mls_range,mls_id) values " "(\"%s\",%d);", range, range);
+	sprintf(d->stmt, "insert into mls (mls_range,mls_id) values " "(\"%s\",%d);", range, (size_t)range);
 	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
 	d->id++;
 
@@ -1391,18 +1390,18 @@ static int INSERT_FILE(const sefs_fileinfo_t * pinfo, struct sefs_sql_data *d)
 		sprintf(d->stmt, "insert into inodes (inode_id,user,type,range,obj_class,symlink_target,dev,ino"
 			") values (%d,%d,%d,%d,%d,'%s',%u,%llu);",
 			d->id,
-			pinfo->context.user,
-			pinfo->context.type,
-			pinfo->context.range,
+			(size_t)pinfo->context.user,
+			(size_t)pinfo->context.type,
+			(size_t)pinfo->context.range,
 			pinfo->obj_class,
 			pinfo->symlink_target, (unsigned int)(pinfo->key.dev), (unsigned long long)(pinfo->key.inode));
 	} else {
 		sprintf(d->stmt, "insert into inodes (inode_id,user,type,range,obj_class,symlink_target,dev,ino"
 			") values (%d,%d,%d,%d,%d,'',%u,%llu);",
 			d->id,
-			pinfo->context.user,
-			pinfo->context.type,
-			pinfo->context.range,
+			(size_t)pinfo->context.user,
+			(size_t)pinfo->context.type,
+			(size_t)pinfo->context.range,
 			pinfo->obj_class, (unsigned int)(pinfo->key.dev), (unsigned long long)(pinfo->key.inode));
 	}
 	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
@@ -1430,13 +1429,11 @@ static int INSERT_FILE(const sefs_fileinfo_t * pinfo, struct sefs_sql_data *d)
 
 int sefs_filesystem_db_save(sefs_filesystem_db_t * fsd, const char *filename)
 {
-	int i, j, rc = 0;
+	int rc = 0;
 	FILE *fp = NULL;
-	sefs_fileinfo_t *pinfo = NULL;
 	struct sqlite3 *sqldb = NULL;
 	char stmt[100000];
 	char *errmsg = NULL;
-	char *new_stmt = NULL;
 	char hostname[100];
 	time_t mytime;
 	struct sefs_sql_data ssd;
@@ -1588,8 +1585,6 @@ int sefs_filesystem_db_load(sefs_filesystem_db_t * fsd, const char *filename)
 
 static void destroy_fsdata(sefs_filesystem_data_t * fsd)
 {
-	int i, j;
-
 	if (fsd == NULL)
 		return;
 
