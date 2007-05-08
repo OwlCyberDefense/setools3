@@ -24,7 +24,9 @@ libpoldiff_tswig_soname=libtpoldiff.so.1
 
 libsefs_version=3.1
 libsefs_soname=libsefs.so.3
-dnl libsefs will not be swigified
+libsefs_pyswig_soname=_sefs.so.3
+libsefs_jswig_soname=libjsefs.so.3
+libsefs_tswig_soname=libtsefs.so.3
 
 libseaudit_version=4.1
 libseaudit_soname=libseaudit.so.4
@@ -662,6 +664,9 @@ AC_SUBST(libpoldiff_jswig_soname)
 AC_SUBST(libpoldiff_tswig_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
+AC_SUBST(libsefs_pyswig_soname)
+AC_SUBST(libsefs_jswig_soname)
+AC_SUBST(libsefs_tswig_soname)
 AC_SUBST(libseaudit_version)
 AC_SUBST(libseaudit_soname)
 AC_SUBST(libseaudit_pyswig_soname)
@@ -749,6 +754,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
                  libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF libpoldiff/swig/tcl/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
+                 libsefs/swig/Makefile libsefs/swig/python/Makefile libsefs/swig/java/Makefile libsefs/swig/tcl/Makefile libsefs/swig/java/MANIFEST.MF \
                  libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile \
                  libseaudit/swig/Makefile libseaudit/swig/python/Makefile libseaudit/swig/java/Makefile libseaudit/swig/java/MANIFEST.MF libseaudit/swig/tcl/Makefile \
                  secmds/Makefile \

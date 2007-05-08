@@ -75,7 +75,7 @@ extern "C"
  *  the number of integers used by the array.
  *  @param policy The policy associated with the nodecon statement.
  *  @param ocon The nodecon statement from which to get the IP address.
- *  @param mask Pointer to be set to the byte array of the IP address;
+ *  @param addr Pointer to the byte array of the IP addressto be set ;
  *  the caller should not free this pointer. The number of integers
  *  in this array is 1 if IPv4 and 4 if IPv6.
  *  @param protocol Pointer to be set to the protocol value; this
@@ -90,7 +90,7 @@ extern "C"
  *  the number of integers used by the array.
  *  @param policy The policy associated with the nodecon statement.
  *  @param ocon The nodecon statement from which to get the net mask.
- *  @param mask Pointer to be set to the byte array of the net mask;
+ *  @param mask Pointer to the byte array of the net mask to be set;
  *  the caller should not free this pointer. The number of integers
  *  in this array is 1 if IPv4 and 4 if IPv6.
  *  @param protocol Pointer to be set to the protocol value; this
