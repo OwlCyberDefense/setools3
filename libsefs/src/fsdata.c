@@ -1350,7 +1350,7 @@ static int INSERT_TYPES(const sefs_typeinfo_t * t, struct sefs_sql_data *d)
 {
 	int rc = 0;
 
-	sprintf(d->stmt, "insert into types (type_name,type_id) values " "(\"%s\",%d);", t->name, (size_t)t);
+	sprintf(d->stmt, "insert into types (type_name,type_id) values " "(\"%s\",%zu);", t->name, (size_t) t);
 	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
 	d->id++;
 	/* sqlite returns 0 for success and positive for
@@ -1362,7 +1362,7 @@ static int INSERT_TYPES(const sefs_typeinfo_t * t, struct sefs_sql_data *d)
 static int INSERT_USERS(const char *user, struct sefs_sql_data *d)
 {
 	int rc = 0;
-	sprintf(d->stmt, "insert into users (user_name,user_id) values " "(\"%s\",%d);", user, (size_t)user);
+	sprintf(d->stmt, "insert into users (user_name,user_id) values " "(\"%s\",%zu);", user, (size_t) user);
 
 	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
 	d->id++;
@@ -1373,7 +1373,7 @@ static int INSERT_USERS(const char *user, struct sefs_sql_data *d)
 static int INSERT_RANGE(const char *range, struct sefs_sql_data *d)
 {
 	int rc = 0;
-	sprintf(d->stmt, "insert into mls (mls_range,mls_id) values " "(\"%s\",%d);", range, (size_t)range);
+	sprintf(d->stmt, "insert into mls (mls_range,mls_id) values " "(\"%s\",%zu);", range, (size_t) range);
 	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
 	d->id++;
 
@@ -1388,21 +1388,17 @@ static int INSERT_FILE(const sefs_fileinfo_t * pinfo, struct sefs_sql_data *d)
 
 	if (pinfo->obj_class == SEFS_LNK_FILE && pinfo->symlink_target) {
 		sprintf(d->stmt, "insert into inodes (inode_id,user,type,range,obj_class,symlink_target,dev,ino"
-			") values (%d,%d,%d,%d,%d,'%s',%u,%llu);",
+			") values (%zu,%zu,%zu,%zu,%zu,'%s',%lu,%lu);",
 			d->id,
-			(size_t)pinfo->context.user,
-			(size_t)pinfo->context.type,
-			(size_t)pinfo->context.range,
-			pinfo->obj_class,
-			pinfo->symlink_target, (unsigned int)(pinfo->key.dev), (unsigned long long)(pinfo->key.inode));
+			(size_t) pinfo->context.user, (size_t) pinfo->context.type, (size_t) pinfo->context.range, pinfo->obj_class,
+			/* dev_t is an alias for (unsigned long) */
+			pinfo->symlink_target, /*(dev_t) */ (unsigned long)(pinfo->key.dev), (ino_t) (pinfo->key.inode));
 	} else {
 		sprintf(d->stmt, "insert into inodes (inode_id,user,type,range,obj_class,symlink_target,dev,ino"
-			") values (%d,%d,%d,%d,%d,'',%u,%llu);",
-			d->id,
-			(size_t)pinfo->context.user,
-			(size_t)pinfo->context.type,
-			(size_t)pinfo->context.range,
-			pinfo->obj_class, (unsigned int)(pinfo->key.dev), (unsigned long long)(pinfo->key.inode));
+			") values (%zu,%zu,%zu,%zu,%zu,'',%lu,%lu);",
+			d->id, (size_t) pinfo->context.user, (size_t) pinfo->context.type, (size_t) pinfo->context.range,
+			/* dev_t is an alias for (unsigned long) */
+			pinfo->obj_class, /*(dev_t) */ (unsigned long)(pinfo->key.dev), (ino_t) (pinfo->key.inode));
 	}
 	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
 	if (rc != SQLITE_OK)
