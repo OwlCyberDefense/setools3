@@ -918,14 +918,17 @@ proc ApolTop::readInitFile {} {
 
 # Add a policy path to the recently opened list, trim the menu to
 # max_recent_files, and then regenerate the recent menu.
-proc ApolTop::addRecent {path} {
+proc ApolTop::addRecent {ppath} {
     variable recent_files
     variable max_recent_files
 
-    if {[lsearch $recent_files $path] >= 0} {
-        return
+    # add to recent list if the ppath is not already there
+    foreach r $recent_files {
+        if {[apol_policy_path_compare $r $ppath] == 0} {
+            return
+        }
     }
-    set recent_files [lrange [concat [list $path] $recent_files] 0 [expr {$max_recent_files - 1}]]
+    set recent_files [lrange [concat $ppath $recent_files] 0 [expr {$max_recent_files - 1}]]
     buildRecentFilesMenu
 }
 

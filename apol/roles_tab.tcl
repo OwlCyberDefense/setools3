@@ -53,16 +53,23 @@ proc Apol_Roles::set_Focus_to_Text {} {
 }
 
 proc Apol_Roles::popupRoleInfo {which role} {
-    set role_datum [lindex [apol_GetRoles $role] 0]
-    Apol_Widget::showPopupText $role [renderRole $role_datum 1]
+    Apol_Widget::showPopupText $role [renderRole $role 1]
 }
 
-proc Apol_Roles::renderRole {role_datum show_all} {
-    foreach {name types dominates} $role_datum {break}
+proc Apol_Roles::renderRole {role_name show_all} {
+    set qpol_role_datum [new_qpol_role_t $::ApolTop::qpolicy $role_name]
     if {!$show_all} {
-        return $name
+        return $role_name
     }
-    set text "$name ([llength $types] type"
+    set i [$qpol_role_datum get_type_iter $::ApolTop::qpolicy]
+    set types {}
+    while {![$i end]} {
+        set qpol_type_datum [new_qpol_type_t [$i get_item]]
+        lappend types [$qpol_type_datum get_name $::ApolTop::qpolicy]
+        $i next
+    }
+    $i -delete
+    set text "$role_name ([llength $types] type"
     if {[llength $types] != 1} {
         append text "s"
     }
@@ -74,11 +81,7 @@ proc Apol_Roles::renderRole {role_datum show_all} {
     return $text
 }
 
-##############################################################
-# ::search
-#	- Search text widget for a string
-#
-proc Apol_Roles::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Roles::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     ApolTop::textSearch $widgets(resultsbox).tb $str $case_Insensitive $regExpr $srch_Direction
 }
@@ -89,7 +92,7 @@ proc Apol_Roles::searchRoles {} {
 
     Apol_Widget::clearSearchResults $widgets(resultsbox)
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
     if {$opts(useType)} {
@@ -107,16 +110,17 @@ proc Apol_Roles::searchRoles {} {
         set show_all 1
     }
 
-    if {[catch {apol_GetRoles {} $type 0} roles_data]} {
-        tk_messageBox -icon error -type ok -title "Error" -message $roles_data
-        return
-    }
-
+    set q [new_apol_role_query_t]
+    $q set_type $::ApolTop::policy $type
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set roles_data [role_vector_to_list $v]
+    $v -delete
     set text "ROLES:\n"
     if {[llength $roles_data] == 0} {
         append text "Search returned no results."
     } else {
-        foreach r [lsort -index 0 $roles_data] {
+        foreach r [lsort $roles_data] {
             append text "\n[renderRole $r $show_all]"
         }
     }

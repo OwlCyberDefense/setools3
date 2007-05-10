@@ -39,8 +39,6 @@ extern "C"
 #include <stdio.h>
 #include <stdlib.h>
 
-#define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
-
 #undef FALSE
 #define FALSE   0
 #undef TRUE

@@ -43,6 +43,7 @@
 
 /* use 8k line size */
 #define APOL_LINE_SZ 8192
+#define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
 
 const char *libapol_get_version(void)
 {
@@ -456,8 +457,6 @@ char *apol_str_join(const apol_vector_t * list, const char *delim)
  * a new string that does not contain those whitespaces.
  *
  * @param str String to modify.
- *
- * @return 0 on success, < 0 on out of memory.
  */
 static void trim_leading_whitespace(char *str)
 {
@@ -471,7 +470,7 @@ static void trim_leading_whitespace(char *str)
  * Given a mutable string, replace trailing whitespace characters with
  * null characters.
  *
- * @param str Reference to a mutable string.
+ * @param str String to modify.
  */
 static void trim_trailing_whitespace(char *str)
 {
