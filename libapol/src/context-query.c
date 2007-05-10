@@ -36,22 +36,6 @@ struct apol_context
 	apol_mls_range_t *range;
 };
 
-/**
- * Equivalent to the non-ANSI strdup() function.
- * @param p Policy handler.
- * @param s String to duplicate.
- * @return Pointer to newly allocated string, or NULL on error.
- */
-static char *apol_strdup(apol_policy_t * p, const char *s)
-{
-	char *t;
-	if ((t = strdup(s)) == NULL) {
-		ERR(p, "%s", strerror(errno));
-		return NULL;
-	}
-	return t;
-}
-
 apol_context_t *apol_context_create(void)
 {
 	return calloc(1, sizeof(apol_context_t));
@@ -114,7 +98,8 @@ int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const cha
 {
 	free(context->user);
 	context->user = NULL;
-	if (user != NULL && (context->user = apol_strdup(p, user)) == NULL) {
+	if (user != NULL && (context->user = strdup(user)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -124,7 +109,8 @@ int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const cha
 {
 	free(context->role);
 	context->role = NULL;
-	if (role != NULL && (context->role = apol_strdup(p, role)) == NULL) {
+	if (role != NULL && (context->role = strdup(role)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -134,7 +120,8 @@ int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const cha
 {
 	free(context->type);
 	context->type = NULL;
-	if (type != NULL && (context->type = apol_strdup(p, type)) == NULL) {
+	if (type != NULL && (context->type = strdup(type)) == NULL) {
+		ERR(p, "%s", strerror(errno));
 		return -1;
 	}
 	return 0;

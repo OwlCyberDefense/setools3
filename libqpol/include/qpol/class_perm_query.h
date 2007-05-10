@@ -43,7 +43,8 @@ extern "C"
 /* perms */
 /**
  *  Get an iterator over the set of classes which contain a permission
- *  with the name perm.
+ *  with the name perm. This function does not search for the permission
+ *  in the class's inherited common.
  *  @param policy The policy from which to query the classes.
  *  @param perm The name of the permission to be matched. Must be non-NULL.
  *  @param classes The iterator of type qpol_class_t returned;
