@@ -1,4 +1,4 @@
-lib_LIBRARIES = libapol_tcl.a
+noinst_LIBRARIES = libapol_tcl.a
 setoolsdir = @setoolsdir@
 
 libapol_tcl_so_DATA = libapol_tcl.so.@libapol_version@

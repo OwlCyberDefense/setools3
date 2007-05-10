@@ -1,5 +1,10 @@
 2007-05-10  J. Tang  <jtang@tresys.com>
 
+	* Added setools-libs-tcl target to setools.spec.
+
+	* Removed apol/apol.c; apol is now just a Tcl script that is
+	executed by tclsh, rather than a custom compiled Tcl interpreter.
+
 	* Removed the deprecated header apol/avl-util.h and its associated
 	source file.
 

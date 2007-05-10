@@ -1,7 +1,6 @@
 VERS_4.0{
         global:
                 apol_attr_*;
-                apol_avl_*;
                 apol_avrule_*;
                 apol_bool_*;
                 apol_bst_*;

@@ -6,7 +6,7 @@ Packager: Jason Tang <selinux@tresys.com>
 License: GPL
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Source: setools-3.2.tar.gz
+Source: setools-3.3.tar.gz
 AutoReqProv: no
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
@@ -36,7 +36,7 @@ Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
 Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libsefs = %{libsefs_ver} libseaudit = %{libseaudit_ver}
 BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
-BuildRequires: tk-devel >= 8.4.9 tcl-devel >= 8.4.9
+BuildRequires: tcl-devel >= 8.4.9
 BuildRequires: gtk2-devel >= 2.8 libglade2-devel libxml2-devel
 BuildRequires: autoconf >= 2.59 automake
 
@@ -84,6 +84,25 @@ SETools is a collection of graphical tools, command-line tools, and
 libraries designed to facilitate SELinux policy analysis.
 
 This package includes Java bindings for the following libraries:
+
+  libapol       policy analysis library
+  libpoldiff    semantic policy difference library
+  libqpol       library that abstracts policy internals
+  libseaudit    parse and filter SELinux audit messages in log files
+
+%package libs-tcl
+License: LGPL
+Summary: Tcl bindings for SELinux policy analysis
+Group: Development/Languages
+Requires: setools-libs = %{version} tcl >= 8.4.9
+Provides: libqpol-tcl = %{libqpol_ver} libapol-tcl = %{libapol_ver} libpoldiff-tcl = %{libpoldiff_ver} libseaudit-tcl = %{libseaudit_ver}
+BuildRequires: tcl-devel >= 8.4.9 swig >= 1.3.28
+
+%description libs-tcl
+SETools is a collection of graphical tools, command-line tools, and
+libraries designed to facilitate SELinux policy analysis.
+
+This package includes Tcl bindings for the following libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
@@ -150,12 +169,13 @@ This package includes the following graphical tools:
 %define pkgpyexecdir %{_libdir}/python?.?/site-packages/setools
 %define pkgpythondir %{_exec_prefix}/lib*/python?.?/site-packages/setools
 %define javalibdir %{_libdir}/setools
+%define tcllibdir %{_libdir}/setools
 
 %prep
 %setup -q
 
 %build
-%configure --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java
+%configure --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java --enable-swig-tcl
 make %{?_smp_mflags}
 
 %install
@@ -251,6 +271,17 @@ rm -rf ${RPM_BUILD_ROOT}
 %{javalibdir}/apol.jar
 %{javalibdir}/poldiff.jar
 %{javalibdir}/seaudit.jar
+
+%files libs-tcl
+%defattr(-,root,root)
+%{tcllibdir}/qpol/libtqpol.so.%{libqpol_ver}
+%{tcllibdir}/qpol/pkgIndex.tcl
+%{tcllibdir}/apol/libtapol.so.%{libapol_ver}
+%{tcllibdir}/apol/pkgIndex.tcl
+%{tcllibdir}/poldiff/libtpoldiff.so.%{libpoldiff_ver}
+%{tcllibdir}/poldiff/pkgIndex.tcl
+%{tcllibdir}/seaudit/libtseaudit.so.%{libseaudit_ver}
+%{tcllibdir}/seaudit/pkgIndex.tcl
 
 %files devel
 %defattr(-,root,root)
@@ -376,6 +407,8 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/seaudit
 %{_bindir}/sediffx
 %{_bindir}/apol
+%{tcllibdir}/apol_tcl/libapol_tcl.so.%{libapol_ver}
+%{tcllibdir}/apol_tcl/pkgIndex.tcl
 %{setoolsdir}/sediff_help.txt
 %{setoolsdir}/sediffx.glade
 %{setoolsdir}/sediffx.png

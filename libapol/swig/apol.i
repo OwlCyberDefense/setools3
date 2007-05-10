@@ -25,7 +25,6 @@
 %module apol
 
 %{
-#include <apol/avl-util.h>
 #include <apol/avrule-query.h>
 #include <apol/bool-query.h>
 #include <apol/bst.h>

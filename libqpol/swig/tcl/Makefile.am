@@ -30,13 +30,6 @@ $(package_SCRIPTS): $(wrappedso_DATA)
 	$(mkdir_p) qpol
 	cp $(wrappedso_DATA) $@ qpol
 
-install-data-hook:
-	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(wrappedso_SONAME)
-	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(short_name)
-
-uninstall-local:
-	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_SONAME) $(DESTDIR)$(wrappedsodir)/$(short_name)
-
 MOSTLYCLEANFILES = $(BUILT_SOURCES) $(wrappedso_DATA) $(wrappedso_SONAME) $(short_name) $(package_DATA) qpol/$(wrappedso_DATA) qpol/$(package_SCRIPTS)
 
 CLEANFILES = $(package_SCRIPTS)
