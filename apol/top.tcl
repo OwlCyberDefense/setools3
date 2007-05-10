@@ -26,25 +26,24 @@ namespace eval ApolTop {
     variable policy_stats_summary {}
 
     # user's preferences
-    variable dot_apol_file	[file join $::env(HOME) .apol]
+    variable dot_apol_file [file join $::env(HOME) .apol]
     variable recent_files {}
     variable last_policy_path {}
-    variable max_recent_files	5
+    variable max_recent_files 5
     variable show_fake_attrib_warning 1 ;# warn if using fake attribute names
 
     variable goto_line_num
-    variable prevCursor		arrow
 
     # store the default background color for use when diabling widgets
     variable default_bg_color
-    variable text_font		""
-    variable title_font		""
-    variable dialog_font	""
-    variable general_font	""
-    variable query_file_ext	".qf"
+    variable text_font {}
+    variable title_font {}
+    variable dialog_font {}
+    variable general_font {}
+    variable query_file_ext ".qf"
     # Main window dimension defaults
-    variable top_width          1000
-    variable top_height         700
+    variable mainframe_width 1000
+    variable mainframe_height 700
 
     # Top-level dialog widgets
     variable searchDlg .apol_find_dialog
@@ -106,7 +105,6 @@ namespace eval ApolTop {
         Analysis
         PolicyConf
     }
-    variable tk_msgBox_Wait
 }
 
 proc ApolTop::is_policy_open {} {
@@ -150,12 +148,10 @@ proc ApolTop::load_fc_index_file {} {
     if {$rt == 1} {
         ApolTop::configure_load_index_menu_item 1
     }
-    return 0
 }
 
 proc ApolTop::create_fc_index_file {} {
     Apol_File_Contexts::display_create_db_dlg
-    return 0
 }
 
 proc ApolTop::load_perm_map_fileDlg {} {
@@ -164,9 +160,6 @@ proc ApolTop::load_perm_map_fileDlg {} {
     }
 }
 
-########################################################################
-# ::load_default_perm_map_Dlg --
-#	- Called from Advanced menu
 proc ApolTop::load_default_perm_map_Dlg {} {
     if {[Apol_Perms_Map::loadDefaultPermMap]} {
         ApolTop::configure_edit_pmap_menu_item 1
@@ -193,51 +186,18 @@ proc ApolTop::configure_load_index_menu_item {enable} {
     }
 }
 
-# ------------------------------------------------------------------------------
-#  Command ApolTop::popup_listbox_Menu
-# ------------------------------------------------------------------------------
-proc ApolTop::popup_listbox_Menu { global x y popup callbacks list_box} {
-    focus -force $list_box
-
-    set selected_item [$list_box get active]
-    if {$selected_item == ""} {
-        return
-    }
-    # Getting global coordinates of the application window (of position 0, 0)
-    set gx [winfo rootx $global]
-    set gy [winfo rooty $global]
-
-    # Add the global coordinates for the application window to the current mouse coordinates
-    # of %x & %y
-    set cmx [expr $gx + $x]
-    set cmy [expr $gy + $y]
-
-    $popup delete 0 end
-    foreach callback $callbacks {
-        $popup add command -label "[lindex $callback 0]" -command "[lindex $callback 1] $selected_item"
-    }
-    tk_popup $popup $cmx $cmy
-}
-
-proc ApolTop::popup_Tab_Menu { window x y popupMenu callbacks page } {
-    if {$page == ""} {
-        return
-    }
-
-    # Getting global coordinates of the application window (of position 0, 0)
-    set gx [winfo rootx $window]
-    set gy [winfo rooty $window]
-
-    # Add the global coordinates for the application window to the current mouse coordinates
-    # of %x & %y
+proc ApolTop::popup {parent x y menu callbacks callback_arg} {
+    # determine where to place the popup menu
+    set gx [winfo rootx $parent]
+    set gy [winfo rooty $parent]
     set cmx [expr {$gx + $x}]
     set cmy [expr {$gy + $y}]
 
-    $popupMenu delete 0 end
+    $menu delete 0 end
     foreach callback $callbacks {
-        $popupMenu add command -label [lindex $callback 0] -command [list [lindex $callback 1] $page]
+        $menu add command -label [lindex $callback 0] -command [concat [lindex $callback 1] $callback_arg]
     }
-    tk_popup $popupMenu $cmx $cmy
+    tk_popup $menu $cmx $cmy
 }
 
 proc ApolTop::set_Focus_to_Text { tab } {
@@ -280,68 +240,52 @@ proc ApolTop::set_Focus_to_Text { tab } {
         }
 }
 
-########################################################################
-# ::textSearch --
-#	- Search for an instances of a given string in a text widget and
-#	- selects matching text.
+# Search for an instances of a given string in a text widget and
+# select matching text.
 #
-# Arguments:
-# w -			The window in which to search.  Must be a text widget.
-# str -			The string to search for. BUG NOTE: '-' as first character throws an error.
-# case_Insensitive	Whether to ignore case differences or not
-# regExpr		Whether to treat $str as a regular expression and match it against the text
-# srch_Direction	What direction to search in the text. (-forward or -backward)
-#
-proc ApolTop::textSearch { w str case_Insensitive regExpr srch_Direction } {
+# @param w Text widget to search
+# @str String to search.
+# @param nocase If non-zero, search case insensitive.
+# @param regexp If non-zero, treat $str as a regular expression.
+# @param dir What direction to search in the text, either "up" or "down".
+proc ApolTop::textSearch {w str nocase regexp dir} {
     if {$str == {}} {
         return
     }
 
-    set case_opt {}
-    set regExpr_opt {}
-    set direction_opt {}
-
-    if {$case_Insensitive} {
-        set case_opt "-nocase"
+    set opts {}
+    if {$nocase} {
+        lappend opts "-nocase"
     }
-    if {$regExpr} {
-        set regExpr_opt "-regexp"
+    if {$regexp} {
+        lappend opts "-regexp"
     }
-    if { $srch_Direction == "down" } {
-        set direction_opt "-forward"
-        # Get the current insert position.
-        set cur_srch_pos [$w index insert]
+    if {$dir == "down"} {
+        lappend opts "-forward"
+        set start_pos [$w index insert]
     } else {
-        set direction_opt "-backward"
-        # Get the first character index of the current selection.
-        set cur_srch_pos [lindex [$w tag ranges sel] 0]
+        lappend opts "-backward"
+        set start_pos [lindex [$w tag ranges sel] 0]
     }
-    if { $cur_srch_pos == "" } {
-        set cur_srch_pos "1.0"
+    if {$start_pos == {}} {
+        set start_pos "1.0"
     }
 
     $w tag remove sel 0.0 end
-    set cur_srch_pos [eval [list $w search -count cur_srch_pos_length] $case_opt $regExpr_opt $direction_opt [list -- $str $cur_srch_pos]]
+    set pos [eval $w search -count count $opts -- [list $str] $start_pos]
 
-    # Prompt the user if a match was not found.
-    if {$cur_srch_pos == {}} {
-        # NOTE: Use vwait command.to block the application if the event hasn't completed.
-        # This is because when Return button is hit multiple times a TCL/TK bug is being
-        # thrown:can't read "::tk::FocusGrab(...)
-        # The problem is that tkMessageBox summarily destroys the old window -
-        # which screws up SetFocusGrab's private variables because SetFocusGrab isn't reentrant.
-        set ApolTop::tk_msgBox_Wait  \
-            [tk_messageBox -parent $ApolTop::searchDlg -icon warning -type ok -title "Search Failed" -message \
-                 "Search string not found."]
-        vwait ApolTop::tk_msgBox_Wait
+    if {$pos == {}} {
+        tk_messageBox -parent $ApolTop::searchDlg -icon warning -type ok -title "Find" -message \
+                 "String not found."
     } else {
-        # Set the insert position in the text widget.
-        # If the direction is down, set the mark to index of the END character in the match.
-        # If the direction is up, set the mark to the index of the FIRST character in the match.
-        $w mark set insert "$cur_srch_pos + $cur_srch_pos_length char"
-        $w tag add sel $cur_srch_pos "$cur_srch_pos + $cur_srch_pos_length char"
-        # Adjust the view in the window.
-        $w see $cur_srch_pos
+        if {$dir == "down"} {
+            $w mark set insert "$pos + $count char"
+            $w see "$pos + $count char"
+        } else {
+            $w mark set insert "$pos"
+            $w see $pos
+        }
+        $w tag add sel $pos "$pos + $count char"
     }
 }
 
@@ -404,7 +348,7 @@ proc ApolTop::load_query_info {} {
 
     set query_file ""
     set types {
-        {"Query files"		{$ApolTop::query_file_ext}}
+        {"Query files" {$ApolTop::query_file_ext}}
     }
     set query_file [tk_getOpenFile -filetypes $types -title "Select Query to Load..." \
                         -defaultextension $ApolTop::query_file_ext -parent $mainframe]
@@ -414,10 +358,9 @@ proc ApolTop::load_query_info {} {
                 -message "File $query_file does not exist." -parent $mainframe
             return -1
         }
-        set rt [catch {set f [::open $query_file]} err]
-        if {$rt != 0} {
+        if {[catch {::open $query_file r} f]} {
             tk_messageBox -icon error -type ok -title "Error" \
-                -message "Cannot open $query_file: $err"
+                -message "Cannot open $query_file: $f"
             return -1
         }
         # Search for the analysis type line
@@ -481,29 +424,26 @@ proc ApolTop::save_query_info {} {
 
     if {![string equal $raised_tab $analysis_tab] && ![string equal $raised_tab $rules_tab]} {
         tk_messageBox -icon error -type ok -title "Save Query Error" \
-            -message "You cannot save a query from this tab! \
+            -message "You cannot save a query from this tab. \
 			You can only save from the Policy Rules->TE Rules tab and the Analysis tab."
         return -1
     }
     if {[string equal $raised_tab $rules_tab] && ![string equal [$rules_nb raise] $terules_tab]} {
         tk_messageBox -icon error -type ok -title "Save Query Error" \
-            -message "You cannot save a query from this tab! \
+            -message "You cannot save a query from this tab. \
 			You can only save from the Policy Rules->TE Rules tab and the Analysis tab."
         return -1
     }
 
     set query_file ""
     set types {
-        {"Query files"		{$ApolTop::query_file_ext}}
+        {"Query files" {$ApolTop::query_file_ext}}
     }
     set query_file [tk_getSaveFile -title "Save Query As?" \
                         -defaultextension $ApolTop::query_file_ext \
                         -filetypes $types -parent $mainframe]
     if {$query_file != ""} {
-        set rt [catch {set f [::open $query_file w+]} err]
-        if {$rt != 0} {
-            return -code error $err
-        }
+        set f [::open $query_file w+]
         switch -- $raised_tab \
             $analysis_tab {
                 puts $f "$analysis_tab"
@@ -794,7 +734,7 @@ proc ApolTop::create { } {
 }
 
 # Saves user data in their $HOME/.apol file
-proc ApolTop::writeInitFile { } {
+proc ApolTop::writeInitFile {} {
     variable dot_apol_file
     variable recent_files
     variable text_font
@@ -859,11 +799,11 @@ proc ApolTop::writeInitFile { } {
 
 
 # Reads in user data from their $HOME/.apol file
-proc ApolTop::readInitFile { } {
+proc ApolTop::readInitFile {} {
     variable dot_apol_file
     variable recent_files
 
-    # if it doesn't exist, we'll create later
+    # if it doesn't exist, it will be created later
     if {![file exists $dot_apol_file]} {
         return
     }
@@ -894,14 +834,14 @@ proc ApolTop::readInitFile { } {
                     puts "window_height was not given as an integer and is ignored"
                     break
                 }
-                variable top_height $value
+                variable mainframe_height $value
             }
             "\[window_width\]" {
                 if {[string is integer -strict $value] != 1} {
                     puts "window_width was not given as an integer and is ignored"
                     break
                 }
-                variable top_width $value
+                variable mainframe_width $value
             }
             "\[title_font\]" {
                 variable title_font $value
@@ -1019,17 +959,6 @@ proc ApolTop::helpDlg {title file_name} {
         close $f
     }
     Apol_Widget::showPopupParagraph $title $info
-}
-
-proc ApolTop::setBusyCursor {} {
-    variable prevCursor
-    set prevCursor [. cget -cursor]
-    . configure -cursor watch
-}
-
-proc ApolTop::resetBusyCursor {} {
-    variable prevCursor
-    . configure -cursor $prevCursor
 }
 
 proc ApolTop::popupPolicyStats {} {
@@ -1406,8 +1335,6 @@ proc ApolTop::load_fonts {} {
 }
 
 proc ApolTop::main {} {
-    variable top_width
-    variable top_height
     variable notebook
 
     tcl_config_init
@@ -1446,9 +1373,9 @@ proc ApolTop::main {} {
     }
     variable apol_icon $icon
 
-    set top_width [$notebook cget -width]
-    set top_height [$notebook cget -height]
-    wm geom . ${top_width}x${top_height}
+    variable mainframe_width [$notebook cget -width]
+    variable mainframe_height [$notebook cget -height]
+    wm geom . ${mainframe_width}x${mainframe_height}
 
     wm deiconify .
     raise .

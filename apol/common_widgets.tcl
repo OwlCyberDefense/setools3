@@ -13,9 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget 1.7+
-
 namespace eval Apol_Widget {
     variable menuPopup {}
     variable infoPopup {}
@@ -57,17 +54,11 @@ proc Apol_Widget::setListboxCallbacks {path callback_list} {
     # add double-click on an item to immediately do something
     bind $lb <Double-Button-1> [eval list Apol_Widget::_listbox_double_click $lb [lindex $callback_list 0 1]]
 
-    # enable right-clicks on listbox to popup a menu; that menu has a lets
+    # enable right-clicks on listbox to popup a menu; that menu lets
     # the user see more info
 
-    # first create a global popup menu widget if one does not already exist
-    variable menuPopup
-    if {![winfo exists $menuPopup]} {
-        set menuPopup [menu .apol_widget_menu_popup]
-    }
-
     set lb [getScrolledListbox $path]
-    bind $lb <Button-3> [list ApolTop::popup_listbox_Menu %W %x %y $menuPopup $callback_list $lb]
+    bind $lb <Button-3> [list Apol_Widget::_listbox_popup %W %x %y $callback_list $lb]
 }
 
 proc Apol_Widget::getScrolledListbox {path} {
@@ -674,6 +665,22 @@ proc Apol_Widget::_listbox_key {listbox key} {
 
 proc Apol_Widget::_listbox_double_click {listbox callback_func args} {
     eval $callback_func $args [$listbox get active]
+}
+
+proc Apol_Widget::_listbox_popup {w x y callbacks lb} {
+    focus $lb
+    set selected_item [$lb get active]
+    if {$selected_item == {}} {
+        return
+    }
+
+    # create a global popup menu widget if one does not already exist
+    variable menuPopup
+    if {![winfo exists $menuPopup]} {
+        set menuPopup [menu .apol_widget_menu_popup]
+    }
+    
+    ApolTop::popup $w $x $y $menuPopup $callbacks $selected_item
 }
 
 proc Apol_Widget::_attrib_enabled {path} {

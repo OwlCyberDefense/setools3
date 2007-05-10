@@ -36,10 +36,8 @@ information.
 SETools includes the following graphical tools, command-line tools,
 and libraries:
 
-  apol          Tcl/Tk-based policy analysis tool
-  awish         customized wish interpreter
+  apol          policy analysis tool
   libapol       policy analysis library
-  libapol-tcl   bindings between apol and libapol
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
@@ -85,9 +83,10 @@ The following are not strictly required but highly recommended:
   libglade2
 These packages are needed to build SETools's graphical tools.
 
-To build the SETools SWIG wrappers, these packages are required:
-  python-devel 2.3 or greater
+To build additional SETools SWIG wrappers, these packages are
+required:
   Java JDK 1.2 or greater
+  python-devel 2.3 or greater
 
 Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is
 part of the tcllib package and is often not present in Linux
@@ -107,13 +106,13 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.2
+  $ cd setools-3.3
   $ ./configure
   $ make
   $ make install
 
 This will put the binaries in /usr/local/bin, data files in
-/usr/local/share/setool-3.2, and libraries in /usr/local/lib.
+/usr/local/share/setool-3.3, and libraries in /usr/local/lib.
 Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
 $LD_LIBRARY_PATH everything should now work.
 
@@ -303,10 +302,6 @@ The main emphasis of SETools is the graphical analysis tools.
       policy, examine the policy's components and rules, and perform
       various types of analyses.
 
-  awish:
-      A customized wish interpreter built against SETools libraries.
-      It is used to test features of apol.
-
   seaudit:
       A GTK+ graphical audit log analysis tool for SELinux.  This
       tool allows users to sort and filter the system's audit log,
@@ -416,16 +411,13 @@ maintain compatibility beginning with SETools version 3.0.
       and execute SQL queries into the database.  This library also
       has functions to parse the system's default file_contexts.
 
-  libapol-tcl:
-      Glue code that provides bindings between apol (a Tcl/Tk
-      application) and libapol/libqpol.  The functions within are
-      not meant to be used by any other program.
-
-The first four libraries have SWIG wrappers that are built if
---enable-swig-python and/or --enable-swig-java are given during
-configuration time.  The generated Python wrappers will be installed
-to Python's site-packages directory; Java wrappers will be in placed
-in $PREFIX/lib and $PREFIX/lib/setools.
+These libraries have SWIG wrappers that are built if
+--enable-swig-java, --enable-swig-python, and/or --enable-swig-tcl are
+given during configuration time.  The generated Java wrappers will be
+in placed in $PREFIX/lib and $PREFIX/lib/setools.  Python wrappers
+will be installed to Python's site-packages directory.  Tcl wrappers
+are built as Tcl packages (e.g., `package require apol') and placed in
+$PREFIX/lib/setools.
 
 
 4. Obtaining SETools

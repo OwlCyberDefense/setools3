@@ -51,6 +51,36 @@ proc Apol_Class_Perms::close {} {
     Apol_Widget::clearSearchResults $widgets(results)
 }
 
+# Given a permission name, return a 2-ple of lists.  The first list
+# will contain all classes that directly declare the permission.  The
+# second list is a list of classes that inherited from a common that
+# declared the permission.  Both lists will be sorted and uniquified
+# when returned.
+proc Apol_Class_Perms::getClassesForPerm {perm_name} {
+    set classes_list {}
+    set i [$::ApolTop::qpolicy get_class_iter $perm_name]
+    while {![$i end]} {
+        set qpol_class_datum [new_qpol_class_t [$i get_item]]
+        lappend classes_list [$qpol_class_datum get_name $::ApolTop::qpolicy]
+        $i next
+    }
+    $i -delete
+    set indirect_classes_list {}
+    set i [$::ApolTop::qpolicy get_common_iter $perm_name]
+    while {![$i end]} {
+        set qpol_common_datum [new_qpol_common_t [$i get_item]]
+        set q [new_apol_class_query_t]
+        $q set_common $::ApolTop::policy [$qpol_common_datum get_name $::ApolTop::qpolicy]
+        set v [$q run $::ApolTop::policy]
+        $q -delete
+        set indirect_classes_list [concat $indirect_classes_list [class_vector_to_list $v]]
+        $v -delete
+        $i next
+    }
+    $i -delete
+    list [lsort $classes_list] [lsort -unique $indirect_classes_list]
+}
+
 proc Apol_Class_Perms::initializeVars {} {
     variable opts
     array set opts {
@@ -64,23 +94,23 @@ proc Apol_Class_Perms::set_Focus_to_Text {} {
     focus $Apol_Class_Perms::widgets(results)
 }
 
-proc Apol_Class_Perms::goto_line { line_num } {
+proc Apol_Class_Perms::goto_line {line_num} {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
 
 proc Apol_Class_Perms::popupInfo {which name} {
     if {$which == "class"} {
-        set text [renderClass [lindex [apol_GetClasses $name] 0] 1 0]
+        set text [renderClass $name 1 0]
     } elseif {$which == "common"} {
-        set text [renderCommon [lindex [apol_GetCommons $name] 0] 1 0]
+        set text [renderCommon $name 1 0]
     } else {
-        set text [renderPerm [lindex [apol_GetPerms $name] 0] 1 1]
+        set text [renderPerm $name 1 1]
     }
     Apol_Widget::showPopupText $name $text
 }
 
-proc Apol_Class_Perms::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Class_Perms::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
@@ -91,11 +121,11 @@ proc Apol_Class_Perms::search_Class_Perms {} {
 
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
     if {!$opts(classes:show) && !$opts(commons:show) && !$opts(perms:show)} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided."
         return
     }
     set use_regexp [Apol_Widget::getRegexpEntryState $widgets(regexp)]
@@ -117,10 +147,13 @@ proc Apol_Class_Perms::search_Class_Perms {} {
         } else {
             set classes_commons 0
         }
-        if {[catch {apol_GetClasses $regexp $use_regexp} classes_data]} {
-            tk_messageBox -icon error -type ok -title Error -message "Error obtaining classes list:\n$classes_data"
-            return
-        }
+        set q [new_apol_class_query_t]
+        $q set_class $::ApolTop::policy $regexp
+        $q set_regex $::ApolTop::policy $use_regexp
+        set v [$q run $::ApolTop::policy]
+        $q -delete
+        set classes_data [class_vector_to_list $v]
+        $v -delete
         append results "OBJECT CLASSES:\n"
         if {$classes_data == {}} {
             append results "Search returned no results.\n"
@@ -132,10 +165,13 @@ proc Apol_Class_Perms::search_Class_Perms {} {
     }
 
     if {$opts(commons:show)} {
-        if {[catch {apol_GetCommons $regexp $use_regexp} commons_data]} {
-            tk_messageBox -icon error -type ok -title Error -message "Error obtaining common permissions list:\n$commons_data"
-            return
-        }
+        set q [new_apol_common_query_t]
+        $q set_common $::ApolTop::policy $regexp
+        $q set_regex $::ApolTop::policy $use_regexp
+        set v [$q run $::ApolTop::policy]
+        $q -delete
+        set commons_data [common_vector_to_list $v]
+        $v -delete
         append results "\nCOMMON PERMISSIONS:  \n"
         if {$commons_data == {}} {
             append results "Search returned no results.\n"
@@ -147,10 +183,13 @@ proc Apol_Class_Perms::search_Class_Perms {} {
     }
 
     if {$opts(perms:show)} {
-        if {[catch {apol_GetPerms $regexp $use_regexp} perms_data]} {
-            tk_messageBox -icon error -type ok -title Error -message "Error obtaining permissions list:\n$perms_data"
-            return
-        }
+        set q [new_apol_perm_query_t]
+        $q set_perm $::ApolTop::policy $regexp
+        $q set_regex $::ApolTop::policy $use_regexp
+        set v [$q run $::ApolTop::policy]
+        $q -delete
+        set perms_data [str_vector_to_list $v]
+        $v -delete
         append results "\nPERMISSIONS"
         if {$opts(perms:classes)} {
             append results "  (* means class uses permission via a common permission)"
@@ -167,19 +206,29 @@ proc Apol_Class_Perms::search_Class_Perms {} {
     Apol_Widget::appendSearchResultText $widgets(results) [string trim $results]
 }
 
-proc Apol_Class_Perms::renderClass {class_datum show_perms expand_common} {
-    foreach {class_name common_class perms_list} $class_datum {break}
+proc Apol_Class_Perms::renderClass {class_name show_perms expand_common} {
+    set qpol_class_datum [new_qpol_class_t $::ApolTop::qpolicy $class_name]
+    if {[set qpol_common_datum [$qpol_class_datum get_common $::ApolTop::qpolicy]] == "NULL"} {
+        set common_name {}
+    } else {
+        set common_name [$qpol_common_datum get_name $::ApolTop::qpolicy]
+    }
     set text "$class_name\n"
     if {$show_perms} {
+        set i [$qpol_class_datum get_perm_iter $::ApolTop::qpolicy]
+        set perms_list [iter_to_str_list $i]
+        $i -delete
         foreach perm [lsort $perms_list] {
             append text "    $perm\n"
         }
-        if {$common_class != {}} {
-            append text "    $common_class  (common perm)\n"
+        if {$common_name != {}} {
+            append text "    $common_name  (common perm)\n"
             if {$expand_common} {
-                foreach perm [lsort [lindex [apol_GetCommons $common_class] 0 1]] {
+                set i [$qpol_common_datum get_perm_iter $::ApolTop::qpolicy]
+                foreach perm [lsort [iter_to_str_list $i]] {
                     append text "        $perm\n"
                 }
+                $i -delete
             }
         }
         append text \n
@@ -187,16 +236,29 @@ proc Apol_Class_Perms::renderClass {class_datum show_perms expand_common} {
     return $text
 }
 
-proc Apol_Class_Perms::renderCommon {common_datum show_perms show_classes} {
-    foreach {common_name perms_list classes_list} $common_datum {break}
+proc Apol_Class_Perms::renderCommon {common_name show_perms show_classes} {
+    set qpol_common_datum [new_qpol_common_t $::ApolTop::qpolicy $common_name]
     set text "$common_name\n"
     if {$show_perms} {
-        foreach perm [lsort $perms_list] {
+        set i [$qpol_common_datum get_perm_iter $::ApolTop::qpolicy]
+        foreach perm [lsort [iter_to_str_list $i]] {
             append text "    $perm\n"
         }
+        $i -delete
     }
     if {$show_classes} {
         append text "  Object classes that use this common permission:\n"
+        set i [$::ApolTop::qpolicy get_class_iter]
+        set classes_list {}
+        while {![$i end]} {
+            set qpol_class_t [new_qpol_class_t [$i get_item]]
+            set q [$qpol_class_t get_common $::ApolTop::qpolicy]
+            if {$q != "NULL" && [$q get_name $::ApolTop::qpolicy] == $common_name} {
+                lappend classes_list [$qpol_class_t get_name $::ApolTop::qpolicy]
+            }
+            $i next
+        }
+        $i -delete
         foreach class [lsort $classes_list] {
             append text "      $class\n"
         }
@@ -207,16 +269,13 @@ proc Apol_Class_Perms::renderCommon {common_datum show_perms show_classes} {
     return $text
 }
 
-proc Apol_Class_Perms::renderPerm {perm_datum show_classes show_commons} {
-    foreach {perm_name classes_list commons_list} $perm_datum {break}
+proc Apol_Class_Perms::renderPerm {perm_name show_classes show_commons} {
     set text "$perm_name\n"
     if {$show_classes} {
         append text "  object classes:\n"
-        # recurse through each class that inherits from a commons
-        foreach common $commons_list {
-            foreach class [lindex [apol_GetCommons $common] 0 2] {
-                lappend classes_list ${class}*
-            }
+        foreach {classes_list indirect_classes_list} [getClassesForPerm $perm_name] {break}
+        foreach c $indirect_classes_list {
+            lappend classes_list ${c}*
         }
         if {$classes_list == {}} {
             append text "    <none>\n"
@@ -228,6 +287,15 @@ proc Apol_Class_Perms::renderPerm {perm_datum show_classes show_commons} {
     }
     if {$show_commons} {
         append text "  common permissions:\n"
+        set commons_list {}
+        set i [$::ApolTop::qpolicy get_common_iter $perm_name]
+        while {![$i end]} {
+            set qpol_common_datum [new_qpol_common_t [$i get_item]]
+            lappend commons_list [$qpol_common_datum get_name $::ApolTop::qpolicy]
+            $i next
+        }
+        $i -delete
+
         if {$commons_list == {}} {
             append text "    <none>\n"
         } else {
@@ -248,10 +316,8 @@ proc Apol_Class_Perms::create {nb} {
 
     initializeVars
 
-    # Layout frames
     set frame [$nb insert end $ApolTop::class_perms_tab -text "Classes/Perms"]
 
-    # Paned Windows
     set pw1 [PanedWindow $frame.pw -side top]
     set left_pane   [$pw1 add -weight 0]
     set center_pane [$pw1 add -weight 1]
@@ -259,14 +325,11 @@ proc Apol_Class_Perms::create {nb} {
     set common_pane [frame $left_pane.common]
     set perms_pane  [frame $left_pane.perms]
 
-    # Major subframes
     set classes_box [TitleFrame $class_pane.tbox -text "Object Classes"]
     set common_box  [TitleFrame $common_pane.tbox -text "Common Permissions"]
     set perms_box   [TitleFrame $perms_pane.tbox -text "Permissions"]
     set options_box [TitleFrame $center_pane.obox -text "Search Options"]
     set results_box [TitleFrame $center_pane.rbox -text "Search Results"]
-
-    # Placing layout frames and major subframe
     pack $classes_box -fill both -expand yes
     pack $common_box -fill both -expand yes
     pack $perms_box -fill both -expand yes
@@ -351,7 +414,6 @@ proc Apol_Class_Perms::create {nb} {
                 -command Apol_Class_Perms::search_Class_Perms]
     pack $ok -side right -pady 5 -padx 5 -anchor ne
 
-    # Display results window
     set widgets(results) [Apol_Widget::makeSearchResults [$results_box getframe].results]
     pack $widgets(results) -expand yes -fill both
 

@@ -142,11 +142,11 @@ proc Apol_Types::searchTypes {} {
 
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
     if {$opts(types) == 0 && $opts(attribs) == 0} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided."
         return
     }
     set use_regexp [Apol_Widget::getRegexpEntryState $widgets(regexp)]

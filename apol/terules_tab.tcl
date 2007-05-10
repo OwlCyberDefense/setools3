@@ -13,15 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_TE
-#
-# The TE Rules page
-##############################################################
 namespace eval Apol_TE {
     variable vals
     variable widgets
@@ -29,11 +20,7 @@ namespace eval Apol_TE {
     variable enabled
 }
 
-########################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
-proc Apol_TE::goto_line { line_num } {
+proc Apol_TE::goto_line {line_num} {
     variable widgets
     variable tabs
     if {[$widgets(results) pages] != {}} {
@@ -44,11 +31,7 @@ proc Apol_TE::goto_line { line_num } {
     }
 }
 
-##############################################################
-# ::search
-#	- Search text widget for a string
-#
-proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_TE::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     variable tabs
     if {[$widgets(results) pages] != {}} {
@@ -59,8 +42,7 @@ proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
     }
 }
 
-
-proc Apol_TE::set_Focus_to_Text { tab } {
+proc Apol_TE::set_Focus_to_Text {tab} {
     variable widgets
     variable tabs
     if {[$widgets(results) pages] != {}} {
@@ -71,18 +53,12 @@ proc Apol_TE::set_Focus_to_Text { tab } {
     }
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::get_results_raised_tab
-# -----------------------------------------------------------------------------
 proc Apol_TE::get_results_raised_tab {} {
     variable widgets
     $widgets(results) raise
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::open
-# -----------------------------------------------------------------------------
-proc Apol_TE::open { } {
+proc Apol_TE::open {} {
     reinitialize_default_search_options
     reinitialize_search_widgets
     reinitialize_tabs
@@ -94,20 +70,14 @@ proc Apol_TE::open { } {
     set enabled(cp:perms) 1
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::close
-# -----------------------------------------------------------------------------
-proc Apol_TE::close { } {
+proc Apol_TE::close {} {
     reinitialize_tabs
     reinitialize_search_widgets
     reinitialize_default_search_options
     set enabled(cp:perms) 1
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::reinitialize_default_search_options
-# -----------------------------------------------------------------------------
-proc Apol_TE::reinitialize_default_search_options { } {
+proc Apol_TE::reinitialize_default_search_options {} {
     variable vals
     array set vals {
         rs:allow 1       rs:type_transition 1
@@ -171,9 +141,6 @@ proc Apol_TE::reinitialize_search_widgets {} {
     $widgets(cp:perms) selection clear 0 end
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::create
-# -----------------------------------------------------------------------------
 proc Apol_TE::create {nb} {
     variable vals
     variable widgets
@@ -264,7 +231,7 @@ proc Apol_TE::create {nb} {
     set widgets(results) [NoteBook [$rbox getframe].results]
     $widgets(results) bindtabs <Button-1> Apol_TE::switch_to_tab
     $widgets(results) bindtabs <Button-3> \
-        [list ApolTop::popup_Tab_Menu \
+        [list ApolTop::popup \
              %W %x %y $popupTab_Menu $tab_menu_callbacks]
     set close [button [$rbox getframe].close -text "Close Tab" \
                    -command Apol_TE::delete_current_results]
@@ -278,11 +245,6 @@ proc Apol_TE::create {nb} {
 
 #### private functions below ####
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::createTypesAttribsTab
-#
-#  Description: This function is called by Apol_TE::create.
-# -----------------------------------------------------------------------------
 proc Apol_TE::createTypesAttribsTab {} {
     variable vals
     variable widgets
@@ -506,9 +468,8 @@ proc Apol_TE::toggle_ta_pushed {col cb} {
     }
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::createClassesPermsTab
-# -----------------------------------------------------------------------------
+# code to create and handle the classe/permissions subtab
+
 proc Apol_TE::createClassesPermsTab {} {
     variable vals
     variable widgets
@@ -728,11 +689,6 @@ proc Apol_TE::update_cp_tabname {name1 name2 op} {
     }
 }
 
-########################################################################
-
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::delete_results
-# -----------------------------------------------------------------------------
 proc Apol_TE::delete_results {pageID} {
     variable widgets
     variable tabs
@@ -843,10 +799,6 @@ proc Apol_TE::reset {} {
     }
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::search_terules
-# -----------------------------------------------------------------------------
-
 proc Apol_TE::search_terules {whichButton} {
     variable vals
     variable widgets
@@ -953,7 +905,7 @@ proc Apol_TE::search_terules {whichButton} {
         ApolTop::resetBusyCursor
         destroy .terules_busy
         tk_messageBox -icon error -type ok -title Error -message "Error searching TE rules:\n$results"
-        focus -force .
+        focus .
     } else {
         set tabs(searches_text) "Collecting results..."
         update idletasks
@@ -986,7 +938,7 @@ proc Apol_TE::search_terules {whichButton} {
         Apol_Widget::appendSearchResultHeader $sr $header
         ApolTop::resetBusyCursor
         destroy .terules_busy
-        focus -force .
+        focus .
     }
 
     if {[$widgets(results) pages] != {} || $retval == 0} {
@@ -994,9 +946,6 @@ proc Apol_TE::search_terules {whichButton} {
     }
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::load_query_options
-# -----------------------------------------------------------------------------
 proc Apol_TE::load_query_options {file_channel parentDlg} {
     variable vals
     variable widgets

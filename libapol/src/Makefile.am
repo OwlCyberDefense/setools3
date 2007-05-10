@@ -12,7 +12,6 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libapol_a_SOURCES = \
-	avl-util.c \
 	avrule-query.c \
 	bool-query.c \
 	bst.c \

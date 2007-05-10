@@ -1,3 +1,8 @@
+2007-05-10  J. Tang  <jtang@tresys.com>
+
+	* Removed the deprecated header apol/avl-util.h and its associated
+	source file.
+
 2007-05-08  M. Goldman  <mgoldman@tresys.com>
 	* Added next and previous buttons to seaudit
 	

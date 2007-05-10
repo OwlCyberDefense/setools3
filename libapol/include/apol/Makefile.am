@@ -1,7 +1,6 @@
 apoldir = $(includedir)/apol
 
 apol_HEADERS = \
-	avl-util.h \
 	avrule-query.h \
 	bool-query.h \
 	bst.h \

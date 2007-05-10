@@ -15,8 +15,8 @@ Requires: setools-libs = %{version} setools-gui = %{version} setools-console = %
 # disable auto dependency generation because they are explicitly listed
 %define __find_requires %{nil}
 
-%define libqpol_ver 1.2
-%define libapol_ver 4.0
+%define libqpol_ver 1.3
+%define libapol_ver 4.1
 %define libpoldiff_ver 1.2
 %define libsefs_ver 3.1
 %define libseaudit_ver 4.1
@@ -103,9 +103,7 @@ libraries designed to facilitate SELinux policy analysis.
 This package includes header files and archives for the following
 libraries:
 
-  awish         customized wish interpreter for apol development
   libapol       policy analysis library
-  libapol-tcl   bindings between apol and libapol
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
@@ -256,13 +254,11 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files devel
 %defattr(-,root,root)
-%{_bindir}/awish
 %{_libdir}/libqpol.a
 %{_libdir}/libapol.a
 %{_libdir}/libpoldiff.a
 %{_libdir}/libsefs.a
 %{_libdir}/libseaudit.a
-%{_libdir}/libapol-tcl.a
 %{_includedir}/qpol/avrule_query.h
 %{_includedir}/qpol/bool_query.h
 %{_includedir}/qpol/class_perm_query.h
@@ -288,7 +284,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/qpol/type_query.h
 %{_includedir}/qpol/user_query.h
 %{_includedir}/qpol/util.h
-%{_includedir}/apol/avl-util.h
 %{_includedir}/apol/avrule-query.h
 %{_includedir}/apol/bool-query.h
 %{_includedir}/apol/bst.h
@@ -399,7 +394,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{setoolsdir}/apol_perm_mapping_ver20
 %{setoolsdir}/apol_perm_mapping_ver21
 %{setoolsdir}/apol.gif
-%{setoolsdir}/apol.tcl
 %{setoolsdir}/seaudit.glade
 %{setoolsdir}/seaudit_help.txt
 %{setoolsdir}/seaudit.png

@@ -147,7 +147,7 @@ proc Apol_Analysis::create {nb} {
     set widgets(results) [NoteBook [$results_f getframe].results]
     $widgets(results) bindtabs <Button-1> Apol_Analysis::switchTab
     $widgets(results) bindtabs <Button-3> \
-        [list ApolTop::popup_Tab_Menu \
+        [list ApolTop::popup \
              %W %x %y $popupTab_Menu $tab_menu_callbacks]
     set close [button [$results_f getframe].close -text "Close Tab" \
                    -command Apol_Analysis::deleteCurrentResults]
@@ -260,7 +260,7 @@ proc Apol_Analysis::analyze {which_button} {
 
     ApolTop::resetBusyCursor
     destroy .analysis_busy
-    focus -force .
+    focus .
 
     if {$retval != {}} {
         tk_messageBox -icon error -type ok -title Error -message "Error while performing analysis:\n\n$retval"
