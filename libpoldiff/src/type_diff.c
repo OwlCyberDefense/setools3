@@ -506,14 +506,14 @@ static apol_vector_t *type_get_attrib_names(poldiff_t * diff, apol_policy_t * p,
 	 * and policy */
 	v = type_map_lookup_reverse(diff, type, (diff->orig_pol == p ? POLDIFF_POLICY_ORIG : POLDIFF_POLICY_MOD));
 	if (apol_vector_get_size(v) == 0) {
-		assert(FALSE);
+		assert(false);
 		return NULL;
 	}
 	/* append the attributes for each qpol_type_t to the vector we return */
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		qt = apol_vector_get_element(v, i);
 		if (qt == NULL) {
-			assert(FALSE);
+			assert(false);
 			return NULL;
 		}
 		qpol_type_get_attr_iter(q, qt, &attrib_iter);

@@ -343,7 +343,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t * p,
 	}
 
 	if ((lvl = apol_mls_level_create()) == NULL) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(error));
 		return NULL;
 	}
 	if (qpol_level_get_name(p->p, qpol_level, &tmp)) {
@@ -352,7 +352,7 @@ apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t * p,
 	}
 	if ((lvl->sens = strdup(tmp)) == NULL) {
 		error = errno;
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(error));
 		goto err;
 	}
 
@@ -558,7 +558,7 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 	if (!sens_name)
 		goto cleanup;
 	if (apol_str_append(&rt, &sz, sens_name)) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 
@@ -580,7 +580,7 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 		goto cleanup;
 
 	if (apol_str_appendf(&rt, &sz, ":%s", cat_name)) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	cur = 0;		       /* current value to compare with cat[i] */
@@ -604,7 +604,7 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 				if (qpol_cat_get_name(p->p, next_cat, &name))
 					goto cleanup;
 				if (apol_str_appendf(&rt, &sz, ".%s", name)) {
-					ERR(p, "%s", strerror(ENOMEM));
+					ERR(p, "%s", strerror(errno));
 					goto cleanup;
 				}
 				cur = i;
@@ -621,7 +621,7 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 					if (qpol_cat_get_name(p->p, next_cat, &name))
 						goto cleanup;
 					if (apol_str_appendf(&rt, &sz, ".%s", name)) {
-						ERR(p, "%s", strerror(ENOMEM));
+						ERR(p, "%s", strerror(errno));
 						goto cleanup;
 					}
 					cur = i;
@@ -631,7 +631,7 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 			if (qpol_cat_get_name(p->p, next_cat, &name))
 				goto cleanup;
 			if (apol_str_appendf(&rt, &sz, ", %s", name)) {
-				ERR(p, "%s", strerror(ENOMEM));
+				ERR(p, "%s", strerror(errno));
 				goto cleanup;
 			}
 			cur = i;

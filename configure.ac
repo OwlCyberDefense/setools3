@@ -261,7 +261,7 @@ else
 fi
 
 if test "x${enable_debug}" = xyes; then
-   TCL_AUTOPATH='$(top_builddir)/libqpol/swig/tcl $(top_builddir)/libapol/swig/tcl $(top_builddir)/libapol-tcl'
+   TCL_AUTOPATH='$(top_builddir)/libqpol/swig/tcl $(top_builddir)/libapol/swig/tcl $(top_builddir)/apol'
 else
    TCL_AUTOPATH='$(libdir)/setools'
 fi
@@ -751,7 +751,6 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/swig/Makefile libqpol/swig/python/Makefile libqpol/swig/java/Makefile libqpol/swig/java/MANIFEST.MF libqpol/swig/tcl/Makefile \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
                  libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile libapol/swig/java/MANIFEST.MF libapol/swig/tcl/Makefile \
-                 libapol-tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile \
                  libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF libpoldiff/swig/tcl/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \

@@ -27,33 +27,39 @@ proc Apol_Cond_Bools::search_bools {} {
 
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
     set name [string trim $opts(name)]
     if {$opts(enable_bool) && $name == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No boolean variable provided!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No boolean variable provided."
         return
     }
+
+    set q [new_apol_bool_query_t]
+    $q set_bool $::ApolTop::policy $name
+    $q set_regex $::ApolTop::policy $opts(use_regexp)
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set bools_data [bool_vector_to_list $v]
+    $v -delete
+    
     set results {}
-    if {[catch {apol_GetBools $name $opts(use_regexp)} bools_data]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining booleans list:\n$bools_data"
-        return
-    }
     set results "BOOLEANS:\n"
     if {[llength $bools_data] == 0} {
         append results "Search returned no results."
     } else {
-        foreach b [lsort -index 0 $bools_data] {
+        foreach b [lsort $bools_data] {
             append results "\n[renderBool $b $opts(show_default) $opts(show_current)]"
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_Cond_Bools::renderBool {bool_datum show_default show_current} {
+proc Apol_Cond_Bools::renderBool {bool_name show_default show_current} {
     variable cond_bools_defaults
-    foreach {bool_name cur_value} $bool_datum {break}
+    set qpol_bool_datum [new_qpol_bool_t $::ApolTop::qpolicy $bool_name]
+    set cur_state [$qpol_bool_datum get_state $::ApolTop::qpolicy]
     set text [format "%-28s" $bool_name]
     if {$show_default} {
         if {$cond_bools_defaults($bool_name)} {
@@ -63,7 +69,7 @@ proc Apol_Cond_Bools::renderBool {bool_datum show_default show_current} {
         }
     }
     if {$show_current} {
-        if {$cur_value} {
+        if {$cur_state} {
             append text "  Current State: True "
         } else {
             append text "  Current State: False"
@@ -83,7 +89,8 @@ proc Apol_Cond_Bools::reset_bools {} {
 
 proc Apol_Cond_Bools::set_bool_value {name1 name2 op} {
     variable cond_bools_values
-    apol_SetBoolValue $name2 $cond_bools_values($name2)
+    set qpol_bool_datum [new_qpol_bool_t $::ApolTop::qpolicy $name2]
+    $qpol_bool_datum set_state $::ApolTop::qpolicy $cond_bools_values($name2)
 }
 
 proc Apol_Cond_Bools::insert_listbox_item {bool initial_state} {

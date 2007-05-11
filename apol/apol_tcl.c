@@ -92,7 +92,7 @@ static void apol_tcl_route_handle_to_string(void *varg
 	}
 }
 
-static int apol_tcl_clear_info_string(ClientData clientData, Tcl_Interp * interp, int argc, Tcl_Obj * CONST objv[])
+static int apol_tcl_clear_info_string(ClientData clientData __attribute__((unused)), Tcl_Interp * interp __attribute__((unused)), int argc __attribute__((unused)), Tcl_Obj * CONST objv[] __attribute__((unused)))
 {
 	if (message != NULL) {
 		free(message);
@@ -102,7 +102,7 @@ static int apol_tcl_clear_info_string(ClientData clientData, Tcl_Interp * interp
 	return TCL_OK;
 }
 
-static int apol_tcl_get_info_string(ClientData clientData, Tcl_Interp * interp, int argc, Tcl_Obj * CONST objv[])
+static int apol_tcl_get_info_string(ClientData clientData __attribute__((unused)), Tcl_Interp * interp, int argc __attribute__((unused)), Tcl_Obj * CONST objv[] __attribute__((unused)))
 {
 	if (message != NULL) {
 		Tcl_Obj *obj = Tcl_NewStringObj(message, -1);
@@ -125,7 +125,7 @@ extern void *apol_swig_message_callback_arg;
  * @param argv This function takes one parameter, an apol_policy_path
  * object.
  */
-static int apol_tcl_open_policy(ClientData clientData, Tcl_Interp * interp, int argc, Tcl_Obj * CONST objv[])
+static int apol_tcl_open_policy(ClientData clientData __attribute__((unused)), Tcl_Interp * interp, int argc, Tcl_Obj * CONST objv[])
 {
 	if (argc < 2) {
 		Tcl_SetResult(interp, "Need a policy path.", TCL_STATIC);

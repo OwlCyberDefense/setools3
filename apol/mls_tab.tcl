@@ -179,13 +179,11 @@ proc Apol_MLS::toggleCheckbutton {path name1 name2 op} {
 }
 
 proc Apol_MLS::popupSensInfo {sens} {
-    set sens_datum [lindex [apol_GetLevels $sens] 0]
-    Apol_Widget::showPopupText $sens [renderLevel $sens_datum 1]
+    Apol_Widget::showPopupText $sens [renderLevel $sens 1]
 }
 
 proc Apol_MLS::popupCatsInfo {cats} {
-    set cats_datum [lindex [apol_GetCats $cats] 0]
-    Apol_Widget::showPopupText $cats [renderCats $cats_datum 1]
+    Apol_Widget::showPopupText $cats [renderCats $cats 1]
 }
 
 proc Apol_MLS::runSearch {} {
@@ -193,11 +191,11 @@ proc Apol_MLS::runSearch {} {
     variable widgets
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
     if {$vals(enable_sens) == 0 && $vals(enable_cats) == 0} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided."
         return
     }
     set results ""
@@ -212,16 +210,27 @@ proc Apol_MLS::runSearch {} {
         set regexp {}
     }
     if {$vals(enable_sens)} {
-        if {[catch {apol_GetLevels $regexp $use_regexp} level_data]} {
-            tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining sensitivities list:\n$level_data"
-            return
+        set q [new_apol_level_query_t]
+        $q set_sens $::ApolTop::policy $regexp
+        $q set_regex $::ApolTop::policy $use_regexp
+        set v [$q run $::ApolTop::policy]
+        $q -delete
+
+        set level_data {}
+        for {set i 0} {$i < [$v get_size]} {incr i} {
+            set qpol_level_datum [new_qpol_level_t [$v get_element $i]]
+            set level_name [$qpol_level_datum get_name $::ApolTop::qpolicy]
+            set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
+            lappend level_data [list $level_name $level_value]
         }
+        $v -delete
+
         append results "SENSITIVITIES (ordered by dominance from low to high):"
         if {[llength $level_data] == 0} {
             append results "\nSearch returned no results."
         } else {
-            foreach l [lsort -integer -index 3 $level_data] {
-                append results "\n[renderLevel $l $vals(show_cats_too)]"
+            foreach l [lsort -integer -index 1 $level_data] {
+                append results "\n[renderLevel [lindex $l 0] $vals(show_cats_too)]"
             }
         }
     }
@@ -229,53 +238,86 @@ proc Apol_MLS::runSearch {} {
         if {$vals(enable_sens)} {
             append results "\n\n"
         }
-        if {[catch {apol_GetCats $regexp $use_regexp} cats_data]} {
-            tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining categories list:\n$cats_data"
-            return
+        
+        set q [new_apol_cat_query_t]
+        $q set_cat $::ApolTop::policy $regexp
+        $q set_regex $::ApolTop::policy $use_regexp
+        set v [$q run $::ApolTop::policy]
+        $q -delete
+
+        set cats_data {}
+        for {set i 0} {$i < [$v get_size]} {incr i} {
+            set qpol_cat_datum [new_qpol_cat_t [$v get_element $i]]
+            set cat_name [$qpol_cat_datum get_name $::ApolTop::qpolicy]
+            set cat_value [$qpol_cat_datum get_value $::ApolTop::qpolicy]
+            lappend cats_data [list $cat_name $cat_value]
         }
+        $v -delete
+
         append results "CATEGORIES (ordered by appearance within policy):"
         if {[llength $cats_data] == 0} {
             append results "\nSearch returned no results."
         } else {
-            foreach c [lsort -integer -index 3 $cats_data] {
-                append results "\n[renderCats $c $vals(show_sens_too)]"
+            foreach c [lsort -integer -index 1 $cats_data] {
+                append results "\n[renderCats [lindex $c 0] $vals(show_sens_too)]"
             }
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_MLS::renderLevel {level_datum show_level} {
-    foreach {sens aliases cats dom_value} $level_datum {break}
-    set text $sens
+proc Apol_MLS::renderLevel {level_name show_level} {
+    set qpol_level_datum [new_qpol_level_t $::ApolTop::qpolicy $level_name]
+    set i [$qpol_level_datum get_alias_iter $::ApolTop::qpolicy]
+    set aliases [iter_to_str_list $i]
+    $i -delete
+
+    set text $level_name
     if {[llength $aliases] > 0} {
         append text " alias \{$aliases\}"
     }
     if {$show_level} {
-        append text " ([llength $cats] categor"
-        if {[llength $cats] == 1} {
+        set i [$qpol_level_datum get_cat_iter $::ApolTop::qpolicy]
+        set num_cats [$i get_size]
+        $i -delete
+        append text " ($num_cats categor"
+        if {$num_cats == 1} {
             append text "y)"
         } else {
             append text "ies)"
         }
-        append text "\n    level [apol_RenderLevel [list $sens $cats]]\n"
+        set level [new_apol_mls_level_t $::ApolTop::policy $qpol_level_datum]
+        append text "\n    level [$level render $::ApolTop::policy]\n"
+        $level -delete
     }
     return $text
 }
 
-proc Apol_MLS::renderCats {cats_datum show_sens} {
-    foreach {cats aliases sens cat_value} $cats_datum {break}
-    set text $cats
+proc Apol_MLS::renderCats {cat_name show_sens} {
+    set qpol_cat_datum [new_qpol_cat_t $::ApolTop::qpolicy $cat_name]
+    set i [$qpol_cat_datum get_alias_iter $::ApolTop::qpolicy]
+    set aliases [iter_to_str_list $i]
+    $i -delete
+
+    set text $cat_name
     if {[llength $aliases] > 0} {
         append text " alias \{$aliases\}"
     }
-    append text "\n"
     if {$show_sens} {
+        append text "\n"
+        set q [new_apol_level_query_t]
+        $q set_cat $::ApolTop::policy $cat_name
+        set v [$q run $::ApolTop::policy]
+        $q -delete
         set sens_list {}
-        foreach s $sens {
-            lappend sens_list [lindex [apol_GetLevels $s] 0]
+        for {set i 0} {$i < [$v get_size]} {incr i} {
+            set qpol_level_datum [new_qpol_level_t [$v get_element $i]]
+            set level_name [$qpol_level_datum get_name $::ApolTop::qpolicy]
+            set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
+            lappend sens_list [list $level_name $level_value]
         }
-        foreach s [lsort -integer -index 3 $sens_list] {
+        $v -delete
+        foreach s [lsort -integer -index 1 $sens_list] {
             append text "    [lindex $s 0]\n"
         }
     }

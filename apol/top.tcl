@@ -1240,6 +1240,7 @@ proc ApolTop::set_initial_open_policy_state {} {
     if {![is_capable "mls"]} {
         set_mls_tabs_state disabled
     }
+    variable show_fake_attrib_warning
     if {![is_capable "attribute names"] && \
             [llength $::Apol_Types::attriblist] > 0 && \
             $show_fake_attrib_warning} {
@@ -1291,6 +1292,7 @@ proc ApolTop::openPolicyFile {ppath} {
     addRecent $ppath
     variable last_policy_path $ppath
     wm title . "SELinux Policy Analysis - $primary_file"
+    return 0
 }
 
 proc ApolTop::openPolicy {} {

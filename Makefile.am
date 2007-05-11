@@ -6,7 +6,7 @@ if COPY_BWIDGET
 endif
 
 if BUILD_APOL
-  MAYBE_APOL = libapol-tcl apol
+  MAYBE_APOL = apol
 endif
 
 if BUILD_GUI
@@ -26,9 +26,6 @@ libqpol:
 libapol:
 	$(MAKE) -C $(top_srcdir)/libapol
 
-libapol-tcl:
-	$(MAKE) -C $(top_srcdir)/libapol-tcl
-
 libpoldiff:
 	$(MAKE) -C $(top_srcdir)/libpoldiff
 
@@ -38,7 +35,7 @@ libsefs:
 libseaudit:
 	$(MAKE) -C $(top_srcdir)/libseaudit
 
-apol: libqpol libapol libsefs libapol-tcl
+apol: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/apol
 
 secmds: libqpol libapol libsefs
@@ -78,7 +75,7 @@ help:
 install-logwatch:
 	$(MAKE) -C $(top_srcdir)/seaudit install-logwatch
 
-.PHONY: libqpol libapol libapol-tcl libpoldiff libsefs libseaudit \
+.PHONY: libqpol libapol libpoldiff libsefs libseaudit \
 	apol secmds seaudit sediff sediffx sechecker \
 	install-logwatch help \
 	seinfo sesearch indexcon findcon replcon searchcon
