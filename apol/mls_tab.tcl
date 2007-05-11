@@ -135,6 +135,32 @@ proc Apol_MLS::create {nb} {
     return $frame
 }
 
+# Given a sensitivity name, return a non-empty string if that
+# sensitivity is within the loaded policy.  This string is the same as
+# the given parameter if the name is a sensitivity; it will be the
+# real sensitivity's name if the parameter is an alias.  If no policy
+# has been loaded then return an empty string.
+proc Apol_MLS::isSensInPolicy {sens} {
+    variable vals
+    if {![ApolTop::is_policy_open]} {
+        return {}
+    }
+    if {[lsearch $vals(senslist) $sens] >= 0} {
+        return $sens
+    }
+    # try looking up aliases
+    foreach s $vals(senslist) {
+        set qpol_level_t [new_qpol_level_t $::ApolTop::qpolicy $s]
+        set i [$qpol_level_t get_alias_iter $::ApolTop::qpolicy]
+        set l [iter_to_str_list $i]
+        $i -delete
+        if {[lsearch $l $sens] >= 0} {
+            return $s
+        }
+    }
+    return {}
+}
+
 #### private functions below ####
 
 proc Apol_MLS::toggleCheckbutton {path name1 name2 op} {

@@ -19,7 +19,7 @@ namespace eval Apol_Users {
     variable users_list {}
 }
 
-proc Apol_Users::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Users::search {str case_Insensitive regExpr srch_Direction} {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
@@ -34,7 +34,7 @@ proc Apol_Users::searchUsers {} {
 
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
     if {$opts(useRole)} {
@@ -47,23 +47,23 @@ proc Apol_Users::searchUsers {} {
         set role {}
     }
     if {$opts(enable_default)} {
-        if {$opts(default_level) == {{} {}}} {
+        if {$opts(default_level) == {}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No default level selected."
             return
         }
         set default $opts(default_level)
     } else {
-        set default {}
+        set default NULL
     }
     set range_enabled [Apol_Widget::getRangeSelectorState $widgets(range)]
     foreach {range range_type} [Apol_Widget::getRangeSelectorValue $widgets(range)] {break}
     if {$range_enabled} {
-        if {$range == {{{} {}} {{} {}}}} {
+        if {$range == {}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No range selected."
             return
         }
     } else {
-        set range {}
+        set range NULL
     }
     if {$opts(showSelection) == "all"} {
         set show_all 1
@@ -71,10 +71,15 @@ proc Apol_Users::searchUsers {} {
         set show_all 0
     }
 
-    if {[catch {apol_GetUsers {} $role $default $range $range_type 0} users_data]} {
-	tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining users list:\n$users_data"
-        return
-    }
+    set q [new_apol_user_query_t]
+    $q set_role $::ApolTop::policy $role
+    $q set_default_level $::ApolTop::policy $default
+    $q set_range $::ApolTop::policy $range $range_type
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set users_data [user_vector_to_list $v]
+    $v -delete
+
     set text "USERS:\n"
     if {[llength $users_data] == 0} {
         append text "Search returned no results."
@@ -86,29 +91,34 @@ proc Apol_Users::searchUsers {} {
     Apol_Widget::appendSearchResultText $widgets(results) $text
 }
 
-proc Apol_Users::renderUser {user_datum show_all} {
-    set text ""
-    foreach {user roles default range} $user_datum {break}
-    append text "$user"
+proc Apol_Users::renderUser {user_name show_all} {
+    set text "$user_name"
     if {!$show_all} {
         return $text
     }
+    set qpol_user_datum [new_qpol_user_t $::ApolTop::qpolicy $user_name]
     if {[ApolTop::is_capable "mls"]} {
-        append text " level [apol_RenderLevel $default]"
-        set low [apol_RenderLevel [lindex $range 0]]
-        set high [apol_RenderLevel [lindex $range 1]]
-        if {$low == $high} {
-            append text " range $low"
-        } else {
-            append text " range $low - $high"
-        }
+        set default [$qpol_user_datum get_dfltlevel $::ApolTop::qpolicy]
+        set apol_default [new_apol_mls_level_t $::ApolTop::policy $default]
+        append text " level [$apol_default render $::ApolTop::policy]"
+        $apol_default -delete
+        set range [$qpol_user_datum get_range $::ApolTop::qpolicy]
+        set apol_range [new_apol_mls_range_t $::ApolTop::policy $range]
+        append text " range [$apol_range render $::ApolTop::policy]"
+        $apol_range -delete
+    }
+    set i [$qpol_user_datum get_role_iter $::ApolTop::qpolicy]
+    set roles {}
+    while {![$i end]} {
+        set qpol_role_datum [new_qpol_role_t [$i get_item]]
+        lappend roles [$qpol_role_datum get_name $::ApolTop::qpolicy]
+        $i next
     }
     append text " ([llength $roles] role"
     if {[llength $roles] != 1} {
         append text "s"
     }
-    append text ")"
-    append text "\n"
+    append text ")\n"
     foreach r $roles {
         append text "    $r\n"
     }
@@ -153,16 +163,15 @@ proc Apol_Users::initializeVars {} {
     array set opts {
         showSelection all
         useRole 0         role {}
-        enable_default 0  default_level {{} {}}
+        enable_default 0  default_level {}
     }
 }
 
 proc Apol_Users::popupUserInfo {which user} {
-    set user_datum [lindex [apol_GetUsers $user] 0]
-    Apol_Widget::showPopupText $user [renderUser $user_datum 1]
+    Apol_Widget::showPopupText $user [renderUser $user 1]
 }
 
-proc Apol_Users::goto_line { line_num } {
+proc Apol_Users::goto_line {line_num} {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
@@ -183,11 +192,7 @@ proc Apol_Users::create {nb} {
     set userbox [TitleFrame $rpane.userbox -text "Users"]
     set s_optionsbox [TitleFrame $spane.obox -text "Search Options"]
     set resultsbox [TitleFrame $spane.rbox -text "Search Results"]
-
-    # Placing layout
     pack $pw1 -fill both -expand yes
-
-    # Placing title frames
     pack $s_optionsbox -side top -expand 0 -fill both -padx 2
     pack $userbox -fill both -expand yes
     pack $resultsbox -expand yes -fill both -padx 2
@@ -240,7 +245,6 @@ proc Apol_Users::create {nb} {
     button $ofm.ok -text OK -width 6 -command {Apol_Users::searchUsers}
     pack $ofm.ok -side right -pady 5 -padx 5 -anchor ne
 
-    # Display results window
     set widgets(results) [Apol_Widget::makeSearchResults [$resultsbox getframe].results]
     pack $widgets(results) -expand yes -fill both
 
@@ -270,17 +274,22 @@ proc Apol_Users::toggleDefaultCheckbutton {cb display button name1 name2 op} {
 }
 
 proc Apol_Users::show_level_dialog {} {
-    set Apol_Users::opts(default_level) [Apol_Level_Dialog::getLevel $Apol_Users::opts(default_level)]
+    variable opts
+    set new_level [Apol_Level_Dialog::getLevel $opts(default_level)]
+    if {$new_level != {}} {
+        set opts(default_level) $new_level
+        $opts(default_level) -acquire
+    }
 }
 
 proc Apol_Users::updateDefaultDisplay {display name1 name2 op} {
     variable opts
-    if {$opts(default_level) == {{} {}}} {
-        set opts(default_level_display) ""
+    if {$opts(default_level) == {}} {
+        set opts(default_level_display) {}
         $display configure -helptext {}
     } else {
-        set level [apol_RenderLevel $opts(default_level)]
-        if {$level == ""} {
+        set level [$opts(default_level) render $::ApolTop::policy]
+        if {$level == {}} {
             set opts(default_level_display) "<invalid MLS level>"
         } else {
             set opts(default_level_display) $level

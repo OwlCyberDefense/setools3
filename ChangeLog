@@ -1,3 +1,18 @@
+2007-05-11  J. Tang  <jtang@tresys.com>
+
+	* Fix potential segfaults in apol_mls_range functions if the high
+	level is not set.
+
+	* Added apol_mls_level_validate() to SWIG wrappers.  Added
+	apol_mls_range_get_low() and apol_mls_range_get_high().
+	apol_mls_range_validate() is now a member function of class
+	apol_mls_range_t, rather than a library function.
+
+	* Within the SWIG wrappers, apol_mls_level_get_cats() returns a
+	vector.  This should have been a string vector instead.
+
+	* Added function apol_mls_level_validate().
+
 2007-05-10  J. Tang  <jtang@tresys.com>
 
 	* Added setools-libs-tcl target to setools.spec.
@@ -10,7 +25,7 @@
 
 2007-05-08  M. Goldman  <mgoldman@tresys.com>
 	* Added next and previous buttons to seaudit
-	
+
 	* Added apol_bst_inorder_map()
 
 2007-05-07  J. Mowery  <jmowery@tresys.com>

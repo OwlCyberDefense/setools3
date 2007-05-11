@@ -26,7 +26,7 @@ proc Apol_Types::open {} {
     $q -delete
     variable typelist [lsort [type_vector_to_list $v]]
     $v -delete
-    
+
     set q [new_apol_attr_query_t]
     set v [$q run $::ApolTop::policy]
     $q -delete
@@ -76,7 +76,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
 
     set notebook [NoteBook [$w getframe].nb]
     pack $notebook -expand 1 -fill both
-    
+
     set ta_info_tab [$notebook insert end ta_info_tab]
     if {[tcl_config_use_sefs]} {
         set fc_info_tab [$notebook insert end fc_info_tab -text "Files"]
@@ -343,6 +343,19 @@ proc Apol_Types::create {nb} {
 
     return $frame
 }
+
+
+# Given an attribute name, return non-zero if that attribute is within
+# the loaded policy.  If no policy has been loaded then return zero.
+proc Apol_Types::isAttributeInPolicy {attrib} {
+    variable attriblist
+    if {[ApolTop::is_policy_open] && [lsearch $attriblist $attrib] >= 0} {
+        return 1
+    }
+    return 0
+}
+
+#### private functions below ####
 
 proc Apol_Types::toggleCheckbuttons {w name1 name2 op} {
     variable opts

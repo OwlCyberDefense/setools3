@@ -168,7 +168,7 @@ proc Apol_Widget::setTypeComboboxState {path newState} {
 proc Apol_Widget::makeLevelSelector {path catSize args} {
     variable vars
     array unset vars $path:*
-    set vars($path:sens) ""
+    set vars($path:sens) {}
     set vars($path:cats) {}
 
     set f [frame $path]
@@ -192,12 +192,15 @@ proc Apol_Widget::makeLevelSelector {path catSize args} {
     return $f
 }
 
+# Return an apol_level_t object that represents the level selected.
 proc Apol_Widget::getLevelSelectorLevel {path} {
     variable vars
-    if {[catch {apol_GetLevels $vars($path:sens)} l] || $l == {}} {
+    # convert sensitivity aliases to its real name, if necessary
+    set l [Apol_MLS::isSensInPolicy $vars($path:sens)]
+    if {$l == {}} {
         set sens $vars($path:sens)
     } else {
-        set sens [lindex $l 0 0]
+        set sens $l
     }
     set sl [getScrolledListbox $path.cats]
     set cats {}
@@ -234,15 +237,28 @@ proc Apol_Widget::setLevelSelectorLevel {path level} {
 
 proc Apol_Widget::resetLevelSelectorToPolicy {path} {
     variable vars
-    set vars($path:sens) ""
-    if {[catch {apol_GetLevels {} 0} level_data]} {
+    set vars($path:sens) {}
+
+    if {![ApolTop::is_policy_open]} {
         $path.sens configure -values {}
     } else {
-        set vals {}
-        foreach l [lsort -integer -index 3 $level_data] {
-            lappend vals [lindex $l 0]
+        set level_data {}
+        set i [$::ApolTop::qpolicy get_level_iter]
+        while {![$i end]} {
+            set qpol_level_datum [new_qpol_level_t [$i get_item]]
+            if {![$qpol_level_datum get_isalias $::ApolTop::qpolicy]} {
+                set level_name [$qpol_level_datum get_name $::ApolTop::qpolicy]
+                set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
+                lappend level_data [list $level_name $level_value]
+            }
+            $i next
         }
-        $path.sens configure -values $vals
+        $i -delete
+        set level_names {}
+        foreach l [lsort -integer -index 1 $level_data] {
+            lappend level_names [lindex $l 0]
+        }
+        $path.sens configure -values $level_names
     }
 }
 
@@ -679,7 +695,7 @@ proc Apol_Widget::_listbox_popup {w x y callbacks lb} {
     if {![winfo exists $menuPopup]} {
         set menuPopup [menu .apol_widget_menu_popup]
     }
-    
+
     ApolTop::popup $w $x $y $menuPopup $callbacks $selected_item
 }
 
@@ -707,8 +723,17 @@ proc Apol_Widget::_attrib_validate {path} {
 
 proc Apol_Widget::_filter_type_combobox {path attribvalue} {
     variable vars
-    if {$attribvalue != ""} {
-        set typesList [lsort [lindex [apol_GetAttribs $attribvalue] 0 1]]
+    if {$attribvalue != {}} {
+        set typesList {}
+        if {[Apol_Types::isAttributeInPolicy $attribvalue]} {
+            set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attribvalue]
+            set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
+            foreach t [iter_to_list $i] {
+                set t [new_qpol_type_t $t]
+                lappend typesList [$t get_name $::ApolTop::qpolicy]
+            }
+            $i -delete
+        }
         if {$typesList == {}} {
             # unknown attribute, so don't change type combobox
             return
@@ -718,9 +743,9 @@ proc Apol_Widget::_filter_type_combobox {path attribvalue} {
         # during policy load this list should already have been sorted
     }
     if {[lsearch -exact $typesList $vars($path:type)] == -1} {
-        set vars($path:type) ""
+        set vars($path:type) {}
     }
-    $path.tb configure -values $typesList
+    $path.tb configure -values [lsort $typesList]
 }
 
 proc Apol_Widget::_sens_changed {path name1 name2 op} {
@@ -728,8 +753,17 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
     # get a list of categories associated with this sensitivity
     [getScrolledListbox $path.cats] selection clear 0 end
     set vars($path:cats) {}
-    if {![catch {apol_GetLevels $vars($path:sens)} level_data]} {
-        set vars($path:cats) [concat $vars($path:cats) [lindex $level_data 0 2]]
+    set sens [Apol_MLS::isSensInPolicy $vars($path:sens)]
+    if {$sens != {}} {
+        # the given level exists within the given policy
+        set qpol_level_datum [new_qpol_level_t $::ApolTop::qpolicy $sens]
+        set i [$qpol_level_datum get_cat_iter $::ApolTop::qpolicy]
+        while {![$i end]} {
+            set qpol_cat_datum [new_qpol_cat_t [$i get_item]]
+            lappend vars($path:cats) [$qpol_cat_datum get_name $::ApolTop::qpolicy]
+            $i next
+        }
+        $i -delete
     }
 }
 

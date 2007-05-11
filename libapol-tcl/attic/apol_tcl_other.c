@@ -385,56 +385,6 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp * interp, int argc,
 }
 
 /**
- * Given a capability, return 1 if the currently loaded policy can do
- * that particular thing, 0 if not.
- *
- * @param argv This function takes a single capability string, which
- * is one of:
- * <ol>
- *   <li>"attribute names"
- *   <li>"conditionals"
- *   <li>"line numbers"
- *   <li>"mls"
- *   <li>"source"
- *   <li>"syntactic rules"
- * </ol>
- */
-static int Apol_IsCapable(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	qpol_capability_e cap;
-	int retval;
-	Tcl_Obj *result_obj;
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
-	}
-	if (argc < 1) {
-		Tcl_SetResult(interp, "Need a capability to check.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-	if (strcmp(argv[1], "attribute names") == 0) {
-		cap = QPOL_CAP_ATTRIB_NAMES;
-	} else if (strcmp(argv[1], "conditionals") == 0) {
-		cap = QPOL_CAP_CONDITIONALS;
-	} else if (strcmp(argv[1], "line numbers") == 0) {
-		cap = QPOL_CAP_LINE_NUMBERS;
-	} else if (strcmp(argv[1], "mls") == 0) {
-		cap = QPOL_CAP_MLS;
-	} else if (strcmp(argv[1], "source") == 0) {
-		cap = QPOL_CAP_SOURCE;
-	} else if (strcmp(argv[1], "syntactic rules") == 0) {
-		cap = QPOL_CAP_SYN_RULES;
-	} else {
-		Tcl_SetResult(interp, "Unknown capability.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-	retval = qpol_policy_has_capability(qpolicydb, cap);
-	result_obj = Tcl_NewIntObj(retval);
-	Tcl_SetObjResult(interp, result_obj);
-	return TCL_OK;
-}
-
-/**
  * Return a string describing the currently opened policy.  The string
  * gives the policy version, if it is source or binary, and if it is
  * MLS or not.
@@ -650,54 +600,6 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp * interp, int argc, C
 	apol_perm_query_destroy(&perm_query);
 	qpol_iterator_destroy(&iter);
 	apol_vector_destroy(&v);
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
-/**
- * Checks if a range is valid or not according to the policy.  Returns
- * 1 if valid, 0 if invalid.
- *
- * @param argv This function takes one parameter: a range (2-uple of levels).
- */
-static int Apol_IsValidRange(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	apol_mls_range_t *range = NULL;
-	int retval = TCL_ERROR, retval2;
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		goto cleanup;
-	}
-	if (argc != 2) {
-		ERR(policydb, "%s", "Need a range.");
-		goto cleanup;
-	}
-	if ((range = apol_mls_range_create()) == NULL) {
-		ERR(policydb, "%s", strerror(ENOMEM));
-		goto cleanup;
-	}
-	retval2 = apol_tcl_string_to_range(interp, argv[1], range);
-	if (retval2 < 0) {
-		goto cleanup;
-	} else if (retval2 == 1) {
-		Tcl_SetResult(interp, "0", TCL_STATIC);
-		retval = TCL_OK;
-		goto cleanup;
-	}
-	retval2 = apol_mls_range_validate(policydb, range);
-	if (retval2 < 0) {
-		goto cleanup;
-	} else if (retval2 == 0) {
-		Tcl_SetResult(interp, "0", TCL_STATIC);
-	} else {
-		Tcl_SetResult(interp, "1", TCL_STATIC);
-	}
-	retval = TCL_OK;
-      cleanup:
-	apol_mls_range_destroy(&range);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -1104,11 +1006,9 @@ int apol_tcl_init(Tcl_Interp * interp)
 {
 	Tcl_CreateCommand(interp, "apol_GetInfoString", Apol_GetInfoString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_OpenPolicy", Apol_OpenPolicy, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_IsCapable", Apol_IsCapable, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", Apol_GetPolicyVersionString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", Apol_GetPolicyVersionNumber, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetStats", Apol_GetStats, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_IsValidRange", Apol_IsValidRange, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidPartialContext", Apol_IsValidPartialContext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsPermMapLoaded", Apol_IsPermMapLoaded, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetDefault_PermMap", Apol_GetDefault_PermMap, NULL, NULL);

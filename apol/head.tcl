@@ -21,12 +21,9 @@ exec tclsh "$0" ${1+"$@"}
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
-# Tcl/Tk GUI for SELinux policy analysis
+# Question/comments to: setools@tresys.com
 #
-# Question/comments to: selinux@tresys.com
-#
-# This tool is designed to analyze SELinux policies.
-#
-# See the assoicated help file for more information.
+# This tool is designed to analyze SELinux policies.  See the
+# assoicated help file for more information.
 #
 ##############################################################

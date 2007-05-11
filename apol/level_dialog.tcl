@@ -13,30 +13,37 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget 1.7+
-
 namespace eval Apol_Level_Dialog {
     variable dialog ""
     variable vars
 }
 
 # Create a dialog box to allow the user to select a single MLS level.
-proc Apol_Level_Dialog::getLevel {{defaultLevel {{} {}}} {parent .}} {
+# Return an instance of an apol_mls_level.  If no level is selected
+# then return an empty list; otherwise return the level.  The caller
+# must delete it afterwards.
+proc Apol_Level_Dialog::getLevel {{defaultLevel {}} {parent .}} {
     variable dialog
     if {![winfo exists $dialog]} {
         _create_dialog $parent
     }
     set f [$dialog getframe]
     Apol_Widget::resetLevelSelectorToPolicy $f.level
-    Apol_Widget::setLevelSelectorLevel $f.level $defaultLevel
+    if {$defaultLevel != {}} {
+        set sens [$defaultLevel get_sens]
+        set cats [str_vector_to_list [$defaultLevel get_cats]]
+    } else {
+        set sens {}
+        set cats {}
+    }
+    Apol_Widget::setLevelSelectorLevel $f.level [list $sens $cats]
     # force a recomputation of button sizes  (bug in ButtonBox)
     $dialog.bbox _redraw
     set retval [$dialog draw]
     if {$retval == -1 || $retval == 1} {
-        return $defaultLevel
+        return {}
     }
-    _get_level
+    _get_level $dialog
 }
 
 
@@ -61,23 +68,25 @@ proc Apol_Level_Dialog::_create_dialog {parent} {
     $dialog add -text "Cancel"
 }
 
-proc Apol_Level_Dialog::_get_level {} {
-    variable dialog
-    Apol_Widget::getLevelSelectorLevel [$dialog getframe].level
+proc Apol_Level_Dialog::_get_level {dialog} {
+    foreach {sens cats} [Apol_Widget::getLevelSelectorLevel [$dialog getframe].level] {break}
+    set level [new_apol_mls_level_t]
+    $level set_sens $::ApolTop::policy $sens
+    foreach c $cats {
+        $level append_cats $::ApolTop::policy $c
+    }
+    return $level
 }
 
 # check that the level is legal by constructing a 'range' with it (as
 # both the low and high level)
 proc Apol_Level_Dialog::_okay {dialog} {
-    set level [_get_level]
-
-    if {[catch {apol_IsValidRange [list $level]} val]} {
-        tk_messageBox -icon error -type ok -title "Could Not Validate Level" \
-            -message "Could not validate selected level.  Make sure that the correct policy was loaded."
-    } elseif {$val == 0} {
+    set level [_get_level $dialog]
+    if {[$level validate $::ApolTop::policy] != 1} {
         tk_messageBox -icon error -type ok -title "Invalid Level" \
             -message "The selected level is not valid for the current policy."
     } else {
         $dialog enddialog 0
     }
+    $level -delete
 }

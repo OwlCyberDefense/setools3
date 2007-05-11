@@ -27,7 +27,7 @@ proc Apol_Class_Perms::open {} {
     $q -delete
     variable class_list [lsort [class_vector_to_list $v]]
     $v -delete
-    
+
     set q [new_apol_common_query_t]
     set v [$q run $::ApolTop::policy]
     $q -delete
