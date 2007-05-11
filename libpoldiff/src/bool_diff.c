@@ -45,7 +45,7 @@ struct poldiff_bool
 {
 	char *name;
 	poldiff_form_e form;
-	bool_t state;
+	bool state;
 };
 
 void poldiff_bool_get_stats(poldiff_t * diff, size_t stats[5])
@@ -87,7 +87,7 @@ char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean)
 		}
 	case POLDIFF_FORM_MODIFIED:{
 			if (apol_str_appendf
-			    (&s, &len, "* %s (changed from %s)", b->name, (b->state ? "FALSE to TRUE" : "TRUE to FALSE")) < 0) {
+			    (&s, &len, "* %s (changed from %s)", b->name, (b->state ? "false to true" : "true to false")) < 0) {
 				break;
 			}
 			return s;
@@ -309,9 +309,9 @@ int bool_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			goto cleanup;
 		}
 		if (s2)
-			b->state = TRUE;
+			b->state = true;
 		else
-			b->state = FALSE;
+			b->state = false;
 	}
 	if (b != NULL) {
 		if (apol_vector_append(diff->bool_diffs->diffs, b) < 0) {

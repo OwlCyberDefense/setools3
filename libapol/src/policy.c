@@ -61,7 +61,8 @@ static void apol_handle_default_callback(void *varg __attribute__ ((unused)), ap
 	fprintf(stderr, "\n");
 }
 
-static void qpol_handle_route_to_callback(void *varg, qpol_policy_t * policy, int level, const char *fmt, va_list ap)
+static void qpol_handle_route_to_callback(void *varg, qpol_policy_t * policy
+					  __attribute__ ((unused)), int level, const char *fmt, va_list ap)
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
 	if (p == NULL) {

@@ -52,8 +52,8 @@ const char *libapol_get_version(void)
 
 int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
 {
-	bool_t ipv4 = FALSE;
-	bool_t ipv6 = FALSE;
+	bool ipv4 = false;
+	bool ipv6 = false;
 
 	if (!str || !ip) {
 		errno = EINVAL;
@@ -63,10 +63,10 @@ int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
 	ip[0] = ip[1] = ip[2] = ip[3] = 0;
 
 	if (strchr(str, '.'))
-		ipv4 = TRUE;
+		ipv4 = true;
 
 	if (strchr(str, ':'))
-		ipv6 = TRUE;
+		ipv6 = true;
 
 	if (ipv4 == ipv6) {
 		errno = EINVAL;
@@ -80,7 +80,7 @@ int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
 		size_t len = strlen(str), i;
 		for (i = 0; i <= len; i++) {
 			if (str[i] == '.' || str[i] == '\0') {
-				if (val < 0 || val > 255) {
+				if (val > 255) {
 					errno = EINVAL;
 					return -1;
 				}

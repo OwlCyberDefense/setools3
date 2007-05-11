@@ -95,20 +95,20 @@ typedef struct options
 	char *class_name;
 	char *permlist;
 	char *bool_name;
-	bool_t all;
-	bool_t lineno;
-	bool_t semantic;
-	bool_t indirect;
-	bool_t allow;
-	bool_t nallow;
-	bool_t auditallow;
-	bool_t dontaudit;
-	bool_t type;
-	bool_t rtrans;
-	bool_t role_allow;
-	bool_t role_trans;
-	bool_t useregex;
-	bool_t show_cond;
+	bool all;
+	bool lineno;
+	bool semantic;
+	bool indirect;
+	bool allow;
+	bool nallow;
+	bool auditallow;
+	bool dontaudit;
+	bool type;
+	bool rtrans;
+	bool role_allow;
+	bool role_trans;
+	bool useregex;
+	bool show_cond;
 	apol_vector_t *perm_vector;
 } options_t;
 
@@ -597,7 +597,7 @@ static int perform_ra_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return -1;
 }
 
-static void print_ra_results(apol_policy_t * policy, options_t * opt, apol_vector_t * v)
+static void print_ra_results(apol_policy_t * policy, options_t * opt __attribute__ ((unused)), apol_vector_t * v)
 {
 	size_t i, num_rules = 0;
 	qpol_role_allow_t *rule = NULL;
@@ -675,7 +675,7 @@ static int perform_rt_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return -1;
 }
 
-static void print_rt_results(apol_policy_t * policy, options_t * opt, apol_vector_t * v)
+static void print_rt_results(apol_policy_t * policy, options_t * opt __attribute__ ((unused)), apol_vector_t * v)
 {
 	size_t i, num_rules = 0;
 	qpol_role_trans_t *rule = NULL;
@@ -759,7 +759,7 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 	return -1;
 }
 
-static void print_range_results(apol_policy_t * policy, options_t * opt, apol_vector_t * v)
+static void print_range_results(apol_policy_t * policy, options_t * opt __attribute__ ((unused)), apol_vector_t * v)
 {
 	size_t i, num_rules = 0;
 	qpol_range_trans_t *rule = NULL;
@@ -796,7 +796,7 @@ int main(int argc, char **argv)
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 
 	memset(&cmd_opts, 0, sizeof(cmd_opts));
-	cmd_opts.indirect = TRUE;
+	cmd_opts.indirect = true;
 	while ((optc = getopt_long(argc, argv, "ATs:t:c:p:b:dRnSChV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
@@ -886,51 +886,51 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'd':	       /* direct search */
-			cmd_opts.indirect = FALSE;
+			cmd_opts.indirect = false;
 			break;
 		case 'R':	       /* use regex */
-			cmd_opts.useregex = TRUE;
+			cmd_opts.useregex = true;
 			break;
 		case 'A':	       /* allow */
-			cmd_opts.allow = TRUE;
+			cmd_opts.allow = true;
 			break;
 		case RULE_NEVERALLOW: /* neverallow */
-			cmd_opts.nallow = TRUE;
+			cmd_opts.nallow = true;
 			break;
 		case RULE_AUDIT:      /* audit */
-			cmd_opts.auditallow = TRUE;
-			cmd_opts.dontaudit = TRUE;
+			cmd_opts.auditallow = true;
+			cmd_opts.dontaudit = true;
 			fprintf(stderr, "Use of --audit is depercated; use --auditallow and --dontaudit instead.\n");
 			break;
 		case RULE_AUDITALLOW:
-			cmd_opts.auditallow = TRUE;
+			cmd_opts.auditallow = true;
 			break;
 		case RULE_DONTAUDIT:
-			cmd_opts.dontaudit = TRUE;
+			cmd_opts.dontaudit = true;
 			break;
 		case 'T':	       /* type */
-			cmd_opts.type = TRUE;
+			cmd_opts.type = true;
 			break;
 		case RULE_ROLE_ALLOW:
-			cmd_opts.role_allow = TRUE;
+			cmd_opts.role_allow = true;
 			break;
 		case RULE_ROLE_TRANS:
-			cmd_opts.role_trans = TRUE;
+			cmd_opts.role_trans = true;
 			break;
 		case RULE_RANGE_TRANS:	/* range transition */
-			cmd_opts.rtrans = TRUE;
+			cmd_opts.rtrans = true;
 			break;
 		case RULE_ALL:	       /* all */
-			cmd_opts.all = TRUE;
+			cmd_opts.all = true;
 			break;
 		case 'n':	       /* lineno */
-			cmd_opts.lineno = TRUE;
+			cmd_opts.lineno = true;
 			break;
 		case 'S':	       /* semantic */
-			cmd_opts.semantic = TRUE;
+			cmd_opts.semantic = true;
 			break;
 		case 'C':
-			cmd_opts.show_cond = TRUE;
+			cmd_opts.show_cond = true;
 			break;
 		case 'h':	       /* help */
 			usage(argv[0], 0);

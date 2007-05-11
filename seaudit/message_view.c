@@ -537,7 +537,8 @@ static gboolean message_view_store_iter_children(GtkTreeModel * tree_model, GtkT
 	return TRUE;
 }
 
-static gboolean message_view_store_iter_has_child(GtkTreeModel * tree_model, GtkTreeIter * iter)
+static gboolean message_view_store_iter_has_child(GtkTreeModel * tree_model __attribute__ ((unused)), GtkTreeIter * iter
+						  __attribute__ ((unused)))
 {
 	return FALSE;
 }
@@ -574,7 +575,8 @@ static gboolean message_view_store_iter_nth_child(GtkTreeModel * tree_model, Gtk
 	return TRUE;
 }
 
-static gboolean message_view_store_iter_parent(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreeIter * child)
+static gboolean message_view_store_iter_parent(GtkTreeModel * tree_model __attribute__ ((unused)), GtkTreeIter * iter
+					       __attribute__ ((unused)), GtkTreeIter * child __attribute__ ((unused)))
 {
 	return FALSE;
 }
@@ -619,7 +621,7 @@ static void cb_view_message(GtkWidget * window, int response, _msg_user_data_t *
 	GtkTreePath *p;
 	GtkTextIter iter;
 	GtkTreeIter temp;
-	int i;
+	size_t i;
 	int go_back = 0;
 	int go_forward = 0;
 
@@ -740,7 +742,7 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
 
 /******************** handlers for  right click menu ********************/
 
-static void message_view_popup_on_view_message_activate(GtkMenuItem * menuitem, gpointer user_data)
+static void message_view_popup_on_view_message_activate(GtkMenuItem * menuitem, gpointer user_data __attribute__ ((unused)))
 {
 	message_view_t *v = g_object_get_data(G_OBJECT(menuitem), "view-object");
 	message_view_entire_message(v);

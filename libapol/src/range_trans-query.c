@@ -222,11 +222,6 @@ int apol_range_trans_query_set_range(apol_policy_t * p __attribute__ ((unused)),
 	return 0;
 }
 
-int apol_range_trans_query_set_enabled(apol_policy_t * p, apol_range_trans_query_t * r, int is_enabled)
-{
-	return apol_query_set_flag(p, &r->flags, is_enabled, APOL_QUERY_ONLY_ENABLED);
-}
-
 int apol_range_trans_query_set_source_any(apol_policy_t * p, apol_range_trans_query_t * r, int is_any)
 {
 	return apol_query_set_flag(p, &r->flags, is_any, APOL_QUERY_SOURCE_AS_ANY);

@@ -53,7 +53,7 @@ static int sechk_lib_compare_sev(const char *a, const char *b)
 	int aval, bval;
 
 	if (a == NULL || b == NULL) {
-		assert(FALSE);
+		assert(false);
 		errno = EINVAL;
 		return -1;
 	}
@@ -67,7 +67,7 @@ static int sechk_lib_compare_sev(const char *a, const char *b)
 	else if (strcmp(a, SECHK_SEV_HIGH) == 0)
 		aval = 3;
 	else {
-		assert(FALSE);
+		assert(false);
 		errno = EINVAL;
 		return -1;
 	}
@@ -81,7 +81,7 @@ static int sechk_lib_compare_sev(const char *a, const char *b)
 	else if (strcmp(b, SECHK_SEV_HIGH) == 0)
 		bval = 3;
 	else {
-		assert(FALSE);
+		assert(false);
 		errno = EINVAL;
 		return -1;
 	}
@@ -95,7 +95,7 @@ static int sechk_lib_compare_sev(const char *a, const char *b)
 int sechk_lib_set_minsev(const char *minsev, sechk_lib_t * lib)
 {
 	if (lib == NULL || lib->policy == NULL || minsev == NULL) {
-		assert(FALSE);
+		assert(false);
 		errno = EINVAL;
 		return -1;
 	}
@@ -146,7 +146,7 @@ sechk_lib_t *sechk_lib_new(void)
 	sechk_lib_t *lib = NULL;
 	int retv, error;
 	const sechk_module_name_reg_t *reg_list;
-	int num_known_modules = 0;
+	size_t num_known_modules = 0;
 	size_t i = 0;
 	sechk_module_t *tmp = NULL;
 
@@ -598,7 +598,7 @@ int sechk_lib_check_module_dependencies(sechk_lib_t * lib)
 {
 	int idx = 0;
 	size_t i, j;
-	bool_t test = TRUE, done = FALSE, *processed = NULL;
+	bool test = true, done = false, *processed = NULL;
 	sechk_name_value_t *nv = NULL;
 	sechk_module_t *mod = NULL, *dep = NULL;
 
@@ -608,7 +608,7 @@ int sechk_lib_check_module_dependencies(sechk_lib_t * lib)
 		return -1;
 	}
 
-	processed = (bool_t *) calloc(apol_vector_get_size(lib->modules), sizeof(bool_t));
+	processed = (bool *) calloc(apol_vector_get_size(lib->modules), sizeof(bool));
 	if (!processed) {
 		perror(NULL);
 		return -1;
@@ -621,12 +621,12 @@ int sechk_lib_check_module_dependencies(sechk_lib_t * lib)
 				continue;
 			mod = apol_vector_get_element(lib->modules, i);
 			if (!mod->selected) {
-				processed[i] = TRUE;
+				processed[i] = true;
 				continue;
 			}
 			for (j = 0; j < apol_vector_get_size(mod->dependencies); j++) {
 				nv = apol_vector_get_element(mod->dependencies, j);
-				test = FALSE;
+				test = false;
 				test = sechk_lib_check_dependency(nv, lib);
 				if (!test) {
 					ERR(lib->policy, "Dependency %s not found for %s.", nv->name, mod->name);
@@ -637,18 +637,18 @@ int sechk_lib_check_module_dependencies(sechk_lib_t * lib)
 				idx = sechk_lib_get_module_idx(nv->value, lib);
 				dep = apol_vector_get_element(lib->modules, idx);
 				if (!dep->selected) {
-					processed[idx] = FALSE;
-					dep->selected = TRUE;
+					processed[idx] = false;
+					dep->selected = true;
 				}
 			}
-			processed[i] = TRUE;
+			processed[i] = true;
 		}
 		for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
 			if (!processed[i])
 				break;
 		}
 		if (i == apol_vector_get_size(lib->modules))
-			done = TRUE;
+			done = true;
 	}
 	free(processed);
 
@@ -659,7 +659,7 @@ int sechk_lib_check_module_requirements(sechk_lib_t * lib)
 {
 	int retv = 0;
 	size_t i, j;
-	bool_t test = TRUE;
+	bool test = true;
 	sechk_name_value_t *nv = NULL;
 	sechk_module_t *mod = NULL;
 
@@ -670,7 +670,7 @@ int sechk_lib_check_module_requirements(sechk_lib_t * lib)
 			continue;
 		for (j = 0; j < apol_vector_get_size(mod->requirements); j++) {
 			nv = apol_vector_get_element(mod->requirements, j);
-			test = FALSE;
+			test = false;
 			test = sechk_lib_check_requirement(nv, lib);
 			if (!test) {
 				/* if we're in quiet mode then we quit on a failed requirement */
@@ -680,7 +680,7 @@ int sechk_lib_check_module_requirements(sechk_lib_t * lib)
 				} else {
 					/* otherwise we just disable this module and keep testing */
 					ERR(lib->policy, "Requirements not met for %s.", mod->name);
-					mod->selected = FALSE;
+					mod->selected = false;
 					retv = -1;
 					break;
 				}
@@ -817,20 +817,20 @@ int sechk_lib_print_modules_report(sechk_lib_t * lib)
 	return rc;
 }
 
-bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
+bool sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 {
 	struct stat stat_buf;
 
 	if (!req) {
 		fprintf(stderr, "Error: invalid requirement\n");
 		errno = EINVAL;
-		return FALSE;
+		return false;
 	}
 
 	if (!lib || !lib->policy) {
 		fprintf(stderr, "Error: invalid library\n");
 		errno = EINVAL;
-		return FALSE;
+		return false;
 	}
 
 	if (!strcmp(req->name, SECHK_REQ_POLICY_CAP)) {
@@ -839,53 +839,53 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
 				}
-				return FALSE;
+				return false;
 			}
 		} else if (!strcmp(req->value, SECHK_REQ_CAP_MLS)) {
 			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_MLS)) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
 				}
-				return FALSE;
+				return false;
 			}
 		} else if (!strcmp(req->value, SECHK_REQ_CAP_SYN_RULES)) {
 			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_SYN_RULES)) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
 				}
-				return FALSE;
+				return false;
 			}
 		} else if (!strcmp(req->value, SECHK_REQ_CAP_RULES_LOADED)) {
 			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_RULES_LOADED)) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
 				}
-				return FALSE;
+				return false;
 			}
 		} else if (!strcmp(req->value, SECHK_REQ_CAP_LINE_NOS)) {
 			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_LINE_NUMBERS)) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
 				}
-				return FALSE;
+				return false;
 			}
 		} else if (!strcmp(req->value, SECHK_REQ_CAP_CONDITIONALS)) {
 			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_CONDITIONALS)) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
 				}
-				return FALSE;
+				return false;
 			}
 		} else if (!strcmp(req->value, SECHK_REQ_CAP_MODULES)) {
 			if (!qpol_policy_has_capability(apol_policy_get_qpol(lib->policy), QPOL_CAP_MODULES)) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
 				}
-				return FALSE;
+				return false;
 			}
 		} else {
 			ERR(lib->policy, "Unknown requirement: %s, %s", req->name, req->value);
-			return FALSE;
+			return false;
 		}
 	} else if (!strcmp(req->name, SECHK_REQ_DEFAULT_CONTEXTS)) {
 #ifdef LIBSELINUX
@@ -893,13 +893,13 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 			if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 				ERR(lib->policy, "Requirement %s not met.", req->name);
 			}
-			return FALSE;
+			return false;
 		}
 #else
 		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 			ERR(lib->policy, "Checking requirement %s: %s", req->name, strerror(ENOTSUP));
 		}
-		return FALSE;
+		return false;
 #endif
 	} else if (!strcmp(req->name, SECHK_REQ_FILE_CONTEXTS)) {
 #ifdef LIBSEFS
@@ -911,7 +911,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 #else
 		if (lib->outputformat & ~(SECHK_OUT_QUIET))
 			ERR(lib->policy, "Checking requirement %s, %s: %s", req->name, req->value, strerror(ENOTSUP));
-		return FALSE;
+		return false;
 #endif
 	} else if (!strcmp(req->name, SECHK_REQ_SYSTEM)) {
 		if (!strcmp(req->value, SECHK_REQ_SYS_SELINUX)) {
@@ -919,66 +919,66 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 			if (!is_selinux_mls_enabled() || !is_selinux_enabled()) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET))
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
-				return FALSE;
+				return false;
 			}
 #else
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				ERR(lib->policy, "Checking requirement %s, %s: %s", req->name, req->value, strerror(ENOTSUP));
-			return FALSE;
+			return false;
 #endif
 		} else if (!strcmp(req->value, SECHK_REQ_SYS_MLS)) {
 #ifdef LIBSELINUX
 			if (!is_selinux_mls_enabled() || !is_selinux_enabled()) {
 				if (lib->outputformat & ~(SECHK_OUT_QUIET))
 					ERR(lib->policy, "Requirement %s, %s not met.", req->name, req->value);
-				return FALSE;
+				return false;
 			}
 #else
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				ERR(lib->policy, "Checking requirement %s, %s: %s", req->name, req->value, strerror(ENOTSUP));
-			return FALSE;
+			return false;
 #endif
 		} else {
 			ERR(lib->policy, "Unknown requirement: %s, %s", req->name, req->value);
-			return FALSE;
+			return false;
 		}
 	} else {
 		ERR(lib->policy, "Unknown requirement: %s, %s", req->name, req->value);
-		return FALSE;
+		return false;
 	}
 
-	return TRUE;
+	return true;
 }
 
-bool_t sechk_lib_check_dependency(sechk_name_value_t * dep, sechk_lib_t * lib)
+bool sechk_lib_check_dependency(sechk_name_value_t * dep, sechk_lib_t * lib)
 {
 	sechk_module_t *mod = NULL;
 
 	if (!dep || !dep->value) {
 		fprintf(stderr, "Error: invalid dependency\n");
 		errno = EINVAL;
-		return FALSE;
+		return false;
 	}
 
 	if (!lib) {
 		fprintf(stderr, "Error: invalid library\n");
 		errno = EINVAL;
-		return FALSE;
+		return false;
 	}
 
 	mod = sechk_lib_get_module(dep->value, lib);
 	if (!mod) {
 		fprintf(stderr, "Error: could not find dependency %s\n", dep->value);
 		errno = ENOENT;
-		return FALSE;
+		return false;
 	}
 
-	return TRUE;
+	return true;
 }
 
 int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t * lib)
 {
-	int i;
+	size_t i;
 	sechk_module_t *mod = NULL;
 
 	if (!lib || !out) {
@@ -1027,8 +1027,8 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t * lib)
 {
 	const sechk_profile_name_reg_t *profiles;
 	char *profpath = NULL, *prof_filename = NULL, *path = NULL;
-	int num_profiles, retv = -1, error = 0;
-	size_t i;
+	int retv = -1, error = 0;
+	size_t num_profiles, i;
 	sechk_module_t *mod = NULL;
 
 	if (!prof_name || !lib) {

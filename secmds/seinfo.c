@@ -514,11 +514,11 @@ static int print_types(FILE * fp, const char *name, int expand, apol_policy_t * 
  */
 static int print_attribs(FILE * fp, const char *name, int expand, apol_policy_t * policydb)
 {
-	int retval = -1, i;
+	int retval = -1;
 	apol_attr_query_t *attr_query = NULL;
 	apol_vector_t *v = NULL;
 	qpol_type_t *type_datum = NULL;
-	size_t n_attrs;
+	size_t n_attrs, i;
 
 	/* we are only printing information about 1 attribute */
 	if (name != NULL) {

@@ -655,7 +655,7 @@ void replcon_info_free(replcon_info_t * info)
  *
  * @param info A reference to a replcon info object
  * @param obj_class
- * @return TRUE on success, FALSE on error
+ * @return true on success, false on error
  */
 int replcon_info_has_object_class(replcon_info_t * info, sefs_classes_t obj_class)
 {
@@ -664,16 +664,16 @@ int replcon_info_has_object_class(replcon_info_t * info, sefs_classes_t obj_clas
 	assert(info != NULL);
 	for (i = 0; i < info->num_classes; i++)
 		if (info->obj_classes[i] == obj_class)
-			return TRUE;
-	return FALSE;
+			return true;
+	return false;
 }
 
 /**
  * Determines if context is a valid file context format.
  *
  * @param ctx_str A string containing a security context
- * @return TRUE if security context string is valid,
- * FALSE if the string is invalid
+ * @return true if security context string is valid,
+ * false if the string is invalid
  */
 int replcon_is_valid_context_format(const char *ctx_str)
 {
@@ -681,7 +681,7 @@ int replcon_is_valid_context_format(const char *ctx_str)
 
 	assert(ctx_str != NULL);
 	if (!strcasecmp("unlabeled", ctx_str))
-		return TRUE;
+		return true;
 
 	len = strlen(ctx_str);
 
@@ -692,12 +692,12 @@ int replcon_is_valid_context_format(const char *ctx_str)
 
 	if (is_selinux_mls_enabled()) {
 		if (count > 5)
-			return FALSE;
+			return false;
 	} else {
 		if (count > 2)
-			return FALSE;
+			return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /**
@@ -918,7 +918,7 @@ int replcon_info_add_filename(replcon_info_t * info, const char *file)
  * @param context A reference to a replcon context object
  * @param patterns A reference to a replcon context object,
  * whose contents will be used for pattern matching against context
- * @return TRUE on success, FALSE on error
+ * @return true on success, false on error
  */
 unsigned char replcon_context_equal(const replcon_context_t * context, const replcon_context_t * patterns)
 {
@@ -970,7 +970,7 @@ unsigned char replcon_context_equal(const replcon_context_t * context, const rep
 int replcon_file_context_replace(const char *filename, const struct stat64 *statptr, int fileflags, struct FTW *pfwt)
 {
 	int file_class, i, ret;
-	unsigned char match = FALSE;
+	unsigned char match = false;
 	replcon_context_t *replacement_con = NULL, *original_con = NULL, *new_con = NULL;
 	security_context_t old_file_con, new_file_con = NULL;
 	replcon_info_t *info = NULL;
@@ -1011,7 +1011,7 @@ int replcon_file_context_replace(const char *filename, const struct stat64 *stat
 
 	for (i = 0; i < info->num_pairs; i++) {
 		if (replcon_context_equal(original_con, &(info->pairs[i].old_context))) {
-			match = TRUE;
+			match = true;
 			new_con = &(info->pairs[i].new_context);
 			if (strcmp(new_con->user, "") != 0)
 				replcon_context_user_set(replacement_con, new_con->user);
@@ -1280,27 +1280,27 @@ void replcon_parse_command_line(int argc, char **argv)
 #endif
 			break;
 		case OPT_RAW:
-			replcon_info.use_raw = TRUE;
+			replcon_info.use_raw = true;
 			break;
 		case 'r':	       /* recursive directory parsing */
-			replcon_info.recursive = TRUE;
+			replcon_info.recursive = true;
 			break;
 		case 's':	       /* read from standard in */
-			replcon_info.stdin = TRUE;
+			replcon_info.stdin = true;
 			break;
 		case 'q':
 			if (replcon_info.verbose) {
 				fprintf(stderr, "Error: Can not specify -q and -V\n");
 				goto err;
 			}
-			replcon_info.quiet = TRUE;
+			replcon_info.quiet = true;
 			break;
 		case 'v':	       /* verbose program execution */
 			if (replcon_info.quiet) {
 				fprintf(stderr, "Error: Can not specify -q and -V\n");
 				goto err;
 			}
-			replcon_info.verbose = TRUE;
+			replcon_info.verbose = true;
 			break;
 		case 'V':	       /* version */
 #ifndef FINDCON
@@ -1373,7 +1373,8 @@ void replcon_parse_command_line(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	char stream_input[MAX_INPUT_SIZE];
-	int i, rw;
+	int rw;
+	size_t i;
 
 	replcon_info_init(&replcon_info);
 	replcon_parse_command_line(argc, argv);
@@ -1393,7 +1394,7 @@ int main(int argc, char **argv)
 		goto err;
 	}
 	/* check to see if we are using raw and user did not ask */
-	if (replcon_info.use_raw == FALSE && lgetfilecon_raw == NULL) {
+	if (replcon_info.use_raw == false && lgetfilecon_raw == NULL) {
 		printf("Note: System only contains raw contexts\n");
 	}
 

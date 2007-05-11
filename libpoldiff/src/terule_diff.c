@@ -507,7 +507,7 @@ static int terule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * 
 	qpol_iterator_t *iter = NULL;
 	qpol_cond_expr_node_t *node;
 	uint32_t expr_type, truthiness;
-	qpol_bool_t *bools[5], *bool;
+	qpol_bool_t *bools[5], *qbool;
 	size_t i, j;
 	size_t num_bools = 0;
 	char *bool_name, *pseudo_bool, *t;
@@ -525,18 +525,18 @@ static int terule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * 
 		if (expr_type != QPOL_COND_EXPR_BOOL) {
 			continue;
 		}
-		if (qpol_cond_expr_node_get_bool(q, node, &bool) < 0) {
+		if (qpol_cond_expr_node_get_bool(q, node, &qbool) < 0) {
 			error = errno;
 			goto cleanup;
 		}
 		for (i = 0; i < num_bools; i++) {
-			if (bools[i] == bool) {
+			if (bools[i] == qbool) {
 				break;
 			}
 		}
 		if (i >= num_bools) {
 			assert(num_bools < 4);
-			bools[i] = bool;
+			bools[i] = qbool;
 			num_bools++;
 		}
 	}
@@ -563,7 +563,7 @@ static int terule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * 
 				t = key->bools[j];
 				key->bools[j] = key->bools[j - 1];
 				key->bools[j - 1] = t;
-				bool = bools[j];
+				qbool = bools[j];
 				bools[j] = bools[j - 1];
 				bools[j - 1] = bools[j];
 			}
@@ -784,9 +784,9 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(bools); i++) {
-		qpol_bool_t *bool = apol_vector_get_element(bools, i);
+		qpol_bool_t *qbool = apol_vector_get_element(bools, i);
 		int state;
-		if (qpol_bool_get_state(q, bool, &state) < 0) {
+		if (qpol_bool_get_state(q, qbool, &state) < 0) {
 			error = errno;
 			goto cleanup;
 		}
@@ -826,9 +826,9 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy)
       cleanup:
 	/* restore boolean states */
 	for (i = 0; bools != NULL && i < apol_vector_get_size(bools); i++) {
-		qpol_bool_t *bool = apol_vector_get_element(bools, i);
+		qpol_bool_t *qbool = apol_vector_get_element(bools, i);
 		int state = (int)((size_t) apol_vector_get_element(bool_states, i));
-		qpol_bool_set_state_no_eval(q, bool, state);
+		qpol_bool_set_state_no_eval(q, qbool, state);
 	}
 	apol_vector_destroy(&bools);
 	apol_vector_destroy(&bool_states);

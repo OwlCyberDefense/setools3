@@ -124,7 +124,7 @@ struct seaudit_message
 	union
 	{
 		seaudit_avc_message_t *avc;
-		seaudit_bool_message_t *bool;
+		seaudit_bool_message_t *boolm;
 		seaudit_load_message_t *load;
 	} data;
 };
@@ -301,7 +301,7 @@ char *avc_message_to_misc_string(seaudit_avc_message_t * avc);
 typedef struct seaudit_bool_message_change
 {
 	/** pointer into log's bools BST */
-	char *bool;
+	char *boolean;
 	/** new value for the boolean */
 	int value;
 } seaudit_bool_message_change_t;

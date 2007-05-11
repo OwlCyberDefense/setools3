@@ -38,12 +38,7 @@ extern "C"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#undef FALSE
-#define FALSE   0
-#undef TRUE
-#define TRUE	1
-	typedef unsigned char bool_t;
+#include <stdbool.h>
 
 /**
  * Return an immutable string describing this library's version.

@@ -331,11 +331,6 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	return -1;
 }
 
-void domain_and_file_data_free(void *data)
-{
-	free(data);
-}
-
 int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unsigned char outformat = 0x00;

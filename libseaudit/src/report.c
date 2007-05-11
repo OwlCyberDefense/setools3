@@ -314,8 +314,9 @@ static int report_is_valid_section_name(const char *name)
 	return 0;
 }
 
-static int report_parse_seaudit_report(seaudit_log_t * log, seaudit_report_t * report,
-				       xmlTextReaderPtr reader, xmlChar ** id_value, xmlChar ** title_value)
+static int report_parse_seaudit_report(seaudit_log_t * log, seaudit_report_t * report __attribute__ ((unused)),
+				       xmlTextReaderPtr reader, xmlChar ** id_value
+				       __attribute__ ((unused)), xmlChar ** title_value)
 {
 	int rt, error;
 	xmlChar *name = NULL;
@@ -348,7 +349,7 @@ static int report_parse_seaudit_report(seaudit_log_t * log, seaudit_report_t * r
 	return 0;
 }
 
-static int report_parse_standard_attribs(seaudit_log_t * log, seaudit_report_t * report,
+static int report_parse_standard_attribs(seaudit_log_t * log, seaudit_report_t * report __attribute__ ((unused)),
 					 xmlTextReaderPtr reader, xmlChar ** id_value, xmlChar ** title_value)
 {
 	int rt, error;
@@ -383,7 +384,7 @@ static int report_parse_standard_attribs(seaudit_log_t * log, seaudit_report_t *
 	return 0;
 }
 
-static int report_parse_custom_attribs(seaudit_log_t * log, seaudit_report_t * report,
+static int report_parse_custom_attribs(seaudit_log_t * log, seaudit_report_t * report __attribute__ ((unused)),
 				       xmlTextReaderPtr reader, xmlChar ** title_value)
 {
 	int rt, error;
@@ -421,7 +422,8 @@ static int report_parse_custom_attribs(seaudit_log_t * log, seaudit_report_t * r
  * Allocate and return a filter for setenforce toggles.  (Actually, it
  * can't filter on permissions.)
  */
-static seaudit_filter_t *report_enforce_toggle_filter_create(seaudit_log_t * log, seaudit_report_t * report)
+static seaudit_filter_t *report_enforce_toggle_filter_create(seaudit_log_t * log, seaudit_report_t * report
+							     __attribute__ ((unused)))
 {
 	seaudit_filter_t *filter = NULL;
 	apol_vector_t *type_v = NULL, *class_v;

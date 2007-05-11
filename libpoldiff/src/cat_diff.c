@@ -280,7 +280,8 @@ int cat_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	return 0;
 }
 
-int cat_deep_diff(poldiff_t * diff, const void *x, const void *y)
+int cat_deep_diff(poldiff_t * diff __attribute__ ((unused)), const void *x __attribute__ ((unused)), const void *y
+		  __attribute__ ((unused)))
 {
 	/* Categories cannot be modified only added or removed.
 	 * This call back simply returns 0 to satisfy the generic diff algorithm. */

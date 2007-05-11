@@ -411,7 +411,7 @@ static int apol_infoflow_edge_compare(const void *a, const void *b __attribute__
  * NULL upon error.
  */
 static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t * p,
-							     apol_infoflow_graph_t * g,
+							     apol_infoflow_graph_t * g __attribute__ ((unused)),
 							     apol_infoflow_node_t * start_node,
 							     apol_infoflow_node_t * end_node, int len)
 {
@@ -929,7 +929,8 @@ static int apol_infoflow_direct_define(apol_policy_t * p,
 		return -1;
 	}
 	result->direction |= direction;
-	if (edge->length < result->length) {
+	//TODO: check that edge->lenght can be safely unsigned
+	if (edge->length < (int)result->length) {
 		result->length = edge->length;
 	}
 	return 0;
@@ -2050,7 +2051,7 @@ int apol_infoflow_analysis_append_class_perm(apol_policy_t * p,
 	return 0;
 }
 
-int apol_infoflow_analysis_set_min_weight(apol_policy_t * p, apol_infoflow_analysis_t * ia, int min_weight)
+int apol_infoflow_analysis_set_min_weight(apol_policy_t * p __attribute__ ((unused)), apol_infoflow_analysis_t * ia, int min_weight)
 {
 	if (min_weight <= 0) {
 		ia->min_weight = 0;

@@ -1083,7 +1083,7 @@ static void filter_netif_print(const seaudit_filter_t * filter, const char *name
 	filter_string_print(name, filter->netif, f, tabs);
 }
 
-static int filter_avc_msg_type_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+static int filter_avc_msg_type_support(const seaudit_filter_t * filter, const seaudit_message_t * msg __attribute__ ((unused)))
 {
 	return filter->avc_msg_type != SEAUDIT_AVC_UNKNOWN;
 }
@@ -1251,7 +1251,7 @@ struct filter_criteria_t
  * criteria, implement their support and accept functions and then
  * append new entries to this table.
  */
-const static struct filter_criteria_t filter_criteria[] = {
+static const struct filter_criteria_t filter_criteria[] = {
 	{"src_user", filter_src_user_support, filter_src_user_accept, filter_src_user_read, filter_src_user_print},
 	{"src_role", filter_src_role_support, filter_src_role_accept, filter_src_role_read, filter_src_role_print},
 	{"src_type", filter_src_type_support, filter_src_type_accept, filter_src_type_read, filter_src_type_print},
@@ -1326,7 +1326,7 @@ int filter_is_accepted(seaudit_filter_t * filter, const seaudit_message_t * msg)
 	return 1;
 }
 
-static bool_t filter_parse_is_valid_tag(const xmlChar * tag)
+static bool filter_parse_is_valid_tag(const xmlChar * tag)
 {
 	static const char *parse_valid_tags[] = { "item", "criteria", "view", "filter", "desc", NULL };
 	size_t i;

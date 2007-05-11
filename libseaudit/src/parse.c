@@ -98,7 +98,9 @@ static seaudit_message_type_e is_selinux(char *line)
 		return SEAUDIT_MESSAGE_TYPE_INVALID;
 }
 
-/**
+extern int daylight;
+
+	/**
  * Fill in the date_stamp field of a message.  If the stamp was not
  * already allocated space then do it here.
  *
@@ -109,7 +111,6 @@ static int insert_time(seaudit_log_t * log, apol_vector_t * tokens, size_t * pos
 	char *t = NULL;
 	size_t i, length = 0;
 	int error;
-	extern int daylight;
 
 	if (*position + NUM_TIME_COMPONENTS >= apol_vector_get_size(tokens)) {
 		WARN(log, "%s", "Not enough tokens for time.");
@@ -925,7 +926,7 @@ static int avc_parse(seaudit_log_t * log, apol_vector_t * tokens)
 
 /******************** boolean parsing ********************/
 
-static int boolean_msg_insert_bool(seaudit_log_t * log, seaudit_bool_message_t * bool, char *token)
+static int boolean_msg_insert_bool(seaudit_log_t * log, seaudit_bool_message_t * boolm, char *token)
 {
 	size_t len = strlen(token);
 	int value;
@@ -952,13 +953,13 @@ static int boolean_msg_insert_bool(seaudit_log_t * log, seaudit_bool_message_t *
 
 	token[len - 2] = '\0';
 
-	return bool_change_append(log, bool, token, value);
+	return bool_change_append(log, boolm, token, value);
 }
 
 static int bool_parse(seaudit_log_t * log, apol_vector_t * tokens)
 {
 	seaudit_message_t *msg;
-	seaudit_bool_message_t *bool;
+	seaudit_bool_message_t *boolm;
 	seaudit_message_type_e type;
 	int ret, has_warnings = 0, next_line = log->next_line;
 	size_t position = 0, num_tokens = apol_vector_get_size(tokens);
@@ -976,7 +977,7 @@ static int bool_parse(seaudit_log_t * log, apol_vector_t * tokens)
 			return -1;
 		}
 	}
-	bool = seaudit_message_get_data(msg, &type);
+	boolm = seaudit_message_get_data(msg, &type);
 
 	ret = insert_standard_msg_header(log, tokens, &position, msg);
 	if (ret < 0) {
@@ -1075,7 +1076,7 @@ static int bool_parse(seaudit_log_t * log, apol_vector_t * tokens)
 			return has_warnings;
 		}
 
-		ret = boolean_msg_insert_bool(log, bool, token);
+		ret = boolean_msg_insert_bool(log, boolm, token);
 		if (ret < 0) {
 			return ret;
 		} else if (ret > 0) {

@@ -27,6 +27,8 @@
 
 #include "qpol_internal.h"
 
+#include <qpol/util.h>
+
 #include <glob.h>
 #include <errno.h>
 #include <stdio.h>

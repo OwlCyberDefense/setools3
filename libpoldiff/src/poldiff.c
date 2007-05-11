@@ -532,7 +532,7 @@ int poldiff_build_bsts(poldiff_t * diff)
 	apol_vector_t *bools[2] = { NULL, NULL };
 	size_t i, j;
 	qpol_class_t *cls;
-	qpol_bool_t *bool;
+	qpol_bool_t *qbool;
 	char *name, *new_name;
 	int retval = -1, error = 0;
 	if (diff->class_bst != NULL) {
@@ -576,8 +576,8 @@ int poldiff_build_bsts(poldiff_t * diff)
 			}
 		}
 		for (j = 0; j < apol_vector_get_size(bools[i]); j++) {
-			bool = (qpol_bool_t *) apol_vector_get_element(bools[i], j);
-			if (qpol_bool_get_name(q, bool, &name) < 0) {
+			qbool = (qpol_bool_t *) apol_vector_get_element(bools[i], j);
+			if (qpol_bool_get_name(q, qbool, &name) < 0) {
 				error = errno;
 				goto cleanup;
 			}

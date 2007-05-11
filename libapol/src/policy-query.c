@@ -160,7 +160,7 @@ int apol_compare_cond_expr(apol_policy_t * p, qpol_cond_t * cond, const char *na
 	for (; !qpol_iterator_end(expr_iter); qpol_iterator_next(expr_iter)) {
 		qpol_cond_expr_node_t *expr;
 		uint32_t expr_type;
-		qpol_bool_t *bool;
+		qpol_bool_t *qbool;
 		char *bool_name;
 		if (qpol_iterator_get_item(expr_iter, (void **)&expr) < 0 ||
 		    qpol_cond_expr_node_get_expr_type(p->p, expr, &expr_type) < 0) {
@@ -169,7 +169,7 @@ int apol_compare_cond_expr(apol_policy_t * p, qpol_cond_t * cond, const char *na
 		if (expr_type != QPOL_COND_EXPR_BOOL) {
 			continue;
 		}
-		if (qpol_cond_expr_node_get_bool(p->p, expr, &bool) < 0 || qpol_bool_get_name(p->p, bool, &bool_name) < 0) {
+		if (qpol_cond_expr_node_get_bool(p->p, expr, &qbool) < 0 || qpol_bool_get_name(p->p, qbool, &bool_name) < 0) {
 			goto cleanup;
 		}
 		compval = apol_compare(p, bool_name, name, flags, bool_regex);

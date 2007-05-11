@@ -127,7 +127,7 @@ int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const cha
 	return 0;
 }
 
-int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range)
+int apol_context_set_range(apol_policy_t * p __attribute__ ((unused)), apol_context_t * context, apol_mls_range_t * range)
 {
 	apol_mls_range_destroy(&(context->range));
 	context->range = range;

@@ -93,7 +93,7 @@ int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apo
 				free(genfscon);
 				continue;
 			}
-			if (g->objclass >= 0 && g->objclass != objclass) {
+			if (g->objclass >= 0 && (uint32_t) g->objclass != objclass) {
 				free(genfscon);
 				continue;
 			}
@@ -310,7 +310,7 @@ int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_ve
 			} else if (retval2 == 0) {
 				continue;
 			}
-			if (f->behavior >= 0 && f->behavior != behavior) {
+			if (f->behavior >= 0 && (uint32_t) f->behavior != behavior) {
 				continue;
 			}
 			/* recall that fs_use_psid statements do not

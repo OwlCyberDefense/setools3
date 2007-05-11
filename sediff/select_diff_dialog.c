@@ -35,7 +35,7 @@ struct component
 	const uint32_t bit;
 };
 
-const static struct component comps[] = {
+static const struct component comps[] = {
 	{"attribs checkbutton", POLDIFF_DIFF_ATTRIBS},
 	{"avrules checkbutton", POLDIFF_DIFF_AVRULES},
 	{"bools checkbutton", POLDIFF_DIFF_BOOLS},

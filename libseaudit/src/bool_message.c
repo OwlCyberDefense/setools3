@@ -42,18 +42,18 @@ static void seaudit_bool_change_free(void *elem)
 
 seaudit_bool_message_t *bool_message_create(void)
 {
-	seaudit_bool_message_t *bool = calloc(1, sizeof(seaudit_bool_message_t));
-	if (bool == NULL) {
+	seaudit_bool_message_t *boolm = calloc(1, sizeof(seaudit_bool_message_t));
+	if (boolm == NULL) {
 		return NULL;
 	}
-	if ((bool->changes = apol_vector_create(seaudit_bool_change_free)) == NULL) {
-		bool_message_free(bool);
+	if ((boolm->changes = apol_vector_create(seaudit_bool_change_free)) == NULL) {
+		bool_message_free(boolm);
 		return NULL;
 	}
-	return bool;
+	return boolm;
 }
 
-int bool_change_append(seaudit_log_t * log, seaudit_bool_message_t * bool, char *name, int value)
+int bool_change_append(seaudit_log_t * log, seaudit_bool_message_t * boolm, char *name, int value)
 {
 	char *s = strdup(name);
 	seaudit_bool_message_change_t *bc = NULL;
@@ -65,42 +65,42 @@ int bool_change_append(seaudit_log_t * log, seaudit_bool_message_t * bool, char 
 		errno = error;
 		return -1;
 	}
-	if ((bc = calloc(1, sizeof(*bc))) == NULL || apol_vector_append(bool->changes, bc) < 0) {
+	if ((bc = calloc(1, sizeof(*bc))) == NULL || apol_vector_append(boolm->changes, bc) < 0) {
 		error = errno;
 		free(s);
 		ERR(log, "%s", strerror(error));
 		errno = error;
 		return -1;
 	}
-	bc->bool = s;
+	bc->boolean = s;
 	bc->value = value;
 	return 0;
 }
 
-void bool_message_free(seaudit_bool_message_t * bool)
+void bool_message_free(seaudit_bool_message_t * boolm)
 {
-	if (bool != NULL) {
-		apol_vector_destroy(&bool->changes);
-		free(bool);
+	if (boolm != NULL) {
+		apol_vector_destroy(&boolm->changes);
+		free(boolm);
 	}
 }
 
 char *bool_message_to_string(seaudit_message_t * msg, const char *date)
 {
-	seaudit_bool_message_t *bool = msg->data.bool;
+	seaudit_bool_message_t *boolm = msg->data.boolm;
 	const char *host = msg->host;
 	const char *manager = msg->manager;
 	char *s = NULL, *misc_string;
 	size_t len = 0;
 	char *open_brace = "", *close_brace = "";
-	if (apol_vector_get_size(bool->changes) > 0) {
+	if (apol_vector_get_size(boolm->changes) > 0) {
 		open_brace = "{ ";
 		close_brace = " }";
 	}
 	if (apol_str_appendf(&s, &len, "%s %s %s: security: committed booleans: %s", date, host, manager, open_brace) < 0) {
 		return NULL;
 	}
-	if ((misc_string = bool_message_to_misc_string(bool)) == NULL ||
+	if ((misc_string = bool_message_to_misc_string(boolm)) == NULL ||
 	    apol_str_appendf(&s, &len, misc_string) < 0 || apol_str_append(&s, &len, close_brace) < 0) {
 		free(misc_string);
 		return NULL;
@@ -111,13 +111,13 @@ char *bool_message_to_string(seaudit_message_t * msg, const char *date)
 
 char *bool_message_to_string_html(seaudit_message_t * msg, const char *date)
 {
-	seaudit_bool_message_t *bool = msg->data.bool;
+	seaudit_bool_message_t *boolm = msg->data.boolm;
 	const char *host = msg->host;
 	const char *manager = msg->manager;
 	char *s = NULL, *misc_string;
 	size_t len = 0;
 	char *open_brace = "", *close_brace = "";
-	if (apol_vector_get_size(bool->changes) > 0) {
+	if (apol_vector_get_size(boolm->changes) > 0) {
 		open_brace = "{ ";
 		close_brace = " }";
 	}
@@ -127,7 +127,7 @@ char *bool_message_to_string_html(seaudit_message_t * msg, const char *date)
 			     "%s: security: committed booleans: %s", date, host, manager, open_brace) < 0) {
 		return NULL;
 	}
-	if ((misc_string = bool_message_to_misc_string(bool)) == NULL ||
+	if ((misc_string = bool_message_to_misc_string(boolm)) == NULL ||
 	    apol_str_appendf(&s, &len, misc_string) < 0 || apol_str_appendf(&s, &len, "%s%s<br>", s, close_brace) < 0) {
 		free(misc_string);
 		return NULL;
@@ -136,13 +136,13 @@ char *bool_message_to_string_html(seaudit_message_t * msg, const char *date)
 	return s;
 }
 
-char *bool_message_to_misc_string(seaudit_bool_message_t * bool)
+char *bool_message_to_misc_string(seaudit_bool_message_t * boolm)
 {
 	char *s = NULL;
 	size_t len = 0, i;
-	for (i = 0; i < apol_vector_get_size(bool->changes); i++) {
-		seaudit_bool_message_change_t *bc = apol_vector_get_element(bool->changes, i);
-		if (apol_str_appendf(&s, &len, "%s%s:%d", (i == 0 ? "" : ", "), bc->bool, bc->value) < 0) {
+	for (i = 0; i < apol_vector_get_size(boolm->changes); i++) {
+		seaudit_bool_message_change_t *bc = apol_vector_get_element(boolm->changes, i);
+		if (apol_str_appendf(&s, &len, "%s%s:%d", (i == 0 ? "" : ", "), bc->boolean, bc->value) < 0) {
 			return NULL;
 		}
 	}

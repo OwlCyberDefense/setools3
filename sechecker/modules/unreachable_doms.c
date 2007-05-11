@@ -34,9 +34,9 @@
 #include <errno.h>
 #include <assert.h>
 
-static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy);
-static bool_t in_isid_ctx(char *type_name, apol_policy_t * policy);
-static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t * datum);
+static bool parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy);
+static bool in_isid_ctx(char *type_name, apol_policy_t * policy);
+static bool in_def_ctx(char *type_name, unreachable_doms_data_t * datum);
 /* for some reason we have to define this here to remove compile warnings */
 extern ssize_t getline(char **lineptr, size_t * n, FILE * stream);
 
@@ -175,7 +175,7 @@ int unreachable_doms_register(sechk_lib_t * lib)
 int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unreachable_doms_data_t *datum = NULL;
-	bool_t retv;
+	bool retv;
 	const char *ctx_file_path = NULL;
 
 	if (!mod || !policy) {
@@ -872,13 +872,13 @@ unreachable_doms_data_t *unreachable_doms_data_new(void)
 
 /* Parses default_contexts and adds source domains to datum->ctx_list.
  * The vector will contain newly allocated strings. */
-static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy)
+static bool parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy)
 {
-	int str_sz, i, charno, error = 0;
+	int str_sz, i, charno, error = 0, retv;
 	FILE *ctx_file;
 	char *line = NULL, *src_role = NULL, *src_dom = NULL, *dst_role = NULL, *dst_dom = NULL;
-	size_t retv, line_len = 0;
-	bool_t uses_mls = FALSE;
+	size_t line_len = 0;
+	bool uses_mls = false;
 
 	printf("Using default contexts: %s\n", ctx_file_path);
 	ctx_file = fopen(ctx_file_path, "r");
@@ -900,7 +900,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * 
 			}
 		}
 
-		uses_mls = FALSE;
+		uses_mls = false;
 		str_sz = APOL_STR_SZ + 128;
 		i = 0;
 
@@ -937,7 +937,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * 
 				break;
 			/* Check for MLS */
 			if (line[i] == ':') {
-				uses_mls = TRUE;
+				uses_mls = true;
 				i++;   /* skip ':' */
 				while (!isspace(line[i]))
 					i++;
@@ -1004,7 +1004,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * 
 	}
 	free(line);
 	fclose(ctx_file);
-	return TRUE;
+	return true;
       parse_default_contexts_fail:
 	if (ctx_file != NULL) {
 		fclose(ctx_file);
@@ -1015,21 +1015,21 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * 
 	free(dst_role);
 	free(dst_dom);
 	errno = error;
-	return FALSE;
+	return false;
 }
 
 /* Returns true if type_idx is in datum->ctx_list */
-static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t * datum)
+static bool in_def_ctx(char *type_name, unreachable_doms_data_t * datum)
 {
 	size_t i;
 	if (apol_vector_get_index(datum->ctx_vector, type_name, apol_str_strcmp, NULL, &i) < 0) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /* Returns true if type is a type assigned to an isid */
-static bool_t in_isid_ctx(char *type_name, apol_policy_t * policy)
+static bool in_isid_ctx(char *type_name, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
@@ -1046,9 +1046,9 @@ static bool_t in_isid_ctx(char *type_name, apol_policy_t * policy)
 		qpol_type_get_name(q, context_type, &context_type_name);
 		if (!strcmp(type_name, context_type_name)) {
 			qpol_iterator_destroy(&iter);
-			return TRUE;
+			return true;
 		}
 	}
 	qpol_iterator_destroy(&iter);
-	return FALSE;
+	return false;
 }

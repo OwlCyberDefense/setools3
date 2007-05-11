@@ -228,7 +228,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	int buff_sz, error = 0;
 
 	/* NEW */
-	int num_fc_entries = 0;
+	size_t num_fc_entries = 0;
 	apol_vector_t *type_vector = NULL;
 	apol_vector_t *fc_entry_vector = NULL;
 
@@ -302,7 +302,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		for (; !qpol_iterator_end(file_attr_iter); qpol_iterator_next(file_attr_iter)) {
 			char *attr_name;
 			qpol_type_t *attr;
-			int nfta;
+			size_t nfta;
 
 			qpol_iterator_get_item(file_attr_iter, (void **)&attr);
 			qpol_type_get_name(q, attr, &attr_name);
@@ -681,7 +681,8 @@ int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	return 0;
 }
 
-int find_file_types_get_list(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
+int find_file_types_get_list(sechk_module_t * mod, apol_policy_t * policy __attribute__ ((unused)), void *arg
+			     __attribute__ ((unused)))
 {
 	apol_vector_t **v = arg;
 

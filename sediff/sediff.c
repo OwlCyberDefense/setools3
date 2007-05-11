@@ -1043,7 +1043,7 @@ static void print_range_trans_diffs(poldiff_t * diff, int stats_only)
 
 /** compare the names for two poldiff_type_t objects.
  * used to sort items prior to display. */
-static int type_name_cmp(const void *a, const void *b, void *user_data)
+static int type_name_cmp(const void *a, const void *b, void *user_data __attribute__ ((unused)))
 {
 	poldiff_type_t *ta = (poldiff_type_t *) a;
 	poldiff_type_t *tb = (poldiff_type_t *) b;

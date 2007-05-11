@@ -44,7 +44,7 @@ void *seaudit_message_get_data(seaudit_message_t * msg, seaudit_message_type_e *
 	case SEAUDIT_MESSAGE_TYPE_AVC:
 		return msg->data.avc;
 	case SEAUDIT_MESSAGE_TYPE_BOOL:
-		return msg->data.bool;
+		return msg->data.boolm;
 	case SEAUDIT_MESSAGE_TYPE_LOAD:
 		return msg->data.load;
 	default:
@@ -125,7 +125,7 @@ char *seaudit_message_to_misc_string(seaudit_message_t * msg)
 	case SEAUDIT_MESSAGE_TYPE_AVC:
 		return avc_message_to_misc_string(msg->data.avc);
 	case SEAUDIT_MESSAGE_TYPE_BOOL:
-		return bool_message_to_misc_string(msg->data.bool);
+		return bool_message_to_misc_string(msg->data.boolm);
 	case SEAUDIT_MESSAGE_TYPE_LOAD:
 		return load_message_to_misc_string(msg->data.load);
 	default:
@@ -160,7 +160,7 @@ seaudit_message_t *message_create(seaudit_log_t * log, seaudit_message_type_e ty
 		}
 		break;
 	case SEAUDIT_MESSAGE_TYPE_BOOL:
-		if ((m->data.bool = bool_message_create()) == NULL) {
+		if ((m->data.boolm = bool_message_create()) == NULL) {
 			rt = -1;
 		}
 		break;
@@ -191,7 +191,7 @@ void message_free(void *msg)
 			avc_message_free(m->data.avc);
 			break;
 		case SEAUDIT_MESSAGE_TYPE_BOOL:
-			bool_message_free(m->data.bool);
+			bool_message_free(m->data.boolm);
 			break;
 		case SEAUDIT_MESSAGE_TYPE_LOAD:
 			load_message_free(m->data.load);

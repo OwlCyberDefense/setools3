@@ -46,6 +46,7 @@
 #include <sepol/module.h>
 #include <sepol/policydb/module.h>
 
+#include <stdbool.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
@@ -85,12 +86,6 @@ extern int mlspol;
 #define cpu_to_le64(x) bswap_64(x)
 #define le64_to_cpu(x) bswap_64(x)
 #endif
-
-#undef FALSE
-#define FALSE   0
-#undef TRUE
-#define TRUE    1
-typedef unsigned char bool_t;
 
 /* buffer for reading from file */
 typedef struct fbuf
@@ -147,7 +142,8 @@ void qpol_handle_msg(qpol_policy_t * p, int level, const char *fmt, ...)
 	va_end(ap);
 }
 
-static void qpol_handle_default_callback(void *varg, qpol_policy_t * p, int level, const char *fmt, va_list va_args)
+static void qpol_handle_default_callback(void *varg __attribute__ ((unused)), qpol_policy_t * p
+					 __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
 	case QPOL_MSG_INFO:
@@ -340,7 +336,7 @@ int qpol_is_file_mod_pkg(FILE * fp)
 {
 	size_t sz;
 	__u32 ubuf;
-	bool_t rt;
+	int rt;
 
 	sz = fread(&ubuf, sizeof(__u32), 1, fp);
 
@@ -466,8 +462,8 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	sepol_policydb_t *old_p = NULL;
 	sepol_policydb_t **modules = NULL;
 	qpol_module_t *base = NULL;
-	size_t num_modules = 0;
-	int error = 0, i;
+	size_t num_modules = 0, i;
+	int error = 0;
 
 	if (!policy) {
 		ERR(NULL, "%s", strerror(EINVAL));

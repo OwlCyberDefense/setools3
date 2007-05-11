@@ -454,7 +454,7 @@ int imp_range_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	sechk_proof_t *proof = NULL;
 	qpol_range_trans_t *rt;
 	char *tmp;
-	int i = 0, k = 0, j = 0, num_items;
+	size_t i = 0, k = 0, j = 0, num_items;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

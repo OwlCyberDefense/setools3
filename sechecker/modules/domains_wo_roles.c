@@ -164,7 +164,8 @@ int domains_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i, retv, error;
+	int retv, error;
+	size_t i;
 	sechk_module_t *mod_ptr = NULL;
 	sechk_mod_fn_t run_fn = NULL;
 	apol_vector_t *domain_vector;

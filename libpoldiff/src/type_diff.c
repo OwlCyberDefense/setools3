@@ -310,7 +310,7 @@ int type_reset(poldiff_t * diff)
  * @return < 0, 0, or > 0, if x is respectively less than
  * equal to, or greater than y.
  */
-int type_comp(const void *x, const void *y, poldiff_t * diff)
+int type_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))
 {
 	uint32_t p1val = (uint32_t) ((size_t) x);
 	uint32_t p2val = (uint32_t) ((size_t) y);
@@ -494,7 +494,8 @@ static apol_vector_t *type_get_attrib_names(poldiff_t * diff, apol_policy_t * p,
 	apol_vector_t *ret = NULL;
 	qpol_type_t *qt = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
-	int retval = -1, i;
+	int retval = -1;
+	size_t i;
 
 	if ((ret = apol_vector_create(free)) == NULL) {
 		ERR(diff, "%s", strerror(errno));

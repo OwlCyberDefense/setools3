@@ -407,7 +407,7 @@ int find_port_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j = 0, k = 0, num_items = 0;
+	size_t i = 0, j = 0, k = 0, num_items = 0;
 	qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;

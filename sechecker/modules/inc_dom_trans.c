@@ -291,9 +291,9 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 			char *end_name;
 			char *ep_name;
 			int result;
-			bool_t ok;
+			bool ok;
 
-			ok = FALSE;
+			ok = false;
 			dtr = apol_vector_get_element(domain_trans_vector, j);
 			start = apol_domain_trans_result_get_start_type(dtr);
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
@@ -324,7 +324,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 						apol_user_query_set_role(policy, user_query, role_name);
 						apol_user_get_by_query(policy, user_query, &user_vector);
 						if (apol_vector_get_size(user_vector) > 0) {
-							ok = TRUE;
+							ok = true;
 						}
 						apol_vector_destroy(&user_vector);
 					}
@@ -355,7 +355,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 								apol_user_query_set_role(policy, user_query, default_role_name);
 								apol_user_get_by_query(policy, user_query, &user_vector);
 								if (apol_vector_get_size(user_vector) > 0) {
-									ok = TRUE;
+									ok = true;
 								}
 							}
 							apol_vector_destroy(&user_vector);
@@ -566,7 +566,7 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	int i = 0, j = 0, num_items;
+	size_t i = 0, j = 0, num_items;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

@@ -256,7 +256,7 @@ extern "C"
 		unsigned char outputformat;
 	/** This field is used by the library to indicate that the user or another
 	 *  module has selected this module to be run. */
-		bool_t selected;
+		bool selected;
 	/** The severity level of this module's results. One of SECHK_SEV_* above. */
 		const char *severity;
 	/** The module's private data. This includes data generated when processing
@@ -619,7 +619,7 @@ extern "C"
  *  @return 1 if the requirement is met, and 0 if it is either unmet or
  *  if the library is unable to determine.
  */
-	bool_t sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib);
+	bool sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib);
 
 /**
  *  Check that the library can meet a single module dependency.
@@ -630,7 +630,7 @@ extern "C"
  *  @return 1 if the dependency exists, and 0 if it either does not or
  *  if the library is unable to determine.
  */
-	bool_t sechk_lib_check_dependency(sechk_name_value_t * dep, sechk_lib_t * lib);
+	bool sechk_lib_check_dependency(sechk_name_value_t * dep, sechk_lib_t * lib);
 
 /**
  *  Set the default output format for the library.

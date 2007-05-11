@@ -545,11 +545,11 @@ char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 {
 	char *rt = NULL, *name = NULL, *sens_name = NULL, *cat_name = NULL;
 	char *retval = NULL;
-	int i, cur;
+	int cur;
 	qpol_cat_t *cur_cat = NULL, *next_cat = NULL;
 	uint32_t cur_cat_val, next_cat_val, far_cat_val;
 	apol_vector_t *cats = NULL;
-	size_t sz = 0, n_cats = 0;
+	size_t sz = 0, n_cats = 0, i;
 
 	if (!level || !p)
 		goto cleanup;

@@ -1782,7 +1782,7 @@ int inc_net_access_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j = 0, k = 0, l = 0, num_items;
+	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	char *type_name;

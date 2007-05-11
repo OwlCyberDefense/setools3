@@ -124,7 +124,8 @@ static GtkTextBuffer *result_item_single_get_buffer(result_item_t * item, poldif
 /**
  * For single items, rendering is (supposed to be) very fast.
  */
-static int result_item_single_is_render_slow(result_item_t * item, poldiff_form_e form)
+static int result_item_single_is_render_slow(result_item_t * item __attribute__ ((unused)), poldiff_form_e form
+					     __attribute__ ((unused)))
 {
 	return 0;
 }

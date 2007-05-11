@@ -33,6 +33,7 @@
 #include <sepol/policydb/ebitmap.h>
 #include <sepol/policydb/expand.h>
 #include <qpol/policy.h>
+#include <qpol/policy_extend.h>
 #include <qpol/iterator.h>
 #include <errno.h>
 #include <assert.h>

@@ -166,7 +166,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i, j;
-	bool_t both = FALSE, add_proof = FALSE;
+	bool both = false, add_proof = false;
 	int error = 0;
 	char *tmp = NULL;
 	apol_vector_t *mount_vector;
@@ -239,8 +239,8 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 		qpol_type_t *mount_target;
 		char *mount_source_name, *mount_target_name;
 
-		both = FALSE;
-		add_proof = TRUE;
+		both = false;
+		add_proof = true;
 		mount_rule = apol_vector_get_element(mount_vector, i);
 		qpol_avrule_get_source_type(q, mount_rule, &mount_source);
 		qpol_avrule_get_target_type(q, mount_rule, &mount_target);
@@ -261,7 +261,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 
 			/* Check to see if they match */
 			if (!strcmp(mount_source_name, mounton_source_name) && !strcmp(mount_target_name, mounton_target_name))
-				both = TRUE;
+				both = true;
 		}
 		if (!both) {
 			proof = sechk_proof_new(NULL);
@@ -290,7 +290,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 				res_type = res_item->item;
 				qpol_type_get_name(q, res_type, &res_type_name);
 				if (!strcmp(mount_source_name, res_type_name) || !strcmp(mount_target_name, res_type_name))
-					add_proof = FALSE;
+					add_proof = false;
 			}
 			if (add_proof) {
 				if (!item) {
@@ -333,8 +333,8 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 		qpol_type_t *mounton_target;
 		char *mounton_source_name, *mounton_target_name;
 
-		both = FALSE;
-		add_proof = TRUE;
+		both = false;
+		add_proof = true;
 		mounton_rule = apol_vector_get_element(mounton_vector, i);
 		qpol_avrule_get_source_type(q, mounton_rule, &mounton_source);
 		qpol_avrule_get_target_type(q, mounton_rule, &mounton_target);
@@ -354,7 +354,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 			qpol_type_get_name(q, mount_target, &mount_target_name);
 
 			if (!strcmp(mount_source_name, mounton_source_name) && !strcmp(mount_target_name, mounton_target_name))
-				both = TRUE;
+				both = true;
 		}
 		if (!both) {
 			proof = sechk_proof_new(NULL);
@@ -378,7 +378,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 				res_type = res_item->item;
 				qpol_type_get_name(q, res_type, &res_type_name);
 				if (!strcmp(mounton_source_name, res_type_name) || !strcmp(mounton_target_name, res_type_name))
-					add_proof = FALSE;
+					add_proof = false;
 			}
 			if (add_proof) {
 				if (!item) {

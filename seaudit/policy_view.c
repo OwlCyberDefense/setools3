@@ -236,8 +236,8 @@ static void policy_view_on_class_toggle(GtkToggleButton * toggle, gpointer user_
 }
 
 static gboolean policy_view_on_line_event(GtkTextTag * tag
-					  __attribute__ ((unused)), GObject * event_object, GdkEvent * event,
-					  const GtkTextIter * iter, gpointer user_data)
+					  __attribute__ ((unused)), GObject * event_object
+					  __attribute__ ((unused)), GdkEvent * event, const GtkTextIter * iter, gpointer user_data)
 {
 	policy_view_t *pv = (policy_view_t *) user_data;
 	GtkTextIter start, end;

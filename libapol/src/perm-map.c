@@ -285,7 +285,8 @@ static apol_permmap_class_t *find_permmap_class(apol_policy_t * p, const char *t
  * @return Pointer to the permission record within the class, or NULL
  * if not found or on error.
  */
-static apol_permmap_perm_t *find_permmap_perm(apol_policy_t * p, apol_permmap_class_t * pc, const char *target)
+static apol_permmap_perm_t *find_permmap_perm(apol_policy_t * p
+					      __attribute__ ((unused)), apol_permmap_class_t * pc, const char *target)
 {
 	size_t i;
 	for (i = 0; i < apol_vector_get_size(pc->perms); i++) {
