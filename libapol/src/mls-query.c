@@ -83,54 +83,6 @@ static int apol_mls_cat_vector_compare(const void *a, const void *b, void *data)
 	return (cat_value2 - cat_value1);
 }
 
-/**
- * Given a level, determine if it is legal according to the supplied
- * policy.  This function will convert from aliases to canonical forms
- * as necessary.  This function differs from apol_mls_level_compare()
- * in that the supplied level must contain a sensitivity.
- *
- * @param h Error reporting handler.
- * @param p Policy within which to look up MLS information.
- * @param level Level to check.
- *
- * @return 1 If level is legal, 0 if not; < 0 on error.
- */
-static int apol_mls_level_validate(apol_policy_t * p, const apol_mls_level_t * level)
-{
-	qpol_level_t *level_datum;
-	qpol_iterator_t *iter = NULL;
-	apol_vector_t *cat_vector;
-	int retval = -1;
-	size_t i, j;
-
-	if (level == NULL) {
-		ERR(p, "%s", strerror(EINVAL));
-		return -1;
-	}
-	if (qpol_policy_get_level_by_name(p->p, level->sens, &level_datum) < 0 ||
-	    qpol_level_get_cat_iter(p->p, level_datum, &iter) < 0) {
-		return -1;
-	}
-	if ((cat_vector = apol_vector_create_from_iter(iter, NULL)) == NULL) {
-		ERR(p, "%s", strerror(errno));
-		goto cleanup;
-	}
-
-	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
-		char *cat_name = (char *)apol_vector_get_element(level->cats, i);
-		if (apol_vector_get_index(cat_vector, cat_name, apol_mls_cat_vector_compare, p, &j) < 0) {
-			retval = 0;
-			goto cleanup;
-		}
-	}
-
-	retval = 1;
-      cleanup:
-	qpol_iterator_destroy(&iter);
-	apol_vector_destroy(&cat_vector);
-	return retval;
-}
-
 /********************* level *********************/
 
 apol_mls_level_t *apol_mls_level_create(void)
@@ -552,6 +504,43 @@ int apol_mls_level_compare(apol_policy_t * p, const apol_mls_level_t * l1, const
 	return APOL_MLS_INCOMP;
 }
 
+int apol_mls_level_validate(apol_policy_t * p, const apol_mls_level_t * level)
+{
+	qpol_level_t *level_datum;
+	qpol_iterator_t *iter = NULL;
+	apol_vector_t *cat_vector;
+	int retval = -1;
+	size_t i, j;
+
+	if (p == NULL || level == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	if (qpol_policy_get_level_by_name(p->p, level->sens, &level_datum) < 0 ||
+	    qpol_level_get_cat_iter(p->p, level_datum, &iter) < 0) {
+		return -1;
+	}
+	if ((cat_vector = apol_vector_create_from_iter(iter, NULL)) == NULL) {
+		ERR(p, "%s", strerror(errno));
+		goto cleanup;
+	}
+
+	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
+		char *cat_name = (char *)apol_vector_get_element(level->cats, i);
+		if (apol_vector_get_index(cat_vector, cat_name, apol_mls_cat_vector_compare, p, &j) < 0) {
+			retval = 0;
+			goto cleanup;
+		}
+	}
+
+	retval = 1;
+      cleanup:
+	qpol_iterator_destroy(&iter);
+	apol_vector_destroy(&cat_vector);
+	return retval;
+}
+
 char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level)
 {
 	char *rt = NULL, *name = NULL, *sens_name = NULL, *cat_name = NULL;
@@ -785,10 +774,10 @@ int apol_mls_range_set_low(apol_policy_t * p, apol_mls_range_t * range, apol_mls
 		errno = EINVAL;
 		return -1;
 	}
-
-	apol_mls_level_destroy(&(range->low));
-	range->low = level;
-
+	if (range->low != level) {
+		apol_mls_level_destroy(&(range->low));
+		range->low = level;
+	}
 	return 0;
 }
 
@@ -800,11 +789,12 @@ int apol_mls_range_set_high(apol_policy_t * p, apol_mls_range_t * range, apol_ml
 		return -1;
 	}
 
-	if (range->low != range->high) {
-		apol_mls_level_destroy(&(range->high));
+	if (range->high != level) {
+		if (range->low != range->high) {
+			apol_mls_level_destroy(&(range->high));
+		}
+		range->high = level;
 	}
-	range->high = level;
-
 	return 0;
 }
 
@@ -832,6 +822,11 @@ int apol_mls_range_compare(apol_policy_t * p, const apol_mls_range_t * target, c
 	int ans1 = -1, ans2 = -1;
 	if (search == NULL) {
 		return 1;
+	}
+	if (p == NULL || target == NULL || target->low == NULL || search->low == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
 	}
 	/* FIX ME:  intersect does not work */
 	if ((range_compare_type & APOL_QUERY_SUB) || (range_compare_type & APOL_QUERY_INTERSECT)) {
@@ -865,11 +860,6 @@ static int apol_mls_range_does_include_level(apol_policy_t * p, const apol_mls_r
 {
 	int high_cmp = -1, low_cmp = -1;
 
-	if (p == NULL || apol_mls_range_validate(p, range) != 1) {
-		ERR(p, "%s", strerror(EINVAL));
-		return -1;
-	}
-
 	if (range->low != range->high) {
 		low_cmp = apol_mls_level_compare(p, range->low, level);
 		if (low_cmp < 0) {
@@ -902,9 +892,10 @@ int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * 
 	/* parent range validity will be checked via
 	 * apol_mls_range_include_level() */
 
-	if (apol_mls_range_does_include_level(p, range, subrange->low) &&
-	    apol_mls_range_does_include_level(p, range, subrange->high)) {
-		return 1;
+	if (apol_mls_range_does_include_level(p, range, subrange->low)) {
+		if (subrange->high == NULL || apol_mls_range_does_include_level(p, range, subrange->high)) {
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -913,8 +904,9 @@ int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range)
 {
 	int retv;
 
-	if (p == NULL || range == NULL) {
+	if (p == NULL || range == NULL || range->low == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -922,10 +914,15 @@ int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range)
 		return retv;
 	}
 
+	if (range->high == NULL) {
+		return retv;
+	}
 	if (range->high != range->low && (retv = apol_mls_level_validate(p, range->high)) != 1) {
 		return retv;
 	}
 
+	/* both low and high levels exist, so now check that high
+	 * dominates low */
 	retv = apol_mls_level_compare(p, range->low, range->high);
 	if (retv < 0) {
 		return -1;
@@ -970,16 +967,23 @@ apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range
 	int error = 0;
 	qpol_iterator_t *iter = NULL, *catiter = NULL;
 
-	if (p == NULL || range == NULL) {
+	if (p == NULL || range == NULL || range->low == NULL) {
 		error = EINVAL;
 		ERR(p, "%s", strerror(error));
 		goto err;
 	}
-	if (qpol_policy_get_level_by_name(q, range->low->sens, &l) < 0 || qpol_level_get_value(q, l, &low_value) < 0) {
+	apol_mls_level_t *low_level, *high_level;
+	low_level = range->low;
+	if (range->high == NULL) {
+		high_level = low_level;
+	} else {
+		high_level = range->high;
+	}
+	if (qpol_policy_get_level_by_name(q, low_level->sens, &l) < 0 || qpol_level_get_value(q, l, &low_value) < 0) {
 		error = errno;
 		goto err;
 	}
-	if (qpol_policy_get_level_by_name(q, range->high->sens, &l) < 0 || qpol_level_get_value(q, l, &high_value) < 0) {
+	if (qpol_policy_get_level_by_name(q, high_level->sens, &l) < 0 || qpol_level_get_value(q, l, &high_value) < 0) {
 		error = errno;
 		goto err;
 	}
@@ -1006,7 +1010,7 @@ apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range
 		}
 		if ((ml = calloc(1, sizeof(*ml))) == NULL ||
 		    (ml->sens = strdup(name)) == NULL ||
-		    (ml->cats = apol_vector_create_from_vector(range->high->cats, apol_str_strdup, NULL, free)) == NULL ||
+		    (ml->cats = apol_vector_create_from_vector(high_level->cats, apol_str_strdup, NULL, free)) == NULL ||
 		    apol_vector_append(v, ml) < 0) {
 			error = errno;
 			apol_mls_level_destroy(&ml);
@@ -1054,18 +1058,24 @@ char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range)
 	int retv;
 	size_t sz = 0;
 
-	if (!range || !p)
+	if (!range || !p || range->low == NULL)
 		goto cleanup;
 
 	if ((sub_str = apol_mls_level_render(p, range->low)) == NULL) {
 		goto cleanup;
 	}
 	if (apol_str_append(&rt, &sz, sub_str)) {
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
 	free(sub_str);
 	sub_str = NULL;
+	if (range->high == NULL) {
+		/* no high level set, so skip the rest of this render
+		 * function */
+		retval = rt;
+		goto cleanup;
+	}
 	retv = apol_mls_level_compare(p, range->low, range->high);
 	if (retv < 0) {
 		goto cleanup;
@@ -1076,7 +1086,7 @@ char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range)
 		if (!sub_str)
 			goto cleanup;
 		if (apol_str_appendf(&rt, &sz, " - %s", sub_str)) {
-			ERR(p, "%s", strerror(ENOMEM));
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 	}

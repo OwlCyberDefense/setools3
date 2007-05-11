@@ -183,8 +183,25 @@ extern "C"
  *
  * @return One of APOL_MLS_EQ, APOL_MLS_DOM, APOL_MLS_DOMBY, or
  * APOL_MLS_INCOMP; < 0 on error.
+ *
+ * @see apol_mls_level_validate()
  */
 	extern int apol_mls_level_compare(apol_policy_t * p, const apol_mls_level_t * level1, const apol_mls_level_t * level2);
+
+/**
+ * Given a level, determine if it is legal according to the supplied
+ * policy.  This function will convert from aliases to canonical forms
+ * as necessary.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param level Level to check.
+ *
+ * @return 1 If level is legal, 0 if not; < 0 on error.
+ *
+ * @see apol_mls_level_compare()
+ */
+	extern int apol_mls_level_validate(apol_policy_t * p, const apol_mls_level_t * level);
 
 /**
  * Creates a string containing the textual representation of
@@ -413,8 +430,9 @@ extern "C"
  * NULL then return all levels.
  * @param v Reference to a vector of qpol_level_t.  The vector will be
  * allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards.  This will be set to NULL upon no
- * results or upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon
+ * upon error.  Note that the vector may be empty if the policy is
+ * not an MLS policy.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -493,8 +511,9 @@ extern "C"
  * NULL then return all categories.
  * @param v Reference to a vector of qpol_cat_t.  The vector will be
  * allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards.  This will be set to NULL upon no
- * results or upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon
+ * upon error.  Note that the vector could be empty if the policy is
+ * not an MLS policy.
  *
  * @return 0 on success (including none found), negative on error.
  */

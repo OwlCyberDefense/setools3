@@ -903,9 +903,17 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return;
 	};
-	const apol_vector_t *get_cats() {
-		return apol_mls_level_get_cats(self);
+	const apol_string_vector_t *get_cats() {
+		return (apol_string_vector_t *) apol_mls_level_get_cats(self);
 	};
+	int validate(apol_policy_t *p) {
+		int ret = apol_mls_level_validate(p, self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not validate level");
+		}
+	fail:
+		return ret;
+	}
 	%newobject render();
 	char *render(apol_policy_t *p) {
 		char *str;
@@ -983,6 +991,12 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 			return;
 	};
+        const apol_mls_level_t *get_low() {
+                return apol_mls_range_get_low(self);
+        }
+        const apol_mls_level_t *get_high() {
+                return apol_mls_range_get_high(self);
+        }
 	%newobject render();
 	char *render(apol_policy_t *p) {
 		char *str;
@@ -1003,10 +1017,17 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 			return v;
 	};
+	int validate(apol_policy_t *p) {
+		int ret = apol_mls_range_validate(p, self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not validate range");
+		}
+	fail:
+		return ret;
+	}
 };
 int apol_mls_range_compare(apol_policy_t * p, const apol_mls_range_t * target, const apol_mls_range_t * search, unsigned int range_compare_type);
 int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range,	const apol_mls_range_t * subrange);
-int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range);
 
 /* apol level query */
 typedef struct apol_level_query {} apol_level_query_t;
