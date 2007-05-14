@@ -77,12 +77,12 @@ extern "C"
 /* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are 
  * copied from sepol/policydb/services.h.
  * QPOL_FS_USE_PSID is an extension to support v12 policies. */
-#define QPOL_FS_USE_XATTR 1
-#define QPOL_FS_USE_TRANS 2
-#define QPOL_FS_USE_TASK  3
-#define QPOL_FS_USE_GENFS 4
-#define QPOL_FS_USE_NONE  5
-#define QPOL_FS_USE_PSID  6
+#define QPOL_FS_USE_XATTR 1U
+#define QPOL_FS_USE_TRANS 2U
+#define QPOL_FS_USE_TASK  3U
+#define QPOL_FS_USE_GENFS 4U
+#define QPOL_FS_USE_NONE  5U
+#define QPOL_FS_USE_PSID  6U
 
 /**
  *  Get the labeling behavior from a fs_use statement.

@@ -32,6 +32,8 @@ extern "C"
 
 #include <config.h>
 
+#include <stdbool.h>
+
 #include <apol/policy.h>
 #include <apol/policy-path.h>
 #include <apol/policy-query.h>

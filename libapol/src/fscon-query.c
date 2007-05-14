@@ -33,11 +33,13 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 struct apol_genfscon_query
 {
 	char *fs, *path;
-	int objclass;
+	uint32_t objclass;
+	bool objclass_set;
 	apol_context_t *context;
 	unsigned int flags;
 };
@@ -45,7 +47,8 @@ struct apol_genfscon_query
 struct apol_fs_use_query
 {
 	char *fs;
-	int behavior;
+	uint32_t behavior;
+	bool behavior_set;
 	apol_context_t *context;
 	unsigned int flags;
 };
@@ -93,7 +96,7 @@ int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apo
 				free(genfscon);
 				continue;
 			}
-			if (g->objclass >= 0 && (uint32_t) g->objclass != objclass) {
+			if (g->objclass_set && g->objclass != objclass) {
 				free(genfscon);
 				continue;
 			}
@@ -159,7 +162,8 @@ int apol_genfscon_query_set_path(apol_policy_t * p, apol_genfscon_query_t * g, c
 int apol_genfscon_query_set_objclass(apol_policy_t * p, apol_genfscon_query_t * g, int objclass)
 {
 	if (objclass < 0) {
-		g->objclass = -1;
+		g->objclass = 0;
+		g->objclass_set = false;
 	} else {
 		switch (objclass) {
 		case QPOL_CLASS_BLK_FILE:
@@ -169,8 +173,10 @@ int apol_genfscon_query_set_objclass(apol_policy_t * p, apol_genfscon_query_t * 
 		case QPOL_CLASS_FILE:
 		case QPOL_CLASS_LNK_FILE:
 		case QPOL_CLASS_SOCK_FILE:
-		case QPOL_CLASS_ALL:{
-				g->objclass = (int)objclass;
+		case QPOL_CLASS_ALL:
+			{
+				g->objclass = objclass;
+				g->objclass_set = true;
 				break;
 			}
 		default:
@@ -310,7 +316,7 @@ int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_ve
 			} else if (retval2 == 0) {
 				continue;
 			}
-			if (f->behavior >= 0 && (uint32_t) f->behavior != behavior) {
+			if (f->behavior_set && f->behavior != behavior) {
 				continue;
 			}
 			/* recall that fs_use_psid statements do not
@@ -369,7 +375,8 @@ int apol_fs_use_query_set_filesystem(apol_policy_t * p, apol_fs_use_query_t * f,
 int apol_fs_use_query_set_behavior(apol_policy_t * p, apol_fs_use_query_t * f, int behavior)
 {
 	if (behavior < 0) {
-		f->behavior = -1;
+		f->behavior = 0;
+		f->behavior_set = false;
 	} else {
 		switch (behavior) {
 		case QPOL_FS_USE_XATTR:
@@ -377,8 +384,10 @@ int apol_fs_use_query_set_behavior(apol_policy_t * p, apol_fs_use_query_t * f, i
 		case QPOL_FS_USE_TRANS:
 		case QPOL_FS_USE_GENFS:
 		case QPOL_FS_USE_NONE:
-		case QPOL_FS_USE_PSID:{
-				f->behavior = (int)behavior;
+		case QPOL_FS_USE_PSID:
+			{
+				f->behavior = behavior;
+				f->behavior_set = true;
 				break;
 			}
 		default:

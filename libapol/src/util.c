@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 /* these are needed for nodecons and IPv4 and IPv6 */
 #include <qpol/nodecon_query.h>

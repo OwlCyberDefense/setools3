@@ -1,3 +1,8 @@
+2007-05-14  J. Mowery  <jmowery@tresys.com>
+
+	* correctly marked libqpol defines for genfscon object classes
+	  and fs_use behaviors as unsigned constants.
+
 2007-05-14  J. Tang  <jtang@tresys.com>
 
 	* libapol/src/role-query.c (apol_role_get_by_query),
@@ -21,6 +26,12 @@
 	* libapol/src/context-query.c (apol_context_render): When
 	rendering a partial context, unset fields are now explicitly
 	represented by an asterisk, rather than by an empty string.
+
+2007-05-11  J. Mowery  <jmowery@tresys.com>
+
+	* removed usage of typedef'ed bool_t and replaced with bool as 
+	  defined by stdbool.h; also replaced defined TRUE and FALSE
+	  with true and false constants as defined by stdbool.h.
 
 2007-05-11  J. Tang  <jtang@tresys.com>
 

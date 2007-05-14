@@ -127,8 +127,8 @@ extern "C"
 
 /**
  * Write a message to the callback stored within an apol error
- * handler.  If the msg_callback field is empty then suppress the
- * message.
+ * handler.  If the msg_callback field is empty, then the default
+ * message callback will be used.
  *
  * @param p Error reporting handler.  If NULL then write message to
  * stderr.

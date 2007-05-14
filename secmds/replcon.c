@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <fnmatch.h>
+#include <stdbool.h>
 /* command line parsing commands */
 #include <getopt.h>
 /* file tree walking commands */

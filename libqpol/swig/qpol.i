@@ -1229,12 +1229,21 @@ typedef struct qpol_common {} qpol_common_t;
 /* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are
  * copied from sepol/policydb/services.h.
  * QPOL_FS_USE_PSID is an extension to support v12 policies. */
+#ifdef SWIGJAVA /* java does not understand unsigned constants */
 #define QPOL_FS_USE_XATTR 1
 #define QPOL_FS_USE_TRANS 2
 #define QPOL_FS_USE_TASK  3
 #define QPOL_FS_USE_GENFS 4
 #define QPOL_FS_USE_NONE  5
 #define QPOL_FS_USE_PSID  6
+#else
+#define QPOL_FS_USE_XATTR 1U
+#define QPOL_FS_USE_TRANS 2U
+#define QPOL_FS_USE_TASK  3U
+#define QPOL_FS_USE_GENFS 4U
+#define QPOL_FS_USE_NONE  5U
+#define QPOL_FS_USE_PSID  6U
+#endif
 typedef struct qpol_fs_use {} qpol_fs_use_t;
 %extend qpol_fs_use_t {
 	qpol_fs_use_t(qpol_policy_t *p, char *name) {
@@ -1284,6 +1293,7 @@ typedef struct qpol_fs_use {} qpol_fs_use_t;
 
 /* qpol genfscon */
 /* values from flask do not change */
+#ifdef SWIGJAVA /* java does not understand unsigned constants */
 #define QPOL_CLASS_ALL        0
 #define QPOL_CLASS_BLK_FILE  11
 #define QPOL_CLASS_CHR_FILE  10
@@ -1292,6 +1302,16 @@ typedef struct qpol_fs_use {} qpol_fs_use_t;
 #define QPOL_CLASS_FILE       6
 #define QPOL_CLASS_LNK_FILE   9
 #define QPOL_CLASS_SOCK_FILE 12
+#else
+#define QPOL_CLASS_ALL        0U
+#define QPOL_CLASS_BLK_FILE  11U
+#define QPOL_CLASS_CHR_FILE  10U
+#define QPOL_CLASS_DIR        7U
+#define QPOL_CLASS_FIFO_FILE 13U
+#define QPOL_CLASS_FILE       6U
+#define QPOL_CLASS_LNK_FILE   9U
+#define QPOL_CLASS_SOCK_FILE 12U
+#endif
 typedef struct qpol_genfscon {} qpol_genfscon_t;
 %extend qpol_genfscon_t {
 	qpol_genfscon_t(qpol_policy_t *p, char *name, char *path) {

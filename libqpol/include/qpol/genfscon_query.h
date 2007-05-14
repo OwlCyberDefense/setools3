@@ -88,14 +88,14 @@ extern "C"
 	extern int qpol_genfscon_get_path(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **path);
 
 /* values from flask do not change */
-#define QPOL_CLASS_ALL        0
-#define QPOL_CLASS_BLK_FILE  11
-#define QPOL_CLASS_CHR_FILE  10
-#define QPOL_CLASS_DIR        7
-#define QPOL_CLASS_FIFO_FILE 13
-#define QPOL_CLASS_FILE       6
-#define QPOL_CLASS_LNK_FILE   9
-#define QPOL_CLASS_SOCK_FILE 12
+#define QPOL_CLASS_ALL        0U
+#define QPOL_CLASS_BLK_FILE  11U
+#define QPOL_CLASS_CHR_FILE  10U
+#define QPOL_CLASS_DIR        7U
+#define QPOL_CLASS_FIFO_FILE 13U
+#define QPOL_CLASS_FILE       6U
+#define QPOL_CLASS_LNK_FILE   9U
+#define QPOL_CLASS_SOCK_FILE 12U
 
 /**
  *  Get the object class from a genfscon statement.

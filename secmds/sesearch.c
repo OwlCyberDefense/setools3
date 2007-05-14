@@ -44,6 +44,7 @@
 #include <assert.h>
 #include <getopt.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
