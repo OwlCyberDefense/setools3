@@ -1237,6 +1237,22 @@ typedef struct apol_context {} apol_context_t;
 	const apol_mls_range_t *get_range() {
 		return apol_context_get_range(self);
 	};
+	int validate(apol_policy_t *p) {
+		int ret = apol_context_validate(p, self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not validate context");
+		}
+	fail:
+		return ret;
+	}
+	int validate_partial(apol_policy_t *p) {
+		int ret = apol_context_validate_partial(p, self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not validate context");
+		}
+	fail:
+		return ret;
+	}
 	%newobject render();
 	char *render(apol_policy_t *p) {
 		char *str;
@@ -1249,8 +1265,6 @@ typedef struct apol_context {} apol_context_t;
 	};
 };
 int apol_context_compare(apol_policy_t * p, apol_context_t * target, apol_context_t * search, unsigned int range_compare_type);
-int apol_context_validate(apol_policy_t * p, apol_context_t * context);
-int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context);
 
 /* apol constraint query */
 typedef struct apol_constraint_query {} apol_constraint_query_t;

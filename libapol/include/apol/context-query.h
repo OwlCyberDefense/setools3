@@ -71,7 +71,7 @@ extern "C"
  * Set the user field of a context structure.  This function
  * duplicates the incoming string.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param context Context to modify.
  * @param user New user field to set, or NULL to unset this field.
  *
@@ -83,7 +83,7 @@ extern "C"
  * Set the role field of a context structure.  This function
  * duplicates the incoming string.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param context Context to modify.
  * @param role New role field to set, or NULL to unset this field.
  *
@@ -95,7 +95,7 @@ extern "C"
  * Set the type field of a context structure.  This function
  * duplicates the incoming string.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param context Context to modify.
  * @param type New type field to set, or NULL to unset this field.
  *
@@ -108,7 +108,7 @@ extern "C"
  * ownership of the range, such that the caller must not modify nor
  * destroy it afterwards.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param context Context to modify.
  * @param range New range field to set, or NULL to unset this field.
  *
@@ -210,14 +210,16 @@ extern "C"
 /**
  * Given a context, allocate and return a string that represents the
  * context.  This function does not check if the context is valid or
- * not.  For fields that have not been set, leave that part of the
- * string empty.
+ * not.  An asterisk ("*") represents fields that have not been set.
+ * For example, if a context has the role object_r but has no user nor
+ * type set, it will be rendered as "<sample>*:object_r:*</sample>"
+ * (assuming the given policy is not MLS).
  *
  * @param p Policy within which to look up context information.
  * @param context Context to render.
  *
- * @return A newly allocated string on success, caller must free;
- * NULL on error.
+ * @return A newly allocated string on success, which the caller must
+ * free afterwards.  Upon error return NULL.
  */
 	extern char *apol_context_render(apol_policy_t * p, apol_context_t * context);
 

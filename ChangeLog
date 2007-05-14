@@ -1,3 +1,27 @@
+2007-05-14  J. Tang  <jtang@tresys.com>
+
+	* libapol/src/role-query.c (apol_role_get_by_query),
+	libapol/src/user-query.c (apol_user_get_by_query): Extra logic
+	added when "object_r" is given as the role.  For user queries, all
+	users implicitly have object_r assigned to them.  For role
+	queries, all types are assigned to object_r.
+
+	* libapol/swig/apol.i: apol_context_validate() and
+	apol_context_validate_partial() are now member functions of class
+	apol_context_t, rather than being a library function.
+
+	* libapol/include/mls-query.h (apol_mls_cat_name_compare): Removed
+	apol_mls_cat_name_compare() from the libapol public API.  This
+	function should never have been made public.
+
+	* libapol/src/context-query.c: Fixed potential segfaults in
+	modifiers to apol_context_t object, if the same pointer returned
+	by its accessor is then passed back in the modifier modifier.
+
+	* libapol/src/context-query.c (apol_context_render): When
+	rendering a partial context, unset fields are now explicitly
+	represented by an asterisk, rather than by an empty string.
+
 2007-05-11  J. Tang  <jtang@tresys.com>
 
 	* Fix potential segfaults in apol_mls_range functions if the high

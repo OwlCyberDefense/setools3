@@ -121,7 +121,7 @@ extern "C"
  * Set the sensitivity component of an MLS level structure.  This
  * function duplicates the incoming string.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param level MLS level to modify.
  * @param sens New sensitivity component to set, or NULL to unset this
  * field.
@@ -144,7 +144,7 @@ extern "C"
  * Add a category component of an MLS level structure.	This function
  * duplicates the incoming string.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param level MLS level to modify.
  * @param cats New category component to append.
  *
@@ -240,21 +240,6 @@ extern "C"
  */
 	extern int apol_mls_cats_compare(apol_policy_t * p, const char *cat1, const char *cat2);
 
-/**
- * Given two category names, returns < 0 if a has higher value than b,
- * > 0 if b is higher. The comparison is against the categories'
- * values according to the supplied policy.  If the two are equal or
- * upon error, return 0.
- *
- * @param a First category name to compare.
- * @param b Other name to compare.
- * @param data Pointer to a policy to which use for comparison.
- *
- * @return <0, 0, or >0 if a is less than, equal, or greater than b,
- * respectively.
- */
-	extern int apol_mls_cat_name_compare(const void *a, const void *b, void *data);
-
 /******************** range stuff ********************/
 
 /**
@@ -307,7 +292,7 @@ extern "C"
  * not modify nor destroy it afterwards.  It is legal to pass in the
  * same pointer for the range's low and high level.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param range MLS range to modify.
  * @param level New low level for range, or NULL to unset this field.
  *
@@ -321,7 +306,7 @@ extern "C"
  * not modify nor destroy it afterwards.  It is legal to pass in the
  * same pointer for the range's low and high level.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param range MLS range to modify.
  * @param level New high level for range, or NULL to unset this field.
  *

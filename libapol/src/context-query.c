@@ -96,41 +96,69 @@ void apol_context_destroy(apol_context_t ** context)
 
 int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const char *user)
 {
-	free(context->user);
-	context->user = NULL;
-	if (user != NULL && (context->user = strdup(user)) == NULL) {
-		ERR(p, "%s", strerror(errno));
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
+	}
+	if (user != context->user) {
+		free(context->user);
+		context->user = NULL;
+		if (user != NULL && (context->user = strdup(user)) == NULL) {
+			ERR(p, "%s", strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }
 
 int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const char *role)
 {
-	free(context->role);
-	context->role = NULL;
-	if (role != NULL && (context->role = strdup(role)) == NULL) {
-		ERR(p, "%s", strerror(errno));
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
+	}
+	if (role != context->role) {
+		free(context->role);
+		context->role = NULL;
+		if (role != NULL && (context->role = strdup(role)) == NULL) {
+			ERR(p, "%s", strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }
 
 int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const char *type)
 {
-	free(context->type);
-	context->type = NULL;
-	if (type != NULL && (context->type = strdup(type)) == NULL) {
-		ERR(p, "%s", strerror(errno));
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
+	}
+	if (type != context->type) {
+		free(context->type);
+		context->type = NULL;
+		if (type != NULL && (context->type = strdup(type)) == NULL) {
+			ERR(p, "%s", strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }
 
-int apol_context_set_range(apol_policy_t * p __attribute__ ((unused)), apol_context_t * context, apol_mls_range_t * range)
+int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range)
 {
-	apol_mls_range_destroy(&(context->range));
-	context->range = range;
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	if (range != context->range) {
+		apol_mls_range_destroy(&(context->range));
+		context->range = range;
+	}
 	return 0;
 }
 
@@ -327,21 +355,21 @@ char *apol_context_render(apol_policy_t * p, apol_context_t * context)
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->user != NULL ? context->user : "")) != 0) {
+	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->user != NULL ? context->user : "*")) != 0) {
 		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->role != NULL ? context->role : "")) != 0) {
+	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->role != NULL ? context->role : "*")) != 0) {
 		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	if (apol_str_append(&buf, &buf_sz, (context->type != NULL ? context->type : "")) != 0) {
+	if (apol_str_append(&buf, &buf_sz, (context->type != NULL ? context->type : "*")) != 0) {
 		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
 	if (apol_policy_is_mls(p)) {
 		if (context->range == NULL) {
-			range_str = strdup("");
+			range_str = strdup("*");
 		} else {
 			range_str = apol_mls_range_render(p, context->range);
 		}

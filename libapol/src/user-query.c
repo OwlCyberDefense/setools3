@@ -101,6 +101,14 @@ int apol_user_get_by_query(apol_policy_t * p, apol_user_query_t * u, apol_vector
 						break;
 					}
 				}
+				/* special case: object_r is assigned
+				 * to all users */
+				compval = apol_compare(p, "object_r", u->role_name, u->flags, &(u->role_regex));
+				if (compval < 0) {
+					goto cleanup;
+				} else if (compval == 1) {
+					append_user = 1;
+				}
 				if (!append_user) {
 					continue;
 				}

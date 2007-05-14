@@ -83,6 +83,35 @@ static int apol_mls_cat_vector_compare(const void *a, const void *b, void *data)
 	return (cat_value2 - cat_value1);
 }
 
+/**
+ * Given two category names, returns < 0 if a has higher value than b,
+ * > 0 if b is higher. The comparison is against the categories'
+ * values according to the supplied policy.  If the two are equal or
+ * upon error, return 0.
+ *
+ * @param a First category name to compare.
+ * @param b Other name to compare.
+ * @param data Pointer to a policy to which use for comparison.
+ *
+ * @return <0, 0, or >0 if a is less than, equal, or greater than b,
+ * respectively.
+ */
+static int apol_mls_cat_name_compare(const void *a, const void *b, void *data)
+{
+	const char *cat1 = (const char *)a;
+	const char *cat2 = (const char *)b;
+	apol_policy_t *p = (apol_policy_t *) data;
+	qpol_cat_t *qcat1, *qcat2;
+	uint32_t cat_value1, cat_value2;
+	if (qpol_policy_get_cat_by_name(p->p, cat1, &qcat1) < 0 || qpol_policy_get_cat_by_name(p->p, cat2, &qcat2) < 0) {
+		return 0;
+	}
+	if (qpol_cat_get_value(p->p, qcat1, &cat_value1) < 0 || qpol_cat_get_value(p->p, qcat2, &cat_value2) < 0) {
+		return 0;
+	}
+	return (cat_value1 - cat_value2);
+}
+
 /********************* level *********************/
 
 apol_mls_level_t *apol_mls_level_create(void)
@@ -670,22 +699,6 @@ int apol_mls_cats_compare(apol_policy_t * p, const char *cat1, const char *cat2)
 		return 1;
 	}
 	return 0;
-}
-
-int apol_mls_cat_name_compare(const void *a, const void *b, void *data)
-{
-	const char *cat1 = (const char *)a;
-	const char *cat2 = (const char *)b;
-	apol_policy_t *p = (apol_policy_t *) data;
-	qpol_cat_t *qcat1, *qcat2;
-	uint32_t cat_value1, cat_value2;
-	if (qpol_policy_get_cat_by_name(p->p, cat1, &qcat1) < 0 || qpol_policy_get_cat_by_name(p->p, cat2, &qcat2) < 0) {
-		return 0;
-	}
-	if (qpol_cat_get_value(p->p, qcat1, &cat_value1) < 0 || qpol_cat_get_value(p->p, qcat2, &cat_value2) < 0) {
-		return 0;
-	}
-	return (cat_value1 - cat_value2);
 }
 
 /********************* range *********************/
