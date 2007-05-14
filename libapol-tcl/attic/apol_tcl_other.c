@@ -607,52 +607,6 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp * interp, int argc, C
 }
 
 /**
- * Checks if a context is partially valid or not according to the
- * policy.  Returns 1 if valid, 0 if invalid.
- */
-static int Apol_IsValidPartialContext(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	apol_context_t *context = NULL;
-	int retval = TCL_ERROR, retval2;
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		goto cleanup;
-	}
-	if (argc != 2) {
-		ERR(policydb, "%s", "Need a Tcl context.");
-		goto cleanup;
-	}
-	if ((context = apol_context_create()) == NULL) {
-		ERR(policydb, "%s", strerror(ENOMEM));
-		goto cleanup;
-	}
-	retval2 = apol_tcl_string_to_context(interp, argv[1], context);
-	if (retval2 < 0) {
-		goto cleanup;
-	} else if (retval2 == 1) {
-		Tcl_SetResult(interp, "0", TCL_STATIC);
-		retval = TCL_OK;
-		goto cleanup;
-	}
-	retval2 = apol_context_validate_partial(policydb, context);
-	if (retval2 < 0) {
-		goto cleanup;
-	} else if (retval2 == 0) {
-		Tcl_SetResult(interp, "0", TCL_STATIC);
-	} else {
-		Tcl_SetResult(interp, "1", TCL_STATIC);
-	}
-	retval = TCL_OK;
-      cleanup:
-	apol_context_destroy(&context);
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
-	return retval;
-}
-
-/**
  * Checks if the permission map has been loaded yet.  Returns 1 if so,
  * 0 if not.
  */
@@ -1009,7 +963,6 @@ int apol_tcl_init(Tcl_Interp * interp)
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", Apol_GetPolicyVersionString, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", Apol_GetPolicyVersionNumber, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetStats", Apol_GetStats, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_IsValidPartialContext", Apol_IsValidPartialContext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsPermMapLoaded", Apol_IsPermMapLoaded, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetDefault_PermMap", Apol_GetDefault_PermMap, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_LoadPermMap", Apol_LoadPermMap, NULL, NULL);

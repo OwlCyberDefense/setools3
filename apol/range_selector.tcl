@@ -107,10 +107,16 @@ proc Apol_Widget::getRangeSelectorState {path} {
 # Return a 2-uple containing the range value (an instance of an
 # apol_mls_range_t) and the search type (one of APOL_QUERY_EXACT,
 # APOL_QUERY_SUB, or APOL_QUERY_SUPER).  Caller must delete the range
-# afterwards.
+# afterwards.  Note that the range could be an empty string if none is
+# set.
 proc Apol_Widget::getRangeSelectorValue {path} {
     variable vars
-    list $vars($path:range) $vars($path:search_type)
+    if {$vars($path:range) != {}} {
+        set range [new_apol_mls_range_t $vars($path:range)]
+    } else {
+        set range {}
+    }
+    list $range $vars($path:search_type)
 }
 
 ########## private functions below ##########

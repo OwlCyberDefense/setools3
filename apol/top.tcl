@@ -20,7 +20,7 @@ namespace eval ApolTop {
     variable qpolicy {} ;# handle to policy's qpol_policy_t, or {} if none opened
     variable polstats
 
-    # these three are shown along the status line of the toplevel window
+    # these three are shown on the status line of the toplevel window
     variable policy_version_string {}
     variable policyConf_lineno {}
     variable policy_stats_summary {}
@@ -112,10 +112,6 @@ proc ApolTop::is_policy_open {} {
         return 0
     }
     return 1
-}
-
-proc ApolTop::get_toplevel_dialog {} {
-    return $ApolTop::mainframe
 }
 
 # If a policy is open and it has the given capability then return
@@ -616,21 +612,15 @@ proc ApolTop::displayGotoDialog {} {
     wm resizable $goto_Dialog 0 0
 }
 
-proc ApolTop::create { } {
-    variable notebook
-    variable mainframe
-    variable components_nb
-    variable rules_nb
-
-    # Menu description
-    set descmenu {
+proc ApolTop::create {} {
+    set menus {
 	"&File" {} file 0 {
 	    {command "&Open..." {} "Open a new policy" {Ctrl o} -command ApolTop::openPolicy}
 	    {command "&Close" {} "Close current polocy" {Ctrl w} -command ApolTop::closePolicy}
 	    {separator}
-	    {command "&Quit" {} "Quit policy analysis tool" {Ctrl q} -command ApolTop::apolExit}
-	    {separator}
 	    {cascade "&Recent Files" {} recent 0 {}}
+	    {separator}
+            {command "&Quit" {} "Quit policy analysis tool" {Ctrl q} -command ApolTop::apolExit}
 	}
 	"&Search" {} search 0 {
 	    {command "&Find..." {Disable_SearchMenu_Tag} "Find text in current buffer" {Ctrl f} -command ApolTop::displayFindDialog}
@@ -660,11 +650,7 @@ proc ApolTop::create { } {
 	    {command "&About apol" {} "Show copyright information" {} -command ApolTop::aboutBox}
 	}
     }
-
-    set mainframe [MainFrame .mainframe -menu $descmenu -textvariable ApolTop::statu_line]
-
-    #[$mainframe getmenu fc_index_menu] insert 0 command -label "Load Index... (Not loaded)" -command "ApolTop::load_fc_index_file"
-    #[$mainframe getmenu fc_index_menu] insert 0 command -label "Create Index" -command "ApolTop::create_fc_index_file"
+    variable mainframe [MainFrame .mainframe -menu $menus -textvariable ApolTop::statu_line]
 
     $mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
     $mainframe addindicator -textvariable ApolTop::policy_stats_summary -width 88
@@ -678,10 +664,7 @@ proc ApolTop::create { } {
     $ApolTop::mainframe setmenustate Disable_Summary disabled
 
     # NoteBook creation
-    set frame    [$mainframe getframe]
-    set notebook [NoteBook $frame.nb]
-
-    # Create Top-level tab frames
+    variable notebook [NoteBook [$mainframe getframe].nb]
     set components_frame [$notebook insert end $ApolTop::components_tab -text "Policy Components"]
     set rules_frame [$notebook insert end $ApolTop::rules_tab -text "Policy Rules"]
 
@@ -692,8 +675,8 @@ proc ApolTop::create { } {
     Apol_PolicyConf::create $notebook
 
     # Create subordinate tab frames
-    set components_nb [NoteBook $components_frame.components_nb]
-    set rules_nb [NoteBook $rules_frame.rules_nb]
+    variable components_nb [NoteBook $components_frame.components_nb]
+    variable rules_nb [NoteBook $rules_frame.rules_nb]
 
     variable mls_tabs
 

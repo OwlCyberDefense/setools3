@@ -52,6 +52,7 @@ proc Apol_Users::searchUsers {} {
             return
         }
         set default $opts(default_level)
+        # the user query will handle destroying the apol_mls_level object
     } else {
         set default NULL
     }
@@ -62,6 +63,7 @@ proc Apol_Users::searchUsers {} {
             tk_messageBox -icon error -type ok -title "Error" -message "No range selected."
             return
         }
+        # the user query will handle destroying the apol_mls_range object
     } else {
         set range NULL
     }

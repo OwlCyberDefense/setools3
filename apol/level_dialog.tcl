@@ -30,13 +30,8 @@ proc Apol_Level_Dialog::getLevel {{defaultLevel {}} {parent .}} {
     set f [$dialog getframe]
     Apol_Widget::resetLevelSelectorToPolicy $f.level
     if {$defaultLevel != {}} {
-        set sens [$defaultLevel get_sens]
-        set cats [str_vector_to_list [$defaultLevel get_cats]]
-    } else {
-        set sens {}
-        set cats {}
+        Apol_Widget::setLevelSelectorLevel $f.level $defaultLevel
     }
-    Apol_Widget::setLevelSelectorLevel $f.level [list $sens $cats]
     # force a recomputation of button sizes  (bug in ButtonBox)
     $dialog.bbox _redraw
     set retval [$dialog draw]
@@ -69,20 +64,14 @@ proc Apol_Level_Dialog::_create_dialog {parent} {
 }
 
 proc Apol_Level_Dialog::_get_level {dialog} {
-    foreach {sens cats} [Apol_Widget::getLevelSelectorLevel [$dialog getframe].level] {break}
-    set level [new_apol_mls_level_t]
-    $level set_sens $::ApolTop::policy $sens
-    foreach c $cats {
-        $level append_cats $::ApolTop::policy $c
-    }
-    return $level
+    return [Apol_Widget::getLevelSelectorLevel [$dialog getframe].level]
 }
 
-# check that the level is legal by constructing a 'range' with it (as
-# both the low and high level)
+# Check that the level is legal by validating it against the current
+# policy.
 proc Apol_Level_Dialog::_okay {dialog} {
     set level [_get_level $dialog]
-    if {[$level validate $::ApolTop::policy] != 1} {
+    if {![ApolTop::is_policy_open] || [$level validate $::ApolTop::policy] != 1} {
         tk_messageBox -icon error -type ok -title "Invalid Level" \
             -message "The selected level is not valid for the current policy."
     } else {

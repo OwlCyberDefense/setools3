@@ -32,21 +32,15 @@ proc Apol_Range_Dialog::getRange {{defaultRange {}} {parent .}} {
     set f [$dialog getframe]
     Apol_Widget::resetLevelSelectorToPolicy $f.low
     Apol_Widget::resetLevelSelectorToPolicy $f.high
-    Apol_Widget::setLevelSelectorLevel $f.low {{} {}}
-    Apol_Widget::setLevelSelectorLevel $f.high {{} {}}
     set vars($dialog:highenable) 0
     if {$defaultRange != {}} {
         set low_level [$defaultRange get_low]
         set high_level [$defaultRange get_high]
         
-        set sens [$low_level get_sens]
-        set cats [str_vector_to_list [$low_level get_cats]]
-        Apol_Widget::setLevelSelectorLevel $f.low [list $sens $cats]
+        Apol_Widget::setLevelSelectorLevel $f.low $low_level
         if {[apol_mls_level_compare $::ApolTop::policy $low_level $high_level] != $::APOL_MLS_EQ} {
             set vars($dialog:highenable) 1
-            set sens [$high_level get_sens]
-            set cats [str_vector_to_list [$high_level get_cats]]
-            Apol_Widget::setLevelSelectorLevel $f.high [list $sens $cats]
+            Apol_Widget::setLevelSelectorLevel $f.high $high_level
         }
     }
 
@@ -96,22 +90,18 @@ proc Apol_Range_Dialog::_get_range {dialog} {
     set f [$dialog getframe]
     set range [new_apol_mls_range_t]
 
-    foreach {sens cats} [Apol_Widget::getLevelSelectorLevel $f.low] {break}
-    set low_level [new_apol_mls_level_t]
-    $low_level set_sens $::ApolTop::policy $sens
-    foreach c $cats {
-        $low_level append_cats $::ApolTop::policy $c
+    if {[ApolTop::is_policy_open]} {
+        set p $::ApolTop::policy
+    } else {
+        set p NULL
     }
-    $range set_low $::ApolTop::policy $low_level
+
+    set low_level [Apol_Widget::getLevelSelectorLevel $f.low]
+    $range set_low $p $low_level
     
     if {$vars($dialog:highenable)} {
-        foreach {sens cats} [Apol_Widget::getLevelSelectorLevel $f.high] {break}
-        set high_level [new_apol_mls_level_t]
-        $high_level set_sens $::ApolTop::policy $sens
-        foreach c $cats {
-            $high_level append_cats $::ApolTop::policy $c
-        }
-        $range set_high $::ApolTop::policy $high_level
+        set high_level [Apol_Widget::getLevelSelectorLevel $f.high]
+        $range set_high $p $high_level
     }
 
     return $range
@@ -119,7 +109,7 @@ proc Apol_Range_Dialog::_get_range {dialog} {
 
 proc Apol_Range_Dialog::_okay {dialog} {
     set range [_get_range $dialog]
-    if {[$range validate $::ApolTop::policy] != 1} {
+    if {![ApolTop::is_policy_open] || [$range validate $::ApolTop::policy] != 1} {
         tk_messageBox -icon error -type ok -title "Invalid Range" \
             -message "The selected range is not valid.  The high level does not dominate the low level."
     } else {

@@ -433,7 +433,6 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp * interp, int argc,
 	return retval;
 }
 
-
 /**
  * Given a qpol_context, allocate a new TclObj to the
  * referenced paramater dest_obj.  The returned Tcl list is:
@@ -471,124 +470,6 @@ static int qpol_context_to_tcl_obj(Tcl_Interp * interp, qpol_context_t * context
 	retval = TCL_OK;
       cleanup:
 	apol_context_destroy(&apol_context);
-	return retval;
-}
-
-/**
- * Takes a qpol_isid_t and appends a tuple of it to result_list.  The
- * tuple consists of:
- * <code>
- *   { isid_name context }
- * </code>
- * where a context is:
- * <code>
- *   { user role type {low_level high_level} }
- * </code>
- */
-static int append_isid_to_list(Tcl_Interp * interp, qpol_isid_t * isid, Tcl_Obj * result_list)
-{
-	Tcl_Obj *isid_elem[2], *isid_list;
-	char *name;
-	qpol_context_t *context;
-	int retval = TCL_ERROR;
-	if (qpol_isid_get_name(qpolicydb, isid, &name) < 0 || qpol_isid_get_context(qpolicydb, isid, &context) < 0) {
-		goto cleanup;
-	}
-	isid_elem[0] = Tcl_NewStringObj(name, -1);
-	if (qpol_context_to_tcl_obj(interp, context, isid_elem + 1) == TCL_ERROR) {
-		goto cleanup;
-	}
-	isid_list = Tcl_NewListObj(2, isid_elem);
-	if (Tcl_ListObjAppendElement(interp, result_list, isid_list) == TCL_ERROR) {
-		goto cleanup;
-	}
-	retval = TCL_OK;
-      cleanup:
-	return retval;
-}
-
-/**
- * Return an unordered list of initial sid tuples within the current
- * policy.  Each tuple consists of:
- * <ul>
- *   <li>initial sid name
- *   <li>initial sid context
- * </ul>
- * where a context is:
- * <code>
- *   { user role type range }
- * </code>
- *
- * @param argv This function takes three parameters:
- * <ol>
- *   <li>name to lookup, or empty string to ignore
- *   <li>(optional) full or partial context to match
- *   <li>(optional) range query type
- * </ol>
- */
-static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	qpol_isid_t *isid;
-	const char *name = NULL;
-	apol_context_t *context = NULL;
-	unsigned int range_match;
-	apol_isid_query_t *query = NULL;
-	apol_vector_t *v = NULL;
-	size_t i;
-	int retval = TCL_ERROR;
-
-	apol_tcl_clear_error();
-	if (policydb == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		goto cleanup;
-	}
-	if (argc != 2 && argc != 4) {
-		ERR(policydb, "%s", "Need an isid name, ?context?, and ?range_match?.");
-		goto cleanup;
-	}
-	if (*argv[1] != '\0') {
-		name = argv[1];
-	}
-	if (argc > 2 && *argv[2] != '\0') {
-		if ((context = apol_context_create()) == NULL) {
-			ERR(policydb, "%s", strerror(ENOMEM));
-			goto cleanup;
-		}
-		if (apol_tcl_string_to_context(interp, argv[2], context) < 0 ||
-		    apol_tcl_string_to_range_match(interp, argv[3], &range_match) < 0) {
-			goto cleanup;
-		}
-	}
-	if (name != NULL || context != NULL) {
-		if ((query = apol_isid_query_create()) == NULL) {
-			ERR(policydb, "%s", strerror(ENOMEM));
-			goto cleanup;
-		}
-		if (apol_isid_query_set_name(policydb, query, name) < 0 ||
-		    apol_isid_query_set_context(policydb, query, context, range_match) < 0) {
-			goto cleanup;
-		}
-		context = NULL;
-	}
-	if (apol_isid_get_by_query(policydb, query, &v) < 0) {
-		goto cleanup;
-	}
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		isid = (qpol_isid_t *) apol_vector_get_element(v, i);
-		if (append_isid_to_list(interp, isid, result_obj) == TCL_ERROR) {
-			goto cleanup;
-		}
-	}
-	Tcl_SetObjResult(interp, result_obj);
-	retval = TCL_OK;
-      cleanup:
-	apol_context_destroy(&context);
-	apol_isid_query_destroy(&query);
-	apol_vector_destroy(&v);
-	if (retval == TCL_ERROR) {
-		apol_tcl_write_error(interp);
-	}
 	return retval;
 }
 
@@ -1378,7 +1259,6 @@ int apol_tcl_components_init(Tcl_Interp * interp)
 	Tcl_CreateCommand(interp, "apol_GetAttribs", Apol_GetAttribs, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetClasses", Apol_GetClasses, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetCommons", Apol_GetCommons, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetInitialSIDs", Apol_GetInitialSIDs, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPortcons", Apol_GetPortcons, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetNetifcons", Apol_GetNetifcons, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetNodecons", Apol_GetNodecons, NULL, NULL);

@@ -122,15 +122,22 @@ proc Apol_Widget::getTypeComboboxValue {path} {
     string trim $Apol_Widget::vars($path:type)
 }
 
+# Return the currently selected type.  If an attribute is acting as a
+# filter, the return value will instead be a 2-ple list of the
+# selected type and the selected attribute.
 proc Apol_Widget::getTypeComboboxValueAndAttrib {path} {
     variable vars
     if {$vars($path:attribenable)} {
-        list $vars($path:type) $vars($path:attrib)
+        list [string trim $vars($path:type)] $vars($path:attrib)
     } else {
-        set vars($path:type)
+        string trim vars($path:type)
     }
 }
 
+# Set the type and possibly attribute for a type combobox.  The first
+# element of $type is the type to set.  If $type has more than one
+# element, then the second element is the attribute upon which to
+# filter.
 proc Apol_Widget::setTypeComboboxValue {path type} {
     variable vars
     if {[llength $type] <= 1} {
@@ -164,7 +171,7 @@ proc Apol_Widget::setTypeComboboxState {path newState} {
 # Create a mega-widget used to select a single MLS level (a
 # sensitivity + 0 or more categories).
 #
-# catSize - number of categories to show in the box, by default
+# @param catSize Number of categories to show in the dropdown box.
 proc Apol_Widget::makeLevelSelector {path catSize args} {
     variable vars
     array unset vars $path:*
@@ -192,30 +199,39 @@ proc Apol_Widget::makeLevelSelector {path catSize args} {
     return $f
 }
 
-# Return an apol_level_t object that represents the level selected.
+# Return an apol_mls_level_t object that represents the level
+# selected.  The caller must delete it afterwards.
 proc Apol_Widget::getLevelSelectorLevel {path} {
     variable vars
+    set apol_level [new_apol_mls_level_t]
     # convert sensitivity aliases to its real name, if necessary
     set l [Apol_MLS::isSensInPolicy $vars($path:sens)]
-    if {$l == {}} {
-        set sens $vars($path:sens)
+    if {[ApolTop::is_policy_open]} {
+        set p $::ApolTop::policy
     } else {
-        set sens $l
+        set p NULL
+    }
+    if {$l == {}} {
+        $apol_level set_sens $p $vars($path:sens)
+    } else {
+        $apol_level set_sens $p $l
     }
     set sl [getScrolledListbox $path.cats]
     set cats {}
     foreach idx [$sl curselection] {
-        lappend cats [$sl get $idx]
+        $apol_level append_cats $p [$sl get $idx]
     }
-    list $sens $cats
+    return $apol_level
 }
 
+# Given an apol_mls_level_t object, set the level selector's display
+# to match the level.
 proc Apol_Widget::setLevelSelectorLevel {path level} {
     variable vars
-    set sens [lindex $level 0]
-    set cats [lindex $level 1]
+    set sens [$level get_sens]
+    set cats [str_vector_to_list [$level get_cats]]
     set sens_list [$path.sens cget -values]
-    if {[lsearch -exact $sens_list $sens] != -1} {
+    if {$sens != {} && [lsearch -exact $sens_list $sens] != -1} {
         set vars($path:sens) $sens
         set cats_list $vars($path:cats)
         set first_idx -1
@@ -264,7 +280,7 @@ proc Apol_Widget::resetLevelSelectorToPolicy {path} {
 
 proc Apol_Widget::clearLevelSelector {path} {
     variable vars
-    set vars($path:sens) ""
+    set vars($path:sens) {}
     $path.sens configure -values {}
     # the category box will be cleared because of the trace on $path:sens
 }
@@ -693,7 +709,7 @@ proc Apol_Widget::_listbox_popup {w x y callbacks lb} {
     # create a global popup menu widget if one does not already exist
     variable menuPopup
     if {![winfo exists $menuPopup]} {
-        set menuPopup [menu .apol_widget_menu_popup]
+        set menuPopup [menu .apol_widget_menu_popup -tearoff 0]
     }
 
     ApolTop::popup $w $x $y $menuPopup $callbacks $selected_item

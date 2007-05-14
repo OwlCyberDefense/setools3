@@ -36,21 +36,25 @@ proc Apol_Initial_SIDS::searchSIDs {} {
     set range_match 0
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
+
+    set q [new_apol_isid_query_t]
     if {[Apol_Widget::getContextSelectorState $widgets(context)]} {
-        foreach {context range_match} [Apol_Widget::getContextSelectorValue $widgets(context)] {break}
+        foreach {context range_match attribute} [Apol_Widget::getContextSelectorValue $widgets(context)] {break}
+        $q set_context $::ApolTop::policy $context $range_match
     }
-    if {[catch {apol_GetInitialSIDs $name $context $range_match} isids]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining initial SIDs list: $isids"
-        return
-    }
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set isids [isid_vector_to_list $v]
+    $v -delete
+    
     set results "INITIAL SIDS:"
     if {[llength $isids] == 0} {
         append results "\nSearch returned no results."
     } else {
-        foreach i [lsort -index 0 -dictionary $isids] {
+        foreach i [lsort -dictionary $isids] {
             append results "\n[render_isid $i]"
         }
     }
@@ -74,26 +78,25 @@ proc Apol_Initial_SIDS::close {} {
     Apol_Widget::clearContextSelector $widgets(context)
 }
 
-proc Apol_Initial_SIDS::render_isid {isid {compact 0}} {
-    foreach {name context} $isid {break}
-    set context [apol_RenderContext $context]
+proc Apol_Initial_SIDS::render_isid {isid_name {compact 0}} {
+    set qpol_isid_datum [new_qpol_isid_t $::ApolTop::qpolicy $isid_name]
+    set qpol_context [$qpol_isid_datum get_context $::ApolTop::qpolicy]
+    set apol_context [new_apol_context_t $::ApolTop::policy $qpol_context]
+    set context_str [$apol_context render $::ApolTop::policy]
+    $apol_context -delete
     if {$compact} {
-        format "sid %s %s" $name $context
+        format "sid %s %s" $isid_name $context_str
     } else {
-        format "sid  %-16s %s" $name $context
+        format "sid  %-16s %s" $isid_name $context_str
     }
 }
 
 proc Apol_Initial_SIDS::popupSIDInfo {sid} {
-    set info [apol_GetInitialSIDs $sid]
-    set text "$sid:"
-    foreach s [lsort -index 0 -dictionary $info] {
-        append text "\n\t[render_isid $s 1]"
-    }
+    set text "$sid:\n  [render_isid $sid 1]"
     Apol_Widget::showPopupText "$sid Context" $text
 }
 
-proc Apol_Initial_SIDS::goto_line { line_num } {
+proc Apol_Initial_SIDS::goto_line {line_num} {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
@@ -106,14 +109,12 @@ proc Apol_Initial_SIDS::create {nb} {
         items {}
     }
 
-    # Layout frames
     set frame [$nb insert end $ApolTop::initial_sids_tab -text "Initial SIDs"]
     set pw [PanedWindow $frame.pw -side top -weights extra]
     set leftf [$pw add -weight 0]
     set rightf [$pw add -weight 1]
     pack $pw -fill both -expand yes
 
-    # Title frames
     set sids_box [TitleFrame $leftf.sids_box -text "Initial SIDs"]
     set s_optionsbox [TitleFrame $rightf.obox -text "Search Options"]
     set rslts_frame [TitleFrame $rightf.rbox -text "Search Results"]
@@ -121,13 +122,11 @@ proc Apol_Initial_SIDS::create {nb} {
     pack $s_optionsbox -side top -expand 0 -fill both -padx 2
     pack $rslts_frame -side top -expand yes -fill both -padx 2
 
-    # Initial SIDs listbox widget
     set widgets(items) [Apol_Widget::makeScrolledListbox [$sids_box getframe].lb -width 20 -listvar Apol_Initial_SIDS::vals(items)]
     Apol_Widget::setListboxCallbacks $widgets(items) \
         {{"Display Initial SID Context" {Apol_Initial_SIDS::popupSIDInfo}}}
     pack $widgets(items) -expand 1 -fill both
 
-    # Search options subframes
     set f [frame [$s_optionsbox getframe].c]
     set widgets(context) [Apol_Widget::makeContextSelector $f.context "Context"]
     pack $widgets(context)
@@ -137,7 +136,6 @@ proc Apol_Initial_SIDS::create {nb} {
                 -command Apol_Initial_SIDS::searchSIDs]
     pack $ok -side right -pady 5 -padx 5 -anchor ne
 
-    # Display results window
     set widgets(results) [Apol_Widget::makeSearchResults [$rslts_frame getframe].results]
     pack $widgets(results) -side top -expand yes -fill both
 

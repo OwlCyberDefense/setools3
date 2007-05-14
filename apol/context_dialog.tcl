@@ -13,26 +13,46 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget 1.7+
-
 namespace eval Apol_Context_Dialog {
     variable dialog ""
     variable vars
 }
 
 # Create a dialog box to allow the user to select a single context
-# (user + role + type + level [if MLS]).
-proc Apol_Context_Dialog::getContext {{defaultContext {{} {} {} {{{} {}}}}} {parent .}} {
+# (user + role + type + level [if MLS]).  This will return a 2-ple
+# list.  The first is an apol_context_t; the caller must delete this
+# afterwards.  Note that the context may be partially filled.  The
+# second element is the attribute used to filter types; it may be an
+# empty string to indicate no filtering.  If the dialog is cancelled
+# then return an empty list.
+proc Apol_Context_Dialog::getContext {{defaultContext {}} {defaultAttribute {}} {parent .}} {
     variable dialog
     variable vars
     if {![winfo exists $dialog]} {
         _create_dialog $parent
     }
 
+    set user {}
+    set role {}
+    set type {}
+    set low_level {}
+    set high_level {}
+
     # initialize widget states
     array set vars [list $dialog:low_enable 0  $dialog:high_enable 0]
-    foreach {user role type range} $defaultContext {break}
+    if {$defaultContext != {}} {
+        set user [$defaultContext get_user]
+        set role [$defaultContext get_role]
+        set type [$defaultContext get_type]
+        if {$defaultAttribute != {}} {
+            lappend type $defaultAttribute
+        }
+        set range [$defaultContext get_range]
+        if {$range != "NULL"} {
+            set low_level [$range get_low]
+            set high_level [$range get_high]
+        }
+    }
 
     $vars($dialog:user_box) configure -values $Apol_Users::users_list
     set vars($dialog:user) $user
@@ -60,20 +80,15 @@ proc Apol_Context_Dialog::getContext {{defaultContext {{} {} {} {{{} {}}}}} {par
 
     Apol_Widget::resetLevelSelectorToPolicy $vars($dialog:low_level)
     Apol_Widget::resetLevelSelectorToPolicy $vars($dialog:high_level)
-    if {[ApolTop::is_capable "mls"]} {
-        if {[llength $range] == 1} {
-            if {[lindex $range 0] == {{} {}}} {
-                set vars($dialog:low_enable) 0
-            } else {
-                set vars($dialog:low_enable) 1
-                Apol_Widget::setLevelSelectorLevel $vars($dialog:low_level) [lindex $range 0]
-            }
-            set vars($dialog:high_enable) 0
-        } else {
+    if {[ApolTop::is_policy_open] && [ApolTop::is_capable "mls"]} {
+        if {$low_level != {}} {
             set vars($dialog:low_enable) 1
-            Apol_Widget::setLevelSelectorLevel $vars($dialog:low_level) [lindex $range 0]
+            Apol_Widget::setLevelSelectorLevel $vars($dialog:low_level) $low_level
+        }
+        if {$high_level != {}} {
+            set vars($dialog:low_enable) 1
             set vars($dialog:high_enable) 1
-            Apol_Widget::setLevelSelectorLevel $vars($dialog:high_level) [lindex $range 1]
+            Apol_Widget::setLevelSelectorLevel $vars($dialog:high_level) $high_level
         }
         $vars($dialog:low_cb) configure -state normal
     } else {
@@ -86,9 +101,11 @@ proc Apol_Context_Dialog::getContext {{defaultContext {{} {} {} {{{} {}}}}} {par
     $dialog.bbox _redraw
     set retval [$dialog draw]
     if {$retval == -1 || $retval == 1} {
-        return $defaultContext
+        return {}
     }
-    _get_context $dialog
+    set context [_get_context $dialog]
+    set attribute [lindex [Apol_Widget::getTypeComboboxValueAndAttrib $vars($dialog:type_box)] 1]
+    list $context $attribute
 }
 
 
@@ -168,14 +185,20 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
 # the low and high level).
 proc Apol_Context_Dialog::_okay {dialog} {
     variable vars
+    set context [new_apol_context_t]
+    if {[ApolTop::is_policy_open]} {
+        set p $::ApolTop::policy
+    } else {
+        set p NULL
+    }
+
     if {$vars($dialog:user_enable)} {
         if {[set user $vars($dialog:user)] == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                 -message "No user was selected."
             return
         }
-    } else {
-        set user {}
+        $context set_user $p $user
     }
     if {$vars($dialog:role_enable)} {
         if {[set role $vars($dialog:role)] == {}} {
@@ -183,79 +206,78 @@ proc Apol_Context_Dialog::_okay {dialog} {
                 -message "No role was selected."
             return
         }
-    } else {
-        set role {}
+        $context set_role $p $role
     }
-    set type [Apol_Widget::getTypeComboboxValue $vars($dialog:type_box)]
     if {$vars($dialog:type_enable)} {
+        set type [lindex [Apol_Widget::getTypeComboboxValue $vars($dialog:type_box)] 0]
         if {$type == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                 -message "No type was selected."
             return
         }
-    } else {
-        set type {}
+        $context set_type $p $type
     }
     if {$vars($dialog:low_enable)} {
         set range [_get_range $dialog]
-        set low [lindex $range 0]
-        if {$low == {{} {}}} {
+        if {$range == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                 -message "No level was selected."
             return
         }
-    } else {
-        set range {}
+        $context set_range $p $range
     }
-    if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-            -message "The context could not be validated because no policy is open."
-        return
-    }
-    if {[catch {apol_IsValidPartialContext [list $user $role $type $range]} val]} {
-        tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-            -message "The context could not be validated:\n$val"
-        return
-    } elseif {$val == 0} {
+    if {![ApolTop::is_policy_open] || [$context validate_partial $p] <= 0} {
         tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
             -message "The selected context is not valid for the current policy."
         return
+    } else {
+        $dialog enddialog 0
     }
-    $dialog enddialog 0
+    $context -delete
 }
 
 proc Apol_Context_Dialog::_get_context {dialog} {
     variable vars
-    set context {}
-    if {$vars($dialog:user_enable)} {
-        lappend context $vars($dialog:user)
+    set context [new_apol_context_t]
+    if {[ApolTop::is_policy_open]} {
+        set p $::ApolTop::policy
     } else {
-        lappend context {}
+        set p NULL
+    }
+    if {$vars($dialog:user_enable)} {
+        $context set_user $p $vars($dialog:user)
     }
     if {$vars($dialog:role_enable)} {
-        lappend context $vars($dialog:role)
-    } else {
-        lappend context {}
+        $context set_role $p $vars($dialog:role)
     }
     if {$vars($dialog:type_enable)} {
-        lappend context [Apol_Widget::getTypeComboboxValueAndAttrib $vars($dialog:type_box)]
-    } else {
-        lappend context {}
+        set type [lindex [Apol_Widget::getTypeComboboxValueAndAttrib $vars($dialog:type_box)] 0]
+        $context set_type $p $type
     }
-    lappend context [_get_range $dialog]
+    set range [_get_range $dialog]
+    if {$range != {}} {
+        $context set_range $p $range
+    }
+    return $context
 }
 
 proc Apol_Context_Dialog::_get_range {dialog} {
     variable vars
     if {!$vars($dialog:low_enable)} {
-        return {{{} {}}}
+        return {}
     }
-    set low [Apol_Widget::getLevelSelectorLevel $vars($dialog:low_level)]
-    if {!$vars($dialog:high_enable)} {
-        list $low
+    if {[ApolTop::is_policy_open]} {
+        set p $::ApolTop::policy
     } else {
-        list $low [Apol_Widget::getLevelSelectorLevel $vars($dialog:high_level)]
+        set p NULL
     }
+    set range [new_apol_mls_range_t]
+    $range set_low $p [Apol_Widget::getLevelSelectorLevel $vars($dialog:low_level)]
+    
+    if {$vars($dialog:high_enable)} {
+        $range set_high $p [Apol_Widget::getLevelSelectorLevel $vars($dialog:high_level)]
+    }
+    return $range
 }
 
 proc Apol_Context_Dialog::_user_changed {dialog name1 name2 op} {
