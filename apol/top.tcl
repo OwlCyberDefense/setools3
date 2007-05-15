@@ -231,7 +231,7 @@ proc ApolTop::_create_toplevel {} {
             {command "Open &Default Perm Map" {tag_policy_open} "Open the default permission map" {} -command ApolTop::_open_perm_map_default}
             {command "&Modify Perm Map..." {tag_policy_open tag_perm_map_open} "Edit currently loaded permission map" {} -command Apol_Perms_Map::editPermMappings}
         }
-	"&Help" {} help 0 {
+	"&Help" {} helpmenu 0 {
 	    {command "&General Help" {} "Show help on using apol" {} -command {ApolTop::_show_file Help apol_help.txt}}
 	    {command "&Domain Transition Analysis" {} "Show help on domain transitions" {} -command {ApolTop::_show_file "Domain Transition Analysis Help" domaintrans_help.txt}}
 	    {command "&Information Flow Analysis" {} "Show help on information flows" {} -command {ApolTop::_show_file "Information Flow Analysis Help" infoflow_help.txt}}
@@ -241,6 +241,14 @@ proc ApolTop::_create_toplevel {} {
 	    {command "&About apol" {} "Show copyright information" {} -command ApolTop::_about}
 	}
     }
+    # Note that the name of the last menu is "helpmenu", not "help".
+    # This is because Tk handles menus named "help" differently in X
+    # Windows -- specifically, it is right justified on the menu bar.
+    # See the man page for [menu] for details.  It was decided that
+    # the behavior is undesirable; the Help menu is intended to be
+    # left justified along with the other menus.  Therefore the menu
+    # name is "helpmenu".
+    
     variable mainframe [MainFrame .mainframe -menu $menus -textvariable ApolTop::statu_line]
     pack $mainframe -fill both -expand yes
 
@@ -283,6 +291,8 @@ proc ApolTop::_create_toplevel {} {
     setCurrentTab [$components page 0]
 }
 
+# Callback invoked whenever the user clicks on a (possibly different)
+# tab in the toplevel notebook(s).
 proc ApolTop::_switch_tab {new_tab} {
     variable current_tab $new_tab
     _toplevel_tab_switched

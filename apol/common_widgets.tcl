@@ -224,14 +224,18 @@ proc Apol_Widget::getLevelSelectorLevel {path} {
 # to match the level.
 proc Apol_Widget::setLevelSelectorLevel {path level} {
     variable vars
-    set sens [$level get_sens]
-    set cats [str_vector_to_list [$level get_cats]]
+    if {$level == "NULL"} {
+        set sens {}
+    } else {
+        set sens [$level get_sens]
+    }
     set sens_list [$path.sens cget -values]
     if {$sens != {} && [lsearch -exact $sens_list $sens] != -1} {
         set vars($path:sens) $sens
         set cats_list $vars($path:cats)
         set first_idx -1
         set listbox [getScrolledListbox $path.cats]
+        set cats [str_vector_to_list [$level get_cats]]
         foreach cat $cats {
             if {[set idx [lsearch -exact $cats_list $cat]] != -1} {
                 $listbox selection set $idx

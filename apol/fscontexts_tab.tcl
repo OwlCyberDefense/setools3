@@ -243,7 +243,7 @@ proc Apol_FSContexts::_genfscon_popup {fstype} {
     }
     append text ")"
     foreach g [lsort -command _genfscon_sort $genfscons] {
-        append text "\n    [_genfscon_render $g 1]"
+        append text "\n    [_genfscon_render $g]"
     }
     Apol_Widget::showPopupText "filesystem $fstype" $text
 }
@@ -270,7 +270,7 @@ proc Apol_FSContexts::_genfscon_runSearch {} {
     } else {
         set path {}
     }
-    
+
     set q [new_apol_genfscon_query_t]
     if {[Apol_Widget::getContextSelectorState $widgets(genfscon:context)]} {
         foreach {context range_match attribute} [Apol_Widget::getContextSelectorValue $widgets(genfscon:context)] {break}
@@ -283,7 +283,7 @@ proc Apol_FSContexts::_genfscon_runSearch {} {
     $q -delete
     set genfscons [genfscon_vector_to_list $v]
     $v -delete
-    
+
     set results "GENFSCONS:"
     if {[llength $genfscons] == 0} {
         append results "\nSearch returned no results."
@@ -295,26 +295,8 @@ proc Apol_FSContexts::_genfscon_runSearch {} {
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_FSContexts::_genfscon_render {qpol_genfscon_datum {compact 0}} {
-    set fstype [$qpol_genfscon_datum get_name $::ApolTop::qpolicy]
-    set path [$qpol_genfscon_datum get_path $::ApolTop::qpolicy]
-    set objclass [apol_objclass_to_str [$qpol_genfscon_datum get_class $::ApolTop::qpolicy]]
-    set context [apol_qpol_context_render $::ApolTop::policy [$qpol_genfscon_datum get_context $::ApolTop::qpolicy]]
-    if {$objclass != "any"} {
-        if {$compact} {
-            format "genfscon %s %s -t%s %s" $fstype $path $objclass $context
-        } else {
-            format "genfscon  %-12s %-24s -t%-4s %s" \
-                $fstype $path $objclass $context
-        }
-    } else {
-        if {$compact} {
-            format "genfscon %s %s %s" $fstype $path $context
-        } else {
-            format "genfscon  %-12s %-24s %s" \
-                $fstype $path $context
-        }
-    }
+proc Apol_FSContexts::_genfscon_render {qpol_genfscon_datum} {
+    apol_genfscon_render $::ApolTop::policy $qpol_genfscon_datum
 }
 
 proc Apol_FSContexts::_genfscon_sort {a b} {
@@ -370,17 +352,19 @@ proc Apol_FSContexts::_fsuse_open {} {
     set q [new_apol_fs_use_query_t]
     set v [$q run $::ApolTop::policy]
     $q -delete
-    set vals(fsuse:items) [fs_use_vector_to_list $v]
+    set fs_uses [lsort -unique [fs_use_vector_to_list $v]]
     $v -delete
 
     # get a list of all behaviors present in this policy
+    set vals(fsuse:items) {}
     set behavs {}
-    foreach fsuse $vals(fsuse:items) {
-        set f [new_qpol_fs_use_t $::ApolTop::qpolicy $fsuse]
+    foreach f $fs_uses {
+        lappend vals(fsuse:items) [$f get_name $::ApolTop::qpolicy]
         lappend behavs [apol_fs_use_behavior_to_str [$f get_behavior $::ApolTop::qpolicy]]
     }
 
     variable widgets
+    set vals(fsuse:items) [lsort -unique $vals(fsuse:items)]
     $widgets(fsuse:type) configure -values [lsort -unique $behavs]
     $widgets(fsuse:fs) configure -values $vals(fsuse:items)
 }
@@ -394,7 +378,8 @@ proc Apol_FSContexts::_fsuse_show {} {
 }
 
 proc Apol_FSContexts::_fsuse_popup {fs} {
-    set text "fs_use $fs\n    [_fsuse_render $fs]"
+    set qpol_fs_use_datum [new_qpol_fs_use_t $::ApolTop::qpolicy $fs]
+    set text "fs_use $fs\n    [_fsuse_render $qpol_fs_use_datum]"
     Apol_Widget::showPopupText $fs $text
 }
 
@@ -413,7 +398,7 @@ proc Apol_FSContexts::_fsuse_runSearch {} {
             return
         }
     } else {
-        set behavior {}
+        set behavior -1
     }
     if {$vals(fsuse:fs_enable)} {
         if {$vals(fsuse:fs) == {}} {
@@ -449,22 +434,13 @@ proc Apol_FSContexts::_fsuse_runSearch {} {
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_FSContexts::_fsuse_render {fsuse} {
-    set qpol_fs_use_datum [new_qpol_fs_use_t $::ApolTop::qpolicy $fsuse]
-    set behav [apol_fs_use_behavior_to_str [$qpol_fs_use_datum get_behavior $::ApolTop::qpolicy]]
-    if {[$qpol_fs_use_datum get_behavior $::ApolTop::qpolicy] == $::QPOL_FS_USE_PSID} {
-        # fs_use_psid has no context, so don't render that part
-        format "%-13s %s;" $behav $fsuse
-    } else {
-        set qpol_context [$qpol_fs_use_datum get_context $::ApolTop::qpolicy]
-        set context_str [apol_qpol_context_render $::ApolTop::policy $qpol_context]
-        format "%-13s %-10s %s;" $behav $fsuse $context_str
-    }
+proc Apol_FSContexts::_fsuse_render {qpol_fs_use_datum} {
+    apol_fs_use_render $::ApolTop::policy $qpol_fs_use_datum
 }
 
 proc Apol_FSContexts::_fsuse_sort {a b} {
-    set behav_a [$a get_behavior $::ApolTop::qpolicy]
-    set behav_b [$b get_behavior $::ApolTop::qpolicy]
+    set behav_a [apol_fs_use_behavior_to_str [$a get_behavior $::ApolTop::qpolicy]]
+    set behav_b [apol_fs_use_behavior_to_str [$b get_behavior $::ApolTop::qpolicy]]
     if {[set z [string compare $behav_a $behav_b]] != 0} {
         return $z
     }

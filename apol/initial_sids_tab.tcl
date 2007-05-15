@@ -110,7 +110,7 @@ proc Apol_Initial_SIDS::_search {} {
     $q -delete
     set isids [isid_vector_to_list $v]
     $v -delete
-    
+
     set results "INITIAL SIDS:"
     if {[llength $isids] == 0} {
         append results "\nSearch returned no results."
@@ -126,7 +126,6 @@ proc Apol_Initial_SIDS::_render_isid {isid_name {compact 0}} {
     set qpol_isid_datum [new_qpol_isid_t $::ApolTop::qpolicy $isid_name]
     set qpol_context [$qpol_isid_datum get_context $::ApolTop::qpolicy]
     set context_str [apol_qpol_context_render $::ApolTop::policy $qpol_context]
-    $apol_context -delete
     if {$compact} {
         format "sid %s %s" $isid_name $context_str
     } else {

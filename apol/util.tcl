@@ -91,11 +91,13 @@ proc common_vector_to_list {v} {
     return $list
 }
 
+# Convert a vector a qpol_fs_use_t objects to a list of qpol_fs_use_t
+# objects.
 proc fs_use_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
         set q [new_qpol_fs_use_t [$v get_element $i]]
-        lappend list [$q get_name $::ApolTop::qpolicy]
+        lappend list $q
     }
     return $list
 }
@@ -161,14 +163,11 @@ proc nodecon_vector_to_list {v} {
     return $list
 }
 
+# Convert a vector of qpol_portcon_t objects to a list of qpol_portcon_t.
 proc portcon_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_portcon_t [$v get_element $i]]
-        set low [$q get_low_port $::ApolTop::qpolicy]
-        set high [$q get_high_port $::ApolTop::qpolicy]
-        set proto [$q get_protocol $::ApolTop::qpolicy]
-        lappend list [list $low $high $proto]
+        lappend list [new_qpol_portcon_t [$v get_element $i]]
     }
     return $list
 }

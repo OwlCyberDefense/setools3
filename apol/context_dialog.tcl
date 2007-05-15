@@ -85,7 +85,7 @@ proc Apol_Context_Dialog::getContext {{defaultContext {}} {defaultAttribute {}} 
             set vars($dialog:low_enable) 1
             Apol_Widget::setLevelSelectorLevel $vars($dialog:low_level) $low_level
         }
-        if {$high_level != {}} {
+        if {$high_level != {} && $high_level != "NULL"} {
             set vars($dialog:low_enable) 1
             set vars($dialog:high_enable) 1
             Apol_Widget::setLevelSelectorLevel $vars($dialog:high_level) $high_level
@@ -273,7 +273,7 @@ proc Apol_Context_Dialog::_get_range {dialog} {
     }
     set range [new_apol_mls_range_t]
     $range set_low $p [Apol_Widget::getLevelSelectorLevel $vars($dialog:low_level)]
-    
+
     if {$vars($dialog:high_enable)} {
         $range set_high $p [Apol_Widget::getLevelSelectorLevel $vars($dialog:high_level)]
     }
