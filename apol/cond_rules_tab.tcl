@@ -108,7 +108,7 @@ proc Apol_Cond_Rules::getTextWidget {} {
 
 proc Apol_Cond_Rules::open {ppath} {
     variable widgets
-    $widgets(combo_box) configure -values $Apol_Cond_Bools::cond_bools_list
+    $widgets(combo_box) configure -values [Apol_Cond_Bools::getBooleans]
 }
 
 ################################################################

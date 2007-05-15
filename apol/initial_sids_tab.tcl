@@ -18,7 +18,77 @@ namespace eval Apol_Initial_SIDS {
     variable vals
 }
 
-proc Apol_Initial_SIDS::searchSIDs {} {
+proc Apol_Initial_SIDS::create {tab_name nb} {
+    variable widgets
+    variable vals
+
+    array set vals {
+        items {}
+    }
+
+    set frame [$nb insert end $tab_name -text "Initial SIDs"]
+    set pw [PanedWindow $frame.pw -side top -weights extra]
+    set leftf [$pw add -weight 0]
+    set rightf [$pw add -weight 1]
+    pack $pw -fill both -expand yes
+
+    set sids_box [TitleFrame $leftf.sids_box -text "Initial SIDs"]
+    set s_optionsbox [TitleFrame $rightf.obox -text "Search Options"]
+    set rslts_frame [TitleFrame $rightf.rbox -text "Search Results"]
+    pack $sids_box -expand 1 -fill both
+    pack $s_optionsbox -side top -expand 0 -fill both -padx 2
+    pack $rslts_frame -side top -expand yes -fill both -padx 2
+
+    set widgets(items) [Apol_Widget::makeScrolledListbox [$sids_box getframe].lb -width 20 -listvar Apol_Initial_SIDS::vals(items)]
+    Apol_Widget::setListboxCallbacks $widgets(items) \
+        {{"Display Initial SID Context" {Apol_Initial_SIDS::_popupSIDInfo}}}
+    pack $widgets(items) -expand 1 -fill both
+
+    set f [frame [$s_optionsbox getframe].c]
+    set widgets(context) [Apol_Widget::makeContextSelector $f.context "Context"]
+    pack $widgets(context)
+    pack $f -side left -anchor n -padx 4 -pady 2
+
+    set ok [button [$s_optionsbox getframe].ok -text "OK" -width 6 \
+                -command Apol_Initial_SIDS::_search]
+    pack $ok -side right -pady 5 -padx 5 -anchor ne
+
+    set widgets(results) [Apol_Widget::makeSearchResults [$rslts_frame getframe].results]
+    pack $widgets(results) -side top -expand yes -fill both
+
+    return $frame
+}
+
+proc Apol_Initial_SIDS::open {ppath} {
+    variable vals
+    set q [new_apol_isid_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set vals(items) [lsort [isid_vector_to_list $v]]
+    $v -delete
+}
+
+proc Apol_Initial_SIDS::close {} {
+    variable vals
+    variable widgets
+    set vals(items) {}
+    Apol_Widget::clearSearchResults $widgets(results)
+    Apol_Widget::clearContextSelector $widgets(context)
+}
+
+proc Apol_Initial_SIDS::getTextWidget {} {
+    variable widgets
+    return $widgets(results).tb
+}
+
+#### private functions below ####
+
+proc Apol_Initial_SIDS::_popupSIDInfo {sid} {
+    set text "$sid:\n    [_render_isid $sid 1]"
+    Apol_Widget::showPopupText "$sid Context" $text
+}
+
+proc Apol_Initial_SIDS::_search {} {
     variable vals
     variable widgets
 
@@ -46,89 +116,20 @@ proc Apol_Initial_SIDS::searchSIDs {} {
         append results "\nSearch returned no results."
     } else {
         foreach i [lsort -dictionary $isids] {
-            append results "\n[render_isid $i]"
+            append results "\n[_render_isid $i]"
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_Initial_SIDS::open {ppath} {
-    variable vals
-    set q [new_apol_isid_query_t]
-    set v [$q run $::ApolTop::policy]
-    $q -delete
-    set vals(items) [lsort [isid_vector_to_list $v]]
-    $v -delete
-}
-
-proc Apol_Initial_SIDS::close {} {
-    variable vals
-    variable widgets
-    set vals(items) {}
-    Apol_Widget::clearSearchResults $widgets(results)
-    Apol_Widget::clearContextSelector $widgets(context)
-}
-
-proc Apol_Initial_SIDS::render_isid {isid_name {compact 0}} {
+proc Apol_Initial_SIDS::_render_isid {isid_name {compact 0}} {
     set qpol_isid_datum [new_qpol_isid_t $::ApolTop::qpolicy $isid_name]
     set qpol_context [$qpol_isid_datum get_context $::ApolTop::qpolicy]
-    set apol_context [new_apol_context_t $::ApolTop::policy $qpol_context]
-    set context_str [$apol_context render $::ApolTop::policy]
+    set context_str [apol_qpol_context_render $::ApolTop::policy $qpol_context]
     $apol_context -delete
     if {$compact} {
         format "sid %s %s" $isid_name $context_str
     } else {
         format "sid  %-16s %s" $isid_name $context_str
     }
-}
-
-proc Apol_Initial_SIDS::getTextWidget {} {
-    variable widgets
-    return $widgets(results).tb
-}
-
-proc Apol_Initial_SIDS::popupSIDInfo {sid} {
-    set text "$sid:\n  [render_isid $sid 1]"
-    Apol_Widget::showPopupText "$sid Context" $text
-}
-
-proc Apol_Initial_SIDS::create {tab_name nb} {
-    variable widgets
-    variable vals
-
-    array set vals {
-        items {}
-    }
-
-    set frame [$nb insert end $tab_name -text "Initial SIDs"]
-    set pw [PanedWindow $frame.pw -side top -weights extra]
-    set leftf [$pw add -weight 0]
-    set rightf [$pw add -weight 1]
-    pack $pw -fill both -expand yes
-
-    set sids_box [TitleFrame $leftf.sids_box -text "Initial SIDs"]
-    set s_optionsbox [TitleFrame $rightf.obox -text "Search Options"]
-    set rslts_frame [TitleFrame $rightf.rbox -text "Search Results"]
-    pack $sids_box -expand 1 -fill both
-    pack $s_optionsbox -side top -expand 0 -fill both -padx 2
-    pack $rslts_frame -side top -expand yes -fill both -padx 2
-
-    set widgets(items) [Apol_Widget::makeScrolledListbox [$sids_box getframe].lb -width 20 -listvar Apol_Initial_SIDS::vals(items)]
-    Apol_Widget::setListboxCallbacks $widgets(items) \
-        {{"Display Initial SID Context" {Apol_Initial_SIDS::popupSIDInfo}}}
-    pack $widgets(items) -expand 1 -fill both
-
-    set f [frame [$s_optionsbox getframe].c]
-    set widgets(context) [Apol_Widget::makeContextSelector $f.context "Context"]
-    pack $widgets(context)
-    pack $f -side left -anchor n -padx 4 -pady 2
-
-    set ok [button [$s_optionsbox getframe].ok -text "OK" -width 6 \
-                -command Apol_Initial_SIDS::searchSIDs]
-    pack $ok -side right -pady 5 -padx 5 -anchor ne
-
-    set widgets(results) [Apol_Widget::makeSearchResults [$rslts_frame getframe].results]
-    pack $widgets(results) -side top -expand yes -fill both
-
-    return $frame
 }

@@ -54,7 +54,7 @@ proc Apol_Context_Dialog::getContext {{defaultContext {}} {defaultAttribute {}} 
         }
     }
 
-    $vars($dialog:user_box) configure -values $Apol_Users::users_list
+    $vars($dialog:user_box) configure -values [Apol_Users::getUsers]
     set vars($dialog:user) $user
     if {$user == {}} {
         set vars($dialog:user_enable) 0
@@ -62,7 +62,7 @@ proc Apol_Context_Dialog::getContext {{defaultContext {}} {defaultAttribute {}} 
         set vars($dialog:user_enable) 1
     }
 
-    $vars($dialog:role_box) configure -values $Apol_Roles::role_list
+    $vars($dialog:role_box) configure -values [Apol_Roles::getRoles]
     set vars($dialog:role) $role
     if {$role == {}} {
         set vars($dialog:role_enable) 0
@@ -209,7 +209,7 @@ proc Apol_Context_Dialog::_okay {dialog} {
         $context set_role $p $role
     }
     if {$vars($dialog:type_enable)} {
-        set type [lindex [Apol_Widget::getTypeComboboxValue $vars($dialog:type_box)] 0]
+        set type [lindex [Apol_Widget::getTypeComboboxValueAndAttrib $vars($dialog:type_box)] 0]
         if {$type == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                 -message "No type was selected."

@@ -122,7 +122,7 @@ proc Apol_Range::searchRanges {} {
         return
     }
     if {$vals(enable_source)} {
-        set source [Apol_Widget::getTypeComboboxValue $widgets(source_type)]
+        set source [lindex [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(source_type)] 0]
         if {$source == {}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No source type provided."
             return
@@ -131,7 +131,7 @@ proc Apol_Range::searchRanges {} {
         set source {}
     }
     if {$vals(enable_target)} {
-        set target [Apol_Widget::getTypeComboboxValue $widgets(target_type)]
+        set target [lindex [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(target_type)] 0]
         if {$target == {}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No target type provided."
             return

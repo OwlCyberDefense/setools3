@@ -100,11 +100,13 @@ proc fs_use_vector_to_list {v} {
     return $list
 }
 
+# Convert a vector of qpol_genfscon_t objects to a list of
+# qpol_genfscon_t objects.
 proc genfscon_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
         set q [new_qpol_genfscon_t [$v get_element $i]]
-        lappend list [$q get_name $::ApolTop::qpolicy]
+        lappend list $q
     }
     return $list
 }

@@ -104,8 +104,8 @@ proc Apol_Widget::makeTypeCombobox {path args} {
 }
 
 proc Apol_Widget::resetTypeComboboxToPolicy {path} {
-    $path.tb configure -values $Apol_Types::typelist
-    $path.ab configure -values $Apol_Types::attriblist
+    $path.tb configure -values [Apol_Types::getTypes]
+    $path.ab configure -values [Apol_Types::getAttributes]
 }
 
 proc Apol_Widget::clearTypeCombobox {path} {
@@ -118,10 +118,6 @@ proc Apol_Widget::clearTypeCombobox {path} {
     _attrib_enabled $path
 }
 
-proc Apol_Widget::getTypeComboboxValue {path} {
-    string trim $Apol_Widget::vars($path:type)
-}
-
 # Return the currently selected type.  If an attribute is acting as a
 # filter, the return value will instead be a 2-ple list of the
 # selected type and the selected attribute.
@@ -130,7 +126,7 @@ proc Apol_Widget::getTypeComboboxValueAndAttrib {path} {
     if {$vars($path:attribenable)} {
         list [string trim $vars($path:type)] $vars($path:attrib)
     } else {
-        string trim vars($path:type)
+        string trim $vars($path:type)
     }
 }
 

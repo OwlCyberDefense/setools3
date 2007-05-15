@@ -19,7 +19,187 @@ namespace eval Apol_Users {
     variable users_list {}
 }
 
-proc Apol_Users::searchUsers {} {
+proc Apol_Users::create {tab_name nb} {
+    variable opts
+    variable widgets
+
+    _initializeVars
+
+    # Layout frames
+    set frame [$nb insert end $tab_name -text "Users"]
+    set pw1   [PanedWindow $frame.pw -side top]
+    set rpane [$pw1 add -weight 0]
+    set spane [$pw1 add -weight 1]
+
+    # Title frames
+    set userbox [TitleFrame $rpane.userbox -text "Users"]
+    set s_optionsbox [TitleFrame $spane.obox -text "Search Options"]
+    set resultsbox [TitleFrame $spane.rbox -text "Search Results"]
+    pack $pw1 -fill both -expand yes
+    pack $s_optionsbox -side top -expand 0 -fill both -padx 2
+    pack $userbox -fill both -expand yes
+    pack $resultsbox -expand yes -fill both -padx 2
+
+    # Users listbox widget
+    set users_listbox [Apol_Widget::makeScrolledListbox [$userbox getframe].lb -width 20 -listvar Apol_Users::users_list]
+    Apol_Widget::setListboxCallbacks $users_listbox \
+        {{"Display User Info" {Apol_Users::_popupUserInfo users}}}
+    pack $users_listbox -fill both -expand yes
+
+    # Search options subframes
+    set ofm [$s_optionsbox getframe]
+    set verboseFrame [frame $ofm.verbose]
+    set rolesFrame [frame $ofm.roles]
+    set defaultFrame [frame $ofm.default]
+    set rangeFrame [frame $ofm.range]
+    pack $verboseFrame $rolesFrame $defaultFrame $rangeFrame \
+        -side left -padx 4 -pady 2 -anchor nw -expand 0 -fill y
+
+    radiobutton $verboseFrame.all_info -text "All information" \
+        -variable Apol_Users::opts(showSelection) -value all
+    radiobutton $verboseFrame.names_only -text "Names only" \
+        -variable Apol_Users::opts(showSelection) -value names
+    pack $verboseFrame.all_info $verboseFrame.names_only -anchor w -padx 5 -pady 4
+
+    checkbutton $rolesFrame.cb -variable Apol_Users::opts(useRole) -text "Role"
+    set widgets(role) [ComboBox $rolesFrame.combo -width 12 -textvariable Apol_Users::opts(role) \
+                           -helptext "Type or select a role" -state disabled \
+                           -autopost 1]
+    trace add variable Apol_Users::opts(useRole) write \
+        [list Apol_Users::_toggleRolesCheckbutton $widgets(role)]
+    pack $rolesFrame.cb -anchor nw
+    pack $widgets(role) -padx 4
+
+    set widgets(defaultCB) [checkbutton $defaultFrame.cb -variable Apol_Users::opts(enable_default) -text "Default MLS level"]
+    set defaultDisplay [Entry $defaultFrame.display -textvariable Apol_Users::opts(default_level_display) -width 16 -editable 0]
+    set defaultButton [button $defaultFrame.button -text "Select Level..." -state disabled -command [list Apol_Users::_show_level_dialog]]
+    trace add variable Apol_Users::opts(enable_default) write \
+        [list Apol_Users::_toggleDefaultCheckbutton $widgets(defaultCB) $defaultDisplay $defaultButton]
+    trace add variable Apol_Users::opts(default_level) write \
+        [list Apol_Users::_updateDefaultDisplay $defaultDisplay]
+    pack $widgets(defaultCB) -side top -anchor nw -expand 0
+    pack $defaultDisplay -side top -expand 0 -fill x -padx 4
+    pack $defaultButton -side top -expand 1 -fill none -padx 4 -anchor ne
+
+    set widgets(range) [Apol_Widget::makeRangeSelector $rangeFrame.range Users]
+    pack $widgets(range) -expand 1 -fill x
+
+    # Action Buttons
+    button $ofm.ok -text OK -width 6 -command Apol_Users::_searchUsers
+    pack $ofm.ok -side right -pady 5 -padx 5 -anchor ne
+
+    set widgets(results) [Apol_Widget::makeSearchResults [$resultsbox getframe].results]
+    pack $widgets(results) -expand yes -fill both
+
+    return $frame
+}
+
+proc Apol_Users::open {ppath} {
+    set q [new_apol_user_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    variable users_list [lsort [user_vector_to_list $v]]
+    $v -delete
+
+    variable opts
+    variable widgets
+    $Apol_Users::widgets(role) configure -values [Apol_Roles::getRoles]
+    if {[ApolTop::is_capable "mls"]} {
+        Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
+        $widgets(defaultCB) configure -state normal
+    } else {
+        Apol_Widget::clearRangeSelector $widgets(range)
+        Apol_Widget::setRangeSelectorCompleteState $widgets(range) disabled
+        set opts(enable_default) 0
+        $widgets(defaultCB) configure -state disabled
+    }
+}
+
+proc Apol_Users::close {} {
+    variable widgets
+
+    _initializeVars
+    variable users_list {}
+    $widgets(role) configure -values ""
+    Apol_Widget::clearSearchResults $widgets(results)
+    Apol_Widget::clearRangeSelector $widgets(range)
+    Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
+    $widgets(defaultCB) configure -state normal
+}
+
+proc Apol_Users::getTextWidget {} {
+    variable widgets
+    return $widgets(results).tb
+}
+
+# Return a list of all user names within the current policy.  If no
+# policy is loaded then return an empty list.
+proc Apol_Users::getUsers {} {
+    variable users_list
+    set users_list
+}
+
+#### private functions below ####
+
+proc Apol_Users::_initializeVars {} {
+    variable opts
+    array set opts {
+        showSelection all
+        useRole 0         role {}
+        enable_default 0  default_level {}
+    }
+}
+
+proc Apol_Users::_toggleRolesCheckbutton {path name1 name2 op} {
+    variable opts
+    if {$opts($name2)} {
+	$path configure -state normal -entrybg white
+    } else {
+        $path configure -state disabled -entrybg $ApolTop::default_bg_color
+    }
+}
+
+proc Apol_Users::_toggleDefaultCheckbutton {cb display button name1 name2 op} {
+    variable opts
+    if {$opts($name2)} {
+        $button configure -state normal
+        $display configure -state normal
+    } else {
+        $button configure -state disabled
+        $display configure -state disabled
+    }
+}
+
+proc Apol_Users::_show_level_dialog {} {
+    variable opts
+    set new_level [Apol_Level_Dialog::getLevel $opts(default_level)]
+    if {$new_level != {}} {
+        set opts(default_level) $new_level
+        $opts(default_level) -acquire
+    }
+}
+
+proc Apol_Users::_updateDefaultDisplay {display name1 name2 op} {
+    variable opts
+    if {$opts(default_level) == {}} {
+        set opts(default_level_display) {}
+        $display configure -helptext {}
+    } else {
+        set level [$opts(default_level) render $::ApolTop::policy]
+        if {$level == {}} {
+            set opts(default_level_display) "<invalid MLS level>"
+        } else {
+            set opts(default_level_display) $level
+        }
+        $display configure -helptext $opts(default_level_display)
+    }
+}
+
+proc Apol_Users::_popupUserInfo {which user} {
+    Apol_Widget::showPopupText $user [_renderUser $user 1]
+}
+
+proc Apol_Users::_searchUsers {} {
     variable opts
     variable widgets
 
@@ -78,13 +258,13 @@ proc Apol_Users::searchUsers {} {
         append text "Search returned no results."
     } else {
         foreach u [lsort -index 0 $users_data] {
-            append text "\n[renderUser $u $show_all]"
+            append text "\n[_renderUser $u $show_all]"
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $text
 }
 
-proc Apol_Users::renderUser {user_name show_all} {
+proc Apol_Users::_renderUser {user_name show_all} {
     set text "$user_name"
     if {!$show_all} {
         return $text
@@ -116,177 +296,4 @@ proc Apol_Users::renderUser {user_name show_all} {
         append text "    $r\n"
     }
     return $text
-}
-
-proc Apol_Users::open {ppath} {
-    set q [new_apol_user_query_t]
-    set v [$q run $::ApolTop::policy]
-    $q -delete
-    variable users_list [lsort [user_vector_to_list $v]]
-    $v -delete
-
-    variable opts
-    variable widgets
-    $Apol_Users::widgets(role) configure -values $Apol_Roles::role_list
-    if {[ApolTop::is_capable "mls"]} {
-        Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
-        $widgets(defaultCB) configure -state normal
-    } else {
-        Apol_Widget::clearRangeSelector $widgets(range)
-        Apol_Widget::setRangeSelectorCompleteState $widgets(range) disabled
-        set opts(enable_default) 0
-        $widgets(defaultCB) configure -state disabled
-    }
-}
-
-proc Apol_Users::close {} {
-    variable widgets
-
-    initializeVars
-    variable users_list {}
-    $widgets(role) configure -values ""
-    Apol_Widget::clearSearchResults $widgets(results)
-    Apol_Widget::clearRangeSelector $widgets(range)
-    Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
-    $widgets(defaultCB) configure -state normal
-}
-
-proc Apol_Users::initializeVars {} {
-    variable opts
-    array set opts {
-        showSelection all
-        useRole 0         role {}
-        enable_default 0  default_level {}
-    }
-}
-
-proc Apol_Users::popupUserInfo {which user} {
-    Apol_Widget::showPopupText $user [renderUser $user 1]
-}
-
-proc Apol_Users::getTextWidget {} {
-    variable widgets
-    return $widgets(results).tb
-}
-
-proc Apol_Users::create {tab_name nb} {
-    variable opts
-    variable widgets
-
-    initializeVars
-
-    # Layout frames
-    set frame [$nb insert end $tab_name -text "Users"]
-    set pw1   [PanedWindow $frame.pw -side top]
-    set rpane [$pw1 add -weight 0]
-    set spane [$pw1 add -weight 1]
-
-    # Title frames
-    set userbox [TitleFrame $rpane.userbox -text "Users"]
-    set s_optionsbox [TitleFrame $spane.obox -text "Search Options"]
-    set resultsbox [TitleFrame $spane.rbox -text "Search Results"]
-    pack $pw1 -fill both -expand yes
-    pack $s_optionsbox -side top -expand 0 -fill both -padx 2
-    pack $userbox -fill both -expand yes
-    pack $resultsbox -expand yes -fill both -padx 2
-
-    # Users listbox widget
-    set users_listbox [Apol_Widget::makeScrolledListbox [$userbox getframe].lb -width 20 -listvar Apol_Users::users_list]
-    Apol_Widget::setListboxCallbacks $users_listbox \
-        {{"Display User Info" {Apol_Users::popupUserInfo users}}}
-    pack $users_listbox -fill both -expand yes
-
-    # Search options subframes
-    set ofm [$s_optionsbox getframe]
-    set verboseFrame [frame $ofm.verbose]
-    set rolesFrame [frame $ofm.roles]
-    set defaultFrame [frame $ofm.default]
-    set rangeFrame [frame $ofm.range]
-    pack $verboseFrame $rolesFrame $defaultFrame $rangeFrame \
-        -side left -padx 4 -pady 2 -anchor nw -expand 0 -fill y
-
-    radiobutton $verboseFrame.all_info -text "All information" \
-        -variable Apol_Users::opts(showSelection) -value all
-    radiobutton $verboseFrame.names_only -text "Names only" \
-        -variable Apol_Users::opts(showSelection) -value names
-    pack $verboseFrame.all_info $verboseFrame.names_only -anchor w -padx 5 -pady 4
-
-    checkbutton $rolesFrame.cb -variable Apol_Users::opts(useRole) -text "Role"
-    set widgets(role) [ComboBox $rolesFrame.combo -width 12 -textvariable Apol_Users::opts(role) \
-                           -helptext "Type or select a role" -state disabled \
-                           -autopost 1]
-    trace add variable Apol_Users::opts(useRole) write \
-        [list Apol_Users::toggleRolesCheckbutton $widgets(role)]
-    pack $rolesFrame.cb -anchor nw
-    pack $widgets(role) -padx 4
-
-    set widgets(defaultCB) [checkbutton $defaultFrame.cb -variable Apol_Users::opts(enable_default) -text "Default MLS level"]
-    set defaultDisplay [Entry $defaultFrame.display -textvariable Apol_Users::opts(default_level_display) -width 16 -editable 0]
-    set defaultButton [button $defaultFrame.button -text "Select Level..." -state disabled -command [list Apol_Users::show_level_dialog]]
-    trace add variable Apol_Users::opts(enable_default) write \
-        [list Apol_Users::toggleDefaultCheckbutton $widgets(defaultCB) $defaultDisplay $defaultButton]
-    trace add variable Apol_Users::opts(default_level) write \
-        [list Apol_Users::updateDefaultDisplay $defaultDisplay]
-    pack $widgets(defaultCB) -side top -anchor nw -expand 0
-    pack $defaultDisplay -side top -expand 0 -fill x -padx 4
-    pack $defaultButton -side top -expand 1 -fill none -padx 4 -anchor ne
-
-    set widgets(range) [Apol_Widget::makeRangeSelector $rangeFrame.range Users]
-    pack $widgets(range) -expand 1 -fill x
-
-    # Action Buttons
-    button $ofm.ok -text OK -width 6 -command {Apol_Users::searchUsers}
-    pack $ofm.ok -side right -pady 5 -padx 5 -anchor ne
-
-    set widgets(results) [Apol_Widget::makeSearchResults [$resultsbox getframe].results]
-    pack $widgets(results) -expand yes -fill both
-
-    return $frame
-}
-
-#### private functions below ####
-
-proc Apol_Users::toggleRolesCheckbutton {path name1 name2 op} {
-    variable opts
-    if {$opts($name2)} {
-	$path configure -state normal -entrybg white
-    } else {
-        $path configure -state disabled -entrybg $ApolTop::default_bg_color
-    }
-}
-
-proc Apol_Users::toggleDefaultCheckbutton {cb display button name1 name2 op} {
-    variable opts
-    if {$opts($name2)} {
-        $button configure -state normal
-        $display configure -state normal
-    } else {
-        $button configure -state disabled
-        $display configure -state disabled
-    }
-}
-
-proc Apol_Users::show_level_dialog {} {
-    variable opts
-    set new_level [Apol_Level_Dialog::getLevel $opts(default_level)]
-    if {$new_level != {}} {
-        set opts(default_level) $new_level
-        $opts(default_level) -acquire
-    }
-}
-
-proc Apol_Users::updateDefaultDisplay {display name1 name2 op} {
-    variable opts
-    if {$opts(default_level) == {}} {
-        set opts(default_level_display) {}
-        $display configure -helptext {}
-    } else {
-        set level [$opts(default_level) render $::ApolTop::policy]
-        if {$level == {}} {
-            set opts(default_level_display) "<invalid MLS level>"
-        } else {
-            set opts(default_level_display) $level
-        }
-        $display configure -helptext $opts(default_level_display)
-    }
 }
