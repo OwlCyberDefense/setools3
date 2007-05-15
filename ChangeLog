@@ -1,3 +1,9 @@
+2007-05-15  J. Tang  <jtang@tresys.com>
+
+	* libapol/src/mls-query.c (apol_mls_range_contain_subrange): Fixed
+	potential segfault if a range's high level is not yet set when
+	comparison occurs.
+
 2007-05-14  J. Mowery  <jmowery@tresys.com>
 
 	* correctly marked libqpol defines for genfscon object classes

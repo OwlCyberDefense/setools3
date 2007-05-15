@@ -879,16 +879,16 @@ static int apol_mls_range_does_include_level(apol_policy_t * p, const apol_mls_r
 			return -1;
 		}
 	}
-
-	high_cmp = apol_mls_level_compare(p, range->high, level);
+	const apol_mls_level_t *high_level = (range->high != NULL ? range->high : range->low);
+	high_cmp = apol_mls_level_compare(p, high_level, level);
 	if (high_cmp < 0) {
 		return -1;
 	}
 
 	if (high_cmp == APOL_MLS_EQ || high_cmp == APOL_MLS_DOM) {
-		if ((low_cmp == APOL_MLS_EQ || low_cmp == APOL_MLS_DOMBY) && range->low != range->high) {
+		if ((low_cmp == APOL_MLS_EQ || low_cmp == APOL_MLS_DOMBY) && range->low != high_level) {
 			return 1;
-		} else if (range->low == range->high) {
+		} else if (range->low == high_level) {
 			return apol_mls_sens_compare(p, range->low->sens, level->sens);
 		}
 	}
