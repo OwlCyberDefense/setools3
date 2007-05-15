@@ -18,11 +18,7 @@ namespace eval Apol_MLS {
     variable vals
 }
 
-proc Apol_MLS::set_Focus_to_Text {} {
-    focus $Apol_MLS::widgets(results)
-}
-
-proc Apol_MLS::open {} {
+proc Apol_MLS::open {ppath} {
     variable vals
 
     set q [new_apol_level_query_t]
@@ -54,24 +50,19 @@ proc Apol_MLS::initializeVars {} {
     }
 }
 
-proc Apol_MLS::search {str case_Insensitive regExpr srch_Direction} {
+proc Apol_MLS::getTextWidget {} {
     variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
+    return $widgets(results).tb
 }
 
-proc Apol_MLS::goto_line {line_num} {
-    variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
-}
-
-proc Apol_MLS::create {nb} {
+proc Apol_MLS::create {tab_name nb} {
     variable widgets
     variable vals
 
     initializeVars
 
     # Layout frames
-    set frame [$nb insert end $ApolTop::mls_tab -text "MLS"]
+    set frame [$nb insert end $tab_name -text "MLS"]
     set pw [PanedWindow $frame.pw -side top -weights extra]
     set leftf [$pw add -weight 0]
     set rightf [$pw add -weight 1]

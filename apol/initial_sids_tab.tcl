@@ -18,15 +18,6 @@ namespace eval Apol_Initial_SIDS {
     variable vals
 }
 
-proc Apol_Initial_SIDS::search {str case_Insensitive regExpr srch_Direction} {
-    variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
-}
-
-proc Apol_Initial_SIDS::set_Focus_to_Text {} {
-    focus $Apol_Initial_SIDS::widgets(results)
-}
-
 proc Apol_Initial_SIDS::searchSIDs {} {
     variable vals
     variable widgets
@@ -61,7 +52,7 @@ proc Apol_Initial_SIDS::searchSIDs {} {
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_Initial_SIDS::open {} {
+proc Apol_Initial_SIDS::open {ppath} {
     variable vals
     set q [new_apol_isid_query_t]
     set v [$q run $::ApolTop::policy]
@@ -91,17 +82,17 @@ proc Apol_Initial_SIDS::render_isid {isid_name {compact 0}} {
     }
 }
 
+proc Apol_Initial_SIDS::getTextWidget {} {
+    variable widgets
+    return $widgets(results).tb
+}
+
 proc Apol_Initial_SIDS::popupSIDInfo {sid} {
     set text "$sid:\n  [render_isid $sid 1]"
     Apol_Widget::showPopupText "$sid Context" $text
 }
 
-proc Apol_Initial_SIDS::goto_line {line_num} {
-    variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
-}
-
-proc Apol_Initial_SIDS::create {nb} {
+proc Apol_Initial_SIDS::create {tab_name nb} {
     variable widgets
     variable vals
 
@@ -109,7 +100,7 @@ proc Apol_Initial_SIDS::create {nb} {
         items {}
     }
 
-    set frame [$nb insert end $ApolTop::initial_sids_tab -text "Initial SIDs"]
+    set frame [$nb insert end $tab_name -text "Initial SIDs"]
     set pw [PanedWindow $frame.pw -side top -weights extra]
     set leftf [$pw add -weight 0]
     set rightf [$pw add -weight 1]

@@ -20,7 +20,82 @@ namespace eval Apol_Types {
     variable widgets
 }
 
-proc Apol_Types::open {} {
+proc Apol_Types::create {tab_name nb} {
+    variable opts
+    variable widgets
+
+    _initializeVars
+
+    set frame [$nb insert end $tab_name -text "Types"]
+    set pw1   [PanedWindow $frame.pw -side top]
+    set left_pane   [$pw1 add -weight 0]
+    set center_pane [$pw1 add -weight 1]
+    set tpane [frame $left_pane.t]
+    set apane [frame $left_pane.a]
+
+    set tbox [TitleFrame $tpane.tbox -text "Types"]
+    set abox [TitleFrame $apane.abox -text "Attributes"]
+    set obox [TitleFrame $center_pane.obox -text "Search Options"]
+    set rbox [TitleFrame $center_pane.rbox -text "Search Results"]
+
+    pack $obox -side top -expand 0 -fill both -padx 2
+    pack $rbox -expand yes -fill both -padx 2
+    pack $tbox -fill both -expand yes
+    pack $abox -fill both -expand yes
+    pack $pw1 -fill both -expand yes
+    pack $tpane -fill both -expand 1
+    pack $apane -fill both -expand 1
+
+    set tlistbox [Apol_Widget::makeScrolledListbox [$tbox getframe].types \
+                      -height 10 -width 20 -listvar Apol_Types::typelist]
+    Apol_Widget::setListboxCallbacks $tlistbox \
+        {{"Show Type Info" {Apol_Types::_popupTypeInfo type}}}
+    pack $tlistbox -expand 1 -fill both
+
+    set alistbox [Apol_Widget::makeScrolledListbox [$abox getframe].attribs \
+                      -height 5 -width 20 -listvar Apol_Types::attriblist]
+    Apol_Widget::setListboxCallbacks $alistbox {{"Show Attribute Info" {Apol_Types::_popupTypeInfo attrib}}}
+    pack $alistbox -expand 1 -fill both
+
+    set ofm [$obox getframe]
+    set fm_types_select [frame $ofm.to]
+    set fm_attribs_select [frame $ofm.ao]
+    pack $fm_types_select $fm_attribs_select -side left -padx 4 -pady 2 -anchor nw
+
+    set types_select [checkbutton $fm_types_select.type -text "Show types" -variable Apol_Types::opts(types)]
+    set typeattribs [checkbutton $fm_types_select.typeattribs -text "Include attributes" \
+	-variable Apol_Types::opts(types:show_attribs)]
+    pack $types_select -anchor w
+    pack $typeattribs -anchor w -padx 8
+    trace add variable Apol_Types::opts(types) write \
+        [list Apol_Types::_toggleCheckbuttons $typeattribs]
+
+    set attribs_select [checkbutton $fm_attribs_select.type -text "Show attributes" \
+	-variable Apol_Types::opts(attribs)]
+    set a_types [checkbutton $fm_attribs_select.types -text "Include types" \
+	-variable Apol_Types::opts(attribs:show_types) -state disabled]
+    set a_typeattribs [checkbutton $fm_attribs_select.typeattribs -text "Include types' attributes" \
+	-variable Apol_Types::opts(attribs:show_attribs) -state disabled]
+    pack $attribs_select -anchor w
+    pack $a_types $a_typeattribs -anchor w -padx 8
+    trace add variable Apol_Types::opts(attribs) write \
+        [list Apol_Types::_toggleCheckbuttons [list $a_typeattribs $a_types]]
+
+    set widgets(regexp) [Apol_Widget::makeRegexpEntry $ofm.regexpf]
+    Apol_Widget::setRegexpEntryState $widgets(regexp) 1
+
+    pack $widgets(regexp) -side left -padx 4 -pady 2 -anchor nw
+
+    set ok [button $ofm.ok -text OK -width 6 -command Apol_Types::_searchTypes]
+    pack $ok -side right -padx 5 -pady 5 -anchor ne
+
+    set widgets(results) [Apol_Widget::makeSearchResults [$rbox getframe].results]
+    pack $widgets(results) -expand yes -fill both
+
+    return $frame
+}
+
+proc Apol_Types::open {ppath} {
     set q [new_apol_type_query_t]
     set v [$q run $::ApolTop::policy]
     $q -delete
@@ -37,13 +112,30 @@ proc Apol_Types::open {} {
 proc Apol_Types::close {} {
     variable widgets
 
-    initializeVars
+    _initializeVars
     set Apol_Types::typelist {}
     set Apol_Types::attriblist {}
     Apol_Widget::clearSearchResults $widgets(results)
 }
 
-proc Apol_Types::initializeVars {} {
+proc Apol_Types::getTextWidget {} {
+    variable widgets
+    return $widgets(results).tb
+}
+
+# Given an attribute name, return non-zero if that attribute is within
+# the loaded policy.  If no policy has been loaded then return zero.
+proc Apol_Types::isAttributeInPolicy {attrib} {
+    variable attriblist
+    if {[ApolTop::is_policy_open] && [lsearch $attriblist $attrib] >= 0} {
+        return 1
+    }
+    return 0
+}
+
+#### private functions below ####
+
+proc Apol_Types::_initializeVars {} {
     variable opts
     array set opts {
         types 1    types:show_attribs 1  types:show_aliases 1
@@ -51,11 +143,26 @@ proc Apol_Types::initializeVars {} {
     }
 }
 
-proc Apol_Types::set_Focus_to_Text {} {
-    focus $Apol_Types::widgets(results)
+proc Apol_Types::_toggleCheckbuttons {w name1 name2 op} {
+    variable opts
+    variable widgets
+    if {$opts($name2)} {
+        foreach x $w {
+            $x configure -state normal
+        }
+    } else {
+        foreach x $w {
+            $x configure -state disabled
+        }
+    }
+    if {!$opts(types) && !$opts(attribs)} {
+        Apol_Widget::setRegexpEntryState $widgets(regexp) 0
+    } else {
+        Apol_Widget::setRegexpEntryState $widgets(regexp) 1
+    }
 }
 
-proc Apol_Types::popupTypeInfo {which ta} {
+proc Apol_Types::_popupTypeInfo {which ta} {
     set info_fc ""
     set index_file_loaded 0
     if {$which == "type"} {
@@ -131,12 +238,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
     $w draw {} 0 400x400
 }
 
-proc Apol_Types::search {str case_Insensitive regExpr srch_Direction} {
-    variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
-}
-
-proc Apol_Types::searchTypes {} {
+proc Apol_Types::_searchTypes {} {
     variable widgets
     variable opts
 
@@ -171,7 +273,7 @@ proc Apol_Types::searchTypes {} {
         $v -delete
         append results "TYPES ([llength $types_data]):\n\n"
         foreach t [lsort $types_data] {
-            append results "[renderType $t $opts(types:show_attribs) $opts(types:show_aliases)]\n"
+            append results "[_renderType $t $opts(types:show_attribs) $opts(types:show_aliases)]\n"
         }
     }
     if {$opts(attribs)} {
@@ -187,13 +289,13 @@ proc Apol_Types::searchTypes {} {
         }
         append results "ATTRIBUTES ([llength $attribs_data]):\n\n"
         foreach a [lsort $attribs_data] {
-            append results "[renderAttrib $a $opts(attribs:show_types) $opts(attribs:show_attribs)]\n"
+            append results "[_renderAttrib $a $opts(attribs:show_types) $opts(attribs:show_attribs)]\n"
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_Types::renderType {type_name show_attribs show_aliases} {
+proc Apol_Types::_renderType {type_name show_attribs show_aliases} {
     set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $type_name]
     set aliases {}
     set attribs {}
@@ -224,7 +326,7 @@ proc Apol_Types::renderType {type_name show_attribs show_aliases} {
     return $text
 }
 
-proc Apol_Types::renderAttrib {attrib_name show_types show_attribs} {
+proc Apol_Types::_renderAttrib {attrib_name show_types show_attribs} {
     set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attrib_name]
 
     set text "$attrib_name"
@@ -262,116 +364,4 @@ proc Apol_Types::renderAttrib {attrib_name show_types show_attribs} {
         }
     }
     return $text
-}
-
-proc Apol_Types::goto_line { line_num } {
-    variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
-}
-
-proc Apol_Types::create {nb} {
-    variable opts
-    variable widgets
-
-    initializeVars
-
-    set frame [$nb insert end $ApolTop::types_tab -text "Types"]
-    set pw1   [PanedWindow $frame.pw -side top]
-    set left_pane   [$pw1 add -weight 0]
-    set center_pane [$pw1 add -weight 1]
-    set tpane [frame $left_pane.t]
-    set apane [frame $left_pane.a]
-
-    set tbox [TitleFrame $tpane.tbox -text "Types"]
-    set abox [TitleFrame $apane.abox -text "Attributes"]
-    set obox [TitleFrame $center_pane.obox -text "Search Options"]
-    set rbox [TitleFrame $center_pane.rbox -text "Search Results"]
-
-    pack $obox -side top -expand 0 -fill both -padx 2
-    pack $rbox -expand yes -fill both -padx 2
-    pack $tbox -fill both -expand yes
-    pack $abox -fill both -expand yes
-    pack $pw1 -fill both -expand yes
-    pack $tpane -fill both -expand 1
-    pack $apane -fill both -expand 1
-
-    set tlistbox [Apol_Widget::makeScrolledListbox [$tbox getframe].types \
-                      -height 10 -width 20 -listvar Apol_Types::typelist]
-    Apol_Widget::setListboxCallbacks $tlistbox \
-        {{"Show Type Info" {Apol_Types::popupTypeInfo type}}}
-    pack $tlistbox -expand 1 -fill both
-
-    set alistbox [Apol_Widget::makeScrolledListbox [$abox getframe].attribs \
-                      -height 5 -width 20 -listvar Apol_Types::attriblist]
-    Apol_Widget::setListboxCallbacks $alistbox {{"Show Attribute Info" {Apol_Types::popupTypeInfo attrib}}}
-    pack $alistbox -expand 1 -fill both
-
-    set ofm [$obox getframe]
-    set fm_types_select [frame $ofm.to]
-    set fm_attribs_select [frame $ofm.ao]
-    pack $fm_types_select $fm_attribs_select -side left -padx 4 -pady 2 -anchor nw
-
-    set types_select [checkbutton $fm_types_select.type -text "Show types" -variable Apol_Types::opts(types)]
-    set typeattribs [checkbutton $fm_types_select.typeattribs -text "Include attributes" \
-	-variable Apol_Types::opts(types:show_attribs)]
-    pack $types_select -anchor w
-    pack $typeattribs -anchor w -padx 8
-    trace add variable Apol_Types::opts(types) write \
-        [list Apol_Types::toggleCheckbuttons $typeattribs]
-
-    set attribs_select [checkbutton $fm_attribs_select.type -text "Show attributes" \
-	-variable Apol_Types::opts(attribs)]
-    set a_types [checkbutton $fm_attribs_select.types -text "Include types" \
-	-variable Apol_Types::opts(attribs:show_types) -state disabled]
-    set a_typeattribs [checkbutton $fm_attribs_select.typeattribs -text "Include types' attributes" \
-	-variable Apol_Types::opts(attribs:show_attribs) -state disabled]
-    pack $attribs_select -anchor w
-    pack $a_types $a_typeattribs -anchor w -padx 8
-    trace add variable Apol_Types::opts(attribs) write \
-        [list Apol_Types::toggleCheckbuttons [list $a_typeattribs $a_types]]
-
-    set widgets(regexp) [Apol_Widget::makeRegexpEntry $ofm.regexpf]
-    Apol_Widget::setRegexpEntryState $widgets(regexp) 1
-
-    pack $widgets(regexp) -side left -padx 4 -pady 2 -anchor nw
-
-    set ok [button $ofm.ok -text OK -width 6 -command Apol_Types::searchTypes]
-    pack $ok -side right -padx 5 -pady 5 -anchor ne
-
-    set widgets(results) [Apol_Widget::makeSearchResults [$rbox getframe].results]
-    pack $widgets(results) -expand yes -fill both
-
-    return $frame
-}
-
-
-# Given an attribute name, return non-zero if that attribute is within
-# the loaded policy.  If no policy has been loaded then return zero.
-proc Apol_Types::isAttributeInPolicy {attrib} {
-    variable attriblist
-    if {[ApolTop::is_policy_open] && [lsearch $attriblist $attrib] >= 0} {
-        return 1
-    }
-    return 0
-}
-
-#### private functions below ####
-
-proc Apol_Types::toggleCheckbuttons {w name1 name2 op} {
-    variable opts
-    variable widgets
-    if {$opts($name2)} {
-        foreach x $w {
-            $x configure -state normal
-        }
-    } else {
-        foreach x $w {
-            $x configure -state disabled
-        }
-    }
-    if {!$opts(types) && !$opts(attribs)} {
-        Apol_Widget::setRegexpEntryState $widgets(regexp) 0
-    } else {
-        Apol_Widget::setRegexpEntryState $widgets(regexp) 1
-    }
 }

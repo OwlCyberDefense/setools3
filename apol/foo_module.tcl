@@ -136,19 +136,7 @@ proc Apol_Analysis_foo::loadQuery {channel} {
     }
 }
 
-# Highlight a line on a particular result tab.
-proc Apol_Analysis_foo::gotoLine {tab line_num} {
-    set textbox $tab.results
-    # Remove any selection tags.
-    $textbox tag remove sel 0.0 end
-    $textbox mark set insert ${line_num}.0
-    $textbox see ${line_num}.0
-    $textbox tag add sel $line_num.0 $line_num.end
-    focus $textbox
-}
-
-# Search the result tab for some text.
-proc Apol_Analysis_foo::search {tab str case_Insensitive regExpr srch_Direction } {
-    set textbox $tab.results
-    ApolTop::textSearch $textbox $str $case_Insensitive $regExpr $srch_Direction
+# Get a text widget that contains this analysis's results.
+proc Apol_Analysis_foo::getTextWidget {tab} {
+    return $tab.results
 }

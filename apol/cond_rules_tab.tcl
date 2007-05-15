@@ -18,9 +18,6 @@ namespace eval Apol_Cond_Rules {
     variable widgets
 }
 
-###############################################################
-#  ::cond_rules_search
-#
 proc Apol_Cond_Rules::cond_rules_search {} {
     variable vals
     variable widgets
@@ -104,35 +101,12 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
     }
 }
 
-################################################################
-# ::search
-#	- Search text widget for a string
-#
-proc Apol_Cond_Rules::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Cond_Rules::getTextWidget {} {
     variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
+    return $widgets(results).tb
 }
 
-################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
-proc Apol_Cond_Rules::goto_line { line_num } {
-    variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
-}
-
-################################################################
-# ::set_Focus_to_Text
-#
-proc Apol_Cond_Rules::set_Focus_to_Text {} {
-    focus $Apol_RBAC::widgets(results)
-}
-
-################################################################
-#  ::open
-#
-proc Apol_Cond_Rules::open { } {
+proc Apol_Cond_Rules::open {ppath} {
     variable widgets
     $widgets(combo_box) configure -values $Apol_Cond_Bools::cond_bools_list
 }
@@ -140,7 +114,7 @@ proc Apol_Cond_Rules::open { } {
 ################################################################
 #  ::close
 #
-proc Apol_Cond_Rules::close { } {
+proc Apol_Cond_Rules::close {} {
     variable widgets
 
     initializeVars
@@ -161,17 +135,14 @@ proc Apol_Cond_Rules::initializeVars {} {
     }
 }
 
-################################################################
-#  ::create
-#
-proc Apol_Cond_Rules::create {nb} {
+proc Apol_Cond_Rules::create {tab_name nb} {
     variable vals
     variable widgets
 
     initializeVars
 
     # Layout frames
-    set frame [$nb insert end $ApolTop::cond_rules_tab -text "Conditional Expressions"]
+    set frame [$nb insert end $tab_name -text "Conditional Expressions"]
     set topf [frame $frame.top]
     set bottomf [frame $frame.bottom]
     pack $topf -expand 0 -fill both -pady 2

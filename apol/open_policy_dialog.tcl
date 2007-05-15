@@ -339,7 +339,7 @@ proc Apol_Open_Policy_Dialog::tryOpenPolicy {} {
     variable vars
 
     set ppath [list_to_policy_path $vars(path_type) $vars(primary_file) $vars(mod_paths)]
-    if {[ApolTop::openPolicyFile $ppath] == 0} {
+    if {[ApolTop::openPolicyPath $ppath] == 0} {
         $dialog enddialog {}
     }
 }

@@ -13,25 +13,12 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_Range
-#
-#
-##############################################################
 namespace eval Apol_Range {
     variable widgets
     variable vals
 }
 
-proc Apol_Range::set_Focus_to_Text {} {
-    focus $Apol_Range::widgets(results)
-}
-
-proc Apol_Range::open {} {
+proc Apol_Range::open {ppath} {
     variable vals
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(source_type)
@@ -53,22 +40,17 @@ proc Apol_Range::close {} {
     set vals(enable_target) 0
 }
 
-proc Apol_Range::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Range::getTextWidget {} {
     variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
+    return $widgets(results).tb
 }
 
-proc Apol_Range::goto_line { line_num } {
-    variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
-}
-
-proc Apol_Range::create {nb} {
+proc Apol_Range::create {tab_name nb} {
     variable widgets
     variable vals
 
     # Layout frames
-    set frame [$nb insert end $ApolTop::range_tab -text "Range Transition Rules"]
+    set frame [$nb insert end $tab_name -text "Range Transition Rules"]
     set obox [TitleFrame $frame.obox -text "Search Options"]
     set dbox [TitleFrame $frame.dbox -text "Range Transition Rules Display"]
     pack $obox -fill x -expand 0 -padx 2 -pady 2

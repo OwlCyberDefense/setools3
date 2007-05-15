@@ -21,7 +21,7 @@ namespace eval Apol_Class_Perms {
     variable widgets
 }
 
-proc Apol_Class_Perms::open {} {
+proc Apol_Class_Perms::open {ppath} {
     set q [new_apol_class_query_t]
     set v [$q run $::ApolTop::policy]
     $q -delete
@@ -90,13 +90,9 @@ proc Apol_Class_Perms::initializeVars {} {
     }
 }
 
-proc Apol_Class_Perms::set_Focus_to_Text {} {
-    focus $Apol_Class_Perms::widgets(results)
-}
-
-proc Apol_Class_Perms::goto_line {line_num} {
+proc Apol_Class_Perms::getTextWidget {} {
     variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
+    return $widgets(results).tb
 }
 
 proc Apol_Class_Perms::popupInfo {which name} {
@@ -108,11 +104,6 @@ proc Apol_Class_Perms::popupInfo {which name} {
         set text [renderPerm $name 1 1]
     }
     Apol_Widget::showPopupText $name $text
-}
-
-proc Apol_Class_Perms::search {str case_Insensitive regExpr srch_Direction} {
-    variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
 proc Apol_Class_Perms::search_Class_Perms {} {
@@ -310,13 +301,13 @@ proc Apol_Class_Perms::renderPerm {perm_name show_classes show_commons} {
     return $text
 }
 
-proc Apol_Class_Perms::create {nb} {
+proc Apol_Class_Perms::create {tab_name nb} {
     variable opts
     variable widgets
 
     initializeVars
 
-    set frame [$nb insert end $ApolTop::class_perms_tab -text "Classes/Perms"]
+    set frame [$nb insert end $tab_name -text "Classes/Perms"]
 
     set pw1 [PanedWindow $frame.pw -side top]
     set left_pane   [$pw1 add -weight 0]

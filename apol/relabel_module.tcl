@@ -242,16 +242,9 @@ proc Apol_Analysis_relabel::loadQuery {channel} {
     reinitializeWidgets
 }
 
-proc Apol_Analysis_relabel::gotoLine {tab line_num} {
-    set searchResults [$tab.right getframe].res
-    Apol_Widget::gotoLineSearchResults $searchResults $line_num
+proc Apol_Analysis_relabel::getTextWidget {tab} {
+    return [$tab.right getframe].res
 }
-
-proc Apol_Analysis_relabel::search {tab str case_Insensitive regExpr srch_Direction } {
-    set textbox [$tab.right getframe].res.tb
-    ApolTop::textSearch $textbox $str $case_Insensitive $regExpr $srch_Direction
-}
-
 
 #################### private functions below ####################
 

@@ -19,15 +19,6 @@ namespace eval Apol_Users {
     variable users_list {}
 }
 
-proc Apol_Users::search {str case_Insensitive regExpr srch_Direction} {
-    variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
-}
-
-proc Apol_Users::set_Focus_to_Text {} {
-    focus $Apol_Users::widgets(results)
-}
-
 proc Apol_Users::searchUsers {} {
     variable opts
     variable widgets
@@ -127,7 +118,7 @@ proc Apol_Users::renderUser {user_name show_all} {
     return $text
 }
 
-proc Apol_Users::open {} {
+proc Apol_Users::open {ppath} {
     set q [new_apol_user_query_t]
     set v [$q run $::ApolTop::policy]
     $q -delete
@@ -173,19 +164,19 @@ proc Apol_Users::popupUserInfo {which user} {
     Apol_Widget::showPopupText $user [renderUser $user 1]
 }
 
-proc Apol_Users::goto_line {line_num} {
+proc Apol_Users::getTextWidget {} {
     variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
+    return $widgets(results).tb
 }
 
-proc Apol_Users::create {nb} {
+proc Apol_Users::create {tab_name nb} {
     variable opts
     variable widgets
 
     initializeVars
 
     # Layout frames
-    set frame [$nb insert end $ApolTop::users_tab -text "Users"]
+    set frame [$nb insert end $tab_name -text "Users"]
     set pw1   [PanedWindow $frame.pw -side top]
     set rpane [$pw1 add -weight 0]
     set spane [$pw1 add -weight 1]

@@ -1,6 +1,3 @@
-#############################################################
-#  types_relation_module.tcl
-# -----------------------------------------------------------
 #  Copyright (C) 2004-2007 Tresys Technology, LLC
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,11 +12,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-#  Requires tcl and tk 8.4+, with BWidget
-#  Author: <don.patterson@tresys.com> 8-11-2004
-# -----------------------------------------------------------
-#
+
 # This module implements the two types relationship analysis interface.
 
 namespace eval Apol_Analysis_tra {
@@ -177,14 +170,8 @@ proc Apol_Analysis_tra::loadQuery {channel} {
     reinitializeWidgets
 }
 
-proc Apol_Analysis_tra::gotoLine {tab line_num} {
-    set searchResults [$tab.right getframe].res
-    Apol_Widget::gotoLineSearchResults $searchResults $line_num
-}
-
-proc Apol_Analysis_tra::search {tab str case_Insensitive regExpr srch_Direction } {
-    set textbox [$tab.right getframe].res.tb
-    ApolTop::textSearch $textbox $str $case_Insensitive $regExpr $srch_Direction
+proc Apol_Analysis_tra::getTextWidget {tab} {
+    return [$tab.right getframe].res
 }
 
 

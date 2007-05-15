@@ -13,27 +13,9 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_RBAC
-#
-# The Access Control Rules page
-##############################################################
 namespace eval Apol_RBAC {
     variable vals
     variable widgets
-}
-
-proc Apol_RBAC::search { str case_Insensitive regExpr srch_Direction } {
-    variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
-}
-
-proc Apol_RBAC::set_Focus_to_Text {} {
-    focus $Apol_RBAC::widgets(results)
 }
 
 proc Apol_RBAC::searchRBACs {} {
@@ -127,7 +109,7 @@ proc Apol_RBAC::renderRBAC {rule} {
     }
 }
 
-proc Apol_RBAC::open { } {
+proc Apol_RBAC::open {ppath} {
     variable vals
     variable widgets
     $widgets(allow:source) configure -values $Apol_Roles::role_list
@@ -143,7 +125,7 @@ proc Apol_RBAC::open { } {
     set vals(rule_selection) allow
 }
 
-proc Apol_RBAC::close { } {
+proc Apol_RBAC::close {} {
     variable widgets
 
     initializeVars
@@ -176,19 +158,19 @@ proc Apol_RBAC::initializeVars {} {
     }
 }
 
-proc Apol_RBAC::goto_line { line_num } {
+proc Apol_RBAC::getTextWidget {} {
     variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
+    return $widgets(results).tb
 }
 
-proc Apol_RBAC::create {nb} {
+proc Apol_RBAC::create {tab_name nb} {
     variable vals
     variable widgets
 
     initializeVars
 
     # Layout frames
-    set frame [$nb insert end $ApolTop::rbac_tab -text "RBAC Rules"]
+    set frame [$nb insert end $tab_name -text "RBAC Rules"]
     set topf [frame $frame.top]
     set bottomf [frame $frame.bottom]
     pack $topf -expand 0 -fill both -pady 2

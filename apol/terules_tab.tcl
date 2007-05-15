@@ -20,45 +20,19 @@ namespace eval Apol_TE {
     variable enabled
 }
 
-proc Apol_TE::goto_line {line_num} {
+proc Apol_TE::getTextWidget {} {
     variable widgets
     variable tabs
     if {[$widgets(results) pages] != {}} {
         set raisedPage [$widgets(results) raise]
         if {$raisedPage != {}} {
-            Apol_Widget::gotoLineSearchResults $tabs($raisedPage) $line_num
+            return $tabs($raisedPage)
 	}
     }
+    return {}
 }
 
-proc Apol_TE::search {str case_Insensitive regExpr srch_Direction} {
-    variable widgets
-    variable tabs
-    if {[$widgets(results) pages] != {}} {
-        set raisedPage [$widgets(results) raise]
-        if {$raisedPage != {}} {
-            ApolTop::textSearch $tabs($raisedPage).tb $str $case_Insensitive $regExpr $srch_Direction
-	}
-    }
-}
-
-proc Apol_TE::set_Focus_to_Text {tab} {
-    variable widgets
-    variable tabs
-    if {[$widgets(results) pages] != {}} {
-        set raisedPage [$widgets(results) raise]
-        if {$raisedPage != {}} {
-            focus $tabs($raisedPage)
-	}
-    }
-}
-
-proc Apol_TE::get_results_raised_tab {} {
-    variable widgets
-    $widgets(results) raise
-}
-
-proc Apol_TE::open {} {
+proc Apol_TE::open {ppath} {
     reinitialize_default_search_options
     reinitialize_search_widgets
     reinitialize_tabs
@@ -141,14 +115,14 @@ proc Apol_TE::reinitialize_search_widgets {} {
     $widgets(cp:perms) selection clear 0 end
 }
 
-proc Apol_TE::create {nb} {
+proc Apol_TE::create {tab_name nb} {
     variable vals
     variable widgets
 
     reinitialize_default_search_options
 
     # Layout Frames
-    set frame [$nb insert end $ApolTop::terules_tab -text "TE Rules"]
+    set frame [$nb insert end $tab_name -text "TE Rules"]
     set pw [PanedWindow $frame.pw -side left -weights extra]
     set topf [$pw add -weight 0]
     set bottomf [$pw add -weight 1]
@@ -946,7 +920,7 @@ proc Apol_TE::search_terules {whichButton} {
     }
 }
 
-proc Apol_TE::load_query_options {file_channel parentDlg} {
+proc Apol_TE::load_query_options {file_channel} {
     variable vals
     variable widgets
     variable enabled
@@ -992,9 +966,9 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
         }
     }
     if {[llength $unknowns] > 0} {
-        tk_messageBox -icon warning -type ok -title "Invalid Object Classes" \
+        tk_messageBox -icon warning -type ok -title "Open Apol Query" \
             -message "The following object classes do not exist in the currently loaded policy and were ignored:\n\n[join $unknowns ", "]" \
-            -parent $parentDlg
+            -parent .
     }
 
     toggle_perms_toshow {} {} {}
@@ -1009,7 +983,7 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
         }
     }
     if {[llength $unknowns] > 0} {
-        tk_messageBox -icon warning -type ok -title "Invalid Permissions" \
+        tk_messageBox -icon warning -type ok -title "Open Apol Query" \
             -message "The following permissions do not exist in the currently loaded policy and were ignored:\n\n[join $unknowns ", "]" \
             -parent $parentDlg
     }

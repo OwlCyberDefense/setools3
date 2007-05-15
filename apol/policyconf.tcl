@@ -13,28 +13,14 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_PolicyConf
-#
-# The policy.conf Rules page
-###############################################################
 namespace eval Apol_PolicyConf {
     variable textbox
 }
 
-proc Apol_PolicyConf::set_Focus_to_Text {} {
-    focus $Apol_PolicyConf::textbox
-    insertionMarkChanged
-}
-
-proc Apol_PolicyConf::create {nb} {
+proc Apol_PolicyConf::create {tab_name nb} {
     variable textbox
 
-    set frame [$nb insert end $ApolTop::policy_conf_tab -text "Policy Source"]
+    set frame [$nb insert end $tab_name -text "Policy Source"]
     set sw [ScrolledWindow $frame.sw -auto none]
     set textbox [text [$sw getframe].text -bg white -wrap none]
     $sw setwidget $textbox
@@ -51,7 +37,7 @@ proc Apol_PolicyConf::create {nb} {
     # insertion cursor.)  Use the 'fakeinsert' and 'fakedelete'
     # commands to make changes.
     #
-    # Unfortunately the tk 8.4 text widget does not generate a virtual
+    # Unfortunately the Tk 8.4 text widget does not generate a virtual
     # event whenever the insertion mark moves.  Thus to simulate the
     # behavior, override the mark command to generate the event
     # <<Insertion>> after the mark changes.
@@ -70,12 +56,6 @@ proc Apol_PolicyConf::create {nb} {
     }
 }
 
-proc Apol_PolicyConf::insertionMarkChanged {} {
-    set lpos [$Apol_PolicyConf::textbox index insert]
-    foreach {line col} [split $lpos .] {break}
-    set ApolTop::policyConf_lineno "Line $line"
-}
-
 proc Apol_PolicyConf::open {policy_path} {
     variable textbox
 
@@ -83,7 +63,7 @@ proc Apol_PolicyConf::open {policy_path} {
     if {![ApolTop::is_capable "source"]} {
         $textbox fakeinsert end "The currently loaded policy is not a source policy."
     } else {
-        set primary_file [lindex $policy_path 1]
+        set primary_file [$policy_path get_primary]
         if {[catch {::open $primary_file r} f]} {
             $textbox fakeinsert end "$primary_file does not exist or could not be read by the user."
         } else {
@@ -100,13 +80,13 @@ proc Apol_PolicyConf::close {} {
     $textbox fakedelete 0.0 end
 }
 
-proc Apol_PolicyConf::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_PolicyConf::getTextWidget {} {
     variable textbox
-
-    ApolTop::textSearch $textbox $str $case_Insensitive $regExpr $srch_Direction
+    return $textbox
 }
 
-proc Apol_PolicyConf::goto_line { line_num } {
-    variable textbox
-    ApolTop::goto_line $line_num $textbox
+proc Apol_PolicyConf::insertionMarkChanged {} {
+    set lpos [$Apol_PolicyConf::textbox index insert]
+    foreach {line col} [split $lpos .] {break}
+    set ApolTop::policyConf_lineno "Line $line"
 }

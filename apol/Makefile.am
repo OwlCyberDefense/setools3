@@ -33,19 +33,43 @@ dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 
 dist_noinst_DATA = apol.png foo_module.tcl
 
-EXTRA_DIST = head.tcl \
-	types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
-	users_tab.tcl initial_sids_tab.tcl file_contexts_tab.tcl \
-	cond_bools_tab.tcl cond_rules_tab.tcl classes_perms_tab.tcl \
-	policyconf.tcl perms_map.tcl analysis_tab.tcl \
-	range_dialog.tcl level_dialog.tcl \
-	range_trans.tcl mls_tab.tcl \
-	netcontexts_tab.tcl context_dialog.tcl context_selector.tcl \
+EXTRA_DIST = \
+	analysis_tab.tcl \
+	classes_perms_tab.tcl \
+	common_widgets.tcl \
+	cond_bools_tab.tcl \
+	cond_rules_tab.tcl \
+	context_dialog.tcl \
+	context_selector.tcl \
+	directflow_module.tcl \
+	domaintrans_module.tcl \
+	file_contexts_tab.tcl \
+	find.tcl \
 	fscontexts_tab.tcl \
-	common_widgets.tcl range_selector.tcl \
-	domaintrans_module.tcl directflow_module.tcl transflow_module.tcl \
-	relabel_module.tcl types_relation_module.tcl \
-	open_policy_dialog.tcl progress_dialog.tcl util.tcl top.tcl
+	goto.tcl \
+	head.tcl \
+	initial_sids_tab.tcl \
+	level_dialog.tcl \
+	mls_tab.tcl \
+	netcontexts_tab.tcl \
+	open_policy_dialog.tcl \
+	perms_map.tcl \
+	policyconf.tcl \
+	progress_dialog.tcl \
+	range_dialog.tcl \
+	range_selector.tcl \
+	range_trans.tcl \
+	rbac_tab.tcl \
+	relabel_module.tcl \
+	roles_tab.tcl \
+	terules_tab.tcl \
+	transflow_module.tcl \
+	types_relation_module.tcl \
+	types_tab.tcl \
+	users_tab.tcl \
+	util.tcl \
+	top.tcl
+# top.tcl must be last one written because it spawns the rest of the script
 
 TCL_STRIP_FILES = $(patsubst %,$(srcdir)/%,$(filter-out head.tcl,$(EXTRA_DIST)))
 

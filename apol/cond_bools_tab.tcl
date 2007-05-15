@@ -111,21 +111,12 @@ proc Apol_Cond_Bools::insert_listbox_item {bool initial_state} {
     grid $rb_true $rb_false $rb_label -padx 2 -pady 5 -sticky w
 }
 
-proc Apol_Cond_Bools::search {str case_Insensitive regExpr srch_Direction} {
+proc Apol_Cond_Bools::getTextWidget {} {
     variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
+    return $widgets(results).tb
 }
 
-proc Apol_Cond_Bools::goto_line {line_num} {
-    variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
-}
-
-proc Apol_Cond_Bools::set_Focus_to_Text {} {
-    focus $Apol_Cond_Bools::widgets(results)
-}
-
-proc Apol_Cond_Bools::open {} {
+proc Apol_Cond_Bools::open {ppath} {
     set q [new_apol_bool_query_t]
     set v [$q run $::ApolTop::policy]
     $q -delete
@@ -176,14 +167,14 @@ proc Apol_Cond_Bools::initializeVars {} {
     }
 }
 
-proc Apol_Cond_Bools::create {nb} {
+proc Apol_Cond_Bools::create {tab_name nb} {
     variable opts
     variable widgets
 
     initializeVars
 
     # Layout frames
-    set frame [$nb insert end $ApolTop::cond_bools_tab -text "Booleans"]
+    set frame [$nb insert end $tab_name -text "Booleans"]
     set pw [PanedWindow $frame.pw -side top]
     set left_pane [$pw add -weight 0]
     set right_pane [$pw add -weight 1]

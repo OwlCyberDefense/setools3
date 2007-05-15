@@ -38,22 +38,9 @@ proc Apol_File_Contexts::display_analysis_info {} {
     Apol_Widget::showPopupParagraph "File Contexts Information" $Apol_File_Contexts::info_button_text
 } 
 
-##############################################################
-# ::search
-#  	- Search text widget for a string
-# 
-proc Apol_File_Contexts::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_File_Contexts::getTextWidget {} {
     variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
-}
-
-# ----------------------------------------------------------------------------------------
-#  Command Apol_File_Contexts::set_Focus_to_Text
-#
-#  Description: 
-# ----------------------------------------------------------------------------------------
-proc Apol_File_Contexts::set_Focus_to_Text {} {
-    focus $Apol_File_Contexts::widgets(results)
+    return $widgets(results).tb
 }
 
 proc Apol_File_Contexts::is_db_loaded {} {
@@ -85,11 +72,7 @@ proc Apol_File_Contexts::populate_combo_boxes {} {
     $widgets(objclass) configure -values [lsort [lreplace $classes $i $i]]
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_File_Contexts::open
-# ------------------------------------------------------------------------------
-proc Apol_File_Contexts::open { } {
-    return 0
+proc Apol_File_Contexts::open {ppath} {
 } 
 
 # ------------------------------------------------------------------------------
@@ -394,24 +377,12 @@ proc Apol_File_Contexts::close_fc_db { } {
     set opts(db_loaded) 0
 }
 
-########################################################################
-# ::goto_line
-#  	- goes to indicated line in text box
-# 
-proc Apol_File_Contexts::goto_line { line_num } {
-    variable widgets
-    ApolTop::goto_line $line_num $widgets(results)
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_File_Contexts::create
-# ------------------------------------------------------------------------------
-proc Apol_File_Contexts::create {nb} {
+proc Apol_File_Contexts::create {tab_name nb} {
     variable opts
     variable widgets
 		
     # Layout frames
-    set frame [$nb insert end $ApolTop::file_contexts_tab -text "File Contexts"]
+    set frame [$nb insert end $tab_name -text "File Contexts"]
     set options_pane [frame $frame.top]
     set results_pane [frame $frame.bottom]
     pack $options_pane -expand 0 -fill x

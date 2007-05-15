@@ -18,11 +18,7 @@ namespace eval Apol_NetContexts {
     variable vals
 }
 
-proc Apol_NetContexts::set_Focus_to_Text {} {
-    focus $Apol_NetContexts::widgets(results)
-}
-
-proc Apol_NetContexts::open {} {
+proc Apol_NetContexts::open {ppath} {
     variable vals
 
     portcon_open
@@ -73,24 +69,19 @@ proc Apol_NetContexts::initializeVars {} {
     }
 }
 
-proc Apol_NetContexts::search {str case_Insensitive regExpr srch_Direction} {
+proc Apol_NetContexts::getTextWidget {} {
     variable widgets
-    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
+    return $widgets(results).tb
 }
 
-proc Apol_NetContexts::goto_line {line_num} {
-    variable widgets
-    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
-}
-
-proc Apol_NetContexts::create {nb} {
+proc Apol_NetContexts::create {tab_name nb} {
     variable widgets
     variable vals
 
     initializeVars
 
     # Layout frames
-    set frame [$nb insert end $ApolTop::net_contexts_tab -text "Net Contexts"]
+    set frame [$nb insert end $tab_name -text "Net Contexts"]
     set pw [PanedWindow $frame.pw -side top -weights extra]
     set leftf [$pw add -weight 0]
     set rightf [$pw add -weight 1]

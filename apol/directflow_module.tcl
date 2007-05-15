@@ -206,14 +206,8 @@ proc Apol_Analysis_directflow::loadQuery {channel} {
     reinitializeWidgets
 }
 
-proc Apol_Analysis_directflow::gotoLine {tab line_num} {
-    set searchResults [$tab.right getframe].res
-    Apol_Widget::gotoLineSearchResults $searchResults $line_num
-}
-
-proc Apol_Analysis_directflow::search {tab str case_Insensitive regExpr srch_Direction } {
-    set textbox [$tab.right getframe].res.tb
-    ApolTop::textSearch $textbox $str $case_Insensitive $regExpr $srch_Direction
+proc Apol_Analysis_directflow::getTextWidget {tab} {
+    return [$tab.right getframe].res
 }
 
 #################### private functions below ####################

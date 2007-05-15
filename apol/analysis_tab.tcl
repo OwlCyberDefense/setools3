@@ -19,7 +19,7 @@ namespace eval Apol_Analysis {
     variable tabs
 }
 
-proc Apol_Analysis::open {} {
+proc Apol_Analysis::open {ppath} {
     variable vals
     foreach m $vals(modules) {
         ${m}::open
@@ -35,27 +35,14 @@ proc Apol_Analysis::close {} {
     reinitializeTabs
 }
 
-proc Apol_Analysis::set_Focus_to_Text { tab } {
-}
-
-proc Apol_Analysis::goto_line { line_num } {
+proc Apol_Analysis::getTextWidget {} {
     variable widgets
     variable tabs
     set curid [$widgets(results) raise]
     if {$curid != {}} {
-        $tabs($curid:module)::gotoLine [$widgets(results) getframe $curid] \
-            $line_num
+        $tabs($curid:module)::getTextWidget [$widgets(results) getframe $curid]
     }
-}
-
-proc Apol_Analysis::search { str case_Insensitive regExpr srch_Direction } {
-    variable widgets
-    variable tabs
-    set curid [$widgets(results) raise]
-    if {$curid != {}} {
-        $tabs($curid:module)::search [$widgets(results) getframe $curid] \
-            $str $case_Insensitive $regExpr $srch_Direction
-    }
+    return {}
 }
 
 proc Apol_Analysis::save_query_options {file_channel query_file} {
@@ -65,7 +52,7 @@ proc Apol_Analysis::save_query_options {file_channel query_file} {
     ${m}::saveQuery $file_channel
 }
 
-proc Apol_Analysis::load_query_options {file_channel parentDlg} {
+proc Apol_Analysis::load_query_options {file_channel} {
     variable vals
     variable widgets
 
@@ -80,7 +67,8 @@ proc Apol_Analysis::load_query_options {file_channel parentDlg} {
         break
     }
     if {$line == {} || [set i [lsearch -exact $vals(modules) $line]] == -1} {
-        tk_messageBox -icon error -type ok -title Error -message "The specified query is not a valid analysis module."
+        tk_messageBox -icon error -type ok -title "Open Apol Query" -message "The specified query is not a valid analysis module."
+        return
     }
     ${line}::loadQuery $file_channel
     $widgets(modules).lb selection clear 0 end
@@ -89,12 +77,12 @@ proc Apol_Analysis::load_query_options {file_channel parentDlg} {
     $widgets(modules).lb selection set [lsearch $vals(module_names) $vals($module:name)]
 }
 
-proc Apol_Analysis::create {nb} {
+proc Apol_Analysis::create {tab_name nb} {
     variable vals
     variable widgets
 
     # Layout frames
-    set frame [$nb insert end $ApolTop::analysis_tab -text "Analysis"]
+    set frame [$nb insert end $tab_name -text "Analysis"]
     set pw [PanedWindow $frame.pw -side left -weights extra]
     set topf [$pw add -weight 0]
     set bottomf [$pw add -weight 1]
