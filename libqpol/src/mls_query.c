@@ -313,7 +313,7 @@ int qpol_level_get_alias_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol
 		return STATUS_ERR;
 	}
 
-	if (hs->node == NULL || ((level_datum_t *) (hs->node->datum))->level->sens != hs->val)
+	if (hs->node == NULL || !((level_datum_t *) hs->node->datum)->isalias || ((level_datum_t *) (hs->node->datum))->level->sens != hs->val)
 		hash_state_next_level_alias(*aliases);
 
 	return STATUS_SUCCESS;

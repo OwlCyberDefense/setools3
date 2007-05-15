@@ -200,6 +200,7 @@ const char *libapol_get_version(void);
 #define IPPROTO_TCP  6
 #define IPPROTO_UDP 17
 const char *apol_protocol_to_str(uint8_t protocol);
+uint8_t apol_str_to_protocol(const char *protocol_str);
 %typemap(newfree) uint32_t * "free($1);";
 %rename(apol_str_to_internal_ipv6) wrap_apol_str_to_internal_ipv6;
 %newobject wrap_apol_str_to_internal_ipv6;
@@ -1510,8 +1511,8 @@ typedef struct apol_portcon_query {} apol_portcon_query_t;
 	fail:
 		return v;
 	};
-	void set_proto(apol_policy_t *p, int protocol) {
-		apol_portcon_query_set_proto(p, self, protocol);
+	void set_protocol(apol_policy_t *p, int protocol) {
+		apol_portcon_query_set_protocol(p, self, protocol);
 	};
 	void set_low(apol_policy_t *p, int port) {
 		apol_portcon_query_set_low(p, self, port);
@@ -1591,8 +1592,8 @@ typedef struct apol_nodecon_query {} apol_nodecon_query_t;
 	fail:
 		return v;
 	};
-	void set_proto(apol_policy_t *p, int protocol) {
-		if (apol_nodecon_query_set_proto(p, self, protocol)) {
+	void set_protocol(apol_policy_t *p, int protocol) {
+		if (apol_nodecon_query_set_protocol(p, self, protocol)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set protocol for nodecon query");
 		}
 	fail:

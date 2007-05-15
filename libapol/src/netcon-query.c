@@ -135,11 +135,20 @@ void apol_portcon_query_destroy(apol_portcon_query_t ** po)
 	}
 }
 
-int apol_portcon_query_set_proto(apol_policy_t * p __attribute__ ((unused)), apol_portcon_query_t * po, int proto)
+int apol_portcon_query_set_protocol(apol_policy_t * p __attribute__ ((unused)), apol_portcon_query_t * po, int proto)
 {
 	po->proto = proto;
 	return 0;
 }
+
+/**
+ * @deprecated Use apol_portcon_query_set_protocol() instead.
+ */
+int apol_portcon_query_set_proto(apol_policy_t * p, apol_portcon_query_t * po, int proto)
+{
+	return apol_portcon_query_set_protocol(p, po, proto);
+}
+int apol_portcon_query_set_proto(apol_policy_t * p, apol_portcon_query_t * po, int proto) __attribute__ ((deprecated));
 
 int apol_portcon_query_set_low(apol_policy_t * p __attribute__ ((unused)), apol_portcon_query_t * po, int low)
 {
@@ -457,7 +466,7 @@ void apol_nodecon_query_destroy(apol_nodecon_query_t ** n)
 	}
 }
 
-int apol_nodecon_query_set_proto(apol_policy_t * p, apol_nodecon_query_t * n, int proto)
+int apol_nodecon_query_set_protocol(apol_policy_t * p, apol_nodecon_query_t * n, int proto)
 {
 	if (proto == QPOL_IPV4 || proto == QPOL_IPV6) {
 		n->proto = (char)proto;
@@ -469,6 +478,15 @@ int apol_nodecon_query_set_proto(apol_policy_t * p, apol_nodecon_query_t * n, in
 	}
 	return 0;
 }
+
+/**
+ * @deprecated Use apol_nodecon_query_set_protocol() instead.
+ */
+int apol_nodecon_query_set_proto(apol_policy_t * p, apol_nodecon_query_t * n, int proto)
+{
+	return apol_nodecon_query_set_protocol(p, n, proto);
+}
+int apol_nodecon_query_set_proto(apol_policy_t * p, apol_nodecon_query_t * n, int proto) __attribute__ ((deprecated));
 
 int apol_nodecon_query_set_addr(apol_policy_t * p, apol_nodecon_query_t * n, uint32_t * addr, int proto)
 {

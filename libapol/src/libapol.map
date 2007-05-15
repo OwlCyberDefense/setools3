@@ -55,4 +55,6 @@ VERS_4.1{
         	apol_avrule_query_set_all_perms;
         	apol_ipv4_addr_render;
                 apol_mls_level_validate;
+                apol_nodecon_query_set_protocol;
+                apol_portcon_query_set_protocol;
 } VERS_4.0;

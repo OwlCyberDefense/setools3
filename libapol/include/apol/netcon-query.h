@@ -87,7 +87,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_portcon_query_set_proto(apol_policy_t * p, apol_portcon_query_t * po, int proto);
+	extern int apol_portcon_query_set_protocol(apol_policy_t * p, apol_portcon_query_t * po, int proto);
 
 /**
  * Set a portcon query to return only portcons with this as their low
@@ -292,7 +292,7 @@ extern "C"
  *
  * @return 0 if protocol was valid, -1 on error.
  */
-	extern int apol_nodecon_query_set_proto(apol_policy_t * p, apol_nodecon_query_t * n, int proto);
+	extern int apol_nodecon_query_set_protocol(apol_policy_t * p, apol_nodecon_query_t * n, int proto);
 
 /**
  * Set a nodecon query to return only nodecons with this address.  If

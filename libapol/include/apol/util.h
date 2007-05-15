@@ -31,8 +31,6 @@ extern "C"
 {
 #endif
 
-#include <config.h>
-
 #include "vector.h"
 
 #include <stdint.h>
@@ -57,6 +55,16 @@ extern "C"
  * protocol is invalid.  <b>Do not free() this string.</b>
  */
 	extern const char *apol_protocol_to_str(uint8_t protocol);
+
+/**
+ * Given the name of a portcon protocol, return its numeric value.
+ *
+ * @param protocol_str Portcon protocol, one of "tcp", "TCP", "udp", or "UDP".
+ *
+ * @return Numeric value for the protocol, one of IPPROTO_TCP or IPPROTO_UDP
+ * from netinet/in.h.  Upon error return 0.
+ */
+	extern uint8_t apol_str_to_protocol(const char *protocol_str);
 
 /**
  * Given a string representing and IP value (mask or address, IPv4 or

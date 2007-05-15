@@ -1,5 +1,21 @@
 2007-05-15  J. Tang  <jtang@tresys.com>
 
+	* libqpol/src/mls_query.c (qpol_level_get_alias_iter): Fixed
+	possible error when getting a level's alias iterator, where the
+	first element returned might be the original level instead of one
+	of its alias.
+
+	* libapol/include/apol/policy-path.h, libapol/include/apol/util.h:
+	Headers errantly included <config.h>.
+
+	* libapol/src/netcon-query.c (apol_nodecon_query_set_proto) 
+	(apol_portcon_query_set_proto): These have been renamed to
+	apol_nodecon_query_set_protocol() and
+	apol_portcon_query_set_protocol() respectively.
+
+	* libapol/src/util.c (apol_str_to_protocol): Added this function,
+	to complement existing apol_protocol_to_str().
+
 	* libapol/src/mls-query.c (apol_mls_range_contain_subrange): Fixed
 	potential segfault if a range's high level is not yet set when
 	comparison occurs.

@@ -143,8 +143,11 @@ char *apol_qpol_context_render(apol_policy_t * p, qpol_context_t * context)
 	apol_context_t *c = NULL;
 	char *rendered_context;
 
-	if (p == NULL)
+	if (p == NULL || context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return NULL;
+	}
 
 	if ((c = apol_context_create_from_qpol_context(p, context)) == NULL) {
 		return NULL;
