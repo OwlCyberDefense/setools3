@@ -80,7 +80,7 @@ extern "C"
  *  Get the relative path from a gefscon statement.
  *  @param policy The policy associated with the genfscon statement.
  *  @param genfs The genfscon statement from which to get the path.
- *  @param path Pointer to th string in which to store the path.
+ *  @param path Pointer to the string in which to store the path.
  *  The caller should not free this string.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *path will be NULL.

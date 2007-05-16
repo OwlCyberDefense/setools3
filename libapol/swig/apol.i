@@ -207,7 +207,7 @@ uint8_t apol_str_to_protocol(const char *protocol_str);
 %rename(apol_str_to_internal_ipv4) wrap_apol_str_to_internal_ipv4;
 %newobject wrap_apol_str_to_internal_ip;
 %rename(apol_str_to_internal_ip) wrap_apol_str_to_internal_ip;
-
+int apol_str_to_ip_protocol(char *str);
 %inline %{
 	uint32_t *wrap_apol_str_to_internal_ipv6(char *str) {
 		uint32_t *ip = calloc(4, sizeof(uint32_t));
@@ -251,6 +251,20 @@ uint8_t apol_str_to_protocol(const char *protocol_str);
 		}
 	fail:
 		return ip;
+	}
+	int apol_str_to_ip_protocol(char *str) {
+		uint32_t *ip = calloc(4, sizeof(uint32_t));
+		int retv = 0;
+		if (!ip) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		retv = apol_str_to_internal_ip(str, ip);
+		if (retv < 0) {
+			SWIG_exception(SWIG_RuntimeError, "Could not convert string to ip");
+		}
+	fail:
+		free(ip);
+		return retv;
 	}
 %}
 const char *apol_objclass_to_str(uint32_t objclass);
