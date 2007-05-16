@@ -30,8 +30,6 @@ extern "C"
 {
 #endif
 
-#include <config.h>
-
 #include <sys/types.h>
 
 #include <apol/context-query.h>
@@ -42,7 +40,8 @@ extern "C"
 /**
  * Get the context from a sefs entry.
  * @param ent Entry from which to get the context.
- * @return A pointer to the context, or NULL on error.
+ * @return A pointer to the context, or NULL on error. The caller
+ * should not modify or destroy the returned context.
  */
 	const apol_context_t *sefs_entry_get_context(const sefs_entry_t * ent);
 
@@ -79,12 +78,12 @@ extern "C"
 	const apol_vector_t *sefs_entry_get_paths(const sefs_entry_t * ent);
 
 /**
- * Get the origin of a sefs entry.
+ * Get the file from which a sefs entry originated.
  * This function is only meaningful when entries are returned
  * from a query on a modular file context file.
  * @param ent Entry from which to get the origin.
- * @return The path of the module providing the entry or NULL
- * if the entry is not from a module.
+ * @return The path of the file (policy package or source file)
+ * providing the entry or NULL if the entry is not from a module.
  */
 	const char *sefs_entry_get_origin(const sefs_entry_t * ent);
 

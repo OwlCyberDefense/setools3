@@ -30,16 +30,15 @@ extern "C"
 {
 #endif
 
-#include <config.h>
-
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include <apol/context-query.h>
 #include <apol/mls-query.h>
 #include <apol/policy-query.h>
 #include <apol/vector.h>
 
-#include <sefs/fclist.h>
+#include "fclist.h"
 
 	typedef struct sefs_query sefs_query_t;
 
@@ -55,7 +54,7 @@ extern "C"
 /**
  * Deallocate all memory associated with the referenced sefs query, and then
  * set it to NULL.  This function does nothing if the query is already NULL.
- * @param Reference to a sefs query structure to destroy.
+ * @param query Reference to a sefs query structure to destroy.
  */
 	void sefs_query_destroy(sefs_query_t ** query);
 
@@ -82,7 +81,7 @@ extern "C"
  * name. If a policy is not available, this field is ignored, and exact string
  * matching is used instead. 
  */
-	void sefs_query_set_type(sefs_query_t * query, const char *name, int indirect);
+	void sefs_query_set_type(sefs_query_t * query, const char *name, bool indirect);
 
 /**
  * Set a sefs query to match only entries with contexts with a range of \a range.
@@ -93,6 +92,9 @@ extern "C"
  * match the range using the specified semantics; this should be one of
  * APOL_QUERY_SUB, APOL_QUERY_SUPER, or APOL_QUERY_EXACT. If a policy is not
  * available or \a match is zero, exact string matching is used instead.
+ * Note, if a policy is available the regex flag is ignored if \a match
+ * is non-zero.
+ * @see sefs_fclist_associate_policy() to associate a policy with a fclist.
  */
 	void sefs_query_set_range(sefs_query_t * query, const char *range, int match);
 
@@ -130,7 +132,7 @@ extern "C"
  * @param regex If non-zero use regular expression matching, if zero,
  * use only exact string matching.
  */
-	void sefs_query_set_regex(sefs_query_t * query, int regex);
+	void sefs_query_set_regex(sefs_query_t * query, bool regex);
 
 /**
  * Set a sefs query to operate starting at directory \a root.
@@ -140,7 +142,7 @@ extern "C"
  * @param recursive If non-zero operate recursively on all sub-directories
  * of \a root, if zero, only operate on \a root not its sub-directories.
  */
-	void sefs_query_set_root_dir(sefs_query_t * query, const char *root, int recursive);
+	void sefs_query_set_root_dir(sefs_query_t * query, const char *root, bool recursive);
 
 /**
  * Perform a sefs query on the given file context list object.

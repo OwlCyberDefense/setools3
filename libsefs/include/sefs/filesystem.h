@@ -30,13 +30,11 @@ extern "C"
 {
 #endif
 
-#include <config.h>
-
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdbool.h>
 
-#include <sefs/fclist.h>
+#include "fclist.h"
 
 #include <apol/vector.h>
 
@@ -66,8 +64,8 @@ extern "C"
 /**
  * Get a list of mount points within a sefs filesystem.
  * @param fs Filesystem structure from which to get the mount points.
- * @return A vector of all mount points in the filesystem. The caller should
- * not destroy the returned vector.
+ * @return A vector of paths (char *) to all mount points in the
+ * filesystem. The caller should not destroy the returned vector.
  */
 	const apol_vector_t *sefs_filesystem_get_mount_points(sefs_filesystem_t *fs);
 

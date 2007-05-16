@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Defines the public interface for the file context file set fc list object.
+ *  Defines the public interface for the file_context set fc list object.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -30,20 +30,18 @@ extern "C"
 {
 #endif
 
-#include <config.h>
-
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdbool.h>
 
-#include <sefs/fclist.h>
+#include "fclist.h"
 
 #include <apol/vector.h>
 
 	typedef struct sefs_fcfile sefs_fcfile_t;
 
 /**
- * Allocate and return a new sefs file context file set structure.
+ * Allocate and return a new sefs file_context set structure.
  * @param msg_callback Callback to invoke as errors/warnings are generated.
  * If NULL, write messages to standard error.
  * @param varg Value to be passed as the first parameter to the 
@@ -55,7 +53,7 @@ extern "C"
 	sefs_fclist_t *sefs_fcfile_create(sefs_callback_fn_t msg_callback, void * varg);
 
 /**
- * Allocate and return a new sefs file context file set structure from a single
+ * Allocate and return a new sefs file_context set structure from a single
  * file_contexts file.
  * @param file File contexts file to read.
  * @param msg_callback Callback to invoke as errors/warnings are generated.
@@ -69,8 +67,8 @@ extern "C"
 	sefs_fclist_t *sefs_fcfile_create_from_file(const char *file, sefs_callback_fn_t msg_callback, void * varg);
 
 /**
- * Allocate and return a new sefs file context file set structure from a list
- * of file context files.
+ * Allocate and return a new sefs file_context set structure from a list
+ * of file_context files.
  * @param files Vector of file contexts files to read.
  * @param msg_callback Callback to invoke as errors/warnings are generated.
  * If NULL, write messages to standard error.
@@ -83,8 +81,8 @@ extern "C"
 	sefs_fclist_t *sefs_fcfile_create_from_file_list(const apol_vector_t *files, sefs_callback_fn_t msg_callback, void * varg);
 
 /**
- * Append a file contexts file to a sefs file contexts file set.
- * @param fcfile File contexts file set to which to append \a file.
+ * Append a file_contexts file to a sefs file contexts file set.
+ * @param fcfile File_contexts file set to which to append \a file.
  * @param file File containging entries to append to \a fcfile.
  * @return 0 on success or < 0 on failure; if the call fails, \a fcfile
  * will be unchanged.
@@ -92,23 +90,23 @@ extern "C"
 	int sefs_fcfile_append_file(sefs_fcfile_t *fcfile, const char *file);
 
 /**
- * Append a list of file context files to a sefs file contexts file set.
- * @param fcfile File contexts file set to which to append the files.
+ * Append a list of file_context files to a sefs file contexts file set.
+ * @param fcfile File_contexts file set to which to append the files.
  * @param files Vector of files to append; these files will be appended in
  * the order they appear in the vector.
  * @return The number of files successfully appended. If the value returned is
- * less than the size of the vector, then file at index (returned value - 1)
+ * less than the size of the vector, then file at index (returned value)
  * failed. If append fails for any file, the operation stops at that file; it
  * is safe to attempt to append the files remaing after the unsuccessful file.
  */
 	size_t sefs_fcfile_append_file_list(sefs_fcfile_t *fcfile, const apol_vector_t *files);
 
 /**
- * Get a list of all files contributing to the entries in a sefs file contexts
- * file set.
+ * Get a list of all files contributing to the entries in a sefs
+ * file_contexts set.
  * @param fcfile File contexts file set from which to get the file list.
- * @return Vector of file paths of all files contributing to the set; the
- * caller should not destroy the returned vector.
+ * @return Vector of file paths (char *) of all files contributing to
+ * the set; the caller should not destroy the returned vector.
  */
 	const apol_vector_t *sefs_fcfile_get_file_list(sefs_fcfile_t *fcfile);
 

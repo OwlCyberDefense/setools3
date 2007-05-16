@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Defines the public interface for the filesystem fc list object.
+ *  Defines the public interface for the database fc list object.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -30,14 +30,12 @@ extern "C"
 {
 #endif
 
-#include <config.h>
-
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <time.h>
 
-#include <sefs/fclist.h>
+#include "fclist.h"
 
 #include <apol/vector.h>
 
@@ -54,10 +52,10 @@ extern "C"
  * or NULL on error. The caller is responsible for calling
  * sefs_fclist_destroy() to free all memory associated with the returned list.
  */
-	sefs_fclist_t *sefs_db_create(const sefs_filesystem_t *fs, sefs_callback_fn_t msg_callback, void * varg);
+	sefs_fclist_t *sefs_db_create_from_filesystem(const sefs_filesystem_t *fs, sefs_callback_fn_t msg_callback, void * varg);
 
 /**
- * Allocate and return a new sefs database loading the entries from
+ * Allocate and return a new sefs database, loading the entries from
  * the saved database \a path.
  * @param path Path of a sefs database from which to load.
  * @param msg_callback Callback to invoke as errors/warnings are generated.
