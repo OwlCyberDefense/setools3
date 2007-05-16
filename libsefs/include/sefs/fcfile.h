@@ -50,7 +50,7 @@ extern "C"
  * or NULL on error. The caller is responsible for calling
  * sefs_fclist_destroy() to free all memory associated with the returned list.
  */
-	sefs_fclist_t *sefs_fcfile_create(sefs_callback_fn_t msg_callback, void * varg);
+	sefs_fclist_t *sefs_fcfile_create(sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Allocate and return a new sefs file_context set structure from a single
@@ -64,7 +64,7 @@ extern "C"
  * or NULL on error. The caller is responsible for calling
  * sefs_fclist_destroy() to free all memory associated with the returned list.
  */
-	sefs_fclist_t *sefs_fcfile_create_from_file(const char *file, sefs_callback_fn_t msg_callback, void * varg);
+	sefs_fclist_t *sefs_fcfile_create_from_file(const char *file, sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Allocate and return a new sefs file_context set structure from a list
@@ -78,7 +78,7 @@ extern "C"
  * or NULL on error. The caller is responsible for calling
  * sefs_fclist_destroy() to free all memory associated with the returned list.
  */
-	sefs_fclist_t *sefs_fcfile_create_from_file_list(const apol_vector_t *files, sefs_callback_fn_t msg_callback, void * varg);
+	sefs_fclist_t *sefs_fcfile_create_from_file_list(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Append a file_contexts file to a sefs file contexts file set.
@@ -87,7 +87,7 @@ extern "C"
  * @return 0 on success or < 0 on failure; if the call fails, \a fcfile
  * will be unchanged.
  */
-	int sefs_fcfile_append_file(sefs_fcfile_t *fcfile, const char *file);
+	int sefs_fcfile_append_file(sefs_fcfile_t * fcfile, const char *file);
 
 /**
  * Append a list of file_context files to a sefs file contexts file set.
@@ -99,7 +99,7 @@ extern "C"
  * failed. If append fails for any file, the operation stops at that file; it
  * is safe to attempt to append the files remaing after the unsuccessful file.
  */
-	size_t sefs_fcfile_append_file_list(sefs_fcfile_t *fcfile, const apol_vector_t *files);
+	size_t sefs_fcfile_append_file_list(sefs_fcfile_t * fcfile, const apol_vector_t * files);
 
 /**
  * Get a list of all files contributing to the entries in a sefs
@@ -108,13 +108,10 @@ extern "C"
  * @return Vector of file paths (char *) of all files contributing to
  * the set; the caller should not destroy the returned vector.
  */
-	const apol_vector_t *sefs_fcfile_get_file_list(sefs_fcfile_t *fcfile);
-
-
+	const apol_vector_t *sefs_fcfile_get_file_list(sefs_fcfile_t * fcfile);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SEFS_FCFILE_H */
-
+#endif				       /* SEFS_FCFILE_H */

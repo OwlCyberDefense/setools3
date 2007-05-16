@@ -1407,7 +1407,6 @@ int apol_tcl_rules_init(Tcl_Interp * interp)
 {
 	Tcl_CreateCommand(interp, "apol_SearchTERules", Apol_SearchTERules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", Apol_SearchConditionalRules, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_SearchRBACRules", Apol_SearchRBACRules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", Apol_SearchRangeTransRules, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_GetSynAVRules", Apol_GetSynAVRules, NULL, NULL);
 	Tcl_CreateObjCommand(interp, "apol_GetSynTERules", Apol_GetSynTERules, NULL, NULL);

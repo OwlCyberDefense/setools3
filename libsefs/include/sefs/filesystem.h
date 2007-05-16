@@ -52,14 +52,14 @@ extern "C"
  * or NULL on error. The caller is responsible for calling
  * sefs_fclist_destroy() to free all memory associated with the returned list.
  */
-	sefs_fclist_t *sefs_filesystem_create(const char *root, sefs_callback_fn_t msg_callback, void * varg);
+	sefs_fclist_t *sefs_filesystem_create(const char *root, sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Get the root directory of a sefs filesystem structure.
  * @param fs Filesystem structure from which to get the root.
  * @return The root directory of the filesystem or NULL on error.
  */
-	const char *sefs_filesystem_get_root(sefs_filesystem_t *fs);
+	const char *sefs_filesystem_get_root(sefs_filesystem_t * fs);
 
 /**
  * Get a list of mount points within a sefs filesystem.
@@ -67,11 +67,10 @@ extern "C"
  * @return A vector of paths (char *) to all mount points in the
  * filesystem. The caller should not destroy the returned vector.
  */
-	const apol_vector_t *sefs_filesystem_get_mount_points(sefs_filesystem_t *fs);
+	const apol_vector_t *sefs_filesystem_get_mount_points(sefs_filesystem_t * fs);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SEFS_FILESYSTEM_H */
-
+#endif				       /* SEFS_FILESYSTEM_H */

@@ -52,7 +52,7 @@ extern "C"
  * or NULL on error. The caller is responsible for calling
  * sefs_fclist_destroy() to free all memory associated with the returned list.
  */
-	sefs_fclist_t *sefs_db_create_from_filesystem(const sefs_filesystem_t *fs, sefs_callback_fn_t msg_callback, void * varg);
+	sefs_fclist_t *sefs_db_create_from_filesystem(const sefs_filesystem_t * fs, sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Allocate and return a new sefs database, loading the entries from
@@ -66,18 +66,17 @@ extern "C"
  * or NULL on error. The caller is responsible for calling
  * sefs_fclist_destroy() to free all memory associated with the returned list.
  */
-	sefs_fclist_t *sefs_db_create_from_file(const char *path, sefs_callback_fn_t msg_callback, void * varg);
+	sefs_fclist_t *sefs_db_create_from_file(const char *path, sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Get the creation time of a sefs database.
  * @param db Database from which to get the creation time.
  * @return Creation time of the database, or 0 on error.
  */
-	time_t sefs_db_get_ctime(sefs_db_t *db);
- 
+	time_t sefs_db_get_ctime(sefs_db_t * db);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SEFS_DB_H */
-
+#endif				       /* SEFS_DB_H */

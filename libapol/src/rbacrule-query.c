@@ -142,7 +142,7 @@ apol_role_allow_query_t *apol_role_allow_query_create(void)
 
 void apol_role_allow_query_destroy(apol_role_allow_query_t ** r)
 {
-	if (*r != NULL) {
+	if (r != NULL && *r != NULL) {
 		free((*r)->source);
 		free((*r)->target);
 		free(*r);
@@ -172,9 +172,7 @@ int apol_role_allow_query_set_regex(apol_policy_t * p, apol_role_allow_query_t *
 
 char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule)
 {
-	char *tmp = NULL, *tmp_name = NULL;
-	int error = 0;
-	size_t tmp_sz = 0;
+	char *tmp = NULL, *source_name = NULL, *target_name = NULL;
 	qpol_role_t *role = NULL;
 
 	if (!policy || !rule) {
@@ -183,69 +181,32 @@ char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule)
 		return NULL;
 	}
 
-	/* allow */
-	if (apol_str_append(&tmp, &tmp_sz, "allow ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
-		return NULL;
-	}
-
 	/* source role */
 	if (qpol_role_allow_get_source_role(policy->p, rule, &role)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (qpol_role_get_name(policy->p, role, &tmp_name)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+	if (qpol_role_get_name(policy->p, role, &source_name)) {
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
 
 	/* target role */
 	if (qpol_role_allow_get_target_role(policy->p, rule, &role)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (qpol_role_get_name(policy->p, role, &tmp_name)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+	if (qpol_role_get_name(policy->p, role, &target_name)) {
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
 
-	if (apol_str_append(&tmp, &tmp_sz, ";")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+	if (asprintf(&tmp, "allow %s %s;", source_name, target_name) < 0) {
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
 
 	return tmp;
-
-      err:
-	free(tmp);
-	errno = error;
-	return NULL;
 }
 
 /******************** role_transition queries ********************/
@@ -369,7 +330,7 @@ apol_role_trans_query_t *apol_role_trans_query_create(void)
 
 void apol_role_trans_query_destroy(apol_role_trans_query_t ** r)
 {
-	if (*r != NULL) {
+	if (r != NULL && *r != NULL) {
 		free((*r)->source);
 		free((*r)->target);
 		free((*r)->default_role);
@@ -406,9 +367,7 @@ int apol_role_trans_query_set_regex(apol_policy_t * p, apol_role_trans_query_t *
 
 char *apol_role_trans_render(apol_policy_t * policy, qpol_role_trans_t * rule)
 {
-	char *tmp = NULL, *tmp_name = NULL;
-	int error = 0;
-	size_t tmp_sz = 0;
+	char *tmp = NULL, *source_name = NULL, *target_name = NULL, *default_name = NULL;
 	qpol_role_t *role = NULL;
 	qpol_type_t *type = NULL;
 
@@ -418,89 +377,39 @@ char *apol_role_trans_render(apol_policy_t * policy, qpol_role_trans_t * rule)
 		return NULL;
 	}
 
-	/* role_transition */
-	if (apol_str_append(&tmp, &tmp_sz, "role_transition ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
-		return NULL;
-	}
-
 	/* source role */
 	if (qpol_role_trans_get_source_role(policy->p, rule, &role)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (qpol_role_get_name(policy->p, role, &tmp_name)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+	if (qpol_role_get_name(policy->p, role, &source_name)) {
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
 
 	/* target type */
 	if (qpol_role_trans_get_target_type(policy->p, rule, &type)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (qpol_type_get_name(policy->p, type, &tmp_name)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+	if (qpol_type_get_name(policy->p, type, &target_name)) {
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
 
 	/* default role */
 	if (qpol_role_trans_get_default_role(policy->p, rule, &role)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (qpol_role_get_name(policy->p, role, &tmp_name)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, " ")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+	if (qpol_role_get_name(policy->p, role, &default_name)) {
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
 
-	if (apol_str_append(&tmp, &tmp_sz, ";")) {
-		ERR(policy, "%s", strerror(ENOMEM));
-		errno = ENOMEM;
+	if (asprintf(&tmp, "role_transition %s %s %s;", source_name, target_name, default_name) < 0) {
+		ERR(policy, "%s", strerror(errno));
 		return NULL;
 	}
-
 	return tmp;
-
-      err:
-	free(tmp);
-	errno = error;
-	return NULL;
 }

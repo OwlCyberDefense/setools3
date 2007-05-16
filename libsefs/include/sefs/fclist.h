@@ -40,7 +40,7 @@ extern "C"
 
 	typedef struct sefs_fclist sefs_fclist_t;
 
-	typedef void (*sefs_callback_fn_t) (void *varg, sefs_fclist_t *fclist, int level, const char *fmt, va_list argp);
+	typedef void (*sefs_callback_fn_t) (void *varg, sefs_fclist_t * fclist, int level, const char *fmt, va_list argp);
 
 /**
  * Possible types of fclist for use with sefs_fclist_get_data().
@@ -91,7 +91,7 @@ extern "C"
  * remove any policy association. While \a policy is associated
  * with \a fclist the caller should not destroy \a policy.
  */
-	void sefs_fclist_associate_policy(sefs_fclist_t *fclist, apol_policy_t *policy);
+	void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy);
 
 #define SEFS_MSG_ERR  1		       /*!< Message describes a fatal error. */
 #define SEFS_MSG_WARN 2		       /*!< Message is issued as a warning but does not represent a fatal error. */

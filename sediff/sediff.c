@@ -84,12 +84,11 @@ static void usage(const char *prog_name, int brief)
 	printf("  -b, --bool         boolean definitions and default values\n");
 	printf("  -A, --avrule       access vector rules\n");
 	printf("                     takes an optional parameter indicating the\n"
-			 "                     type of av rules to diff:\n"
-			 "                       L: audita(L)low\n"
-			 "                       N: (N)everallow\n"
-			 "                       D: (D)ontaudit\n"
-			 "                       W: allo(W)\n"
-			 "                     Note: you may specify more than one\n");
+	       "                     type of av rules to diff:\n"
+	       "                       L: audita(L)low\n"
+	       "                       N: (N)everallow\n"
+	       "                       D: (D)ontaudit\n"
+	       "                       W: allo(W)\n" "                     Note: you may specify more than one\n");
 	printf("  -T, --terule       type enforcement rules\n");
 	printf("  --role_trans       role_transition rules\n");
 	printf("  --role_allow       role allow rules\n");
@@ -1316,26 +1315,26 @@ int main(int argc, char **argv)
 			break;
 		case 'A':
 
-			if(optarg){ /* handle option options */
-				
-				for(char * tmp = optarg; *tmp; tmp++){
-					switch(*tmp){
-						case 'L': // AVAUDITALLOW
-							flags |= POLDIFF_DIFF_AVAUDITALLOW;
-							break;
-						case 'N': // AVNEVERALLOW
-							flags |= POLDIFF_DIFF_AVNEVERALLOW;
-							break;
-						case 'D': // AVDONTAUDIT
-							flags |= POLDIFF_DIFF_AVDONTAUDIT;
-							break;
-						case 'W': // AVALLOW
-							flags |= POLDIFF_DIFF_AVALLOW;
-							break;
-						default:
-							fprintf(stderr, "Invalid option for -A (--avrule=): '%c'.\n\n", *tmp);
-							usage(argv[0], 0);
-							exit(1);
+			if (optarg) {  /* handle option options */
+
+				for (char *tmp = optarg; *tmp; tmp++) {
+					switch (*tmp) {
+					case 'L':	// AVAUDITALLOW
+						flags |= POLDIFF_DIFF_AVAUDITALLOW;
+						break;
+					case 'N':	// AVNEVERALLOW
+						flags |= POLDIFF_DIFF_AVNEVERALLOW;
+						break;
+					case 'D':	// AVDONTAUDIT
+						flags |= POLDIFF_DIFF_AVDONTAUDIT;
+						break;
+					case 'W':	// AVALLOW
+						flags |= POLDIFF_DIFF_AVALLOW;
+						break;
+					default:
+						fprintf(stderr, "Invalid option for -A (--avrule=): '%c'.\n\n", *tmp);
+						usage(argv[0], 0);
+						exit(1);
 					}
 				}
 			} else {

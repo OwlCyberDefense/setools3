@@ -160,6 +160,26 @@ proc portcon_vector_to_list {v} {
     return $list
 }
 
+# Convert a vector of qpol_role_allow_t objects to a list of
+# qpol_role_allow_t.
+proc role_allow_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        lappend list [new_qpol_role_allow_t [$v get_element $i]]
+    }
+    return $list
+}
+
+# Convert a vector of qpol_role_trans_t objects to a list of
+# qpol_role_trans_t.
+proc role_trans_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        lappend list [new_qpol_role_trans_t [$v get_element $i]]
+    }
+    return $list
+}
+
 proc role_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
