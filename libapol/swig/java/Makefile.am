@@ -30,6 +30,7 @@ BUILT_SOURCES = apol_wrap.c \
 	apol_infoflow_result_t.java \
 	apol_infoflow_step_t.java \
 	apol_infoflow_t.java \
+	apol_ip_t.java \
 	apol_isid_query_t.java \
 	apol.java \
 	apolJNI.java \

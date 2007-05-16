@@ -217,6 +217,9 @@ proc ApolTop::_create_toplevel {} {
             {command "&Quit" {} "Quit policy analysis tool" {Ctrl q} -command ApolTop::_exit}
 	}
 	"&Edit" {} edit 0 {
+            {command "&Copy" {tag_policy_open} {} {Ctrl c} -command ApolTop::_copy}
+            {command "Select &All" {tag_policy_open} {} {Ctrl a} -command ApolTop::_select_all}
+            {separator}
 	    {command "&Find..." {tag_policy_open} "Find text in current buffer" {Ctrl f} -command ApolTop::_find}
 	    {command "&Goto Line..." {tag_policy_open} "Goto a line in current buffer" {Ctrl g} -command ApolTop::_goto}
 	}
@@ -479,6 +482,22 @@ proc ApolTop::_exit {} {
     }
     _write_configuration_file
     exit
+}
+
+proc ApolTop::_copy {} {
+    set w [getCurrentTextWidget]
+    if {$w != {} && [$w tag ranges sel] != {}} {
+        set data [$w get sel.first sel.last]
+        clipboard clear
+        clipboard append -- $data
+    }
+}
+
+proc ApolTop::_select_all {} {
+    set w [getCurrentTextWidget]
+    if {$w != {}} {
+        $w tag add sel 1.0 end
+    }
 }
 
 proc ApolTop::_find {} {

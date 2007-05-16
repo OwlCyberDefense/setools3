@@ -43,14 +43,17 @@ version_min_sepol_patch=27
 dnl *** end of tunable values ***
 
 AC_GNU_SOURCE
-AC_PROG_CC
+AC_PROG_CC_C99
+if test ${ac_cv_prog_cc_c99} = "no"; then
+  AC_MSG_ERROR([SETools requires a C99-compliant C compiler to build.])
+fi
 AC_LANG([C])
-AC_HEADER_STDC
 AC_PROG_LIBTOOL
 AC_PROG_LN_S
 AC_PROG_LEX
 AC_PROG_YACC
 AC_PROG_INSTALL
+AC_HEADER_STDBOOL
 AC_CHECK_SIZEOF(char *)
 AC_C_BIGENDIAN
 AC_CHECK_FUNCS(rand_r)

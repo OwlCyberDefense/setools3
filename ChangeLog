@@ -1,3 +1,18 @@
+2007-05-16  J. Tang  <jtang@tresys.com>
+
+	* Right-clicking an apol results display now pops up a menu, that
+	allows the user to copy and to select all.
+
+	* libapol/swig/apol.i: Within the SWIG interfaces, there now
+	exists an object "apol_ip_t", that represents both an IP address
+	and a protocol.  apol_str_to_internal_ip() returns an apol_ip_t,
+	which may then be used when setting an apol_nodecon_query_t.  Note
+	that this only affects the SWIG generated libraries, not the
+	original libapol.
+
+	* SETools now requires a C99 compliant C compiler.  The supplied
+	configure script will check for a working C99 compiler.
+
 2007-05-16  M. Goldman  <mgoldman@tresys.com>
 	* modified libpoldiff to support partial diffing of avrules
 
@@ -13,7 +28,7 @@
 	* libapol/include/apol/policy-path.h, libapol/include/apol/util.h:
 	Headers errantly included <config.h>.
 
-	* libapol/src/netcon-query.c (apol_nodecon_query_set_proto) 
+	* libapol/src/netcon-query.c (apol_nodecon_query_set_proto)
 	(apol_portcon_query_set_proto): These have been renamed to
 	apol_nodecon_query_set_protocol() and
 	apol_portcon_query_set_protocol() respectively.
@@ -56,7 +71,7 @@
 
 2007-05-11  J. Mowery  <jmowery@tresys.com>
 
-	* removed usage of typedef'ed bool_t and replaced with bool as 
+	* removed usage of typedef'ed bool_t and replaced with bool as
 	  defined by stdbool.h; also replaced defined TRUE and FALSE
 	  with true and false constants as defined by stdbool.h.
 

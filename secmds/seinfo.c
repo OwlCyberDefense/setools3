@@ -1040,7 +1040,7 @@ static int print_nodecon(FILE * fp, const char *addr, apol_policy_t * policydb)
 		}
 		if (apol_nodecon_query_set_addr(policydb, query, address, protocol))
 			goto cleanup;
-		if (apol_nodecon_query_set_proto(policydb, query, protocol))
+		if (apol_nodecon_query_set_protocol(policydb, query, protocol))
 			goto cleanup;
 	}
 

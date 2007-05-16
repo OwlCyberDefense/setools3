@@ -593,11 +593,19 @@ proc Apol_NetContexts::_nodecon_open {} {
     variable widgets
     set vals(nodecon:items) {}
     foreach n [lsort -command _nodecon_sort $nodecons] {
-        set addr [lindex $n 1]
-        if {[lsearch $vals(nodecon:items) $addr] == -1} {
-            lappend vals(nodecon:items) $addr
+        set proto [$n get_protocol $::ApolTop::qpolicy]
+        set addr [$n get_addr $::ApolTop::qpolicy]
+        if {$proto == $::QPOL_IPV4} {
+            set addr [apol_ipv4_addr_render $::ApolTop::policy $addr]
+        } elseif {$proto == $::QPOL_IPV6} {
+            set addr [apol_ipv6_addr_render $::ApolTop::policy $addr]
+        } else {
+            puts stderr "Unknown protocol $proto"
+            exit -1
         }
+        lappend vals(nodecon:items) $addr
     }
+    set vals(nodecon:items) [lsort -unique -dictionary $vals(nodecon:items)]
 }
 
 proc Apol_NetContexts::_nodecon_show {} {
@@ -717,29 +725,31 @@ proc Apol_NetContexts::_nodecon_toggleV4button {path name1 name2 op} {
 
 proc Apol_NetContexts::_nodecon_popup {nodecon_addr} {
     set q [new_apol_nodecon_query_t]
-    $q set_addr $::ApolTop::policy 
-    if {[catch {apol_GetNodecons $nodecon} nodecons]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining nodecons list:\n$nodecons"
-        return
-    }
-    set text "nodecon $nodecon ([llength $nodecons] context"
+    set ip [apol_str_to_internal_ip $nodecon_addr]
+    $q set_addr $::ApolTop::policy $ip
+    $ip -delete
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set nodecons [nodecon_vector_to_list $v]
+    $v -delete
+
+    set text "nodecon $nodecon_addr ([llength $nodecons] context"
     if {[llength $nodecons] != 1} {
         append text s
     }
     append text ")"
-    foreach n [lsort -index 0 $nodecons] {
-        append text "\n\t[_nodecon_render $n]"
+    foreach n [lsort -command _nodecon_sort $nodecons] {
+        append text "\n    [_nodecon_render $n]"
     }
-    Apol_Widget::showPopupText "address $nodecon" $text
+    Apol_Widget::showPopupText "address $nodecon_addr" $text
 }
 
 proc Apol_NetContexts::_nodecon_runSearch {} {
     variable vals
     variable widgets
+
     set addr {}
     set mask {}
-    set context {}
-    set range_match 0
     if {$vals(nodecon:ip_type) == "ipv4"} {
         # explicitly validate the entries (they could still have focus)
         foreach i {0 1 2 3} {
@@ -756,6 +766,7 @@ proc Apol_NetContexts::_nodecon_runSearch {} {
                           $vals(nodecon:ipv4_mask0) $vals(nodecon:ipv4_mask1) \
                           $vals(nodecon:ipv4_mask2) $vals(nodecon:ipv4_mask3)]
         }
+        set proto $::QPOL_IPV4
     } else {
         if {$vals(nodecon:ipv6_addr_enable)} {
             if {[set addr $vals(nodecon:ipv6_addr)] == {}} {
@@ -769,16 +780,35 @@ proc Apol_NetContexts::_nodecon_runSearch {} {
                 return
             }
         }
-    }
-    if {[Apol_Widget::getContextSelectorState $widgets(nodecon:context)]} {
-        foreach {context range_match} [Apol_Widget::getContextSelectorValue $widgets(nodecon:context)] {break}
-    }
-    if {[catch {apol_GetNodecons $addr $mask $vals(nodecon:ip_type) $context $range_match} nodecons]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining nodecons list:\n$nodecons"
-        return
+        set proto $::QPOL_IPV6
     }
 
-    # now display results
+    set q [new_apol_nodecon_query_t]
+    $q set_protocol $::ApolTop::policy $proto
+    if {$addr != {}} {
+        if {[catch {apol_str_to_internal_ip $addr} u]} {
+            tk_messageBox -icon error -type ok -title "Error" -message $u
+            return
+        }
+        $q set_addr $::ApolTop::policy $u
+    }
+    if {$mask != {}} {
+        if {[catch {apol_str_to_internal_ip $mask} u]} {
+            tk_messageBox -icon error -type ok -title "Error" -message $u
+            return
+        }
+        $q set_mask $::ApolTop::policy $u
+    }
+    if {[Apol_Widget::getContextSelectorState $widgets(nodecon:context)]} {
+        foreach {context range_match attribute} [Apol_Widget::getContextSelectorValue $widgets(nodecon:context)] {break}
+        $q set_context $::ApolTop::policy $context $range_match
+    }
+
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set nodecons [nodecon_vector_to_list $v]
+    $v -delete
+
     set results "NODECONS:"
     if {[llength $nodecons] == 0} {
         append results "\nSearch returned no results."
@@ -790,23 +820,33 @@ proc Apol_NetContexts::_nodecon_runSearch {} {
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_NetContexts::_nodecon_render {nodecon} {
-    foreach {iptype addr mask context} $nodecon {break}
-    return "nodecon $addr $mask [apol_RenderContext $context]"
+proc Apol_NetContexts::_nodecon_render {qpol_nodecon_datum} {
+    apol_nodecon_render $::ApolTop::policy $qpol_nodecon_datum
 }
 
 # Sort nodecons, grouping ipv4 before ipv6.  Then sort by address and
 # then mask.
 proc Apol_NetContexts::_nodecon_sort {a b} {
-    foreach {t1 a1 m1 c1} $a {break}
-    foreach {t2 a2 m2 c2} $b {break}
-    if {$t1 == "ipv4" && $t2 == "ipv6"} {
+    set proto1 [$a get_protocol $::ApolTop::qpolicy]
+    set proto2 [$b get_protocol $::ApolTop::qpolicy]
+    if {$proto1 == $::QPOL_IPV4 && $proto2 == $::QPOL_IPV6} {
         return -1
-    } elseif {$t1 == "ipv6" && $t1 == "ipv4"} {
+    } elseif {$proto1 == $::QPOL_IPV6 && $proto1 == $::QPOL_IPV4} {
         return 0
     }
-    if {[set x [string compare $a1 $a2]] != 0} {
+
+    if {$proto1 == $::QPOL_IPV4} {
+        set render apol_ipv4_addr_render
+    } else {
+        set render apol_ipv6_addr_render
+    }
+    set addr1 [$render $::ApolTop::policy [$a get_addr $::ApolTop::qpolicy]]
+    set addr2 [$render $::ApolTop::policy [$b get_addr $::ApolTop::qpolicy]]
+    if {[set x [string compare $addr1 $addr2]] != 0} {
         return $x
     }
-    string compare $m1 $m2
+
+    set mask1 [$render $::ApolTop::policy [$a get_mask $::ApolTop::qpolicy]]
+    set mask2 [$render $::ApolTop::policy [$b get_mask $::ApolTop::qpolicy]]
+    string compare $mask1 $mask2
 }

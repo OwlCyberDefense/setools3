@@ -201,72 +201,53 @@ const char *libapol_get_version(void);
 #define IPPROTO_UDP 17
 const char *apol_protocol_to_str(uint8_t protocol);
 uint8_t apol_str_to_protocol(const char *protocol_str);
-%typemap(newfree) uint32_t * "free($1);";
-%rename(apol_str_to_internal_ipv6) wrap_apol_str_to_internal_ipv6;
-%newobject wrap_apol_str_to_internal_ipv6;
-%rename(apol_str_to_internal_ipv4) wrap_apol_str_to_internal_ipv4;
 %newobject wrap_apol_str_to_internal_ip;
 %rename(apol_str_to_internal_ip) wrap_apol_str_to_internal_ip;
-int apol_str_to_ip_protocol(char *str);
 %inline %{
-	uint32_t *wrap_apol_str_to_internal_ipv6(char *str) {
-		uint32_t *ip = calloc(4, sizeof(uint32_t));
+	typedef struct apol_ip {
+		uint32_t ip[4];
+		int proto;
+	} apol_ip_t;
+	apol_ip_t *wrap_apol_str_to_internal_ip(char *str) {
+		apol_ip_t *ip = calloc(1, sizeof(*ip));
 		int retv = 0;
 		if (!ip) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
-		retv = apol_str_to_internal_ip(str, ip);
+		retv = apol_str_to_internal_ip(str, ip->ip);
 		if (retv < 0) {
-			SWIG_exception(SWIG_RuntimeError, "Could not convert string to ip");
-		} else if (retv == QPOL_IPV4) {
-			SWIG_exception(SWIG_TypeError, "Address uses wrong protocol");
+			free(ip);
+			SWIG_exception(SWIG_RuntimeError, "Could not convert string to IP");
 		}
+		ip->proto = retv;
 	fail:
 		return ip;
-	}
-	uint32_t *wrap_apol_str_to_internal_ipv4(char *str) {
-		uint32_t *ip = calloc(4, sizeof(uint32_t));
-		int retv = 0;
-		if (!ip) {
-			SWIG_exception(SWIG_MemoryError, "Out of memory");
-		}
-		retv = apol_str_to_internal_ip(str, ip);
-		if (retv < 0) {
-			SWIG_exception(SWIG_RuntimeError, "Could not convert string to ip");
-		} else if (retv == QPOL_IPV6) {
-			SWIG_exception(SWIG_TypeError, "Address uses wrong protocol");
-		}
-	fail:
-		return ip;
-	}
-	uint32_t *wrap_apol_str_to_internal_ip(char *str) {
-		uint32_t *ip = calloc(4, sizeof(uint32_t));
-		int retv = 0;
-		if (!ip) {
-			SWIG_exception(SWIG_MemoryError, "Out of memory");
-		}
-		retv = apol_str_to_internal_ip(str, ip);
-		if (retv < 0) {
-			SWIG_exception(SWIG_RuntimeError, "Could not convert string to ip");
-		}
-	fail:
-		return ip;
-	}
-	int apol_str_to_ip_protocol(char *str) {
-		uint32_t *ip = calloc(4, sizeof(uint32_t));
-		int retv = 0;
-		if (!ip) {
-			SWIG_exception(SWIG_MemoryError, "Out of memory");
-		}
-		retv = apol_str_to_internal_ip(str, ip);
-		if (retv < 0) {
-			SWIG_exception(SWIG_RuntimeError, "Could not convert string to ip");
-		}
-	fail:
-		free(ip);
-		return retv;
 	}
 %}
+%extend apol_ip_t {
+	apol_ip_t(const char *str) {
+		apol_ip_t *ip = calloc(1, sizeof(*ip));
+		int retv = 0;
+		if (!ip) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		retv = apol_str_to_internal_ip(str, ip->ip);
+		if (retv < 0) {
+			free(ip);
+			SWIG_exception(SWIG_RuntimeError, "Could not convert string to IP");
+		}
+		ip->proto = retv;
+	fail:
+		return ip;
+	};
+	~apol_ip_t() {
+	    free(self);
+	};
+	int get_protocol() {
+		return self->proto;
+	};
+}
+
 const char *apol_objclass_to_str(uint32_t objclass);
 const char *apol_fs_use_behavior_to_str(uint32_t behavior);
 int apol_str_to_fs_use_behavior(const char *behavior);
@@ -1620,8 +1601,22 @@ typedef struct apol_nodecon_query {} apol_nodecon_query_t;
 	fail:
 		return;
 	};
+	void set_addr(apol_policy_t *p, apol_ip_t *addr) {
+		if (apol_nodecon_query_set_addr(p, self, addr->ip, addr->proto)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set address for nodecon query");
+		}
+	fail:
+		return;
+	};
 	void set_mask(apol_policy_t *p, uint32_t *mask, int protocol) {
 		if (apol_nodecon_query_set_mask(p, self, mask, protocol)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set mask for nodecon query");
+		}
+	fail:
+		return;
+	};
+	void set_mask(apol_policy_t *p, apol_ip_t *mask) {
+		if (apol_nodecon_query_set_mask(p, self, mask->ip, mask->proto)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set mask for nodecon query");
 		}
 	fail:

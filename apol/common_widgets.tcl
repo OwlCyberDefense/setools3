@@ -56,7 +56,6 @@ proc Apol_Widget::setListboxCallbacks {path callback_list} {
 
     # enable right-clicks on listbox to popup a menu; that menu lets
     # the user see more info
-
     set lb [getScrolledListbox $path]
     bind $lb <Button-3> [list Apol_Widget::_listbox_popup %W %x %y $callback_list $lb]
 }
@@ -350,6 +349,7 @@ proc Apol_Widget::makeSearchResults {path args} {
     set sw [ScrolledWindow $path -scrollbar both -auto both]
     set tb [eval text $sw.tb $args -bg white -wrap none -state disabled -font $ApolTop::text_font]
     set vars($path:cursor) [$tb cget -cursor]
+    bind $tb <Button-3> [list Apol_Widget::_searchresults_popup %W %x %y]
     $tb tag configure linenum -foreground blue -underline 1
     $tb tag configure selected -foreground red -underline 1
     $tb tag configure enabled -foreground green -underline 1
@@ -365,6 +365,18 @@ proc Apol_Widget::clearSearchResults {path} {
     $path.tb configure -state normal
     $path.tb delete 0.0 end
     $path.tb configure -state disabled
+}
+
+proc Apol_Widget::copySearchResults {path} {
+    if {[$path tag ranges sel] != {}} {
+        set data [$path get sel.first sel.last]
+        clipboard clear
+        clipboard append -- $data
+    }
+}
+
+proc Apol_Widget::selectAllSearchResults {path} {
+    $path tag add sel 1.0 end
 }
 
 proc Apol_Widget::appendSearchResultHeader {path header} {
@@ -788,6 +800,22 @@ proc Apol_Widget::_toggle_regexp_check_button {path name1 name2 op} {
         $path configure -state normal -bg white
     } else {
         $path configure -state disabled -bg $ApolTop::default_bg_color
+    }
+}
+
+proc Apol_Widget::_searchresults_popup {path x y} {
+    if {[ApolTop::is_policy_open]} {
+        focus $path
+        # create a global popup menu widget if one does not already exist
+        variable menuPopup
+        if {![winfo exists $menuPopup]} {
+            set menuPopup [menu .apol_widget_menu_popup -tearoff 0]
+        }
+        set callbacks {
+            {"Copy" Apol_Widget::copySearchResults}
+            {"Select All" Apol_Widget::selectAllSearchResults}
+        }
+        ApolTop::popup $path $x $y $menuPopup $callbacks $path
     }
 }
 

@@ -140,25 +140,13 @@ proc netifcon_vector_to_list {v} {
     return $list
 }
 
+# Convert a vector of qpol_nodecon_t objects to a list of
+# qpol_nodecon_t objects.
 proc nodecon_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
         set q [new_qpol_nodecon_t [$v get_element $i]]
-        set proto [$q get_protocol $::ApolTop::qpolicy]
-        set addr [$q get_addr $::ApolTop::qpolicy]
-        set mask [$q get_mask $::ApolTop::qpolicy]
-        if {$proto == $::QPOL_IPV4} {
-            set proto_str "ipv4"
-            set addr [apol_ipv4_addr_render $::ApolTop::policy $addr]
-            set mask [apol_ipv4_addr_render $::ApolTop::policy $mask]
-        } elseif {$proto == $::QPOL_IPV6} {
-            set proto_str "ipv6"
-            set addr [apol_ipv6_addr_render $::ApolTop::policy $addr]
-            set mask [apol_ipv6_addr_render $::ApolTop::policy $mask]
-        } else {
-            set proto_str "unknown"
-        }
-        lappend list [list $proto_str $addr $mask]
+        lappend list $q
     }
     return $list
 }
