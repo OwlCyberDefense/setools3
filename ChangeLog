@@ -1,3 +1,8 @@
+2007-05-16  M. Goldman  <mgoldman@tresys.com>
+	* modified libpoldiff to support partial diffing of avrules
+
+	* modified sediff to expose partial diffing of avrules functionality
+
 2007-05-15  J. Tang  <jtang@tresys.com>
 
 	* libqpol/src/mls_query.c (qpol_level_get_alias_iter): Fixed
