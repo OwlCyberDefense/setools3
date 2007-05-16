@@ -930,7 +930,23 @@ static int avrule_expand(poldiff_t * diff, apol_policy_t * p, qpol_avrule_t * ru
 	return retval;
 }
 
-apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *avrule_get_allow(poldiff_t * diff, apol_policy_t * policy){
+	return avrule_get_items(diff, policy, QPOL_RULE_ALLOW);
+}
+
+apol_vector_t *avrule_get_neverallow(poldiff_t * diff, apol_policy_t * policy){
+	return avrule_get_items(diff, policy, QPOL_RULE_NEVERALLOW);
+}
+
+apol_vector_t *avrule_get_auditallow(poldiff_t * diff, apol_policy_t * policy){
+	return avrule_get_items(diff, policy, QPOL_RULE_AUDITALLOW);
+}
+
+apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, apol_policy_t * policy){
+	return avrule_get_items(diff, policy, QPOL_RULE_DONTAUDIT);
+}
+
+apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy, const unsigned int flag)
 {
 	apol_vector_t *bools = NULL, *bool_states = NULL;
 	size_t i, num_rules, j;
@@ -974,7 +990,7 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy)
 		goto cleanup;
 	}
 	if (qpol_policy_get_avrule_iter(q,
-					QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT,
+					flag,
 					&iter) < 0) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));

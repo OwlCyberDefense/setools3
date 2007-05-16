@@ -53,7 +53,7 @@ static struct option const longopts[] = {
 	{"role", no_argument, NULL, 'r'},
 	{"user", no_argument, NULL, 'u'},
 	{"bool", no_argument, NULL, 'b'},
-	{"avrule", no_argument, NULL, 'A'},
+	{"avrule", optional_argument, NULL, 'A'},
 	{"terule", no_argument, NULL, 'T'},
 	{"role_trans", no_argument, NULL, DIFF_ROLE_TRANS},
 	{"role_allow", no_argument, NULL, DIFF_ROLE_ALLOW},
@@ -83,6 +83,13 @@ static void usage(const char *prog_name, int brief)
 	printf("  -u, --user         user definitions\n");
 	printf("  -b, --bool         boolean definitions and default values\n");
 	printf("  -A, --avrule       access vector rules\n");
+	printf("                     takes an optional parameter indicating the\n"
+			 "                     type of av rules to diff:\n"
+			 "                       L: audita(L)low\n"
+			 "                       N: (N)everallow\n"
+			 "                       D: (D)ontaudit\n"
+			 "                       W: allo(W)\n"
+			 "                     Note: you may specify more than one\n");
 	printf("  -T, --terule       type enforcement rules\n");
 	printf("  --role_trans       role_transition rules\n");
 	printf("  --role_allow       role allow rules\n");
@@ -601,7 +608,12 @@ static void print_avrule_diffs(poldiff_t * diff, int stats_only)
 	if (!diff)
 		return;
 
-	poldiff_get_stats(diff, POLDIFF_DIFF_AVRULES, stats);
+	/* AV{(AUDIT|NEVER|)ALLOW,DONTAUDIT} all share the same data items
+	 * in the struct, AVRULES became an aggregation.  If we get the
+	 * aggregation instead of a single member, we end up with all the
+	 * stats multiplied by 4, so we get a single 'copy' of the shared
+	 * data */
+	poldiff_get_stats(diff, POLDIFF_DIFF_AVALLOW, stats);
 	printf("AV Rules (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n",
 	       stats[0], stats[3], stats[1], stats[4], stats[2]);
 	if (stats_only)
@@ -1274,7 +1286,7 @@ int main(int argc, char **argv)
 	poldiff_t *diff = NULL;
 	size_t total = 0;
 
-	while ((optc = getopt_long(argc, argv, "ctarubATqhV", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "ctarubA::TqhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -1303,7 +1315,33 @@ int main(int argc, char **argv)
 			flags |= POLDIFF_DIFF_BOOLS;
 			break;
 		case 'A':
-			flags |= POLDIFF_DIFF_AVRULES;
+
+			if(optarg){ /* handle option options */
+				
+				for(char * tmp = optarg; *tmp; tmp++){
+					switch(*tmp){
+						case 'L': // AVAUDITALLOW
+							flags |= POLDIFF_DIFF_AVAUDITALLOW;
+							break;
+						case 'N': // AVNEVERALLOW
+							flags |= POLDIFF_DIFF_AVNEVERALLOW;
+							break;
+						case 'D': // AVDONTAUDIT
+							flags |= POLDIFF_DIFF_AVDONTAUDIT;
+							break;
+						case 'W': // AVALLOW
+							flags |= POLDIFF_DIFF_AVALLOW;
+							break;
+						default:
+							fprintf(stderr, "Invalid option for -A (--avrule=): '%c'.\n\n", *tmp);
+							usage(argv[0], 0);
+							exit(1);
+					}
+				}
+			} else {
+				flags |= POLDIFF_DIFF_AVRULES;
+			}
+
 			break;
 		case 'T':
 			flags |= POLDIFF_DIFF_TERULES;

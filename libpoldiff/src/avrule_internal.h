@@ -60,6 +60,10 @@ extern "C"
  */
 	int avrule_reset(poldiff_t * diff);
 
+apol_vector_t *avrule_get_allow(poldiff_t * diff, apol_policy_t * policy);
+apol_vector_t *avrule_get_neverallow(poldiff_t * diff, apol_policy_t * policy);
+apol_vector_t *avrule_get_auditallow(poldiff_t * diff, apol_policy_t * policy);
+apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, apol_policy_t * policy);
 /**
  * Get a vector of all avrules from the given policy, sorted.  This
  * function will remap source and target types to their pseudo-type
@@ -73,7 +77,7 @@ extern "C"
  * apol_vector_destroy() afterwards.  On error, return NULL and set
  * errno.
  */
-	apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy, unsigned int flags);
 
 /**
  * Compare two pseudo_avrule_t objects, determining if they have the
