@@ -180,9 +180,9 @@ proc Apol_Types::_popupTypeInfo {which ta} {
     set info_fc ""
     set index_file_loaded 0
     if {$which == "type"} {
-        set info_ta [renderType $ta 1 1]
+        set info_ta [_renderType $ta 1 1]
     } else {
-        set info_ta [renderAttrib $ta 1 0]
+        set info_ta [_renderAttrib $ta 1 0]
     }
     if {[tcl_config_use_sefs] && [Apol_File_Contexts::is_db_loaded]} {
         set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]

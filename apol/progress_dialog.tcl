@@ -43,7 +43,7 @@ proc Apol_Progress_Dialog::wait {title initialtext lambda} {
 
     apol_tcl_clear_info_string
     set retval {}
-    set catchval [catch {eval $lambda} retval]
+    set catchval [catch {uplevel 1 $lambda} retval]
     set val 0
 
     . configure -cursor $orig_cursor

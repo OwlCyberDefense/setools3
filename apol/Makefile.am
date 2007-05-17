@@ -1,23 +1,14 @@
-noinst_LIBRARIES = libapol_tcl.a
-setoolsdir = @setoolsdir@
-
-libapol_tcl_so_DATA = libapol_tcl.so.@libapol_version@
-libapol_tcl_sodir = $(libdir)/setools/apol_tcl
+wrappedso_DATA = libapol_tcl.so.@libapol_version@
+wrappedso_SONAME = $(wrappedso_DATA)
+wrappedsodir = $(libdir)/setools/apol_tcl
 
 package_SCRIPTS = pkgIndex.tcl
-packagedir = $(libapol_tcl_sodir)
+packagedir = $(wrappedsodir)
 
 bin_SCRIPTS = apol
 
-libapol_tcl_a_SOURCES = apol_tcl.c
-
-libapol_tcl_a_DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
-	$(top_builddir)/libapol/src/libapol.so \
-	$(top_builddir)/libsefs/src/libsefs.so \
-	$(top_builddir)/libqpol/swig/tcl/libtqpol.so \
-	$(top_builddir)/libapol/swig/tcl/libtapol.so
-
-libapol_tcl_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libapol_tcl_a_SOURCES)))
+dist_noinst_DATA = apol_tcl.i apol_tcl.c apol.png foo_module.tcl
+BUILT_SOURCES = apol_tcl_wrap.c init.tcl
 
 dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 	infoflow_help.txt types_relation_help.txt \
@@ -30,8 +21,6 @@ dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 	perm_maps/apol_perm_mapping_ver20 \
 	perm_maps/apol_perm_mapping_ver21 \
 	apol.gif
-
-dist_noinst_DATA = apol.png foo_module.tcl
 
 EXTRA_DIST = \
 	analysis_tab.tcl \
@@ -72,8 +61,12 @@ EXTRA_DIST = \
 # top.tcl must be last one written because it spawns the rest of the script
 
 TCL_STRIP_FILES = $(patsubst %,$(srcdir)/%,$(filter-out head.tcl,$(EXTRA_DIST)))
-
-DEPENDENCIES = $(top_builddir)/libqpol/swig/tcl/libtqpol.so $(top_builddir)/libapol/swig/tcl/libtapol.so $(top_builddir)/config.tcl
+DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
+	$(top_builddir)/libapol/src/libapol.so \
+	$(top_builddir)/libsefs/src/libsefs.so \
+	$(top_builddir)/libqpol/swig/tcl/libtqpol.so \
+	$(top_builddir)/libapol/swig/tcl/libtapol.so \
+	$(top_builddir)/config.tcl
 
 #if WANT_LIBSEFS
 #apol_DEPENDENCIES += $(top_builddir)/libsefs/swig/tcl/libtsefs.so
@@ -81,16 +74,17 @@ DEPENDENCIES = $(top_builddir)/libqpol/swig/tcl/libtqpol.so $(top_builddir)/liba
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@SEFS_CFLAGS@@ @APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(top_builddir) -fpic \
-	-I$(top_srcdir)/libapol/include @TCL_INCLUDES@
+	-I$(top_srcdir)/libapol/include
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
-	@SEFS_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@
+	@SEFS_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
-$(libapol_tcl_so_DATA): $(libapol_tcl_so_OBJS)
-	$(CC) -shared -o $@ $^ $(AM_LDFLAGS) $(LDFLAGS)
+apol_tcl_wrap.c: apol_tcl.i
+	$(SWIG) $(SWIG_TCL_OPT) -pkgversion @libapol_version@ -o $@ -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libapol/swig -I$(top_srcdir)/libqpol/swig $<
 
-$(libapol_tcl_so_DATA): libapol_tcl.a
+$(wrappedso_DATA): apol_tcl.c apol_tcl_wrap.c
+	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_TCL_CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
 
-$(package_SCRIPTS): $(libapol_tcl_so_DATA)
+$(package_SCRIPTS): $(wrappedso_DATA)
 	echo "lappend auto_path $(top_builddir)/libapol/swig/tcl ; package require apol ; pkg_mkIndex . $^" | LD_LIBRARY_PATH=$(top_builddir)/libqpol/src:$(top_builddir)/libapol/src:$(top_builddir)/libsefs/src $(TCLSH_PROG)
 	$(mkdir_p) apol_tcl
 	cp $< $@ apol_tcl
@@ -112,7 +106,7 @@ init.tcl: Makefile
 	@echo "    return \"${setoolsdir}\"" >> $@
 	@echo "}" >> $@
 
-$(bin_SCRIPTS): head.tcl init.tcl $(top_builddir)/config.tcl $(TCL_STRIP_FILES)
+$(bin_SCRIPTS): $(package_SCRIPTS) head.tcl init.tcl $(top_builddir)/config.tcl $(TCL_STRIP_FILES)
 	cat $(srcdir)/head.tcl init.tcl $(top_builddir)/config.tcl > $@
 	cat $(TCL_STRIP_FILES) | perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' >> $@
 	chmod u+x $@
@@ -120,6 +114,6 @@ $(bin_SCRIPTS): head.tcl init.tcl $(top_builddir)/config.tcl $(TCL_STRIP_FILES)
 %.tcl:
 # do nothing
 
-CLEANFILES = $(packages_SCRIPTS) $(bin_SCRIPTS) init.tcl
+CLEANFILES = $(packages_SCRIPTS) $(bin_SCRIPTS) $(BUILT_SOURCES)
 
-MOSTLYCLEANFILES = $(libapol_tcl_so_DATA) $(package_SCRIPTS) apol_tcl/$(package_SCRIPTS) apol_tcl/$(libapol_tcl_so_DATA)
+MOSTLYCLEANFILES = $(wrappedso_DATA) $(package_SCRIPTS) apol_tcl/$(wrappedso_DATA) apol_tcl/$(package_SCRIPTS)

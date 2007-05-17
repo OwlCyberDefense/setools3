@@ -36,10 +36,10 @@
 #include <apol/policy.h>
 
 /** severity of most recent message */
-static int msg_level = INT_MAX;
+int msg_level = INT_MAX;
 
 /** pointer to most recent message string */
-static char *message = NULL;
+char *message = NULL;
 
 /**
  * Take the formated string, allocate space for it, and then write it
@@ -92,35 +92,29 @@ static void apol_tcl_route_handle_to_string(void *varg
 	}
 }
 
-static int apol_tcl_clear_info_string(ClientData clientData __attribute__ ((unused)), Tcl_Interp * interp
-				      __attribute__ ((unused)), int argc __attribute__ ((unused)), Tcl_Obj * CONST objv[]
-				      __attribute__ ((unused)))
+void apol_tcl_clear_info_string(void)
 {
 	if (message != NULL) {
 		free(message);
 		message = NULL;
 	}
 	msg_level = INT_MAX;
-	return TCL_OK;
 }
 
-static int apol_tcl_get_info_string(ClientData clientData __attribute__ ((unused)), Tcl_Interp * interp, int argc
-				    __attribute__ ((unused)), Tcl_Obj * CONST objv[] __attribute__ ((unused)))
+int apol_tcl_get_info_level(void)
 {
-	if (message != NULL) {
-		Tcl_Obj *obj = Tcl_NewStringObj(message, -1);
-		Tcl_ResetResult(interp);
-		Tcl_SetObjResult(interp, obj);
-	}
-	return TCL_OK;
+	return msg_level;
 }
 
-/* these variables are defined in apol.i */
-extern apol_callback_fn_t apol_swig_message_callback;
-extern void *apol_swig_message_callback_arg;
+char *apol_tcl_get_info_string(void)
+{
+	return message;
+}
 
 /**
- * Open a policy file, either source or binary, on disk.  If the file
+ * Open a policy file, either source or binary, on disk.  Note that
+ * this will not load neverallows; apol must rebuild neverallows (and
+ * qpol_policy_build_syn_rule_table) when it needs to.  If the file
  * was opened successfully then allocate and return an apol_policy_t
  * object.  Otherwise throw an error and return a string that
  * describes the error.
@@ -128,28 +122,7 @@ extern void *apol_swig_message_callback_arg;
  * @param argv This function takes one parameter, an apol_policy_path
  * object.
  */
-static int apol_tcl_open_policy(ClientData clientData
-				__attribute__ ((unused)), Tcl_Interp * interp, int argc, Tcl_Obj * CONST objv[])
+apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t *ppath)
 {
-	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a policy path.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-	/* (not the non-thread safeness of the following) */
-	apol_swig_message_callback = apol_tcl_route_handle_to_string;
-	apol_swig_message_callback_arg = NULL;
-	Tcl_Obj *script[2];
-	script[0] = Tcl_NewStringObj("new_apol_policy_path_t", -1);
-	script[1] = objv[1];
-	return Tcl_EvalObjv(interp, 2, script, TCL_EVAL_GLOBAL);
-}
-
-int Apol_tcl_Init(Tcl_Interp * interp)
-{
-	Tcl_CreateObjCommand(interp, "apol_tcl_clear_info_string", apol_tcl_clear_info_string, NULL, NULL);
-	Tcl_CreateObjCommand(interp, "apol_tcl_get_info_string", apol_tcl_get_info_string, NULL, NULL);
-	Tcl_CreateObjCommand(interp, "apol_tcl_open_policy", apol_tcl_open_policy, NULL, NULL);
-	Tcl_PkgProvide(interp, "apol_tcl", LIBAPOL_VERSION_STRING);
-
-	return TCL_OK;
+	return apol_policy_create_from_policy_path(ppath, QPOL_POLICY_OPTION_NO_NEVERALLOWS, apol_tcl_route_handle_to_string, NULL);
 }

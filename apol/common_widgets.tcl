@@ -395,7 +395,10 @@ proc Apol_Widget::appendSearchResultText {path text} {
 # results box.  Sort the rules by string representation.  Returns the
 # number of rules that were appended, number of enabled rules, and
 # number of disabled rules.
-proc Apol_Widget::appendSearchResultRules {path indent rule_list {varname {}}} {
+#
+# @param cast SWIG casting function, one of "new_qpol_avrule_t" or
+# "new_qpol_terule_t"
+proc Apol_Widget::appendSearchResultRules {path indent rule_list cast {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set rules {}
@@ -412,11 +415,11 @@ proc Apol_Widget::appendSearchResultRules {path indent rule_list {varname {}}} {
     set num_enabled 0
     set num_disabled 0
     for {set i 0} {$i < [$rule_list get_size]} {incr i} {
-        set rule [$rule_list get_element $i]
+        set rule [$cast [$rule_list get_element $i]]
         $path.tb insert end [string repeat " " $indent]
         $path.tb insert end [apol_rule_render $::ApolTop::policy $rule]
         if {[$rule get_cond $::ApolTop::qpolicy] != "NULL"} {
-            if {[$rule is_enabled $::ApolTop::qpolicy]} {
+            if {[$rule get_is_enabled $::ApolTop::qpolicy]} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
                 incr num_enabled
             } else {
@@ -433,7 +436,10 @@ proc Apol_Widget::appendSearchResultRules {path indent rule_list {varname {}}} {
 # Append a vector of qpol_syn_avrule_t or qpol_syn_terule_t to a
 # search results box.  Returns the number of rules that were appended,
 # number of enabled rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultSynRules {path indent rule_list {varname {}}} {
+#
+# @param cast SWIG casting function, one of "new_qpol_syn_avrule_t" or
+# "new_qpol_syn_terule_t"
+proc Apol_Widget::appendSearchResultSynRules {path indent rule_list cast {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     if {$varname != {}} {
@@ -450,17 +456,17 @@ proc Apol_Widget::appendSearchResultSynRules {path indent rule_list {varname {}}
         set do_linenums 0
     }
     for {set i 0} {$i < [$rule_list get_size]} {incr i} {
-        set syn_rule [$rule_list get_element $i]
+        set syn_rule [$cast [$rule_list get_element $i]]
         $path.tb insert end [string repeat " " $indent]
         if {$do_linenums} {
             $path.tb insert end \
-                "\[ " {} \
+                "\[" {} \
                 [$syn_rule get_lineno $::ApolTop::qpolicy] linenum \
                 "\] " {}
         }
-        $path.tb insert end [apol_rule_render $::ApolTop::policy $rule]
-        if {[$rule get_cond $::ApolTop::qpolicy] != "NULL"} {
-            if {[$rule is_enabled $::ApolTop::qpolicy]} {
+        $path.tb insert end [apol_rule_render $::ApolTop::policy $syn_rule]
+        if {[$syn_rule get_cond $::ApolTop::qpolicy] != "NULL"} {
+            if {[$syn_rule get_is_enabled $::ApolTop::qpolicy]} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
                 incr num_enabled
             } else {

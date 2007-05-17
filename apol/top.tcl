@@ -124,7 +124,13 @@ proc ApolTop::openPolicyPath {ppath} {
     _close_policy
 
     set primary_file [$ppath get_primary]
-    if {[catch {Apol_Progress_Dialog::wait $primary_file "Opening policy." [list new_apol_policy_t $ppath]} p]} {
+    if {[catch {Apol_Progress_Dialog::wait $primary_file "Opening policy." \
+                    {
+                        set p [apol_tcl_open_policy $ppath]
+                        [$p get_qpol] build_syn_rule_table
+                        set p
+                    } \
+                } p]} {
         tk_messageBox -icon error -type ok -title "Open Policy" \
             -message "The selected file does not appear to be a valid SELinux Policy.\n\n$p"
         return -1  ;# indicates failed to open policy
@@ -402,13 +408,14 @@ proc ApolTop::_add_recent {ppath} {
     variable recent_files
     variable max_recent_files
 
-    # add to recent list if the ppath is not already there
+    # if ppath is already in recent files list, remove it from there
+    set new_recent $ppath
     foreach r $recent_files {
-        if {[apol_policy_path_compare $r $ppath] == 0} {
-            return
+        if {[apol_policy_path_compare $r $ppath] != 0} {
+            lappend new_recent $r
         }
     }
-    set recent_files [lrange [concat $ppath $recent_files] 0 [expr {$max_recent_files - 1}]]
+    set recent_files [lrange $new_recent 0 [expr {$max_recent_files - 1}]]
     _build_recent_files_menu
 }
 
@@ -458,7 +465,8 @@ proc ApolTop::_close_policy {} {
 
     variable policy
     if {$policy != {}} {
-        $policy -delete
+        Apol_Progress_Dialog::wait $primary_file "Opening policy." \
+            [list $policy -delete]
         set policy {}
         variable qpolicy {}
     }
