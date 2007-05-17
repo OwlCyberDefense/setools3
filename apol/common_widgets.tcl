@@ -391,58 +391,32 @@ proc Apol_Widget::appendSearchResultText {path text} {
     $path.tb configure -state disabled
 }
 
-# Append a list of values to the search results box.  Add $indent
-# number of spaces preceeding the line.  If $linenum is non-empty,
-# create a hyperlink from it to the policy.  If $cond_info is
-# non-empty, then mark this line as enabled or disabled.
-proc Apol_Widget::appendSearchResultLine {path indent cond_info line_type args} {
-    $path.tb configure -state normal
-    $path.tb insert end [string repeat " " $indent]
-    set text [join [concat $line_type $args]]
-    $path.tb insert end "[string trim $text];"
-    if {$cond_info != {}} {
-        if {[lindex $cond_info 0] == "enabled"} {
-            $path.tb insert end "  \[" {} "Enabled" enabled "\]"
-        } else {
-            $path.tb insert end "  \[" {} "Disabled" disabled "\]"
-        }
-    }
-    $path.tb insert end "\n"
-    $path.tb configure -state disabled
-}
-
-# Append a list of avrules, as specified by their unique ids, to a
-# search results box.  Sort the rules by string representation.
-# Returns the number of rules that were appended, number of enabled
-# rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}} {
+# Append a vector of qpol_avrule_t or qpol_terule_t to a search
+# results box.  Sort the rules by string representation.  Returns the
+# number of rules that were appended, number of enabled rules, and
+# number of disabled rules.
+proc Apol_Widget::appendSearchResultRules {path indent rule_list {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     set rules {}
     if {$varname != {}} {
         upvar $varname progressvar
-        set progressvar "Sorting [llength $rule_list] semantic av rule(s)..."
+        set progressvar "Sorting [$rule_list get_size] semantic av rule(s)..."
         update idletasks
     }
-    set rules [lsort -command apol_RenderAVRuleComp [lsort -unique $rule_list]]
     if {$varname != {}} {
-        set progressvar "Rendering [llength $rules] semantic av rule(s)..."
+        set progressvar "Rendering [$rule_list get_size] semantic av rule(s)..."
         update idletasks
     }
 
     set num_enabled 0
     set num_disabled 0
-    foreach r $rules {
+    for {set i 0} {$i < [$rule_list get_size]} {incr i} {
+        set rule [$rule_list get_element $i]
         $path.tb insert end [string repeat " " $indent]
-        foreach {rule_type source_set target_set class perms cond_info} [apol_RenderAVRule $r] {break}
-        set text [list "$rule_type $source_set $target_set" {}]
-        if {[llength $perms] > 1} {
-            set perms "\{$perms\}"
-        }
-        lappend text " : $class $perms;" {}
-        eval $path.tb insert end $text
-        if {$cond_info != {}} {
-            if {[lindex $cond_info 0] == "enabled"} {
+        $path.tb insert end [apol_rule_render $::ApolTop::policy $rule]
+        if {[$rule get_cond $::ApolTop::qpolicy] != "NULL"} {
+            if {[$rule is_enabled $::ApolTop::qpolicy]} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
                 incr num_enabled
             } else {
@@ -456,16 +430,15 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}}
     list [llength $rules] $num_enabled $num_disabled
 }
 
-# Append a list of syntactic avrules, as specified by their unique
-# ids, to a search results box.  The rules will be sorted by line
-# number.  Returns the number of rules that were appended, number of
-# enabled rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} {
+# Append a vector of qpol_syn_avrule_t or qpol_syn_terule_t to a
+# search results box.  Returns the number of rules that were appended,
+# number of enabled rules, and number of disabled rules.
+proc Apol_Widget::appendSearchResultSynRules {path indent rule_list {varname {}}} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     if {$varname != {}} {
         upvar $varname progressvar
-        set progressvar "Rendering [llength $rules] syntactic av rule(s)..."
+        set progressvar "Rendering [$rule_list get_size] syntactic av rule(s)..."
         update idletasks
     }
 
@@ -476,30 +449,18 @@ proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} 
     } else {
         set do_linenums 0
     }
-    foreach r $rules {
+    for {set i 0} {$i < [$rule_list get_size]} {incr i} {
+        set syn_rule [$rule_list get_element $i]
         $path.tb insert end [string repeat " " $indent]
-        foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderSynAVRule $r] {break}
         if {$do_linenums} {
-            set text [list \[ {} \
-                          $line_num linenum \
-                          "\] " {} \
-                          $rule_type {}]
-        } else {
-            set text [list $rule_type {}]
+            $path.tb insert end \
+                "\[ " {} \
+                [$syn_rule get_lineno $::ApolTop::qpolicy] linenum \
+                "\] " {}
         }
-        set source_set [_render_typeset $source_set]
-        set target_set [_render_typeset $target_set]
-        if {[llength $class] > 1} {
-            set class "\{$class\}"
-        }
-        lappend text " $source_set $target_set" {}
-        if {[llength $perms] > 1} {
-            set perms "\{$perms\}"
-        }
-        lappend text " : $class $perms;" {}
-        eval $path.tb insert end $text
-        if {$cond_info != {}} {
-            if {[lindex $cond_info 0] == "enabled"} {
+        $path.tb insert end [apol_rule_render $::ApolTop::policy $rule]
+        if {[$rule get_cond $::ApolTop::qpolicy] != "NULL"} {
+            if {[$rule is_enabled $::ApolTop::qpolicy]} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
                 incr num_enabled
             } else {
@@ -508,118 +469,9 @@ proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} 
             }
         }
         $path.tb insert end "\n"
-    }
+    }        
     $path.tb configure -state $curstate
-    list [llength $rules] $num_enabled $num_disabled
-}
-
-# Append a list of terules, as specified by their unique ids, to a
-# search results box.  Sort the rules by string representation.
-# Returns the number of rules that were appended, number of enabled
-# rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}} {
-    set curstate [$path.tb cget -state]
-    $path.tb configure -state normal
-    if {$varname != {}} {
-        upvar $varname progressvar
-        set progressvar "Sorting [llength $rule_list] semantic type rule(s)..."
-        update idletasks
-    }
-    set rules [lsort -command apol_RenderTERuleComp [lsort -unique $rule_list]]
-    if {$varname != {}} {
-        set progressvar "Rendering [llength $rules] semantic type rule(s)..."
-        update idletasks
-    }
-
-    set num_enabled 0
-    set num_disabled 0
-    foreach r $rules {
-        $path.tb insert end [string repeat " " $indent]
-        foreach {rule_type source_set target_set class default_type cond_info} [apol_RenderTERule $r] {break}
-        set text [list "$rule_type $source_set $target_set" {}]
-        lappend text " : $class $default_type;" {}
-        eval $path.tb insert end $text
-        if {$cond_info != {}} {
-            if {[lindex $cond_info 0] == "enabled"} {
-                $path.tb insert end "  \[" {} "Enabled" enabled "\]"
-                incr num_enabled
-            } else {
-                $path.tb insert end "  \[" {} "Disabled" disabled "\]"
-                incr num_disabled
-            }
-        }
-        $path.tb insert end "\n"
-    }
-    $path.tb configure -state $curstate
-    list [llength $rules] $num_enabled $num_disabled
-}
-
-# Append a list of syntactic terules, as specified by their unique
-# ids, to a search results box.  The rules will be sorted by line
-# number.  Returns the number of rules that were appended, number of
-# enabled rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} {
-    set curstate [$path.tb cget -state]
-    $path.tb configure -state normal
-    if {$varname != {}} {
-        upvar $varname progressvar
-        set progressvar "Rendering [llength $rules] syntactic type rule(s)..."
-        update idletasks
-    }
-    set num_enabled 0
-    set num_disabled 0
-    if {[ApolTop::is_capable "line numbers"]} {
-        set do_linenums 1
-    } else {
-        set do_linenums 0
-    }
-    foreach r $rules {
-        $path.tb insert end [string repeat " " $indent]
-        foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderSynTERule $r] {break}
-        if {$do_linenums} {
-            set text [list \[ {} \
-                          $line_num linenum \
-                          "\] " {} \
-                          $rule_type {}]
-        } else {
-            set text [list $rule_type {}]
-        }
-        set source_set [_render_typeset $source_set]
-        set target_set [_render_typeset $target_set]
-        if {[llength $class] > 1} {
-            set class "\{$class\}"
-        }
-        lappend text " $source_set $target_set" {}
-        lappend text " : $class $default_type;" {}
-        eval $path.tb insert end $text
-        if {$cond_info != {}} {
-            if {[lindex $cond_info 0] == "enabled"} {
-                $path.tb insert end "  \[" {} "Enabled" enabled "\]"
-                incr num_enabled
-            } else {
-                $path.tb insert end "  \[" {} "Disabled" disabled "\]"
-                incr num_disabled
-            }
-        }
-        $path.tb insert end "\n"
-    }
-    $path.tb configure -state $curstate
-    list [llength $rules] $num_enabled $num_disabled
-}
-
-proc Apol_Widget::gotoLineSearchResults {path line_num} {
-    if {![string is integer -strict $line_num]} {
-        tk_messageBox -icon error -type ok -title "Invalid line number" \
-            -message "$line_num is not a valid line number."
-        return
-    }
-    set textbox $path.tb
-    # Remove any selection tags.
-    $textbox tag remove sel 0.0 end
-    $textbox mark set insert ${line_num}.0
-    $textbox see ${line_num}.0
-    $textbox tag add sel $line_num.0 $line_num.end
-    focus $textbox
+    list [llength $rule_list] $num_enabled $num_disabled
 }
 
 proc Apol_Widget::showPopupText {title info} {

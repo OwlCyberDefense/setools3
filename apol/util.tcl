@@ -91,6 +91,17 @@ proc common_vector_to_list {v} {
     return $list
 }
 
+# Convert a vector a qpol_cond_t objects to a list of qpol_cond_t
+# objects.
+proc cond_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [new_qpol_cond_t [$v get_element $i]]
+        lappend list $q
+    }
+    return $list
+}
+
 # Convert a vector a qpol_fs_use_t objects to a list of qpol_fs_use_t
 # objects.
 proc fs_use_vector_to_list {v} {
@@ -156,6 +167,16 @@ proc portcon_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
         lappend list [new_qpol_portcon_t [$v get_element $i]]
+    }
+    return $list
+}
+
+# Convert a vector of qpol_range_trans_t objects to a list of
+# qpol_role_trans_t.
+proc range_trans_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        lappend list [new_qpol_range_trans_t [$v get_element $i]]
     }
     return $list
 }

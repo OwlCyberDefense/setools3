@@ -104,7 +104,7 @@ proc ApolTop::is_capable {capability} {
     switch -- $capability {
         "attribute names" { set cap $::QPOL_CAP_ATTRIB_NAMES }
         "conditionals" { set cap $::QPOL_CAP_CONDITIONALS }
-        "line numbers" { set cap $::LINE_NUMBERS }
+        "line numbers" { set cap $::QPOL_CAP_LINE_NUMBERS }
         "mls" { set cap $::QPOL_CAP_MLS }
         "source" { set cap $::QPOL_CAP_SOURCE }
         "syntactic rules" { set cap $::QPOL_CAP_SYN_RULES }
@@ -251,7 +251,7 @@ proc ApolTop::_create_toplevel {} {
     # the behavior is undesirable; the Help menu is intended to be
     # left justified along with the other menus.  Therefore the menu
     # name is "helpmenu".
-    
+
     variable mainframe [MainFrame .mainframe -menu $menus -textvariable ApolTop::statu_line]
     pack $mainframe -fill both -expand yes
 

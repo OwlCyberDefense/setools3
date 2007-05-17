@@ -54,7 +54,8 @@ extern "C"
 	extern int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
 
 /**
- * Execute a query against all syntactic access vector rules within the policy.
+ * Execute a query against all syntactic access vector rules within
+ * the policy.  If the policy has line numbers, then the returned list
  *
  * @param p Policy within which to look up avrules.  The policy must
  * be capable of having syntactic rules.
@@ -299,10 +300,10 @@ extern "C"
 /**
  * Given a single avrule, return a newly allocated vector of
  * qpol_syn_avrule_t pointers (relative to the given policy) which
- * comprise that rule.  The vector will be sorted by line numbers.  If
- * the given perms vector is non-NULL and non-empty, then only return
- * syntactic rules with at least one permission listed within the
- * perms vector.
+ * comprise that rule.  The vector will be sorted by line numbers if
+ * the policy has line numbers.  If the given perms vector is non-NULL
+ * and non-empty, then only return syntactic rules with at least one
+ * permission listed within the perms vector.
  *
  * @param p Policy from which to obtain syntactic rules.
  * @param rule AV rule to convert.
@@ -319,10 +320,11 @@ extern "C"
  * Given a vector of avrules (qpol_avrule_t pointers), return a newly
  * allocated vector of qpol_syn_avrule_t pointers (relative to the
  * given policy) which comprise all of those rules.  The returned
- * vector will be sorted by line numbers and will not have any
- * duplicate syntactic rules.  If the given perms vector is non-NULL
- * and non-empty, then only return syntactic rules with at least one
- * permission listed within the perms vector.
+ * vector will be sorted by line numbers if the policy has line
+ * numbers.  Also, it will not have any duplicate syntactic rules.  If
+ * the given perms vector is non-NULL and non-empty, then only return
+ * syntactic rules with at least one permission listed within the
+ * perms vector.
  *
  * @param p Policy from which to obtain syntactic rules.
  * @param rules Vector of AV rules to convert.

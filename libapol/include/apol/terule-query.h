@@ -54,8 +54,9 @@ extern "C"
 	extern int apol_terule_get_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_vector_t ** v);
 
 /**
- * Execute a query against all syntactic type enforcement rules
- * within the policy.
+ * Execute a query against all syntactic type enforcement rules within
+ * the policy.  If the policy has line numbers, then the returned list
+ * will be sorted increasingly by line number.
  *
  * @param p Policy within which to look up terules. <b>Must be a
  * source policy.</b>
@@ -261,7 +262,8 @@ extern "C"
 /**
  * Given a single terule, return a newly allocated vector of
  * qpol_syn_terule_t pointers (relative to the given policy) which
- * comprise that rule.  The vector will be sorted by line numbers.
+ * comprise that rule.  The vector will be sorted by line numbers if
+ * the policy has line numbers.
  *
  * @param p Policy from which to obtain syntactic rules.
  * @param rule TE rule to convert.
@@ -275,8 +277,8 @@ extern "C"
  * Given a vector of terules (qpol_terule_t pointers), return a newly
  * allocated vector of qpol_syn_terule_t pointers (relative to the
  * given policy) which comprise all of those rules.  The returned
- * vector will be sorted by line numbers and will not have any
- * duplicate syntactic rules.
+ * vector will be sorted by line numbers if the policy has line
+ * numbers.  Also, it will not have any duplicate syntactic rules.
  *
  * @param p Policy from which to obtain syntactic rules.
  * @param rules Vector of TE rules to convert.

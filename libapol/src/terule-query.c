@@ -654,6 +654,7 @@ apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t * p, apol_vector_t 
 char *apol_terule_render(apol_policy_t * policy, qpol_terule_t * rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
+        const char *rule_type_str;
 	int error = 0;
 	size_t tmp_sz = 0;
 	uint32_t rule_type = 0;
@@ -677,12 +678,12 @@ char *apol_terule_render(apol_policy_t * policy, qpol_terule_t * rule)
 		errno = EINVAL;
 		return NULL;
 	}
-	if (!(tmp_name = (char *)apol_rule_type_to_str(rule_type))) {
+	if (!(rule_type_str = apol_rule_type_to_str(rule_type))) {
 		ERR(policy, "%s", "Type rule has multiple rule types?");
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, rule_type_str) || apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = error;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -759,6 +760,7 @@ char *apol_terule_render(apol_policy_t * policy, qpol_terule_t * rule)
 char *apol_syn_terule_render(apol_policy_t * policy, qpol_syn_terule_t * rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
+        const char *rule_type_str;
 	int error = 0;
 	uint32_t rule_type = 0, star = 0, comp = 0;
 	qpol_type_t *type = NULL;
@@ -783,12 +785,12 @@ char *apol_syn_terule_render(apol_policy_t * policy, qpol_syn_terule_t * rule)
 		errno = EINVAL;
 		return NULL;
 	}
-	if (!(tmp_name = (char *)apol_rule_type_to_str(rule_type))) {
+	if (!(rule_type_str = apol_rule_type_to_str(rule_type))) {
 		ERR(policy, "%s", "Te rule has multiple rule types?");
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, rule_type_str) || apol_str_append(&tmp, &tmp_sz, " ")) {
 		error = error;
 		ERR(policy, "%s", strerror(error));
 		goto err;

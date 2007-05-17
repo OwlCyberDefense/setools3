@@ -40,16 +40,22 @@ proc Apol_Cond_Rules::create {tab_name nb} {
     # Rule selection subframe
     set fm_rules [$rules_box getframe]
     set allow [checkbutton $fm_rules.allow -text "allow" \
-                   -variable Apol_Cond_Rules::vals(rs:allow)]
+                   -onvalue $::QPOL_RULE_ALLOW -offvalue 0 \
+                   -variable Apol_Cond_Rules::vals(rs:avrule_allow)]
     set auditallow [checkbutton $fm_rules.auditallow -text "auditallow" \
-                        -variable Apol_Cond_Rules::vals(rs:auditallow)]
+                        -onvalue $::QPOL_RULE_AUDITALLOW -offvalue 0 \
+                        -variable Apol_Cond_Rules::vals(rs:avrule_auditallow)]
     set dontaudit [checkbutton $fm_rules.dontaudit -text "dontaudit" \
-                       -variable Apol_Cond_Rules::vals(rs:dontaudit)]
+                       -onvalue $::QPOL_RULE_DONTAUDIT -offvalue 0 \
+                       -variable Apol_Cond_Rules::vals(rs:avrule_dontaudit)]
     set type_transition [checkbutton $fm_rules.type_transition -text "type_trans" \
+                             -onvalue $::QPOL_RULE_TYPE_TRANS -offvalue 0 \
                              -variable Apol_Cond_Rules::vals(rs:type_transition)]
     set type_member [checkbutton $fm_rules.type_member -text "type_member" \
+                         -onvalue $::QPOL_RULE_TYPE_MEMBER -offvalue 0 \
                          -variable Apol_Cond_Rules::vals(rs:type_member)]
     set type_change [checkbutton $fm_rules.type_change -text "type_change" \
+                         -onvalue $::QPOL_RULE_TYPE_CHANGE -offvalue 0 \
                          -variable Apol_Cond_Rules::vals(rs:type_change)]
     grid $allow $type_transition -sticky w -padx 2
     grid $auditallow $type_member -sticky w -padx 2
@@ -107,15 +113,16 @@ proc Apol_Cond_Rules::getTextWidget {} {
 
 proc Apol_Cond_Rules::_initializeVars {} {
     variable vals
-    array set vals {
-        rs:allow 1       rs:type_transition 1
-        rs:auditallow 1  rs:type_member 1
-        rs:dontaudit 1   rs:type_change 1
-
-        enable_bool 0
-        name {}
-        use_regexp 0
-    }
+    array set vals [list \
+                        rs:avrule_allow $::QPOL_RULE_ALLOW \
+                        rs:avrule_auditallow $::QPOL_RULE_AUDITALLOW \
+                        rs:avrule_dontaudit $::QPOL_RULE_DONTAUDIT \
+                        rs:type_transition $::QPOL_RULE_TYPE_TRANS \
+                        rs:type_member $::QPOL_RULE_TYPE_MEMBER \
+                        rs:type_change $::QPOL_RULE_TYPE_CHANGE \
+                        enable_bool 0 \
+                        name {} \
+                        use_regexp 0]
 }
 
 proc Apol_Cond_Rules::_toggleSearchBools {name1 name2 op} {
@@ -136,25 +143,23 @@ proc Apol_Cond_Rules::_search {} {
 
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
 
-    # check search options
-    set rule_selection {}
-    foreach {key value} [array get vals rs:*] {
-        if {$value} {
-            lappend rule_selection [string range $key 3 end]
-        }
+    set avrule_selection 0
+    foreach {key value} [array get vals rs:avrule_*] {
+        set avrule_selection [expr {$avrule_selection | $value}]
     }
-    if {$rule_selection == {}} {
+    set terule_selection 0
+    foreach {key value} [array get vals rs:type_*] {
+        set terule_selection [expr {$terule_selection | $value}]
+    }
+    if {$avrule_selection == 0 && $terule_selection == 0} {
             tk_messageBox -icon error -type ok -title "Error" -message "At least one rule must be selected."
             return
     }
-    set other_opts {}
-    if {$vals(use_regexp)} {
-        lappend other_opts regex
-    }
+
     set bool_name {}
     if {$vals(enable_bool)} {
         if {[set bool_name $vals(name)] == {}} {
@@ -163,10 +168,16 @@ proc Apol_Cond_Rules::_search {} {
         }
     }
 
-    if {[catch {apol_SearchConditionalRules $rule_selection $other_opts $bool_name} results]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error searching conditionals:\n$results"
-        return
+    set q [new_apol_cond_query_t]
+    $q set_bool $::ApolTop::policy $bool_name
+    if {$vals(use_regexp)} {
+        $q set_regex $::ApolTop::policy 1
     }
+
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    set results [cond_vector_to_list $v]
+    $v -delete
 
     if {[llength $results] == 0} {
         set text "Search returned no results."
@@ -180,35 +191,58 @@ proc Apol_Cond_Rules::_search {} {
     Apol_Widget::appendSearchResultText $widgets(results) $text
     set counter 1
     foreach r [lsort -index 0 $results] {
-        _renderConditional $r $counter
-        Apol_Widget::appendSearchResultText $widgets(results) "\n\n"
+        set text [_renderConditional $r $avrule_selection $terule_selection $counter]
+        Apol_Widget::appendSearchResultText $widgets(results) "$text\n\n"
         incr counter
     }
 }
 
-proc Apol_Cond_Rules::_renderConditional {cond cond_number} {
+proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
+    set cond_expr [apol_cond_expr_render $::ApolTop::policy $cond]
+    set i [$cond get_av_true_iter $::ApolTop::qpolicy $avrules]
+    set av_true_vector [new_apol_vector_t $i]
+    $i -delete
+    set i [$cond get_av_false_iter $::ApolTop::qpolicy $avrules]
+    set av_false_vector [new_apol_vector_t $i]
+    $i -delete
+    set i [$cond get_te_true_iter $::ApolTop::qpolicy $terules]
+    set te_true_vector [new_apol_vector_t $i]
+    $i -delete
+    set i [$cond get_te_false_iter $::ApolTop::qpolicy $terules]
+    set te_false_vector [new_apol_vector_t $i]
+    $i -delete
+
     variable widgets
-    foreach {cond_expr true_list false_list} $cond {break}
     set text "conditional expression $cond_number: \[ [join $cond_expr] \]\n"
-    append text "\nTRUE list:\n"
-    Apol_Widget::appendSearchResultText $widgets(results) $text
+
+    Apol_Widget::appendSearchResultText $widgets(results) "$text\nTRUE list:\n"
     if {![ApolTop::is_capable "syntactic rules"]} {
-        Apol_Widget::appendSearchResultAVRules $widgets(results) 4 [lindex $true_list 0]
-        Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $true_list 1]
+        Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_true_vector
+        Apol_Widget::appendSearchResultRules $widgets(results) 4 $te_true_vector
     } else {
-        set syn_avrules [apol_GetSynAVRules [lindex $true_list 0] {}]
-        Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 $syn_avrules
-        set syn_terules [apol_GetSynTERules [lindex $true_list 1]]
-        Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 $syn_terules
+        set syn_avrules [apol_avrule_list_to_syn_avrules $::ApolTop::policy $av_true_vector NULL]
+        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_avrules
+        set syn_terules [apol_terule_list_to_syn_terules $::ApolTop::policy $te_true_vector]
+        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_terules
+        $syn_avrules -delete
+        $syn_terules -delete
     }
+
     Apol_Widget::appendSearchResultText $widgets(results) "\nFALSE list:\n"
-    if {![ApolTop::is_capable "source"]} {
-        Apol_Widget::appendSearchResultAVRules $widgets(results) 4 [lindex $false_list 0]
-        Apol_Widget::appendSearchResultTERules $widgets(results) 4 [lindex $false_list 1]
+    if {![ApolTop::is_capable "syntactic rules"]} {
+        Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_false_vector
+        Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_false_vector
     } else {
-        set syn_avrules [apol_GetSynAVRules [lindex $false_list 0] {}]
-        Apol_Widget::appendSearchResultSynAVRules $widgets(results) 4 $syn_avrules
-        set syn_terules [apol_GetSynTERules [lindex $false_list 1]]
-        Apol_Widget::appendSearchResultSynTERules $widgets(results) 4 $syn_terules
+        set syn_avrules [apol_avrule_list_to_syn_avrules $::ApolTop::policy $av_false_vector NULL]
+        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_avrules
+        set syn_terules [apol_terule_list_to_syn_terules $::ApolTop::policy $te_false_vector]
+        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_terules
+        $syn_avrules -delete
+        $syn_terules -delete
     }
+
+    $av_true_vector -delete
+    $av_false_vector -delete
+    $te_true_vector -delete
+    $te_false_vector -delete
 }
