@@ -475,9 +475,15 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	if (policy->type == QPOL_POLICY_KERNEL_BINARY)
 		return STATUS_SUCCESS;
 
+	/* if options are the same and the modules were not modified, do nothing */
+	if (options == policy->options && policy->modified == 0)
+		return STATUS_SUCCESS;
+
 	/* cache old policy in case of failure */
 	old_p = policy->p;
 	policy->p = NULL;
+	struct qpol_extended_image *ext = policy->ext;
+	policy->ext = NULL;
 
 	if (policy->type == QPOL_POLICY_MODULE_BINARY) {
 		/* allocate enough space for all modules then fill with list of enabled ones only */
@@ -547,11 +553,12 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 		error = errno;
 		goto err;
 	}
-	qpol_extended_image_destroy(&policy->ext);
+
 	if (policy_extend(policy)) {
 		error = errno;
 		goto err;
 	}
+	qpol_extended_image_destroy(&ext);
 
 	sepol_policydb_free(old_p);
 
@@ -561,6 +568,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	free(modules);
 
 	policy->p = old_p;
+	policy->ext = ext;
 	errno = error;
 	return STATUS_ERR;
 }

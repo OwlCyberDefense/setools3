@@ -50,6 +50,7 @@ extern "C"
 
 /**
  *  Build the table of syntactic rules for a policy.
+ *  Subsequent calls to this function have no effect.
  *  @param policy The policy for which to build the table.
  *  This policy will be modified by this call.
  *  @return 0 on success and < 0 on error; if the call fails,

@@ -184,8 +184,12 @@ extern "C"
 	extern int qpol_policy_append_module(qpol_policy_t * policy, qpol_module_t * module);
 
 /**
- *  Rebuild the policy. Re-link all enabled modules with the base
- *  and then call expand.
+ *  Rebuild the policy. If the options provided are the same as those
+ *  provied to the last call to rebuild or open and the modules were not
+ *  changed, this function does nothing; otherwise, re-link all enabled
+ *  modules with the base and then call expand. If the syntactic rule
+ *  table was previously built, the caller should call
+ *  qpol_policy_build_syn_rule_table() after calling this function.
  *  @param policy The policy to rebuild.
  *  This policy will be altered by this function.
  *  @param options Options to control loading only portions of a policy;
