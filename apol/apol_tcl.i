@@ -33,6 +33,7 @@
 #include <apol/terule-query.h>
 #include <apol/policy.h>
 #include <apol/policy-path.h>
+#include <apol/util.h>
 %}
 
 /* implement a custom non thread-safe error handler */
@@ -93,21 +94,22 @@ static char *tcl_get_error(void)
 		qpol_policy_t *q = apol_policy_get_qpol(p);
 
 		uint32_t rule_type1, rule_type2;
-		char *s1, *s2;
+		const char *cs1, *cs2;
 		int compval;
 		if (qpol_avrule_get_rule_type(q, r1, &rule_type1) < 0 ||
 		    qpol_avrule_get_rule_type(q, r2, &rule_type2) < 0) {
 			return 0;
 		}
-		if ((s1 = apol_rule_type_to_str(rule_type1)) == NULL ||
-		    (s2 = apol_rule_type_to_str(rule_type2)) == NULL) {
+		if ((cs1 = apol_rule_type_to_str(rule_type1)) == NULL ||
+		    (cs2 = apol_rule_type_to_str(rule_type2)) == NULL) {
 			return 0;
 		}
-		if ((compval = strcmp(s1, s2)) != 0) {
+		if ((compval = strcmp(cs1, cs2)) != 0) {
 			return compval;
 		}
 
 		qpol_type_t *t1, *t2;
+		char *s1, *s2;
 		if (qpol_avrule_get_source_type(q, r1, &t1) < 0 ||
 		    qpol_avrule_get_source_type(q, r2, &t2) < 0) {
 			return 0;
@@ -149,7 +151,10 @@ static char *tcl_get_error(void)
 	 * source type, then target type, and then by object class.
 	 */
 	void apol_tcl_avrule_sort(apol_policy_t *policy, apol_vector_t *v) {
-		apol_vector_sort(v, avrule_sort, policy);
+		if (policy != NULL && v != NULL) {
+			INFO(policy, "%s", "Sorting AV rules");
+			apol_vector_sort(v, avrule_sort, policy);
+		}
 	}
 
 	static int terule_sort(const void *a, const void *b, void *arg) {
@@ -159,21 +164,22 @@ static char *tcl_get_error(void)
 		qpol_policy_t *q = apol_policy_get_qpol(p);
 
 		uint32_t rule_type1, rule_type2;
-		char *s1, *s2;
+		const char *cs1, *cs2;
 		int compval;
 		if (qpol_terule_get_rule_type(q, r1, &rule_type1) < 0 ||
 		    qpol_terule_get_rule_type(q, r2, &rule_type2) < 0) {
 			return 0;
 		}
-		if ((s1 = apol_rule_type_to_str(rule_type1)) == NULL ||
-		    (s2 = apol_rule_type_to_str(rule_type2)) == NULL) {
+		if ((cs1 = apol_rule_type_to_str(rule_type1)) == NULL ||
+		    (cs2 = apol_rule_type_to_str(rule_type2)) == NULL) {
 			return 0;
 		}
-		if ((compval = strcmp(s1, s2)) != 0) {
+		if ((compval = strcmp(cs1, cs2)) != 0) {
 			return compval;
 		}
 
 		qpol_type_t *t1, *t2;
+		char *s1, *s2;
 		if (qpol_terule_get_source_type(q, r1, &t1) < 0 ||
 		    qpol_terule_get_source_type(q, r2, &t2) < 0) {
 			return 0;
@@ -215,7 +221,10 @@ static char *tcl_get_error(void)
 	 * source type, then target type, and then by object class.
 	 */
 	void apol_tcl_terule_sort(apol_policy_t *policy, apol_vector_t *v) {
-		apol_vector_sort(v, terule_sort, policy);
+		if (policy != NULL && v != NULL) {
+			INFO(policy, "%s", "Sorting TE rules");
+			apol_vector_sort(v, terule_sort, policy);
+		}
 	}
 %}
 

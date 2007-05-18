@@ -191,6 +191,9 @@ proc Apol_Cond_Rules::_search {} {
     Apol_Widget::appendSearchResultText $widgets(results) $text
     Apol_Progress_Dialog::wait "Conditional Expressions" "Rendering conditionals" \
         {
+            if {[ApolTop::is_capable "syntactic rules"]} {
+                $::ApolTop::qpolicy build_syn_rule_table
+            }
             set counter 1
             set num_results [llength $results]
             foreach r [lsort -index 0 $results] {

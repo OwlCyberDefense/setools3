@@ -126,9 +126,7 @@ proc ApolTop::openPolicyPath {ppath} {
     set primary_file [$ppath get_primary]
     if {[catch {Apol_Progress_Dialog::wait $primary_file "Opening policy." \
                     {
-                        set p [apol_tcl_open_policy $ppath]
-                        [$p get_qpol] build_syn_rule_table
-                        set p
+                        apol_tcl_open_policy $ppath
                     } \
                 } p]} {
         tk_messageBox -icon error -type ok -title "Open Policy" \

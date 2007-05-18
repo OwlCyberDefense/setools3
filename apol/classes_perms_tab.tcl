@@ -166,6 +166,25 @@ proc Apol_Class_Perms::getTextWidget {} {
     return $widgets(results).tb
 }
 
+proc Apol_Class_Perms::getClasses {} {
+    variable class_list
+    set class_list
+}
+
+# Return all permissions assigned to a class.  If the class has a
+# common, include the common's permissions as well.
+proc Apol_Class_Perms::getPermsForClass {class_name} {
+    set qpol_class_datum [new_qpol_class_t $::ApolTop::qpolicy $class_name]
+    set i [$qpol_class_datum get_perm_iter $::ApolTop::qpolicy]
+    set perms [iter_to_str_list $i]
+    $i -delete
+    if {[set qpol_common_datum [$qpol_class_datum get_common $::ApolTop::qpolicy]] != "NULL"} {
+        set i [$qpol_common_datum get_perm_iter $::ApolTop::qpolicy]
+        set perms [concat $perms [iter_to_str_list $i]]
+        $i -delete
+    }
+}
+
 # Given a permission name, return a 2-ple of lists.  The first list
 # will contain all classes that directly declare the permission.  The
 # second list is a list of classes that inherited from a common that

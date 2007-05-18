@@ -398,22 +398,13 @@ proc Apol_Widget::appendSearchResultText {path text} {
 #
 # @param cast SWIG casting function, one of "new_qpol_avrule_t" or
 # "new_qpol_terule_t"
-proc Apol_Widget::appendSearchResultRules {path indent rule_list cast {varname {}}} {
+proc Apol_Widget::appendSearchResultRules {path indent rule_list cast} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    set rules {}
-    if {$varname != {}} {
-        upvar $varname progressvar
-        set progressvar "Sorting [$rule_list get_size] semantic av rule(s)..."
-        update idletasks
-    }
-    if {$varname != {}} {
-        set progressvar "Rendering [$rule_list get_size] semantic av rule(s)..."
-        update idletasks
-    }
 
     set num_enabled 0
     set num_disabled 0
+
     for {set i 0} {$i < [$rule_list get_size]} {incr i} {
         set rule [$cast [$rule_list get_element $i]]
         $path.tb insert end [string repeat " " $indent]
@@ -430,7 +421,7 @@ proc Apol_Widget::appendSearchResultRules {path indent rule_list cast {varname {
         $path.tb insert end "\n"
     }
     $path.tb configure -state $curstate
-    list [llength $rules] $num_enabled $num_disabled
+    list [$rule_list get_size] $num_enabled $num_disabled
 }
 
 # Append a vector of qpol_syn_avrule_t or qpol_syn_terule_t to a
@@ -439,14 +430,9 @@ proc Apol_Widget::appendSearchResultRules {path indent rule_list cast {varname {
 #
 # @param cast SWIG casting function, one of "new_qpol_syn_avrule_t" or
 # "new_qpol_syn_terule_t"
-proc Apol_Widget::appendSearchResultSynRules {path indent rule_list cast {varname {}}} {
+proc Apol_Widget::appendSearchResultSynRules {path indent rule_list cast} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    if {$varname != {}} {
-        upvar $varname progressvar
-        set progressvar "Rendering [$rule_list get_size] syntactic av rule(s)..."
-        update idletasks
-    }
 
     set num_enabled 0
     set num_disabled 0
@@ -455,6 +441,7 @@ proc Apol_Widget::appendSearchResultSynRules {path indent rule_list cast {varnam
     } else {
         set do_linenums 0
     }
+
     for {set i 0} {$i < [$rule_list get_size]} {incr i} {
         set syn_rule [$cast [$rule_list get_element $i]]
         $path.tb insert end [string repeat " " $indent]
@@ -477,7 +464,7 @@ proc Apol_Widget::appendSearchResultSynRules {path indent rule_list cast {varnam
         $path.tb insert end "\n"
     }
     $path.tb configure -state $curstate
-    list [llength $rule_list] $num_enabled $num_disabled
+    list [$rule_list get_size] $num_enabled $num_disabled
 }
 
 proc Apol_Widget::showPopupText {title info} {
