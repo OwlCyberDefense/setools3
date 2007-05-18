@@ -38,13 +38,15 @@ extern "C"
 /**
  *  Create an extended image for a policy. This function modifies the policydb
  *  by adding additional records and information about attributes, initial sids
- *  and other components not normally written to a binary policy file.
+ *  and other components not normally written to a binary policy file. Subsequent
+ *  calls to this function have no effect.
  *  @param policy The policy for which the extended image should be created.
  *  @return Returns 0 on success and < 0 on failure. If the call fails,
  *  errno will be set; the state of the policy is not guaranteed to be stable
  *  if this call fails.
+ *  @deprecated It is nolonger necessary to call this function separately.
  */
-	extern int qpol_policy_extend(qpol_policy_t * policy);
+	extern int qpol_policy_extend(qpol_policy_t * policy) __attribute__((deprecated));
 
 /**
  *  Build the table of syntactic rules for a policy.

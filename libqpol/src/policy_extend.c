@@ -822,6 +822,11 @@ void qpol_extended_image_destroy(qpol_extended_image_t ** ext)
 
 int qpol_policy_extend(qpol_policy_t * policy)
 {
+	return policy_extend(policy);
+}
+
+int policy_extend(qpol_policy_t * policy)
+{
 	int retv, error;
 	policydb_t *db = NULL;
 

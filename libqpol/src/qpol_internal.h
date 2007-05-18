@@ -81,6 +81,18 @@ extern "C"
 #define QPOL_POLICY_FILE_DATA_TYPE_MMAP 1
 #define QPOL_POLICY_FILE_DATA_TYPE_MEM  2
 
+/**
+ *  Create an extended image for a policy. This function modifies the policydb
+ *  by adding additional records and information about attributes, initial sids
+ *  and other components not normally written to a binary policy file. Subsequent
+ *  calls to this function have no effect.
+ *  @param policy The policy for which the extended image should be created.
+ *  @return Returns 0 on success and < 0 on failure. If the call fails,
+ *  errno will be set; the state of the policy is not guaranteed to be stable
+ *  if this call fails.
+ */
+	int policy_extend(qpol_policy_t * policy);
+
 	extern void qpol_handle_msg(qpol_policy_t * policy, int level, const char *fmt, ...);
 	int qpol_is_file_binpol(FILE * fp);
 	int qpol_is_file_mod_pkg(FILE * fp);

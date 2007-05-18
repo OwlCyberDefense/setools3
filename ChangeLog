@@ -1,3 +1,9 @@
+2007-05-18  J. Mowery  <jmowery@tresys.com>
+
+	* Deprecated qpol_policy_extend(); this function is called
+	  automatically by qpol_policy_open* and qpol_policy_rebuild()
+	  and therefore does not need to be called separately.
+
 2007-05-16  J. Tang  <jtang@tresys.com>
 
 	* Right-clicking an apol results display now pops up a menu, that

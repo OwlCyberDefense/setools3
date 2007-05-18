@@ -548,7 +548,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 		goto err;
 	}
 	qpol_extended_image_destroy(&policy->ext);
-	if (qpol_policy_extend(policy)) {
+	if (policy_extend(policy)) {
 		error = errno;
 		goto err;
 	}
@@ -672,7 +672,7 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 			error = EIO;
 			goto err;
 		}
-		if (qpol_policy_extend(*policy)) {
+		if (policy_extend(*policy)) {
 			error = errno;
 			goto err;
 		}
@@ -748,7 +748,7 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 			error = errno;
 			goto err;
 		}
-		if (qpol_policy_extend(*policy)) {
+		if (policy_extend(*policy)) {
 			error = errno;
 			goto err;
 		}
