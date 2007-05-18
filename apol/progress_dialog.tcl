@@ -15,12 +15,16 @@
 
 namespace eval Apol_Progress_Dialog {
     variable text
+    variable prev_text
     variable val
+    variable after_id
 }
 
-# Create a dialog to display messages while libapol is running.
+# Create a dialog to display messages while some library process is
+# running.
 proc Apol_Progress_Dialog::wait {title initialtext lambda} {
     variable text "$title:\n    $initialtext"
+    variable prev_text $initialtext
     variable val -1
 
     set title_width [string length $title]
@@ -38,30 +42,26 @@ proc Apol_Progress_Dialog::wait {title initialtext lambda} {
 
     set orig_cursor [. cget -cursor]
     . configure -cursor watch
-    update
-    after idle Apol_Progress_Dialog::_do_idle
+    update idletasks
+    variable after_id [after idle Apol_Progress_Dialog::_do_idle]
 
     apol_tcl_clear_info_string
-    set retval {}
     set catchval [catch {uplevel 1 $lambda} retval]
-    set val 0
+    after cancel $after_id
 
     . configure -cursor $orig_cursor
     destroy .apol_progress
+    update idletasks
     return -code $catchval $retval
 }
 
 proc Apol_Progress_Dialog::_do_idle {} {
     variable text
-    variable val
-    set prev_string {}
-    if {[set infoString [apol_tcl_get_info_string]] != $prev_string} {
+    variable prev_text
+    if {[set infoString [apol_tcl_get_info_string]] != $prev_text} {
         set text "[lindex [split $text "\n"] 0]\n    $infoString"
         update idletasks
-        set prev_string $infoString
+        set prev_text $infoString
     }
-    # keep the idle handler running while the process is not yet done
-    if {$val == -1} {
-        after idle Apol_Progress_Dialog::_do_idle
-    }
+    variable after_id [after idle Apol_Progress_Dialog::_do_idle]
 }

@@ -37,12 +37,23 @@
 
 /* implement a custom non thread-safe error handler */
 %{
+/* Note that these must be placed in a different file rather than
+ * being inlined directly into this SWIG interface file.  The reason
+ * is because they use some GNU functions that are only available when
+ * config.h is included prior to stdio.h.  Unfortunately, SWIG will
+ * always place its own headers, which includes stdio.h, prior to any
+ * inlined headers when generating the wrapped C file.  As a result,
+ * those GNU functions would not be available to the inlined
+ * functions.
+ */
 extern void apol_tcl_clear_info_string(void);
 extern int apol_tcl_get_info_level(void);
 extern char *apol_tcl_get_info_string(void);
+extern void apol_tcl_set_info_string(apol_policy_t *p, const char *s);
 extern apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t *ppath);
 extern int msg_level;
 extern char *message;
+
 static void tcl_clear_error(void)
 {
 	apol_tcl_clear_info_string();
@@ -74,16 +85,151 @@ static char *tcl_get_error(void)
 	fail:
 		return p;
 	};
+
+	static int avrule_sort(const void *a, const void *b, void *arg) {
+		qpol_avrule_t *r1 = (qpol_avrule_t *) a;
+		qpol_avrule_t *r2 = (qpol_avrule_t *) b;
+		apol_policy_t *p = arg;
+		qpol_policy_t *q = apol_policy_get_qpol(p);
+
+		uint32_t rule_type1, rule_type2;
+		char *s1, *s2;
+		int compval;
+		if (qpol_avrule_get_rule_type(q, r1, &rule_type1) < 0 ||
+		    qpol_avrule_get_rule_type(q, r2, &rule_type2) < 0) {
+			return 0;
+		}
+		if ((s1 = apol_rule_type_to_str(rule_type1)) == NULL ||
+		    (s2 = apol_rule_type_to_str(rule_type2)) == NULL) {
+			return 0;
+		}
+		if ((compval = strcmp(s1, s2)) != 0) {
+			return compval;
+		}
+
+		qpol_type_t *t1, *t2;
+		if (qpol_avrule_get_source_type(q, r1, &t1) < 0 ||
+		    qpol_avrule_get_source_type(q, r2, &t2) < 0) {
+			return 0;
+		}
+		if (qpol_type_get_name(q, t1, &s1) < 0 ||
+		    qpol_type_get_name(q, t2, &s2) < 0) {
+			return 0;
+		}
+		if ((compval = strcmp(s1, s2)) != 0) {
+			return compval;
+		}
+
+		if (qpol_avrule_get_target_type(q, r1, &t1) < 0 ||
+		    qpol_avrule_get_target_type(q, r2, &t2) < 0) {
+			return 0;
+		}
+		if (qpol_type_get_name(q, t1, &s1) < 0 ||
+		    qpol_type_get_name(q, t2, &s2) < 0) {
+			return 0;
+		}
+		if ((compval = strcmp(s1, s2)) != 0) {
+			return compval;
+		}
+
+		qpol_class_t *c1, *c2;
+		if (qpol_avrule_get_object_class(q, r1, &c1) < 0 ||
+		    qpol_avrule_get_object_class(q, r2, &c2) < 0) {
+			return 0;
+		}
+		if (qpol_class_get_name(q, c1, &s1) < 0 ||
+		    qpol_class_get_name(q, c2, &s2) < 0) {
+			return 0;
+		}
+		return strcmp(s1, s2);
+	}
+
+	/**
+	 * Sort a vector of qpol_avrule_t, sorting by rule type, then
+	 * source type, then target type, and then by object class.
+	 */
+	void apol_tcl_avrule_sort(apol_policy_t *policy, apol_vector_t *v) {
+		apol_vector_sort(v, avrule_sort, policy);
+	}
+
+	static int terule_sort(const void *a, const void *b, void *arg) {
+		qpol_terule_t *r1 = (qpol_terule_t *) a;
+		qpol_terule_t *r2 = (qpol_terule_t *) b;
+		apol_policy_t *p = arg;
+		qpol_policy_t *q = apol_policy_get_qpol(p);
+
+		uint32_t rule_type1, rule_type2;
+		char *s1, *s2;
+		int compval;
+		if (qpol_terule_get_rule_type(q, r1, &rule_type1) < 0 ||
+		    qpol_terule_get_rule_type(q, r2, &rule_type2) < 0) {
+			return 0;
+		}
+		if ((s1 = apol_rule_type_to_str(rule_type1)) == NULL ||
+		    (s2 = apol_rule_type_to_str(rule_type2)) == NULL) {
+			return 0;
+		}
+		if ((compval = strcmp(s1, s2)) != 0) {
+			return compval;
+		}
+
+		qpol_type_t *t1, *t2;
+		if (qpol_terule_get_source_type(q, r1, &t1) < 0 ||
+		    qpol_terule_get_source_type(q, r2, &t2) < 0) {
+			return 0;
+		}
+		if (qpol_type_get_name(q, t1, &s1) < 0 ||
+		    qpol_type_get_name(q, t2, &s2) < 0) {
+			return 0;
+		}
+		if ((compval = strcmp(s1, s2)) != 0) {
+			return compval;
+		}
+
+		if (qpol_terule_get_target_type(q, r1, &t1) < 0 ||
+		    qpol_terule_get_target_type(q, r2, &t2) < 0) {
+			return 0;
+		}
+		if (qpol_type_get_name(q, t1, &s1) < 0 ||
+		    qpol_type_get_name(q, t2, &s2) < 0) {
+			return 0;
+		}
+		if ((compval = strcmp(s1, s2)) != 0) {
+			return compval;
+		}
+
+		qpol_class_t *c1, *c2;
+		if (qpol_terule_get_object_class(q, r1, &c1) < 0 ||
+		    qpol_terule_get_object_class(q, r2, &c2) < 0) {
+			return 0;
+		}
+		if (qpol_class_get_name(q, c1, &s1) < 0 ||
+		    qpol_class_get_name(q, c2, &s2) < 0) {
+			return 0;
+		}
+		return strcmp(s1, s2);
+	}
+
+	/**
+	 * Sort a vector of qpol_terule_t, sorting by rule type, then
+	 * source type, then target type, and then by object class.
+	 */
+	void apol_tcl_terule_sort(apol_policy_t *policy, apol_vector_t *v) {
+		apol_vector_sort(v, terule_sort, policy);
+	}
 %}
 
-%rename(apol_rule_render) apol_avrule_render;
+%rename(apol_tcl_rule_render) apol_avrule_render;
 extern char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule);
-%rename(apol_rule_render) apol_terule_render;
+%rename(apol_tcl_rule_render) apol_terule_render;
 extern char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule);
-%rename(apol_rule_render) apol_syn_avrule_render;
+%rename(apol_tcl_rule_render) apol_syn_avrule_render;
 extern char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule);
-%rename(apol_rule_render) apol_syn_terule_render;
+%rename(apol_tcl_rule_render) apol_syn_terule_render;
 extern char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule);
+
+void apol_tcl_avrule_sort(apol_policy_t *policy, apol_vector_t *v);
+void apol_tcl_terule_sort(apol_policy_t *policy, apol_vector_t *v);
 
 // disable the exception handler, otherwise it will delete the error
 // message when this function gets called
@@ -91,3 +237,4 @@ extern char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *ru
 extern void apol_tcl_clear_info_string(void);
 extern int apol_tcl_get_info_level(void);
 extern char *apol_tcl_get_info_string(void);
+extern void apol_tcl_set_info_string(apol_policy_t *p, const char *s);

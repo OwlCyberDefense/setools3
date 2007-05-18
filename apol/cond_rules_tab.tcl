@@ -189,12 +189,17 @@ proc Apol_Cond_Rules::_search {} {
         append text " match the search criteria.  Expressions are in Reverse Polish Notation.\n\n"
     }
     Apol_Widget::appendSearchResultText $widgets(results) $text
-    set counter 1
-    foreach r [lsort -index 0 $results] {
-        set text [_renderConditional $r $avrule_selection $terule_selection $counter]
-        Apol_Widget::appendSearchResultText $widgets(results) "$text\n\n"
-        incr counter
-    }
+    Apol_Progress_Dialog::wait "Conditional Expressions" "Rendering conditionals" \
+        {
+            set counter 1
+            set num_results [llength $results]
+            foreach r [lsort -index 0 $results] {
+                apol_tcl_set_info_string $::ApolTop::policy "Rendering $counter of $num_results"
+                set text [_renderConditional $r $avrule_selection $terule_selection $counter]
+                Apol_Widget::appendSearchResultText $widgets(results) "$text\n\n"
+                incr counter
+            }
+        }
 }
 
 proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
@@ -217,7 +222,9 @@ proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
 
     Apol_Widget::appendSearchResultText $widgets(results) "$text\nTRUE list:\n"
     if {![ApolTop::is_capable "syntactic rules"]} {
+        apol_tcl_avrule_sort $::ApolTop::policy $av_true_vector
         Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_true_vector new_qpol_avrule_t
+        apol_tcl_terule_sort $::ApolTop::policy $te_true_vector
         Apol_Widget::appendSearchResultRules $widgets(results) 4 $te_true_vector new_qpol_terule_t
     } else {
         set syn_avrules [apol_avrule_list_to_syn_avrules $::ApolTop::policy $av_true_vector NULL]
@@ -230,7 +237,9 @@ proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
 
     Apol_Widget::appendSearchResultText $widgets(results) "\nFALSE list:\n"
     if {![ApolTop::is_capable "syntactic rules"]} {
+        apol_tcl_avrule_sort $::ApolTop::policy $av_false_vector
         Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_false_vector new_qpol_avrule_t
+        apol_tcl_terule_sort $::ApolTop::policy $te_false_vector
         Apol_Widget::appendSearchResultRules $widgets(results) 4 $te_false_vector new_qpol_terule_t
     } else {
         set syn_avrules [apol_avrule_list_to_syn_avrules $::ApolTop::policy $av_false_vector NULL]

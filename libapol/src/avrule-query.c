@@ -736,7 +736,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t 
 char *apol_avrule_render(apol_policy_t * policy, qpol_avrule_t * rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
-        const char *rule_type_str;
+	const char *rule_type_str;
 	int error = 0;
 	uint32_t rule_type = 0;
 	qpol_type_t *type = NULL;
@@ -881,7 +881,7 @@ char *apol_avrule_render(apol_policy_t * policy, qpol_avrule_t * rule)
 char *apol_syn_avrule_render(apol_policy_t * policy, qpol_syn_avrule_t * rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
-        const char *rule_type_str;
+	const char *rule_type_str;
 	int error = 0;
 	uint32_t rule_type = 0, star = 0, comp = 0, self = 0;
 	qpol_type_t *type = NULL;

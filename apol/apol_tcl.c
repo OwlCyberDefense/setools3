@@ -111,6 +111,11 @@ char *apol_tcl_get_info_string(void)
 	return message;
 }
 
+void apol_tcl_set_info_string(apol_policy_t * p, const char *s)
+{
+	INFO(p, "%s", s);
+}
+
 /**
  * Open a policy file, either source or binary, on disk.  Note that
  * this will not load neverallows; apol must rebuild neverallows (and
@@ -122,7 +127,7 @@ char *apol_tcl_get_info_string(void)
  * @param argv This function takes one parameter, an apol_policy_path
  * object.
  */
-apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t *ppath)
+apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t * ppath)
 {
 	return apol_policy_create_from_policy_path(ppath, QPOL_POLICY_OPTION_NO_NEVERALLOWS, apol_tcl_route_handle_to_string, NULL);
 }

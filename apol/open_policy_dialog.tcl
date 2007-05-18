@@ -94,7 +94,8 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     set e [entry $primary_f.f.e -width 32 -bg white \
                -textvariable Apol_Open_Policy_Dialog::vars(primary_file) \
                -validate key \
-               -vcmd [list Apol_Open_Policy_Dialog::validateEntryKey %P]]
+               -vcmd [list Apol_Open_Policy_Dialog::_validateEntryKey %P]]
+    bind $e <Key-Return> Apol_Open_Policy_Dialog::tryOpenPolicy
     set b [button $primary_f.f.b -text "Browse" \
                -command Apol_Open_Policy_Dialog::browsePrimary]
     pack $e -side left -expand 1 -fill x -padx 4
@@ -142,7 +143,7 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     $dialog add -text "Cancel"
 }
 
-proc Apol_Open_Policy_Dialog::validateEntryKey {newvalue} {
+proc Apol_Open_Policy_Dialog::_validateEntryKey {newvalue} {
     variable vars
     variable dialog
     variable widgets
@@ -283,7 +284,7 @@ proc Apol_Open_Policy_Dialog::importList {} {
     foreach m $modules {
         addModule $m
     }
-    validateEntryKey $vars(primary_file)
+    _validateEntryKey $vars(primary_file)
     $ppath -delete
 }
 
@@ -338,9 +339,11 @@ proc Apol_Open_Policy_Dialog::tryOpenPolicy {} {
     variable dialog
     variable vars
 
-    set ppath [list_to_policy_path $vars(path_type) $vars(primary_file) $vars(mod_paths)]
-    if {[ApolTop::openPolicyPath $ppath] == 0} {
-        $dialog enddialog {}
+    if {[string trim $vars(primary_file)] != {}} {
+        set ppath [list_to_policy_path $vars(path_type) $vars(primary_file) $vars(mod_paths)]
+        if {[ApolTop::openPolicyPath $ppath] == 0} {
+            $dialog enddialog {}
+        }
     }
 }
 

@@ -17,10 +17,10 @@ namespace eval Apol_File_Contexts {
     variable opts
     variable widgets
 	
-	# Global Widgets
-	variable entry_dir
-	variable entry_fn
-	variable create_fc_dlg		.fc_db_create_Dlg
+    # Global Widgets
+    variable entry_dir
+    variable entry_fn
+    variable create_fc_dlg .fc_db_create_Dlg
 	
     variable info_button_text \
 "This tab allows you to create and load a file context index.  The file
@@ -75,10 +75,7 @@ proc Apol_File_Contexts::populate_combo_boxes {} {
 proc Apol_File_Contexts::open {ppath} {
 } 
 
-# ------------------------------------------------------------------------------
-#  Command Apol_File_Contexts::initialize
-# ------------------------------------------------------------------------------
-proc Apol_File_Contexts::initialize { } {
+proc Apol_File_Contexts::initialize {} {
     variable opts
     variable widgets
 
@@ -100,12 +97,9 @@ proc Apol_File_Contexts::initialize { } {
     Apol_Widget::clearSearchResults $widgets(results)
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_File_Contexts::close
-# ------------------------------------------------------------------------------
 proc Apol_File_Contexts::close { } {
-    Apol_File_Contexts::close_fc_db
-    Apol_File_Contexts::initialize
+#    Apol_File_Contexts::close_fc_db
+#    Apol_File_Contexts::initialize
 }
 
 # ------------------------------------------------------------------------------

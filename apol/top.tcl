@@ -457,19 +457,20 @@ proc ApolTop::_close_policy {} {
 
     wm title . "SELinux Policy Analysis"
 
-    variable tabs
-    foreach tab $tabs {
-        [lindex $tab 0]::close
-    }
-    Apol_Perms_Map::close
-
-    variable policy
-    if {$policy != {}} {
-        Apol_Progress_Dialog::wait $primary_file "Opening policy." \
-            [list $policy -delete]
-        set policy {}
-        variable qpolicy {}
-    }
+    Apol_Progress_Dialog::wait "apol" "Closing policy." \
+        {
+            variable tabs
+            foreach tab $tabs {
+                [lindex $tab 0]::close
+            }
+            Apol_Perms_Map::close
+            variable policy
+	    if {$policy != {}} {
+                $policy -delete
+                set policy {}
+                variable qpolicy {}
+            }
+        }
 
     variable mainframe
     $mainframe setmenustate tag_policy_open disabled
@@ -1068,5 +1069,5 @@ if {[catch {package require Tk}]} {
 set path [handle_args $argv0 $argv]
 ApolTop::main
 if {$path != {}} {
-    after idle [list ApolTop::openPolicyFile $path]
+    after idle [list ApolTop::openPolicyPath $path]
 }

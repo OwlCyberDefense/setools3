@@ -417,7 +417,7 @@ proc Apol_Widget::appendSearchResultRules {path indent rule_list cast {varname {
     for {set i 0} {$i < [$rule_list get_size]} {incr i} {
         set rule [$cast [$rule_list get_element $i]]
         $path.tb insert end [string repeat " " $indent]
-        $path.tb insert end [apol_rule_render $::ApolTop::policy $rule]
+        $path.tb insert end [apol_tcl_rule_render $::ApolTop::policy $rule]
         if {[$rule get_cond $::ApolTop::qpolicy] != "NULL"} {
             if {[$rule get_is_enabled $::ApolTop::qpolicy]} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
@@ -464,7 +464,7 @@ proc Apol_Widget::appendSearchResultSynRules {path indent rule_list cast {varnam
                 [$syn_rule get_lineno $::ApolTop::qpolicy] linenum \
                 "\] " {}
         }
-        $path.tb insert end [apol_rule_render $::ApolTop::policy $syn_rule]
+        $path.tb insert end [apol_tcl_rule_render $::ApolTop::policy $syn_rule]
         if {[$syn_rule get_cond $::ApolTop::qpolicy] != "NULL"} {
             if {[$syn_rule get_is_enabled $::ApolTop::qpolicy]} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
@@ -475,7 +475,7 @@ proc Apol_Widget::appendSearchResultSynRules {path indent rule_list cast {varnam
             }
         }
         $path.tb insert end "\n"
-    }        
+    }
     $path.tb configure -state $curstate
     list [llength $rule_list] $num_enabled $num_disabled
 }
