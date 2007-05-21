@@ -486,9 +486,14 @@ proc ApolTop::_toplevel_update_stats {} {
                          avrule_neverallow $::QPOL_RULE_NEVERALLOW \
                         ]
     foreach {key bit} $avrule_bits {
-        set i [$::ApolTop::qpolicy get_avrule_iter $bit]
-        set policy_stats($key) [$i get_size]
-        $i -delete
+        if {$bit == $::QPOL_RULE_NEVERALLOW && ![is_capable "neverallow"]} {
+            # neverallow rules have not yet been loaded
+            set policy_stats($key) 0
+        } else {
+            set i [$::ApolTop::qpolicy get_avrule_iter $bit]
+            set policy_stats($key) [$i get_size]
+            $i -delete
+        }
     }
 
     set terule_bits [list \
@@ -511,6 +516,9 @@ proc ApolTop::_toplevel_update_stats {} {
                             $policy_stats(avrule_dontaudit) + $policy_stats(avrule_neverallow) +
                             $policy_stats(type_trans) + $policy_stats(type_member) +
                             $policy_stats(type_change)}]
+    if {![is_capable "neverallow"]} {
+        append num_te_rules "+"
+    }
     append policy_stats_summary "TE rules: $num_te_rules   "
     append policy_stats_summary "Roles: $policy_stats(roles)   "
     append policy_stats_summary "Users: $policy_stats(users)"
@@ -709,7 +717,7 @@ proc ApolTop::_show_policy_summary {} {
         set rtext {}
         foreach {l r} $block {
             append ltext "\n    $l:"
-            if {$l != "neverallow" || [is_capable "neverallow"]} {
+            if {$r != "avrule_neverallow" || [is_capable "neverallow"]} {
                 append rtext "\n$policy_stats($r)"
             } else {
                 append rtext "\nN/A"
