@@ -691,6 +691,7 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 			error = EIO;
 			goto err;
 		}
+		(*policy)->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 		if (policy_extend(*policy)) {
 			error = errno;
 			goto err;

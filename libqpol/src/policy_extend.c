@@ -357,6 +357,7 @@ static int qpol_policy_add_cond_rule_traceback(qpol_policy_t * policy)
 	qpol_iterator_t *iter = NULL;
 	avtab_ptr_t rule = NULL;
 	int error = 0;
+	uint32_t rules = 0;
 
 	INFO(policy, "%s", "Building conditional rules tables. (Step 5 of 5)");
 	if (!policy) {
@@ -367,9 +368,13 @@ static int qpol_policy_add_cond_rule_traceback(qpol_policy_t * policy)
 
 	db = &policy->p->p;
 
+	rules = (QPOL_RULE_ALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT);
+	if (!(policy->options & QPOL_POLICY_OPTION_NO_NEVERALLOWS))
+		rules |= QPOL_RULE_NEVERALLOW;
+
 	/* mark all unconditional rules as enabled */
 	if (qpol_policy_get_avrule_iter
-	    (policy, (QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT), &iter))
+	    (policy, rules, &iter))
 		return STATUS_ERR;
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, (void **)&rule)) {
