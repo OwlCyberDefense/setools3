@@ -18,12 +18,11 @@ set COPYRIGHT_INFO "Copyright (C) 2001-2007 Tresys Technology, LLC"
 namespace eval ApolTop {
     variable policy {} ;# handle to an apol_policy, or {} if none opened
     variable qpolicy {} ;# handle to policy's qpol_policy_t, or {} if none opened
-    variable polstats
-
     # these three are shown on the status line of the toplevel window
     variable policy_version_string {}
     variable policy_source_linenum {}
     variable policy_stats_summary {}
+    variable policy_stats  ;# array of statistics for the current policy
 
     # user's preferences
     variable dot_apol_file [file join $::env(HOME) .apol]
@@ -95,6 +94,7 @@ proc ApolTop::is_policy_open {} {
 #   "conditionals"
 #   "line numbers"
 #   "mls"
+#   "neverallow"
 #   "source"
 #   "syntactic rules"
 proc ApolTop::is_capable {capability} {
@@ -106,6 +106,7 @@ proc ApolTop::is_capable {capability} {
         "conditionals" { set cap $::QPOL_CAP_CONDITIONALS }
         "line numbers" { set cap $::QPOL_CAP_LINE_NUMBERS }
         "mls" { set cap $::QPOL_CAP_MLS }
+        "neverallow" { set cap $::QPOL_CAP_NEVERALLOW }
         "source" { set cap $::QPOL_CAP_SOURCE }
         "syntactic rules" { set cap $::QPOL_CAP_SYN_RULES }
         default { return 0 }
@@ -119,8 +120,6 @@ proc ApolTop::is_capable {capability} {
 #
 # @param ppath Policy path to open.
 proc ApolTop::openPolicyPath {ppath} {
-    variable policy_version_string
-
     _close_policy
 
     set primary_file [$ppath get_primary]
@@ -159,6 +158,16 @@ proc ApolTop::openPolicyPath {ppath} {
     }
 
     return 0  ;# indicates policy opened successfully
+}
+
+proc ApolTop::loadNeverAllows {} {
+    if {![is_capable "neverallow"]} {
+        Apol_Progress_Dialog::wait "Loading neverallow rules" "Rebuilding policy" \
+            {
+                $::ApolTop::qpolicy rebuild 0
+                _toplevel_update_stats
+            }
+    }
 }
 
 proc ApolTop::popup {parent x y menu callbacks callback_arg} {
@@ -240,7 +249,7 @@ proc ApolTop::_create_toplevel {} {
 	    {command "&Open Query..." {tag_policy_open} "Open query criteria file" {} -command ApolTop::_open_query_file}
 	    {command "&Save Query..." {tag_policy_open tag_query_saveable} "Save current query criteria to file" {} -command ApolTop::_save_query_file}
 	    {separator}
-	    {command "&Policy Summary" {tag_policy_open} "Display summary statistics" {} -command ApolTop::_policy_stats}
+	    {command "&Policy Summary" {tag_policy_open} "Display summary statistics" {} -command ApolTop::_show_policy_summary}
 	}
 	"&Tools" {} tools 0 {
             {command "&Open Perm Map..." {tag_policy_open} "Open a permission map from file" {} -command ApolTop::_open_perm_map_from_file}
@@ -360,7 +369,7 @@ proc ApolTop::_toplevel_policy_open {ppath} {
     $mainframe setmenustate tag_policy_open normal
     $mainframe setmenustate tag_perm_map_open disabled
 
-    _toplevel_update_stats_line
+    _toplevel_update_stats
     variable policy_version_string [$::ApolTop::policy get_version_type_mls_str]
 
     set primary_file [$ppath get_primary]
@@ -368,7 +377,7 @@ proc ApolTop::_toplevel_policy_open {ppath} {
 }
 
 # Enable/disable tabs that contain the given tag.  If the currently
-# raised page is one of those tabs then raise the first page (which
+# raised page is one of those tabs then raise the first tab (which
 # hopefully does not have that tag).
 proc ApolTop::_toplevel_enable_tabs {tag new_state} {
     variable tabs
@@ -380,9 +389,9 @@ proc ApolTop::_toplevel_enable_tabs {tag new_state} {
                 set parent_nb [$parent_nb getframe $nb].nb
             }
             $parent_nb itemconfigure [lindex $tab 0] -state $new_state
-            set current_tab [$parent_nb raise]
-            if {$parent_nb == [lindex $tab 0]  && $new_state == "disabled"} {
-                setCurrentTab [$parent_nb pages 0]
+            if {[$parent_nb raise] == {}} {
+                $parent_nb raise [$parent_nb pages 0]
+                setCurrentTab [lindex $tabs 0 0]
             }
         }
     }
@@ -426,29 +435,85 @@ proc ApolTop::_add_recent {ppath} {
     _build_recent_files_menu
 }
 
-proc ApolTop::_toplevel_update_stats_line {} {
-    variable polstats
+proc ApolTop::_toplevel_update_stats {} {
+    variable policy_stats
     variable policy_stats_summary
-    return
-    if {[catch {apol_GetStats} pstats]} {
-        tk_messageBox -icon error -type ok -title "Error" -message $pstats
-        return
+
+    set iter_funcs {
+        "classes" get_class_iter
+        "commons" get_common_iter
+
+        "roles" get_role_iter
+        "role_allow" get_role_allow_iter
+        "role_trans" get_role_trans_iter
+
+        "users" get_user_iter
+        "bools" get_bool_iter
+        "sens" get_level_iter
+        "cats" get_cat_iter
+        "range_trans" get_range_trans_iter
+
+        "sids" get_isid_iter
+        "portcons" get_portcon_iter
+        "netifcons" get_netifcon_iter
+        "nodecons" get_nodecon_iter
+        "genfscons" get_genfscon_iter
+        "fs_uses" get_fs_use_iter
     }
-    array unset polstats
-    array set polstats $pstats
+    foreach {key func} $iter_funcs {
+        set i [$::ApolTop::qpolicy $func]
+        set policy_stats($key) [$i get_size]
+        $i -delete
+    }
+
+    set query_funcs {
+        "perms" new_apol_perm_query_t
+        "types" new_apol_type_query_t
+        "attribs" new_apol_attr_query_t
+    }
+    foreach {key func} $query_funcs {
+        set q [$func]
+        set v [$q run $::ApolTop::policy]
+        $q -delete
+        set policy_stats($key) [$v get_size]
+        $v -delete
+    }
+
+    set avrule_bits [list \
+                         avrule_allow $::QPOL_RULE_ALLOW \
+                         avrule_auditallow $::QPOL_RULE_AUDITALLOW \
+                         avrule_dontaudit $::QPOL_RULE_DONTAUDIT \
+                         avrule_neverallow $::QPOL_RULE_NEVERALLOW \
+                        ]
+    foreach {key bit} $avrule_bits {
+        set i [$::ApolTop::qpolicy get_avrule_iter $bit]
+        set policy_stats($key) [$i get_size]
+        $i -delete
+    }
+
+    set terule_bits [list \
+                         type_trans $::QPOL_RULE_TYPE_TRANS \
+                         type_member $::QPOL_RULE_TYPE_CHANGE \
+                         type_change $::QPOL_RULE_TYPE_MEMBER \
+                        ]
+    foreach {key bit} $terule_bits {
+        set i [$::ApolTop::qpolicy get_avrule_iter $bit]
+        set policy_stats($key) [$i get_size]
+        $i -delete
+    }
 
     set policy_stats_summary ""
-    append policy_stats_summary "Classes: $polstats(classes)   "
-    append policy_stats_summary "Perms: $polstats(perms)   "
-    append policy_stats_summary "Types: $polstats(types)   "
-    append policy_stats_summary "Attribs: $polstats(attribs)   "
-    set num_te_rules [expr {$polstats(teallow) + $polstats(neverallow) +
-                            $polstats(auditallow) + $polstats(dontaudit) +
-                            $polstats(tetrans) + $polstats(temember) +
-                            $polstats(techange)}]
+    append policy_stats_summary "Classes: $policy_stats(classes)   "
+    append policy_stats_summary "Perms: $policy_stats(perms)   "
+    append policy_stats_summary "Types: $policy_stats(types)   "
+    append policy_stats_summary "Attribs: $policy_stats(attribs)   "
+    set num_te_rules [expr {$policy_stats(avrule_allow) + $policy_stats(avrule_auditallow) +
+                            $policy_stats(avrule_dontaudit) + $policy_stats(avrule_neverallow) +
+                            $policy_stats(type_trans) + $policy_stats(type_member) +
+                            $policy_stats(type_change)}]
     append policy_stats_summary "TE rules: $num_te_rules   "
-    append policy_stats_summary "Roles: $polstats(roles)   "
-    append policy_stats_summary "Users: $polstats(users)"
+    append policy_stats_summary "Roles: $policy_stats(roles)   "
+    append policy_stats_summary "Users: $policy_stats(users)"
 }
 
 ############### callbacks for top-level menu items ###############
@@ -583,12 +648,10 @@ proc ApolTop::_save_query_file {} {
     }
 }
 
-proc ApolTop::_policy_stats {} {
-    variable polstats
+proc ApolTop::_show_policy_summary {} {
+    variable policy_version_string
+    variable policy_stats
 
-    set classes $polstats(classes)
-    set common_perms $polstats(common_perms)
-    set perms $polstats(perms)
     if {![regexp -- {^([^\(]+) \(([^,]+), ([^\)]+)} $ApolTop::policy_version_string -> policy_version policy_type policy_mls_type]} {
         set policy_version $ApolTop::policy_version_string
         set policy_type "unknown"
@@ -596,8 +659,8 @@ proc ApolTop::_policy_stats {} {
     }
     set policy_version [string trim $policy_version]
 
-    destroy .polstatsbox
-    set dialog [Dialog .polstatsbox -separator 1 -title "Policy Summary" \
+    destroy .policy_statsbox
+    set dialog [Dialog .policy_statsbox -separator 1 -title "Policy Summary" \
                     -modal none -parent .]
     $dialog add -text Close -command [list destroy $dialog]
 
@@ -618,7 +681,7 @@ proc ApolTop::_policy_stats {} {
     foreach {title block} {
         "Number of Classes and Permissions" {
             "Object Classes" classes
-            "Common Perms" common_perms
+            "Common Permissions" commons
             "Permissions" perms
         }
         "Number of Types and Attributes" {
@@ -626,27 +689,31 @@ proc ApolTop::_policy_stats {} {
             "Attributes" attribs
         }
         "Number of Type Enforcement Rules" {
-            "allow" teallow
-            "neverallow" neverallow
-            "auditallow" auditallow
-            "dontaudit" dontaudit
-            "type_transition" tetrans
-            "type_member" temember
-            "type_change" techange
+            "allows" avrule_allow
+            "auditallows" avrule_auditallow
+            "dontaudits" avrule_dontaudit
+            "neverallows" avrule_neverallow
+            "type_transitions" type_trans
+            "type_members" type_member
+            "type_changes" type_change
         }
         "Number of Roles" {
             "Roles" roles
         }
         "Number of RBAC Rules" {
-            "allow" roleallow
-            "role_transition" roletrans
+            "allows" role_allow
+            "role_transitions" role_trans
         }
     } {
         set ltext "$title:"
         set rtext {}
         foreach {l r} $block {
             append ltext "\n    $l:"
-            append rtext "\n$polstats($r)"
+            if {$l != "neverallow" || [is_capable "neverallow"]} {
+                append rtext "\n$policy_stats($r)"
+            } else {
+                append rtext "\nN/A"
+            }
         }
         label $f.l$i -justify left -text $ltext
         label $f.r$i -justify left -text $rtext
@@ -661,14 +728,14 @@ proc ApolTop::_policy_stats {} {
             "Users" users
         }
         "Number of Booleans" {
-            "Bools" cond_bools
+            "Booleans" bools
         }
         "Number of MLS Components" {
             "Sensitivities" sens
             "Categories" cats
         }
         "Number of MLS Rules" {
-            "range_transition" rangetrans
+            "range_transitions" range_trans
         }
         "Number of Initial SIDs" {
             "SIDs" sids
@@ -685,7 +752,7 @@ proc ApolTop::_policy_stats {} {
         set rtext {}
         foreach {l r} $block {
             append ltext "\n    $l:"
-            append rtext "\n$polstats($r)"
+            append rtext "\n$policy_stats($r)"
         }
         label $g.l$i -justify left -text $ltext
         label $g.r$i -justify left -text $rtext
