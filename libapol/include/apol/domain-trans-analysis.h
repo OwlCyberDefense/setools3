@@ -70,7 +70,7 @@ extern "C"
  *  prior to apol_domain_trans_analysis_do().  If the table was not
  *  built yet then this function does nothing.
  *
- *  @param polciy Policy containing the table for which the state
+ *  @param policy Policy containing the table for which the state
  *  should be reset.
  */
 	extern void apol_policy_reset_domain_trans_table(apol_policy_t * policy);
