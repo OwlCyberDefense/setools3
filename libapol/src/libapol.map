@@ -56,5 +56,7 @@ VERS_4.1{
         	apol_ipv4_addr_render;
                 apol_mls_level_validate;
                 apol_nodecon_query_set_protocol;
+                apol_policy_build_domain_trans_table;
+                apol_policy_reset_domain_trans_table;
                 apol_portcon_query_set_protocol;
 } VERS_4.0;

@@ -228,7 +228,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 		goto inc_dom_trans_run_fail;
 	}
 
-	if (apol_policy_domain_trans_table_build(policy) < 0) {
+	if (apol_policy_build_domain_trans_table(policy) < 0) {
 		error = errno;
 		ERR(policy, "%s", "Unable to build domain transition table");
 		goto inc_dom_trans_run_fail;

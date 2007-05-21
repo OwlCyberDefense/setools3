@@ -453,11 +453,11 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		/* collect information about roles and transitions to this domain */
 		apol_role_query_set_type(policy, role_q, cur_dom_name);
 		apol_role_get_by_query(policy, role_q, &dom_roles);
-		apol_domain_trans_table_reset(policy);
+		apol_policy_reset_domain_trans_table(policy);
 		apol_domain_trans_analysis_set_start_type(policy, dta, cur_dom_name);
 		apol_domain_trans_analysis_set_valid(policy, dta, APOL_DOMAIN_TRANS_SEARCH_VALID);
 		apol_domain_trans_analysis_do(policy, dta, &valid_rev_trans);
-		apol_domain_trans_table_reset(policy);
+		apol_policy_reset_domain_trans_table(policy);
 		apol_domain_trans_analysis_set_valid(policy, dta, APOL_DOMAIN_TRANS_SEARCH_INVALID);
 		apol_domain_trans_analysis_do(policy, dta, &invalid_rev_trans);
 

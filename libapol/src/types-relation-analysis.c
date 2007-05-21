@@ -873,7 +873,7 @@ static int apol_types_relation_domain(apol_policy_t * p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	if (apol_policy_domain_trans_table_build(p) < 0 ||
+	if (apol_policy_build_domain_trans_table(p) < 0 ||
 	    apol_domain_trans_analysis_set_direction(p, dta, APOL_DOMAIN_TRANS_DIRECTION_FORWARD) < 0) {
 		goto cleanup;
 	}
@@ -892,7 +892,7 @@ static int apol_types_relation_domain(apol_policy_t * p,
 	if (do_domainsBA) {
 		apol_vector_destroy(&v);
 		if (do_domainsAB) {
-			apol_domain_trans_table_reset(p);
+			apol_policy_reset_domain_trans_table(p);
 		}
 		if (apol_domain_trans_analysis_set_start_type(p, dta, nameB) < 0 || apol_domain_trans_analysis_do(p, dta, &v) < 0) {
 			goto cleanup;

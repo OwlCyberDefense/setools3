@@ -550,14 +550,14 @@ typedef struct apol_policy {} apol_policy_t;
 		return;
 	};
 	void build_domain_trans_table() {
-		if (apol_policy_domain_trans_table_build(self)) {
+		if (apol_policy_build_domain_trans_table(self)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not build domain transition table");
 		}
 	fail:
 		return;
 	};
 	void reset_domain_trans_table() {
-		apol_domain_trans_table_reset(self);
+		apol_policy_reset_domain_trans_table(self);
 	}
 };
 

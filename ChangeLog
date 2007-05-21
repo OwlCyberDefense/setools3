@@ -1,3 +1,10 @@
+2007-05-21  J. Mowery  <jmowery@tresys.com>
+
+	* Renamed apol_policy_domain_trans_table_build() and
+	  apol_domain_trans_table_reset() to apol_polciy_build_domain_trans_table()
+	  and apol_polciy_reset_domain_trans_table() respectively.  This change 
+	  reflects the correct namespace for these operations.
+
 2007-05-18  J. Mowery  <jmowery@tresys.com>
 
 	* Deprecated qpol_policy_extend(); this function is called

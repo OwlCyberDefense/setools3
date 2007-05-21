@@ -54,7 +54,12 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and the table will be destroyed.
  */
-	extern int apol_policy_domain_trans_table_build(apol_policy_t * policy);
+	extern int apol_policy_build_domain_trans_table(apol_policy_t * policy);
+
+/**
+ * @deprecated Use apol_policy_build_domain_trans_table().
+ */
+	extern int apol_policy_domain_trans_table_build(apol_policy_t * policy) __attribute__((deprecated));
 
 /**
  *  Reset the state of the domain transition table in a policy.  This
@@ -68,7 +73,12 @@ extern "C"
  *  @param polciy Policy containing the table for which the state
  *  should be reset.
  */
-	extern void apol_domain_trans_table_reset(apol_policy_t * policy);
+	extern void apol_policy_reset_domain_trans_table(apol_policy_t * policy);
+
+/**
+ * @deprecated Use apol_policy_reset_domain_trans_table().
+ */
+	extern void apol_domain_trans_table_reset(apol_policy_t * policy) __attribute__((deprecated));
 
 /*************** functions to do domain transition anslysis ***************/
 

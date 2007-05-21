@@ -1174,7 +1174,7 @@ static int apol_domain_trans_filter_access(apol_domain_trans_t ** trans, apol_ve
 }
 
 /* public functions */
-int apol_policy_domain_trans_table_build(apol_policy_t * policy)
+int apol_policy_build_domain_trans_table(apol_policy_t * policy)
 {
 	size_t i;
 	unsigned char rule_type = 0x00;
@@ -1293,6 +1293,11 @@ int apol_policy_domain_trans_table_build(apol_policy_t * policy)
 	return -1;
 }
 
+int apol_policy_domain_trans_table_build(apol_policy_t * policy)
+{
+	return apol_policy_build_domain_trans_table(policy);
+}
+
 void domain_trans_table_destroy(apol_domain_trans_table_t ** table)
 {
 	size_t i;
@@ -1311,7 +1316,7 @@ void domain_trans_table_destroy(apol_domain_trans_table_t ** table)
 	*table = NULL;
 }
 
-void apol_domain_trans_table_reset(apol_policy_t * policy)
+void apol_policy_reset_domain_trans_table(apol_policy_t * policy)
 {
 	size_t i, j;
 	apol_domain_trans_rule_t *rule = NULL;
@@ -1351,6 +1356,11 @@ void apol_domain_trans_table_reset(apol_policy_t * policy)
 			rule->used = false;
 		}
 	}
+}
+
+void apol_domain_trans_table_reset(apol_policy_t * policy)
+{
+	return apol_policy_reset_domain_trans_table(policy);
 }
 
 apol_domain_trans_analysis_t *apol_domain_trans_analysis_create(void)
@@ -1580,7 +1590,7 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 
 	/* build table if not already present */
 	if (!(policy->domain_trans_table)) {
-		if (apol_policy_domain_trans_table_build(policy))
+		if (apol_policy_build_domain_trans_table(policy))
 			return -1;     /* errors already reported by build function */
 	}
 
@@ -1840,7 +1850,7 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 
 	/* build table if not already present */
 	if (!(policy->domain_trans_table)) {
-		if (apol_policy_domain_trans_table_build(policy))
+		if (apol_policy_build_domain_trans_table(policy))
 			return -1;     /* errors already reported by build function */
 	}
 
