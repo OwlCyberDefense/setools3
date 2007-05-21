@@ -53,6 +53,12 @@ int qpol_policy_get_avrule_iter(qpol_policy_t * policy, uint32_t rule_type_mask,
 		return STATUS_ERR;
 	}
 
+	if ((rule_type_mask & QPOL_RULE_NEVERALLOW) && !qpol_policy_has_capability(policy, QPOL_CAP_NEVERALLOW)) {
+		ERR(policy, "%s", "Cannot get avrules: Neverallow rules requested but not available");
+		errno = ENOTSUP;
+		return STATUS_ERR;
+	}
+
 	db = &policy->p->p;
 
 	state = calloc(1, sizeof(avtab_state_t));

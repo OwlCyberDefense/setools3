@@ -463,7 +463,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	sepol_policydb_t **modules = NULL;
 	qpol_module_t *base = NULL;
 	size_t num_modules = 0, i;
-	int error = 0;
+	int error = 0, old_otions;
 
 	if (!policy) {
 		ERR(NULL, "%s", strerror(EINVAL));
@@ -484,6 +484,12 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	policy->p = NULL;
 	struct qpol_extended_image *ext = policy->ext;
 	policy->ext = NULL;
+	old_otions = policy->options;
+	policy->options = options;
+
+	/* QPOL_POLICY_OPTION_NO_RULES implies QPOL_POLICY_OPTION_NO_NEVERALLOWS */
+	if (policy->options & QPOL_POLICY_OPTION_NO_RULES)
+		policy->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 
 	if (policy->type == QPOL_POLICY_MODULE_BINARY) {
 		/* allocate enough space for all modules then fill with list of enabled ones only */
@@ -569,6 +575,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 
 	policy->p = old_p;
 	policy->ext = ext;
+	policy->options = old_otions;
 	errno = error;
 	return STATUS_ERR;
 }
@@ -638,6 +645,10 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 		goto err;
 	}
 	(*policy)->options = options;
+
+	/* QPOL_POLICY_OPTION_NO_RULES implies QPOL_POLICY_OPTION_NO_NEVERALLOWS */
+	if ((*policy)->options & QPOL_POLICY_OPTION_NO_RULES)
+		(*policy)->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 
 	(*policy)->sh = sepol_handle_create();
 	if ((*policy)->sh == NULL) {
@@ -807,6 +818,11 @@ int qpol_policy_open_from_memory_opt(qpol_policy_t ** policy, const char *fileda
 		error = errno;
 		goto err;
 	}
+	(*policy)->options = options;
+
+	/* QPOL_POLICY_OPTION_NO_RULES implies QPOL_POLICY_OPTION_NO_NEVERALLOWS */
+	if ((*policy)->options & QPOL_POLICY_OPTION_NO_RULES)
+		(*policy)->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 
 	(*policy)->sh = sepol_handle_create();
 	if ((*policy)->sh == NULL) {
