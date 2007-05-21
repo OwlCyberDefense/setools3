@@ -22,7 +22,7 @@ namespace eval ApolTop {
 
     # these three are shown on the status line of the toplevel window
     variable policy_version_string {}
-    variable policyConf_lineno {}
+    variable policy_source_linenum {}
     variable policy_stats_summary {}
 
     # user's preferences
@@ -208,6 +208,15 @@ proc ApolTop::setCurrentTab {tab_name} {
     exit -1
 }
 
+proc ApolTop::setPolicySourceLinenumber {line} {
+    variable policy_source_linenum "Line $line"
+}
+
+proc ApolTop::showPolicySourceLineNumber {line} {
+    setCurrentTab Apol_PolicyConf
+    Apol_PolicyConf::gotoLine $line
+}
+
 ############### functions for creating and maintaining toplevel ###############
 
 proc ApolTop::_create_toplevel {} {
@@ -259,7 +268,7 @@ proc ApolTop::_create_toplevel {} {
     variable mainframe [MainFrame .mainframe -menu $menus -textvariable ApolTop::statu_line]
     pack $mainframe -fill both -expand yes
 
-    $mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
+    $mainframe addindicator -textvariable ApolTop::policy_source_linenum -width 14
     $mainframe addindicator -textvariable ApolTop::policy_stats_summary -width 88
     $mainframe addindicator -textvariable ApolTop::policy_version_string -width 28
 
@@ -322,7 +331,7 @@ proc ApolTop::_toplevel_tab_switched {} {
         if {[lsearch [lindex $tab 2] "tag_source"] >= 0} {
             [lindex $tab 0]::insertionMarkChanged
         } else {
-            variable policyConf_lineno {}
+            variable policy_source_linenum {}
         }
         break
     }

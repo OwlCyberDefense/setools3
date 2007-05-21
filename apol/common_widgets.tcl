@@ -669,8 +669,7 @@ proc Apol_Widget::_hyperlink {path x y} {
     set range [$tb tag prevrange linenum "@$x,$y + 1 char"]
     $tb tag add selected [lindex $range 0] [lindex $range 1]
     set line_num [$tb get [lindex $range 0] [lindex $range 1]]
-    $ApolTop::notebook raise $ApolTop::policy_conf_tab
-    Apol_PolicyConf::goto_line $line_num
+    ApolTop::showPolicySourceLineNumber $line_num
 }
 
 proc Apol_Widget::_render_typeset {typeset} {

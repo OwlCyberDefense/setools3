@@ -24,11 +24,12 @@ proc Apol_PolicyConf::create {tab_name nb} {
     set sw [ScrolledWindow $frame.sw -auto none]
     set textbox [text [$sw getframe].text -bg white -wrap none]
     $sw setwidget $textbox
+    bind $textbox <Button-3> [list Apol_Widget::_searchresults_popup %W %x %y]
     pack $sw -expand yes -fill both
 
     bind $textbox <<Insertion>> Apol_PolicyConf::insertionMarkChanged
 
-    rename $textbox ::Apol_PolicyConf::real_text
+    rename $textbox ::Apol_PolicyConf::_real_text
 
     # Override the textbox's command to do two things:
     #
@@ -48,7 +49,7 @@ proc Apol_PolicyConf::create {tab_name nb} {
             fakeinsert { set cmd insert }
             fakedelete { set cmd delete }
         }
-        set retval [uplevel 1 ::Apol_PolicyConf::real_text $cmd $args]
+        set retval [uplevel 1 ::Apol_PolicyConf::_real_text $cmd $args]
         if {$cmd == "mark" && [string equal -length 10 $args "set insert"]} {
             event generate $Apol_PolicyConf::textbox <<Insertion>>
         }
@@ -56,14 +57,14 @@ proc Apol_PolicyConf::create {tab_name nb} {
     }
 }
 
-proc Apol_PolicyConf::open {policy_path} {
+proc Apol_PolicyConf::open {ppath} {
     variable textbox
 
     $textbox fakedelete 0.0 end
     if {![ApolTop::is_capable "source"]} {
         $textbox fakeinsert end "The currently loaded policy is not a source policy."
     } else {
-        set primary_file [$policy_path get_primary]
+        set primary_file [$ppath get_primary]
         if {[catch {::open $primary_file r} f]} {
             $textbox fakeinsert end "$primary_file does not exist or could not be read by the user."
         } else {
@@ -88,5 +89,14 @@ proc Apol_PolicyConf::getTextWidget {} {
 proc Apol_PolicyConf::insertionMarkChanged {} {
     set lpos [$Apol_PolicyConf::textbox index insert]
     foreach {line col} [split $lpos .] {break}
-    set ApolTop::policyConf_lineno "Line $line"
+    ApolTop::setPolicySourceLinenumber $line
+}
+
+proc Apol_PolicyConf::gotoLine {line} {
+    variable textbox
+    $textbox tag remove sel 0.0 end
+    $textbox mark set insert $line.0
+    $textbox see $line.0
+    $textbox tag add sel $line.0 $line.end
+    focus $textbox
 }

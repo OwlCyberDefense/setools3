@@ -78,7 +78,7 @@ proc Apol_TE::create {tab_name nb} {
     grid $neverallow $type_member -sticky w -padx 2
     grid $auditallow $type_change -sticky w -padx 2
     grid $dontaudit x -sticky w -padx 2
-    foreach x {allow neverallow auditallow dontaudit type_transition type_member type_change} {
+    foreach x {allow auditallow dontaudit neverallow type_transition type_member type_change} {
         trace add variable Apol_TE::vals(rs:$x) write \
             [list Apol_TE::_toggle_rule_selection]
     }
