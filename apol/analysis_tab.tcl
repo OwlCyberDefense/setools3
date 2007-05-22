@@ -19,6 +19,69 @@ namespace eval Apol_Analysis {
     variable tabs
 }
 
+proc Apol_Analysis::create {tab_name nb} {
+    variable vals
+    variable widgets
+
+    set frame [$nb insert end $tab_name -text "Analysis"]
+    set pw [PanedWindow $frame.pw -side left -weights extra]
+    set topf [$pw add -weight 0]
+    set bottomf [$pw add -weight 1]
+    pack $pw -expand 1 -fill both
+
+    set top_leftf [TitleFrame $topf.left -text "Analysis Type"]
+    set opts_f [TitleFrame $topf.opts -text "Analysis Options"]
+    set buttons_f [frame $topf.buttons]
+    pack $top_leftf -side left -expand 0 -fill y -padx 2
+    pack $opts_f -side left -expand 1 -fill both -padx 2
+    pack $buttons_f -side right -expand 0 -anchor ne -padx 2
+    set results_f [TitleFrame $bottomf.r -text "Analysis Results"]
+    pack $results_f -expand 1 -fill both -padx 2
+
+    set widgets(modules) [Apol_Widget::makeScrolledListbox [$top_leftf getframe].m \
+                              -height 8 -width 24 -listvar Apol_Analysis::vals(module_names) -exportselection 0]
+    $widgets(modules).lb selection set 0
+    bind $widgets(modules).lb <<ListboxSelect>> Apol_Analysis::_selectModule
+    pack $widgets(modules) -expand 1 -fill both
+
+    set widgets(search_opts) [PagesManager [$opts_f getframe].s]
+    foreach m $vals(modules) {
+        ${m}::create [$widgets(search_opts) add $m]
+    }
+    $widgets(search_opts) compute_size
+    $widgets(search_opts) raise [lindex $vals(modules) 0]
+    pack $widgets(search_opts) -expand 1 -fill both
+
+    set widgets(new) [button $buttons_f.new -text "New Analysis" -width 12 \
+                          -command [list Apol_Analysis::_analyze new]]
+    set widgets(update) [button $buttons_f.update -text "Update Analysis" -width 12 -state disabled \
+                             -command [list Apol_Analysis::_analyze update]]
+    set widgets(reset) [button $buttons_f.reset -text "Reset Criteria" -width 12 \
+                            -command Apol_Analysis::_reset]
+    set widgets(info) [button $buttons_f.info -text "Info" -width 12 \
+                            -command Apol_Analysis::_info]
+    pack $widgets(new) $widgets(update) $widgets(reset) $widgets(info) \
+        -side top -pady 5 -padx 5 -anchor ne
+
+    set popupTab_Menu [menu .popup_analysis -tearoff 0]
+    set tab_menu_callbacks \
+        [list {"Close Tab" Apol_Analysis::_deleteResults} \
+             {"Rename Tab" Apol_Analysis::_displayRenameTabDialog}]
+
+    set widgets(results) [NoteBook [$results_f getframe].results]
+    $widgets(results) bindtabs <Button-1> Apol_Analysis::_switchTab
+    $widgets(results) bindtabs <Button-3> \
+        [list ApolTop::popup \
+             %W %x %y $popupTab_Menu $tab_menu_callbacks]
+    set close [button [$results_f getframe].close -text "Close Tab" \
+                   -command Apol_Analysis::_deleteCurrentResults]
+    pack $widgets(results) -expand 1 -fill both -padx 4
+    pack $close -expand 0 -fill x -padx 4 -pady 2
+
+    _reinitializeTabs
+    return $frame
+}
+
 proc Apol_Analysis::open {ppath} {
     variable vals
     foreach m $vals(modules) {
@@ -32,7 +95,7 @@ proc Apol_Analysis::close {} {
     foreach m $vals(modules) {
         ${m}::close
     }
-    reinitializeTabs
+    _reinitializeTabs
 }
 
 proc Apol_Analysis::getTextWidget {} {
@@ -77,75 +140,6 @@ proc Apol_Analysis::load_query_options {file_channel} {
     $widgets(modules).lb selection set [lsearch $vals(module_names) $vals($module:name)]
 }
 
-proc Apol_Analysis::create {tab_name nb} {
-    variable vals
-    variable widgets
-
-    # Layout frames
-    set frame [$nb insert end $tab_name -text "Analysis"]
-    set pw [PanedWindow $frame.pw -side left -weights extra]
-    set topf [$pw add -weight 0]
-    set bottomf [$pw add -weight 1]
-    pack $pw -expand 1 -fill both
-
-    # Major subframes
-    set top_leftf [TitleFrame $topf.left -text "Analysis Type"]
-    set opts_f [TitleFrame $topf.opts -text "Analysis Options"]
-    set buttons_f [frame $topf.buttons]
-    pack $top_leftf -side left -expand 0 -fill y -padx 2
-    pack $opts_f -side left -expand 1 -fill both -padx 2
-    pack $buttons_f -side right -expand 0 -anchor ne -padx 2
-    set results_f [TitleFrame $bottomf.r -text "Analysis Results"]
-    pack $results_f -expand 1 -fill both -padx 2
-
-    # Module selection list
-    set widgets(modules) [Apol_Widget::makeScrolledListbox [$top_leftf getframe].m \
-                              -height 8 -width 24 -listvar Apol_Analysis::vals(module_names) -exportselection 0]
-    $widgets(modules).lb selection set 0
-    bind $widgets(modules).lb <<ListboxSelect>> Apol_Analysis::selectModule
-    pack $widgets(modules) -expand 1 -fill both
-
-    set widgets(search_opts) [PagesManager [$opts_f getframe].s]
-    foreach m $vals(modules) {
-        ${m}::create [$widgets(search_opts) add $m]
-    }
-    $widgets(search_opts) compute_size
-    $widgets(search_opts) raise [lindex $vals(modules) 0]
-    pack $widgets(search_opts) -expand 1 -fill both
-
-    # Action buttons
-    set widgets(new) [button $buttons_f.new -text "New Analysis" -width 12 \
-                          -command [list Apol_Analysis::analyze new]]
-    set widgets(update) [button $buttons_f.update -text "Update Analysis" -width 12 -state disabled \
-                             -command [list Apol_Analysis::analyze update]]
-    set widgets(reset) [button $buttons_f.reset -text "Reset Criteria" -width 12 \
-                            -command Apol_Analysis::reset]
-    set widgets(info) [button $buttons_f.info -text "Info" -width 12 \
-                            -command Apol_Analysis::info]
-    pack $widgets(new) $widgets(update) $widgets(reset) $widgets(info) \
-        -side top -pady 5 -padx 5 -anchor ne
-
-    # Popup menu widget
-    set popupTab_Menu [menu .popup_analysis -tearoff 0]
-    set tab_menu_callbacks \
-        [list {"Close Tab" Apol_Analysis::deleteResults} \
-             {"Rename Tab" Apol_Analysis::displayRenameTabDialog}]
-
-    # Notebook creation for results
-    set widgets(results) [NoteBook [$results_f getframe].results]
-    $widgets(results) bindtabs <Button-1> Apol_Analysis::switchTab
-    $widgets(results) bindtabs <Button-3> \
-        [list ApolTop::popup \
-             %W %x %y $popupTab_Menu $tab_menu_callbacks]
-    set close [button [$results_f getframe].close -text "Close Tab" \
-                   -command Apol_Analysis::deleteCurrentResults]
-    pack $widgets(results) -expand 1 -fill both -padx 4
-    pack $close -expand 0 -fill x -padx 4 -pady 2
-
-    reinitializeTabs
-    return $frame
-}
-
 #################### functions invoked by modules ####################
 
 proc Apol_Analysis::registerAnalysis {mod_proc mod_name} {
@@ -180,29 +174,9 @@ proc Apol_Analysis::setResultTabCriteria {criteria} {
     }
 }
 
-# Given an object class, return a sorted list of its permissions,
-# including those that the class inherits from its common.
-proc Apol_Analysis::getAllPermsForClass {class} {
-    if {![ApolTop::is_policy_open]} {
-        return {}
-    }
-    if {[set c [new_qpol_class_t $::ApolTop::qpolicy $class]] == {}} {
-        return {}
-    }
-    set i [$c get_perm_iter $::ApolTop::qpolicy]
-    set perms [iter_to_str_list $i]
-    $i -delete
-    if {[set common [$c get_common $::ApolTop::qpolicy]] != "NULL"} {
-        set i [$common get_perm_iter $::ApolTop::qpolicy]
-        set perms [lsort -unique [concat $perms [iter_to_str_list $i]]]
-        $i -delete
-    }
-    return $perms
-}
-
 #################### private functions ####################
 
-proc Apol_Analysis::selectModule {} {
+proc Apol_Analysis::_selectModule {} {
     variable vals
     variable widgets
     variable tabs
@@ -221,37 +195,27 @@ proc Apol_Analysis::selectModule {} {
     }
 }
 
-proc Apol_Analysis::analyze {which_button} {
+proc Apol_Analysis::_analyze {which_button} {
     variable vals
     variable widgets
     variable tabs
 
     set m [$widgets(search_opts) raise]
-    set tabs(analyses_done) -1
-    set tabs(analyses_text) "Performing $vals($m:name) Analysis..."
-    ProgressDlg .analysis_busy -title "$vals($m:name) Analysis" \
-        -type normal -stop {} -separator 1 -parent . -maximum 2 \
-        -width [string length $tabs(analyses_text)] \
-        -textvariable Apol_Analysis::tabs(analyses_text) \
-        -variable Apol_Analysis::tabs(analyses_done)
-    ApolTop::setBusyCursor
-    update idletasks
-
-    if {$which_button == "new"} {
-        set retval [${m}::newAnalysis]
-    } else {
-        set f [$widgets(results) getframe [$widgets(results) raise]]
-        if {[set retval [${m}::updateAnalysis $f]] != {}} {
-            deleteCurrentResults
-        }
-    }
-
-    ApolTop::resetBusyCursor
-    destroy .analysis_busy
-    focus .
-
+    set retval [Apol_Progress_Dialog::wait "$vals($m:name) Analysis" \
+                    "Performing $vals($m:name) Analysis..." \
+                    {
+                        if {$which_button == "new"} {
+                            ${m}::newAnalysis
+                        } else {
+                            set f [$widgets(results) getframe [$widgets(results) raise]]
+                            if {[set retval [${m}::updateAnalysis $f]] != {}} {
+                                _deleteCurrentResults
+                            }
+                            set retval
+                        }
+                    }]
     if {$retval != {}} {
-        tk_messageBox -icon error -type ok -title Error -message "Error while performing analysis:\n\n$retval"
+        tk_messageBox -icon error -type ok -title "$vals($m:name) Analysis" -message "Error while performing analysis:\n\n$retval"
     }
     if {[$widgets(results) raise] == {}} {
         $widgets(update) configure -state disabled
@@ -260,32 +224,32 @@ proc Apol_Analysis::analyze {which_button} {
     }
 }
 
-proc Apol_Analysis::reset {} {
+proc Apol_Analysis::_reset {} {
     variable vals
     variable widgets
     set m [$widgets(search_opts) raise]
     ${m}::reset
 }
 
-proc Apol_Analysis::info {} {
+proc Apol_Analysis::_info {} {
     variable vals
     variable widgets
     set m [$widgets(search_opts) raise]
     Apol_Widget::showPopupParagraph $vals(${m}:name) [${m}::getInfo]
 }
 
-proc Apol_Analysis::reinitializeTabs {} {
+proc Apol_Analysis::_reinitializeTabs {} {
     variable widgets
     variable tabs
     array set tabs {
         next_result_id 1
     }
     foreach p [$widgets(results) pages 0 end] {
-        deleteResults $p
+        _deleteResults $p
     }
 }
 
-proc Apol_Analysis::switchTab {pageID} {
+proc Apol_Analysis::_switchTab {pageID} {
     variable vals
     variable widgets
     variable tabs
@@ -308,7 +272,7 @@ proc Apol_Analysis::switchTab {pageID} {
     $widgets(search_opts) raise $m
 }
 
-proc Apol_Analysis::deleteResults {pageID} {
+proc Apol_Analysis::_deleteResults {pageID} {
     variable widgets
     variable tabs
 
@@ -320,24 +284,24 @@ proc Apol_Analysis::deleteResults {pageID} {
 
     # try to raise the next tab
     if {[set next_id [$widgets(results) pages $curpos]] != {}} {
-        switchTab $next_id
+        _switchTab $next_id
     } elseif {$curpos > 0} {
         # raise the previous page instead
-        switchTab [$widgets(results) pages [expr {$curpos - 1}]]
+        _switchTab [$widgets(results) pages [expr {$curpos - 1}]]
     } else {
         # no tabs remaining
         $widgets(update) configure -state disabled
     }
 }
 
-proc Apol_Analysis::deleteCurrentResults {} {
+proc Apol_Analysis::_deleteCurrentResults {} {
     variable widgets
     if {[set curid [$widgets(results) raise]] != {}} {
-        deleteResults $curid
+        _deleteResults $curid
     }
 }
 
-proc Apol_Analysis::displayRenameTabDialog {pageID} {
+proc Apol_Analysis::_displayRenameTabDialog {pageID} {
     variable widgets
     variable tabs
     set d [Dialog .apol_analysis_tab_rename -homogeneous 1 -spacing 2 -cancel 1 \

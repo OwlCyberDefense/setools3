@@ -26,8 +26,8 @@ proc Apol_Analysis_transflow::open {} {
     set vals(intermed:inc) $Apol_Types::typelist
     set vals(intermed:inc_all) $Apol_Types::typelist
     set vals(classes:displayed) {}
-    foreach class $Apol_Class_Perms::class_list {
-        foreach perm [Apol_Analysis::getAllPermsForClass $class] {
+    foreach class [Apol_Class_Perms::getClasses] {
+        foreach perm [Apol_Class_Perms::getPermsForClass $class] {
             set vals(perms:$class:$perm) 1
         }
         lappend vals(classes:displayed) $class

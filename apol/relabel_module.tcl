@@ -24,8 +24,8 @@ proc Apol_Analysis_relabel::open {} {
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
     set vals(classes:inc) {}
-    foreach class $Apol_Class_Perms::class_list {
-        set perms [Apol_Analysis::getAllPermsForClass $class]
+    foreach class [Apol_Class_Perms::getClasses] {
+        set perms [Apol_Class_Perms::getPermsForClass $class]
         if {[lsearch $perms "relabelto"] >= 0 && [lsearch $perms "relabelfrom"] >= 0} {
             lappend vals(classes:inc) $class
         }

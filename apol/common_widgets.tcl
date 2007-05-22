@@ -612,7 +612,7 @@ proc Apol_Widget::_filter_type_combobox {path attribvalue} {
             return
         }
     } else {
-        set typesList $Apol_Types::typelist
+        set typesList [Apol_Types::getTypes]
         # during policy load this list should already have been sorted
     }
     if {[lsearch -exact $typesList $vars($path:type)] == -1} {

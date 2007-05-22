@@ -36,6 +36,16 @@ namespace eval Apol_Analysis_foo {
     Apol_Analysis::registerAnalysis "Apol_Analysis_foo" "Analysis Template Example"
 }
 
+# Called when the tool first starts up.  It is given a blank frame to
+# which create its search widgets.
+proc Apol_Analysis_foo::create {options_frame} {
+    variable vals
+    set vals(entry_string) {}
+    set l [label $options_frame.l -text "Enter Text:"]
+    set e [entry $options_frame.e -textvariable Apol_Analysis_foo::vals(entry_string) -width 25 -background white]
+    pack $l $e -side left -anchor w
+}
+
 # Called when a policy is opened.
 proc Apol_Analysis_foo::open {} {
 }
@@ -54,16 +64,6 @@ proc Apol_Analysis_foo::getInfo {} {
     return "This is an analysis template dialog that simply displays the content
 of the entry box.  The purpose of this analysis is to provide a
 template for new analyses."
-}
-
-# Called when the tool first starts up.  It is given a blank frame to
-# which create its search widgets.
-proc Apol_Analysis_foo::create {options_frame} {
-    variable vals
-    set vals(entry_string) {}
-    set l [label $options_frame.l -text "Enter Text:"]
-    set e [entry $options_frame.e -textvariable Apol_Analysis_foo::vals(entry_string) -width 25 -background white]
-    pack $l $e -side left -anchor w
 }
 
 # Perform a new analysis.  This function is responsible for obtaining
@@ -136,7 +136,8 @@ proc Apol_Analysis_foo::loadQuery {channel} {
     }
 }
 
-# Get a text widget that contains this analysis's results.
+# Get a text widget that contains this analysis's results.  This is
+# then passed to the find dialog, goto line dialog, and so forth.
 proc Apol_Analysis_foo::getTextWidget {tab} {
     return $tab.results
 }

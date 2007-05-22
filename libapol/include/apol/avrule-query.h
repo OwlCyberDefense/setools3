@@ -195,7 +195,8 @@ extern "C"
  * least one of the rule's permissions must be one of those appended;
  * that is, the intersection of query's and rule's permissions must be
  * non-empty.  (This behavior can be changed.)  Pass a NULL to clear
- * all permissions.
+ * all permissions.  Note that this performs a straight string
+ * comparison, ignoring the regex flag.
  *
  * @param p Policy handler, to report errors.
  * @param a AV rule query to set.

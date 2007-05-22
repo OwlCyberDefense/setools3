@@ -135,7 +135,7 @@ proc Apol_TE::open {ppath} {
 
     variable vals
     variable enabled
-    set vals(cp:classes) $Apol_Class_Perms::class_list
+    set vals(cp:classes) [Apol_Class_Perms::getClasses]
     set enabled(cp:classes) 1
     set enabled(cp:perms) 1
 }
@@ -848,7 +848,7 @@ proc Apol_TE::_reset {} {
     _initializeWidgets
     if {[set enabled(cp:classes) $old_classes_enabled]} {
         variable vals
-        set vals(cp:classes) $Apol_Class_Perms::class_list
+        set vals(cp:classes) [Apol_Class_Perms::getClasses]
         set enabled(cp:classes) 1
         set enabled(cp:perms) 1
     }

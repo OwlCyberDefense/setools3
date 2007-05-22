@@ -133,8 +133,9 @@ proc Apol_Types::isAttributeInPolicy {attrib} {
     return 0
 }
 
-# Return a list of all type names (not attributes nor aliases) within
-# the current policy.  If no policy is open then return an empty list.
+# Return a sorted list of all type names (not attributes nor aliases)
+# within the current policy.  If no policy is open then return an
+# empty list.
 proc Apol_Types::getTypes {} {
     variable typelist
     set typelist

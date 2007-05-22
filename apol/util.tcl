@@ -34,6 +34,15 @@ proc iter_to_str_list {iter} {
     return $list
 }
 
+proc list_to_vector {list} {
+    set v [new_apol_vector_t]
+    $v -acquire
+    foreach x $list {
+        $v append $x
+    }
+    return $v
+}
+
 proc list_to_str_vector {list} {
     set v [new_apol_string_vector_t]
     $v -acquire
@@ -53,6 +62,15 @@ proc str_vector_to_list {v} {
 
 proc attr_vector_to_list {v} {
     type_vector_to_list $v
+}
+
+proc avrule_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [new_qpol_avrule_t [$v get_element $i]]
+        lappend list $q
+    }
+    return $list
 }
 
 proc bool_vector_to_list {v} {
@@ -98,6 +116,15 @@ proc cond_vector_to_list {v} {
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
         set q [new_qpol_cond_t [$v get_element $i]]
         lappend list $q
+    }
+    return $list
+}
+
+proc domain_trans_result_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set a [new_apol_domain_trans_result_t [$v get_element $i]]
+        lappend list $a
     }
     return $list
 }
@@ -206,6 +233,15 @@ proc role_vector_to_list {v} {
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
         set q [new_qpol_role_t [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
+    }
+    return $list
+}
+
+proc terule_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [new_qpol_terule_t [$v get_element $i]]
+        lappend list $q
     }
     return $list
 }

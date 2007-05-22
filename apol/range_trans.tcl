@@ -85,7 +85,7 @@ proc Apol_Range::open {ppath} {
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(source_type)
     Apol_Widget::resetTypeComboboxToPolicy $widgets(target_type)
-    set vals(classes) $Apol_Class_Perms::class_list
+    set vals(classes) [Apol_Class_Perms::getClasses]
     $widgets(classes) configure -bg white -state normal
 }
 
