@@ -753,6 +753,8 @@ static int apol_infoflow_graph_create(apol_policy_t * p, apol_infoflow_analysis_
 		ERR(p, "%s", "A permission map must be loaded prior to building the infoflow graph.");
 		goto cleanup;
 	}
+
+	INFO(p, "%s", "Generating information flow graph.");
 	if (ia->mode == APOL_INFOFLOW_MODE_TRANS && ia->intermed != NULL &&
 	    (types = apol_infoflow_graph_create_required_types(p, ia->intermed)) == NULL) {
 		goto cleanup;
@@ -1812,6 +1814,7 @@ int apol_infoflow_analysis_do(apol_policy_t * p, apol_infoflow_analysis_t * ia, 
 	if (apol_infoflow_graph_create(p, ia, g) < 0) {
 		goto cleanup;
 	}
+	INFO(p, "%s", "Searching information flow graph.");
 	retval = apol_infoflow_analysis_do_more(p, *g, ia->type, v);
       cleanup:
 	if (retval != 0) {

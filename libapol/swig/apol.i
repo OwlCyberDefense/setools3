@@ -2276,7 +2276,7 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 	fail:
 		return;
 	};
-	void set_direction(apol_policy_t *p, int direction) {
+	void set_dir(apol_policy_t *p, int direction) {
 		if (apol_infoflow_analysis_set_dir(p, self, (unsigned int)direction)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set direction for information flow analysis");
 		}

@@ -48,11 +48,11 @@ char *message = NULL;
  * the previous one, overwrite the string if message level is less
  * than previous, else ignore the message.
  */
-static void apol_tcl_route_handle_to_string(void *varg
-					    __attribute__ ((unused)), apol_policy_t * p
+static void apol_tcl_route_handle_to_string(void *arg, apol_policy_t * p
 					    __attribute__ ((unused)), int level, const char *fmt, va_list ap)
 {
 	char *s, *t;
+	Tcl_Interp *interp = arg;
 	if (level == APOL_MSG_INFO && msg_level >= APOL_MSG_INFO) {
 		/* generate an info event */
 		free(message);
@@ -63,7 +63,8 @@ static void apol_tcl_route_handle_to_string(void *varg
 		}
 		message = s;
 		msg_level = level;
-		Tcl_DoOneEvent(TCL_IDLE_EVENTS | TCL_DONT_WAIT);
+		Tcl_Eval(interp, "Apol_Progress_Dialog::_update_message");
+		while (Tcl_DoOneEvent(TCL_IDLE_EVENTS | TCL_DONT_WAIT)) ;
 	} else if (message == NULL || level < msg_level) {
 		/* overwrite the existing stored message string with a
 		 * new, higher priority message */
@@ -127,7 +128,8 @@ void apol_tcl_set_info_string(apol_policy_t * p, const char *s)
  * @param argv This function takes one parameter, an apol_policy_path
  * object.
  */
-apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t * ppath)
+apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t * ppath, Tcl_Interp * interp)
 {
-	return apol_policy_create_from_policy_path(ppath, QPOL_POLICY_OPTION_NO_NEVERALLOWS, apol_tcl_route_handle_to_string, NULL);
+	return apol_policy_create_from_policy_path(ppath, QPOL_POLICY_OPTION_NO_NEVERALLOWS, apol_tcl_route_handle_to_string,
+						   interp);
 }

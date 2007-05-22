@@ -23,8 +23,8 @@ proc Apol_Analysis_transflow::open {} {
     variable vals
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
-    set vals(intermed:inc) $Apol_Types::typelist
-    set vals(intermed:inc_all) $Apol_Types::typelist
+    set vals(intermed:inc) [Apol_Types::getTypes]
+    set vals(intermed:inc_all) $vals(intermed:inc)
     set vals(classes:displayed) {}
     foreach class [Apol_Class_Perms::getClasses] {
         foreach perm [Apol_Class_Perms::getPermsForClass $class] {
@@ -225,7 +225,7 @@ proc Apol_Analysis_transflow::loadQuery {channel} {
         }
     }
     set vals(classes:displayed) {}
-    foreach class $Apol_Class_Perms::class_list {
+    foreach class [Apol_Class_Perms::getClasses] {
         set all_disabled 1
         foreach perm_key [array names vals perms:$class:*] {
             if {$vals($perm_key)} {
@@ -274,7 +274,7 @@ proc Apol_Analysis_transflow::reinitializeVals {} {
         find_more:limit 20
     }
     array unset vals perms:*
-    foreach class $Apol_Class_Perms::class_list {
+    foreach class [Apol_Class_Perms::getClasses] {
         foreach perm [apol_GetAllPermsForClass $class] {
             set vals(perms:$class:$perm) 1
         }

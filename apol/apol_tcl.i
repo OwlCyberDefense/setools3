@@ -53,7 +53,7 @@ extern void apol_tcl_clear_info_string(void);
 extern int apol_tcl_get_info_level(void);
 extern char *apol_tcl_get_info_string(void);
 extern void apol_tcl_set_info_string(apol_policy_t *p, const char *s);
-extern apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t *ppath);
+extern apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t *ppath, Tcl_Interp *interp);
 extern int msg_level;
 extern char *message;
 
@@ -77,11 +77,23 @@ static char *tcl_get_error(void)
 #define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
 %}
 
+/* Major hackery here to pass in the Tcl interpreter object as
+ * apol_policy_create_from_policy_path()'s callback argument.  This is
+ * needed so that the callback can properly update apol's progress
+ * dialog without deadlocking itself.
+ */
 %newobject wrap_apol_tcl_open_policy;
+%typemap (in) (const apol_policy_path_t *ppath, Tcl_Interp *interp) {
+  int res = SWIG_ConvertPtr($input,SWIG_as_voidptrptr(&$1), $1_descriptor, 0);
+  if (res) {
+    SWIG_exception_fail(SWIG_ArgError(res), "in method '" "apol_tcl_open_policy" "', argument " "1"" of type '" "apol_policy_path_t const *""'"); 
+  }
+  $2 = interp;
+};
 %rename(apol_tcl_open_policy) wrap_apol_tcl_open_policy;
 %inline %{
-	apol_policy_t *wrap_apol_tcl_open_policy(const apol_policy_path_t *ppath) {
-		apol_policy_t *p = apol_tcl_open_policy(ppath);
+	apol_policy_t *wrap_apol_tcl_open_policy(const apol_policy_path_t *ppath, Tcl_Interp *interp) {
+		apol_policy_t *p = apol_tcl_open_policy(ppath, interp);
 		if (p == NULL) {
 			SWIG_exception(SWIG_RuntimeError, "Could not open policy");
 		}
@@ -154,7 +166,6 @@ static char *tcl_get_error(void)
 	 */
 	void apol_tcl_avrule_sort(apol_policy_t *policy, apol_vector_t *v) {
 		if (policy != NULL && v != NULL) {
-			INFO(policy, "%s", "Sorting AV rules");
 			apol_vector_sort(v, avrule_sort, policy);
 		}
 	}
@@ -224,7 +235,6 @@ static char *tcl_get_error(void)
 	 */
 	void apol_tcl_terule_sort(apol_policy_t *policy, apol_vector_t *v) {
 		if (policy != NULL && v != NULL) {
-			INFO(policy, "%s", "Sorting TE rules");
 			apol_vector_sort(v, terule_sort, policy);
 		}
 	}

@@ -253,7 +253,7 @@ proc ApolTop::_create_toplevel {} {
 	}
 	"&Tools" {} tools 0 {
             {command "&Open Perm Map..." {tag_policy_open} "Open a permission map from file" {} -command ApolTop::_open_perm_map_from_file}
-            {command "Open &Default Perm Map" {tag_policy_open} "Open the default permission map" {} -command ApolTop::_open_perm_map_default}
+            {command "Open &Default Perm Map" {tag_policy_open} "Open the default permission map" {} -command ApolTop::openDefaultPermMap}
             {command "&Save Perm Map..." {tag_policy_open tag_perm_map_open} "Save the permission map to a file" {} -command ApolTop::_save_perm_map}
             {command "Save Perm Map &As..." {tag_policy_open tag_perm_map_open} "Save the permission map to a file" {} -command ApolTop::_save_perm_map_as}
             {command "Save Perm Map as D&efault" {tag_policy_open tag_perm_map_open} "Save the permission map to default file" {} -command ApolTop::_save_perm_map_default}
@@ -781,11 +781,15 @@ proc ApolTop::_open_perm_map_from_file {} {
     }
 }
 
-proc ApolTop::_open_perm_map_default {} {
+# Return non-zero if a permission map was found and opened, zero if
+# not.
+proc ApolTop::openDefaultPermMap {} {
     if {[Apol_Perms_Map::openDefaultPermMap]} {
         variable mainframe
         $mainframe setmenustate tag_perm_map_open normal
+        return 1
     }
+    return 0
 }
 
 proc ApolTop::_save_perm_map {} {

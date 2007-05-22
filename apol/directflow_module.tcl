@@ -123,6 +123,7 @@ proc Apol_Analysis_directflow::newAnalysis {} {
         return $rt
     }
     set results [_analyze]
+    set f [_createResultsDisplay]
     _renderResults $f $results
     $results -delete
     return {}
@@ -194,7 +195,7 @@ proc Apol_Analysis_directflow::loadQuery {channel} {
 
     set vals(classes:selected) {}
     foreach c $classes {
-        set i [lsearch $Apol_Class_Perms::class_list $c]
+        set i [lsearch [Apol_Class_Perms::getClasses] $c]
         if {$i >= 0} {
             lappend vals(classes:selected) $c
         }
@@ -274,7 +275,7 @@ proc Apol_Analysis_directflow::_selectClassesListbox {lb} {
 proc Apol_Analysis_directflow::_includeAll {lb} {
     variable vals
     $lb selection set 0 end
-    set vals(classes:selected) $Apol_Class_Perms::class_list
+    set vals(classes:selected) $vals(classes:all_classes)
 }
 
 proc Apol_Analysis_directflow::_excludeAll {lb} {
@@ -310,9 +311,10 @@ proc Apol_Analysis_directflow::_checkParams {} {
 
     # if a permap is not loaded then load the default permap
     if {![Apol_Perms_Map::is_pmap_loaded]} {
-        if {![Apol_Perms_Map::loadDefaultPermMap]} {
+        if {![ApolTop::openDefaultPermMap]} {
             return "This analysis requires that a permission map is loaded."
 	}
+        apol_tcl_clear_info_string
     }
 
     return {}  ;# all parameters passed, now ready to do search
@@ -324,7 +326,7 @@ proc Apol_Analysis_directflow::_analyze {} {
     if {$vals(classes:enable)} {
         foreach c $vals(classes:selected) {
             foreach p [Apol_Class_Perms::getPermsForClass $c] {
-                lappend classes [list $c $p]
+                lappend classes $c $p
             }
         }
     }
@@ -333,7 +335,18 @@ proc Apol_Analysis_directflow::_analyze {} {
     } else {
         set regexp {}
     }
-    apol_DirectInformationFlowAnalysis $vals(dir) $vals(type) $classes $regexp
+
+    set q [new_apol_infoflow_analysis_t]
+    $q set_mode $::ApolTop::policy $::APOL_INFOFLOW_MODE_DIRECT
+    $q set_dir $::ApolTop::policy $vals(dir)
+    $q set_type $::ApolTop::policy $vals(type)
+    foreach {c p} $classes {
+        $q append_class_perm $::ApolTop::policy $c $p
+    }
+    $q set_result_regex $::ApolTop::policy $regexp
+    set results [$q run $::ApolTop::policy]
+    $q -delete
+    return $results
 }
 
 proc Apol_Analysis_directflow::_analyzeMore {tree node} {
@@ -343,6 +356,7 @@ proc Apol_Analysis_directflow::_analyzeMore {tree node} {
         return {}
     }
     set g [lindex [$tree itemcget top -data] 0]
+    # FIX ME -- check if this returns a vector or graph + vector
     apol_DirectInformationFlowMore $g $new_start
 }
 
@@ -372,7 +386,6 @@ proc Apol_Analysis_directflow::_createResultsDisplay {} {
 
     $tree configure -selectcommand [list Apol_Analysis_directflow::_treeSelect $res]
     $tree configure -opencmd [list Apol_Analysis_directflow::_treeOpen $tree]
-    bind $tree <Destroy> [list Apol_Analysis_directflow::_treeDestroy $tree]
     return $f
 }
 
@@ -396,23 +409,16 @@ proc Apol_Analysis_directflow::_treeSelect {res tree node} {
 proc Apol_Analysis_directflow::_treeOpen {tree node} {
     foreach {is_expanded results} [$tree itemcget $node -data] {break}
     if {[string index $node 0] == "x" && !$is_expanded} {
-        ApolTop::setBusyCursor
-        update idletasks
-        set retval [catch {_analyzeMore $tree $node} new_results]
-        ApolTop::resetBusyCursor
-        if {$retval} {
-            tk_messageBox -icon error -type ok -title "Direct Information Flow" -message "Could not perform additional analysis:\n\n$new_results"
-        } else {
-            # mark this node as having been expanded
-            $tree itemconfigure $node -data [list 1 $results]
-            _createResultsNodes $tree $node $new_results 1
+        set new_results [Apol_Progress_Dialog::wait "Direct Information Flow Analysis" \
+                             "Performing Direct Information Flow Analysis..." \
+                             { _analyzeMore $tree $node}]
+        # mark this node as having been expanded
+        $tree itemconfigure $node -data [list 1 $results]
+        if {$new_results != {}} {
+            $new_results -acquire
+            _createResultsNodes $tree $node $new_results
         }
     }
-}
-
-proc Apol_Analysis_directflow::_treeDestroy {tree} {
-    set graph_handler [lindex [$tree itemcget top -data] 0]
-    apol_InformationFlowDestroy $graph_handler
 }
 
 proc Apol_Analysis_directflow::_clearResultsDisplay {f} {
@@ -420,8 +426,6 @@ proc Apol_Analysis_directflow::_clearResultsDisplay {f} {
 
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
-    set graph_handler [lindex [$tree itemcget top -data] 0]
-    apol_InformationFlowDestroy $graph_handler
     $tree delete [$tree nodes root]
     Apol_Widget::clearSearchResults $res
     Apol_Analysis::setResultTabCriteria [array get vals]
@@ -430,8 +434,10 @@ proc Apol_Analysis_directflow::_clearResultsDisplay {f} {
 proc Apol_Analysis_directflow::_renderResults {f results} {
     variable vals
 
-    set graph_handler [lindex $results 0]
-    set results_list [lrange $results 1 end]
+    set graph_handler [$results extract_graph]
+    $graph_handler -acquire  ;# let Tcl's GC destroy the graph
+    set results_list [$results extract_result_vector]
+    $results_list -acquire  ;# let Tcl's GC destroy the vector afterwards
 
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
@@ -440,10 +446,9 @@ proc Apol_Analysis_directflow::_renderResults {f results} {
     set top_text [_renderTopText]
     $tree itemconfigure top -data [list $graph_handler $top_text]
 
-    _createResultsNodes $tree top $results_list 1
+    _createResultsNodes $tree top $results_list
     $tree selection set top
     $tree opentree top 0
-    update idletasks
     $tree see top
 }
 
@@ -466,39 +471,56 @@ your selection above) its parent node.
 same, you cannot open the child.  This avoids cyclic analyses."
 }
 
-# create results to the given tree.  if do_expand is non-zero then
-# allow subbranches to be made.
-proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results do_expand} {
+# create results to the given tree.
+proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results} {
     set all_targets {}
-    foreach r $results {
-        foreach {flow_dir source target rules} $r {break}
-        if {!$do_expand} {
-            set target [lindex $results 0 2]
-        }
+    set info_list [infoflow_result_vector_to_list $results]
+    set results_processed 0
+    foreach r $info_list {
+        apol_tcl_set_info_string $::ApolTop::policy "Processing result $results_processed of [llength $info_list]"
+        set flow_dir [$r get_dir]
+        set source [[$r get_start_type] get_name $::ApolTop::qpolicy]
+        set target [[$r get_end_type] get_name $::ApolTop::qpolicy]
+        set step0 [new_apol_infoflow_step_t [[$r get_steps] get_element 0]]
+        set rules [$step0 get_rules]
+
         lappend all_targets $target
-        foreach r $rules {
-            set class [apol_RenderAVRuleClass $r]
+        foreach r [avrule_vector_to_list $rules] {
+            set class [[$r get_object_class $::ApolTop::qpolicy] get_name $::ApolTop::qpolicy]
             lappend classes($target) $class
             lappend classes($target:$class) $r
         }
         set dir($target:$flow_dir) 1
+        incr results_processed
     }
-    foreach t [lsort -uniq $all_targets] {
-        if {[info exists dir($t:both)] ||
-            ([info exists dir($t:in)] && [info exists dir($t:out)])} {
+
+    set all_targets [lsort -uniq $all_targets]
+    set results_processed 0
+    foreach t $all_targets {
+        apol_tcl_set_info_string $::ApolTop::policy "Displaying result $results_processed of [llength $all_targets]"
+        if {[info exists dir(${t}:${::APOL_INFOFLOW_BOTH})] ||
+            ([info exists dir(${t}:${::APOL_INFOFLOW_IN})] &&
+             [info exists dir(${t}:${::APOL_INFOFLOW_OUT})])} {
             set flow_dir "both"
-        } elseif {[info exists dir($t:in)]} {
+        } elseif {[info exists dir(${t}:${::APOL_INFOFLOW_IN})]} {
             set flow_dir "in"
         } else {
             set flow_dir "out"
         }
         set rules {}
         foreach c [lsort -uniq $classes($t)] {
-            lappend rules [list $c [lsort -uniq $classes($t:$c)]]
+            set v [new_apol_vector_t]
+            $v -acquire
+            foreach r [lsort -uniq $classes($t:$c)] {
+                $v append $r
+            }
+            apol_tcl_avrule_sort $::ApolTop::policy $v
+            lappend rules [list $c $v]
         }
         set data [list $flow_dir $rules]
         $tree insert end $parent_node x\#auto -text $t -drawcross allways \
             -data [list 0 $data]
+        incr results_processed
     }
 }
 
@@ -534,6 +556,6 @@ proc Apol_Analysis_directflow::_renderResultsDirectFlow {res tree node data} {
         foreach {class_name rules} $c {break}
         $res.tb insert end "      " {} \
             $class_name\n subtitle
-        Apol_Widget::appendSearchResultAVRules $res 12 $rules
+        Apol_Widget::appendSearchResultRules $res 12 $rules new_qpol_avrule_t
     }
 }

@@ -986,11 +986,11 @@ proc Apol_TE::_search_terules {whichButton} {
             }
 
             if {![ApolTop::is_capable "syntactic rules"]} {
-                apol_tcl_avrule_sort $::ApolTop::policy $avresults
-                apol_tcl_terule_sort $::ApolTop::policy $teresults
                 apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_avresults AV rule results"
+                apol_tcl_terule_sort $::ApolTop::policy $teresults
                 set numAVs [Apol_Widget::appendSearchResultRules $sr 0 $avresults new_qpol_avrule_t]
                 apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_teresults TE rule results"
+                apol_tcl_avrule_sort $::ApolTop::policy $avresults
                 set numTEs [Apol_Widget::appendSearchResultRules $sr 0 $teresults new_qpol_terule_t]
             } else {
                 apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_avresults AV rule results"

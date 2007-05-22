@@ -151,6 +151,15 @@ proc genfscon_vector_to_list {v} {
     return $list
 }
 
+proc infoflow_result_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set a [new_apol_infoflow_result_t [$v get_element $i]]
+        lappend list $a
+    }
+    return $list
+}
+
 proc isid_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {

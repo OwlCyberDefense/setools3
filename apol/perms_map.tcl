@@ -76,8 +76,14 @@ proc Apol_Perms_Map::openDefaultPermMap {} {
             # finally try fallback one
             set pmap_name [apol_file_find_path apol_perm_mapping]
             if {$pmap_name == {}} {
-                 tk_messageBox -icon error -type ok -title "Permission Maps" \
-                     -message "Could not locate system default permission map.  You must explicitly load a permission map from file."
+                set message "Could not locate system default permission map.  You must explicitly load a permission map from file."
+                if {[Apol_Progress_Dialog::is_waiting]} {
+                    error $message
+                }
+                else {
+                    tk_messageBox -icon error -type ok -title "Permission Maps" \
+                        -message $message
+                }
                 return 0
             }
         }
@@ -121,8 +127,12 @@ proc Apol_Perms_Map::is_pmap_loaded {} {
 
 proc Apol_Perms_Map::_loadPermMap {filename shortname saveable} {
     if {[catch {$::ApolTop::policy open_permmap $filename} err]} {
-        tk_messageBox -icon error -type ok -title "Permission Maps" -message $err
-        return 0
+        if {[Apol_Progress_Dialog::is_waiting]} {
+            error $err
+        } else {
+            tk_messageBox -icon error -type ok -title "Permission Maps" -message $err
+            return 0
+        }
     }
     variable opts
     set opts(filename) $filename
@@ -137,12 +147,16 @@ proc Apol_Perms_Map::_loadPermMap {filename shortname saveable} {
             lappend err "(plus $len more lines)"
             set err [join $err "\n"]
         }
-        set message "There were warnings while opening the permission map:"
-        tk_messageBox -icon warning -type ok -title "Permission Maps" \
-            -message "$message\n\n$err"
+        if {![Apol_Progress_Dialog::is_waiting]} {
+            set message "There were warnings while opening the permission map:"
+            tk_messageBox -icon warning -type ok -title "Permission Maps" \
+                -message "$message\n\n$err"
+        }
     } else {
-        tk_messageBox -icon info -type ok -title "Permission Maps" \
-            -message "Permission map successfully loaded."
+        if {![Apol_Progress_Dialog::is_waiting]} {
+            tk_messageBox -icon info -type ok -title "Permission Maps" \
+                -message "Permission map successfully loaded."
+        }
     }
     variable dialog
     if {[winfo exists $dialog]} {

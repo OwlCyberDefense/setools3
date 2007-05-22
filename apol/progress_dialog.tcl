@@ -17,7 +17,7 @@ namespace eval Apol_Progress_Dialog {
     variable text
     variable prev_text
     variable val
-    variable after_id
+    variable waiting 0
 }
 
 # Create a dialog to display messages while some library process is
@@ -43,11 +43,11 @@ proc Apol_Progress_Dialog::wait {title initialtext lambda} {
     set orig_cursor [. cget -cursor]
     . configure -cursor watch
     update idletasks
-    variable after_id [after idle Apol_Progress_Dialog::_do_idle]
 
     apol_tcl_clear_info_string
+    variable waiting 1
     set catchval [catch {uplevel 1 $lambda} retval]
-    after cancel $after_id
+    set waiting 0
 
     . configure -cursor $orig_cursor
     destroy .apol_progress
@@ -55,7 +55,12 @@ proc Apol_Progress_Dialog::wait {title initialtext lambda} {
     return -code $catchval $retval
 }
 
-proc Apol_Progress_Dialog::_do_idle {} {
+proc Apol_Progress_Dialog::is_waiting {} {
+    variable waiting
+    set waiting
+}
+
+proc Apol_Progress_Dialog::_update_message {} {
     variable text
     variable prev_text
     if {[set infoString [apol_tcl_get_info_string]] != $prev_text} {
@@ -63,5 +68,4 @@ proc Apol_Progress_Dialog::_do_idle {} {
         update idletasks
         set prev_text $infoString
     }
-    variable after_id [after idle Apol_Progress_Dialog::_do_idle]
 }
