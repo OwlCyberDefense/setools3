@@ -373,8 +373,7 @@ static int qpol_policy_add_cond_rule_traceback(qpol_policy_t * policy)
 		rules |= QPOL_RULE_NEVERALLOW;
 
 	/* mark all unconditional rules as enabled */
-	if (qpol_policy_get_avrule_iter
-	    (policy, rules, &iter))
+	if (qpol_policy_get_avrule_iter(policy, rules, &iter))
 		return STATUS_ERR;
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, (void **)&rule)) {

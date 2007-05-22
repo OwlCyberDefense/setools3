@@ -59,7 +59,7 @@ extern "C"
 /**
  * @deprecated Use apol_policy_build_domain_trans_table().
  */
-	extern int apol_policy_domain_trans_table_build(apol_policy_t * policy) __attribute__((deprecated));
+	extern int apol_policy_domain_trans_table_build(apol_policy_t * policy) __attribute__ ((deprecated));
 
 /**
  *  Reset the state of the domain transition table in a policy.  This
@@ -78,7 +78,7 @@ extern "C"
 /**
  * @deprecated Use apol_policy_reset_domain_trans_table().
  */
-	extern void apol_domain_trans_table_reset(apol_policy_t * policy) __attribute__((deprecated));
+	extern void apol_domain_trans_table_reset(apol_policy_t * policy) __attribute__ ((deprecated));
 
 /*************** functions to do domain transition anslysis ***************/
 

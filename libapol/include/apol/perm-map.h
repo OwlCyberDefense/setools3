@@ -64,7 +64,7 @@ extern "C"
 /**
  * @deprecated Use apol_policy_open_permmap().
  */
-	extern int apol_permmap_load(apol_policy_t * p, const char *filename) __attribute__((deprecated));
+	extern int apol_permmap_load(apol_policy_t * p, const char *filename) __attribute__ ((deprecated));
 
 /**
  * Write the contents of permission map to a file.  Any existing file
@@ -80,7 +80,7 @@ extern "C"
 /**
  * @deprecated Use apol_policy_save_permmap().
  */
-	extern int apol_permmap_save(apol_policy_t * p, const char *filename) __attribute__((deprecated));
+	extern int apol_permmap_save(apol_policy_t * p, const char *filename) __attribute__ ((deprecated));
 
 /**
  * Given a class and permission name, look up that permission mapping
@@ -103,7 +103,8 @@ extern "C"
 /**
  * @deprecated Use apol_policy_get_permmap().
  */
-	extern int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight) __attribute__((deprecated));
+	extern int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
+		__attribute__ ((deprecated));
 
 /**
  * Given a class and permission name, set that permission's map and
@@ -125,7 +126,8 @@ extern "C"
 /**
  * @deprecated Use apol_policy_set_permmap().
  */
-	extern int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight) __attribute__((deprecated));
+	extern int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
+		__attribute__ ((deprecated));
 
 #ifdef	__cplusplus
 }

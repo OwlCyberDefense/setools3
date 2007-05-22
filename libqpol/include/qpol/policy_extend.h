@@ -46,7 +46,7 @@ extern "C"
  *  if this call fails.
  *  @deprecated It is nolonger necessary to call this function separately.
  */
-	extern int qpol_policy_extend(qpol_policy_t * policy) __attribute__((deprecated));
+	extern int qpol_policy_extend(qpol_policy_t * policy) __attribute__ ((deprecated));
 
 /**
  *  Build the table of syntactic rules for a policy.
