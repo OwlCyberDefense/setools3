@@ -102,4 +102,4 @@ distclean-local:
 	-rm -r config.tcl
 
 indent:
-	find $(top_src_dir) -name '*.[ch]' ! -wholename '*sqlite*' -type f -exec indent $(INDENT_OPTS) '{}' \;
+	find $(top_src_dir) -regex '.*\.[ch][ch]?' ! -wholename '*sqlite*' -type f -exec indent $(INDENT_OPTS) '{}' \;
