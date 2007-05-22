@@ -51,8 +51,8 @@ extern "C"
  * that does not exist within the policy) then generate a warning
  * string and send it to the error handler stored within the policy.
  *
- * If a permission map was already loaded, then it will be first
- * destroyed.
+ * If a permission map was already loaded, then the existing one will
+ * be destroyed.
  *
  * @param p Policy to which store permission map.
  * @param filename Name of file containing permission map.

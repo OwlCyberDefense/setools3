@@ -254,7 +254,10 @@ proc ApolTop::_create_toplevel {} {
 	"&Tools" {} tools 0 {
             {command "&Open Perm Map..." {tag_policy_open} "Open a permission map from file" {} -command ApolTop::_open_perm_map_from_file}
             {command "Open &Default Perm Map" {tag_policy_open} "Open the default permission map" {} -command ApolTop::_open_perm_map_default}
-            {command "&Modify Perm Map..." {tag_policy_open tag_perm_map_open} "Edit currently loaded permission map" {} -command Apol_Perms_Map::editPermMappings}
+            {command "&Save Perm Map..." {tag_policy_open tag_perm_map_open} "Save the permission map to a file" {} -command ApolTop::_save_perm_map}
+            {command "Save Perm Map &As..." {tag_policy_open tag_perm_map_open} "Save the permission map to a file" {} -command ApolTop::_save_perm_map_as}
+            {command "Save Perm Map as D&efault" {tag_policy_open tag_perm_map_open} "Save the permission map to default file" {} -command ApolTop::_save_perm_map_default}
+            {command "&View Perm Map..." {tag_policy_open tag_perm_map_open} "Edit currently loaded permission map" {} -command Apol_Perms_Map::showPermMappings}
         }
 	"&Help" {} helpmenu 0 {
 	    {command "&General Help" {} "Show help on using apol" {} -command {ApolTop::_show_file Help apol_help.txt}}
@@ -772,17 +775,29 @@ proc ApolTop::_show_policy_summary {} {
 }
 
 proc ApolTop::_open_perm_map_from_file {} {
-    if {[Apol_Perms_Map::loadPermMapFromFile]} {
+    if {[Apol_Perms_Map::openPermMapFromFile]} {
         variable mainframe
         $mainframe setmenustate tag_perm_map_open normal
     }
 }
 
 proc ApolTop::_open_perm_map_default {} {
-    if {[Apol_Perms_Map::loadDefaultPermMap]} {
+    if {[Apol_Perms_Map::openDefaultPermMap]} {
         variable mainframe
         $mainframe setmenustate tag_perm_map_open normal
     }
+}
+
+proc ApolTop::_save_perm_map {} {
+    Apol_Perms_Map::savePermMap
+}
+
+proc ApolTop::_save_perm_map_as {} {
+    Apol_Perms_Map::savePermMapAs
+}
+
+proc ApolTop::_save_perm_map_default {} {
+    Apol_Perms_Map::saveDefaultPermMap
 }
 
 proc ApolTop::_show_file {title file_name} {

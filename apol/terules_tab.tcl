@@ -929,6 +929,8 @@ proc Apol_TE::_search_terules {whichButton} {
         $avq set_all_perms $::ApolTop::policy 1
     }
 
+    $avq set_rules $::ApolTop::policy $avrule_selection
+    $teq set_rules $::ApolTop::policy $terule_selection
     $avq set_enabled $::ApolTop::policy $vals(oo:enabled)
     $teq set_enabled $::ApolTop::policy $vals(oo:enabled)
     $avq set_regex $::ApolTop::policy $vals(oo:regexp)

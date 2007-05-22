@@ -19,21 +19,80 @@ namespace eval Apol_Analysis_directflow {
     Apol_Analysis::registerAnalysis "Apol_Analysis_directflow" "Direct Information Flow"
 }
 
+proc Apol_Analysis_directflow::create {options_frame} {
+    variable vals
+    variable widgets
+
+    _reinitializeVals
+
+    set dir_tf [TitleFrame $options_frame.mode -text "Direction"]
+    pack $dir_tf -side left -padx 2 -pady 2 -expand 0 -fill y
+    set dir_in [radiobutton [$dir_tf getframe].in -text In \
+                    -value $::APOL_INFOFLOW_IN \
+                    -variable Apol_Analysis_directflow::vals(dir)]
+    set dir_out [radiobutton [$dir_tf getframe].out -text Out \
+                     -value $::APOL_INFOFLOW_OUT \
+                     -variable Apol_Analysis_directflow::vals(dir)]
+    set dir_either [radiobutton [$dir_tf getframe].either -text Either \
+                        -value $::APOL_INFOFLOW_EITHER \
+                        -variable Apol_Analysis_directflow::vals(dir)]
+    set dir_both [radiobutton [$dir_tf getframe].both -text Both \
+                      -value $::APOL_INFOFLOW_BOTH \
+                      -variable Apol_Analysis_directflow::vals(dir)]
+    pack $dir_in $dir_out $dir_either $dir_both -anchor w
+
+    set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
+    pack $req_tf -side left -padx 2 -pady 2 -expand 0 -fill y
+    set l [label [$req_tf getframe].l -text "Starting type"]
+    pack $l -anchor w
+    set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
+    pack $widgets(type)
+
+    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
+    pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
+    set class_f [frame [$filter_tf getframe].class]
+    pack $class_f -side left -anchor nw
+    set class_enable [checkbutton $class_f.enable -text "Filter by object class" \
+                          -variable Apol_Analysis_directflow::vals(classes:enable)]
+    pack $class_enable -anchor w
+    set widgets(classes) [Apol_Widget::makeScrolledListbox $class_f.classes \
+                              -height 6 -width 24 \
+                              -listvar Apol_Analysis_directflow::vals(classes:all_classes) \
+                              -selectmode multiple -exportselection 0]
+    set classes_lb [Apol_Widget::getScrolledListbox $widgets(classes)]
+    bind $classes_lb <<ListboxSelect>> \
+        [list Apol_Analysis_directflow::_selectClassesListbox $classes_lb]
+    pack $widgets(classes) -padx 4 -expand 0 -fill both
+    trace add variable Apol_Analysis_directflow::vals(classes:enable) write \
+        Apol_Analysis_directflow::_toggleClasses
+    Apol_Widget::setScrolledListboxState $widgets(classes) disabled
+    set classes_bb [ButtonBox $class_f.bb -homogeneous 1 -spacing 4]
+    $classes_bb add -text "Include All" \
+        -command [list Apol_Analysis_directflow::_includeAll $classes_lb]
+    $classes_bb add -text "Exclude All"  \
+        -command [list Apol_Analysis_directflow::_excludeAll $classes_lb]
+    pack $classes_bb -pady 4
+    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
+    $widgets(regexp).cb configure -text "Filter result types using regular expression"
+    pack $widgets(regexp) -side left -anchor nw -padx 8
+}
+
 proc Apol_Analysis_directflow::open {} {
     variable vals
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
-    set vals(classes:selected) $Apol_Class_Perms::class_list
+    set vals(classes:all_classes) [Apol_Class_Perms::getClasses]
+    set vals(classes:selected) $vals(classes:all_classes)
     Apol_Widget::setScrolledListboxState $widgets(classes) normal
     set classes_lb [Apol_Widget::getScrolledListbox $widgets(classes)]
     $classes_lb selection set 0 end
-    toggleClasses {} {} {}
+    _toggleClasses {} {} {}
 }
 
 proc Apol_Analysis_directflow::close {} {
     variable widgets
-    reinitializeVals
-    reinitializeWidgets
+    _reinitializeVals
+    _reinitializeWidgets
     Apol_Widget::clearTypeCombobox $widgets(type)
 }
 
@@ -59,99 +118,37 @@ same, the child cannot be opened.  This avoids cyclic analyses.
 from the help menu."
 }
 
-proc Apol_Analysis_directflow::create {options_frame} {
-    variable vals
-    variable widgets
-
-    reinitializeVals
-
-    set dir_tf [TitleFrame $options_frame.mode -text "Direction"]
-    pack $dir_tf -side left -padx 2 -pady 2 -expand 0 -fill y
-    set dir_in [radiobutton [$dir_tf getframe].in -text In -value in \
-                    -variable Apol_Analysis_directflow::vals(dir)]
-    set dir_out [radiobutton [$dir_tf getframe].out -text Out -value out \
-                     -variable Apol_Analysis_directflow::vals(dir)]
-    set dir_either [radiobutton [$dir_tf getframe].either -text Either -value either \
-                        -variable Apol_Analysis_directflow::vals(dir)]
-    set dir_both [radiobutton [$dir_tf getframe].both -text Both -value both \
-                         -variable Apol_Analysis_directflow::vals(dir)]
-    pack $dir_in $dir_out $dir_either $dir_both -anchor w
-
-    set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
-    pack $req_tf -side left -padx 2 -pady 2 -expand 0 -fill y
-    set l [label [$req_tf getframe].l -text "Starting type"]
-    pack $l -anchor w
-    set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
-    pack $widgets(type)
-
-    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
-    pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
-    set class_f [frame [$filter_tf getframe].class]
-    pack $class_f -side left -anchor nw
-    set class_enable [checkbutton $class_f.enable -text "Filter by object class" \
-                          -variable Apol_Analysis_directflow::vals(classes:enable)]
-    pack $class_enable -anchor w
-    set widgets(classes) [Apol_Widget::makeScrolledListbox $class_f.classes \
-                              -height 6 -width 24 \
-                              -listvar Apol_Class_Perms::class_list \
-                              -selectmode multiple -exportselection 0]
-    set classes_lb [Apol_Widget::getScrolledListbox $widgets(classes)]
-    bind $classes_lb <<ListboxSelect>> \
-        [list Apol_Analysis_directflow::selectClassesListbox $classes_lb]
-    pack $widgets(classes) -padx 4 -expand 0 -fill both
-    trace add variable Apol_Analysis_directflow::vals(classes:enable) write \
-        Apol_Analysis_directflow::toggleClasses
-    Apol_Widget::setScrolledListboxState $widgets(classes) disabled
-    set classes_bb [ButtonBox $class_f.bb -homogeneous 1 -spacing 4]
-    $classes_bb add -text "Include All" \
-        -command [list Apol_Analysis_directflow::includeAll $classes_lb]
-    $classes_bb add -text "Exclude All"  \
-        -command [list Apol_Analysis_directflow::excludeAll $classes_lb]
-    pack $classes_bb -pady 4
-    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
-    $widgets(regexp).cb configure -text "Filter result types using regular expression"
-    pack $widgets(regexp) -side left -anchor nw -padx 8
-}
-
 proc Apol_Analysis_directflow::newAnalysis {} {
-    if {[set rt [checkParams]] != {}} {
+    if {[set rt [_checkParams]] != {}} {
         return $rt
     }
-    if {[catch {analyze} results]} {
-        return $results
-    }
-    set f [createResultsDisplay]
-    if {[catch {renderResults $f $results} rt]} {
-        Apol_Analysis::deleteCurrentResults
-        return $rt
-    }
+    set results [_analyze]
+    _renderResults $f $results
+    $results -delete
     return {}
 }
 
 proc Apol_Analysis_directflow::updateAnalysis {f} {
-    if {[set rt [checkParams]] != {}} {
+    if {[set rt [_checkParams]] != {}} {
         return $rt
     }
-    if {[catch {analyze} results]} {
-        return $results
-    }
-    clearResultsDisplay $f
-    if {[catch {renderResults $f $results} rt]} {
-        return $rt
-    }
+    set results [_analyze]
+    _clearResultsDisplay $f
+    _renderResults $f $results
+    $results -delete
     return {}
 }
 
 proc Apol_Analysis_directflow::reset {} {
-    reinitializeVals
-    reinitializeWidgets
+    _reinitializeVals
+    _reinitializeWidgets
 }
 
 proc Apol_Analysis_directflow::switchTab {query_options} {
     variable vals
     variable widgets
     array set vals $query_options
-    reinitializeWidgets
+    _reinitializeWidgets
 }
 
 proc Apol_Analysis_directflow::saveQuery {channel} {
@@ -203,7 +200,7 @@ proc Apol_Analysis_directflow::loadQuery {channel} {
         }
     }
     set vals(classes:selected) [lsort $vals(classes:selected)]
-    reinitializeWidgets
+    _reinitializeWidgets
 }
 
 proc Apol_Analysis_directflow::getTextWidget {tab} {
@@ -212,12 +209,13 @@ proc Apol_Analysis_directflow::getTextWidget {tab} {
 
 #################### private functions below ####################
 
-proc Apol_Analysis_directflow::reinitializeVals {} {
+proc Apol_Analysis_directflow::_reinitializeVals {} {
     variable vals
+    set vals(dir) $::APOL_INFOFLOW_IN
     array set vals {
-        dir in
         type {}  type:attrib {}
 
+        classes:all_classes {}
         classes:enable 0
         classes:selected {}
 
@@ -226,7 +224,7 @@ proc Apol_Analysis_directflow::reinitializeVals {} {
     }
 }
 
-proc Apol_Analysis_directflow::reinitializeWidgets {} {
+proc Apol_Analysis_directflow::_reinitializeWidgets {} {
     variable vals
     variable widgets
 
@@ -241,13 +239,13 @@ proc Apol_Analysis_directflow::reinitializeWidgets {} {
     set classes_lb [Apol_Widget::getScrolledListbox $widgets(classes)]
     $classes_lb selection clear 0 end
     foreach c $vals(classes:selected) {
-        set i [lsearch $Apol_Class_Perms::class_list $c]
+        set i [lsearch $vals(classes:all_classes) $c]
         $classes_lb selection set $i $i
     }
-    toggleClasses {} {} {}
+    _toggleClasses {} {} {}
 }
 
-proc Apol_Analysis_directflow::toggleClasses {name1 name2 op} {
+proc Apol_Analysis_directflow::_toggleClasses {name1 name2 op} {
     variable vals
     variable widgets
     if {$vals(classes:enable)} {
@@ -257,7 +255,7 @@ proc Apol_Analysis_directflow::toggleClasses {name1 name2 op} {
     }
 }
 
-proc Apol_Analysis_directflow::selectClassesListbox {lb} {
+proc Apol_Analysis_directflow::_selectClassesListbox {lb} {
     variable vals
     for {set i 0} {$i < [$lb index end]} {incr i} {
         set t [$lb get $i]
@@ -273,13 +271,13 @@ proc Apol_Analysis_directflow::selectClassesListbox {lb} {
     focus $lb
 }
 
-proc Apol_Analysis_directflow::includeAll {lb} {
+proc Apol_Analysis_directflow::_includeAll {lb} {
     variable vals
     $lb selection set 0 end
     set vals(classes:selected) $Apol_Class_Perms::class_list
 }
 
-proc Apol_Analysis_directflow::excludeAll {lb} {
+proc Apol_Analysis_directflow::_excludeAll {lb} {
     variable vals
     $lb selection clear 0 end
     set vals(classes:selected) {}
@@ -287,11 +285,11 @@ proc Apol_Analysis_directflow::excludeAll {lb} {
 
 #################### functions that do analyses ####################
 
-proc Apol_Analysis_directflow::checkParams {} {
+proc Apol_Analysis_directflow::_checkParams {} {
     variable vals
     variable widgets
     if {![ApolTop::is_policy_open]} {
-        return "No current policy file is opened!"
+        return "No current policy file is opened."
     }
     set type [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(type)]
     if {[lindex $type 0] == {}} {
@@ -320,7 +318,7 @@ proc Apol_Analysis_directflow::checkParams {} {
     return {}  ;# all parameters passed, now ready to do search
 }
 
-proc Apol_Analysis_directflow::analyze {} {
+proc Apol_Analysis_directflow::_analyze {} {
     variable vals
     set classes {}
     if {$vals(classes:enable)} {
@@ -338,7 +336,7 @@ proc Apol_Analysis_directflow::analyze {} {
     apol_DirectInformationFlowAnalysis $vals(dir) $vals(type) $classes $regexp
 }
 
-proc Apol_Analysis_directflow::analyzeMore {tree node} {
+proc Apol_Analysis_directflow::_analyzeMore {tree node} {
     # disallow more analysis if this node is the same as its parent
     set new_start [$tree itemcget $node -text]
     if {[$tree itemcget [$tree parent $node] -text] == $new_start} {
@@ -350,7 +348,7 @@ proc Apol_Analysis_directflow::analyzeMore {tree node} {
 
 ################# functions that control analysis output #################
 
-proc Apol_Analysis_directflow::createResultsDisplay {} {
+proc Apol_Analysis_directflow::_createResultsDisplay {} {
     variable vals
 
     set f [Apol_Analysis::createResultTab "Direct Flow" [array get vals]]
@@ -372,19 +370,19 @@ proc Apol_Analysis_directflow::createResultsDisplay {} {
     $res.tb tag configure subtitle_dir -foreground blue -font {Helvetica 10 bold}
     pack $res -expand 1 -fill both
 
-    $tree configure -selectcommand [list Apol_Analysis_directflow::treeSelect $res]
-    $tree configure -opencmd [list Apol_Analysis_directflow::treeOpen $tree]
-    bind $tree <Destroy> [list Apol_Analysis_directflow::treeDestroy $tree]
+    $tree configure -selectcommand [list Apol_Analysis_directflow::_treeSelect $res]
+    $tree configure -opencmd [list Apol_Analysis_directflow::_treeOpen $tree]
+    bind $tree <Destroy> [list Apol_Analysis_directflow::_treeDestroy $tree]
     return $f
 }
 
-proc Apol_Analysis_directflow::treeSelect {res tree node} {
+proc Apol_Analysis_directflow::_treeSelect {res tree node} {
     if {$node != {}} {
         $res.tb configure -state normal
         $res.tb delete 0.0 end
         set data [$tree itemcget $node -data]
         if {[string index $node 0] == "x"} {
-            renderResultsDirectFlow $res $tree $node [lindex $data 1]
+            _renderResultsDirectFlow $res $tree $node [lindex $data 1]
         } else {
             # an informational node, whose data has already been rendered
             eval $res.tb insert end [lindex $data 1]
@@ -395,29 +393,29 @@ proc Apol_Analysis_directflow::treeSelect {res tree node} {
 
 # perform additional direct infoflows if this node has not been
 # analyzed yet
-proc Apol_Analysis_directflow::treeOpen {tree node} {
+proc Apol_Analysis_directflow::_treeOpen {tree node} {
     foreach {is_expanded results} [$tree itemcget $node -data] {break}
     if {[string index $node 0] == "x" && !$is_expanded} {
         ApolTop::setBusyCursor
         update idletasks
-        set retval [catch {analyzeMore $tree $node} new_results]
+        set retval [catch {_analyzeMore $tree $node} new_results]
         ApolTop::resetBusyCursor
         if {$retval} {
             tk_messageBox -icon error -type ok -title "Direct Information Flow" -message "Could not perform additional analysis:\n\n$new_results"
         } else {
             # mark this node as having been expanded
             $tree itemconfigure $node -data [list 1 $results]
-            createResultsNodes $tree $node $new_results 1
+            _createResultsNodes $tree $node $new_results 1
         }
     }
 }
 
-proc Apol_Analysis_directflow::treeDestroy {tree} {
+proc Apol_Analysis_directflow::_treeDestroy {tree} {
     set graph_handler [lindex [$tree itemcget top -data] 0]
     apol_InformationFlowDestroy $graph_handler
 }
 
-proc Apol_Analysis_directflow::clearResultsDisplay {f} {
+proc Apol_Analysis_directflow::_clearResultsDisplay {f} {
     variable vals
 
     set tree [[$f.left getframe].sw getframe].tree
@@ -429,7 +427,7 @@ proc Apol_Analysis_directflow::clearResultsDisplay {f} {
     Apol_Analysis::setResultTabCriteria [array get vals]
 }
 
-proc Apol_Analysis_directflow::renderResults {f results} {
+proc Apol_Analysis_directflow::_renderResults {f results} {
     variable vals
 
     set graph_handler [lindex $results 0]
@@ -439,17 +437,17 @@ proc Apol_Analysis_directflow::renderResults {f results} {
     set res [$f.right getframe].res
 
     $tree insert end root top -text $vals(type) -open 1 -drawcross auto
-    set top_text [renderTopText]
+    set top_text [_renderTopText]
     $tree itemconfigure top -data [list $graph_handler $top_text]
 
-    createResultsNodes $tree top $results_list 1
+    _createResultsNodes $tree top $results_list 1
     $tree selection set top
     $tree opentree top 0
     update idletasks
     $tree see top
 }
 
-proc Apol_Analysis_directflow::renderTopText {} {
+proc Apol_Analysis_directflow::_renderTopText {} {
     variable vals
 
     set top_text [list "Direct Information Flow Analysis: Starting type: " title]
@@ -470,7 +468,7 @@ same, you cannot open the child.  This avoids cyclic analyses."
 
 # create results to the given tree.  if do_expand is non-zero then
 # allow subbranches to be made.
-proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results do_expand} {
+proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results do_expand} {
     set all_targets {}
     foreach r $results {
         foreach {flow_dir source target rules} $r {break}
@@ -504,7 +502,7 @@ proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results do_e
     }
 }
 
-proc Apol_Analysis_directflow::renderResultsDirectFlow {res tree node data} {
+proc Apol_Analysis_directflow::_renderResultsDirectFlow {res tree node data} {
     set parent_name [$tree itemcget [$tree parent $node] -text]
     set name [$tree itemcget $node -text]
     foreach {flow_dir classes} $data {break}

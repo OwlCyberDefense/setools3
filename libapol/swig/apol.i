@@ -253,6 +253,8 @@ const char *apol_fs_use_behavior_to_str(uint32_t behavior);
 int apol_str_to_fs_use_behavior(const char *behavior);
 const char *apol_rule_type_to_str(uint32_t rule_type);
 const char *apol_cond_expr_type_to_str(uint32_t expr_type);
+%newobject apol_file_find_path;
+char *apol_file_find_path(const char *file_name);
 
 /* directly include and wrap */
 %include "apol/render.h"
@@ -542,7 +544,7 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return dir;
 	};
-	void permmap_set(char *class_name, char *perm_name, int direction, int weight) {
+	void set_permmap(char *class_name, char *perm_name, int direction, int weight) {
 		if (apol_policy_set_permmap(self, class_name, perm_name, direction, weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set permission mapping");
 		}
@@ -2192,6 +2194,12 @@ typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
 int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * start_dom, qpol_type_t * ep_type,	qpol_type_t * end_dom);
 
 /* apol infoflow analysis */
+#define APOL_INFOFLOW_MODE_DIRECT  0x01
+#define APOL_INFOFLOW_MODE_TRANS   0x02
+#define APOL_INFOFLOW_IN      0x01
+#define APOL_INFOFLOW_OUT     0x02
+#define APOL_INFOFLOW_BOTH    (APOL_INFOFLOW_IN|APOL_INFOFLOW_OUT)
+#define APOL_INFOFLOW_EITHER  0x04
 %{
 	typedef struct apol_infoflow {
 		apol_infoflow_graph_t *g;

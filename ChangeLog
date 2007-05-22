@@ -1,3 +1,9 @@
+2007-05-22  J. Tang  <jtang@tresys.com>
+
+	* Added infoflow defines to apol.i.  Added apol_file_find_path()
+	to apol.i.  They were inadvertently missing from the interface
+	file.
+
 2007-05-22  J. Mowery  <jmowery@tresys.com>
 
 	* Renamed apol_permmap_*() to apol_policy_*_permmap() to
@@ -7,7 +13,7 @@
 
 	* Renamed apol_policy_domain_trans_table_build() and
 	  apol_domain_trans_table_reset() to apol_policy_build_domain_trans_table()
-	  and apol_polciy_reset_domain_trans_table() respectively.  This change 
+	  and apol_polciy_reset_domain_trans_table() respectively.  This change
 	  reflects the correct namespace for these operations.
 
 2007-05-18  J. Mowery  <jmowery@tresys.com>

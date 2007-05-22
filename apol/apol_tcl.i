@@ -29,6 +29,8 @@
 %import qpol.i
 
 %{
+#include <config.h>
+
 #include <apol/avrule-query.h>
 #include <apol/terule-query.h>
 #include <apol/policy.h>
@@ -85,7 +87,7 @@ static char *tcl_get_error(void)
 		}
 	fail:
 		return p;
-	};
+	}
 
 	static int avrule_sort(const void *a, const void *b, void *arg) {
 		qpol_avrule_t *r1 = (qpol_avrule_t *) a;
@@ -226,6 +228,28 @@ static char *tcl_get_error(void)
 			apol_vector_sort(v, terule_sort, policy);
 		}
 	}
+
+	/**
+	 * Returns the policy version number for the currently opened
+	 * policy.  If the policy is modular, return the maximum
+	 * allowed policy as per libsepol.
+	 */
+	unsigned int apol_tcl_get_policy_version(apol_policy_t *policy) {
+		if (policy == NULL) {
+			SWIG_exception(SWIG_RuntimeError, "No policy opened");
+		}
+		if (apol_policy_get_policy_type(policy) != QPOL_POLICY_MODULE_BINARY) {
+			unsigned int version;
+			if (qpol_policy_get_policy_version(apol_policy_get_qpol(policy), &version) < 0) {
+				SWIG_exception(SWIG_RuntimeError, "Could not get policy version");
+			}
+			return version;
+		} else {
+			return (unsigned int) SEPOL_POLICY_VERSION_MAX;
+		}
+	fail:
+		return 0;
+	}
 %}
 
 %rename(apol_tcl_rule_render) apol_avrule_render;
@@ -239,6 +263,7 @@ extern char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *ru
 
 void apol_tcl_avrule_sort(apol_policy_t *policy, apol_vector_t *v);
 void apol_tcl_terule_sort(apol_policy_t *policy, apol_vector_t *v);
+unsigned int apol_tcl_get_policy_version(apol_policy_t *policy);
 
 // disable the exception handler, otherwise it will delete the error
 // message when this function gets called
