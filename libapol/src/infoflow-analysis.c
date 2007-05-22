@@ -549,7 +549,7 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t * p, apol_infoflow_gr
 		if (qpol_iterator_get_item(perm_iter, (void **)&perm_name) < 0) {
 			goto cleanup;
 		}
-		if (apol_permmap_get(p, obj_class_name, perm_name, &perm_map, &perm_weight) < 0) {
+		if (apol_policy_get_permmap(p, obj_class_name, perm_name, &perm_map, &perm_weight) < 0) {
 			goto cleanup;
 		}
 		free(perm_name);

@@ -512,15 +512,15 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return str;
 	};
-	void load_permmap(char *path) {
-		if (apol_permmap_load(self, path) < 0) {
+	void open_permmap(char *path) {
+		if (apol_policy_open_permmap(self, path) < 0) {
 			SWIG_exception(SWIG_RuntimeError, "Error loading permission map");
 		}
 	fail:
 		return;
 	};
 	void save_permmap(char *path) {
-		if (apol_permmap_save(self, path)) {
+		if (apol_policy_save_permmap(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not save permission map");
 		}
 	fail:
@@ -528,7 +528,7 @@ typedef struct apol_policy {} apol_policy_t;
 	};
 	int get_permmap_weight(char *class_name, char *perm_name) {
 		int dir, weight;
-		if (apol_permmap_get(self, class_name, perm_name, &dir, &weight)) {
+		if (apol_policy_get_permmap(self, class_name, perm_name, &dir, &weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not get permission map weight");
 		}
 	fail:
@@ -536,14 +536,14 @@ typedef struct apol_policy {} apol_policy_t;
 	};
 	int get_permmap_direction(char *class_name, char *perm_name) {
 		int dir, weight;
-		if (apol_permmap_get(self, class_name, perm_name, &dir, &weight)) {
+		if (apol_policy_get_permmap(self, class_name, perm_name, &dir, &weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not get permission map direction");
 		}
 	fail:
 		return dir;
 	};
 	void permmap_set(char *class_name, char *perm_name, int direction, int weight) {
-		if (apol_permmap_set(self, class_name, perm_name, direction, weight)) {
+		if (apol_policy_set_permmap(self, class_name, perm_name, direction, weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set permission mapping");
 		}
 	fail:

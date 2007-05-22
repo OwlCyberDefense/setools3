@@ -1,3 +1,8 @@
+2007-05-22  J. Mowery  <jmowery@tresys.com>
+
+	* Renamed apol_permmap_*() to apol_policy_*_permmap() to
+	  correctly reflect the fact that the policy owns the permmap.
+
 2007-05-21  J. Mowery  <jmowery@tresys.com>
 
 	* Renamed apol_policy_domain_trans_table_build() and

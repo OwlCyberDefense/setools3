@@ -524,7 +524,7 @@ static int parse_permmap(apol_policy_t * p, FILE * fp)
 	return retval;
 }
 
-int apol_permmap_load(apol_policy_t * p, const char *filename)
+int apol_policy_open_permmap(apol_policy_t * p, const char *filename)
 {
 	FILE *outfile = NULL;
 	int retval = -1, rt = 0;
@@ -560,7 +560,12 @@ int apol_permmap_load(apol_policy_t * p, const char *filename)
 	return retval;
 }
 
-int apol_permmap_save(apol_policy_t * p, const char *filename)
+int apol_permmap_load(apol_policy_t * p, const char *filename)
+{
+	return apol_policy_open_permmap(p, filename);
+}
+
+int apol_policy_save_permmap(apol_policy_t * p, const char *filename)
 {
 	time_t ltime;
 	size_t i, j;
@@ -639,7 +644,12 @@ int apol_permmap_save(apol_policy_t * p, const char *filename)
 	return retval;
 }
 
-int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
+int apol_permmap_save(apol_policy_t * p, const char *filename)
+{
+	return apol_policy_save_permmap(p, filename);
+}
+
+int apol_policy_get_permmap(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
 {
 	apol_permmap_class_t *pc;
 	apol_permmap_perm_t *pp;
@@ -655,7 +665,12 @@ int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm
 	return 0;
 }
 
-int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
+int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
+{
+	return apol_policy_get_permmap(p, class_name, perm_name, map, weight);
+}
+
+int apol_policy_set_permmap(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
 {
 	apol_permmap_class_t *pc;
 	apol_permmap_perm_t *pp;
@@ -674,4 +689,9 @@ int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm
 	}
 	pp->weight = weight;
 	return 0;
+}
+
+int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
+{
+	return apol_policy_set_permmap(p, class_name, perm_name, map, weight);
 }
