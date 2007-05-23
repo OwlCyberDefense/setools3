@@ -274,7 +274,7 @@ static int relabel_analysis_compare_type_to_vector(apol_policy_t * p, apol_vecto
  *
  * @return 0 on success, < 0 on error.
  */
-static int append_avrules_to_subject_vector(apol_policy_t * p,
+static int append_avrules_to_object_vector(apol_policy_t * p,
 					    apol_relabel_analysis_t * r,
 					    qpol_avrule_t * ruleA, qpol_avrule_t * ruleB, apol_vector_t * results)
 {
@@ -293,6 +293,9 @@ static int append_avrules_to_subject_vector(apol_policy_t * p,
 	    qpol_type_get_isattr(p->p, sourceA, &isattrA) < 0 || qpol_type_get_isattr(p->p, sourceB, &isattrB) < 0) {
 		goto cleanup;
 	}
+	/* If both rules use the same attribute, retain the attribute
+	 * to minimize the number of results and to indicate that all
+	 * types with that attribute have the permission to relabel. */
 	if ((isattrA && isattrB) || !isattrA) {
 		intermed = sourceA;
 	} else {
@@ -408,7 +411,7 @@ static int relabel_analysis_matchup(apol_policy_t * p,
 			    b_target == start_type || a_class != b_class) {
 				continue;
 			}
-			if (append_avrules_to_subject_vector(p, r, a_avrule, b_avrule, v) < 0) {
+			if (append_avrules_to_object_vector(p, r, a_avrule, b_avrule, v) < 0) {
 				goto cleanup;
 			}
 		}

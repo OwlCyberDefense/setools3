@@ -100,14 +100,14 @@ else
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.so'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.so'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.so'
-        POLSEARCH_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpolsearch.so'
+        POLSEARCH_LIB_FLAG='$(top_builddir)/libpolsearch/src/libpolsearch.so'
         SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.so'
     else
         QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a'
-        POLSEARCH_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpolsearch.a'
+        POLSEARCH_LIB_FLAG='$(top_builddir)/libpolsearch/src/libpolsearch.a'
         SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.a'
     fi
     AC_MSG_RESULT(disabled)
