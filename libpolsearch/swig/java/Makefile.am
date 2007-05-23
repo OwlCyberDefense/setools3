@@ -11,8 +11,8 @@ wrappedjardir = $(libdir)/setools
 
 dist_noinst_DATA = $(srcdir)/../polsearch.i
 BUILT_SOURCES = polsearch_wrap.c \
-	polsearchJNI.java \
-	SWIGTYPE_p_void.java
+	polsearch.java \
+	polsearchJNI.java
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \

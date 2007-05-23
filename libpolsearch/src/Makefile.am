@@ -4,7 +4,7 @@ polsearchso_DATA = libpolsearch.so.@libpolsearch_version@
 polsearchsodir = $(libdir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ \
-	@APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(srcdir)/../include -fpic
+	@SEFS_CFLAGS@ @APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(srcdir)/../include -fpic
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libpolsearch_a_SOURCES = \
@@ -20,7 +20,7 @@ LIBPOLSEARCH_SONAME = @libpolsearch_soname@
 dist_noinst_DATA = libpolsearch.map
 
 $(polsearchso_DATA): $(libpolsearch_so_OBJS) libpolsearch.map
-	$(CC) -shared -o $@ $(libpolsearch_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBPOLSEARCH_SONAME),--version-script=$(srcdir)/libpolsearch.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so
+	$(CC) -shared -o $@ $(libpolsearch_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBPOLSEARCH_SONAME),--version-script=$(srcdir)/libpolsearch.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libsefs/src/libsefs.so
 	$(LN_S) -f $@ @libpolsearch_soname@
 	$(LN_S) -f $@ libpolsearch.so
 
