@@ -70,7 +70,7 @@ proc Apol_Perms_Map::openDefaultPermMap {} {
     } else {
         set pmap_editable 0
         # try policy-specific file
-        set policy_version [apol_tcl_get_policy_version]
+        set policy_version [apol_tcl_get_policy_version $::ApolTop::policy]
         set pmap_name [apol_file_find_path "apol_perm_mapping_ver${policy_version}"]
         if {$pmap_name == {}} {
             # finally try fallback one

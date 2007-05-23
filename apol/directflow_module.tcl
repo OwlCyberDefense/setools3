@@ -356,8 +356,7 @@ proc Apol_Analysis_directflow::_analyzeMore {tree node} {
         return {}
     }
     set g [lindex [$tree itemcget top -data] 0]
-    # FIX ME -- check if this returns a vector or graph + vector
-    apol_DirectInformationFlowMore $g $new_start
+    set results [$g do_more $::ApolTop::policy $new_start]
 }
 
 ################# functions that control analysis output #################
@@ -409,15 +408,17 @@ proc Apol_Analysis_directflow::_treeSelect {res tree node} {
 proc Apol_Analysis_directflow::_treeOpen {tree node} {
     foreach {is_expanded results} [$tree itemcget $node -data] {break}
     if {[string index $node 0] == "x" && !$is_expanded} {
-        set new_results [Apol_Progress_Dialog::wait "Direct Information Flow Analysis" \
-                             "Performing Direct Information Flow Analysis..." \
-                             { _analyzeMore $tree $node}]
-        # mark this node as having been expanded
-        $tree itemconfigure $node -data [list 1 $results]
-        if {$new_results != {}} {
-            $new_results -acquire
-            _createResultsNodes $tree $node $new_results
-        }
+        Apol_Progress_Dialog::wait "Direct Information Flow Analysis" \
+            "Performing Direct Information Flow Analysis..." \
+            {
+                set new_results [_analyzeMore $tree $node]
+                # mark this node as having been expanded
+                $tree itemconfigure $node -data [list 1 $results]
+                if {$new_results != {}} {
+                    $new_results -acquire
+                    _createResultsNodes $tree $node $new_results
+                }
+            }
     }
 }
 
@@ -435,9 +436,8 @@ proc Apol_Analysis_directflow::_renderResults {f results} {
     variable vals
 
     set graph_handler [$results extract_graph]
-    $graph_handler -acquire  ;# let Tcl's GC destroy the graph
+    $graph_handler -acquire  ;# let Tcl's GC destroy graph when this tab closes
     set results_list [$results extract_result_vector]
-    $results_list -acquire  ;# let Tcl's GC destroy the vector afterwards
 
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
@@ -450,6 +450,8 @@ proc Apol_Analysis_directflow::_renderResults {f results} {
     $tree selection set top
     $tree opentree top 0
     $tree see top
+
+    $results_list -delete
 }
 
 proc Apol_Analysis_directflow::_renderTopText {} {
@@ -509,13 +511,7 @@ proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results} {
         }
         set rules {}
         foreach c [lsort -uniq $classes($t)] {
-            set v [new_apol_vector_t]
-            $v -acquire
-            foreach r [lsort -uniq $classes($t:$c)] {
-                $v append $r
-            }
-            apol_tcl_avrule_sort $::ApolTop::policy $v
-            lappend rules [list $c $v]
+            lappend rules [list $c [lsort -uniq $classes($t:$c)]]
         }
         set data [list $flow_dir $rules]
         $tree insert end $parent_node x\#auto -text $t -drawcross allways \
@@ -556,6 +552,12 @@ proc Apol_Analysis_directflow::_renderResultsDirectFlow {res tree node data} {
         foreach {class_name rules} $c {break}
         $res.tb insert end "      " {} \
             $class_name\n subtitle
-        Apol_Widget::appendSearchResultRules $res 12 $rules new_qpol_avrule_t
+        set v [new_apol_vector_t]
+        foreach r $rules {
+            $v append $r
+        }
+        apol_tcl_avrule_sort $::ApolTop::policy $v
+        Apol_Widget::appendSearchResultRules $res 12 $v new_qpol_avrule_t
+        $v -delete
     }
 }
