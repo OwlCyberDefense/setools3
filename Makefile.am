@@ -14,7 +14,7 @@ if BUILD_GUI
 endif
 # sediffx is also built conditionally, from sediffx/Makefile.am
 
-SUBDIRS = libqpol libapol libpoldiff libsefs libseaudit secmds sechecker sediff man $(MAYBE_APOL) $(MAYBE_GUI) $(MAYBE_BWIDGET)
+SUBDIRS = libqpol libapol libpoldiff libpolsearch libsefs libseaudit secmds sechecker sediff man $(MAYBE_APOL) $(MAYBE_GUI) $(MAYBE_BWIDGET)
 
 INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc
 
@@ -28,6 +28,9 @@ libapol:
 
 libpoldiff:
 	$(MAKE) -C $(top_srcdir)/libpoldiff
+
+libpolsearch:
+	$(MAKE) -C $(top_srcdir)/libpolsearch
 
 libsefs:
 	$(MAKE) -C $(top_srcdir)/libsefs

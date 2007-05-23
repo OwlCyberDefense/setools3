@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+
+Name: com/tresys/setools/
+Specification-Title: "SETools Java Libraries"
+Specification-Version: "@VERSION@"
+Specification-Vendor: "Tresys Technology"
+Implementation-Title: "com.tresys.setools.polsearch"
+Implementation-Version: "@libpolsearch_version@"
+Implementation-Vendor: "Tresys Technology"
+Extension-List: qpol apol sefs
+qpol-Extension-Name: com.tresys.setools.qpol
+qpol-Implementation-Version: @libqpol_version@
+apol-Extension-Name: com.tresys.setools.apol
+apol-Implementation-Version: @libapol_version@
+apol-Extension-Name: com.tresys.setools.sefs
+apol-Implementation-Version: @libsefs_version@

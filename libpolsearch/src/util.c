@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * Miscellaneous, uncategorized functions for libpolsearch.
+ * Implementation of utility functions for libpolsearch.
  *
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
@@ -23,23 +23,10 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLSEARCH_UTIL_H
-#define POLSEARCH_UTIL_H
+#include <config.h>
+#include <polsearch/util.h>
 
-#ifdef	__cplusplus
-extern "C"
+const char *libpolsearch_get_version(void)
 {
-#endif
-
-/**
- * Return an immutable string describing this library's version.
- *
- * @return String describing this library.
- */
-	extern const char *libpolsearch_get_version(void);
-
-#ifdef __cplusplus
+	return LIBPOLSEARCH_VERSION_STRING;
 }
-#endif
-
-#endif				       /* POLSEARCH_UTIL_H */

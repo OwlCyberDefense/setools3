@@ -1,7 +1,6 @@
 /**
  * @file
- *
- * Miscellaneous, uncategorized functions for libpolsearch.
+ * SWIG declarations for libpolsearch.
  *
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
@@ -23,23 +22,10 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLSEARCH_UTIL_H
-#define POLSEARCH_UTIL_H
+%module polsearch
 
-#ifdef	__cplusplus
-extern "C"
-{
-#endif
+%{
+#include <polsearch/util.h>
+%}
 
-/**
- * Return an immutable string describing this library's version.
- *
- * @return String describing this library.
- */
-	extern const char *libpolsearch_get_version(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif				       /* POLSEARCH_UTIL_H */
+const char *libpolsearch_get_version (void);
