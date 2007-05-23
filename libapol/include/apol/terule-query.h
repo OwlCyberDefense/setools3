@@ -247,9 +247,9 @@ extern "C"
 
 /**
  * Set a terule query to use regular expression searching for source
- * and target types/attributes.  Strings will be treated as regexes
- * instead of literals.  Matching will occur against the type name or
- * any of its aliases.
+ * and target types/attributes and default type.  Strings will be
+ * treated as regexes instead of literals.  Matching will occur against
+ * the type name or any of its aliases.
  *
  * @param p Policy handler, to report errors.
  * @param t TE rule query to set.
