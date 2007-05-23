@@ -356,7 +356,7 @@ proc Apol_Analysis_directflow::_analyzeMore {tree node} {
         return {}
     }
     set g [lindex [$tree itemcget top -data] 0]
-    set results [$g do_more $::ApolTop::policy $new_start]
+    $g do_more $::ApolTop::policy $new_start
 }
 
 ################# functions that control analysis output #################
@@ -415,8 +415,8 @@ proc Apol_Analysis_directflow::_treeOpen {tree node} {
                 # mark this node as having been expanded
                 $tree itemconfigure $node -data [list 1 $results]
                 if {$new_results != {}} {
-                    $new_results -acquire
                     _createResultsNodes $tree $node $new_results
+                    $new_results -delete
                 }
             }
     }
@@ -497,9 +497,10 @@ proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results} {
     }
 
     set all_targets [lsort -uniq $all_targets]
-    set results_processed 0
+    apol_tcl_set_info_string $::ApolTop::policy "Displaying [llength $all_targets] result(s)"
+    update idle
+
     foreach t $all_targets {
-        apol_tcl_set_info_string $::ApolTop::policy "Displaying result $results_processed of [llength $all_targets]"
         if {[info exists dir(${t}:${::APOL_INFOFLOW_BOTH})] ||
             ([info exists dir(${t}:${::APOL_INFOFLOW_IN})] &&
              [info exists dir(${t}:${::APOL_INFOFLOW_OUT})])} {
@@ -516,7 +517,6 @@ proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results} {
         set data [list $flow_dir $rules]
         $tree insert end $parent_node x\#auto -text $t -drawcross allways \
             -data [list 0 $data]
-        incr results_processed
     }
 }
 

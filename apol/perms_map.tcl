@@ -15,7 +15,7 @@
 
 namespace eval Apol_Perms_Map {
     variable dialog .apol_perms
-    variable user_default_pmap_name  [file join $::env(HOME) .apol_perm_mapping]
+    variable user_default_pmap_name [file join $::env(HOME) .apol_perm_mapping]
 
     variable opts           ;# options for edit perm map dialog
     variable widgets
@@ -23,12 +23,8 @@ namespace eval Apol_Perms_Map {
 
 proc Apol_Perms_Map::close {} {
     variable opts
-    variable dialog
-    destroy $dialog
-    array unset opts c:*
-    array unset opts p:*
-    trace remove variable Apol_Perms_Map::opts(modified) write \
-        Apol_Perms_Map::_toggleButtons
+
+    _close_dialog
     set opts(filename) {}
     set opts(is_saveable) 0
     set opts(modified) 0
@@ -340,7 +336,7 @@ proc Apol_Perms_Map::_toggleButtons {name1 name2 op} {
 
 proc Apol_Perms_Map::_okay {} {
     _apply
-    close  ;# invoke my close to remove traces and clear memory
+    _close_dialog
 }
 
 proc Apol_Perms_Map::_apply {} {
@@ -379,7 +375,18 @@ proc Apol_Perms_Map::_cancel {} {
             }
         }
     }
-    close  ;# invoke my close to remove traces and clear memory
+    _close_dialog
+}
+
+proc Apol_Perms_Map::_close_dialog {} {
+    variable opts
+    array unset opts c:*
+    array unset opts p:*
+    trace remove variable Apol_Perms_Map::opts(modified) write \
+        Apol_Perms_Map::_toggleButtons
+
+    variable dialog
+    destroy $dialog
 }
 
 proc Apol_Perms_Map::_savePermMap {filename shortname} {

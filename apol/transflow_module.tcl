@@ -19,6 +19,47 @@ namespace eval Apol_Analysis_transflow {
     Apol_Analysis::registerAnalysis "Apol_Analysis_transflow" "Transitive Information Flow"
 }
 
+proc Apol_Analysis_transflow::create {options_frame} {
+    variable vals
+    variable widgets
+
+    _reinitializeVals
+
+    set dir_tf [TitleFrame $options_frame.dir -text "Direction"]
+    pack $dir_tf -side left -padx 2 -pady 2 -expand 0 -fill y
+    set dir_to [radiobutton [$dir_tf getframe].to -text "To" \
+                    -value $::APOL_INFOFLOW_IN \
+                    -variable Apol_Analysis_transflow::vals(dir)]
+    set dir_from [radiobutton [$dir_tf getframe].from -text "From" \
+                      -value $::APOL_INFOFLOW_OUT \
+                      -variable Apol_Analysis_transflow::vals(dir)]
+    pack $dir_to $dir_from -anchor w
+
+    set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
+    pack $req_tf -side left -padx 2 -pady 2 -expand 0 -fill y
+    set l [label [$req_tf getframe].l -text "Starting type"]
+    pack $l -anchor w
+    set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
+    pack $widgets(type)
+
+    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
+    pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
+    set advanced_f [frame [$filter_tf getframe].advanced]
+    pack $advanced_f -side left -anchor nw
+    set widgets(advanced_enable) [checkbutton $advanced_f.enable -text "Use advanced filters" \
+                                      -variable Apol_Analysis_transflow::vals(advanced:enable)]
+    pack $widgets(advanced_enable) -anchor w
+    set widgets(advanced) [button $advanced_f.b -text "Advanced Filters" \
+                               -command Apol_Analysis_transflow::_createAdvancedDialog \
+                               -state disabled]
+    pack $widgets(advanced) -anchor w -padx 4
+    trace add variable Apol_Analysis_transflow::vals(advanced:enable) write \
+        Apol_Analysis_transflow::_toggleAdvancedSelected
+    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
+    $widgets(regexp).cb configure -text "Filter result types using regular expression"
+    pack $widgets(regexp) -side left -anchor nw -padx 8
+}
+
 proc Apol_Analysis_transflow::open {} {
     variable vals
     variable widgets
@@ -36,8 +77,8 @@ proc Apol_Analysis_transflow::open {} {
 
 proc Apol_Analysis_transflow::close {} {
     variable widgets
-    reinitializeVals
-    reinitializeWidgets
+    _reinitializeVals
+    _reinitializeWidgets
     Apol_Widget::clearTypeCombobox $widgets(type)
 }
 
@@ -64,77 +105,31 @@ same, the child cannot be opened.  This avoids cyclic analyses.
 from the help menu."
 }
 
-proc Apol_Analysis_transflow::create {options_frame} {
-    variable vals
-    variable widgets
-
-    reinitializeVals
-
-    set dir_tf [TitleFrame $options_frame.dir -text "Direction"]
-    pack $dir_tf -side left -padx 2 -pady 2 -expand 0 -fill y
-    set dir_to [radiobutton [$dir_tf getframe].to -text "To" \
-                    -variable Apol_Analysis_transflow::vals(dir) -value to]
-    set dir_from [radiobutton [$dir_tf getframe].from -text "From" \
-                      -variable Apol_Analysis_transflow::vals(dir) -value from]
-    pack $dir_to $dir_from -anchor w
-
-    set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
-    pack $req_tf -side left -padx 2 -pady 2 -expand 0 -fill y
-    set l [label [$req_tf getframe].l -text "Starting type"]
-    pack $l -anchor w
-    set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
-    pack $widgets(type)
-
-    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
-    pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
-    set advanced_f [frame [$filter_tf getframe].advanced]
-    pack $advanced_f -side left -anchor nw
-    set widgets(advanced_enable) [checkbutton $advanced_f.enable -text "Use advanced filters" \
-                                      -variable Apol_Analysis_transflow::vals(advanced:enable)]
-    pack $widgets(advanced_enable) -anchor w
-    set widgets(advanced) [button $advanced_f.b -text "Advanced Filters" \
-                               -command Apol_Analysis_transflow::createAdvancedDialog \
-                               -state disabled]
-    pack $widgets(advanced) -anchor w -padx 4
-    trace add variable Apol_Analysis_transflow::vals(advanced:enable) write \
-        Apol_Analysis_transflow::toggleAdvancedSelected
-    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
-    $widgets(regexp).cb configure -text "Filter result types using regular expression"
-    pack $widgets(regexp) -side left -anchor nw -padx 8
-}
-
 proc Apol_Analysis_transflow::newAnalysis {} {
-    if {[set rt [checkParams]] != {}} {
+    if {[set rt [_checkParams]] != {}} {
         return $rt
     }
-    if {[catch {analyze} results]} {
-        return $results
-    }
-    set f [createResultsDisplay]
-    if {[catch {renderResults $f $results} rt]} {
-        Apol_Analysis::deleteCurrentResults
-        return $rt
-    }
+    set results [_analyze]
+    set f [_createResultsDisplay]
+    _renderResults $f $results
+    $results -delete
     return {}
 }
 
 proc Apol_Analysis_transflow::updateAnalysis {f} {
-    if {[set rt [checkParams]] != {}} {
+    if {[set rt [_checkParams]] != {}} {
         return $rt
     }
-    if {[catch {analyze} results]} {
-        return $results
-    }
-    clearResultsDisplay $f
-    if {[catch {renderResults $f $results} rt]} {
-        return $rt
-    }
+    set results [_analyze]
+    _clearResultsDisplay $f
+    _renderResults $f $results
+    $results -delete
     return {}
 }
 
 proc Apol_Analysis_transflow::reset {} {
-    reinitializeVals
-    reinitializeWidgets
+    _reinitializeVals
+    _reinitializeWidgets
     open
 }
 
@@ -142,7 +137,7 @@ proc Apol_Analysis_transflow::switchTab {query_options} {
     variable vals
     variable widgets
     array set vals $query_options
-    reinitializeWidgets
+    _reinitializeWidgets
 }
 
 proc Apol_Analysis_transflow::saveQuery {channel} {
@@ -239,7 +234,7 @@ proc Apol_Analysis_transflow::loadQuery {channel} {
             lappend vals(classes:displayed) $class
         }
     }
-    reinitializeWidgets
+    _reinitializeWidgets
 }
 
 proc Apol_Analysis_transflow::getTextWidget {tab} {
@@ -248,12 +243,11 @@ proc Apol_Analysis_transflow::getTextWidget {tab} {
 
 #################### private functions below ####################
 
-proc Apol_Analysis_transflow::reinitializeVals {} {
+proc Apol_Analysis_transflow::_reinitializeVals {} {
     variable vals
 
+    set vals(dir) $::APOL_INFOFLOW_IN
     array set vals {
-        dir to
-
         type {}  type:attrib {}
 
         regexp:enable 0
@@ -281,7 +275,7 @@ proc Apol_Analysis_transflow::reinitializeVals {} {
     }
 }
 
-proc Apol_Analysis_transflow::reinitializeWidgets {} {
+proc Apol_Analysis_transflow::_reinitializeWidgets {} {
     variable vals
     variable widgets
 
@@ -293,7 +287,7 @@ proc Apol_Analysis_transflow::reinitializeWidgets {} {
     Apol_Widget::setRegexpEntryValue $widgets(regexp) $vals(regexp:enable) $vals(regexp)
 }
 
-proc Apol_Analysis_transflow::toggleAdvancedSelected {name1 name2 op} {
+proc Apol_Analysis_transflow::_toggleAdvancedSelected {name1 name2 op} {
     variable vals
     variable widgets
     if {$vals(advanced:enable)} {
@@ -305,13 +299,13 @@ proc Apol_Analysis_transflow::toggleAdvancedSelected {name1 name2 op} {
 
 ################# functions that do advanced filters #################
 
-proc Apol_Analysis_transflow::createAdvancedDialog {} {
+proc Apol_Analysis_transflow::_createAdvancedDialog {} {
     destroy .transflow_adv
     variable vals
 
     # if a permap is not loaded then load the default permap
     if {[ApolTop::is_policy_open] && ![Apol_Perms_Map::is_pmap_loaded]} {
-        if {![Apol_Perms_Map::loadDefaultPermMap]} {
+        if {![ApolTop::openDefaultPermMap]} {
             return "This analysis requires that a permission map is loaded."
 	}
     }
@@ -321,11 +315,11 @@ proc Apol_Analysis_transflow::createAdvancedDialog {} {
 
     set tf [TitleFrame [$d getframe].classes -text "Filter By Object Class Permissions"]
     pack $tf -side top -expand 1 -fill both -padx 2 -pady 4
-    createClassFilter [$tf getframe]
+    _createClassFilter [$tf getframe]
 
     set tf [TitleFrame [$d getframe].types -text "Filter By Intermediate Types"]
     pack $tf -side top -expand 1 -fill both -padx 2 -pady 4
-    createIntermedFilter [$tf getframe]
+    _createIntermedFilter [$tf getframe]
     set inc [$tf getframe].inc
     set exc [$tf getframe].exc
 
@@ -338,20 +332,20 @@ proc Apol_Analysis_transflow::createAdvancedDialog {} {
                         -values $Apol_Types::attriblist \
                         -textvariable Apol_Analysis_transflow::vals(intermed:attrib)]
     $attrib_enable configure -command \
-        [list Apol_Analysis_transflow::attribEnabled $attrib_box]
-    # remove any old traces on the attribute
+        [list Apol_Analysis_transflow::_attribEnabled $attrib_box]
+    # remove any old traces on the attribute before adding new ones
     trace remove variable Apol_Analysis_transflow::vals(intermed:attrib) write \
-        [list Apol_Analysis_transflow::attribChanged]
+        [list Apol_Analysis_transflow::_attribChanged]
     trace add variable Apol_Analysis_transflow::vals(intermed:attrib) write \
-        [list Apol_Analysis_transflow::attribChanged]
+        [list Apol_Analysis_transflow::_attribChanged]
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
-    attribEnabled $attrib_box
+    _attribEnabled $attrib_box
 
     $d draw
 }
 
-proc Apol_Analysis_transflow::createClassFilter {f} {
+proc Apol_Analysis_transflow::_createClassFilter {f} {
     variable vals
 
     set l1 [label $f.l1 -text "Object Classes"]
@@ -361,43 +355,43 @@ proc Apol_Analysis_transflow::createClassFilter {f} {
     grid $l1 $l $l2 -sticky w
 
     set classes [Apol_Widget::makeScrolledListbox $f.c -selectmode extended \
-                     -height 16 -width 30 -listvar Apol_Analysis_transflow::vals(classes:displayed)]
-    set sw [ScrolledWindow $f.sw -auto both]
-    set perms [ScrollableFrame $sw.perms -bg white -height 200 -width 300]
+                     -height 12 -width 24 -listvar Apol_Analysis_transflow::vals(classes:displayed)]
+    set sw [ScrolledWindow $f.sw -auto both -bd 2 -relief groove]
+    set perms [ScrollableFrame $sw.perms -height 150 -width 250]
     $sw setwidget $perms
     bind $classes.lb <<ListboxSelect>> \
-        [list Apol_Analysis_transflow::refreshPerm $classes $perms]
+        [list Apol_Analysis_transflow::_refreshPerm $classes $perms]
     grid $classes x $sw -sticky nsew
     update
     grid propagate $sw 0
 
     set bb [ButtonBox $f.bb -homogeneous 1 -spacing 4]
-    $bb add -text "Include All Perms" -width 16 -command [list Apol_Analysis_transflow::setAllPerms $classes $perms 1]
-    $bb add -text "Exclude All Perms" -width 16 -command [list Apol_Analysis_transflow::setAllPerms $classes $perms 0]
+    $bb add -text "Include All Perms" -width 16 -command [list Apol_Analysis_transflow::_setAllPerms $classes $perms 1]
+    $bb add -text "Exclude All Perms" -width 16 -command [list Apol_Analysis_transflow::_setAllPerms $classes $perms 0]
     grid ^ x $bb -pady 4
 
     set f [frame $f.f]
     grid ^ x $f
     grid configure $f -sticky ew
-    set cb [checkbutton $f.cb -text "Exclude permissions that have weights below this threshold:" \
+    set cb [checkbutton $f.cb -text "Exclude permissions with weights below:" \
                 -variable Apol_Analysis_transflow::vals(classes:threshold_enable)]
     set weight [spinbox $f.threshold -from 1 -to 10 -increment 1 \
                     -width 2 -bg white -justify right \
                     -textvariable Apol_Analysis_transflow::vals(classes:threshold)]
-    # remove any old traces on the threshold checkbutton
+    # remove any old traces on the threshold checkbutton befored adding new one
     trace remove variable Apol_Analysis_transflow::vals(classes:threshold_enable) write \
-        [list Apol_Analysis_transflow::thresholdChanged $weight]
+        [list Apol_Analysis_transflow::_thresholdChanged $weight]
     trace add variable Apol_Analysis_transflow::vals(classes:threshold_enable) write \
-        [list Apol_Analysis_transflow::thresholdChanged $weight]
+        [list Apol_Analysis_transflow::_thresholdChanged $weight]
     pack $cb $weight -side left
-    thresholdChanged $weight {} {} {}
+    _thresholdChanged $weight {} {} {}
 
     grid columnconfigure $f 0 -weight 0
     grid columnconfigure $f 1 -weight 0 -pad 4
     grid columnconfigure $f 2 -weight 1
 }
 
-proc Apol_Analysis_transflow::refreshPerm {classes perms} {
+proc Apol_Analysis_transflow::_refreshPerm {classes perms} {
     variable vals
     focus $classes.lb
     if {[$classes.lb curselection] == {}} {
@@ -411,37 +405,24 @@ proc Apol_Analysis_transflow::refreshPerm {classes perms} {
     foreach {class foo} [$classes.lb get anchor] {break}
     set i [$classes.lb index anchor]
     set vals(classes:title) "Permissions for $class"
-    if {[catch {apol_GetPermMap $class} perm_map_list]} {
-        tk_messageBox -icon error -type ok \
-            -title "Error Getting Permission Map" -message $perm_map_list
-        return
-    }
+
     foreach perm_key [lsort [array names vals perms:$class:*]] {
         foreach {foo bar perm} [split $perm_key :] {break}
-        set j [lsearch -glob [lindex $perm_map_list 0 1] "$perm *"]
-        set weight [lindex $perm_map_list 0 1 $j 2]
-        set l [label $pf.$perm:l -text $perm -bg white -anchor w]
-        set inc [radiobutton $pf.$perm:i -text "Include" -value 1 -bg white \
-                     -highlightthickness 0 \
-                     -command [list Apol_Analysis_transflow::togglePerm $class $i] \
+        set weight [$::ApolTop::policy get_permmap_weight $class $perm]
+        set l [label $pf.$perm:l -text $perm -anchor w]
+        set inc [checkbutton $pf.$perm:i -text "Include" \
+                     -command [list Apol_Analysis_transflow::_togglePerm $class $i] \
                      -variable Apol_Analysis_transflow::vals(perms:$class:$perm)]
-        set exc [radiobutton $pf.$perm:e -text "Exclude" -value 0 -bg white \
-                     -highlightthickness 0 \
-                     -command [list Apol_Analysis_transflow::togglePerm $class $i] \
-                     -variable Apol_Analysis_transflow::vals(perms:$class:$perm)]
-        set w [label $pf.$perm:w -text "Weight: $weight" -bg white]
-        grid $l $inc $exc $w -padx 2 -sticky w -pady 4
+        set w [label $pf.$perm:w -text "Weight: $weight"]
+        grid $l $inc $w -padx 2 -sticky w -pady 4
         grid configure $w -ipadx 10
     }
     grid columnconfigure $pf 0 -minsize 100 -weight 1
-    foreach i {1 2} {
-        grid columnconfigure $pf $i -uniform 1 -weight 0
-    }
     $perms xview moveto 0
     $perms yview moveto 0
 }
 
-proc Apol_Analysis_transflow::togglePerm {class i} {
+proc Apol_Analysis_transflow::_togglePerm {class i} {
     variable vals
     set all_disabled 1
     foreach perm_key [array names vals perms:$class:*] {
@@ -457,7 +438,7 @@ proc Apol_Analysis_transflow::togglePerm {class i} {
     }
 }
 
-proc Apol_Analysis_transflow::setAllPerms {classes perms newValue} {
+proc Apol_Analysis_transflow::_setAllPerms {classes perms newValue} {
     variable vals
     foreach i [$classes.lb curselection] {
         foreach {class foo} [split [$classes.lb get $i]] {break}
@@ -472,7 +453,7 @@ proc Apol_Analysis_transflow::setAllPerms {classes perms newValue} {
     }
 }
 
-proc Apol_Analysis_transflow::thresholdChanged {w name1 name2 op} {
+proc Apol_Analysis_transflow::_thresholdChanged {w name1 name2 op} {
     variable vals
     if {$vals(classes:threshold_enable)} {
         $w configure -state normal
@@ -481,7 +462,7 @@ proc Apol_Analysis_transflow::thresholdChanged {w name1 name2 op} {
     }
 }
 
-proc Apol_Analysis_transflow::createIntermedFilter {f} {
+proc Apol_Analysis_transflow::_createIntermedFilter {f} {
     set l1 [label $f.l1 -text "Included Intermediate Types"]
     set l2 [label $f.l2 -text "Excluded Intermediate Types"]
     grid $l1 x $l2 -sticky w
@@ -495,8 +476,8 @@ proc Apol_Analysis_transflow::createIntermedFilter {f} {
     set inc_lb [Apol_Widget::getScrolledListbox $inc]
     set exc_lb [Apol_Widget::getScrolledListbox $exc]
     set bb [ButtonBox $f.bb -homogeneous 1 -orient vertical -spacing 4]
-    $bb add -text "-->" -width 10 -command [list Apol_Analysis_transflow::moveToExclude $inc_lb $exc_lb]
-    $bb add -text "<--" -width 10 -command [list Apol_Analysis_transflow::moveToInclude $inc_lb $exc_lb]
+    $bb add -text "-->" -width 10 -command [list Apol_Analysis_transflow::_moveToExclude $inc_lb $exc_lb]
+    $bb add -text "<--" -width 10 -command [list Apol_Analysis_transflow::_moveToInclude $inc_lb $exc_lb]
     grid $inc $bb $exc -sticky nsew
 
     set inc_bb [ButtonBox $f.inc_bb -homogeneous 1 -spacing 4]
@@ -512,7 +493,7 @@ proc Apol_Analysis_transflow::createIntermedFilter {f} {
     grid columnconfigure $f 2 -weight 1 -uniform 0 -pad 2
 }
 
-proc Apol_Analysis_transflow::moveToExclude {inc exc} {
+proc Apol_Analysis_transflow::_moveToExclude {inc exc} {
     variable vals
     if {[set selection [$inc curselection]] == {}} {
         return
@@ -532,7 +513,7 @@ proc Apol_Analysis_transflow::moveToExclude {inc exc} {
     $exc selection clear 0 end
 }
 
-proc Apol_Analysis_transflow::moveToInclude {inc exc} {
+proc Apol_Analysis_transflow::_moveToInclude {inc exc} {
     variable vals
     if {[set selection [$exc curselection]] == {}} {
         return
@@ -552,28 +533,41 @@ proc Apol_Analysis_transflow::moveToInclude {inc exc} {
     $exc selection clear 0 end
 }
 
-proc Apol_Analysis_transflow::attribEnabled {cb} {
+proc Apol_Analysis_transflow::_attribEnabled {cb} {
     variable vals
     if {$vals(intermed:attribenable)} {
         $cb configure -state normal
-        filterTypeLists $vals(intermed:attrib)
+        _filterTypeLists $vals(intermed:attrib)
     } else {
         $cb configure -state disabled
-        filterTypeLists ""
+        _filterTypeLists ""
     }
 }
 
-proc Apol_Analysis_transflow::attribChanged {name1 name2 op} {
+proc Apol_Analysis_transflow::_attribChanged {name1 name2 op} {
     variable vals
     if {$vals(intermed:attribenable)} {
-        filterTypeLists $vals(intermed:attrib)
+        _filterTypeLists $vals(intermed:attrib)
     }
 }
 
-proc Apol_Analysis_transflow::filterTypeLists {attrib} {
+proc Apol_Analysis_transflow::_filterTypeLists {attrib} {
     variable vals
-    if {$attrib != ""} {
-        set typesList [lindex [apol_GetAttribs $attrib] 0 1]
+    if {$attrib != {}} {
+        set typesList {}
+        if {[Apol_Types::isAttributeInPolicy $attrib]} {
+            set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attrib]
+            set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
+            foreach t [iter_to_list $i] {
+                set t [new_qpol_type_t $t]
+                lappend typesList [$t get_name $::ApolTop::qpolicy]
+            }
+            $i -delete
+        }
+        if {$typesList == {}} {
+            # unknown attribute, so don't change listboxes
+            return
+        }
         set vals(intermed:inc) {}
         set vals(intermed:exc) {}
         foreach t $typesList {
@@ -594,11 +588,11 @@ proc Apol_Analysis_transflow::filterTypeLists {attrib} {
 
 #################### functions that do analyses ####################
 
-proc Apol_Analysis_transflow::checkParams {} {
+proc Apol_Analysis_transflow::_checkParams {} {
     variable vals
     variable widgets
     if {![ApolTop::is_policy_open]} {
-        return "No current policy file is opened!"
+        return "No current policy file is opened."
     }
     set type [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(type)]
     if {[lindex $type 0] == {}} {
@@ -616,7 +610,7 @@ proc Apol_Analysis_transflow::checkParams {} {
 
     # if a permap is not loaded then load the default permap
     if {![Apol_Perms_Map::is_pmap_loaded]} {
-        if {![Apol_Perms_Map::loadDefaultPermMap]} {
+        if {![ApolTop::openDefaultPermMap]} {
             return "This analysis requires that a permission map is loaded."
 	}
     }
@@ -642,7 +636,7 @@ proc Apol_Analysis_transflow::checkParams {} {
     return {}  ;# all parameters passed, now ready to do search
 }
 
-proc Apol_Analysis_transflow::analyze {} {
+proc Apol_Analysis_transflow::_analyze {} {
     variable vals
     if {$vals(regexp:enable)} {
         set regexp $vals(regexp)
@@ -652,11 +646,11 @@ proc Apol_Analysis_transflow::analyze {} {
     set threshold {}
     if {$vals(advanced:enable)} {
         set intermed $vals(intermed:inc_all)
-        set classperms {}
+        set classes {}
         foreach perm_key [array names vals perms:*] {
             if {$vals($perm_key)} {
                 foreach {foo class perm} [split $perm_key :] {break}
-                lappend classperms [list $class $perm]
+                lappend classperms $class $perm
             }
         }
         if {$vals(classes:threshold_enable)} {
@@ -664,24 +658,41 @@ proc Apol_Analysis_transflow::analyze {} {
         }
     } else {
         set intermed {}
-        set classperms {}
+        set classes {}
     }
-    apol_TransInformationFlowAnalysis $vals(dir) $vals(type) $intermed $classperms $threshold $regexp
+
+    set q [new_apol_infoflow_analysis_t]
+    $q set_mode $::ApolTop::policy $::APOL_INFOFLOW_MODE_TRANS
+    $q set_dir $::ApolTop::policy $vals(dir)
+    $q set_type $::ApolTop::policy $vals(type)
+    foreach i $intermed {
+        $q append_intermediate $::ApolTop::policy $i
+    }
+    foreach {c p} $classes {
+        $q append_class_perm $::ApolTop::policy $c $p
+    }
+    if {$threshold != {}} {
+        $q set_min_weight $::ApolTop::policy $threshold
+    }
+    $q set_result_regex $::ApolTop::policy $regexp
+    set results [$q run $::ApolTop::policy]
+    $q -delete
+    return $results
 }
 
-proc Apol_Analysis_transflow::analyzeMore {tree node} {
+proc Apol_Analysis_transflow::_analyzeMore {tree node} {
     # disallow more analysis if this node is the same as its parent
     set new_start [$tree itemcget $node -text]
     if {[$tree itemcget [$tree parent $node] -text] == $new_start} {
         return {}
     }
     set g [lindex [$tree itemcget top -data] 0]
-    apol_TransInformationFlowMore $g $new_start
+    $g do_more $::ApolTop::policy $new_start
 }
 
 ################# functions that control analysis output #################
 
-proc Apol_Analysis_transflow::createResultsDisplay {} {
+proc Apol_Analysis_transflow::_createResultsDisplay {} {
     variable vals
 
     set f [Apol_Analysis::createResultTab "Trans Flow" [array get vals]]
@@ -702,24 +713,23 @@ proc Apol_Analysis_transflow::createResultsDisplay {} {
     $res.tb tag configure find_more -underline 1
     $res.tb tag configure subtitle -font {Helvetica 10 bold}
     $res.tb tag configure num -foreground blue -font {Helvetica 10 bold}
-    $res.tb tag bind find_more <Button-1> [list Apol_Analysis_transflow::findMore $res $tree]
+    $res.tb tag bind find_more <Button-1> [list Apol_Analysis_transflow::_findMore $res $tree]
     $res.tb tag bind find_more <Enter> [list $res.tb configure -cursor hand2]
     $res.tb tag bind find_more <Leave> [list $res.tb configure -cursor {}]
     pack $res -expand 1 -fill both
 
-    $tree configure -selectcommand [list Apol_Analysis_transflow::treeSelect $res]
-    $tree configure -opencmd [list Apol_Analysis_transflow::treeOpen $tree]
-    bind $tree <Destroy> [list Apol_Analysis_transflow::treeDestroy $tree]
+    $tree configure -selectcommand [list Apol_Analysis_transflow::_treeSelect $res]
+    $tree configure -opencmd [list Apol_Analysis_transflow::_treeOpen $tree]
     return $f
 }
 
-proc Apol_Analysis_transflow::treeSelect {res tree node} {
+proc Apol_Analysis_transflow::_treeSelect {res tree node} {
     if {$node != {}} {
         $res.tb configure -state normal
         $res.tb delete 0.0 end
         set data [$tree itemcget $node -data]
         if {[string index $node 0] == "y"} {
-            renderResultsTransFlow $res $tree $node [lindex $data 1]
+            _renderResultsTransFlow $res $tree $node [lindex $data 1]
         } else {
             # an informational node, whose data has already been rendered
             eval $res.tb insert end [lindex $data 1]
@@ -728,62 +738,57 @@ proc Apol_Analysis_transflow::treeSelect {res tree node} {
     }
 }
 
-proc Apol_Analysis_transflow::treeOpen {tree node} {
+proc Apol_Analysis_transflow::_treeOpen {tree node} {
     foreach {is_expanded results} [$tree itemcget $node -data] {break}
     if {[string index $node 0] == "y" && !$is_expanded} {
-        ApolTop::setBusyCursor
-        update idletasks
-        set retval [catch {analyzeMore $tree $node} new_results]
-        ApolTop::resetBusyCursor
-        if {$retval} {
-            tk_messageBox -icon error -type ok -title "Transitive Information Flow" -message "Could not perform additional analysis:\n\n$new_results"
-        } else {
-            # mark this node as having been expanded
-            $tree itemconfigure $node -data [list 1 $results]
-            createResultsNodes $tree $node $new_results 1
-        }
+        Apol_Progress_Dialog::wait "Transitive Information Flow Analysis" \
+            "Performing Transitive Information Flow Analysis..." \
+            {
+                set new_results [_analyzeMore $tree $node]
+                # mark this node as having been expanded
+                $tree itemconfigure $node -data [list 1 $results]
+                if {$new_results != {}} {
+                    _createResultsNodes $tree $node $new_results 1
+                    $new_results -delete
+                }
+            }
     }
 }
 
-proc Apol_Analysis_transflow::treeDestroy {tree} {
-    set graph_handler [lindex [$tree itemcget top -data] 0]
-    apol_InformationFlowDestroy $graph_handler
-}
-
-proc Apol_Analysis_transflow::clearResultsDisplay {f} {
+proc Apol_Analysis_transflow::_clearResultsDisplay {f} {
     variable vals
 
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
-    set graph_handler [lindex [$tree itemcget top -data] 0]
-    apol_InformationFlowDestroy $graph_handler
     $tree delete [$tree nodes root]
     Apol_Widget::clearSearchResults $res
     Apol_Analysis::setResultTabCriteria [array get vals]
 }
 
 
-proc Apol_Analysis_transflow::renderResults {f results} {
+proc Apol_Analysis_transflow::_renderResults {f results} {
     variable vals
 
-    set graph_handler [lindex $results 0]
-    set results_list [lrange $results 1 end]
+    set graph_handler [$results extract_graph]
+    $graph_handler -acquire  ;# let Tcl's GC destroy graph when this tab closes
+    set results_list [$results extract_result_vector]
 
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
 
     $tree insert end root top -text $vals(type) -open 1 -drawcross auto
-    set top_text [renderTopText]
+    set top_text [_renderTopText]
     $tree itemconfigure top -data [list $graph_handler $top_text]
 
-    createResultsNodes $tree top $results_list 1
+    _createResultsNodes $tree top $results_list 1
     $tree selection set top
     $tree opentree top 0
-    update idletasks
     $tree see top
+
+    $results_list -delete
 }
 
-proc Apol_Analysis_transflow::renderTopText {} {
+proc Apol_Analysis_transflow::_renderTopText {} {
     variable vals
 
     set top_text [list "Transitive Information Flow Analysis: Starting type: " title]
@@ -802,29 +807,52 @@ on your selection above) its parent node.
 same, you cannot open the child.  This avoids cyclic analyses." {}
 }
 
-proc Apol_Analysis_transflow::createResultsNodes {tree parent_node results do_expand} {
+# If do_expand is zero, then generate result nodes for only the first
+# target type of $results.  This is needed by two types relationship
+# analysis.
+proc Apol_Analysis_transflow::_createResultsNodes {tree parent_node results do_expand} {
     set all_targets {}
-    foreach r $results {
-        foreach {flow_dir source target length steps} $r {break}
+    set info_list [infoflow_result_vector_to_list $results]
+    set results_processed 0
+    foreach r $info_list {
+        apol_tcl_set_info_string $::ApolTop::policy "Processing result $results_processed of [llength $info_list]"
+        set flow_dir [$r get_dir]
+        set source [[$r get_start_type] get_name $::ApolTop::qpolicy]
+        set target [[$r get_end_type] get_name $::ApolTop::qpolicy]
+        set length [$r get_length]
+        set steps_v [$r get_steps]
+
         if {!$do_expand} {
-            set target [lindex $results 0 2]
+            set target [[[lindex $info_list 0] get_end_type] get_name $::ApolTop::qpolicy]
         }
+
         lappend all_targets $target
-        lappend paths($target) [list $length $steps]
+        lappend paths($target) [list $length $steps_v]
+        incr results_processed
     }
-    foreach t [lsort -uniq $all_targets] {
+
+    set all_targets [lsort -uniq $all_targets]
+    apol_tcl_set_info_string $::ApolTop::policy "Displaying [llength $all_targets] result(s)"
+    update idle
+
+    foreach t $all_targets {
         set sorted_paths {}
         foreach path [lsort -uniq [lsort -index 0 -integer $paths($t)]] {
-            if {$flow_dir == "to"} {
+            set step_v [lindex $path 1]
+            set p {}
+            if {$flow_dir == $::APOL_INFOFLOW_IN} {
                 # flip the steps around
-                set p {}
-                foreach step [lindex $path 1] {
-                    set p [concat [list $step] $p]
+                for {set i [expr {[$step_v get_size] - 1}]} {$i >= 0} {incr i -1} {
+                    set r [new_apol_infoflow_step_t [$step_v get_element $i]]
+                    lappend p [_infoflow_step_to_list $r]
                 }
-                lappend sorted_paths $p
             } else {
-                lappend sorted_paths [lindex $path 1]
+                for {set i 0} {$i < [$step_v get_size]} {incr i} {
+                    set r [new_apol_infoflow_step_t [$step_v get_element $i]]
+                    lappend p [_infoflow_step_to_list $r]
+                }
             }
+            lappend sorted_paths $p
         }
         set data [list $flow_dir $sorted_paths]
         $tree insert end $parent_node y\#auto -text $t -drawcross allways \
@@ -832,24 +860,32 @@ proc Apol_Analysis_transflow::createResultsNodes {tree parent_node results do_ex
     }
 }
 
-proc Apol_Analysis_transflow::renderResultsTransFlow {res tree node data} {
+proc Apol_Analysis_transflow::_infoflow_step_to_list {step} {
+    set start [[$step get_start_type] get_name $::ApolTop::qpolicy]
+    set end [[$step get_end_type] get_name $::ApolTop::qpolicy]
+    set weight [$step get_weight]
+    set rules [avrule_vector_to_list [$step get_rules]]
+    list $start $end $weight $rules
+}
+
+proc Apol_Analysis_transflow::_renderResultsTransFlow {res tree node data} {
     set parent_name [$tree itemcget [$tree parent $node] -text]
     set name [$tree itemcget $node -text]
     foreach {flow_dir paths} $data {break}
-    switch -- $flow_dir {
-        to {
+    switch -- $flow_dir [list \
+        $::APOL_INFOFLOW_IN {
             $res.tb insert end "Information flows to " title \
                 $parent_name title_type \
                 " from " title \
                 $name title_type
-        }
-        from {
+        } \
+        $::APOL_INFOFLOW_OUT {
             $res.tb insert end "Information flows from " title \
                 $parent_name title_type \
                 " to " title \
                 $name title_type
-        }
-    }
+        } \
+                            ]
     $res.tb insert end "  (" title \
         "Find more flows" {title_type find_more} \
         ")\n\n" title \
@@ -859,12 +895,12 @@ proc Apol_Analysis_transflow::renderResultsTransFlow {res tree node data} {
     set path_num 1
     foreach path $paths {
         $res.tb insert end "\n" {}
-        renderPath $res $path_num $path
+        _renderPath $res $path_num $path
         incr path_num
     }
 }
 
-proc Apol_Analysis_transflow::renderPath {res path_num path} {
+proc Apol_Analysis_transflow::_renderPath {res path_num path} {
     $res.tb insert end "Flow " subtitle \
         $path_num num \
         " requires " subtitle \
@@ -881,21 +917,30 @@ proc Apol_Analysis_transflow::renderPath {res path_num path} {
     $res.tb insert end \n {}
     foreach steps $path {
         set rules [lindex $steps 3]
-        Apol_Widget::appendSearchResultAVRules $res 6 [lindex $rules 0]
-        Apol_Widget::appendSearchResultAVRules $res 10 [lrange $rules 1 end]
+        set v [new_apol_vector_t]
+        $v append [lindex $rules 0]
+        Apol_Widget::appendSearchResultRules $res 6 $v new_qpol_avrule_t
+        $v -delete
+
+        set v [new_apol_vector_t]
+        foreach r [lrange $rules 1 end] {
+            $v append $r
+        }
+        Apol_Widget::appendSearchResultRules $res 10 $v new_qpol_avrule_t
+        $v -delete
     }
 }
 
 #################### procedures to find further flows ####################
 
-proc Apol_Analysis_transflow::findMore {res tree} {
+proc Apol_Analysis_transflow::_findMore {res tree} {
     set node [$tree selection get]
     set start [$tree itemcget [$tree parent $node] -text]
     set end [$tree itemcget $node -text]
 
     set d [Dialog .trans_more -cancel 1 -default 0 -modal local -parent . \
                -separator 1 -title "Find More Flows"]
-    $d add -text Find -command [list Apol_Analysis_transflow::verifyFindMore $d]
+    $d add -text Find -command [list Apol_Analysis_transflow::_verifyFindMore $d]
     $d add -text Cancel
 
     set f [$d getframe]
@@ -925,12 +970,12 @@ proc Apol_Analysis_transflow::findMore {res tree} {
         if {[catch {apol_TransInformationFurtherPrepare $graph_handler $start $end} err]} {
             tk_messageBox -icon error -type ok -title "Find More Flows" -message "Could not prepare infoflow graph:\n$err"
         } else {
-            doFindMore $res $tree $node
+            _doFindMore $res $tree $node
         }
     }
 }
 
-proc Apol_Analysis_transflow::verifyFindMore {d} {
+proc Apol_Analysis_transflow::_verifyFindMore {d} {
     variable vals
     set message {}
     if {[set hours [string trim $vals(find_more:hours)]] == {}} {
@@ -961,7 +1006,7 @@ proc Apol_Analysis_transflow::verifyFindMore {d} {
     }
 }
 
-proc Apol_Analysis_transflow::doFindMore {res tree node} {
+proc Apol_Analysis_transflow::_doFindMore {res tree node} {
     variable vals
     if {[set hours [string trim $vals(find_more:hours)]] == {}} {
         set hours 0
@@ -1067,7 +1112,7 @@ proc Apol_Analysis_transflow::doFindMore {res tree node} {
             set sorted_path $path
         }
         $res.tb insert end "\n" {}
-        renderPath $res $path_num $sorted_path
+        _renderPath $res $path_num $sorted_path
         incr path_num
     }
     $res.tb configure -state disabled
