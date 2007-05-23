@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SERECON_CRITERION_H
-#define SERECON_CRITERION_H
+#ifndef POLSEARCH_CRITERION_H
+#define POLSEARCH_CRITERION_H
 
 #ifdef __cplusplus
 extern "C"
@@ -38,71 +38,71 @@ extern "C"
 #include "string_list.hh"
 
 /** Value to indicate the comparison operator for a parameter */
-	typedef enum serecon_op
+	typedef enum polsearch_op
 	{
-		SERECON_OP_NONE = 0,   /*!< only used for error conditions */
-		SERECON_OP_IS,	       /*!< symbol (or state) is */
-		SERECON_OP_MATCH_REGEX,	/*!< symbol name (or alias name) matches regular expression */
-		SERECON_OP_RULE_TYPE,  /*!< is rule type */
-		SERECON_OP_INCLUDE,    /*!< set includes */
-		SERECON_OP_AS_SOURCE,  /*!< has as rule source */
-		SERECON_OP_AS_TARGET,  /*!< has as rule target */
-		SERECON_OP_AS_CLASS,   /*!< has as rule class */
-		SERECON_OP_AS_PERM,    /*!< has as rule permission */
-		SERECON_OP_AS_DEFAULT, /*!< has as rule default */
-		SERECON_OP_AS_SRC_TGT, /*!< has as rule source or target */
-		SERECON_OP_AS_SRC_TGT_DFLT,	/*!< has as rule source, target, or default */
-		SERECON_OP_AS_SRC_DFLT,	/*!< has as rule source or default */
-		SERECON_OP_IN_COND,    /*!< is in a conditional with boolean */
-		SERECON_OP_LEVEL,      /*!< user level comparison */
-		SERECON_OP_RANGE,      /*!< has as range */
-		SERECON_OP_AS_USER,    /*!< has as user */
-		SERECON_OP_AS_ROLE,    /*!< has as role */
-		SERECON_OP_AS_TYPE,    /*!< has as type */
-	} serecon_op_e;
+		POLSEARCH_OP_NONE = 0,   /*!< only used for error conditions */
+		POLSEARCH_OP_IS,	       /*!< symbol (or state) is */
+		POLSEARCH_OP_MATCH_REGEX,	/*!< symbol name (or alias name) matches regular expression */
+		POLSEARCH_OP_RULE_TYPE,  /*!< is rule type */
+		POLSEARCH_OP_INCLUDE,    /*!< set includes */
+		POLSEARCH_OP_AS_SOURCE,  /*!< has as rule source */
+		POLSEARCH_OP_AS_TARGET,  /*!< has as rule target */
+		POLSEARCH_OP_AS_CLASS,   /*!< has as rule class */
+		POLSEARCH_OP_AS_PERM,    /*!< has as rule permission */
+		POLSEARCH_OP_AS_DEFAULT, /*!< has as rule default */
+		POLSEARCH_OP_AS_SRC_TGT, /*!< has as rule source or target */
+		POLSEARCH_OP_AS_SRC_TGT_DFLT,	/*!< has as rule source, target, or default */
+		POLSEARCH_OP_AS_SRC_DFLT,	/*!< has as rule source or default */
+		POLSEARCH_OP_IN_COND,    /*!< is in a conditional with boolean */
+		POLSEARCH_OP_LEVEL,      /*!< user level comparison */
+		POLSEARCH_OP_RANGE,      /*!< has as range */
+		POLSEARCH_OP_AS_USER,    /*!< has as user */
+		POLSEARCH_OP_AS_ROLE,    /*!< has as role */
+		POLSEARCH_OP_AS_TYPE,    /*!< has as type */
+	} polsearch_op_e;
 
 /** Value to indicate the type of the parameter value of a criterion */
-	typedef enum serecon_param_type
+	typedef enum polsearch_param_type
 	{
-		SERECON_PARAM_TYPE_NONE = 0,	/*!< only used for error conditions */
-		SERECON_PARAM_TYPE_REGEX,	/*!< parameter is a string (char *) representing a regular expression */
-		SERECON_PARAM_TYPE_STR_LIST,	/*!< parameter is a string list */
-		SERECON_PARAM_TYPE_RULE_TYPE,	/*!< parameter is a rule type code (int) */
-		SERECON_PARAM_TYPE_BOOL,	/*!< parameter is a boolean value (bool) */
-		SERECON_PARAM_TYPE_LEVEL,	/*!< parameter is an apol_mls_level_t * */
-		SERECON_PARAM_TYPE_RANGE,	/*!< parameter is an apol_mls_range_t * */
-	} serecon_param_type_e;
+		POLSEARCH_PARAM_TYPE_NONE = 0,	/*!< only used for error conditions */
+		POLSEARCH_PARAM_TYPE_REGEX,	/*!< parameter is a string (char *) representing a regular expression */
+		POLSEARCH_PARAM_TYPE_STR_LIST,	/*!< parameter is a string list */
+		POLSEARCH_PARAM_TYPE_RULE_TYPE,	/*!< parameter is a rule type code (int) */
+		POLSEARCH_PARAM_TYPE_BOOL,	/*!< parameter is a boolean value (bool) */
+		POLSEARCH_PARAM_TYPE_LEVEL,	/*!< parameter is an apol_mls_level_t * */
+		POLSEARCH_PARAM_TYPE_RANGE,	/*!< parameter is an apol_mls_range_t * */
+	} polsearch_param_type_e;
 
 #ifdef __cplusplus
 }
 
-class serecon_criterion
+class polsearch_criterion
 {
       public:
-	virtual serecon_criterion(serecon_op_e opr, bool neg = false);
-	virtual serecon_criterion(const serecon_criterion & sc);
-	virtual ~serecon_criterion();
+	virtual polsearch_criterion(polsearch_op_e opr, bool neg = false);
+	virtual polsearch_criterion(const polsearch_criterion & sc);
+	virtual ~polsearch_criterion();
 
-	serecon_op_e op() const;
+	polsearch_op_e op() const;
 	bool negated() const;
 	bool negated(bool neg);
-	serecon_param_type_e param_type() const;
+	polsearch_param_type_e param_type() const;
 
 	virtual apol_vector_t *check(apol_policy_t * p, sefs_fclist_t * fclist, apol_vector_t * test_candidates,
 				     apol_vector_t * Xcandidtates) = 0;
 
       protected:
-	 serecon_op_e _op;
+	 polsearch_op_e _op;
 	bool _negated;
-	serecon_param_type_e _param_type;
+	polsearch_param_type_e _param_type;
 };
 
-class serecon_regex_criterion:public serecon_criterion
+class polsearch_regex_criterion:public polsearch_criterion
 {
       public:
-	serecon_regex_criterion(serecon_op_e opr, bool neg = false, char *expression = NULL);
-	 serecon_regex_criterion(const serecon_regex_criterion & src);
-	~serecon_regex_criterion();
+	polsearch_regex_criterion(polsearch_op_e opr, bool neg = false, char *expression = NULL);
+	 polsearch_regex_criterion(const polsearch_regex_criterion & src);
+	~polsearch_regex_criterion();
 
 	const char *const regex() const;
 	char *regex(char *expression);
@@ -111,26 +111,26 @@ class serecon_regex_criterion:public serecon_criterion
 	char *_regex;
 };
 
-class serecon_strring_list_criterion:public serecon_criterion
+class polsearch_strring_list_criterion:public polsearch_criterion
 {
       public:
-	serecon_strring_list_criterion(serecon_op_e opr, bool neg = false, serecon_string_list * strlist = NULL);
-	serecon_strring_list_criterion(const serecon_strring_list_criterion & sslc);
-	~serecon_strring_list_criterion();
+	polsearch_strring_list_criterion(polsearch_op_e opr, bool neg = false, polsearch_string_list * strlist = NULL);
+	polsearch_strring_list_criterion(const polsearch_strring_list_criterion & sslc);
+	~polsearch_strring_list_criterion();
 
-	const serecon_string_list *string_list() const;
-	serecon_string_list *string_list(serecon_string_list * strlist);
+	const polsearch_string_list *string_list() const;
+	polsearch_string_list *string_list(polsearch_string_list * strlist);
 
       private:
-	 serecon_string_list * _string_list;
+	 polsearch_string_list * _string_list;
 };
 
-class serecon_rule_type_criterion:public serecon_criterion
+class polsearch_rule_type_criterion:public polsearch_criterion
 {
       public:
-	serecon_rule_type_criterion(serecon_op_e opr, bool neg = false, uint32_t ruletype = 0);
-	serecon_rule_type_criterion(const serecon_rule_type_criterion & srtc);
-	~serecon_rule_type_criterion();
+	polsearch_rule_type_criterion(polsearch_op_e opr, bool neg = false, uint32_t ruletype = 0);
+	polsearch_rule_type_criterion(const polsearch_rule_type_criterion & srtc);
+	~polsearch_rule_type_criterion();
 
 	uint32_t rule_type() const;
 	uint32_t rule_type(uint32_t ruletype);
@@ -138,12 +138,12 @@ class serecon_rule_type_criterion:public serecon_criterion
 	 uint32_t _rule_type;
 };
 
-class serecon_bool_criterion:public serecon_criterion
+class polsearch_bool_criterion:public polsearch_criterion
 {
       public:
-	serecon_bool_criterion();
-	serecon_bool_criterion();
-	~serecon_bool_criterion();
+	polsearch_bool_criterion();
+	polsearch_bool_criterion();
+	~polsearch_bool_criterion();
 
 	bool value() const;
 	bool value(bool val);
@@ -152,12 +152,12 @@ class serecon_bool_criterion:public serecon_criterion
 	 bool _value;
 };
 
-class serecon_level_criterion:public serecon_criterion
+class polsearch_level_criterion:public polsearch_criterion
 {
       public:
-	serecon_level_criterion(serecon_op_e opr, bool neg = false, apol_mls_level_t * lvl = NULL, int m = APOL_MLS_EQ);
-	serecon_level_criterion(const serecon_level_criterion & slc);
-	~serecon_level_criterion();
+	polsearch_level_criterion(polsearch_op_e opr, bool neg = false, apol_mls_level_t * lvl = NULL, int m = APOL_MLS_EQ);
+	polsearch_level_criterion(const polsearch_level_criterion & slc);
+	~polsearch_level_criterion();
 
 	const apol_mls_level_t *level() const;
 	apol_mls_level_t *level(apol_mls_level_t * lvl);
@@ -169,13 +169,13 @@ class serecon_level_criterion:public serecon_criterion
 	int _match;
 };
 
-class serecon_range_criterion:public serecon_criterion
+class polsearch_range_criterion:public polsearch_criterion
 {
       public:
-	serecon_range_criterion(serecon_op_e opr, bool neg = false, apol_mls_range_t * rng = NULL, unsigned int m =
+	polsearch_range_criterion(polsearch_op_e opr, bool neg = false, apol_mls_range_t * rng = NULL, unsigned int m =
 				APOL_QUERY_EXACT);
-	 serecon_range_criterion(serecon_range_criterion & src);
-	~serecon_range_criterion();
+	 polsearch_range_criterion(polsearch_range_criterion & src);
+	~polsearch_range_criterion();
 
 	const apol_mls_range_t *range() const;
 	apol_mls_range_t *range(apol_mls_range_t * rng);
@@ -197,4 +197,4 @@ extern "C"
 }
 #endif
 
-#endif				       /* SERECON_CRITERION_H */
+#endif				       /* POLSEARCH_CRITERION_H */

@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SERECON_STRING_LIST_H
-#define SERECON_STRING_LIST_H
+#ifndef POLSEARCH_STRING_LIST_H
+#define POLSEARCH_STRING_LIST_H
 
 #ifdef __cplusplus
 extern "C"
@@ -36,12 +36,12 @@ extern "C"
 #ifdef __cplusplus
 }
 
-class serecon_string_list
+class polsearch_string_list
 {
       public:
-	serecon_string_list(char *str, bool Xvalid);
-	serecon_string_list(const serecon_string_list & sl);
-	~serecon_string_list();
+	polsearch_string_list(char *str, bool Xvalid);
+	polsearch_string_list(const polsearch_string_list & sl);
+	~polsearch_string_list();
 
 	const apol_vector_t *ids() const;
 	apol_vector_t *match(apol_vector_t * test_ids, apol_vector_t * Xcandidates);
@@ -61,4 +61,4 @@ extern "C"
 }
 #endif
 
-#endif				       /* SERECON_STRING_LIST_H */
+#endif				       /* POLSEARCH_STRING_LIST_H */

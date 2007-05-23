@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SERECON_H
-#define SERECON_H
+#ifndef POLSEARCH_H
+#define POLSEARCH_H
 
 #ifdef __cplusplus
 extern "C"
@@ -32,22 +32,22 @@ extern "C"
 #endif
 
 	/** Values to indicate the type of symbol for which to search */
-	typedef enum serecon_symbol
+	typedef enum polsearch_symbol
 	{
-		SERECON_SYMBOL_NONE = 0,	/*!< only used for error conditions */
-		SERECON_SYMBOL_TYPE,   /*!< query returns qpol_type_t */
-		SERECON_SYMBOL_ATTRIBUTE,	/*!< query returns qpol_type_t */
-		SERECON_SYMBOL_ROLE,   /*!< query returns qpol_role_t */
-		SERECON_SYMBOL_USER,   /*!< query returns qpol_user_t */
-		SERECON_SYMBOL_CLASS,  /*!< query returns qpol_class_t */
-		SERECON_SYMBOL_COMMON, /*!< query returns qpol_common_t */
-		SERECON_SYMBOL_CATEGORY,	/*!< query returns qpol_cat_t */
-		SERECON_SYMBOL_LEVEL,  /*!< query returns qpol_level_t */
-		SERECON_SYMBOL_BOOL    /*!< query returns qpol_bool_t */
-	} serecon_symbol_e;
+		POLSEARCH_SYMBOL_NONE = 0,	/*!< only used for error conditions */
+		POLSEARCH_SYMBOL_TYPE,   /*!< query returns qpol_type_t */
+		POLSEARCH_SYMBOL_ATTRIBUTE,	/*!< query returns qpol_type_t */
+		POLSEARCH_SYMBOL_ROLE,   /*!< query returns qpol_role_t */
+		POLSEARCH_SYMBOL_USER,   /*!< query returns qpol_user_t */
+		POLSEARCH_SYMBOL_CLASS,  /*!< query returns qpol_class_t */
+		POLSEARCH_SYMBOL_COMMON, /*!< query returns qpol_common_t */
+		POLSEARCH_SYMBOL_CATEGORY,	/*!< query returns qpol_cat_t */
+		POLSEARCH_SYMBOL_LEVEL,  /*!< query returns qpol_level_t */
+		POLSEARCH_SYMBOL_BOOL    /*!< query returns qpol_bool_t */
+	} polsearch_symbol_e;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif				       /* SERECON_H */
+#endif				       /* POLSEARCH_H */

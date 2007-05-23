@@ -23,15 +23,15 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SERECON_SYMBOL_QUERY_H
-#define SERECON_SYMBOL_QUERY_H
+#ifndef POLSEARCH_SYMBOL_QUERY_H
+#define POLSEARCH_SYMBOL_QUERY_H
 
 #include <apol/policy.h>
 #include <apol/vector.h>
 
 #include <sefs/fclist.h>
 
-#include "serecon.hh"
+#include "polsearch.hh"
 #include "test.hh"
 
 #ifdef __cplusplus
@@ -40,11 +40,11 @@ extern "C"
 #endif
 
 /** Value to indicate the overall matching behavior of the query */
-	typedef enum serecon_match
+	typedef enum polsearch_match
 	{
-		SERECON_MATCH_ALL = 0, /*!< Returned symbols must match all tests. */
-		SERECON_MATCH_ANY      /*!< Returned symbols must match at least one test. */
-	} serecon_match_e;
+		POLSEARCH_MATCH_ALL = 0, /*!< Returned symbols must match all tests. */
+		POLSEARCH_MATCH_ANY      /*!< Returned symbols must match at least one test. */
+	} polsearch_match_e;
 
 #ifdef __cplusplus
 }
@@ -55,43 +55,43 @@ extern "C"
  * only be set at creation of the query; however, the user is free to change
  * the matching behavior to either match all or any of the specified tests.
  * Tests are handled as semantic tests except in the case where \a symbol_type
- * is SERECON_SYMBOL_ATTRIBUTE in which case the tests are considered syntactic.
+ * is POLSEARCH_SYMBOL_ATTRIBUTE in which case the tests are considered syntactic.
  */
-class serecon_symbol_query
+class polsearch_symbol_query
 {
       public:
 		/**
 		 * Create a new symbol query.
 		 * @param symbol_type The type of symbol to match; must be one of
-		 * SERECON_SYMBOL_* from above.
+		 * POLSEARCH_SYMBOL_* from above.
 		 * @param match Set the matching behavior of the query, must be
-		 * either SERECON_MATCH_ALL or SERECON_MATCH_ANY.
+		 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
 		 */
-	serecon_symbol_query(serecon_symbol_e sym_type, serecon_match_e match = SERECON_MATCH_ALL);
+	polsearch_symbol_query(polsearch_symbol_e sym_type, polsearch_match_e match = POLSEARCH_MATCH_ALL);
 		/**
 		 * Copy a symbol query.
 		 * @param sq The query to copy.
 		 */
-	serecon_symbol_query(const serecon_symbol_query & sq);
+	polsearch_symbol_query(const polsearch_symbol_query & sq);
 	//! Destructor.
-	~serecon_symbol_query();
+	~polsearch_symbol_query();
 
 		/**
 		 * Get the symbol type matched by the query.
 		 * @return The type of symbol matched.
 		 */
-	serecon_symbol_e symbol_type() const;
+	polsearch_symbol_e symbol_type() const;
 		/**
 		 * Get the matching behavior of the query.
 		 * @return The current matching behavior of the query.
 		 */
-	serecon_match_e match() const;
+	polsearch_match_e match() const;
 		/**
 		 * Set the matching behavior of the query.
-		 * @param m One of SERECON_MATCH_ALL or SERECON_MATCH_ANY to set.
+		 * @param m One of POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY to set.
 		 * @return The behavior set.
 		 */
-	serecon_match_e match(serecon_match_e m);
+	polsearch_match_e match(polsearch_match_e m);
 		/**
 		 * Get the vector of tests performed by the query.
 		 * @return The vector of tests. The caller is free to modify this vector,
@@ -104,7 +104,7 @@ class serecon_symbol_query
 		 * @param fclist A file_contexts list to optionally use for tests that
 		 * match file_context entries. It is an error to not provide \a fclist
 		 * if a test matches file_context entries.
-		 * @return A vector of symbols matching the query (see serecon_symbol_e
+		 * @return A vector of symbols matching the query (see polsearch_symbol_e
 		 * values for appropriate type of the vector's elements), or NULL on
 		 * error. The caller is responsible for calling apol_vector_destroy()
 		 * on the returned vector.
@@ -113,61 +113,61 @@ class serecon_symbol_query
 		/**
 		 * Get a list of the valid types of tests to perform for the symbol
 		 * type specified by the query.
-		 * @return A vector (of type serecon_test_cond_e) containing all valid
+		 * @return A vector (of type polsearch_test_cond_e) containing all valid
 		 * tests for the specified symbol type. The caller is responsible for
 		 * calling apol_vector_destroy() on the returned vector.
 		 */
 	apol_vector_t *getValidTests();
 
       private:
-	serecon_symbol_e _symbol_type;	/*!< The type of symbol matched by the query. */
-	serecon_match_e _match:	       /*!< The matching behavior used for determining if a symbol matches with multiple tests. */
+	polsearch_symbol_e _symbol_type;	/*!< The type of symbol matched by the query. */
+	polsearch_match_e _match:	       /*!< The matching behavior used for determining if a symbol matches with multiple tests. */
 	apol_vector_t * _tests;       /*!< The set of tests used by the query to determine which symbols match. */
 };
 
 extern "C"
 {
 #endif
-	/** This typedef may safely be used in C to represent the class serecon_symbol_query */
-	typedef struct serecon_symbol_query serecon_symbol_query_t;
+	/** This typedef may safely be used in C to represent the class polsearch_symbol_query */
+	typedef struct polsearch_symbol_query polsearch_symbol_query_t;
 
 	/**
 	 * Create a symbol query.
-	 * @see serecon_symbol_query::serecon_symbol_query(serecon_symbol_e, serecon_match_e)
+	 * @see polsearch_symbol_query::polsearch_symbol_query(polsearch_symbol_e, polsearch_match_e)
 	 */
-	serecon_symbol_query_t *serecon_symbol_query_create(serecon_symbol_e symbol_type, serecon_match_e match);
+	polsearch_symbol_query_t *polsearch_symbol_query_create(polsearch_symbol_e symbol_type, polsearch_match_e match);
 	/**
 	 * Copy a symbol query.
-	 * @see serecon_symbol_query::serecon_symbol_query(const serecon_symbol_query&)
+	 * @see polsearch_symbol_query::polsearch_symbol_query(const polsearch_symbol_query&)
 	 */
-	serecon_symbol_query_t *serecon_symbol_query_create_from_symbol_query(serecon_symbol_query_t * sq);
+	polsearch_symbol_query_t *polsearch_symbol_query_create_from_symbol_query(polsearch_symbol_query_t * sq);
 	/**
 	 * Deallocate all memory associated with a symbol query and set it to NULL.
 	 * @param sq Reference pointer to the symbol query to destroy.
-	 * @see serecon_symbol_query::~serecon_symbol_query()
+	 * @see polsearch_symbol_query::~polsearch_symbol_query()
 	 */
-	void serecon_symbol_query_destroy(serecon_symbol_query_t ** sq);
+	void polsearch_symbol_query_destroy(polsearch_symbol_query_t ** sq);
 
 	/**
 	 * Get the symbol type matched by a symbol query.
-	 * @see serecon_symbol_query::symbol_type()
+	 * @see polsearch_symbol_query::symbol_type()
 	 */
-	serecon_symbol_e serecon_symbol_query_get_symbol_type(serecon_symbol_query_t * sq);
+	polsearch_symbol_e polsearch_symbol_query_get_symbol_type(polsearch_symbol_query_t * sq);
 	/**
 	 * Get the symbol matching behavior from a symbol query.
-	 * @see serecon_symbol_query::match()
+	 * @see polsearch_symbol_query::match()
 	 */
-	serecon_match_e serecon_symbol_query_get_match(serecon_symbol_query_t * sq);
+	polsearch_match_e polsearch_symbol_query_get_match(polsearch_symbol_query_t * sq);
 	/**
 	 * Set the symbol matching behavior from a symbol query.
-	 * @see serecon_symbol_query::match(serecon_match_e)
+	 * @see polsearch_symbol_query::match(polsearch_match_e)
 	 */
-	serecon_match_e serecon_symbol_query_set_match(serecon_symbol_query_t * sq, serecon_match_e m);
+	polsearch_match_e polsearch_symbol_query_set_match(polsearch_symbol_query_t * sq, polsearch_match_e m);
 	/**
 	 * Get the vector of tests run by a symbol query.
-	 * @see serecon_symbol_query::tests()
+	 * @see polsearch_symbol_query::tests()
 	 */
-	apol_vector_t *serecon_symbol_query_get_tests(serecon_symbol_query_t * sq);
+	apol_vector_t *polsearch_symbol_query_get_tests(polsearch_symbol_query_t * sq);
 	/**
 	 * Run a symbol query.
 	 * @param sq The query to run.
@@ -175,21 +175,21 @@ extern "C"
 	 * @param fclist A file_contexts list to optionally use for the tests that
 	 * match file_context entries. It is an error to pass \a fclist as NULL if
 	 * a test matches file_context entries.
-	 * @return A vector of symbols matching the query (see serecon_symbol_e
+	 * @return A vector of symbols matching the query (see polsearch_symbol_e
 	 * values for appropriate type of the vector's elements), or NULL on
 	 * error. The caller is responsible for calling apol_vector_destroy()
 	 * on the returned vector.
-	 * @see serecon_symbol_query::run(apol_policy_t*, sefs_fclist_t*)
+	 * @see polsearch_symbol_query::run(apol_policy_t*, sefs_fclist_t*)
 	 */
-	apol_vector_t *serecon_symbol_query_run(serecon_symbol_query_t * sq, apol_policy_t * p, sefs_fclist_t * fclist);
+	apol_vector_t *polsearch_symbol_query_run(polsearch_symbol_query_t * sq, apol_policy_t * p, sefs_fclist_t * fclist);
 	/**
 	 * Get a list of the valid types of tests to perform for the symol
 	 * type specified by the query.
-	 * @see serecon_symbol_query::getValidTests()
+	 * @see polsearch_symbol_query::getValidTests()
 	 */
-	apol_vector_t *serecon_symbol_query_get_valid_tests(serecon_symbol_query_t * sq);
+	apol_vector_t *polsearch_symbol_query_get_valid_tests(polsearch_symbol_query_t * sq);
 #ifdef __cplusplus
 }
 #endif
 
-#endif				       /* SERECON_SYMBOL_QUERY_H */
+#endif				       /* POLSEARCH_SYMBOL_QUERY_H */

@@ -23,12 +23,12 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SERECON_TEST_H
-#define SERECON_TEST_H
+#ifndef POLSEARCH_TEST_H
+#define POLSEARCH_TEST_H
 
 #include <apol/vector.h>
 
-#include "serecon.hh"
+#include "polsearch.hh"
 #include "criterion.hh"
 
 #ifdef __cplusplus
@@ -36,53 +36,53 @@ extern "C"
 {
 #endif
 
-	typedef struct serecon_test serecon_test_t;
+	typedef struct polsearch_test polsearch_test_t;
 
 /** Value to indicate the test condition */
-	typedef enum serecon_test_cond
+	typedef enum polsearch_test_cond
 	{
-		SERECON_TEST_NONE = 0, /*!< only used for error conditions */
-		SERECON_TEST_NAME,     /*!< primary name of the symbol */
-		SERECON_TEST_ALIAS,    /*!< alias(es) of the symbol */
-		SERECON_TEST_ATTRIBUTES,	/*!< assigned attributes */
-		SERECON_TEST_ROLES,    /*!< assigned roles (or assigned to roles) */
-		SERECON_TEST_AVRULE,   /*!< there is an av rule */
-		SERECON_TEST_TERULE,   /*!< there is a type rule */
-		SERECON_TEST_ROLEALLOW,	/*!< there is a role allow rule */
-		SERECON_TEST_ROLETRANS,	/*!< there is a role_transition rule */
-		SERECON_TEST_RANGETRANS,	/*!< there is a range_transition rule */
-		SERECON_TEST_FCENTRY,  /*!< there is a file_contexts entry */
-		SERECON_TEST_TYPES,    /*!< assigned types */
-		SERECON_TEST_USERS,    /*!< assigned to users */
-		SERECON_TEST_DEFAULT_LEVEL,	/*!< its default level */
-		SERECON_TEST_RANGE,    /*!< assigned range */
-		SERECON_TEST_COMMON,   /*!< inherited common */
-		SERECON_TEST_PERMISSIONS,	/*!< assigned permissions */
-		SERECON_TEST_CATEGORIES,	/*!< assigned categories */
-		SERECON_TEST_STATE,    /*!< boolean default state */
-	} serecon_test_cond_e;
+		POLSEARCH_TEST_NONE = 0, /*!< only used for error conditions */
+		POLSEARCH_TEST_NAME,     /*!< primary name of the symbol */
+		POLSEARCH_TEST_ALIAS,    /*!< alias(es) of the symbol */
+		POLSEARCH_TEST_ATTRIBUTES,	/*!< assigned attributes */
+		POLSEARCH_TEST_ROLES,    /*!< assigned roles (or assigned to roles) */
+		POLSEARCH_TEST_AVRULE,   /*!< there is an av rule */
+		POLSEARCH_TEST_TERULE,   /*!< there is a type rule */
+		POLSEARCH_TEST_ROLEALLOW,	/*!< there is a role allow rule */
+		POLSEARCH_TEST_ROLETRANS,	/*!< there is a role_transition rule */
+		POLSEARCH_TEST_RANGETRANS,	/*!< there is a range_transition rule */
+		POLSEARCH_TEST_FCENTRY,  /*!< there is a file_contexts entry */
+		POLSEARCH_TEST_TYPES,    /*!< assigned types */
+		POLSEARCH_TEST_USERS,    /*!< assigned to users */
+		POLSEARCH_TEST_DEFAULT_LEVEL,	/*!< its default level */
+		POLSEARCH_TEST_RANGE,    /*!< assigned range */
+		POLSEARCH_TEST_COMMON,   /*!< inherited common */
+		POLSEARCH_TEST_PERMISSIONS,	/*!< assigned permissions */
+		POLSEARCH_TEST_CATEGORIES,	/*!< assigned categories */
+		POLSEARCH_TEST_STATE,    /*!< boolean default state */
+	} polsearch_test_cond_e;
 
 #ifdef __cplusplus
 }
 
-class serecon_test
+class polsearch_test
 {
       public:
-	serecon_test(serecon_symbol_e sym_type, serecon_test_cond_e cond);
-	serecon_test(const serecon_test & st);
-	~serecon_test();
+	polsearch_test(polsearch_symbol_e sym_type, polsearch_test_cond_e cond);
+	polsearch_test(const polsearch_test & st);
+	~polsearch_test();
 
 	apol_vector_t *getValidOps() const;
 	apol_vector_t *criteria();
-	serecon_symbol_e symbol_type() const;
+	polsearch_symbol_e symbol_type() const;
 	apol_vector_t *run(apol_policy_t * p, sefs_fclist * fclist, apol_vector_t * Xcandidates) const;
-	serecon_param_type_e getParamType(serecon_op_e op) const;
+	polsearch_param_type_e getParamType(polsearch_op_e op) const;
 
       protected:
 	apol_vector_t * _criteria;
 
       private:
-	serecon_symbol_e _symbol_type;
+	polsearch_symbol_e _symbol_type;
 };
 
 extern "C"
@@ -95,4 +95,4 @@ extern "C"
 }
 #endif
 
-#endif				       /* SERECON_TEST_H */
+#endif				       /* POLSEARCH_TEST_H */
