@@ -217,6 +217,22 @@ proc range_trans_vector_to_list {v} {
     return $list
 }
 
+proc relabel_result_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        lappend list [new_apol_relabel_result_t [$v get_element $i]]
+    }
+    return $list
+}
+
+proc relabel_result_pair_vector_to_list {v} {
+    set list {}
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        lappend list [new_apol_relabel_result_pair_t [$v get_element $i]]
+    }
+    return $list
+}
+
 # Convert a vector of qpol_role_allow_t objects to a list of
 # qpol_role_allow_t.
 proc role_allow_vector_to_list {v} {

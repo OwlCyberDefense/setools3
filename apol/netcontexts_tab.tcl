@@ -510,7 +510,7 @@ proc Apol_NetContexts::_netifcon_popup {netif} {
 proc Apol_NetContexts::_netifcon_runSearch {} {
     variable vals
     variable widgets
-    
+
     if {$vals(netifcon:dev_enable)} {
         if {$vals(netifcon:dev) == {}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No device selected."

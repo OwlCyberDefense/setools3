@@ -50,7 +50,7 @@ analysis queries, the required query parameters as well as the
 specified advanced settings are saved.  When loading a query, apol
 parses the specified query (.qf) file, raises the correct tab and
 configures the query options with the specified query parameters and
-advanced settings.  The load query menu item is enabled across all
+advanced settings.  The Load Query menu item is enabled across all
 tabs, but the save query menu item is only enabled when the Analysis
 tab or the TE Rules tab (see the Policy Rules tab description below)
 is raised.  Choose 'Policy Summary' from the Query menu to display
@@ -58,12 +58,13 @@ statistics about the currently loaded policy.  A shorthand version of
 these statistics is always displayed on the status bar when a policy
 is opened.
 
-Permission mappings are managed through in the Advanced menu.  The
-mappings are used by apol's direct and transitive information flow
-analyses.  Although this dialog is not required to perform an
-information flow analysis, it provides additional control over those
-mappings.  See the separate help file on information flow for more
-information about permission mappings and their management.
+Permission mappings are managed through the Tools menu.  The mappings
+are used by apol's direct and transitive information flow analyses.
+Mappings may be viewed with the View Perm Map menu item.  Although the
+ensuing dialog is not required to perform an information flow
+analysis, the user may fine tune those mappings.  See the separate
+help file on information flow for more information about permission
+mappings and their management.
 
 
 Policy Components tabs
