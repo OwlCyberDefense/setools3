@@ -613,6 +613,7 @@ proc Apol_Analysis_transflow::_checkParams {} {
         if {![ApolTop::openDefaultPermMap]} {
             return "This analysis requires that a permission map is loaded."
 	}
+        apol_tcl_clear_info_string
     }
 
     if {$vals(advanced:enable)} {
@@ -816,15 +817,15 @@ proc Apol_Analysis_transflow::_createResultsNodes {tree parent_node results do_e
     set results_processed 0
     foreach r $info_list {
         apol_tcl_set_info_string $::ApolTop::policy "Processing result $results_processed of [llength $info_list]"
-        set flow_dir [$r get_dir]
-        set source [[$r get_start_type] get_name $::ApolTop::qpolicy]
-        set target [[$r get_end_type] get_name $::ApolTop::qpolicy]
-        set length [$r get_length]
-        set steps_v [$r get_steps]
 
-        if {!$do_expand} {
+        if {$do_expand} {
+            set target [[$r get_end_type] get_name $::ApolTop::qpolicy]
+        } else {
             set target [[[lindex $info_list 0] get_end_type] get_name $::ApolTop::qpolicy]
         }
+        set flow_dir [$r get_dir]
+        set length [$r get_length]
+        set steps_v [$r get_steps]
 
         lappend all_targets $target
         lappend paths($target) [list $length $steps_v]
@@ -967,11 +968,8 @@ proc Apol_Analysis_transflow::_findMore {res tree} {
     destroy .trans_more
     if {$retval == 0} {
         set graph_handler [lindex [$tree itemcget top -data] 0]
-        if {[catch {apol_TransInformationFurtherPrepare $graph_handler $start $end} err]} {
-            tk_messageBox -icon error -type ok -title "Find More Flows" -message "Could not prepare infoflow graph:\n$err"
-        } else {
-            _doFindMore $res $tree $node
-        }
+        $graph_handler trans_further_prepare $::ApolTop::policy $start $end
+        _doFindMore $res $tree $node
     }
 }
 
@@ -1044,21 +1042,16 @@ proc Apol_Analysis_transflow::_doFindMore {res tree node} {
     set graph_handler [lindex [$tree itemcget top -data] 0]
     set start_time [clock seconds]
     set elapsed_time 0
-    set results {}
     set path_found 0
-
+    set v NULL
     while {1} {
         set elapsed_time [expr {[clock seconds] - $start_time}]
         set vals(find_more:searches_text) "Finding more flows:\n\n"
         append vals(find_more:searches_text) "    Time: [clock format $elapsed_time -format "%H:%M:%S" -gmt 1]$time_limit_str\n\n"
         append vals(find_more:searches_text) "    Flows: found $path_found$path_limit_str"
         update
-        if {[catch {apol_TransInformationFurtherNext $graph_handler} r]} {
-            tk_messageBox -icon error -type ok -title "Find More Flows" -message "Could not find more flows:\n$results"
-            break
-        }
-        set results [lsort -unique [concat $results $r]]
-        set path_found [llength $results]
+        set v [$graph_handler trans_further_next $::ApolTop::policy $v]
+        set path_found [$v get_size]
         if {($time_limit != {} && $elapsed_time >= $time_limit) || \
                 ($path_limit != 0 && $path_found > $path_limit) || \
                 $vals(find_more:abort)} {
@@ -1073,20 +1066,20 @@ proc Apol_Analysis_transflow::_doFindMore {res tree node} {
     set parent_name [$tree itemcget [$tree parent $node] -text]
     set name [$tree itemcget $node -text]
     set flow_dir [lindex [$tree itemcget $node -data] 1 0]
-    switch -- $flow_dir {
-        to {
+    switch -- $flow_dir [list \
+        $::APOL_INFOFLOW_IN {
             $res.tb insert end "More information flows to " title \
                 $parent_name title_type \
                 " from " title \
                 $name title_type
-        }
-        from {
+        } \
+        $::APOL_INFOFLOW_OUT {
             $res.tb insert end "More information flows from " title \
                 $parent_name title_type \
                 " to " title \
                 $name title_type
-        }
-    }
+        } \
+                             ]
     $res.tb insert end "  (" title \
         "Find more flows" {title_type find_more} \
         ")\n\n" title \
@@ -1098,23 +1091,36 @@ proc Apol_Analysis_transflow::_doFindMore {res tree node} {
         " out of " subtitle \
         $path_limit num \
         "\n" subtitle
+
+    set results {}
+    foreach r [infoflow_result_vector_to_list $v] {
+        set length [$r get_length]
+        set steps_v [$r get_steps]
+        lappend results [list $length $steps_v]
+    }
+
     set path_num 1
-    foreach r [lsort -index 3 -integer $results] {
-        set path [lindex $r 4]
-        if {$flow_dir == "to"} {
+    foreach r [lsort -index 0 -integer $results] {
+        set steps_v [lindex $r 1]
+        set sorted_path {}
+        if {$flow_dir == $::APOL_INFOFLOW_IN} {
             # flip the steps around
-            set p {}
-            foreach step $path {
-                set p [concat [list $step] $p]
+            for {set i [expr {[$steps_v get_size] - 1}]} {$i >= 0} {incr i -1} {
+                set s [new_apol_infoflow_step_t [$steps_v get_element $i]]
+                lappend sorted_path [_infoflow_step_to_list $s]
             }
-            set sorted_path $p
         } else {
-            set sorted_path $path
+            for {set i 0} {$i < [$steps_v get_size]} {incr i} {
+                set s [new_apol_infoflow_step_t [$steps_v get_element $i]]
+                lappend sorted_path [_infoflow_step_to_list $s]
+            }
         }
         $res.tb insert end "\n" {}
         _renderPath $res $path_num $sorted_path
         incr path_num
     }
+    
     $res.tb configure -state disabled
     destroy $d
+    $v -delete
 }

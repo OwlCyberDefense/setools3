@@ -2341,12 +2341,14 @@ typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
 	fail:
 		return;
 	};
-	void trans_further_next(apol_policy_t *p, apol_vector_t *v) {
-		if (apol_infoflow_analysis_trans_further_next(p, self, (&v))) {
+	apol_vector_t *trans_further_next(apol_policy_t *p, apol_vector_t *v) {
+		apol_vector_t *retval = NULL;
+		if (apol_infoflow_analysis_trans_further_next(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run further analysis");
 		}
+		retval = v;
 	fail:
-		return;
+		return retval;
 	};
 };
 typedef struct apol_infoflow_result {} apol_infoflow_result_t;
