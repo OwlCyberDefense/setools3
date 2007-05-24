@@ -35,15 +35,15 @@ extern "C"
 	typedef enum polsearch_symbol
 	{
 		POLSEARCH_SYMBOL_NONE = 0,	/*!< only used for error conditions */
-		POLSEARCH_SYMBOL_TYPE,   /*!< query returns qpol_type_t */
+		POLSEARCH_SYMBOL_TYPE, /*!< query returns qpol_type_t */
 		POLSEARCH_SYMBOL_ATTRIBUTE,	/*!< query returns qpol_type_t */
-		POLSEARCH_SYMBOL_ROLE,   /*!< query returns qpol_role_t */
-		POLSEARCH_SYMBOL_USER,   /*!< query returns qpol_user_t */
-		POLSEARCH_SYMBOL_CLASS,  /*!< query returns qpol_class_t */
-		POLSEARCH_SYMBOL_COMMON, /*!< query returns qpol_common_t */
+		POLSEARCH_SYMBOL_ROLE, /*!< query returns qpol_role_t */
+		POLSEARCH_SYMBOL_USER, /*!< query returns qpol_user_t */
+		POLSEARCH_SYMBOL_CLASS,	/*!< query returns qpol_class_t */
+		POLSEARCH_SYMBOL_COMMON,	/*!< query returns qpol_common_t */
 		POLSEARCH_SYMBOL_CATEGORY,	/*!< query returns qpol_cat_t */
-		POLSEARCH_SYMBOL_LEVEL,  /*!< query returns qpol_level_t */
-		POLSEARCH_SYMBOL_BOOL    /*!< query returns qpol_bool_t */
+		POLSEARCH_SYMBOL_LEVEL,	/*!< query returns qpol_level_t */
+		POLSEARCH_SYMBOL_BOOL  /*!< query returns qpol_bool_t */
 	} polsearch_symbol_e;
 
 #ifdef __cplusplus

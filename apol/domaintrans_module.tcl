@@ -576,6 +576,9 @@ proc Apol_Analysis_domaintrans::_checkParams {} {
     if {[lindex $type 0] == {}} {
         return "No type was selected."
     }
+    if {![Apol_Types::isTypeInPolicy [lindex $type 0]]} {
+        return "[lindex $type 0] is not a type within the policy."
+    }
     set vals(type) [lindex $type 0]
     set vals(type:attrib) [lindex $type 1]
     set use_regexp [Apol_Widget::getRegexpEntryState $widgets(regexp)]

@@ -2591,7 +2591,7 @@ typedef struct apol_types_relation_result {} apol_types_relation_result_t;
 	const apol_vector_t *get_dissimilar_first() {
 		return apol_types_relation_result_get_dissimilar_first(self);
 	};
-	const apol_vector_t *get_similar_other() {
+	const apol_vector_t *get_dissimilar_other() {
 		return apol_types_relation_result_get_dissimilar_other(self);
 	};
 	const apol_vector_t *get_allowrules() {

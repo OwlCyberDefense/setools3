@@ -40,25 +40,25 @@ extern "C"
 /** Value to indicate the comparison operator for a parameter */
 	typedef enum polsearch_op
 	{
-		POLSEARCH_OP_NONE = 0,   /*!< only used for error conditions */
-		POLSEARCH_OP_IS,	       /*!< symbol (or state) is */
+		POLSEARCH_OP_NONE = 0, /*!< only used for error conditions */
+		POLSEARCH_OP_IS,       /*!< symbol (or state) is */
 		POLSEARCH_OP_MATCH_REGEX,	/*!< symbol name (or alias name) matches regular expression */
-		POLSEARCH_OP_RULE_TYPE,  /*!< is rule type */
-		POLSEARCH_OP_INCLUDE,    /*!< set includes */
-		POLSEARCH_OP_AS_SOURCE,  /*!< has as rule source */
-		POLSEARCH_OP_AS_TARGET,  /*!< has as rule target */
-		POLSEARCH_OP_AS_CLASS,   /*!< has as rule class */
-		POLSEARCH_OP_AS_PERM,    /*!< has as rule permission */
-		POLSEARCH_OP_AS_DEFAULT, /*!< has as rule default */
-		POLSEARCH_OP_AS_SRC_TGT, /*!< has as rule source or target */
+		POLSEARCH_OP_RULE_TYPE,	/*!< is rule type */
+		POLSEARCH_OP_INCLUDE,  /*!< set includes */
+		POLSEARCH_OP_AS_SOURCE,	/*!< has as rule source */
+		POLSEARCH_OP_AS_TARGET,	/*!< has as rule target */
+		POLSEARCH_OP_AS_CLASS, /*!< has as rule class */
+		POLSEARCH_OP_AS_PERM,  /*!< has as rule permission */
+		POLSEARCH_OP_AS_DEFAULT,	/*!< has as rule default */
+		POLSEARCH_OP_AS_SRC_TGT,	/*!< has as rule source or target */
 		POLSEARCH_OP_AS_SRC_TGT_DFLT,	/*!< has as rule source, target, or default */
 		POLSEARCH_OP_AS_SRC_DFLT,	/*!< has as rule source or default */
-		POLSEARCH_OP_IN_COND,    /*!< is in a conditional with boolean */
-		POLSEARCH_OP_LEVEL,      /*!< user level comparison */
-		POLSEARCH_OP_RANGE,      /*!< has as range */
-		POLSEARCH_OP_AS_USER,    /*!< has as user */
-		POLSEARCH_OP_AS_ROLE,    /*!< has as role */
-		POLSEARCH_OP_AS_TYPE,    /*!< has as type */
+		POLSEARCH_OP_IN_COND,  /*!< is in a conditional with boolean */
+		POLSEARCH_OP_LEVEL,    /*!< user level comparison */
+		POLSEARCH_OP_RANGE,    /*!< has as range */
+		POLSEARCH_OP_AS_USER,  /*!< has as user */
+		POLSEARCH_OP_AS_ROLE,  /*!< has as role */
+		POLSEARCH_OP_AS_TYPE,  /*!< has as type */
 	} polsearch_op_e;
 
 /** Value to indicate the type of the parameter value of a criterion */
@@ -81,7 +81,7 @@ class polsearch_criterion
       public:
 	virtual polsearch_criterion(polsearch_op_e opr, bool neg = false);
 	virtual polsearch_criterion(const polsearch_criterion & sc);
-	virtual ~polsearch_criterion();
+	 virtual ~ polsearch_criterion();
 
 	polsearch_op_e op() const;
 	bool negated() const;
@@ -156,7 +156,7 @@ class polsearch_level_criterion:public polsearch_criterion
 {
       public:
 	polsearch_level_criterion(polsearch_op_e opr, bool neg = false, apol_mls_level_t * lvl = NULL, int m = APOL_MLS_EQ);
-	polsearch_level_criterion(const polsearch_level_criterion & slc);
+	 polsearch_level_criterion(const polsearch_level_criterion & slc);
 	~polsearch_level_criterion();
 
 	const apol_mls_level_t *level() const;
@@ -165,7 +165,7 @@ class polsearch_level_criterion:public polsearch_criterion
 	int match(int m);
 
       private:
-	apol_mls_level_t * _level;
+	 apol_mls_level_t * _level;
 	int _match;
 };
 
@@ -173,7 +173,7 @@ class polsearch_range_criterion:public polsearch_criterion
 {
       public:
 	polsearch_range_criterion(polsearch_op_e opr, bool neg = false, apol_mls_range_t * rng = NULL, unsigned int m =
-				APOL_QUERY_EXACT);
+				  APOL_QUERY_EXACT);
 	 polsearch_range_criterion(polsearch_range_criterion & src);
 	~polsearch_range_criterion();
 

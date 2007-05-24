@@ -41,25 +41,25 @@ extern "C"
 /** Value to indicate the test condition */
 	typedef enum polsearch_test_cond
 	{
-		POLSEARCH_TEST_NONE = 0, /*!< only used for error conditions */
-		POLSEARCH_TEST_NAME,     /*!< primary name of the symbol */
-		POLSEARCH_TEST_ALIAS,    /*!< alias(es) of the symbol */
+		POLSEARCH_TEST_NONE = 0,	/*!< only used for error conditions */
+		POLSEARCH_TEST_NAME,   /*!< primary name of the symbol */
+		POLSEARCH_TEST_ALIAS,  /*!< alias(es) of the symbol */
 		POLSEARCH_TEST_ATTRIBUTES,	/*!< assigned attributes */
-		POLSEARCH_TEST_ROLES,    /*!< assigned roles (or assigned to roles) */
-		POLSEARCH_TEST_AVRULE,   /*!< there is an av rule */
-		POLSEARCH_TEST_TERULE,   /*!< there is a type rule */
+		POLSEARCH_TEST_ROLES,  /*!< assigned roles (or assigned to roles) */
+		POLSEARCH_TEST_AVRULE, /*!< there is an av rule */
+		POLSEARCH_TEST_TERULE, /*!< there is a type rule */
 		POLSEARCH_TEST_ROLEALLOW,	/*!< there is a role allow rule */
 		POLSEARCH_TEST_ROLETRANS,	/*!< there is a role_transition rule */
 		POLSEARCH_TEST_RANGETRANS,	/*!< there is a range_transition rule */
-		POLSEARCH_TEST_FCENTRY,  /*!< there is a file_contexts entry */
-		POLSEARCH_TEST_TYPES,    /*!< assigned types */
-		POLSEARCH_TEST_USERS,    /*!< assigned to users */
+		POLSEARCH_TEST_FCENTRY,	/*!< there is a file_contexts entry */
+		POLSEARCH_TEST_TYPES,  /*!< assigned types */
+		POLSEARCH_TEST_USERS,  /*!< assigned to users */
 		POLSEARCH_TEST_DEFAULT_LEVEL,	/*!< its default level */
-		POLSEARCH_TEST_RANGE,    /*!< assigned range */
-		POLSEARCH_TEST_COMMON,   /*!< inherited common */
+		POLSEARCH_TEST_RANGE,  /*!< assigned range */
+		POLSEARCH_TEST_COMMON, /*!< inherited common */
 		POLSEARCH_TEST_PERMISSIONS,	/*!< assigned permissions */
 		POLSEARCH_TEST_CATEGORIES,	/*!< assigned categories */
-		POLSEARCH_TEST_STATE,    /*!< boolean default state */
+		POLSEARCH_TEST_STATE,  /*!< boolean default state */
 	} polsearch_test_cond_e;
 
 #ifdef __cplusplus
@@ -79,10 +79,10 @@ class polsearch_test
 	polsearch_param_type_e getParamType(polsearch_op_e op) const;
 
       protected:
-	apol_vector_t * _criteria;
+	 apol_vector_t * _criteria;
 
       private:
-	polsearch_symbol_e _symbol_type;
+	 polsearch_symbol_e _symbol_type;
 };
 
 extern "C"

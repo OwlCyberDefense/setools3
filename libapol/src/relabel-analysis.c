@@ -275,8 +275,8 @@ static int relabel_analysis_compare_type_to_vector(apol_policy_t * p, apol_vecto
  * @return 0 on success, < 0 on error.
  */
 static int append_avrules_to_object_vector(apol_policy_t * p,
-					    apol_relabel_analysis_t * r,
-					    qpol_avrule_t * ruleA, qpol_avrule_t * ruleB, apol_vector_t * results)
+					   apol_relabel_analysis_t * r,
+					   qpol_avrule_t * ruleA, qpol_avrule_t * ruleB, apol_vector_t * results)
 {
 	qpol_type_t *sourceA, *sourceB, *target, *intermed;
 	unsigned char isattrA, isattrB;

@@ -42,8 +42,8 @@ extern "C"
 /** Value to indicate the overall matching behavior of the query */
 	typedef enum polsearch_match
 	{
-		POLSEARCH_MATCH_ALL = 0, /*!< Returned symbols must match all tests. */
-		POLSEARCH_MATCH_ANY      /*!< Returned symbols must match at least one test. */
+		POLSEARCH_MATCH_ALL = 0,	/*!< Returned symbols must match all tests. */
+		POLSEARCH_MATCH_ANY    /*!< Returned symbols must match at least one test. */
 	} polsearch_match_e;
 
 #ifdef __cplusplus
@@ -120,9 +120,9 @@ class polsearch_symbol_query
 	apol_vector_t *getValidTests();
 
       private:
-	polsearch_symbol_e _symbol_type;	/*!< The type of symbol matched by the query. */
-	polsearch_match_e _match:	       /*!< The matching behavior used for determining if a symbol matches with multiple tests. */
-	apol_vector_t * _tests;       /*!< The set of tests used by the query to determine which symbols match. */
+	 polsearch_symbol_e _symbol_type;	/*!< The type of symbol matched by the query. */
+	polsearch_match_e _match:      /*!< The matching behavior used for determining if a symbol matches with multiple tests. */
+	 apol_vector_t * _tests;       /*!< The set of tests used by the query to determine which symbols match. */
 };
 
 extern "C"

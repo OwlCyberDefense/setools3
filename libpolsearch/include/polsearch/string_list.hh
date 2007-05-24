@@ -40,7 +40,7 @@ class polsearch_string_list
 {
       public:
 	polsearch_string_list(char *str, bool Xvalid);
-	polsearch_string_list(const polsearch_string_list & sl);
+	 polsearch_string_list(const polsearch_string_list & sl);
 	~polsearch_string_list();
 
 	const apol_vector_t *ids() const;

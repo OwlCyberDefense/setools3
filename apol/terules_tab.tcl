@@ -114,7 +114,7 @@ proc Apol_TE::create {tab_name nb} {
 
     # Notebook creation for results
     set widgets(results) [NoteBook [$rbox getframe].results]
-    $widgets(results) bindtabs <Button-1> Apol_TE::switch_to_tab
+    $widgets(results) bindtabs <Button-1> Apol_TE::_switch_to_tab
     $widgets(results) bindtabs <Button-3> \
         [list ApolTop::popup \
              %W %x %y $popupTab_Menu $tab_menu_callbacks]

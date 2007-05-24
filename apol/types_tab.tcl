@@ -123,6 +123,25 @@ proc Apol_Types::getTextWidget {} {
     return $widgets(results).tb
 }
 
+# Given a type or alias name, return non-zero if that type/alias is
+# within the policy.  If no policy has been loaded then return zero.
+proc Apol_Types::isTypeInPolicy {type} {
+    if {![ApolTop::is_policy_open]} {
+        return 0
+    }
+    set q [new_apol_type_query_t]
+    $q set_type $::ApolTop::policy $type
+    set v [$q run $::ApolTop::policy]
+    $q -delete
+    if {$v == "NULL" || [$v get_size] == 0} {
+        set retval 0
+    } else {
+        set retval 1
+    }
+    $v -delete
+    set retval
+}
+
 # Given an attribute name, return non-zero if that attribute is within
 # the loaded policy.  If no policy has been loaded then return zero.
 proc Apol_Types::isAttributeInPolicy {attrib} {

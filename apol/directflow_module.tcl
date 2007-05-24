@@ -208,6 +208,10 @@ proc Apol_Analysis_directflow::getTextWidget {tab} {
     return [$tab.right getframe].res
 }
 
+proc Apol_Analysis_directflow::appendResultsNodes {tree parent_node results} {
+    _createResultsNodes $tree $parent_node $results 0
+}
+
 #################### private functions below ####################
 
 proc Apol_Analysis_directflow::_reinitializeVals {} {
@@ -295,6 +299,9 @@ proc Apol_Analysis_directflow::_checkParams {} {
     set type [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(type)]
     if {[lindex $type 0] == {}} {
         return "No type was selected."
+    }
+    if {![Apol_Types::isTypeInPolicy [lindex $type 0]]} {
+        return "[lindex $type 0] is not a type within the policy."
     }
     set vals(type) [lindex $type 0]
     set vals(type:attrib) [lindex $type 1]
@@ -415,7 +422,7 @@ proc Apol_Analysis_directflow::_treeOpen {tree node} {
                 # mark this node as having been expanded
                 $tree itemconfigure $node -data [list 1 $results]
                 if {$new_results != {}} {
-                    _createResultsNodes $tree $node $new_results
+                    _createResultsNodes $tree $node $new_results 1
                     $new_results -delete
                 }
             }
@@ -446,7 +453,7 @@ proc Apol_Analysis_directflow::_renderResults {f results} {
     set top_text [_renderTopText]
     $tree itemconfigure top -data [list $graph_handler $top_text]
 
-    _createResultsNodes $tree top $results_list
+    _createResultsNodes $tree top $results_list 1
     $tree selection set top
     $tree opentree top 0
     $tree see top
@@ -473,16 +480,22 @@ your selection above) its parent node.
 same, you cannot open the child.  This avoids cyclic analyses."
 }
 
-# create results to the given tree.
-proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results} {
+# If do_expand is zero, then generate result nodes for only the first
+# target type of $results.  This is needed by two types relationship
+# analysis.
+proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results do_expand} {
     set all_targets {}
     set info_list [infoflow_result_vector_to_list $results]
     set results_processed 0
     foreach r $info_list {
         apol_tcl_set_info_string $::ApolTop::policy "Processing result $results_processed of [llength $info_list]"
+
+        if {$do_expand} {
+            set target [[$r get_end_type] get_name $::ApolTop::qpolicy]
+        } else {
+            set target [[[lindex $info_list 0] get_end_type] get_name $::ApolTop::qpolicy]
+        }
         set flow_dir [$r get_dir]
-        set source [[$r get_start_type] get_name $::ApolTop::qpolicy]
-        set target [[$r get_end_type] get_name $::ApolTop::qpolicy]
         set step0 [new_apol_infoflow_step_t [[$r get_steps] get_element 0]]
         set rules [$step0 get_rules]
 

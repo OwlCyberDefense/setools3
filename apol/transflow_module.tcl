@@ -241,6 +241,14 @@ proc Apol_Analysis_transflow::getTextWidget {tab} {
     return [$tab.right getframe].res
 }
 
+proc Apol_Analysis_transflow::appendResultsNodes {tree parent_node results} {
+    _createResultsNodes $tree $parent_node $results 0
+}
+
+proc Apol_Analysis_transflow::renderPath {res path_num path} {
+    _renderPath $res $path_num $path
+}
+
 #################### private functions below ####################
 
 proc Apol_Analysis_transflow::_reinitializeVals {} {
@@ -598,6 +606,9 @@ proc Apol_Analysis_transflow::_checkParams {} {
     if {[lindex $type 0] == {}} {
         return "No type was selected."
     }
+    if {![Apol_Types::isTypeInPolicy [lindex $type 0]]} {
+        return "[lindex $type 0] is not a type within the policy."
+    }
     set vals(type) [lindex $type 0]
     set vals(type:attrib) [lindex $type 1]
     set use_regexp [Apol_Widget::getRegexpEntryState $widgets(regexp)]
@@ -927,6 +938,7 @@ proc Apol_Analysis_transflow::_renderPath {res path_num path} {
         foreach r [lrange $rules 1 end] {
             $v append $r
         }
+        apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 10 $v new_qpol_avrule_t
         $v -delete
     }
@@ -1119,7 +1131,7 @@ proc Apol_Analysis_transflow::_doFindMore {res tree node} {
         _renderPath $res $path_num $sorted_path
         incr path_num
     }
-    
+
     $res.tb configure -state disabled
     destroy $d
     $v -delete
