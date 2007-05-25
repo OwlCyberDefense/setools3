@@ -109,7 +109,7 @@ class polsearch_symbol_query
 		 * error. The caller is responsible for calling apol_vector_destroy()
 		 * on the returned vector.
 		 */
-	apol_vector_t *run(apol_policy_t * policy, sefs_fclist_t * fclist = NULL);
+	apol_vector_t *run(const apol_policy_t * policy, const sefs_fclist_t * fclist = NULL) const;
 		/**
 		 * Get a list of the valid types of tests to perform for the symbol
 		 * type specified by the query.
@@ -117,7 +117,7 @@ class polsearch_symbol_query
 		 * tests for the specified symbol type. The caller is responsible for
 		 * calling apol_vector_destroy() on the returned vector.
 		 */
-	apol_vector_t *getValidTests();
+	apol_vector_t *getValidTests() const;
 
       private:
 	 polsearch_symbol_e _symbol_type;	/*!< The type of symbol matched by the query. */
@@ -128,6 +128,10 @@ class polsearch_symbol_query
 extern "C"
 {
 #endif
+
+//we do not want to wrap two copies of everything so have SWIG ignore the compatibility section.
+#ifndef SWIG
+
 	/** This typedef may safely be used in C to represent the class polsearch_symbol_query */
 	typedef struct polsearch_symbol_query polsearch_symbol_query_t;
 
@@ -140,7 +144,7 @@ extern "C"
 	 * Copy a symbol query.
 	 * @see polsearch_symbol_query::polsearch_symbol_query(const polsearch_symbol_query&)
 	 */
-	polsearch_symbol_query_t *polsearch_symbol_query_create_from_symbol_query(polsearch_symbol_query_t * sq);
+	polsearch_symbol_query_t *polsearch_symbol_query_create_from_symbol_query(const polsearch_symbol_query_t * sq);
 	/**
 	 * Deallocate all memory associated with a symbol query and set it to NULL.
 	 * @param sq Reference pointer to the symbol query to destroy.
@@ -152,12 +156,12 @@ extern "C"
 	 * Get the symbol type matched by a symbol query.
 	 * @see polsearch_symbol_query::symbol_type()
 	 */
-	polsearch_symbol_e polsearch_symbol_query_get_symbol_type(polsearch_symbol_query_t * sq);
+	polsearch_symbol_e polsearch_symbol_query_get_symbol_type(const polsearch_symbol_query_t * sq);
 	/**
 	 * Get the symbol matching behavior from a symbol query.
 	 * @see polsearch_symbol_query::match()
 	 */
-	polsearch_match_e polsearch_symbol_query_get_match(polsearch_symbol_query_t * sq);
+	polsearch_match_e polsearch_symbol_query_get_match(const polsearch_symbol_query_t * sq);
 	/**
 	 * Set the symbol matching behavior from a symbol query.
 	 * @see polsearch_symbol_query::match(polsearch_match_e)
@@ -181,13 +185,16 @@ extern "C"
 	 * on the returned vector.
 	 * @see polsearch_symbol_query::run(apol_policy_t*, sefs_fclist_t*)
 	 */
-	apol_vector_t *polsearch_symbol_query_run(polsearch_symbol_query_t * sq, apol_policy_t * p, sefs_fclist_t * fclist);
+	apol_vector_t *polsearch_symbol_query_run(const polsearch_symbol_query_t * sq, const apol_policy_t * p, const sefs_fclist_t * fclist);
 	/**
 	 * Get a list of the valid types of tests to perform for the symol
 	 * type specified by the query.
 	 * @see polsearch_symbol_query::getValidTests()
 	 */
-	apol_vector_t *polsearch_symbol_query_get_valid_tests(polsearch_symbol_query_t * sq);
+	apol_vector_t *polsearch_symbol_query_get_valid_tests(const polsearch_symbol_query_t * sq);
+
+#endif /* SWIG */
+
 #ifdef __cplusplus
 }
 #endif
