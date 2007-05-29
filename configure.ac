@@ -1,4 +1,5 @@
 AC_INIT(setools, 3.3, [Tresys Technology <setools@tresys.com>], [setools])
+AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([-Wno-portability])
@@ -53,6 +54,7 @@ AC_PROG_CC_C99
 if test ${ac_cv_prog_cc_c99} = "no"; then
   AC_MSG_ERROR([SETools requires a C99-compliant C compiler to build.])
 fi
+AC_PROG_CXX
 AC_LANG([C])
 AC_PROG_LIBTOOL
 AC_PROG_LN_S

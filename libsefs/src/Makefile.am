@@ -23,7 +23,9 @@ libsqlite_a_SOURCES = \
 
 libsefs_a_LIBADD = libsqlite_a-*.o
 libsefs_a_SOURCES = \
+	sefs_internal.hh \
 	util.c
+
 libsefs_a_DEPENDENCIES = \
 	libsqlite.a \
 	$(top_builddir)/libapol/src/libapol.so
