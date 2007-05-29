@@ -204,7 +204,7 @@ proc Apol_Types::_popupTypeInfo {which ta} {
     } else {
         set info_ta [_renderAttrib $ta 1 0]
     }
-    if {[tcl_config_use_sefs] && [Apol_File_Contexts::is_db_loaded]} {
+    if {[Apol_File_Contexts::is_db_loaded]} {
         set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]
         set index_file_loaded 1
     }
@@ -219,9 +219,7 @@ proc Apol_Types::_popupTypeInfo {which ta} {
     pack $notebook -expand 1 -fill both
 
     set ta_info_tab [$notebook insert end ta_info_tab]
-    if {[tcl_config_use_sefs]} {
-        set fc_info_tab [$notebook insert end fc_info_tab -text "Files"]
-    }
+    set fc_info_tab [$notebook insert end fc_info_tab -text "Files"]
 
     if {$which == "type"} {
         $notebook itemconfigure ta_info_tab -text "Attributes"
@@ -235,39 +233,35 @@ proc Apol_Types::_popupTypeInfo {which ta} {
     $text insert 0.0 $info_ta
     $text configure -state disabled
 
-    if {[tcl_config_use_sefs]} {
-        if {$which != "type"} {
-            set l [label [$notebook getframe fc_info_tab].l \
-                         -text "Files labeled with types that are members of this attribute:" \
-                         -justify left]
-            pack $l -anchor nw
-        }
-        set sw [ScrolledWindow [$notebook getframe fc_info_tab].sw -scrollbar both -auto both]
-        set text [text [$sw getframe].text -wrap none -font {helvetica 10} -bg white]
-        $sw setwidget $text
-        pack $sw -expand 1 -fill both
+    if {$which != "type"} {
+        set l [label [$notebook getframe fc_info_tab].l \
+                   -text "Files labeled with types that are members of this attribute:" \
+                   -justify left]
+        pack $l -anchor nw
     }
+    set sw [ScrolledWindow [$notebook getframe fc_info_tab].sw -scrollbar both -auto both]
+    set text [text [$sw getframe].text -wrap none -font {helvetica 10} -bg white]
+    $sw setwidget $text
+    pack $sw -expand 1 -fill both
 
     $notebook raise [$notebook page 0]
 
-    if {[tcl_config_use_sefs]} {
-        if {$index_file_loaded} {
-            if {$info_fc != ""} {
-                set num 0
-                foreach item $info_fc {
-                    foreach {ctxt class path} $item {}
-                    $f_fc insert end "$ctxt\t     $class\t     $path\n"
-                    incr num
-                }
-                $text insert 1.0 "Number of files: $num\n\n"
-            } else {
-                $text insert end "No files found."
+    if {$index_file_loaded} {
+        if {$info_fc != ""} {
+            set num 0
+            foreach item $info_fc {
+                foreach {ctxt class path} $item {}
+                $f_fc insert end "$ctxt\t     $class\t     $path\n"
+                incr num
             }
+            $text insert 1.0 "Number of files: $num\n\n"
         } else {
-            $text insert 0.0 "No index file is loaded.  Load an index file through the File Context tab."
+            $text insert end "No files found."
         }
-        $text configure -state disabled
+    } else {
+        $text insert 0.0 "No index file is loaded.  Load an index file through the File Context tab."
     }
+    $text configure -state disabled
 
     $w draw {} 0 400x400
 }

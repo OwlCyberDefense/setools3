@@ -1,5 +1,9 @@
 2007-05-29  J. Tang  <jtang@tresys.com>
 
+	* ./configure no longer has --enable-sefs flag, for libselinux is
+	required to build SETools.  (The kernel does need to have SELinux
+	running, though.)  Therefore, libsefs is now always built.
+
 	* apol converted to use the SWIG interface for Tcl.
 
 	* libapol/src/types-relation-analysis.c

@@ -25,9 +25,7 @@
  */
 
 #include "find_file_types.h"
-#ifdef LIBSEFS
 #include <sefs/file_contexts.h>
-#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -67,23 +65,16 @@ int find_file_types_register(sechk_lib_t * lib)
 		"   1) it has an attribute associated with file types\n"
 		"   2) it is the source of a rule to allow filesystem associate permission\n"
 		"   3) it is the default type of a type transition rule with an object class\n" "      other than process\n"
-#ifdef LIBSEFS
-		"   4) it is specified in a context in the file_contexts file\n"
-#endif
-		;
+		"   4) it is specified in a context in the file_contexts file\n";
 	mod->opt_description = "Module requirements:\n" "   attribute names\n"
-#ifdef LIBSEFS
 		"   file_contexts\n"
-#endif
 		"Module dependencies:\n" "   none\n" "Module options:\n" "   file_type_attribute can be modified in a profile\n";
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
 	nv = sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES);
 	apol_vector_append(mod->requirements, (void *)nv);
-#ifdef LIBSEFS
 	nv = sechk_name_value_new(SECHK_REQ_FILE_CONTEXTS, NULL);
 	apol_vector_append(mod->requirements, (void *)nv);
-#endif
 
 	/* assign options */
 	nv = sechk_name_value_new("file_type_attribute", "file_type");
@@ -267,7 +258,6 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto find_file_types_run_fail;
 	}
-#ifdef LIBSEFS
 	if (mod->parent_lib->fc_entries) {
 		if (mod->parent_lib->fc_path) {
 			fc_entry_vector = mod->parent_lib->fc_entries;
@@ -278,7 +268,6 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			goto find_file_types_run_fail;
 		}
 	}
-#endif
 
 	/* Get an iterator for the types */
 	if (apol_type_get_by_query(policy, NULL, &type_vector) < 0) {
@@ -449,7 +438,6 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		apol_vector_destroy(&terule_vector);
 		apol_terule_query_destroy(&terule_query);
 
-#ifdef LIBSEFS
 		/* assigned in fc check */
 		if (fc_entry_vector) {
 			buff = NULL;
@@ -566,7 +554,6 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 				}
 			}
 		}
-#endif
 		/* insert any results for this type */
 		if (item) {
 			item->item = type;

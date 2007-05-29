@@ -40,7 +40,7 @@ class polsearch_string_list
 {
       public:
 	polsearch_string_list(const char *str, bool Xvalid = true);
-	polsearch_string_list(const polsearch_string_list & sl);
+	 polsearch_string_list(const polsearch_string_list & sl);
 	~polsearch_string_list();
 
 	const apol_vector_t *ids() const;
@@ -60,13 +60,14 @@ extern "C"
 
 	typedef struct polsearch_string_list polsearch_string_list_t;
 
-	polsearch_string_list_t * polsearch_string_list_create(const char * str, bool Xvalid);
-	polsearch_string_list_t * polsearch_string_list_create_from_string_list(const polsearch_string_list_t * psl);
-	const apol_vector_t * polsearch_string_list_get_ids(const polsearch_string_list_t * psl);
-	apol_vector_t * polsearch_string_list_match(const polsearch_string_list_t * psl, const apol_vector_t * test_ids, apol_vector_t * Xcandidates);
+	polsearch_string_list_t *polsearch_string_list_create(const char *str, bool Xvalid);
+	polsearch_string_list_t *polsearch_string_list_create_from_string_list(const polsearch_string_list_t * psl);
+	const apol_vector_t *polsearch_string_list_get_ids(const polsearch_string_list_t * psl);
+	apol_vector_t *polsearch_string_list_match(const polsearch_string_list_t * psl, const apol_vector_t * test_ids,
+						   apol_vector_t * Xcandidates);
 	//TODO extern C bindings
 
-#endif /* SWIG */
+#endif				       /* SWIG */
 
 #ifdef __cplusplus
 }

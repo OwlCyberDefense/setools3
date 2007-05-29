@@ -1,7 +1,10 @@
 sefsdir = $(includedir)/sefs
 
 sefs_HEADERS = \
-	file_contexts.h \
-	fsdata.h \
-	fshash.h \
+	db.h \
+	entry.h \
+	fcfile.h \
+	fclist.h \
+	filesystem.h \
+	query.h \
 	util.h

@@ -185,7 +185,8 @@ extern "C"
 	 * on the returned vector.
 	 * @see polsearch_symbol_query::run(apol_policy_t*, sefs_fclist_t*)
 	 */
-	apol_vector_t *polsearch_symbol_query_run(const polsearch_symbol_query_t * sq, const apol_policy_t * p, const sefs_fclist_t * fclist);
+	apol_vector_t *polsearch_symbol_query_run(const polsearch_symbol_query_t * sq, const apol_policy_t * p,
+						  const sefs_fclist_t * fclist);
 	/**
 	 * Get a list of the valid types of tests to perform for the symol
 	 * type specified by the query.
@@ -193,7 +194,7 @@ extern "C"
 	 */
 	apol_vector_t *polsearch_symbol_query_get_valid_tests(const polsearch_symbol_query_t * sq);
 
-#endif /* SWIG */
+#endif				       /* SWIG */
 
 #ifdef __cplusplus
 }

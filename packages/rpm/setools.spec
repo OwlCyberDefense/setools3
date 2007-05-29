@@ -18,7 +18,7 @@ Requires: setools-libs = %{version} setools-gui = %{version} setools-console = %
 %define libqpol_ver 1.3
 %define libapol_ver 4.1
 %define libpoldiff_ver 1.2
-%define libsefs_ver 3.1
+%define libsefs_ver 4.0
 %define libseaudit_ver 4.1
 
 %description
@@ -214,7 +214,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libpoldiff.so.1
 %{_libdir}/libpoldiff.so
 %{_libdir}/libsefs.so.%{libsefs_ver}
-%{_libdir}/libsefs.so.3
+%{_libdir}/libsefs.so.4
 %{_libdir}/libsefs.so
 %{_libdir}/libseaudit.so.%{libseaudit_ver}
 %{_libdir}/libseaudit.so.4

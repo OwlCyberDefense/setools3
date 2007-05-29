@@ -43,7 +43,7 @@ extern "C"
 	typedef struct sefs_query sefs_query_t;
 
 /**
- * Allocate and return a new sefs query structure. 
+ * Allocate and return a new sefs query structure.
  * All fields are initialized, such that running this blank query results in
  * returning all entries within a fclist.  The caller must call
  * sefs_query_destroy() upon the return value afterwords.
@@ -79,7 +79,8 @@ extern "C"
  * @param indirect If the fclist queried has access to a policy, also match
  * contexts with types in attribute \a name or types which are an alias for \a
  * name. If a policy is not available, this field is ignored, and exact string
- * matching is used instead. 
+ * matching is used instead.
+ * @see sefs_fclist_associate_policy() to associate a policy with a fclist.
  */
 	void sefs_query_set_type(sefs_query_t * query, const char *name, bool indirect);
 

@@ -40,9 +40,7 @@ extern "C"
 #include <apol/vector.h>
 #include <apol/util.h>
 
-#ifdef LIBSEFS
 #include <sefs/file_contexts.h>
-#endif
 #include <libxml/xmlstring.h>
 
 /* These should be defined from the make environment */
@@ -210,14 +208,12 @@ extern "C"
 		apol_vector_t *modules;
 	/** The policy to analyze when running modules */
 		apol_policy_t *policy;
-#ifdef LIBSEFS
 	/** Vector of file contexts data (of type sefs_fc_entry_t).
 	 *  (Only available with libsefs support) */
 		apol_vector_t *fc_entries;
 	/** File name of the file_contexts file loaded.
 	 *  (Only available with libsefs support) */
 		char *fc_path;
-#endif
 	/** The default output format for the report */
 		unsigned char outputformat;
 	/** The path for the selinux configuration file */
@@ -574,8 +570,6 @@ extern "C"
  */
 	int sechk_lib_load_policy(apol_policy_path_t * policy_mods, sechk_lib_t * lib);
 
-#ifdef LIBSEFS
-
 /**
  *  Load the file contexts file the library will use during analysis.
  *  (Only available with libsefs support)
@@ -587,7 +581,6 @@ extern "C"
  *  @return 0 on success and < 0 on failure.
  */
 	int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib);
-#endif
 
 /**
  *  Load a profile containing module options.

@@ -7,16 +7,9 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -fpic
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
-libsefs_a_SOURCES = \
-	file_contexts.c \
-	util.c
-
 noinst_LIBRARIES = libsqlite.a
-libsqlite_a_SOURCES =
 libsqlite_a_CFLAGS = -fPIC -w -O2
-if WANT_LIBSEFS
-libsefs_a_SOURCES += fsdata.c fshash.c
-libsqlite_a_SOURCES += \
+libsqlite_a_SOURCES = \
 	sqlite/attach.c sqlite/auth.c sqlite/btree.c sqlite/build.c sqlite/date.c \
 	sqlite/delete.c sqlite/expr.c sqlite/func.c sqlite/hash.c sqlite/insert.c sqlite/legacy.c \
 	sqlite/main.c sqlite/opcodes.c sqlite/os_mac.c sqlite/os_unix.c sqlite/os_win.c sqlite/pager.c \
@@ -27,19 +20,17 @@ libsqlite_a_SOURCES += \
 	sqlite/hash.h sqlite/os_mac.h sqlite/parse.h sqlite/vdbeInt.h \
 	sqlite/opcodes.h sqlite/os_unix.h sqlite/sqlite3.h \
 	sqlite/os_common.h sqlite/os_win.h sqlite/sqliteInt.h
-libsefs_a_LIBADD=libsqlite_a-*.o
-libsefs_a_DEPENDENCIES=libsqlite.a $(top_builddir)/libapol/src/libapol.so
 
-else
-
-libsefs_a_DEPENDENCIES=$(top_builddir)/libapol/src/libapol.so
-
-endif
+libsefs_a_LIBADD = libsqlite_a-*.o
+libsefs_a_SOURCES = \
+	util.c
+libsefs_a_DEPENDENCIES = \
+	libsqlite.a \
+	$(top_builddir)/libapol/src/libapol.so
+	$(top_builddir)/libqpol/src/libqpol.so
 
 libsefs_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libsefs_a_SOURCES)))
-if WANT_LIBSEFS
 libsefs_so_OBJS += $(patsubst %.c,libsqlite_a-%.o,$(filter %.c,$(notdir $(libsqlite_a_SOURCES))))
-endif
 
 LIBSEFS_SONAME = @libsefs_soname@
 

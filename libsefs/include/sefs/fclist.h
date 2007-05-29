@@ -85,11 +85,16 @@ extern "C"
 	bool sefs_fclist_get_is_mls(sefs_fclist_t * fclist);
 
 /**
- * Associate a policy with the fclist.
+ * Associate a policy with the fclist.  This is needed to resolve
+ * attributes and MLS ranges in queries.  If a policy is already
+ * associated, then calling this function removes that previous
+ * association.
  * @param fclist Fclist with which to associate the policy.
  * @param policy Policy to associate with \a fclist. If NULL,
  * remove any policy association. While \a policy is associated
  * with \a fclist the caller should not destroy \a policy.
+ * @see sefs_query_set_type()
+ * @see sefs_query_set_range()
  */
 	void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy);
 

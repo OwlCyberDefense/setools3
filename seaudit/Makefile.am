@@ -73,9 +73,6 @@ install-logwatch: $(dist_noinst_DATA) seaudit-report-service
 	install -m 644 seaudit-report-service.conf $(LOGWATCH_SERVICE)
 	install -m 755 seaudit-report-service $(LOGWATCH_FILTER)
 
-$(top_builddir)/libapol/libapol-tcl.a:
-	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
-
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 

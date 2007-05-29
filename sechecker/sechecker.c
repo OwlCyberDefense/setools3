@@ -37,9 +37,9 @@
 #include <apol/policy.h>
 #include <apol/util.h>
 #include <apol/vector.h>
-#ifdef LIBSEFS
+
+#include <sefs/util.h>
 #include <sefs/file_contexts.h>
-#endif
 
 #ifdef LIBSELINUX
 #include <selinux/selinux.h>
@@ -216,10 +216,8 @@ void sechk_lib_destroy(sechk_lib_t ** lib)
 
 	apol_vector_destroy(&((*lib)->modules));
 	apol_policy_destroy(&((*lib)->policy));
-#ifdef LIBSEFS
 	apol_vector_destroy(&((*lib)->fc_entries));
 	free((*lib)->fc_path);
-#endif
 	free((*lib)->selinux_config_path);
 	apol_policy_path_destroy(&((*lib)->policy_path));
 	free(*lib);
@@ -423,7 +421,6 @@ int sechk_lib_load_policy(apol_policy_path_t * policy_mods, sechk_lib_t * lib)
 	return -1;
 }
 
-#ifdef LIBSEFS
 int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 {
 	int retv = -1, error = 0;
@@ -437,17 +434,27 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 
 	/* if no file_contexts file is given attempt to find the default */
 	if (!fcfilelocation) {
-		retv = sefs_fc_find_default_file_contexts(&default_fc_path);
-		if (retv) {
+		default_fc_path = sefs_default_file_contexts_get_path();
+		if (default_fc_path == NULL) {
 			error = errno;
 			WARN(lib->policy, "Unable to find default file_contexts file: %s", strerror(error));
 			errno = error;
 			return 0;      /* not fatal error until a module requires this to exist */
 		}
-		retv = sefs_fc_entry_parse_file_contexts(lib->policy, default_fc_path, &(lib->fc_entries));
+		if (strcmp(default_fc_path, "") == 0) {
+			WARN(lib->policy, "%s", "The system has no default file_contexts file.");
+			free(default_fc_path);
+			errno = ENOSYS;
+			return 0;      /* not fatal error until a module requires this to exist */
+		}
+		/* FIX ME!
+		 * retv = sefs_fc_entry_parse_file_contexts(lib->policy, default_fc_path, &(lib->fc_entries));
+		 */
+		retv = -1;
 		if (retv) {
 			error = errno;
 			WARN(lib->policy, "Unable to process file_contexts file %s.", default_fc_path);
+			free(default_fc_path);
 			errno = error;
 			return -1;
 		} else {
@@ -457,7 +464,10 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 			fprintf(stderr, "Using file contexts: %s\n", lib->fc_path);
 		}
 	} else {
-		retv = sefs_fc_entry_parse_file_contexts(lib->policy, fcfilelocation, &(lib->fc_entries));
+		/* FIX ME!
+		 * retv = sefs_fc_entry_parse_file_contexts(lib->policy, fcfilelocation, &(lib->fc_entries));
+		 */
+		retv = -1;
 		if (retv) {
 			error = errno;
 			WARN(lib->policy, "Unable to process file_contexts file %s.", fcfilelocation);
@@ -470,7 +480,6 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 
 	return 0;
 }
-#endif
 
 int sechk_lib_register_modules(const sechk_module_name_reg_t * register_fns, sechk_lib_t * lib)
 {
@@ -902,17 +911,11 @@ bool sechk_lib_check_requirement(sechk_name_value_t * req, sechk_lib_t * lib)
 		return false;
 #endif
 	} else if (!strcmp(req->name, SECHK_REQ_FILE_CONTEXTS)) {
-#ifdef LIBSEFS
 		if (!lib->fc_entries || !apol_vector_get_size(lib->fc_entries)) {
 			if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 				ERR(lib->policy, "Requirement %s not met.", req->name);
 			}
 		}
-#else
-		if (lib->outputformat & ~(SECHK_OUT_QUIET))
-			ERR(lib->policy, "Checking requirement %s, %s: %s", req->name, req->value, strerror(ENOTSUP));
-		return false;
-#endif
 	} else if (!strcmp(req->name, SECHK_REQ_SYSTEM)) {
 		if (!strcmp(req->value, SECHK_REQ_SYS_SELINUX)) {
 #ifdef LIBSELINUX

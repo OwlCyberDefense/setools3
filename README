@@ -169,11 +169,6 @@ You can customize your SETools build using the flags given to
       disable parts of SETools.  By specifying this flag,
       'configure' will not disable parts of SETools.
 
-  --disable-sefs
-      Disable sefs support.  Use this flag if SETools will be
-      deployed on systems not running SELinux.  For example, sediff
-      does not need an SELinux-enabled kernel to operate.
-
   --enable-swig-java
       Build SWIG interfaces for Java.  This permits third-party
       developers who prefer Java to use the SETools libraries for

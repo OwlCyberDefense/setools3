@@ -50,9 +50,7 @@ static struct option const longopts[] = {
 	{"short", no_argument, NULL, 's'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"profile", required_argument, NULL, 'p'},
-#ifdef LIBSEFS
 	{"fcfile", required_argument, NULL, OPT_FCFILE},
-#endif
 	{"module", required_argument, NULL, 'm'},
 	{"min-sev", required_argument, NULL, OPT_MIN_SEV},
 	{NULL, 0, NULL, 0}
@@ -73,9 +71,7 @@ void usage(const char *arg0, bool brief)
 		printf("   -p PROF, --profile=PROF      name or path of profile to load\n");
 		printf("                                if used without -m, run all modules in profile\n");
 		printf("   -m MODULE, --module=MODULE   MODULE to run\n");
-#ifdef LIBSEFS
 		printf("   --fcfile=FILE                file_contexts file to load\n");
-#endif
 		printf("\n");
 		printf("   -q, --quiet                  suppress output\n");
 		printf("   -s, --short                  print short output\n");
@@ -121,9 +117,7 @@ int main(int argc, char **argv)
 {
 	int optc = 0, retv = 0;
 	size_t i;
-#ifdef LIBSEFS
 	char *fcpath = NULL;
-#endif
 	char *modname = NULL;
 	char *prof_name = NULL;
 	char *base_path = NULL;
@@ -149,11 +143,9 @@ int main(int argc, char **argv)
 			}
 			modname = strdup(optarg);
 			break;
-#ifdef LIBSEFS
 		case OPT_FCFILE:
 			fcpath = strdup(optarg);
 			break;
-#endif
 		case 'q':
 			if (output_override) {
 				fprintf(stderr, "Error: multiple output formats specified.\n");
@@ -289,11 +281,9 @@ int main(int argc, char **argv)
 	if (minsev && sechk_lib_set_minsev(minsev, lib) < 0)
 		goto exit_err;
 
-#ifdef LIBSEFS
 	/* initialize the file contexts */
 	if (sechk_lib_load_fc(fcpath, lib) < 0)
 		goto exit_err;
-#endif
 	/* initialize the output format */
 	if (output_override) {
 		if (sechk_lib_set_outputformat(output_override, lib) < 0)
@@ -351,9 +341,7 @@ int main(int argc, char **argv)
 		goto exit_err;
 
       exit:
-#ifdef LIBSEFS
 	free(fcpath);
-#endif
 	apol_vector_destroy(&policy_mods);
 	free(minsev);
 	free(prof_name);
@@ -362,9 +350,7 @@ int main(int argc, char **argv)
 	return 0;
 
       exit_err:
-#ifdef LIBSEFS
 	free(fcpath);
-#endif
 	apol_vector_destroy(&policy_mods);
 	free(minsev);
 	free(prof_name);

@@ -57,7 +57,6 @@ namespace eval ApolTop {
     #   tag_conditionals - show this only if the policy supports conditionals
     #   tag_mls - show this only if policy supports MLS
     #   tag_query_saveable - if this tab is shown, enable query saving
-    #   tag_sefs - only create this tab if libsefs is enabled
     #   tag_source - show this only if a source policy is loaded
     variable tabs {
         {Apol_Types components {}}
@@ -73,7 +72,7 @@ namespace eval ApolTop {
         {Apol_Cond_Rules rules {tag_conditionals}}
         {Apol_RBAC rules {}}
         {Apol_Range rules {tag_mls}}
-        {Apol_File_Contexts {} {tag_sefs}}
+        {Apol_File_Contexts {} {}}
         {Apol_Analysis {} {tag_query_saveable}}
         {Apol_PolicyConf {} {tag_source}}
     }
@@ -300,9 +299,6 @@ proc ApolTop::_create_toplevel {} {
 
     variable tabs
     foreach tab $tabs {
-        if {[lsearch [lindex $tab 2] tag_sefs] >= 0 && ![tcl_config_use_sefs]} {
-            continue
-        }
         set parent_nb $notebook
         foreach nb [lindex $tab 1] {
             # (intermediate notebooks were created just above here)
@@ -569,9 +565,7 @@ proc ApolTop::_exit {} {
     if {$policy != {}} {
         _close_policy
     }
-    if {[tcl_config_use_sefs]} {
-        Apol_File_Contexts::close
-    }
+    Apol_File_Contexts::close
     _write_configuration_file
     exit
 }

@@ -28,11 +28,11 @@ libpolsearch_pyswig_soname=_polsearch.so.1
 libpolsearch_jswig_soname=libjpolsearch.so.1
 libpolsearch_tswig_soname=libtpolsearch.so.1
 
-libsefs_version=3.1
-libsefs_soname=libsefs.so.3
-libsefs_pyswig_soname=_sefs.so.3
-libsefs_jswig_soname=libjsefs.so.3
-libsefs_tswig_soname=libtsefs.so.3
+libsefs_version=4.0
+libsefs_soname=libsefs.so.4
+libsefs_pyswig_soname=_sefs.so.4
+libsefs_jswig_soname=libjsefs.so.4
+libsefs_tswig_soname=libtsefs.so.4
 
 libseaudit_version=4.1
 libseaudit_soname=libseaudit.so.4
@@ -406,23 +406,6 @@ SELINUX_LIB_FLAG="-L${sepol_devel_libdir} -L${selinux_devel_libdir}"
 CFLAGS="${selinux_save_CFLAGS}"
 CPPFLAGS="${selinux_save_CPPFLAGS}"
 
-AC_ARG_ENABLE(sefs,
-              AC_HELP_STRING([--disable-sefs],
-                             [disallow file system analyses (requires SELinux development files) (default is ENABLE)]),
-              sefs="$enableval",
-              sefs="yes")
-AC_MSG_CHECKING([for file system analyses])
-if test "x${sefs}" = "xyes" ; then
-   if test ${use_selinux} = no; then
-      AC_MSG_ERROR([sefs requires a running SELinux system])
-   fi
-   use_sefs=yes
-   AC_MSG_RESULT(yes)
-else
-   use_sefs=no
-   AC_MSG_RESULT(disabled)
-fi
-
 AC_ARG_ENABLE(sepol-src,
               AC_HELP_STRING([--enable-sepol-src=PATH],
                              [use another sepol source tree at PATH (developer only flag)]),
@@ -647,16 +630,10 @@ if test ${use_selinux} = "yes"; then
    AC_DEFINE(LIBSELINUX, 1, [enable libselinux-specific code])
 fi
 
-if test ${use_sefs} = "yes"; then
-   AC_DEFINE(LIBSEFS, 1, [enable analyses of a SELinux filesystem])
-   AC_SUBST(use_sefs)
-fi
-
 AM_CONDITIONAL(DO_SWIGIFY, test ${do_swigify} = "yes")
 AM_CONDITIONAL(DO_SWIGIFY_PYTHON, test ${do_swigify_python} = "yes")
 AM_CONDITIONAL(DO_SWIGIFY_JAVA, test ${do_swigify_java} = "yes")
 AM_CONDITIONAL(DO_SWIGIFY_TCL, test ${do_swigify_tcl} = "yes")
-AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 AM_CONDITIONAL(BUILD_APOL, test ${build_apol} = "yes")
 AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
@@ -760,14 +737,7 @@ EOF
    echo "proc tcl_config_get_version {} {" >> ./config.tcl
    echo "    return ${version}" >> ./config.tcl
    echo "}" >> ./config.tcl
-   echo "proc tcl_config_use_sefs {} {" >> ./config.tcl
-   if test "x${use_sefs}" = "xyes"; then
-      echo "    return 1" >> ./config.tcl
-   else
-      echo "    return 0" >> ./config.tcl
-   fi
-   echo "}" >> ./config.tcl
-]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; version=$VERSION; use_sefs=${use_sefs}])
+]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; version=$VERSION])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \

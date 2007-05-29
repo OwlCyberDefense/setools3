@@ -22,15 +22,11 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	-DPROFILE_INSTALL_DIR='"${profile_install_dir}"'
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
-LDADD = @SELINUX_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @XML_LIBS@
-sechecker_DEPENDENCIES = $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libqpol/src/libqpol.so
-
-if WANT_LIBSEFS
-sechecker_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
-sechecker_DEPENDENCIES += $(top_builddir)/libsefs/src/libsefs.so
-else
-sechecker_LDADD = $(LDADD)
-endif
+LDADD = @SELINUX_LIB_FLAG@ @SEFS_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @XML_LIBS@
+sechecker_DEPENDENCIES = \
+	$(top_builddir)/libsefs/src/libsefs.so \
+	$(top_builddir)/libapol/src/libapol.so \
+	$(top_builddir)/libqpol/src/libqpol.so
 
 sechecker_SOURCES = \
 	sechecker.c sechecker.h \
@@ -59,9 +55,6 @@ sechecker_SOURCES = \
 	modules/types_wo_allow.c modules/types_wo_allow.h \
 	modules/unreachable_doms.c modules/unreachable_doms.h \
 	modules/users_wo_roles.c modules/users_wo_roles.h
-
-$(top_builddir)/libapol/libapol-tcl.a:
-	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
 
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)

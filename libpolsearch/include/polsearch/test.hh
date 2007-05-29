@@ -135,9 +135,9 @@ class polsearch_test
 	apol_vector_t *run(const apol_policy_t * p, const sefs_fclist * fclist, apol_vector_t * Xcandidates) const;
 
       private:
-	apol_vector_t * _criteria; /*!< The list of criteria. */
-	polsearch_symbol_e _symbol_type; /*!< The type of symbol tested. */
-	polsearch_test_cond_e _test_cond; /*!< The condition for which the test checks. */
+	 apol_vector_t * _criteria;    /*!< The list of criteria. */
+	polsearch_symbol_e _symbol_type;	/*!< The type of symbol tested. */
+	polsearch_test_cond_e _test_cond;	/*!< The condition for which the test checks. */
 };
 
 extern "C"
@@ -154,12 +154,12 @@ extern "C"
 	 * Create a test.
 	 * @see polsearch_test::polsearch_test(polsearch_symbol_e, polsearch_test_cond_e)
 	 */
-	polsearch_test_t * polsearch_test_create(polsearch_symbol_e sym_type, polsearch_test_cond_e cond);
+	polsearch_test_t *polsearch_test_create(polsearch_symbol_e sym_type, polsearch_test_cond_e cond);
 	/**
 	 * Copy a test.
 	 * @see polsearch_test::polsearch_test(const polsearch_test&)
 	 */
-	polsearch_test_t * polsearch_test_create_from_test(const polsearch_test_t * pt);
+	polsearch_test_t *polsearch_test_create_from_test(const polsearch_test_t * pt);
 	/**
 	 * Deallocate all memory associated with a test and set it to NULL.
 	 * @param pt Reference pointer to the test to destroy.
@@ -170,35 +170,36 @@ extern "C"
 	 * Get a list of valid comparison operators for a test.
 	 * @see polsearch_test::getValidOps()
 	 */
-	apol_vector_t * polsearch_test_get_valid_ops(const polsearch_test_t * pt);
+	apol_vector_t *polsearch_test_get_valid_ops(const polsearch_test_t * pt);
 	/**
 	 * Get the list of criteria checked.
 	 * @see polsearch_test::criteria()
 	 */
-	apol_vector_t * polsearch_test_get_criteria(polsearch_test_t * pt);
+	apol_vector_t *polsearch_test_get_criteria(polsearch_test_t * pt);
 	/**
 	 * Get the type of symbol used by a test.
 	 * @see polsearch_test::symbol_type()
 	 */
-	polsearch_symbol_e polsearch_test_get_symbol_type(const polsearch_test_t *pt);
+	polsearch_symbol_e polsearch_test_get_symbol_type(const polsearch_test_t * pt);
 	/**
 	 * Get the condition for which a test checks.
 	 * @see polsearch_test::test_cond()
 	 */
-	polsearch_test_cond_e polsearch_test_get_test_cond(const polsearch_test_t *pt);
+	polsearch_test_cond_e polsearch_test_get_test_cond(const polsearch_test_t * pt);
 	/**
 	 * Run the test.
 	 * @see polsearch_test::run()
 	 */
-	apol_vector_t * polsearch_test_run(const polsearch_test_t *pt, const apol_policy_t * p, const sefs_fclist * fclist, apol_vector_t * Xcandidates);
+	apol_vector_t *polsearch_test_run(const polsearch_test_t * pt, const apol_policy_t * p, const sefs_fclist * fclist,
+					  apol_vector_t * Xcandidates);
 	/**
 	 * Get the correct type of parameter to use for a criterion of a
 	 * given comparison operator.
 	 * @see polsearch_test::getParamType()
 	 */
-	polsearch_param_type_e polsearch_test_get_param_type(const polsearch_test_t *pt, polsearch_op_e opr);
+	polsearch_param_type_e polsearch_test_get_param_type(const polsearch_test_t * pt, polsearch_op_e opr);
 
-#endif /* SWIG */
+#endif				       /* SWIG */
 
 #ifdef __cplusplus
 }

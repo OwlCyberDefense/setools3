@@ -38,6 +38,17 @@ extern "C"
  */
 	extern const char *libsefs_get_version(void);
 
+/**
+ * Return the name (path + filename) of the file_contexts file for the
+ * currently running SELinux system.  If the system is not running
+ * SELinux then return an empty string ("").
+ *
+ * @return The name of the default file_contexts file (if system is
+ * running SELinux), an empty string (if not SELinux), or NULL upon
+ * error.  The caller must free() the string afterwards.
+ */
+	extern char *sefs_default_file_contexts_get_path(void);
+
 #ifdef	__cplusplus
 }
 #endif
