@@ -237,6 +237,10 @@ proc Apol_Analysis_domaintrans::getTextWidget {tab} {
     return [$tab.right getframe].res
 }
 
+proc Apol_Analysis_domaintrans::appendResultsNodes {tree parent_node results} {
+    _createResultsNodes $tree $parent_node $results $::APOL_DOMAIN_TRANS_DIRECTION_FORWARD
+}
+
 #################### private functions below ####################
 
 proc Apol_Analysis_domaintrans::_reinitializeVals {} {

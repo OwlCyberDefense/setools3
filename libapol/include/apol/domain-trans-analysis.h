@@ -206,6 +206,8 @@ extern "C"
  *  afterwards. This will be set to NULL upon error.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *results will be NULL.
+ *
+ *  @see apol_policy_reset_domain_trans_table()
  */
 	extern int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
 						 apol_vector_t ** results);

@@ -1,3 +1,13 @@
+2007-05-29  J. Tang  <jtang@tresys.com>
+
+	* apol converted to use the SWIG interface for Tcl.
+
+	* libapol/src/types-relation-analysis.c
+	(apol_types_relation_domain): Domain transition table was not
+	correctly reset when intermixing calls between
+	apol_types_relation_analysis_do() and
+	apol_domain_trans_analysis_do().
+	
 2007-05-22  J. Tang  <jtang@tresys.com>
 
 	* Added infoflow defines to apol.i.  Added apol_file_find_path()

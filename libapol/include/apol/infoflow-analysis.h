@@ -299,7 +299,7 @@ extern "C"
  * should not free the returned pointer.
  *
  * @param result Infoflow result from which to get end type.
- * @return Pointer to the start type of the infoflow or NULL on error.
+ * @return Pointer to the end type of the infoflow or NULL on error.
  */
 	extern qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t * result);
 

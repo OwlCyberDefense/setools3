@@ -658,21 +658,23 @@ proc Apol_Analysis_tra::_showTransFlow {res data} {
     }
 }
 
-proc Apol_Analysis_tra::_renderDTA {dir tree dta} {
+proc Apol_Analysis_tra::_renderDTA {dir tree results} {
     variable vals
     if {$dir == 0} {
         set title2 "A->B"
         set data [list $vals(typeA) $vals(typeB)]
+        set dta [$results get_domainsAB]
     } else {
         set title2 "B->A"
         set data [list $vals(typeB) $vals(typeA)]
+        set dta [$results get_domainsBA]
     }
-    if {$dta == {}} {
+    if {$dta == "NULL" || [$dta get_size] == 0} {
         $tree insert end root pre:dta$dir
         set node [$tree nodes root end]
         set data [list "No domain transitions found." title]
     } else {
-        Apol_Analysis_domaintrans::createResultsNodes $tree root $dta forward
+        Apol_Analysis_domaintrans::appendResultsNodes $tree root $dta
         set node [$tree nodes root end]
         lappend data [$tree itemcget $node -data]
     }
@@ -692,14 +694,21 @@ proc Apol_Analysis_tra::_showDTA {res data} {
     $res.tb insert end "Process Transition Rules: " subtitle \
         [llength $proctrans] num \
         "\n" subtitle
-    Apol_Widget::appendSearchResultAVRules $res 6 $proctrans
+    set v [list_to_vector $proctrans]
+    apol_tcl_avrule_sort $::ApolTop::policy $v
+    Apol_Widget::appendSearchResultRules $res 6 $v new_qpol_avrule_t
+    $v -delete
     if {[llength $setexec] > 0} {
         $res.tb insert end "\n" {} \
             "Setexec Rules: " subtitle \
             [llength $setexec] num \
             "\n" subtitle
-        Apol_Widget::appendSearchResultAVRules $res 6 $setexec
+        set v [list_to_vector $setexec]
+        apol_tcl_avrule_sort $::ApolTop::policy $v
+        Apol_Widget::appendSearchResultRules $res 6 $v new_qpol_avrule_t
+        $v -delete
     }
+
     $res.tb insert end "\nEntry Point File Types: " subtitle \
         [llength $ep] num
     foreach e [lsort -index 0 $ep] {
@@ -709,27 +718,40 @@ proc Apol_Analysis_tra::_showDTA {res data} {
             "File Entrypoint Rules: " subtitle \
             [llength $entrypoint] num \
             "\n" subtitle
-        Apol_Widget::appendSearchResultAVRules $res 12 $entrypoint
+        set v [list_to_vector $entrypoint]
+        apol_tcl_avrule_sort $::ApolTop::policy $v
+        Apol_Widget::appendSearchResultRules $res 12 $v new_qpol_avrule_t
+        $v -delete
         $res.tb insert end "\n" {} \
             "            " {} \
             "File Execute Rules: " subtitle \
             [llength $execute] num \
             "\n" subtitle
-        Apol_Widget::appendSearchResultAVRules $res 12 $execute
+        set v [list_to_vector $execute]
+        apol_tcl_avrule_sort $::ApolTop::policy $v
+        Apol_Widget::appendSearchResultRules $res 12 $v new_qpol_avrule_t
+        $v -delete
         if {[llength $type_trans] > 0} {
             $res.tb insert end "\n" {} \
                 "            " {} \
                 "Type_transition Rules: " subtitle \
                 [llength $type_trans] num \
                 "\n" subtitle
-            Apol_Widget::appendSearchResultTERules $res 12 $type_trans
+            set v [list_to_vector $type_trans]
+            apol_tcl_terule_sort $::ApolTop::policy $v
+            Apol_Widget::appendSearchResultRules $res 12 $v new_qpol_terule_t
+            $v -delete
         }
     }
+
     if {[llength $access_list] > 0} {
         $res.tb insert end "\n" {} \
             "The access filters you specified returned the following rules: " subtitle \
             [llength $access_list] num \
             "\n" subtitle
-        Apol_Widget::appendSearchResultAVRule $res 6 $access_list
+        set v [list_to_vector $access_list]
+        apol_tcl_avrule_sort $::ApolTop::policy $v
+        Apol_Widget::appendSearchResultRules $res 6 $v new_qpol_avrule_t
+        $v -delete
     }
 }

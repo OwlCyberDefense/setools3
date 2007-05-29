@@ -832,7 +832,8 @@ proc Apol_Analysis_transflow::_createResultsNodes {tree parent_node results do_e
         if {$do_expand} {
             set target [[$r get_end_type] get_name $::ApolTop::qpolicy]
         } else {
-            set target [[[lindex $info_list 0] get_end_type] get_name $::ApolTop::qpolicy]
+            set first_target [[lindex $info_list 0] get_end_type]
+            set target [$first_target get_name $::ApolTop::qpolicy]
         }
         set flow_dir [$r get_dir]
         set length [$r get_length]
