@@ -260,18 +260,18 @@ int qpol_genfscon_get_path(qpol_policy_t * policy, qpol_genfscon_t * genfs, char
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uint32_t * class)
+int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uint32_t * obj_class)
 {
-	if (class != NULL)
-		*class = 0;
+	if (obj_class != NULL)
+		*obj_class = 0;
 
-	if (policy == NULL || genfs == NULL || class == NULL) {
+	if (policy == NULL || genfs == NULL || obj_class == NULL) {
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
 
-	*class = genfs->sclass;
+	*obj_class = genfs->sclass;
 
 	return STATUS_SUCCESS;
 }

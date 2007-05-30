@@ -4,7 +4,8 @@ sefsso_DATA = libsefs.so.@libsefs_version@
 sefssodir = $(libdir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
-	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -fpic
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ -I$(srcdir)/../include -fpic
+AM_CXXFLAGS = $(AM_CFLAGS)
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 noinst_LIBRARIES = libsqlite.a
@@ -23,6 +24,9 @@ libsqlite_a_SOURCES = \
 
 libsefs_a_LIBADD = libsqlite_a-*.o
 libsefs_a_SOURCES = \
+	entry.cc \
+	fcfile.cc \
+	fclist.cc \
 	sefs_internal.hh \
 	util.c
 

@@ -55,12 +55,12 @@ extern "C"
  *  Get an iterator for the genfscon statements in a policy.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator over items of type qpol_genfscon_t returned.
- *  The caller is responsible for calling qpol_iterator_destroy() 
+ *  The caller is responsible for calling qpol_iterator_destroy()
  *  to free memory used by this iterator. The caller must also call free()
  *  on items returned by qpol_iterator_get_item() when using this iterator.
- *  It is important to note that this iterator is only valid as long 
+ *  It is important to note that this iterator is only valid as long
  *  as the policy is unmodified.
- *  @return 0 on success and < 0 on failure; if the call fails, 
+ *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
 	extern int qpol_policy_get_genfscon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
@@ -101,17 +101,17 @@ extern "C"
  *  Get the object class from a genfscon statement.
  *  @param policy The policy associated with the genfscon statement.
  *  @param genfs The genfscon statement from which to get the path.
- *  @param class Pointer in which to store the integer code for the
+ *  @param obj_class Pointer in which to store the integer code for the
  *  object class. See QPOL_CLASS_* defines above for values.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *class will be 0.
  */
-	extern int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uint32_t * class);
+	extern int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uint32_t * obj_class);
 
 /**
  *  Get the context from a path component of a genfscon statement.
  *  @param policy The policy associated with the genfscon statement.
- *  @param genfscon The genfscon statement from which to get 
+ *  @param genfscon The genfscon statement from which to get
  *  the context.
  *  @param context Pointer in which to store the context.
  *  The caller should not free this pointer.

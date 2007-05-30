@@ -37,6 +37,9 @@ extern "C"
 #ifdef __cplusplus
 }
 
+#include <sefs/fclist.hh>
+#include <stdexcept>
+
 /**
  * This class represents file contexts entry as read from a file,
  * typically name file_contexts.
@@ -53,7 +56,7 @@ class sefs_fcfile:public sefs_fclist
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
 	 */
-	sefs_fcfile(sefs_callback_fn_t msg_callback, void *varg);
+	sefs_fcfile(sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc);
 
 	/**
 	 * Allocate and return a new sefs file_context set structure
@@ -64,7 +67,7 @@ class sefs_fcfile:public sefs_fclist
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
 	 */
-	 sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void *varg);
+	 sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc);
 
 	/**
 	 * Allocate and return a new sefs file_context set structure
@@ -76,7 +79,7 @@ class sefs_fcfile:public sefs_fclist
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
 	 */
-	 sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg);
+	 sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc);
 
 	~sefs_fcfile();
 
@@ -97,7 +100,7 @@ class sefs_fcfile:public sefs_fclist
 	 * the vector.
 	 * @return The number of files successfully appended. If the
 	 * value returned is less than the size of the vector, then
-	 * file at index (returned value) failed. If append fails for
+	 * file at index (returned value) failed.  If append fails for
 	 * any file, the operation stops at that file; it is safe to
 	 * attempt to append the files remaining after the
 	 * unsuccessful file.
@@ -114,7 +117,9 @@ class sefs_fcfile:public sefs_fclist
 	const apol_vector_t *fileList() const;
 
       private:
-	 apol_vector_t * _files;
+	 bool isMLS() const;
+	int parse(const char *file);
+	apol_vector_t *_files, *_entries;
 };
 
 extern "C"

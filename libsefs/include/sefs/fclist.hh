@@ -47,20 +47,35 @@ extern "C"
 
 	typedef void (*sefs_callback_fn_t) (void *varg, struct sefs_fclist * fclist, int level, const char *fmt, va_list argp);
 
+/**
+ * Possible types of fclist for use with sefs_fclist_get_data().
+ */
+	typedef enum sefs_fclist_type
+	{
+		SEFS_FCLIST_TYPE_NONE = 0,	/*!< Not an actual type, used for error conditions */
+		SEFS_FCLIST_TYPE_FILESYSTEM,	/*!< get_data returns sefs_filesystem_t, a representation of a file system */
+		SEFS_FCLIST_TYPE_FCFILE,	/*!< get_data returns sefs_fcfile_t, a representation of a collection of file_context files */
+		SEFS_FCLIST_TYPE_DB    /*!< get_data returns sefs_db_t, a representation of a database of file system contexts */
+	} sefs_fclist_type_e;
+
 #ifdef __cplusplus
 }
+
+#include <stdexcept>
+
+struct apol_bst;
 
 class sefs_fclist
 {
       public:
-	~sefs_fclist();
+	virtual ~ sefs_fclist();
 
 	/**
 	 * Determine if the contexts in the fclist contain MLS fields.
-	 * @return \a true if MLS fields are present and \a false
-	 * otherwise
+	 * @return \a true if MLS fields are present, \a false if not
+	 * or undeterminable.
 	 */
-	bool isMLS() const;
+	virtual bool isMLS() const = 0;
 
 	/**
 	 * Associate a policy with the fclist.	This is needed to
@@ -74,10 +89,21 @@ class sefs_fclist
 	 * @see sefs_query_set_type()
 	 * @see sefs_query_set_range()
 	 */
-	void associatePolicy(apol_policy_t * policy);
+	void associatePolicy(apol_policy_t * new_policy);
+
+	/**
+	 * Get the type of fclist object represented by \a fclist.
+	 * @return The type of fclist object or SEFS_FCLIST_TYPE_NONE
+	 * on error.
+	 */
+	sefs_fclist_type_e type() const;
 
       protected:
-	 apol_policy_t * policy;
+	 sefs_fclist(sefs_callback_fn_t callback, void *varg) throw(std::bad_alloc);
+
+	sefs_fclist_type_e fclist_type;
+	apol_policy_t *policy;
+	struct apol_bst *user_tree, *role_tree, *type_tree, *range_tree;
 
 	/**
 	 * Write a message to the callback stored within a fclist
@@ -87,12 +113,11 @@ class sefs_fclist
 	 * @param fmt Format string to print, using syntax of
 	 * printf(3).
 	 */
-	void handle_msg(int level, const char *fmt, ...);
 	__attribute__ ((format(printf, 3, 4)))
-	void handle_msg(int level, const char *fmt, ...);
+	void handleMsg(int level, const char *fmt, ...);
 
       private:
-	 sefs_callback_fn_t * _callback;
+	 sefs_callback_fn_t _callback;
 	void *_varg;
 };
 
@@ -115,21 +140,8 @@ extern "C"
 	void sefs_fclist_destroy(sefs_fclist_t ** fclist);
 
 /**
- * Possible types of fclist for use with sefs_fclist_get_data().
- */
-	typedef enum sefs_fclist_type
-	{
-		SEFS_FCLIST_TYPE_NONE = 0,    /*!< Not an actual type, used for error conditions */
-		SEFS_FCLIST_TYPE_FILESYSTEM,    /*!< get_data returns sefs_filesystem_t, a representation of a file system */
-		SEFS_FCLIST_TYPE_FCFILE,    /*!< get_data returns sefs_fcfile_t, a representation of a collection of file_context files */
-		SEFS_FCLIST_TYPE_DB    /*!< get_data returns sefs_db_t, a representation of a database of file system contexts */
-	} sefs_fclist_type_e;
-
-/**
  * Get the type of fclist object represented by \a fclist.
- * @param fclist Fclist object from which to get the type.
- * @return The type of fclist object or SEFS_FCLIST_TYPE_NONE on
- * error.
+ * @see sefs_fclist::type()
  */
 	sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist);
 

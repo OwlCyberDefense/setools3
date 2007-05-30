@@ -31,13 +31,13 @@ extern "C"
 #endif
 
 #include <sys/types.h>
-
 #include <apol/context-query.h>
 #include <apol/vector.h>
 
 #ifdef __cplusplus
 }
 
+class sefs_fclist;
 class sefs_db;
 class sefs_fcfile;
 class sefs_filesystem;
@@ -55,7 +55,7 @@ class sefs_entry
 
 	/**
 	 * Get the context from a sefs entry.
-	 * @return A pointer to the context, or NULL on error. The
+	 * @return A pointer to the context, or NULL on error.  The
 	 * caller should not modify or destroy the returned context.
 	 */
 	const apol_context_t *context() const;
@@ -72,10 +72,12 @@ class sefs_entry
 	 * @return Device number associated with the entry or 0 on
 	 * error.
 	 */
-	dev64_t dev() const;
+	dev_t dev() const;
 
 	/**
-	 * Get the object class associated with a sefs entry.
+	 * Get the object class associated with a sefs entry.  If this
+	 * returns an empty string ("") then the entry is associated
+	 * with all object classes.
 	 * @return Name of the object class or NULL on error.  Do not
 	 * free() this pointer.
 	 */
@@ -102,9 +104,24 @@ class sefs_entry
 	const char *origin() const;
 
       private:
-	apol_context_t * _context;
+	/**
+         * Create a blank entry.  The entity creating this entry is
+         * responsible for setting additional values as needed.
+         * @param list Associate the new entry with this list.
+         * @param context A string representing the file entry's
+         * context.  It will be converted into an apol_context_t
+         * struct.
+         * @param objectClass Object class for the entry, or an empty
+         * string to mean any class.
+         * @param path Path to this entry.         
+         */
+	sefs_entry(sefs_fclist * fclist, const char *context, const char *objectClass, const char *path);
+
+	// note that entry owns the context; all others are assumed to
+	// be shallow pointers
+	apol_context_t *_context;
 	ino64_t _inode;
-	dev64_t _dev;
+	dev_t _dev;
 	char *_objectClass;
 	apol_vector_t *_paths;
 	char *_origin;
@@ -136,7 +153,7 @@ extern "C"
  * Get the device number associated with a sefs entry.
  * @see sefs_entry::dev()
  */
-	dev64_t sefs_entry_get_dev(const sefs_entry_t * ent);
+	dev_t sefs_entry_get_dev(const sefs_entry_t * ent);
 
 /**
  * Get the object class associated with a sefs entry.
