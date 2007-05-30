@@ -1,3 +1,7 @@
+2007-05-30  J. Mowery  <jmowery@tresys.com>
+
+	* The --regex flag in sesearch now also applies to --class.
+
 2007-05-29  J. Tang  <jtang@tresys.com>
 
 	* ./configure no longer has --enable-sefs flag, for libselinux is

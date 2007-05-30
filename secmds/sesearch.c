@@ -4,6 +4,7 @@
  *
  *  @author Frank Mayer  mayerf@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Paul Rosenfeld  prosenfeld@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -96,6 +97,7 @@ typedef struct options
 	char *class_name;
 	char *permlist;
 	char *bool_name;
+	apol_vector_t *class_vector;
 	bool all;
 	bool lineno;
 	bool semantic;
@@ -189,7 +191,6 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 	if (opt->dontaudit || opt->all)
 		rules |= QPOL_RULE_DONTAUDIT;
 	apol_avrule_query_set_rules(policy, avq, rules);
-
 	apol_avrule_query_set_regex(policy, avq, opt->useregex);
 	if (opt->src_name)
 		apol_avrule_query_set_source(policy, avq, opt->src_name, opt->indirect);
@@ -198,11 +199,25 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 	if (opt->bool_name)
 		apol_avrule_query_set_bool(policy, avq, opt->bool_name);
 	if (opt->class_name) {
-		if (apol_avrule_query_append_class(policy, avq, opt->class_name)) {
-			error = errno;
-			goto err;
+		if (opt->class_vector == NULL) {
+			if (apol_avrule_query_append_class(policy, avq, opt->class_name)) {
+				error = errno;
+				goto err;
+			}
+		} else {
+			for (size_t i = 0; i < apol_vector_get_size(opt->class_vector); ++i) {
+				char *class_name;
+				class_name = apol_vector_get_element(opt->class_vector, i);
+				if (!class_name)
+					continue;
+				if (apol_avrule_query_append_class(policy, avq, class_name)) {
+					error = errno;
+					goto err;
+				}
+			}
 		}
 	}
+
 	if (opt->permlist) {
 		tmp = strdup(opt->permlist);
 		for (tok = strtok(tmp, ","); tok; tok = strtok(NULL, ",")) {
@@ -397,9 +412,22 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 	if (opt->bool_name)
 		apol_terule_query_set_bool(policy, teq, opt->bool_name);
 	if (opt->class_name) {
-		if (apol_terule_query_append_class(policy, teq, opt->class_name)) {
-			error = errno;
-			goto err;
+		if (opt->class_vector == NULL) {
+			if (apol_terule_query_append_class(policy, teq, opt->class_name)) {
+				error = errno;
+				goto err;
+			}
+		} else {
+			for (size_t i = 0; i < apol_vector_get_size(opt->class_vector); ++i) {
+				char *class_name;
+				class_name = apol_vector_get_element(opt->class_vector, i);
+				if (!class_name)
+					continue;
+				if (apol_terule_query_append_class(policy, teq, class_name)) {
+					error = errno;
+					goto err;
+				}
+			}
 		}
 	}
 
@@ -738,9 +766,22 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 		}
 	}
 	if (opt->class_name) {
-		if (apol_range_trans_query_append_class(policy, rtq, opt->class_name)) {
-			error = errno;
-			goto err;
+		if (opt->class_vector == NULL) {
+			if (apol_range_trans_query_append_class(policy, rtq, opt->class_name)) {
+				error = errno;
+				goto err;
+			}
+		} else {
+			for (size_t i = 0; i < apol_vector_get_size(opt->class_vector); ++i) {
+				char *class_name;
+				class_name = apol_vector_get_element(opt->class_vector, i);
+				if (!class_name)
+					continue;
+				if (apol_range_trans_query_append_class(policy, rtq, class_name)) {
+					error = errno;
+					goto err;
+				}
+			}
 		}
 	}
 
@@ -1013,6 +1054,26 @@ int main(int argc, char **argv)
 		apol_policy_path_destroy(&pol_path);
 		exit(1);
 	}
+	/* handle regex for class name */
+	if (cmd_opts.useregex && cmd_opts.class_name != NULL) {
+		cmd_opts.class_vector = apol_vector_create(NULL);
+		apol_vector_t *qpol_matching_classes = NULL;
+		apol_class_query_t *regex_match_query = apol_class_query_create();
+		apol_class_query_set_regex(policy, regex_match_query, 1);
+		apol_class_query_set_class(policy, regex_match_query, cmd_opts.class_name);
+		apol_class_get_by_query(policy, regex_match_query, &qpol_matching_classes);
+		qpol_class_t *class = NULL;
+		for (size_t i = 0; i < apol_vector_get_size(qpol_matching_classes); ++i) {
+			char *class_name;
+			class = apol_vector_get_element(qpol_matching_classes, i);
+			if (!class)
+				break;
+			qpol_class_get_name(apol_policy_get_qpol(policy), class, &class_name);
+			apol_vector_append(cmd_opts.class_vector, class_name);
+		}
+		apol_vector_destroy(&qpol_matching_classes);
+		apol_class_query_destroy(&regex_match_query);
+	}
 
 	if (!cmd_opts.semantic && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_SYN_RULES)) {
 		if (qpol_policy_build_syn_rule_table(apol_policy_get_qpol(policy))) {
@@ -1094,5 +1155,6 @@ int main(int argc, char **argv)
 	free(cmd_opts.src_role_name);
 	free(cmd_opts.tgt_role_name);
 	apol_vector_destroy(&cmd_opts.perm_vector);
+	apol_vector_destroy(&cmd_opts.class_vector);
 	exit(rt);
 }
