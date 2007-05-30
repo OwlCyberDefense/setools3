@@ -85,13 +85,13 @@ int apol_portcon_get_by_query(apol_policy_t * p, apol_portcon_query_t * po, apol
 			    qpol_portcon_get_high_port(p->p,
 						       portcon, &high) < 0 ||
 			    qpol_portcon_get_protocol(p->p,
-						      portcon, &proto) < 0 ||
-			    qpol_portcon_get_context(p->p, portcon, &context) < 0) {
+						      portcon, &proto) < 0 || qpol_portcon_get_context(p->p, portcon, &context) < 0)
+			{
 				goto cleanup;
 			}
 			if ((po->low >= 0 && ((uint16_t) po->low) != low) ||
-			    (po->high >= 0 && ((uint16_t) po->high) != high) ||
-			    (po->proto >= 0 && ((uint8_t) po->proto) != proto)) {
+			    (po->high >= 0 && ((uint16_t) po->high) != high) || (po->proto >= 0 && ((uint8_t) po->proto) != proto))
+			{
 				continue;
 			}
 			retval2 = apol_compare_context(p, context, po->context, po->flags);

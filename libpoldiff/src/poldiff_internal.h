@@ -246,8 +246,7 @@ extern "C"
  * POLDIFF_MSG_WARN, or POLDIFF_MSG_INFO.
  * @param fmt Format string to print, using syntax of printf(3).
  */
-	__attribute__ ((format(printf, 3, 4)))
-	extern void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...);
+	__attribute__ ((format(printf, 3, 4))) extern void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...);
 
 #undef ERR
 #undef WARN

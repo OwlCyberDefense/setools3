@@ -74,53 +74,56 @@ char *poldiff_attrib_to_string(poldiff_t * diff, const void *attrib)
 	num_added = apol_vector_get_size(at->added_types);
 	num_removed = apol_vector_get_size(at->removed_types);
 	switch (at->form) {
-	case POLDIFF_FORM_ADDED:{
-			if (apol_str_appendf(&s, &len, "+ %s", at->name) < 0) {
-				break;
-			}
-			return s;
+	case POLDIFF_FORM_ADDED:
+	{
+		if (apol_str_appendf(&s, &len, "+ %s", at->name) < 0) {
+			break;
 		}
-	case POLDIFF_FORM_REMOVED:{
-			if (apol_str_appendf(&s, &len, "- %s", at->name) < 0) {
-				break;
-			}
-			return s;
+		return s;
+	}
+	case POLDIFF_FORM_REMOVED:
+	{
+		if (apol_str_appendf(&s, &len, "- %s", at->name) < 0) {
+			break;
 		}
-	case POLDIFF_FORM_MODIFIED:{
-			if (apol_str_appendf(&s, &len, "* %s (", at->name) < 0) {
-				break;
-			}
-			if (num_added > 0
-			    && apol_str_appendf(&s, &len, "%zd Added Type%s", num_added, (num_added == 1 ? "" : "s")) < 0) {
-				break;
-			}
-			if (num_removed > 0
-			    && apol_str_appendf(&s, &len, "%s%zd Removed Type%s", (num_added > 0 ? ", " : ""), num_removed,
-						(num_removed == 1 ? "" : "s")) < 0) {
-				break;
-			}
-			if (apol_str_append(&s, &len, ")\n") < 0) {
-				break;
-			}
-			for (i = 0; i < apol_vector_get_size(at->added_types); i++) {
-				type = (char *)apol_vector_get_element(at->added_types, i);
-				if (apol_str_appendf(&s, &len, "\t+ %s\n", type) < 0) {
-					goto err;
-				}
-			}
-			for (i = 0; i < apol_vector_get_size(at->removed_types); i++) {
-				type = (char *)apol_vector_get_element(at->removed_types, i);
-				if (apol_str_appendf(&s, &len, "\t- %s\n", type) < 0) {
-					goto err;
-				}
-			}
-			return s;
+		return s;
+	}
+	case POLDIFF_FORM_MODIFIED:
+	{
+		if (apol_str_appendf(&s, &len, "* %s (", at->name) < 0) {
+			break;
 		}
-	default:{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
+		if (num_added > 0 && apol_str_appendf(&s, &len, "%zd Added Type%s", num_added, (num_added == 1 ? "" : "s")) < 0) {
+			break;
 		}
+		if (num_removed > 0
+		    && apol_str_appendf(&s, &len, "%s%zd Removed Type%s", (num_added > 0 ? ", " : ""), num_removed,
+					(num_removed == 1 ? "" : "s")) < 0) {
+			break;
+		}
+		if (apol_str_append(&s, &len, ")\n") < 0) {
+			break;
+		}
+		for (i = 0; i < apol_vector_get_size(at->added_types); i++) {
+			type = (char *)apol_vector_get_element(at->added_types, i);
+			if (apol_str_appendf(&s, &len, "\t+ %s\n", type) < 0) {
+				goto err;
+			}
+		}
+		for (i = 0; i < apol_vector_get_size(at->removed_types); i++) {
+			type = (char *)apol_vector_get_element(at->removed_types, i);
+			if (apol_str_appendf(&s, &len, "\t- %s\n", type) < 0) {
+				goto err;
+			}
+		}
+		return s;
+	}
+	default:
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
       err:
 	/* if this is reached then an error occurred */
@@ -327,8 +330,8 @@ int attrib_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
 	     qpol_type_get_name(diff->mod_qpol, r, &name) < 0) ||
-	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_type_get_name(diff->orig_qpol, r, &name) < 0)) {
+	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) && qpol_type_get_name(diff->orig_qpol, r, &name) < 0))
+	{
 		return -1;
 	}
 	pr = make_diff(diff, form, name);

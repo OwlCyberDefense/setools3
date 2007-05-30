@@ -376,8 +376,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 			error = errno;
 			goto cleanup;
 		}
-		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE))
-		    || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
+		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE)) || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
 			apol_vector_remove(list, i);
 			i--;
 		}
@@ -523,8 +522,7 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 			error = errno;
 			goto cleanup;
 		}
-		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE))
-		    || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
+		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE)) || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
 			apol_vector_remove(list, i);
 			i--;
 		}

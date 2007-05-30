@@ -83,48 +83,48 @@ char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
 	switch (rt->form) {
 	case POLDIFF_FORM_ADDED:
 	case POLDIFF_FORM_ADD_TYPE:
-		{
-			char *t = NULL;
-			if ((t = apol_mls_range_render(diff->mod_pol, mod_range)) == NULL ||
-			    apol_str_appendf(&s, &len, "+ range_transition %s %s : %s %s;", rt->source, rt->target,
-					     rt->target_class, t) < 0) {
-				free(t);
-				goto cleanup;
-			}
+	{
+		char *t = NULL;
+		if ((t = apol_mls_range_render(diff->mod_pol, mod_range)) == NULL ||
+		    apol_str_appendf(&s, &len, "+ range_transition %s %s : %s %s;", rt->source, rt->target,
+				     rt->target_class, t) < 0) {
 			free(t);
-			return s;
+			goto cleanup;
 		}
+		free(t);
+		return s;
+	}
 	case POLDIFF_FORM_REMOVED:
 	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			char *t = NULL;
-			if ((t = apol_mls_range_render(diff->orig_pol, orig_range)) == NULL ||
-			    apol_str_appendf(&s, &len, "- range_transition %s %s : %s %s;", rt->source, rt->target,
-					     rt->target_class, t) < 0) {
-				free(t);
-				goto cleanup;
-			}
+	{
+		char *t = NULL;
+		if ((t = apol_mls_range_render(diff->orig_pol, orig_range)) == NULL ||
+		    apol_str_appendf(&s, &len, "- range_transition %s %s : %s %s;", rt->source, rt->target,
+				     rt->target_class, t) < 0) {
 			free(t);
-			return s;
+			goto cleanup;
 		}
+		free(t);
+		return s;
+	}
 	case POLDIFF_FORM_MODIFIED:
-		{
-			char *t;
-			if ((t = poldiff_range_to_string_brief(diff, range)) == NULL ||
-			    apol_str_appendf(&s, &len, "* range_transition %s %s : %s\n%s", rt->source, rt->target,
-					     rt->target_class, t) < 0) {
-				free(t);
-				goto cleanup;
-			}
+	{
+		char *t;
+		if ((t = poldiff_range_to_string_brief(diff, range)) == NULL ||
+		    apol_str_appendf(&s, &len, "* range_transition %s %s : %s\n%s", rt->source, rt->target,
+				     rt->target_class, t) < 0) {
 			free(t);
-			return s;
+			goto cleanup;
 		}
+		free(t);
+		return s;
+	}
 	default:
-		{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
       cleanup:
 	/* if this is reached then an error occurred */
@@ -360,30 +360,30 @@ int range_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item
 	/* increment appropriate counter */
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-		{
-			diff->range_trans_diffs->num_added++;
-			break;
-		}
+	{
+		diff->range_trans_diffs->num_added++;
+		break;
+	}
 	case POLDIFF_FORM_ADD_TYPE:
-		{
-			diff->range_trans_diffs->num_added_type++;
-			break;
-		}
+	{
+		diff->range_trans_diffs->num_added_type++;
+		break;
+	}
 	case POLDIFF_FORM_REMOVED:
-		{
-			diff->range_trans_diffs->num_removed++;
-			break;
-		}
+	{
+		diff->range_trans_diffs->num_removed++;
+		break;
+	}
 	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			diff->range_trans_diffs->num_removed_type++;
-			break;
-		}
+	{
+		diff->range_trans_diffs->num_removed_type++;
+		break;
+	}
 	default:
-		{
-			/* not reachable */
-			assert(0);
-		}
+	{
+		/* not reachable */
+		assert(0);
+	}
 	}
 	return 0;
       cleanup:

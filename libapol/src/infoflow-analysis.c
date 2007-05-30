@@ -1938,14 +1938,16 @@ int apol_infoflow_analysis_set_mode(apol_policy_t * p, apol_infoflow_analysis_t 
 {
 	switch (mode) {
 	case APOL_INFOFLOW_MODE_DIRECT:
-	case APOL_INFOFLOW_MODE_TRANS:{
-			ia->mode = mode;
-			break;
-		}
-	default:{
-			ERR(p, "%s", strerror(EINVAL));
-			return -1;
-		}
+	case APOL_INFOFLOW_MODE_TRANS:
+	{
+		ia->mode = mode;
+		break;
+	}
+	default:
+	{
+		ERR(p, "%s", strerror(EINVAL));
+		return -1;
+	}
 	}
 	return 0;
 }
@@ -1956,14 +1958,16 @@ int apol_infoflow_analysis_set_dir(apol_policy_t * p, apol_infoflow_analysis_t *
 	case APOL_INFOFLOW_IN:
 	case APOL_INFOFLOW_OUT:
 	case APOL_INFOFLOW_BOTH:
-	case APOL_INFOFLOW_EITHER:{
-			ia->direction = dir;
-			break;
-		}
-	default:{
-			ERR(p, "%s", strerror(EINVAL));
-			return -1;
-		}
+	case APOL_INFOFLOW_EITHER:
+	{
+		ia->direction = dir;
+		break;
+	}
+	default:
+	{
+		ERR(p, "%s", strerror(EINVAL));
+		return -1;
+	}
 	}
 	return 0;
 }
@@ -2165,8 +2169,8 @@ apol_infoflow_result_t *infoflow_result_create_from_infoflow_result(apol_infoflo
 	int retval = -1;
 
 	if ((new_r = calloc(1, sizeof(*new_r))) == NULL ||
-	    (new_r->steps =
-	     apol_vector_create_with_capacity(apol_vector_get_size(result->steps), apol_infoflow_step_free)) == NULL) {
+	    (new_r->steps = apol_vector_create_with_capacity(apol_vector_get_size(result->steps), apol_infoflow_step_free)) == NULL)
+	{
 		goto cleanup;
 	}
 	new_r->start_type = result->start_type;

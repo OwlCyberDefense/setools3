@@ -161,29 +161,33 @@ char *poldiff_user_to_string(poldiff_t * diff, const void *user)
 		return NULL;
 	}
 	switch (u->form) {
-	case POLDIFF_FORM_ADDED:{
-			if (apol_str_appendf(&s, &len, "+ %s", u->name) < 0) {
-				break;
-			}
-			return s;
+	case POLDIFF_FORM_ADDED:
+	{
+		if (apol_str_appendf(&s, &len, "+ %s", u->name) < 0) {
+			break;
 		}
-	case POLDIFF_FORM_REMOVED:{
-			if (apol_str_appendf(&s, &len, "- %s", u->name) < 0) {
-				break;
-			}
-			return s;
+		return s;
+	}
+	case POLDIFF_FORM_REMOVED:
+	{
+		if (apol_str_appendf(&s, &len, "- %s", u->name) < 0) {
+			break;
 		}
-	case POLDIFF_FORM_MODIFIED:{
-			if ((s = user_to_modified_string(diff, u)) == NULL) {
-				goto err;
-			}
-			return s;
+		return s;
+	}
+	case POLDIFF_FORM_MODIFIED:
+	{
+		if ((s = user_to_modified_string(diff, u)) == NULL) {
+			goto err;
 		}
-	default:{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+		return s;
+	}
+	default:
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
       err:
 	/* if this is reached then an error occurred */
@@ -611,8 +615,8 @@ int user_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	int error, retval = -1;
 	if ((form == POLDIFF_FORM_ADDED &&
 	     qpol_user_get_name(diff->mod_qpol, u, &name) < 0) ||
-	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_user_get_name(diff->orig_qpol, u, &name) < 0)) {
+	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) && qpol_user_get_name(diff->orig_qpol, u, &name) < 0))
+	{
 		error = errno;
 		goto cleanup;
 	}

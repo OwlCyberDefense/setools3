@@ -422,8 +422,7 @@ static apol_policy_path_t *open_policy_build_path(struct open_policy_pane *pane)
 					apol_vector_destroy(&modules);
 					return NULL;
 				}
-			}
-			while (gtk_tree_model_iter_next(GTK_TREE_MODEL(pane->module_store), &iter));
+			} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(pane->module_store), &iter));
 		}
 	}
 	path = apol_policy_path_create(path_type, primary_path, modules);

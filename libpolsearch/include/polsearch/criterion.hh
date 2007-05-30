@@ -37,7 +37,7 @@ extern "C"
 
 #include "string_list.hh"
 
-/** Value to indicate the comparison operator for a parameter */
+	/** Value to indicate the comparison operator for a parameter */
 	typedef enum polsearch_op
 	{
 		POLSEARCH_OP_NONE = 0, /*!< only used for error conditions */
@@ -61,7 +61,7 @@ extern "C"
 		POLSEARCH_OP_AS_TYPE,  /*!< has as type */
 	} polsearch_op_e;
 
-/** Value to indicate the type of the parameter value of a criterion */
+	/** Value to indicate the type of the parameter value of a criterion */
 	typedef enum polsearch_param_type
 	{
 		POLSEARCH_PARAM_TYPE_NONE = 0,	/*!< only used for error conditions */
@@ -84,17 +84,51 @@ extern "C"
 class polsearch_criterion
 {
       public:
+		/**
+		 * Create a generic criterion.
+		 * @param opr Comparison operator to use.
+		 * @param neg If \a true, invert the logic result of the operator.
+		 */
 	virtual polsearch_criterion(polsearch_op_e opr, bool neg = false);
+		/**
+		 * Copy a generic criterion.
+		 * @param pc The criterion to copy.
+		 */
 	virtual polsearch_criterion(const polsearch_criterion & pc);
-	 virtual ~ polsearch_criterion();
+	//! Destructor.
+	 virtual ~polsearch_criterion();
 
+		/**
+		 * Get the comparison operator used to check this criterion.
+		 * @return The operator used.
+		 */
 	polsearch_op_e op() const;
+		/**
+		 * Determine if the comparison operator for this criterion is negated.
+		 * @return \a true if negated, \a false otherwise
+		  */
 	bool negated() const;
+		/**
+		 * Set the flag to negate the comparison operator.
+		 * @param neg If \a true, invert the logic result of the operator;
+		 * if \a false do not invert.
+		 * @return The state set.
+		 */
 	bool negated(bool neg);
-	polsearch_param_type_e param_type() const;
+		/**
+		 * Get the type of parameter used by this criterion.
+		 * @return The type of parameter (see polsearch_param_type_e).
+		 */
+	polsearch_param_type_e paramType() const;
 
-	virtual apol_vector_t *check(const apol_policy_t * p, const sefs_fclist_t * fclist, const apol_vector_t * test_candidates,
-				     apol_vector_t * Xcandidtates) const = 0;
+		/**
+		 * Check all candidates to find symbols that meet this criterion.
+		 * @param p The policy containing the symbols to check.
+		 * @param fclist The file_contexts list to use.
+		 * @param test_candidates Vector of items to check (
+		 */
+	virtual apol_vector_t *check(const apol_policy_t * p, const sefs_fclist_t * fclist,
+				     const apol_vector_t * test_candidates, apol_vector_t * Xcandidtates) const = 0;
 
       protected:
 	 polsearch_op_e _op;
@@ -195,8 +229,8 @@ class polsearch_level_criterion:public polsearch_criterion
 class polsearch_range_criterion:public polsearch_criterion
 {
       public:
-	polsearch_range_criterion(polsearch_op_e opr, bool neg = false, const apol_mls_range_t * rng = NULL, unsigned int m =
-				  APOL_QUERY_EXACT);
+	polsearch_range_criterion(polsearch_op_e opr, bool neg = false, const apol_mls_range_t * rng = NULL,
+				  unsigned int m = APOL_QUERY_EXACT);
 	 polsearch_range_criterion(polsearch_range_criterion & prc);
 	~polsearch_range_criterion();
 
@@ -264,8 +298,8 @@ extern "C"
 	bool polsearch_bool_criterion_get_value(const polsearch_bool_criterion_t * pbc);
 	bool polsearch_bool_criterion_set_value(polsearch_bool_criterion_t * pbc, bool val);
 
-	polsearch_level_criterion_t *polsearch_level_criterion_create(polsearch_op_e opr, bool neg, const apol_mls_level_t * lvl,
-								      int m);
+	polsearch_level_criterion_t *polsearch_level_criterion_create(polsearch_op_e opr, bool neg,
+								      const apol_mls_level_t * lvl, int m);
 	polsearch_level_criterion_t *polsearch_level_criterion_create_from_criterion(const polsearch_level_criterion_t * plc);
 	void polsearch_level_criterion_destroy(polsearch_level_criterion_t ** plc);
 	const apol_mls_level_t *polsearch_level_criterion_get_level(const polsearch_level_criterion_t * plc);
@@ -273,8 +307,8 @@ extern "C"
 	int polsearch_level_criterion_get_match(const polsearch_level_criterion_t * plc);
 	int polsearch_level_criterion_set_match(polsearch_level_criterion_t * plc, int m);
 
-	polsearch_range_criterion_t *polsearch_range_criterion_create(polsearch_op_e opr, bool neg, const apol_mls_range_t * rng,
-								      unsigned int m);
+	polsearch_range_criterion_t *polsearch_range_criterion_create(polsearch_op_e opr, bool neg,
+								      const apol_mls_range_t * rng, unsigned int m);
 	polsearch_range_criterion_t *polsearch_range_criterion_create_from_criterion(const polsearch_range_criterion_t * prc);
 	void polsearch_range_criterion_destroy(polsearch_range_criterion_t ** prc);
 	const apol_mls_range_t *polsearch_range_criterion_get_range(const polsearch_range_criterion_t * prc);

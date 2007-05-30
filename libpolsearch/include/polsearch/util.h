@@ -26,10 +26,14 @@
 #ifndef POLSEARCH_UTIL_H
 #define POLSEARCH_UTIL_H
 
+#include "polsearch.hh"
+
 #ifdef	__cplusplus
 extern "C"
 {
 #endif
+
+#include <apol/policy.h>
 
 /**
  * Return an immutable string describing this library's version.
@@ -37,6 +41,15 @@ extern "C"
  * @return String describing this library.
  */
 	extern const char *libpolsearch_get_version(void);
+
+/**
+ * Get the name of a policy symbol.
+ * @param symbol The symbol for which to get the name.
+ * @param sym_type The type of symbol.
+ * @param p The policy conaining \a symbol.
+ * @return The name of the symbol, or NULL on error.
+ */
+	extern const char *libpolsearch_symbol_get_name(const void *symbol, polsearch_symbol_e sym_type, const apol_policy_t * p);
 
 #ifdef __cplusplus
 }

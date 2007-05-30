@@ -147,21 +147,21 @@ static void qpol_handle_default_callback(void *varg __attribute__ ((unused)), qp
 {
 	switch (level) {
 	case QPOL_MSG_INFO:
-		{
-			/* by default ignore info messages */
-			return;
-		}
+	{
+		/* by default ignore info messages */
+		return;
+	}
 	case QPOL_MSG_WARN:
-		{
-			fprintf(stderr, "WARNING: ");
-			break;
-		}
+	{
+		fprintf(stderr, "WARNING: ");
+		break;
+	}
 	case QPOL_MSG_ERR:
 	default:
-		{
-			fprintf(stderr, "ERROR: ");
-			break;
-		}
+	{
+		fprintf(stderr, "ERROR: ");
+		break;
+	}
 	}
 
 	vfprintf(stderr, fmt, va_args);
@@ -1178,63 +1178,63 @@ int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
 
 	switch (cap) {
 	case QPOL_CAP_ATTRIB_NAMES:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_SYN_RULES:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_LINE_NUMBERS:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_CONDITIONALS:
-		{
-			if (version >= 16 || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (version >= 16 || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_MLS:
-		{
-			return is_mls_policy(policy);
-		}
+	{
+		return is_mls_policy(policy);
+	}
 	case QPOL_CAP_MODULES:
-		{
-			if (policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_RULES_LOADED:
-		{
-			if (!(policy->options & QPOL_POLICY_OPTION_NO_RULES))
-				return 1;
-			break;
-		}
+	{
+		if (!(policy->options & QPOL_POLICY_OPTION_NO_RULES))
+			return 1;
+		break;
+	}
 	case QPOL_CAP_SOURCE:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_NEVERALLOW:
-		{
-			if (!(policy->options & QPOL_POLICY_OPTION_NO_NEVERALLOWS) && policy->type != QPOL_POLICY_KERNEL_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (!(policy->options & QPOL_POLICY_OPTION_NO_NEVERALLOWS) && policy->type != QPOL_POLICY_KERNEL_BINARY)
+			return 1;
+		break;
+	}
 	default:
-		{
-			ERR(policy, "%s", "Unknown capability");
-			errno = EDOM;
-			break;
-		}
+	{
+		ERR(policy, "%s", "Unknown capability");
+		errno = EDOM;
+		break;
+	}
 	}
 	return 0;
 }

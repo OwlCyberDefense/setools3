@@ -41,21 +41,21 @@ static void apol_handle_default_callback(void *varg __attribute__ ((unused)), ap
 {
 	switch (level) {
 	case APOL_MSG_INFO:
-		{
-			/* by default do not display these messages */
-			return;
-		}
+	{
+		/* by default do not display these messages */
+		return;
+	}
 	case APOL_MSG_WARN:
-		{
-			fprintf(stderr, "WARNING: ");
-			break;
-		}
+	{
+		fprintf(stderr, "WARNING: ");
+		break;
+	}
 	case APOL_MSG_ERR:
 	default:
-		{
-			fprintf(stderr, "ERROR: ");
-			break;
-		}
+	{
+		fprintf(stderr, "ERROR: ");
+		break;
+	}
 	}
 	vfprintf(stderr, fmt, va_args);
 	fprintf(stderr, "\n");

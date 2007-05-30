@@ -100,73 +100,73 @@ char *poldiff_role_allow_to_string(poldiff_t * diff, const void *role_allow)
 	num_removed = apol_vector_get_size(ra->removed_roles);
 	switch (ra->form) {
 	case POLDIFF_FORM_ADDED:
-		{
-			if (apol_str_appendf(&s, &len, "+ allow %s { ", ra->source_role) < 0) {
-				s = NULL;
-				break;
-			}
-			for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
-				role = apol_vector_get_element(ra->orig_roles, i);
-				if (apol_str_appendf(&s, &len, "%s ", role) < 0) {
-					goto err;
-				}
-			}
-			if (apol_str_append(&s, &len, "};") < 0) {
-				break;
-			}
-			return s;
+	{
+		if (apol_str_appendf(&s, &len, "+ allow %s { ", ra->source_role) < 0) {
+			s = NULL;
+			break;
 		}
+		for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
+			role = apol_vector_get_element(ra->orig_roles, i);
+			if (apol_str_appendf(&s, &len, "%s ", role) < 0) {
+				goto err;
+			}
+		}
+		if (apol_str_append(&s, &len, "};") < 0) {
+			break;
+		}
+		return s;
+	}
 	case POLDIFF_FORM_REMOVED:
-		{
-			if (apol_str_appendf(&s, &len, "- allow %s { ", ra->source_role) < 0) {
-				break;
-			}
-			for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
-				role = apol_vector_get_element(ra->orig_roles, i);
-				if (apol_str_appendf(&s, &len, "%s ", role) < 0) {
-					goto err;
-				}
-			}
-			if (apol_str_append(&s, &len, "};") < 0) {
-				break;
-			}
-			return s;
+	{
+		if (apol_str_appendf(&s, &len, "- allow %s { ", ra->source_role) < 0) {
+			break;
 		}
+		for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
+			role = apol_vector_get_element(ra->orig_roles, i);
+			if (apol_str_appendf(&s, &len, "%s ", role) < 0) {
+				goto err;
+			}
+		}
+		if (apol_str_append(&s, &len, "};") < 0) {
+			break;
+		}
+		return s;
+	}
 	case POLDIFF_FORM_MODIFIED:
-		{
-			if (apol_str_appendf(&s, &len, "* allow %s { ", ra->source_role) < 0) {
-				s = NULL;
-				break;
-			}
-			for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
-				role = apol_vector_get_element(ra->orig_roles, i);
-				if (apol_str_appendf(&s, &len, "%s ", role) < 0) {
-					goto err;
-				}
-			}
-			for (i = 0; i < apol_vector_get_size(ra->added_roles); i++) {
-				role = apol_vector_get_element(ra->added_roles, i);
-				if (apol_str_appendf(&s, &len, "+%s ", role) < 0) {
-					goto err;
-				}
-			}
-			for (i = 0; i < apol_vector_get_size(ra->removed_roles); i++) {
-				role = apol_vector_get_element(ra->removed_roles, i);
-				if (apol_str_appendf(&s, &len, "-%s ", role) < 0) {
-					goto err;
-				}
-			}
-			if (apol_str_append(&s, &len, "};") < 0) {
-				break;
-			}
-			return s;
+	{
+		if (apol_str_appendf(&s, &len, "* allow %s { ", ra->source_role) < 0) {
+			s = NULL;
+			break;
 		}
+		for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
+			role = apol_vector_get_element(ra->orig_roles, i);
+			if (apol_str_appendf(&s, &len, "%s ", role) < 0) {
+				goto err;
+			}
+		}
+		for (i = 0; i < apol_vector_get_size(ra->added_roles); i++) {
+			role = apol_vector_get_element(ra->added_roles, i);
+			if (apol_str_appendf(&s, &len, "+%s ", role) < 0) {
+				goto err;
+			}
+		}
+		for (i = 0; i < apol_vector_get_size(ra->removed_roles); i++) {
+			role = apol_vector_get_element(ra->removed_roles, i);
+			if (apol_str_appendf(&s, &len, "-%s ", role) < 0) {
+				goto err;
+			}
+		}
+		if (apol_str_append(&s, &len, "};") < 0) {
+			break;
+		}
+		return s;
+	}
 	default:
-		{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
 	/* if this is reached then an error occurred */
       err:
@@ -576,33 +576,33 @@ extern char *poldiff_role_trans_to_string(poldiff_t * diff, const void *role_tra
 	switch (rt->form) {
 	case POLDIFF_FORM_ADDED:
 	case POLDIFF_FORM_ADD_TYPE:
-		{
-			if (asprintf(&s, "+ role_transition %s %s %s;", rt->source_role, rt->target_type, rt->mod_default) < 0)
-				break;
-			return s;
-		}
+	{
+		if (asprintf(&s, "+ role_transition %s %s %s;", rt->source_role, rt->target_type, rt->mod_default) < 0)
+			break;
+		return s;
+	}
 	case POLDIFF_FORM_REMOVED:
 	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			if (asprintf(&s, "- role_transition %s %s %s;", rt->source_role, rt->target_type, rt->orig_default) < 0)
-				break;
-			return s;
-		}
+	{
+		if (asprintf(&s, "- role_transition %s %s %s;", rt->source_role, rt->target_type, rt->orig_default) < 0)
+			break;
+		return s;
+	}
 	case POLDIFF_FORM_MODIFIED:
-		{
-			if (asprintf
-			    (&s, "* role_transition %s %s { +%s -%s };", rt->source_role, rt->target_type, rt->mod_default,
-			     rt->orig_default) < 0)
-				break;
-			return s;
-		}
+	{
+		if (asprintf
+		    (&s, "* role_transition %s %s { +%s -%s };", rt->source_role, rt->target_type, rt->mod_default,
+		     rt->orig_default) < 0)
+			break;
+		return s;
+	}
 	case POLDIFF_FORM_NONE:
 	default:
-		{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
 	/* if this is reached then an error occurred */
 	free(s);
@@ -907,28 +907,28 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	/* get tgt_name from type_map */
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-		{
-			tgt_name = type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_MOD);
-			if (type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG) == NULL) {
-				form = POLDIFF_FORM_ADD_TYPE;
-			}
-			break;
+	{
+		tgt_name = type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_MOD);
+		if (type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG) == NULL) {
+			form = POLDIFF_FORM_ADD_TYPE;
 		}
+		break;
+	}
 	case POLDIFF_FORM_REMOVED:
-		{
-			tgt_name = type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG);
-			if (type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_MOD) == NULL) {
-				form = POLDIFF_FORM_REMOVE_TYPE;
-			}
-			break;
+	{
+		tgt_name = type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_ORIG);
+		if (type_map_get_name(diff, rt->pseudo_target, POLDIFF_POLICY_MOD) == NULL) {
+			form = POLDIFF_FORM_REMOVE_TYPE;
 		}
+		break;
+	}
 	case POLDIFF_FORM_MODIFIED:   /* not supported here */
 	case POLDIFF_FORM_NONE:
 	default:
-		{
-			assert(0);
-			return -1;
-		}
+	{
+		assert(0);
+		return -1;
+	}
 	}
 	assert(tgt_name != NULL);
 
@@ -941,21 +941,21 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
 	case POLDIFF_FORM_ADD_TYPE:
-		{
-			prt->mod_default = rt->default_role;
-			break;
-		}
+	{
+		prt->mod_default = rt->default_role;
+		break;
+	}
 	case POLDIFF_FORM_REMOVED:
 	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			prt->orig_default = rt->default_role;
-			break;
-		}
+	{
+		prt->orig_default = rt->default_role;
+		break;
+	}
 	default:
-		{
-			/* not reachable */
-			assert(0);
-		}
+	{
+		/* not reachable */
+		assert(0);
+	}
 	}
 	if (apol_vector_append(diff->role_trans_diffs->diffs, prt)) {
 		error = errno;
@@ -968,30 +968,30 @@ int role_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	/* increment appropriate counter */
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-		{
-			diff->role_trans_diffs->num_added++;
-			break;
-		}
+	{
+		diff->role_trans_diffs->num_added++;
+		break;
+	}
 	case POLDIFF_FORM_ADD_TYPE:
-		{
-			diff->role_trans_diffs->num_added_type++;
-			break;
-		}
+	{
+		diff->role_trans_diffs->num_added_type++;
+		break;
+	}
 	case POLDIFF_FORM_REMOVED:
-		{
-			diff->role_trans_diffs->num_removed++;
-			break;
-		}
+	{
+		diff->role_trans_diffs->num_removed++;
+		break;
+	}
 	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			diff->role_trans_diffs->num_removed_type++;
-			break;
-		}
+	{
+		diff->role_trans_diffs->num_removed_type++;
+		break;
+	}
 	default:
-		{
-			/* not reachable */
-			assert(0);
-		}
+	{
+		/* not reachable */
+		assert(0);
+	}
 	}
 
 	return 0;

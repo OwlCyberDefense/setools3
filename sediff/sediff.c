@@ -1482,8 +1482,7 @@ int main(int argc, char **argv)
 	 * but do not warn if it was implicitly requested for two
 	 * non-MLS policies */
 	if ((flags & POLDIFF_DIFF_MLS)
-	    && (!(qpol_policy_has_capability(orig_qpol, QPOL_CAP_MLS))
-		&& !(qpol_policy_has_capability(mod_qpol, QPOL_CAP_MLS)))) {
+	    && (!(qpol_policy_has_capability(orig_qpol, QPOL_CAP_MLS)) && !(qpol_policy_has_capability(mod_qpol, QPOL_CAP_MLS)))) {
 		flags &= ~(POLDIFF_DIFF_MLS);
 		if (!default_all) {
 			WARN(NULL, "%s", "MLS diffs are not supported for current policies.");

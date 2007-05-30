@@ -76,58 +76,60 @@ char *poldiff_level_to_string(poldiff_t * diff, const void *level)
 	num_added = apol_vector_get_size(l->added_cats);
 	num_removed = apol_vector_get_size(l->removed_cats);
 	switch (l->form) {
-	case POLDIFF_FORM_ADDED:{
-			if (apol_str_appendf(&s, &len, "+ %s", l->name) < 0) {
+	case POLDIFF_FORM_ADDED:
+	{
+		if (apol_str_appendf(&s, &len, "+ %s", l->name) < 0) {
+			break;
+		}
+		return s;
+	}
+	case POLDIFF_FORM_REMOVED:
+	{
+		if (apol_str_appendf(&s, &len, "- %s", l->name) < 0) {
+			break;
+		}
+		return s;
+	}
+	case POLDIFF_FORM_MODIFIED:
+	{
+		if (apol_str_appendf(&s, &len, "* %s (", l->name) < 0) {
+			break;
+		}
+		if (num_added > 0) {
+			if (apol_str_appendf(&s, &len, "%d Added %s", num_added, (num_added == 1 ? "Category" : "Categories")) < 0) {
 				break;
 			}
-			return s;
 		}
-	case POLDIFF_FORM_REMOVED:{
-			if (apol_str_appendf(&s, &len, "- %s", l->name) < 0) {
+		if (num_removed > 0) {
+			if (apol_str_appendf
+			    (&s, &len, "%s%d Removed %s", (num_added > 0 ? ", " : ""), num_removed,
+			     (num_removed == 1 ? "Category" : "Categories")) < 0) {
 				break;
 			}
-			return s;
 		}
-	case POLDIFF_FORM_MODIFIED:{
-			if (apol_str_appendf(&s, &len, "* %s (", l->name) < 0) {
-				break;
-			}
-			if (num_added > 0) {
-				if (apol_str_appendf
-				    (&s, &len, "%d Added %s", num_added, (num_added == 1 ? "Category" : "Categories")) < 0) {
-					break;
-				}
-			}
-			if (num_removed > 0) {
-				if (apol_str_appendf
-				    (&s, &len, "%s%d Removed %s", (num_added > 0 ? ", " : ""), num_removed,
-				     (num_removed == 1 ? "Category" : "Categories"))
-				    < 0) {
-					break;
-				}
-			}
-			if (apol_str_append(&s, &len, ")\n") < 0) {
-				break;
-			}
-			for (i = 0; i < apol_vector_get_size(l->added_cats); i++) {
-				cat = (char *)apol_vector_get_element(l->added_cats, i);
-				if (apol_str_appendf(&s, &len, "\t+ %s\n", cat) < 0) {
-					goto err;
-				}
-			}
-			for (i = 0; i < apol_vector_get_size(l->removed_cats); i++) {
-				cat = (char *)apol_vector_get_element(l->removed_cats, i);
-				if (apol_str_appendf(&s, &len, "\t- %s\n", cat) < 0) {
-					goto err;
-				}
-			}
-			return s;
+		if (apol_str_append(&s, &len, ")\n") < 0) {
+			break;
 		}
-	default:{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
+		for (i = 0; i < apol_vector_get_size(l->added_cats); i++) {
+			cat = (char *)apol_vector_get_element(l->added_cats, i);
+			if (apol_str_appendf(&s, &len, "\t+ %s\n", cat) < 0) {
+				goto err;
+			}
 		}
+		for (i = 0; i < apol_vector_get_size(l->removed_cats); i++) {
+			cat = (char *)apol_vector_get_element(l->removed_cats, i);
+			if (apol_str_appendf(&s, &len, "\t- %s\n", cat) < 0) {
+				goto err;
+			}
+		}
+		return s;
+	}
+	default:
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
       err:
 	/* if this is reached then an error occurred */

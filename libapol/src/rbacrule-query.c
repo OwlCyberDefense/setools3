@@ -62,8 +62,8 @@ int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r,
 			target_list = source_list;
 			source_as_any = 1;
 		} else if (r->target != NULL &&
-			   (target_list =
-			    apol_query_create_candidate_role_list(p, r->target, r->flags & APOL_QUERY_REGEX)) == NULL) {
+			   (target_list = apol_query_create_candidate_role_list(p, r->target, r->flags & APOL_QUERY_REGEX)) == NULL)
+		{
 			goto cleanup;
 		}
 	}

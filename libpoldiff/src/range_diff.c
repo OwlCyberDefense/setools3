@@ -194,8 +194,8 @@ poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, q
 		const char *sens = apol_mls_level_get_sens(l);
 		const apol_vector_t *cats = apol_mls_level_get_cats(l);
 		if ((pl = calloc(1, sizeof(*pl))) == NULL ||
-		    (pl->name = strdup(sens)) == NULL
-		    || (pl->unmodified_cats = apol_vector_create_with_capacity(1, free)) == NULL) {
+		    (pl->name = strdup(sens)) == NULL || (pl->unmodified_cats = apol_vector_create_with_capacity(1, free)) == NULL)
+		{
 			ERR(diff, "%s", strerror(errno));
 			goto cleanup;
 		}

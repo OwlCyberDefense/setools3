@@ -782,39 +782,39 @@ int qpol_constraint_expr_node_get_names_iter(qpol_policy_t * policy, qpol_constr
 
 	switch (internal_expr->attr & ~(QPOL_CEXPR_SYM_TARGET | QPOL_CEXPR_SYM_XTARGET)) {
 	case QPOL_CEXPR_SYM_USER:
-		{
-			if (qpol_iterator_create(policy, (void *)cns,
-						 cexpr_name_state_get_cur_user, cexpr_name_state_next,
-						 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
-				return STATUS_ERR;
-			}
-			break;
-		}
-	case QPOL_CEXPR_SYM_ROLE:
-		{
-			if (qpol_iterator_create(policy, (void *)cns,
-						 cexpr_name_state_get_cur_role, cexpr_name_state_next,
-						 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
-				return STATUS_ERR;
-			}
-			break;
-		}
-	case QPOL_CEXPR_SYM_TYPE:
-		{
-			if (qpol_iterator_create(policy, (void *)cns,
-						 cexpr_name_state_get_cur_type, cexpr_name_state_next,
-						 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
-				return STATUS_ERR;
-			}
-			break;
-		}
-	default:
-		{
-			ERR(policy, "%s", strerror(EINVAL));
-			free(cns);
-			errno = EINVAL;
+	{
+		if (qpol_iterator_create(policy, (void *)cns,
+					 cexpr_name_state_get_cur_user, cexpr_name_state_next,
+					 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
 			return STATUS_ERR;
 		}
+		break;
+	}
+	case QPOL_CEXPR_SYM_ROLE:
+	{
+		if (qpol_iterator_create(policy, (void *)cns,
+					 cexpr_name_state_get_cur_role, cexpr_name_state_next,
+					 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
+			return STATUS_ERR;
+		}
+		break;
+	}
+	case QPOL_CEXPR_SYM_TYPE:
+	{
+		if (qpol_iterator_create(policy, (void *)cns,
+					 cexpr_name_state_get_cur_type, cexpr_name_state_next,
+					 cexpr_name_state_end, cexpr_name_state_size, free, iter)) {
+			return STATUS_ERR;
+		}
+		break;
+	}
+	default:
+	{
+		ERR(policy, "%s", strerror(EINVAL));
+		free(cns);
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
 	}
 
 	if (cns->inc->node && !ebitmap_get_bit(cns->inc, cns->cur))

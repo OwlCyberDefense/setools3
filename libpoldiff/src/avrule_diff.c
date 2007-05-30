@@ -131,28 +131,32 @@ char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule)
 	}
 	switch (pa->form) {
 	case POLDIFF_FORM_ADDED:
-	case POLDIFF_FORM_ADD_TYPE:{
-			diff_char = "+";
-			p = diff->mod_pol;
-			break;
-		}
+	case POLDIFF_FORM_ADD_TYPE:
+	{
+		diff_char = "+";
+		p = diff->mod_pol;
+		break;
+	}
 	case POLDIFF_FORM_REMOVED:
-	case POLDIFF_FORM_REMOVE_TYPE:{
-			diff_char = "-";
-			p = diff->orig_pol;
-			break;
-		}
-	case POLDIFF_FORM_MODIFIED:{
-			diff_char = "*";
-			p = diff->orig_pol;
-			show_perm_sym = 1;
-			break;
-		}
-	default:{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+	case POLDIFF_FORM_REMOVE_TYPE:
+	{
+		diff_char = "-";
+		p = diff->orig_pol;
+		break;
+	}
+	case POLDIFF_FORM_MODIFIED:
+	{
+		diff_char = "*";
+		p = diff->orig_pol;
+		show_perm_sym = 1;
+		break;
+	}
+	default:
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
 	rule_type = apol_rule_type_to_str(pa->spec);
 	if (apol_str_appendf(&s, &len, "%s %s %s %s : %s {", diff_char, rule_type, pa->source, pa->target, pa->cls) < 0) {
@@ -917,11 +921,9 @@ static int avrule_expand(poldiff_t * diff, apol_policy_t * p, qpol_avrule_t * ru
 				error = errno;
 				goto cleanup;
 			}
-		}
-		while (target_attr && !qpol_iterator_end(target_iter));
+		} while (target_attr && !qpol_iterator_end(target_iter));
 		qpol_iterator_destroy(&target_iter);
-	}
-	while (source_attr && !qpol_iterator_end(source_iter));
+	} while (source_attr && !qpol_iterator_end(source_iter));
 	retval = 0;
       cleanup:
 	qpol_iterator_destroy(&source_iter);

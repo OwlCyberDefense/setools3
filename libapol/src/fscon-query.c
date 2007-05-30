@@ -174,11 +174,11 @@ int apol_genfscon_query_set_objclass(apol_policy_t * p, apol_genfscon_query_t * 
 		case QPOL_CLASS_LNK_FILE:
 		case QPOL_CLASS_SOCK_FILE:
 		case QPOL_CLASS_ALL:
-			{
-				g->objclass = objclass;
-				g->objclass_set = true;
-				break;
-			}
+		{
+			g->objclass = objclass;
+			g->objclass_set = true;
+			break;
+		}
 		default:
 			ERR(p, "%s", "Invalid object class given.");
 			return -1;
@@ -369,11 +369,11 @@ int apol_fs_use_query_set_behavior(apol_policy_t * p, apol_fs_use_query_t * f, i
 		case QPOL_FS_USE_GENFS:
 		case QPOL_FS_USE_NONE:
 		case QPOL_FS_USE_PSID:
-			{
-				f->behavior = behavior;
-				f->behavior_set = true;
-				break;
-			}
+		{
+			f->behavior = behavior;
+			f->behavior_set = true;
+			break;
+		}
 		default:
 			ERR(p, "%s", "Invalid fs_use behavior given.");
 			return -1;

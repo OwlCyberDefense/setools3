@@ -16,7 +16,10 @@ endif
 
 SUBDIRS = libqpol libapol libsefs libpoldiff libpolsearch libseaudit secmds sechecker sediff man $(MAYBE_APOL) $(MAYBE_GUI) $(MAYBE_BWIDGET)
 
-INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc
+#old indent opts
+#INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc
+C_INDENT_OPTS   = -npro -nbad -bap -nbbb -nbbo -nbc -br -bli0 -bls -c40 -cbi0 -cd40 -cdw  -ce -ci8 -cli0 -cp40 -ncs -d0 -nbfda -di1 -nfc1 -nfca -i8 -ip0 -l132 -lp -nlps -npcs -pi0 -nprs -npsl -saf -sai -sbi0 -sob -ss -ts8 -ut
+CXX_INDENT_OPTS = -npro -nbad -bap -nbbb -nbbo -nbc -bl -bli0 -bls -c40 -cbi0 -cd40 -cdw -nce -ci8 -cli0 -cp40 -ncs -d0 -nbfda -di1 -nfc1 -nfca -i8 -ip0 -l132 -lp -nlps -npcs -pi0 -nprs -npsl -saf -sai -sbi0 -sob -ss -ts8 -ut
 
 EXTRA_DIST = VERSION KNOWN-BUGS COPYING.LGPL COPYING.GPL
 
@@ -105,4 +108,7 @@ distclean-local:
 	-rm -r config.tcl
 
 indent:
-	find $(top_src_dir) -regex '.*\.[ch][ch]?' ! -wholename '*sqlite*' -type f -exec indent $(INDENT_OPTS) '{}' \;
+	find $(top_src_dir) -name '*.[ch]' ! -wholename '*sqlite*' -type f -exec indent $(C_INDENT_OPTS) '{}' \;
+	find $(top_src_dir) -name '*.cc' -or -name '*.hh' -type f -exec indent $(CXX_INDENT_OPTS) '{}' \;
+	find $(top_src_dir) -name '*.cc' -type f -exec sed -i 's/const const/const/g' '{}' \;
+	find $(top_src_dir) -name '*.hh' -type f -exec sed -i 's/virtual ~ /virtual ~/g' '{}' \;

@@ -329,76 +329,87 @@ static void message_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter 
 	preference_field_e field = column;
 
 	switch (field) {
-	case HOST_FIELD:{
-			message_view_to_utf8(value, seaudit_message_get_host(m));
-			return;
+	case HOST_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_message_get_host(m));
+		return;
+	}
+	case MESSAGE_FIELD:
+	{
+		char *message = "Invalid";
+		switch (type) {
+		case SEAUDIT_MESSAGE_TYPE_BOOL:
+		{
+			message = "Boolean";
+			break;
 		}
-	case MESSAGE_FIELD:{
-			char *message = "Invalid";
-			switch (type) {
-			case SEAUDIT_MESSAGE_TYPE_BOOL:{
-					message = "Boolean";
-					break;
-				}
-			case SEAUDIT_MESSAGE_TYPE_LOAD:{
-					message = "Load";
-					break;
-				}
-			case SEAUDIT_MESSAGE_TYPE_AVC:{
-					avc = (seaudit_avc_message_t *) data;
-					seaudit_avc_message_type_e avc_type;
-					avc_type = seaudit_avc_message_get_message_type(avc);
-					switch (avc_type) {
-					case SEAUDIT_AVC_DENIED:{
-							message = "Denied";
-							break;
-						}
-					case SEAUDIT_AVC_GRANTED:{
-							message = "Granted";
-							break;
-						}
-					default:{
-							/* should never get here */
-							toplevel_ERR(view->top, "Got an invalid AVC message type %d!", avc_type);
-							assert(0);
-							return;
-						}
-					}
-					break;
-				}
-			default:{
-					/* should never get here */
-					toplevel_ERR(view->top, "Got an invalid message type %d!", type);
-					assert(0);
-					return;
-				}
+		case SEAUDIT_MESSAGE_TYPE_LOAD:
+		{
+			message = "Load";
+			break;
+		}
+		case SEAUDIT_MESSAGE_TYPE_AVC:
+		{
+			avc = (seaudit_avc_message_t *) data;
+			seaudit_avc_message_type_e avc_type;
+			avc_type = seaudit_avc_message_get_message_type(avc);
+			switch (avc_type) {
+			case SEAUDIT_AVC_DENIED:
+			{
+				message = "Denied";
+				break;
 			}
-			message_view_to_utf8(value, message);
-			return;
-		}
-	case DATE_FIELD:{
-			struct tm *tm = seaudit_message_get_time(m);
-			char date[256];
-			/* check to see if we have been given a valid year, if
-			 * so display, otherwise no year displayed */
-			if (tm->tm_year == 0) {
-				strftime(date, 256, "%b %d %H:%M:%S", tm);
-			} else {
-				strftime(date, 256, "%b %d %H:%M:%S %Y", tm);
+			case SEAUDIT_AVC_GRANTED:
+			{
+				message = "Granted";
+				break;
 			}
-			message_view_to_utf8(value, date);
-			return;
-		}
-	case OTHER_FIELD:{
-			char *other = seaudit_message_to_misc_string(m);;
-			if (other == NULL) {
-				toplevel_ERR(view->top, "%s", strerror(errno));
+			default:
+			{
+				/* should never get here */
+				toplevel_ERR(view->top, "Got an invalid AVC message type %d!", avc_type);
+				assert(0);
 				return;
 			}
-			message_view_to_utf8(value, other);
-			free(other);
+			}
+			break;
+		}
+		default:
+		{
+			/* should never get here */
+			toplevel_ERR(view->top, "Got an invalid message type %d!", type);
+			assert(0);
 			return;
 		}
+		}
+		message_view_to_utf8(value, message);
+		return;
+	}
+	case DATE_FIELD:
+	{
+		struct tm *tm = seaudit_message_get_time(m);
+		char date[256];
+		/* check to see if we have been given a valid year, if
+		 * so display, otherwise no year displayed */
+		if (tm->tm_year == 0) {
+			strftime(date, 256, "%b %d %H:%M:%S", tm);
+		} else {
+			strftime(date, 256, "%b %d %H:%M:%S %Y", tm);
+		}
+		message_view_to_utf8(value, date);
+		return;
+	}
+	case OTHER_FIELD:
+	{
+		char *other = seaudit_message_to_misc_string(m);;
+		if (other == NULL) {
+			toplevel_ERR(view->top, "%s", strerror(errno));
+			return;
+		}
+		message_view_to_utf8(value, other);
+		free(other);
+		return;
+	}
 	default:		       /* FALLTHROUGH */
 		break;
 	}
@@ -412,85 +423,99 @@ static void message_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter 
 	avc = (seaudit_avc_message_t *) data;
 
 	switch (field) {
-	case SUSER_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_source_user(avc));
-			return;
-		}
-	case SROLE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_source_role(avc));
-			return;
-		}
-	case STYPE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_source_type(avc));
-			return;
-		}
-	case TUSER_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_target_user(avc));
-			return;
-		}
-	case TROLE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_target_role(avc));
-			return;
-		}
-	case TTYPE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_target_type(avc));
-			return;
-		}
-	case OBJCLASS_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_object_class(avc));
-			return;
-		}
-	case PERM_FIELD:{
-			apol_vector_t *perms = seaudit_avc_message_get_perm(avc);
-			char *perm = NULL;
-			size_t i, len = 0;
-			for (i = 0; perms != NULL && i < apol_vector_get_size(perms); i++) {
-				char *p = apol_vector_get_element(perms, i);
-				if (apol_str_appendf(&perm, &len, "%s%s", (i > 0 ? "," : ""), p) < 0) {
-					toplevel_ERR(view->top, "%s", strerror(errno));
-					return;
-				}
-			}
-			message_view_to_utf8(value, perm);
-			free(perm);
-			return;
-		}
-	case EXECUTABLE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_exe(avc));
-			return;
-		}
-	case COMMAND_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_comm(avc));
-			return;
-		}
-	case NAME_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_name(avc));
-			return;
-		}
-	case PID_FIELD:{
-			char *s;
-			if (asprintf(&s, "%u", seaudit_avc_message_get_pid(avc)) < 0) {
+	case SUSER_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_source_user(avc));
+		return;
+	}
+	case SROLE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_source_role(avc));
+		return;
+	}
+	case STYPE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_source_type(avc));
+		return;
+	}
+	case TUSER_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_target_user(avc));
+		return;
+	}
+	case TROLE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_target_role(avc));
+		return;
+	}
+	case TTYPE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_target_type(avc));
+		return;
+	}
+	case OBJCLASS_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_object_class(avc));
+		return;
+	}
+	case PERM_FIELD:
+	{
+		apol_vector_t *perms = seaudit_avc_message_get_perm(avc);
+		char *perm = NULL;
+		size_t i, len = 0;
+		for (i = 0; perms != NULL && i < apol_vector_get_size(perms); i++) {
+			char *p = apol_vector_get_element(perms, i);
+			if (apol_str_appendf(&perm, &len, "%s%s", (i > 0 ? "," : ""), p) < 0) {
 				toplevel_ERR(view->top, "%s", strerror(errno));
 				return;
 			}
-			message_view_to_utf8(value, s);
-			free(s);
+		}
+		message_view_to_utf8(value, perm);
+		free(perm);
+		return;
+	}
+	case EXECUTABLE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_exe(avc));
+		return;
+	}
+	case COMMAND_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_comm(avc));
+		return;
+	}
+	case NAME_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_name(avc));
+		return;
+	}
+	case PID_FIELD:
+	{
+		char *s;
+		if (asprintf(&s, "%u", seaudit_avc_message_get_pid(avc)) < 0) {
+			toplevel_ERR(view->top, "%s", strerror(errno));
 			return;
 		}
-	case INODE_FIELD:{
-			char *s;
-			if (asprintf(&s, "%lu", seaudit_avc_message_get_inode(avc)) < 0) {
-				toplevel_ERR(view->top, "%s", strerror(errno));
-				return;
-			}
-			message_view_to_utf8(value, s);
-			free(s);
+		message_view_to_utf8(value, s);
+		free(s);
+		return;
+	}
+	case INODE_FIELD:
+	{
+		char *s;
+		if (asprintf(&s, "%lu", seaudit_avc_message_get_inode(avc)) < 0) {
+			toplevel_ERR(view->top, "%s", strerror(errno));
 			return;
 		}
-	case PATH_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_path(avc));
-			return;
-		}
+		message_view_to_utf8(value, s);
+		free(s);
+		return;
+	}
+	case PATH_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_path(avc));
+		return;
+	}
 	default:		       /* FALLTHROUGH */
 		break;
 	}

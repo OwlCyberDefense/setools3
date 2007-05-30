@@ -787,38 +787,43 @@ static int result_item_avrule_comp(const void *a, const void *b, void *data)
 	struct sort_opts *opts = data;
 	const char *s1, *s2;
 	switch (opts->field) {
-	case RESULTS_SORT_SOURCE:{
-			s1 = poldiff_avrule_get_source_type(a1);
-			s2 = poldiff_avrule_get_source_type(a2);
-			break;
+	case RESULTS_SORT_SOURCE:
+	{
+		s1 = poldiff_avrule_get_source_type(a1);
+		s2 = poldiff_avrule_get_source_type(a2);
+		break;
+	}
+	case RESULTS_SORT_TARGET:
+	{
+		s1 = poldiff_avrule_get_target_type(a1);
+		s2 = poldiff_avrule_get_target_type(a2);
+		break;
+	}
+	case RESULTS_SORT_CLASS:
+	{
+		s1 = poldiff_avrule_get_object_class(a1);
+		s2 = poldiff_avrule_get_object_class(a2);
+		break;
+	}
+	case RESULTS_SORT_COND:
+	{
+		qpol_cond_t *q1, *q2;
+		apol_policy_t *p1, *p2;
+		uint32_t w1, w2;
+		poldiff_avrule_get_cond(opts->diff, a1, &q1, &w1, &p1);
+		poldiff_avrule_get_cond(opts->diff, a2, &q2, &w2, &p2);
+		if (q1 != q2) {
+			return opts->direction * ((char *)q1 - (char *)q2);
 		}
-	case RESULTS_SORT_TARGET:{
-			s1 = poldiff_avrule_get_target_type(a1);
-			s2 = poldiff_avrule_get_target_type(a2);
-			break;
-		}
-	case RESULTS_SORT_CLASS:{
-			s1 = poldiff_avrule_get_object_class(a1);
-			s2 = poldiff_avrule_get_object_class(a2);
-			break;
-		}
-	case RESULTS_SORT_COND:{
-			qpol_cond_t *q1, *q2;
-			apol_policy_t *p1, *p2;
-			uint32_t w1, w2;
-			poldiff_avrule_get_cond(opts->diff, a1, &q1, &w1, &p1);
-			poldiff_avrule_get_cond(opts->diff, a2, &q2, &w2, &p2);
-			if (q1 != q2) {
-				return opts->direction * ((char *)q1 - (char *)q2);
-			}
-			return opts->direction * (w1 - w2);
-			break;
-		}
-	default:{
-			/* shouldn't get here */
-			assert(0);
-			return 0;
-		}
+		return opts->direction * (w1 - w2);
+		break;
+	}
+	default:
+	{
+		/* shouldn't get here */
+		assert(0);
+		return 0;
+	}
 	}
 	return opts->direction * strcmp(s1, s2);
 }
@@ -916,38 +921,43 @@ static int result_item_terule_comp(const void *a, const void *b, void *data)
 	struct sort_opts *opts = data;
 	const char *s1, *s2;
 	switch (opts->field) {
-	case RESULTS_SORT_SOURCE:{
-			s1 = poldiff_terule_get_source_type(a1);
-			s2 = poldiff_terule_get_source_type(a2);
-			break;
+	case RESULTS_SORT_SOURCE:
+	{
+		s1 = poldiff_terule_get_source_type(a1);
+		s2 = poldiff_terule_get_source_type(a2);
+		break;
+	}
+	case RESULTS_SORT_TARGET:
+	{
+		s1 = poldiff_terule_get_target_type(a1);
+		s2 = poldiff_terule_get_target_type(a2);
+		break;
+	}
+	case RESULTS_SORT_CLASS:
+	{
+		s1 = poldiff_terule_get_object_class(a1);
+		s2 = poldiff_terule_get_object_class(a2);
+		break;
+	}
+	case RESULTS_SORT_COND:
+	{
+		qpol_cond_t *q1, *q2;
+		apol_policy_t *p1, *p2;
+		uint32_t w1, w2;
+		poldiff_terule_get_cond(opts->diff, a1, &q1, &w1, &p1);
+		poldiff_terule_get_cond(opts->diff, a2, &q2, &w2, &p2);
+		if (q1 != q2) {
+			return opts->direction * ((char *)q1 - (char *)q2);
 		}
-	case RESULTS_SORT_TARGET:{
-			s1 = poldiff_terule_get_target_type(a1);
-			s2 = poldiff_terule_get_target_type(a2);
-			break;
-		}
-	case RESULTS_SORT_CLASS:{
-			s1 = poldiff_terule_get_object_class(a1);
-			s2 = poldiff_terule_get_object_class(a2);
-			break;
-		}
-	case RESULTS_SORT_COND:{
-			qpol_cond_t *q1, *q2;
-			apol_policy_t *p1, *p2;
-			uint32_t w1, w2;
-			poldiff_terule_get_cond(opts->diff, a1, &q1, &w1, &p1);
-			poldiff_terule_get_cond(opts->diff, a2, &q2, &w2, &p2);
-			if (q1 != q2) {
-				return opts->direction * ((char *)q1 - (char *)q2);
-			}
-			return opts->direction * (w1 - w2);
-			break;
-		}
-	default:{
-			/* shouldn't get here */
-			assert(0);
-			return 0;
-		}
+		return opts->direction * (w1 - w2);
+		break;
+	}
+	default:
+	{
+		/* shouldn't get here */
+		assert(0);
+		return 0;
+	}
 	}
 	return opts->direction * strcmp(s1, s2);
 }

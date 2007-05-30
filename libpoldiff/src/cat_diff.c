@@ -79,26 +79,26 @@ char *poldiff_cat_to_string(poldiff_t * diff, const void *cat)
 	}
 	switch (c->form) {
 	case POLDIFF_FORM_ADDED:
-		{
-			if (apol_str_appendf(&s, &len, "+ %s", c->name) < 0) {
-				break;
-			}
-			return s;
+	{
+		if (apol_str_appendf(&s, &len, "+ %s", c->name) < 0) {
+			break;
 		}
+		return s;
+	}
 	case POLDIFF_FORM_REMOVED:
-		{
-			if (apol_str_appendf(&s, &len, "- %s", c->name) < 0) {
-				break;
-			}
-			return s;
+	{
+		if (apol_str_appendf(&s, &len, "- %s", c->name) < 0) {
+			break;
 		}
+		return s;
+	}
 	case POLDIFF_FORM_MODIFIED:
 	default:
-		{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
 	return NULL;
 }

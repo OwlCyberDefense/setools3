@@ -952,8 +952,8 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy,
 			entry->end_type = end;
 			if (rule_entry) {
 				if (!
-				    (entry->proc_trans_rules =
-				     apol_vector_create_from_vector(rule_entry->rules, NULL, NULL, NULL))) {
+				    (entry->proc_trans_rules = apol_vector_create_from_vector(rule_entry->rules, NULL, NULL, NULL)))
+				{
 					error = errno;
 					ERR(policy, "%s", strerror(error));
 					goto exit_error;

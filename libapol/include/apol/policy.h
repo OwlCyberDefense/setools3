@@ -138,8 +138,7 @@ extern "C"
  */
 	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
 
-	__attribute__ ((format(printf, 3, 4)))
-	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
+	__attribute__ ((format(printf, 3, 4))) extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
 
 /**
  * Invoke a apol_policy_t's callback for an error, passing it a format

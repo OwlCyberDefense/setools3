@@ -157,19 +157,22 @@ static void seaudit_handle_default_callback(void *arg __attribute__ ((unused)),
 					    int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
-	case SEAUDIT_MSG_INFO:{
-			/* by default do not display these messages */
-			return;
-		}
-	case SEAUDIT_MSG_WARN:{
-			fprintf(stderr, "WARNING: ");
-			break;
-		}
+	case SEAUDIT_MSG_INFO:
+	{
+		/* by default do not display these messages */
+		return;
+	}
+	case SEAUDIT_MSG_WARN:
+	{
+		fprintf(stderr, "WARNING: ");
+		break;
+	}
 	case SEAUDIT_MSG_ERR:
-	default:{
-			fprintf(stderr, "ERROR: ");
-			break;
-		}
+	default:
+	{
+		fprintf(stderr, "ERROR: ");
+		break;
+	}
 	}
 	vfprintf(stderr, fmt, va_args);
 	fprintf(stderr, "\n");

@@ -1028,8 +1028,8 @@ int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_avrule *
 	srs->cur = srs->node->rules;
 
 	if (qpol_iterator_create(policy, (void *)srs,
-				 syn_rule_state_get_cur, syn_rule_state_next,
-				 syn_rule_state_end, syn_rule_state_size, free, iter)) {
+				 syn_rule_state_get_cur, syn_rule_state_next, syn_rule_state_end, syn_rule_state_size, free, iter))
+	{
 		error = errno;
 		goto err;
 	}
@@ -1129,8 +1129,8 @@ int qpol_terule_get_syn_terule_iter(qpol_policy_t * policy, struct qpol_terule *
 	srs->cur = srs->node->rules;
 
 	if (qpol_iterator_create(policy, (void *)srs,
-				 syn_rule_state_get_cur, syn_rule_state_next,
-				 syn_rule_state_end, syn_rule_state_size, free, iter)) {
+				 syn_rule_state_get_cur, syn_rule_state_next, syn_rule_state_end, syn_rule_state_size, free, iter))
+	{
 		error = errno;
 		goto err;
 	}

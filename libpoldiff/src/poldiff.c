@@ -645,21 +645,21 @@ static void poldiff_handle_default_callback(void *arg __attribute__ ((unused)),
 {
 	switch (level) {
 	case POLDIFF_MSG_INFO:
-		{
-			/* by default do not display these messages */
-			return;
-		}
+	{
+		/* by default do not display these messages */
+		return;
+	}
 	case POLDIFF_MSG_WARN:
-		{
-			fprintf(stderr, "WARNING: ");
-			break;
-		}
+	{
+		fprintf(stderr, "WARNING: ");
+		break;
+	}
 	case POLDIFF_MSG_ERR:
 	default:
-		{
-			fprintf(stderr, "ERROR: ");
-			break;
-		}
+	{
+		fprintf(stderr, "ERROR: ");
+		break;
+	}
 	}
 	vfprintf(stderr, fmt, va_args);
 	fprintf(stderr, "\n");

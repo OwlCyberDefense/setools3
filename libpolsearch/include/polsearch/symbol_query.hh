@@ -26,11 +26,6 @@
 #ifndef POLSEARCH_SYMBOL_QUERY_H
 #define POLSEARCH_SYMBOL_QUERY_H
 
-#include <apol/policy.h>
-#include <apol/vector.h>
-
-#include <sefs/fclist.h>
-
 #include "polsearch.hh"
 #include "test.hh"
 
@@ -39,7 +34,12 @@ extern "C"
 {
 #endif
 
-/** Value to indicate the overall matching behavior of the query */
+#include <apol/policy.h>
+#include <apol/vector.h>
+
+#include <sefs/fclist.h>
+
+	/** Value to indicate the overall matching behavior of the query */
 	typedef enum polsearch_match
 	{
 		POLSEARCH_MATCH_ALL = 0,	/*!< Returned symbols must match all tests. */
@@ -80,7 +80,7 @@ class polsearch_symbol_query
 		 * Get the symbol type matched by the query.
 		 * @return The type of symbol matched.
 		 */
-	polsearch_symbol_e symbol_type() const;
+	polsearch_symbol_e symbolType() const;
 		/**
 		 * Get the matching behavior of the query.
 		 * @return The current matching behavior of the query.
@@ -104,8 +104,7 @@ class polsearch_symbol_query
 		 * @param fclist A file_contexts list to optionally use for tests that
 		 * match file_context entries. It is an error to not provide \a fclist
 		 * if a test matches file_context entries.
-		 * @return A vector of symbols matching the query (see polsearch_symbol_e
-		 * values for appropriate type of the vector's elements), or NULL on
+		 * @return A vector of results (polsearch_symbol_result), or NULL on
 		 * error. The caller is responsible for calling apol_vector_destroy()
 		 * on the returned vector.
 		 */
@@ -123,6 +122,18 @@ class polsearch_symbol_query
 	 polsearch_symbol_e _symbol_type;	/*!< The type of symbol matched by the query. */
 	polsearch_match_e _match:      /*!< The matching behavior used for determining if a symbol matches with multiple tests. */
 	 apol_vector_t * _tests;       /*!< The set of tests used by the query to determine which symbols match. */
+};
+
+class polsearch_symbol_result
+{
+      public:
+	polsearch_symbol_result(polsearch_symbol_e sym_type, void *sym);
+	 polsearch_symbol_result(const polsearch_symbol_result & psr);
+	~polsearch_symbol_result();
+      private:
+	 polsearch_symbol_e _symbol_type;
+	void *_symbol;
+	apol_vector_t *_proof;
 };
 
 extern "C"
@@ -154,7 +165,7 @@ extern "C"
 
 	/**
 	 * Get the symbol type matched by a symbol query.
-	 * @see polsearch_symbol_query::symbol_type()
+	 * @see polsearch_symbol_query::symbolType()
 	 */
 	polsearch_symbol_e polsearch_symbol_query_get_symbol_type(const polsearch_symbol_query_t * sq);
 	/**

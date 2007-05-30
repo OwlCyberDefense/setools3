@@ -705,20 +705,23 @@ int apol_relabel_analysis_set_dir(apol_policy_t * p, apol_relabel_analysis_t * r
 	switch (dir) {
 	case APOL_RELABEL_DIR_BOTH:
 	case APOL_RELABEL_DIR_TO:
-	case APOL_RELABEL_DIR_FROM:{
-			r->mode = APOL_RELABEL_MODE_OBJ;
-			r->direction = dir;
-			break;
-		}
-	case APOL_RELABEL_DIR_SUBJECT:{
-			r->mode = APOL_RELABEL_MODE_SUBJ;
-			r->direction = APOL_RELABEL_DIR_BOTH;
-			break;
-		}
-	default:{
-			ERR(p, "%s", strerror(EINVAL));
-			return -1;
-		}
+	case APOL_RELABEL_DIR_FROM:
+	{
+		r->mode = APOL_RELABEL_MODE_OBJ;
+		r->direction = dir;
+		break;
+	}
+	case APOL_RELABEL_DIR_SUBJECT:
+	{
+		r->mode = APOL_RELABEL_MODE_SUBJ;
+		r->direction = APOL_RELABEL_DIR_BOTH;
+		break;
+	}
+	default:
+	{
+		ERR(p, "%s", strerror(EINVAL));
+		return -1;
+	}
 	}
 	return 0;
 }

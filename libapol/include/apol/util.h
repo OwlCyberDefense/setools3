@@ -281,8 +281,7 @@ extern "C"
 	extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...);
 
 /* declaration duplicated below to satisfy doxygen */
-	extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...)
-		__attribute__ ((format(printf, 3, 4)));
+	extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...) __attribute__ ((format(printf, 3, 4)));
 
 /**
  * Test whether a given string is only white space.

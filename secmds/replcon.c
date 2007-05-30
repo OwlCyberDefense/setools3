@@ -105,10 +105,8 @@ sefs_hash_t *hashtab;
 /* use weak bindings to allow runtime checking for raw fcns */
 /* the raw functions allow access to the raw context not the context
    returned by the translation library */
-extern int lgetfilecon_raw(const char *, security_context_t *)
-	__attribute__ ((weak));
-extern int lsetfilecon_raw(const char *, security_context_t)
-	__attribute__ ((weak));
+extern int lgetfilecon_raw(const char *, security_context_t *) __attribute__ ((weak));
+extern int lsetfilecon_raw(const char *, security_context_t) __attribute__ ((weak));
 
 enum opt_values
 {
@@ -942,8 +940,7 @@ unsigned char replcon_context_equal(const replcon_context_t * context, const rep
 	 */
 	mls_match = 1;
 	if (is_selinux_mls_enabled()) {
-		mls_match = ((strcmp(patterns->mls, "") == 0) || (fnmatch(patterns->mls, context->mls, 0) == 0)
-			);
+		mls_match = ((strcmp(patterns->mls, "") == 0) || (fnmatch(patterns->mls, context->mls, 0) == 0));
 	}
 	return (user_match && role_match && type_match && mls_match);
 

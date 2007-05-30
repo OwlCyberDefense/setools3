@@ -102,8 +102,8 @@ static poldiff_type_remap_entry_t *poldiff_type_remap_entry_create(poldiff_t * d
 	poldiff_type_remap_entry_t *e = NULL;
 	if ((e = calloc(1, sizeof(*e))) == NULL ||
 	    (e->orig_types = apol_vector_create_with_capacity(1, NULL)) == NULL ||
-	    (e->mod_types = apol_vector_create_with_capacity(1, NULL)) == NULL
-	    || apol_vector_append(diff->type_map->remap, e) < 0) {
+	    (e->mod_types = apol_vector_create_with_capacity(1, NULL)) == NULL || apol_vector_append(diff->type_map->remap, e) < 0)
+	{
 		type_remap_entry_free(e);
 		return NULL;
 	}

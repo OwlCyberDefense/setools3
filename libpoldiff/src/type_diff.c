@@ -80,57 +80,60 @@ char *poldiff_type_to_string(poldiff_t * diff, const void *type)
 	num_added = apol_vector_get_size(t->added_attribs);
 	num_removed = apol_vector_get_size(t->removed_attribs);
 	switch (t->form) {
-	case POLDIFF_FORM_ADDED:{
-			if (apol_str_appendf(&s, &len, "+ %s", t->name) < 0) {
+	case POLDIFF_FORM_ADDED:
+	{
+		if (apol_str_appendf(&s, &len, "+ %s", t->name) < 0) {
+			break;
+		}
+		return s;
+	}
+	case POLDIFF_FORM_REMOVED:
+	{
+		if (apol_str_appendf(&s, &len, "- %s", t->name) < 0) {
+			break;
+		}
+		return s;
+	}
+	case POLDIFF_FORM_MODIFIED:
+	{
+		if (apol_str_appendf(&s, &len, "* %s (", t->name) < 0) {
+			break;
+		}
+		if (num_added > 0) {
+			if (apol_str_appendf(&s, &len, "%zd Added Attribute%s", num_added, (num_added == 1 ? "" : "s")) < 0) {
 				break;
 			}
-			return s;
 		}
-	case POLDIFF_FORM_REMOVED:{
-			if (apol_str_appendf(&s, &len, "- %s", t->name) < 0) {
+		if (num_removed > 0) {
+			if (apol_str_appendf
+			    (&s, &len, "%s%zd Removed Attribute%s", (num_added > 0 ? ", " : ""), num_removed,
+			     (num_removed == 1 ? "" : "s")) < 0) {
 				break;
 			}
-			return s;
 		}
-	case POLDIFF_FORM_MODIFIED:{
-			if (apol_str_appendf(&s, &len, "* %s (", t->name) < 0) {
-				break;
-			}
-			if (num_added > 0) {
-				if (apol_str_appendf(&s, &len, "%zd Added Attribute%s", num_added, (num_added == 1 ? "" : "s")) < 0) {
-					break;
-				}
-			}
-			if (num_removed > 0) {
-				if (apol_str_appendf
-				    (&s, &len, "%s%zd Removed Attribute%s", (num_added > 0 ? ", " : ""), num_removed,
-				     (num_removed == 1 ? "" : "s"))
-				    < 0) {
-					break;
-				}
-			}
-			if (apol_str_append(&s, &len, ")\n") < 0) {
-				break;
-			}
-			for (i = 0; i < apol_vector_get_size(t->added_attribs); i++) {
-				attrib = (char *)apol_vector_get_element(t->added_attribs, i);
-				if (apol_str_appendf(&s, &len, "\t+ %s\n", attrib) < 0) {
-					goto err;
-				}
-			}
-			for (i = 0; i < apol_vector_get_size(t->removed_attribs); i++) {
-				attrib = (char *)apol_vector_get_element(t->removed_attribs, i);
-				if (apol_str_appendf(&s, &len, "\t- %s\n", attrib) < 0) {
-					goto err;
-				}
-			}
-			return s;
+		if (apol_str_append(&s, &len, ")\n") < 0) {
+			break;
 		}
-	default:{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
+		for (i = 0; i < apol_vector_get_size(t->added_attribs); i++) {
+			attrib = (char *)apol_vector_get_element(t->added_attribs, i);
+			if (apol_str_appendf(&s, &len, "\t+ %s\n", attrib) < 0) {
+				goto err;
+			}
 		}
+		for (i = 0; i < apol_vector_get_size(t->removed_attribs); i++) {
+			attrib = (char *)apol_vector_get_element(t->removed_attribs, i);
+			if (apol_str_appendf(&s, &len, "\t- %s\n", attrib) < 0) {
+				goto err;
+			}
+		}
+		return s;
+	}
+	default:
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
       err:
 	/* if this is reached then an error occurred */

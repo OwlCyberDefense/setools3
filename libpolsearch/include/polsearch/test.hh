@@ -26,8 +26,6 @@
 #ifndef POLSEARCH_TEST_H
 #define POLSEARCH_TEST_H
 
-#include <apol/vector.h>
-
 #include "polsearch.hh"
 #include "criterion.hh"
 
@@ -36,9 +34,11 @@ extern "C"
 {
 #endif
 
+#include <apol/vector.h>
+
 	typedef struct polsearch_test polsearch_test_t;
 
-/** Value to indicate the test condition */
+	/** Value to indicate the test condition */
 	typedef enum polsearch_test_cond
 	{
 		POLSEARCH_TEST_NONE = 0,	/*!< only used for error conditions */
@@ -73,71 +73,121 @@ extern "C"
 class polsearch_test
 {
       public:
-	/**
-	 * Create a new test.
-	 * @param sym_type Type of symbol to test.
-	 * @param cond Condition for which to test.
-	 */
-	polsearch_test(polsearch_symbol_e sym_type, polsearch_test_cond_e cond);
-	/**
-	 * Copy a test.
-	 * @param pt Test to copy.
-	 */
+		/**
+		 * Create a new test.
+		 * @param elem_type Type of policy element to test.
+		 * @param cond Condition for which to test.
+		 */
+	polsearch_test(polsearch_element_e elem_type, polsearch_test_cond_e cond);
+		/**
+		 * Copy a test.
+		 * @param pt Test to copy.
+		 */
 	polsearch_test(const polsearch_test & pt);
 	//! Destructor.
 	~polsearch_test();
 
-	/**
-	 * Get a list of the valid comparison operators for the symbol and
-	 * condition of a test.
-	 * @return Vector of valid operators (polsearch_op_e) or NULL on error.
-	 * The caller is responsible for calling apol_vector_destroy() on the
-	 * returned vector.
-	 */
+		/**
+		 * Get a list of the valid comparison operators for the symbol and
+		 * condition of a test.
+		 * @return Vector of valid operators (polsearch_op_e) or NULL on error.
+		 * The caller is responsible for calling apol_vector_destroy() on the
+		 * returned vector.
+		 */
 	apol_vector_t *getValidOps() const;
-	/**
-	 * Get the type of parameter to use for the test criterion for the
-	 * given comparison operator.
-	 * @param opr The comparison operator for which to get the parameter type.
-	 * @return The type of parameter or POLSEARCH_PARAM_TYPE_NONE on error.
-	 */
+		/**
+		 * Get the type of parameter to use for the test criterion for the
+		 * given comparison operator.
+		 * @param opr The comparison operator for which to get the parameter type.
+		 * @return The type of parameter or POLSEARCH_PARAM_TYPE_NONE on error.
+		 */
 	polsearch_param_type_e getParamType(polsearch_op_e opr) const;
-	/**
-	 * Get the vector of criteria checked by this test.
-	 * @return The vector of criteria. The caller is free to modify this
-	 * vector but should not destroy it.
-	 */
+		/**
+		 * Get the vector of criteria checked by this test.
+		 * @return The vector of criteria. The caller is free to modify this
+		 * vector but should not destroy it.
+		 */
 	apol_vector_t *criteria();
-	/**
-	 * Get the symbol type tested by a test.
-	 * @return The type of symbol tested.
-	 */
-	polsearch_symbol_e symbol_type() const;
-	/**
-	 * Get the condition for which a test checks.
-	 * @return The condition tested.
-	 */
+		/**
+		 * Get the symbol type tested by a test.
+		 * @return The type of symbol tested.
+		 */
+	polsearch_element_e element_type() const;
+		/**
+		 * Get the condition for which a test checks.
+		 * @return The condition tested.
+		 */
 	polsearch_test_cond_e test_cond() const;
-	/**
-	 * Run the test. This finds all symbols of the specified type that
-	 * meet all criteria for the test.
-	 * @param p The policy containing the symbols to test.
-	 * @param fclist The file_contexts list to use for conditions that
-	 * check for file_context entries. (Optional)
-	 * @param Xcandidates The list of currenly valid candidates for the test.
-	 * If null, all symbols of the specified type are considered candidates.
-	 * @return A vector of all symbols of the appropriate type (see
-	 * polsearch_symbol_e) or NULL on error. The caller is responsible for
-	 * calling apol_vector_destroy() on the returned vector. The size of the
-	 * returned vector may be zero, indicating that none of the candidates
-	 * satisfied all criteria for the test.
-	 */
+		/**
+		 * Run the test. This finds all symbols of the specified type that
+		 * meet all criteria for the test.
+		 * @param p The policy containing the symbols to test.
+		 * @param fclist The file_contexts list to use for conditions that
+		 * check for file_context entries. (Optional)
+		 * @param Xcandidates The list of currenly valid candidates for the test.
+		 * If null, all symbols of the specified type are considered candidates.
+		 * @return A vector of all symbols of the appropriate type (see
+		 * polsearch_symbol_e) or NULL on error. The caller is responsible for
+		 * calling apol_vector_destroy() on the returned vector. The size of the
+		 * returned vector may be zero, indicating that none of the candidates
+		 * satisfied all criteria for the test.
+		 */
 	apol_vector_t *run(const apol_policy_t * p, const sefs_fclist * fclist, apol_vector_t * Xcandidates) const;
 
       private:
 	 apol_vector_t * _criteria;    /*!< The list of criteria. */
-	polsearch_symbol_e _symbol_type;	/*!< The type of symbol tested. */
+	polsearch_element_e _element_type;	/*!< The type of element tested. */
 	polsearch_test_cond_e _test_cond;	/*!< The condition for which the test checks. */
+};
+
+/**
+ * Individual proof entry created when a policy element matches a test
+ * condition. The proof element is another policy element which proves that
+ * the tested element (as stored by the query result) matches the test.
+ * (Examples include the specific attribute a type has and the rule using a
+ * specific role.)
+ */
+class polsearch_proof
+{
+      public:
+		/**
+		 * Create a new poof entry.
+		 * @param test The test condition proved by this entry.
+		 * @param elem_type The type of element used as proof.
+		 * @param elem The element that proves the test.
+		 */
+	polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem);
+		/**
+		 * Copy a proof.
+		 * @param pp The proof to copy.
+		 */
+	 polsearch_proof(const polsearch_proof & pp);
+	//! Destructor.
+	~polsearch_proof();
+
+		/**
+		 * Return a string representing the proof.
+		 * @param p The policy from which to get any relevant symbol names.
+		 * @param fclist The file_contexts list from which to get any relevant
+		 * file_context entries.
+		 * @return A newly allocated string representing the proof. The caller is
+		 * responsible for calling <b>free()</b> on the string returned.
+		 */
+	char *toString(const apol_policy_t * p, const sefs_fclist_t * fclist) const;
+		/**
+		 * Get the type of element stored in the proof.
+		 * @return The type of element stored in the proof.
+		 */
+	polsearch_element_e elementType() const;
+		/**
+		 * Get the element
+		 */
+	const void *element() const;
+
+      private:
+	 polsearch_test_cond_e _test;  /*!< Test condition matched by the element */
+	polsearch_element_e _element_type;	/*!< The type of element to display as proof (may not be same type as tested element). */
+	const void *_element;	       /*!< The element to display as proof. (This memory is not owned by the proof, but rather by the policy or fclist from which it came.) */
 };
 
 extern "C"
@@ -152,9 +202,9 @@ extern "C"
 
 	/**
 	 * Create a test.
-	 * @see polsearch_test::polsearch_test(polsearch_symbol_e, polsearch_test_cond_e)
+	 * @see polsearch_test::polsearch_test(polsearch_element_e, polsearch_test_cond_e)
 	 */
-	polsearch_test_t *polsearch_test_create(polsearch_symbol_e sym_type, polsearch_test_cond_e cond);
+	polsearch_test_t *polsearch_test_create(polsearch_element_e elem_type, polsearch_test_cond_e cond);
 	/**
 	 * Copy a test.
 	 * @see polsearch_test::polsearch_test(const polsearch_test&)
@@ -178,9 +228,9 @@ extern "C"
 	apol_vector_t *polsearch_test_get_criteria(polsearch_test_t * pt);
 	/**
 	 * Get the type of symbol used by a test.
-	 * @see polsearch_test::symbol_type()
+	 * @see polsearch_test::element_type()
 	 */
-	polsearch_symbol_e polsearch_test_get_symbol_type(const polsearch_test_t * pt);
+	polsearch_element_e polsearch_test_get_element_type(const polsearch_test_t * pt);
 	/**
 	 * Get the condition for which a test checks.
 	 * @see polsearch_test::test_cond()

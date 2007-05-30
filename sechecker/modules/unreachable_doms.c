@@ -600,119 +600,118 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			proof->elem = NULL;
 			switch (need) {
 			case USER:
-				{
-					qpol_role_get_name(q, last_role, &tmp_name);
-					if (asprintf(&proof->text, "No user associated with role %s for %s", tmp_name, cur_dom_name)
-					    < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				qpol_role_get_name(q, last_role, &tmp_name);
+				if (asprintf(&proof->text, "No user associated with role %s for %s", tmp_name, cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case COMMON_USER:
-				{
-					qpol_role_get_name(q, last_role, &tmp_name);
-					qpol_role_get_name(q, last_dflt, &tmp2);
-					if (asprintf
-					    (&proof->text, "Role transition required but no user associated with role %s and %s",
-					     tmp_name, tmp2) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				qpol_role_get_name(q, last_role, &tmp_name);
+				qpol_role_get_name(q, last_dflt, &tmp2);
+				if (asprintf
+				    (&proof->text, "Role transition required but no user associated with role %s and %s",
+				     tmp_name, tmp2) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case ROLE_TRANS:
-				{
-					qpol_role_get_name(q, last_role, &tmp_name);
-					qpol_role_get_name(q, last_dflt, &tmp2);
-					qpol_type_get_name(q, last_type, &tmp3);
-					if (asprintf(&proof->text, "Missing: role_transition %s %s %s;", tmp_name, tmp3, tmp2) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				qpol_role_get_name(q, last_role, &tmp_name);
+				qpol_role_get_name(q, last_dflt, &tmp2);
+				qpol_type_get_name(q, last_type, &tmp3);
+				if (asprintf(&proof->text, "Missing: role_transition %s %s %s;", tmp_name, tmp3, tmp2) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case ROLE_ALLOW:
-				{
-					qpol_role_get_name(q, last_role, &tmp_name);
-					qpol_role_get_name(q, last_dflt, &tmp2);
-					if (asprintf
-					    (&proof->text,
-					     "Role transition required but missing role allow rule.\n\tMissing: allow %s %s;",
-					     tmp_name, tmp2) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				qpol_role_get_name(q, last_role, &tmp_name);
+				qpol_role_get_name(q, last_dflt, &tmp2);
+				if (asprintf
+				    (&proof->text,
+				     "Role transition required but missing role allow rule.\n\tMissing: allow %s %s;",
+				     tmp_name, tmp2) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case RBAC:
-				{
-					if (asprintf
-					    (&proof->text,
-					     "Valid domain transition to %s exists but indufficient RBAC rules to permit it.",
-					     cur_dom_name) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				if (asprintf
+				    (&proof->text,
+				     "Valid domain transition to %s exists but indufficient RBAC rules to permit it.",
+				     cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case VALID_TRANS:
-				{
-					if (start_type)
-						qpol_type_get_name(q, start_type, &tmp2);
-					else
-						tmp2 = "<start_type>";
-					if (ep_type)
-						qpol_type_get_name(q, ep_type, &tmp3);
-					else
-						tmp3 = "<entrypont>";
-					if (asprintf
-					    (&proof->text,
-					     "Partial transition to %s found:\n\t%s: allow %s %s : process transition;\n\t%s: allow %s %s : file execute;\n\t%s: allow %s %s : file entrypoint;\n\t%s one of:\n\tallow %s self : process setexec;\n\ttype_transition %s %s : process %s;",
-					     cur_dom_name,
-					     ((trans_missing & APOL_DOMAIN_TRANS_RULE_PROC_TRANS) ? "Missing" : "Has"), tmp2,
-					     cur_dom_name, ((trans_missing & APOL_DOMAIN_TRANS_RULE_EXEC) ? "Missing" : "Has"),
-					     tmp2, tmp3, ((trans_missing & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT) ? "Missing" : "Has"),
-					     cur_dom_name, tmp3,
-					     ((trans_missing & (APOL_DOMAIN_TRANS_RULE_TYPE_TRANS | APOL_DOMAIN_TRANS_RULE_SETEXEC))
-					      ? "May need" : "Has"), cur_dom_name, tmp2, tmp3, cur_dom_name) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				if (start_type)
+					qpol_type_get_name(q, start_type, &tmp2);
+				else
+					tmp2 = "<start_type>";
+				if (ep_type)
+					qpol_type_get_name(q, ep_type, &tmp3);
+				else
+					tmp3 = "<entrypont>";
+				if (asprintf
+				    (&proof->text,
+				     "Partial transition to %s found:\n\t%s: allow %s %s : process transition;\n\t%s: allow %s %s : file execute;\n\t%s: allow %s %s : file entrypoint;\n\t%s one of:\n\tallow %s self : process setexec;\n\ttype_transition %s %s : process %s;",
+				     cur_dom_name,
+				     ((trans_missing & APOL_DOMAIN_TRANS_RULE_PROC_TRANS) ? "Missing" : "Has"), tmp2,
+				     cur_dom_name, ((trans_missing & APOL_DOMAIN_TRANS_RULE_EXEC) ? "Missing" : "Has"),
+				     tmp2, tmp3, ((trans_missing & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT) ? "Missing" : "Has"),
+				     cur_dom_name, tmp3,
+				     ((trans_missing & (APOL_DOMAIN_TRANS_RULE_TYPE_TRANS | APOL_DOMAIN_TRANS_RULE_SETEXEC))
+				      ? "May need" : "Has"), cur_dom_name, tmp2, tmp3, cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case ROLE:
-				{
-					if (asprintf(&proof->text, "No role associated with domain %s", cur_dom_name) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				if (asprintf(&proof->text, "No role associated with domain %s", cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case TRANSITION:
-				{
-					if (asprintf(&proof->text, "There are no transitions to domain %s", cur_dom_name) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				if (asprintf(&proof->text, "There are no transitions to domain %s", cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case DONE:
 			case KEEP_SEARCHING:
 			default:
-				{
-					assert(0);
-					error = EDOM;
-					goto unreachable_doms_run_fail;
-				}
+			{
+				assert(0);
+				error = EDOM;
+				goto unreachable_doms_run_fail;
+			}
 			}
 			if (apol_vector_append(item->proof, (void *)proof) < 0) {
 				error = errno;

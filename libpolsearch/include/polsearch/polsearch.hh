@@ -46,6 +46,43 @@ extern "C"
 		POLSEARCH_SYMBOL_BOOL  /*!< query returns qpol_bool_t */
 	} polsearch_symbol_e;
 
+	/** Values to indicate the type of policy element. This is a superset of polsearch_symbol_e */
+	typedef enum polsearch_element
+	{
+		POLSEARCH_ELEMENT_NONE = POLSEARCH_SYMBOL_NONE,	/*!< only used for error conditions */
+		POLSEARCH_ELEMENT_TYPE = POLSEARCH_SYMBOL_TYPE,	/*!< qpol_type_t */
+		POLSEARCH_ELEMENT_ATTRIBUTE = POLSEARCH_SYMBOL_ATTRIBUTE,	/*!< qpol_type_t */
+		POLSEARCH_ELEMENT_ROLE = POLSEARCH_SYMBOL_ROLE,	/*!< qpol_role_t */
+		POLSEARCH_ELEMENT_USER = POLSEARCH_SYMBOL_USER,	/*!< qpol_user_t */
+		POLSEARCH_ELEMENT_CLASS = POLSEARCH_SYMBOL_CLASS,	/*!< qpol_class_t */
+		POLSEARCH_ELEMENT_COMMON = POLSEARCH_SYMBOL_COMMON,	/*!< qpol_common_t */
+		POLSEARCH_ELEMENT_CATEGORY = POLSEARCH_SYMBOL_CATEGORY,	/*!< qpol_cat_t */
+		POLSEARCH_ELEMENT_LEVEL = POLSEARCH_SYMBOL_LEVEL,	/*!< qpol_level_t */
+		POLSEARCH_ELEMENT_BOOL = POLSEARCH_SYMBOL_BOOL,	/*!< qpol_bool_t */
+		POLSEARCH_ELEMENT_STRING,	/*!< char * */
+		POLSEARCH_ELEMENT_AVRULE,	/*!< qpol_avrule_t */
+		POLSEARCH_ELEMENT_TERULE,	/*!< qpol_terule_t */
+		POLSEARCH_ELEMENT_ROLE_ALLOW,	/*!< qpol_role_allow_t */
+		POLSEARCH_ELEMENT_ROLE_TRANS,	/*!< qpol_role_trans_t */
+		POLSEARCH_ELEMENT_RANGE_TRANS,	/*!< qpol_range_trans_t */
+		POLSEARCH_ELEMENT_FC_ENTRY,	/*!< sefs_entry_t */
+		POLSEARCH_ELEMENT_MLS_RANGE,	/*!< apol_mls_range_t */
+		POLSEARCH_ELEMENT_PERMISSION,	/*!< char * */
+		POLSEARCH_ELEMENT_BOOL_STATE,	/*!< bool */
+	} polsearch_element_e;
+
+#ifdef __cplusplus
+}
+
+extern "C"
+{
+#endif
+
+//we do not want to wrap two copies of everything so have SWIG ignore the compatibility section.
+#ifndef SWIG
+
+#endif				       /* SWIG */
+
 #ifdef __cplusplus
 }
 #endif

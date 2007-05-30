@@ -74,30 +74,34 @@ char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean)
 		return NULL;
 	}
 	switch (b->form) {
-	case POLDIFF_FORM_ADDED:{
-			if (apol_str_appendf(&s, &len, "+ %s", b->name) < 0) {
-				break;
-			}
-			return s;
+	case POLDIFF_FORM_ADDED:
+	{
+		if (apol_str_appendf(&s, &len, "+ %s", b->name) < 0) {
+			break;
 		}
-	case POLDIFF_FORM_REMOVED:{
-			if (apol_str_appendf(&s, &len, "- %s", b->name) < 0) {
-				break;
-			}
-			return s;
+		return s;
+	}
+	case POLDIFF_FORM_REMOVED:
+	{
+		if (apol_str_appendf(&s, &len, "- %s", b->name) < 0) {
+			break;
 		}
-	case POLDIFF_FORM_MODIFIED:{
-			if (apol_str_appendf
-			    (&s, &len, "* %s (changed from %s)", b->name, (b->state ? "false to true" : "true to false")) < 0) {
-				break;
-			}
-			return s;
+		return s;
+	}
+	case POLDIFF_FORM_MODIFIED:
+	{
+		if (apol_str_appendf
+		    (&s, &len, "* %s (changed from %s)", b->name, (b->state ? "false to true" : "true to false")) < 0) {
+			break;
 		}
-	default:{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+		return s;
+	}
+	default:
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
 	errno = ENOMEM;
 	return NULL;
@@ -268,8 +272,8 @@ int bool_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
 	     qpol_bool_get_name(diff->mod_qpol, c, &name) < 0) ||
-	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_bool_get_name(diff->orig_qpol, c, &name) < 0)) {
+	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) && qpol_bool_get_name(diff->orig_qpol, c, &name) < 0))
+	{
 		return -1;
 	}
 	pb = make_diff(diff, form, name);
