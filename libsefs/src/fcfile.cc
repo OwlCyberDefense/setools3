@@ -38,7 +38,8 @@
 
 static void fcfile_entry_free(void *elem)
 {
-	if (elem != NULL) {
+	if (elem != NULL)
+	{
 		sefs_entry *entry = static_cast < sefs_entry * >(elem);
 		delete entry;
 	}
@@ -49,15 +50,19 @@ sefs_fcfile::sefs_fcfile(sefs_callback_fn_t msg_callback, void *varg) throw(std:
 {
 	_files = _entries = NULL;
 	_mls_set = false;
-	try {
-		if ((_files = apol_vector_create(free)) == NULL) {
-			throw new std::bad_alloc;
+	try
+	{
+		if ((_files = apol_vector_create(free)) == NULL)
+		{
+			throw std::bad_alloc();
 		}
-		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL) {
-			throw new std::bad_alloc;
+		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
+		{
+			throw std::bad_alloc();
 		}
 	}
-	catch(...) {
+	catch(...)
+	{
 		apol_vector_destroy(&_files);
 		apol_vector_destroy(&_entries);
 		throw;
@@ -71,18 +76,23 @@ sefs_fcfile::sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void
 {
 	_files = _entries = NULL;
 	_mls_set = false;
-	try {
-		if ((_files = apol_vector_create_with_capacity(1, free)) == NULL) {
-			throw new std::bad_alloc;
+	try
+	{
+		if ((_files = apol_vector_create_with_capacity(1, free)) == NULL)
+		{
+			throw std::bad_alloc();
 		}
-		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL) {
-			throw new std::bad_alloc;
+		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
+		{
+			throw std::bad_alloc();
 		}
-		if (appendFile(file) < 0) {
-			throw new std::runtime_error("Could not construct fcfile with the given file.");
+		if (appendFile(file) < 0)
+		{
+			throw std::runtime_error("Could not construct fcfile with the given file.");
 		}
 	}
-	catch(...) {
+	catch(...)
+	{
 		apol_vector_destroy(&_files);
 		apol_vector_destroy(&_entries);
 		throw;
@@ -96,21 +106,27 @@ sefs_fcfile::sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_cal
 {
 	_files = _entries = NULL;
 	_mls_set = false;
-	try {
-		if (files == NULL) {
-			throw new std::runtime_error(strerror(EINVAL));
+	try
+	{
+		if (files == NULL)
+		{
+			throw std::runtime_error(strerror(EINVAL));
 		}
-		if ((_files = apol_vector_create_with_capacity(apol_vector_get_size(files), free)) == NULL) {
-			throw new std::bad_alloc;
+		if ((_files = apol_vector_create_with_capacity(apol_vector_get_size(files), free)) == NULL)
+		{
+			throw std::bad_alloc();
 		}
-		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL) {
-			throw new std::bad_alloc;
+		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
+		{
+			throw std::bad_alloc();
 		}
-		if (appendFileList(files) != apol_vector_get_size(files)) {
-			throw new std::runtime_error("Could not construct fcfile with the given vector.");
+		if (appendFileList(files) != apol_vector_get_size(files))
+		{
+			throw std::runtime_error("Could not construct fcfile with the given vector.");
 		}
 	}
-	catch(...) {
+	catch(...)
+	{
 		apol_vector_destroy(&_files);
 		apol_vector_destroy(&_entries);
 		throw;
@@ -130,41 +146,51 @@ int sefs_fcfile::appendFile(const char *file)
 	size_t line_len = 0;
 	int retval, error = 0;
 
-	try {
-		if (file == NULL) {
+	try
+	{
+		if (file == NULL)
+		{
 			error = EINVAL;
 			SEFS_ERR("%s", strerror(EINVAL));
-			throw new std::runtime_error(strerror(EINVAL));
+			throw std::runtime_error(strerror(EINVAL));
 		}
 
 		fc_file = fopen(file, "r");
-		if (!fc_file) {
+		if (!fc_file)
+		{
 			error = errno;
 			SEFS_ERR("Unable to open file %s", file);
-			throw new std::runtime_error(strerror(error));
+			throw std::runtime_error(strerror(error));
 		}
 
 		char *s = strdup(file);
-		if (s == NULL) {
+		if (s == NULL)
+		{
 			error = errno;
 			SEFS_ERR("%s", strerror(error));
-			throw new std::bad_alloc;
+			throw std::bad_alloc();
 		}
-		if (apol_vector_append(_files, s) < 0) {
+		if (apol_vector_append(_files, s) < 0)
+		{
 			error = errno;
 			SEFS_ERR("%s", strerror(error));
 			free(s);
-			throw new std::bad_alloc;
+			throw std::bad_alloc();
 		}
 
-		while (!feof(fc_file)) {
-			if (getline(&line, &line_len, fc_file) == -1) {
-				if (feof(fc_file)) {
+		while (!feof(fc_file))
+		{
+			if (getline(&line, &line_len, fc_file) == -1)
+			{
+				if (feof(fc_file))
+				{
 					break;
-				} else {
+				}
+				else
+				{
 					error = errno;
 					SEFS_ERR("%s", strerror(error));
-					throw new std::bad_alloc;
+					throw std::bad_alloc();
 				}
 			}
 			parse_line(line);
@@ -172,11 +198,13 @@ int sefs_fcfile::appendFile(const char *file)
 
 		retval = 0;
 	}
-	catch(...) {
+	catch(...)
+	{
 		retval = -1;
 	}
 
-	if (fc_file != NULL) {
+	if (fc_file != NULL)
+	{
 		fclose(fc_file);
 	}
 	free(line);
@@ -187,7 +215,8 @@ int sefs_fcfile::appendFile(const char *file)
 size_t sefs_fcfile::appendFileList(const apol_vector_t * files)
 {
 	size_t i;
-	for (i = 0; i < apol_vector_get_size(files); i++) {
+	for (i = 0; i < apol_vector_get_size(files); i++)
+	{
 		if (appendFile(static_cast < char *>(apol_vector_get_element(files, i))) < 0)
 		{
 			return i;
@@ -203,7 +232,8 @@ const apol_vector_t *sefs_fcfile::fileList() const
 
 bool sefs_fcfile::isMLS() const
 {
-	if (_mls_set) {
+	if (_mls_set)
+	{
 		return _mls;
 	}
 	return false;
@@ -211,35 +241,39 @@ bool sefs_fcfile::isMLS() const
 
 /******************** private functions below ********************/
 
-void sefs_fcfile::parse_line(const char *line)
+void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtime_error)
 {
 	int error = 0;
 	char *s = strdup(line);
-        apol_context_t *context = NULL;
-        apol_mls_range_t *range = NULL;
-        apol_mls_level_t *level = NULL;
-        char *origin = "";        
-	if (s == NULL) {
+	apol_context_t *context = NULL;
+	apol_mls_range_t *range = NULL;
+	apol_mls_level_t *level = NULL;
+	char *origin = "";
+	if (s == NULL)
+	{
 		error = errno;
 		SEFS_ERR("%s", strerror(error));
-		throw new std::bad_alloc;
+		throw std::bad_alloc();
 	}
 
 	apol_str_trim(s);
-	if (s[0] == '#' || s[0] == '\0') {
+	if (s[0] == '#' || s[0] == '\0')
+	{
 		free(s);
 		return;
 	}
 
-	try {
+	try
+	{
 		size_t line_len = strlen(s);
 		size_t j;
-                bool found_dash = false;
-                bool found_high = false;
+		bool found_high = false;
 
 		// extract the path
-		for (j = 0; j < line_len; j++) {
-			if (isspace(s[j]) || s[j] == ':') {
+		for (j = 0; j < line_len; j++)
+		{
+			if (isspace(s[j]) || s[j] == ':' || s[j] == '-')
+			{
 				// split the line
 				s[j] = '\0';
 			}
@@ -248,31 +282,37 @@ void sefs_fcfile::parse_line(const char *line)
 		j = strlen(tmp) + 1;
 
 		char *path = strdup(tmp);
-		if (path == NULL) {
+		if (path == NULL)
+		{
 			error = errno;
 			SEFS_ERR("%s", strerror(error));
-			throw new std::bad_alloc;
+			throw std::bad_alloc();
 		}
-		if (apol_bst_insert_and_get(path_tree, (void **)&path, NULL) < 0) {
+		if (apol_bst_insert_and_get(path_tree, (void **)&path, NULL) < 0)
+		{
 			error = errno;
 			SEFS_ERR("%s", strerror(error));
-			throw new std::bad_alloc;
+			throw std::bad_alloc();
 		}
 
-		while (j < line_len && s[j] == '\0') {
+		while (j < line_len && s[j] == '\0')
+		{
 			j++;
 		}
-		if (j >= line_len) {
+		if (j >= line_len)
+		{
 			// walked off the end
 			error = EIO;
 			SEFS_ERR("%s", "Not enough fields in line");
-			throw new std::runtime_error(strerror(error));
+			throw std::runtime_error(strerror(error));
 		}
 
 		tmp = s + j;
 		uint32_t objclass;
-		if (tmp[0] == '-') {
-			switch (tmp[1]) {
+		if (tmp[0] == '-')
+		{
+			switch (tmp[1])
+			{
 			case '-':
 				objclass = QPOL_CLASS_FILE;
 				break;
@@ -297,168 +337,180 @@ void sefs_fcfile::parse_line(const char *line)
 			default:
 				error = EIO;
 				SEFS_ERR("%s", "Invalid file context object class.");
-				throw new std::runtime_error(strerror(error));
+				throw std::runtime_error(strerror(error));
 			}
 
 			// advance to context
 			j += 2;
-			while (j < line_len && s[j] == '\0') {
+			while (j < line_len && s[j] == '\0')
+			{
 				j++;
 			}
 
-			if (j >= line_len) {
+			if (j >= line_len)
+			{
 				// walked off the end
 				error = EIO;
 				SEFS_ERR("%s", "Not enough fields in line");
-				throw new std::runtime_error(strerror(error));
+				throw std::runtime_error(strerror(error));
 			}
-		} else {
+		}
+		else
+		{
 			// no object class explicitly given; j is pointing to context
 			objclass = QPOL_CLASS_ALL;
 		}
 
 		tmp = s + j;
-                    if ((context = apol_context_create()) == NULL) {
-                        error = errno;
-                        SEFS_ERR("%s", strerror(error));
-                        throw new std::bad_alloc;
-                    }
-		if (strcmp(tmp, "<<none>>") == 0) {
-                    goto finish_context;
-                }
-                // get user
-                if (apol_context_set_user(NULL, context, tmp) < 0) {
-                    error = errno;
-                    SEFS_ERR("%s", strerror(error));
-                    throw new std::bad_alloc;
-                }
-                j += strlen(tmp) + 2;
-                if (j >= line_len) {
-                    // walked off the end
-                    error = EIO;
-                    SEFS_ERR("%s", "Not enough fields in line");
-			throw new std::runtime_error(strerror(error));
-                }
-                
-                // get role
-		tmp = s + j;
-                if (apol_context_set_role(NULL, context, tmp) < 0) {
-                    error = errno;
-                    SEFS_ERR("%s", strerror(error));
-                    throw new std::bad_alloc;
-                }
-                j += strlen(tmp) + 2;
-		if (j >= line_len) {
-			// walked off the end
-                    error = EIO;
-			SEFS_ERR("%s", "Not enough fields in line");
-			throw new std::runtime_error(strerror(error));
+		if ((context = apol_context_create()) == NULL)
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
 		}
-                
-                // get type
-		tmp = s + j;
-                    if (apol_context_set_type(NULL, context, tmp) < 0) {
-                        error = errno;
-                        SEFS_ERR("%s", strerror(error));
-                        throw new std::bad_alloc;
-                    }
-                    j += strlen(tmp) + 2;
-		if (j >= line_len) {
-			// at end of line -- check if MLS range is needed
-                    if (_mls_set && _mls) {
+		if (strcmp(tmp, "<<none>>") == 0)
+		{
+			goto finish_context;
+		}
+		// get user
+		if (apol_context_set_user(NULL, context, tmp) < 0)
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
+		j += strlen(tmp) + 1;
+		if (j >= line_len)
+		{
+			// walked off the end
 			error = EIO;
 			SEFS_ERR("%s", "Not enough fields in line");
-			throw new std::runtime_error(strerror(error));
-                    }
-                    _mls_set = true;
-                    _mls = false;
-                    goto finish_context;
+			throw std::runtime_error(strerror(error));
 		}
 
-                // check if MLS range is not expected
-                if (_mls_set && !_mls) {
-                    error = EIO;
-                    SEFS_ERR("%s", "Too many fields in line");
-                    throw new std::runtime_error(strerror(error));
-                }
-                _mls_set = true;
-                _mls = true;
-                tmp = s + j;
+		// get role
+		tmp = s + j;
+		if (apol_context_set_role(NULL, context, tmp) < 0)
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
+		j += strlen(tmp) + 1;
+		if (j >= line_len)
+		{
+			// walked off the end
+			error = EIO;
+			SEFS_ERR("%s", "Not enough fields in line");
+			throw std::runtime_error(strerror(error));
+		}
 
-                // add low level to range being constructed
-                if ((range = apol_mls_range_create()) == NULL) {
-                        error = errno;
-                        SEFS_ERR("%s", strerror(error));
-                        throw new std::bad_alloc;
-                }
-                if ((level = apol_mls_level_create_from_literal(tmp)) == NULL ||
-                    (apol_mls_range_set_low(NULL, range, level) < 0)) {
-                    error = errno;
-                    SEFS_ERR("%s", strerror(error));
-                    throw new std::bad_alloc;
-                }
-                level = NULL;
+		// get type
+		tmp = s + j;
+		if (apol_context_set_type(NULL, context, tmp) < 0)
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
+		j += strlen(tmp) + 1;
+		if (j >= line_len)
+		{
+			// at end of line -- check if MLS range is needed
+			if (_mls_set && _mls)
+			{
+				error = EIO;
+				SEFS_ERR("%s", "Not enough fields in line");
+				throw std::runtime_error(strerror(error));
+			}
+			_mls_set = true;
+			_mls = false;
+			goto finish_context;
+		}
 
-                // check if there is a high level for the range
-                j += strlen(tmp) + 2;
-                for ( ; j < line_len; j++) {
-                    if (s[j] == '-') {
-                        if (found_dash) {
-                            error = EIO;
-                            SEFS_ERR("%s", "Too many dashes in context");
-                            throw new std::runtime_error(strerror(error));
-                        }
-                        found_dash = true;
-                    }
-                    else if (s[j] != '\0') {
-                        if (found_high) {
-                            error = EIO;
-                            SEFS_ERR("%s", "Too many fields in line");
-                            throw new std::runtime_error(strerror(error));
-                        }
-                        if (!found_dash) {
-                            error = EIO;
-                            SEFS_ERR("%s", "Not enough dashes in context");
-                            throw new std::runtime_error(strerror(error));
-                        }
-                        
-                        tmp = s + j;
-                        if ((level = apol_mls_level_create_from_literal(tmp)) == NULL ||
-                            (apol_mls_range_set_high(NULL, range, level) < 0)) {
-                            error = errno;
-                            SEFS_ERR("%s", strerror(error));
-                            throw new std::bad_alloc;
-                        }
-                        level = NULL;
-                        j += strlen(tmp) + 1; // for loop increments j again
-                        found_high = true;
-                    }
-                }
+		// check if MLS range is not expected
+		if (_mls_set && !_mls)
+		{
+			error = EIO;
+			SEFS_ERR("%s", "Too many fields in line");
+			throw std::runtime_error(strerror(error));
+		}
+		_mls_set = true;
+		_mls = true;
+		tmp = s + j;
 
-                if (apol_context_set_range(NULL, context, range) < 0) {
-                        error = errno;
-                        SEFS_ERR("%s", strerror(error));
-                        throw new std::bad_alloc;
-                }
-                range = NULL;
-                
-        finish_context:
-                sefs_entry *entry = new sefs_entry(context, objclass, path, origin);
-                if (apol_vector_append(_entries, static_cast<void *>(entry)) < 0) {
-                    error = errno;
-                    delete entry;
-                    SEFS_ERR("%s", strerror(error));
-                    throw new std::bad_alloc;
-                }
+		// add low level to range being constructed
+		if ((range = apol_mls_range_create()) == NULL)
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
+		if ((level = apol_mls_level_create_from_literal(tmp)) == NULL || (apol_mls_range_set_low(NULL, range, level) < 0))
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
+		level = NULL;
+
+		// check if there is a high level for the range
+		j += strlen(tmp) + 1;
+		while (j < line_len && s[j] == '\0')
+		{
+			j++;
+		}
+		if (j < line_len)
+		{
+			if (found_high)
+			{
+				error = EIO;
+				SEFS_ERR("%s", "Too many fields in line");
+				throw std::runtime_error(strerror(error));
+			}
+
+			tmp = s + j;
+			if ((level = apol_mls_level_create_from_literal(tmp)) == NULL ||
+			    (apol_mls_range_set_high(NULL, range, level) < 0))
+			{
+				error = errno;
+				SEFS_ERR("%s", strerror(error));
+				throw std::bad_alloc();
+			}
+			level = NULL;
+			j += strlen(tmp) + 1;	// for loop increments j again
+			found_high = true;
+		}
+
+		if (apol_context_set_range(NULL, context, range) < 0)
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
+		range = NULL;
+
+	      finish_context:
+		sefs_entry * entry = new sefs_entry(this, context, objclass, path, origin);
+		if (apol_vector_append(_entries, static_cast < void *>(entry)) < 0)
+		{
+			error = errno;
+			delete entry;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
 	}
-	catch(...) {
+
+	catch(...)
+	{
 		free(s);
-                apol_context_destroy(&context);
-                apol_mls_range_destroy(&range);
-                apol_mls_level_destroy(&level);
+		apol_context_destroy(&context);
+		apol_mls_range_destroy(&range);
+		apol_mls_level_destroy(&level);
 		errno = error;
 		throw;
 	}
+
 	free(s);
 }
 
@@ -467,10 +519,12 @@ void sefs_fcfile::parse_line(const char *line)
 sefs_fclist_t *sefs_fcfile_create(sefs_callback_fn_t msg_callback, void *varg)
 {
 	sefs_fclist *fclist;
-	try {
+	try
+	{
 		fclist = new sefs_fcfile(msg_callback, varg);
 	}
-	catch(...) {
+	catch(...)
+	{
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -480,10 +534,12 @@ sefs_fclist_t *sefs_fcfile_create(sefs_callback_fn_t msg_callback, void *varg)
 sefs_fclist_t *sefs_fcfile_create_from_file(const char *file, sefs_callback_fn_t msg_callback, void *varg)
 {
 	sefs_fclist *fclist;
-	try {
+	try
+	{
 		fclist = new sefs_fcfile(file, msg_callback, varg);
 	}
-	catch(...) {
+	catch(...)
+	{
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -493,10 +549,12 @@ sefs_fclist_t *sefs_fcfile_create_from_file(const char *file, sefs_callback_fn_t
 sefs_fclist_t *sefs_fcfile_create_from_file_list(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg)
 {
 	sefs_fclist *fclist;
-	try {
+	try
+	{
 		fclist = new sefs_fcfile(files, msg_callback, varg);
 	}
-	catch(...) {
+	catch(...)
+	{
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -505,14 +563,17 @@ sefs_fclist_t *sefs_fcfile_create_from_file_list(const apol_vector_t * files, se
 
 int sefs_fcfile_append_file(sefs_fcfile_t * fcfile, const char *file)
 {
-	if (fcfile == NULL) {
+	if (fcfile == NULL)
+	{
 		errno = EINVAL;
 		return -1;
 	}
-	try {
+	try
+	{
 		fcfile->appendFile(file);
 	}
-	catch(...) {
+	catch(...)
+	{
 		return -1;
 	}
 	return 0;
@@ -520,7 +581,8 @@ int sefs_fcfile_append_file(sefs_fcfile_t * fcfile, const char *file)
 
 size_t sefs_fcfile_append_file_list(sefs_fcfile_t * fcfile, const apol_vector_t * files)
 {
-	if (fcfile == NULL) {
+	if (fcfile == NULL)
+	{
 		errno = EINVAL;
 		return 0;
 	}
@@ -529,7 +591,8 @@ size_t sefs_fcfile_append_file_list(sefs_fcfile_t * fcfile, const apol_vector_t 
 
 const apol_vector_t *sefs_fcfile_get_file_list(sefs_fcfile_t * fcfile)
 {
-	if (fcfile == NULL) {
+	if (fcfile == NULL)
+	{
 		errno = EINVAL;
 		return NULL;
 	}

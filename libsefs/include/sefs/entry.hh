@@ -110,22 +110,36 @@ class sefs_entry
 	 */
 	const char *origin() const;
 
+	/**
+	 * Return a string representation of this entry.  The string
+	 * is suitable for printing to the screen or to a
+	 * file_contexts file.
+	 * @return An allocated string representation.  The caller is
+	 * responsibily for free()ing the string afterwards.
+	 * @exception std::bad_alloc if out of memory
+	 */
+	char *toString() const throw(std::bad_alloc);
+
       private:
 	/**
 	 * Create a blank entry.  The entity creating this entry is
 	 * responsible for setting additional values as needed.
+	 * @param fclist List that will contain this entry.  This
+	 * constructor will not add itself to the fclist.
 	 * @param context An apol context for the new entry.
 	 * @param objectClass Object class for the entry.
 	 * @param path Path to this entry.
 	 * @param origin Name of file_contexts file from which this
 	 * entry originated.
+	 * @exception std::bad_alloc if out of memory
 	 */
-	 sefs_entry(const apol_context_t * context, uint32_t objectClass, const char *path, const char *origin =
+	 sefs_entry(class sefs_fclist *fclist, const apol_context_t * context, uint32_t objectClass, const char *path, const char *origin =
 		    NULL) throw(std::bad_alloc);
 
 	// note that entry does not own any of these pointers; they
 	// are shallow copies (and hence why default copy-constructor
 	// and default destructor works)
+	class sefs_fclist *_fclist;
 	const apol_context_t *_context;
 	ino64_t _inode;
 	dev_t _dev;
@@ -148,37 +162,43 @@ extern "C"
  * Get the context from a sefs entry.
  * @see sefs_entry::context()
  */
-	const apol_context_t *sefs_entry_get_context(const sefs_entry_t * ent);
+	extern const apol_context_t *sefs_entry_get_context(const sefs_entry_t * ent);
 
 /**
  * Get the inode number associated with a sefs entry.
  * @see sefs_entry::inode()
  */
-	ino64_t sefs_entry_get_inode(const sefs_entry_t * ent);
+	extern ino64_t sefs_entry_get_inode(const sefs_entry_t * ent);
 
 /**
  * Get the device number associated with a sefs entry.
  * @see sefs_entry::dev()
  */
-	dev_t sefs_entry_get_dev(const sefs_entry_t * ent);
+	extern dev_t sefs_entry_get_dev(const sefs_entry_t * ent);
 
 /**
  * Get the object class associated with a sefs entry.
  * @see sefs_entry::objectClass()
  */
-	uint32_t sefs_entry_get_object_class(const sefs_entry_t * ent);
+	extern uint32_t sefs_entry_get_object_class(const sefs_entry_t * ent);
 
 /**
  * Get the list of paths associated with a sefs entry.
  * @see sefs_entry::paths()
  */
-	const apol_vector_t *sefs_entry_get_paths(const sefs_entry_t * ent);
+	extern const apol_vector_t *sefs_entry_get_paths(const sefs_entry_t * ent);
 
 /**
  * Get the file from which a sefs entry originated.
  * @see sefs_entry::origin()
  */
-	const char *sefs_entry_get_origin(const sefs_entry_t * ent);
+	extern const char *sefs_entry_get_origin(const sefs_entry_t * ent);
+
+/**
+ * Return a string representation of this entry.
+ * @see sefs_entry::toString()
+ */
+	extern char *sefs_entry_to_string(const sefs_entry_t * ent);
 
 #endif				       /* SWIG */
 

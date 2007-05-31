@@ -1,3 +1,13 @@
+2007-05-31  J. Tang  <jtang@tresys.com>
+
+	* libapol/src/mls_level.c (apol_mls_level_is_literal),
+	  libapol/src/mls_range.c (apol_mls_range_is_literal): Added
+	  ability to query if level/range is literal.  This is needed when
+	  printing an apol_context_t containing a literal level.
+
+	* libapol: split mls-query.h into mls-query.h, mls_level.h, and
+	mls_range.h.  This file was much too large.
+
 2007-05-30  J. Tang  <jtang@tresys.com>
 
 	* libapol/src/mls-query.c (apol_mls_level_create_from_literal)

@@ -64,13 +64,14 @@ extern "C"
 #include <stdexcept>
 
 struct apol_bst;
+class sefs_entry;
 
 class sefs_fclist
 {
+    friend class sefs_entry;
+
       public:
-	// *INDENT-OFF*
 	virtual ~sefs_fclist();
-	// *INDENT-ON*
 
 	/**
 	 * Determine if the contexts in the fclist contain MLS fields.
@@ -92,6 +93,15 @@ class sefs_fclist
 	 * @see sefs_query_set_range()
 	 */
 	void associatePolicy(apol_policy_t * new_policy);
+
+	/**
+	 * Return the policy currently associated with this fclist.
+	 * Do not destroy the policy without first unassociating it
+	 * (via call to sefs_fclist::associatePolicy(NULL)).
+	 * @return Currently associated policy, or NULL if none is
+	 * set.
+	 */
+	apol_policy_t *associatePolicy() const;
 
 	/**
 	 * Get the type of fclist object represented by \a fclist.
@@ -118,7 +128,7 @@ class sefs_fclist
 	__attribute__ ((format(printf, 3, 4))) void handleMsg(int level, const char *fmt, ...);
 
       private:
-	 sefs_callback_fn_t _callback;
+	sefs_callback_fn_t _callback;
 	void *_varg;
 };
 
@@ -138,19 +148,19 @@ extern "C"
  * object is already NULL.
  * @param Reference to a fclist object to destroy.
  */
-	void sefs_fclist_destroy(sefs_fclist_t ** fclist);
+	extern void sefs_fclist_destroy(sefs_fclist_t ** fclist);
 
 /**
  * Get the type of fclist object represented by \a fclist.
  * @see sefs_fclist::type()
  */
-	sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist);
+	extern sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist);
 
 /**
  * Determine if the contexts in the fclist contain MLS fields.
  * @see sefs_fclist::isMLS()
  */
-	bool sefs_fclist_get_is_mls(const sefs_fclist_t * fclist);
+	extern bool sefs_fclist_get_is_mls(const sefs_fclist_t * fclist);
 
 /**
  * Associate a policy with the fclist.
@@ -158,7 +168,7 @@ extern "C"
  * @see sefs_query_set_type()
  * @see sefs_query_set_range()
  */
-	void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy);
+	extern void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy);
 
 #endif				       /* SWIG */
 

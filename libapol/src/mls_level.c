@@ -40,7 +40,7 @@
 struct apol_mls_level
 {
 	char *sens;
-	apol_vector_t *cats;	       // if NULL, then level is still a literal string
+	apol_vector_t *cats;	       // if NULL, then level is incomplete
 	char *literal_cats;
 };
 
@@ -110,18 +110,23 @@ apol_mls_level_t *apol_mls_level_create(void)
 apol_mls_level_t *apol_mls_level_create_from_mls_level(const apol_mls_level_t * level)
 {
 	apol_mls_level_t *l;
-	if (level != NULL && level->cats == NULL) {
-		errno = EINVAL;
+	if ((l = calloc(1, sizeof(*l))) == NULL) {
 		return NULL;
 	}
-	if ((l = apol_mls_level_create()) == NULL) {
-		return NULL;
-	}
-	if (level != NULL &&
-	    ((l->sens = strdup(level->sens)) == NULL ||
-	     (l->cats = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL, free)) == NULL)) {
-		apol_mls_level_destroy(&l);
-		return NULL;
+	if (level != NULL) {
+		if ((level->sens != NULL) && (l->sens = strdup(level->sens)) == NULL) {
+			apol_mls_level_destroy(&l);
+			return NULL;
+		}
+		if ((level->cats != NULL) &&
+		    (l->cats = apol_vector_create_from_vector(level->cats, apol_str_strdup, NULL, free)) == NULL) {
+			apol_mls_level_destroy(&l);
+			return NULL;
+		}
+		if ((level->literal_cats != NULL) && (l->literal_cats = strdup(level->literal_cats)) == NULL) {
+			apol_mls_level_destroy(&l);
+			return NULL;
+		}
 	}
 	return l;
 }

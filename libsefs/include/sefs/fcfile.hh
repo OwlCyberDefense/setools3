@@ -55,6 +55,7 @@ class sefs_fcfile:public sefs_fclist
 	 * are generated.  If NULL, write messages to standard error.
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
+	 * @exception std::bad_alloc if out of memory
 	 */
 	sefs_fcfile(sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc);
 
@@ -66,6 +67,9 @@ class sefs_fcfile:public sefs_fclist
 	 * are generated.  If NULL, write messages to standard error.
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
+	 * @exception std::bad_alloc if out of memory
+	 * @exception std::runtime_error if the give file could not be
+	 * read or is the wrong format
 	 */
 	 sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc, std::runtime_error);
 
@@ -78,6 +82,9 @@ class sefs_fcfile:public sefs_fclist
 	 * are generated.  If NULL, write messages to standard error.
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
+	 * @exception std::bad_alloc if out of memory
+	 * @exception std::runtime_error if the given file could not
+	 * be read or is the wrong format
 	 */
 	 sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
 												     std::runtime_error);
@@ -131,7 +138,18 @@ class sefs_fcfile:public sefs_fclist
 	bool isMLS() const;
 
       private:
-	void parse_line(const char *line);
+
+	/**
+	 * Parse a single line from a file_contexts file (or from any
+	 * other source of file contexts information), and then add
+	 * the resulting sefs_entry into the vector of entries.
+	 * @param line File contexts line to parse.
+	 * @exception std::bad_alloc if out of memory
+	 * @exception std::runtime_error if the give file could not be
+	 * read or is the wrong format
+	 */
+	void parse_line(const char *line) throw(std::bad_alloc, std::runtime_error);
+
 	apol_vector_t *_files, *_entries;
 	bool _mls, _mls_set;
 };
@@ -150,21 +168,22 @@ extern "C"
  * Allocate and return a new sefs file_context set structure.
  * @see sefs_fcfile::sefs_fcfile(sefs_callback_fn_t msg_callback, void *varg)
  */
-	sefs_fclist_t *sefs_fcfile_create(sefs_callback_fn_t msg_callback, void *varg);
+	extern sefs_fclist_t *sefs_fcfile_create(sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Allocate and return a new sefs file_context set structure from a
  * single file_contexts file.
  * @see sefs_fcfile::sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void *varg)
  */
-	sefs_fclist_t *sefs_fcfile_create_from_file(const char *file, sefs_callback_fn_t msg_callback, void *varg);
+	extern sefs_fclist_t *sefs_fcfile_create_from_file(const char *file, sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Allocate and return a new sefs file_context set structure from a
  * list of file_context files.
  * @see sefs_fcfile::sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg)
  */
-	sefs_fclist_t *sefs_fcfile_create_from_file_list(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg);
+	extern sefs_fclist_t *sefs_fcfile_create_from_file_list(const apol_vector_t * files, sefs_callback_fn_t msg_callback,
+								void *varg);
 
 /**
  * Append a file_contexts file to a sefs file contexts file set.
@@ -172,21 +191,21 @@ extern "C"
  * fcfile will be unchanged.
  * @see sefs_fcfile::appendFile()
  */
-	int sefs_fcfile_append_file(sefs_fcfile_t * fcfile, const char *file);
+	extern int sefs_fcfile_append_file(sefs_fcfile_t * fcfile, const char *file);
 
 /**
  * Append a list of file_context files to a sefs file contexts file
  * set.
  * @see sefs_fcfile::appendFileList()
  */
-	size_t sefs_fcfile_append_file_list(sefs_fcfile_t * fcfile, const apol_vector_t * files);
+	extern size_t sefs_fcfile_append_file_list(sefs_fcfile_t * fcfile, const apol_vector_t * files);
 
 /**
  * Get a list of all files contributing to the entries in a sefs
  * file_contexts set.
  * @see sefs_fcfile::fileList()
  */
-	const apol_vector_t *sefs_fcfile_get_file_list(sefs_fcfile_t * fcfile);
+	extern const apol_vector_t *sefs_fcfile_get_file_list(sefs_fcfile_t * fcfile);
 
 #endif				       /* SWIG */
 
