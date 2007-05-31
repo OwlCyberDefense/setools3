@@ -24,6 +24,8 @@ libapol_a_SOURCES = \
 	infoflow-analysis.c infoflow-analysis-internal.h \
 	isid-query.c \
 	mls-query.c \
+	mls_level.c \
+	mls_range.c \
 	netcon-query.c \
 	perm-map.c \
 	policy.c \

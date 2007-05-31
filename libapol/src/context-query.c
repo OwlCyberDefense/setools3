@@ -252,7 +252,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 	return 1;
 }
 
-int apol_context_validate(apol_policy_t * p, apol_context_t * context)
+int apol_context_validate(apol_policy_t * p, const apol_context_t * context)
 {
 	if (context == NULL ||
 	    context->user == NULL ||
@@ -264,7 +264,7 @@ int apol_context_validate(apol_policy_t * p, apol_context_t * context)
 	return apol_context_validate_partial(p, context);
 }
 
-int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context)
+int apol_context_validate_partial(apol_policy_t * p, const apol_context_t * context)
 {
 	apol_user_query_t *user_query = NULL;
 	apol_role_query_t *role_query = NULL;
@@ -346,12 +346,18 @@ int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context)
 	return retval;
 }
 
-char *apol_context_render(apol_policy_t * p, apol_context_t * context)
+char *apol_context_render(apol_policy_t * p, const apol_context_t * context)
 {
 	char *buf = NULL, *range_str = NULL;
 	size_t buf_sz = 0;
 
-	if (p == NULL || context == NULL) {
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return NULL;
+	}
+	if (p == NULL && !apol_mls_range_is_literal(context->range)) {
+		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}
@@ -367,7 +373,7 @@ char *apol_context_render(apol_policy_t * p, apol_context_t * context)
 		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	if (apol_policy_is_mls(p)) {
+	if ((p != NULL && apol_policy_is_mls(p)) || (p == NULL)) {
 		if (context->range == NULL) {
 			range_str = strdup("*");
 		} else {

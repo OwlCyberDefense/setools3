@@ -939,6 +939,14 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return ret;
 	}
+	int is_literal() {
+		int ret = apol_mls_level_is_literal(self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if level is literal");
+		}
+	fail:
+		return ret;
+	}
 };
 #define APOL_MLS_EQ 0
 #define APOL_MLS_DOM 1
@@ -1036,6 +1044,14 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 		int ret = apol_mls_range_validate(p, self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not validate range");
+		}
+	fail:
+		return ret;
+	}
+	int is_literal() {
+		int ret = apol_mls_range_is_literal(self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not determine if range is literal");
 		}
 	fail:
 		return ret;

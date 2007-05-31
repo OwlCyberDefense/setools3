@@ -190,7 +190,7 @@ extern "C"
  *
  * @return 1 If context is legal, 0 if not; -1 on error.
  */
-	extern int apol_context_validate(apol_policy_t * p, apol_context_t * context);
+	extern int apol_context_validate(apol_policy_t * p, const apol_context_t * context);
 
 /**
  * Given a partial context, determine if it is legal according to the
@@ -205,7 +205,7 @@ extern "C"
  *
  * @return 1 If context is legal, 0 if not; -1 on error.
  */
-	extern int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context);
+	extern int apol_context_validate_partial(apol_policy_t * p, const apol_context_t * context);
 
 /**
  * Given a context, allocate and return a string that represents the
@@ -215,13 +215,14 @@ extern "C"
  * type set, it will be rendered as "<sample>*:object_r:*</sample>"
  * (assuming the given policy is not MLS).
  *
- * @param p Policy within which to look up context information.
+ * @param p Policy within which to look up MLS range information.  If
+ * NULL, then attempt to treat the range as incomplete.
  * @param context Context to render.
  *
  * @return A newly allocated string on success, which the caller must
  * free afterwards.  Upon error return NULL.
  */
-	extern char *apol_context_render(apol_policy_t * p, apol_context_t * context);
+	extern char *apol_context_render(apol_policy_t * p, const apol_context_t * context);
 
 #ifdef	__cplusplus
 }

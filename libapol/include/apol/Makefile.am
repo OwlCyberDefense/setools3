@@ -13,6 +13,8 @@ apol_HEADERS = \
 	infoflow-analysis.h \
 	isid-query.h \
 	mls-query.h \
+	mls_level.h \
+	mls_range.h \
 	netcon-query.h \
 	perm-map.h \
 	policy.h \
