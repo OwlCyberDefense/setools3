@@ -1,3 +1,10 @@
+2007-05-30  J. Tang  <jtang@tresys.com>
+
+	* libapol/src/mls-query.c (apol_mls_level_create_from_literal)
+	(apol_mls_level_convert): The apol_mls_level_t object can now be
+	created without relying upon a policy.  Call
+	apol_mls_level_convert() to complete its category list.
+
 2007-05-30  J. Mowery  <jmowery@tresys.com>
 
 	* The --regex flag in sesearch now also applies to --class.

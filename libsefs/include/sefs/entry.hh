@@ -37,6 +37,8 @@ extern "C"
 #ifdef __cplusplus
 }
 
+#include <stdexcept>
+
 class sefs_fclist;
 class sefs_db;
 class sefs_fcfile;
@@ -75,21 +77,26 @@ class sefs_entry
 	dev_t dev() const;
 
 	/**
-	 * Get the object class associated with a sefs entry.  If this
-	 * returns an empty string ("") then the entry is associated
-	 * with all object classes.
-	 * @return Name of the object class or NULL on error.  Do not
-	 * free() this pointer.
+	 * Get the object class associated with a sefs entry.  The
+	 * returned value will be one of one of QPOL_CLASS_ALL,
+	 * QPOL_CLASS_FILE, etc., as defined in
+	 * <qpol/genfscon_query.h>.  If this returns QPOL_CLASS_ALL
+	 * then the entry is associated with all object classes.
+	 * @return Entry's object class.  Upon error return
+	 * QPOL_CLASS_ALL.
+	 * @see apol_objclass_to_str() to convert the value to a
+	 * string.
 	 */
-	const char *objectClass() const;
+	uint32_t objectClass() const;
 
 	/**
 	 * Get the list of paths associated with a sefs entry.
 	 * @return Vector of path strings (char *) representing the
 	 * paths for the entry or NULL on error.  The caller <b>should
-	 * not</b> destroy the vector or the strings it returns.  If
-	 * the entry came from a file_contexts object the paths will
-	 * be regular expressions rather than literal paths.
+	 * not</b> destroy or otherwise modify the vector or the
+	 * strings within it.  If the entry came from a file_contexts
+	 * object the paths will be regular expressions rather than
+	 * literal paths.
 	 */
 	const apol_vector_t *paths() const;
 
@@ -105,26 +112,26 @@ class sefs_entry
 
       private:
 	/**
-         * Create a blank entry.  The entity creating this entry is
-         * responsible for setting additional values as needed.
-         * @param list Associate the new entry with this list.
-         * @param context A string representing the file entry's
-         * context.  It will be converted into an apol_context_t
-         * struct.
-         * @param objectClass Object class for the entry, or an empty
-         * string to mean any class.
-         * @param path Path to this entry.         
-         */
-	sefs_entry(sefs_fclist * fclist, const char *context, const char *objectClass, const char *path);
+	 * Create a blank entry.  The entity creating this entry is
+	 * responsible for setting additional values as needed.
+	 * @param context An apol context for the new entry.
+	 * @param objectClass Object class for the entry.
+	 * @param path Path to this entry.
+	 * @param origin Name of file_contexts file from which this
+	 * entry originated.
+	 */
+	 sefs_entry(const apol_context_t * context, uint32_t objectClass, const char *path, const char *origin =
+		    NULL) throw(std::bad_alloc);
 
-	// note that entry owns the context; all others are assumed to
-	// be shallow pointers
-	apol_context_t *_context;
+	// note that entry does not own any of these pointers; they
+	// are shallow copies (and hence why default copy-constructor
+	// and default destructor works)
+	const apol_context_t *_context;
 	ino64_t _inode;
 	dev_t _dev;
-	char *_objectClass;
+	uint32_t _objectClass;
 	apol_vector_t *_paths;
-	char *_origin;
+	const char *_origin;
 };
 
 extern "C"
@@ -159,7 +166,7 @@ extern "C"
  * Get the object class associated with a sefs entry.
  * @see sefs_entry::objectClass()
  */
-	const char *sefs_entry_get_object_class(const sefs_entry_t * ent);
+	uint32_t sefs_entry_get_object_class(const sefs_entry_t * ent);
 
 /**
  * Get the list of paths associated with a sefs entry.

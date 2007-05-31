@@ -39,6 +39,7 @@ sefs_fclist::~sefs_fclist()
 	apol_bst_destroy(&role_tree);
 	apol_bst_destroy(&type_tree);
 	apol_bst_destroy(&range_tree);
+	apol_bst_destroy(&path_tree);
 }
 
 void sefs_fclist::associatePolicy(apol_policy_t * new_policy)
@@ -53,13 +54,13 @@ sefs_fclist_type_e sefs_fclist::type() const
 
 /******************** protected functions below ********************/
 
-sefs_fclist::sefs_fclist(sefs_callback_fn_t callback, void *varg)throw(std::bad_alloc)
+sefs_fclist::sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, void *varg)throw(std::bad_alloc)
 {
-	fclist_type = SEFS_FCLIST_TYPE_NONE;
+	fclist_type = type;
 	_callback = callback;
 	_varg = varg;
 	policy = NULL;
-	user_tree = role_tree = type_tree = range_tree = NULL;
+	user_tree = role_tree = type_tree = range_tree = path_tree = NULL;
 	try {
 		if ((user_tree = apol_bst_create(apol_str_strcmp, free)) == NULL) {
 			throw new std::bad_alloc;
@@ -73,19 +74,22 @@ sefs_fclist::sefs_fclist(sefs_callback_fn_t callback, void *varg)throw(std::bad_
 		if ((range_tree = apol_bst_create(apol_str_strcmp, free)) == NULL) {
 			throw new std::bad_alloc;
 		}
+		if ((path_tree = apol_bst_create(apol_str_strcmp, free)) == NULL) {
+			throw new std::bad_alloc;
+		}
 	}
 	catch(...) {
 		apol_bst_destroy(&user_tree);
 		apol_bst_destroy(&role_tree);
 		apol_bst_destroy(&type_tree);
 		apol_bst_destroy(&range_tree);
+		apol_bst_destroy(&path_tree);
 		throw;
 	}
 }
 
 static void sefs_handle_default_callback(void *arg __attribute__ ((unused)),
-					 sefs_fclist * f __attribute__ ((unused)),
-					 int level, const char *fmt, va_list va_args)
+					 sefs_fclist * f __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
 	case SEFS_MSG_INFO:

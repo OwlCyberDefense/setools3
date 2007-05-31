@@ -851,9 +851,18 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return aml;
 	};
-	apol_mls_level_t(apol_policy_t *p, char *str) {
+	apol_mls_level_t(apol_policy_t *p, const char *str) {
 		apol_mls_level_t *aml;
 		aml = apol_mls_level_create_from_string(p, str);
+		if (!aml) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return aml;
+	};
+	apol_mls_level_t(const char *str) {
+		apol_mls_level_t *aml;
+		aml = apol_mls_level_create_from_literal(str);
 		if (!aml) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
@@ -922,6 +931,14 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return str;
 	};
+	int convert(apol_policy_t *p) {
+		int ret = apol_mls_level_convert(p, self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not convert level");
+		}
+	fail:
+		return ret;
+	}
 };
 #define APOL_MLS_EQ 0
 #define APOL_MLS_DOM 1

@@ -81,6 +81,28 @@ extern "C"
 	extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, const char *mls_level_string);
 
 /**
+ * Take a literal MLS level string (e.g., <b>S0:C0.C127</b>), fill in
+ * a newly allocated apol_mls_level_t and return it.  The category
+ * portion of the level will <strong>not</strong> be expanded (i.e.,
+ * dots will not be resolved).  The caller must call
+ * apol_mls_level_destroy() upon the returned value afterwards.
+ *
+ * Because this function creates a level without the benefit of a
+ * policy, its category list is "incomplete" and thus most operations
+ * will fail.  All functions other than apol_mls_level_convert() and
+ * apol_mls_level_render() will result in error.  Call
+ * apol_mls_level_convert() to make a literal MLS level complete, so
+ * that it can be used in all functions.
+ *
+ * @param
+ * @param mls_level_string Pointer to a string representing a
+ * (possibly invalid) MLS level.
+ *
+ * @return A filled in MLS level structure, or NULL upon error.
+ */
+	extern apol_mls_level_t *apol_mls_level_create_from_literal(const char *mls_level_string);
+
+/**
  * Create a new apol_mls_level_t and initialize it with a
  * qpol_mls_level_t.  The caller must call apol_mls_level_destroy()
  * upon the returned value afterwards.
@@ -206,13 +228,30 @@ extern "C"
 /**
  * Creates a string containing the textual representation of
  * a MLS level.
- * @param p Policy from which the MLS level is a member.
+ * @param p Policy from which the MLS level is a member.  If NULL,
+ * then attempt to treat the level as an incomplete level (as per
+ * apol_mls_level_create_from_literal()).
  * @param level MLS level to render.
  *
  * @return A newly allocated string, or NULL upon error.  The caller
  * is responsible for calling free() upon the return value.
  */
 	extern char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level);
+
+/**
+ * Given a policy and a MLS level created by
+ * apol_mls_level_create_from_literal(), convert the level to have a
+ * valid ("complete") list of categories.  This will take the literal
+ * string stored within the level and resolve its category lists, such
+ * as by expanding dots.  The level will keep its literal string, so
+ * that it may be converted again if given a different policy.
+ *
+ * @param p Policy containing category information.
+ * @param level MLS level to convert.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int apol_mls_level_convert(apol_policy_t * p, apol_mls_level_t * level);
 
 /**
  * Determine if two sensitivities are actually the same.  Either level
@@ -395,7 +434,9 @@ extern "C"
 /**
  * Creates a string containing the textual representation of
  * a MLS range.
- * @param p Policy from which the MLS range is a member.
+ * @param p Policy from which the MLS range is a member.  If NULL,
+ * then attempt to treat the range's levels as incomplete levels (as
+ * per apol_mls_level_create_from_literal()).
  * @param range MLS range to render.
  *
  * @return A newly allocated string, or NULL upon error.  The caller

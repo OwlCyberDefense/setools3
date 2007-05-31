@@ -25,6 +25,7 @@
 #include <config.h>
 
 #include <sefs/entry.hh>
+#include <qpol/genfscon_query.h>
 #include <errno.h>
 
 /******************** public functions below ********************/
@@ -44,7 +45,7 @@ dev_t sefs_entry::dev() const
 	return _dev;
 }
 
-const char *sefs_entry::objectClass() const
+uint32_t sefs_entry::objectClass() const
 {
 	return _objectClass;
 }
@@ -57,6 +58,35 @@ const apol_vector_t *sefs_entry::paths() const
 const char *sefs_entry::origin() const
 {
 	return _origin;
+}
+
+/******************** private functions below ********************/
+
+sefs_entry::sefs_entry(const apol_context_t * context, uint32_t objectClass, const char *path,
+		       const char *origin)throw(std::bad_alloc)
+{
+	_context = context;
+	_objectClass = objectClass;
+	_paths = NULL;
+	_inode = 0;
+	_dev = 0;
+	_origin = origin;
+	try {
+		if ((_paths = apol_vector_create_with_capacity(1, NULL)) == NULL) {
+			throw new std::bad_alloc;
+		}
+		// cast below is safe because the string is never
+		// modified by this class, and header file says that
+		// user must never change the string
+		if (apol_vector_append(_paths, const_cast < char *>(path)) < 0)
+		{
+			throw new std::bad_alloc;
+		}
+	}
+	catch(...) {
+		apol_vector_destroy(&_paths);
+		throw;
+	}
 }
 
 /******************** C functions below ********************/
@@ -88,11 +118,11 @@ dev_t sefs_entry_get_dev(const sefs_entry_t * ent)
 	return ent->dev();
 }
 
-const char *sefs_entry_get_object_class(const sefs_entry_t * ent)
+uint32_t sefs_entry_get_object_class(const sefs_entry_t * ent)
 {
 	if (ent == NULL) {
 		errno = EINVAL;
-		return NULL;
+		return QPOL_CLASS_ALL;
 	}
 	return ent->objectClass();
 }

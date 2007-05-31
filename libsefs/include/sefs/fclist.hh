@@ -68,7 +68,9 @@ struct apol_bst;
 class sefs_fclist
 {
       public:
-	virtual ~ sefs_fclist();
+	// *INDENT-OFF*
+	virtual ~sefs_fclist();
+	// *INDENT-ON*
 
 	/**
 	 * Determine if the contexts in the fclist contain MLS fields.
@@ -78,7 +80,7 @@ class sefs_fclist
 	virtual bool isMLS() const = 0;
 
 	/**
-	 * Associate a policy with the fclist.	This is needed to
+	 * Associate a policy with the fclist.  This is needed to
 	 * resolve attributes and MLS ranges in queries.  If a policy
 	 * is already associated, then calling this function removes
 	 * that previous association.
@@ -99,11 +101,11 @@ class sefs_fclist
 	sefs_fclist_type_e type() const;
 
       protected:
-	 sefs_fclist(sefs_callback_fn_t callback, void *varg) throw(std::bad_alloc);
+	 sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, void *varg) throw(std::bad_alloc);
 
 	sefs_fclist_type_e fclist_type;
 	apol_policy_t *policy;
-	struct apol_bst *user_tree, *role_tree, *type_tree, *range_tree;
+	struct apol_bst *user_tree, *role_tree, *type_tree, *range_tree, *path_tree;
 
 	/**
 	 * Write a message to the callback stored within a fclist
@@ -113,8 +115,7 @@ class sefs_fclist
 	 * @param fmt Format string to print, using syntax of
 	 * printf(3).
 	 */
-	__attribute__ ((format(printf, 3, 4)))
-	void handleMsg(int level, const char *fmt, ...);
+	__attribute__ ((format(printf, 3, 4))) void handleMsg(int level, const char *fmt, ...);
 
       private:
 	 sefs_callback_fn_t _callback;
