@@ -109,6 +109,6 @@ distclean-local:
 
 indent:
 	find $(top_src_dir) -name '*.[ch]' ! -wholename '*sqlite*' -type f -exec indent $(C_INDENT_OPTS) '{}' \;
-	find $(top_src_dir) -name '*.cc' -or -name '*.hh' -type f -exec indent $(CXX_INDENT_OPTS) '{}' \;
+	find $(top_src_dir) -regex '.*\.\(cc\|hh\)' -type f -exec indent $(CXX_INDENT_OPTS) '{}' \;
 	find $(top_src_dir) -name '*.cc' -type f -exec sed -i 's/const const/const/g' '{}' \;
 	find $(top_src_dir) -name '*.hh' -type f -exec sed -i 's/virtual ~ /virtual ~/g' '{}' \;

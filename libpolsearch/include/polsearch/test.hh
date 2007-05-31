@@ -73,65 +73,65 @@ extern "C"
 class polsearch_test
 {
       public:
-		/**
-		 * Create a new test.
-		 * @param elem_type Type of policy element to test.
-		 * @param cond Condition for which to test.
-		 */
+	/**
+		* Create a new test.
+		* @param elem_type Type of policy element to test.
+		* @param cond Condition for which to test.
+		*/
 	polsearch_test(polsearch_element_e elem_type, polsearch_test_cond_e cond);
-		/**
-		 * Copy a test.
-		 * @param pt Test to copy.
-		 */
+	/**
+		* Copy a test.
+		* @param pt Test to copy.
+		*/
 	polsearch_test(const polsearch_test & pt);
 	//! Destructor.
 	~polsearch_test();
 
-		/**
-		 * Get a list of the valid comparison operators for the symbol and
-		 * condition of a test.
-		 * @return Vector of valid operators (polsearch_op_e) or NULL on error.
-		 * The caller is responsible for calling apol_vector_destroy() on the
-		 * returned vector.
-		 */
+	/**
+		* Get a list of the valid comparison operators for the symbol and
+		* condition of a test.
+		* @return Vector of valid operators (polsearch_op_e) or NULL on error.
+		* The caller is responsible for calling apol_vector_destroy() on the
+		* returned vector.
+		*/
 	apol_vector_t *getValidOps() const;
-		/**
-		 * Get the type of parameter to use for the test criterion for the
-		 * given comparison operator.
-		 * @param opr The comparison operator for which to get the parameter type.
-		 * @return The type of parameter or POLSEARCH_PARAM_TYPE_NONE on error.
-		 */
+	/**
+		* Get the type of parameter to use for the test criterion for the
+		* given comparison operator.
+		* @param opr The comparison operator for which to get the parameter type.
+		* @return The type of parameter or POLSEARCH_PARAM_TYPE_NONE on error.
+		*/
 	polsearch_param_type_e getParamType(polsearch_op_e opr) const;
-		/**
-		 * Get the vector of criteria checked by this test.
-		 * @return The vector of criteria. The caller is free to modify this
-		 * vector but should not destroy it.
-		 */
+	/**
+		* Get the vector of criteria checked by this test.
+		* @return The vector of criteria. The caller is free to modify this
+		* vector but should not destroy it.
+		*/
 	apol_vector_t *criteria();
-		/**
-		 * Get the symbol type tested by a test.
-		 * @return The type of symbol tested.
-		 */
+	/**
+		* Get the symbol type tested by a test.
+		* @return The type of symbol tested.
+		*/
 	polsearch_element_e element_type() const;
-		/**
-		 * Get the condition for which a test checks.
-		 * @return The condition tested.
-		 */
+	/**
+		* Get the condition for which a test checks.
+		* @return The condition tested.
+		*/
 	polsearch_test_cond_e test_cond() const;
-		/**
-		 * Run the test. This finds all symbols of the specified type that
-		 * meet all criteria for the test.
-		 * @param p The policy containing the symbols to test.
-		 * @param fclist The file_contexts list to use for conditions that
-		 * check for file_context entries. (Optional)
-		 * @param Xcandidates The list of currenly valid candidates for the test.
-		 * If null, all symbols of the specified type are considered candidates.
-		 * @return A vector of all symbols of the appropriate type (see
-		 * polsearch_symbol_e) or NULL on error. The caller is responsible for
-		 * calling apol_vector_destroy() on the returned vector. The size of the
-		 * returned vector may be zero, indicating that none of the candidates
-		 * satisfied all criteria for the test.
-		 */
+	/**
+		* Run the test. This finds all symbols of the specified type that
+		* meet all criteria for the test.
+		* @param p The policy containing the symbols to test.
+		* @param fclist The file_contexts list to use for conditions that
+		* check for file_context entries. (Optional)
+		* @param Xcandidates The list of currenly valid candidates for the test.
+		* If null, all symbols of the specified type are considered candidates.
+		* @return A vector of all symbols of the appropriate type (see
+		* polsearch_symbol_e) or NULL on error. The caller is responsible for
+		* calling apol_vector_destroy() on the returned vector. The size of the
+		* returned vector may be zero, indicating that none of the candidates
+		* satisfied all criteria for the test.
+		*/
 	apol_vector_t *run(const apol_policy_t * p, const sefs_fclist * fclist, apol_vector_t * Xcandidates) const;
 
       private:
@@ -150,38 +150,38 @@ class polsearch_test
 class polsearch_proof
 {
       public:
-		/**
-		 * Create a new poof entry.
-		 * @param test The test condition proved by this entry.
-		 * @param elem_type The type of element used as proof.
-		 * @param elem The element that proves the test.
-		 */
+	/**
+		* Create a new poof entry.
+		* @param test The test condition proved by this entry.
+		* @param elem_type The type of element used as proof.
+		* @param elem The element that proves the test.
+		*/
 	polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem);
-		/**
-		 * Copy a proof.
-		 * @param pp The proof to copy.
-		 */
+	/**
+		* Copy a proof.
+		* @param pp The proof to copy.
+		*/
 	 polsearch_proof(const polsearch_proof & pp);
 	//! Destructor.
 	~polsearch_proof();
 
-		/**
-		 * Return a string representing the proof.
-		 * @param p The policy from which to get any relevant symbol names.
-		 * @param fclist The file_contexts list from which to get any relevant
-		 * file_context entries.
-		 * @return A newly allocated string representing the proof. The caller is
-		 * responsible for calling <b>free()</b> on the string returned.
-		 */
+	/**
+		* Return a string representing the proof.
+		* @param p The policy from which to get any relevant symbol names.
+		* @param fclist The file_contexts list from which to get any relevant
+		* file_context entries.
+		* @return A newly allocated string representing the proof. The caller is
+		* responsible for calling <b>free()</b> on the string returned.
+		*/
 	char *toString(const apol_policy_t * p, const sefs_fclist_t * fclist) const;
-		/**
-		 * Get the type of element stored in the proof.
-		 * @return The type of element stored in the proof.
-		 */
+	/**
+		* Get the type of element stored in the proof.
+		* @return The type of element stored in the proof.
+		*/
 	polsearch_element_e elementType() const;
-		/**
-		 * Get the element
-		 */
+	/**
+		* Get the element
+		*/
 	const void *element() const;
 
       private:

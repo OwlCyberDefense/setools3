@@ -68,10 +68,10 @@ class sefs_entry;
 
 class sefs_fclist
 {
-    friend class sefs_entry;
+	friend class sefs_entry;
 
       public:
-	virtual ~sefs_fclist();
+	 virtual ~sefs_fclist();
 
 	/**
 	 * Determine if the contexts in the fclist contain MLS fields.
@@ -128,7 +128,7 @@ class sefs_fclist
 	__attribute__ ((format(printf, 3, 4))) void handleMsg(int level, const char *fmt, ...);
 
       private:
-	sefs_callback_fn_t _callback;
+	 sefs_callback_fn_t _callback;
 	void *_varg;
 };
 

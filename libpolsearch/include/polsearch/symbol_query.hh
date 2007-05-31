@@ -60,62 +60,62 @@ extern "C"
 class polsearch_symbol_query
 {
       public:
-		/**
-		 * Create a new symbol query.
-		 * @param symbol_type The type of symbol to match; must be one of
-		 * POLSEARCH_SYMBOL_* from above.
-		 * @param match Set the matching behavior of the query, must be
-		 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
-		 */
+	/**
+	 * Create a new symbol query.
+	 * @param symbol_type The type of symbol to match; must be one of
+	 * POLSEARCH_SYMBOL_* from above.
+	 * @param match Set the matching behavior of the query, must be
+	 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
+	 */
 	polsearch_symbol_query(polsearch_symbol_e sym_type, polsearch_match_e match = POLSEARCH_MATCH_ALL);
-		/**
-		 * Copy a symbol query.
-		 * @param sq The query to copy.
-		 */
+	/**
+	 * Copy a symbol query.
+	 * @param sq The query to copy.
+	 */
 	polsearch_symbol_query(const polsearch_symbol_query & sq);
 	//! Destructor.
 	~polsearch_symbol_query();
 
-		/**
-		 * Get the symbol type matched by the query.
-		 * @return The type of symbol matched.
-		 */
+	/**
+	 * Get the symbol type matched by the query.
+	 * @return The type of symbol matched.
+	 */
 	polsearch_symbol_e symbolType() const;
-		/**
-		 * Get the matching behavior of the query.
-		 * @return The current matching behavior of the query.
-		 */
+	/**
+	 * Get the matching behavior of the query.
+	 * @return The current matching behavior of the query.
+	 */
 	polsearch_match_e match() const;
-		/**
-		 * Set the matching behavior of the query.
-		 * @param m One of POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY to set.
-		 * @return The behavior set.
-		 */
+	/**
+	 * Set the matching behavior of the query.
+	 * @param m One of POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY to set.
+	 * @return The behavior set.
+	 */
 	polsearch_match_e match(polsearch_match_e m);
-		/**
-		 * Get the vector of tests performed by the query.
-		 * @return The vector of tests. The caller is free to modify this vector,
-		 * but should not destroy it.
-		 */
+	/**
+	 * Get the vector of tests performed by the query.
+	 * @return The vector of tests. The caller is free to modify this vector,
+	 * but should not destroy it.
+	 */
 	apol_vector_t *tests();
-		/**
-		 * Run the query.
-		 * @param policy The policy containing the symbols to match.
-		 * @param fclist A file_contexts list to optionally use for tests that
-		 * match file_context entries. It is an error to not provide \a fclist
-		 * if a test matches file_context entries.
-		 * @return A vector of results (polsearch_symbol_result), or NULL on
-		 * error. The caller is responsible for calling apol_vector_destroy()
-		 * on the returned vector.
-		 */
+	/**
+		* Run the query.
+		* @param policy The policy containing the symbols to match.
+		* @param fclist A file_contexts list to optionally use for tests that
+		* match file_context entries. It is an error to not provide \a fclist
+		* if a test matches file_context entries.
+		* @return A vector of results (polsearch_symbol_result), or NULL on
+		* error. The caller is responsible for calling apol_vector_destroy()
+		* on the returned vector.
+		*/
 	apol_vector_t *run(const apol_policy_t * policy, const sefs_fclist_t * fclist = NULL) const;
-		/**
-		 * Get a list of the valid types of tests to perform for the symbol
-		 * type specified by the query.
-		 * @return A vector (of type polsearch_test_cond_e) containing all valid
-		 * tests for the specified symbol type. The caller is responsible for
-		 * calling apol_vector_destroy() on the returned vector.
-		 */
+/**
+	* Get a list of the valid types of tests to perform for the symbol
+	* type specified by the query.
+	* @return A vector (of type polsearch_test_cond_e) containing all valid
+	* tests for the specified symbol type. The caller is responsible for
+	* calling apol_vector_destroy() on the returned vector.
+	*/
 	apol_vector_t *getValidTests() const;
 
       private:

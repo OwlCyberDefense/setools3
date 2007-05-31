@@ -76,6 +76,8 @@ extern "C"
 #ifdef __cplusplus
 }
 
+#include <sdtexcept>
+
 /**
  * A single criterion to be checked when running a test. This is the base
  * criterion with no parameter and by itself is not valid for use in a test;
@@ -84,56 +86,56 @@ extern "C"
 class polsearch_criterion
 {
       public:
-		/**
-		 * Create a generic criterion.
-		 * @param opr Comparison operator to use.
-		 * @param neg If \a true, invert the logic result of the operator.
-		 */
+	/**
+	 * Create a generic criterion.
+	 * @param opr Comparison operator to use.
+	 * @param neg If \a true, invert the logic result of the operator.
+	 */
 	virtual polsearch_criterion(polsearch_op_e opr, bool neg = false);
-		/**
-		 * Copy a generic criterion.
-		 * @param pc The criterion to copy.
-		 */
+	/**
+	 * Copy a generic criterion.
+	 * @param pc The criterion to copy.
+	 */
 	virtual polsearch_criterion(const polsearch_criterion & pc);
 	//! Destructor.
 	 virtual ~polsearch_criterion();
 
-		/**
-		 * Get the comparison operator used to check this criterion.
-		 * @return The operator used.
-		 */
+	/**
+	 * Get the comparison operator used to check this criterion.
+	 * @return The operator used.
+	 */
 	polsearch_op_e op() const;
-		/**
-		 * Determine if the comparison operator for this criterion is negated.
-		 * @return \a true if negated, \a false otherwise
-		  */
+	/**
+	 * Determine if the comparison operator for this criterion is negated.
+	 * @return \a true if negated, \a false otherwise
+	 */
 	bool negated() const;
-		/**
-		 * Set the flag to negate the comparison operator.
-		 * @param neg If \a true, invert the logic result of the operator;
-		 * if \a false do not invert.
-		 * @return The state set.
-		 */
+	/**
+	 * Set the flag to negate the comparison operator.
+	 * @param neg If \a true, invert the logic result of the operator;
+	 * if \a false do not invert.
+	 * @return The state set.
+	 */
 	bool negated(bool neg);
-		/**
-		 * Get the type of parameter used by this criterion.
-		 * @return The type of parameter (see polsearch_param_type_e).
-		 */
+	/**
+	 * Get the type of parameter used by this criterion.
+	 * @return The type of parameter (see polsearch_param_type_e).
+	 */
 	polsearch_param_type_e paramType() const;
 
-		/**
-		 * Check all candidates to find symbols that meet this criterion.
-		 * @param p The policy containing the symbols to check.
-		 * @param fclist The file_contexts list to use.
-		 * @param test_candidates Vector of items to check (
-		 */
+	/**
+	 * Check all candidates to find symbols that meet this criterion.
+	 * @param p The policy containing the symbols to check.
+	 * @param fclist The file_contexts list to use.
+	 * @param test_candidates Vector of items to check (
+	 */
 	virtual apol_vector_t *check(const apol_policy_t * p, const sefs_fclist_t * fclist,
 				     const apol_vector_t * test_candidates, apol_vector_t * Xcandidtates) const = 0;
 
       protected:
-	 polsearch_op_e _op;
-	bool _negated;
-	polsearch_param_type_e _param_type;
+	 polsearch_op_e _op;	       /*!< The comparison operator. */
+	bool _negated;		       /*!< Negate operator flag. */
+	polsearch_param_type_e _param_type;	/*!< Type of parameter. */
 };
 
 /**
@@ -142,21 +144,46 @@ class polsearch_criterion
 class polsearch_regex_criterion:public polsearch_criterion
 {
       public:
-	polsearch_regex_criterion(polsearch_op_e opr, bool neg = false, const char *expression = NULL);
-	 polsearch_regex_criterion(const polsearch_regex_criterion & prc);
+	/**
+	 * Create a criterion with a regular expresion parameter.
+	 * @param opr Comparison operator to use.
+	 * @param neg If \a true, invert the logic result of the operator.
+	 * @param expression The regular expression string; this string will
+	 * be duplicated.
+	 * @exception std::bad_alloc Could not duplicate the expression string.
+	 */
+	polsearch_regex_criterion(polsearch_op_e opr, bool neg = false, const char *expression = NULL) throw(std::bad_alloc);
+	/**
+	 * Copy a criterion with a regular expression parameter.
+	 * @param prc The criterion to copy.
+	 * @exception std::bad_alloc Could not duplicate the expression string.
+	 */
+	 polsearch_regex_criterion(const polsearch_regex_criterion & prc) throw(std::bad_alloc);
+	//! Destructor.
 	~polsearch_regex_criterion();
 
+	/**
+	 * Get the regular expression string.
+	 * @return The regular expression string or NULL if it has been cleared.
+	 */
 	const char *const regex() const;
-	char *regex(const char *expression);
+	/**
+	 * Set the regular expression string.
+	 * @param expression The expression to set, or NULL to clear any previous
+	 * value. This string (if non-null) will be duplicated.
+	 * @return The string set or NULL if cleared.
+	 * @exception std::bad_alloc Could not duplicate the expression string.
+	 */
+	const char *regex(const char *expression) throw(std::bad_alloc);
 
       private:
-	char *_regex;
+	char *_regex;		       /*!< The regular expression string. */
 };
 
 /**
  * Criterion used to compare symbols to a logical list of identifiers.
  */
-class polsearch_strring_list_criterion:public polsearch_criterion
+class polsearch_strring_list_criterion:public polsearch_criterion	//TODO doxy
 {
       public:
 	polsearch_strring_list_criterion(polsearch_op_e opr, bool neg = false, const polsearch_string_list * strlist = NULL);
@@ -176,14 +203,46 @@ class polsearch_strring_list_criterion:public polsearch_criterion
 class polsearch_rule_type_criterion:public polsearch_criterion
 {
       public:
-	polsearch_rule_type_criterion(polsearch_op_e opr, bool neg = false, uint32_t ruletype = 0);
+	/**
+	 * Create a criterion with a rule type parameter.
+	 * @param opr Comparison operator to use.
+	 * @param neg If \a true, invert the logic result of the operator.
+	 * @param ruletype The type of rule. Must be one of QPOL_RULE_* from
+	 * \link avrule_query.h \<qpol/avrule_query.h\> \endlink and
+	 * \link terule_query.h \<qpol/terule_query.h\> \endlink or 0 to indicate
+	 * that any rule type matches.
+	 * @exception std::invalid_argument The provided rule type is not valid.
+	 */
+	polsearch_rule_type_criterion(polsearch_op_e opr, bool neg = false, uint32_t ruletype = 0) throw(std::invalid_argument);
+	/**
+	 * Copy a criterion with a rule type parameter.
+	 * @param prtc The criterion to copy.
+	 */
 	polsearch_rule_type_criterion(const polsearch_rule_type_criterion & prtc);
+	//! Destructor.
 	~polsearch_rule_type_criterion();
 
+	/**
+	 * Get the rule type.
+	 * @return The rule type. This will be one of QPOL_RULE_* from
+	 * \link avrule_query.h \<qpol/avrule_query.h\> \endlink and
+	 * \link terule_query.h \<qpol/terule_query.h\> \endlink or 0 to indicate
+	 * that any rule type matches.
+	 */
 	uint32_t rule_type() const;
-	uint32_t rule_type(uint32_t ruletype);
+	/**
+	 * Set the rule type.
+	 * @param ruletype The rule type. Must be one of QPOL_RULE_* from
+	 * \link avrule_query.h \<qpol/avrule_query.h\> \endlink and
+	 * \link terule_query.h \<qpol/terule_query.h\> \endlink or 0 to indicate
+	 * that any rule type matches.
+	 * @return The rule type set.
+	 * @exception std::invalid_argument The provided rule type is not valid.
+	 */
+	uint32_t rule_type(uint32_t ruletype) throw(std::invalid_argument);
+
       private:
-	 uint32_t _rule_type;
+	 uint32_t _rule_type;	       /*!< The rule type. */
 };
 
 /**
@@ -192,15 +251,34 @@ class polsearch_rule_type_criterion:public polsearch_criterion
 class polsearch_bool_criterion:public polsearch_criterion
 {
       public:
+	/**
+	 * Create a criterion with a boolean state parameter.
+	 * @param opr Comparison operator to use.
+	 * @param neg If \a true, invert the logic result of the operator.
+	 * @param val Value of the boolean.
+	 */
 	polsearch_bool_criterion(polsearch_op_e opr, bool neg = false, bool val = false);
+	/**
+	 * Copy a criterion with a boolean state parameter.
+	 * @param pbc The criterion to copy.
+	 */
 	polsearch_bool_criterion(const polsearch_bool_criterion & pbc);
+	//! Destructor.
 	~polsearch_bool_criterion();
 
+	/**
+	 * Get the boolean state value.
+	 * @return The boolean state value.
+	 */
 	bool value() const;
+	/**
+	 * Set the boolean state value.
+	 * @return The boolean state value set.
+	 */
 	bool value(bool val);
 
       private:
-	 bool _value;
+	 bool _value;		       /*!< The boolean state value. */
 };
 
 /**
@@ -209,12 +287,32 @@ class polsearch_bool_criterion:public polsearch_criterion
 class polsearch_level_criterion:public polsearch_criterion
 {
       public:
-	polsearch_level_criterion(polsearch_op_e opr, bool neg = false, const apol_mls_level_t * lvl = NULL, int m = APOL_MLS_EQ);
-	 polsearch_level_criterion(const polsearch_level_criterion & plc);
+	/**
+	 * Create a criterion with a MLS level parameter.
+	 * @param opr Comparison operator to use.
+	 * @param neg If \a true, invert the logic result of the operator.
+	 * @param lvl The MLS level; this level will be duplicated.
+	 * @param m The type of matching to use for the level. This must be one
+	 * of APOL_MLS_EQ, APOL_MLS_DOM, APOL_MLS_DOMBY, or APOL_MLS_INCOMP from
+	 * \link mls-query.h \<apol/mls-query.h\>\endlink.
+	 * @exception std::bad_alloc Could not copy the provided level.
+	 * @exception std::invalid_argument Invalid level matching requested.
+	 */
+	polsearch_level_criterion(polsearch_op_e opr, bool neg = false, const apol_mls_level_t * lvl = NULL, int m =
+				  APOL_MLS_EQ) throw(std::bad_alloc, std::invalid_argument);
+	/**
+	 * Copy a criterion with a MLS level parameter.
+	 * @param plc The criterion to copy.
+	 * @exception std::bad_alloc Could not copy the MLS level.
+	 */
+	 polsearch_level_criterion(const polsearch_level_criterion & plc) throw(std::bad_alloc);
+	//! Destructor.
 	~polsearch_level_criterion();
 
+	/**
+	 */
 	const apol_mls_level_t *level() const;
-	apol_mls_level_t *level(const apol_mls_level_t * lvl);
+	const apol_mls_level_t *level(const apol_mls_level_t * lvl);
 	int match() const;
 	int match(int m);
 

@@ -133,8 +133,8 @@ class sefs_entry
 	 * entry originated.
 	 * @exception std::bad_alloc if out of memory
 	 */
-	 sefs_entry(class sefs_fclist *fclist, const apol_context_t * context, uint32_t objectClass, const char *path, const char *origin =
-		    NULL) throw(std::bad_alloc);
+	 sefs_entry(class sefs_fclist * fclist, const apol_context_t * context, uint32_t objectClass, const char *path,
+		    const char *origin = NULL) throw(std::bad_alloc);
 
 	// note that entry does not own any of these pointers; they
 	// are shallow copies (and hence why default copy-constructor
