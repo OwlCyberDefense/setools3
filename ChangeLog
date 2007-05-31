@@ -1,5 +1,8 @@
 2007-05-31  J. Tang  <jtang@tresys.com>
 
+	* libapol/src/util.c (apol_str_to_objclass): Added this function,
+	as the complement to apol_objclass_to_str().
+
 	* libapol/src/mls_level.c (apol_mls_level_is_literal),
 	  libapol/src/mls_range.c (apol_mls_range_is_literal): Added
 	  ability to query if level/range is literal.  This is needed when

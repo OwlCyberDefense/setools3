@@ -27,6 +27,8 @@
 #ifndef SEFS_FCLIST_H
 #define SEFS_FCLIST_H
 
+#include "query.hh"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -65,6 +67,7 @@ extern "C"
 
 struct apol_bst;
 class sefs_entry;
+class sefs_query;
 
 class sefs_fclist
 {
@@ -72,6 +75,20 @@ class sefs_fclist
 
       public:
 	 virtual ~sefs_fclist();
+
+	/**
+	 * Perform a sefs query on the given file context list object.
+	 * @param query Query object containing search parameters.  If
+	 * NULL, return all contexts.
+	 * @return A newly allocated vector (of class sefs_entry *)
+	 * containing all entries matching the query.  Note that the
+	 * vector may be empty.  The caller is responsible for calling
+	 * apol_vector_destroy() on the returned vector.
+	 * @exception std::bad_alloc if out of memory
+	 * @exception std::runtime_error if encounter an error while
+	 * reading contexts from the fclist
+	 */
+	virtual apol_vector_t *runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error) = 0;
 
 	/**
 	 * Determine if the contexts in the fclist contain MLS fields.
@@ -151,10 +168,10 @@ extern "C"
 	extern void sefs_fclist_destroy(sefs_fclist_t ** fclist);
 
 /**
- * Get the type of fclist object represented by \a fclist.
- * @see sefs_fclist::type()
+ * Perform a sefs query on the given file context list object.
+ * @see sefs_query::run()
  */
-	extern sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist);
+	extern apol_vector_t *sefs_fclist_run_query(sefs_fclist_t * fclist, sefs_query_t * query);
 
 /**
  * Determine if the contexts in the fclist contain MLS fields.
@@ -169,6 +186,12 @@ extern "C"
  * @see sefs_query_set_range()
  */
 	extern void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy);
+
+/**
+ * Get the type of fclist object represented by \a fclist.
+ * @see sefs_fclist::type()
+ */
+	extern sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist);
 
 #endif				       /* SWIG */
 

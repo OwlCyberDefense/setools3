@@ -40,9 +40,6 @@ extern "C"
 #include <stdexcept>
 
 class sefs_fclist;
-class sefs_db;
-class sefs_fcfile;
-class sefs_filesystem;
 
 /**
  * This class represents an individual entry within a list an fcfile object.

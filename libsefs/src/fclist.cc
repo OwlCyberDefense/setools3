@@ -145,23 +145,30 @@ void sefs_fclist::handleMsg(int level, const char *fmt, ...)
 
 void sefs_fclist_destroy(sefs_fclist_t ** fclist)
 {
-	if (fclist != NULL)
+	if (fclist != NULL && *fclist != NULL)
 	{
-		if (*fclist != NULL)
-		{
-			delete(*fclist);
-		}
+		delete(*fclist);
 		*fclist = NULL;
 	}
 }
 
-sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist)
+apol_vector_t *sefs_fclist_run_query(sefs_fclist_t * fclist, sefs_query_t * query)
 {
 	if (fclist == NULL)
 	{
-		return SEFS_FCLIST_TYPE_NONE;
+		errno = EINVAL;
+		return NULL;
 	}
-	return fclist->type();
+	apol_vector_t *v = NULL;
+	try
+	{
+		v = fclist->runQuery(query);
+	}
+	catch(...)
+	{
+		return NULL;
+	}
+	return v;
 }
 
 bool sefs_fclist_get_is_mls(const sefs_fclist_t * fclist)
@@ -183,4 +190,13 @@ void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy
 	{
 		fclist->associatePolicy(policy);
 	}
+}
+
+sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist)
+{
+	if (fclist == NULL)
+	{
+		return SEFS_FCLIST_TYPE_NONE;
+	}
+	return fclist->type();
 }

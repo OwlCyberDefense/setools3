@@ -249,6 +249,7 @@ uint8_t apol_str_to_protocol(const char *protocol_str);
 }
 
 const char *apol_objclass_to_str(uint32_t objclass);
+uint32_t apol_str_to_objclass(const char *objclass);
 const char *apol_fs_use_behavior_to_str(uint32_t behavior);
 int apol_str_to_fs_use_behavior(const char *behavior);
 const char *apol_rule_type_to_str(uint32_t rule_type);

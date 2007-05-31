@@ -90,8 +90,23 @@ extern "C"
  *
  * @return A string that describes the object class, or NULL if the
  * object class is invalid.  <b>Do not free() this string.</b>
+ *
+ * @see <qpol/genfscon_query.h> for a list of valid object classes.
  */
 	extern const char *apol_objclass_to_str(uint32_t objclass);
+
+/**
+ * Given a string representing a genfscon object class, return its
+ * numeric identifier.  Valid strings may be obtained by calling
+ * apol_objclass_to_str().
+ *
+ * @param objclass Object class, one of "any", "file", etc.
+ *
+ * @return Numeric identifier for object class, or 0 if unknown.
+ *
+ * @see <qpol/genfscon_query.h> for a list of valid object classes.
+ */
+	extern uint32_t apol_str_to_objclass(const char *objclass);
 
 /**
  * Given a fs_use behavior type, return a read-only string that

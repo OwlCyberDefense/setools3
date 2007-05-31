@@ -133,6 +133,39 @@ const char *apol_objclass_to_str(uint32_t objclass)
 	return NULL;
 }
 
+uint32_t apol_str_to_objclass(const char *objclass)
+{
+	if (objclass == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	if (strcmp(objclass, "block") == 0) {
+		return QPOL_CLASS_BLK_FILE;
+	}
+	if (strcmp(objclass, "char") == 0) {
+		return QPOL_CLASS_CHR_FILE;
+	}
+	if (strcmp(objclass, "dir") == 0) {
+		return QPOL_CLASS_DIR;
+	}
+	if (strcmp(objclass, "fifo") == 0) {
+		return QPOL_CLASS_FIFO_FILE;
+	}
+	if (strcmp(objclass, "file") == 0) {
+		return QPOL_CLASS_FILE;
+	}
+	if (strcmp(objclass, "link") == 0) {
+		return QPOL_CLASS_LNK_FILE;
+	}
+	if (strcmp(objclass, "sock") == 0) {
+		return QPOL_CLASS_SOCK_FILE;
+	}
+	if (strcmp(objclass, "any") == 0) {
+		return QPOL_CLASS_ALL;
+	}
+	return 0;
+}
+
 const char *apol_protocol_to_str(uint8_t protocol)
 {
 	switch (protocol) {

@@ -27,6 +27,7 @@ libsefs_a_SOURCES = \
 	entry.cc \
 	fcfile.cc \
 	fclist.cc \
+	query.cc \
 	sefs_internal.hh \
 	util.c
 

@@ -54,19 +54,20 @@ static struct option const longopts[] = {
 
 static void usage(const char *program_name, bool brief)
 {
-    cout << "Usage: " << program_name << " FCLIST [OPTIONS] [EXPRESSION]" << endl << endl;
-    if (brief) {
-        cout << "\tTry " << program_name << " --help for more help." << endl << endl;
-        return;
-    }
+	cout << "Usage: " << program_name << " FCLIST [OPTIONS] [EXPRESSION]" << endl << endl;
+	if (brief)
+	{
+		cout << "\tTry " << program_name << " --help for more help." << endl << endl;
+		return;
+	}
 
-    cout << "Find files matching the given SELinux context." << endl << endl;
+	cout << "Find files matching the given SELinux context." << endl << endl;
 
-    cout << "FCLIST is a directory name, a file_contexts file, or a database" << endl;
-    cout << "created by a previous run of indexcon." << endl;
-    cout << endl;
+	cout << "FCLIST is a directory name, a file_contexts file, or a database" << endl;
+	cout << "created by a previous run of indexcon." << endl;
+	cout << endl;
 
-    cout << "EXPRESSION:" << endl;
+	cout << "EXPRESSION:" << endl;
 	cout << "  -t TYPE,  --type=TYPE            find contexts with type TYPE" << endl;
 	cout << "  -u USER,  --user=USER            find contexts with user USER" << endl;
 	cout << "  -m RANGE, --mls-range=RANGE      find contexts with MLS range RANGE" << endl;
@@ -74,7 +75,7 @@ static void usage(const char *program_name, bool brief)
 	cout << "  -c CLASS, --class=CLASS          find files of object class CLASS" << endl;
 	cout << endl;
 
-        cout << "OPTIONS:" << endl;
+	cout << "OPTIONS:" << endl;
 	cout << "  -R, --regex                      enable regular expressions" << endl;
 	cout << "  -h, --help                       print this help text and exit" << endl;
 	cout << "  -V, --version                    print version information and exit" << endl;
@@ -86,145 +87,55 @@ static void usage(const char *program_name, bool brief)
 
 int main(int argc, char *argv[])
 {
-    int optc;
+	int optc;
 
-    while ((optc = getopt_long(argc, argv, "t:u:m:p:c:RhV", longopts, NULL)) != -1) {
-        switch (optc) {
-            case 'h':	       // help
+	while ((optc = getopt_long(argc, argv, "t:u:m:p:c:RhV", longopts, NULL)) != -1)
+	{
+		switch (optc)
+		{
+		case 'h':	       // help
 			usage(argv[0], false);
 			exit(0);
-            case 'V':	       // version
-                    cout << "searchcon " << VERSION << endl << COPYRIGHT_INFO << endl;
+		case 'V':	       // version
+			cout << "searchcon " << VERSION << endl << COPYRIGHT_INFO << endl;
 			exit(0);
 		default:
 			usage(argv[0], true);
 			exit(1);
 		}
 	}
-    if (optind + 1 != argc) {
+	if (optind + 1 != argc)
+	{
 		usage(argv[0], 1);
 		exit(-1);
-    }
+	}
 
-    // try to autodetect the type of thing being searched
-    struct stat sb;
-    if (stat(argv[optind], &sb) != 0) {
-        cerr << "Could not open " << argv[optind] << ": " << strerror(errno) << endl;
-        exit(-1);
-    }
+	// try to autodetect the type of thing being searched
+	struct stat sb;
+	if (stat(argv[optind], &sb) != 0)
+	{
+		cerr << "Could not open " << argv[optind] << ": " << strerror(errno) << endl;
+		exit(-1);
+	}
 
-    sefs_fclist *fclist = NULL;
-    try {
-        if (S_ISDIR(sb.st_mode)) {
-            // FIX ME: create a filesystem
-        }
-        else {
-            // FIX ME: autodetect a database
-            fclist = new sefs_fcfile(argv[optind], NULL, NULL);
-        }
-    }
-    catch (std::runtime_error) {
-        exit(-1);
-    }
-
-    delete fclist;
-    return 0;
-}
-
-    #if 0
-	char *filename = NULL;
-	int optc = 0, list_sz = 0;
-	char **list_ret = NULL;
-	const char **holder = NULL;
-
-	memset(&search_keys, 0, sizeof(search_keys));
-
-		case 't':	       /* type */
-			if ((holder =
-			     (const char **)realloc(search_keys.type, sizeof(char *) * (search_keys.num_type + 1))) == NULL) {
-				printf("Out of memory\n");
-				return 1;
-			}
-			search_keys.type = holder;
-			search_keys.type[search_keys.num_type] = optarg;
-			search_keys.num_type++;
-			break;
-		case 'u':	       /* user */
-			if ((holder =
-			     (const char **)realloc(search_keys.user, sizeof(char *) * (search_keys.num_user + 1))) == NULL) {
-				printf("Out of memory\n");
-				return 1;
-			}
-			search_keys.user = holder;
-			search_keys.user[search_keys.num_user] = optarg;
-			search_keys.num_user++;
-			break;
-		case 'm':	       /* MLS range */
-			if ((holder =
-			     (const char **)realloc(search_keys.range, sizeof(char *) * (search_keys.num_range + 1))) == NULL) {
-				printf("Out of memory\n");
-				return 1;
-			}
-			search_keys.range = holder;
-			search_keys.range[search_keys.num_range] = optarg;
-			search_keys.num_range++;
-			break;
-		case 'p':	       /* path */
-			if ((holder =
-			     (const char **)realloc(search_keys.path, sizeof(char *) * (search_keys.num_path + 1))) == NULL) {
-				printf("Out of memory\n");
-				return 1;
-			}
-			search_keys.path = holder;
-			search_keys.path[search_keys.num_path] = optarg;
-			search_keys.num_path++;
-			break;
-		case 'c':	       /* object class */
-			if ((holder =
-			     (const char **)realloc(search_keys.object_class,
-						    sizeof(char *) * (search_keys.num_object_class + 1))) == NULL) {
-				printf("Out of memory");
-				return 1;
-			}
-			search_keys.object_class = holder;
-			search_keys.object_class[search_keys.num_object_class] = optarg;
-			search_keys.num_object_class++;
-			break;
-		case 'R':	       /* regex */
-			search_keys.do_type_regEx = 1;
-			search_keys.do_user_regEx = 1;
-			search_keys.do_range_regEx = 1;
-			search_keys.do_path_regEx = 1;
-			break;
-		case 'h':	       /* help */
-			usage(argv[0], 0);
-			exit(0);
-		case 'V':	       /* version */
-			printf("searchcon %s\n%s\n", VERSION, COPYRIGHT_INFO);
-			exit(0);
-		default:
-			usage(argv[0], 1);
-			exit(1);
+	sefs_fclist *fclist = NULL;
+	try
+	{
+		if (S_ISDIR(sb.st_mode))
+		{
+			// FIX ME: create a filesystem
+		}
+		else
+		{
+			// FIX ME: autodetect a database
+			fclist = new sefs_fcfile(argv[optind], NULL, NULL);
 		}
 	}
-	if (argc - optind > 1 || argc - optind < 1) {
-		usage(argv[0], 1);
+	catch(std::runtime_error)
+	{
 		exit(-1);
-	} else
-		filename = argv[optind];
-
-	if (sefs_filesystem_db_load(&fsdata, filename) == -1) {
-		fprintf(stderr, "sefs_filesystem_data_load failed\n");
-		return -1;
 	}
 
-		sefs_filesystem_db_search(&fsdata, &search_keys);
-		sefs_search_keys_ret_print(search_keys.search_ret);
-		sefs_search_keys_ret_destroy(search_keys.search_ret);
-
-	free(search_keys.user);
-	free(search_keys.type);
-	free(search_keys.path);
-	free(search_keys.object_class);
-
-#endif
+	delete fclist;
+	return 0;
+}

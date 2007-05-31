@@ -69,7 +69,7 @@ sefs_fcfile::sefs_fcfile(sefs_callback_fn_t msg_callback, void *varg) throw(std:
 	}
 }
 
-sefs_fcfile::sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
+sefs_fcfile::sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc, std::invalid_argument,
 											      std::
 											      runtime_error):sefs_fclist
 	(SEFS_FCLIST_TYPE_FCFILE, msg_callback, varg)
@@ -100,6 +100,7 @@ sefs_fcfile::sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void
 }
 
 sefs_fcfile::sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
+													 std::invalid_argument,
 													 std::
 													 runtime_error):sefs_fclist
 	(SEFS_FCLIST_TYPE_FCFILE, msg_callback, varg)
@@ -110,7 +111,8 @@ sefs_fcfile::sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_cal
 	{
 		if (files == NULL)
 		{
-			throw std::runtime_error(strerror(EINVAL));
+			errno = EINVAL;
+			throw std::invalid_argument(strerror(EINVAL));
 		}
 		if ((_files = apol_vector_create_with_capacity(apol_vector_get_size(files), free)) == NULL)
 		{
@@ -139,7 +141,38 @@ sefs_fcfile::~sefs_fcfile()
 	apol_vector_destroy(&_entries);
 }
 
-int sefs_fcfile::appendFile(const char *file)
+apol_vector_t *sefs_fcfile::runQuery(sefs_query * query) throw(std::bad_alloc)
+{
+	apol_vector_t *v;
+	if ((v = apol_vector_create(NULL)) == NULL)
+	{
+		throw std::bad_alloc();
+	}
+	for (size_t i = 0; i < apol_vector_get_size(_entries); i++)
+	{
+		sefs_entry *e = static_cast < sefs_entry * >(apol_vector_get_element(_entries, i));
+		if (query != NULL)
+		{
+		}
+		if (apol_vector_append(v, e) < 0)
+		{
+			apol_vector_destroy(&v);
+			throw std::bad_alloc();
+		}
+	}
+	return v;
+}
+
+bool sefs_fcfile::isMLS() const
+{
+	if (_mls_set)
+	{
+		return _mls;
+	}
+	return false;
+}
+
+int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid_argument, std::runtime_error)
 {
 	FILE *fc_file = NULL;
 	char *line = NULL;
@@ -152,7 +185,7 @@ int sefs_fcfile::appendFile(const char *file)
 		{
 			error = EINVAL;
 			SEFS_ERR("%s", strerror(EINVAL));
-			throw std::runtime_error(strerror(EINVAL));
+			throw std::invalid_argument(strerror(EINVAL));
 		}
 
 		fc_file = fopen(file, "r");
@@ -212,9 +245,14 @@ int sefs_fcfile::appendFile(const char *file)
 	return retval;
 }
 
-size_t sefs_fcfile::appendFileList(const apol_vector_t * files)
+size_t sefs_fcfile::appendFileList(const apol_vector_t * files)throw(std::bad_alloc, std::invalid_argument, std::runtime_error)
 {
 	size_t i;
+	if (files == NULL)
+	{
+		errno = EINVAL;
+		throw new std::invalid_argument(strerror(EINVAL));
+	}
 	for (i = 0; i < apol_vector_get_size(files); i++)
 	{
 		if (appendFile(static_cast < char *>(apol_vector_get_element(files, i))) < 0)
@@ -230,15 +268,6 @@ const apol_vector_t *sefs_fcfile::fileList() const
 	return _files;
 }
 
-bool sefs_fcfile::isMLS() const
-{
-	if (_mls_set)
-	{
-		return _mls;
-	}
-	return false;
-}
-
 /******************** private functions below ********************/
 
 void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtime_error)
@@ -248,7 +277,7 @@ void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtim
 	apol_context_t *context = NULL;
 	apol_mls_range_t *range = NULL;
 	apol_mls_level_t *level = NULL;
-	char *origin = "";
+	char *origin = "";	       // FIX ME
 	if (s == NULL)
 	{
 		error = errno;
@@ -420,7 +449,7 @@ void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtim
 			if (_mls_set && _mls)
 			{
 				error = EIO;
-				SEFS_ERR("%s", "Not enough fields in line");
+				SEFS_ERR("fcfile is MLS, but line had no MLS field:\n%s", line);
 				throw std::runtime_error(strerror(error));
 			}
 			_mls_set = true;
@@ -432,7 +461,7 @@ void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtim
 		if (_mls_set && !_mls)
 		{
 			error = EIO;
-			SEFS_ERR("%s", "Too many fields in line");
+			SEFS_ERR("fcfile is not MLS, but line had a MLS field:\n%s", line);
 			throw std::runtime_error(strerror(error));
 		}
 		_mls_set = true;

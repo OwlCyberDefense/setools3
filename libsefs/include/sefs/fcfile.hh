@@ -68,10 +68,12 @@ class sefs_fcfile:public sefs_fclist
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
 	 * @exception std::bad_alloc if out of memory
+	 * @exception std::invalid_argument if the vector is NULL
 	 * @exception std::runtime_error if the give file could not be
 	 * read or is the wrong format
 	 */
-	 sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc, std::runtime_error);
+	 sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc, std::invalid_argument,
+											  std::runtime_error);
 
 	/**
 	 * Allocate and return a new sefs file_context set structure
@@ -83,13 +85,34 @@ class sefs_fcfile:public sefs_fclist
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
 	 * @exception std::bad_alloc if out of memory
-	 * @exception std::runtime_error if the given file could not
+	 * @exception std::invalid_argument if the vector is NULL
+	 * @exception std::runtime_error if a given file could not
 	 * be read or is the wrong format
 	 */
 	 sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
+												     std::invalid_argument,
 												     std::runtime_error);
 
 	~sefs_fcfile();
+
+	/**
+	 * Perform a sefs query on the given fcfile object.
+	 * @param query Query object containing search parameters.  If
+	 * NULL, return all contexts.
+	 * @return A newly allocated vector (of class sefs_entry *)
+	 * containing all entries matching the query.  Note that the
+	 * vector may be empty.  The caller is responsible for calling
+	 * apol_vector_destroy() on the returned vector.
+	 * @exception std::bad_alloc if out of memory
+	 */
+	apol_vector_t *runQuery(sefs_query * query) throw(std::bad_alloc);
+
+	/**
+	 * Determine if the contexts in the fcfile contain MLS fields.
+	 * @return \a true if MLS fields are present, \a false if not
+	 * or undeterminable.
+	 */
+	bool isMLS() const;
 
 	/**
 	 * Append a file_contexts file to a sefs file contexts file
@@ -100,8 +123,12 @@ class sefs_fcfile:public sefs_fclist
 	 * @param file File containing entries to append.
 	 * @return 0 on success or < 0 on failure; if the call fails,
 	 * the fcfile will be unchanged.
+	 * @exception std::bad_alloc if out of memory
+	 * @exception std::invalid_argument if the file name is NULL
+	 * @exception std::runtime_error if a given file could not
+	 * be read or is the wrong format
 	 */
-	int appendFile(const char *file);
+	int appendFile(const char *file) throw(std::bad_alloc, std::invalid_argument, std::runtime_error);
 
 	/**
 	 * Append a list of file_context files to a sefs file contexts
@@ -118,8 +145,12 @@ class sefs_fcfile:public sefs_fclist
 	 * any file, the operation stops at that file; it is safe to
 	 * attempt to append the files remaining after the
 	 * unsuccessful file.
+	 * @exception std::bad_alloc if out of memory
+	 * @exception std::invalid_argument if the vector is NULL
+	 * @exception std::runtime_error if a given file could not
+	 * be read or is the wrong format
 	 */
-	size_t appendFileList(const apol_vector_t * files);
+	size_t appendFileList(const apol_vector_t * files) throw(std::bad_alloc, std::invalid_argument, std::runtime_error);
 
 	/**
 	 * Get a list of all files contributing to the entries in a
@@ -129,13 +160,6 @@ class sefs_fcfile:public sefs_fclist
 	 * otherwise modify the returned vector.
 	 */
 	const apol_vector_t *fileList() const;
-
-	/**
-	 * Determine if the contexts in the fcfile contain MLS fields.
-	 * @return \a true if MLS fields are present, \a false if not
-	 * or undeterminable.
-	 */
-	bool isMLS() const;
 
       private:
 

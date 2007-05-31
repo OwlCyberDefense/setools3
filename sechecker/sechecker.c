@@ -39,7 +39,6 @@
 #include <apol/vector.h>
 
 #include <sefs/util.h>
-#include <sefs/file_contexts.h>
 
 #ifdef LIBSELINUX
 #include <selinux/selinux.h>
