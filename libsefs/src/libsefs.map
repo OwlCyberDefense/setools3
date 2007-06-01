@@ -1,6 +1,7 @@
-{
-        global:
-                sefs_*;
-                libsefs_get_version;
-        local: *;
+VERS_4.0 {
+	global:
+		extern "C++" {sefs_*::*};
+		sefs_*;
+		libsefs_get_version;
+	local: *;
 };
