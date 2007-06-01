@@ -51,6 +51,34 @@ extern "C"
  */
 	extern const char *libpolsearch_symbol_get_name(const void *symbol, polsearch_symbol_e sym_type, const apol_policy_t * p);
 
+	/**
+	 * Get a string representing a symbol type.
+	 * @param sym_type The symbol type for which to get a string representation.
+	 * @return A string representing the symbol type, or NULL on error.
+	 */
+	const char * polsearch_symbol_to_string(polsearch_symbol_e sym_type);
+
+	/**
+	 * Given a string representing a symbol type get the value for that type.
+	 * @param str A string representing a policy symbol type.
+	 * @return The corresponding symbol value, or POLSEARCH_SYMBOL_NONE on error.
+	 */
+	polsearch_symbol_e polsearch_sting_to_symbol(const char *str);
+
+	/**
+	 * Get a string representing a element type.
+	 * @param elem_type The element type for which to get a string representation.
+	 * @return A string representing the element type, or NULL on error.
+	 */
+	const char * polsearch_element_to_string(polsearch_element_e elem_type);
+
+	/**
+	 * Given a string representing a element type get the value for that type.
+	 * @param str A string representing a policy element type.
+	 * @return The corresponding element value, or POLSEARCH_ELEMENT_NONE on error.
+	 */
+	polsearch_element_e polsearch_sting_to_element(const char *str);
+
 #ifdef __cplusplus
 }
 #endif

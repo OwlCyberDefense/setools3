@@ -26,6 +26,8 @@
 #ifndef POLSEARCH_STRING_LIST_H
 #define POLSEARCH_STRING_LIST_H
 
+#include <stdexcept>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -36,19 +38,52 @@ extern "C"
 #ifdef __cplusplus
 }
 
+/**
+ * An expression for the list of possible string values in a particular field
+ * or element in a policy or file_context entry.
+ */
 class polsearch_string_list
 {
       public:
-	polsearch_string_list(const char *str, bool Xvalid = true);
+	/**
+	 * Create a string list from a string.
+	 * @param str String representing the identifiers and logic operators.
+	 * @param Xvalid If \a true, The special identifier "X" may be used to
+	 * represent that the current query candidates should be considered for
+	 * the field for which the identifiers are used.
+	 */
+	polsearch_string_list(const char *str, bool Xvalid = true) throw(std::runtime_error);
+	/**
+	 * Copy a string list.
+	 * @param sl The string list to copy.
+	 */
 	 polsearch_string_list(const polsearch_string_list & sl);
+	 //! Destructor.
 	~polsearch_string_list();
 
+	/**
+	 * Get a sorted list of all unique identifiers in the list.
+	 * @return A vector of identifiers (char*) in the list.
+	 */
 	const apol_vector_t *ids() const;
-	apol_vector_t *match(const apol_vector_t * test_ids, apol_vector_t * Xcandidates) const;
-	//TODO any other methods?
+	/**
+	 * Find all matching identifiers in a list that match the string list.
+	 * @param test_ids A vector of identifiers (char *) to match literally.
+	 * @param Xcandidates A vector of identifiers (char *) to consider matches
+	 * to the special identifier "X".
+	 * @return A vector of identifiers (char *) that matched from either set.
+	 * @exception std::bad_alloc Could not create the vector of matching identifiers.
+	 */
+	apol_vector_t *match(const apol_vector_t * test_ids, const apol_vector_t * Xcandidates) const throw(std::bad_alloc);
+	/**
+	 * Return a string representing the list.
+	 * @return A string representing the list.
+	 */
+	char *toString() const;
 
       private:
-	//TODO store the internal stuff here;
+	apol_vector_t * _tokens; /*!< RPN list of string list tokens. TODO: What is a token? */
+	apol_vector_t * _ids; /*!< A sorted unique list of the identifiers (char*) in the list. */
 };
 
 extern "C"
@@ -60,12 +95,12 @@ extern "C"
 
 	typedef struct polsearch_string_list polsearch_string_list_t;
 
-	polsearch_string_list_t *polsearch_string_list_create(const char *str, bool Xvalid);
-	polsearch_string_list_t *polsearch_string_list_create_from_string_list(const polsearch_string_list_t * psl);
-	const apol_vector_t *polsearch_string_list_get_ids(const polsearch_string_list_t * psl);
-	apol_vector_t *polsearch_string_list_match(const polsearch_string_list_t * psl, const apol_vector_t * test_ids,
-						   apol_vector_t * Xcandidates);
-	//TODO extern C bindings
+	extern polsearch_string_list_t *polsearch_string_list_create(const char *str, bool Xvalid);
+	extern polsearch_string_list_t *polsearch_string_list_create_from_string_list(const polsearch_string_list_t * psl);
+	extern const apol_vector_t *polsearch_string_list_get_ids(const polsearch_string_list_t * psl);
+	extern apol_vector_t *polsearch_string_list_match(const polsearch_string_list_t * psl, const apol_vector_t * test_ids,
+						   const apol_vector_t * Xcandidates);
+	extern char *polsearch_string_list_to_string(const polsearch_string_list_t *psl);
 
 #endif				       /* SWIG */
 

@@ -74,17 +74,13 @@ extern "C"
 #ifdef __cplusplus
 }
 
-extern "C"
-{
-#endif
-
-//we do not want to wrap two copies of everything so have SWIG ignore the compatibility section.
-#ifndef SWIG
-
-#endif				       /* SWIG */
-
-#ifdef __cplusplus
-}
-#endif
+/* Include the other headers so that only this one needs to be included. */
+#include "query.hh"
+#include "test.hh"
+#include "criterion.hh"
+#include "string_list.hh"
+#include "util.hh"
+#include "symbol_query.hh"
+#include "util.h"
 
 #endif				       /* POLSEARCH_H */

@@ -1,5 +1,7 @@
 VERS_1.0{
 	global:
+		extern "C++" {polsearch_*::*};
+		polsearch_*;
 		libpolsearch_get_version;
 	local: *;
 };

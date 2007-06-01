@@ -15,12 +15,13 @@ libpolsearch_a_DEPENDENCIES = \
 	$(top_builddir)/libsefs/src/libsefs.so
 
 libpolsearch_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libpolsearch_a_SOURCES)))
+libpolsearch_so_OBJS += $(patsubst %.cc,%.o,$(filter %.cc,$(libpolsearch_a_SOURCES)))
 LIBPOLSEARCH_SONAME = @libpolsearch_soname@
 
 dist_noinst_DATA = libpolsearch.map
 
 $(polsearchso_DATA): $(libpolsearch_so_OBJS) libpolsearch.map
-	$(CC) -shared -o $@ $(libpolsearch_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBPOLSEARCH_SONAME),--version-script=$(srcdir)/libpolsearch.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libsefs/src/libsefs.so
+	$(CXX) -shared -o $@ $(libpolsearch_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBPOLSEARCH_SONAME),--version-script=$(srcdir)/libpolsearch.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so $(top_builddir)/libsefs/src/libsefs.so
 	$(LN_S) -f $@ @libpolsearch_soname@
 	$(LN_S) -f $@ libpolsearch.so
 
