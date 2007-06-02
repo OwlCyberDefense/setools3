@@ -27,6 +27,7 @@
 
 #include <apol/bst.h>
 #include <sefs/fclist.hh>
+#include <regex.h>
 
 /**
  * Invoke a sefs_fclist_t's callback for an error, passing it a format
@@ -45,5 +46,32 @@
  * passing it a format string and arguments.
  */
 #define SEFS_INFO(format, ...) handleMsg(SEFS_MSG_INFO, format, __VA_ARGS__)
+
+/**
+ * Determines if a string matches a target symbol name.  If \a
+ * regex_flag is true, use the compiled regular expression instead of
+ * \a str.  Otherwise do a straight string comparison between \a str
+ * and \a target.  If \a str is NULL and/or empty then the comparison
+ * always succeeds regardless of \a regex and \a target.
+ *
+ * @param target Name of target symbol to compare.
+ * @param str Source string from which to compare.
+ * @param regex If using regexp comparison, the compiled regular
+ * expression to use.
+ * @param regex_flag If true, use the compiled regular expression
+ * instead.
+ *
+ * @return true if comparison succeeds, false if not.
+ */
+bool str_compare(const char *target, const char *str, const regex_t * regex, const bool regex_flag);
+
+// rather than having each sefs_entry having its own apol_context_t
+// object, build a cache of nodes to save space
+struct sefs_context_node
+{
+	apol_context_t *context;
+	const char *user, *role, *type, *range;
+	char *context_str;
+};
 
 #endif

@@ -441,7 +441,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		if (fc_entry_vector) {
 			buff = NULL;
 			for (j = 0; j < num_fc_entries; j++) {
-#if 0 /* FIX ME */
+#if 0				       /* FIX ME */
 				sefs_fc_entry_t *fc_entry;
 				char *fc_type_name = NULL;
 				fc_entry = apol_vector_get_element(fc_entry_vector, j);

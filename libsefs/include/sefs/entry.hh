@@ -40,6 +40,7 @@ extern "C"
 #include <stdexcept>
 
 class sefs_fclist;
+struct sefs_context_node;
 
 /**
  * This class represents an individual entry within a list an fcfile object.
@@ -51,6 +52,8 @@ class sefs_entry
 	friend class sefs_filesystem;
 
       public:
+
+	~sefs_entry();
 
 	/**
 	 * Get the context from a sefs entry.
@@ -123,26 +126,26 @@ class sefs_entry
 	 * responsible for setting additional values as needed.
 	 * @param fclist List that will contain this entry.  This
 	 * constructor will not add itself to the fclist.
-	 * @param context An apol context for the new entry.
+	 * @param context Context node containing the SELinux context.
 	 * @param objectClass Object class for the entry.
 	 * @param path Path to this entry.
 	 * @param origin Name of file_contexts file from which this
 	 * entry originated.
 	 * @exception std::bad_alloc if out of memory
 	 */
-	 sefs_entry(class sefs_fclist * fclist, const apol_context_t * context, uint32_t objectClass, const char *path,
+	 sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node *context, uint32_t objectClass, const char *path,
 		    const char *origin = NULL) throw(std::bad_alloc);
 
 	// note that entry does not own any of these pointers; they
-	// are shallow copies (and hence why default copy-constructor
-	// and default destructor works)
+	// are shallow copies into the fclist's BST
 	class sefs_fclist *_fclist;
-	const apol_context_t *_context;
+	const struct sefs_context_node *_context;
 	ino64_t _inode;
 	dev_t _dev;
 	uint32_t _objectClass;
-	apol_vector_t *_paths;
 	const char *_origin;
+
+	apol_vector_t *_paths;
 };
 
 extern "C"

@@ -66,6 +66,7 @@ extern "C"
 #include <stdexcept>
 
 struct apol_bst;
+struct context_node;
 class sefs_entry;
 class sefs_query;
 
@@ -130,9 +131,29 @@ class sefs_fclist
       protected:
 	 sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, void *varg) throw(std::bad_alloc);
 
+	/**
+	 * Given the parts of a context, return a context node (which
+	 * would contain an apol_context_t).  If the context already
+	 * exists, then a pointer to the existing one is returned.
+	 *
+	 * @param user User component of the context.  The string will
+	 * be duplicated.
+	 * @param role Role component of the context.  The string will
+	 * be duplicated.
+	 * @param type Type component of the context.  The string will
+	 * be duplicated.
+	 * @param range Range component of the context.  The string
+	 * will be duplicated.
+	 *
+	 * @return A context node.  Do not free() it.
+	 */
+	struct sefs_context_node *getContext(const char *user, const char *role, const char *type,
+					     const char *range) throw(std::bad_alloc);
+
 	sefs_fclist_type_e fclist_type;
 	apol_policy_t *policy;
 	struct apol_bst *user_tree, *role_tree, *type_tree, *range_tree, *path_tree;
+	struct apol_bst *context_tree;
 
 	/**
 	 * Write a message to the callback stored within a fclist
@@ -145,6 +166,7 @@ class sefs_fclist
 	__attribute__ ((format(printf, 3, 4))) void handleMsg(int level, const char *fmt, ...);
 
       private:
+
 	 sefs_callback_fn_t _callback;
 	void *_varg;
 };

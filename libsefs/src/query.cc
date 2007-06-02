@@ -43,6 +43,8 @@ sefs_query::sefs_query()
 	_indirect = _regex = _recursive = false;
 	_inode = 0;
 	_dev = 0;
+	_recompiled = false;
+	_reuser = _rerole = _retype = _rerange = _repath = NULL;
 }
 
 sefs_query::~sefs_query()
@@ -51,6 +53,19 @@ sefs_query::~sefs_query()
 	free(_role);
 	free(_type);
 	free(_range);
+	if (_recompiled)
+	{
+		regfree(_reuser);
+		free(_reuser);
+		regfree(_rerole);
+		free(_rerole);
+		regfree(_retype);
+		free(_retype);
+		regfree(_rerange);
+		free(_rerange);
+		regfree(_repath);
+		free(_repath);
+	}
 }
 
 void sefs_query::user(const char *name) throw(std::bad_alloc)
@@ -173,6 +188,69 @@ void sefs_query::rootDir(const char *root, bool recursive) throw(std::bad_alloc)
 			_recursive = recursive;
 		}
 	}
+}
+
+/******************** private functions below ********************/
+
+void sefs_query::compile() throw(std::bad_alloc)
+{
+	if (_recompiled)
+	{
+		regfree(_reuser);
+		regfree(_rerole);
+		regfree(_retype);
+		regfree(_rerange);
+		regfree(_repath);
+	}
+	else
+	{
+		if ((_reuser = static_cast < regex_t * >(malloc(sizeof(*_reuser)))) == NULL)
+		{
+			throw std::bad_alloc();
+		}
+		if ((_rerole = static_cast < regex_t * >(malloc(sizeof(*_rerole)))) == NULL)
+		{
+			throw std::bad_alloc();
+		}
+		if ((_retype = static_cast < regex_t * >(malloc(sizeof(*_retype)))) == NULL)
+		{
+			throw std::bad_alloc();
+		}
+		if ((_rerange = static_cast < regex_t * >(malloc(sizeof(*_rerange)))) == NULL)
+		{
+			throw std::bad_alloc();
+		}
+		if ((_repath = static_cast < regex_t * >(malloc(sizeof(*_repath)))) == NULL)
+		{
+			throw std::bad_alloc();
+		}
+	}
+	const char *s = (_user == NULL ? "" : _user);
+	if (regcomp(_reuser, s, REG_EXTENDED | REG_NOSUB))
+	{
+		throw std::bad_alloc();
+	}
+	s = (_role == NULL ? "" : _role);
+	if (regcomp(_rerole, s, REG_EXTENDED | REG_NOSUB))
+	{
+		throw std::bad_alloc();
+	}
+	s = (_type == NULL ? "" : _type);
+	if (regcomp(_retype, s, REG_EXTENDED | REG_NOSUB))
+	{
+		throw std::bad_alloc();
+	}
+	s = (_range == NULL ? "" : _range);
+	if (regcomp(_rerange, s, REG_EXTENDED | REG_NOSUB))
+	{
+		throw std::bad_alloc();
+	}
+	s = (_path == NULL ? "" : _path);
+	if (regcomp(_repath, s, REG_EXTENDED | REG_NOSUB))
+	{
+		throw std::bad_alloc();
+	}
+	_recompiled = true;
 }
 
 /******************** C functions below ********************/

@@ -27,6 +27,8 @@
 #include <config.h>
 
 #include <sefs/fcfile.hh>
+#include <sefs/entry.hh>
+#include <sefs/query.hh>
 
 using namespace std;
 
@@ -44,6 +46,7 @@ static struct option const longopts[] = {
 	{"class", required_argument, NULL, 'c'},
 	{"type", required_argument, NULL, 't'},
 	{"user", required_argument, NULL, 'u'},
+	{"role", required_argument, NULL, 'r'},
 	{"mls-range", required_argument, NULL, 'm'},
 	{"path", required_argument, NULL, 'p'},
 	{"regex", no_argument, NULL, 'R'},
@@ -68,45 +71,83 @@ static void usage(const char *program_name, bool brief)
 	cout << endl;
 
 	cout << "EXPRESSION:" << endl;
-	cout << "  -t TYPE,  --type=TYPE            find contexts with type TYPE" << endl;
-	cout << "  -u USER,  --user=USER            find contexts with user USER" << endl;
-	cout << "  -m RANGE, --mls-range=RANGE      find contexts with MLS range RANGE" << endl;
-	cout << "  -p PATH,  --path=PATH            find files in PATH" << endl;
-	cout << "  -c CLASS, --class=CLASS          find files of object class CLASS" << endl;
+	cout << "  -t TYPE,  --type=TYPE          find contexts with type TYPE" << endl;
+	cout << "  -u USER,  --user=USER          find contexts with user USER" << endl;
+	cout << "  -r ROLE,  --role=ROLE          find contexts with role ROLE" << endl;
+	cout << "  -m RANGE, --mls-range=RANGE    find contexts with MLS range RANGE" << endl;
+	cout << "  -p PATH,  --path=PATH          find files in PATH" << endl;
+	cout << "  -c CLASS, --class=CLASS        find files of object class CLASS" << endl;
 	cout << endl;
 
 	cout << "OPTIONS:" << endl;
-	cout << "  -R, --regex                      enable regular expressions" << endl;
-	cout << "  -h, --help                       print this help text and exit" << endl;
-	cout << "  -V, --version                    print version information and exit" << endl;
+	cout << "  -d, --direct                   do not search for type's attributes" << endl;
+	cout << "  -R, --regex                    enable regular expressions" << endl;
+	cout << "  -h, --help                     print this help text and exit" << endl;
+	cout << "  -V, --version                  print version information and exit" << endl;
 	cout << endl;
 	cout << "If the fclist does not contain MLS ranges and -m was given," << endl;
 	cout << "then the search will return nothing." << endl;
-
 }
 
 int main(int argc, char *argv[])
 {
 	int optc;
+	sefs_query *query = new sefs_query();
 
-	while ((optc = getopt_long(argc, argv, "t:u:m:p:c:RhV", longopts, NULL)) != -1)
+	char *type = NULL;
+	bool indirect = true;
+	try
 	{
-		switch (optc)
+		while ((optc = getopt_long(argc, argv, "t:u:r:m:p:c:RhV", longopts, NULL)) != -1)
 		{
-		case 'h':	       // help
-			usage(argv[0], false);
-			exit(0);
-		case 'V':	       // version
-			cout << "searchcon " << VERSION << endl << COPYRIGHT_INFO << endl;
-			exit(0);
-		default:
-			usage(argv[0], true);
-			exit(1);
+			switch (optc)
+			{
+			case 't':
+				type = optarg;
+				break;
+			case 'u':
+				query->user(optarg);
+				break;
+			case 'r':
+				query->role(optarg);
+				break;
+			case 'm':
+				query->range(optarg, APOL_QUERY_EXACT);
+				break;
+			case 'p':
+				query->path(optarg);
+				break;
+			case 'c':
+				query->objectClass(optarg);
+				break;
+			case 'd':
+				indirect = false;
+				break;
+			case 'R':
+				query->regex(true);
+				break;
+			case 'h':     // help
+				usage(argv[0], false);
+				exit(0);
+			case 'V':     // version
+				cout << "findcon " << VERSION << endl << COPYRIGHT_INFO << endl;
+				exit(0);
+			default:
+				usage(argv[0], true);
+				exit(1);
+			}
 		}
+		query->type(type, indirect);
+	}
+	catch(std::bad_alloc)
+	{
+		delete query;
+		exit(-1);
 	}
 	if (optind + 1 != argc)
 	{
 		usage(argv[0], 1);
+		delete query;
 		exit(-1);
 	}
 
@@ -115,10 +156,12 @@ int main(int argc, char *argv[])
 	if (stat(argv[optind], &sb) != 0)
 	{
 		cerr << "Could not open " << argv[optind] << ": " << strerror(errno) << endl;
+		delete query;
 		exit(-1);
 	}
 
 	sefs_fclist *fclist = NULL;
+	apol_vector_t *results = NULL;
 	try
 	{
 		if (S_ISDIR(sb.st_mode))
@@ -130,12 +173,26 @@ int main(int argc, char *argv[])
 			// FIX ME: autodetect a database
 			fclist = new sefs_fcfile(argv[optind], NULL, NULL);
 		}
+
+		results = fclist->runQuery(query);
+		for (size_t i = 0; i < apol_vector_get_size(results); i++)
+		{
+			const sefs_entry *e = static_cast < sefs_entry * >(apol_vector_get_element(results, i));
+			char *str = e->toString();
+			cout << str << endl;
+			free(str);
+		}
 	}
-	catch(std::runtime_error)
+	catch(...)
 	{
+		delete query;
+		delete fclist;
+		apol_vector_destroy(&results);
 		exit(-1);
 	}
 
+	delete query;
 	delete fclist;
+	apol_vector_destroy(&results);
 	return 0;
 }

@@ -31,6 +31,7 @@ extern "C"
 #endif
 
 #include <sys/types.h>
+#include <regex.h>
 
 #ifndef __cplusplus
 #include <stdbool.h>
@@ -49,6 +50,9 @@ extern "C"
 /**
  * This class represents a query into a (subclass of) fclist.  Create
  * a query, fill in all accessors are needed, and then run the query.
+ * All fields must match for an entry to be returned.  Where a fclist
+ * does not support a particular criterion (e.g., inode numbers for
+ * fcfile) that portion of the query is considered to be matching.
  */
 class sefs_query
 {
@@ -144,8 +148,17 @@ class sefs_query
 
 	/**
 	 * Set a sefs query to match only entries with path \a path.
-	 * @param path Limit query to only entries with this path, or
-	 * NULL to clear this field.  The string will be duplicated.
+	 * <em>Note:</em> if the query is run against a fcfile, the
+	 * behavior of matching paths is slightly different.  For each
+	 * of fcfile's entries, that entry's regular expression is
+	 * matched against \a path.  This is the reverse for other
+	 * types of fclist, where \a path matches an entry's path if
+	 * \a path is a substring.  (If sefs_query::regex() is set to
+	 * true, \a path is instead treated as a regular expression.)
+	 *
+	 * @param path Limit query to only entries containing this
+	 * path, or NULL to clear this field.  The string will be
+	 * duplicated.
 	 * @exception std::bad_alloc if out of memory
 	 */
 	void path(const char *path) throw(std::bad_alloc);
@@ -190,12 +203,22 @@ class sefs_query
 	void rootDir(const char *root, bool recursive) throw(std::bad_alloc);
 
       private:
+	/**
+	 * Compile the regular expressions stored within this query
+	 * object.  It is safe to call this function multiple times.
+	 *
+	 * @exception std::bad_alloc if out of memory
+	 */
+	void compile() throw(std::bad_alloc);
+
 	char *_user, *_role, *_type, *_range, *_path, *_root;
 	uint32_t _objclass;
 	bool _indirect, _regex, _recursive;
 	int _rangeMatch;
 	ino64_t _inode;
 	dev_t _dev;
+	bool _recompiled;
+	regex_t *_reuser, *_rerole, *_retype, *_rerange, *_repath;
 };
 
 extern "C"

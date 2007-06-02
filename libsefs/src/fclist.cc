@@ -31,6 +31,36 @@
 #include <stdio.h>
 #include <string.h>
 
+static int fclist_sefs_context_node_comp(const void *a, const void *b, void *arg __attribute__ ((unused)))
+{
+	const struct sefs_context_node *n1 = static_cast < const struct sefs_context_node *>(a);
+	const struct sefs_context_node *n2 = static_cast < const struct sefs_context_node *>(b);
+	if (n1->type != n2->type)
+	{
+		return (int)n1->type - (int)n2->type;
+	}
+	if (n1->user != n2->user)
+	{
+		return (int)n1->user - (int)n2->user;
+	}
+	if (n1->role != n2->role)
+	{
+		return (int)n1->role - (int)n2->role;
+	}
+	return (int)n1->range - (int)n2->range;
+}
+
+static void fclist_sefs_context_node_free(void *elem)
+{
+	if (elem != NULL)
+	{
+		struct sefs_context_node *node = static_cast < struct sefs_context_node *>(elem);
+		apol_context_destroy(&node->context);
+		free(node->context_str);
+		free(node);
+	}
+}
+
 /******************** public functions below ********************/
 
 sefs_fclist::~sefs_fclist()
@@ -40,11 +70,13 @@ sefs_fclist::~sefs_fclist()
 	apol_bst_destroy(&type_tree);
 	apol_bst_destroy(&range_tree);
 	apol_bst_destroy(&path_tree);
+	apol_bst_destroy(&context_tree);
 }
 
 void sefs_fclist::associatePolicy(apol_policy_t * new_policy)
 {
 	policy = new_policy;
+	// FIX ME: convert all context nodes
 }
 
 apol_policy_t *sefs_fclist::associatePolicy() const
@@ -88,6 +120,10 @@ sefs_fclist::sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, v
 		{
 			throw std::bad_alloc();
 		}
+		if ((context_tree = apol_bst_create(fclist_sefs_context_node_comp, fclist_sefs_context_node_free)) == NULL)
+		{
+			throw std::bad_alloc();
+		}
 	}
 	catch(...)
 	{
@@ -96,6 +132,7 @@ sefs_fclist::sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, v
 		apol_bst_destroy(&type_tree);
 		apol_bst_destroy(&range_tree);
 		apol_bst_destroy(&path_tree);
+		apol_bst_destroy(&context_tree);
 		throw;
 	}
 }
@@ -139,6 +176,128 @@ void sefs_fclist::handleMsg(int level, const char *fmt, ...)
 		_callback(_varg, this, level, fmt, ap);
 	}
 	va_end(ap);
+}
+
+struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *role, const char *type,
+						  const char *range) throw(std::bad_alloc)
+{
+	char *u = NULL, *r = NULL, *t = NULL, *m = NULL;
+	if ((u = strdup(user)) == NULL)
+	{
+		SEFS_ERR("%s", strerror(errno));
+		throw std::runtime_error(strerror(errno));
+	}
+	if (apol_bst_insert_and_get(user_tree, (void **)&u, NULL) < 0)
+	{
+		free(u);
+		SEFS_ERR("%s", strerror(errno));
+		throw std::runtime_error(strerror(errno));
+	}
+
+	if ((r = strdup(role)) == NULL)
+	{
+		SEFS_ERR("%s", strerror(errno));
+		throw std::runtime_error(strerror(errno));
+	}
+	if (apol_bst_insert_and_get(role_tree, (void **)&r, NULL) < 0)
+	{
+		free(r);
+		SEFS_ERR("%s", strerror(errno));
+		throw std::runtime_error(strerror(errno));
+	}
+
+	if ((t = strdup(type)) == NULL)
+	{
+		SEFS_ERR("%s", strerror(errno));
+		throw std::runtime_error(strerror(errno));
+	}
+	if (apol_bst_insert_and_get(type_tree, (void **)&t, NULL) < 0)
+	{
+		free(t);
+		SEFS_ERR("%s", strerror(errno));
+		throw std::runtime_error(strerror(errno));
+	}
+
+	if (range == NULL)
+	{
+		m = NULL;
+	}
+	else
+	{
+		if ((m = strdup(range)) == NULL)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+		if (apol_bst_insert_and_get(range_tree, (void **)&m, NULL) < 0)
+		{
+			free(m);
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+	}
+
+	struct sefs_context_node *node = NULL;
+	apol_context_t *context = NULL;
+	try
+	{
+		if ((node = static_cast < struct sefs_context_node * >(calloc(1, sizeof(*node)))) == NULL)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+
+		node->user = u;
+		node->role = r;
+		node->type = t;
+		node->range = m;
+
+		void *v;
+		if (apol_bst_get_element(context_tree, node, NULL, &v) == 0)
+		{
+			// context already exists
+			fclist_sefs_context_node_free(node);
+			return static_cast < struct sefs_context_node *>(v);
+		}
+		if ((context = apol_context_create()) == NULL)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+		if (apol_context_set_user(NULL, context, u) < 0 ||
+		    apol_context_set_role(NULL, context, r) < 0 || apol_context_set_type(NULL, context, t) < 0)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+
+		// FIX ME: set the range
+
+		node->context = context;
+		context = NULL;
+
+		// FIX ME: set this to <<none>> if nothing is set
+		// FIX ME: if not MLS, don't print the star
+		if ((node->context_str = apol_context_render(policy, node->context)) == NULL)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+
+		if (apol_bst_insert(context_tree, node, NULL) != 0)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+	}
+	catch(...)
+	{
+		fclist_sefs_context_node_free(node);
+		apol_context_destroy(&context);
+		throw;
+	}
+
+	return node;
 }
 
 /******************** C functions below ********************/
@@ -199,4 +358,30 @@ sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist)
 		return SEFS_FCLIST_TYPE_NONE;
 	}
 	return fclist->type();
+}
+
+/******************** private static functions below ********************/
+
+bool str_compare(const char *target, const char *str, const regex_t * regex, const bool regex_flag)
+{
+	if (str == NULL || str[0] == '\0' || target == NULL || target[0] == '\0')
+	{
+		return true;
+	}
+	if (regex_flag)
+	{
+		if (regexec(regex, target, 0, NULL, 0) == 0)
+		{
+			return true;
+		}
+		return false;
+	}
+	else
+	{
+		if (strcmp(target, str) == 0)
+		{
+			return true;
+		}
+		return false;
+	}
 }

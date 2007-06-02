@@ -37,7 +37,12 @@
 
 const apol_context_t *sefs_entry::context() const
 {
-	return _context;
+	return _context->context;
+}
+
+sefs_entry::~sefs_entry()
+{
+	apol_vector_destroy(&_paths);
 }
 
 ino64_t sefs_entry::inode() const
@@ -67,7 +72,7 @@ const char *sefs_entry::origin() const
 
 char *sefs_entry::toString() const throw(std::bad_alloc)
 {
-	char *class_str, *context_str;
+	char *class_str;
 
 	switch (_objectClass)
 	{
@@ -101,22 +106,15 @@ char *sefs_entry::toString() const throw(std::bad_alloc)
 		class_str = "-?";
 	}
 
-	apol_policy_t *p = _fclist->associatePolicy();
-	if ((context_str = apol_context_render(p, _context)) == NULL)
-	{
-		throw std::bad_alloc();
-	}
-
 	char *s = NULL;
 	size_t len = 0;
 	for (size_t i = 0; i < apol_vector_get_size(_paths); i++)
 	{
 		char *path = static_cast < char *>(apol_vector_get_element(_paths, i));
-		if (apol_str_appendf(&s, &len, "%s\t%s\t%s", path, class_str, context_str) < 0)
+		if (apol_str_appendf(&s, &len, "%s\t%s\t%s", path, class_str, _context->context_str) < 0)
 		{
 			_fclist->SEFS_ERR("%s", strerror(errno));
 			free(s);
-			free(context_str);
 			throw std::bad_alloc();
 		}
 	}
@@ -125,7 +123,7 @@ char *sefs_entry::toString() const throw(std::bad_alloc)
 
 /******************** private functions below ********************/
 
-sefs_entry::sefs_entry(class sefs_fclist * fclist, const apol_context_t * context, uint32_t objectClass, const char *path,
+sefs_entry::sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node * context, uint32_t objectClass, const char *path,
 		       const char *origin)throw(std::bad_alloc)
 {
 	_fclist = fclist;

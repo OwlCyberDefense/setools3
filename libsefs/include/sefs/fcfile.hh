@@ -167,12 +167,19 @@ class sefs_fcfile:public sefs_fclist
 	 * Parse a single line from a file_contexts file (or from any
 	 * other source of file contexts information), and then add
 	 * the resulting sefs_entry into the vector of entries.
+	 * @param origin File from which this line originated.
 	 * @param line File contexts line to parse.
+	 * @param line_regex Compiled regular expression pattern for
+	 * an entire line.
+	 * @param context_regex Compiled regular expression pattern
+	 * for the SELinux portion of a line.
 	 * @exception std::bad_alloc if out of memory
 	 * @exception std::runtime_error if the give file could not be
 	 * read or is the wrong format
 	 */
-	void parse_line(const char *line) throw(std::bad_alloc, std::runtime_error);
+	void parse_line(const char *origin, const char *line, regex_t * line_regex, regex_t * context_regex) throw(std::bad_alloc,
+														   std::
+														   runtime_error);
 
 	apol_vector_t *_files, *_entries;
 	bool _mls, _mls_set;

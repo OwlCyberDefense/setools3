@@ -30,8 +30,10 @@
 #include <sefs/fcfile.hh>
 #include <apol/util.h>
 #include <qpol/genfscon_query.h>
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <regex.h>
 #include <stdio.h>
 
 /******************** public functions below ********************/
@@ -148,12 +150,31 @@ apol_vector_t *sefs_fcfile::runQuery(sefs_query * query) throw(std::bad_alloc)
 	{
 		throw std::bad_alloc();
 	}
+	if (query != NULL)
+	{
+		query->compile();
+	}
+
 	for (size_t i = 0; i < apol_vector_get_size(_entries); i++)
 	{
 		sefs_entry *e = static_cast < sefs_entry * >(apol_vector_get_element(_entries, i));
 		if (query != NULL)
 		{
+			const struct sefs_context_node *context = e->_context;
+			if (!str_compare(context->user, query->_user, query->_reuser, query->_regex))
+			{
+				continue;
+			}
+			if (!str_compare(context->role, query->_role, query->_rerole, query->_regex))
+			{
+				continue;
+			}
+			// FIX ME: check type & range & path
+
 		}
+
+		// if reached this point, then all criteria passed, so
+		// accept the entry
 		if (apol_vector_append(v, e) < 0)
 		{
 			apol_vector_destroy(&v);
@@ -175,9 +196,14 @@ bool sefs_fcfile::isMLS() const
 int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid_argument, std::runtime_error)
 {
 	FILE *fc_file = NULL;
-	char *line = NULL;
+	char *line = NULL, *name_dup;
 	size_t line_len = 0;
+	size_t last_entry = apol_vector_get_size(_entries);
 	int retval, error = 0;
+
+	regex_t line_regex, context_regex;
+	bool is_line_compiled = false;
+	bool is_context_compiled = false;
 
 	try
 	{
@@ -196,20 +222,28 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 			throw std::runtime_error(strerror(error));
 		}
 
-		char *s = strdup(file);
-		if (s == NULL)
+		if ((name_dup = strdup(file)) == NULL)
 		{
 			error = errno;
 			SEFS_ERR("%s", strerror(error));
 			throw std::bad_alloc();
 		}
-		if (apol_vector_append(_files, s) < 0)
+
+		if (regcomp(&line_regex, "^([^[:blank:]]+)[[:blank:]]+(-.[[:blank:]]+)?([^-].+)$", REG_EXTENDED) != 0)
 		{
 			error = errno;
 			SEFS_ERR("%s", strerror(error));
-			free(s);
 			throw std::bad_alloc();
 		}
+		is_line_compiled = true;
+
+		if (regcomp(&context_regex, "^([^:]+):([^:]+):([^:]+):?(.*)$", REG_EXTENDED) != 0)
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
+		is_context_compiled = true;
 
 		while (!feof(fc_file))
 		{
@@ -226,13 +260,29 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 					throw std::bad_alloc();
 				}
 			}
-			parse_line(line);
+			parse_line(name_dup, line, &line_regex, &context_regex);
 		}
+
+		if (apol_vector_append(_files, name_dup) < 0)
+		{
+			error = errno;
+			SEFS_ERR("%s", strerror(error));
+			throw std::bad_alloc();
+		}
+		name_dup = NULL;
 
 		retval = 0;
 	}
 	catch(...)
 	{
+		// discard all entries that were read from this file_contexts
+		size_t i = apol_vector_get_size(_entries);
+		for (; i > last_entry; i--)
+		{
+			sefs_entry *e = static_cast < sefs_entry * >(apol_vector_get_element(_entries, i - 1));
+			fcfile_entry_free(e);
+			apol_vector_remove(_entries, i - 1);
+		}
 		retval = -1;
 	}
 
@@ -240,6 +290,15 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 	{
 		fclose(fc_file);
 	}
+	if (is_line_compiled)
+	{
+		regfree(&line_regex);
+	}
+	if (is_context_compiled)
+	{
+		regfree(&context_regex);
+	}
+	free(name_dup);
 	free(line);
 	errno = error;
 	return retval;
@@ -270,14 +329,14 @@ const apol_vector_t *sefs_fcfile::fileList() const
 
 /******************** private functions below ********************/
 
-void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtime_error)
+void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * line_regex,
+			     regex_t * context_regex) throw(std::bad_alloc, std::runtime_error)
 {
 	int error = 0;
+
 	char *s = strdup(line);
-	apol_context_t *context = NULL;
-	apol_mls_range_t *range = NULL;
-	apol_mls_level_t *level = NULL;
-	char *origin = "";	       // FIX ME
+	char *path;
+
 	if (s == NULL)
 	{
 		error = errno;
@@ -294,53 +353,34 @@ void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtim
 
 	try
 	{
-		size_t line_len = strlen(s);
-		size_t j;
-		bool found_high = false;
+		const size_t nmatch = 5;
+		regmatch_t pmatch[nmatch];
 
-		// extract the path
-		for (j = 0; j < line_len; j++)
+		if (regexec(line_regex, s, nmatch, pmatch, 0) != 0)
 		{
-			if (isspace(s[j]) || s[j] == ':' || s[j] == '-')
-			{
-				// split the line
-				s[j] = '\0';
-			}
-		}
-		char *tmp = s;
-		j = strlen(tmp) + 1;
-
-		char *path = strdup(tmp);
-		if (path == NULL)
-		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
-		}
-		if (apol_bst_insert_and_get(path_tree, (void **)&path, NULL) < 0)
-		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
-		}
-
-		while (j < line_len && s[j] == '\0')
-		{
-			j++;
-		}
-		if (j >= line_len)
-		{
-			// walked off the end
 			error = EIO;
-			SEFS_ERR("%s", "Not enough fields in line");
+			SEFS_ERR("fcfile line is not legal:\n%s", s);
 			throw std::runtime_error(strerror(error));
 		}
 
-		tmp = s + j;
-		uint32_t objclass;
-		if (tmp[0] == '-')
+		assert(pmatch[1].rm_so == 0);
+		s[pmatch[1].rm_eo] = '\0';
+		if ((path = strdup(s)) == NULL)
 		{
-			switch (tmp[1])
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(error));
+		}
+		if (apol_bst_insert_and_get(path_tree, (void **)&path, NULL) < 0)
+		{
+			free(path);
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(error));
+		}
+
+		uint32_t objclass;
+		if (pmatch[2].rm_so != -1)
+		{
+			switch (s[pmatch[2].rm_so + 1])
 			{
 			case '-':
 				objclass = QPOL_CLASS_FILE;
@@ -368,159 +408,73 @@ void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtim
 				SEFS_ERR("%s", "Invalid file context object class.");
 				throw std::runtime_error(strerror(error));
 			}
-
-			// advance to context
-			j += 2;
-			while (j < line_len && s[j] == '\0')
-			{
-				j++;
-			}
-
-			if (j >= line_len)
-			{
-				// walked off the end
-				error = EIO;
-				SEFS_ERR("%s", "Not enough fields in line");
-				throw std::runtime_error(strerror(error));
-			}
 		}
 		else
 		{
-			// no object class explicitly given; j is pointing to context
+			// no object class explicitly given
 			objclass = QPOL_CLASS_ALL;
 		}
 
-		tmp = s + j;
-		if ((context = apol_context_create()) == NULL)
-		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
-		}
-		if (strcmp(tmp, "<<none>>") == 0)
-		{
-			goto finish_context;
-		}
-		// get user
-		if (apol_context_set_user(NULL, context, tmp) < 0)
-		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
-		}
-		j += strlen(tmp) + 1;
-		if (j >= line_len)
-		{
-			// walked off the end
-			error = EIO;
-			SEFS_ERR("%s", "Not enough fields in line");
-			throw std::runtime_error(strerror(error));
-		}
+		assert(pmatch[3].rm_so != -1);
+		char *context_str = s + pmatch[3].rm_so;
+		char *user, *role, *type, *range;
 
-		// get role
-		tmp = s + j;
-		if (apol_context_set_role(NULL, context, tmp) < 0)
+		if (strcmp(context_str, "<<none>>") == 0)
 		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
+			user = role = type = range = "";
 		}
-		j += strlen(tmp) + 1;
-		if (j >= line_len)
+		else
 		{
-			// walked off the end
-			error = EIO;
-			SEFS_ERR("%s", "Not enough fields in line");
-			throw std::runtime_error(strerror(error));
-		}
-
-		// get type
-		tmp = s + j;
-		if (apol_context_set_type(NULL, context, tmp) < 0)
-		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
-		}
-		j += strlen(tmp) + 1;
-		if (j >= line_len)
-		{
-			// at end of line -- check if MLS range is needed
-			if (_mls_set && _mls)
+			if (regexec(context_regex, context_str, nmatch, pmatch, 0) != 0)
 			{
 				error = EIO;
-				SEFS_ERR("fcfile is MLS, but line had no MLS field:\n%s", line);
+				SEFS_ERR("fcfile context is not legal:\n%s", context_str);
 				throw std::runtime_error(strerror(error));
 			}
+
+			assert(pmatch[1].rm_so == 0);
+			context_str[pmatch[1].rm_eo] = '\0';
+			user = context_str;
+
+			assert(pmatch[2].rm_so != -1);
+			context_str[pmatch[2].rm_eo] = '\0';
+			role = context_str + pmatch[2].rm_so;
+
+			assert(pmatch[3].rm_so != -1);
+			context_str[pmatch[3].rm_eo] = '\0';
+			type = context_str + pmatch[3].rm_so;
+
+			range = NULL;
+			if (pmatch[4].rm_so != -1)
+			{
+				range = context_str + pmatch[4].rm_so;
+			}
+		}
+		if (range != NULL & range[0] != '\0')
+		{
+			if (_mls_set && !_mls)
+			{
+				error = EIO;
+				SEFS_ERR("fcfile context is MLS, but fcfile is not:\n%s", context_str);
+				throw std::runtime_error(strerror(error));
+			}
+			_mls = true;
 			_mls_set = true;
-			_mls = false;
-			goto finish_context;
 		}
-
-		// check if MLS range is not expected
-		if (_mls_set && !_mls)
+		else
 		{
-			error = EIO;
-			SEFS_ERR("fcfile is not MLS, but line had a MLS field:\n%s", line);
-			throw std::runtime_error(strerror(error));
-		}
-		_mls_set = true;
-		_mls = true;
-		tmp = s + j;
-
-		// add low level to range being constructed
-		if ((range = apol_mls_range_create()) == NULL)
-		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
-		}
-		if ((level = apol_mls_level_create_from_literal(tmp)) == NULL || (apol_mls_range_set_low(NULL, range, level) < 0))
-		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
-		}
-		level = NULL;
-
-		// check if there is a high level for the range
-		j += strlen(tmp) + 1;
-		while (j < line_len && s[j] == '\0')
-		{
-			j++;
-		}
-		if (j < line_len)
-		{
-			if (found_high)
+			if (_mls_set && !_mls && strcmp(context_str, "<<none>>") != 0)
 			{
 				error = EIO;
-				SEFS_ERR("%s", "Too many fields in line");
+				SEFS_ERR("fcfile context is not MLS, but fcfile is:\n%s", context_str);
 				throw std::runtime_error(strerror(error));
 			}
-
-			tmp = s + j;
-			if ((level = apol_mls_level_create_from_literal(tmp)) == NULL ||
-			    (apol_mls_range_set_high(NULL, range, level) < 0))
-			{
-				error = errno;
-				SEFS_ERR("%s", strerror(error));
-				throw std::bad_alloc();
-			}
-			level = NULL;
-			j += strlen(tmp) + 1;	// for loop increments j again
-			found_high = true;
+			_mls = true;
+			_mls_set = false;
 		}
+		struct sefs_context_node *context = getContext(user, role, type, range);
+		sefs_entry *entry = new sefs_entry(this, context, objclass, path, origin);
 
-		if (apol_context_set_range(NULL, context, range) < 0)
-		{
-			error = errno;
-			SEFS_ERR("%s", strerror(error));
-			throw std::bad_alloc();
-		}
-		range = NULL;
-
-	      finish_context:
-		sefs_entry * entry = new sefs_entry(this, context, objclass, path, origin);
 		if (apol_vector_append(_entries, static_cast < void *>(entry)) < 0)
 		{
 			error = errno;
@@ -533,9 +487,6 @@ void sefs_fcfile::parse_line(const char *line) throw(std::bad_alloc, std::runtim
 	catch(...)
 	{
 		free(s);
-		apol_context_destroy(&context);
-		apol_mls_range_destroy(&range);
-		apol_mls_level_destroy(&level);
 		errno = error;
 		throw;
 	}
