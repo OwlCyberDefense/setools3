@@ -60,6 +60,43 @@ extern "C"
 	extern apol_mls_range_t *apol_mls_range_create_from_mls_range(const apol_mls_range_t * range);
 
 /**
+ * Take a MLS range string (e.g., <b>S0:C0.C10-S1:C0.C127</b>) and
+ * parse it.  Fill in a newly allocated apol_mls_range_t and return
+ * it.  This function needs a policy to resolve dots within categories
+ * and to ensure that the high level dominates the low.  If the string
+ * represents an illegal range then return NULL.  The caller must call
+ * apol_mls_range_destroy() upon the returned value afterwards.
+ *
+ * @param p Policy within which to validate mls_range_string.
+ * @param mls_range_string Pointer to a string representing a valid
+ * MLS range.
+ *
+ * @return A filled in MLS range structure, or NULL upon error.
+ */
+	extern apol_mls_range_t *apol_mls_range_create_from_string(apol_policy_t * p, const char *mls_range_string);
+
+/**
+ * Take a literal MLS range string (e.g.,
+ * <b>S0:C0.C10-S1:C0.C127</b>), fill in a newly allocated
+ * apol_mls_range_t and return it.  The category portions of the
+ * levels will <strong>not</strong> be expanded (i.e., dots will not
+ * be resolved); likewise there is no check that the high level
+ * dominates the low.  The caller must call apol_mls_range_destroy()
+ * upon the returned value afterwards.
+ *
+ * Because this function creates a range without the benefit of a
+ * policy, its levels are "incomplete" and thus most operations will
+ * fail.  Call apol_mls_range_convert() to make a literal MLS range
+ * complete, so that it can be used in all functions.
+ *
+ * @param mls_range_string Pointer to a string representing a
+ * (possibly invalid) MLS range.
+ *
+ * @return A filled in MLS range structure, or NULL upon error.
+ */
+	extern apol_mls_range_t *apol_mls_range_create_from_literal(const char *mls_range_string);
+
+/**
  * Create a new apol_mls_range_t and initialize it with a
  * qpol_mls_range_t.  The caller must call apol_mls_range_destroy()
  * upon the return value afterwards.
@@ -201,6 +238,18 @@ extern "C"
  * is responsible for calling free() upon the return value.
  */
 	extern char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range);
+
+/**
+ * Given a range, convert any literal MLS levels within it (as per
+ * apol_mls_level_convert()) to a complete level.  If the range has no
+ * levels or has no literal levels then do nothing.
+ *
+ * @param p Policy containing category information.
+ * @param range Range to convert.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int apol_mls_range_convert(apol_policy_t * p, apol_mls_range_t * range);
 
 /**
  * Determine if the range contains any literal levels.  (Levels that

@@ -395,3 +395,16 @@ char *apol_context_render(apol_policy_t * p, const apol_context_t * context)
 	free(range_str);
 	return NULL;
 }
+
+int apol_context_convert(apol_policy_t * p, apol_context_t * context)
+{
+	if (p == NULL || context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	if (context->range != NULL) {
+		return apol_mls_range_convert(p, context->range);
+	}
+	return 0;
+}

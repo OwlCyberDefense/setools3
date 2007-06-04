@@ -224,6 +224,18 @@ extern "C"
  */
 	extern char *apol_context_render(apol_policy_t * p, const apol_context_t * context);
 
+/**
+ * Given a context, convert the range within it (as per
+ * apol_mls_range_convert()) to a complete range.  If the context has
+ * no range or has no literal range then do nothing.
+ *
+ * @param p Policy containing category information.
+ * @param context Context to convert.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int apol_context_convert(apol_policy_t * p, apol_context_t * context);
+
 #ifdef	__cplusplus
 }
 #endif

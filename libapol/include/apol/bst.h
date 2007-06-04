@@ -156,21 +156,21 @@ extern "C"
 	extern int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data);
 
 /**
- * map a function across all the elements of the BST.  Mapping occurs in
+ * Map a function across all the elements of the BST.  Mapping occurs in
  * the sorted order as defined by the original comparison function.
  *
- * NOTE: fn() must not modify the data element that is passed in or
- *       undefined(bad) things may occur.
- *
- * @param node the root of the BST
- * @param fn a function pointer, takes 2 arguments, first a (const void*)
- *           to the data in the node of the BST.  Second, an arbitrary data
- *           element.  Returns >= 0 on success. < 0 signals an error and
- *           ends the mapping over the tree.
- * @return returns the result of the last call to fn() (IE >= 0 on success
- *           < 0 on failure.
+ * @param node BST upon which to map against.
+ * @param fn Function pointer that takes 2 arguments, first is a
+ * pointer to the data in a node of the BST, second is an arbitrary
+ * data element.  The function may change the BST node, but it must
+ * not affect the node's sorting order within the tree.  This function
+ * should return >= 0 on success; a return of < 0 signals error and
+ * ends the mapping over the tree.
+
+ * @return Result of the last call to fn() (i.e., >= 0 on success < 0 on
+ * failure).  If the tree is empty then return 0.
  */
-	extern int apol_bst_inorder_map(const struct apol_bst *node, int (*fn) (const void *, void *), void *data);
+	extern int apol_bst_inorder_map(const apol_bst_t * b, int (*fn) (void *, void *), void *data);
 #ifdef	__cplusplus
 }
 #endif

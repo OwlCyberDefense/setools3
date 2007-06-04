@@ -986,6 +986,24 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return amr;
 	};
+	apol_mls_range_t(apol_policy_t *p, const char *s) {
+		apol_mls_range_t *amr;
+		amr = apol_mls_range_create_from_string(p, s);
+		if (!amr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return amr;
+	};
+	apol_mls_range_t(const char *s) {
+		apol_mls_range_t *amr;
+		amr = apol_mls_range_create_from_literal(s);
+		if (!amr) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return amr;
+	};
 	apol_mls_range_t(apol_policy_t *p, qpol_mls_range_t *in) {
 		apol_mls_range_t *amr;
 		amr = apol_mls_range_create_from_qpol_mls_range(p, in);
@@ -1015,12 +1033,12 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 			return;
 	};
-        const apol_mls_level_t *get_low() {
-                return apol_mls_range_get_low(self);
-        }
-        const apol_mls_level_t *get_high() {
-                return apol_mls_range_get_high(self);
-        }
+	const apol_mls_level_t *get_low() {
+		return apol_mls_range_get_low(self);
+	}
+	const apol_mls_level_t *get_high() {
+		return apol_mls_range_get_high(self);
+	}
 	%newobject render();
 	char *render(apol_policy_t *p) {
 		char *str;
@@ -1057,9 +1075,17 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return ret;
 	}
+	int convert(apol_policy_t *p) {
+		int ret = apol_mls_range_convert(p, self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not convert range");
+		}
+	fail:
+		return ret;
+	}
 };
 int apol_mls_range_compare(apol_policy_t * p, const apol_mls_range_t * target, const apol_mls_range_t * search, unsigned int range_compare_type);
-int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range,	const apol_mls_range_t * subrange);
+int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range, const apol_mls_range_t * subrange);
 
 /* apol level query */
 typedef struct apol_level_query {} apol_level_query_t;
@@ -1295,6 +1321,14 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return str;
 	};
+	int convert(apol_policy_t *p) {
+		int ret = apol_context_convert(p, self);
+		if (ret < 0) {
+			SWIG_exception(SWIG_ValueError, "Could not convert context");
+		}
+	fail:
+		return ret;
+	}
 };
 int apol_context_compare(apol_policy_t * p, apol_context_t * target, apol_context_t * search, unsigned int range_compare_type);
 

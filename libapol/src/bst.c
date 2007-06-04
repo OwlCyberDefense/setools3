@@ -329,7 +329,7 @@ int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data)
 	return retval;
 }
 
-static int bst_inorder_map(const bst_node_t * node, int (*fn) (const void *, void *), void *data)
+static int bst_inorder_map(const bst_node_t * node, int (*fn) (void *, void *), void *data)
 {
 	int retval;
 	if (node == NULL) {
@@ -344,9 +344,9 @@ static int bst_inorder_map(const bst_node_t * node, int (*fn) (const void *, voi
 	return bst_inorder_map(node->child[1], fn, data);
 }
 
-int apol_bst_inorder_map(const struct apol_bst *node, int (*fn) (const void *, void *), void *data)
+int apol_bst_inorder_map(const apol_bst_t * b, int (*fn) (void *, void *), void *data)
 {
-	if (node == NULL)
-		return 0;
-	return bst_inorder_map(node->head, fn, data);
+	if (b == NULL || fn == NULL)
+		return -1;
+	return bst_inorder_map(b->head, fn, data);
 }

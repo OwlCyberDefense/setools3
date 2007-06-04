@@ -83,12 +83,11 @@ extern "C"
  *
  * Because this function creates a level without the benefit of a
  * policy, its category list is "incomplete" and thus most operations
- * will fail.  All functions other than apol_mls_level_convert() and
- * apol_mls_level_render() will result in error.  Call
- * apol_mls_level_convert() to make a literal MLS level complete, so
- * that it can be used in all functions.
+ * will fail.  All functions other than apol_mls_level_render(),
+ * apol_mls_level_convert(), and apol_mls_level_is_literal() will
+ * result in error.  Call apol_mls_level_convert() to make a literal
+ * MLS level complete, so that it can be used in all functions.
  *
- * @param
  * @param mls_level_string Pointer to a string representing a
  * (possibly invalid) MLS level.
  *

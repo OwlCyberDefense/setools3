@@ -133,7 +133,7 @@ apol_mls_level_t *apol_mls_level_create_from_mls_level(const apol_mls_level_t * 
 
 apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, const char *mls_level_string)
 {
-	if (p == NULL) {
+	if (p == NULL || mls_level_string == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
@@ -166,6 +166,7 @@ apol_mls_level_t *apol_mls_level_create_from_literal(const char *mls_level_strin
 		return NULL;
 	}
 	if ((colon = strchr(mls_level_string, ':')) != NULL) {
+		// both a sensitivity and 1 or more categories
 		if (colon == mls_level_string) {
 			apol_mls_level_destroy(&l);
 			errno = EINVAL;
@@ -188,6 +189,7 @@ apol_mls_level_t *apol_mls_level_create_from_literal(const char *mls_level_strin
 			return NULL;
 		}
 	}
+	apol_str_trim(l->sens);
 	return l;
 }
 
