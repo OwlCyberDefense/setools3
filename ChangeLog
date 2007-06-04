@@ -1,3 +1,10 @@
+2007-06-04  J. Tang  <jtang@tresys.com>
+
+	* added convert functions to apol_context_t and
+	apol_mls_range_t; added constructors
+	apol_mls_range_create_from_string() and
+	apol_mls_range_create_from_literal().
+
 2007-05-31  J. Tang  <jtang@tresys.com>
 
 	* libapol/src/util.c (apol_str_to_objclass): Added this function,

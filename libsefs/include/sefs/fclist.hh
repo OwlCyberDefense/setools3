@@ -143,7 +143,7 @@ class sefs_fclist
 	 * @param type Type component of the context.  The string will
 	 * be duplicated.
 	 * @param range Range component of the context.  The string
-	 * will be duplicated.
+	 * will be duplicated, or NULL if no range exists.
 	 *
 	 * @return A context node.  Do not free() it.
 	 */

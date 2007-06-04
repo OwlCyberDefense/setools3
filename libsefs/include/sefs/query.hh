@@ -94,12 +94,12 @@ class sefs_query
 	 * the type \a name.
 	 * @param name Limit query to only contexts with this type, or
 	 * NULL to clear this field.  The string will be duplicated.
-	 * @param indirect If the fclist queried has access to a
-	 * policy, also match contexts with types in attribute \a name
-	 * or types which are an alias for \a name.  If a policy is
-	 * not available, this field is ignored, and exact string
-	 * matching is used instead.  This paramater is ignored if \a
-	 * name is NULL.
+	 * @param indirect If true and if the fclist queried has
+	 * access to a policy, also match contexts with types in
+	 * attribute \a name or types which are an alias for \a name.
+	 * If a policy is not available, this field is ignored, and
+	 * exact string matching is used instead.  This paramater is
+	 * ignored if \a name is NULL.
 	 * @exception std::bad_alloc if out of memory
 	 * @see sefs_fclist::associatePolicy() to associate a policy
 	 * with a fclist.

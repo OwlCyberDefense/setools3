@@ -61,6 +61,61 @@ static void fclist_sefs_context_node_free(void *elem)
 	}
 }
 
+static int fclist_sefs_node_make_string(struct sefs_context_node *node)
+{
+	free(node->context_str);
+	node->context_str = NULL;
+	if (node->user[0] == '\0' && node->role[0] == '\0' && node->type[0] == '\0' &&
+	    (node->range == NULL || node->range[0] == '\0'))
+	{
+		if ((node->context_str = strdup("<<none>>")) == NULL)
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		// instead of calling apol_context_render(), use a custom
+		// rendering function if no range is set
+		char *s = NULL;
+		if (asprintf(&s, "%s:%s:%s", node->user, node->role, node->type) < 0)
+		{
+			return -1;
+		}
+		if (node->range != NULL)
+		{
+			size_t len = strlen(s) + 1;
+			if (apol_str_appendf(&s, &len, ":%s", node->range) < 0)
+			{
+				free(s);
+				return -1;
+			}
+		}
+		node->context_str = s;
+	}
+	return 0;
+}
+
+static int fclist_sefs_node_convert(void *data, void *arg)
+{
+	struct sefs_context_node *node = static_cast < struct sefs_context_node *>(data);
+	sefs_fclist *fclist = static_cast < sefs_fclist * >(arg);
+	apol_policy_t *p = fclist->associatePolicy();
+	if (p != NULL)
+	{
+		int retval = apol_context_convert(p, node->context);
+		if (retval < 0)
+		{
+			return retval;
+		}
+		if ((retval = fclist_sefs_node_make_string(node)) < 0)
+		{
+			return retval;
+		}
+	}
+	return 0;
+}
+
 /******************** public functions below ********************/
 
 sefs_fclist::~sefs_fclist()
@@ -76,7 +131,13 @@ sefs_fclist::~sefs_fclist()
 void sefs_fclist::associatePolicy(apol_policy_t * new_policy)
 {
 	policy = new_policy;
-	// FIX ME: convert all context nodes
+	if (policy != NULL)
+	{
+		if (apol_bst_inorder_map(context_tree, fclist_sefs_node_convert, policy) < 0)
+		{
+			throw new std::bad_alloc();
+		}
+	}
 }
 
 apol_policy_t *sefs_fclist::associatePolicy() const
@@ -259,26 +320,34 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 			fclist_sefs_context_node_free(node);
 			return static_cast < struct sefs_context_node *>(v);
 		}
+
+		apol_mls_range_t *range = NULL;
+		if (m != NULL)
+		{
+			if ((range = apol_mls_range_create_from_literal(m)) == NULL)
+			{
+				SEFS_ERR("%s", strerror(errno));
+				throw std::bad_alloc();
+			}
+		}
+
 		if ((context = apol_context_create()) == NULL)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		if (apol_context_set_user(NULL, context, u) < 0 ||
-		    apol_context_set_role(NULL, context, r) < 0 || apol_context_set_type(NULL, context, t) < 0)
+		    apol_context_set_role(NULL, context, r) < 0 || apol_context_set_type(NULL, context, t) < 0 ||
+		    apol_context_set_range(NULL, context, range) < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 
-		// FIX ME: set the range
-
 		node->context = context;
 		context = NULL;
 
-		// FIX ME: set this to <<none>> if nothing is set
-		// FIX ME: if not MLS, don't print the star
-		if ((node->context_str = apol_context_render(policy, node->context)) == NULL)
+		if (fclist_sefs_node_make_string(node) < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));

@@ -169,8 +169,46 @@ apol_vector_t *sefs_fcfile::runQuery(sefs_query * query) throw(std::bad_alloc)
 			{
 				continue;
 			}
-			// FIX ME: check type & range & path
+			// FIX ME: check type & range
 
+			bool path_matched;
+
+			if (query->_path == NULL || query->_path[0] == '\0')
+			{
+				path_matched = true;
+			}
+			else
+			{
+				path_matched = false;
+				for (size_t j = 0; j < apol_vector_get_size(e->_paths); j++)
+				{
+					const char *path = static_cast < const char *>(apol_vector_get_element(e->_paths, j));
+					size_t len = strlen(path);
+					char anchored_path[len + 3];
+					anchored_path[0] = '^';
+					memcpy(anchored_path + 1, path, len);
+					anchored_path[len + 1] = '$';
+					anchored_path[len + 2] = '\0';
+					regex_t regex;
+
+					if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
+					{
+						apol_vector_destroy(&v);
+						throw std::bad_alloc();
+					}
+					bool compval = str_compare(query->_path, anchored_path, &regex, true);
+					regfree(&regex);
+					if (compval)
+					{
+						path_matched = true;
+						break;
+					}
+				}
+			}
+			if (!path_matched)
+			{
+				continue;
+			}
 		}
 
 		// if reached this point, then all criteria passed, so

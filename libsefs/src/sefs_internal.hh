@@ -52,7 +52,8 @@
  * regex_flag is true, use the compiled regular expression instead of
  * \a str.  Otherwise do a straight string comparison between \a str
  * and \a target.  If \a str is NULL and/or empty then the comparison
- * always succeeds regardless of \a regex and \a target.
+ * always succeeds regardless of \a regex and \a target.  If \a target
+ * is NULL or empty then comparison also succeeds.
  *
  * @param target Name of target symbol to compare.
  * @param str Source string from which to compare.
