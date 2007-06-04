@@ -48,12 +48,30 @@
 #define SEFS_INFO(format, ...) handleMsg(SEFS_MSG_INFO, format, __VA_ARGS__)
 
 /**
+ * Given a policy containing types, generate and return a vector of
+ * names (char *) that match the given criteria.
+ *
+ * @param policy Policy associated with types.
+ * @param str Type name to find.
+ * @param regex If using regexp comparison, the compiled regular
+ * expression to use.
+ * @param regex_flag If true, use the compiled regular expression
+ * instead of str.
+ * @param indirect If true, do indirect type matching.
+ *
+ * @return Vector of strings.  The caller is responsible for calling
+ * apol_vector_destroy() upon the returned value afterwards.
+ */
+apol_vector_t *query_create_candidate_type(apol_policy_t * policy, const char *str, const regex_t * regex, const bool regex_flag,
+					   const bool indirect);
+
+/**
  * Determines if a string matches a target symbol name.  If \a
  * regex_flag is true, use the compiled regular expression instead of
  * \a str.  Otherwise do a straight string comparison between \a str
  * and \a target.  If \a str is NULL and/or empty then the comparison
- * always succeeds regardless of \a regex and \a target.  If \a target
- * is NULL or empty then comparison also succeeds.
+ * always succeeds regardless of \a regex and \a target.  Next, if \a
+ * target is NULL or empty then comparison fails.
  *
  * @param target Name of target symbol to compare.
  * @param str Source string from which to compare.
@@ -64,7 +82,7 @@
  *
  * @return true if comparison succeeds, false if not.
  */
-bool str_compare(const char *target, const char *str, const regex_t * regex, const bool regex_flag);
+bool query_str_compare(const char *target, const char *str, const regex_t * regex, const bool regex_flag);
 
 // rather than having each sefs_entry having its own apol_context_t
 // object, build a cache of nodes to save space

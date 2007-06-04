@@ -431,11 +431,198 @@ sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist)
 
 /******************** private static functions below ********************/
 
-bool str_compare(const char *target, const char *str, const regex_t * regex, const bool regex_flag)
+/**
+ * Given a type name, obtain its qpol_type_t pointer (relative to a
+ * policy).  If the type is really its alias, get its primary instead.
+ * (Attributes are considered to be always primary.)
+ *
+ * @param p Policy in which to look up types.
+ * @param type_name Name of type to find.
+ *
+ * @return Qpol datum for type, or NULL if not found.
+ */
+static qpol_type_t *query_get_type(apol_policy_t * p, const char *type_name)
 {
-	if (str == NULL || str[0] == '\0' || target == NULL || target[0] == '\0')
+	unsigned char isalias;
+	qpol_type_t *type = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
+	if (qpol_policy_get_type_by_name(q, type_name, &type) < 0 || qpol_type_get_isalias(q, type, &isalias) < 0)
+	{
+		return NULL;
+	}
+	if (isalias)
+	{
+		char *primary_name;
+		if (qpol_type_get_name(q, type, &primary_name) < 0 || qpol_policy_get_type_by_name(q, primary_name, &type) < 0)
+		{
+			return NULL;
+		}
+	}
+	return type;
+}
+
+/**
+ * Append a non-aliased type name to a vector.  If the passed in type
+ * is an alias, find its primary type and append that name instead.
+ *
+ * @param p Policy in which to look up types.
+ * @param v Vector in which append the non-aliased type name.
+ * @param type Type or attribute to append.  If this is an alias,
+ * append its primary.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int query_append_type(apol_policy_t * p, apol_vector_t * v, qpol_type_t * type)
+{
+	qpol_policy_t *q = apol_policy_get_qpol(p);
+	unsigned char isalias;
+	qpol_type_t *real_type = type;
+	char *name;
+	if (qpol_type_get_isattr(q, type, &isalias) < 0)
+	{
+		return -1;
+	}
+	if (isalias)
+	{
+		if (qpol_type_get_name(q, type, &name) < 0 || qpol_policy_get_type_by_name(q, name, &real_type) < 0)
+		{
+			return -1;
+		}
+	}
+	if (qpol_type_get_name(q, type, &name) < 0 || apol_vector_append(v, name) < 0)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+apol_vector_t *query_create_candidate_type(apol_policy_t * policy, const char *str, const regex_t * regex, const bool regex_flag,
+					   const bool indirect)
+{
+	qpol_policy_t *q = apol_policy_get_qpol(policy);
+	apol_vector_t *list = apol_vector_create(NULL);
+	qpol_type_t *type;
+	qpol_iterator_t *iter = NULL, *alias_iter = NULL;
+	char *type_name;
+	bool compval;
+
+	try
+	{
+		if (list == NULL)
+		{
+			throw new std::bad_alloc();
+		}
+
+		if (!regex_flag && (type = query_get_type(policy, str)) != NULL)
+		{
+			if (query_append_type(policy, list, type) < 0)
+			{
+				throw new std::bad_alloc();
+			}
+		}
+
+		if (regex_flag)
+		{
+			if (qpol_policy_get_type_iter(q, &iter) < 0)
+			{
+				throw new std::bad_alloc();
+			}
+			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter))
+			{
+				if (qpol_iterator_get_item(iter, (void **)&type) < 0 || qpol_type_get_name(q, type, &type_name) < 0)
+				{
+					throw new std::runtime_error(strerror(errno));
+				}
+				compval = query_str_compare(type_name, str, regex, true);
+				if (compval)
+				{
+					if (query_append_type(policy, list, type) < 0)
+					{
+						throw new std::bad_alloc();
+					}
+					continue;
+				}
+				if (qpol_type_get_alias_iter(q, type, &alias_iter) < 0)
+				{
+					throw new std::bad_alloc();
+				}
+				for (; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter))
+				{
+					if (qpol_iterator_get_item(alias_iter, (void **)&type_name) < 0)
+					{
+						throw new std::runtime_error(strerror(errno));
+					}
+					compval = query_str_compare(type_name, str, regex, true);
+					if (compval)
+					{
+						if (query_append_type(policy, list, type))
+						{
+							throw new std::bad_alloc();
+						}
+						break;
+					}
+				}
+				qpol_iterator_destroy(&alias_iter);
+			}
+			qpol_iterator_destroy(&iter);
+		}
+
+		if (indirect)
+		{
+			size_t orig_vector_size = apol_vector_get_size(list);
+			unsigned char isattr, isalias;
+			for (size_t i = 0; i < orig_vector_size; i++)
+			{
+				type = static_cast < qpol_type_t * >(apol_vector_get_element(list, i));
+				if (qpol_type_get_isalias(q, type, &isalias) < 0 || qpol_type_get_isattr(q, type, &isattr) < 0)
+				{
+					throw new std::runtime_error(strerror(errno));
+				}
+				if (isalias)
+				{
+					continue;
+				}
+				if ((isattr &&
+				     qpol_type_get_type_iter(q, type, &iter) < 0) ||
+				    (!isattr && qpol_type_get_attr_iter(q, type, &iter) < 0))
+				{
+					throw new std::bad_alloc();
+				}
+				for (; !qpol_iterator_end(iter); qpol_iterator_next(iter))
+				{
+					if (qpol_iterator_get_item(iter, (void **)&type) < 0)
+					{
+						throw new std::runtime_error(strerror(errno));
+					}
+					if (query_append_type(policy, list, type))
+					{
+						throw new std::bad_alloc();
+					}
+				}
+				qpol_iterator_destroy(&iter);
+			}
+		}
+
+		apol_vector_sort_uniquify(list, NULL, NULL);
+	}
+	catch(...)
+	{
+		apol_vector_destroy(&list);
+	}
+	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&alias_iter);
+	return list;
+}
+
+bool query_str_compare(const char *target, const char *str, const regex_t * regex, const bool regex_flag)
+{
+	if (str == NULL || str[0] == '\0')
 	{
 		return true;
+	}
+	if (target == NULL || target[0] == '\0')
+	{
+		return false;
 	}
 	if (regex_flag)
 	{

@@ -135,13 +135,17 @@ void sefs_query::objectClass(uint32_t objclass)
 
 void sefs_query::objectClass(const char *name)
 {
-	if (name == NULL)
+	if (name == NULL || strcmp(name, "any") == 0)
 	{
 		_objclass = QPOL_CLASS_ALL;
 	}
 	else
 	{
-		_objclass = apol_str_to_objclass(name);
+		uint32_t o = apol_str_to_objclass(name);
+		if (o != QPOL_CLASS_ALL)
+		{
+			_objclass = o;
+		}
 	}
 }
 

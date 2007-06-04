@@ -146,79 +146,147 @@ sefs_fcfile::~sefs_fcfile()
 apol_vector_t *sefs_fcfile::runQuery(sefs_query * query) throw(std::bad_alloc)
 {
 	apol_vector_t *v;
-	if ((v = apol_vector_create(NULL)) == NULL)
+	apol_vector_t *type_list = NULL;
+	apol_mls_range_t *range = NULL;
+	try
 	{
-		throw std::bad_alloc();
-	}
-	if (query != NULL)
-	{
-		query->compile();
-	}
-
-	for (size_t i = 0; i < apol_vector_get_size(_entries); i++)
-	{
-		sefs_entry *e = static_cast < sefs_entry * >(apol_vector_get_element(_entries, i));
-		if (query != NULL)
+		if ((v = apol_vector_create(NULL)) == NULL)
 		{
-			const struct sefs_context_node *context = e->_context;
-			if (!str_compare(context->user, query->_user, query->_reuser, query->_regex))
-			{
-				continue;
-			}
-			if (!str_compare(context->role, query->_role, query->_rerole, query->_regex))
-			{
-				continue;
-			}
-			// FIX ME: check type & range
-
-			bool path_matched;
-
-			if (query->_path == NULL || query->_path[0] == '\0')
-			{
-				path_matched = true;
-			}
-			else
-			{
-				path_matched = false;
-				for (size_t j = 0; j < apol_vector_get_size(e->_paths); j++)
-				{
-					const char *path = static_cast < const char *>(apol_vector_get_element(e->_paths, j));
-					size_t len = strlen(path);
-					char anchored_path[len + 3];
-					anchored_path[0] = '^';
-					memcpy(anchored_path + 1, path, len);
-					anchored_path[len + 1] = '$';
-					anchored_path[len + 2] = '\0';
-					regex_t regex;
-
-					if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
-					{
-						apol_vector_destroy(&v);
-						throw std::bad_alloc();
-					}
-					bool compval = str_compare(query->_path, anchored_path, &regex, true);
-					regfree(&regex);
-					if (compval)
-					{
-						path_matched = true;
-						break;
-					}
-				}
-			}
-			if (!path_matched)
-			{
-				continue;
-			}
-		}
-
-		// if reached this point, then all criteria passed, so
-		// accept the entry
-		if (apol_vector_append(v, e) < 0)
-		{
-			apol_vector_destroy(&v);
 			throw std::bad_alloc();
 		}
+		if (query != NULL)
+		{
+			query->compile();
+			if (policy != NULL)
+			{
+				if (query->_type != NULL &&
+				    (type_list =
+				     query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,
+								 query->_indirect)) == NULL)
+				{
+					throw std::bad_alloc();
+				}
+				if (query->_range != NULL)
+				{
+					throw std::bad_alloc();
+				}
+				if ((range = apol_mls_range_create_from_string(policy, query->_range)) == NULL)
+				{
+					throw std::bad_alloc();
+				}
+			}
+		}
+
+		for (size_t i = 0; i < apol_vector_get_size(_entries); i++)
+		{
+			sefs_entry *e = static_cast < sefs_entry * >(apol_vector_get_element(_entries, i));
+			if (query != NULL)
+			{
+				const struct sefs_context_node *context = e->_context;
+				if (!query_str_compare(context->user, query->_user, query->_reuser, query->_regex))
+				{
+					continue;
+				}
+				if (!query_str_compare(context->role, query->_role, query->_rerole, query->_regex))
+				{
+					continue;
+				}
+				if (type_list == NULL)
+				{
+					if (!query_str_compare(context->type, query->_type, query->_retype, query->_regex))
+					{
+						continue;
+					}
+				}
+				else
+				{
+					size_t index;
+					if (apol_vector_get_index(type_list, context->type, apol_str_strcmp, NULL, &index) < 0)
+					{
+						continue;
+					}
+				}
+
+				if (range == NULL)
+				{
+					if (!query_str_compare(context->range, query->_range, query->_rerange, query->_regex))
+					{
+						continue;
+					}
+				}
+				else
+				{
+					const apol_mls_range_t *context_range = apol_context_get_range(context->context);
+					int ret;
+					ret = apol_mls_range_compare(policy, context_range, range, query->_rangeMatch);
+					if (ret <= 0)
+					{
+						continue;
+					}
+				}
+
+				if (e->_objectClass != QPOL_CLASS_ALL && query->_objclass != QPOL_CLASS_ALL &&
+				    e->_objectClass != query->_objclass)
+				{
+					continue;
+				}
+
+				bool path_matched;
+
+				if (query->_path == NULL || query->_path[0] == '\0')
+				{
+					path_matched = true;
+				}
+				else
+				{
+					path_matched = false;
+					for (size_t j = 0; j < apol_vector_get_size(e->_paths); j++)
+					{
+						const char *path =
+							static_cast < const char *>(apol_vector_get_element(e->_paths, j));
+						size_t len = strlen(path);
+						char anchored_path[len + 3];
+						anchored_path[0] = '^';
+						memcpy(anchored_path + 1, path, len);
+						anchored_path[len + 1] = '$';
+						anchored_path[len + 2] = '\0';
+						regex_t regex;
+
+						if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
+						{
+							throw std::bad_alloc();
+						}
+						bool compval = query_str_compare(query->_path, anchored_path, &regex, true);
+						regfree(&regex);
+						if (compval)
+						{
+							path_matched = true;
+							break;
+						}
+					}
+				}
+				if (!path_matched)
+				{
+					continue;
+				}
+			}
+
+			// if reached this point, then all criteria passed, so
+			// accept the entry
+			if (apol_vector_append(v, e) < 0)
+			{
+				throw std::bad_alloc();
+			}
+		}
 	}
+	catch(...)
+	{
+		apol_vector_destroy(&v);
+		apol_vector_destroy(&type_list);
+		apol_mls_range_destroy(&range);
+		throw;
+	}
+	apol_vector_destroy(&type_list);
 	return v;
 }
 

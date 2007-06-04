@@ -44,7 +44,7 @@ LIBSEFS_SONAME = @libsefs_soname@
 dist_noinst_DATA = libsefs.map
 
 $(sefsso_DATA): $(libsefs_so_OBJS) libsefs.map
-	$(CXX) -shared -o $@ $(libsefs_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs $(top_builddir)/libapol/src/libapol.so @SELINUX_LIB_FLAG@ -lselinux -lsepol
+	$(CXX) -shared -o $@ $(libsefs_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBSEFS_SONAME),--version-script=$(srcdir)/libsefs.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so @SELINUX_LIB_FLAG@ -lselinux -lsepol
 	$(LN_S) -f $@ @libsefs_soname@
 	$(LN_S) -f $@ libsefs.so
 
