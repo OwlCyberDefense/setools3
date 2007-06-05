@@ -72,6 +72,7 @@ struct context_node;
 class sefs_entry;
 class sefs_query;
 
+#define SEFS_MAP_FUNC_DEFINED
 typedef int (*sefs_fclist_map_fn_t) (sefs_fclist *, const sefs_entry *, void *);
 
 class sefs_fclist
@@ -208,6 +209,12 @@ extern "C"
 #ifndef SWIG
 
 	typedef struct sefs_fclist sefs_fclist_t;
+
+#ifndef SEFS_MAP_FUNC_DEFINED
+	struct sefs_fclist;
+	struct sefs_entry;
+	typedef int (*sefs_fclist_map_fn_t) (struct sefs_fclist *, const struct sefs_entry *, void *);
+#endif
 
 /**
  * Deallocate all memory associated with the referenced fclist object,
