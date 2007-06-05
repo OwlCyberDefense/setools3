@@ -145,6 +145,17 @@ extern "C"
 #define WARN(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_WARN, format, __VA_ARGS__)
 #define INFO(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_INFO, format, __VA_ARGS__)
 
+/**
+ * Build the BST for classes, permissions, and booleans if the
+ * policies have changed.  This effectively provides a partial mapping
+ * of rules from one policy to the other.
+ *
+ * @param diff Policy difference structure containing policies to diff.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	int poldiff_build_bsts(poldiff_t * diff);
+
 #ifdef	__cplusplus
 }
 #endif

@@ -180,17 +180,6 @@ extern "C"
  */
 	typedef int (*poldiff_deep_diff_fn_t) (poldiff_t * diff, const void *x, const void *y);
 
-/**
- * Build the BST for classes, permissions, and booleans if the
- * policies have changed.  This effectively provides a partial mapping
- * of rules from one policy to the other.
- *
- * @param diff Policy difference structure containing policies to diff.
- *
- * @return 0 on success, < 0 on error.
- */
-	int poldiff_build_bsts(poldiff_t * diff);
-
 	typedef struct poldiff_item_record poldiff_item_record_t;
 
 	typedef void (*poldiff_handle_fn_t) (void *arg, poldiff_t * diff, int level, const char *fmt, va_list va_args);
