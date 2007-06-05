@@ -79,8 +79,9 @@ extern "C"
 #include "test.hh"
 #include "criterion.hh"
 #include "string_list.hh"
-#include "util.hh"
 #include "symbol_query.hh"
 #include "util.h"
+
+#endif
 
 #endif				       /* POLSEARCH_H */
