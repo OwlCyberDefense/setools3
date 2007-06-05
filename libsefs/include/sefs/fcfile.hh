@@ -96,16 +96,27 @@ class sefs_fcfile:public sefs_fclist
 	~sefs_fcfile();
 
 	/**
-	 * Perform a sefs query on the given fcfile object.
+	 * Perform a sefs query on this fcfile object, and then invoke
+	 * a callback upon each matching entry.  Mapping occurs in the
+	 * order of entries as given by the file_contexts, and in the
+	 * order that file_contexts were appended (via appendFile())
+	 * to this object.
 	 * @param query Query object containing search parameters.  If
-	 * NULL, return all contexts.
-	 * @return A newly allocated vector (of class sefs_entry *)
-	 * containing all entries matching the query.  Note that the
-	 * vector may be empty.  The caller is responsible for calling
-	 * apol_vector_destroy() on the returned vector.
-	 * @exception std::bad_alloc if out of memory
+	 * NULL, invoke the callback on all entries.
+	 * @param fn Function to invoke upon matching entries.  This
+	 * function will be called with three parameters: a pointer to
+	 * this fclist, pointer to a matching entry, and an arbitrary
+	 * data pointer.  It should return a non-negative value upon
+	 * success, negative value upon error and to abort the
+	 * mapping.
+	 * @param data Arbitrary pointer to be passed into \fn as a
+	 * third parameter.
+	 * @return Last value returned by fn() (i.e., >= on success, <
+	 * 0 on failure).  If the fcfile has no entries then return 0.
+	 * @exception std::runtime_error Error while reading contexts
+	 * from the fclist.
 	 */
-	apol_vector_t *runQuery(sefs_query * query) throw(std::bad_alloc);
+	int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error);
 
 	/**
 	 * Determine if the contexts in the fcfile contain MLS fields.
@@ -236,7 +247,7 @@ extern "C"
  * file_contexts set.
  * @see sefs_fcfile::fileList()
  */
-	extern const apol_vector_t *sefs_fcfile_get_file_list(sefs_fcfile_t * fcfile);
+	extern const apol_vector_t *sefs_fcfile_get_file_list(const sefs_fcfile_t * fcfile);
 
 #endif				       /* SWIG */
 

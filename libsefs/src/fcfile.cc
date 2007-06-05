@@ -143,17 +143,13 @@ sefs_fcfile::~sefs_fcfile()
 	apol_vector_destroy(&_entries);
 }
 
-apol_vector_t *sefs_fcfile::runQuery(sefs_query * query) throw(std::bad_alloc)
+int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error)
 {
-	apol_vector_t *v;
 	apol_vector_t *type_list = NULL;
 	apol_mls_range_t *range = NULL;
+	int retval = 0;
 	try
 	{
-		if ((v = apol_vector_create(NULL)) == NULL)
-		{
-			throw std::bad_alloc();
-		}
 		if (query != NULL)
 		{
 			query->compile();
@@ -164,15 +160,12 @@ apol_vector_t *sefs_fcfile::runQuery(sefs_query * query) throw(std::bad_alloc)
 				     query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,
 								 query->_indirect)) == NULL)
 				{
-					throw std::bad_alloc();
+					throw std::runtime_error(strerror(errno));
 				}
-				if (query->_range != NULL)
+				if (query->_range != NULL &&
+				    (range = apol_mls_range_create_from_string(policy, query->_range)) == NULL)
 				{
-					throw std::bad_alloc();
-				}
-				if ((range = apol_mls_range_create_from_string(policy, query->_range)) == NULL)
-				{
-					throw std::bad_alloc();
+					throw std::runtime_error(strerror(errno));
 				}
 			}
 		}
@@ -254,7 +247,7 @@ apol_vector_t *sefs_fcfile::runQuery(sefs_query * query) throw(std::bad_alloc)
 
 						if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
 						{
-							throw std::bad_alloc();
+							throw std::runtime_error(strerror(errno));
 						}
 						bool compval = query_str_compare(query->_path, anchored_path, &regex, true);
 						regfree(&regex);
@@ -272,22 +265,22 @@ apol_vector_t *sefs_fcfile::runQuery(sefs_query * query) throw(std::bad_alloc)
 			}
 
 			// if reached this point, then all criteria passed, so
-			// accept the entry
-			if (apol_vector_append(v, e) < 0)
+			// invoke the mapping function
+
+			if ((retval = fn(this, e, data)) < 0)
 			{
-				throw std::bad_alloc();
+				return retval;
 			}
 		}
 	}
 	catch(...)
 	{
-		apol_vector_destroy(&v);
 		apol_vector_destroy(&type_list);
 		apol_mls_range_destroy(&range);
 		throw;
 	}
 	apol_vector_destroy(&type_list);
-	return v;
+	return retval;
 }
 
 bool sefs_fcfile::isMLS() const
@@ -675,7 +668,7 @@ size_t sefs_fcfile_append_file_list(sefs_fcfile_t * fcfile, const apol_vector_t 
 	return fcfile->appendFileList(files);
 }
 
-const apol_vector_t *sefs_fcfile_get_file_list(sefs_fcfile_t * fcfile)
+const apol_vector_t *sefs_fcfile_get_file_list(const sefs_fcfile_t * fcfile)
 {
 	if (fcfile == NULL)
 	{

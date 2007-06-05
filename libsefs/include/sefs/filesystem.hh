@@ -30,12 +30,14 @@ extern "C"
 {
 #endif
 
-#include "fclist.h"
+#include <sefs/fclist.hh>
 
 #include <apol/vector.h>
 
 #ifdef __cplusplus
 }
+
+#include <stdexcept>
 
 /**
  * This class represents the SELinux file contexts on a local on-disk
@@ -48,15 +50,55 @@ class sefs_filesystem:public sefs_fclist
 	/**
 	 * Allocate and return a new sefs filesystem structure
 	 * representing the filesystem rooted at directory \a root.
+	 * <b>Be aware that the constructor is not thread-safe.</b>
 	 * @param root Directory to use as the root of the filesystem.
+	 * @param rw If true, then this filesystem object only
+	 * represents files (and directories) on filesystems that are
+	 * mounted read/write.  Otherwise it represents all files.
 	 * @param msg_callback Callback to invoke as errors/warnings
 	 * are generated.  If NULL, write messages to standard error.
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
+	 * @exception bad_alloc Out of memory.
+	 * @exception invalid_argument Root directory must exist.
+	 * @exception runtime_error Could not open root directory or
+	 * /etc/mtab.
 	 */
-	sefs_filesystem(const char *root, sefs_callback_fn_t msg_callback, void *varg);
+	sefs_filesystem(const char *root, bool rw, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
+												      std::invalid_argument,
+												      std::runtime_error);
 
 	~sefs_filesystem();
+
+	/**
+	 * Perform a sefs query on this filesystem object, and then invoke
+	 * a callback upon each matching entry.  Mapping occurs in the
+	 * order of entries as given by ftw().
+	 * @param query Query object containing search parameters.  If
+	 * NULL, invoke the callback on all entries.
+	 * @param fn Function to invoke upon matching entries.  This
+	 * function will be called with three parameters: a pointer to
+	 * this filesystem, pointer to a matching entry, and an
+	 * arbitrary data pointer.  It should return a non-negative
+	 * value upon success, negative value upon error and to abort
+	 * the mapping.
+	 * @param data Arbitrary pointer to be passed into \fn as a
+	 * third parameter.
+	 * @return Last value returned by fn() (i.e., >= on success, <
+	 * 0 on failure).  If the filesystem has no entries then
+	 * return 0.
+	 * @exception std::runtime_error Error while reading contexts
+	 * from the filesystem.
+	 */
+	int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error);
+
+	/**
+	 * Determine if the contexts stored in this filesystem contain
+	 * MLS fields.
+	 * @return \a true if MLS fields are present, \a false if not
+	 * or undeterminable.
+	 */
+	bool isMLS() const;
 
 	/**
 	 * Get the root directory of a sefs filesystem structure.
@@ -65,16 +107,9 @@ class sefs_filesystem:public sefs_fclist
 	 */
 	const char *root() const;
 
-	/**
-	 * Get a list of mount points within a sefs filesystem.
-	 * @return A vector of paths (char *) to all mount points in
-	 * the filesystem. The caller should not destroy the returned
-	 * vector.
-	 */
-	const apol_vector_t *mountPoints() const;
-
       private:
 	char *_root;
+	bool _rw, _mls;
 	apol_vector_t *_mounts;
 };
 
@@ -93,19 +128,13 @@ extern "C"
  * the filesystem rooted at directory \a root.
  * @see sefs_filesystem::sefs_filesystem()
  */
-	sefs_fclist_t *sefs_filesystem_create(const char *root, sefs_callback_fn_t msg_callback, void *varg);
+	extern sefs_filesystem_t *sefs_filesystem_create(const char *root, bool rw, sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Get the root directory of a sefs filesystem structure.
  * @see sefs_filesystem::root()
  */
-	const char *sefs_filesystem_get_root(sefs_filesystem_t * fs);
-
-/**
- * Get a list of mount points within a sefs filesystem.
- * @see sefs_filesystem::mountPoints()
- */
-	const apol_vector_t *sefs_filesystem_get_mount_points(sefs_filesystem_t * fs);
+	extern const char *sefs_filesystem_get_root(const sefs_filesystem_t * fs);
 
 #endif				       /* SWIG */
 

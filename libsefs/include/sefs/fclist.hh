@@ -47,6 +47,8 @@ extern "C"
 #define SEFS_MSG_WARN 2		       /*!< Message is issued as a warning but does not represent a fatal error. */
 #define SEFS_MSG_INFO 3		       /*!< Message is issued for inormational reasons and does not represent an atypical state. */
 
+	struct sefs_fclist;
+
 	typedef void (*sefs_callback_fn_t) (void *varg, struct sefs_fclist * fclist, int level, const char *fmt, va_list argp);
 
 /**
@@ -70,6 +72,8 @@ struct context_node;
 class sefs_entry;
 class sefs_query;
 
+typedef int (*sefs_fclist_map_fn_t) (sefs_fclist *, const sefs_entry *, void *);
+
 class sefs_fclist
 {
 	friend class sefs_entry;
@@ -78,18 +82,42 @@ class sefs_fclist
 	 virtual ~sefs_fclist();
 
 	/**
-	 * Perform a sefs query on the given file context list object.
+	 * Perform a sefs query on the given file context list object,
+	 * and then invoke a callback upon each matching entry.
+	 * Mapping occurs in the order of entries as specified by the
+	 * file context list.
+	 * @param query Query object containing search parameters.  If
+	 * NULL, invoke the callback on all entries.
+	 * @param fn Function to invoke upon matching entries.  This
+	 * function will be called with three parameters: a pointer to
+	 * this fclist, pointer to a matching entry, and an arbitrary
+	 * data pointer.  It should return a non-negative value upon
+	 * success, negative value upon error and to abort the
+	 * mapping.
+	 * @param data Arbitrary pointer to be passed into \fn as a
+	 * third parameter.
+	 * @return Last value returned by fn() (i.e., >= on success, <
+	 * 0 on failure).  If the fclist has no entries then return 0.
+	 * @exception std::runtime_error Error while reading contexts
+	 * from the fclist.
+	 */
+	virtual int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error) = 0;
+
+	/**
+	 * Perform a sefs query on the given file context list object
+	 * and return a list of matching entries.
 	 * @param query Query object containing search parameters.  If
 	 * NULL, return all contexts.
-	 * @return A newly allocated vector (of class sefs_entry *)
-	 * containing all entries matching the query.  Note that the
-	 * vector may be empty.  The caller is responsible for calling
+	 * @return A newly allocated unsorted vector (of class
+	 * sefs_entry *) containing all entries matching the query.
+	 * Do not modify the returned entries.  Note that the vector
+	 * may be empty.  The caller is responsible for calling
 	 * apol_vector_destroy() on the returned vector.
-	 * @exception std::bad_alloc if out of memory
-	 * @exception std::runtime_error if encounter an error while
-	 * reading contexts from the fclist
+	 * @exception std::bad_alloc Out of memory.
+	 * @exception std::runtime_error Error while reading contexts
+	 * from the fclist.
 	 */
-	virtual apol_vector_t *runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error) = 0;
+	apol_vector_t *runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error);
 
 	/**
 	 * Determine if the contexts in the fclist contain MLS fields.
@@ -191,7 +219,13 @@ extern "C"
 
 /**
  * Perform a sefs query on the given file context list object.
- * @see sefs_query::run()
+ * @see sefs_fclist::runQueryMap()
+ */
+	extern int sefs_fclist_run_query_map(sefs_fclist_t * fclist, sefs_query_t * query, sefs_fclist_map_fn_t fn, void *data);
+
+/**
+ * Perform a sefs query on the given file context list object.
+ * @see sefs_fclist::runQuery()
  */
 	extern apol_vector_t *sefs_fclist_run_query(sefs_fclist_t * fclist, sefs_query_t * query);
 
@@ -213,7 +247,7 @@ extern "C"
  * Get the type of fclist object represented by \a fclist.
  * @see sefs_fclist::type()
  */
-	extern sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist);
+	extern sefs_fclist_type_e sefs_fclist_get_type(const sefs_fclist_t * fclist);
 
 #endif				       /* SWIG */
 

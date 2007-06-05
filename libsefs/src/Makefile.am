@@ -27,13 +27,14 @@ libsefs_a_SOURCES = \
 	entry.cc \
 	fcfile.cc \
 	fclist.cc \
+	filesystem.cc \
 	query.cc \
 	sefs_internal.hh \
 	util.c
 
 libsefs_a_DEPENDENCIES = \
 	libsqlite.a \
-	$(top_builddir)/libapol/src/libapol.so
+	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libqpol/src/libqpol.so
 
 libsefs_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libsefs_a_SOURCES))) $(patsubst %.cc,%.o,$(filter %.cc,$(libsefs_a_SOURCES)))

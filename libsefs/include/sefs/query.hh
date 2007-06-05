@@ -76,7 +76,7 @@ class sefs_query
 	 * the user \a name.
 	 * @param name Limit query to only contexts with this user, or
 	 * NULL to clear this field.  The string will be duplicated.
-	 * @exception std::bad_alloc if out of memory
+	 * @exception std::bad_alloc Out of memory.
 	 */
 	void user(const char *name) throw(std::bad_alloc);
 
@@ -85,7 +85,7 @@ class sefs_query
 	 * the role \a name.
 	 * @param name Limit query to only contexts with this role, or
 	 * NULL to clear this field.  The string will be duplicated.
-         * @exception std::bad_alloc if out of memory
+         * @exception std::bad_alloc Out of memory.
 	 */
 	void role(const char *name) throw(std::bad_alloc);
 
@@ -100,7 +100,7 @@ class sefs_query
 	 * If a policy is not available, this field is ignored, and
 	 * exact string matching is used instead.  This paramater is
 	 * ignored if \a name is NULL.
-	 * @exception std::bad_alloc if out of memory
+	 * @exception std::bad_alloc Out of memory.
 	 * @see sefs_fclist::associatePolicy() to associate a policy
 	 * with a fclist.
 	 */
@@ -121,7 +121,7 @@ class sefs_query
 	 * matching is used instead.  Note, if a policy is available
 	 * the regex flag is ignored if \a match is non-zero.  This
 	 * parameter is ignored if \a range is NULL.
-	 * @exception std::bad_alloc if out of memory
+	 * @exception std::bad_alloc Out of memory.
 	 * @see sefs_fclist::associatePolicy() to associate a policy
 	 * with a fclist.
 	 */
@@ -159,7 +159,7 @@ class sefs_query
 	 * @param path Limit query to only entries containing this
 	 * path, or NULL to clear this field.  The string will be
 	 * duplicated.
-	 * @exception std::bad_alloc if out of memory
+	 * @exception std::bad_alloc Out of memory.
 	 */
 	void path(const char *path) throw(std::bad_alloc);
 
@@ -198,7 +198,7 @@ class sefs_query
 	 * sub-directories of \a root; otherwise only operate on \a
 	 * root not its sub-directories.  This parameter is ignored if
 	 * \a root is NULL.
-	 * @exception std::bad_alloc if out of memory
+	 * @exception std::bad_alloc Out of memory.
 	 */
 	void rootDir(const char *root, bool recursive) throw(std::bad_alloc);
 
@@ -207,7 +207,7 @@ class sefs_query
 	 * Compile the regular expressions stored within this query
 	 * object.  It is safe to call this function multiple times.
 	 *
-	 * @exception std::bad_alloc if out of memory
+	 * @exception std::bad_alloc Out of memory.
 	 */
 	void compile() throw(std::bad_alloc);
 

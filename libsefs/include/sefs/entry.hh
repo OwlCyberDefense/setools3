@@ -116,7 +116,7 @@ class sefs_entry
 	 * file_contexts file.
 	 * @return An allocated string representation.  The caller is
 	 * responsibily for free()ing the string afterwards.
-	 * @exception std::bad_alloc if out of memory
+	 * @exception std::bad_alloc Out of memory.
 	 */
 	char *toString() const throw(std::bad_alloc);
 
@@ -131,7 +131,7 @@ class sefs_entry
 	 * @param path Path to this entry.
 	 * @param origin Name of file_contexts file from which this
 	 * entry originated.
-	 * @exception std::bad_alloc if out of memory
+	 * @exception std::bad_alloc Out of memory.
 	 */
 	 sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node *context, uint32_t objectClass, const char *path,
 		    const char *origin = NULL) throw(std::bad_alloc);

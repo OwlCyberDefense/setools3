@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 
 static int fclist_sefs_context_node_comp(const void *a, const void *b, void *arg __attribute__ ((unused)))
 {
@@ -37,17 +38,17 @@ static int fclist_sefs_context_node_comp(const void *a, const void *b, void *arg
 	const struct sefs_context_node *n2 = static_cast < const struct sefs_context_node *>(b);
 	if (n1->type != n2->type)
 	{
-		return (int)n1->type - (int)n2->type;
+		return static_cast < int >(reinterpret_cast < ssize_t > (n1->type) - reinterpret_cast < ssize_t > (n2->type));
 	}
 	if (n1->user != n2->user)
 	{
-		return (int)n1->user - (int)n2->user;
+		return static_cast < int >(reinterpret_cast < ssize_t > (n1->user) - reinterpret_cast < ssize_t > (n2->user));
 	}
 	if (n1->role != n2->role)
 	{
-		return (int)n1->role - (int)n2->role;
+		return static_cast < int >(reinterpret_cast < ssize_t > (n1->role) - reinterpret_cast < ssize_t > (n2->role));
 	}
-	return (int)n1->range - (int)n2->range;
+	return static_cast < int >(reinterpret_cast < ssize_t > (n1->range) - reinterpret_cast < ssize_t > (n2->range));
 }
 
 static void fclist_sefs_context_node_free(void *elem)
@@ -126,6 +127,38 @@ sefs_fclist::~sefs_fclist()
 	apol_bst_destroy(&range_tree);
 	apol_bst_destroy(&path_tree);
 	apol_bst_destroy(&context_tree);
+}
+
+static int map_to_vector(sefs_fclist * fclist, const sefs_entry * entry, void *data)
+{
+	apol_vector_t *v = static_cast < apol_vector_t * >(data);
+	if (apol_vector_append(v, const_cast < sefs_entry * >(entry)) < 0)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+apol_vector_t *sefs_fclist::runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error)
+{
+	apol_vector_t *v = NULL;
+	try
+	{
+		if ((v = apol_vector_create(NULL)) == NULL)
+		{
+			throw std::bad_alloc();
+		}
+		if (runQueryMap(query, map_to_vector, v) < 0)
+		{
+			throw std::bad_alloc();
+		}
+	}
+	catch(...)
+	{
+		apol_vector_destroy(&v);
+		throw;
+	}
+	return v;
 }
 
 void sefs_fclist::associatePolicy(apol_policy_t * new_policy)
@@ -380,6 +413,25 @@ void sefs_fclist_destroy(sefs_fclist_t ** fclist)
 	}
 }
 
+int sefs_fclist_run_query_map(sefs_fclist_t * fclist, sefs_query_t * query, sefs_fclist_map_fn_t fn, void *data)
+{
+	if (fclist == NULL)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	int retval;
+	try
+	{
+		retval = fclist->runQueryMap(query, fn, data);
+	}
+	catch(...)
+	{
+		return -1;
+	}
+	return retval;
+}
+
 apol_vector_t *sefs_fclist_run_query(sefs_fclist_t * fclist, sefs_query_t * query)
 {
 	if (fclist == NULL)
@@ -420,7 +472,7 @@ void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy
 	}
 }
 
-sefs_fclist_type_e sefs_fclist_get_type(sefs_fclist_t * fclist)
+sefs_fclist_type_e sefs_fclist_get_type(const sefs_fclist_t * fclist)
 {
 	if (fclist == NULL)
 	{
