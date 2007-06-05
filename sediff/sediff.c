@@ -81,12 +81,10 @@ static void usage(const char *prog_name, int brief)
 	printf("  -u, --user         user definitions\n");
 	printf("  -b, --bool         boolean definitions and default values\n");
 	printf("  -A                 allow rules\n"
-			 "  -N                 never-allow rules\n"
-			 "  -D                 don't-audit rules\n"
-			 "  -L                 audit-allow rules\n");
+	       "  -N                 never-allow rules\n"
+	       "  -D                 don't-audit rules\n" "  -L                 audit-allow rules\n");
 	printf("  -M                 type_memeber rules\n"
-			 "  -C                 type_change rules\n"
-			 "  -R                 type_trans rules\n");
+	       "  -C                 type_change rules\n" "  -R                 type_trans rules\n");
 	printf("  --role_trans       role_transition rules\n");
 	printf("  --role_allow       role allow rules\n");
 	printf("  --range_trans      range_transition rules\n");
@@ -120,15 +118,16 @@ static void print_diff_string(const char *str, unsigned int indent_level)
 	}
 }
 
-static void print_rule_section(poldiff_t * diff, const poldiff_item_record_t * rec, apol_vector_t * v, poldiff_form_e form){
+static void print_rule_section(poldiff_t * diff, const poldiff_item_record_t * rec, apol_vector_t * v, poldiff_form_e form)
+{
 	int i;
-	char * str = NULL;
-	const void * item1;
+	char *str = NULL;
+	const void *item1;
 
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		item1 = apol_vector_get_element(v, i);
-		if (poldiff_get_form_fn(rec)(item1) == form) {
-			if ((str = poldiff_get_to_string_fn(rec)(diff, item1)) == NULL) {
+		if (poldiff_get_form_fn(rec) (item1) == form) {
+			if ((str = poldiff_get_to_string_fn(rec) (diff, item1)) == NULL) {
 				return;
 			}
 			print_diff_string(str, 1);
@@ -143,7 +142,8 @@ static void print_rule_section(poldiff_t * diff, const poldiff_item_record_t * r
 #define PRINT_MODIFIED  2
 #define PRINT_ALL 4
 
-static void print_rule_diffs(poldiff_t * diff, const poldiff_item_record_t * rec, int stats_only, const char * name, uint32_t flags, apol_vector_comp_func sort_by)
+static void print_rule_diffs(poldiff_t * diff, const poldiff_item_record_t * rec, int stats_only, const char *name, uint32_t flags,
+			     apol_vector_comp_func sort_by)
 {
 	apol_vector_t *v = NULL;
 	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
@@ -153,30 +153,31 @@ static void print_rule_diffs(poldiff_t * diff, const poldiff_item_record_t * rec
 	if (!rec || !diff)
 		return;
 
-	poldiff_get_stats_fn(rec)(diff, stats);
-	if(flags == PRINT_ADDED_REMOVED){
-		printf("%s (Added %zd, Removed %zd)\n", name,stats[0], stats[1]);
-	}else if(flags == PRINT_MODIFIED){
-		printf("%s (Added %zd, Removed %zd, Modified %zd)\n", name,stats[0], stats[1], stats[2]);
-	}else if(flags == PRINT_ALL){
-		printf("%s (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n", name,stats[0], stats[3], stats[1], stats[4], stats[2]);
-	}else{
+	poldiff_get_stats_fn(rec) (diff, stats);
+	if (flags == PRINT_ADDED_REMOVED) {
+		printf("%s (Added %zd, Removed %zd)\n", name, stats[0], stats[1]);
+	} else if (flags == PRINT_MODIFIED) {
+		printf("%s (Added %zd, Removed %zd, Modified %zd)\n", name, stats[0], stats[1], stats[2]);
+	} else if (flags == PRINT_ALL) {
+		printf("%s (Added %zd, Added New Type %zd, Removed %zd, Removed Missing Type %zd, Modified %zd)\n", name, stats[0],
+		       stats[3], stats[1], stats[4], stats[2]);
+	} else {
 		fprintf(stderr, "Error, unhandled flag type\n");
 	}
 
 	if (stats_only)
 		return;
-	if ((v = poldiff_get_results_fn(rec)(diff)) == NULL) {
+	if ((v = poldiff_get_results_fn(rec) (diff)) == NULL) {
 		return;
 	}
-	if(sort_by){
+	if (sort_by) {
 		apol_vector_sort(v, sort_by, NULL);
 	}
 
 	printf("   Added %s: %zd\n", name, stats[0]);
 	print_rule_section(diff, rec, v, POLDIFF_FORM_ADDED);
 
-	if(flags == PRINT_ALL){
+	if (flags == PRINT_ALL) {
 		printf("   Added %s because of new type: %zd\n", name, stats[3]);
 		print_rule_section(diff, rec, v, POLDIFF_FORM_ADD_TYPE);
 	}
@@ -184,18 +185,17 @@ static void print_rule_diffs(poldiff_t * diff, const poldiff_item_record_t * rec
 	printf("   Removed %s: %zd\n", name, stats[1]);
 	print_rule_section(diff, rec, v, POLDIFF_FORM_REMOVED);
 
-	if(flags == PRINT_ALL){
+	if (flags == PRINT_ALL) {
 		printf("   Removed %s because of missing type: %zd\n", name, stats[4]);
 		print_rule_section(diff, rec, v, POLDIFF_FORM_REMOVE_TYPE);
 	}
-	if(flags == PRINT_MODIFIED || flags == PRINT_ALL){
+	if (flags == PRINT_MODIFIED || flags == PRINT_ALL) {
 		printf("   Modified %s: %zd\n", name, stats[2]);
 		print_rule_section(diff, rec, v, POLDIFF_FORM_MODIFIED);
 	}
 	printf("\n");
 	return;
 }
-
 
 static void print_class_diffs(poldiff_t * diff, int stats_only)
 {
@@ -246,17 +246,20 @@ static void print_avallow_diffs(poldiff_t * diff, int stats_only)
 
 static void print_avneverallow_diffs(poldiff_t * diff, int stats_only)
 {
-	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVNEVERALLOW), stats_only, "AV-Never Allow Rules", PRINT_ALL, NULL);
+	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVNEVERALLOW), stats_only, "AV-Never Allow Rules", PRINT_ALL,
+			 NULL);
 }
 
 static void print_avdontaudit_diffs(poldiff_t * diff, int stats_only)
 {
-	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVDONTAUDIT), stats_only, "AV-Don't Audit Rules", PRINT_ALL, NULL);
+	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVDONTAUDIT), stats_only, "AV-Don't Audit Rules", PRINT_ALL,
+			 NULL);
 }
 
 static void print_avauditallow_diffs(poldiff_t * diff, int stats_only)
 {
-	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVAUDITALLOW), stats_only, "AV-Audit Allow Rules", PRINT_ALL, NULL);
+	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVAUDITALLOW), stats_only, "AV-Audit Allow Rules", PRINT_ALL,
+			 NULL);
 }
 
 static void print_terule_diffs(poldiff_t * diff, int stats_only)
@@ -266,7 +269,8 @@ static void print_terule_diffs(poldiff_t * diff, int stats_only)
 
 static void print_role_allow_diffs(poldiff_t * diff, int stats_only)
 {
-	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_ROLE_ALLOWS), stats_only, "Role Allow Rules", PRINT_MODIFIED, NULL);
+	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_ROLE_ALLOWS), stats_only, "Role Allow Rules", PRINT_MODIFIED,
+			 NULL);
 	return;
 }
 
@@ -278,7 +282,8 @@ static void print_role_trans_diffs(poldiff_t * diff, int stats_only)
 
 static void print_range_trans_diffs(poldiff_t * diff, int stats_only)
 {
-	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_RANGE_TRANS), stats_only, "Range Transitions", PRINT_MODIFIED, NULL);
+	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_RANGE_TRANS), stats_only, "Range Transitions", PRINT_MODIFIED,
+			 NULL);
 	return;
 }
 

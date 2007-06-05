@@ -26,8 +26,6 @@
 #ifndef POLSEARCH_STRING_LIST_H
 #define POLSEARCH_STRING_LIST_H
 
-#include <stdexcept>
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -37,6 +35,8 @@ extern "C"
 
 #ifdef __cplusplus
 }
+
+#include <stdexcept>
 
 /**
  * An expression for the list of possible string values in a particular field
@@ -58,7 +58,7 @@ class polsearch_string_list
 	 * @param sl The string list to copy.
 	 */
 	 polsearch_string_list(const polsearch_string_list & sl);
-	 //! Destructor.
+	//! Destructor.
 	~polsearch_string_list();
 
 	/**
@@ -82,8 +82,8 @@ class polsearch_string_list
 	char *toString() const;
 
       private:
-	apol_vector_t * _tokens; /*!< RPN list of string list tokens. TODO: What is a token? */
-	apol_vector_t * _ids; /*!< A sorted unique list of the identifiers (char*) in the list. */
+	 apol_vector_t * _tokens;      /*!< RPN list of string list tokens. TODO: What is a token? */
+	apol_vector_t *_ids;	       /*!< A sorted unique list of the identifiers (char*) in the list. */
 };
 
 extern "C"
@@ -99,8 +99,8 @@ extern "C"
 	extern polsearch_string_list_t *polsearch_string_list_create_from_string_list(const polsearch_string_list_t * psl);
 	extern const apol_vector_t *polsearch_string_list_get_ids(const polsearch_string_list_t * psl);
 	extern apol_vector_t *polsearch_string_list_match(const polsearch_string_list_t * psl, const apol_vector_t * test_ids,
-						   const apol_vector_t * Xcandidates);
-	extern char *polsearch_string_list_to_string(const polsearch_string_list_t *psl);
+							  const apol_vector_t * Xcandidates);
+	extern char *polsearch_string_list_to_string(const polsearch_string_list_t * psl);
 
 #endif				       /* SWIG */
 

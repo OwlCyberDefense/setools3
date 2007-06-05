@@ -30,3 +30,40 @@ const char *libpolsearch_get_version(void)
 {
 	return LIBPOLSEARCH_VERSION_STRING;
 }
+
+const char *libpolsearch_symbol_get_name(const void *symbol, polsearch_symbol_e sym_type, const apol_policy_t * p)
+{
+	//TODO
+	return "";
+}
+
+const char *polsearch_symbol_type_to_string(polsearch_symbol_e sym_type)
+{
+	//TODO
+	return "";
+}
+
+polsearch_symbol_e polsearch_sting_to_symbol_type(const char *str)
+{
+	//TODO
+	return POLSEARCH_SYMBOL_NONE;
+}
+
+const char *polsearch_element_type_to_string(polsearch_element_e elem_type)
+{
+	//TODO
+	return "";
+}
+
+polsearch_element_e polsearch_sting_to_element_type(const char *str)
+{
+	//TODO
+	return POLSEARCH_ELEMENT_NONE;
+}
+
+char *polsearch_element_to_string(const void *elem, polsearch_element_e elem_type, const apol_policy_t * p,
+				  const sefs_fclist_t * fclist)
+{
+	//TODO
+	return strdup("");
+}

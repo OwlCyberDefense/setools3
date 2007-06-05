@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * Routines to handle tests criteria for logic queries.
+ * Routines to handle tests' criteria for logic queries.
  *
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
@@ -26,6 +26,10 @@
 #ifndef POLSEARCH_CRITERION_H
 #define POLSEARCH_CRITERION_H
 
+#include "string_list.hh"
+
+#include <sefs/fclist.hh>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -34,8 +38,8 @@ extern "C"
 #include <stdint.h>
 
 #include <apol/mls-query.h>
-
-#include "string_list.hh"
+#include <apol/vector.h>
+#include <apol/policy.h>
 
 	/** Value to indicate the comparison operator for a parameter */
 	typedef enum polsearch_op
@@ -54,8 +58,8 @@ extern "C"
 		POLSEARCH_OP_AS_SRC_TGT_DFLT,	/*!< has as rule source, target, or default */
 		POLSEARCH_OP_AS_SRC_DFLT,	/*!< has as rule source or default */
 		POLSEARCH_OP_IN_COND,  /*!< is in a conditional with boolean */
-		POLSEARCH_OP_LEVEL,    /*!< user level comparison */
-		POLSEARCH_OP_RANGE,    /*!< has as range */
+		POLSEARCH_OP_AS_LEVEL, /*!< user level comparison */
+		POLSEARCH_OP_AS_RANGE, /*!< has as range */
 		POLSEARCH_OP_AS_USER,  /*!< has as user */
 		POLSEARCH_OP_AS_ROLE,  /*!< has as role */
 		POLSEARCH_OP_AS_TYPE,  /*!< has as type */
@@ -76,7 +80,7 @@ extern "C"
 #ifdef __cplusplus
 }
 
-#include <sdtexcept>
+#include <stdexcept>
 
 /**
  * A single criterion to be checked when running a test. This is the base
@@ -91,12 +95,12 @@ class polsearch_criterion
 	 * @param opr Comparison operator to use.
 	 * @param neg If \a true, invert the logic result of the operator.
 	 */
-	virtual polsearch_criterion(polsearch_op_e opr, bool neg = false);
+	polsearch_criterion(polsearch_op_e opr, bool neg = false);
 	/**
 	 * Copy a generic criterion.
 	 * @param pc The criterion to copy.
 	 */
-	virtual polsearch_criterion(const polsearch_criterion & pc);
+	polsearch_criterion(const polsearch_criterion & pc);
 	//! Destructor.
 	 virtual ~polsearch_criterion();
 
@@ -347,11 +351,11 @@ class polsearch_level_criterion:public polsearch_criterion
 	 * @return The type of matching set.
 	 * @exception std::invalid_argument Invalid level matching requested.
 	 */
-	int match(int m) throw (std::invalid_argument);
+	int match(int m) throw(std::invalid_argument);
 
       private:
-	 apol_mls_level_t * _level; /*!< The MLS level. */
-	int _match; /*!< The type of level matching. */
+	 apol_mls_level_t * _level;    /*!< The MLS level. */
+	int _match;		       /*!< The type of level matching. */
 };
 
 /**
@@ -381,7 +385,7 @@ class polsearch_range_criterion:public polsearch_criterion
 	 * @exception std::bad_alloc Could not duplicate the range.
 	 */
 	 polsearch_range_criterion(polsearch_range_criterion & prc) throw(std::bad_alloc);
-	 //! Destructor.
+	//! Destructor.
 	~polsearch_range_criterion();
 
 	/**
@@ -415,8 +419,8 @@ class polsearch_range_criterion:public polsearch_criterion
 	unsigned int match(unsigned int m) throw(std::invalid_argument);
 
       private:
-	 apol_mls_range_t * _range; /*!< The MLS range. */
-	unsigned int _match; /*!< The type of range matching. */
+	 apol_mls_range_t * _range;    /*!< The MLS range. */
+	unsigned int _match;	       /*!< The type of range matching. */
 };
 
 extern "C"
@@ -440,29 +444,33 @@ extern "C"
 	extern bool polsearch_criterion_set_negated(polsearch_criterion_t * pc);
 	extern polsearch_param_type_e polsearch_criterion_get_param_type(const polsearch_criterion_t * pc);
 	extern apol_vector_t *polsearch_criterion_check(const polsearch_criterion_t * pc, const apol_policy_t * p,
-						 const sefs_fclist_t * fclist, const apol_vector_t * test_candidates,
-						 apol_vector_t * Xcandidtates);
+							const sefs_fclist_t * fclist, const apol_vector_t * test_candidates,
+							apol_vector_t * Xcandidtates);
 
 	extern polsearch_regex_criterion_t *polsearch_regex_criterion_create(polsearch_op_e opr, bool neg, const char *expression);
-	extern polsearch_regex_criterion_t *polsearch_regex_criterion_create_from_criterion(const polsearch_regex_criterion_t * prc);
+	extern polsearch_regex_criterion_t *polsearch_regex_criterion_create_from_criterion(const polsearch_regex_criterion_t *
+											    prc);
 	extern void polsearch_regex_criterion_destroy(polsearch_regex_criterion_t ** prc);
 	extern const char *const polsearch_regex_criterion_get_regex(const polsearch_regex_criterion_t * prc);
 	extern char *polsearch_regex_criterion_set_regex(polsearch_regex_criterion_t * prc, const char *expression);
 
 	extern polsearch_strring_list_criterion_t *polsearch_strring_list_criterion_create(polsearch_op_e opr, bool neg,
-										    const polsearch_string_list * strlist);
+											   const polsearch_string_list * strlist);
 	extern polsearch_strring_list_criterion_t *polsearch_strring_list_criterion_create_from_criterion(const
-												   polsearch_strring_list_criterion_t
-												   * pslc);
+													  polsearch_strring_list_criterion_t
+													  * pslc);
 	extern void polsearch_strring_list_criterion_destroy(polsearch_strring_list_criterion_t ** pslc);
-	extern const polsearch_string_list_t *polsearch_strring_list_criterion_get_string_list(const polsearch_strring_list_criterion_t *
-											pslc);
+	extern const polsearch_string_list_t *polsearch_strring_list_criterion_get_string_list(const
+											       polsearch_strring_list_criterion_t *
+											       pslc);
 	extern polsearch_string_list_t *polsearch_strring_list_criterion_set_string_list(polsearch_strring_list_criterion_t * pslc,
-										  const polsearch_string_list_t * strlist);
+											 const polsearch_string_list_t * strlist);
 
-	extern polsearch_rule_type_criterion_t *polsearch_rule_type_criterion_create(polsearch_op_e opr, bool neg, uint32_t ruletype);
-	extern polsearch_rule_type_criterion_t *polsearch_rule_type_criterion_create_from_criterion(const polsearch_rule_type_criterion_t *
-											     prtc);
+	extern polsearch_rule_type_criterion_t *polsearch_rule_type_criterion_create(polsearch_op_e opr, bool neg,
+										     uint32_t ruletype);
+	extern polsearch_rule_type_criterion_t *polsearch_rule_type_criterion_create_from_criterion(const
+												    polsearch_rule_type_criterion_t
+												    * prtc);
 	extern void polsearch_rule_type_criterion_destroy(polsearch_rule_type_criterion_t ** prtc);
 	extern uint32_t polsearch_rule_type_criterion_get_rule_type(const polsearch_rule_type_criterion_t * prtc);
 	extern uint32_t polsearch_rule_type_criterion_set_rule_type(polsearch_rule_type_criterion_t * prtc, uint32_t ruletype);
@@ -474,20 +482,24 @@ extern "C"
 	extern bool polsearch_bool_criterion_set_value(polsearch_bool_criterion_t * pbc, bool val);
 
 	extern polsearch_level_criterion_t *polsearch_level_criterion_create(polsearch_op_e opr, bool neg,
-								      const apol_mls_level_t * lvl, int m);
-	extern polsearch_level_criterion_t *polsearch_level_criterion_create_from_criterion(const polsearch_level_criterion_t * plc);
+									     const apol_mls_level_t * lvl, int m);
+	extern polsearch_level_criterion_t *polsearch_level_criterion_create_from_criterion(const polsearch_level_criterion_t *
+											    plc);
 	extern void polsearch_level_criterion_destroy(polsearch_level_criterion_t ** plc);
 	extern const apol_mls_level_t *polsearch_level_criterion_get_level(const polsearch_level_criterion_t * plc);
-	extern apol_mls_level_t *polsearch_level_criterion_set_level(polsearch_level_criterion_t * plc, const apol_mls_level_t * lvl);
+	extern apol_mls_level_t *polsearch_level_criterion_set_level(polsearch_level_criterion_t * plc,
+								     const apol_mls_level_t * lvl);
 	extern int polsearch_level_criterion_get_match(const polsearch_level_criterion_t * plc);
 	extern int polsearch_level_criterion_set_match(polsearch_level_criterion_t * plc, int m);
 
 	extern polsearch_range_criterion_t *polsearch_range_criterion_create(polsearch_op_e opr, bool neg,
-								      const apol_mls_range_t * rng, unsigned int m);
-	extern polsearch_range_criterion_t *polsearch_range_criterion_create_from_criterion(const polsearch_range_criterion_t * prc);
+									     const apol_mls_range_t * rng, unsigned int m);
+	extern polsearch_range_criterion_t *polsearch_range_criterion_create_from_criterion(const polsearch_range_criterion_t *
+											    prc);
 	extern void polsearch_range_criterion_destroy(polsearch_range_criterion_t ** prc);
 	extern const apol_mls_range_t *polsearch_range_criterion_get_range(const polsearch_range_criterion_t * prc);
-	extern apol_mls_range_t *polsearch_range_criterion_set_range(polsearch_range_criterion_t * prc, const apol_mls_range_t * rng);
+	extern apol_mls_range_t *polsearch_range_criterion_set_range(polsearch_range_criterion_t * prc,
+								     const apol_mls_range_t * rng);
 	extern unsigned int polsearch_range_criterion_get_match(const polsearch_range_criterion_t * prc);
 	extern unsigned int polsearch_range_criterion_set_match(polsearch_range_criterion_t * prc, unsigned int m);
 

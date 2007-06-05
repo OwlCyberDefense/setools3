@@ -30,6 +30,8 @@
 #include "query.hh"
 #include "test.hh"
 
+#include <sefs/fclist.hh>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -37,9 +39,6 @@ extern "C"
 
 #include <apol/policy.h>
 #include <apol/vector.h>
-
-#include <sefs/fclist.h>
-
 
 #ifdef __cplusplus
 }
@@ -127,7 +126,7 @@ extern "C"
 	 * @see polsearch_symbol_query::run(apol_policy_t*, sefs_fclist_t*)
 	 */
 	extern apol_vector_t *polsearch_symbol_query_run(const polsearch_symbol_query_t * sq, const apol_policy_t * p,
-						  const sefs_fclist_t * fclist);
+							 const sefs_fclist_t * fclist);
 	/**
 	 * Get a list of the valid types of tests to perform for the symol
 	 * type specified by the query.

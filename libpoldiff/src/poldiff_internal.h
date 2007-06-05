@@ -117,7 +117,6 @@ extern "C"
 		int remapped;
 	};
 
-
 /******************** error handling code below ********************/
 
 #define POLDIFF_MSG_ERR  1

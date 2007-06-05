@@ -9,7 +9,7 @@ dist_noinst_DATA = $(srcdir)/../polsearch.i
 BUILT_SOURCES = polsearch_wrap.c
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
-	@QPOL_CFLAGS@ @APOL_CFLAGS@ -I$(top_builddir) -fpic \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -I$(top_builddir) -fpic \
 	-I$(top_srcdir)/libpolsearch/include
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@SEFS_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @POLSEARCH_LIB_FLAG@

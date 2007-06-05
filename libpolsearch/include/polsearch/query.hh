@@ -37,11 +37,14 @@ extern "C"
 #include <apol/policy.h>
 #include <apol/vector.h>
 
-#include <sefs/fclist.h>
+#include <sefs/fclist.hh>
+
+#include <stdexcept>
 
 	/** Value to indicate the overall matching behavior of the query */
 	typedef enum polsearch_match
 	{
+		POLSEARCH_MATCH_ERROR = -1,	/*!< Error condition. */
 		POLSEARCH_MATCH_ALL = 0,	/*!< Returned symbols must match all tests. */
 		POLSEARCH_MATCH_ANY    /*!< Returned symbols must match at least one test. */
 	} polsearch_match_e;
@@ -53,19 +56,22 @@ extern "C"
  */
 class polsearch_query
 {
-	public:
+      public:
 	/**
 	 * Base class constructor.
 	 * @param m Set the matching behavior of the query, must be
 	 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
+	 * @exception std::bad_alloc Error allocating internal data fields.
 	 */
-	virtual polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL);
+	polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL) throw(std::bad_alloc);
 	/**
 	 * Base class copy constructor
+	 * @param pq The query to copy.
+	 * @exception std::bad_alloc Error allocating internal data fields.
 	 */
-	virtual polsearch_query(const polsearch_query& pq);
+	polsearch_query(const polsearch_query & pq) throw(std::bad_alloc);
 	//! Destructor.
-	virtual ~polsearch_query();
+	 virtual ~polsearch_query();
 
 	/**
 	 * Get the matching behavior of the query.
@@ -77,15 +83,16 @@ class polsearch_query
 	 * @param m One of POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY to set.
 	 * @return The behavior set.
 	 */
-	polsearch_match_e match(polsearch_match_e m);
-/**
-	* Get a list of the valid types of tests to perform for the symbol
-	* type specified by the query.
-	* @return A vector (of type polsearch_test_cond_e) containing all valid
-	* tests for the specified symbol type. The caller is responsible for
-	* calling apol_vector_destroy() on the returned vector.
-	*/
-	virtual apol_vector_t *getValidTests() const = 0;
+	polsearch_match_e match(polsearch_match_e m) throw(std::invalid_argument);
+	/**
+	 * Get a list of the valid types of tests to perform for the symbol
+	 * type specified by the query.
+	 * @return A vector (of type polsearch_test_cond_e) containing all valid
+	 * tests for the specified symbol type. The caller is responsible for
+	 * calling apol_vector_destroy() on the returned vector.
+	 * @exception std::bad_alloc Could not allocate the vector.
+	 */
+	virtual apol_vector_t *getValidTests() const throw(std::bad_alloc) = 0;
 	/**
 	 * Get the vector of tests performed by the query.
 	 * @return The vector of tests. The caller is free to modify this vector,
@@ -93,22 +100,22 @@ class polsearch_query
 	 */
 	apol_vector_t *tests();
 	/**
-		* Run the query.
-		* @param policy The policy containing the elements to match.
-		* @param fclist A file_contexts list to optionally use for tests that
-		* match file_context entries. It is an error to not provide \a fclist
-		* if a test matches file_context entries.
-		* @return A vector of results (polsearch_result), or NULL on
-		* error. The caller is responsible for calling apol_vector_destroy()
-		* on the returned vector.
-		*/
+	 * Run the query.
+	 * @param policy The policy containing the elements to match.
+	 * @param fclist A file_contexts list to optionally use for tests that
+	 * match file_context entries. It is an error to not provide \a fclist
+	 * if a test matches file_context entries.
+	 * @return A vector of results (polsearch_result), or NULL on
+	 * error. The caller is responsible for calling apol_vector_destroy()
+	 * on the returned vector.
+	 */
 	virtual apol_vector_t *run(const apol_policy_t * policy, const sefs_fclist_t * fclist = NULL) const = 0;
 
-	protected:
-	polsearch_match_e _match;      /*!< The matching behavior used for determining if an element matches with multiple tests. */
-	apol_vector_t * _tests;       /*!< The set of tests used by the query to determine which elements match. */
+      protected:
+	 polsearch_match_e _match;     /*!< The matching behavior used for determining if an element matches with multiple tests. */
+	apol_vector_t *_tests;	       /*!< The set of tests used by the query to determine which elements match. */
 
-	private:
+      private:
 };
 
 #ifdef __cplusplus
@@ -123,19 +130,27 @@ extern "C"
 
 	/**
 	 * Get the symbol matching behavior from a symbol query.
+	 * @param sq The query from which to get the matching behavior.
+	 * @return The current matching behavior or POLSEARCH_MATCH_ERROR on error.
 	 * @see polsearch_query::match()
 	 */
-	extern polsearch_match_e polsearch_query_get_match(const polsearch_symbol_query_t * sq);
+	extern polsearch_match_e polsearch_query_get_match(const polsearch_query_t * sq);
 	/**
 	 * Set the symbol matching behavior from a symbol query.
+	 * @param sq The query to set.
+	 * @param m The matching behavior to set.
+	 * @return The behavior set or POLSEARCH_MATCH_ERROR on error.
 	 * @see polsearch_query::match(polsearch_match_e)
 	 */
-	extern polsearch_match_e polsearch_query_set_match(polsearch_symbol_query_t * sq, polsearch_match_e m);
+	extern polsearch_match_e polsearch_query_set_match(polsearch_query_t * sq, polsearch_match_e m);
 	/**
 	 * Get the vector of tests run by a symbol query.
+	 * @param sq The query from which to get the tests.
+	 * @return The vector of tests or NULL on error. The caller should not
+	 * destroy the returned vector.
 	 * @see polsearch_query::tests()
 	 */
-	extern apol_vector_t *polsearch_query_get_tests(polsearch_symbol_query_t * sq);
+	extern apol_vector_t *polsearch_query_get_tests(polsearch_query_t * sq);
 
 #endif
 
@@ -143,4 +158,4 @@ extern "C"
 }
 #endif
 
-#endif /* POLSEARCH_QUERY_H */
+#endif				       /* POLSEARCH_QUERY_H */

@@ -5,13 +5,20 @@ polsearchsodir = $(libdir)
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ \
 	@SEFS_CFLAGS@ @APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(srcdir)/../include -fpic
+AM_CXXFLAGS = $(AM_CFLAGS)
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libpolsearch_a_SOURCES = \
+	criterion.cc \
+	polsearch.cc \
+	query.cc \
+	string_list.cc \
+	test.cc \
+	test_internal.hh \
 	util.c
 
 libpolsearch_a_DEPENDENCIES = \
-	$(top_builddir)/libapol/src/libapol.so
+	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libsefs/src/libsefs.so
 
 libpolsearch_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libpolsearch_a_SOURCES)))

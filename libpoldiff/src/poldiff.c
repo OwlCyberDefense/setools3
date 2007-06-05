@@ -300,13 +300,14 @@ static const poldiff_item_record_t item_records[] = {
 	 },
 };
 
-const poldiff_item_record_t *poldiff_get_item_record(uint32_t which){
+const poldiff_item_record_t *poldiff_get_item_record(uint32_t which)
+{
 	size_t i = 0;
 	size_t num_items;
 
 	num_items = sizeof(item_records) / sizeof(poldiff_item_record_t);
-	for(i = 0; i < num_items; i++){
-		if(item_records[i].flag_bit == which)
+	for (i = 0; i < num_items; i++) {
+		if (item_records[i].flag_bit == which)
 			return &item_records[i];
 	}
 	return NULL;
@@ -742,25 +743,28 @@ void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...)
 
 poldiff_item_get_form_fn_t poldiff_get_form_fn(const poldiff_item_record_t * diff)
 {
-	if(!diff) return NULL;
+	if (!diff)
+		return NULL;
 	return diff->get_form;
 }
 
 poldiff_item_to_string_fn_t poldiff_get_to_string_fn(const poldiff_item_record_t * diff)
 {
-	if(!diff) return NULL;
+	if (!diff)
+		return NULL;
 	return diff->to_string;
 }
 
 poldiff_get_item_stats_fn_t poldiff_get_stats_fn(const poldiff_item_record_t * diff)
 {
-	if(!diff) return NULL;
+	if (!diff)
+		return NULL;
 	return diff->get_stats;
 }
 
 poldiff_get_result_items_fn_t poldiff_get_results_fn(const poldiff_item_record_t * diff)
 {
-	if(!diff) return NULL;
+	if (!diff)
+		return NULL;
 	return diff->get_results;
 }
-
