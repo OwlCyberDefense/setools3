@@ -273,17 +273,17 @@ static apol_vector_t *poldiff_get_terule_vector(poldiff_t * diff, unsigned int i
 
 apol_vector_t *poldiff_get_terule_vector_member(poldiff_t * diff)
 {
-	poldiff_get_terule_vector(diff, POLDIFF_MEMBER_OFFSET);
+	return poldiff_get_terule_vector(diff, POLDIFF_MEMBER_OFFSET);
 }
 
 apol_vector_t *poldiff_get_terule_vector_change(poldiff_t * diff)
 {
-	poldiff_get_terule_vector(diff, POLDIFF_CHANGE_OFFSET);
+	return poldiff_get_terule_vector(diff, POLDIFF_CHANGE_OFFSET);
 }
 
 apol_vector_t *poldiff_get_terule_vector_trans(poldiff_t * diff)
 {
-	poldiff_get_terule_vector(diff, POLDIFF_TRANS_OFFSET);
+	return poldiff_get_terule_vector(diff, POLDIFF_TRANS_OFFSET);
 }
 
 poldiff_form_e poldiff_terule_get_form(const void *terule)
@@ -445,17 +445,17 @@ static int terule_reset(poldiff_t * diff, unsigned int index)
 
 int terule_reset_change(poldiff_t * diff)
 {
-	terule_reset(diff, POLDIFF_CHANGE_OFFSET);
+	return terule_reset(diff, POLDIFF_CHANGE_OFFSET);
 }
 
 int terule_reset_member(poldiff_t * diff)
 {
-	terule_reset(diff, POLDIFF_MEMBER_OFFSET);
+	return terule_reset(diff, POLDIFF_MEMBER_OFFSET);
 }
 
 int terule_reset_trans(poldiff_t * diff)
 {
-	terule_reset(diff, POLDIFF_TRANS_OFFSET);
+	return terule_reset(diff, POLDIFF_TRANS_OFFSET);
 }
 
 static void terule_free_item(void *item)
@@ -1073,17 +1073,17 @@ static int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 
 int terule_new_diff_member(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	terule_new_diff(diff, form, item, POLDIFF_MEMBER_OFFSET);
+	return terule_new_diff(diff, form, item, POLDIFF_MEMBER_OFFSET);
 }
 
 int terule_new_diff_change(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	terule_new_diff(diff, form, item, POLDIFF_CHANGE_OFFSET);
+	return terule_new_diff(diff, form, item, POLDIFF_CHANGE_OFFSET);
 }
 
 int terule_new_diff_trans(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	terule_new_diff(diff, form, item, POLDIFF_TRANS_OFFSET);
+	return terule_new_diff(diff, form, item, POLDIFF_TRANS_OFFSET);
 }
 
 static int terule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsigned int index)
@@ -1156,17 +1156,17 @@ static int terule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsi
 
 int terule_deep_diff_member(poldiff_t * diff, const void *x, const void *y)
 {
-	terule_deep_diff(diff, x, y, POLDIFF_MEMBER_OFFSET);
+	return terule_deep_diff(diff, x, y, POLDIFF_MEMBER_OFFSET);
 }
 
 int terule_deep_diff_change(poldiff_t * diff, const void *x, const void *y)
 {
-	terule_deep_diff(diff, x, y, POLDIFF_CHANGE_OFFSET);
+	return terule_deep_diff(diff, x, y, POLDIFF_CHANGE_OFFSET);
 }
 
 int terule_deep_diff_trans(poldiff_t * diff, const void *x, const void *y)
 {
-	terule_deep_diff(diff, x, y, POLDIFF_TRANS_OFFSET);
+	return terule_deep_diff(diff, x, y, POLDIFF_TRANS_OFFSET);
 }
 
 int terule_enable_line_numbers(poldiff_t * diff, unsigned int index)
