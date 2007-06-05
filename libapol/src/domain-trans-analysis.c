@@ -1360,7 +1360,7 @@ void apol_policy_reset_domain_trans_table(apol_policy_t * policy)
 
 void apol_domain_trans_table_reset(apol_policy_t * policy)
 {
-	return apol_policy_reset_domain_trans_table(policy);
+	apol_policy_reset_domain_trans_table(policy);
 }
 
 apol_domain_trans_analysis_t *apol_domain_trans_analysis_create(void)
