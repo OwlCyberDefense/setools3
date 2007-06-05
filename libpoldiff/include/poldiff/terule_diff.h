@@ -48,7 +48,9 @@ extern "C"
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-	extern void poldiff_terule_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_terule_get_stats_member(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_terule_get_stats_change(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_terule_get_stats_trans(poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of te rule differences from the te rule difference
@@ -61,7 +63,9 @@ extern "C"
  *  error.  The caller should <b>not</b> destroy the vector returned.
  *  If the call fails, errno will be set.
  */
-	extern apol_vector_t *poldiff_get_terule_vector(poldiff_t * diff);
+	extern apol_vector_t *poldiff_get_terule_vector_member(poldiff_t * diff);
+	extern apol_vector_t *poldiff_get_terule_vector_change(poldiff_t * diff);
+	extern apol_vector_t *poldiff_get_terule_vector_trans(poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in

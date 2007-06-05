@@ -58,7 +58,10 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-	int avrule_reset(poldiff_t * diff);
+	int avrule_reset_allow(poldiff_t * diff);
+	int avrule_reset_neverallow(poldiff_t * diff);
+	int avrule_reset_dontaudit(poldiff_t * diff);
+	int avrule_reset_auditallow(poldiff_t * diff);
 
 	apol_vector_t *avrule_get_allow(poldiff_t * diff, apol_policy_t * policy);
 	apol_vector_t *avrule_get_neverallow(poldiff_t * diff, apol_policy_t * policy);
@@ -105,7 +108,10 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-	int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int avrule_new_diff_allow(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int avrule_new_diff_neverallow(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int avrule_new_diff_dontaudit(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int avrule_new_diff_auditallow(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two pseudo-av rules for which
@@ -121,7 +127,10 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-	int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y);
+	int avrule_deep_diff_allow(poldiff_t * diff, const void *x, const void *y);
+	int avrule_deep_diff_neverallow(poldiff_t * diff, const void *x, const void *y);
+	int avrule_deep_diff_dontaudit(poldiff_t * diff, const void *x, const void *y);
+	int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y);
 
 /**
  * Iterate through all AV rule differences, filling in their line numbers.
@@ -130,7 +139,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on errno.
  */
-	int avrule_enable_line_numbers(poldiff_t * diff);
+	int avrule_enable_line_numbers(poldiff_t * diff, unsigned int index);
 
 #ifdef	__cplusplus
 }

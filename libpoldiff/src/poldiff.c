@@ -35,7 +35,7 @@
  * implement at least these functions.  Next, a record should be
  * appended to the array 'item_records' below.
  */
-typedef struct poldiff_item_record
+struct poldiff_item_record
 {
 	const char *item_name;
 	uint32_t flag_bit;
@@ -48,7 +48,7 @@ typedef struct poldiff_item_record
 	poldiff_item_comp_fn_t comp;
 	poldiff_new_diff_fn_t new_diff;
 	poldiff_deep_diff_fn_t deep_diff;
-} poldiff_item_record_t;
+};
 
 static const poldiff_item_record_t item_records[] = {
 	{
@@ -67,54 +67,54 @@ static const poldiff_item_record_t item_records[] = {
 	{
 	 "avrule-avallow",
 	 POLDIFF_DIFF_AVALLOW,
-	 poldiff_avrule_get_stats,
-	 poldiff_get_avrule_vector,
+	 poldiff_avrule_get_stats_allow,
+	 poldiff_get_avrule_vector_allow,
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
-	 avrule_reset,
+	 avrule_reset_allow,
 	 avrule_get_allow,
 	 avrule_comp,
-	 avrule_new_diff,
-	 avrule_deep_diff,
+	 avrule_new_diff_allow,
+	 avrule_deep_diff_allow,
 	 },
 	{
 	 "avrule-avneverallow",
 	 POLDIFF_DIFF_AVNEVERALLOW,
-	 poldiff_avrule_get_stats,
-	 poldiff_get_avrule_vector,
+	 poldiff_avrule_get_stats_neverallow,
+	 poldiff_get_avrule_vector_neverallow,
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
-	 avrule_reset,
+	 avrule_reset_neverallow,
 	 avrule_get_neverallow,
 	 avrule_comp,
-	 avrule_new_diff,
-	 avrule_deep_diff,
+	 avrule_new_diff_neverallow,
+	 avrule_deep_diff_neverallow,
 	 },
 	{
 	 "avrule-avauditallow",
 	 POLDIFF_DIFF_AVAUDITALLOW,
-	 poldiff_avrule_get_stats,
-	 poldiff_get_avrule_vector,
+	 poldiff_avrule_get_stats_auditallow,
+	 poldiff_get_avrule_vector_auditallow,
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
-	 avrule_reset,
+	 avrule_reset_auditallow,
 	 avrule_get_auditallow,
 	 avrule_comp,
-	 avrule_new_diff,
-	 avrule_deep_diff,
+	 avrule_new_diff_auditallow,
+	 avrule_deep_diff_auditallow,
 	 },
 	{
 	 "avrule-avdontaudit",
 	 POLDIFF_DIFF_AVDONTAUDIT,
-	 poldiff_avrule_get_stats,
-	 poldiff_get_avrule_vector,
+	 poldiff_avrule_get_stats_dontaudit,
+	 poldiff_get_avrule_vector_dontaudit,
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
-	 avrule_reset,
+	 avrule_reset_dontaudit,
 	 avrule_get_dontaudit,
 	 avrule_comp,
-	 avrule_new_diff,
-	 avrule_deep_diff,
+	 avrule_new_diff_dontaudit,
+	 avrule_deep_diff_dontaudit,
 	 },
 	{
 	 "bool",
@@ -234,17 +234,43 @@ static const poldiff_item_record_t item_records[] = {
 	 role_trans_deep_diff,
 	 },
 	{
-	 "terule",
-	 POLDIFF_DIFF_TERULES,
-	 poldiff_terule_get_stats,
-	 poldiff_get_terule_vector,
+	 "te-trans",
+	 POLDIFF_DIFF_TETRANS,
+	 poldiff_terule_get_stats_trans,
+	 poldiff_get_terule_vector_trans,
 	 poldiff_terule_get_form,
 	 poldiff_terule_to_string,
-	 terule_reset,
-	 terule_get_items,
+	 terule_reset_trans,
+	 terule_get_items_trans,
 	 terule_comp,
-	 terule_new_diff,
-	 terule_deep_diff,
+	 terule_new_diff_trans,
+	 terule_deep_diff_trans,
+	 },
+	{
+	 "te-change",
+	 POLDIFF_DIFF_TECHANGE,
+	 poldiff_terule_get_stats_change,
+	 poldiff_get_terule_vector_change,
+	 poldiff_terule_get_form,
+	 poldiff_terule_to_string,
+	 terule_reset_change,
+	 terule_get_items_change,
+	 terule_comp,
+	 terule_new_diff_change,
+	 terule_deep_diff_change,
+	 },
+	{
+	 "te-member",
+	 POLDIFF_DIFF_TEMEMBER,
+	 poldiff_terule_get_stats_member,
+	 poldiff_get_terule_vector_member,
+	 poldiff_terule_get_form,
+	 poldiff_terule_to_string,
+	 terule_reset_member,
+	 terule_get_items_member,
+	 terule_comp,
+	 terule_new_diff_member,
+	 terule_deep_diff_member,
 	 },
 	{
 	 "type",
@@ -271,8 +297,20 @@ static const poldiff_item_record_t item_records[] = {
 	 user_comp,
 	 user_new_diff,
 	 user_deep_diff,
-	 }
+	 },
 };
+
+const poldiff_item_record_t *poldiff_get_item_record(uint32_t which){
+	size_t i = 0;
+	size_t num_items;
+
+	num_items = sizeof(item_records) / sizeof(poldiff_item_record_t);
+	for(i = 0; i < num_items; i++){
+		if(item_records[i].flag_bit == which)
+			return &item_records[i];
+	}
+	return NULL;
+}
 
 poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_policy, poldiff_handle_fn_t fn, void *callback_arg)
 {
@@ -310,7 +348,10 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	}
 
 	if ((diff->attrib_diffs = attrib_summary_create()) == NULL ||
-	    (diff->avrule_diffs = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[0] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[1] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[2] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[3] = avrule_create()) == NULL ||
 	    (diff->bool_diffs = bool_create()) == NULL ||
 	    (diff->cat_diffs = cat_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
@@ -320,7 +361,9 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->role_trans_diffs = role_trans_create()) == NULL ||
-	    (diff->terule_diffs = terule_create()) == NULL ||
+	    (diff->terule_diffs[0] = terule_create()) == NULL ||
+	    (diff->terule_diffs[1] = terule_create()) == NULL ||
+	    (diff->terule_diffs[2] = terule_create()) == NULL ||
 	    (diff->type_diffs = type_summary_create()) == NULL || (diff->user_diffs = user_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
@@ -343,7 +386,10 @@ void poldiff_destroy(poldiff_t ** diff)
 
 	type_map_destroy(&(*diff)->type_map);
 	attrib_summary_destroy(&(*diff)->attrib_diffs);
-	avrule_destroy(&(*diff)->avrule_diffs);
+	avrule_destroy(&(*diff)->avrule_diffs[0]);
+	avrule_destroy(&(*diff)->avrule_diffs[1]);
+	avrule_destroy(&(*diff)->avrule_diffs[2]);
+	avrule_destroy(&(*diff)->avrule_diffs[3]);
 	bool_destroy(&(*diff)->bool_diffs);
 	cat_destroy(&(*diff)->cat_diffs);
 	class_destroy(&(*diff)->class_diffs);
@@ -354,7 +400,9 @@ void poldiff_destroy(poldiff_t ** diff)
 	role_allow_destroy(&(*diff)->role_allow_diffs);
 	role_trans_destroy(&(*diff)->role_trans_diffs);
 	user_destroy(&(*diff)->user_diffs);
-	terule_destroy(&(*diff)->terule_diffs);
+	terule_destroy(&(*diff)->terule_diffs[0]);
+	terule_destroy(&(*diff)->terule_diffs[1]);
+	terule_destroy(&(*diff)->terule_diffs[2]);
 	type_summary_destroy(&(*diff)->type_diffs);
 	free(*diff);
 	*diff = NULL;
@@ -553,10 +601,25 @@ int poldiff_enable_line_numbers(poldiff_t * diff)
 			return -1;
 		if (qpol_policy_build_syn_rule_table(diff->mod_qpol))
 			return -1;
-		if ((retval = avrule_enable_line_numbers(diff)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, POLDIFF_ALLOW_OFFSET)) < 0) {
 			return retval;
 		}
-		if ((retval = terule_enable_line_numbers(diff)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, POLDIFF_NEVERALLOW_OFFSET)) < 0) {
+			return retval;
+		}
+		if ((retval = avrule_enable_line_numbers(diff, POLDIFF_DONTAUDIT_OFFSET)) < 0) {
+			return retval;
+		}
+		if ((retval = avrule_enable_line_numbers(diff, POLDIFF_AUDITALLOW_OFFSET)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff, POLDIFF_MEMBER_OFFSET)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff, POLDIFF_CHANGE_OFFSET)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff, POLDIFF_TRANS_OFFSET)) < 0) {
 			return retval;
 		}
 		diff->line_numbers_enabled = 1;
@@ -676,3 +739,28 @@ void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...)
 	}
 	va_end(ap);
 }
+
+poldiff_item_get_form_fn_t poldiff_get_form_fn(const poldiff_item_record_t * diff)
+{
+	if(!diff) return NULL;
+	return diff->get_form;
+}
+
+poldiff_item_to_string_fn_t poldiff_get_to_string_fn(const poldiff_item_record_t * diff)
+{
+	if(!diff) return NULL;
+	return diff->to_string;
+}
+
+poldiff_get_item_stats_fn_t poldiff_get_stats_fn(const poldiff_item_record_t * diff)
+{
+	if(!diff) return NULL;
+	return diff->get_stats;
+}
+
+poldiff_get_result_items_fn_t poldiff_get_results_fn(const poldiff_item_record_t * diff)
+{
+	if(!diff) return NULL;
+	return diff->get_results;
+}
+

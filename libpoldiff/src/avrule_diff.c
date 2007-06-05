@@ -102,19 +102,39 @@ typedef struct pseudo_avrule
 
 /******************** public avrule functions ********************/
 
-void poldiff_avrule_get_stats(poldiff_t * diff, size_t stats[5])
+static void poldiff_avrule_get_stats(poldiff_t * diff, size_t stats[5], unsigned int index)
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return;
 	}
-	stats[0] = diff->avrule_diffs->num_added;
-	stats[1] = diff->avrule_diffs->num_removed;
-	stats[2] = diff->avrule_diffs->num_modified;
-	stats[3] = diff->avrule_diffs->num_added_type;
-	stats[4] = diff->avrule_diffs->num_removed_type;
+	stats[0] = diff->avrule_diffs[index]->num_added;
+	stats[1] = diff->avrule_diffs[index]->num_removed;
+	stats[2] = diff->avrule_diffs[index]->num_modified;
+	stats[3] = diff->avrule_diffs[index]->num_added_type;
+	stats[4] = diff->avrule_diffs[index]->num_removed_type;
 }
+
+void poldiff_avrule_get_stats_allow(poldiff_t * diff, size_t stats[5])
+{
+	poldiff_avrule_get_stats(diff, stats, POLDIFF_ALLOW_OFFSET);
+}	
+
+void poldiff_avrule_get_stats_neverallow(poldiff_t * diff, size_t stats[5])
+{
+	poldiff_avrule_get_stats(diff, stats, POLDIFF_NEVERALLOW_OFFSET);
+}	
+
+void poldiff_avrule_get_stats_dontaudit(poldiff_t * diff, size_t stats[5])
+{
+	poldiff_avrule_get_stats(diff, stats, POLDIFF_DONTAUDIT_OFFSET);
+}	
+
+void poldiff_avrule_get_stats_auditallow(poldiff_t * diff, size_t stats[5])
+{
+	poldiff_avrule_get_stats(diff, stats, POLDIFF_AUDITALLOW_OFFSET);
+}	
 
 char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule)
 {
@@ -240,17 +260,33 @@ static int poldiff_avrule_cmp(const void *x, const void *y, void *data __attribu
 	return b->branch - a->branch;
 }
 
-apol_vector_t *poldiff_get_avrule_vector(poldiff_t * diff)
+static apol_vector_t *poldiff_get_avrule_vector(poldiff_t * diff,unsigned int index)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
-	if (diff->avrule_diffs->diffs_sorted == 0) {
-		apol_vector_sort(diff->avrule_diffs->diffs, poldiff_avrule_cmp, NULL);
-		diff->avrule_diffs->diffs_sorted = 1;
+	if (diff->avrule_diffs[index]->diffs_sorted == 0) {
+		apol_vector_sort(diff->avrule_diffs[index]->diffs, poldiff_avrule_cmp, NULL);
+		diff->avrule_diffs[index]->diffs_sorted = 1;
 	}
-	return diff->avrule_diffs->diffs;
+	return diff->avrule_diffs[index]->diffs;
+}
+
+apol_vector_t *poldiff_get_avrule_vector_allow(poldiff_t * diff){
+	return poldiff_get_avrule_vector(diff, POLDIFF_ALLOW_OFFSET);
+}
+
+apol_vector_t *poldiff_get_avrule_vector_neverallow(poldiff_t * diff){
+	return poldiff_get_avrule_vector(diff, POLDIFF_NEVERALLOW_OFFSET);
+}
+
+apol_vector_t *poldiff_get_avrule_vector_dontaudit(poldiff_t * diff){
+	return poldiff_get_avrule_vector(diff, POLDIFF_DONTAUDIT_OFFSET);
+}
+
+apol_vector_t *poldiff_get_avrule_vector_auditallow(poldiff_t * diff){
+	return poldiff_get_avrule_vector(diff, POLDIFF_AUDITALLOW_OFFSET);
 }
 
 poldiff_form_e poldiff_avrule_get_form(const void *avrule)
@@ -497,13 +533,13 @@ void avrule_destroy(poldiff_avrule_summary_t ** rs)
 	}
 }
 
-int avrule_reset(poldiff_t * diff)
+static int avrule_reset(poldiff_t * diff, unsigned int index)
 {
 	int error = 0;
 
-	avrule_destroy(&diff->avrule_diffs);
-	diff->avrule_diffs = avrule_create();
-	if (diff->avrule_diffs == NULL) {
+	avrule_destroy(&diff->avrule_diffs[index]);
+	diff->avrule_diffs[index] = avrule_create();
+	if (diff->avrule_diffs[index] == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		errno = error;
@@ -512,6 +548,24 @@ int avrule_reset(poldiff_t * diff)
 
 	return 0;
 }
+
+int avrule_reset_allow(poldiff_t * diff)
+{ 
+	return avrule_reset(diff,POLDIFF_ALLOW_OFFSET);
+}
+int avrule_reset_neverallow(poldiff_t * diff)
+{ 
+	return avrule_reset(diff,POLDIFF_NEVERALLOW_OFFSET);
+}
+int avrule_reset_dontaudit(poldiff_t * diff)
+{ 
+	return avrule_reset(diff,POLDIFF_DONTAUDIT_OFFSET);
+}
+int avrule_reset_auditallow(poldiff_t * diff)
+{ 
+	return avrule_reset(diff,POLDIFF_AUDITALLOW_OFFSET);
+}
+
 
 static void avrule_free_item(void *item)
 {
@@ -1091,7 +1145,7 @@ static poldiff_avrule_t *make_avdiff(poldiff_t * diff, poldiff_form_e form, pseu
 	return pa;
 }
 
-int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
+static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item, unsigned int index)
 {
 	pseudo_avrule_t *rule = (pseudo_avrule_t *) item;
 	poldiff_avrule_t *pa = NULL;
@@ -1196,23 +1250,23 @@ int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 		}
 	}
 
-	if (apol_vector_append(diff->avrule_diffs->diffs, pa) < 0) {
+	if (apol_vector_append(diff->avrule_diffs[index]->diffs, pa) < 0) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-		diff->avrule_diffs->num_added++;
+		diff->avrule_diffs[index]->num_added++;
 		break;
 	case POLDIFF_FORM_ADD_TYPE:
-		diff->avrule_diffs->num_added_type++;
+		diff->avrule_diffs[index]->num_added_type++;
 		break;
 	case POLDIFF_FORM_REMOVED:
-		diff->avrule_diffs->num_removed++;
+		diff->avrule_diffs[index]->num_removed++;
 		break;
 	case POLDIFF_FORM_REMOVE_TYPE:
-		diff->avrule_diffs->num_removed_type++;
+		diff->avrule_diffs[index]->num_removed_type++;
 		break;
 	default:
 		error = EBADRQC;       /* should never get here */
@@ -1220,7 +1274,7 @@ int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 		assert(0);
 		goto cleanup;
 	}
-	diff->avrule_diffs->diffs_sorted = 0;
+	diff->avrule_diffs[index]->diffs_sorted = 0;
 	retval = 0;
       cleanup:
 	if (retval < 0) {
@@ -1230,7 +1284,24 @@ int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	return retval;
 }
 
-int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y)
+int avrule_new_diff_allow(poldiff_t * diff, poldiff_form_e form, const void *item)
+{
+	return avrule_new_diff(diff, form, item, POLDIFF_ALLOW_OFFSET);
+}
+int avrule_new_diff_neverallow(poldiff_t * diff, poldiff_form_e form, const void *item)
+{
+	return avrule_new_diff(diff, form, item, POLDIFF_NEVERALLOW_OFFSET);
+}
+int avrule_new_diff_dontaudit(poldiff_t * diff, poldiff_form_e form, const void *item)
+{
+	return avrule_new_diff(diff, form, item, POLDIFF_DONTAUDIT_OFFSET);
+}
+int avrule_new_diff_auditallow(poldiff_t * diff, poldiff_form_e form, const void *item)
+{
+	return avrule_new_diff(diff, form, item, POLDIFF_AUDITALLOW_OFFSET);
+}
+
+static int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsigned int index)
 {
 	pseudo_avrule_t *r1 = (pseudo_avrule_t *) x;
 	pseudo_avrule_t *r2 = (pseudo_avrule_t *) y;
@@ -1342,13 +1413,13 @@ int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			}
 			memcpy(pa->mod_rules, r2->rules, r2->num_rules * sizeof(qpol_avrule_t *));
 		}
-		if (apol_vector_append(diff->avrule_diffs->diffs, pa) < 0) {
+		if (apol_vector_append(diff->avrule_diffs[index]->diffs, pa) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		diff->avrule_diffs->num_modified++;
-		diff->avrule_diffs->diffs_sorted = 0;
+		diff->avrule_diffs[index]->num_modified++;
+		diff->avrule_diffs[index]->diffs_sorted = 0;
 	}
 	retval = 0;
       cleanup:
@@ -1362,7 +1433,24 @@ int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y)
 	return retval;
 }
 
-int avrule_enable_line_numbers(poldiff_t * diff)
+int avrule_deep_diff_allow(poldiff_t * diff, const void *x, const void *y)
+{
+	return avrule_deep_diff(diff, x, y, POLDIFF_ALLOW_OFFSET);
+}
+int avrule_deep_diff_neverallow(poldiff_t * diff, const void *x, const void *y)
+{
+	return avrule_deep_diff(diff, x, y, POLDIFF_NEVERALLOW_OFFSET);
+}
+int avrule_deep_diff_dontaudit(poldiff_t * diff, const void *x, const void *y)
+{
+	return avrule_deep_diff(diff, x, y, POLDIFF_DONTAUDIT_OFFSET);
+}
+int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y)
+{
+	return avrule_deep_diff(diff, x, y, POLDIFF_AUDITALLOW_OFFSET);
+}
+
+int avrule_enable_line_numbers(poldiff_t * diff, unsigned int index)
 {
 	apol_vector_t *av = NULL;
 	poldiff_avrule_t *avrule = NULL;
@@ -1372,7 +1460,7 @@ int avrule_enable_line_numbers(poldiff_t * diff)
 	int error = 0;
 	unsigned long lineno = 0;
 
-	av = poldiff_get_avrule_vector(diff);
+	av = poldiff_get_avrule_vector(diff, index);
 
 	for (i = 0; i < apol_vector_get_size(av); i++) {
 		avrule = apol_vector_get_element(av, i);

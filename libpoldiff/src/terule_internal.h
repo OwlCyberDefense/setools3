@@ -58,7 +58,9 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-	int terule_reset(poldiff_t * diff);
+	int terule_reset_change(poldiff_t * diff);
+	int terule_reset_member(poldiff_t * diff);
+	int terule_reset_trans(poldiff_t * diff);
 
 /**
  * Get a vector of all terules from the given policy, sorted.  This
@@ -73,7 +75,11 @@ extern "C"
  * apol_vector_destroy() afterwards.  On error, return NULL and set
  * errno.
  */
-	apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy);
+
+	apol_vector_t *terule_get_items_trans(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *terule_get_items_change(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *terule_get_items_member(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy, unsigned int flags);
 
 /**
  * Compare two pseudo_terule_t objects, determining if they have the
@@ -101,7 +107,9 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-	int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int terule_new_diff_member(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int terule_new_diff_change(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int terule_new_diff_trans(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two pseudo-te rules for which
@@ -117,7 +125,9 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-	int terule_deep_diff(poldiff_t * diff, const void *x, const void *y);
+	int terule_deep_diff_member(poldiff_t * diff, const void *x, const void *y);
+	int terule_deep_diff_change(poldiff_t * diff, const void *x, const void *y);
+	int terule_deep_diff_trans(poldiff_t * diff, const void *x, const void *y);
 
 /**
  * Iterate through all TE rule differences, filling in their line numbers.
@@ -126,7 +136,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on errno.
  */
-	int terule_enable_line_numbers(poldiff_t * diff);
+	int terule_enable_line_numbers(poldiff_t * diff, unsigned int index);
 
 #ifdef	__cplusplus
 }

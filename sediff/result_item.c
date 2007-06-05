@@ -834,7 +834,8 @@ static apol_vector_t *result_item_avrule_sort(result_item_t * item, poldiff_form
 	size_t i;
 	void *elem;
 	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
-	orig_v = poldiff_get_avrule_vector(item->diff);
+	// FIXME:
+	orig_v = poldiff_get_avrule_vector_allow(item->diff);
 	if ((v = apol_vector_create(NULL)) == NULL) {
 		return NULL;
 	}
@@ -906,8 +907,9 @@ result_item_t *result_item_create_avrules(GtkTextTagTable * table)
 		return item;
 	}
 	item->label = "AV Rules";
+	// FIXME:
 	item->bit_pos = POLDIFF_DIFF_AVRULES;
-	item->get_vector = poldiff_get_avrule_vector;
+	item->get_vector = poldiff_get_avrule_vector_allow;
 	item->get_form = poldiff_avrule_get_form;
 	item->get_string = poldiff_avrule_to_string;
 	item->data.multi.print_diff = result_item_avrule_print_diff;
@@ -968,7 +970,8 @@ static apol_vector_t *result_item_terule_sort(result_item_t * item, poldiff_form
 	size_t i;
 	void *elem;
 	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
-	orig_v = poldiff_get_terule_vector(item->diff);
+	// FIXME:
+	orig_v = poldiff_get_terule_vector_member(item->diff);
 	if ((v = apol_vector_create(NULL)) == NULL) {
 		return NULL;
 	}
@@ -1041,7 +1044,8 @@ result_item_t *result_item_create_terules(GtkTextTagTable * table)
 	}
 	item->label = "Type Rules";
 	item->bit_pos = POLDIFF_DIFF_TERULES;
-	item->get_vector = poldiff_get_terule_vector;
+	// FIXME:
+	item->get_vector = poldiff_get_terule_vector_member;
 	item->get_form = poldiff_terule_get_form;
 	item->get_string = poldiff_terule_to_string;
 	item->data.multi.print_diff = result_item_terule_print_diff;
