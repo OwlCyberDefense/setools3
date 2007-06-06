@@ -27,6 +27,7 @@
 #include <config.h>
 
 #include <sefs/fcfile.hh>
+#include <sefs/filesystem.hh>
 #include <sefs/entry.hh>
 #include <sefs/query.hh>
 
@@ -166,7 +167,7 @@ int main(int argc, char *argv[])
 	{
 		if (S_ISDIR(sb.st_mode))
 		{
-			// FIX ME: create a filesystem
+			fclist = new sefs_filesystem(argv[optind], false, NULL, NULL);
 		}
 		else
 		{

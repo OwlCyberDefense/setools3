@@ -60,7 +60,7 @@ class sefs_filesystem:public sefs_fclist
 	 * @param varg Value to be passed as the first parameter to
 	 * the callback function.
 	 * @exception bad_alloc Out of memory.
-	 * @exception invalid_argument Root directory must exist.
+	 * @exception invalid_argument Root directory does not exist.
 	 * @exception runtime_error Could not open root directory or
 	 * /etc/mtab.
 	 */
@@ -71,9 +71,10 @@ class sefs_filesystem:public sefs_fclist
 	~sefs_filesystem();
 
 	/**
-	 * Perform a sefs query on this filesystem object, and then invoke
-	 * a callback upon each matching entry.  Mapping occurs in the
-	 * order of entries as given by ftw().
+	 * Perform a sefs query on this filesystem object, and then
+	 * invoke a callback upon each matching entry.  Mapping is in
+	 * pre-order (i.e., directories will be mapped prior to files
+	 * and subdirectories they contain.)
 	 * @param query Query object containing search parameters.  If
 	 * NULL, invoke the callback on all entries.
 	 * @param fn Function to invoke upon matching entries.  This
@@ -106,6 +107,17 @@ class sefs_filesystem:public sefs_fclist
 	 * error.  Do not free() this string.
 	 */
 	const char *root() const;
+
+	/**
+	 * Convenience function to check if a file matches a single
+	 * query, without the overhead of constructing an entire
+	 * sefs_filesystem for a single file.  If the query object is
+	 * NULL then the match always succeeds (returns true).
+	 * @param path Path to a file (or directory) to check.
+	 * @param query Query object containing search parameters.
+	 * @return true if the query match, false if not.
+	 */
+	static bool isQueryMatch(const char *path, sefs_query * query);
 
       private:
 	char *_root;

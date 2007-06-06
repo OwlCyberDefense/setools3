@@ -28,6 +28,7 @@ libsefs_a_SOURCES = \
 	fcfile.cc \
 	fclist.cc \
 	filesystem.cc \
+	new_ftw.c new_ftw.h \
 	query.cc \
 	sefs_internal.hh \
 	util.c

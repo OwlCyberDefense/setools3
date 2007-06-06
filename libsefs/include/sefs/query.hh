@@ -190,7 +190,9 @@ class sefs_query
 	/**
 	 * Set a sefs query to operate starting at directory \a root.
 	 * By default, the query will operate at the topmost of the
-	 * fclist and will recurse.
+	 * fclist and will recurse.  Because file_context files use
+	 * regular expressions instead of paths, this modifier has no
+	 * effect when querying against a fcfile object.
 	 * @param root Directory from which to begin the query, or
 	 * NULL to clear this field.  This field is not affected by
 	 * the sefs_query_set_regex() option.
