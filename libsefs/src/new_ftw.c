@@ -402,7 +402,8 @@ static int internal_function process_entry(struct new_ftw_data *data, struct dir
 	return result;
 }
 
-static int __attribute((noinline)) internal_function ftw_dir(struct new_ftw_data *data, struct STAT *st, struct dir_data *old_dir)
+static int __attribute((noinline))
+internal_function ftw_dir(struct new_ftw_data *data, struct STAT *st, struct dir_data *old_dir)
 {
 	struct dir_data dir;
 	struct dirent64 *d;
@@ -524,8 +525,7 @@ static int __attribute((noinline)) internal_function ftw_dir(struct new_ftw_data
 	return result;
 }
 
-static int
-__attribute((noinline))
+static int __attribute((noinline))
 internal_function new_ftw_startup(const char *dir, int is_nftw, void *func, int descriptors, int flags, void *func_data)
 {
 	struct new_ftw_data data;

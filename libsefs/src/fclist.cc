@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <selinux/context.h>
 #include <sys/types.h>
 
 static int fclist_sefs_context_node_comp(const void *a, const void *b, void *arg __attribute__ ((unused)))
@@ -312,7 +313,7 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 		throw std::runtime_error(strerror(errno));
 	}
 
-	if (range == NULL)
+	if (range == NULL || range[0] == '\0')
 	{
 		m = NULL;
 	}
@@ -399,6 +400,31 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 		throw;
 	}
 
+	return node;
+}
+
+struct sefs_context_node *sefs_fclist::getContext(const security_context_t scon) throw(std::bad_alloc)
+{
+	context_t con;
+	if ((con = context_new(scon)) == 0)
+	{
+		throw std::bad_alloc();
+	}
+	const char *user = context_user_get(con);
+	const char *role = context_role_get(con);
+	const char *type = context_type_get(con);
+	const char *range = context_range_get(con);
+	struct sefs_context_node *node = NULL;
+	try
+	{
+		node = getContext(user, role, type, range);
+	}
+	catch(...)
+	{
+		context_free(con);
+		throw;
+	}
+	context_free(con);
 	return node;
 }
 

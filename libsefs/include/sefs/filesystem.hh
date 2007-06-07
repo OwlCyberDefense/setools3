@@ -45,6 +45,15 @@ extern "C"
  */
 class sefs_filesystem:public sefs_fclist
 {
+	// private functions -- do not call these directly from
+	// outside of the library
+
+	friend struct sefs_context_node *sefs_filesystem_get_context(sefs_filesystem *, security_context_t) throw(std::bad_alloc);
+	friend sefs_entry *sefs_filesystem_get_entry(sefs_filesystem *, const struct sefs_context_node *, uint32_t,
+						     const char *) throw(std::bad_alloc);
+	friend bool sefs_filesystem_is_query_match(sefs_filesystem *, const sefs_query *, const char *, const struct stat64 *,
+						   apol_vector_t *, apol_mls_range_t *) throw(std::runtime_error);
+
       public:
 
 	/**
@@ -52,9 +61,8 @@ class sefs_filesystem:public sefs_fclist
 	 * representing the filesystem rooted at directory \a root.
 	 * <b>Be aware that the constructor is not thread-safe.</b>
 	 * @param root Directory to use as the root of the filesystem.
-	 * @param rw If true, then this filesystem object only
-	 * represents files (and directories) on filesystems that are
-	 * mounted read/write.  Otherwise it represents all files.
+	 * This object represents this directory and all
+	 * subdirectories, including other mounted filesystems.
 	 * @param msg_callback Callback to invoke as errors/warnings
 	 * are generated.  If NULL, write messages to standard error.
 	 * @param varg Value to be passed as the first parameter to
@@ -64,9 +72,9 @@ class sefs_filesystem:public sefs_fclist
 	 * @exception runtime_error Could not open root directory or
 	 * /etc/mtab.
 	 */
-	sefs_filesystem(const char *root, bool rw, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
-												      std::invalid_argument,
-												      std::runtime_error);
+	 sefs_filesystem(const char *root, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
+											      std::invalid_argument,
+											      std::runtime_error);
 
 	~sefs_filesystem();
 
@@ -108,18 +116,10 @@ class sefs_filesystem:public sefs_fclist
 	 */
 	const char *root() const;
 
-	/**
-	 * Convenience function to check if a file matches a single
-	 * query, without the overhead of constructing an entire
-	 * sefs_filesystem for a single file.  If the query object is
-	 * NULL then the match always succeeds (returns true).
-	 * @param path Path to a file (or directory) to check.
-	 * @param query Query object containing search parameters.
-	 * @return true if the query match, false if not.
-	 */
-	static bool isQueryMatch(const char *path, sefs_query * query);
-
       private:
+	 bool isQueryMatch(const sefs_query * query, const char *path, const struct stat64 *sb, apol_vector_t * type_list,
+			   apol_mls_range_t * range) throw(std::runtime_error);
+	sefs_entry *getEntry(const struct sefs_context_node *context, uint32_t objectClass, const char *path);
 	char *_root;
 	bool _rw, _mls;
 	apol_vector_t *_mounts;
@@ -140,7 +140,7 @@ extern "C"
  * the filesystem rooted at directory \a root.
  * @see sefs_filesystem::sefs_filesystem()
  */
-	extern sefs_filesystem_t *sefs_filesystem_create(const char *root, bool rw, sefs_callback_fn_t msg_callback, void *varg);
+	extern sefs_filesystem_t *sefs_filesystem_create(const char *root, sefs_callback_fn_t msg_callback, void *varg);
 
 /**
  * Get the root directory of a sefs filesystem structure.

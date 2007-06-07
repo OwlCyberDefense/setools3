@@ -187,23 +187,6 @@ class sefs_query
 	 */
 	void regex(bool regex);
 
-	/**
-	 * Set a sefs query to operate starting at directory \a root.
-	 * By default, the query will operate at the topmost of the
-	 * fclist and will recurse.  Because file_context files use
-	 * regular expressions instead of paths, this modifier has no
-	 * effect when querying against a fcfile object.
-	 * @param root Directory from which to begin the query, or
-	 * NULL to clear this field.  This field is not affected by
-	 * the sefs_query_set_regex() option.
-	 * @param recursive If true operate recursively on all
-	 * sub-directories of \a root; otherwise only operate on \a
-	 * root not its sub-directories.  This parameter is ignored if
-	 * \a root is NULL.
-	 * @exception std::bad_alloc Out of memory.
-	 */
-	void rootDir(const char *root, bool recursive) throw(std::bad_alloc);
-
       private:
 	/**
 	 * Compile the regular expressions stored within this query
@@ -213,7 +196,7 @@ class sefs_query
 	 */
 	void compile() throw(std::bad_alloc);
 
-	char *_user, *_role, *_type, *_range, *_path, *_root;
+	char *_user, *_role, *_type, *_range, *_path;
 	uint32_t _objclass;
 	bool _indirect, _regex, _recursive;
 	int _rangeMatch;
@@ -321,12 +304,6 @@ extern "C"
  * @see sefs_query::regex()
  */
 	extern int sefs_query_set_regex(sefs_query_t * query, bool regex);
-
-/**
- * Set a sefs query to operate starting at directory \a root.
- * @see sefs_query::rootDir()
- */
-	extern int sefs_query_set_root_dir(sefs_query_t * query, const char *root, bool recursive);
 
 #endif				       /* SWIG */
 

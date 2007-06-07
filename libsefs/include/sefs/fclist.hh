@@ -34,7 +34,7 @@ extern "C"
 {
 #endif
 
-#include <sys/types.h>
+#include <selinux/selinux.h>
 #include <stdarg.h>
 
 #ifndef __cplusplus
@@ -94,7 +94,9 @@ class sefs_fclist
 	 * this fclist, pointer to a matching entry, and an arbitrary
 	 * data pointer.  It should return a non-negative value upon
 	 * success, negative value upon error and to abort the
-	 * mapping.
+	 * mapping.  Be aware that the entry may go out of scope upon
+	 * conclusion of runQueryMap(), so \a fn will need to clone
+	 * the entry if it needs it later.
 	 * @param data Arbitrary pointer to be passed into \fn as a
 	 * third parameter.
 	 * @return Last value returned by fn() (i.e., >= on success, <
@@ -178,6 +180,18 @@ class sefs_fclist
 	 */
 	struct sefs_context_node *getContext(const char *user, const char *role, const char *type,
 					     const char *range) throw(std::bad_alloc);
+
+	/**
+	 * Given a SELinux security context, return a context node
+	 * (which would contain an apol_context_t).  If the context
+	 * already exists, then a pointer to the existing one is
+	 * returned.
+	 *
+	 * @param scon Security context from which to obtain a node.
+	 *
+	 * @return A context node.  Do not free() it.
+	 */
+	struct sefs_context_node *getContext(const security_context_t scon) throw(std::bad_alloc);
 
 	sefs_fclist_type_e fclist_type;
 	apol_policy_t *policy;

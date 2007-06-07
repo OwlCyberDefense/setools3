@@ -56,10 +56,12 @@ sefs_fcfile::sefs_fcfile(sefs_callback_fn_t msg_callback, void *varg) throw(std:
 	{
 		if ((_files = apol_vector_create(free)) == NULL)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 	}
@@ -82,14 +84,17 @@ sefs_fcfile::sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void
 	{
 		if ((_files = apol_vector_create_with_capacity(1, free)) == NULL)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if (appendFile(file) < 0)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error("Could not construct fcfile with the given file.");
 		}
 	}
@@ -113,19 +118,23 @@ sefs_fcfile::sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_cal
 	{
 		if (files == NULL)
 		{
+			SEFS_ERR("%s", strerror(EINVAL));
 			errno = EINVAL;
 			throw std::invalid_argument(strerror(EINVAL));
 		}
 		if ((_files = apol_vector_create_with_capacity(apol_vector_get_size(files), free)) == NULL)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if (appendFileList(files) != apol_vector_get_size(files))
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error("Could not construct fcfile with the given vector.");
 		}
 	}
@@ -160,11 +169,13 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 				     query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,
 								 query->_indirect)) == NULL)
 				{
+					SEFS_ERR("%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 				if (query->_range != NULL &&
 				    (range = apol_mls_range_create_from_string(policy, query->_range)) == NULL)
 				{
+					SEFS_ERR("%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 			}
@@ -247,6 +258,7 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 
 						if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
 						{
+							SEFS_ERR("%s", strerror(errno));
 							throw std::runtime_error(strerror(errno));
 						}
 						bool compval = query_str_compare(query->_path, anchored_path, &regex, true);
@@ -408,6 +420,7 @@ size_t sefs_fcfile::appendFileList(const apol_vector_t * files)throw(std::bad_al
 	size_t i;
 	if (files == NULL)
 	{
+		SEFS_ERR("%s", strerror(EINVAL));
 		errno = EINVAL;
 		throw new std::invalid_argument(strerror(EINVAL));
 	}

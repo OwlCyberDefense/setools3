@@ -38,7 +38,7 @@
 sefs_query::sefs_query()
 {
 	_user = _role = _type = _range = NULL;
-	_path = _root = NULL;
+	_path = NULL;
 	_objclass = QPOL_CLASS_ALL;
 	_indirect = _regex = _recursive = false;
 	_inode = 0;
@@ -175,23 +175,6 @@ void sefs_query::dev(dev_t dev)
 void sefs_query::regex(bool regex)
 {
 	_regex = regex;
-}
-
-void sefs_query::rootDir(const char *root, bool recursive) throw(std::bad_alloc)
-{
-	if (root != _root)
-	{
-		free(_root);
-		_root = NULL;
-		if (root != NULL)
-		{
-			if ((_root = strdup(root)) == NULL)
-			{
-				throw std::bad_alloc();
-			}
-			_recursive = recursive;
-		}
-	}
 }
 
 /******************** private functions below ********************/
@@ -408,23 +391,5 @@ int sefs_query_set_regex(sefs_query_t * query, bool regex)
 		return -1;
 	}
 	query->regex(regex);
-	return 0;
-}
-
-int sefs_query_set_root_dir(sefs_query_t * query, const char *root, bool recursive)
-{
-	if (query == NULL)
-	{
-		errno = EINVAL;
-		return -1;
-	}
-	try
-	{
-		query->rootDir(root, recursive);
-	}
-	catch(...)
-	{
-		return -1;
-	}
 	return 0;
 }

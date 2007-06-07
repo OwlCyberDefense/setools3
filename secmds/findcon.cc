@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 	{
 		if (S_ISDIR(sb.st_mode))
 		{
-			fclist = new sefs_filesystem(argv[optind], false, NULL, NULL);
+			fclist = new sefs_filesystem(argv[optind], NULL, NULL);
 		}
 		else
 		{

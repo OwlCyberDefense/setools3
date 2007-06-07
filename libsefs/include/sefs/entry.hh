@@ -53,6 +53,11 @@ class sefs_entry
 
       public:
 
+	/**
+	 * Perform a deep copy of an entry object.
+	 */
+	 sefs_entry(const sefs_entry * e) throw(std::bad_alloc);
+
 	~sefs_entry();
 
 	/**
@@ -128,9 +133,10 @@ class sefs_entry
 	 * constructor will not add itself to the fclist.
 	 * @param context Context node containing the SELinux context.
 	 * @param objectClass Object class for the entry.
-	 * @param path Path to this entry.
+	 * @param path Path to this entry.  The entry will share this
+	 * pointer.
 	 * @param origin Name of file_contexts file from which this
-	 * entry originated.
+	 * entry originated.  The entry will share this pointer.
 	 * @exception std::bad_alloc Out of memory.
 	 */
 	 sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node *context, uint32_t objectClass, const char *path,

@@ -70,14 +70,12 @@ static int filesystem_lgetfilecon(const char *path, security_context_t * context
  * is a mount, it will not be reported; a subdirectory might.
  *
  * @param dir Directory to begin search.
- * @param rw If true, then only process mounts that are mounted as
- * read-write.  Otherwise only find read-only mounts.
  *
  * @return An allocated vector containing pathnames (type char *) to
  * each mounted location with the "bind" option.  The caller is
  * responsible for calling apol_vector_destroy() afterwards.
  */
-static apol_vector_t *filesystem_find_mount_points(const char *dir, bool rw) throw(std::bad_alloc, std::runtime_error)
+static apol_vector_t *filesystem_find_mount_points(const char *dir) throw(std::bad_alloc, std::runtime_error)
 {
 	char *dirdup = NULL;
 	apol_vector_t *v = NULL;
@@ -114,10 +112,6 @@ static apol_vector_t *filesystem_find_mount_points(const char *dir, bool rw) thr
 			{
 				continue;
 			}
-			if (rw && hasmntopt(entry, MNTOPT_RW) == NULL)
-			{
-				continue;
-			}
 			if (strstr(entry->mnt_opts, "bind") != NULL)
 			{
 				char *s = strdup(entry->mnt_dir);
@@ -151,17 +145,17 @@ static apol_vector_t *filesystem_find_mount_points(const char *dir, bool rw) thr
 
 /******************** public functions below ********************/
 
-sefs_filesystem::sefs_filesystem(const char *root, bool rw, sefs_callback_fn_t msg_callback, void *varg)throw(std::bad_alloc, std::invalid_argument, std::runtime_error):sefs_fclist(SEFS_FCLIST_TYPE_FILESYSTEM,
+sefs_filesystem::sefs_filesystem(const char *root, sefs_callback_fn_t msg_callback, void *varg)throw(std::bad_alloc, std::invalid_argument, std::runtime_error):sefs_fclist(SEFS_FCLIST_TYPE_FILESYSTEM,
 	    msg_callback,
 	    varg)
 {
 	if (root == NULL)
 	{
+		SEFS_ERR("%s", strerror(EINVAL));
 		errno = EINVAL;
 		throw std::invalid_argument(strerror(EINVAL));
 	}
 	_root = NULL;
-	_rw = rw;
 	_mls = false;
 	_mounts = NULL;
 	try
@@ -170,6 +164,7 @@ sefs_filesystem::sefs_filesystem(const char *root, bool rw, sefs_callback_fn_t m
 		struct stat64 sb;
 		if (stat64(root, &sb) != 0 && !S_ISDIR(sb.st_mode))
 		{
+			SEFS_ERR("%s", strerror(EINVAL));
 			errno = EINVAL;
 			throw std::invalid_argument(strerror(EINVAL));
 		}
@@ -178,17 +173,19 @@ sefs_filesystem::sefs_filesystem(const char *root, bool rw, sefs_callback_fn_t m
 		security_context_t scon;
 		if (filesystem_lgetfilecon(root, &scon) < 0)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		context_t con;
 		if ((con = context_new(scon)) == 0)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			freecon(scon);
 			throw std::runtime_error(strerror(errno));
 		}
 		freecon(scon);
 		const char *range = context_range_get(con);
-		if (range != NULL)
+		if (range != NULL && range[0] != '\0')
 		{
 			_mls = true;
 		}
@@ -196,9 +193,10 @@ sefs_filesystem::sefs_filesystem(const char *root, bool rw, sefs_callback_fn_t m
 
 		if ((_root = strdup(root)) == NULL)
 		{
+			SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
-		_mounts = filesystem_find_mount_points(root, rw);
+		_mounts = filesystem_find_mount_points(root);
 	}
 	catch(...)
 	{
@@ -216,28 +214,117 @@ sefs_filesystem::~sefs_filesystem()
 
 struct filesystem_ftw_struct
 {
-	sefs_fclist *fclist;
+	sefs_filesystem *fs;
 	sefs_query *query;
+	apol_vector_t *type_list;
+	apol_mls_range_t *range;
 	sefs_fclist_map_fn_t fn;
 	void *data;
 	bool aborted;
 	int retval;
 };
 
-static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb __attribute__ ((unused)), int typeflag
+// wrapper functions to go between non-OO land into OO member functions
+
+inline struct sefs_context_node *sefs_filesystem_get_context(sefs_filesystem * fs, security_context_t scon) throw(std::bad_alloc)
+{
+	return fs->getContext(scon);
+}
+
+inline sefs_entry *sefs_filesystem_get_entry(sefs_filesystem * fs, const struct sefs_context_node * node, uint32_t objClass,
+					     const char *path)throw(std::bad_alloc)
+{
+	return fs->getEntry(node, objClass, path);
+}
+
+inline bool sefs_filesystem_is_query_match(sefs_filesystem * fs, const sefs_query * query, const char *path,
+					   const struct stat64 * sb, apol_vector_t * type_list,
+					   apol_mls_range_t * range)throw(std::runtime_error)
+{
+	return fs->isQueryMatch(query, path, sb, type_list, range);
+}
+
+static uint32_t filesystem_stat_to_objclass(const struct stat64 *sb)
+{
+	if (S_ISREG(sb->st_mode))
+	{
+		return QPOL_CLASS_FILE;
+	}
+	if (S_ISDIR(sb->st_mode))
+	{
+		return QPOL_CLASS_DIR;
+	}
+	if (S_ISCHR(sb->st_mode))
+	{
+		return QPOL_CLASS_CHR_FILE;
+	}
+	if (S_ISBLK(sb->st_mode))
+	{
+		return QPOL_CLASS_BLK_FILE;
+	}
+	if (S_ISFIFO(sb->st_mode))
+	{
+		return QPOL_CLASS_FIFO_FILE;
+	}
+	if (S_ISLNK(sb->st_mode))
+	{
+		return QPOL_CLASS_LNK_FILE;
+	}
+	if (S_ISSOCK(sb->st_mode))
+	{
+		return QPOL_CLASS_SOCK_FILE;
+	}
+	assert(0);		       // should never get here
+	return 0;
+}
+
+static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, int typeflag
 				  __attribute__ ((unused)), struct FTW *ftwbuf __attribute__ ((unused)), void *data)
 {
 	struct filesystem_ftw_struct *s = static_cast < struct filesystem_ftw_struct *>(data);
 
-	if (!sefs_filesystem::isQueryMatch(fpath, s->query))
+	try
 	{
-		return 0;
+		if (!sefs_filesystem_is_query_match(s->fs, s->query, fpath, sb, s->type_list, s->range))
+		{
+			return 0;
+		}
 	}
-	// generate a entry for this file
-	sefs_entry *entry = NULL;      // FIX ME
+	catch(...)
+	{
+		return -1;
+	}
+
+	security_context_t scon;
+	if (filesystem_lgetfilecon(fpath, &scon) < 0)
+	{
+		return -1;
+	}
+	struct sefs_context_node *node = NULL;
+	try
+	{
+		node = sefs_filesystem_get_context(s->fs, scon);
+	}
+	catch(...)
+	{
+		freecon(scon);
+		return -1;
+	}
+	freecon(scon);
+
+	uint32_t objClass = filesystem_stat_to_objclass(sb);
+	sefs_entry *entry = NULL;
+	try
+	{
+		entry = sefs_filesystem_get_entry(s->fs, node, objClass, fpath);
+	}
+	catch(...)
+	{
+		return -1;
+	}
 
 	// invoke real callback (not just the nftw handler)
-	s->retval = s->fn(s->fclist, entry, s->data);
+	s->retval = s->fn(s->fs, entry, s->data);
 	delete entry;
 	if (s->retval < 0)
 	{
@@ -251,15 +338,48 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb __a
 int sefs_filesystem::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error)
 {
 	struct filesystem_ftw_struct s;
-	s.fclist = this;
+	s.type_list = NULL;
+	s.range = NULL;
+	try
+	{
+		if (query != NULL)
+		{
+			query->compile();
+			if (policy != NULL)
+			{
+				if (query->_type != NULL &&
+				    (s.type_list =
+				     query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,
+								 query->_indirect)) == NULL)
+				{
+					SEFS_ERR("%s", strerror(errno));
+					throw std::runtime_error(strerror(errno));
+				}
+				if (query->_range != NULL &&
+				    (s.range = apol_mls_range_create_from_string(policy, query->_range)) == NULL)
+				{
+					SEFS_ERR("%s", strerror(errno));
+					throw std::runtime_error(strerror(errno));
+				}
+			}
+		}
+	}
+	catch(...)
+	{
+		apol_vector_destroy(&s.type_list);
+		apol_mls_range_destroy(&s.range);
+		throw;
+	}
+	s.fs = this;
 	s.query = query;
 	s.fn = fn;
 	s.data = data;
 	s.aborted = false;
 	s.retval = 0;
 
-	// FIX ME: should this have FTW_MOUNT flag?
-	int retval = new_nftw64(_root, filesystem_ftw_handler, 1024, FTW_MOUNT, &s);
+	int retval = new_nftw64(_root, filesystem_ftw_handler, 1024, 0, &s);
+	apol_vector_destroy(&s.type_list);
+	apol_mls_range_destroy(&s.range);
 	if (retval != 0 && !s.aborted)
 	{
 		// error was generated by new_nftw64() itself, not
@@ -279,61 +399,135 @@ const char *sefs_filesystem::root() const
 	return _root;
 }
 
-bool sefs_filesystem::isQueryMatch(const char *path, sefs_query * query)
+/******************** private functions below ********************/
+
+bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, const struct stat64 * sb, apol_vector_t * type_list,
+				   apol_mls_range_t * range)throw(std::runtime_error)
 {
 	if (query == NULL)
 	{
 		return true;
 	}
-	if (path == NULL)
+	security_context_t scon;
+	if (filesystem_lgetfilecon(path, &scon) < 0)
 	{
-		errno = EINVAL;
+		SEFS_ERR("%s", strerror(errno));
+		throw std::runtime_error(strerror(errno));
+	}
+	context_t con;
+	if ((con = context_new(scon)) == 0)
+	{
+		SEFS_ERR("%s", strerror(errno));
+		freecon(scon);
+		throw std::runtime_error(strerror(errno));
+	}
+	freecon(scon);
+
+	if (!query_str_compare(context_user_get(con), query->_user, query->_reuser, query->_regex))
+	{
+		context_free(con);
 		return false;
 	}
-	struct stat sb;
-	if (lstat(path, &sb) < 0)
+	if (!query_str_compare(context_role_get(con), query->_role, query->_rerole, query->_regex))
+	{
+		context_free(con);
+		return false;
+	}
+	if (type_list == NULL)
+	{
+		if (!query_str_compare(context_type_get(con), query->_type, query->_retype, query->_regex))
+		{
+			context_free(con);
+			return false;
+		}
+	}
+	else
+	{
+		size_t index;
+		if (apol_vector_get_index(type_list, context_type_get(con), apol_str_strcmp, NULL, &index) < 0)
+		{
+			context_free(con);
+			return false;
+		}
+	}
+
+	if (range == NULL)
+	{
+		if (!query_str_compare(context_range_get(con), query->_range, query->_rerange, query->_regex))
+		{
+			context_free(con);
+			return false;
+		}
+	}
+	else
+	{
+		assert(policy != NULL);
+		apol_mls_range_t *context_range = apol_mls_range_create_from_string(policy, context_range_get(con));
+		if (context_range == NULL)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			context_free(con);
+			throw std::runtime_error(strerror(errno));
+		}
+		int ret;
+		ret = apol_mls_range_compare(policy, context_range, range, query->_rangeMatch);
+		apol_mls_range_destroy(&context_range);
+		if (ret <= 0)
+		{
+			context_free(con);
+			return false;
+		}
+	}
+	context_free(con);
+
+	if (query->_objclass != 0 && query->_objclass != filesystem_stat_to_objclass(sb))
 	{
 		return false;
 	}
-	// rw flag
 
-	// check user
-
-	// role
-
-	// type
-
-	// range
-
-	// object class
-
-	// path
-
-	if (query->_inode != 0 && query->_inode != sb.st_ino)
+	if (!query_str_compare(path, query->_path, query->_repath, query->_regex))
 	{
 		return false;
 	}
 
-	if (query->_dev != 0 && query->_dev != sb.st_dev)
+	if (query->_inode != 0 && query->_inode != sb->st_ino)
 	{
 		return false;
 	}
 
-	// root_dir
+	if (query->_dev != 0 && query->_dev != sb->st_dev)
+	{
+		return false;
+	}
 
 	return true;
 }
 
-/******************** private functions below ********************/
+sefs_entry *sefs_filesystem::getEntry(const struct sefs_context_node * context, uint32_t objectClass, const char *path)
+{
+	char *s = strdup(path);
+	if (s == NULL)
+	{
+		SEFS_ERR("%s", strerror(errno));
+		throw std::bad_alloc();
+	}
+	if (apol_bst_insert_and_get(path_tree, (void **)&s, NULL) < 0)
+	{
+		SEFS_ERR("%s", strerror(errno));
+		free(s);
+		throw std::runtime_error(strerror(errno));
+	}
+	return new sefs_entry(this, context, objectClass, s);
+}
 
 /******************** C functions below ********************/
 
-sefs_filesystem_t *sefs_filesystem_create(const char *root, bool rw, sefs_callback_fn_t msg_callback, void *varg)
+sefs_filesystem_t *sefs_filesystem_create(const char *root, sefs_callback_fn_t msg_callback, void *varg)
 {
 	sefs_filesystem_t *fs;
 	try
 	{
-		fs = new sefs_filesystem(root, rw, msg_callback, varg);
+		fs = new sefs_filesystem(root, msg_callback, varg);
 	}
 	catch(...)
 	{

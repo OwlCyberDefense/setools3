@@ -35,14 +35,28 @@
 
 /******************** public functions below ********************/
 
-const apol_context_t *sefs_entry::context() const
+sefs_entry::sefs_entry(const sefs_entry * e) throw(std::bad_alloc)
 {
-	return _context->context;
+	if ((_paths = apol_vector_create_from_vector(e->_paths, NULL, NULL, NULL)) == NULL)
+	{
+		throw std::bad_alloc();
+	}
+	_fclist = e->_fclist;
+	_context = e->_context;
+	_inode = e->_inode;
+	_dev = e->_dev;
+	_objectClass = e->_objectClass;
+	_origin = e->_origin;
 }
 
 sefs_entry::~sefs_entry()
 {
 	apol_vector_destroy(&_paths);
+}
+
+const apol_context_t *sefs_entry::context() const
+{
+	return _context->context;
 }
 
 ino64_t sefs_entry::inode() const
@@ -135,14 +149,12 @@ sefs_entry::sefs_entry(class sefs_fclist * fclist, const struct sefs_context_nod
 	_origin = origin;
 	try
 	{
-		if ((_paths = apol_vector_create_with_capacity(1, NULL)) == NULL)
+		if ((_paths = apol_vector_create_with_capacity(1, free)) == NULL)
 		{
 			_fclist->SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
-		// cast below is safe because the string is never
-		// modified by this class, and header file says that
-		// user must never change the string
+		// share the path pointer, so thus cast away the const
 		if (apol_vector_append(_paths, const_cast < char *>(path)) < 0)
 		{
 			_fclist->SEFS_ERR("%s", strerror(errno));

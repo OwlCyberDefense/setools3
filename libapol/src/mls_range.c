@@ -75,7 +75,7 @@ apol_mls_range_t *apol_mls_range_create_from_string(apol_policy_t * p, const cha
 		return NULL;
 	}
 	char *dash;
-	if ((dash = strchr(mls_range_string, ':')) == NULL) {
+	if ((dash = strchr(mls_range_string, '-')) == NULL) {
 		// just a low level
 		apol_mls_level_t *l = apol_mls_level_create_from_string(p, mls_range_string);
 		if (l == NULL) {
@@ -138,7 +138,7 @@ apol_mls_range_t *apol_mls_range_create_from_literal(const char *mls_range_strin
 		return NULL;
 	}
 	char *dash;
-	if ((dash = strchr(mls_range_string, ':')) == NULL) {
+	if ((dash = strchr(mls_range_string, '-')) == NULL) {
 		// just a low level
 		apol_mls_level_t *l = apol_mls_level_create_from_literal(mls_range_string);
 		if (l == NULL) {
