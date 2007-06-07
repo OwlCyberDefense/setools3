@@ -55,7 +55,7 @@ struct apol_fs_use_query
 
 /******************** genfscon queries ********************/
 
-int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apol_vector_t ** v)
+int apol_genfscon_get_by_query(const apol_policy_t * p, const apol_genfscon_query_t * g, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
@@ -73,9 +73,9 @@ int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apo
 			goto cleanup;
 		}
 		if (g != NULL) {
-			char *fs, *path;
+			const char *fs, *path;
 			uint32_t objclass;
-			qpol_context_t *context;
+			const qpol_context_t *context;
 			if (qpol_genfscon_get_name(p->p, genfscon, &fs) < 0 ||
 			    qpol_genfscon_get_path(p->p, genfscon, &path) < 0 ||
 			    qpol_genfscon_get_class(p->p, genfscon, &objclass) < 0 ||
@@ -144,12 +144,12 @@ void apol_genfscon_query_destroy(apol_genfscon_query_t ** g)
 	}
 }
 
-int apol_genfscon_query_set_filesystem(apol_policy_t * p, apol_genfscon_query_t * g, const char *fs)
+int apol_genfscon_query_set_filesystem(const apol_policy_t * p, apol_genfscon_query_t * g, const char *fs)
 {
 	return apol_query_set(p, &g->fs, NULL, fs);
 }
 
-int apol_genfscon_query_set_path(apol_policy_t * p, apol_genfscon_query_t * g, const char *path)
+int apol_genfscon_query_set_path(const apol_policy_t * p, apol_genfscon_query_t * g, const char *path)
 {
 	int tmp = apol_query_set(p, &g->path, NULL, path);
 	if (!tmp && g->path) {
@@ -159,7 +159,7 @@ int apol_genfscon_query_set_path(apol_policy_t * p, apol_genfscon_query_t * g, c
 	return tmp;
 }
 
-int apol_genfscon_query_set_objclass(apol_policy_t * p, apol_genfscon_query_t * g, int objclass)
+int apol_genfscon_query_set_objclass(const apol_policy_t * p, apol_genfscon_query_t * g, int objclass)
 {
 	if (objclass < 0) {
 		g->objclass = 0;
@@ -187,7 +187,7 @@ int apol_genfscon_query_set_objclass(apol_policy_t * p, apol_genfscon_query_t * 
 	return 0;
 }
 
-int apol_genfscon_query_set_context(apol_policy_t * p __attribute__ ((unused)),
+int apol_genfscon_query_set_context(const apol_policy_t * p __attribute__ ((unused)),
 				    apol_genfscon_query_t * g, apol_context_t * context, unsigned int range_match)
 {
 	if (g->context != NULL) {
@@ -198,13 +198,13 @@ int apol_genfscon_query_set_context(apol_policy_t * p __attribute__ ((unused)),
 	return 0;
 }
 
-char *apol_genfscon_render(apol_policy_t * p, qpol_genfscon_t * genfscon)
+char *apol_genfscon_render(const apol_policy_t * p, const qpol_genfscon_t * genfscon)
 {
 	char *line = NULL, *retval = NULL;
-	qpol_context_t *ctxt = NULL;
+	const qpol_context_t *ctxt = NULL;
 	char *context_str = NULL;
 	const char *type_str = NULL;
-	char *name = NULL, *path = NULL;
+	const char *name = NULL, *path = NULL;
 	uint32_t fclass;
 
 	if (!genfscon || !p)
@@ -267,11 +267,11 @@ char *apol_genfscon_render(apol_policy_t * p, qpol_genfscon_t * genfscon)
 
 /******************** fs_use queries ********************/
 
-int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_vector_t ** v)
+int apol_fs_use_get_by_query(const apol_policy_t * p, const apol_fs_use_query_t * f, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
-	qpol_fs_use_t *fs_use = NULL;
+	const qpol_fs_use_t *fs_use = NULL;
 	*v = NULL;
 	if (qpol_policy_get_fs_use_iter(p->p, &iter) < 0) {
 		return -1;
@@ -285,9 +285,9 @@ int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_ve
 			goto cleanup;
 		}
 		if (f != NULL) {
-			char *fs;
+			const char *fs;
 			uint32_t behavior;
-			qpol_context_t *context = NULL;
+			const qpol_context_t *context = NULL;
 			if (qpol_fs_use_get_name(p->p, fs_use, &fs) < 0 || qpol_fs_use_get_behavior(p->p, fs_use, &behavior) < 0) {
 				goto cleanup;
 			}
@@ -317,7 +317,7 @@ int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_ve
 				continue;
 			}
 		}
-		if (apol_vector_append(*v, fs_use)) {
+		if (apol_vector_append(*v, (void*)fs_use)) {
 			ERR(p, "%s", strerror(EINVAL));
 			goto cleanup;
 		}
@@ -351,12 +351,12 @@ void apol_fs_use_query_destroy(apol_fs_use_query_t ** f)
 	}
 }
 
-int apol_fs_use_query_set_filesystem(apol_policy_t * p, apol_fs_use_query_t * f, const char *fs)
+int apol_fs_use_query_set_filesystem(const apol_policy_t * p, apol_fs_use_query_t * f, const char *fs)
 {
 	return apol_query_set(p, &f->fs, NULL, fs);
 }
 
-int apol_fs_use_query_set_behavior(apol_policy_t * p, apol_fs_use_query_t * f, int behavior)
+int apol_fs_use_query_set_behavior(const apol_policy_t * p, apol_fs_use_query_t * f, int behavior)
 {
 	if (behavior < 0) {
 		f->behavior = 0;
@@ -382,7 +382,7 @@ int apol_fs_use_query_set_behavior(apol_policy_t * p, apol_fs_use_query_t * f, i
 	return 0;
 }
 
-int apol_fs_use_query_set_context(apol_policy_t * p __attribute__ ((unused)),
+int apol_fs_use_query_set_context(const apol_policy_t * p __attribute__ ((unused)),
 				  apol_fs_use_query_t * f, apol_context_t * context, unsigned int range_match)
 {
 	if (f->context != NULL) {
@@ -393,13 +393,13 @@ int apol_fs_use_query_set_context(apol_policy_t * p __attribute__ ((unused)),
 	return 0;
 }
 
-char *apol_fs_use_render(apol_policy_t * p, qpol_fs_use_t * fsuse)
+char *apol_fs_use_render(const apol_policy_t * p, const qpol_fs_use_t * fsuse)
 {
 	char *context_str = NULL;
 	char *line = NULL, *retval = NULL;
 	const char *behavior_str = NULL;
-	char *fsname = NULL;
-	qpol_context_t *ctxt = NULL;
+	const char *fsname = NULL;
+	const qpol_context_t *ctxt = NULL;
 	uint32_t behavior;
 
 	if (qpol_fs_use_get_behavior(p->p, fsuse, &behavior))

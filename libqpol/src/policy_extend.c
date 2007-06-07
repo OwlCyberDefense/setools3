@@ -512,7 +512,7 @@ static void qpol_syn_rule_table_destroy(qpol_syn_rule_table_t ** t)
  *  @param key The key for which to search.
  *  @return a valid qpol_syn_rule_node_t pointer on success or NULL on failure.
  */
-static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(qpol_syn_rule_table_t * table, qpol_syn_rule_key_t * key)
+static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(const qpol_syn_rule_table_t * table, const qpol_syn_rule_key_t * key)
 {
 	qpol_syn_rule_node_t *node = NULL;
 
@@ -885,7 +885,7 @@ typedef struct syn_rule_state
 	qpol_syn_rule_list_t *cur;
 } syn_rule_state_t;
 
-static int syn_rule_state_end(qpol_iterator_t * iter)
+static int syn_rule_state_end(const qpol_iterator_t * iter)
 {
 	syn_rule_state_t *srs = NULL;
 
@@ -897,7 +897,7 @@ static int syn_rule_state_end(qpol_iterator_t * iter)
 	return (srs->cur ? 0 : 1);
 }
 
-static void *syn_rule_state_get_cur(qpol_iterator_t * iter)
+static void *syn_rule_state_get_cur(const qpol_iterator_t * iter)
 {
 	syn_rule_state_t *srs = NULL;
 
@@ -927,7 +927,7 @@ static int syn_rule_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t syn_rule_state_size(qpol_iterator_t * iter)
+static size_t syn_rule_state_size(const qpol_iterator_t * iter)
 {
 	size_t count = 0;
 	qpol_syn_rule_list_t *tmp = NULL;
@@ -944,12 +944,12 @@ static size_t syn_rule_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_avrule *rule, qpol_iterator_t ** iter)
+int qpol_avrule_get_syn_avrule_iter(const qpol_policy_t * policy, const struct qpol_avrule *rule, qpol_iterator_t ** iter)
 {
 	qpol_syn_rule_key_t *key = NULL;
-	qpol_type_t *tmp_type;
-	qpol_class_t *tmp_class;
-	qpol_cond_t *tmp_cond;
+	const qpol_type_t *tmp_type;
+	const qpol_class_t *tmp_class;
+	const qpol_cond_t *tmp_cond;
 	syn_rule_state_t *srs = NULL;
 	uint32_t tmp_val;
 	int error = 0;
@@ -1045,12 +1045,12 @@ int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_avrule *
 	return -1;
 }
 
-int qpol_terule_get_syn_terule_iter(qpol_policy_t * policy, struct qpol_terule *rule, qpol_iterator_t ** iter)
+int qpol_terule_get_syn_terule_iter(const qpol_policy_t * policy, const struct qpol_terule *rule, qpol_iterator_t ** iter)
 {
 	qpol_syn_rule_key_t *key = NULL;
-	qpol_type_t *tmp_type;
-	qpol_class_t *tmp_class;
-	qpol_cond_t *tmp_cond;
+	const qpol_type_t *tmp_type;
+	const qpol_class_t *tmp_class;
+	const qpol_cond_t *tmp_cond;
 	syn_rule_state_t *srs = NULL;
 	uint32_t tmp_val;
 	int error = 0;

@@ -96,7 +96,7 @@ typedef struct fbuf
 } qpol_fbuf_t;
 
 static void qpol_handle_route_to_callback(void *varg
-					  __attribute__ ((unused)), qpol_policy_t * p, int level, const char *fmt, va_list va_args)
+					  __attribute__ ((unused)), const qpol_policy_t * p, int level, const char *fmt, va_list va_args)
 {
 	if (!p || !(p->fn)) {
 		vfprintf(stderr, fmt, va_args);
@@ -125,7 +125,7 @@ static void sepol_handle_route_to_callback(void *varg, sepol_handle_t * sh, cons
 	va_end(ap);
 }
 
-void qpol_handle_msg(qpol_policy_t * p, int level, const char *fmt, ...)
+void qpol_handle_msg(const qpol_policy_t * p, int level, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -138,11 +138,12 @@ void qpol_handle_msg(qpol_policy_t * p, int level, const char *fmt, ...)
 	}
 
 	va_start(ap, fmt);
-	qpol_handle_route_to_callback(p->varg, p, level, fmt, ap);
+	/* explicit cast here to remove const for sepol handle */
+	qpol_handle_route_to_callback((void*)p->varg, p, level, fmt, ap);
 	va_end(ap);
 }
 
-static void qpol_handle_default_callback(void *varg __attribute__ ((unused)), qpol_policy_t * p
+static void qpol_handle_default_callback(void *varg __attribute__ ((unused)), const qpol_policy_t * p
 					 __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
@@ -355,13 +356,13 @@ int qpol_is_file_mod_pkg(FILE * fp)
 static int infer_policy_version(qpol_policy_t * policy)
 {
 	policydb_t *db = NULL;
-	qpol_class_t *obj_class = NULL;
+	const qpol_class_t *obj_class = NULL;
 	qpol_iterator_t *iter = NULL;
 	qpol_fs_use_t *fsuse = NULL;
 	qpol_range_trans_t *rangetrans = NULL;
 	uint32_t behavior = 0;
 	size_t nvtrans = 0, fsusexattr = 0;
-	char *obj_name = NULL;
+	const char *obj_name = NULL;
 
 	if (!policy) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -1022,7 +1023,7 @@ typedef struct mod_state
 	size_t end;
 } mod_state_t;
 
-static int mod_state_end(qpol_iterator_t * iter)
+static int mod_state_end(const qpol_iterator_t * iter)
 {
 	mod_state_t *ms;
 
@@ -1034,7 +1035,7 @@ static int mod_state_end(qpol_iterator_t * iter)
 	return (ms->cur >= ms->end);
 }
 
-static void *mod_state_get_cur(qpol_iterator_t * iter)
+static void *mod_state_get_cur(const qpol_iterator_t * iter)
 {
 	mod_state_t *ms;
 
@@ -1064,7 +1065,7 @@ static int mod_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t mod_state_size(qpol_iterator_t * iter)
+static size_t mod_state_size(const qpol_iterator_t * iter)
 {
 	mod_state_t *ms;
 
@@ -1076,7 +1077,7 @@ static size_t mod_state_size(qpol_iterator_t * iter)
 	return ms->end;
 }
 
-int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_module_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	mod_state_t *ms = NULL;
 	int error = 0;
@@ -1108,7 +1109,7 @@ int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-static int is_mls_policy(qpol_policy_t * policy)
+static int is_mls_policy(const qpol_policy_t * policy)
 {
 	policydb_t *db = NULL;
 
@@ -1131,7 +1132,7 @@ int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
 	return is_mls_policy(policy);
 }
 
-int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version)
+int qpol_policy_get_policy_version(const qpol_policy_t * policy, unsigned int *version)
 {
 	policydb_t *db;
 
@@ -1151,7 +1152,7 @@ int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_type(qpol_policy_t * policy, int *type)
+int qpol_policy_get_type(const qpol_policy_t * policy, int *type)
 {
 	if (!policy || !type) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -1164,7 +1165,7 @@ int qpol_policy_get_type(qpol_policy_t * policy, int *type)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
+int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e cap)
 {
 	unsigned int version = 0;
 

@@ -41,7 +41,7 @@ typedef struct syn_rule_class_state
 	class_perm_node_t *cur;
 } syn_rule_class_state_t;
 
-static int syn_rule_class_state_end(qpol_iterator_t * iter)
+static int syn_rule_class_state_end(const qpol_iterator_t * iter)
 {
 	syn_rule_class_state_t *srcs = NULL;
 
@@ -56,10 +56,10 @@ static int syn_rule_class_state_end(qpol_iterator_t * iter)
 		return 0;
 }
 
-static void *syn_rule_class_state_get_cur(qpol_iterator_t * iter)
+static void *syn_rule_class_state_get_cur(const qpol_iterator_t * iter)
 {
 	syn_rule_class_state_t *srcs = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 
 	if (!iter || !(srcs = (syn_rule_class_state_t *) qpol_iterator_state(iter)) ||
 	    !(db = qpol_iterator_policy(iter)) || qpol_iterator_end(iter)) {
@@ -88,7 +88,7 @@ static int syn_rule_class_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t syn_rule_class_state_size(qpol_iterator_t * iter)
+static size_t syn_rule_class_state_size(const qpol_iterator_t * iter)
 {
 	syn_rule_class_state_t *srcs = NULL;
 	size_t count = 0;
@@ -112,7 +112,7 @@ typedef struct syn_rule_perm_state
 	size_t cur;
 } syn_rule_perm_state_t;
 
-static int syn_rule_perm_state_end(qpol_iterator_t * iter)
+static int syn_rule_perm_state_end(const qpol_iterator_t * iter)
 {
 	syn_rule_perm_state_t *srps = NULL;
 
@@ -124,7 +124,7 @@ static int syn_rule_perm_state_end(qpol_iterator_t * iter)
 	return (srps->cur >= srps->perm_list_sz ? 1 : 0);
 }
 
-static void *syn_rule_perm_state_get_cur(qpol_iterator_t * iter)
+static void *syn_rule_perm_state_get_cur(const qpol_iterator_t * iter)
 {
 	syn_rule_perm_state_t *srps = NULL;
 
@@ -154,7 +154,7 @@ static int syn_rule_perm_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t syn_rule_perm_state_size(qpol_iterator_t * iter)
+static size_t syn_rule_perm_state_size(const qpol_iterator_t * iter)
 {
 	syn_rule_perm_state_t *srps = NULL;
 
@@ -183,7 +183,7 @@ static void syn_rule_perm_state_free(void *state)
 
 /***************************** type set functions ****************************/
 
-int qpol_type_set_get_included_types_iter(qpol_policy_t * policy, qpol_type_set_t * ts, qpol_iterator_t ** iter)
+int qpol_type_set_get_included_types_iter(const qpol_policy_t * policy, const qpol_type_set_t * ts, qpol_iterator_t ** iter)
 {
 	type_set_t *internal_ts = NULL;
 	ebitmap_state_t *es = NULL;
@@ -223,7 +223,7 @@ int qpol_type_set_get_included_types_iter(qpol_policy_t * policy, qpol_type_set_
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_set_get_subtracted_types_iter(qpol_policy_t * policy, qpol_type_set_t * ts, qpol_iterator_t ** iter)
+int qpol_type_set_get_subtracted_types_iter(const qpol_policy_t * policy, const qpol_type_set_t * ts, qpol_iterator_t ** iter)
 {
 	type_set_t *internal_ts = NULL;
 	ebitmap_state_t *es = NULL;
@@ -263,7 +263,7 @@ int qpol_type_set_get_subtracted_types_iter(qpol_policy_t * policy, qpol_type_se
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_set_get_is_star(qpol_policy_t * policy, qpol_type_set_t * ts, uint32_t * is_star)
+int qpol_type_set_get_is_star(const qpol_policy_t * policy, const qpol_type_set_t * ts, uint32_t * is_star)
 {
 	type_set_t *internal_ts = NULL;
 
@@ -284,7 +284,7 @@ int qpol_type_set_get_is_star(qpol_policy_t * policy, qpol_type_set_t * ts, uint
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_set_get_is_comp(qpol_policy_t * policy, qpol_type_set_t * ts, uint32_t * is_comp)
+int qpol_type_set_get_is_comp(const qpol_policy_t * policy, const qpol_type_set_t * ts, uint32_t * is_comp)
 {
 	type_set_t *internal_ts = NULL;
 
@@ -307,7 +307,7 @@ int qpol_type_set_get_is_comp(qpol_policy_t * policy, qpol_type_set_t * ts, uint
 
 /***************************** syn_avule functions ****************************/
 
-int qpol_syn_avrule_get_rule_type(qpol_policy_t * policy, qpol_syn_avrule_t * rule, uint32_t * rule_type)
+int qpol_syn_avrule_get_rule_type(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, uint32_t * rule_type)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -330,7 +330,7 @@ int qpol_syn_avrule_get_rule_type(qpol_policy_t * policy, qpol_syn_avrule_t * ru
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_source_type_set(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_type_set_t ** source_set)
+int qpol_syn_avrule_get_source_type_set(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, const qpol_type_set_t ** source_set)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -350,7 +350,7 @@ int qpol_syn_avrule_get_source_type_set(qpol_policy_t * policy, qpol_syn_avrule_
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_target_type_set(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_type_set_t ** target_set)
+int qpol_syn_avrule_get_target_type_set(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, const qpol_type_set_t ** target_set)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -370,7 +370,7 @@ int qpol_syn_avrule_get_target_type_set(qpol_policy_t * policy, qpol_syn_avrule_
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_is_target_self(qpol_policy_t * policy, qpol_syn_avrule_t * rule, uint32_t * is_self)
+int qpol_syn_avrule_get_is_target_self(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, uint32_t * is_self)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -391,7 +391,7 @@ int qpol_syn_avrule_get_is_target_self(qpol_policy_t * policy, qpol_syn_avrule_t
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_class_iter(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_iterator_t ** classes)
+int qpol_syn_avrule_get_class_iter(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, qpol_iterator_t ** classes)
 {
 	syn_rule_class_state_t *srcs = NULL;
 	avrule_t *internal_rule = NULL;
@@ -429,7 +429,7 @@ int qpol_syn_avrule_get_class_iter(qpol_policy_t * policy, qpol_syn_avrule_t * r
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_perm_iter(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_iterator_t ** perms)
+int qpol_syn_avrule_get_perm_iter(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, qpol_iterator_t ** perms)
 {
 	avrule_t *internal_rule = NULL;
 	policydb_t *db = NULL;
@@ -526,7 +526,7 @@ int qpol_syn_avrule_get_perm_iter(qpol_policy_t * policy, qpol_syn_avrule_t * ru
 	return STATUS_ERR;
 }
 
-int qpol_syn_avrule_get_lineno(qpol_policy_t * policy, qpol_syn_avrule_t * rule, unsigned long *lineno)
+int qpol_syn_avrule_get_lineno(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, unsigned long *lineno)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -546,7 +546,7 @@ int qpol_syn_avrule_get_lineno(qpol_policy_t * policy, qpol_syn_avrule_t * rule,
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_cond(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_cond_t ** cond)
+int qpol_syn_avrule_get_cond(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, const qpol_cond_t ** cond)
 {
 	if (cond)
 		*cond = NULL;
@@ -561,7 +561,7 @@ int qpol_syn_avrule_get_cond(qpol_policy_t * policy, qpol_syn_avrule_t * rule, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_avrule_get_is_enabled(qpol_policy_t * policy, qpol_syn_avrule_t * rule, uint32_t * is_enabled)
+int qpol_syn_avrule_get_is_enabled(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, uint32_t * is_enabled)
 {
 	int truth;
 	if (is_enabled)
@@ -592,7 +592,7 @@ int qpol_syn_avrule_get_is_enabled(qpol_policy_t * policy, qpol_syn_avrule_t * r
 
 /***************************** syn_terule functions ****************************/
 
-int qpol_syn_terule_get_rule_type(qpol_policy_t * policy, qpol_syn_terule_t * rule, uint32_t * rule_type)
+int qpol_syn_terule_get_rule_type(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, uint32_t * rule_type)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -612,7 +612,7 @@ int qpol_syn_terule_get_rule_type(qpol_policy_t * policy, qpol_syn_terule_t * ru
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_source_type_set(qpol_policy_t * policy, qpol_syn_terule_t * rule, qpol_type_set_t ** source_set)
+int qpol_syn_terule_get_source_type_set(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, const qpol_type_set_t ** source_set)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -632,7 +632,7 @@ int qpol_syn_terule_get_source_type_set(qpol_policy_t * policy, qpol_syn_terule_
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_target_type_set(qpol_policy_t * policy, qpol_syn_terule_t * rule, qpol_type_set_t ** target_set)
+int qpol_syn_terule_get_target_type_set(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, const qpol_type_set_t ** target_set)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -652,7 +652,7 @@ int qpol_syn_terule_get_target_type_set(qpol_policy_t * policy, qpol_syn_terule_
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_class_iter(qpol_policy_t * policy, qpol_syn_terule_t * rule, qpol_iterator_t ** classes)
+int qpol_syn_terule_get_class_iter(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, qpol_iterator_t ** classes)
 {
 	syn_rule_class_state_t *srcs = NULL;
 	avrule_t *internal_rule = NULL;
@@ -690,7 +690,7 @@ int qpol_syn_terule_get_class_iter(qpol_policy_t * policy, qpol_syn_terule_t * r
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_default_type(qpol_policy_t * policy, qpol_syn_terule_t * rule, qpol_type_t ** dflt)
+int qpol_syn_terule_get_default_type(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, const qpol_type_t ** dflt)
 {
 	avrule_t *internal_rule = NULL;
 	policydb_t *db = NULL;
@@ -713,7 +713,7 @@ int qpol_syn_terule_get_default_type(qpol_policy_t * policy, qpol_syn_terule_t *
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_lineno(qpol_policy_t * policy, qpol_syn_terule_t * rule, unsigned long *lineno)
+int qpol_syn_terule_get_lineno(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, unsigned long *lineno)
 {
 	avrule_t *internal_rule = NULL;
 
@@ -733,7 +733,7 @@ int qpol_syn_terule_get_lineno(qpol_policy_t * policy, qpol_syn_terule_t * rule,
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_cond(qpol_policy_t * policy, qpol_syn_terule_t * rule, qpol_cond_t ** cond)
+int qpol_syn_terule_get_cond(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, const qpol_cond_t ** cond)
 {
 	if (cond)
 		*cond = NULL;
@@ -748,7 +748,7 @@ int qpol_syn_terule_get_cond(qpol_policy_t * policy, qpol_syn_terule_t * rule, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_syn_terule_get_is_enabled(qpol_policy_t * policy, qpol_syn_terule_t * rule, uint32_t * is_enabled)
+int qpol_syn_terule_get_is_enabled(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, uint32_t * is_enabled)
 {
 	int truth;
 	if (is_enabled)

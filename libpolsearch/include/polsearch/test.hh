@@ -124,8 +124,8 @@ class polsearch_test
 	 */
 	apol_vector_t *criteria();
 	/**
-	 * Get the symbol type tested by a test.
-	 * @return The type of symbol tested.
+	 * Get the element type tested by a test.
+	 * @return The type of element tested.
 	 */
 	polsearch_element_e element_type() const;
 	/**

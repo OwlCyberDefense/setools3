@@ -48,7 +48,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *genfscon will be NULL.
  */
-	extern int qpol_policy_get_genfscon_by_name(qpol_policy_t * policy, const char *name, const char *path,
+	extern int qpol_policy_get_genfscon_by_name(const qpol_policy_t * policy, const char *name, const char *path,
 						    qpol_genfscon_t ** genfscon);
 
 /**
@@ -63,7 +63,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_genfscon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_genfscon_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the file system name from a gefscon statement.
@@ -74,7 +74,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-	extern int qpol_genfscon_get_name(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **name);
+	extern int qpol_genfscon_get_name(const qpol_policy_t * policy, const qpol_genfscon_t * genfs, const char **name);
 
 /**
  *  Get the relative path from a gefscon statement.
@@ -85,7 +85,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *path will be NULL.
  */
-	extern int qpol_genfscon_get_path(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **path);
+	extern int qpol_genfscon_get_path(const qpol_policy_t * policy, const qpol_genfscon_t * genfs, const char **path);
 
 /* values from flask do not change */
 #define QPOL_CLASS_ALL        0U
@@ -106,7 +106,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *class will be 0.
  */
-	extern int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uint32_t * obj_class);
+	extern int qpol_genfscon_get_class(const qpol_policy_t * policy, const qpol_genfscon_t * genfs, uint32_t * obj_class);
 
 /**
  *  Get the context from a path component of a genfscon statement.
@@ -118,7 +118,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-	extern int qpol_genfscon_get_context(qpol_policy_t * policy, qpol_genfscon_t * genfscon, qpol_context_t ** context);
+	extern int qpol_genfscon_get_context(const qpol_policy_t * policy, const qpol_genfscon_t * genfscon, const qpol_context_t ** context);
 
 #ifdef	__cplusplus
 }

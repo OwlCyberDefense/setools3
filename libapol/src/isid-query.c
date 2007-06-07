@@ -40,11 +40,11 @@ struct apol_isid_query
 
 /******************** genfscon queries ********************/
 
-int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v)
+int apol_isid_get_by_query(const apol_policy_t * p, const apol_isid_query_t * i, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
-	qpol_isid_t *isid = NULL;
+	const qpol_isid_t *isid = NULL;
 	*v = NULL;
 	if (qpol_policy_get_isid_iter(p->p, &iter) < 0) {
 		return -1;
@@ -58,8 +58,8 @@ int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector
 			goto cleanup;
 		}
 		if (i != NULL) {
-			char *name;
-			qpol_context_t *context;
+			const char *name;
+			const qpol_context_t *context;
 			if (qpol_isid_get_name(p->p, isid, &name) < 0 || qpol_isid_get_context(p->p, isid, &context) < 0) {
 				goto cleanup;
 			}
@@ -76,7 +76,7 @@ int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector
 				continue;
 			}
 		}
-		if (apol_vector_append(*v, isid)) {
+		if (apol_vector_append(*v, (void*)isid)) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -106,12 +106,12 @@ void apol_isid_query_destroy(apol_isid_query_t ** i)
 	}
 }
 
-int apol_isid_query_set_name(apol_policy_t * p, apol_isid_query_t * i, const char *name)
+int apol_isid_query_set_name(const apol_policy_t * p, apol_isid_query_t * i, const char *name)
 {
 	return apol_query_set(p, &i->name, NULL, name);
 }
 
-int apol_isid_query_set_context(apol_policy_t * p __attribute__ ((unused)),
+int apol_isid_query_set_context(const apol_policy_t * p __attribute__ ((unused)),
 				apol_isid_query_t * i, apol_context_t * context, unsigned int range_match)
 {
 	if (i->context != NULL) {

@@ -40,7 +40,7 @@ struct apol_role_query
 
 /******************** role queries ********************/
 
-int apol_role_get_by_query(apol_policy_t * p, apol_role_query_t * r, apol_vector_t ** v)
+int apol_role_get_by_query(const apol_policy_t * p, apol_role_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *type_iter = NULL;
 	int retval = -1, append_role;
@@ -59,7 +59,7 @@ int apol_role_get_by_query(apol_policy_t * p, apol_role_query_t * r, apol_vector
 		}
 		append_role = 1;
 		if (r != NULL) {
-			char *role_name;
+			const char *role_name;
 			int compval;
 			if (qpol_role_get_name(p->p, role, &role_name) < 0) {
 				goto cleanup;
@@ -133,22 +133,22 @@ void apol_role_query_destroy(apol_role_query_t ** r)
 	}
 }
 
-int apol_role_query_set_role(apol_policy_t * p, apol_role_query_t * r, const char *name)
+int apol_role_query_set_role(const apol_policy_t * p, apol_role_query_t * r, const char *name)
 {
 	return apol_query_set(p, &r->role_name, &r->role_regex, name);
 }
 
-int apol_role_query_set_type(apol_policy_t * p, apol_role_query_t * r, const char *name)
+int apol_role_query_set_type(const apol_policy_t * p, apol_role_query_t * r, const char *name)
 {
 	return apol_query_set(p, &r->type_name, &r->type_regex, name);
 }
 
-int apol_role_query_set_regex(apol_policy_t * p, apol_role_query_t * r, int is_regex)
+int apol_role_query_set_regex(const apol_policy_t * p, apol_role_query_t * r, int is_regex)
 {
 	return apol_query_set_regex(p, &r->flags, is_regex);
 }
 
-int apol_role_has_type(apol_policy_t * p, qpol_role_t * r, qpol_type_t * t)
+int apol_role_has_type(const apol_policy_t * p, const qpol_role_t * r, const qpol_type_t * t)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_type_t *tmp_type;

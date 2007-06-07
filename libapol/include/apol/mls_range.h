@@ -73,7 +73,7 @@ extern "C"
  *
  * @return A filled in MLS range structure, or NULL upon error.
  */
-	extern apol_mls_range_t *apol_mls_range_create_from_string(apol_policy_t * p, const char *mls_range_string);
+	extern apol_mls_range_t *apol_mls_range_create_from_string(const apol_policy_t * p, const char *mls_range_string);
 
 /**
  * Take a literal MLS range string (e.g.,
@@ -102,13 +102,13 @@ extern "C"
  * upon the return value afterwards.
  *
  * @param p Policy from which the qpol_mls_range_t was obtained.
- * @param qpol_level The libqpol range for which to create a new
+ * @param qpol_range The libqpol range for which to create a new
  * apol range.	This range will not be altered by this call.
  *
  * @return A MLS range structure initialized to the value of
  * qpol_range, or NULL upon error.
  */
-	extern apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t * p, qpol_mls_range_t * qpol_range);
+	extern apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(const apol_policy_t * p, const qpol_mls_range_t * qpol_range);
 
 /**
  * Deallocate all memory associated with a MLS range structure and
@@ -131,7 +131,7 @@ extern "C"
  *
  * @return 0 on success or < 0 on failure.
  */
-	extern int apol_mls_range_set_low(apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level);
+	extern int apol_mls_range_set_low(const apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level);
 
 /**
  * Set the high level component of a MLS range structure.  This
@@ -145,7 +145,7 @@ extern "C"
  *
  * @return 0 on success or < 0 on failure.
  */
-	extern int apol_mls_range_set_high(apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level);
+	extern int apol_mls_range_set_high(const apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level);
 
 /**
  * Get the low level component of a MLS range structure.
@@ -183,7 +183,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-	extern int apol_mls_range_compare(apol_policy_t * p,
+	extern int apol_mls_range_compare(const apol_policy_t * p,
 					  const apol_mls_range_t * target, const apol_mls_range_t * search,
 					  unsigned int range_compare_type);
 
@@ -198,7 +198,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-	extern int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range,
+	extern int apol_mls_range_contain_subrange(const apol_policy_t * p, const apol_mls_range_t * range,
 						   const apol_mls_range_t * subrange);
 /**
  * Given a range, determine if it is legal according to the supplied
@@ -210,7 +210,7 @@ extern "C"
  *
  * @return 1 If range is legal, 0 if not; -1 on error.
  */
-	extern int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range);
+	extern int apol_mls_range_validate(const apol_policy_t * p, const apol_mls_range_t * range);
 
 /**
  * Given a range, return a vector of levels (type apol_mls_level_t *)
@@ -223,7 +223,7 @@ extern "C"
  * responsible for calling apol_vector_destroy() upon the returned
  * value, passing apol_mls_level_free() as the second parameter.
  */
-	extern apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range_t * range);
+	extern apol_vector_t *apol_mls_range_get_levels(const apol_policy_t * p, const apol_mls_range_t * range);
 
 /**
  * Creates a string containing the textual representation of
@@ -237,7 +237,7 @@ extern "C"
  * @return A newly allocated string, or NULL upon error.  The caller
  * is responsible for calling free() upon the return value.
  */
-	extern char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range);
+	extern char *apol_mls_range_render(const apol_policy_t * p, const apol_mls_range_t * range);
 
 /**
  * Given a range, convert any literal MLS levels within it (as per
@@ -249,7 +249,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_mls_range_convert(apol_policy_t * p, apol_mls_range_t * range);
+	extern int apol_mls_range_convert(const apol_policy_t * p, apol_mls_range_t * range);
 
 /**
  * Determine if the range contains any literal levels.  (Levels that

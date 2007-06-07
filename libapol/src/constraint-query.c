@@ -48,7 +48,7 @@ struct apol_validatetrans_query
 
 /******************** constraint queries ********************/
 
-int apol_constraint_get_by_query(apol_policy_t * p, apol_constraint_query_t * c, apol_vector_t ** v)
+int apol_constraint_get_by_query(const apol_policy_t * p, apol_constraint_query_t * c, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	int retval = -1;
@@ -66,8 +66,8 @@ int apol_constraint_get_by_query(apol_policy_t * p, apol_constraint_query_t * c,
 			goto cleanup;
 		}
 		if (c != NULL) {
-			qpol_class_t *class_datum;
-			char *class_name;
+			const qpol_class_t *class_datum;
+			const char *class_name;
 			int compval;
 			if (qpol_constraint_get_class(p->p, constraint, &class_datum) < 0 ||
 			    qpol_class_get_name(p->p, class_datum, &class_name) < 0) {
@@ -126,24 +126,24 @@ void apol_constraint_query_destroy(apol_constraint_query_t ** c)
 	}
 }
 
-int apol_constraint_query_set_class(apol_policy_t * p, apol_constraint_query_t * c, const char *name)
+int apol_constraint_query_set_class(const apol_policy_t * p, apol_constraint_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->class_name, &c->class_regex, name);
 }
 
-int apol_constraint_query_set_perm(apol_policy_t * p, apol_constraint_query_t * c, const char *name)
+int apol_constraint_query_set_perm(const apol_policy_t * p, apol_constraint_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->perm_name, &c->perm_regex, name);
 }
 
-int apol_constraint_query_set_regex(apol_policy_t * p, apol_constraint_query_t * c, int is_regex)
+int apol_constraint_query_set_regex(const apol_policy_t * p, apol_constraint_query_t * c, int is_regex)
 {
 	return apol_query_set_regex(p, &c->flags, is_regex);
 }
 
 /******************** validatetrans queries ********************/
 
-int apol_validatetrans_get_by_query(apol_policy_t * p, apol_validatetrans_query_t * vt, apol_vector_t ** v)
+int apol_validatetrans_get_by_query(const apol_policy_t * p, apol_validatetrans_query_t * vt, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
@@ -161,8 +161,8 @@ int apol_validatetrans_get_by_query(apol_policy_t * p, apol_validatetrans_query_
 			goto cleanup;
 		}
 		if (vt != NULL) {
-			qpol_class_t *class_datum;
-			char *class_name;
+			const qpol_class_t *class_datum;
+			const char *class_name;
 			int compval;
 			if (qpol_validatetrans_get_class(p->p, validatetrans, &class_datum) < 0 ||
 			    qpol_class_get_name(p->p, class_datum, &class_name) < 0) {
@@ -206,12 +206,12 @@ void apol_validatetrans_query_destroy(apol_validatetrans_query_t ** vt)
 	}
 }
 
-int apol_validatetrans_query_set_class(apol_policy_t * p, apol_validatetrans_query_t * vt, const char *name)
+int apol_validatetrans_query_set_class(const apol_policy_t * p, apol_validatetrans_query_t * vt, const char *name)
 {
 	return apol_query_set(p, &vt->class_name, &vt->regex, name);
 }
 
-int apol_validatetrans_query_set_regex(apol_policy_t * p, apol_validatetrans_query_t * vt, int is_regex)
+int apol_validatetrans_query_set_regex(const apol_policy_t * p, apol_validatetrans_query_t * vt, int is_regex)
 {
 	return apol_query_set_regex(p, &vt->flags, is_regex);
 }

@@ -35,7 +35,7 @@
  *
  * @return A clone of the passed in result node, or NULL upon error.
  */
-extern apol_infoflow_result_t *infoflow_result_create_from_infoflow_result(apol_infoflow_result_t * result);
+extern apol_infoflow_result_t *infoflow_result_create_from_infoflow_result(const apol_infoflow_result_t * result);
 
 /**
  * Free all memory associated with an information flow analysis

@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include "qpol_internal.h"
 
-int qpol_policy_get_terule_iter(qpol_policy_t * policy, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_policy_get_terule_iter(const qpol_policy_t * policy, uint32_t rule_type_mask, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	avtab_state_t *state;
@@ -77,7 +77,7 @@ int qpol_policy_get_terule_iter(qpol_policy_t * policy, uint32_t rule_type_mask,
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_source_type(qpol_policy_t * policy, qpol_terule_t * rule, qpol_type_t ** source)
+int qpol_terule_get_source_type(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_type_t ** source)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -100,7 +100,7 @@ int qpol_terule_get_source_type(qpol_policy_t * policy, qpol_terule_t * rule, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_target_type(qpol_policy_t * policy, qpol_terule_t * rule, qpol_type_t ** target)
+int qpol_terule_get_target_type(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_type_t ** target)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -123,7 +123,7 @@ int qpol_terule_get_target_type(qpol_policy_t * policy, qpol_terule_t * rule, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_object_class(qpol_policy_t * policy, qpol_terule_t * rule, qpol_class_t ** obj_class)
+int qpol_terule_get_object_class(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_class_t ** obj_class)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -146,7 +146,7 @@ int qpol_terule_get_object_class(qpol_policy_t * policy, qpol_terule_t * rule, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_default_type(qpol_policy_t * policy, qpol_terule_t * rule, qpol_type_t ** dflt)
+int qpol_terule_get_default_type(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_type_t ** dflt)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -169,7 +169,7 @@ int qpol_terule_get_default_type(qpol_policy_t * policy, qpol_terule_t * rule, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_rule_type(qpol_policy_t * policy, qpol_terule_t * rule, uint32_t * rule_type)
+int qpol_terule_get_rule_type(const qpol_policy_t * policy, const qpol_terule_t * rule, uint32_t * rule_type)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t terule = NULL;
@@ -192,7 +192,7 @@ int qpol_terule_get_rule_type(qpol_policy_t * policy, qpol_terule_t * rule, uint
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_cond(qpol_policy_t * policy, qpol_terule_t * rule, qpol_cond_t ** cond)
+int qpol_terule_get_cond(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_cond_t ** cond)
 {
 	avtab_ptr_t terule = NULL;
 
@@ -213,7 +213,7 @@ int qpol_terule_get_cond(qpol_policy_t * policy, qpol_terule_t * rule, qpol_cond
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_is_enabled(qpol_policy_t * policy, qpol_terule_t * rule, uint32_t * is_enabled)
+int qpol_terule_get_is_enabled(const qpol_policy_t * policy, const qpol_terule_t * rule, uint32_t * is_enabled)
 {
 	avtab_ptr_t terule = NULL;
 
@@ -234,7 +234,7 @@ int qpol_terule_get_is_enabled(qpol_policy_t * policy, qpol_terule_t * rule, uin
 	return STATUS_SUCCESS;
 }
 
-int qpol_terule_get_which_list(qpol_policy_t * policy, qpol_terule_t * rule, uint32_t * which_list)
+int qpol_terule_get_which_list(const qpol_policy_t * policy, const qpol_terule_t * rule, uint32_t * which_list)
 {
 	avtab_ptr_t terule = NULL;
 

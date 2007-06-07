@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void apol_handle_default_callback(void *varg __attribute__ ((unused)), apol_policy_t * p
+static void apol_handle_default_callback(void *varg __attribute__ ((unused)), const apol_policy_t * p
 					 __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
@@ -61,7 +61,7 @@ static void apol_handle_default_callback(void *varg __attribute__ ((unused)), ap
 	fprintf(stderr, "\n");
 }
 
-static void qpol_handle_route_to_callback(void *varg, qpol_policy_t * policy
+static void qpol_handle_route_to_callback(void *varg, const qpol_policy_t * policy
 					  __attribute__ ((unused)), int level, const char *fmt, va_list ap)
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
@@ -147,7 +147,7 @@ void apol_policy_destroy(apol_policy_t ** policy)
 	}
 }
 
-int apol_policy_get_policy_type(apol_policy_t * policy)
+int apol_policy_get_policy_type(const apol_policy_t * policy)
 {
 	if (policy == NULL) {
 		errno = EINVAL;
@@ -156,7 +156,7 @@ int apol_policy_get_policy_type(apol_policy_t * policy)
 	return policy->policy_type;
 }
 
-qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy)
+qpol_policy_t *apol_policy_get_qpol(const apol_policy_t * policy)
 {
 	if (policy == NULL) {
 		errno = EINVAL;
@@ -165,7 +165,7 @@ qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy)
 	return policy->p;
 }
 
-int apol_policy_is_mls(apol_policy_t * p)
+int apol_policy_is_mls(const apol_policy_t * p)
 {
 	if (p == NULL) {
 		return -1;
@@ -173,7 +173,7 @@ int apol_policy_is_mls(apol_policy_t * p)
 	return qpol_policy_has_capability(p->p, QPOL_CAP_MLS);
 }
 
-char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
+char *apol_policy_get_version_type_mls_str(const apol_policy_t * p)
 {
 	unsigned int version;
 	char *policy_type, *mls, buf[64];
@@ -205,7 +205,7 @@ char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
 	return strdup(buf);
 }
 
-void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...)
+void apol_handle_msg(const apol_policy_t * p, int level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

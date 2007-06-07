@@ -519,10 +519,10 @@ sefs_fclist_type_e sefs_fclist_get_type(const sefs_fclist_t * fclist)
  *
  * @return Qpol datum for type, or NULL if not found.
  */
-static qpol_type_t *query_get_type(apol_policy_t * p, const char *type_name)
+static const qpol_type_t *query_get_type(apol_policy_t * p, const char *type_name)
 {
 	unsigned char isalias;
-	qpol_type_t *type = NULL;
+	const qpol_type_t *type = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	if (qpol_policy_get_type_by_name(q, type_name, &type) < 0 || qpol_type_get_isalias(q, type, &isalias) < 0)
 	{
@@ -530,7 +530,7 @@ static qpol_type_t *query_get_type(apol_policy_t * p, const char *type_name)
 	}
 	if (isalias)
 	{
-		char *primary_name;
+		const char *primary_name;
 		if (qpol_type_get_name(q, type, &primary_name) < 0 || qpol_policy_get_type_by_name(q, primary_name, &type) < 0)
 		{
 			return NULL;
@@ -550,12 +550,12 @@ static qpol_type_t *query_get_type(apol_policy_t * p, const char *type_name)
  *
  * @return 0 on success, < 0 on error.
  */
-static int query_append_type(apol_policy_t * p, apol_vector_t * v, qpol_type_t * type)
+static int query_append_type(apol_policy_t * p, apol_vector_t * v, const qpol_type_t * type)
 {
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	unsigned char isalias;
-	qpol_type_t *real_type = type;
-	char *name;
+	const qpol_type_t *real_type = type;
+	const char *name;
 	if (qpol_type_get_isattr(q, type, &isalias) < 0)
 	{
 		return -1;
@@ -567,7 +567,7 @@ static int query_append_type(apol_policy_t * p, apol_vector_t * v, qpol_type_t *
 			return -1;
 		}
 	}
-	if (qpol_type_get_name(q, type, &name) < 0 || apol_vector_append(v, name) < 0)
+	if (qpol_type_get_name(q, type, &name) < 0 || apol_vector_append(v, const_cast<void*>(static_cast<const void*>(name))) < 0)
 	{
 		return -1;
 	}
@@ -579,9 +579,9 @@ apol_vector_t *query_create_candidate_type(apol_policy_t * policy, const char *s
 {
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	apol_vector_t *list = apol_vector_create(NULL);
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_iterator_t *iter = NULL, *alias_iter = NULL;
-	char *type_name;
+	const char *type_name;
 	bool compval;
 
 	try

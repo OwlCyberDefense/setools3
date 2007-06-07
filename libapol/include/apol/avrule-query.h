@@ -51,7 +51,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
+	extern int apol_avrule_get_by_query(const apol_policy_t * p, const apol_avrule_query_t * a, apol_vector_t ** v);
 
 /**
  * Execute a query against all syntactic access vector rules within
@@ -68,7 +68,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_syn_avrule_get_by_query(apol_policy_t * p, apol_avrule_query_t * a, apol_vector_t ** v);
+	extern int apol_syn_avrule_get_by_query(const apol_policy_t * p, const apol_avrule_query_t * a, apol_vector_t ** v);
 
 /**
  * Allocate and return a new avrule query structure.  All fields are
@@ -102,7 +102,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_avrule_query_set_rules(apol_policy_t * p, apol_avrule_query_t * a, unsigned int rules);
+	extern int apol_avrule_query_set_rules(const apol_policy_t * p, apol_avrule_query_t * a, unsigned int rules);
 
 /**
  * Set an avrule query to return rules whose source symbol matches
@@ -121,7 +121,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_avrule_query_set_source(apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect);
+	extern int apol_avrule_query_set_source(const apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect);
 
 /**
  * Set an avrule query to return rules whose source symbol is matched as a type
@@ -136,7 +136,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_avrule_query_set_source_component(apol_policy_t * p, apol_avrule_query_t * a, unsigned int component);
+	extern int apol_avrule_query_set_source_component(const apol_policy_t * p, apol_avrule_query_t * a, unsigned int component);
 
 /**
  * Set an avrule query to return rules whose target symbol matches
@@ -155,7 +155,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_avrule_query_set_target(apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect);
+	extern int apol_avrule_query_set_target(const apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect);
 
 /**
  * Set an avrule query to return rules whose target symbol is matched as a type
@@ -170,7 +170,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_avrule_query_set_target_component(apol_policy_t * p, apol_avrule_query_t * a, unsigned int component);
+	extern int apol_avrule_query_set_target_component(const apol_policy_t * p, apol_avrule_query_t * a, unsigned int component);
 
 /**
  * Set an avrule query to return rules with this object (non-common)
@@ -187,7 +187,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_avrule_query_append_class(apol_policy_t * p, apol_avrule_query_t * a, const char *obj_class);
+	extern int apol_avrule_query_append_class(const apol_policy_t * p, apol_avrule_query_t * a, const char *obj_class);
 
 /**
  * Set an avrule query to return rules with this permission.  By
@@ -207,7 +207,7 @@ extern "C"
  *
  * @see apol_avrule_query_set_all_perms()
  */
-	extern int apol_avrule_query_append_perm(apol_policy_t * p, apol_avrule_query_t * a, const char *perm);
+	extern int apol_avrule_query_append_perm(const apol_policy_t * p, apol_avrule_query_t * a, const char *perm);
 
 /**
  * Set an avrule query to return rules that are in conditionals and
@@ -221,7 +221,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_avrule_query_set_bool(apol_policy_t * p, apol_avrule_query_t * a, const char *bool_name);
+	extern int apol_avrule_query_set_bool(const apol_policy_t * p, apol_avrule_query_t * a, const char *bool_name);
 
 /**
  * Set an avrule query to search only enabled rules within the policy.
@@ -235,7 +235,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_avrule_query_set_enabled(apol_policy_t * p, apol_avrule_query_t * a, int is_enabled);
+	extern int apol_avrule_query_set_enabled(const apol_policy_t * p, apol_avrule_query_t * a, int is_enabled);
 
 /**
  * Normally, if more than one permission are added to the query then
@@ -268,7 +268,7 @@ extern "C"
  *
  * @see apol_avrule_query_append_perm()
  */
-	extern int apol_avrule_query_set_all_perms(apol_policy_t * p, apol_avrule_query_t * a, int all_perms);
+	extern int apol_avrule_query_set_all_perms(const apol_policy_t * p, apol_avrule_query_t * a, int all_perms);
 
 /**
  * Set an avrule query to treat the source symbol as any.  That is,
@@ -282,7 +282,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_avrule_query_set_source_any(apol_policy_t * p, apol_avrule_query_t * a, int is_any);
+	extern int apol_avrule_query_set_source_any(const apol_policy_t * p, apol_avrule_query_t * a, int is_any);
 
 /**
  * Set an avrule query to use regular expression searching for source
@@ -296,7 +296,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_avrule_query_set_regex(apol_policy_t * p, apol_avrule_query_t * a, int is_regex);
+	extern int apol_avrule_query_set_regex(const apol_policy_t * p, apol_avrule_query_t * a, int is_regex);
 
 /**
  * Given a single avrule, return a newly allocated vector of
@@ -315,7 +315,7 @@ extern "C"
  * @return A newly allocated vector of syn_avrule_t pointers.  The
  * caller is responsible for calling apol_vector_destroy() afterwards.
  */
-	extern apol_vector_t *apol_avrule_to_syn_avrules(apol_policy_t * p, qpol_avrule_t * rule, apol_vector_t * perms);
+	extern apol_vector_t *apol_avrule_to_syn_avrules(const apol_policy_t * p, const qpol_avrule_t * rule, const apol_vector_t * perms);
 
 /**
  * Given a vector of avrules (qpol_avrule_t pointers), return a newly
@@ -336,7 +336,7 @@ extern "C"
  * @return A newly allocated vector of syn_avrule_t pointers.  The
  * caller is responsible for calling apol_vector_destroy() afterwards.
  */
-	extern apol_vector_t *apol_avrule_list_to_syn_avrules(apol_policy_t * p, apol_vector_t * rules, apol_vector_t * perms);
+	extern apol_vector_t *apol_avrule_list_to_syn_avrules(const apol_policy_t * p, const apol_vector_t * rules, const apol_vector_t * perms);
 
 /**
  *  Render an avrule to a string.
@@ -348,7 +348,7 @@ extern "C"
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
-	extern char *apol_avrule_render(apol_policy_t * policy, qpol_avrule_t * rule);
+	extern char *apol_avrule_render(const apol_policy_t * policy, const qpol_avrule_t * rule);
 
 /**
  *  Render a syntactic avrule to a string.
@@ -360,7 +360,7 @@ extern "C"
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
 */
-	extern char *apol_syn_avrule_render(apol_policy_t * policy, qpol_syn_avrule_t * rule);
+	extern char *apol_syn_avrule_render(const apol_policy_t * policy, const qpol_syn_avrule_t * rule);
 
 #ifdef	__cplusplus
 }

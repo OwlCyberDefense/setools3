@@ -51,7 +51,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v);
+	extern int apol_range_trans_get_by_query(const apol_policy_t * p, const apol_range_trans_query_t * r, apol_vector_t ** v);
 
 /**
  * Allocate and return a new range trans query structure.  All fields
@@ -90,7 +90,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_range_trans_query_set_source(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol,
+	extern int apol_range_trans_query_set_source(const apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol,
 						     int is_indirect);
 
 /**
@@ -110,7 +110,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_range_trans_query_set_target(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol,
+	extern int apol_range_trans_query_set_target(const apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol,
 						     int is_indirect);
 
 /**
@@ -128,7 +128,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class);
+	extern int apol_range_trans_query_append_class(const apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class);
 
 /**
  * Set a range trans query to return only rules matching a MLS range.
@@ -145,7 +145,7 @@ extern "C"
  *
  * @return Always returns 0.
  */
-	extern int apol_range_trans_query_set_range(apol_policy_t * p,
+	extern int apol_range_trans_query_set_range(const apol_policy_t * p,
 						    apol_range_trans_query_t * r, apol_mls_range_t * range,
 						    unsigned int range_match);
 
@@ -161,7 +161,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_range_trans_query_set_source_any(apol_policy_t * p, apol_range_trans_query_t * r, int is_any);
+	extern int apol_range_trans_query_set_source_any(const apol_policy_t * p, apol_range_trans_query_t * r, int is_any);
 
 /**
  * Set a range trans query to use regular expression searching for
@@ -175,7 +175,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_range_trans_query_set_regex(apol_policy_t * p, apol_range_trans_query_t * t, int is_regex);
+	extern int apol_range_trans_query_set_regex(const apol_policy_t * p, apol_range_trans_query_t * t, int is_regex);
 
 /**
  *  Render a range transition to a string.
@@ -187,7 +187,7 @@ extern "C"
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
-	extern char *apol_range_trans_render(apol_policy_t * policy, qpol_range_trans_t * rule);
+	extern char *apol_range_trans_render(const apol_policy_t * policy, const qpol_range_trans_t * rule);
 
 #ifdef	__cplusplus
 }

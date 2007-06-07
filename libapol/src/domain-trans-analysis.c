@@ -41,9 +41,9 @@ typedef struct apol_domain_trans_rule
 	/** relavant type :
 	 * for domain nodes either the transition target or the entrypoint type (target)
 	 * for exec nodes either the entered or calling domain (source) */
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	/** default type, only for type_transition rules */
-	qpol_type_t *dflt;
+	const qpol_type_t *dflt;
 	/** vector of rules (of type qpol_avrule_t or qpol_terule_t) */
 	apol_vector_t *rules;
 	/** used flag, marks that a rule has previously been returned, not used for setexec rules */
@@ -77,9 +77,9 @@ typedef struct apol_domain_trans_exec_node
 /** internal representation of a potential transition */
 typedef struct apol_domain_trans
 {
-	qpol_type_t *start_type;
-	qpol_type_t *ep_type;
-	qpol_type_t *end_type;
+	const qpol_type_t *start_type;
+	const qpol_type_t *ep_type;
+	const qpol_type_t *end_type;
 	apol_vector_t *proc_trans_rules;
 	apol_vector_t *ep_rules;
 	apol_vector_t *exec_rules;
@@ -106,9 +106,9 @@ struct apol_domain_trans_analysis
 
 struct apol_domain_trans_result
 {
-	qpol_type_t *start_type;
-	qpol_type_t *ep_type;
-	qpol_type_t *end_type;
+	const qpol_type_t *start_type;
+	const qpol_type_t *ep_type;
+	const qpol_type_t *end_type;
 	apol_vector_t *proc_trans_rules;
 	apol_vector_t *ep_rules;
 	apol_vector_t *exec_rules;
@@ -265,8 +265,8 @@ static void apol_domain_trans_destroy(apol_domain_trans_t ** trans)
 	*trans = NULL;
 }
 
-static apol_domain_trans_rule_t *apol_domain_trans_find_rule_for_type(apol_policy_t * policy, apol_vector_t * rule_list,
-								      qpol_type_t * type)
+static apol_domain_trans_rule_t *apol_domain_trans_find_rule_for_type(const apol_policy_t * policy, const apol_vector_t * rule_list,
+								      const qpol_type_t * type)
 {
 	int list_sz = apol_vector_get_size(rule_list);
 	int left = 0, right = list_sz - 1;
@@ -306,8 +306,8 @@ static apol_domain_trans_rule_t *apol_domain_trans_find_rule_for_type(apol_polic
 	return NULL;
 }
 
-static apol_domain_trans_rule_t *apol_domain_trans_find_rule_for_dflt(apol_policy_t * policy, apol_vector_t * rule_list,
-								      qpol_type_t * dflt)
+static apol_domain_trans_rule_t *apol_domain_trans_find_rule_for_dflt(const apol_policy_t * policy, const apol_vector_t * rule_list,
+								      const qpol_type_t * dflt)
 {
 	apol_domain_trans_rule_t *rule = NULL;
 	uint32_t dflt_val, rule_type_val;
@@ -351,8 +351,8 @@ static int apol_domain_trans_rule_compare(const void *a, const void *b, void *po
 	return (int)a_val - (int)b_val;
 }
 
-static int apol_domain_trans_add_rule_to_list(apol_policy_t * policy, apol_vector_t * rule_list, qpol_type_t * type,
-					      qpol_type_t * dflt, void *rule, bool has_no_trans)
+static int apol_domain_trans_add_rule_to_list(const apol_policy_t * policy, apol_vector_t * rule_list, const qpol_type_t * type,
+					      const qpol_type_t * dflt, void *rule, bool has_no_trans)
 {
 	apol_domain_trans_rule_t *tmp_rule = NULL;
 	unsigned char isattr = 0;
@@ -400,7 +400,8 @@ static int apol_domain_trans_add_rule_to_list(apol_policy_t * policy, apol_vecto
 		}
 	}
 
-	apol_vector_sort(rule_list, apol_domain_trans_rule_compare, policy);
+	/* vector's arbitrary data is non-const so explicit cast here. */
+	apol_vector_sort(rule_list, apol_domain_trans_rule_compare, (void*)policy);
 
 	return 0;
 }
@@ -409,9 +410,9 @@ static int apol_domain_trans_table_add_rule(apol_policy_t * policy, unsigned cha
 {
 	int retv, error = 0;
 	apol_domain_trans_table_t *table = NULL;
-	qpol_terule_t *terule = NULL;
-	qpol_avrule_t *avrule = NULL;
-	qpol_type_t *src = NULL, *tgt = NULL, *dflt = NULL;
+	const qpol_terule_t *terule = NULL;
+	const qpol_avrule_t *avrule = NULL;
+	const qpol_type_t *src = NULL, *tgt = NULL, *dflt = NULL;
 	uint32_t src_val = 0, tgt_val = 0;
 	apol_vector_t *src_types = NULL, *tgt_types = NULL;
 	size_t i, j;
@@ -540,11 +541,11 @@ static int apol_domain_trans_table_add_rule(apol_policy_t * policy, unsigned cha
 	return -1;
 }
 
-static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy, apol_domain_trans_t ** trans, qpol_type_t * start)
+static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy, apol_domain_trans_t ** trans, const qpol_type_t * start)
 {
 	apol_domain_trans_table_t *table = NULL;
 	apol_domain_trans_t *entry = NULL, *cur_head = NULL, *cur_tail = NULL;
-	qpol_type_t *ep = NULL, *end = NULL;
+	const qpol_type_t *ep = NULL, *end = NULL;
 	uint32_t start_val, ep_val, end_val;
 	size_t i, j;
 	apol_domain_trans_rule_t *rule_entry = NULL, *tmp_rule = NULL, *tmp_rule2 = NULL;
@@ -745,11 +746,11 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy,
 	return -1;
 }
 
-static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol_domain_trans_t ** trans, qpol_type_t * end)
+static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol_domain_trans_t ** trans, const qpol_type_t * end)
 {
 	apol_domain_trans_table_t *table = NULL;
 	apol_domain_trans_t *entry = NULL, *cur_head = NULL, *cur_tail = NULL;
-	qpol_type_t *ep = NULL, *start = NULL, *dflt = NULL;
+	const qpol_type_t *ep = NULL, *start = NULL, *dflt = NULL;
 	uint32_t start_val, ep_val, end_val, dflt_val;
 	size_t i, j;
 	apol_domain_trans_rule_t *rule_entry = NULL, *tmp_rule = NULL, *tmp_rule2 = NULL;
@@ -934,7 +935,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy,
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
 			}
-			if (apol_vector_append(v, start)) {
+			if (apol_vector_append(v, (void*)start)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -1054,11 +1055,11 @@ static int apol_domain_trans_filter_valid(apol_domain_trans_t ** trans, bool val
 
 /* filter list of transitions to include only transitions
  * with a result type in the provided list */
-static int apol_domain_trans_filter_result_types(apol_policy_t * policy,
+static int apol_domain_trans_filter_result_types(const apol_policy_t * policy,
 						 apol_domain_trans_analysis_t * dta, apol_domain_trans_t ** trans)
 {
 	apol_domain_trans_t *cur = NULL, *prev = NULL;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	int compval;
 
 	for (cur = *trans; cur;) {
@@ -1096,14 +1097,14 @@ static int apol_domain_trans_filter_result_types(apol_policy_t * policy,
 /* filter list of transitions to include only transitions
  * with an end type that has access to at least one of the provided
  * access_types for at least one of the object & permission sets */
-static int apol_domain_trans_filter_access(apol_domain_trans_t ** trans, apol_vector_t * access_types,
-					   apol_vector_t * obj_perm_sets, apol_policy_t * policy)
+static int apol_domain_trans_filter_access(apol_domain_trans_t ** trans, const apol_vector_t * access_types,
+					   const apol_vector_t * obj_perm_sets, const apol_policy_t * policy)
 {
 	apol_domain_trans_t *cur = NULL, *prev = NULL;
 	size_t i, j, k;
 	int error = 0;
-	qpol_type_t *type = NULL;
-	char *tmp = NULL;
+	const qpol_type_t *type = NULL;
+	const char *tmp = NULL;
 	apol_avrule_query_t *avq = NULL;
 	apol_obj_perm_t *op = NULL;
 	apol_vector_t *v = NULL;
@@ -1397,7 +1398,7 @@ void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t ** dta)
 	*dta = NULL;
 }
 
-int apol_domain_trans_analysis_set_direction(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, unsigned char direction)
+int apol_domain_trans_analysis_set_direction(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, unsigned char direction)
 {
 	if (!dta || (direction != APOL_DOMAIN_TRANS_DIRECTION_FORWARD && direction != APOL_DOMAIN_TRANS_DIRECTION_REVERSE)) {
 		ERR(policy, "Error setting analysis direction: %s", strerror(EINVAL));
@@ -1410,7 +1411,7 @@ int apol_domain_trans_analysis_set_direction(apol_policy_t * policy, apol_domain
 	return 0;
 }
 
-int apol_domain_trans_analysis_set_valid(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, unsigned char valid)
+int apol_domain_trans_analysis_set_valid(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, unsigned char valid)
 {
 	if (!dta || valid & ~(APOL_DOMAIN_TRANS_SEARCH_BOTH)) {
 		ERR(policy, "Error setting analysis validity flag: %s", strerror(EINVAL));
@@ -1423,7 +1424,7 @@ int apol_domain_trans_analysis_set_valid(apol_policy_t * policy, apol_domain_tra
 	return 0;
 }
 
-int apol_domain_trans_analysis_set_start_type(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *type_name)
+int apol_domain_trans_analysis_set_start_type(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *type_name)
 {
 	char *tmp = NULL;
 	int error = 0;
@@ -1447,7 +1448,7 @@ int apol_domain_trans_analysis_set_start_type(apol_policy_t * policy, apol_domai
 	return 0;
 }
 
-int apol_domain_trans_analysis_set_result_regex(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *regex)
+int apol_domain_trans_analysis_set_result_regex(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *regex)
 {
 	if (!dta) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -1463,7 +1464,7 @@ int apol_domain_trans_analysis_set_result_regex(apol_policy_t * policy, apol_dom
 	return apol_query_set(policy, &dta->result, &dta->result_regex, regex);
 }
 
-int apol_domain_trans_analysis_append_access_type(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *type_name)
+int apol_domain_trans_analysis_append_access_type(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *type_name)
 {
 	char *tmp = NULL;
 	int error = 0;
@@ -1514,7 +1515,7 @@ static int compare_class_perm_by_class_name(const void *in_op, const void *class
 	return strcmp(apol_obj_perm_get_obj_name(op), name);
 }
 
-int apol_domain_trans_analysis_append_class_perm(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *class_name,
+int apol_domain_trans_analysis_append_class_perm(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *class_name,
 						 const char *perm_name)
 {
 	int error = 0;
@@ -1580,7 +1581,7 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 	apol_domain_trans_result_t *tmp_result = NULL;
 	apol_vector_t *type_v = NULL;
 	size_t i;
-	qpol_type_t *start_type = NULL, *tmp_type = NULL;
+	const qpol_type_t *start_type = NULL, *tmp_type = NULL;
 
 	if (!policy || !dta || !results) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -1653,7 +1654,7 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 				error = errno;
 				goto err;
 			}
-			if (apol_vector_append_unique(type_v, tmp_type, NULL, NULL)) {
+			if (apol_vector_append_unique(type_v, (void*)tmp_type, NULL, NULL)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
@@ -1715,7 +1716,7 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 	return -1;
 }
 
-qpol_type_t *apol_domain_trans_result_get_start_type(apol_domain_trans_result_t * dtr)
+const qpol_type_t *apol_domain_trans_result_get_start_type(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->start_type;
@@ -1725,7 +1726,7 @@ qpol_type_t *apol_domain_trans_result_get_start_type(apol_domain_trans_result_t 
 	}
 }
 
-qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_trans_result_t * dtr)
+const qpol_type_t *apol_domain_trans_result_get_entrypoint_type(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->ep_type;
@@ -1735,7 +1736,7 @@ qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_trans_resu
 	}
 }
 
-qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_result_t * dtr)
+const qpol_type_t *apol_domain_trans_result_get_end_type(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->end_type;
@@ -1745,7 +1746,7 @@ qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_result_t * 
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_trans_result_t * dtr)
+const apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->proc_trans_rules;
@@ -1755,7 +1756,7 @@ apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_trans_r
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_trans_result_t * dtr)
+const apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->ep_rules;
@@ -1765,7 +1766,7 @@ apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_trans_r
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_result_t * dtr)
+const apol_vector_t *apol_domain_trans_result_get_exec_rules(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->exec_rules;
@@ -1775,7 +1776,7 @@ apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_result_
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_trans_result_t * dtr)
+const apol_vector_t *apol_domain_trans_result_get_setexec_rules(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->setexec_rules;
@@ -1785,7 +1786,7 @@ apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_trans_resu
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_type_trans_rules(apol_domain_trans_result_t * dtr)
+const apol_vector_t *apol_domain_trans_result_get_type_trans_rules(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->type_trans_rules;
@@ -1795,7 +1796,7 @@ apol_vector_t *apol_domain_trans_result_get_type_trans_rules(apol_domain_trans_r
 	}
 }
 
-int apol_domain_trans_result_is_trans_valid(apol_domain_trans_result_t * dtr)
+int apol_domain_trans_result_is_trans_valid(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->valid;
@@ -1805,7 +1806,7 @@ int apol_domain_trans_result_is_trans_valid(apol_domain_trans_result_t * dtr)
 	}
 }
 
-apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_result_t * dtr)
+const apol_vector_t *apol_domain_trans_result_get_access_rules(const apol_domain_trans_result_t * dtr)
 {
 	if (dtr) {
 		return dtr->access_rules;
@@ -1815,8 +1816,8 @@ apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_trans_resul
 	}
 }
 
-int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * start_dom, qpol_type_t * ep_type,
-					 qpol_type_t * end_dom)
+int apol_domain_trans_table_verify_trans(apol_policy_t * policy, const qpol_type_t * start_dom, const qpol_type_t * ep_type,
+					 const qpol_type_t * end_dom)
 {
 	apol_domain_trans_table_t *table = NULL;
 	apol_domain_trans_rule_t *retv;

@@ -44,7 +44,7 @@ typedef struct cond_state
 	cond_node_t *cur;
 } cond_state_t;
 
-static int cond_state_end(qpol_iterator_t * iter)
+static int cond_state_end(const qpol_iterator_t * iter)
 {
 	cond_state_t *cs = NULL;
 
@@ -56,7 +56,7 @@ static int cond_state_end(qpol_iterator_t * iter)
 	return cs->cur ? 0 : 1;
 }
 
-static void *cond_state_get_cur(qpol_iterator_t * iter)
+static void *cond_state_get_cur(const qpol_iterator_t * iter)
 {
 	cond_state_t *cs = NULL;
 
@@ -87,7 +87,7 @@ static int cond_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t cond_state_size(qpol_iterator_t * iter)
+static size_t cond_state_size(const qpol_iterator_t * iter)
 {
 	cond_state_t *cs = NULL;
 	cond_node_t *tmp = NULL;
@@ -104,7 +104,7 @@ static size_t cond_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_policy_get_cond_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_cond_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_state_t *cs = NULL;
@@ -154,7 +154,7 @@ typedef struct cond_expr_state
 	cond_expr_t *cur;
 } cond_expr_state_t;
 
-static int cond_expr_state_end(qpol_iterator_t * iter)
+static int cond_expr_state_end(const qpol_iterator_t * iter)
 {
 	cond_expr_state_t *ces = NULL;
 
@@ -166,7 +166,7 @@ static int cond_expr_state_end(qpol_iterator_t * iter)
 	return ces->cur ? 0 : 1;
 }
 
-static void *cond_expr_state_get_cur(qpol_iterator_t * iter)
+static void *cond_expr_state_get_cur(const qpol_iterator_t * iter)
 {
 	cond_expr_state_t *ces = NULL;
 
@@ -197,7 +197,7 @@ static int cond_expr_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t cond_expr_state_size(qpol_iterator_t * iter)
+static size_t cond_expr_state_size(const qpol_iterator_t * iter)
 {
 	cond_expr_state_t *ces = NULL;
 	cond_expr_t *tmp = NULL;
@@ -214,7 +214,7 @@ static size_t cond_expr_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_cond_get_expr_node_iter(qpol_policy_t * policy, qpol_cond_t * cond, qpol_iterator_t ** iter)
+int qpol_cond_get_expr_node_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_expr_state_t *ces = NULL;
@@ -262,7 +262,7 @@ typedef struct cond_rule_state
 	uint32_t rule_type_mask;
 } cond_rule_state_t;
 
-static int cond_rule_state_end(qpol_iterator_t * iter)
+static int cond_rule_state_end(const qpol_iterator_t * iter)
 {
 	cond_rule_state_t *crs = NULL;
 
@@ -274,7 +274,7 @@ static int cond_rule_state_end(qpol_iterator_t * iter)
 	return crs->cur ? 0 : 1;
 }
 
-static void *cond_rule_state_get_cur(qpol_iterator_t * iter)
+static void *cond_rule_state_get_cur(const qpol_iterator_t * iter)
 {
 	cond_rule_state_t *crs = NULL;
 
@@ -307,7 +307,7 @@ static int cond_rule_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t cond_rule_state_size(qpol_iterator_t * iter)
+static size_t cond_rule_state_size(const qpol_iterator_t * iter)
 {
 	cond_rule_state_t *crs = NULL;
 	cond_av_list_t *tmp = NULL;
@@ -326,7 +326,7 @@ static size_t cond_rule_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_cond_get_av_true_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_cond_get_av_true_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_rule_state_t *crs = NULL;
@@ -377,7 +377,7 @@ int qpol_cond_get_av_true_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint3
 	return STATUS_ERR;
 }
 
-int qpol_cond_get_te_true_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_cond_get_te_true_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_rule_state_t *crs = NULL;
@@ -428,7 +428,7 @@ int qpol_cond_get_te_true_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint3
 	return STATUS_ERR;
 }
 
-int qpol_cond_get_av_false_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_cond_get_av_false_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_rule_state_t *crs = NULL;
@@ -479,7 +479,7 @@ int qpol_cond_get_av_false_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint
 	return STATUS_ERR;
 }
 
-int qpol_cond_get_te_false_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_cond_get_te_false_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_rule_state_t *crs = NULL;
@@ -530,7 +530,7 @@ int qpol_cond_get_te_false_iter(qpol_policy_t * policy, qpol_cond_t * cond, uint
 	return STATUS_ERR;
 }
 
-int qpol_cond_eval(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t * is_true)
+int qpol_cond_eval(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t * is_true)
 {
 	int error = 0;
 	cond_node_t *internal_cond = NULL;
@@ -559,7 +559,7 @@ int qpol_cond_eval(qpol_policy_t * policy, qpol_cond_t * cond, uint32_t * is_tru
 	return STATUS_ERR;
 }
 
-int qpol_cond_expr_node_get_expr_type(qpol_policy_t * policy, qpol_cond_expr_node_t * node, uint32_t * expr_type)
+int qpol_cond_expr_node_get_expr_type(const qpol_policy_t * policy, const qpol_cond_expr_node_t * node, uint32_t * expr_type)
 {
 	cond_expr_t *internal_cond = NULL;
 
@@ -579,7 +579,7 @@ int qpol_cond_expr_node_get_expr_type(qpol_policy_t * policy, qpol_cond_expr_nod
 	return STATUS_SUCCESS;
 }
 
-int qpol_cond_expr_node_get_bool(qpol_policy_t * policy, qpol_cond_expr_node_t * node, qpol_bool_t ** cond_bool)
+int qpol_cond_expr_node_get_bool(const qpol_policy_t * policy, const qpol_cond_expr_node_t * node, qpol_bool_t ** cond_bool)
 {
 	int error = 0;
 	cond_expr_t *internal_cond = NULL;

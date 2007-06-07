@@ -56,7 +56,7 @@ extern "C"
  *
  * @return An initialized context structure, or NULL upon error.
  */
-	extern apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_context_t * context);
+	extern apol_context_t *apol_context_create_from_qpol_context(const apol_policy_t * p, const qpol_context_t * context);
 
 /**
  * Deallocate all memory associated with a context structure and then
@@ -77,7 +77,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const char *user);
+	extern int apol_context_set_user(const apol_policy_t * p, apol_context_t * context, const char *user);
 
 /**
  * Set the role field of a context structure.  This function
@@ -89,7 +89,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const char *role);
+	extern int apol_context_set_role(const apol_policy_t * p, apol_context_t * context, const char *role);
 
 /**
  * Set the type field of a context structure.  This function
@@ -101,7 +101,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const char *type);
+	extern int apol_context_set_type(const apol_policy_t * p, apol_context_t * context, const char *type);
 
 /**
  * Set the range field of a context structure.	This function takes
@@ -114,7 +114,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range);
+	extern int apol_context_set_range(const apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range);
 
 /**
  * Get the user field of a context structure.
@@ -174,7 +174,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-	extern int apol_context_compare(apol_policy_t * p,
+	extern int apol_context_compare(const apol_policy_t * p,
 					const apol_context_t * target, const apol_context_t * search,
 					unsigned int range_compare_type);
 
@@ -190,7 +190,7 @@ extern "C"
  *
  * @return 1 If context is legal, 0 if not; -1 on error.
  */
-	extern int apol_context_validate(apol_policy_t * p, const apol_context_t * context);
+	extern int apol_context_validate(const apol_policy_t * p, const apol_context_t * context);
 
 /**
  * Given a partial context, determine if it is legal according to the
@@ -205,7 +205,7 @@ extern "C"
  *
  * @return 1 If context is legal, 0 if not; -1 on error.
  */
-	extern int apol_context_validate_partial(apol_policy_t * p, const apol_context_t * context);
+	extern int apol_context_validate_partial(const apol_policy_t * p, const apol_context_t * context);
 
 /**
  * Given a context, allocate and return a string that represents the
@@ -222,7 +222,7 @@ extern "C"
  * @return A newly allocated string on success, which the caller must
  * free afterwards.  Upon error return NULL.
  */
-	extern char *apol_context_render(apol_policy_t * p, const apol_context_t * context);
+	extern char *apol_context_render(const apol_policy_t * p, const apol_context_t * context);
 
 /**
  * Given a context, convert the range within it (as per
@@ -234,7 +234,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_convert(apol_policy_t * p, apol_context_t * context);
+	extern int apol_context_convert(const apol_policy_t * p, apol_context_t * context);
 
 #ifdef	__cplusplus
 }

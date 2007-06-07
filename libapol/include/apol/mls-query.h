@@ -57,7 +57,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-	extern int apol_mls_sens_compare(apol_policy_t * p, const char *sens1, const char *sens2);
+	extern int apol_mls_sens_compare(const apol_policy_t * p, const char *sens1, const char *sens2);
 
 /**
  * Determine if two categories are actually the same.  Either category
@@ -70,7 +70,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-	extern int apol_mls_cats_compare(apol_policy_t * p, const char *cat1, const char *cat2);
+	extern int apol_mls_cats_compare(const apol_policy_t * p, const char *cat1, const char *cat2);
 
 /******************** level queries ********************/
 
@@ -90,7 +90,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_level_get_by_query(apol_policy_t * p, apol_level_query_t * l, apol_vector_t ** v);
+	extern int apol_level_get_by_query(const apol_policy_t * p, apol_level_query_t * l, apol_vector_t ** v);
 
 /**
  * Allocate and return a new level query structure.  All fields are
@@ -123,7 +123,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_level_query_set_sens(apol_policy_t * p, apol_level_query_t * l, const char *name);
+	extern int apol_level_query_set_sens(const apol_policy_t * p, apol_level_query_t * l, const char *name);
 
 /**
  * Set a level query to return only levels contain a particular
@@ -137,7 +137,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_level_query_set_cat(apol_policy_t * p, apol_level_query_t * l, const char *name);
+	extern int apol_level_query_set_cat(const apol_policy_t * p, apol_level_query_t * l, const char *name);
 
 /**
  * Set a level query to use regular expression searching for all of
@@ -151,7 +151,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_level_query_set_regex(apol_policy_t * p, apol_level_query_t * l, int is_regex);
+	extern int apol_level_query_set_regex(const apol_policy_t * p, apol_level_query_t * l, int is_regex);
 
 /******************** category queries ********************/
 
@@ -171,7 +171,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_cat_get_by_query(apol_policy_t * p, apol_cat_query_t * c, apol_vector_t ** v);
+	extern int apol_cat_get_by_query(const apol_policy_t * p, apol_cat_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new category query structure.	All fields are
@@ -205,7 +205,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_cat_query_set_cat(apol_policy_t * p, apol_cat_query_t * c, const char *name);
+	extern int apol_cat_query_set_cat(const apol_policy_t * p, apol_cat_query_t * c, const char *name);
 
 /**
  * Set a category query to use regular expression searching for all of
@@ -219,7 +219,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_cat_query_set_regex(apol_policy_t * p, apol_cat_query_t * c, int is_regex);
+	extern int apol_cat_query_set_regex(const apol_policy_t * p, apol_cat_query_t * c, int is_regex);
 
 #ifdef	__cplusplus
 }

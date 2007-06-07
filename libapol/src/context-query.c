@@ -41,14 +41,14 @@ apol_context_t *apol_context_create(void)
 	return calloc(1, sizeof(apol_context_t));
 }
 
-apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_context_t * context)
+apol_context_t *apol_context_create_from_qpol_context(const apol_policy_t * p, const qpol_context_t * context)
 {
 	apol_context_t *c = NULL;
-	qpol_user_t *user;
-	qpol_role_t *role;
-	qpol_type_t *type;
-	qpol_mls_range_t *range;
-	char *user_name, *role_name, *type_name;
+	const qpol_user_t *user;
+	const qpol_role_t *role;
+	const qpol_type_t *type;
+	const qpol_mls_range_t *range;
+	const char *user_name, *role_name, *type_name;
 	apol_mls_range_t *apol_range = NULL;
 	if ((c = apol_context_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
@@ -94,7 +94,7 @@ void apol_context_destroy(apol_context_t ** context)
 	}
 }
 
-int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const char *user)
+int apol_context_set_user(const apol_policy_t * p, apol_context_t * context, const char *user)
 {
 	if (context == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -112,7 +112,7 @@ int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const cha
 	return 0;
 }
 
-int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const char *role)
+int apol_context_set_role(const apol_policy_t * p, apol_context_t * context, const char *role)
 {
 	if (context == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -130,7 +130,7 @@ int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const cha
 	return 0;
 }
 
-int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const char *type)
+int apol_context_set_type(const apol_policy_t * p, apol_context_t * context, const char *type)
 {
 	if (context == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -148,7 +148,7 @@ int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const cha
 	return 0;
 }
 
-int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range)
+int apol_context_set_range(const apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range)
 {
 	if (context == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -198,7 +198,7 @@ const apol_mls_range_t *apol_context_get_range(const apol_context_t * context)
 	return context->range;
 }
 
-int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const apol_context_t * search,
+int apol_context_compare(const apol_policy_t * p, const apol_context_t * target, const apol_context_t * search,
 			 unsigned int range_compare_type)
 {
 	uint32_t value0, value1;
@@ -208,7 +208,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 		return -1;
 	}
 	if (target->user != NULL && search->user != NULL) {
-		qpol_user_t *user0, *user1;
+		const qpol_user_t *user0, *user1;
 		if (qpol_policy_get_user_by_name(p->p,
 						 target->user, &user0) < 0 ||
 		    qpol_policy_get_user_by_name(p->p,
@@ -221,7 +221,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 		}
 	}
 	if (target->role != NULL && search->role != NULL) {
-		qpol_role_t *role0, *role1;
+		const qpol_role_t *role0, *role1;
 		if (qpol_policy_get_role_by_name(p->p,
 						 target->role, &role0) < 0 ||
 		    qpol_policy_get_role_by_name(p->p,
@@ -234,7 +234,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 		}
 	}
 	if (target->type != NULL && search->type != NULL) {
-		qpol_type_t *type0, *type1;
+		const qpol_type_t *type0, *type1;
 		if (qpol_policy_get_type_by_name(p->p,
 						 target->type, &type0) < 0 ||
 		    qpol_policy_get_type_by_name(p->p,
@@ -252,7 +252,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 	return 1;
 }
 
-int apol_context_validate(apol_policy_t * p, const apol_context_t * context)
+int apol_context_validate(const apol_policy_t * p, const apol_context_t * context)
 {
 	if (context == NULL ||
 	    context->user == NULL ||
@@ -264,14 +264,14 @@ int apol_context_validate(apol_policy_t * p, const apol_context_t * context)
 	return apol_context_validate_partial(p, context);
 }
 
-int apol_context_validate_partial(apol_policy_t * p, const apol_context_t * context)
+int apol_context_validate_partial(const apol_policy_t * p, const apol_context_t * context)
 {
 	apol_user_query_t *user_query = NULL;
 	apol_role_query_t *role_query = NULL;
 	apol_vector_t *user_v = NULL, *role_v = NULL;
-	qpol_user_t *user;
-	qpol_type_t *type;
-	qpol_mls_range_t *user_range;
+	const qpol_user_t *user;
+	const qpol_type_t *type;
+	const qpol_mls_range_t *user_range;
 	apol_mls_range_t *user_apol_range = NULL;
 	int retval = -1, retval2;
 
@@ -346,7 +346,7 @@ int apol_context_validate_partial(apol_policy_t * p, const apol_context_t * cont
 	return retval;
 }
 
-char *apol_context_render(apol_policy_t * p, const apol_context_t * context)
+char *apol_context_render(const apol_policy_t * p, const apol_context_t * context)
 {
 	char *buf = NULL, *range_str = NULL;
 	size_t buf_sz = 0;
@@ -396,7 +396,7 @@ char *apol_context_render(apol_policy_t * p, const apol_context_t * context)
 	return NULL;
 }
 
-int apol_context_convert(apol_policy_t * p, apol_context_t * context)
+int apol_context_convert(const apol_policy_t * p, apol_context_t * context)
 {
 	if (p == NULL || context == NULL) {
 		ERR(p, "%s", strerror(EINVAL));

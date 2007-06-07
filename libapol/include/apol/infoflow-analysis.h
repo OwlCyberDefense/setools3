@@ -89,8 +89,8 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_do(apol_policy_t * p,
-					     apol_infoflow_analysis_t * ia, apol_vector_t ** v, apol_infoflow_graph_t ** g);
+	extern int apol_infoflow_analysis_do(const apol_policy_t * p,
+					     const apol_infoflow_analysis_t * ia, apol_vector_t ** v, apol_infoflow_graph_t ** g);
 
 /**
  * Execute an information flow analysis against a particular policy
@@ -108,7 +108,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_do_more(apol_policy_t * p, apol_infoflow_graph_t * g, const char *type,
+	extern int apol_infoflow_analysis_do_more(const apol_policy_t * p, apol_infoflow_graph_t * g, const char *type,
 						  apol_vector_t ** v);
 
 /**
@@ -127,7 +127,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_infoflow_analysis_trans_further_prepare(apol_policy_t * p,
+	extern int apol_infoflow_analysis_trans_further_prepare(const apol_policy_t * p,
 								apol_infoflow_graph_t * g, const char *start_type,
 								const char *end_type);
 
@@ -147,7 +147,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_infoflow_analysis_trans_further_next(apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t ** v);
+	extern int apol_infoflow_analysis_trans_further_next(const apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t ** v);
 
 /********** functions to create/modify an analysis object **********/
 
@@ -183,7 +183,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_set_mode(apol_policy_t * p, apol_infoflow_analysis_t * ia, unsigned int mode);
+	extern int apol_infoflow_analysis_set_mode(const apol_policy_t * p, apol_infoflow_analysis_t * ia, unsigned int mode);
 
 /**
  * Set an information flow analysis to search in a specific direction.
@@ -198,7 +198,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_set_dir(apol_policy_t * p, apol_infoflow_analysis_t * ia, unsigned int dir);
+	extern int apol_infoflow_analysis_set_dir(const apol_policy_t * p, apol_infoflow_analysis_t * ia, unsigned int dir);
 
 /**
  * Set an information flow analysis to begin searching using a given
@@ -210,7 +210,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_set_type(apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *name);
+	extern int apol_infoflow_analysis_set_type(const apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *name);
 
 /**
  * Set an information flow analysis to return paths that only go
@@ -224,7 +224,7 @@ extern "C"
  * @param type Intermediate type which a result must flow through.
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_append_intermediate(apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *type);
+	extern int apol_infoflow_analysis_append_intermediate(const apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *type);
 
 /**
  * Set an information flow analysis to return only rules with this
@@ -241,7 +241,7 @@ extern "C"
  * given class.  This may be NULL if class_name is also NULL.
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_append_class_perm(apol_policy_t * p,
+	extern int apol_infoflow_analysis_append_class_perm(const apol_policy_t * p,
 							    apol_infoflow_analysis_t * ia, const char *class_name,
 							    const char *perm_name);
 
@@ -258,7 +258,7 @@ extern "C"
  * all rules.
  * @return Always 0.
  */
-	extern int apol_infoflow_analysis_set_min_weight(apol_policy_t * p, apol_infoflow_analysis_t * ia, int min_weight);
+	extern int apol_infoflow_analysis_set_min_weight(const apol_policy_t * p, apol_infoflow_analysis_t * ia, int min_weight);
 
 /**
  * Set an information flow analysis to return only types matching a
@@ -272,7 +272,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_set_result_regex(apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *result);
+	extern int apol_infoflow_analysis_set_result_regex(const apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *result);
 
 /*************** functions to access infoflow results ***************/
 
@@ -283,7 +283,7 @@ extern "C"
  * @param result Infoflow result from which to get direction.
  * @return Direction of result or zero on error.
  */
-	extern unsigned int apol_infoflow_result_get_dir(apol_infoflow_result_t * result);
+	extern unsigned int apol_infoflow_result_get_dir(const apol_infoflow_result_t * result);
 
 /**
  * Return the start type of an information flow result.  The caller
@@ -292,7 +292,7 @@ extern "C"
  * @param result Infoflow result from which to get start type.
  * @return Pointer to the start type of the infoflow or NULL on error.
  */
-	extern qpol_type_t *apol_infoflow_result_get_start_type(apol_infoflow_result_t * result);
+	extern const qpol_type_t *apol_infoflow_result_get_start_type(const apol_infoflow_result_t * result);
 
 /**
  * Return the end type of an information flow result.  The caller
@@ -301,7 +301,7 @@ extern "C"
  * @param result Infoflow result from which to get end type.
  * @return Pointer to the end type of the infoflow or NULL on error.
  */
-	extern qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t * result);
+	extern const qpol_type_t *apol_infoflow_result_get_end_type(const apol_infoflow_result_t * result);
 
 /**
  * Return the length of an information flow result.  This represents
@@ -312,7 +312,7 @@ extern "C"
  * @param result Infoflow result from which to get length.
  * @return Length of result or zero on error.
  */
-	extern unsigned int apol_infoflow_result_get_length(apol_infoflow_result_t * result);
+	extern unsigned int apol_infoflow_result_get_length(const apol_infoflow_result_t * result);
 
 /**
  * Return the vector of infoflow steps for a particular information
@@ -327,7 +327,7 @@ extern "C"
  * @return Pointer to a vector of steps found between the result's
  * start and end types or NULL on error.
  */
-	extern apol_vector_t *apol_infoflow_result_get_steps(apol_infoflow_result_t * result);
+	extern const apol_vector_t *apol_infoflow_result_get_steps(const apol_infoflow_result_t * result);
 
 /**
  * Return the starting type for an information flow step.  The caller
@@ -336,7 +336,7 @@ extern "C"
  * @param step Infoflow step from which to get start type.
  * @return Pointer to the start type for this infoflow step or NULL on error.
  */
-	extern qpol_type_t *apol_infoflow_step_get_start_type(apol_infoflow_step_t * step);
+	extern const qpol_type_t *apol_infoflow_step_get_start_type(const apol_infoflow_step_t * step);
 
 /**
  * Return the ending type for an information flow step.  The caller
@@ -345,7 +345,7 @@ extern "C"
  * @param step Infoflow step from which to get end type.
  * @return Pointer to the start type for this infoflow step or NULL on error.
  */
-	extern qpol_type_t *apol_infoflow_step_get_end_type(apol_infoflow_step_t * step);
+	extern const qpol_type_t *apol_infoflow_step_get_end_type(const apol_infoflow_step_t * step);
 
 /**
  * Return the weight of an information flow step.  For a direct
@@ -359,7 +359,7 @@ extern "C"
  * @param step Infoflow step from which to get weight.
  * @return Weight of step or < 0 on error.
  */
-	extern int apol_infoflow_step_get_weight(apol_infoflow_step_t * step);
+	extern int apol_infoflow_step_get_weight(const apol_infoflow_step_t * step);
 
 /**
  * Return the vector of access rules for a particular information
@@ -372,7 +372,7 @@ extern "C"
  * @return Pointer to a vector of rules relative to the policy originally
  * used to generate the results or NULL on error.
  */
-	extern apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t * step);
+	extern const apol_vector_t *apol_infoflow_step_get_rules(const apol_infoflow_step_t * step);
 
 #ifdef	__cplusplus
 }

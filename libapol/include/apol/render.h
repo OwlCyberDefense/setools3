@@ -50,7 +50,7 @@ extern "C"
  * @return A newly allocated string, which the caller must free.
  * Returns NULL on error.
  */
-	extern char *apol_ipv4_addr_render(apol_policy_t * p, uint32_t addr[4]);
+	extern char *apol_ipv4_addr_render(const apol_policy_t * p, uint32_t addr[4]);
 
 /**
  * Given an IPv6 address (or mask) in qpol byte order, allocate and
@@ -62,7 +62,7 @@ extern "C"
  * @return A newly allocated string, which the caller must free.
  * Returns NULL on error.
  */
-	extern char *apol_ipv6_addr_render(apol_policy_t * p, uint32_t addr[4]);
+	extern char *apol_ipv6_addr_render(const apol_policy_t * p, uint32_t addr[4]);
 
 /**
  * Creates a string containing the textual representation of
@@ -73,7 +73,7 @@ extern "C"
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-	extern char *apol_qpol_context_render(apol_policy_t * p, qpol_context_t * context);
+	extern char *apol_qpol_context_render(const apol_policy_t * p, const qpol_context_t * context);
 
 #ifdef	__cplusplus
 }

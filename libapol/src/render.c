@@ -49,7 +49,7 @@ __asm__(".symver apol_ipv4_addr_render_new,apol_ipv4_addr_render@@VERS_4.1");
  * Implementation of the exported function apol_ipv4_addr_render()
  * for version 4.1; this symbol name is not exported.
  */
-char *apol_ipv4_addr_render_new(apol_policy_t * policydb, uint32_t addr[4])
+char *apol_ipv4_addr_render_new(const apol_policy_t * policydb, uint32_t addr[4])
 {
 	char buf[40], *b;
 	unsigned char *p = (unsigned char *)&(addr[0]);
@@ -61,7 +61,7 @@ char *apol_ipv4_addr_render_new(apol_policy_t * policydb, uint32_t addr[4])
 }
 
 #if LINK_SHARED == 0
-char *apol_ipv4_addr_render(apol_policy_t * policydb, uint32_t addr[4])
+char *apol_ipv4_addr_render(const apol_policy_t * policydb, uint32_t addr[4])
 {
 	return apol_ipv4_addr_render_new(policydb, addr);
 }
@@ -83,7 +83,7 @@ char *apol_ipv4_addr_render_old(apol_policy_t * policydb, uint32_t addr)
 	return b;
 }
 
-char *apol_ipv6_addr_render(apol_policy_t * policydb, uint32_t addr[4])
+char *apol_ipv6_addr_render(const apol_policy_t * policydb, uint32_t addr[4])
 {
 	uint16_t tmp[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	int i, sz = 0, retv;
@@ -138,7 +138,7 @@ char *apol_ipv6_addr_render(apol_policy_t * policydb, uint32_t addr[4])
 	return b;
 }
 
-char *apol_qpol_context_render(apol_policy_t * p, qpol_context_t * context)
+char *apol_qpol_context_render(const apol_policy_t * p, const qpol_context_t * context)
 {
 	apol_context_t *c = NULL;
 	char *rendered_context;

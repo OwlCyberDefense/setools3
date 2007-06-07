@@ -33,7 +33,7 @@
 #include <qpol/type_query.h>
 #include "qpol_internal.h"
 
-int qpol_policy_get_type_by_name(qpol_policy_t * policy, const char *name, qpol_type_t ** datum)
+int qpol_policy_get_type_by_name(const qpol_policy_t * policy, const char *name, const qpol_type_t ** datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -59,7 +59,7 @@ int qpol_policy_get_type_by_name(qpol_policy_t * policy, const char *name, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_type_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_type_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -97,7 +97,7 @@ int qpol_policy_get_type_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_get_value(qpol_policy_t * policy, qpol_type_t * datum, uint32_t * value)
+int qpol_type_get_value(const qpol_policy_t * policy, const qpol_type_t * datum, uint32_t * value)
 {
 	type_datum_t *internal_datum;
 
@@ -143,7 +143,7 @@ static int is_type_really_an_alias(const type_datum_t * datum)
 	return 0;
 }
 
-int qpol_type_get_isalias(qpol_policy_t * policy, qpol_type_t * datum, unsigned char *isalias)
+int qpol_type_get_isalias(const qpol_policy_t * policy, const qpol_type_t * datum, unsigned char *isalias)
 {
 	type_datum_t *internal_datum;
 
@@ -160,7 +160,7 @@ int qpol_type_get_isalias(qpol_policy_t * policy, qpol_type_t * datum, unsigned 
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_get_isattr(qpol_policy_t * policy, qpol_type_t * datum, unsigned char *isattr)
+int qpol_type_get_isattr(const qpol_policy_t * policy, const qpol_type_t * datum, unsigned char *isattr)
 {
 	type_datum_t *internal_datum;
 
@@ -178,7 +178,7 @@ int qpol_type_get_isattr(qpol_policy_t * policy, qpol_type_t * datum, unsigned c
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_get_type_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** types)
+int qpol_type_get_type_iter(const qpol_policy_t * policy, const qpol_type_t * datum, qpol_iterator_t ** types)
 {
 	type_datum_t *internal_datum = NULL;
 	ebitmap_state_t *es = NULL;
@@ -224,7 +224,7 @@ int qpol_type_get_type_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_it
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_get_attr_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** attrs)
+int qpol_type_get_attr_iter(const qpol_policy_t * policy, const qpol_type_t * datum, qpol_iterator_t ** attrs)
 {
 	type_datum_t *internal_datum = NULL;
 	ebitmap_state_t *es = NULL;
@@ -270,7 +270,7 @@ int qpol_type_get_attr_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_it
 	return STATUS_SUCCESS;
 }
 
-int qpol_type_get_name(qpol_policy_t * policy, qpol_type_t * datum, char **name)
+int qpol_type_get_name(const qpol_policy_t * policy, const qpol_type_t * datum, const char **name)
 {
 	type_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -345,7 +345,7 @@ static int hash_state_next_type_alias(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static void *hash_state_get_cur_alias(qpol_iterator_t * iter)
+static void *hash_state_get_cur_alias(const qpol_iterator_t * iter)
 {
 	type_alias_hash_state_t *hs = NULL;
 
@@ -367,7 +367,7 @@ static void *hash_state_get_cur_alias(qpol_iterator_t * iter)
 	return hs->node->key;
 }
 
-static size_t hash_alias_state_size(qpol_iterator_t * iter)
+static size_t hash_alias_state_size(const qpol_iterator_t * iter)
 {
 	type_alias_hash_state_t *hs = NULL;
 	type_datum_t *tmp_datum;
@@ -395,7 +395,7 @@ static size_t hash_alias_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_type_get_alias_iter(qpol_policy_t * policy, qpol_type_t * datum, qpol_iterator_t ** aliases)
+int qpol_type_get_alias_iter(const qpol_policy_t * policy, const qpol_type_t * datum, qpol_iterator_t ** aliases)
 {
 	type_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;

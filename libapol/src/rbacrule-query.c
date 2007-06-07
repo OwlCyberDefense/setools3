@@ -46,7 +46,7 @@ struct apol_role_trans_query
 
 /******************** (role) allow queries ********************/
 
-int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r, apol_vector_t ** v)
+int apol_role_allow_get_by_query(const apol_policy_t * p, const apol_role_allow_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL;
@@ -85,7 +85,7 @@ int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r,
 		if (source_list == NULL) {
 			match_source = 1;
 		} else {
-			qpol_role_t *source_role;
+			const qpol_role_t *source_role;
 			if (qpol_role_allow_get_source_role(p->p, rule, &source_role) < 0) {
 				goto cleanup;
 			}
@@ -104,7 +104,7 @@ int apol_role_allow_get_by_query(apol_policy_t * p, apol_role_allow_query_t * r,
 		if (target_list == NULL || (source_as_any && match_source)) {
 			match_target = 1;
 		} else {
-			qpol_role_t *target_role;
+			const qpol_role_t *target_role;
 			if (qpol_role_allow_get_target_role(p->p, rule, &target_role) < 0) {
 				goto cleanup;
 			}
@@ -150,30 +150,31 @@ void apol_role_allow_query_destroy(apol_role_allow_query_t ** r)
 	}
 }
 
-int apol_role_allow_query_set_source(apol_policy_t * p, apol_role_allow_query_t * r, const char *role)
+int apol_role_allow_query_set_source(const apol_policy_t * p, apol_role_allow_query_t * r, const char *role)
 {
 	return apol_query_set(p, &r->source, NULL, role);
 }
 
-int apol_role_allow_query_set_target(apol_policy_t * p, apol_role_allow_query_t * r, const char *role)
+int apol_role_allow_query_set_target(const apol_policy_t * p, apol_role_allow_query_t * r, const char *role)
 {
 	return apol_query_set(p, &r->target, NULL, role);
 }
 
-int apol_role_allow_query_set_source_any(apol_policy_t * p, apol_role_allow_query_t * r, int is_any)
+int apol_role_allow_query_set_source_any(const apol_policy_t * p, apol_role_allow_query_t * r, int is_any)
 {
 	return apol_query_set_flag(p, &r->flags, is_any, APOL_QUERY_SOURCE_AS_ANY);
 }
 
-int apol_role_allow_query_set_regex(apol_policy_t * p, apol_role_allow_query_t * r, int is_regex)
+int apol_role_allow_query_set_regex(const apol_policy_t * p, apol_role_allow_query_t * r, int is_regex)
 {
 	return apol_query_set_regex(p, &r->flags, is_regex);
 }
 
-char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule)
+char *apol_role_allow_render(const apol_policy_t * policy, const qpol_role_allow_t * rule)
 {
-	char *tmp = NULL, *source_name = NULL, *target_name = NULL;
-	qpol_role_t *role = NULL;
+	char *tmp = NULL;
+	const char *source_name = NULL, *target_name = NULL;
+	const qpol_role_t *role = NULL;
 
 	if (!policy || !rule) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -211,7 +212,7 @@ char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule)
 
 /******************** role_transition queries ********************/
 
-int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r, apol_vector_t ** v)
+int apol_role_trans_get_by_query(const apol_policy_t * p, const apol_role_trans_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL, *default_list = NULL;
@@ -257,7 +258,7 @@ int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r,
 		if (source_list == NULL) {
 			match_source = 1;
 		} else {
-			qpol_role_t *source_role;
+			const qpol_role_t *source_role;
 			if (qpol_role_trans_get_source_role(p->p, rule, &source_role) < 0) {
 				goto cleanup;
 			}
@@ -276,7 +277,7 @@ int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r,
 		if (target_list == NULL) {
 			match_target = 1;
 		} else {
-			qpol_type_t *target_type;
+			const qpol_type_t *target_type;
 			if (qpol_role_trans_get_target_type(p->p, rule, &target_type) < 0) {
 				goto cleanup;
 			}
@@ -291,7 +292,7 @@ int apol_role_trans_get_by_query(apol_policy_t * p, apol_role_trans_query_t * r,
 		if (default_list == NULL || (source_as_any && match_source)) {
 			match_default = 1;
 		} else {
-			qpol_role_t *default_role;
+			const qpol_role_t *default_role;
 			if (qpol_role_trans_get_default_role(p->p, rule, &default_role) < 0) {
 				goto cleanup;
 			}
@@ -339,37 +340,38 @@ void apol_role_trans_query_destroy(apol_role_trans_query_t ** r)
 	}
 }
 
-int apol_role_trans_query_set_source(apol_policy_t * p, apol_role_trans_query_t * r, const char *role)
+int apol_role_trans_query_set_source(const apol_policy_t * p, apol_role_trans_query_t * r, const char *role)
 {
 	return apol_query_set(p, &r->source, NULL, role);
 }
 
-int apol_role_trans_query_set_target(apol_policy_t * p, apol_role_trans_query_t * r, const char *type, int is_indirect)
+int apol_role_trans_query_set_target(const apol_policy_t * p, apol_role_trans_query_t * r, const char *type, int is_indirect)
 {
 	apol_query_set_flag(p, &r->flags, is_indirect, APOL_QUERY_TARGET_INDIRECT);
 	return apol_query_set(p, &r->target, NULL, type);
 }
 
-int apol_role_trans_query_set_default(apol_policy_t * p, apol_role_trans_query_t * r, const char *role)
+int apol_role_trans_query_set_default(const apol_policy_t * p, apol_role_trans_query_t * r, const char *role)
 {
 	return apol_query_set(p, &r->default_role, NULL, role);
 }
 
-int apol_role_trans_query_set_source_any(apol_policy_t * p, apol_role_trans_query_t * r, int is_any)
+int apol_role_trans_query_set_source_any(const apol_policy_t * p, apol_role_trans_query_t * r, int is_any)
 {
 	return apol_query_set_flag(p, &r->flags, is_any, APOL_QUERY_SOURCE_AS_ANY);
 }
 
-int apol_role_trans_query_set_regex(apol_policy_t * p, apol_role_trans_query_t * r, int is_regex)
+int apol_role_trans_query_set_regex(const apol_policy_t * p, apol_role_trans_query_t * r, int is_regex)
 {
 	return apol_query_set_regex(p, &r->flags, is_regex);
 }
 
-char *apol_role_trans_render(apol_policy_t * policy, qpol_role_trans_t * rule)
+char *apol_role_trans_render(const apol_policy_t * policy, const qpol_role_trans_t * rule)
 {
-	char *tmp = NULL, *source_name = NULL, *target_name = NULL, *default_name = NULL;
-	qpol_role_t *role = NULL;
-	qpol_type_t *type = NULL;
+	char *tmp = NULL;
+	const char *source_name = NULL, *target_name = NULL, *default_name = NULL;
+	const qpol_role_t *role = NULL;
+	const qpol_type_t *type = NULL;
 
 	if (!policy || !rule) {
 		ERR(policy, "%s", strerror(EINVAL));

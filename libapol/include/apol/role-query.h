@@ -51,7 +51,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_role_get_by_query(apol_policy_t * p, apol_role_query_t * r, apol_vector_t ** v);
+	extern int apol_role_get_by_query(const apol_policy_t * p, apol_role_query_t * r, apol_vector_t ** v);
 
 /**
  * Allocate and return a new role query structure.  All fields are
@@ -83,7 +83,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_role_query_set_role(apol_policy_t * p, apol_role_query_t * r, const char *name);
+	extern int apol_role_query_set_role(const apol_policy_t * p, apol_role_query_t * r, const char *name);
 
 /**
  * Set a role query to return only roles containing this type or one
@@ -96,7 +96,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_role_query_set_type(apol_policy_t * p, apol_role_query_t * r, const char *name);
+	extern int apol_role_query_set_type(const apol_policy_t * p, apol_role_query_t * r, const char *name);
 
 /**
  * Set a role query to use regular expression searching for all of its
@@ -108,7 +108,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_role_query_set_regex(apol_policy_t * p, apol_role_query_t * r, int is_regex);
+	extern int apol_role_query_set_regex(const apol_policy_t * p, apol_role_query_t * r, int is_regex);
 
 /**
  * See if the role passed in includes the type that is the
@@ -118,7 +118,7 @@ extern "C"
  * @param t Type that is checked against all types that are in role
  * @return 1 if the type is included in the role, 0 if it's not, < 0 on error
 */
-	extern int apol_role_has_type(apol_policy_t * p, qpol_role_t * r, qpol_type_t * t);
+	extern int apol_role_has_type(const apol_policy_t * p, const qpol_role_t * r, const qpol_type_t * t);
 
 #ifdef	__cplusplus
 }

@@ -59,7 +59,7 @@ extern "C"
 #include <qpol/type_query.h>
 #include <qpol/user_query.h>
 
-	typedef void (*qpol_callback_fn_t) (void *varg, struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
+	typedef void (*qpol_callback_fn_t) (void *varg, const struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
 
 #define QPOL_POLICY_UNKNOWN       -1
 #define QPOL_POLICY_KERNEL_SOURCE  0
@@ -208,7 +208,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_module_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the version number of the policy.
@@ -217,7 +217,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *version will be 0.
  */
-	extern int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version);
+	extern int qpol_policy_get_policy_version(const qpol_policy_t * policy, unsigned int *version);
 
 /**
  *  Get the type of policy (source, binary, or module).
@@ -227,7 +227,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *type will be QPOL_POLICY_UNKNOWN.
  */
-	extern int qpol_policy_get_type(qpol_policy_t * policy, int *type);
+	extern int qpol_policy_get_type(const qpol_policy_t * policy, int *type);
 
 /**
  *  Determine if a policy has support for a specific capability.
@@ -236,7 +236,7 @@ extern "C"
  *  defined above.
  *  @return Non-zero if the policy has the specified capability, and zero otherwise.
  */
-	extern int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap);
+	extern int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e cap);
 
 #ifdef	__cplusplus
 }

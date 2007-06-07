@@ -48,7 +48,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-	extern int qpol_policy_get_fs_use_by_name(qpol_policy_t * policy, const char *name, qpol_fs_use_t ** ocon);
+	extern int qpol_policy_get_fs_use_by_name(const qpol_policy_t * policy, const char *name, const qpol_fs_use_t ** ocon);
 
 /**
  *  Get an iterator for the fs_use statements in a policy.
@@ -61,7 +61,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_fs_use_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_fs_use_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the file system name from a fs_use statement.
@@ -72,7 +72,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-	extern int qpol_fs_use_get_name(qpol_policy_t * policy, qpol_fs_use_t * ocon, char **name);
+	extern int qpol_fs_use_get_name(const qpol_policy_t * policy, const qpol_fs_use_t * ocon, const char **name);
 
 /* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are 
  * copied from sepol/policydb/services.h.
@@ -93,7 +93,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *behavior will be 0.
  */
-	extern int qpol_fs_use_get_behavior(qpol_policy_t * policy, qpol_fs_use_t * ocon, uint32_t * behavior);
+	extern int qpol_fs_use_get_behavior(const qpol_policy_t * policy, const qpol_fs_use_t * ocon, uint32_t * behavior);
 
 /**
  *  Get the context from a fs_use statement.
@@ -105,7 +105,7 @@ extern "C"
  *  errno will be set and *context will be NULL. It is considered an 
  *  error to call this function if behavior is QPOL_FS_USE_PSID.
  */
-	extern int qpol_fs_use_get_context(qpol_policy_t * policy, qpol_fs_use_t * ocon, qpol_context_t ** context);
+	extern int qpol_fs_use_get_context(const qpol_policy_t * policy, const qpol_fs_use_t * ocon, const qpol_context_t ** context);
 
 #ifdef	__cplusplus
 }

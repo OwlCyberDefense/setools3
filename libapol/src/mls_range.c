@@ -61,7 +61,7 @@ apol_mls_range_t *apol_mls_range_create_from_mls_range(const apol_mls_range_t * 
 	return r;
 }
 
-apol_mls_range_t *apol_mls_range_create_from_string(apol_policy_t * p, const char *mls_range_string)
+apol_mls_range_t *apol_mls_range_create_from_string(const apol_policy_t * p, const char *mls_range_string)
 {
 	if (p == NULL || mls_range_string == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -177,10 +177,10 @@ apol_mls_range_t *apol_mls_range_create_from_literal(const char *mls_range_strin
 	return r;
 }
 
-apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t * p, qpol_mls_range_t * qpol_range)
+apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(const apol_policy_t * p, const qpol_mls_range_t * qpol_range)
 {
 	apol_mls_range_t *apol_range = NULL;
-	qpol_mls_level_t *tmp = NULL;
+	const qpol_mls_level_t *tmp = NULL;
 	apol_mls_level_t *tmp_lvl = NULL;
 	int error = 0;
 
@@ -234,7 +234,7 @@ void apol_mls_range_destroy(apol_mls_range_t ** range)
 	*range = NULL;
 }
 
-int apol_mls_range_set_low(apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level)
+int apol_mls_range_set_low(const apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level)
 {
 	if (!range) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -248,7 +248,7 @@ int apol_mls_range_set_low(apol_policy_t * p, apol_mls_range_t * range, apol_mls
 	return 0;
 }
 
-int apol_mls_range_set_high(apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level)
+int apol_mls_range_set_high(const apol_policy_t * p, apol_mls_range_t * range, apol_mls_level_t * level)
 {
 	if (!range) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -283,7 +283,7 @@ const apol_mls_level_t *apol_mls_range_get_high(const apol_mls_range_t * range)
 	return range->high;
 }
 
-int apol_mls_range_compare(apol_policy_t * p, const apol_mls_range_t * target, const apol_mls_range_t * search,
+int apol_mls_range_compare(const apol_policy_t * p, const apol_mls_range_t * target, const apol_mls_range_t * search,
 			   unsigned int range_compare_type)
 {
 	int ans1 = -1, ans2 = -1;
@@ -323,7 +323,7 @@ int apol_mls_range_compare(apol_policy_t * p, const apol_mls_range_t * target, c
 	return -1;
 }
 
-static int apol_mls_range_does_include_level(apol_policy_t * p, const apol_mls_range_t * range, const apol_mls_level_t * level)
+static int apol_mls_range_does_include_level(const apol_policy_t * p, const apol_mls_range_t * range, const apol_mls_level_t * level)
 {
 	int high_cmp = -1, low_cmp = -1;
 
@@ -350,7 +350,7 @@ static int apol_mls_range_does_include_level(apol_policy_t * p, const apol_mls_r
 	return 0;
 }
 
-int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range, const apol_mls_range_t * subrange)
+int apol_mls_range_contain_subrange(const apol_policy_t * p, const apol_mls_range_t * range, const apol_mls_range_t * subrange)
 {
 	if (p == NULL || apol_mls_range_validate(p, subrange) != 1) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -367,7 +367,7 @@ int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * 
 	return 0;
 }
 
-int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range)
+int apol_mls_range_validate(const apol_policy_t * p, const apol_mls_range_t * range)
 {
 	int retv;
 
@@ -402,10 +402,10 @@ int apol_mls_range_validate(apol_policy_t * p, const apol_mls_range_t * range)
 
 static int mls_range_comp(const void *a, const void *b, void *data)
 {
-	const apol_mls_level_t *l1 = (const apol_mls_level_t *)a;
-	const apol_mls_level_t *l2 = (const apol_mls_level_t *)b;
+	const apol_mls_level_t *l1 = a;
+	const apol_mls_level_t *l2 = b;
 	qpol_policy_t *q = (qpol_policy_t *) data;
-	qpol_level_t *l;
+	const qpol_level_t *l;
 	uint32_t low_value, high_value;
 	qpol_policy_get_level_by_name(q, apol_mls_level_get_sens(l1), &l);
 	qpol_level_get_value(q, l, &low_value);
@@ -417,10 +417,10 @@ static int mls_range_comp(const void *a, const void *b, void *data)
 
 static int mls_level_name_to_cat_comp(const void *a, const void *b, void *data)
 {
-	qpol_cat_t *cat = (qpol_cat_t *) a;
+	const qpol_cat_t *cat = a;
 	const char *name = (const char *)b;
 	qpol_policy_t *q = (qpol_policy_t *) data;
-	char *cat_name = "";
+	const char *cat_name = "";
 	qpol_cat_get_name(q, cat, &cat_name);
 	return strcmp(name, cat_name);
 }
@@ -431,11 +431,11 @@ static void mls_level_free(void *elem)
 	apol_mls_level_destroy(&level);
 }
 
-apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range_t * range)
+apol_vector_t *apol_mls_range_get_levels(const apol_policy_t * p, const apol_mls_range_t * range)
 {
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	apol_vector_t *v = NULL, *catv = NULL;
-	qpol_level_t *l;
+	const qpol_level_t *l;
 	uint32_t low_value, high_value, value;
 	int error = 0;
 	qpol_iterator_t *iter = NULL, *catiter = NULL;
@@ -473,7 +473,7 @@ apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range
 		goto err;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		char *name;
+		const char *name;
 		apol_mls_level_t *ml;
 		if (qpol_iterator_get_item(iter, (void **)&l) < 0 ||
 		    qpol_level_get_value(q, l, &value) < 0 || qpol_level_get_name(q, l, &name) < 0) {
@@ -538,7 +538,7 @@ apol_vector_t *apol_mls_range_get_levels(apol_policy_t * p, const apol_mls_range
 	return NULL;
 }
 
-char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range)
+char *apol_mls_range_render(const apol_policy_t * p, const apol_mls_range_t * range)
 {
 	char *rt = NULL, *retval = NULL;
 	char *sub_str = NULL;
@@ -599,7 +599,7 @@ char *apol_mls_range_render(apol_policy_t * p, const apol_mls_range_t * range)
 	return retval;
 }
 
-int apol_mls_range_convert(apol_policy_t * p, apol_mls_range_t * range)
+int apol_mls_range_convert(const apol_policy_t * p, apol_mls_range_t * range)
 {
 	if (p == NULL || range == NULL) {
 		ERR(p, "%s", strerror(EINVAL));

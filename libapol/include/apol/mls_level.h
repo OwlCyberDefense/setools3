@@ -72,7 +72,7 @@ extern "C"
  *
  * @return A filled in MLS level structure, or NULL upon error.
  */
-	extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t * p, const char *mls_level_string);
+	extern apol_mls_level_t *apol_mls_level_create_from_string(const apol_policy_t * p, const char *mls_level_string);
 
 /**
  * Take a literal MLS level string (e.g., <b>S0:C0.C127</b>), fill in
@@ -107,7 +107,7 @@ extern "C"
  * @return A MLS level structure initialized to the value of
  * qpol_level, or NULL upon error.
  */
-	extern apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t * p, qpol_mls_level_t * qpol_level);
+	extern apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(const apol_policy_t * p, const qpol_mls_level_t * qpol_level);
 
 /**
  * Create a new apol_mls_level_t and initialize it with a
@@ -121,7 +121,7 @@ extern "C"
  * @return A MLS level structure initialized to the value of
  * qpol_level, or NULL upon error.
  */
-	apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t * p, qpol_level_t * qpol_level);
+	apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(const apol_policy_t * p, const qpol_level_t * qpol_level);
 
 /**
  * Deallocate all memory associated with a MLS level structure and
@@ -143,7 +143,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_mls_level_set_sens(apol_policy_t * p, apol_mls_level_t * level, const char *sens);
+	extern int apol_mls_level_set_sens(const apol_policy_t * p, apol_mls_level_t * level, const char *sens);
 
 /**
  * Get the sensitivity component of an MLS level structure.
@@ -165,7 +165,7 @@ extern "C"
  *
  * @return 0 on success or < 0 on failure.
  */
-	extern int apol_mls_level_append_cats(apol_policy_t * p, apol_mls_level_t * level, const char *cats);
+	extern int apol_mls_level_append_cats(const apol_policy_t * p, apol_mls_level_t * level, const char *cats);
 
 /**
  * Get the category component of an MLS level structure.  This will be
@@ -194,7 +194,7 @@ extern "C"
  *
  * @see apol_mls_level_validate()
  */
-	extern int apol_mls_level_compare(apol_policy_t * p, const apol_mls_level_t * level1, const apol_mls_level_t * level2);
+	extern int apol_mls_level_compare(const apol_policy_t * p, const apol_mls_level_t * level1, const apol_mls_level_t * level2);
 
 /**
  * Given a level, determine if it is legal according to the supplied
@@ -209,7 +209,7 @@ extern "C"
  *
  * @see apol_mls_level_compare()
  */
-	extern int apol_mls_level_validate(apol_policy_t * p, const apol_mls_level_t * level);
+	extern int apol_mls_level_validate(const apol_policy_t * p, const apol_mls_level_t * level);
 
 /**
  * Creates a string containing the textual representation of
@@ -222,7 +222,7 @@ extern "C"
  * @return A newly allocated string, or NULL upon error.  The caller
  * is responsible for calling free() upon the return value.
  */
-	extern char *apol_mls_level_render(apol_policy_t * p, const apol_mls_level_t * level);
+	extern char *apol_mls_level_render(const apol_policy_t * p, const apol_mls_level_t * level);
 
 /**
  * Given a policy and a MLS level created by
@@ -237,7 +237,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_mls_level_convert(apol_policy_t * p, apol_mls_level_t * level);
+	extern int apol_mls_level_convert(const apol_policy_t * p, apol_mls_level_t * level);
 
 /**
  * Determine if a level is literal (i.e., created from

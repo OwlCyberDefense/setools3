@@ -34,7 +34,7 @@
 #include "qpol_internal.h"
 
 /* level */
-int qpol_policy_get_level_by_name(qpol_policy_t * policy, const char *name, qpol_level_t ** datum)
+int qpol_policy_get_level_by_name(const qpol_policy_t * policy, const char *name, const qpol_level_t ** datum)
 {
 	policydb_t *db = NULL;
 	hashtab_datum_t internal_datum = NULL;
@@ -58,7 +58,7 @@ int qpol_policy_get_level_by_name(qpol_policy_t * policy, const char *name, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_level_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_level_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -96,7 +96,7 @@ int qpol_policy_get_level_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_isalias(qpol_policy_t * policy, qpol_level_t * datum, unsigned char *isalias)
+int qpol_level_get_isalias(const qpol_policy_t * policy, const qpol_level_t * datum, unsigned char *isalias)
 {
 	level_datum_t *internal_datum;
 
@@ -114,7 +114,7 @@ int qpol_level_get_isalias(qpol_policy_t * policy, qpol_level_t * datum, unsigne
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_value(qpol_policy_t * policy, qpol_level_t * datum, uint32_t * value)
+int qpol_level_get_value(const qpol_policy_t * policy, const qpol_level_t * datum, uint32_t * value)
 {
 	level_datum_t *internal_datum = NULL;
 
@@ -132,7 +132,7 @@ int qpol_level_get_value(qpol_policy_t * policy, qpol_level_t * datum, uint32_t 
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_cat_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol_iterator_t ** cats)
+int qpol_level_get_cat_iter(const qpol_policy_t * policy, const qpol_level_t * datum, qpol_iterator_t ** cats)
 {
 	level_datum_t *internal_datum = NULL;
 	ebitmap_state_t *es = NULL;
@@ -171,7 +171,7 @@ int qpol_level_get_cat_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol_i
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_name(qpol_policy_t * policy, qpol_level_t * datum, char **name)
+int qpol_level_get_name(const qpol_policy_t * policy, const qpol_level_t * datum, const char **name)
 {
 	level_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -228,7 +228,7 @@ static int hash_state_next_level_alias(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static void *hash_state_get_cur_alias(qpol_iterator_t * iter)
+static void *hash_state_get_cur_alias(const qpol_iterator_t * iter)
 {
 	level_alias_hash_state_t *hs = NULL;
 
@@ -250,7 +250,7 @@ static void *hash_state_get_cur_alias(qpol_iterator_t * iter)
 	return hs->node->key;
 }
 
-static size_t hash_state_level_alias_size(qpol_iterator_t * iter)
+static size_t hash_state_level_alias_size(const qpol_iterator_t * iter)
 {
 	level_alias_hash_state_t *hs = NULL;
 	hashtab_node_t *tmp_node;
@@ -278,7 +278,7 @@ static size_t hash_state_level_alias_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_level_get_alias_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol_iterator_t ** aliases)
+int qpol_level_get_alias_iter(const qpol_policy_t * policy, const qpol_level_t * datum, qpol_iterator_t ** aliases)
 {
 	level_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -321,7 +321,7 @@ int qpol_level_get_alias_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol
 }
 
 /* cat */
-int qpol_policy_get_cat_by_name(qpol_policy_t * policy, const char *name, qpol_cat_t ** datum)
+int qpol_policy_get_cat_by_name(const qpol_policy_t * policy, const char *name, const qpol_cat_t ** datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -347,7 +347,7 @@ int qpol_policy_get_cat_by_name(qpol_policy_t * policy, const char *name, qpol_c
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_cat_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_cat_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -385,7 +385,7 @@ int qpol_policy_get_cat_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_value(qpol_policy_t * policy, qpol_cat_t * datum, uint32_t * value)
+int qpol_cat_get_value(const qpol_policy_t * policy, const qpol_cat_t * datum, uint32_t * value)
 {
 	cat_datum_t *internal_datum = NULL;
 
@@ -403,7 +403,7 @@ int qpol_cat_get_value(qpol_policy_t * policy, qpol_cat_t * datum, uint32_t * va
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_isalias(qpol_policy_t * policy, qpol_cat_t * datum, unsigned char *isalias)
+int qpol_cat_get_isalias(const qpol_policy_t * policy, const qpol_cat_t * datum, unsigned char *isalias)
 {
 	cat_datum_t *internal_datum;
 
@@ -421,7 +421,7 @@ int qpol_cat_get_isalias(qpol_policy_t * policy, qpol_cat_t * datum, unsigned ch
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_name(qpol_policy_t * policy, qpol_cat_t * datum, char **name)
+int qpol_cat_get_name(const qpol_policy_t * policy, const qpol_cat_t * datum, const char **name)
 {
 	cat_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -471,7 +471,7 @@ static int hash_state_next_cat_alias(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t hash_state_cat_alias_size(qpol_iterator_t * iter)
+static size_t hash_state_cat_alias_size(const qpol_iterator_t * iter)
 {
 	level_alias_hash_state_t *hs = NULL;
 	hashtab_node_t *tmp_node;
@@ -499,7 +499,7 @@ static size_t hash_state_cat_alias_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_cat_get_alias_iter(qpol_policy_t * policy, qpol_cat_t * datum, qpol_iterator_t ** aliases)
+int qpol_cat_get_alias_iter(const qpol_policy_t * policy, const qpol_cat_t * datum, qpol_iterator_t ** aliases)
 {
 	cat_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -541,7 +541,7 @@ int qpol_cat_get_alias_iter(qpol_policy_t * policy, qpol_cat_t * datum, qpol_ite
 }
 
 /* mls range */
-int qpol_mls_range_get_low_level(qpol_policy_t * policy, qpol_mls_range_t * range, qpol_mls_level_t ** level)
+int qpol_mls_range_get_low_level(const qpol_policy_t * policy, const qpol_mls_range_t * range, const qpol_mls_level_t ** level)
 {
 	mls_range_t *internal_range = NULL;
 
@@ -559,7 +559,7 @@ int qpol_mls_range_get_low_level(qpol_policy_t * policy, qpol_mls_range_t * rang
 	return STATUS_SUCCESS;
 }
 
-int qpol_mls_range_get_high_level(qpol_policy_t * policy, qpol_mls_range_t * range, qpol_mls_level_t ** level)
+int qpol_mls_range_get_high_level(const qpol_policy_t * policy, const qpol_mls_range_t * range, const qpol_mls_level_t ** level)
 {
 	mls_range_t *internal_range = NULL;
 
@@ -578,7 +578,7 @@ int qpol_mls_range_get_high_level(qpol_policy_t * policy, qpol_mls_range_t * ran
 }
 
 /* mls_level */
-int qpol_mls_level_get_sens_name(qpol_policy_t * policy, qpol_mls_level_t * level, char **name)
+int qpol_mls_level_get_sens_name(const qpol_policy_t * policy, const qpol_mls_level_t * level, const char **name)
 {
 	policydb_t *db = NULL;
 	mls_level_t *internal_level = NULL;
@@ -599,7 +599,7 @@ int qpol_mls_level_get_sens_name(qpol_policy_t * policy, qpol_mls_level_t * leve
 	return STATUS_SUCCESS;
 }
 
-int qpol_mls_level_get_cat_iter(qpol_policy_t * policy, qpol_mls_level_t * level, qpol_iterator_t ** cats)
+int qpol_mls_level_get_cat_iter(const qpol_policy_t * policy, const qpol_mls_level_t * level, qpol_iterator_t ** cats)
 {
 	mls_level_t *internal_level = NULL;
 	ebitmap_state_t *es = NULL;

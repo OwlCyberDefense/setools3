@@ -59,9 +59,9 @@ struct apol_terule_query
  *  If NULL, all rules will be considered (including unconditional rules).
  *  @return 0 on success and < 0 on failure.
  */
-static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type, unsigned int flags,
-		       apol_vector_t * source_list, apol_vector_t * target_list, apol_vector_t * class_list,
-		       apol_vector_t * default_list, const char *bool_name)
+static int rule_select(const apol_policy_t * p, apol_vector_t * v, uint32_t rule_type, unsigned int flags,
+		       const apol_vector_t * source_list, const apol_vector_t * target_list, const apol_vector_t * class_list,
+		       const apol_vector_t * default_list, const char *bool_name)
 {
 	qpol_iterator_t *iter = NULL;
 	int only_enabled = flags & APOL_QUERY_ONLY_ENABLED;
@@ -77,7 +77,7 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_terule_t *rule;
 		uint32_t is_enabled;
-		qpol_cond_t *cond = NULL;
+		const qpol_cond_t *cond = NULL;
 		int match_source = 0, match_target = 0, match_default = 0, match_bool = 0;
 		size_t i;
 		if (qpol_iterator_get_item(iter, (void **)&rule) < 0) {
@@ -109,7 +109,7 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 		if (source_list == NULL) {
 			match_source = 1;
 		} else {
-			qpol_type_t *source_type;
+			const qpol_type_t *source_type;
 			if (qpol_terule_get_source_type(p->p, rule, &source_type) < 0) {
 				goto cleanup;
 			}
@@ -128,7 +128,7 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 		if (target_list == NULL || (source_as_any && match_source)) {
 			match_target = 1;
 		} else {
-			qpol_type_t *target_type;
+			const qpol_type_t *target_type;
 			if (qpol_terule_get_target_type(p->p, rule, &target_type) < 0) {
 				goto cleanup;
 			}
@@ -144,7 +144,7 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 		if (default_list == NULL || (source_as_any && match_source) || (source_as_any && match_target)) {
 			match_default = 1;
 		} else {
-			qpol_type_t *default_type;
+			const qpol_type_t *default_type;
 			if (qpol_terule_get_default_type(p->p, rule, &default_type) < 0) {
 				goto cleanup;
 			}
@@ -162,7 +162,7 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 		}
 
 		if (class_list != NULL) {
-			qpol_class_t *obj_class;
+			const qpol_class_t *obj_class;
 			if (qpol_terule_get_object_class(p->p, rule, &obj_class) < 0) {
 				goto cleanup;
 			}
@@ -185,7 +185,7 @@ static int rule_select(apol_policy_t * p, apol_vector_t * v, uint32_t rule_type,
 	return retv;
 }
 
-int apol_terule_get_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_vector_t ** v)
+int apol_terule_get_by_query(const apol_policy_t * p, const apol_terule_query_t * t, apol_vector_t ** v)
 {
 	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL, *default_list = NULL;
 	int retval = -1, source_as_any = 0, is_regex = 0;
@@ -259,7 +259,7 @@ int apol_terule_get_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_ve
 	return retval;
 }
 
-int apol_syn_terule_get_by_query(apol_policy_t * p, apol_terule_query_t * t, apol_vector_t ** v)
+int apol_syn_terule_get_by_query(const apol_policy_t * p, const apol_terule_query_t * t, apol_vector_t ** v)
 {
 	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL, *default_list = NULL, *syn_v = NULL;
 	int retval = -1, source_as_any = 0, is_regex = 0;
@@ -374,8 +374,8 @@ int apol_syn_terule_get_by_query(apol_policy_t * p, apol_terule_query_t * t, apo
 
 	for (i = 0; i < apol_vector_get_size(*v); i++) {
 		qpol_syn_terule_t *srule = apol_vector_get_element(*v, i);
-		qpol_type_set_t *stypes = NULL, *ttypes = NULL;
-		qpol_type_t *dflt = NULL;
+		const qpol_type_set_t *stypes = NULL, *ttypes = NULL;
+		const qpol_type_t *dflt = NULL;
 		size_t j;
 		int uses_source = 0, uses_target = 0, uses_default = 0;
 		qpol_syn_terule_get_source_type_set(p->p, srule, &stypes);
@@ -457,7 +457,7 @@ void apol_terule_query_destroy(apol_terule_query_t ** t)
 	}
 }
 
-int apol_terule_query_set_rules(apol_policy_t * p __attribute__ ((unused)), apol_terule_query_t * t, unsigned int rules)
+int apol_terule_query_set_rules(const apol_policy_t * p __attribute__ ((unused)), apol_terule_query_t * t, unsigned int rules)
 {
 	if (rules != 0) {
 		t->rules = rules;
@@ -467,13 +467,13 @@ int apol_terule_query_set_rules(apol_policy_t * p __attribute__ ((unused)), apol
 	return 0;
 }
 
-int apol_terule_query_set_source(apol_policy_t * p, apol_terule_query_t * t, const char *symbol, int is_indirect)
+int apol_terule_query_set_source(const apol_policy_t * p, apol_terule_query_t * t, const char *symbol, int is_indirect)
 {
 	apol_query_set_flag(p, &t->flags, is_indirect, APOL_QUERY_SOURCE_INDIRECT);
 	return apol_query_set(p, &t->source, NULL, symbol);
 }
 
-int apol_terule_query_set_source_component(apol_policy_t * p, apol_terule_query_t * t, unsigned int component)
+int apol_terule_query_set_source_component(const apol_policy_t * p, apol_terule_query_t * t, unsigned int component)
 {
 	if (!t || !(component & APOL_QUERY_SYMBOL_IS_BOTH)) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -485,13 +485,13 @@ int apol_terule_query_set_source_component(apol_policy_t * p, apol_terule_query_
 	return 0;
 }
 
-int apol_terule_query_set_target(apol_policy_t * p, apol_terule_query_t * t, const char *symbol, int is_indirect)
+int apol_terule_query_set_target(const apol_policy_t * p, apol_terule_query_t * t, const char *symbol, int is_indirect)
 {
 	apol_query_set_flag(p, &t->flags, is_indirect, APOL_QUERY_TARGET_INDIRECT);
 	return apol_query_set(p, &t->target, NULL, symbol);
 }
 
-int apol_terule_query_set_target_component(apol_policy_t * p, apol_terule_query_t * t, unsigned int component)
+int apol_terule_query_set_target_component(const apol_policy_t * p, apol_terule_query_t * t, unsigned int component)
 {
 	if (!t || !(component & APOL_QUERY_SYMBOL_IS_BOTH)) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -503,12 +503,12 @@ int apol_terule_query_set_target_component(apol_policy_t * p, apol_terule_query_
 	return 0;
 }
 
-int apol_terule_query_set_default(apol_policy_t * p, apol_terule_query_t * t, const char *symbol)
+int apol_terule_query_set_default(const apol_policy_t * p, apol_terule_query_t * t, const char *symbol)
 {
 	return apol_query_set(p, &t->default_type, NULL, symbol);
 }
 
-int apol_terule_query_append_class(apol_policy_t * p, apol_terule_query_t * t, const char *obj_class)
+int apol_terule_query_append_class(const apol_policy_t * p, apol_terule_query_t * t, const char *obj_class)
 {
 	char *s = NULL;
 	if (obj_class == NULL) {
@@ -522,22 +522,22 @@ int apol_terule_query_append_class(apol_policy_t * p, apol_terule_query_t * t, c
 	return 0;
 }
 
-int apol_terule_query_set_bool(apol_policy_t * p, apol_terule_query_t * t, const char *bool_name)
+int apol_terule_query_set_bool(const apol_policy_t * p, apol_terule_query_t * t, const char *bool_name)
 {
 	return apol_query_set(p, &t->bool_name, NULL, bool_name);
 }
 
-int apol_terule_query_set_enabled(apol_policy_t * p, apol_terule_query_t * t, int is_enabled)
+int apol_terule_query_set_enabled(const apol_policy_t * p, apol_terule_query_t * t, int is_enabled)
 {
 	return apol_query_set_flag(p, &t->flags, is_enabled, APOL_QUERY_ONLY_ENABLED);
 }
 
-int apol_terule_query_set_source_any(apol_policy_t * p, apol_terule_query_t * t, int is_any)
+int apol_terule_query_set_source_any(const apol_policy_t * p, apol_terule_query_t * t, int is_any)
 {
 	return apol_query_set_flag(p, &t->flags, is_any, APOL_QUERY_SOURCE_AS_ANY);
 }
 
-int apol_terule_query_set_regex(apol_policy_t * p, apol_terule_query_t * t, int is_regex)
+int apol_terule_query_set_regex(const apol_policy_t * p, apol_terule_query_t * t, int is_regex)
 {
 	return apol_query_set_regex(p, &t->flags, is_regex);
 }
@@ -561,7 +561,7 @@ static int apol_syn_terule_comp(const void *a, const void *b, void *data)
 	return (int)((char *)r1 - (char *)r2);
 }
 
-apol_vector_t *apol_terule_to_syn_terules(apol_policy_t * p, qpol_terule_t * rule)
+apol_vector_t *apol_terule_to_syn_terules(const apol_policy_t * p, const qpol_terule_t * rule)
 {
 	apol_vector_t *v = NULL;
 	qpol_iterator_t *iter = NULL;
@@ -588,7 +588,7 @@ apol_vector_t *apol_terule_to_syn_terules(apol_policy_t * p, qpol_terule_t * rul
 			goto cleanup;
 		}
 	}
-	apol_vector_sort_uniquify(v, apol_syn_terule_comp, p);
+	apol_vector_sort_uniquify(v, apol_syn_terule_comp, (void*)p);
 	retval = 0;
       cleanup:
 	qpol_iterator_destroy(&iter);
@@ -600,7 +600,7 @@ apol_vector_t *apol_terule_to_syn_terules(apol_policy_t * p, qpol_terule_t * rul
 	return v;
 }
 
-apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t * p, apol_vector_t * rules)
+apol_vector_t *apol_terule_list_to_syn_terules(const apol_policy_t * p, const apol_vector_t * rules)
 {
 	apol_bst_t *b = NULL;
 	qpol_terule_t *rule;
@@ -627,7 +627,7 @@ apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t * p, apol_vector_t 
 				ERR(p, "%s", strerror(error));
 				goto cleanup;
 			}
-			if (apol_bst_insert(b, syn_terule, p) < 0) {
+			if (apol_bst_insert(b, syn_terule, (void*)p) < 0) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto cleanup;
@@ -651,15 +651,16 @@ apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t * p, apol_vector_t 
 	return v;
 }
 
-char *apol_terule_render(apol_policy_t * policy, qpol_terule_t * rule)
+char *apol_terule_render(const apol_policy_t * policy, const qpol_terule_t * rule)
 {
-	char *tmp = NULL, *tmp_name = NULL;
+	char *tmp = NULL;
+	const char *tmp_name = NULL;
 	const char *rule_type_str;
 	int error = 0;
 	size_t tmp_sz = 0;
 	uint32_t rule_type = 0;
-	qpol_type_t *type = NULL;
-	qpol_class_t *obj_class = NULL;
+	const qpol_type_t *type = NULL;
+	const qpol_class_t *obj_class = NULL;
 
 	if (!policy || !rule) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -757,17 +758,18 @@ char *apol_terule_render(apol_policy_t * policy, qpol_terule_t * rule)
 	return NULL;
 }
 
-char *apol_syn_terule_render(apol_policy_t * policy, qpol_syn_terule_t * rule)
+char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule_t * rule)
 {
-	char *tmp = NULL, *tmp_name = NULL;
+	char *tmp = NULL;
+	const char *tmp_name = NULL;
 	const char *rule_type_str;
 	int error = 0;
 	uint32_t rule_type = 0, star = 0, comp = 0;
-	qpol_type_t *type = NULL;
-	qpol_class_t *obj_class = NULL;
+	const qpol_type_t *type = NULL;
+	const qpol_class_t *obj_class = NULL;
 	qpol_iterator_t *iter = NULL, *iter2 = NULL;
 	size_t tmp_sz = 0, iter_sz = 0, iter2_sz = 0;
-	qpol_type_set_t *set = NULL;
+	const qpol_type_set_t *set = NULL;
 
 	if (!policy || !rule) {
 		ERR(policy, "%s", strerror(EINVAL));

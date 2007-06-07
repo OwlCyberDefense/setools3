@@ -102,7 +102,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	int apol_query_set(apol_policy_t * p, char **query_name, regex_t ** regex, const char *name);
+	int apol_query_set(const apol_policy_t * p, char **query_name, regex_t ** regex, const char *name);
 
 /**
  * Sets an arbitrary flag for a query structure.
@@ -114,7 +114,7 @@ extern "C"
  *
  * @return Always returns 0.
  */
-	int apol_query_set_flag(apol_policy_t * p, unsigned int *flags, const int is_flag, int flag_value);
+	int apol_query_set_flag(const apol_policy_t * p, unsigned int *flags, const int is_flag, int flag_value);
 
 /**
  * Sets the regular expression flag for a query structure.
@@ -125,7 +125,7 @@ extern "C"
  *
  * @return Always returns 0.
  */
-	int apol_query_set_regex(apol_policy_t * p, unsigned int *flags, const int is_regex);
+	int apol_query_set_regex(const apol_policy_t * p, unsigned int *flags, const int is_regex);
 
 /**
  * Determines if a name matches a target symbol name.  If flags has
@@ -147,7 +147,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare(apol_policy_t * p, const char *target, const char *name, unsigned int flags, regex_t ** regex);
+	int apol_compare(const apol_policy_t * p, const char *target, const char *name, unsigned int flags, regex_t ** regex);
 
 /**
  * Given an iterator of strings, checks if name matches any element
@@ -167,7 +167,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_iter(apol_policy_t * p, qpol_iterator_t * iter, const char *name,
+	int apol_compare_iter(const apol_policy_t * p, qpol_iterator_t * iter, const char *name,
 			      unsigned int flags, regex_t ** regex, int do_free);
 
 /**
@@ -186,7 +186,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_type(apol_policy_t * p, qpol_type_t * type, const char *name, unsigned int flags, regex_t ** type_regex);
+	int apol_compare_type(const apol_policy_t * p, const qpol_type_t * type, const char *name, unsigned int flags, regex_t ** type_regex);
 
 /**
  * Determines if a boolean is used within a particual conditional.
@@ -203,7 +203,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_cond_expr(apol_policy_t * p, qpol_cond_t * cond, const char *name, unsigned int flags,
+	int apol_compare_cond_expr(const apol_policy_t * p, const qpol_cond_t * cond, const char *name, unsigned int flags,
 				   regex_t ** bool_regex);
 
 /**
@@ -222,7 +222,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_level(apol_policy_t * p, qpol_level_t * level, const char *name, unsigned int flags,
+	int apol_compare_level(const apol_policy_t * p, const qpol_level_t * level, const char *name, unsigned int flags,
 			       regex_t ** level_regex);
 
 /**
@@ -241,7 +241,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_cat(apol_policy_t * p, qpol_cat_t * cat, const char *name, unsigned int flags, regex_t ** cat_regex);
+	int apol_compare_cat(const apol_policy_t * p, const qpol_cat_t * cat, const char *name, unsigned int flags, regex_t ** cat_regex);
 
 /**
  * Convenience function that compares a qpol_context_t to a
@@ -255,7 +255,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_context(apol_policy_t * p, qpol_context_t * target, apol_context_t * search, unsigned int flags);
+	int apol_compare_context(const apol_policy_t * p, const qpol_context_t * target, const apol_context_t * search, unsigned int flags);
 
 /**
  * Given a type name, obtain its qpol_type_t pointer (relative to a
@@ -268,7 +268,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	int apol_query_get_type(apol_policy_t * p, const char *type_name, qpol_type_t ** type);
+	int apol_query_get_type(const apol_policy_t * p, const char *type_name, const qpol_type_t ** type);
 
 /**
  * Given a symbol name (a type, attribute, alias, or a regular
@@ -293,7 +293,7 @@ extern "C"
  * within p), or NULL upon error.  Caller is responsible for calling
  * apol_vector_destroy() afterwards.
  */
-	apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
+	apol_vector_t *apol_query_create_candidate_type_list(const apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
 							     unsigned int ta_flag);
 
 /**
@@ -320,7 +320,7 @@ extern "C"
  * within p), or NULL upon error.  Caller is responsible for calling
  * apol_vector_destroy() afterwards.
  */
-	apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, const char *symbol, int do_regex,
+	apol_vector_t *apol_query_create_candidate_syn_type_list(const apol_policy_t * p, const char *symbol, int do_regex,
 								 int do_indirect, unsigned int ta_flag);
 
 /**
@@ -337,7 +337,7 @@ extern "C"
  * within p), or NULL upon error.  Caller is responsible for calling
  * apol_vector_destroy() afterwards.
  */
-	apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *symbol, int do_regex);
+	apol_vector_t *apol_query_create_candidate_role_list(const apol_policy_t * p, char *symbol, int do_regex);
 
 /**
  * Given a vector of object class strings, determine all of the
@@ -352,7 +352,7 @@ extern "C"
  * within p), or NULL upon error.  Caller is responsible for calling
  * apol_vector_destroy() afterwards.
  */
-	apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t * p, apol_vector_t * classes);
+	apol_vector_t *apol_query_create_candidate_class_list(const apol_policy_t * p, apol_vector_t * classes);
 
 /**
  * Given a type, return a vector of qpol_type_t pointers to which the
@@ -367,7 +367,7 @@ extern "C"
  * @return Vector of qpol_type_t pointers, or NULL upon error.  Caller
  * is responsible for calling apol_vector_destroy() afterwards.
  */
-	apol_vector_t *apol_query_expand_type(apol_policy_t * p, qpol_type_t * t);
+	apol_vector_t *apol_query_expand_type(const apol_policy_t * p, const qpol_type_t * t);
 
 /**
  *  Object class and permission set.
@@ -447,7 +447,7 @@ extern "C"
  *  @return 0 if no types in v appear in set, > 0 if at least one type
  *  was found, and < 0 if an error occurred.
  */
-	int apol_query_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v);
+	int apol_query_type_set_uses_types_directly(const apol_policy_t * p, const qpol_type_set_t * set, const apol_vector_t * v);
 
 /**
  * Deallocate all space associated with a particular policy's permmap,

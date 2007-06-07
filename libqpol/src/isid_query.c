@@ -34,7 +34,7 @@
 #include "qpol_internal.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_isid_by_name(qpol_policy_t * policy, const char *name, qpol_isid_t ** ocon)
+int qpol_policy_get_isid_by_name(const qpol_policy_t * policy, const char *name, const qpol_isid_t ** ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -65,7 +65,7 @@ int qpol_policy_get_isid_by_name(qpol_policy_t * policy, const char *name, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_isid_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_isid_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	ocon_state_t *os = NULL;
@@ -100,7 +100,7 @@ int qpol_policy_get_isid_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_isid_get_name(qpol_policy_t * policy, qpol_isid_t * ocon, char **name)
+int qpol_isid_get_name(const qpol_policy_t * policy, const qpol_isid_t * ocon, const char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -119,7 +119,7 @@ int qpol_isid_get_name(qpol_policy_t * policy, qpol_isid_t * ocon, char **name)
 	return STATUS_SUCCESS;
 }
 
-int qpol_isid_get_context(qpol_policy_t * policy, qpol_isid_t * ocon, qpol_context_t ** context)
+int qpol_isid_get_context(const qpol_policy_t * policy, const qpol_isid_t * ocon, const qpol_context_t ** context)
 {
 	ocontext_t *internal_ocon = NULL;
 

@@ -55,7 +55,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_class_get_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vector_t ** v);
+	extern int apol_class_get_by_query(const apol_policy_t * p, apol_class_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new class query structure.  All fields are
@@ -87,7 +87,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_class_query_set_class(apol_policy_t * p, apol_class_query_t * c, const char *name);
+	extern int apol_class_query_set_class(const apol_policy_t * p, apol_class_query_t * c, const char *name);
 
 /**
  * Set a class query to return only object classes that inherit from a
@@ -102,7 +102,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_class_query_set_common(apol_policy_t * p, apol_class_query_t * c, const char *name);
+	extern int apol_class_query_set_common(const apol_policy_t * p, apol_class_query_t * c, const char *name);
 /**
  * Set a class query to use regular expression searching for all of
  * its fields.	Strings will be treated as regexes instead of
@@ -114,7 +114,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_class_query_set_regex(apol_policy_t * p, apol_class_query_t * c, int is_regex);
+	extern int apol_class_query_set_regex(const apol_policy_t * p, apol_class_query_t * c, int is_regex);
 
 /******************** common class queries ********************/
 
@@ -132,7 +132,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_common_get_by_query(apol_policy_t * p, apol_common_query_t * c, apol_vector_t ** v);
+	extern int apol_common_get_by_query(const apol_policy_t * p, apol_common_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new common query structure.  All fields are
@@ -164,7 +164,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_common_query_set_common(apol_policy_t * p, apol_common_query_t * c, const char *name);
+	extern int apol_common_query_set_common(const apol_policy_t * p, apol_common_query_t * c, const char *name);
 
 /**
  * Set a common query to use regular expression searching for all of
@@ -177,7 +177,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_common_query_set_regex(apol_policy_t * p, apol_common_query_t * c, int is_regex);
+	extern int apol_common_query_set_regex(const apol_policy_t * p, apol_common_query_t * c, int is_regex);
 
 /******************** permission queries ********************/
 
@@ -199,7 +199,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_perm_get_by_query(apol_policy_t * p, apol_perm_query_t * pq, apol_vector_t ** v);
+	extern int apol_perm_get_by_query(const apol_policy_t * p, apol_perm_query_t * pq, apol_vector_t ** v);
 
 /**
  * Allocate and return a new permission query structure.  All fields
@@ -232,7 +232,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_perm_query_set_perm(apol_policy_t * p, apol_perm_query_t * pq, const char *name);
+	extern int apol_perm_query_set_perm(const apol_policy_t * p, apol_perm_query_t * pq, const char *name);
 
 /**
  * Set a permission query to use regular expression searching for all
@@ -245,7 +245,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_perm_query_set_regex(apol_policy_t * p, apol_perm_query_t * pq, int is_regex);
+	extern int apol_perm_query_set_regex(const apol_policy_t * p, apol_perm_query_t * pq, int is_regex);
 
 #ifdef	__cplusplus
 }

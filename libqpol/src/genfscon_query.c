@@ -36,13 +36,13 @@
 
 struct qpol_genfscon
 {
-	char *fs_name;
-	char *path;
-	context_struct_t *context;
+	const char *fs_name;
+	const char *path;
+	const context_struct_t *context;
 	uint32_t sclass;
 };
 
-int qpol_policy_get_genfscon_by_name(qpol_policy_t * policy, const char *name, const char *path, qpol_genfscon_t ** genfscon)
+int qpol_policy_get_genfscon_by_name(const qpol_policy_t * policy, const char *name, const char *path, qpol_genfscon_t ** genfscon)
 {
 	genfs_t *tmp = NULL;
 	ocontext_t *tmp2 = NULL;
@@ -102,7 +102,7 @@ typedef struct genfs_state
 	ocontext_t *cur_path;
 } genfs_state_t;
 
-static int genfs_state_end(qpol_iterator_t * iter)
+static int genfs_state_end(const qpol_iterator_t * iter)
 {
 	genfs_state_t *gs = NULL;
 
@@ -119,7 +119,7 @@ static int genfs_state_end(qpol_iterator_t * iter)
 	return 0;
 }
 
-static void *genfs_state_get_cur(qpol_iterator_t * iter)
+static void *genfs_state_get_cur(const qpol_iterator_t * iter)
 {
 	genfs_state_t *gs = NULL;
 	qpol_genfscon_t *genfscon = NULL;
@@ -144,7 +144,7 @@ static void *genfs_state_get_cur(qpol_iterator_t * iter)
 	return genfscon;
 }
 
-static size_t genfs_state_size(qpol_iterator_t * iter)
+static size_t genfs_state_size(const qpol_iterator_t * iter)
 {
 	genfs_state_t *gs = NULL;
 	size_t count = 0;
@@ -191,7 +191,7 @@ static int genfs_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_genfscon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_genfscon_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	genfs_state_t *gs = NULL;
@@ -228,7 +228,7 @@ int qpol_policy_get_genfscon_iter(qpol_policy_t * policy, qpol_iterator_t ** ite
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_name(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **name)
+int qpol_genfscon_get_name(const qpol_policy_t * policy, const qpol_genfscon_t * genfs, const char **name)
 {
 	if (name != NULL)
 		*name = NULL;
@@ -244,7 +244,7 @@ int qpol_genfscon_get_name(qpol_policy_t * policy, qpol_genfscon_t * genfs, char
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_path(qpol_policy_t * policy, qpol_genfscon_t * genfs, char **path)
+int qpol_genfscon_get_path(const qpol_policy_t * policy, const qpol_genfscon_t * genfs, const char **path)
 {
 	if (path != NULL)
 		*path = NULL;
@@ -260,7 +260,7 @@ int qpol_genfscon_get_path(qpol_policy_t * policy, qpol_genfscon_t * genfs, char
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uint32_t * obj_class)
+int qpol_genfscon_get_class(const qpol_policy_t * policy, const qpol_genfscon_t * genfs, uint32_t * obj_class)
 {
 	if (obj_class != NULL)
 		*obj_class = 0;
@@ -276,7 +276,7 @@ int qpol_genfscon_get_class(qpol_policy_t * policy, qpol_genfscon_t * genfs, uin
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_context(qpol_policy_t * policy, qpol_genfscon_t * genfscon, qpol_context_t ** context)
+int qpol_genfscon_get_context(const qpol_policy_t * policy, const qpol_genfscon_t * genfscon, const qpol_context_t ** context)
 {
 	if (context != NULL)
 		*context = NULL;
