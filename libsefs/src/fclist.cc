@@ -26,6 +26,7 @@
 
 #include "sefs_internal.hh"
 
+#include <sefs/entry.hh>
 #include <apol/util.h>
 #include <errno.h>
 #include <stdio.h>
@@ -133,11 +134,21 @@ sefs_fclist::~sefs_fclist()
 static int map_to_vector(sefs_fclist * fclist, const sefs_entry * entry, void *data)
 {
 	apol_vector_t *v = static_cast < apol_vector_t * >(data);
-	if (apol_vector_append(v, const_cast < sefs_entry * >(entry)) < 0)
+	sefs_entry *new_entry = new sefs_entry(entry);
+	if (apol_vector_append(v, new_entry) < 0)
 	{
 		return -1;
 	}
 	return 0;
+}
+
+static void fclist_entry_free(void *elem)
+{
+	if (elem != NULL)
+	{
+		sefs_entry *entry = static_cast < sefs_entry * >(elem);
+		delete entry;
+	}
 }
 
 apol_vector_t *sefs_fclist::runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error)
@@ -145,7 +156,7 @@ apol_vector_t *sefs_fclist::runQuery(sefs_query * query) throw(std::bad_alloc, s
 	apol_vector_t *v = NULL;
 	try
 	{
-		if ((v = apol_vector_create(NULL)) == NULL)
+		if ((v = apol_vector_create(fclist_entry_free)) == NULL)
 		{
 			throw std::bad_alloc();
 		}
@@ -567,7 +578,8 @@ static int query_append_type(apol_policy_t * p, apol_vector_t * v, const qpol_ty
 			return -1;
 		}
 	}
-	if (qpol_type_get_name(q, type, &name) < 0 || apol_vector_append(v, const_cast<void*>(static_cast<const void*>(name))) < 0)
+	if (qpol_type_get_name(q, type, &name) < 0 ||
+	    apol_vector_append(v, const_cast < void *>(static_cast < const void *>(name))) < 0)
 	{
 		return -1;
 	}

@@ -149,7 +149,7 @@ sefs_entry::sefs_entry(class sefs_fclist * fclist, const struct sefs_context_nod
 	_origin = origin;
 	try
 	{
-		if ((_paths = apol_vector_create_with_capacity(1, free)) == NULL)
+		if ((_paths = apol_vector_create_with_capacity(1, NULL)) == NULL)
 		{
 			_fclist->SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
