@@ -37,7 +37,10 @@ struct component
 
 static const struct component comps[] = {
 	{"attribs checkbutton", POLDIFF_DIFF_ATTRIBS},
-	{"avrules checkbutton", POLDIFF_DIFF_AVRULES},
+	{"allow checkbutton", POLDIFF_DIFF_AVALLOW},
+	{"neverallow checkbutton", POLDIFF_DIFF_AVNEVERALLOW},
+	{"dontaudit checkbutton", POLDIFF_DIFF_AVDONTAUDIT},
+	{"auditallow checkbutton", POLDIFF_DIFF_AVAUDITALLOW},
 	{"bools checkbutton", POLDIFF_DIFF_BOOLS},
 	{"cats checkbutton", POLDIFF_DIFF_CATS},
 	{"classes checkbutton", POLDIFF_DIFF_CLASSES},
@@ -48,7 +51,9 @@ static const struct component comps[] = {
 	{"roleallows checkbutton", POLDIFF_DIFF_ROLE_ALLOWS},
 	{"roletrans checkbutton", POLDIFF_DIFF_ROLE_TRANS},
 	{"users checkbutton", POLDIFF_DIFF_USERS},
-	{"terules checkbutton", POLDIFF_DIFF_TERULES},
+	{"member checkbutton", POLDIFF_DIFF_TEMEMBER},
+	{"transition checkbutton", POLDIFF_DIFF_TETRANS},
+	{"change checkbutton", POLDIFF_DIFF_TECHANGE},
 	{"types checkbutton", POLDIFF_DIFF_TYPES},
 	{NULL, 0}
 };

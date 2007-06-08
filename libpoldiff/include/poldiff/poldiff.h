@@ -333,6 +333,7 @@ extern "C"
 	extern poldiff_item_to_string_fn_t poldiff_get_to_string_fn(const poldiff_item_record_t * diff);
 	extern poldiff_get_item_stats_fn_t poldiff_get_stats_fn(const poldiff_item_record_t * diff);
 	extern poldiff_get_result_items_fn_t poldiff_get_results_fn(const poldiff_item_record_t * diff);
+	extern const char *poldiff_item_get_label(const poldiff_item_record_t * diff);
 
 #ifdef	__cplusplus
 }

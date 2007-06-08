@@ -65,7 +65,7 @@ static const poldiff_item_record_t item_records[] = {
 	 attrib_deep_diff,
 	 },
 	{
-	 "avrule-avallow",
+	 "AVrule allow",
 	 POLDIFF_DIFF_AVALLOW,
 	 poldiff_avrule_get_stats_allow,
 	 poldiff_get_avrule_vector_allow,
@@ -78,7 +78,7 @@ static const poldiff_item_record_t item_records[] = {
 	 avrule_deep_diff_allow,
 	 },
 	{
-	 "avrule-avneverallow",
+	 "AVrule neverallow",
 	 POLDIFF_DIFF_AVNEVERALLOW,
 	 poldiff_avrule_get_stats_neverallow,
 	 poldiff_get_avrule_vector_neverallow,
@@ -91,7 +91,7 @@ static const poldiff_item_record_t item_records[] = {
 	 avrule_deep_diff_neverallow,
 	 },
 	{
-	 "avrule-avauditallow",
+	 "AVrule auditallow",
 	 POLDIFF_DIFF_AVAUDITALLOW,
 	 poldiff_avrule_get_stats_auditallow,
 	 poldiff_get_avrule_vector_auditallow,
@@ -104,7 +104,7 @@ static const poldiff_item_record_t item_records[] = {
 	 avrule_deep_diff_auditallow,
 	 },
 	{
-	 "avrule-avdontaudit",
+	 "AVrule dontaudit",
 	 POLDIFF_DIFF_AVDONTAUDIT,
 	 poldiff_avrule_get_stats_dontaudit,
 	 poldiff_get_avrule_vector_dontaudit,
@@ -234,7 +234,7 @@ static const poldiff_item_record_t item_records[] = {
 	 role_trans_deep_diff,
 	 },
 	{
-	 "te-trans",
+	 "TErule transition",
 	 POLDIFF_DIFF_TETRANS,
 	 poldiff_terule_get_stats_trans,
 	 poldiff_get_terule_vector_trans,
@@ -247,7 +247,7 @@ static const poldiff_item_record_t item_records[] = {
 	 terule_deep_diff_trans,
 	 },
 	{
-	 "te-change",
+	 "TErule change",
 	 POLDIFF_DIFF_TECHANGE,
 	 poldiff_terule_get_stats_change,
 	 poldiff_get_terule_vector_change,
@@ -260,7 +260,7 @@ static const poldiff_item_record_t item_records[] = {
 	 terule_deep_diff_change,
 	 },
 	{
-	 "te-member",
+	 "TErule member",
 	 POLDIFF_DIFF_TEMEMBER,
 	 poldiff_terule_get_stats_member,
 	 poldiff_get_terule_vector_member,
@@ -767,4 +767,11 @@ poldiff_get_result_items_fn_t poldiff_get_results_fn(const poldiff_item_record_t
 	if (!diff)
 		return NULL;
 	return diff->get_results;
+}
+
+const char *poldiff_item_get_label(const poldiff_item_record_t * diff)
+{
+	if (!diff)
+		return NULL;
+	return diff->item_name;
 }

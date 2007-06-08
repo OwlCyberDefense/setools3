@@ -834,8 +834,8 @@ static apol_vector_t *result_item_avrule_sort(result_item_t * item, poldiff_form
 	size_t i;
 	void *elem;
 	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
-	// FIXME:
-	orig_v = poldiff_get_avrule_vector_allow(item->diff);
+
+	orig_v = item->get_vector(item->diff);
 	if ((v = apol_vector_create(NULL)) == NULL) {
 		return NULL;
 	}
@@ -861,6 +861,8 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 	GString *string = g_string_new("");
 	const apol_vector_t *syn_linenos;
 	apol_vector_t *rules = result_item_avrule_sort(item, form);
+	char *orig_prefix;
+	char *mod_prefix;
 
 	apol_vector_destroy(&item->data.multi.items[form_reverse_map[form]]);
 	item->data.multi.items[form_reverse_map[form]] = rules;
@@ -875,23 +877,19 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 		}
 		result_item_print_string_avrule(tb, &iter, s, 1);
 		if (form != POLDIFF_FORM_MODIFIED) {
-			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
-			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
-			}
-			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
-			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
-			}
+			orig_prefix = NULL;
+			mod_prefix = NULL;
 		} else {
-			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
-			    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, "op: ", syn_linenos, "line-pol_orig", string);
-			}
-			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
-			    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, "mp: ", syn_linenos, "line-pol_mod", string);
-			}
+			orig_prefix = "op: ";
+			mod_prefix = "mp: ";
+		}
+		if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
+		    (syn_linenos = poldiff_avrule_get_orig_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+			result_item_print_linenos(tb, &iter, orig_prefix, syn_linenos, "line-pol_orig", string);
+		}
+		if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
+		    (syn_linenos = poldiff_avrule_get_mod_line_numbers((poldiff_avrule_t *) elem)) != NULL) {
+			result_item_print_linenos(tb, &iter, mod_prefix, syn_linenos, "line-pol_mod", string);
 		}
 		free(s);
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
@@ -900,20 +898,40 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 	g_string_free(string, TRUE);
 }
 
-result_item_t *result_item_create_avrules(GtkTextTagTable * table)
+static result_item_t *result_item_create_from_flag(GtkTextTagTable * table, uint32_t flag)
 {
 	result_item_t *item = result_item_multi_create(table);
 	if (item == NULL) {
 		return item;
 	}
-	item->label = "AV Rules";
-	// FIXME:
-	item->bit_pos = POLDIFF_DIFF_AVRULES;
-	item->get_vector = poldiff_get_avrule_vector_allow;
-	item->get_form = poldiff_avrule_get_form;
-	item->get_string = poldiff_avrule_to_string;
+	const poldiff_item_record_t *rec = poldiff_get_item_record(flag);
+	item->label = poldiff_item_get_label(rec);
+	item->bit_pos = flag;
+	item->get_vector = poldiff_get_results_fn(rec);
+	item->get_form = poldiff_get_form_fn(rec);
+	item->get_string = poldiff_get_to_string_fn(rec);
 	item->data.multi.print_diff = result_item_avrule_print_diff;
 	return item;
+}
+
+result_item_t *result_item_create_avrules_allow(GtkTextTagTable * table)
+{
+	return result_item_create_from_flag(table, POLDIFF_DIFF_AVALLOW);
+}
+
+result_item_t *result_item_create_avrules_neverallow(GtkTextTagTable * table)
+{
+	return result_item_create_from_flag(table, POLDIFF_DIFF_AVNEVERALLOW);
+}
+
+result_item_t *result_item_create_avrules_dontaudit(GtkTextTagTable * table)
+{
+	return result_item_create_from_flag(table, POLDIFF_DIFF_AVDONTAUDIT);
+}
+
+result_item_t *result_item_create_avrules_auditallow(GtkTextTagTable * table)
+{
+	return result_item_create_from_flag(table, POLDIFF_DIFF_AVAUDITALLOW);
 }
 
 static int result_item_terule_comp(const void *a, const void *b, void *data)
@@ -970,8 +988,7 @@ static apol_vector_t *result_item_terule_sort(result_item_t * item, poldiff_form
 	size_t i;
 	void *elem;
 	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
-	// FIXME:
-	orig_v = poldiff_get_terule_vector_member(item->diff);
+	orig_v = item->get_vector(item->diff);
 	if ((v = apol_vector_create(NULL)) == NULL) {
 		return NULL;
 	}
@@ -997,6 +1014,8 @@ static void result_item_terule_print_diff(result_item_t * item, GtkTextBuffer * 
 	GString *string = g_string_new("");
 	apol_vector_t *syn_linenos;
 	apol_vector_t *rules = result_item_terule_sort(item, form);
+	char *orig_prefix;
+	char *mod_prefix;
 
 	gtk_text_buffer_get_end_iter(tb, &iter);
 	if (apol_vector_get_size(rules) > 0) {
@@ -1008,25 +1027,21 @@ static void result_item_terule_print_diff(result_item_t * item, GtkTextBuffer * 
 			goto cleanup;
 		}
 		if (form != POLDIFF_FORM_MODIFIED) {
+			orig_prefix = NULL;
+			mod_prefix = NULL;
 			result_item_print_string(tb, &iter, s, 1);
-			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
-			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_orig", string);
-			}
-			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
-			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, NULL, syn_linenos, "line-pol_mod", string);
-			}
 		} else {
+			orig_prefix = "op: ";
+			mod_prefix = "mp: ";
 			result_item_print_string_inline(tb, &iter, s, 1);
-			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
-			    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, "op: ", syn_linenos, "line-pol_orig", string);
-			}
-			if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
-			    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
-				result_item_print_linenos(tb, &iter, "mp: ", syn_linenos, "line-pol_mod", string);
-			}
+		}
+		if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_ORIG] &&
+		    (syn_linenos = poldiff_terule_get_orig_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+			result_item_print_linenos(tb, &iter, orig_prefix, syn_linenos, "line-pol_orig", string);
+		}
+		if (item->data.multi.has_line_numbers[SEDIFFX_POLICY_MOD] &&
+		    (syn_linenos = poldiff_terule_get_mod_line_numbers((poldiff_terule_t *) elem)) != NULL) {
+			result_item_print_linenos(tb, &iter, mod_prefix, syn_linenos, "line-pol_mod", string);
 		}
 		free(s);
 		gtk_text_buffer_insert(tb, &iter, "\n", -1);
@@ -1036,20 +1051,35 @@ static void result_item_terule_print_diff(result_item_t * item, GtkTextBuffer * 
 	g_string_free(string, TRUE);
 }
 
-result_item_t *result_item_create_terules(GtkTextTagTable * table)
+static result_item_t *result_item_create_terules_from_flag(GtkTextTagTable * table, uint32_t flag)
 {
 	result_item_t *item = result_item_multi_create(table);
 	if (item == NULL) {
 		return item;
 	}
-	item->label = "Type Rules";
-	item->bit_pos = POLDIFF_DIFF_TERULES;
-	// FIXME:
-	item->get_vector = poldiff_get_terule_vector_member;
-	item->get_form = poldiff_terule_get_form;
-	item->get_string = poldiff_terule_to_string;
+	const poldiff_item_record_t *rec = poldiff_get_item_record(flag);
+	item->label = poldiff_item_get_label(rec);
+	item->bit_pos = flag;
+	item->get_vector = poldiff_get_results_fn(rec);
+	item->get_form = poldiff_get_form_fn(rec);
+	item->get_string = poldiff_get_to_string_fn(rec);
 	item->data.multi.print_diff = result_item_terule_print_diff;
 	return item;
+}
+
+result_item_t *result_item_create_terules_member(GtkTextTagTable * table)
+{
+	return result_item_create_terules_from_flag(table, POLDIFF_DIFF_TEMEMBER);
+}
+
+result_item_t *result_item_create_terules_change(GtkTextTagTable * table)
+{
+	return result_item_create_terules_from_flag(table, POLDIFF_DIFF_TECHANGE);
+}
+
+result_item_t *result_item_create_terules_trans(GtkTextTagTable * table)
+{
+	return result_item_create_terules_from_flag(table, POLDIFF_DIFF_TETRANS);
 }
 
 /******************** public methods below ********************/

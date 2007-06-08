@@ -146,9 +146,7 @@ static void print_rule_diffs(poldiff_t * diff, const poldiff_item_record_t * rec
 			     apol_vector_comp_func sort_by)
 {
 	apol_vector_t *v = NULL;
-	size_t i, stats[5] = { 0, 0, 0, 0, 0 };
-	char *str = NULL;
-	const void *item1 = NULL;
+	size_t stats[5] = { 0, 0, 0, 0, 0 };
 
 	if (!rec || !diff)
 		return;
@@ -260,11 +258,6 @@ static void print_avauditallow_diffs(poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVAUDITALLOW), stats_only, "AV-Audit Allow Rules", PRINT_ALL,
 			 NULL);
-}
-
-static void print_terule_diffs(poldiff_t * diff, int stats_only)
-{
-	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_TECHANGE), stats_only, "TE Rules", PRINT_ALL, NULL);
 }
 
 static void print_role_allow_diffs(poldiff_t * diff, int stats_only)
