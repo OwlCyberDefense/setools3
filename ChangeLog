@@ -1,3 +1,9 @@
+2007-06-08  M. Goldman <mgoldman@tresys.com>
+	
+	* updated sediffx diffs so that the subrules for avrules and
+	  terules are broken out into allow, neverallow, auditallow,
+	  dontaudit type_member, type_change, and type_transition rules
+
 2007-06-04  J. Tang  <jtang@tresys.com>
 
 	* added convert functions to apol_context_t and
