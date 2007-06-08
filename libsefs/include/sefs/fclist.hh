@@ -49,7 +49,8 @@ extern "C"
 
 	struct sefs_fclist;
 
-	typedef void (*sefs_callback_fn_t) (void *varg, struct sefs_fclist * fclist, int level, const char *fmt, va_list argp);
+	typedef void (*sefs_callback_fn_t) (void *varg, const struct sefs_fclist * fclist, int level, const char *fmt,
+					    va_list argp);
 
 /**
  * Possible types of fclist for use with sefs_fclist_get_data().
@@ -206,7 +207,7 @@ class sefs_fclist
 	 * @param fmt Format string to print, using syntax of
 	 * printf(3).
 	 */
-	__attribute__ ((format(printf, 3, 4))) void handleMsg(int level, const char *fmt, ...);
+	__attribute__ ((format(printf, 3, 4))) void handleMsg(int level, const char *fmt, ...) const;
 
       private:
 

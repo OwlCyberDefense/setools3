@@ -244,7 +244,8 @@ sefs_fclist::sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, v
 }
 
 static void sefs_handle_default_callback(void *arg __attribute__ ((unused)),
-					 sefs_fclist * f __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
+					 const sefs_fclist * f
+					 __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level)
 	{
@@ -269,7 +270,7 @@ static void sefs_handle_default_callback(void *arg __attribute__ ((unused)),
 	fprintf(stderr, "\n");
 }
 
-void sefs_fclist::handleMsg(int level, const char *fmt, ...)
+void sefs_fclist::handleMsg(int level, const char *fmt, ...) const
 {
 	va_list ap;
 	va_start(ap, fmt);

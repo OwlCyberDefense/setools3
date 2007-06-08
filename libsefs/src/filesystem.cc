@@ -226,20 +226,20 @@ struct filesystem_ftw_struct
 
 // wrapper functions to go between non-OO land into OO member functions
 
-inline struct sefs_context_node *sefs_filesystem_get_context(sefs_filesystem * fs, security_context_t scon) throw(std::bad_alloc)
+inline struct sefs_context_node *filesystem_get_context(sefs_filesystem * fs, security_context_t scon) throw(std::bad_alloc)
 {
 	return fs->getContext(scon);
 }
 
-inline sefs_entry *sefs_filesystem_get_entry(sefs_filesystem * fs, const struct sefs_context_node * node, uint32_t objClass,
-					     const char *path)throw(std::bad_alloc)
+inline sefs_entry *filesystem_get_entry(sefs_filesystem * fs, const struct sefs_context_node * node, uint32_t objClass,
+					const char *path)throw(std::bad_alloc)
 {
 	return fs->getEntry(node, objClass, path);
 }
 
-inline bool sefs_filesystem_is_query_match(sefs_filesystem * fs, const sefs_query * query, const char *path,
-					   const struct stat64 * sb, apol_vector_t * type_list,
-					   apol_mls_range_t * range)throw(std::runtime_error)
+inline bool filesystem_is_query_match(sefs_filesystem * fs, const sefs_query * query, const char *path,
+				      const struct stat64 * sb, apol_vector_t * type_list,
+				      apol_mls_range_t * range)throw(std::runtime_error)
 {
 	return fs->isQueryMatch(query, path, sb, type_list, range);
 }
@@ -285,7 +285,7 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 
 	try
 	{
-		if (!sefs_filesystem_is_query_match(s->fs, s->query, fpath, sb, s->type_list, s->range))
+		if (!filesystem_is_query_match(s->fs, s->query, fpath, sb, s->type_list, s->range))
 		{
 			return 0;
 		}
@@ -303,7 +303,7 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	struct sefs_context_node *node = NULL;
 	try
 	{
-		node = sefs_filesystem_get_context(s->fs, scon);
+		node = filesystem_get_context(s->fs, scon);
 	}
 	catch(...)
 	{
@@ -316,7 +316,7 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	sefs_entry *entry = NULL;
 	try
 	{
-		entry = sefs_filesystem_get_entry(s->fs, node, objClass, fpath);
+		entry = filesystem_get_entry(s->fs, node, objClass, fpath);
 	}
 	catch(...)
 	{

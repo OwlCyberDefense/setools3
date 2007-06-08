@@ -24,6 +24,7 @@ libsqlite_a_SOURCES = \
 
 libsefs_a_LIBADD = libsqlite_a-*.o
 libsefs_a_SOURCES = \
+	db.cc \
 	entry.cc \
 	fcfile.cc \
 	fclist.cc \

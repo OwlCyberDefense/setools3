@@ -48,11 +48,11 @@ class sefs_filesystem:public sefs_fclist
 	// private functions -- do not call these directly from
 	// outside of the library
 
-	friend struct sefs_context_node *sefs_filesystem_get_context(sefs_filesystem *, security_context_t) throw(std::bad_alloc);
-	friend sefs_entry *sefs_filesystem_get_entry(sefs_filesystem *, const struct sefs_context_node *, uint32_t,
-						     const char *) throw(std::bad_alloc);
-	friend bool sefs_filesystem_is_query_match(sefs_filesystem *, const sefs_query *, const char *, const struct stat64 *,
-						   apol_vector_t *, apol_mls_range_t *) throw(std::runtime_error);
+	friend struct sefs_context_node *filesystem_get_context(sefs_filesystem *, security_context_t) throw(std::bad_alloc);
+	friend sefs_entry *filesystem_get_entry(sefs_filesystem *, const struct sefs_context_node *, uint32_t,
+						const char *) throw(std::bad_alloc);
+	friend bool filesystem_is_query_match(sefs_filesystem *, const sefs_query *, const char *, const struct stat64 *,
+					      apol_vector_t *, apol_mls_range_t *) throw(std::runtime_error);
 
       public:
 
