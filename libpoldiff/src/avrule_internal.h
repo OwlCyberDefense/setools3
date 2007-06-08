@@ -63,10 +63,10 @@ extern "C"
 	int avrule_reset_dontaudit(poldiff_t * diff);
 	int avrule_reset_auditallow(poldiff_t * diff);
 
-	apol_vector_t *avrule_get_allow(poldiff_t * diff, apol_policy_t * policy);
-	apol_vector_t *avrule_get_neverallow(poldiff_t * diff, apol_policy_t * policy);
-	apol_vector_t *avrule_get_auditallow(poldiff_t * diff, apol_policy_t * policy);
-	apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *avrule_get_allow(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *avrule_get_neverallow(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *avrule_get_auditallow(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, const apol_policy_t * policy);
 /**
  * Get a vector of all avrules from the given policy, sorted.  This
  * function will remap source and target types to their pseudo-type
@@ -80,7 +80,7 @@ extern "C"
  * apol_vector_destroy() afterwards.  On error, return NULL and set
  * errno.
  */
-	apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy, unsigned int flags);
+	apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, unsigned int flags);
 
 /**
  * Compare two pseudo_avrule_t objects, determining if they have the
@@ -95,7 +95,7 @@ extern "C"
  * @return < 0, 0, or > 0 if av rule x is respectively less than,
  * equal to, or greater than av rule y.
  */
-	int avrule_comp(const void *x, const void *y, poldiff_t * diff);
+	int avrule_comp(const void *x, const void *y, const poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for

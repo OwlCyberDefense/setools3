@@ -48,9 +48,9 @@ extern "C"
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-	extern void poldiff_terule_get_stats_member(poldiff_t * diff, size_t stats[5]);
-	extern void poldiff_terule_get_stats_change(poldiff_t * diff, size_t stats[5]);
-	extern void poldiff_terule_get_stats_trans(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_terule_get_stats_member(const poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_terule_get_stats_change(const poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_terule_get_stats_trans(const poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of te rule differences from the te rule difference
@@ -63,9 +63,9 @@ extern "C"
  *  error.  The caller should <b>not</b> destroy the vector returned.
  *  If the call fails, errno will be set.
  */
-	extern apol_vector_t *poldiff_get_terule_vector_member(poldiff_t * diff);
-	extern apol_vector_t *poldiff_get_terule_vector_change(poldiff_t * diff);
-	extern apol_vector_t *poldiff_get_terule_vector_trans(poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_terule_vector_member(const poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_terule_vector_change(const poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_terule_vector_trans(const poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -79,7 +79,7 @@ extern "C"
  *  is responsible for free()ing this string.  On error, return NULL
  *  and set errno.
  */
-	extern char *poldiff_terule_to_string(poldiff_t * diff, const void *terule);
+	extern char *poldiff_terule_to_string(const poldiff_t * diff, const void *terule);
 
 /**
  *  Get the form of difference from a te rule diff.
@@ -147,7 +147,7 @@ extern "C"
  *  must not destroy this pointer.
  */
 	extern void poldiff_terule_get_cond(const poldiff_t * diff, const poldiff_terule_t * terule,
-					    qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p);
+					    const qpol_cond_t ** cond, uint32_t * which_list, const apol_policy_t ** p);
 
 /**
  *  Get the original default type for this type rule.  Note that if

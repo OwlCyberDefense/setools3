@@ -50,7 +50,7 @@ extern "C"
  * @return Rendered string, or NULL upon error.  Caller must free()
  * string afterwards.
  */
-	char *poldiff_range_to_string_brief(poldiff_t * diff, const poldiff_range_t * range);
+	char *poldiff_range_to_string_brief(const poldiff_t * diff, const poldiff_range_t * range);
 
 /**
  *  Get the vector of level differences from a range diffence object.

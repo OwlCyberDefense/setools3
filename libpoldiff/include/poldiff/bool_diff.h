@@ -49,7 +49,7 @@ extern "C"
  *  form POLDIFF_FORM_ADD_TYPE, and number of
  *  POLDIFF_FORM_REMOVE_TYPE.
  */
-	extern void poldiff_bool_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_bool_get_stats(const poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of bool differences from the boolean difference
@@ -62,7 +62,7 @@ extern "C"
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-	extern apol_vector_t *poldiff_get_bool_vector(poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_bool_vector(const poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -75,7 +75,7 @@ extern "C"
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-	extern char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean);
+	extern char *poldiff_bool_to_string(const poldiff_t * diff, const void *boolean);
 
 /**
  *  Get the number of added bools from a policy difference
@@ -87,7 +87,7 @@ extern "C"
  *  @return The number of added bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
-	extern size_t poldiff_get_num_added_bools(poldiff_t * diff);
+	extern size_t poldiff_get_num_added_bools(const poldiff_t * diff);
 
 /**
  *  Get the number of removed bools from a policy difference
@@ -99,7 +99,7 @@ extern "C"
  *  @return The number of removed bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
-	extern size_t poldiff_get_num_removed_bools(poldiff_t * diff);
+	extern size_t poldiff_get_num_removed_bools(const poldiff_t * diff);
 
 /**
  *  Get the number of modified bools from a policy difference
@@ -111,7 +111,7 @@ extern "C"
  *  @return The number of modified bools or 0 if not yet run.  (The
  *  number of differences could also be zero.)
  */
-	extern size_t poldiff_get_num_modified_bools(poldiff_t * diff);
+	extern size_t poldiff_get_num_modified_bools(const poldiff_t * diff);
 
 /**
  *  Get the name of the bool from a bool diff.

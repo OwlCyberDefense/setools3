@@ -53,13 +53,13 @@ struct poldiff_terule
 	/* pointer into policy's symbol table */
 	const char *source, *target;
 	/** the class string is pointer into the class_bst BST */
-	char *cls;
+	const char *cls;
 	poldiff_form_e form;
 	/* pointer into policy's symbol table */
 	const char *orig_default, *mod_default;
 	/** pointer into policy's conditional list, needed to render
 	 * conditional expressions */
-	qpol_cond_t *cond;
+	const qpol_cond_t *cond;
 	uint32_t branch;
 	/** vector of unsigned longs of line numbers from original policy */
 	apol_vector_t *orig_linenos;
@@ -79,20 +79,20 @@ typedef struct pseudo_terule
 	/** pseudo-type values */
 	uint32_t source, target, default_type;
 	/** pointer into the class_bst BST */
-	char *cls;
+	const char *cls;
 	/** array of pointers into the bool_bst BST */
-	char *bools[5];
+	const char *bools[5];
 	uint32_t bool_val;
 	uint32_t branch;
 	/** pointer into policy's conditional list, needed to render
 	 * conditional expressions */
-	qpol_cond_t *cond;
+	const qpol_cond_t *cond;
 	/** array of qpol_terule_t pointers, for showing line numbers */
-	qpol_terule_t **rules;
+	const qpol_terule_t **rules;
 	size_t num_rules;
 } pseudo_terule_t;
 
-static void poldiff_terule_get_stats(poldiff_t * diff, size_t stats[5], unsigned int index)
+static void poldiff_terule_get_stats(const poldiff_t * diff, size_t stats[5], unsigned int index)
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -106,22 +106,22 @@ static void poldiff_terule_get_stats(poldiff_t * diff, size_t stats[5], unsigned
 	stats[4] = diff->terule_diffs[index]->num_removed_type;
 }
 
-void poldiff_terule_get_stats_member(poldiff_t * diff, size_t stats[5])
+void poldiff_terule_get_stats_member(const poldiff_t * diff, size_t stats[5])
 {
 	poldiff_terule_get_stats(diff, stats, POLDIFF_MEMBER_OFFSET);
 }
 
-void poldiff_terule_get_stats_change(poldiff_t * diff, size_t stats[5])
+void poldiff_terule_get_stats_change(const poldiff_t * diff, size_t stats[5])
 {
 	poldiff_terule_get_stats(diff, stats, POLDIFF_CHANGE_OFFSET);
 }
 
-void poldiff_terule_get_stats_trans(poldiff_t * diff, size_t stats[5])
+void poldiff_terule_get_stats_trans(const poldiff_t * diff, size_t stats[5])
 {
 	poldiff_terule_get_stats(diff, stats, POLDIFF_TRANS_OFFSET);
 }
 
-char *poldiff_terule_to_string(poldiff_t * diff, const void *terule)
+char *poldiff_terule_to_string(const poldiff_t * diff, const void *terule)
 {
 	const poldiff_terule_t *pt = (const poldiff_terule_t *)terule;
 	apol_policy_t *p;
@@ -258,7 +258,7 @@ static int poldiff_terule_cmp(const void *x, const void *y, void *data __attribu
 	return b->branch - a->branch;
 }
 
-static apol_vector_t *poldiff_get_terule_vector(poldiff_t * diff, unsigned int index)
+static const apol_vector_t *poldiff_get_terule_vector(const poldiff_t * diff, unsigned int index)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
@@ -271,17 +271,17 @@ static apol_vector_t *poldiff_get_terule_vector(poldiff_t * diff, unsigned int i
 	return diff->terule_diffs[index]->diffs;
 }
 
-apol_vector_t *poldiff_get_terule_vector_member(poldiff_t * diff)
+const apol_vector_t *poldiff_get_terule_vector_member(const poldiff_t * diff)
 {
 	return poldiff_get_terule_vector(diff, POLDIFF_MEMBER_OFFSET);
 }
 
-apol_vector_t *poldiff_get_terule_vector_change(poldiff_t * diff)
+const apol_vector_t *poldiff_get_terule_vector_change(const poldiff_t * diff)
 {
 	return poldiff_get_terule_vector(diff, POLDIFF_CHANGE_OFFSET);
 }
 
-apol_vector_t *poldiff_get_terule_vector_trans(poldiff_t * diff)
+const apol_vector_t *poldiff_get_terule_vector_trans(const poldiff_t * diff)
 {
 	return poldiff_get_terule_vector(diff, POLDIFF_TRANS_OFFSET);
 }
@@ -332,7 +332,7 @@ const char *poldiff_terule_get_object_class(const poldiff_terule_t * terule)
 }
 
 void poldiff_terule_get_cond(const poldiff_t * diff, const poldiff_terule_t * terule,
-			     qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p)
+			     const qpol_cond_t ** cond, uint32_t * which_list, const apol_policy_t ** p)
 {
 	if (diff == NULL || terule == NULL || cond == NULL || p == NULL) {
 		errno = EINVAL;
@@ -366,7 +366,7 @@ const char *poldiff_terule_get_modified_default(const poldiff_terule_t * terule)
 		errno = EINVAL;
 		return 0;
 	}
-	return terule->orig_default;
+	return terule->mod_default;
 }
 
 apol_vector_t *poldiff_terule_get_orig_line_numbers(const poldiff_terule_t * terule)
@@ -555,7 +555,7 @@ static int terule_bst_comp(const void *x, const void *y, void *data)
  * @param cond Conditional expression to convert.
  * @param key Location to write converted expression.
  */
-static int terule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * cond, pseudo_terule_t * key)
+static int terule_build_cond(const poldiff_t * diff, const apol_policy_t * p, const qpol_cond_t * cond, pseudo_terule_t * key)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_cond_expr_node_t *node;
@@ -563,7 +563,7 @@ static int terule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * 
 	qpol_bool_t *bools[5], *qbool;
 	size_t i, j;
 	size_t num_bools = 0;
-	char *bool_name, *pseudo_bool, *t;
+	const char *bool_name, *pseudo_bool, *t;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1, error = 0, compval;
 	if (qpol_cond_get_expr_node_iter(q, cond, &iter) < 0) {
@@ -598,7 +598,7 @@ static int terule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * 
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_bst_get_element(diff->bool_bst, bool_name, NULL, (void **)&pseudo_bool) < 0) {
+		if (apol_bst_get_element(diff->bool_bst, (void*)bool_name, NULL, (void **)&pseudo_bool) < 0) {
 			error = EBADRQC;	/* should never get here */
 			ERR(diff, "%s", strerror(error));
 			assert(0);
@@ -659,14 +659,14 @@ static int terule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * 
  *
  * @return 0 on success, < 0 on error.
  */
-static int terule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
-			     qpol_terule_t * rule, uint32_t source, uint32_t target, apol_bst_t * b)
+static int terule_add_to_bst(poldiff_t * diff, const apol_policy_t * p,
+			     const qpol_terule_t * rule, uint32_t source, uint32_t target, apol_bst_t * b)
 {
 	pseudo_terule_t *key, *inserted_key;
-	qpol_class_t *obj_class;
-	qpol_type_t *default_type;
-	char *class_name;
-	qpol_cond_t *cond;
+	const qpol_class_t *obj_class;
+	const qpol_type_t *default_type;
+	const char *class_name;
+	const qpol_cond_t *cond;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1, error = 0, compval;
 	int which = (p == diff->orig_pol ? POLDIFF_POLICY_ORIG : POLDIFF_POLICY_MOD);
@@ -685,7 +685,7 @@ static int terule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
 		error = errno;
 		goto cleanup;
 	}
-	if (apol_bst_get_element(diff->class_bst, class_name, NULL, (void **)&key->cls) < 0) {
+	if (apol_bst_get_element(diff->class_bst, (void*)class_name, NULL, (void **)&key->cls) < 0) {
 		error = EBADRQC;       /* should never get here */
 		ERR(diff, "%s", strerror(error));
 		assert(0);
@@ -714,7 +714,7 @@ static int terule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
 
 	/* store the rule pointer, to be used for showing line numbers */
 	if (qpol_policy_has_capability(q, QPOL_CAP_LINE_NUMBERS)) {
-		qpol_terule_t **t = realloc(inserted_key->rules,
+		const qpol_terule_t **t = realloc(inserted_key->rules,
 					    (inserted_key->num_rules + 1) * sizeof(*t));
 		if (t == NULL) {
 			error = errno;
@@ -746,9 +746,9 @@ static int terule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int terule_expand(poldiff_t * diff, apol_policy_t * p, qpol_terule_t * rule, apol_bst_t * b)
+static int terule_expand(poldiff_t * diff, const apol_policy_t * p, const qpol_terule_t * rule, apol_bst_t * b)
 {
-	qpol_type_t *source, *orig_target, *target;
+	const qpol_type_t *source, *orig_target, *target;
 	unsigned char source_attr, target_attr;
 	qpol_iterator_t *source_iter = NULL, *target_iter = NULL;
 	uint32_t source_val, target_val;
@@ -789,7 +789,7 @@ static int terule_expand(poldiff_t * diff, apol_policy_t * p, qpol_terule_t * ru
 				}
 				qpol_iterator_next(target_iter);
 			}
-			char *n1, *n2;
+			const char *n1, *n2;
 			qpol_type_get_name(q, source, &n1);
 			qpol_type_get_name(q, target, &n2);
 			if ((source_val = type_map_lookup(diff, source, which)) == 0 ||
@@ -809,22 +809,22 @@ static int terule_expand(poldiff_t * diff, apol_policy_t * p, qpol_terule_t * ru
 	return retval;
 }
 
-apol_vector_t *terule_get_items_trans(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *terule_get_items_trans(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return terule_get_items(diff, policy, QPOL_RULE_TYPE_TRANS);
 }
 
-apol_vector_t *terule_get_items_change(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *terule_get_items_change(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return terule_get_items(diff, policy, QPOL_RULE_TYPE_CHANGE);
 }
 
-apol_vector_t *terule_get_items_member(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *terule_get_items_member(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return terule_get_items(diff, policy, QPOL_RULE_TYPE_MEMBER);
 }
 
-apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy, unsigned int flags)
+apol_vector_t *terule_get_items(poldiff_t * diff, const apol_policy_t * policy, unsigned int flags)
 {
 	apol_vector_t *bools = NULL, *bool_states = NULL;
 	size_t i, num_rules, j;
@@ -909,7 +909,7 @@ apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy, unsign
 	return v;
 }
 
-int terule_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))
+int terule_comp(const void *x, const void *y, const poldiff_t * diff __attribute__ ((unused)))
 {
 	const pseudo_terule_t *r1 = (const pseudo_terule_t *)x;
 	const pseudo_terule_t *r2 = (const pseudo_terule_t *)y;
@@ -929,7 +929,7 @@ int terule_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((u
  * The caller is responsible for calling poldiff_terule_free() upon
  * the returned value.
  */
-static poldiff_terule_t *make_tediff(poldiff_t * diff, poldiff_form_e form, pseudo_terule_t * rule)
+static poldiff_terule_t *make_tediff(const poldiff_t * diff, poldiff_form_e form, const pseudo_terule_t * rule)
 {
 	poldiff_terule_t *pt;
 	const char *n1, *n2;
@@ -963,7 +963,7 @@ static int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 {
 	pseudo_terule_t *rule = (pseudo_terule_t *) item;
 	poldiff_terule_t *pt = NULL;
-	apol_vector_t *v1, *v2;
+	const apol_vector_t *v1, *v2;
 	apol_policy_t *p;
 	const char *orig_default = NULL, *mod_default = NULL;
 	int retval = -1, error = errno;
@@ -1004,15 +1004,16 @@ static int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 
 	/* calculate line numbers */
 	if (qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_LINE_NUMBERS)) {
-		if ((v1 = apol_vector_create(NULL)) == NULL) {
+		apol_vector_t *vl = NULL;
+		if ((vl = apol_vector_create(NULL)) == NULL) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
 		if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
-			pt->mod_linenos = v1;
+			pt->mod_linenos = vl;
 		} else {
-			pt->orig_linenos = v1;
+			pt->orig_linenos = vl;
 		}
 
 		/* copy rule pointers for delayed line number claculation */
@@ -1171,7 +1172,7 @@ int terule_deep_diff_trans(poldiff_t * diff, const void *x, const void *y)
 
 int terule_enable_line_numbers(poldiff_t * diff, unsigned int index)
 {
-	apol_vector_t *te = NULL;
+	const apol_vector_t *te = NULL;
 	poldiff_terule_t *terule = NULL;
 	size_t i, j;
 	qpol_iterator_t *iter = NULL;

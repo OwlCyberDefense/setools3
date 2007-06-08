@@ -550,7 +550,7 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 	return 0;
 }
 
-int poldiff_is_run(poldiff_t * diff, uint32_t flags)
+int poldiff_is_run(const poldiff_t * diff, uint32_t flags)
 {
 	if (!flags)
 		return 1;	       /* nothing to do */
@@ -566,7 +566,7 @@ int poldiff_is_run(poldiff_t * diff, uint32_t flags)
 	return 0;
 }
 
-int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5])
+int poldiff_get_stats(const poldiff_t * diff, uint32_t flags, size_t stats[5])
 {
 	size_t i, j, num_items, tmp_stats[5] = { 0, 0, 0, 0, 0 };
 
@@ -634,9 +634,10 @@ int poldiff_build_bsts(poldiff_t * diff)
 	apol_vector_t *perms[2] = { NULL, NULL };
 	apol_vector_t *bools[2] = { NULL, NULL };
 	size_t i, j;
-	qpol_class_t *cls;
+	const qpol_class_t *cls;
 	qpol_bool_t *qbool;
-	char *name, *new_name;
+	const char *name;
+	char *new_name;
 	int retval = -1, error = 0;
 	if (diff->class_bst != NULL) {
 		return 0;
@@ -657,7 +658,7 @@ int poldiff_build_bsts(poldiff_t * diff)
 			goto cleanup;
 		}
 		for (j = 0; j < apol_vector_get_size(classes[i]); j++) {
-			cls = (qpol_class_t *) apol_vector_get_element(classes[i], j);
+			cls = apol_vector_get_element(classes[i], j);
 			if (qpol_class_get_name(q, cls, &name) < 0) {
 				error = errno;
 				goto cleanup;
@@ -729,7 +730,7 @@ static void poldiff_handle_default_callback(void *arg __attribute__ ((unused)),
 	fprintf(stderr, "\n");
 }
 
-void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...)
+void poldiff_handle_msg(const poldiff_t * p, int level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

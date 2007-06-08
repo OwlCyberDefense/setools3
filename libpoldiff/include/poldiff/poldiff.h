@@ -80,7 +80,7 @@ extern "C"
  *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
  *  number of POLDIFF_FORM_REMOVE_TYPE.
  */
-	typedef void (*poldiff_get_item_stats_fn_t) (poldiff_t * diff, size_t stats[5]);
+	typedef void (*poldiff_get_item_stats_fn_t) (const poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Callback function signature for getting a vector of all result
@@ -89,7 +89,7 @@ extern "C"
  *  @return A vector of result items, which the caller may not modify
  *  or destroy.  Upon error, return NULL and set errno.
  */
-	typedef apol_vector_t *(*poldiff_get_result_items_fn_t) (poldiff_t * diff);
+	typedef const apol_vector_t *(*poldiff_get_result_items_fn_t) (const poldiff_t * diff);
 
 /**
  *  Callback function signature for getting the form of difference for
@@ -109,7 +109,7 @@ extern "C"
  *  string representation of the item or NULL on error; if the call fails,
  *  it is expected to set errno.
  */
-	typedef char *(*poldiff_item_to_string_fn_t) (poldiff_t * diff, const void *item);
+	typedef char *(*poldiff_item_to_string_fn_t) (const poldiff_t * diff, const void *item);
 
 /**
  *  Callbackfunction signature for resetting the diff results for an item.
@@ -131,7 +131,7 @@ extern "C"
  *  of the appropriate kind on success, or NULL on error;
  *  if the call fails, errno will be set.
  */
-	typedef apol_vector_t *(*poldiff_get_items_fn_t) (poldiff_t * diff, apol_policy_t * policy);
+	typedef apol_vector_t *(*poldiff_get_items_fn_t) (poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  *  Callback funtion signature for quickly comparing two items to
@@ -149,7 +149,7 @@ extern "C"
  *  This must be able to return a defined stable ordering for all items
  *  not semantically equivalent.
  */
-	typedef int (*poldiff_item_comp_fn_t) (const void *x, const void *y, poldiff_t * diff);
+	typedef int (*poldiff_item_comp_fn_t) (const void *x, const void *y, const poldiff_t * diff);
 
 /**
  *  Callback function signature for creating, initializing and inserting
@@ -182,7 +182,7 @@ extern "C"
 
 	typedef struct poldiff_item_record poldiff_item_record_t;
 
-	typedef void (*poldiff_handle_fn_t) (void *arg, poldiff_t * diff, int level, const char *fmt, va_list va_args);
+	typedef void (*poldiff_handle_fn_t) (void *arg, const poldiff_t * diff, int level, const char *fmt, va_list va_args);
 
 #include <poldiff/attrib_diff.h>
 #include <poldiff/avrule_diff.h>
@@ -295,7 +295,7 @@ extern "C"
  *  @return 1 if all indicated diffs were run, 0 if any were not, < 0
  *  on error.
  */
-	extern int poldiff_is_run(poldiff_t * diff, uint32_t flags);
+	extern int poldiff_is_run(const poldiff_t * diff, uint32_t flags);
 
 /**
  *  Get a total of the differences of each form for a given item (or set
@@ -311,7 +311,7 @@ extern "C"
  *  number of POLDIFF_FORM_REMOVE_TYPE.
  *  @return 0 on success and < 0 on error; if the call fails, errno will be set.
  */
-	extern int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5]);
+	extern int poldiff_get_stats(const poldiff_t * diff, uint32_t flags, size_t stats[5]);
 
 /**
  *  Enable line numbers for all rule differences.  If not called, line

@@ -44,7 +44,7 @@ struct poldiff_cat
 	poldiff_form_e form;
 };
 
-void poldiff_cat_get_stats(poldiff_t * diff, size_t stats[5])
+void poldiff_cat_get_stats(const poldiff_t * diff, size_t stats[5])
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -58,7 +58,7 @@ void poldiff_cat_get_stats(poldiff_t * diff, size_t stats[5])
 	stats[4] = 0;
 }
 
-apol_vector_t *poldiff_get_cat_vector(poldiff_t * diff)
+const apol_vector_t *poldiff_get_cat_vector(const poldiff_t * diff)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
@@ -67,7 +67,7 @@ apol_vector_t *poldiff_get_cat_vector(poldiff_t * diff)
 	return diff->cat_diffs->diffs;
 }
 
-char *poldiff_cat_to_string(poldiff_t * diff, const void *cat)
+char *poldiff_cat_to_string(const poldiff_t * diff, const void *cat)
 {
 	poldiff_cat_t *c = (poldiff_cat_t *) cat;
 	size_t len = 0;
@@ -180,18 +180,18 @@ int cat_reset(poldiff_t * diff)
  */
 static int cat_name_comp(const void *x, const void *y, void *arg)
 {
-	qpol_cat_t *c1 = (qpol_cat_t *) x;
-	qpol_cat_t *c2 = (qpol_cat_t *) y;
+	const qpol_cat_t *c1 = x;
+	const qpol_cat_t *c2 = y;
 	apol_policy_t *p = arg;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
-	char *name1, *name2;
+	const char *name1, *name2;
 
 	if (qpol_cat_get_name(q, c1, &name1) < 0 || qpol_cat_get_name(q, c2, &name2) < 0)
 		return 0;
 	return strcmp(name1, name2);
 }
 
-apol_vector_t *cat_get_items(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *cat_get_items(poldiff_t * diff, const apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
@@ -209,15 +209,15 @@ apol_vector_t *cat_get_items(poldiff_t * diff, apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort(v, cat_name_comp, policy);
+	apol_vector_sort(v, cat_name_comp, (void*)policy);
 	return v;
 }
 
-int cat_comp(const void *x, const void *y, poldiff_t * diff)
+int cat_comp(const void *x, const void *y, const poldiff_t * diff)
 {
-	qpol_cat_t *c1 = (qpol_cat_t *) x;
-	qpol_cat_t *c2 = (qpol_cat_t *) y;
-	char *name1, *name2;
+	const qpol_cat_t *c1 = x;
+	const qpol_cat_t *c2 = y;
+	const char *name1, *name2;
 	if (qpol_cat_get_name(diff->orig_qpol, c1, &name1) < 0 || qpol_cat_get_name(diff->mod_qpol, c2, &name2) < 0) {
 		return 0;
 	}
@@ -235,7 +235,7 @@ int cat_comp(const void *x, const void *y, poldiff_t * diff)
  * The caller is responsible for calling cat_free() upon the returned
  * value.
  */
-static poldiff_cat_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *name)
+static poldiff_cat_t *make_diff(const poldiff_t * diff, poldiff_form_e form, const char *name)
 {
 	poldiff_cat_t *pl;
 	int error;
@@ -252,8 +252,8 @@ static poldiff_cat_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *nam
 
 int cat_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	qpol_cat_t *c = (qpol_cat_t *) item;
-	char *name = NULL;
+	const qpol_cat_t *c = item;
+	const char *name = NULL;
 	poldiff_cat_t *pl;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&

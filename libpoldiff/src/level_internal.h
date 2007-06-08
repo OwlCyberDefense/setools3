@@ -80,7 +80,7 @@ extern "C"
  * responsible for calling apol_vector_destroy() afterwards.  On
  * error, return NULL and set errno.
  */
-	apol_vector_t *level_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *level_get_items(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Compare two qpol_level_t objects, determining if they have the same
@@ -94,7 +94,7 @@ extern "C"
  * @return < 0, 0, or > 0 if level x is respectively less than, equal
  * to, or greater than level y.
  */
-	int level_comp(const void *x, const void *y, poldiff_t * diff);
+	int level_comp(const void *x, const void *y, const poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -142,7 +142,7 @@ extern "C"
  * @return Initialized level, or NULL upon error.  Caller must call
  * level_free() upon the returned value.
  */
-	poldiff_level_t *level_create_from_apol_mls_level(apol_mls_level_t * level, poldiff_form_e form);
+	poldiff_level_t *level_create_from_apol_mls_level(const apol_mls_level_t * level, poldiff_form_e form);
 
 /**
  * Deallocate all space associated with a poldiff_level_t, including

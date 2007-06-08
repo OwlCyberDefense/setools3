@@ -489,23 +489,23 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 		return poldiff_avrule_get_object_class(self);
 	};
 	const qpol_cond_t *get_cond(poldiff_t *p) {
-		qpol_cond_t *cond;
+		const qpol_cond_t *cond;
 		uint32_t which_list;
-		apol_policy_t *which_pol;
+		const apol_policy_t *which_pol;
 		poldiff_avrule_get_cond(p, self, &cond, &which_list, &which_pol);
 		return cond;
 	};
 	uint32_t get_cond_list(poldiff_t *p) {
-		qpol_cond_t *cond;
+		const qpol_cond_t *cond;
 		uint32_t which_list;
-		apol_policy_t *which_pol;
+		const apol_policy_t *which_pol;
 		poldiff_avrule_get_cond(p, self, &cond, &which_list, &which_pol);
 		return which_list;
 	};
 	const apol_policy_t *get_cond_policy(poldiff_t *p) {
-		qpol_cond_t *cond;
+		const qpol_cond_t *cond;
 		uint32_t which_list;
-		apol_policy_t *which_pol;
+		const apol_policy_t *which_pol;
 		poldiff_avrule_get_cond(p, self, &cond, &which_list, &which_pol);
 		return which_pol;
 	};
@@ -926,23 +926,23 @@ typedef struct poldiff_terule {} poldiff_terule_t;
 		return poldiff_terule_get_object_class(self);
 	};
 	const qpol_cond_t *get_cond(poldiff_t *p) {
-		qpol_cond_t *cond;
+		const qpol_cond_t *cond;
 		uint32_t which_list;
-		apol_policy_t *which_pol;
+		const apol_policy_t *which_pol;
 		poldiff_terule_get_cond(p, self, &cond, &which_list, &which_pol);
 		return cond;
 	};
 	uint32_t get_cond_list(poldiff_t *p) {
-		qpol_cond_t *cond;
+		const qpol_cond_t *cond;
 		uint32_t which_list;
-		apol_policy_t *which_pol;
+		const apol_policy_t *which_pol;
 		poldiff_terule_get_cond(p, self, &cond, &which_list, &which_pol);
 		return which_list;
 	};
 	const apol_policy_t *get_cond_policy(poldiff_t *p) {
-		qpol_cond_t *cond;
+		const qpol_cond_t *cond;
 		uint32_t which_list;
-		apol_policy_t *which_pol;
+		const apol_policy_t *which_pol;
 		poldiff_terule_get_cond(p, self, &cond, &which_list, &which_pol);
 		return which_pol;
 	};

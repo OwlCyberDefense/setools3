@@ -54,7 +54,7 @@ struct poldiff_role_trans_summary
 
 struct poldiff_role_allow
 {
-	char *source_role;
+	const char *source_role;
 	poldiff_form_e form;
 	apol_vector_t *orig_roles;
 	apol_vector_t *added_roles;
@@ -63,16 +63,16 @@ struct poldiff_role_allow
 
 struct poldiff_role_trans
 {
-	char *source_role;
+	const char *source_role;
 	char *target_type;
-	char *orig_default;
-	char *mod_default;
+	const char *orig_default;
+	const char *mod_default;
 	poldiff_form_e form;
 };
 
 /**************** role allow functions *******************/
 
-void poldiff_role_allow_get_stats(poldiff_t * diff, size_t stats[5])
+void poldiff_role_allow_get_stats(const poldiff_t * diff, size_t stats[5])
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -86,7 +86,7 @@ void poldiff_role_allow_get_stats(poldiff_t * diff, size_t stats[5])
 	stats[4] = 0;
 }
 
-char *poldiff_role_allow_to_string(poldiff_t * diff, const void *role_allow)
+char *poldiff_role_allow_to_string(const poldiff_t * diff, const void *role_allow)
 {
 	const poldiff_role_allow_t *ra = role_allow;
 	size_t num_added, num_removed, len = 0, i;
@@ -176,7 +176,7 @@ char *poldiff_role_allow_to_string(poldiff_t * diff, const void *role_allow)
 	return NULL;
 }
 
-apol_vector_t *poldiff_get_role_allow_vector(poldiff_t * diff)
+const apol_vector_t *poldiff_get_role_allow_vector(const poldiff_t * diff)
 {
 	if (diff == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -204,7 +204,7 @@ poldiff_form_e poldiff_role_allow_get_form(const void *role_allow)
 	return ((const poldiff_role_allow_t *)role_allow)->form;
 }
 
-apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t * role_allow)
+const apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t * role_allow)
 {
 	if (role_allow == NULL) {
 		errno = EINVAL;
@@ -213,7 +213,7 @@ apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t * r
 	return role_allow->added_roles;
 }
 
-apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t * role_allow)
+const apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t * role_allow)
 {
 	if (role_allow == NULL) {
 		errno = EINVAL;
@@ -232,6 +232,7 @@ static void role_allow_free(void *elem)
 		free(r);
 	}
 }
+
 poldiff_role_allow_summary_t *role_allow_create(void)
 {
 	poldiff_role_allow_summary_t *ras = calloc(1, sizeof(*ras));
@@ -256,7 +257,7 @@ void role_allow_destroy(poldiff_role_allow_summary_t ** ras)
 
 typedef struct pseudo_role_allow
 {
-	char *source_role;
+	const char *source_role;
 	apol_vector_t *target_roles;
 } pseudo_role_allow_t;
 
@@ -280,7 +281,7 @@ static int role_allow_source_comp(const void *x, const void *y, void *arg __attr
 	return strcmp(p1->source_role, p2->source_role);
 }
 
-apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *role_allow_get_items(poldiff_t * diff, const apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *tmp = NULL, *v = NULL;
@@ -288,9 +289,9 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 	size_t i;
 	apol_bst_t *bst = NULL;
 	pseudo_role_allow_t *pra = NULL;
-	qpol_role_t *sr = NULL, *tr = NULL;
-	char *sr_name = NULL, *tr_name = NULL;
-	qpol_role_allow_t *qra = NULL;
+	const qpol_role_t *sr = NULL, *tr = NULL;
+	const char *sr_name = NULL, *tr_name = NULL;
+	const qpol_role_allow_t *qra = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 
 	if (qpol_policy_get_role_allow_iter(q, &iter) < 0) {
@@ -335,7 +336,7 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 			ERR(diff, "%s", strerror(error));
 			goto err;
 		}
-		apol_vector_append_unique(pra->target_roles, tr_name, apol_str_strcmp, NULL);
+		apol_vector_append_unique(pra->target_roles, (void*)tr_name, apol_str_strcmp, NULL);
 		pra = NULL;
 	}
 	apol_vector_destroy(&tmp);
@@ -357,7 +358,7 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, apol_policy_t * policy)
 	return NULL;
 }
 
-int role_allow_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))
+int role_allow_comp(const void *x, const void *y, const poldiff_t * diff __attribute__ ((unused)))
 {
 	const pseudo_role_allow_t *p1 = x;
 	const pseudo_role_allow_t *p2 = y;
@@ -398,7 +399,7 @@ int role_allow_reset(poldiff_t * diff)
  *  The caller is responsible for calling role_allow_free() upon the returned
  *  value.
  */
-static poldiff_role_allow_t *make_ra_diff(poldiff_t * diff, poldiff_form_e form, char *source_role)
+static poldiff_role_allow_t *make_ra_diff(const poldiff_t * diff, poldiff_form_e form, const char *source_role)
 {
 	poldiff_role_allow_t *ra = NULL;
 	int error = 0;
@@ -549,7 +550,7 @@ int role_allow_deep_diff(poldiff_t * diff, const void *x, const void *y)
 
 /**************** role_transition functions *******************/
 
-void poldiff_role_trans_get_stats(poldiff_t * diff, size_t stats[5])
+void poldiff_role_trans_get_stats(const poldiff_t * diff, size_t stats[5])
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -563,7 +564,7 @@ void poldiff_role_trans_get_stats(poldiff_t * diff, size_t stats[5])
 	stats[4] = diff->role_trans_diffs->num_removed_type;
 }
 
-extern char *poldiff_role_trans_to_string(poldiff_t * diff, const void *role_trans)
+extern char *poldiff_role_trans_to_string(const poldiff_t * diff, const void *role_trans)
 {
 	const poldiff_role_trans_t *rt = role_trans;
 	char *s = NULL;
@@ -611,7 +612,7 @@ extern char *poldiff_role_trans_to_string(poldiff_t * diff, const void *role_tra
 	return NULL;
 }
 
-apol_vector_t *poldiff_get_role_trans_vector(poldiff_t * diff)
+const apol_vector_t *poldiff_get_role_trans_vector(const poldiff_t * diff)
 {
 	if (diff == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -721,9 +722,9 @@ int role_trans_reset(poldiff_t * diff)
 
 typedef struct pseudo_role_trans
 {
-	char *source_role;
+	const char *source_role;
 	uint32_t pseudo_target;
-	char *default_role;
+	const char *default_role;
 } pseudo_role_trans_t;
 
 /**
@@ -762,15 +763,15 @@ static void role_trans_free_item(void *item)
 	free(item);
 }
 
-apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *role_trans_get_items(poldiff_t * diff, const apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL, *attr_types = NULL;
 	apol_vector_t *v = NULL;
-	qpol_role_trans_t *qrt = NULL;
+	const qpol_role_trans_t *qrt = NULL;
 	pseudo_role_trans_t *tmp_prt = NULL;
-	char *tmp_name = NULL;
-	qpol_role_t *tmp_role = NULL;
-	qpol_type_t *tmp_type = NULL;
+	const char *tmp_name = NULL;
+	const qpol_role_t *tmp_role = NULL;
+	const qpol_type_t *tmp_type = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0, which_pol;
 	unsigned char isattr = 0;
@@ -857,7 +858,7 @@ apol_vector_t *role_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
 	return NULL;
 }
 
-int role_trans_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))
+int role_trans_comp(const void *x, const void *y, const poldiff_t * diff __attribute__ ((unused)))
 {
 	int retv = 0;
 	const pseudo_role_trans_t *a = x;
@@ -882,7 +883,7 @@ int role_trans_comp(const void *x, const void *y, poldiff_t * diff __attribute__
  *  The caller is responsible for calling free() upon the returned
  *  value.
  */
-static poldiff_role_trans_t *make_rt_diff(poldiff_t * diff, poldiff_form_e form, char *src, const char *tgt)
+static poldiff_role_trans_t *make_rt_diff(const poldiff_t * diff, poldiff_form_e form, const char *src, const char *tgt)
 {
 	poldiff_role_trans_t *rt = NULL;
 	int error = 0;
@@ -1001,7 +1002,7 @@ int role_trans_deep_diff(poldiff_t * diff, const void *x, const void *y)
 {
 	const pseudo_role_trans_t *prt1 = x;
 	const pseudo_role_trans_t *prt2 = y;
-	char *default1 = NULL, *default2 = NULL;
+	const char *default1 = NULL, *default2 = NULL;
 	poldiff_role_trans_t *rt = NULL;
 	const char *tgt = NULL;
 	int error = 0;

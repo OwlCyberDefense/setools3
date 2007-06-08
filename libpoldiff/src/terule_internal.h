@@ -76,10 +76,10 @@ extern "C"
  * errno.
  */
 
-	apol_vector_t *terule_get_items_trans(poldiff_t * diff, apol_policy_t * policy);
-	apol_vector_t *terule_get_items_change(poldiff_t * diff, apol_policy_t * policy);
-	apol_vector_t *terule_get_items_member(poldiff_t * diff, apol_policy_t * policy);
-	apol_vector_t *terule_get_items(poldiff_t * diff, apol_policy_t * policy, unsigned int flags);
+	apol_vector_t *terule_get_items_trans(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *terule_get_items_change(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *terule_get_items_member(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *terule_get_items(poldiff_t * diff, const apol_policy_t * policy, unsigned int flags);
 
 /**
  * Compare two pseudo_terule_t objects, determining if they have the
@@ -94,7 +94,7 @@ extern "C"
  * @return < 0, 0, or > 0 if te rule x is respectively less than,
  * equal to, or greater than te rule y.
  */
-	int terule_comp(const void *x, const void *y, poldiff_t * diff);
+	int terule_comp(const void *x, const void *y, const poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for

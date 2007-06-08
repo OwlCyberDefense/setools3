@@ -63,7 +63,7 @@ struct poldiff_avrule
 	apol_vector_t *removed_perms;
 	/** pointer into policy's conditional list, needed to render
 	 * conditional expressions */
-	qpol_cond_t *cond;
+	const qpol_cond_t *cond;
 	uint32_t branch;
 	/** vector of unsigned longs of line numbers from original policy */
 	apol_vector_t *orig_linenos;
@@ -94,15 +94,15 @@ typedef struct pseudo_avrule
 	uint32_t branch;
 	/** pointer into policy's conditional list, needed to render
 	 * conditional expressions */
-	qpol_cond_t *cond;
+	const qpol_cond_t *cond;
 	/** array of qpol_avrule_t pointers, for showing line numbers */
-	qpol_avrule_t **rules;
+	const qpol_avrule_t **rules;
 	size_t num_rules;
 } pseudo_avrule_t;
 
 /******************** public avrule functions ********************/
 
-static void poldiff_avrule_get_stats(poldiff_t * diff, size_t stats[5], unsigned int index)
+static void poldiff_avrule_get_stats(const poldiff_t * diff, size_t stats[5], unsigned int index)
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -116,27 +116,27 @@ static void poldiff_avrule_get_stats(poldiff_t * diff, size_t stats[5], unsigned
 	stats[4] = diff->avrule_diffs[index]->num_removed_type;
 }
 
-void poldiff_avrule_get_stats_allow(poldiff_t * diff, size_t stats[5])
+void poldiff_avrule_get_stats_allow(const poldiff_t * diff, size_t stats[5])
 {
 	poldiff_avrule_get_stats(diff, stats, POLDIFF_ALLOW_OFFSET);
 }
 
-void poldiff_avrule_get_stats_neverallow(poldiff_t * diff, size_t stats[5])
+void poldiff_avrule_get_stats_neverallow(const poldiff_t * diff, size_t stats[5])
 {
 	poldiff_avrule_get_stats(diff, stats, POLDIFF_NEVERALLOW_OFFSET);
 }
 
-void poldiff_avrule_get_stats_dontaudit(poldiff_t * diff, size_t stats[5])
+void poldiff_avrule_get_stats_dontaudit(const poldiff_t * diff, size_t stats[5])
 {
 	poldiff_avrule_get_stats(diff, stats, POLDIFF_DONTAUDIT_OFFSET);
 }
 
-void poldiff_avrule_get_stats_auditallow(poldiff_t * diff, size_t stats[5])
+void poldiff_avrule_get_stats_auditallow(const poldiff_t * diff, size_t stats[5])
 {
 	poldiff_avrule_get_stats(diff, stats, POLDIFF_AUDITALLOW_OFFSET);
 }
 
-char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule)
+char *poldiff_avrule_to_string(const poldiff_t * diff, const void *avrule)
 {
 	const poldiff_avrule_t *pa = (const poldiff_avrule_t *)avrule;
 	apol_policy_t *p;
@@ -260,7 +260,7 @@ static int poldiff_avrule_cmp(const void *x, const void *y, void *data __attribu
 	return b->branch - a->branch;
 }
 
-static apol_vector_t *poldiff_get_avrule_vector(poldiff_t * diff, unsigned int index)
+static const apol_vector_t *poldiff_get_avrule_vector(const poldiff_t * diff, unsigned int index)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
@@ -273,22 +273,22 @@ static apol_vector_t *poldiff_get_avrule_vector(poldiff_t * diff, unsigned int i
 	return diff->avrule_diffs[index]->diffs;
 }
 
-apol_vector_t *poldiff_get_avrule_vector_allow(poldiff_t * diff)
+const apol_vector_t *poldiff_get_avrule_vector_allow(const poldiff_t * diff)
 {
 	return poldiff_get_avrule_vector(diff, POLDIFF_ALLOW_OFFSET);
 }
 
-apol_vector_t *poldiff_get_avrule_vector_neverallow(poldiff_t * diff)
+const apol_vector_t *poldiff_get_avrule_vector_neverallow(const poldiff_t * diff)
 {
 	return poldiff_get_avrule_vector(diff, POLDIFF_NEVERALLOW_OFFSET);
 }
 
-apol_vector_t *poldiff_get_avrule_vector_dontaudit(poldiff_t * diff)
+const apol_vector_t *poldiff_get_avrule_vector_dontaudit(const poldiff_t * diff)
 {
 	return poldiff_get_avrule_vector(diff, POLDIFF_DONTAUDIT_OFFSET);
 }
 
-apol_vector_t *poldiff_get_avrule_vector_auditallow(poldiff_t * diff)
+const apol_vector_t *poldiff_get_avrule_vector_auditallow(const poldiff_t * diff)
 {
 	return poldiff_get_avrule_vector(diff, POLDIFF_AUDITALLOW_OFFSET);
 }
@@ -339,7 +339,7 @@ const char *poldiff_avrule_get_object_class(const poldiff_avrule_t * avrule)
 }
 
 void poldiff_avrule_get_cond(const poldiff_t * diff, const poldiff_avrule_t * avrule,
-			     qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p)
+			     const qpol_cond_t ** cond, uint32_t * which_list, const apol_policy_t ** p)
 {
 	if (diff == NULL || avrule == NULL || cond == NULL || p == NULL) {
 		errno = EINVAL;
@@ -358,7 +358,7 @@ void poldiff_avrule_get_cond(const poldiff_t * diff, const poldiff_avrule_t * av
 	}
 }
 
-apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule)
+const apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule)
 {
 	if (avrule == NULL) {
 		errno = EINVAL;
@@ -367,7 +367,7 @@ apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avru
 	return avrule->unmodified_perms;
 }
 
-apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule)
+const apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule)
 {
 	if (avrule == NULL) {
 		errno = EINVAL;
@@ -376,7 +376,7 @@ apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule)
 	return avrule->added_perms;
 }
 
-apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t * avrule)
+const apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t * avrule)
 {
 	if (avrule == NULL) {
 		errno = EINVAL;
@@ -407,7 +407,7 @@ const apol_vector_t *poldiff_avrule_get_mod_line_numbers(const poldiff_avrule_t 
  * Get the line numbers from an array of qpol_avrule_t that contain
  * the given permission.
  */
-static apol_vector_t *avrule_get_line_numbers_for_perm(poldiff_t * diff, const char *perm, qpol_policy_t * q,
+static apol_vector_t *avrule_get_line_numbers_for_perm(const poldiff_t * diff, const char *perm, const qpol_policy_t * q,
 						       qpol_avrule_t ** rules, const size_t num_rules)
 {
 	apol_vector_t *v = NULL;
@@ -460,7 +460,7 @@ static apol_vector_t *avrule_get_line_numbers_for_perm(poldiff_t * diff, const c
 	return v;
 }
 
-apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule, const char *perm)
+apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(const poldiff_t * diff, const poldiff_avrule_t * avrule, const char *perm)
 {
 	if (diff == NULL || avrule == NULL || perm == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -476,7 +476,7 @@ apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(poldiff_t * diff, c
 	return avrule_get_line_numbers_for_perm(diff, perm, diff->orig_qpol, avrule->orig_rules, avrule->num_orig_rules);
 }
 
-apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule, const char *perm)
+apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(const poldiff_t * diff, const poldiff_avrule_t * avrule, const char *perm)
 {
 	if (diff == NULL || avrule == NULL || perm == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -664,7 +664,7 @@ static int avrule_bst_comp(const void *x, const void *y, void *data __attribute_
  * @param cond Conditional expression to convert.
  * @param key Location to write converted expression.
  */
-static int avrule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * cond, pseudo_avrule_t * key)
+static int avrule_build_cond(poldiff_t * diff, const apol_policy_t * p, const qpol_cond_t * cond, pseudo_avrule_t * key)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_cond_expr_node_t *node;
@@ -672,7 +672,8 @@ static int avrule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * 
 	qpol_bool_t *bools[5], *qbool;
 	size_t i, j;
 	size_t num_bools = 0;
-	char *bool_name, *pseudo_bool, *t;
+	const char *bool_name;
+	char *pseudo_bool, *t;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1, error = 0, compval;
 	if (qpol_cond_get_expr_node_iter(q, cond, &iter) < 0) {
@@ -707,7 +708,7 @@ static int avrule_build_cond(poldiff_t * diff, apol_policy_t * p, qpol_cond_t * 
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_bst_get_element(diff->bool_bst, bool_name, NULL, (void **)&pseudo_bool) < 0) {
+		if (apol_bst_get_element(diff->bool_bst, (void*)bool_name, NULL, (void **)&pseudo_bool) < 0) {
 			error = EBADRQC;	/* should never get here */
 			ERR(diff, "%s", strerror(error));
 			assert(0);
@@ -796,15 +797,16 @@ static void sort_and_uniquify_perms(pseudo_avrule_t * key)
  *
  * @return 0 on success, < 0 on error.
  */
-static int avrule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
-			     qpol_avrule_t * rule, uint32_t source, uint32_t target, apol_bst_t * b)
+static int avrule_add_to_bst(poldiff_t * diff, const apol_policy_t * p,
+			     const qpol_avrule_t * rule, uint32_t source, uint32_t target, apol_bst_t * b)
 {
 	pseudo_avrule_t *key, *inserted_key;
-	qpol_class_t *obj_class;
+	const qpol_class_t *obj_class;
 	qpol_iterator_t *perm_iter = NULL;
-	char *class_name, *perm_name, *pseudo_perm, **t;
+	const char *class_name;
+	char *perm_name, *pseudo_perm, **t;
 	size_t num_perms;
-	qpol_cond_t *cond;
+	const qpol_cond_t *cond;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
 	int retval = -1, error = 0, compval;
 	if ((key = calloc(1, sizeof(*key))) == NULL) {
@@ -822,7 +824,7 @@ static int avrule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
 		error = errno;
 		goto cleanup;
 	}
-	if (apol_bst_get_element(diff->class_bst, class_name, NULL, (void **)&key->cls) < 0) {
+	if (apol_bst_get_element(diff->class_bst, (void*)class_name, NULL, (void **)&key->cls) < 0) {
 		error = EBADRQC;       /* should never get here */
 		ERR(diff, "%s", strerror(error));
 		assert(0);
@@ -874,7 +876,7 @@ static int avrule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
 
 	/* store the rule pointer, to be used for showing line numbers */
 	if (qpol_policy_has_capability(q, QPOL_CAP_LINE_NUMBERS)) {
-		qpol_avrule_t **a = realloc(inserted_key->rules,
+		const qpol_avrule_t **a = realloc(inserted_key->rules,
 					    (inserted_key->num_rules + 1) * sizeof(*a));
 		if (a == NULL) {
 			error = errno;
@@ -907,9 +909,9 @@ static int avrule_add_to_bst(poldiff_t * diff, apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int avrule_expand(poldiff_t * diff, apol_policy_t * p, qpol_avrule_t * rule, apol_bst_t * b)
+static int avrule_expand(poldiff_t * diff, const apol_policy_t * p, const qpol_avrule_t * rule, apol_bst_t * b)
 {
-	qpol_type_t *source, *orig_target, *target;
+	const qpol_type_t *source, *orig_target, *target;
 	unsigned char source_attr, target_attr;
 	qpol_iterator_t *source_iter = NULL, *target_iter = NULL;
 	uint32_t source_val, target_val;
@@ -923,7 +925,7 @@ static int avrule_expand(poldiff_t * diff, apol_policy_t * p, qpol_avrule_t * ru
 		goto cleanup;
 	}
 #ifdef SETOOLS_DEBUG
-	char *orig_source_name, *orig_target_name;
+	const char *orig_source_name, *orig_target_name;
 	qpol_type_get_name(q, source, &orig_source_name);
 	qpol_type_get_name(q, orig_target, &orig_target_name);
 #endif
@@ -971,7 +973,7 @@ static int avrule_expand(poldiff_t * diff, apol_policy_t * p, qpol_avrule_t * ru
 				qpol_iterator_next(target_iter);
 			}
 #ifdef SETOOLS_DEBUG
-			char *n1, *n2;
+			const char *n1, *n2;
 			qpol_type_get_name(q, source, &n1);
 			qpol_type_get_name(q, target, &n2);
 #endif
@@ -992,34 +994,34 @@ static int avrule_expand(poldiff_t * diff, apol_policy_t * p, qpol_avrule_t * ru
 	return retval;
 }
 
-apol_vector_t *avrule_get_allow(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *avrule_get_allow(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return avrule_get_items(diff, policy, QPOL_RULE_ALLOW);
 }
 
-apol_vector_t *avrule_get_neverallow(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *avrule_get_neverallow(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return avrule_get_items(diff, policy, QPOL_RULE_NEVERALLOW);
 }
 
-apol_vector_t *avrule_get_auditallow(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *avrule_get_auditallow(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return avrule_get_items(diff, policy, QPOL_RULE_AUDITALLOW);
 }
 
-apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return avrule_get_items(diff, policy, QPOL_RULE_DONTAUDIT);
 }
 
-apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy, const unsigned int flag)
+apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, const unsigned int flag)
 {
 	apol_vector_t *bools = NULL, *bool_states = NULL;
 	size_t i, num_rules, j;
 	apol_bst_t *b = NULL;
 	apol_vector_t *v = NULL;
 	qpol_iterator_t *iter = NULL;
-	qpol_avrule_t *rule;
+	const qpol_avrule_t *rule;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int retval = -1, error = 0;
 	if (poldiff_build_bsts(diff) < 0) {
@@ -1097,7 +1099,7 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, apol_policy_t * policy, const 
 	return v;
 }
 
-int avrule_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))
+int avrule_comp(const void *x, const void *y, const poldiff_t * diff __attribute__ ((unused)))
 {
 	const pseudo_avrule_t *r1 = (const pseudo_avrule_t *)x;
 	const pseudo_avrule_t *r2 = (const pseudo_avrule_t *)y;
@@ -1155,7 +1157,8 @@ static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 {
 	pseudo_avrule_t *rule = (pseudo_avrule_t *) item;
 	poldiff_avrule_t *pa = NULL;
-	apol_vector_t *v1, *v2, **target;
+	const apol_vector_t *v1, *v2;
+	apol_vector_t **target;
 	apol_policy_t *p;
 	size_t i;
 	int retval = -1, error = errno;
@@ -1223,15 +1226,16 @@ static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 
 	if (qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_LINE_NUMBERS)) {
 		/* calculate line numbers */
-		if ((v1 = apol_vector_create(NULL)) == NULL) {
+		apol_vector_t *vl = NULL;
+		if ((vl = apol_vector_create(NULL)) == NULL) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
 		if (form == POLDIFF_FORM_ADDED || form == POLDIFF_FORM_ADD_TYPE) {
-			pa->mod_linenos = v1;
+			pa->mod_linenos = vl;
 		} else {
-			pa->orig_linenos = v1;
+			pa->orig_linenos = vl;
 		}
 
 		/* copy rule pointers for delayed line number claculation */
@@ -1458,7 +1462,7 @@ int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y)
 
 int avrule_enable_line_numbers(poldiff_t * diff, unsigned int index)
 {
-	apol_vector_t *av = NULL;
+	const apol_vector_t *av = NULL;
 	poldiff_avrule_t *avrule = NULL;
 	size_t i, j;
 	qpol_iterator_t *iter = NULL;

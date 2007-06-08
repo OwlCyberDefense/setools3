@@ -1,3 +1,10 @@
+2007-06-08  J. Mowery  <jmowery@tresys.com>
+
+	* Fixed an error in libpoldiff where 
+	  poldiff_terule_get_modified_default() was returning the
+	  original default; it now correctly returns the modified
+	  default type.
+
 2007-06-08  M. Goldman <mgoldman@tresys.com>
 	
 	* updated sediffx diffs so that the subrules for avrules and
