@@ -43,7 +43,7 @@ const char *libpolsearch_symbol_get_name(const void *symbol, polsearch_symbol_e 
 		return NULL;
 	}
 	qpol_policy_t * qp = apol_policy_get_qpol(p);
-	char * name = NULL;
+	const char * name = NULL;
 	switch (sym_type)
 	{
 		case POLSEARCH_SYMBOL_TYPE:

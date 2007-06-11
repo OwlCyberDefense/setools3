@@ -225,7 +225,7 @@ void result_item_print_string_avrule(GtkTextBuffer * tb, GtkTextIter * iter, con
 void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
 {
 	GtkTextIter iter;
-	apol_vector_t *v;
+	const apol_vector_t *v;
 	size_t i;
 	void *elem;
 	char *s = NULL;
@@ -246,7 +246,7 @@ void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_fo
 void result_item_print_rule_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
 {
 	GtkTextIter iter;
-	apol_vector_t *v;
+	const apol_vector_t *v;
 	size_t i;
 	void *elem;
 	char *s = NULL;

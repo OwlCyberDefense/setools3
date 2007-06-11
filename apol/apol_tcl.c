@@ -48,7 +48,7 @@ char *message = NULL;
  * the previous one, overwrite the string if message level is less
  * than previous, else ignore the message.
  */
-static void apol_tcl_route_handle_to_string(void *arg, apol_policy_t * p
+static void apol_tcl_route_handle_to_string(void *arg, const apol_policy_t * p
 					    __attribute__ ((unused)), int level, const char *fmt, va_list ap)
 {
 	char *s, *t;

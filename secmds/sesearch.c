@@ -157,7 +157,7 @@ void usage(const char *program_name, int brief)
 	printf("policy, will be opened if no policy is provided.\n\n");
 }
 
-static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector_t ** v)
+static int perform_av_query(const apol_policy_t * policy, const options_t * opt, apol_vector_t ** v)
 {
 	apol_avrule_query_t *avq = NULL;
 	unsigned int rules = 0;
@@ -259,15 +259,15 @@ static int perform_av_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return -1;
 }
 
-static void print_syn_av_results(apol_policy_t * policy, options_t * opt, apol_vector_t * v)
+static void print_syn_av_results(const apol_policy_t * policy, const options_t * opt, const apol_vector_t * v)
 {
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	size_t i, num_rules = 0;
-	apol_vector_t *syn_list = NULL;
-	qpol_syn_avrule_t *rule = NULL;
+	const apol_vector_t *syn_list = NULL;
+	const qpol_syn_avrule_t *rule = NULL;
 	char *tmp = NULL, *rule_str = NULL, *expr = NULL;
 	char enable_char = ' ', branch_char = ' ';
-	qpol_cond_t *cond = NULL;
+	const qpol_cond_t *cond = NULL;
 	uint32_t enabled = 0, is_true = 0;
 	unsigned long lineno = 0;
 
@@ -320,15 +320,15 @@ static void print_syn_av_results(apol_policy_t * policy, options_t * opt, apol_v
 	free(expr);
 }
 
-static void print_av_results(apol_policy_t * policy, options_t * opt, apol_vector_t * v)
+static void print_av_results(const apol_policy_t * policy, const options_t * opt, const apol_vector_t * v)
 {
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	size_t i, num_rules = 0;
-	qpol_avrule_t *rule = NULL;
+	const qpol_avrule_t *rule = NULL;
 	char *tmp = NULL, *rule_str = NULL, *expr = NULL;
 	char enable_char = ' ', branch_char = ' ';
 	qpol_iterator_t *iter = NULL;
-	qpol_cond_t *cond = NULL;
+	const qpol_cond_t *cond = NULL;
 	uint32_t enabled = 0, list = 0;
 
 	if (!policy || !v)
@@ -341,7 +341,7 @@ static void print_av_results(apol_policy_t * policy, options_t * opt, apol_vecto
 
 	for (i = 0; i < num_rules; i++) {
 		enable_char = branch_char = ' ';
-		if (!(rule = (qpol_avrule_t *) apol_vector_get_element(v, i)))
+		if (!(rule = apol_vector_get_element(v, i)))
 			goto cleanup;
 		if (opt->show_cond) {
 			if (qpol_avrule_get_cond(q, rule, &cond))
@@ -377,7 +377,7 @@ static void print_av_results(apol_policy_t * policy, options_t * opt, apol_vecto
 	free(expr);
 }
 
-static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector_t ** v)
+static int perform_te_query(const apol_policy_t * policy, const options_t * opt, apol_vector_t ** v)
 {
 	apol_terule_query_t *teq = NULL;
 	unsigned int rules = 0;
@@ -454,15 +454,15 @@ static int perform_te_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return -1;
 }
 
-static void print_syn_te_results(apol_policy_t * policy, options_t * opt, apol_vector_t * v)
+static void print_syn_te_results(const apol_policy_t * policy, const options_t * opt, const apol_vector_t * v)
 {
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	size_t i, num_rules = 0;
-	apol_vector_t *syn_list = NULL;
-	qpol_syn_terule_t *rule = NULL;
+	const apol_vector_t *syn_list = NULL;
+	const qpol_syn_terule_t *rule = NULL;
 	char *tmp = NULL, *rule_str = NULL, *expr = NULL;
 	char enable_char = ' ', branch_char = ' ';
-	qpol_cond_t *cond = NULL;
+	const qpol_cond_t *cond = NULL;
 	uint32_t enabled = 0, is_true = 0;
 	unsigned long lineno = 0;
 
@@ -515,15 +515,15 @@ static void print_syn_te_results(apol_policy_t * policy, options_t * opt, apol_v
 	free(expr);
 }
 
-static void print_te_results(apol_policy_t * policy, options_t * opt, apol_vector_t * v)
+static void print_te_results(const apol_policy_t * policy, const options_t * opt, const apol_vector_t * v)
 {
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	size_t i, num_rules = 0;
-	qpol_terule_t *rule = NULL;
+	const qpol_terule_t *rule = NULL;
 	char *tmp = NULL, *rule_str = NULL, *expr = NULL;
 	char enable_char = ' ', branch_char = ' ';
 	qpol_iterator_t *iter = NULL;
-	qpol_cond_t *cond = NULL;
+	const qpol_cond_t *cond = NULL;
 	uint32_t enabled = 0, list = 0;
 
 	if (!policy || !v)
@@ -536,7 +536,7 @@ static void print_te_results(apol_policy_t * policy, options_t * opt, apol_vecto
 
 	for (i = 0; i < num_rules; i++) {
 		enable_char = branch_char = ' ';
-		if (!(rule = (qpol_terule_t *) apol_vector_get_element(v, i)))
+		if (!(rule = apol_vector_get_element(v, i)))
 			goto cleanup;
 		if (opt->show_cond) {
 			if (qpol_terule_get_cond(q, rule, &cond))
@@ -574,7 +574,7 @@ static void print_te_results(apol_policy_t * policy, options_t * opt, apol_vecto
 	free(expr);
 }
 
-static int perform_ra_query(apol_policy_t * policy, options_t * opt, apol_vector_t ** v)
+static int perform_ra_query(const apol_policy_t * policy, const options_t * opt, apol_vector_t ** v)
 {
 	apol_role_allow_query_t *raq = NULL;
 	int error = 0;
@@ -626,10 +626,10 @@ static int perform_ra_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return -1;
 }
 
-static void print_ra_results(apol_policy_t * policy, options_t * opt __attribute__ ((unused)), apol_vector_t * v)
+static void print_ra_results(const apol_policy_t * policy, const options_t * opt __attribute__ ((unused)), const apol_vector_t * v)
 {
 	size_t i, num_rules = 0;
-	qpol_role_allow_t *rule = NULL;
+	const qpol_role_allow_t *rule = NULL;
 	char *tmp = NULL;
 
 	if (!policy || !v)
@@ -641,7 +641,7 @@ static void print_ra_results(apol_policy_t * policy, options_t * opt __attribute
 	fprintf(stdout, "Found %zd role allow rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
-		if (!(rule = (qpol_role_allow_t *) apol_vector_get_element(v, i)))
+		if (!(rule = apol_vector_get_element(v, i)))
 			break;
 		if (!(tmp = apol_role_allow_render(policy, rule)))
 			break;
@@ -651,7 +651,7 @@ static void print_ra_results(apol_policy_t * policy, options_t * opt __attribute
 	}
 }
 
-static int perform_rt_query(apol_policy_t * policy, options_t * opt, apol_vector_t ** v)
+static int perform_rt_query(const apol_policy_t * policy, const options_t * opt, apol_vector_t ** v)
 {
 	apol_role_trans_query_t *rtq = NULL;
 	int error = 0;
@@ -704,10 +704,10 @@ static int perform_rt_query(apol_policy_t * policy, options_t * opt, apol_vector
 	return -1;
 }
 
-static void print_rt_results(apol_policy_t * policy, options_t * opt __attribute__ ((unused)), apol_vector_t * v)
+static void print_rt_results(const apol_policy_t * policy, const options_t * opt __attribute__ ((unused)), const apol_vector_t * v)
 {
 	size_t i, num_rules = 0;
-	qpol_role_trans_t *rule = NULL;
+	const qpol_role_trans_t *rule = NULL;
 	char *tmp = NULL;
 
 	if (!policy || !v)
@@ -719,7 +719,7 @@ static void print_rt_results(apol_policy_t * policy, options_t * opt __attribute
 	fprintf(stdout, "Found %zd role_transition rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
-		if (!(rule = (qpol_role_trans_t *) apol_vector_get_element(v, i)))
+		if (!(rule = apol_vector_get_element(v, i)))
 			break;
 		if (!(tmp = apol_role_trans_render(policy, rule)))
 			break;
@@ -729,7 +729,7 @@ static void print_rt_results(apol_policy_t * policy, options_t * opt __attribute
 	}
 }
 
-static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vector_t ** v)
+static int perform_range_query(const apol_policy_t * policy, const options_t * opt, apol_vector_t ** v)
 {
 	apol_range_trans_query_t *rtq = NULL;
 	int error = 0;
@@ -801,10 +801,10 @@ static int perform_range_query(apol_policy_t * policy, options_t * opt, apol_vec
 	return -1;
 }
 
-static void print_range_results(apol_policy_t * policy, options_t * opt __attribute__ ((unused)), apol_vector_t * v)
+static void print_range_results(const apol_policy_t * policy, const options_t * opt __attribute__ ((unused)), const apol_vector_t * v)
 {
 	size_t i, num_rules = 0;
-	qpol_range_trans_t *rule = NULL;
+	const qpol_range_trans_t *rule = NULL;
 	char *tmp = NULL;
 
 	if (!policy || !v)
@@ -816,7 +816,7 @@ static void print_range_results(apol_policy_t * policy, options_t * opt __attrib
 	fprintf(stdout, "Found %zd range_transition rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
-		if (!(rule = (qpol_range_trans_t *) apol_vector_get_element(v, i)))
+		if (!(rule = apol_vector_get_element(v, i)))
 			break;
 		if (!(tmp = apol_range_trans_render(policy, rule)))
 			break;
@@ -1062,14 +1062,14 @@ int main(int argc, char **argv)
 		apol_class_query_set_regex(policy, regex_match_query, 1);
 		apol_class_query_set_class(policy, regex_match_query, cmd_opts.class_name);
 		apol_class_get_by_query(policy, regex_match_query, &qpol_matching_classes);
-		qpol_class_t *class = NULL;
+		const qpol_class_t *class = NULL;
 		for (size_t i = 0; i < apol_vector_get_size(qpol_matching_classes); ++i) {
-			char *class_name;
+			const char *class_name;
 			class = apol_vector_get_element(qpol_matching_classes, i);
 			if (!class)
 				break;
 			qpol_class_get_name(apol_policy_get_qpol(policy), class, &class_name);
-			apol_vector_append(cmd_opts.class_vector, class_name);
+			apol_vector_append(cmd_opts.class_vector, (void*)class_name);
 		}
 		apol_vector_destroy(&qpol_matching_classes);
 		apol_class_query_destroy(&regex_match_query);

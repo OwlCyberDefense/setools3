@@ -185,14 +185,14 @@ void progress_update(progress_t * progress, char *fmt, ...)
 	va_end(ap);
 }
 
-void progress_poldiff_handle_func(void *arg, poldiff_t * diff __attribute__ ((unused)), int level
+void progress_poldiff_handle_func(void *arg, const poldiff_t * diff __attribute__ ((unused)), int level
 				  __attribute__ ((unused)), const char *fmt, va_list va_args)
 {
 	progress_t *progress = arg;
 	progress_update_label(progress, fmt, va_args);
 }
 
-void progress_apol_handle_func(void *varg, apol_policy_t * p __attribute__ ((unused)), int level
+void progress_apol_handle_func(void *varg, const apol_policy_t * p __attribute__ ((unused)), int level
 			       __attribute__ ((unused)), const char *fmt, va_list argp)
 {
 	progress_t *progress = varg;

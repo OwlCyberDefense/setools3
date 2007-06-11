@@ -102,8 +102,8 @@ static char *tcl_get_error(void)
 	}
 
 	static int avrule_sort(const void *a, const void *b, void *arg) {
-		qpol_avrule_t *r1 = (qpol_avrule_t *) a;
-		qpol_avrule_t *r2 = (qpol_avrule_t *) b;
+		const qpol_avrule_t *r1 = a;
+		const qpol_avrule_t *r2 = b;
 		apol_policy_t *p = arg;
 		qpol_policy_t *q = apol_policy_get_qpol(p);
 
@@ -122,8 +122,8 @@ static char *tcl_get_error(void)
 			return compval;
 		}
 
-		qpol_type_t *t1, *t2;
-		char *s1, *s2;
+		const qpol_type_t *t1, *t2;
+		const char *s1, *s2;
 		if (qpol_avrule_get_source_type(q, r1, &t1) < 0 ||
 		    qpol_avrule_get_source_type(q, r2, &t2) < 0) {
 			return 0;
@@ -148,7 +148,7 @@ static char *tcl_get_error(void)
 			return compval;
 		}
 
-		qpol_class_t *c1, *c2;
+		const qpol_class_t *c1, *c2;
 		if (qpol_avrule_get_object_class(q, r1, &c1) < 0 ||
 		    qpol_avrule_get_object_class(q, r2, &c2) < 0) {
 			return 0;
@@ -171,8 +171,8 @@ static char *tcl_get_error(void)
 	}
 
 	static int terule_sort(const void *a, const void *b, void *arg) {
-		qpol_terule_t *r1 = (qpol_terule_t *) a;
-		qpol_terule_t *r2 = (qpol_terule_t *) b;
+		const qpol_terule_t *r1 = a;
+		const qpol_terule_t *r2 = b;
 		apol_policy_t *p = arg;
 		qpol_policy_t *q = apol_policy_get_qpol(p);
 
@@ -191,8 +191,8 @@ static char *tcl_get_error(void)
 			return compval;
 		}
 
-		qpol_type_t *t1, *t2;
-		char *s1, *s2;
+		const qpol_type_t *t1, *t2;
+		const char *s1, *s2;
 		if (qpol_terule_get_source_type(q, r1, &t1) < 0 ||
 		    qpol_terule_get_source_type(q, r2, &t2) < 0) {
 			return 0;
@@ -217,7 +217,7 @@ static char *tcl_get_error(void)
 			return compval;
 		}
 
-		qpol_class_t *c1, *c2;
+		const qpol_class_t *c1, *c2;
 		if (qpol_terule_get_object_class(q, r1, &c1) < 0 ||
 		    qpol_terule_get_object_class(q, r2, &c2) < 0) {
 			return 0;

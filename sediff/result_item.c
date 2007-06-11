@@ -54,9 +54,9 @@ struct result_item
 	results_sort_e sorts[5];
 	results_sort_dir_e sort_dirs[5];
 	/* below are required functions to get poldiff results */
-	apol_vector_t *(*get_vector) (poldiff_t *);
+	const apol_vector_t *(*get_vector) (const poldiff_t *);
 	 poldiff_form_e(*get_form) (const void *);
-	char *(*get_string) (poldiff_t *, const void *);
+	char *(*get_string) (const poldiff_t *, const void *);
 	/* below is a virtual function table */
 	destructor_fn_t destructor;
 	/** if the result item does not care about the type of
@@ -413,9 +413,9 @@ static void result_item_user_print_modified(result_item_t * item, poldiff_user_t
 	g_string_printf(string, "* %s\n", poldiff_user_get_name(user));
 	result_item_print_string(tb, iter, string->str, 1);
 
-	apol_vector_t *added = poldiff_user_get_added_roles(user);
-	apol_vector_t *removed = poldiff_user_get_removed_roles(user);
-	apol_vector_t *unmodified = poldiff_user_get_unmodified_roles(user);
+	const apol_vector_t *added = poldiff_user_get_added_roles(user);
+	const apol_vector_t *removed = poldiff_user_get_removed_roles(user);
+	const apol_vector_t *unmodified = poldiff_user_get_unmodified_roles(user);
 	size_t i;
 	char *s;
 	if (apol_vector_get_size(added) > 0 || apol_vector_get_size(removed) > 0) {
@@ -480,7 +480,7 @@ static GtkTextBuffer *result_item_user_get_buffer(result_item_t * item, poldiff_
 		util_text_buffer_clear(single_buffer);
 		result_item_print_header(item, single_buffer, form);
 		GtkTextIter iter;
-		apol_vector_t *v;
+		const apol_vector_t *v;
 		size_t i;
 		poldiff_user_t *user;
 
@@ -625,7 +625,7 @@ static GtkTextBuffer *result_item_range_trans_get_buffer(result_item_t * item, p
 		util_text_buffer_clear(single_buffer);
 		result_item_print_header(item, single_buffer, form);
 		GtkTextIter iter;
-		apol_vector_t *v;
+		const apol_vector_t *v;
 		size_t i;
 		poldiff_range_trans_t *rt;
 
@@ -807,8 +807,8 @@ static int result_item_avrule_comp(const void *a, const void *b, void *data)
 	}
 	case RESULTS_SORT_COND:
 	{
-		qpol_cond_t *q1, *q2;
-		apol_policy_t *p1, *p2;
+		const qpol_cond_t *q1, *q2;
+		const apol_policy_t *p1, *p2;
 		uint32_t w1, w2;
 		poldiff_avrule_get_cond(opts->diff, a1, &q1, &w1, &p1);
 		poldiff_avrule_get_cond(opts->diff, a2, &q2, &w2, &p2);
@@ -830,7 +830,8 @@ static int result_item_avrule_comp(const void *a, const void *b, void *data)
 
 static apol_vector_t *result_item_avrule_sort(result_item_t * item, poldiff_form_e form)
 {
-	apol_vector_t *orig_v, *v;
+	const apol_vector_t *orig_v;
+	apol_vector_t *v;
 	size_t i;
 	void *elem;
 	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
@@ -961,8 +962,8 @@ static int result_item_terule_comp(const void *a, const void *b, void *data)
 	}
 	case RESULTS_SORT_COND:
 	{
-		qpol_cond_t *q1, *q2;
-		apol_policy_t *p1, *p2;
+		const qpol_cond_t *q1, *q2;
+		const apol_policy_t *p1, *p2;
 		uint32_t w1, w2;
 		poldiff_terule_get_cond(opts->diff, a1, &q1, &w1, &p1);
 		poldiff_terule_get_cond(opts->diff, a2, &q2, &w2, &p2);
@@ -984,7 +985,8 @@ static int result_item_terule_comp(const void *a, const void *b, void *data)
 
 static apol_vector_t *result_item_terule_sort(result_item_t * item, poldiff_form_e form)
 {
-	apol_vector_t *orig_v, *v;
+	const apol_vector_t *orig_v;
+	apol_vector_t *v;
 	size_t i;
 	void *elem;
 	struct sort_opts opts = { item->diff, item->sorts[form_reverse_map[form]], item->sort_dirs[form_reverse_map[form]] };
@@ -1301,7 +1303,7 @@ poldiff_t *result_item_get_diff(result_item_t * item)
 	return item->diff;
 }
 
-apol_vector_t *result_item_get_vector(result_item_t * item)
+const apol_vector_t *result_item_get_vector(result_item_t * item)
 {
 	return item->get_vector(item->diff);
 }

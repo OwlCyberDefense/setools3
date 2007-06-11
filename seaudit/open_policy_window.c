@@ -202,7 +202,7 @@ static void open_policy_on_base_browse_click(GtkButton * button __attribute__ ((
  */
 static int open_policy_load_module(struct open_policy *op, const char *path)
 {
-	char *module_name, *version_string;
+	const char *module_name, *version_string;
 	int module_type;
 	qpol_module_t *module = NULL;
 	GtkTreeIter iter;

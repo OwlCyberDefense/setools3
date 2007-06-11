@@ -192,7 +192,7 @@ void progress_seaudit_handle_func(void *arg, seaudit_log_t * log __attribute__ (
 	progress_update_label(progress, fmt, va_args);
 }
 
-void progress_apol_handle_func(void *varg, apol_policy_t * p __attribute__ ((unused)), int level
+void progress_apol_handle_func(void *varg, const apol_policy_t * p __attribute__ ((unused)), int level
 			       __attribute__ ((unused)), const char *fmt, va_list argp)
 {
 	progress_t *progress = varg;

@@ -471,16 +471,16 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 	if (policy != NULL) {
 		qpol_policy_t *qp = apol_policy_get_qpol(policy);
 		size_t i;
-		qpol_type_t *type;
-		qpol_class_t *obj_class;
-		char *s;
+		const qpol_type_t *type;
+		const qpol_class_t *obj_class;
+		const char *s;
 		GtkTreeIter iter;
 		apol_vector_t *v;
 		apol_type_get_by_query(policy, NULL, &v);
 		for (i = 0; i < apol_vector_get_size(v); i++) {
 			type = apol_vector_get_element(v, i);
 			qpol_type_get_name(qp, type, &s);
-			apol_vector_append(pv->type_list, s);
+			apol_vector_append(pv->type_list, (void*)s);
 		}
 		apol_vector_destroy(&v);
 		apol_vector_sort(pv->type_list, apol_str_strcmp, NULL);
@@ -492,7 +492,7 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 		for (i = 0; i < apol_vector_get_size(v); i++) {
 			obj_class = apol_vector_get_element(v, i);
 			qpol_class_get_name(qp, obj_class, &s);
-			apol_vector_append(pv->class_list, s);
+			apol_vector_append(pv->class_list, (void*)s);
 		}
 		apol_vector_destroy(&v);
 		apol_vector_sort(pv->class_list, apol_str_strcmp, NULL);

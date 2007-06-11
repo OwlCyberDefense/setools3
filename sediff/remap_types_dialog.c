@@ -497,10 +497,10 @@ static gboolean remap_types_types_filter_visible(GtkTreeModel * model, GtkTreeIt
  */
 static int remap_types_qpol_type_cmp(const void *a, const void *b, void *data)
 {
-	qpol_type_t *x = (qpol_type_t *) a;
-	qpol_type_t *y = (qpol_type_t *) b;
+	const qpol_type_t *x = a;
+	const qpol_type_t *y = b;
 	qpol_policy_t *q = (qpol_policy_t *) data;
-	char *s, *t;
+	const char *s, *t;
 	qpol_type_get_name(q, x, &s);
 	qpol_type_get_name(q, y, &t);
 	return strcmp(s, t);
@@ -513,8 +513,8 @@ int remap_types_update(apol_policy_t * orig_policy, apol_policy_t * mod_policy)
 	apol_vector_t *v = NULL;
 	sediffx_policy_e which;
 	size_t i;
-	qpol_type_t *t;
-	char *type_name;
+	const qpol_type_t *t;
+	const char *type_name;
 	GtkTreeIter iter;
 	int error = 0, retval = -1;
 

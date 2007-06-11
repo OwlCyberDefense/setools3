@@ -118,7 +118,7 @@ static void print_diff_string(const char *str, unsigned int indent_level)
 	}
 }
 
-static void print_rule_section(poldiff_t * diff, const poldiff_item_record_t * rec, apol_vector_t * v, poldiff_form_e form)
+static void print_rule_section(const poldiff_t * diff, const poldiff_item_record_t * rec, const apol_vector_t * v, poldiff_form_e form)
 {
 	int i;
 	char *str = NULL;
@@ -142,9 +142,10 @@ static void print_rule_section(poldiff_t * diff, const poldiff_item_record_t * r
 #define PRINT_MODIFIED  2
 #define PRINT_ALL 4
 
-static void print_rule_diffs(poldiff_t * diff, const poldiff_item_record_t * rec, int stats_only, const char *name, uint32_t flags,
+static void print_rule_diffs(const poldiff_t * diff, const poldiff_item_record_t * rec, int stats_only, const char *name, uint32_t flags,
 			     apol_vector_comp_func sort_by)
 {
+	const apol_vector_t *internal_v = NULL;
 	apol_vector_t *v = NULL;
 	size_t stats[5] = { 0, 0, 0, 0, 0 };
 
@@ -165,9 +166,14 @@ static void print_rule_diffs(poldiff_t * diff, const poldiff_item_record_t * rec
 
 	if (stats_only)
 		return;
-	if ((v = poldiff_get_results_fn(rec) (diff)) == NULL) {
+	if ((internal_v = poldiff_get_results_fn(rec) (diff)) == NULL) {
 		return;
 	}
+	if (!(v = apol_vector_create_from_vector(internal_v, NULL, NULL, NULL))) {
+		perror("Error printig results");
+		return;
+	}
+	
 	if (sort_by) {
 		apol_vector_sort(v, sort_by, NULL);
 	}
@@ -192,88 +198,89 @@ static void print_rule_diffs(poldiff_t * diff, const poldiff_item_record_t * rec
 		print_rule_section(diff, rec, v, POLDIFF_FORM_MODIFIED);
 	}
 	printf("\n");
+	apol_vector_destroy(&v);
 	return;
 }
 
-static void print_class_diffs(poldiff_t * diff, int stats_only)
+static void print_class_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_CLASSES), stats_only, "Classes", PRINT_MODIFIED, NULL);
 	return;
 }
 
-static void print_bool_diffs(poldiff_t * diff, int stats_only)
+static void print_bool_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_BOOLS), stats_only, "Booleans", PRINT_MODIFIED, NULL);
 	return;
 }
 
-static void print_common_diffs(poldiff_t * diff, int stats_only)
+static void print_common_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_COMMONS), stats_only, "Commons", PRINT_MODIFIED, NULL);
 	return;
 }
 
-static void print_level_diffs(poldiff_t * diff, int stats_only)
+static void print_level_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_LEVELS), stats_only, "Levels", PRINT_MODIFIED, NULL);
 	return;
 }
 
-static void print_cat_diffs(poldiff_t * diff, int stats_only)
+static void print_cat_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_CATS), stats_only, "Categories", PRINT_MODIFIED, NULL);
 	return;
 }
 
-static void print_role_diffs(poldiff_t * diff, int stats_only)
+static void print_role_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_ROLES), stats_only, "Roles", PRINT_MODIFIED, NULL);
 	return;
 }
 
-static void print_user_diffs(poldiff_t * diff, int stats_only)
+static void print_user_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_USERS), stats_only, "Users", PRINT_MODIFIED, NULL);
 	return;
 }
 
-static void print_avallow_diffs(poldiff_t * diff, int stats_only)
+static void print_avallow_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVALLOW), stats_only, "AV-Allow Rules", PRINT_ALL, NULL);
 }
 
-static void print_avneverallow_diffs(poldiff_t * diff, int stats_only)
+static void print_avneverallow_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVNEVERALLOW), stats_only, "AV-Never Allow Rules", PRINT_ALL,
 			 NULL);
 }
 
-static void print_avdontaudit_diffs(poldiff_t * diff, int stats_only)
+static void print_avdontaudit_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVDONTAUDIT), stats_only, "AV-Don't Audit Rules", PRINT_ALL,
 			 NULL);
 }
 
-static void print_avauditallow_diffs(poldiff_t * diff, int stats_only)
+static void print_avauditallow_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_AVAUDITALLOW), stats_only, "AV-Audit Allow Rules", PRINT_ALL,
 			 NULL);
 }
 
-static void print_role_allow_diffs(poldiff_t * diff, int stats_only)
+static void print_role_allow_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_ROLE_ALLOWS), stats_only, "Role Allow Rules", PRINT_MODIFIED,
 			 NULL);
 	return;
 }
 
-static void print_role_trans_diffs(poldiff_t * diff, int stats_only)
+static void print_role_trans_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_ROLE_TRANS), stats_only, "Role Transitions", PRINT_ALL, NULL);
 	return;
 }
 
-static void print_range_trans_diffs(poldiff_t * diff, int stats_only)
+static void print_range_trans_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_RANGE_TRANS), stats_only, "Range Transitions", PRINT_MODIFIED,
 			 NULL);
@@ -291,19 +298,19 @@ static int type_name_cmp(const void *a, const void *b, void *user_data __attribu
 	return strcmp(poldiff_type_get_name(ta), poldiff_type_get_name(tb));
 }
 
-static void print_type_diffs(poldiff_t * diff, int stats_only)
+static void print_type_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_TYPES), stats_only, "Types", PRINT_MODIFIED, type_name_cmp);
 	return;
 }
 
-static void print_attrib_diffs(poldiff_t * diff, int stats_only)
+static void print_attrib_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_item_record(POLDIFF_DIFF_ATTRIBS), stats_only, "Attributes", PRINT_MODIFIED, NULL);
 	return;
 }
 
-static size_t get_diff_total(poldiff_t * diff, uint32_t flags)
+static size_t get_diff_total(const poldiff_t * diff, uint32_t flags)
 {
 	size_t total = 0;
 	uint32_t i;
@@ -323,7 +330,7 @@ static size_t get_diff_total(poldiff_t * diff, uint32_t flags)
 	return total;
 }
 
-static void print_diff(poldiff_t * diff, uint32_t flags, int stats, int quiet)
+static void print_diff(const poldiff_t * diff, uint32_t flags, int stats, int quiet)
 {
 	if (flags & POLDIFF_DIFF_CLASSES && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_CLASSES))) {
 		print_class_diffs(diff, stats);
