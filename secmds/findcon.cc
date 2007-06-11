@@ -26,6 +26,7 @@
 
 #include <config.h>
 
+#include <sefs/db.hh>
 #include <sefs/fcfile.hh>
 #include <sefs/filesystem.hh>
 #include <sefs/entry.hh>
@@ -169,9 +170,12 @@ int main(int argc, char *argv[])
 		{
 			fclist = new sefs_filesystem(argv[optind], NULL, NULL);
 		}
+		else if (sefs_db::isDB(argv[optind]))
+		{
+			fclist = new sefs_db(argv[optind], NULL, NULL);
+		}
 		else
 		{
-			// FIX ME: autodetect a database
 			fclist = new sefs_fcfile(argv[optind], NULL, NULL);
 		}
 

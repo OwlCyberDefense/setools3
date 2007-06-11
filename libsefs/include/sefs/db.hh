@@ -126,6 +126,14 @@ class sefs_db:public sefs_fclist
 	 */
 	time_t getCTime() const;
 
+	/**
+	 * Determine if the given file is a valid sefs_db.  This
+	 * does not thoroughly load the file, rather just the header
+	 * of the file.
+	 * @param filename Name of file to check.
+	 * @return True if the file appears to be a database, false if not.
+	 */
+	static bool isDB(const char *filename);
       private:
 	struct sqlite3 *_db;
 	time_t _ctime;
@@ -166,6 +174,12 @@ extern "C"
  * @see sefs_db::getCTime()
  */
 	extern time_t sefs_db_get_ctime(sefs_db_t * db);
+
+/**
+ * Determine if the given file is a valid sefs_db.
+ * @see sefs_db::isDB()
+ */
+	extern bool sefs_db_is_db(const char *filename);
 
 #endif				       /* SWIG */
 

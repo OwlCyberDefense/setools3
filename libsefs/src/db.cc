@@ -29,6 +29,7 @@
 #include "sefs_internal.hh"
 
 #include <sefs/db.hh>
+#include <sefs/filesystem.hh>
 #include <sefs/entry.hh>
 
 #include "sqlite/sqlite3.h"
@@ -79,12 +80,58 @@
 			   mls_range varchar (64) \
 		       );"
 
+/******************** sqlite3 callback functions ********************/
+
+struct db_callback_arg
+{
+	struct sqlite3 *db;
+	char *errmsg;
+	const char *source_db, *target_db;
+};
+
+static int db_copy_schema(void *arg, int argc __attribute__ ((unused)), char *argv[], char *column_names[] __attribute__ ((unused)))
+{
+	// argv[0] contains a SQL statement that, if executed against a
+	// db, will create a table
+	struct db_callback_arg *db = static_cast < struct db_callback_arg *>(arg);
+	if (sqlite3_exec(db->db, argv[0], NULL, NULL, &(db->errmsg)) != SQLITE_OK)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+static int db_copy_table(void *arg, int argc __attribute__ ((unused)), char *argv[], char *column_names[] __attribute__ ((unused)))
+{
+	// argv[0] contains the name of a table
+	struct db_callback_arg *db = static_cast < struct db_callback_arg *>(arg);
+	char *insert = NULL;
+	if (asprintf(&insert, "INSERT INTO %s%s SELECT * FROM %s%s", db->target_db, argv[0], db->source_db, argv[0]) < 0)
+	{
+		db->errmsg = strdup(strerror(errno));
+		return -1;
+	}
+	int rc = sqlite3_exec(db->db, insert, NULL, NULL, &(db->errmsg));
+	free(insert);
+	if (rc != SQLITE_OK)
+	{
+		return -1;
+	}
+	return 0;
+}
+
 /******************** public functions below ********************/
 
-sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *varg) throw(std::invalid_argument,
-											  std::
-											  runtime_error):sefs_fclist
-	(SEFS_FCLIST_TYPE_DB, msg_callback, varg)
+static int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), const sefs_entry * entry, void *arg)
+{
+	struct sqlite3 *db = static_cast < struct sqlite3 *>(arg);
+	// FIX ME: for each entry, add its information into DB
+	return 0;
+}
+
+sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *varg)throw(std::invalid_argument, std::runtime_error):sefs_fclist
+	(SEFS_FCLIST_TYPE_DB, msg_callback,
+	 varg)
 {
 	if (fs == NULL)
 	{
@@ -93,24 +140,50 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 		throw std::invalid_argument(strerror(EINVAL));
 	}
 
-	// FIX ME:
-	// create a memory DB
-	// foreach entries in fs
-	//   insert into DB
-	// record time and determine MLS
+	char *errmsg = NULL;
+	try
+	{
+		if (sqlite3_open(":memory:", &_db) != SQLITE_OK)
+		{
+			SEFS_ERR("%s", sqlite3_errmsg(_db));
+			throw std::runtime_error(sqlite3_errmsg(_db));
+		}
+		int rc;
+		if (fs->isMLS())
+		{
+			rc = sqlite3_exec(_db, DB_SCHEMA_MLS, NULL, 0, &errmsg);
+		}
+		else
+		{
+			rc = sqlite3_exec(_db, DB_SCHEMA_NONMLS, NULL, 0, &errmsg);
+		}
+		if (rc != SQLITE_OK)
+		{
+			SEFS_ERR("%s", errmsg);
+			throw std::runtime_error(errmsg);
+		}
+		if (fs->runQueryMap(NULL, db_create_from_filesystem, _db) < 0)
+		{
+			throw std::runtime_error(sqlite3_errmsg(_db));
+		}
+	}
+	catch(...)
+	{
+		if (errmsg != NULL)
+		{
+			sqlite3_free(errmsg);
+		}
+		sqlite3_close(_db);
+		throw;
+	}
+	// FIX ME: record time
 	_ctime = time(NULL);
 }
 
-static int db_count_callback(void *arg, int argc __attribute__ ((unused)), char **argv, char **column_names
-			     __attribute__ ((unused)))
-{
-	int *count = static_cast < int *>(arg);
-	*count = atoi(argv[0]);
-	return 0;
-}
-
-sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *varg)throw(std::invalid_argument, std::runtime_error):sefs_fclist(SEFS_FCLIST_TYPE_DB, msg_callback,
-	    varg)
+sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *varg) throw(std::invalid_argument,
+											  std::
+											  runtime_error):sefs_fclist
+	(SEFS_FCLIST_TYPE_DB, msg_callback, varg)
 {
 	if (filename == NULL)
 	{
@@ -119,34 +192,23 @@ sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *va
 		throw std::invalid_argument(strerror(EINVAL));
 	}
 
-	_db = NULL;
-	int rc = access(filename, R_OK);
-	if (rc != 0)
+	if (!sefs_db::isDB(filename))
 	{
 		SEFS_ERR("%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
-	rc = sqlite3_open(filename, &_db);
-	if (rc)
+
+	if (sqlite3_open(filename, &_db) != SQLITE_OK)
 	{
 		SEFS_ERR("%s", sqlite3_errmsg(_db));
 		sqlite3_close(_db);
 		throw std::runtime_error(strerror(errno));
 	}
-	char *errmsg = NULL;
-	/* A limitation of sqlite is that is does not check whether
-	 * the file is a valid sqlite database.  Run a simple query to
-	 * check that the database is legal. */
-	int list_size;
-	rc = sqlite3_exec(_db, "SELECT type_name from types", db_count_callback, &list_size, &errmsg);
-	if (rc == SQLITE_NOTADB)
-	{
-		SEFS_ERR("%s", errmsg);
-		sqlite3_close(_db);
-		sqlite3_free(errmsg);
-		errno = EIO;
-		throw std::runtime_error(strerror(EIO));
-	}
+
+	// FIX ME: if db does not have a roles table, then
+	//   create table roles (role_id, role_name) ...
+	//   ALTER TABLE inodes ADD COLUMN (role int DEFAULT 0)
+
 	// FIX ME: get ctime from db
 }
 
@@ -194,8 +256,11 @@ bool sefs_db::isMLS() const
 void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runtime_error)
 {
 	FILE *fp = NULL;
-	struct sqlite3 *diskdb = NULL;
-	char *errmsg = NULL;
+	struct db_callback_arg diskdb;
+	diskdb.db = NULL;
+	diskdb.errmsg = NULL;
+	bool in_transaction = false;
+
 	try
 	{
 		if (filename == NULL)
@@ -203,6 +268,8 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 			errno = EINVAL;
 			throw std::invalid_argument(strerror(errno));
 		}
+		// check that target file is creatable; this will also
+		// remove the file if it already exists
 		if ((fp = fopen(filename, "w")) == NULL)
 		{
 			SEFS_ERR("%s", strerror(errno));
@@ -211,43 +278,82 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 		fclose(fp);
 		fp = NULL;
 
-		int rc = sqlite3_open(filename, &diskdb);
-		if (rc)
+		// copy database schema from in-memory db to the one on disk
+		if (sqlite3_open(filename, &(diskdb.db)) != SQLITE_OK)
 		{
-			SEFS_ERR("%s", sqlite3_errmsg(diskdb));
-			throw std::runtime_error(sqlite3_errmsg(diskdb));
+			SEFS_ERR("%s", sqlite3_errmsg(diskdb.db));
+			throw std::runtime_error(sqlite3_errmsg(diskdb.db));
 		}
-
-		// apply schema to it, based upon if it should have MLS or not
-		// a MLS range associated with them
-		if (isMLS())
+		if (sqlite3_exec(_db, "SELECT sql FROM sqlite_master WHERE sql NOT NULL", db_copy_schema, &diskdb, &diskdb.errmsg)
+		    != SQLITE_OK)
 		{
-			rc = sqlite3_exec(diskdb, DB_SCHEMA_MLS, NULL, 0, &errmsg);
+			SEFS_ERR("%s", diskdb.errmsg);
+			throw std::runtime_error(diskdb.errmsg);
 		}
-		else
-		{
-			rc = sqlite3_exec(diskdb, DB_SCHEMA_NONMLS, NULL, 0, &errmsg);
-		}
-		if (rc != SQLITE_OK)
-		{
-			SEFS_ERR("%s", errmsg);
-			throw std::runtime_error(errmsg);
-		}
+		sqlite3_close(diskdb.db);
 
 		// copy contents from in-memory db to the one on disk
-		rc = sqlite3_exec(diskdb, "BEGIN TRANSACTION", NULL, 0, &errmsg);
+		if (sqlite3_exec(_db, "BEGIN TRANSACTION", NULL, NULL, &(diskdb.errmsg)) != SQLITE_OK)
+		{
+			SEFS_ERR("%s", diskdb.errmsg);
+			throw std::runtime_error(diskdb.errmsg);
+		}
+		in_transaction = true;
+		char *attach = NULL;
+		if (asprintf(&attach, "ATTACH '%s' AS diskdb", filename) < 0)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+		diskdb.source_db = "";
+		diskdb.target_db = "diskdb.";
+		int rc = sqlite3_exec(_db, attach, NULL, NULL, &diskdb.errmsg);
+		free(attach);
 		if (rc != SQLITE_OK)
 		{
-			SEFS_ERR("%s", errmsg);
-			throw std::runtime_error(errmsg);
+			SEFS_ERR("%s", diskdb.errmsg);
+			throw std::runtime_error(diskdb.errmsg);
+		}
+		if (sqlite3_exec(_db, "SELECT name FROM sqlite_master WHERE type ='table'", db_copy_table, &diskdb, &diskdb.errmsg)
+		    != SQLITE_OK)
+		{
+			SEFS_ERR("%s", diskdb.errmsg);
+			throw std::runtime_error(diskdb.errmsg);
 		}
 
-		rc = sqlite3_exec(diskdb, "END TRANSACTION", NULL, 0, &errmsg);
+		// store metadata about the database
+		const char *dbversion = "1";
+		char hostname[64];
+		gethostname(hostname, sizeof(hostname));
+		hostname[63] = '\0';
+		char datetime[32];
+		ctime_r(&_ctime, datetime);
+
+		char *info_insert = NULL;
+		if (asprintf(&info_insert,
+			     "INSERT INTO diskdb.info (key,value) values ('dbversion','%s');"
+			     "INSERT INTO diskdb.info (key,value) values ('hostname','%s');"
+			     "INSERT INTO diskdb.info (key,value) values ('datetime','%s');", dbversion, hostname, datetime) < 0)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+		rc = sqlite3_exec(_db, info_insert, NULL, NULL, &(diskdb.errmsg));
+		free(info_insert);
 		if (rc != SQLITE_OK)
 		{
-			SEFS_ERR("%s", errmsg);
-			throw std::runtime_error(errmsg);
+			SEFS_ERR("%s", diskdb.errmsg);
+			throw std::runtime_error(diskdb.errmsg);
 		}
+
+		sqlite3_exec(_db, "DETACH diskdb", NULL, NULL, NULL);
+
+		if (sqlite3_exec(_db, "END TRANSACTION", NULL, 0, &(diskdb.errmsg)) != SQLITE_OK)
+		{
+			SEFS_ERR("%s", diskdb.errmsg);
+			throw std::runtime_error(diskdb.errmsg);
+		}
+		in_transaction = false;
 	}
 	catch(...)
 	{
@@ -255,20 +361,70 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 		{
 			fclose(fp);
 		}
-		if (diskdb != NULL)
+		if (in_transaction)
 		{
-			sqlite3_close(diskdb);
+			sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
 		}
-		sqlite3_free(errmsg);
+		if (diskdb.db != NULL)
+		{
+			sqlite3_close(diskdb.db);
+		}
+		sqlite3_free(diskdb.errmsg);
 		throw;
 	}
-	sqlite3_close(diskdb);
-	sqlite3_free(errmsg);
+	sqlite3_close(diskdb.db);
+	sqlite3_free(diskdb.errmsg);
 }
 
 time_t sefs_db::getCTime() const
 {
 	return _ctime;
+}
+
+static int db_count_callback(void *arg, int argc __attribute__ ((unused)), char **argv, char **column_names
+			     __attribute__ ((unused)))
+{
+	int *count = static_cast < int *>(arg);
+	*count = atoi(argv[0]);
+	return 0;
+}
+
+bool sefs_db::isDB(const char *filename)
+{
+	if (filename == NULL)
+	{
+		errno = EINVAL;
+		return false;
+	}
+
+	int rc = access(filename, R_OK);
+	if (rc != 0)
+	{
+		return false;
+	}
+
+	struct sqlite3 *db = NULL;
+	rc = sqlite3_open(filename, &db);
+	if (rc != SQLITE_OK)
+	{
+		sqlite3_close(db);
+		errno = EIO;
+		return false;
+	}
+
+	// Run a simple query to check that the database is legal.
+	int list_size;
+	char *errmsg = NULL;
+	rc = sqlite3_exec(db, "SELECT type_name from types", db_count_callback, &list_size, &errmsg);
+	if (rc != SQLITE_OK)
+	{
+		sqlite3_close(db);
+		sqlite3_free(errmsg);
+		errno = EIO;
+		return false;
+	}
+	sqlite3_close(db);
+	return true;
 }
 
 /******************** C functions below ********************/
@@ -327,6 +483,11 @@ time_t sefs_db_get_ctime(sefs_db_t * db)
 		return static_cast < time_t > (-1);
 	}
 	return db->getCTime();
+}
+
+bool sefs_db_is_db(const char *filename)
+{
+	return sefs_db::isDB(filename);
 }
 
 #if 0
