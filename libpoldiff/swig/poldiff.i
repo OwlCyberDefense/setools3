@@ -365,8 +365,17 @@ typedef struct poldiff {} poldiff_t;
 	const apol_vector_t *get_attrib_vector() {
 		return poldiff_get_attrib_vector(self);
 	};
-	const apol_vector_t *get_avrule_vector() {
-		return poldiff_get_avrule_vector(self);
+	const apol_vector_t *get_avrule_vector_allow() {
+		return poldiff_get_avrule_vector_allow(self);
+	};
+	const apol_vector_t *get_avrule_vector_neverallow() {
+		return poldiff_get_avrule_vector_neverallow(self);
+	};
+	const apol_vector_t *get_avrule_vector_dontaudit() {
+		return poldiff_get_avrule_vector_dontaudit(self);
+	};
+	const apol_vector_t *get_avrule_vector_auditallow() {
+		return poldiff_get_avrule_vector_auditallow(self);
 	};
 	const apol_vector_t *get_bool_vector() {
 		return poldiff_get_bool_vector(self);
@@ -395,8 +404,14 @@ typedef struct poldiff {} poldiff_t;
 	const apol_vector_t *get_role_vector() {
 		return poldiff_get_role_vector(self);
 	};
-	const apol_vector_t *get_terule_vector() {
-		return poldiff_get_terule_vector(self);
+	const apol_vector_t *get_terule_vector_change() {
+		return poldiff_get_terule_vector_change(self);
+	};
+	const apol_vector_t *get_terule_vector_member() {
+		return poldiff_get_terule_vector_member(self);
+	};
+	const apol_vector_t *get_terule_vector_trans() {
+		return poldiff_get_terule_vector_trans(self);
 	};
 	const apol_vector_t *get_type_vector() {
 		return poldiff_get_type_vector(self);
