@@ -373,7 +373,7 @@ apol_vector_t *user_get_items(poldiff_t * diff, const apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort(v, user_name_comp, (void*)policy);
+	apol_vector_sort(v, user_name_comp, (void *)policy);
 	return v;
 }
 
@@ -452,7 +452,7 @@ static apol_vector_t *user_get_roles(const poldiff_t * diff, const apol_policy_t
 			error = errno;
 			goto cleanup;
 		}
-		if ((role_name2 = strdup(role_name)) == NULL || apol_vector_append(v, (void*)role_name2) < 0) {
+		if ((role_name2 = strdup(role_name)) == NULL || apol_vector_append(v, (void *)role_name2) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			free(role_name2);

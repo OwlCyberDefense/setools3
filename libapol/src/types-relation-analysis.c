@@ -89,7 +89,8 @@ struct apol_types_relation_access
  * @return 0 on success, < 0 on error.
  */
 static int apol_types_relation_common_attribs(const apol_policy_t * p,
-					      const qpol_type_t * typeA, const qpol_type_t * typeB, apol_types_relation_result_t * r)
+					      const qpol_type_t * typeA, const qpol_type_t * typeB,
+					      apol_types_relation_result_t * r)
 {
 	qpol_iterator_t *iA = NULL, *iB = NULL;
 	apol_vector_t *vA = NULL, *vB = NULL;
@@ -322,7 +323,7 @@ static int apol_types_relation_access_append_rule(const apol_policy_t * p, const
 			}
 			a->type = t;
 		}
-		if (apol_vector_append(a->rules, (void*)r) < 0) {
+		if (apol_vector_append(a->rules, (void *)r) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -403,7 +404,8 @@ static int apol_types_relation_create_access_pools(const apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_access_append(const apol_policy_t * p, const apol_types_relation_access_t * a, apol_vector_t * access)
+static int apol_types_relation_access_append(const apol_policy_t * p, const apol_types_relation_access_t * a,
+					     apol_vector_t * access)
 {
 	apol_types_relation_access_t *new_a;
 	int retval = -1;
@@ -440,7 +442,8 @@ static int apol_types_relation_access_append(const apol_policy_t * p, const apol
  */
 static int apol_types_relation_accesses(const apol_policy_t * p,
 					const qpol_type_t * typeA,
-					const qpol_type_t * typeB, int do_similar, int do_dissimilar, apol_types_relation_result_t * r)
+					const qpol_type_t * typeB, int do_similar, int do_dissimilar,
+					apol_types_relation_result_t * r)
 {
 	apol_vector_t *accessesA = NULL, *accessesB = NULL;
 	apol_types_relation_access_t *a, *b;
@@ -535,7 +538,8 @@ static int apol_types_relation_accesses(const apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_allows(const apol_policy_t * p, const qpol_type_t * typeA, const qpol_type_t * typeB, apol_types_relation_result_t * r)
+static int apol_types_relation_allows(const apol_policy_t * p, const qpol_type_t * typeA, const qpol_type_t * typeB,
+				      apol_types_relation_result_t * r)
 {
 	const char *nameA, *nameB;
 	apol_avrule_query_t *aq = NULL;
@@ -582,7 +586,8 @@ static int apol_types_relation_allows(const apol_policy_t * p, const qpol_type_t
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_types(const apol_policy_t * p, const qpol_type_t * typeA, const qpol_type_t * typeB, apol_types_relation_result_t * r)
+static int apol_types_relation_types(const apol_policy_t * p, const qpol_type_t * typeA, const qpol_type_t * typeB,
+				     apol_types_relation_result_t * r)
 {
 	const char *nameA, *nameB;
 	apol_terule_query_t *tq = NULL;
@@ -613,7 +618,7 @@ static int apol_types_relation_types(const apol_policy_t * p, const qpol_type_t 
 		}
 		if ((apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0 ||
 		     apol_vector_get_index(candidate_types, default_type, NULL, NULL, &j) == 0) &&
-		    apol_vector_append(r->types, (void*)rule) < 0) {
+		    apol_vector_append(r->types, (void *)rule) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -634,7 +639,7 @@ static int apol_types_relation_types(const apol_policy_t * p, const qpol_type_t 
 		}
 		if ((apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0 ||
 		     apol_vector_get_index(candidate_types, default_type, NULL, NULL, &j) == 0) &&
-		    apol_vector_append(r->types, (void*)rule) < 0) {
+		    apol_vector_append(r->types, (void *)rule) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -660,7 +665,8 @@ static int apol_types_relation_types(const apol_policy_t * p, const qpol_type_t 
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_clone_infoflow(const apol_policy_t * p, const apol_vector_t * v, const char *target_name, apol_vector_t * results)
+static int apol_types_relation_clone_infoflow(const apol_policy_t * p, const apol_vector_t * v, const char *target_name,
+					      apol_vector_t * results)
 {
 	apol_vector_t *candidate_types = NULL;
 	const qpol_type_t *target;
@@ -816,7 +822,8 @@ static int apol_types_relation_transflow(const apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_clone_domaintrans(const apol_policy_t * p, const apol_vector_t * v, const char *target_name, apol_vector_t * results)
+static int apol_types_relation_clone_domaintrans(const apol_policy_t * p, const apol_vector_t * v, const char *target_name,
+						 apol_vector_t * results)
 {
 	apol_vector_t *candidate_types = NULL;
 	const qpol_type_t *target;

@@ -588,7 +588,7 @@ apol_vector_t *apol_terule_to_syn_terules(const apol_policy_t * p, const qpol_te
 			goto cleanup;
 		}
 	}
-	apol_vector_sort_uniquify(v, apol_syn_terule_comp, (void*)p);
+	apol_vector_sort_uniquify(v, apol_syn_terule_comp, (void *)p);
 	retval = 0;
       cleanup:
 	qpol_iterator_destroy(&iter);
@@ -627,7 +627,7 @@ apol_vector_t *apol_terule_list_to_syn_terules(const apol_policy_t * p, const ap
 				ERR(p, "%s", strerror(error));
 				goto cleanup;
 			}
-			if (apol_bst_insert(b, syn_terule, (void*)p) < 0) {
+			if (apol_bst_insert(b, syn_terule, (void *)p) < 0) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto cleanup;

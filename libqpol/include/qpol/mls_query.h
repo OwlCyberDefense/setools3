@@ -211,7 +211,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *level will be NULL.
  */
-	extern int qpol_mls_range_get_low_level(const qpol_policy_t * policy, const qpol_mls_range_t * range, const qpol_mls_level_t ** level);
+	extern int qpol_mls_range_get_low_level(const qpol_policy_t * policy, const qpol_mls_range_t * range,
+						const qpol_mls_level_t ** level);
 
 /**
  *  Get the high level from a MLS range.
@@ -222,7 +223,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *level will be NULL.
  */
-	extern int qpol_mls_range_get_high_level(const qpol_policy_t * policy, const qpol_mls_range_t * range, const qpol_mls_level_t ** level);
+	extern int qpol_mls_range_get_high_level(const qpol_policy_t * policy, const qpol_mls_range_t * range,
+						 const qpol_mls_level_t ** level);
 
 /* mls_level */
 /**
@@ -248,7 +250,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *cats will be NULL.
  */
-	extern int qpol_mls_level_get_cat_iter(const qpol_policy_t * policy, const qpol_mls_level_t * level, qpol_iterator_t ** cats);
+	extern int qpol_mls_level_get_cat_iter(const qpol_policy_t * policy, const qpol_mls_level_t * level,
+					       qpol_iterator_t ** cats);
 
 #ifdef	__cplusplus
 }

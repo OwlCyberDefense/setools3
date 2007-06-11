@@ -82,7 +82,7 @@ int apol_type_get_by_query(const apol_policy_t * p, apol_type_query_t * t, apol_
 				continue;
 			}
 		}
-		if (apol_vector_append(*v, (void*)type)) {
+		if (apol_vector_append(*v, (void *)type)) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}

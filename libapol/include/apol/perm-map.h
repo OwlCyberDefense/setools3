@@ -98,7 +98,8 @@ extern "C"
  * @return 0 if class and permission were found, < 0 on error or if
  * not found.
  */
-	extern int apol_policy_get_permmap(const apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight);
+	extern int apol_policy_get_permmap(const apol_policy_t * p, const char *class_name, const char *perm_name, int *map,
+					   int *weight);
 
 /**
  * @deprecated Use apol_policy_get_permmap().

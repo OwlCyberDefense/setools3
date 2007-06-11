@@ -121,7 +121,8 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_avrule_query_set_source(const apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect);
+	extern int apol_avrule_query_set_source(const apol_policy_t * p, apol_avrule_query_t * a, const char *symbol,
+						int is_indirect);
 
 /**
  * Set an avrule query to return rules whose source symbol is matched as a type
@@ -155,7 +156,8 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_avrule_query_set_target(const apol_policy_t * p, apol_avrule_query_t * a, const char *symbol, int is_indirect);
+	extern int apol_avrule_query_set_target(const apol_policy_t * p, apol_avrule_query_t * a, const char *symbol,
+						int is_indirect);
 
 /**
  * Set an avrule query to return rules whose target symbol is matched as a type
@@ -315,7 +317,8 @@ extern "C"
  * @return A newly allocated vector of syn_avrule_t pointers.  The
  * caller is responsible for calling apol_vector_destroy() afterwards.
  */
-	extern apol_vector_t *apol_avrule_to_syn_avrules(const apol_policy_t * p, const qpol_avrule_t * rule, const apol_vector_t * perms);
+	extern apol_vector_t *apol_avrule_to_syn_avrules(const apol_policy_t * p, const qpol_avrule_t * rule,
+							 const apol_vector_t * perms);
 
 /**
  * Given a vector of avrules (qpol_avrule_t pointers), return a newly
@@ -336,7 +339,8 @@ extern "C"
  * @return A newly allocated vector of syn_avrule_t pointers.  The
  * caller is responsible for calling apol_vector_destroy() afterwards.
  */
-	extern apol_vector_t *apol_avrule_list_to_syn_avrules(const apol_policy_t * p, const apol_vector_t * rules, const apol_vector_t * perms);
+	extern apol_vector_t *apol_avrule_list_to_syn_avrules(const apol_policy_t * p, const apol_vector_t * rules,
+							      const apol_vector_t * perms);
 
 /**
  *  Render an avrule to a string.

@@ -128,7 +128,8 @@ int apol_compare_iter(const apol_policy_t * p, qpol_iterator_t * iter,
 	return 0;
 }
 
-int apol_compare_type(const apol_policy_t * p, const qpol_type_t * type, const char *name, unsigned int flags, regex_t ** type_regex)
+int apol_compare_type(const apol_policy_t * p, const qpol_type_t * type, const char *name, unsigned int flags,
+		      regex_t ** type_regex)
 {
 	const char *type_name;
 	int compval;
@@ -150,7 +151,8 @@ int apol_compare_type(const apol_policy_t * p, const qpol_type_t * type, const c
 	return compval;
 }
 
-int apol_compare_cond_expr(const apol_policy_t * p, const qpol_cond_t * cond, const char *name, unsigned int flags, regex_t ** bool_regex)
+int apol_compare_cond_expr(const apol_policy_t * p, const qpol_cond_t * cond, const char *name, unsigned int flags,
+			   regex_t ** bool_regex)
 {
 	qpol_iterator_t *expr_iter = NULL;
 	int compval = -1;
@@ -183,7 +185,8 @@ int apol_compare_cond_expr(const apol_policy_t * p, const qpol_cond_t * cond, co
 	return compval;
 }
 
-int apol_compare_level(const apol_policy_t * p, const qpol_level_t * level, const char *name, unsigned int flags, regex_t ** level_regex)
+int apol_compare_level(const apol_policy_t * p, const qpol_level_t * level, const char *name, unsigned int flags,
+		       regex_t ** level_regex)
 {
 	const char *level_name;
 	int compval;
@@ -283,7 +286,7 @@ static int apol_query_append_type(const apol_policy_t * p, apol_vector_t * v, co
 			return -1;
 		}
 	}
-	if (apol_vector_append(v, (void*)real_type) < 0) {
+	if (apol_vector_append(v, (void *)real_type) < 0) {
 		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
@@ -589,7 +592,7 @@ apol_vector_t *apol_query_create_candidate_role_list(const apol_policy_t * p, ch
 	}
 
 	if (!do_regex && qpol_policy_get_role_by_name(p->p, symbol, &role) == 0) {
-		if (apol_vector_append(list, (void*)role) < 0) {
+		if (apol_vector_append(list, (void *)role) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -609,7 +612,7 @@ apol_vector_t *apol_query_create_candidate_role_list(const apol_policy_t * p, ch
 			if (compval < 0) {
 				goto cleanup;
 			}
-			if (compval && apol_vector_append(list, (void*)role)) {
+			if (compval && apol_vector_append(list, (void *)role)) {
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -646,7 +649,7 @@ apol_vector_t *apol_query_create_candidate_class_list(const apol_policy_t * p, a
 		char *class_string = (char *)apol_vector_get_element(classes, i);
 		const qpol_class_t *class;
 		if (qpol_policy_get_class_by_name(p->p, class_string, &class) == 0) {
-			if (apol_vector_append(list, (void*)class) < 0) {
+			if (apol_vector_append(list, (void *)class) < 0) {
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -677,7 +680,7 @@ apol_vector_t *apol_query_expand_type(const apol_policy_t * p, const qpol_type_t
 		goto cleanup;
 	}
 	if (!isattr) {
-		if (apol_vector_append(v, (void*)t) < 0) {
+		if (apol_vector_append(v, (void *)t) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}

@@ -279,7 +279,7 @@ int apol_netifcon_get_by_query(const apol_policy_t * p, const apol_netifcon_quer
 				continue;
 			}
 		}
-		if (apol_vector_append(*v, (void*)netifcon)) {
+		if (apol_vector_append(*v, (void *)netifcon)) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}

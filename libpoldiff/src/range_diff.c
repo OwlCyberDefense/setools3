@@ -153,7 +153,8 @@ char *poldiff_range_to_string_brief(const poldiff_t * diff, const poldiff_range_
 	return s;
 }
 
-poldiff_range_t *range_create(const poldiff_t * diff, const qpol_mls_range_t * orig_range, const qpol_mls_range_t * mod_range, poldiff_form_e form)
+poldiff_range_t *range_create(const poldiff_t * diff, const qpol_mls_range_t * orig_range, const qpol_mls_range_t * mod_range,
+			      poldiff_form_e form)
 {
 	poldiff_range_t *pr = NULL;
 	apol_policy_t *p;

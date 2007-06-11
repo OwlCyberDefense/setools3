@@ -107,7 +107,8 @@ extern "C"
  * @return A MLS level structure initialized to the value of
  * qpol_level, or NULL upon error.
  */
-	extern apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(const apol_policy_t * p, const qpol_mls_level_t * qpol_level);
+	extern apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(const apol_policy_t * p,
+									   const qpol_mls_level_t * qpol_level);
 
 /**
  * Create a new apol_mls_level_t and initialize it with a
@@ -194,7 +195,8 @@ extern "C"
  *
  * @see apol_mls_level_validate()
  */
-	extern int apol_mls_level_compare(const apol_policy_t * p, const apol_mls_level_t * level1, const apol_mls_level_t * level2);
+	extern int apol_mls_level_compare(const apol_policy_t * p, const apol_mls_level_t * level1,
+					  const apol_mls_level_t * level2);
 
 /**
  * Given a level, determine if it is legal according to the supplied

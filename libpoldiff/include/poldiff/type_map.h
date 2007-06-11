@@ -98,7 +98,8 @@ extern "C"
  *  calling apol_vector_destroy() afterwards.  Upon error return NULL
  *  and set errno.
  */
-	extern apol_vector_t *poldiff_type_remap_entry_get_original_types(const poldiff_t * diff, const poldiff_type_remap_entry_t * entry);
+	extern apol_vector_t *poldiff_type_remap_entry_get_original_types(const poldiff_t * diff,
+									  const poldiff_type_remap_entry_t * entry);
 
 /**
  *  Allocate and return a sorted vector of type names (char *)
@@ -114,7 +115,8 @@ extern "C"
  *  calling apol_vector_destroy() afterwards.  Upon error return NULL
  *  and set errno.
  */
-	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(const poldiff_t * diff, const poldiff_type_remap_entry_t * entry);
+	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(const poldiff_t * diff,
+									  const poldiff_type_remap_entry_t * entry);
 
 /**
  *  Given a poldiff_type_remap_entry_t object, determine if was

@@ -115,7 +115,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *common will be NULL. 
  */
-	extern int qpol_class_get_common(const qpol_policy_t * policy, const qpol_class_t * obj_class, const qpol_common_t ** common);
+	extern int qpol_class_get_common(const qpol_policy_t * policy, const qpol_class_t * obj_class,
+					 const qpol_common_t ** common);
 
 /**
  *  Get an iterator for the set of (unique) permissions for a class.

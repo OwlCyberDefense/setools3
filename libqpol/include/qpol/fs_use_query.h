@@ -105,7 +105,8 @@ extern "C"
  *  errno will be set and *context will be NULL. It is considered an 
  *  error to call this function if behavior is QPOL_FS_USE_PSID.
  */
-	extern int qpol_fs_use_get_context(const qpol_policy_t * policy, const qpol_fs_use_t * ocon, const qpol_context_t ** context);
+	extern int qpol_fs_use_get_context(const qpol_policy_t * policy, const qpol_fs_use_t * ocon,
+					   const qpol_context_t ** context);
 
 #ifdef	__cplusplus
 }

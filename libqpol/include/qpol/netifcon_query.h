@@ -82,7 +82,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-	extern int qpol_netifcon_get_msg_con(const qpol_policy_t * policy, const qpol_netifcon_t * ocon, const qpol_context_t ** context);
+	extern int qpol_netifcon_get_msg_con(const qpol_policy_t * policy, const qpol_netifcon_t * ocon,
+					     const qpol_context_t ** context);
 
 /**
  *  Get the interface context from a netifcon statement.
@@ -93,7 +94,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-	extern int qpol_netifcon_get_if_con(const qpol_policy_t * policy, const qpol_netifcon_t * ocon, const qpol_context_t ** context);
+	extern int qpol_netifcon_get_if_con(const qpol_policy_t * policy, const qpol_netifcon_t * ocon,
+					    const qpol_context_t ** context);
 
 #ifdef	__cplusplus
 }

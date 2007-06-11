@@ -147,7 +147,8 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_infoflow_analysis_trans_further_next(const apol_policy_t * p, apol_infoflow_graph_t * g, apol_vector_t ** v);
+	extern int apol_infoflow_analysis_trans_further_next(const apol_policy_t * p, apol_infoflow_graph_t * g,
+							     apol_vector_t ** v);
 
 /********** functions to create/modify an analysis object **********/
 
@@ -224,7 +225,8 @@ extern "C"
  * @param type Intermediate type which a result must flow through.
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_append_intermediate(const apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *type);
+	extern int apol_infoflow_analysis_append_intermediate(const apol_policy_t * p, apol_infoflow_analysis_t * ia,
+							      const char *type);
 
 /**
  * Set an information flow analysis to return only rules with this
@@ -272,7 +274,8 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_infoflow_analysis_set_result_regex(const apol_policy_t * p, apol_infoflow_analysis_t * ia, const char *result);
+	extern int apol_infoflow_analysis_set_result_regex(const apol_policy_t * p, apol_infoflow_analysis_t * ia,
+							   const char *result);
 
 /*************** functions to access infoflow results ***************/
 

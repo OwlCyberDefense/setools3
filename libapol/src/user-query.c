@@ -185,7 +185,8 @@ int apol_user_query_set_role(const apol_policy_t * p, apol_user_query_t * u, con
 	return apol_query_set(p, &u->role_name, &u->role_regex, role);
 }
 
-int apol_user_query_set_default_level(const apol_policy_t * p __attribute__ ((unused)), apol_user_query_t * u, apol_mls_level_t * level)
+int apol_user_query_set_default_level(const apol_policy_t * p
+				      __attribute__ ((unused)), apol_user_query_t * u, apol_mls_level_t * level)
 {
 	u->default_level = level;
 	return 0;

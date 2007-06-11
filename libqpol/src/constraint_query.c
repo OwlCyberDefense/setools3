@@ -50,7 +50,7 @@ typedef struct policy_constr_state
 {
 	qpol_iterator_t *class_iter;
 	qpol_iterator_t *constr_iter;
-	const qpol_policy_t *policy;	       /* needed to get sub iterators */
+	const qpol_policy_t *policy;   /* needed to get sub iterators */
 } policy_constr_state_t;
 
 static int policy_constr_state_end(const qpol_iterator_t * iter)
@@ -546,7 +546,8 @@ int qpol_validatetrans_get_expr_iter(const qpol_policy_t * policy, const qpol_va
 	return STATUS_SUCCESS;
 }
 
-int qpol_constraint_expr_node_get_expr_type(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr, uint32_t * expr_type)
+int qpol_constraint_expr_node_get_expr_type(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr,
+					    uint32_t * expr_type)
 {
 	constraint_expr_t *internal_expr = NULL;
 
@@ -563,7 +564,8 @@ int qpol_constraint_expr_node_get_expr_type(const qpol_policy_t * policy, const 
 	return STATUS_SUCCESS;
 }
 
-int qpol_constraint_expr_node_get_sym_type(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr, uint32_t * sym_type)
+int qpol_constraint_expr_node_get_sym_type(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr,
+					   uint32_t * sym_type)
 {
 	constraint_expr_t *internal_expr = NULL;
 
@@ -744,7 +746,8 @@ static void *cexpr_name_state_get_cur_type(const qpol_iterator_t * iter)
 	return name;
 }
 
-int qpol_constraint_expr_node_get_names_iter(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr, qpol_iterator_t ** iter)
+int qpol_constraint_expr_node_get_names_iter(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr,
+					     qpol_iterator_t ** iter)
 {
 	constraint_expr_t *internal_expr = NULL;
 	cexpr_name_state_t *cns = NULL;

@@ -276,7 +276,7 @@ apol_vector_t *role_get_items(poldiff_t * diff, const apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort(v, role_name_comp, (void*)policy);
+	apol_vector_sort(v, role_name_comp, (void *)policy);
 	return v;
 }
 

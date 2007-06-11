@@ -83,7 +83,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set, addr will be NULL, and protocol will be 0.
  */
-	int qpol_nodecon_get_addr(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** addr, unsigned char *protocol);
+	int qpol_nodecon_get_addr(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** addr,
+				  unsigned char *protocol);
 
 /**
  *  Get the net mask from a nodecon statement. Sets protocol to indicate
@@ -98,7 +99,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set, mask will be NULL, and protocol will be 0.
  */
-	int qpol_nodecon_get_mask(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** mask, unsigned char *protocol);
+	int qpol_nodecon_get_mask(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** mask,
+				  unsigned char *protocol);
 
 /**
  *  Get the protocol from a nodecon statement.
@@ -120,7 +122,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-	extern int qpol_nodecon_get_context(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, const qpol_context_t ** context);
+	extern int qpol_nodecon_get_context(const qpol_policy_t * policy, const qpol_nodecon_t * ocon,
+					    const qpol_context_t ** context);
 
 #ifdef	__cplusplus
 }

@@ -801,7 +801,8 @@ static int perform_range_query(const apol_policy_t * policy, const options_t * o
 	return -1;
 }
 
-static void print_range_results(const apol_policy_t * policy, const options_t * opt __attribute__ ((unused)), const apol_vector_t * v)
+static void print_range_results(const apol_policy_t * policy, const options_t * opt
+				__attribute__ ((unused)), const apol_vector_t * v)
 {
 	size_t i, num_rules = 0;
 	const qpol_range_trans_t *rule = NULL;
@@ -1069,7 +1070,7 @@ int main(int argc, char **argv)
 			if (!class)
 				break;
 			qpol_class_get_name(apol_policy_get_qpol(policy), class, &class_name);
-			apol_vector_append(cmd_opts.class_vector, (void*)class_name);
+			apol_vector_append(cmd_opts.class_vector, (void *)class_name);
 		}
 		apol_vector_destroy(&qpol_matching_classes);
 		apol_class_query_destroy(&regex_match_query);

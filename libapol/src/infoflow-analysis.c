@@ -466,7 +466,8 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(const apol_policy_t
  */
 static int apol_infoflow_graph_connect_nodes(const apol_policy_t * p,
 					     apol_infoflow_graph_t * g,
-					     const qpol_avrule_t * rule, int found_read, int read_len, int found_write, int write_len)
+					     const qpol_avrule_t * rule, int found_read, int read_len, int found_write,
+					     int write_len)
 {
 	const qpol_type_t *src_type, *tgt_type;
 	apol_vector_t *src_nodes = NULL, *tgt_nodes = NULL;
@@ -493,7 +494,7 @@ static int apol_infoflow_graph_connect_nodes(const apol_policy_t * p,
 				if ((edge = apol_infoflow_graph_create_edge(p, g, tgt_node, src_node, read_len)) == NULL) {
 					goto cleanup;
 				}
-				if (apol_vector_append(edge->rules, (void*)rule) < 0) {
+				if (apol_vector_append(edge->rules, (void *)rule) < 0) {
 					ERR(p, "%s", strerror(ENOMEM));
 					goto cleanup;
 				}
@@ -502,7 +503,7 @@ static int apol_infoflow_graph_connect_nodes(const apol_policy_t * p,
 				if ((edge = apol_infoflow_graph_create_edge(p, g, src_node, tgt_node, write_len)) == NULL) {
 					goto cleanup;
 				}
-				if (apol_vector_append(edge->rules, (void*)rule) < 0) {
+				if (apol_vector_append(edge->rules, (void *)rule) < 0) {
 					ERR(p, "%s", strerror(ENOMEM));
 					goto cleanup;
 				}
@@ -529,7 +530,8 @@ static int apol_infoflow_graph_connect_nodes(const apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_graph_create_avrule(const apol_policy_t * p, apol_infoflow_graph_t * g, const qpol_avrule_t * rule, int max_len)
+static int apol_infoflow_graph_create_avrule(const apol_policy_t * p, apol_infoflow_graph_t * g, const qpol_avrule_t * rule,
+					     int max_len)
 {
 	const qpol_class_t *obj_class;
 	qpol_iterator_t *perm_iter = NULL;
@@ -681,7 +683,8 @@ static int apol_infoflow_graph_check_types(const apol_policy_t * p, const qpol_a
  *
  * @return 1 if rule matches, 0 if not, < 0 on error.
  */
-static int apol_infoflow_graph_check_class_perms(const apol_policy_t * p, const qpol_avrule_t * rule, const apol_vector_t * class_perms)
+static int apol_infoflow_graph_check_class_perms(const apol_policy_t * p, const qpol_avrule_t * rule,
+						 const apol_vector_t * class_perms)
 {
 	const qpol_class_t *obj_class;
 	const char *obj_name;
@@ -844,7 +847,8 @@ void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** g)
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_graph_get_nodes_for_type(const apol_policy_t * p, const apol_infoflow_graph_t * g, const char *type, apol_vector_t * v)
+static int apol_infoflow_graph_get_nodes_for_type(const apol_policy_t * p, const apol_infoflow_graph_t * g, const char *type,
+						  apol_vector_t * v)
 {
 	size_t i, j;
 	apol_vector_t *cand_list = NULL;
@@ -879,7 +883,8 @@ static int apol_infoflow_graph_get_nodes_for_type(const apol_policy_t * p, const
  * @return A usable infoflow result object, or NULL upon error.
  */
 static apol_infoflow_result_t *apol_infoflow_direct_get_result(const apol_policy_t * p,
-							       apol_vector_t * v, const qpol_type_t * start_type, const qpol_type_t * end_type)
+							       apol_vector_t * v, const qpol_type_t * start_type,
+							       const qpol_type_t * end_type)
 {
 	size_t i;
 	apol_infoflow_result_t *r;
@@ -1800,7 +1805,8 @@ static int apol_infoflow_analysis_trans_further(const apol_policy_t * p,
 
 /******************** infoflow analysis object routines ********************/
 
-int apol_infoflow_analysis_do(const apol_policy_t * p, const apol_infoflow_analysis_t * ia, apol_vector_t ** v, apol_infoflow_graph_t ** g)
+int apol_infoflow_analysis_do(const apol_policy_t * p, const apol_infoflow_analysis_t * ia, apol_vector_t ** v,
+			      apol_infoflow_graph_t ** g)
 {
 	int retval = -1;
 	if (v != NULL) {
@@ -2060,7 +2066,8 @@ int apol_infoflow_analysis_append_class_perm(const apol_policy_t * p,
 	return 0;
 }
 
-int apol_infoflow_analysis_set_min_weight(const apol_policy_t * p __attribute__ ((unused)), apol_infoflow_analysis_t * ia, int min_weight)
+int apol_infoflow_analysis_set_min_weight(const apol_policy_t * p
+					  __attribute__ ((unused)), apol_infoflow_analysis_t * ia, int min_weight)
 {
 	if (min_weight <= 0) {
 		ia->min_weight = 0;

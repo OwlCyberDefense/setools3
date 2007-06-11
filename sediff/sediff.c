@@ -118,7 +118,8 @@ static void print_diff_string(const char *str, unsigned int indent_level)
 	}
 }
 
-static void print_rule_section(const poldiff_t * diff, const poldiff_item_record_t * rec, const apol_vector_t * v, poldiff_form_e form)
+static void print_rule_section(const poldiff_t * diff, const poldiff_item_record_t * rec, const apol_vector_t * v,
+			       poldiff_form_e form)
 {
 	int i;
 	char *str = NULL;
@@ -142,8 +143,8 @@ static void print_rule_section(const poldiff_t * diff, const poldiff_item_record
 #define PRINT_MODIFIED  2
 #define PRINT_ALL 4
 
-static void print_rule_diffs(const poldiff_t * diff, const poldiff_item_record_t * rec, int stats_only, const char *name, uint32_t flags,
-			     apol_vector_comp_func sort_by)
+static void print_rule_diffs(const poldiff_t * diff, const poldiff_item_record_t * rec, int stats_only, const char *name,
+			     uint32_t flags, apol_vector_comp_func sort_by)
 {
 	const apol_vector_t *internal_v = NULL;
 	apol_vector_t *v = NULL;
@@ -173,7 +174,7 @@ static void print_rule_diffs(const poldiff_t * diff, const poldiff_item_record_t
 		perror("Error printig results");
 		return;
 	}
-	
+
 	if (sort_by) {
 		apol_vector_sort(v, sort_by, NULL);
 	}

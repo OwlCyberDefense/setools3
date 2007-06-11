@@ -108,7 +108,8 @@ extern "C"
  *  @return 0 on success < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-	extern int qpol_portcon_get_context(const qpol_policy_t * policy, const qpol_portcon_t * ocon, const qpol_context_t ** context);
+	extern int qpol_portcon_get_context(const qpol_policy_t * policy, const qpol_portcon_t * ocon,
+					    const qpol_context_t ** context);
 
 #ifdef	__cplusplus
 }

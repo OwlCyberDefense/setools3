@@ -588,7 +588,7 @@ void *ebitmap_state_get_cur_cat(const qpol_iterator_t * iter)
 	/* There is no val_to_struct for categories; this requires that qpol
 	 * search for the struct, but it can't be returned as const here so
 	 * cast it to void* explicitly. */
-	return (void*)cat;
+	return (void *)cat;
 }
 
 void ebitmap_state_destroy(void *es)
@@ -663,7 +663,7 @@ void *perm_state_get_cur(const qpol_iterator_t * iter)
 	}
 
 	/* explicit const_cast for sepol */
-	tmp = sepol_av_to_string((policydb_t*)db, ps->obj_class_val, (sepol_access_vector_t) 1 << (ps->cur));
+	tmp = sepol_av_to_string((policydb_t *) db, ps->obj_class_val, (sepol_access_vector_t) 1 << (ps->cur));
 	if (tmp) {
 		tmp++;		       /*sepol_av_to_string prepends a ' ' to the name */
 		return strdup(tmp);

@@ -108,7 +108,8 @@ extern "C"
  * @return A MLS range structure initialized to the value of
  * qpol_range, or NULL upon error.
  */
-	extern apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(const apol_policy_t * p, const qpol_mls_range_t * qpol_range);
+	extern apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(const apol_policy_t * p,
+									   const qpol_mls_range_t * qpol_range);
 
 /**
  * Deallocate all memory associated with a MLS range structure and

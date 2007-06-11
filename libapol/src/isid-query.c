@@ -76,7 +76,7 @@ int apol_isid_get_by_query(const apol_policy_t * p, const apol_isid_query_t * i,
 				continue;
 			}
 		}
-		if (apol_vector_append(*v, (void*)isid)) {
+		if (apol_vector_append(*v, (void *)isid)) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}

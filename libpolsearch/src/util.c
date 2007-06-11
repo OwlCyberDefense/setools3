@@ -37,48 +37,46 @@ const char *libpolsearch_get_version(void)
 const char *libpolsearch_symbol_get_name(const void *symbol, polsearch_symbol_e sym_type, const apol_policy_t * p)
 {
 	//TODO
-	if (!p)
+	if (!p) {
+		errno = EINVAL;
+		return NULL;
+	}
+	qpol_policy_t *qp = apol_policy_get_qpol(p);
+	const char *name = NULL;
+	switch (sym_type) {
+	case POLSEARCH_SYMBOL_TYPE:
+	case POLSEARCH_SYMBOL_ATTRIBUTE:
+	{
+		qpol_type_get_name(qp, symbol, &name);
+		break;
+	}
+	case POLSEARCH_SYMBOL_ROLE:
+	{
+	}
+	case POLSEARCH_SYMBOL_USER:
+	{
+	}
+	case POLSEARCH_SYMBOL_CLASS:
+	{
+	}
+	case POLSEARCH_SYMBOL_COMMON:
+	{
+	}
+	case POLSEARCH_SYMBOL_CATEGORY:
+	{
+	}
+	case POLSEARCH_SYMBOL_LEVEL:
+	{
+	}
+	case POLSEARCH_SYMBOL_BOOL:
+	{
+	}
+	case POLSEARCH_SYMBOL_NONE:
+	default:
 	{
 		errno = EINVAL;
 		return NULL;
 	}
-	qpol_policy_t * qp = apol_policy_get_qpol(p);
-	const char * name = NULL;
-	switch (sym_type)
-	{
-		case POLSEARCH_SYMBOL_TYPE:
-		case POLSEARCH_SYMBOL_ATTRIBUTE:
-		{
-			qpol_type_get_name(qp, symbol, &name);
-			break;
-		}
-		case POLSEARCH_SYMBOL_ROLE:
-		{
-		}
-		case POLSEARCH_SYMBOL_USER:
-		{
-		}
-		case POLSEARCH_SYMBOL_CLASS:
-		{
-		}
-		case POLSEARCH_SYMBOL_COMMON:
-		{
-		}
-		case POLSEARCH_SYMBOL_CATEGORY:
-		{
-		}
-		case POLSEARCH_SYMBOL_LEVEL:
-		{
-		}
-		case POLSEARCH_SYMBOL_BOOL:
-		{
-		}
-		case POLSEARCH_SYMBOL_NONE:
-		default:
-		{
-			errno = EINVAL;
-			return NULL;
-		}
 	}
 	return name;
 }

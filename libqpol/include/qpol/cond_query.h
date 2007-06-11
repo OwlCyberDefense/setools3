@@ -174,7 +174,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *expr_type will be 0.
  */
-	extern int qpol_cond_expr_node_get_expr_type(const qpol_policy_t * policy, const qpol_cond_expr_node_t * node, uint32_t * expr_type);
+	extern int qpol_cond_expr_node_get_expr_type(const qpol_policy_t * policy, const qpol_cond_expr_node_t * node,
+						     uint32_t * expr_type);
 
 /**
  *  Get the boolean used in an expression node.  This is only valid
@@ -187,7 +188,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *cond_bool will be NULL.
  */
-	extern int qpol_cond_expr_node_get_bool(const qpol_policy_t * policy, const qpol_cond_expr_node_t * node, qpol_bool_t ** cond_bool);
+	extern int qpol_cond_expr_node_get_bool(const qpol_policy_t * policy, const qpol_cond_expr_node_t * node,
+						qpol_bool_t ** cond_bool);
 
 #ifdef	__cplusplus
 }

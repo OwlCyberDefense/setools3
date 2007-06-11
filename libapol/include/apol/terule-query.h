@@ -122,7 +122,8 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_terule_query_set_source(const apol_policy_t * p, apol_terule_query_t * t, const char *symbol, int is_indirect);
+	extern int apol_terule_query_set_source(const apol_policy_t * p, apol_terule_query_t * t, const char *symbol,
+						int is_indirect);
 
 /**
  * Set an terule query to return rules whose source symbol is matched as a type
@@ -156,7 +157,8 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_terule_query_set_target(const apol_policy_t * p, apol_terule_query_t * t, const char *symbol, int is_indirect);
+	extern int apol_terule_query_set_target(const apol_policy_t * p, apol_terule_query_t * t, const char *symbol,
+						int is_indirect);
 
 /**
  * Set an terule query to return rules whose target symbol is matched as a type

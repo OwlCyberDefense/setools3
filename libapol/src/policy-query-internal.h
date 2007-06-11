@@ -186,7 +186,8 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_type(const apol_policy_t * p, const qpol_type_t * type, const char *name, unsigned int flags, regex_t ** type_regex);
+	int apol_compare_type(const apol_policy_t * p, const qpol_type_t * type, const char *name, unsigned int flags,
+			      regex_t ** type_regex);
 
 /**
  * Determines if a boolean is used within a particual conditional.
@@ -241,7 +242,8 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_cat(const apol_policy_t * p, const qpol_cat_t * cat, const char *name, unsigned int flags, regex_t ** cat_regex);
+	int apol_compare_cat(const apol_policy_t * p, const qpol_cat_t * cat, const char *name, unsigned int flags,
+			     regex_t ** cat_regex);
 
 /**
  * Convenience function that compares a qpol_context_t to a
@@ -255,7 +257,8 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-	int apol_compare_context(const apol_policy_t * p, const qpol_context_t * target, const apol_context_t * search, unsigned int flags);
+	int apol_compare_context(const apol_policy_t * p, const qpol_context_t * target, const apol_context_t * search,
+				 unsigned int flags);
 
 /**
  * Given a type name, obtain its qpol_type_t pointer (relative to a
@@ -293,8 +296,8 @@ extern "C"
  * within p), or NULL upon error.  Caller is responsible for calling
  * apol_vector_destroy() afterwards.
  */
-	apol_vector_t *apol_query_create_candidate_type_list(const apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
-							     unsigned int ta_flag);
+	apol_vector_t *apol_query_create_candidate_type_list(const apol_policy_t * p, const char *symbol, int do_regex,
+							     int do_indirect, unsigned int ta_flag);
 
 /**
  * Given a symbol name (a type, attribute, alias, or a regular

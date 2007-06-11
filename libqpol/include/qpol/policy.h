@@ -59,7 +59,8 @@ extern "C"
 #include <qpol/type_query.h>
 #include <qpol/user_query.h>
 
-	typedef void (*qpol_callback_fn_t) (void *varg, const struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
+	typedef void (*qpol_callback_fn_t) (void *varg, const struct qpol_policy * policy, int level, const char *fmt,
+					    va_list va_args);
 
 #define QPOL_POLICY_UNKNOWN       -1
 #define QPOL_POLICY_KERNEL_SOURCE  0

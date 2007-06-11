@@ -317,7 +317,7 @@ int apol_fs_use_get_by_query(const apol_policy_t * p, const apol_fs_use_query_t 
 				continue;
 			}
 		}
-		if (apol_vector_append(*v, (void*)fs_use)) {
+		if (apol_vector_append(*v, (void *)fs_use)) {
 			ERR(p, "%s", strerror(EINVAL));
 			goto cleanup;
 		}

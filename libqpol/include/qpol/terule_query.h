@@ -67,7 +67,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-	extern int qpol_terule_get_source_type(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_type_t ** source);
+	extern int qpol_terule_get_source_type(const qpol_policy_t * policy, const qpol_terule_t * rule,
+					       const qpol_type_t ** source);
 
 /**
  *  Get the target type from a type rule.
@@ -78,7 +79,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-	extern int qpol_terule_get_target_type(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_type_t ** target);
+	extern int qpol_terule_get_target_type(const qpol_policy_t * policy, const qpol_terule_t * rule,
+					       const qpol_type_t ** target);
 
 /**
  *  Get the object class from a type rule.
@@ -89,7 +91,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
-	extern int qpol_terule_get_object_class(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_class_t ** obj_class);
+	extern int qpol_terule_get_object_class(const qpol_policy_t * policy, const qpol_terule_t * rule,
+						const qpol_class_t ** obj_class);
 
 /**
  *  Get the default type from a type rule.
@@ -100,7 +103,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dflt will be NULL.
  */
-	extern int qpol_terule_get_default_type(const qpol_policy_t * policy, const qpol_terule_t * rule, const qpol_type_t ** dflt);
+	extern int qpol_terule_get_default_type(const qpol_policy_t * policy, const qpol_terule_t * rule,
+						const qpol_type_t ** dflt);
 
 /**
  *  Get the rule type value for a type rule.

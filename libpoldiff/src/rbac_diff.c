@@ -336,7 +336,7 @@ apol_vector_t *role_allow_get_items(poldiff_t * diff, const apol_policy_t * poli
 			ERR(diff, "%s", strerror(error));
 			goto err;
 		}
-		apol_vector_append_unique(pra->target_roles, (void*)tr_name, apol_str_strcmp, NULL);
+		apol_vector_append_unique(pra->target_roles, (void *)tr_name, apol_str_strcmp, NULL);
 		pra = NULL;
 	}
 	apol_vector_destroy(&tmp);

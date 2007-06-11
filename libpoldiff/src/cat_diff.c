@@ -209,7 +209,7 @@ apol_vector_t *cat_get_items(poldiff_t * diff, const apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort(v, cat_name_comp, (void*)policy);
+	apol_vector_sort(v, cat_name_comp, (void *)policy);
 	return v;
 }
 

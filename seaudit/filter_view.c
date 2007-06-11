@@ -533,7 +533,7 @@ static apol_vector_t *filter_view_get_policy_users(struct filter_view *fv)
 		const qpol_user_t *e = apol_vector_get_element(v, i);
 		const char *name;
 		qpol_user_get_name(apol_policy_get_qpol(p), e, &name);
-		if (apol_vector_append(policy_items, (void*)name) < 0) {
+		if (apol_vector_append(policy_items, (void *)name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy users: %s", strerror(errno));
 			apol_vector_destroy(&v);
 			apol_vector_destroy(&policy_items);
@@ -565,7 +565,7 @@ static apol_vector_t *filter_view_get_policy_roles(struct filter_view *fv)
 		const qpol_role_t *e = apol_vector_get_element(v, i);
 		const char *name;
 		qpol_role_get_name(apol_policy_get_qpol(p), e, &name);
-		if (apol_vector_append(policy_items, (void*)name) < 0) {
+		if (apol_vector_append(policy_items, (void *)name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy roles: %s", strerror(errno));
 			apol_vector_destroy(&v);
 			apol_vector_destroy(&policy_items);
@@ -598,7 +598,7 @@ static apol_vector_t *filter_view_get_policy_types(struct filter_view *fv)
 		const qpol_type_t *e = apol_vector_get_element(v, i);
 		const char *name;
 		qpol_type_get_name(apol_policy_get_qpol(p), e, &name);
-		if (apol_vector_append(policy_items, (void*)name) < 0) {
+		if (apol_vector_append(policy_items, (void *)name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy types: %s", strerror(errno));
 			apol_vector_destroy(&v);
 			apol_vector_destroy(&policy_items);
@@ -631,7 +631,7 @@ static apol_vector_t *filter_view_get_policy_classes(struct filter_view *fv)
 		const qpol_class_t *e = apol_vector_get_element(v, i);
 		const char *name;
 		qpol_class_get_name(apol_policy_get_qpol(p), e, &name);
-		if (apol_vector_append(policy_items, (void*)name) < 0) {
+		if (apol_vector_append(policy_items, (void *)name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy classes: %s", strerror(errno));
 			apol_vector_destroy(&v);
 			apol_vector_destroy(&policy_items);

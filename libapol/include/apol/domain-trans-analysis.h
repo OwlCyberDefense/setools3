@@ -376,8 +376,8 @@ extern "C"
  *  or'ed set of APOL_DOMAIN_TRANS_RULE_* from above (always > 0)
  *  representing the rules missing from the transition.
  */
-	extern int apol_domain_trans_table_verify_trans(apol_policy_t * policy, const qpol_type_t * start_dom, const qpol_type_t * ep_type,
-							const qpol_type_t * end_dom);
+	extern int apol_domain_trans_table_verify_trans(apol_policy_t * policy, const qpol_type_t * start_dom,
+							const qpol_type_t * ep_type, const qpol_type_t * end_dom);
 
 #ifdef	__cplusplus
 }

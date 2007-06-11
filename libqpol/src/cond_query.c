@@ -326,7 +326,8 @@ static size_t cond_rule_state_size(const qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_cond_get_av_true_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_cond_get_av_true_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask,
+			       qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_rule_state_t *crs = NULL;
@@ -377,7 +378,8 @@ int qpol_cond_get_av_true_iter(const qpol_policy_t * policy, const qpol_cond_t *
 	return STATUS_ERR;
 }
 
-int qpol_cond_get_te_true_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_cond_get_te_true_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask,
+			       qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_rule_state_t *crs = NULL;
@@ -428,7 +430,8 @@ int qpol_cond_get_te_true_iter(const qpol_policy_t * policy, const qpol_cond_t *
 	return STATUS_ERR;
 }
 
-int qpol_cond_get_av_false_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_cond_get_av_false_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask,
+				qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_rule_state_t *crs = NULL;
@@ -479,7 +482,8 @@ int qpol_cond_get_av_false_iter(const qpol_policy_t * policy, const qpol_cond_t 
 	return STATUS_ERR;
 }
 
-int qpol_cond_get_te_false_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_cond_get_te_false_iter(const qpol_policy_t * policy, const qpol_cond_t * cond, uint32_t rule_type_mask,
+				qpol_iterator_t ** iter)
 {
 	int error = 0;
 	cond_rule_state_t *crs = NULL;

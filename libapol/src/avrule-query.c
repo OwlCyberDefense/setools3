@@ -633,7 +633,7 @@ apol_vector_t *apol_avrule_to_syn_avrules(const apol_policy_t * p, const qpol_av
 		}
 	}
 	/* explicit cast to void* since vector's arbitrary data is non-const */
-	apol_vector_sort_uniquify(v, apol_syn_avrule_comp, (void*)p);
+	apol_vector_sort_uniquify(v, apol_syn_avrule_comp, (void *)p);
 	retval = 0;
       cleanup:
 	qpol_iterator_destroy(&iter);
@@ -675,7 +675,7 @@ apol_vector_t *apol_avrule_list_to_syn_avrules(const apol_policy_t * p, const ap
 				goto cleanup;
 			}
 			/* explicit cast to void* since bst's arbitrary data is non-const */
-			if (apol_bst_insert(b, syn_avrule, (void*)p) < 0) {
+			if (apol_bst_insert(b, syn_avrule, (void *)p) < 0) {
 				error = errno;
 				ERR(p, "%s", strerror(error));
 				goto cleanup;

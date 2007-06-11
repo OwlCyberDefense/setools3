@@ -35,7 +35,8 @@
 #include "qpol_internal.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_portcon_by_port(const qpol_policy_t * policy, uint16_t low, uint16_t high, uint8_t protocol, const qpol_portcon_t ** ocon)
+int qpol_policy_get_portcon_by_port(const qpol_policy_t * policy, uint16_t low, uint16_t high, uint8_t protocol,
+				    const qpol_portcon_t ** ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;

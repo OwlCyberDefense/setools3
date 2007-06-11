@@ -598,7 +598,7 @@ static int terule_build_cond(const poldiff_t * diff, const apol_policy_t * p, co
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_bst_get_element(diff->bool_bst, (void*)bool_name, NULL, (void **)&pseudo_bool) < 0) {
+		if (apol_bst_get_element(diff->bool_bst, (void *)bool_name, NULL, (void **)&pseudo_bool) < 0) {
 			error = EBADRQC;	/* should never get here */
 			ERR(diff, "%s", strerror(error));
 			assert(0);
@@ -685,7 +685,7 @@ static int terule_add_to_bst(poldiff_t * diff, const apol_policy_t * p,
 		error = errno;
 		goto cleanup;
 	}
-	if (apol_bst_get_element(diff->class_bst, (void*)class_name, NULL, (void **)&key->cls) < 0) {
+	if (apol_bst_get_element(diff->class_bst, (void *)class_name, NULL, (void **)&key->cls) < 0) {
 		error = EBADRQC;       /* should never get here */
 		ERR(diff, "%s", strerror(error));
 		assert(0);
@@ -715,7 +715,7 @@ static int terule_add_to_bst(poldiff_t * diff, const apol_policy_t * p,
 	/* store the rule pointer, to be used for showing line numbers */
 	if (qpol_policy_has_capability(q, QPOL_CAP_LINE_NUMBERS)) {
 		const qpol_terule_t **t = realloc(inserted_key->rules,
-					    (inserted_key->num_rules + 1) * sizeof(*t));
+						  (inserted_key->num_rules + 1) * sizeof(*t));
 		if (t == NULL) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));

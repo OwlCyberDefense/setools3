@@ -408,7 +408,7 @@ int apol_mls_level_compare(const apol_policy_t * p, const apol_mls_level_t * l1,
 	}
 	for (i = 0; i < apol_vector_get_size(cat_list_subset); i++) {
 		char *cat = (char *)apol_vector_get_element(cat_list_subset, i);
-		if (apol_vector_get_index(cat_list_master, cat, apol_mls_cat_name_compare, (void*)p, &j) < 0) {
+		if (apol_vector_get_index(cat_list_master, cat, apol_mls_cat_name_compare, (void *)p, &j) < 0) {
 			ucat = 1;
 			break;
 		}
@@ -447,7 +447,7 @@ int apol_mls_level_validate(const apol_policy_t * p, const apol_mls_level_t * le
 
 	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
 		char *cat_name = (char *)apol_vector_get_element(level->cats, i);
-		if (apol_vector_get_index(cat_vector, cat_name, apol_mls_cat_vector_compare, (void*)p, &j) < 0) {
+		if (apol_vector_get_index(cat_vector, cat_name, apol_mls_cat_vector_compare, (void *)p, &j) < 0) {
 			retval = 0;
 			goto cleanup;
 		}
@@ -503,7 +503,7 @@ char *apol_mls_level_render(const apol_policy_t * p, const apol_mls_level_t * le
 		retval = rt;
 		goto cleanup;
 	}
-	apol_vector_sort(cats, apol_mls_cat_name_compare, (void*)p);
+	apol_vector_sort(cats, apol_mls_cat_name_compare, (void *)p);
 
 	cat_name = (char *)apol_vector_get_element(cats, 0);
 	if (!cat_name)

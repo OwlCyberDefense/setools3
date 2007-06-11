@@ -151,7 +151,7 @@ int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names
 			ERR(diff, "%s is not a primary type.", name);
 			goto cleanup;
 		}
-		if (apol_vector_append(entry->orig_types, (void*)type) < 0) {
+		if (apol_vector_append(entry->orig_types, (void *)type) < 0) {
 			error = ENOMEM;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -171,7 +171,7 @@ int poldiff_type_remap_create(poldiff_t * diff, const apol_vector_t * orig_names
 			ERR(diff, "%s is not a primary type.", name);
 			goto cleanup;
 		}
-		if (apol_vector_append(entry->mod_types, (void*)type) < 0) {
+		if (apol_vector_append(entry->mod_types, (void *)type) < 0) {
 			error = ENOMEM;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
@@ -246,7 +246,7 @@ apol_vector_t *poldiff_type_remap_entry_get_original_types(const poldiff_t * dif
 			errno = error;
 			return NULL;
 		}
-		if (apol_vector_append(v, (void*)name) < 0) {
+		if (apol_vector_append(v, (void *)name) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			apol_vector_destroy(&v);
@@ -283,7 +283,7 @@ apol_vector_t *poldiff_type_remap_entry_get_modified_types(const poldiff_t * dif
 			errno = error;
 			return NULL;
 		}
-		if (apol_vector_append(v, (void*)name) < 0) {
+		if (apol_vector_append(v, (void *)name) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			apol_vector_destroy(&v);
@@ -515,7 +515,7 @@ int type_map_build(poldiff_t * diff)
 				goto cleanup;
 			}
 			map->orig_to_pseudo[val - 1] = next_val;
-			if (apol_vector_append(reverse_v, (void*)t) < 0) {
+			if (apol_vector_append(reverse_v, (void *)t) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -545,7 +545,7 @@ int type_map_build(poldiff_t * diff)
 				goto cleanup;
 			}
 			map->mod_to_pseudo[val - 1] = next_val;
-			if (apol_vector_append(reverse_v, (void*)t) < 0) {
+			if (apol_vector_append(reverse_v, (void *)t) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -572,7 +572,8 @@ int type_map_build(poldiff_t * diff)
 		if (map->orig_to_pseudo[val - 1] == 0) {
 			map->orig_to_pseudo[val - 1] = next_val;
 			if ((reverse_v = apol_vector_create_with_capacity(1, NULL)) == NULL ||
-			    apol_vector_append(reverse_v, (void*)t) < 0 || apol_vector_append(map->pseudo_to_orig, reverse_v) < 0) {
+			    apol_vector_append(reverse_v, (void *)t) < 0 ||
+			    apol_vector_append(map->pseudo_to_orig, reverse_v) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;
@@ -597,7 +598,7 @@ int type_map_build(poldiff_t * diff)
 		if (map->mod_to_pseudo[val - 1] == 0) {
 			map->mod_to_pseudo[val - 1] = next_val;
 			if ((reverse_v = apol_vector_create_with_capacity(1, NULL)) == NULL ||
-			    apol_vector_append(reverse_v, (void*)t) < 0 || apol_vector_append(map->pseudo_to_mod, reverse_v) < 0) {
+			    apol_vector_append(reverse_v, (void *)t) < 0 || apol_vector_append(map->pseudo_to_mod, reverse_v) < 0) {
 				error = errno;
 				ERR(diff, "%s", strerror(error));
 				goto cleanup;

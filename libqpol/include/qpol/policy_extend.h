@@ -74,7 +74,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_avrule_get_syn_avrule_iter(const qpol_policy_t * policy, const struct qpol_avrule *rule, qpol_iterator_t ** iter);
+	extern int qpol_avrule_get_syn_avrule_iter(const qpol_policy_t * policy, const struct qpol_avrule *rule,
+						   qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator over the syntactic rules contributing to a type rule.
@@ -88,7 +89,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_terule_get_syn_terule_iter(const qpol_policy_t * policy, const struct qpol_terule *rule, qpol_iterator_t ** iter);
+	extern int qpol_terule_get_syn_terule_iter(const qpol_policy_t * policy, const struct qpol_terule *rule,
+						   qpol_iterator_t ** iter);
 
 #ifdef	__cplusplus
 }

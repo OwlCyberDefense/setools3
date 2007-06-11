@@ -277,7 +277,7 @@ apol_vector_t *class_get_items(poldiff_t * diff, const apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort(v, class_name_comp, (void*)policy);
+	apol_vector_sort(v, class_name_comp, (void *)policy);
 	return v;
 }
 
@@ -765,7 +765,7 @@ apol_vector_t *common_get_items(poldiff_t * diff, const apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort(v, common_name_comp, (void*)policy);
+	apol_vector_sort(v, common_name_comp, (void *)policy);
 	return v;
 }
 

@@ -401,7 +401,7 @@ static int apol_domain_trans_add_rule_to_list(const apol_policy_t * policy, apol
 	}
 
 	/* vector's arbitrary data is non-const so explicit cast here. */
-	apol_vector_sort(rule_list, apol_domain_trans_rule_compare, (void*)policy);
+	apol_vector_sort(rule_list, apol_domain_trans_rule_compare, (void *)policy);
 
 	return 0;
 }
@@ -541,7 +541,8 @@ static int apol_domain_trans_table_add_rule(apol_policy_t * policy, unsigned cha
 	return -1;
 }
 
-static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy, apol_domain_trans_t ** trans, const qpol_type_t * start)
+static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy, apol_domain_trans_t ** trans,
+							 const qpol_type_t * start)
 {
 	apol_domain_trans_table_t *table = NULL;
 	apol_domain_trans_t *entry = NULL, *cur_head = NULL, *cur_tail = NULL;
@@ -746,7 +747,8 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t * policy,
 	return -1;
 }
 
-static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol_domain_trans_t ** trans, const qpol_type_t * end)
+static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol_domain_trans_t ** trans,
+							 const qpol_type_t * end)
 {
 	apol_domain_trans_table_t *table = NULL;
 	apol_domain_trans_t *entry = NULL, *cur_head = NULL, *cur_tail = NULL;
@@ -935,7 +937,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t * policy,
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
 			}
-			if (apol_vector_append(v, (void*)start)) {
+			if (apol_vector_append(v, (void *)start)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto exit_error;
@@ -1398,7 +1400,8 @@ void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t ** dta)
 	*dta = NULL;
 }
 
-int apol_domain_trans_analysis_set_direction(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, unsigned char direction)
+int apol_domain_trans_analysis_set_direction(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+					     unsigned char direction)
 {
 	if (!dta || (direction != APOL_DOMAIN_TRANS_DIRECTION_FORWARD && direction != APOL_DOMAIN_TRANS_DIRECTION_REVERSE)) {
 		ERR(policy, "Error setting analysis direction: %s", strerror(EINVAL));
@@ -1424,7 +1427,8 @@ int apol_domain_trans_analysis_set_valid(const apol_policy_t * policy, apol_doma
 	return 0;
 }
 
-int apol_domain_trans_analysis_set_start_type(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *type_name)
+int apol_domain_trans_analysis_set_start_type(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+					      const char *type_name)
 {
 	char *tmp = NULL;
 	int error = 0;
@@ -1464,7 +1468,8 @@ int apol_domain_trans_analysis_set_result_regex(const apol_policy_t * policy, ap
 	return apol_query_set(policy, &dta->result, &dta->result_regex, regex);
 }
 
-int apol_domain_trans_analysis_append_access_type(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *type_name)
+int apol_domain_trans_analysis_append_access_type(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+						  const char *type_name)
 {
 	char *tmp = NULL;
 	int error = 0;
@@ -1515,8 +1520,8 @@ static int compare_class_perm_by_class_name(const void *in_op, const void *class
 	return strcmp(apol_obj_perm_get_obj_name(op), name);
 }
 
-int apol_domain_trans_analysis_append_class_perm(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta, const char *class_name,
-						 const char *perm_name)
+int apol_domain_trans_analysis_append_class_perm(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
+						 const char *class_name, const char *perm_name)
 {
 	int error = 0;
 	apol_obj_perm_t *op = NULL;
@@ -1654,7 +1659,7 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 				error = errno;
 				goto err;
 			}
-			if (apol_vector_append_unique(type_v, (void*)tmp_type, NULL, NULL)) {
+			if (apol_vector_append_unique(type_v, (void *)tmp_type, NULL, NULL)) {
 				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;

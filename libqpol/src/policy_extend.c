@@ -512,7 +512,8 @@ static void qpol_syn_rule_table_destroy(qpol_syn_rule_table_t ** t)
  *  @param key The key for which to search.
  *  @return a valid qpol_syn_rule_node_t pointer on success or NULL on failure.
  */
-static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(const qpol_syn_rule_table_t * table, const qpol_syn_rule_key_t * key)
+static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(const qpol_syn_rule_table_t * table,
+								  const qpol_syn_rule_key_t * key)
 {
 	qpol_syn_rule_node_t *node = NULL;
 

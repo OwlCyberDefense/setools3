@@ -109,7 +109,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *level will be NULL.
  */
-	extern int qpol_user_get_dfltlevel(const qpol_policy_t * policy, const qpol_user_t * datum, const qpol_mls_level_t ** level);
+	extern int qpol_user_get_dfltlevel(const qpol_policy_t * policy, const qpol_user_t * datum,
+					   const qpol_mls_level_t ** level);
 
 /**
  *  Get the name which identifies a user from its datum.

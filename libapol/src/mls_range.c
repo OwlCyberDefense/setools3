@@ -323,7 +323,8 @@ int apol_mls_range_compare(const apol_policy_t * p, const apol_mls_range_t * tar
 	return -1;
 }
 
-static int apol_mls_range_does_include_level(const apol_policy_t * p, const apol_mls_range_t * range, const apol_mls_level_t * level)
+static int apol_mls_range_does_include_level(const apol_policy_t * p, const apol_mls_range_t * range,
+					     const apol_mls_level_t * level)
 {
 	int high_cmp = -1, low_cmp = -1;
 

@@ -83,7 +83,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *range will be NULL.
  */
-	extern int qpol_context_get_range(const qpol_policy_t * policy, const qpol_context_t * context, const qpol_mls_range_t ** range);
+	extern int qpol_context_get_range(const qpol_policy_t * policy, const qpol_context_t * context,
+					  const qpol_mls_range_t ** range);
 
 #ifdef	__cplusplus
 }

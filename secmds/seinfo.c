@@ -811,7 +811,7 @@ static int print_cats(FILE * fp, const char *name, int expand, const apol_policy
 	if (apol_cat_get_by_query(policydb, query, &v))
 		goto cleanup;
 	n_cats = apol_vector_get_size(v);
-	apol_vector_sort(v, &qpol_cat_datum_compare, (void*)policydb);
+	apol_vector_sort(v, &qpol_cat_datum_compare, (void *)policydb);
 
 	if (!name)
 		fprintf(fp, "Categories: %zd\n", n_cats);

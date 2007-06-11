@@ -480,7 +480,7 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 		for (i = 0; i < apol_vector_get_size(v); i++) {
 			type = apol_vector_get_element(v, i);
 			qpol_type_get_name(qp, type, &s);
-			apol_vector_append(pv->type_list, (void*)s);
+			apol_vector_append(pv->type_list, (void *)s);
 		}
 		apol_vector_destroy(&v);
 		apol_vector_sort(pv->type_list, apol_str_strcmp, NULL);
@@ -492,7 +492,7 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 		for (i = 0; i < apol_vector_get_size(v); i++) {
 			obj_class = apol_vector_get_element(v, i);
 			qpol_class_get_name(qp, obj_class, &s);
-			apol_vector_append(pv->class_list, (void*)s);
+			apol_vector_append(pv->class_list, (void *)s);
 		}
 		apol_vector_destroy(&v);
 		apol_vector_sort(pv->class_list, apol_str_strcmp, NULL);

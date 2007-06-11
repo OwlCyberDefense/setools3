@@ -128,7 +128,8 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_range_trans_query_append_class(const apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class);
+	extern int apol_range_trans_query_append_class(const apol_policy_t * p, apol_range_trans_query_t * r,
+						       const char *obj_class);
 
 /**
  * Set a range trans query to return only rules matching a MLS range.

@@ -197,7 +197,7 @@ static apol_vector_t *relabel_analysis_get_type_vector(const apol_policy_t * p, 
 		if (apol_query_get_type(p, s, &type) < 0) {
 			goto cleanup;
 		}
-		if (apol_vector_append(types, (void*)type)) {
+		if (apol_vector_append(types, (void *)type)) {
 			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}

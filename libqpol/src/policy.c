@@ -96,7 +96,8 @@ typedef struct fbuf
 } qpol_fbuf_t;
 
 static void qpol_handle_route_to_callback(void *varg
-					  __attribute__ ((unused)), const qpol_policy_t * p, int level, const char *fmt, va_list va_args)
+					  __attribute__ ((unused)), const qpol_policy_t * p, int level, const char *fmt,
+					  va_list va_args)
 {
 	if (!p || !(p->fn)) {
 		vfprintf(stderr, fmt, va_args);
@@ -139,7 +140,7 @@ void qpol_handle_msg(const qpol_policy_t * p, int level, const char *fmt, ...)
 
 	va_start(ap, fmt);
 	/* explicit cast here to remove const for sepol handle */
-	qpol_handle_route_to_callback((void*)p->varg, p, level, fmt, ap);
+	qpol_handle_route_to_callback((void *)p->varg, p, level, fmt, ap);
 	va_end(ap);
 }
 

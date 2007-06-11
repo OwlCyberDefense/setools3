@@ -85,7 +85,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dominates will be NULL.
  */
-	extern int qpol_role_get_dominate_iter(const qpol_policy_t * policy, const qpol_role_t * datum, qpol_iterator_t ** dominates);
+	extern int qpol_role_get_dominate_iter(const qpol_policy_t * policy, const qpol_role_t * datum,
+					       qpol_iterator_t ** dominates);
 
 /**
  *  Get an iterator for the set of types assigned to a role.

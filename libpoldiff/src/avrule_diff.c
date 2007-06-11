@@ -460,7 +460,8 @@ static apol_vector_t *avrule_get_line_numbers_for_perm(const poldiff_t * diff, c
 	return v;
 }
 
-apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(const poldiff_t * diff, const poldiff_avrule_t * avrule, const char *perm)
+apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(const poldiff_t * diff, const poldiff_avrule_t * avrule,
+							     const char *perm)
 {
 	if (diff == NULL || avrule == NULL || perm == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -476,7 +477,8 @@ apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(const poldiff_t * d
 	return avrule_get_line_numbers_for_perm(diff, perm, diff->orig_qpol, avrule->orig_rules, avrule->num_orig_rules);
 }
 
-apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(const poldiff_t * diff, const poldiff_avrule_t * avrule, const char *perm)
+apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(const poldiff_t * diff, const poldiff_avrule_t * avrule,
+							    const char *perm)
 {
 	if (diff == NULL || avrule == NULL || perm == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -708,7 +710,7 @@ static int avrule_build_cond(poldiff_t * diff, const apol_policy_t * p, const qp
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_bst_get_element(diff->bool_bst, (void*)bool_name, NULL, (void **)&pseudo_bool) < 0) {
+		if (apol_bst_get_element(diff->bool_bst, (void *)bool_name, NULL, (void **)&pseudo_bool) < 0) {
 			error = EBADRQC;	/* should never get here */
 			ERR(diff, "%s", strerror(error));
 			assert(0);
@@ -824,7 +826,7 @@ static int avrule_add_to_bst(poldiff_t * diff, const apol_policy_t * p,
 		error = errno;
 		goto cleanup;
 	}
-	if (apol_bst_get_element(diff->class_bst, (void*)class_name, NULL, (void **)&key->cls) < 0) {
+	if (apol_bst_get_element(diff->class_bst, (void *)class_name, NULL, (void **)&key->cls) < 0) {
 		error = EBADRQC;       /* should never get here */
 		ERR(diff, "%s", strerror(error));
 		assert(0);
@@ -877,7 +879,7 @@ static int avrule_add_to_bst(poldiff_t * diff, const apol_policy_t * p,
 	/* store the rule pointer, to be used for showing line numbers */
 	if (qpol_policy_has_capability(q, QPOL_CAP_LINE_NUMBERS)) {
 		const qpol_avrule_t **a = realloc(inserted_key->rules,
-					    (inserted_key->num_rules + 1) * sizeof(*a));
+						  (inserted_key->num_rules + 1) * sizeof(*a));
 		if (a == NULL) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));

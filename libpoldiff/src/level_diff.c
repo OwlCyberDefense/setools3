@@ -332,7 +332,7 @@ apol_vector_t *level_get_items(poldiff_t * diff, const apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort(v, level_name_comp, (void*)policy);
+	apol_vector_sort(v, level_name_comp, (void *)policy);
 	return v;
 }
 
@@ -408,7 +408,7 @@ static apol_vector_t *level_get_cats(const poldiff_t * diff, const apol_policy_t
 			error = errno;
 			goto cleanup;
 		}
-		if (apol_vector_append(v, (void*)cat_name) < 0) {
+		if (apol_vector_append(v, (void *)cat_name) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
