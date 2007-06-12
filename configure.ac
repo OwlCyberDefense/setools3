@@ -82,6 +82,7 @@ AC_ARG_ENABLE(debug,
 AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
     DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall -DSETOOLS_DEBUG=1 -fno-strict-aliasing"
+    DEBUGCXXFLAGS="-g3 -gdwarf-2 -O0 -Wall -DSETOOLS_DEBUG=1 -fno-strict-aliasing"
     DEBUGJFLAGS="-g"
     DEBUGLDFLAGS="-g"
     QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=$(top_builddir)/libqpol/src'
@@ -95,6 +96,7 @@ if test "x${enable_debug}" = xyes; then
 else
     AC_DEFINE(NDEBUG, 1, [disable calls to assert()])
     DEBUGCFLAGS="-fno-strict-aliasing"
+    DEBUGCXXFLAGS="-fno-strict-aliasing"
     DEBUGJFLAGS=""
     DEBUGLDFLAGS=""
     if test ${use_shared} = yes; then
@@ -115,6 +117,7 @@ else
     AC_MSG_RESULT(disabled)
 fi
 AC_SUBST(DEBUGCFLAGS)
+AC_SUBST(DEBUGCXXFLAGS)
 AC_SUBST(DEBUGJFLAGS)
 AC_SUBST(DEBUGLDFLAGS)
 
@@ -150,15 +153,18 @@ AC_ARG_ENABLE(warnall,
                              [compile with most warnings enabled]),
               enable_warnall="$enableval")
 if test "x${enable_warnall}" = xyes; then
-    WARNCFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic-errors -Wuninitialized -fno-strict-aliasing -std=c99"
+    WARNCFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic -Wuninitialized -fno-strict-aliasing -std=c99"
+    WARNCXXFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic -Wuninitialized -Wabi -fno-strict-aliasing"
     WARNJFLAGS=" -verbose"
     WARNLDFLAGS=""
 else
     WARNCFLAGS=""
+    WARNCXXFLAGS=""
     WARNJFLAGS=""
     WARNLDFLAGS=""
 fi
 AC_SUBST(WARNCFLAGS)
+AC_SUBST(WARNCXXFLAGS)
 AC_SUBST(WARNJFLAGS)
 AC_SUBST(WARNLDFLAGS)
 
