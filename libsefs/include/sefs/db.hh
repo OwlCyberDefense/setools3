@@ -47,6 +47,13 @@ class sefs_filesystem;
  */
 class sefs_db:public sefs_fclist
 {
+	// private functions -- do not call these directly from
+	// outside of the library
+	friend struct sefs_context_node *db_get_context(sefs_db *, const char *, const char *, const char *,
+							const char *) throw(std::bad_alloc);
+	friend sefs_entry *db_get_entry(sefs_db *, const struct sefs_context_node *, uint32_t, const char *, ino64_t,
+					dev_t) throw(std::bad_alloc);
+
       public:
 
 	/**
@@ -61,7 +68,8 @@ class sefs_db:public sefs_fclist
 	 * @exception std::runtime_error Error while reading the
 	 * database.
 	 */
-	sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *varg) throw(std::invalid_argument, std::runtime_error);
+	 sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *varg) throw(std::invalid_argument,
+											  std::runtime_error);
 
 	/**
 	 * Allocate and return a new sefs database, loading the
@@ -134,7 +142,14 @@ class sefs_db:public sefs_fclist
 	 * @return True if the file appears to be a database, false if not.
 	 */
 	static bool isDB(const char *filename);
+
       private:
+	/**
+	 * Upgrade an existing version 1 database to version 2.
+	 */
+	void upgradeToDB2() throw(std::runtime_error);
+	sefs_entry *getEntry(const struct sefs_context_node *context, uint32_t objectClass, const char *path, ino64_t inode,
+			     dev_t dev) throw(std::bad_alloc);
 	struct sqlite3 *_db;
 	time_t _ctime;
 };

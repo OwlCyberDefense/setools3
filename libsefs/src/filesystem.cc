@@ -503,7 +503,8 @@ bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, c
 	return true;
 }
 
-sefs_entry *sefs_filesystem::getEntry(const struct sefs_context_node * context, uint32_t objectClass, const char *path)
+sefs_entry *sefs_filesystem::getEntry(const struct sefs_context_node * context, uint32_t objectClass,
+				      const char *path)throw(std::bad_alloc)
 {
 	char *s = strdup(path);
 	if (s == NULL)
@@ -515,8 +516,9 @@ sefs_entry *sefs_filesystem::getEntry(const struct sefs_context_node * context, 
 	{
 		SEFS_ERR("%s", strerror(errno));
 		free(s);
-		throw std::runtime_error(strerror(errno));
+		throw std::bad_alloc();
 	}
+	// FIX ME: add inode & dev information
 	return new sefs_entry(this, context, objectClass, s);
 }
 
