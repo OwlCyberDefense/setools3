@@ -73,6 +73,7 @@ compilation:
   libselinux-1.30.27 or greater
   libsepol-1.12.27 or greater, but NOT libsepol-2.0.2
   libxml-2.0
+  sqlite3-3.2.0 or greater
 
 The following are not strictly required but highly recommended:
   swig 1.3.28 or greater

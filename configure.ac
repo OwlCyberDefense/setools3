@@ -557,81 +557,74 @@ if test ${has_pkg_config} = "no"; then
    AC_MSG_ERROR([pkg-config not found])
 fi
 
+AC_MSG_CHECKING([for libxml])
+pkg-config --exists 'libxml-2.0'
+if test $? -ne 0 ; then
+  AC_MSG_ERROR([setools requires libxml-2.0])
+fi
+XML_CFLAGS=`pkg-config --cflags libxml-2.0`
+XML_LIBS=`pkg-config --libs libxml-2.0`
+AC_MSG_RESULT([yes])
+AC_SUBST(XML_CFLAGS)
+AC_SUBST(XML_LIBS)
+
+AC_MSG_CHECKING([for sqlite3])
+pkg-config --exists 'sqlite3 >= 3.2.0'
+if test $? -ne 0 ; then
+  AC_MSG_ERROR([setools requires sqlite3 3.2.0 or greater])
+fi
+SQLITE3_CFLAGS=`pkg-config --cflags sqlite3`
+SQLITE3_LIBS=`pkg-config --libs sqlite3`
+AC_MSG_RESULT([yes])
+AC_SUBST(SQLITE3_CFLAGS)
+AC_SUBST(SQLITE3_LIBS)
+
 if test "x${build_gui}" = xyes; then
-  dnl check for GTK+
+
   AC_MSG_CHECKING([for GTK])
   pkg-config --exists 'gtk+-2.0 >= 2.8'
   if test $? -ne 0; then
      AC_MSG_ERROR([setools requires GTK+ 2.8 or greater])
   fi
   GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
-  if test -z "${GTK_CFLAGS}"; then
-     AC_MSG_ERROR([could not find GTK headers])
-  fi
   GTK_LIBS=`pkg-config --libs gtk+-2.0`
-  if test -z "${GTK_LIBS}"; then
-     AC_MSG_ERROR([could not find GTK libraries])
-  fi
   AC_MSG_RESULT([yes])
   AC_SUBST(GTK_CFLAGS)
   AC_SUBST(GTK_LIBS)
 
-  dnl check for libglade
   AC_MSG_CHECKING([for libglade])
+  pkg-config --exists 'libglade-2.0'
+  if test $? -ne 0; then
+     AC_MSG_ERROR([setools requires libglade-2.0])
+  fi
   GLADE_CFLAGS=`pkg-config --cflags libglade-2.0`
-  if test -z "${GLADE_CFLAGS}"; then
-     AC_MSG_ERROR([could not find libglade headers])
-  fi
   GLADE_LIBS=`pkg-config --libs libglade-2.0`
-  if test -z "${GLADE_LIBS}"; then
-     AC_MSG_ERROR([could not find libglade libraries])
-  fi
   AC_MSG_RESULT([yes])
   AC_SUBST(GLADE_CFLAGS)
   AC_SUBST(GLADE_LIBS)
 
-  dnl check for gdk-pixbuf
   AC_MSG_CHECKING([for gdk-pixbuf])
+  pkg-config --exists 'gdk-pixbuf-2.0'
+  if test $? -ne 0; then
+     AC_MSG_ERROR([setools requires gdk-pixbuf-2.0])
+  fi
   PIXBUF_CFLAGS=`pkg-config --cflags gdk-pixbuf-2.0`
-  if test -z "${PIXBUF_CFLAGS}"; then
-     AC_MSG_ERROR([could not find libgdk-pixbuf headers])
-  fi
   PIXBUF_LIBS=`pkg-config --libs gdk-pixbuf-2.0`
-  if test -z "${PIXBUF_LIBS}"; then
-     AC_MSG_ERROR([could not find libgdk-pixbuf libraries])
-  fi
   AC_MSG_RESULT([yes])
   AC_SUBST(PIXBUF_CFLAGS)
   AC_SUBST(PIXBUF_LIBS)
 
-  dnl check for gthread
   AC_MSG_CHECKING([for gthread])
+  pkg-config --exists 'gthread-2.0'
+  if test $? -ne 0; then
+     AC_MSG_ERROR([setools requires gthread-2.0])
+  fi
   GTHREAD_CFLAGS=`pkg-config --cflags gthread-2.0`
-  if test -z "${GTHREAD_CFLAGS}"; then
-     AC_MSG_ERROR([could not find gthread headers])
-  fi
   GTHREAD_LIBS=`pkg-config --libs gthread-2.0`
-  if test -z "${GTHREAD_LIBS}"; then
-     AC_MSG_ERROR([could not find gthread libraries])
-  fi
   AC_MSG_RESULT([yes])
   AC_SUBST(GTHREAD_CFLAGS)
   AC_SUBST(GTHREAD_LIBS)
 fi
-
-dnl check for libxml
-AC_MSG_CHECKING([for libxml])
-XML_CFLAGS=`pkg-config --cflags libxml-2.0`
-if test -z "${XML_CFLAGS}"; then
-   AC_MSG_ERROR([could not find libxml headers])
-fi
-XML_LIBS=`pkg-config --libs libxml-2.0`
-if test -z "${XML_LIBS}"; then
-   AC_MSG_ERROR([could not find libxml libraries])
-fi
-AC_MSG_RESULT([yes])
-AC_SUBST(XML_CFLAGS)
-AC_SUBST(XML_LIBS)
 
 dnl set up variables here
 if test ${use_selinux} = "yes"; then

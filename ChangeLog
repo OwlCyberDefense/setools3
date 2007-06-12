@@ -1,3 +1,9 @@
+2007-06-12  J. Tang  <jtang@tresys.com>
+
+	* SETools now requires libsqlite3, version 3.2.0 or greater.  It
+	used to ship with its own copy of sqlite3; that is no longer the
+	case.
+
 2007-06-11  M. Goldman  <mgoldman@tresys.com>
 	* Updated swig interface to properly expose av and te rule
 	  vector accessor functions.

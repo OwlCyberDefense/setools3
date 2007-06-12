@@ -32,10 +32,11 @@ SETools.
 License: LGPL
 Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
-Requires: libselinux >= 1.30 libsepol >= 1.12.27 libxml2
+Requires: libselinux >= 1.30 libsepol >= 1.12.27 sqlite >= 3.2.0 libxml2
 Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libsefs = %{libsefs_ver} libseaudit = %{libseaudit_ver}
 BuildRequires: flex, bison, pkgconfig
-BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel
+BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
+BuildRequires: sqlite-devel >= 3.2.0 libxml2-devel
 BuildRequires: tcl-devel >= 8.4.9
 BuildRequires: gtk2-devel >= 2.8 libglade2-devel libxml2-devel
 BuildRequires: autoconf >= 2.59 automake
@@ -70,6 +71,7 @@ This package includes Python bindings for the following libraries:
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
+  libsefs       SELinux filesystem database library
 
 %package libs-java
 License: LGPL
@@ -89,6 +91,7 @@ This package includes Java bindings for the following libraries:
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
+  libsefs       SELinux filesystem database library
 
 %package libs-tcl
 License: LGPL
@@ -108,12 +111,14 @@ This package includes Tcl bindings for the following libraries:
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
+  libsefs       SELinux filesystem database library
 
 %package devel
 License: LGPL
 Summary: Policy analysis development files for SELinux
 Group: Development/Libraries
-Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 libxml2-devel setools-libs = %{version}
+Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27   setools-libs = %{version}
+BuildRequires: sqlite3-devel >= 3.2.0 libxml2-devel
 
 %description devel
 SETools is a collection of graphical tools, command-line tools, and

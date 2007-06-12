@@ -32,7 +32,7 @@
 #include <sefs/filesystem.hh>
 #include <sefs/entry.hh>
 
-#include "sqlite/sqlite3.h"
+#include <sqlite3.h>
 
 #include <assert.h>
 #include <errno.h>
