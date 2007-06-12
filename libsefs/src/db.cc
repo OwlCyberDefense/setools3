@@ -34,6 +34,7 @@
 
 #include "sqlite/sqlite3.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <time.h>
@@ -89,6 +90,16 @@ struct db_callback_arg
 	const char *source_db, *target_db;
 };
 
+struct db_query_arg
+{
+	char *user, *role, *type, *range, *path;
+	bool regex;
+	regex_t *reuser, *rerole, *retype, *rerange, *repath;
+};
+
+/**
+ * Callback invoked when selecting names of tables from a database.
+ */
 static int db_copy_schema(void *arg, int argc __attribute__ ((unused)), char *argv[], char *column_names[] __attribute__ ((unused)))
 {
 	// argv[0] contains a SQL statement that, if executed against a
@@ -101,6 +112,9 @@ static int db_copy_schema(void *arg, int argc __attribute__ ((unused)), char *ar
 	return 0;
 }
 
+/**
+ * Callback invoked when selecting each row from a table.
+ */
 static int db_copy_table(void *arg, int argc __attribute__ ((unused)), char *argv[], char *column_names[] __attribute__ ((unused)))
 {
 	// argv[0] contains the name of a table
@@ -117,6 +131,65 @@ static int db_copy_table(void *arg, int argc __attribute__ ((unused)), char *arg
 	{
 		return -1;
 	}
+	return 0;
+}
+
+/**
+ * Callback invoked when selecting a type (for a sefs_query).
+ */
+static void db_type_compare(sqlite3_context * context, int argc, sqlite3_value ** argv)
+{
+	void *arg = sqlite3_user_data(context);
+	struct db_query_arg *q = static_cast < struct db_query_arg *>(arg);
+	assert(argc == 2);
+	bool retval = false;
+	if (sqlite3_value_type(argv[0]) == SQLITE_TEXT)
+	{
+		const char *text = reinterpret_cast < const char *>(sqlite3_value_text(argv[0]));
+		retval = query_str_compare(text, q->type, q->retype, q->regex);
+	}
+	sqlite3_result_int(context, (retval ? 1 : 0));
+}
+
+/**
+ * Callback invoked when checking if there exists a table with a
+ * particular name.
+ */
+static int db_table_exist_callback(void *arg,
+				   int argc __attribute__ ((unused)),
+				   char **argv __attribute__ ((unused)), char **col_names __attribute__ ((unused)))
+{
+	bool *answer = static_cast < bool * >(arg);
+	*answer = true;
+	return 0;
+}
+
+/**
+ * Callback invoked when obtaining the ctime value from the database.
+ */
+static int db_ctime_callback(void *arg, int argc __attribute__ ((unused)), char **argv, char **col_names __attribute__ ((unused)))
+{
+	time_t *ctime = static_cast < time_t * >(arg);
+	// argv has the result of a call to ctime_r(); convert the string
+	// back to a time_t value
+	struct tm t;
+	if (strptime(argv[0], "%a %b %d %T %Y", &t) == NULL)
+	{
+		return -1;
+	}
+	*ctime = mktime(&t);
+	return 0;
+}
+
+/**
+ * Callback invoked to determine how many rows match a particular
+ * select statement.
+ */
+static int db_count_callback(void *arg, int argc __attribute__ ((unused)), char **argv, char **column_names
+			     __attribute__ ((unused)))
+{
+	int *count = static_cast < int *>(arg);
+	*count = atoi(argv[0]);
 	return 0;
 }
 
@@ -166,6 +239,32 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 		{
 			throw std::runtime_error(sqlite3_errmsg(_db));
 		}
+
+		// store metadata about the database
+		const char *dbversion = "1";
+		char hostname[64];
+		gethostname(hostname, sizeof(hostname));
+		hostname[63] = '\0';
+		char datetime[32];
+		ctime_r(&_ctime, datetime);
+
+		char *info_insert = NULL;
+		if (asprintf(&info_insert,
+			     "INSERT INTO diskdb.info (key,value) VALUES ('dbversion','%s');"
+			     "INSERT INTO diskdb.info (key,value) VALUES ('hostname','%s');"
+			     "INSERT INTO diskdb.info (key,value) VALUES ('datetime','%s');", dbversion, hostname, datetime) < 0)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+		rc = sqlite3_exec(_db, info_insert, NULL, NULL, &errmsg);
+		free(info_insert);
+		if (rc != SQLITE_OK)
+		{
+			SEFS_ERR("%s", errmsg);
+			throw std::runtime_error(errmsg);
+		}
+
 	}
 	catch(...)
 	{
@@ -205,11 +304,39 @@ sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *va
 		throw std::runtime_error(strerror(errno));
 	}
 
-	// FIX ME: if db does not have a roles table, then
-	//   create table roles (role_id, role_name) ...
-	//   ALTER TABLE inodes ADD COLUMN (role int DEFAULT 0)
+	char *errmsg = NULL;
 
-	// FIX ME: get ctime from db
+	// if the database has no roles tabel, then add one
+	const char *select_stmt = "SELECT * FROM sqlite_master WHERE name='roles'";
+	bool answer = false;
+	if (sqlite3_exec(_db, select_stmt, db_table_exist_callback, &answer, &errmsg) != SQLITE_OK)
+	{
+		SEFS_ERR("%s", errmsg);
+		sqlite3_free(errmsg);
+		throw std::runtime_error(strerror(errno));
+	}
+	if (!answer)
+	{
+		const char *alter_stmt =
+			"CREATE TABLE roles ( role_id INTEGER PRIMARY KEY, role_name varchar (24));"
+			"ALTER TABLE inodes ADD COLUMN role int DEFAULT 0";
+		if (sqlite3_exec(_db, alter_stmt, NULL, NULL, &errmsg) != SQLITE_OK)
+		{
+			SEFS_ERR("%s", errmsg);
+			sqlite3_free(errmsg);
+			throw std::runtime_error(strerror(errno));
+		}
+	}
+
+	// get ctime from db
+	_ctime = 0;
+	const char *ctime_stmt = "SELECT value FROM info WHERE key='datetime'";
+	if (sqlite3_exec(_db, ctime_stmt, db_ctime_callback, &_ctime, &errmsg) != SQLITE_OK)
+	{
+		SEFS_ERR("%s", errmsg);
+		sqlite3_free(errmsg);
+		throw std::runtime_error(strerror(errno));
+	}
 }
 
 sefs_db::~sefs_db()
@@ -223,18 +350,33 @@ sefs_db::~sefs_db()
 
 int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error)
 {
-	return -1;
-}
+	// copy the query fields over to the C land struct; this is
+	// because the query members are private, and thus not accessible
+	// from a C callback
+	struct db_query_arg q;
+	q.user = query->_user;
+	q.role = query->_role;
+	q.type = query->_type;
+	q.range = query->_range;
+	q.path = query->_path;
+	q.regex = query->_regex;
+	q.reuser = query->_reuser;
+	q.rerole = query->_rerole;
+	q.retype = query->_retype;
+	q.rerange = query->_rerange;
+	q.repath = query->_repath;
 
-static int db_mls_callback(void *arg,
-			   int argc __attribute__ ((unused)),
-			   char **argv __attribute__ ((unused)), char **col_names __attribute__ ((unused)))
-{
-	// if this callback is invoked, then there exists a table named
-	// "mls"
-	bool *answer = static_cast < bool * >(arg);
-	*answer = true;
-	return 0;
+	if (q.type != NULL)
+	{
+		if (sqlite3_create_function(_db, "db_type_compare", 2, SQLITE_UTF8, &q, db_type_compare, NULL, NULL) != SQLITE_OK)
+		{
+			throw std::runtime_error(strerror(errno));
+		}
+	}
+	// FIX ME: register other functions; write range compare function
+	// then build appropraiate select statement
+	//   invoke fn for each statement
+	return -1;
 }
 
 bool sefs_db::isMLS() const
@@ -242,8 +384,8 @@ bool sefs_db::isMLS() const
 	int rc;
 	bool answer = false;
 	char *errmsg = NULL;
-	const char *select_stmt = "select * from sqlite_master where name='mls'";
-	rc = sqlite3_exec(_db, select_stmt, db_mls_callback, &answer, &errmsg);
+	const char *select_stmt = "SELECT * FROM sqlite_master WHERE name='mls'";
+	rc = sqlite3_exec(_db, select_stmt, db_table_exist_callback, &answer, &errmsg);
 	if (rc != SQLITE_OK)
 	{
 		SEFS_ERR("%s", errmsg);
@@ -321,31 +463,6 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 			throw std::runtime_error(diskdb.errmsg);
 		}
 
-		// store metadata about the database
-		const char *dbversion = "1";
-		char hostname[64];
-		gethostname(hostname, sizeof(hostname));
-		hostname[63] = '\0';
-		char datetime[32];
-		ctime_r(&_ctime, datetime);
-
-		char *info_insert = NULL;
-		if (asprintf(&info_insert,
-			     "INSERT INTO diskdb.info (key,value) values ('dbversion','%s');"
-			     "INSERT INTO diskdb.info (key,value) values ('hostname','%s');"
-			     "INSERT INTO diskdb.info (key,value) values ('datetime','%s');", dbversion, hostname, datetime) < 0)
-		{
-			SEFS_ERR("%s", strerror(errno));
-			throw std::runtime_error(strerror(errno));
-		}
-		rc = sqlite3_exec(_db, info_insert, NULL, NULL, &(diskdb.errmsg));
-		free(info_insert);
-		if (rc != SQLITE_OK)
-		{
-			SEFS_ERR("%s", diskdb.errmsg);
-			throw std::runtime_error(diskdb.errmsg);
-		}
-
 		sqlite3_exec(_db, "DETACH diskdb", NULL, NULL, NULL);
 
 		if (sqlite3_exec(_db, "END TRANSACTION", NULL, 0, &(diskdb.errmsg)) != SQLITE_OK)
@@ -381,14 +498,6 @@ time_t sefs_db::getCTime() const
 	return _ctime;
 }
 
-static int db_count_callback(void *arg, int argc __attribute__ ((unused)), char **argv, char **column_names
-			     __attribute__ ((unused)))
-{
-	int *count = static_cast < int *>(arg);
-	*count = atoi(argv[0]);
-	return 0;
-}
-
 bool sefs_db::isDB(const char *filename)
 {
 	if (filename == NULL)
@@ -415,7 +524,7 @@ bool sefs_db::isDB(const char *filename)
 	// Run a simple query to check that the database is legal.
 	int list_size;
 	char *errmsg = NULL;
-	rc = sqlite3_exec(db, "SELECT type_name from types", db_count_callback, &list_size, &errmsg);
+	rc = sqlite3_exec(db, "SELECT type_name FROM types", db_count_callback, &list_size, &errmsg);
 	if (rc != SQLITE_OK)
 	{
 		sqlite3_close(db);

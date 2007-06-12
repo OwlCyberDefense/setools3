@@ -320,7 +320,7 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 	{
 		if (file == NULL)
 		{
-			error = EINVAL;
+			errno = EINVAL;
 			SEFS_ERR("%s", strerror(EINVAL));
 			throw std::invalid_argument(strerror(EINVAL));
 		}
@@ -328,21 +328,18 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 		fc_file = fopen(file, "r");
 		if (!fc_file)
 		{
-			error = errno;
 			SEFS_ERR("Unable to open file %s", file);
 			throw std::runtime_error(strerror(error));
 		}
 
 		if ((name_dup = strdup(file)) == NULL)
 		{
-			error = errno;
 			SEFS_ERR("%s", strerror(error));
 			throw std::bad_alloc();
 		}
 
 		if (regcomp(&line_regex, "^([^[:blank:]]+)[[:blank:]]+(-.[[:blank:]]+)?([^-].+)$", REG_EXTENDED) != 0)
 		{
-			error = errno;
 			SEFS_ERR("%s", strerror(error));
 			throw std::bad_alloc();
 		}
@@ -350,7 +347,6 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 
 		if (regcomp(&context_regex, "^([^:]+):([^:]+):([^:]+):?(.*)$", REG_EXTENDED) != 0)
 		{
-			error = errno;
 			SEFS_ERR("%s", strerror(error));
 			throw std::bad_alloc();
 		}
@@ -366,7 +362,6 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 				}
 				else
 				{
-					error = errno;
 					SEFS_ERR("%s", strerror(error));
 					throw std::bad_alloc();
 				}
@@ -376,7 +371,6 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 
 		if (apol_vector_append(_files, name_dup) < 0)
 		{
-			error = errno;
 			SEFS_ERR("%s", strerror(error));
 			throw std::bad_alloc();
 		}
@@ -386,6 +380,7 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 	}
 	catch(...)
 	{
+		error = errno;
 		// discard all entries that were read from this file_contexts
 		size_t i = apol_vector_get_size(_entries);
 		for (; i > last_entry; i--)
