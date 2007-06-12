@@ -92,18 +92,18 @@ typedef struct pseudo_terule
 	size_t num_rules;
 } pseudo_terule_t;
 
-static void poldiff_terule_get_stats(const poldiff_t * diff, size_t stats[5], unsigned int index)
+static void poldiff_terule_get_stats(const poldiff_t * diff, size_t stats[5], unsigned int idx)
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return;
 	}
-	stats[0] = diff->terule_diffs[index]->num_added;
-	stats[1] = diff->terule_diffs[index]->num_removed;
-	stats[2] = diff->terule_diffs[index]->num_modified;
-	stats[3] = diff->terule_diffs[index]->num_added_type;
-	stats[4] = diff->terule_diffs[index]->num_removed_type;
+	stats[0] = diff->terule_diffs[idx]->num_added;
+	stats[1] = diff->terule_diffs[idx]->num_removed;
+	stats[2] = diff->terule_diffs[idx]->num_modified;
+	stats[3] = diff->terule_diffs[idx]->num_added_type;
+	stats[4] = diff->terule_diffs[idx]->num_removed_type;
 }
 
 void poldiff_terule_get_stats_member(const poldiff_t * diff, size_t stats[5])
@@ -258,17 +258,17 @@ static int poldiff_terule_cmp(const void *x, const void *y, void *data __attribu
 	return b->branch - a->branch;
 }
 
-static const apol_vector_t *poldiff_get_terule_vector(const poldiff_t * diff, unsigned int index)
+static const apol_vector_t *poldiff_get_terule_vector(const poldiff_t * diff, unsigned int idx)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
-	if (diff->terule_diffs[index]->diffs_sorted == 0) {
-		apol_vector_sort(diff->terule_diffs[index]->diffs, poldiff_terule_cmp, NULL);
-		diff->terule_diffs[index]->diffs_sorted = 1;
+	if (diff->terule_diffs[idx]->diffs_sorted == 0) {
+		apol_vector_sort(diff->terule_diffs[idx]->diffs, poldiff_terule_cmp, NULL);
+		diff->terule_diffs[idx]->diffs_sorted = 1;
 	}
-	return diff->terule_diffs[index]->diffs;
+	return diff->terule_diffs[idx]->diffs;
 }
 
 const apol_vector_t *poldiff_get_terule_vector_member(const poldiff_t * diff)
@@ -429,12 +429,12 @@ void terule_destroy(poldiff_terule_summary_t ** rs)
 	}
 }
 
-static int terule_reset(poldiff_t * diff, unsigned int index)
+static int terule_reset(poldiff_t * diff, unsigned int idx)
 {
 	int error = 0;
-	terule_destroy(&diff->terule_diffs[index]);
-	diff->terule_diffs[index] = terule_create();
-	if (diff->terule_diffs[index] == NULL) {
+	terule_destroy(&diff->terule_diffs[idx]);
+	diff->terule_diffs[idx] = terule_create();
+	if (diff->terule_diffs[idx] == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		errno = error;
@@ -959,7 +959,7 @@ static poldiff_terule_t *make_tediff(const poldiff_t * diff, poldiff_form_e form
 	return pt;
 }
 
-static int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item, unsigned int index)
+static int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item, unsigned int idx)
 {
 	pseudo_terule_t *rule = (pseudo_terule_t *) item;
 	poldiff_terule_t *pt = NULL;
@@ -1038,23 +1038,23 @@ static int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 		}
 	}
 
-	if (apol_vector_append(diff->terule_diffs[index]->diffs, pt) < 0) {
+	if (apol_vector_append(diff->terule_diffs[idx]->diffs, pt) < 0) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-		diff->terule_diffs[index]->num_added++;
+		diff->terule_diffs[idx]->num_added++;
 		break;
 	case POLDIFF_FORM_ADD_TYPE:
-		diff->terule_diffs[index]->num_added_type++;
+		diff->terule_diffs[idx]->num_added_type++;
 		break;
 	case POLDIFF_FORM_REMOVED:
-		diff->terule_diffs[index]->num_removed++;
+		diff->terule_diffs[idx]->num_removed++;
 		break;
 	case POLDIFF_FORM_REMOVE_TYPE:
-		diff->terule_diffs[index]->num_removed_type++;
+		diff->terule_diffs[idx]->num_removed_type++;
 		break;
 	default:
 		error = EBADRQC;       /* should never get here */
@@ -1062,7 +1062,7 @@ static int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 		assert(0);
 		goto cleanup;
 	}
-	diff->terule_diffs[index]->diffs_sorted = 0;
+	diff->terule_diffs[idx]->diffs_sorted = 0;
 	retval = 0;
       cleanup:
 	if (retval < 0) {
@@ -1087,7 +1087,7 @@ int terule_new_diff_trans(poldiff_t * diff, poldiff_form_e form, const void *ite
 	return terule_new_diff(diff, form, item, POLDIFF_TRANS_OFFSET);
 }
 
-static int terule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsigned int index)
+static int terule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsigned int idx)
 {
 	pseudo_terule_t *r1 = (pseudo_terule_t *) x;
 	pseudo_terule_t *r2 = (pseudo_terule_t *) y;
@@ -1138,13 +1138,13 @@ static int terule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsi
 			memcpy(pt->mod_rules, r2->rules, r2->num_rules * sizeof(qpol_terule_t *));
 		}
 
-		if (apol_vector_append(diff->terule_diffs[index]->diffs, pt) < 0) {
+		if (apol_vector_append(diff->terule_diffs[idx]->diffs, pt) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		diff->terule_diffs[index]->num_modified++;
-		diff->terule_diffs[index]->diffs_sorted = 0;
+		diff->terule_diffs[idx]->num_modified++;
+		diff->terule_diffs[idx]->diffs_sorted = 0;
 	}
 	retval = 0;
       cleanup:
@@ -1170,7 +1170,7 @@ int terule_deep_diff_trans(poldiff_t * diff, const void *x, const void *y)
 	return terule_deep_diff(diff, x, y, POLDIFF_TRANS_OFFSET);
 }
 
-int terule_enable_line_numbers(poldiff_t * diff, unsigned int index)
+int terule_enable_line_numbers(poldiff_t * diff, unsigned int idx)
 {
 	const apol_vector_t *te = NULL;
 	poldiff_terule_t *terule = NULL;
@@ -1180,7 +1180,7 @@ int terule_enable_line_numbers(poldiff_t * diff, unsigned int index)
 	int error = 0;
 	unsigned long lineno = 0;
 
-	te = poldiff_get_terule_vector(diff, index);
+	te = poldiff_get_terule_vector(diff, idx);
 
 	for (i = 0; i < apol_vector_get_size(te); i++) {
 		terule = apol_vector_get_element(te, i);

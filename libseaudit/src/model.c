@@ -155,7 +155,7 @@ static int message_comp(const void *a, const void *b, void *data)
  *
  * @return 0 on successful sort, < 0 on error.
  */
-static int model_sort(seaudit_log_t * log, seaudit_model_t * model)
+static int model_sort(const seaudit_log_t * log, seaudit_model_t * model)
 {
 	size_t i, j, num_messages = apol_vector_get_size(model->messages);
 	apol_vector_t *sup = NULL, *unsup = NULL;
@@ -249,11 +249,11 @@ static void model_recalc_stats(seaudit_model_t * model)
  *
  * @return 0 on success, < 0 on error.
  */
-static int model_refresh(seaudit_log_t * log, seaudit_model_t * model)
+static int model_refresh(const seaudit_log_t * log, seaudit_model_t * model)
 {
 	size_t i, j;
 	seaudit_log_t *l;
-	apol_vector_t *v;
+	const apol_vector_t *v;
 	seaudit_message_t *message;
 	int error, filter_match;
 
@@ -491,7 +491,7 @@ void seaudit_model_destroy(seaudit_model_t ** model)
 	*model = NULL;
 }
 
-int seaudit_model_save_to_file(seaudit_model_t * model, const char *filename)
+int seaudit_model_save_to_file(const seaudit_model_t * model, const char *filename)
 {
 	FILE *file;
 	const char *XML_VER = "<?xml version=\"1.0\"?>\n";
@@ -519,7 +519,7 @@ int seaudit_model_save_to_file(seaudit_model_t * model, const char *filename)
 	return 0;
 }
 
-char *seaudit_model_get_name(seaudit_model_t * model)
+const char *seaudit_model_get_name(const seaudit_model_t * model)
 {
 	if (model == NULL) {
 		errno = EINVAL;
@@ -577,7 +577,7 @@ int seaudit_model_append_filter(seaudit_model_t * model, seaudit_filter_t * filt
 	return 0;
 }
 
-apol_vector_t *seaudit_model_get_filters(seaudit_model_t * model)
+const apol_vector_t *seaudit_model_get_filters(const seaudit_model_t * model)
 {
 	if (model == NULL) {
 		errno = EINVAL;
@@ -614,7 +614,7 @@ int seaudit_model_set_filter_match(seaudit_model_t * model, seaudit_filter_match
 	return 0;
 }
 
-seaudit_filter_match_e seaudit_model_get_filter_match(seaudit_model_t * model)
+seaudit_filter_match_e seaudit_model_get_filter_match(const seaudit_model_t * model)
 {
 	if (model == NULL) {
 		errno = EINVAL;
@@ -634,7 +634,7 @@ int seaudit_model_set_filter_visible(seaudit_model_t * model, seaudit_filter_vis
 	return 0;
 }
 
-seaudit_filter_visible_e seaudit_model_get_filter_visible(seaudit_model_t * model)
+seaudit_filter_visible_e seaudit_model_get_filter_visible(const seaudit_model_t * model)
 {
 	if (model == NULL) {
 		errno = EINVAL;
@@ -670,7 +670,7 @@ int seaudit_model_clear_sorts(seaudit_model_t * model)
 	return 0;
 }
 
-int seaudit_model_is_changed(seaudit_model_t * model)
+int seaudit_model_is_changed(const seaudit_model_t * model)
 {
 	if (model == NULL) {
 		errno = EINVAL;
@@ -679,7 +679,7 @@ int seaudit_model_is_changed(seaudit_model_t * model)
 	return model->dirty;
 }
 
-apol_vector_t *seaudit_model_get_messages(seaudit_log_t * log, seaudit_model_t * model)
+apol_vector_t *seaudit_model_get_messages(const seaudit_log_t * log, seaudit_model_t * model)
 {
 	if (log == NULL || model == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -692,7 +692,7 @@ apol_vector_t *seaudit_model_get_messages(seaudit_log_t * log, seaudit_model_t *
 	return apol_vector_create_from_vector(model->messages, NULL, NULL, NULL);
 }
 
-apol_vector_t *seaudit_model_get_malformed_messages(seaudit_log_t * log, seaudit_model_t * model)
+apol_vector_t *seaudit_model_get_malformed_messages(const seaudit_log_t * log, seaudit_model_t * model)
 {
 	if (log == NULL || model == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -705,7 +705,7 @@ apol_vector_t *seaudit_model_get_malformed_messages(seaudit_log_t * log, seaudit
 	return apol_vector_create_from_vector(model->malformed_messages, NULL, NULL, NULL);
 }
 
-size_t seaudit_model_get_num_allows(seaudit_log_t * log, seaudit_model_t * model)
+size_t seaudit_model_get_num_allows(const seaudit_log_t * log, seaudit_model_t * model)
 {
 	if (log == NULL || model == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -718,7 +718,7 @@ size_t seaudit_model_get_num_allows(seaudit_log_t * log, seaudit_model_t * model
 	return model->num_allows;
 }
 
-size_t seaudit_model_get_num_denies(seaudit_log_t * log, seaudit_model_t * model)
+size_t seaudit_model_get_num_denies(const seaudit_log_t * log, seaudit_model_t * model)
 {
 	if (log == NULL || model == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -731,7 +731,7 @@ size_t seaudit_model_get_num_denies(seaudit_log_t * log, seaudit_model_t * model
 	return model->num_denies;
 }
 
-size_t seaudit_model_get_num_bools(seaudit_log_t * log, seaudit_model_t * model)
+size_t seaudit_model_get_num_bools(const seaudit_log_t * log, seaudit_model_t * model)
 {
 	if (log == NULL || model == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -744,7 +744,7 @@ size_t seaudit_model_get_num_bools(seaudit_log_t * log, seaudit_model_t * model)
 	return model->num_bools;
 }
 
-size_t seaudit_model_get_num_loads(seaudit_log_t * log, seaudit_model_t * model)
+size_t seaudit_model_get_num_loads(const seaudit_log_t * log, seaudit_model_t * model)
 {
 	if (log == NULL || model == NULL) {
 		ERR(log, "%s", strerror(EINVAL));

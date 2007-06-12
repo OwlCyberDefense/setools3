@@ -185,7 +185,7 @@ void progress_update(progress_t * progress, char *fmt, ...)
 	va_end(ap);
 }
 
-void progress_seaudit_handle_func(void *arg, seaudit_log_t * log __attribute__ ((unused)), int level
+void progress_seaudit_handle_func(void *arg, const seaudit_log_t * log __attribute__ ((unused)), int level
 				  __attribute__ ((unused)), const char *fmt, va_list va_args)
 {
 	progress_t *progress = arg;

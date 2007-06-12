@@ -85,7 +85,7 @@ void seaudit_log_destroy(seaudit_log_t ** log)
 	*log = NULL;
 }
 
-apol_vector_t *seaudit_log_get_users(seaudit_log_t * log)
+apol_vector_t *seaudit_log_get_users(const seaudit_log_t * log)
 {
 	if (log == NULL) {
 		errno = EINVAL;
@@ -94,7 +94,7 @@ apol_vector_t *seaudit_log_get_users(seaudit_log_t * log)
 	return apol_bst_get_vector(log->users, 0);
 }
 
-apol_vector_t *seaudit_log_get_roles(seaudit_log_t * log)
+apol_vector_t *seaudit_log_get_roles(const seaudit_log_t * log)
 {
 	if (log == NULL) {
 		errno = EINVAL;
@@ -103,7 +103,7 @@ apol_vector_t *seaudit_log_get_roles(seaudit_log_t * log)
 	return apol_bst_get_vector(log->roles, 0);
 }
 
-apol_vector_t *seaudit_log_get_types(seaudit_log_t * log)
+apol_vector_t *seaudit_log_get_types(const seaudit_log_t * log)
 {
 	if (log == NULL) {
 		errno = EINVAL;
@@ -112,7 +112,7 @@ apol_vector_t *seaudit_log_get_types(seaudit_log_t * log)
 	return apol_bst_get_vector(log->types, 0);
 }
 
-apol_vector_t *seaudit_log_get_classes(seaudit_log_t * log)
+apol_vector_t *seaudit_log_get_classes(const seaudit_log_t * log)
 {
 	if (log == NULL) {
 		errno = EINVAL;
@@ -142,18 +142,18 @@ void log_remove_model(seaudit_log_t * log, seaudit_model_t * model)
 	}
 }
 
-apol_vector_t *log_get_messages(seaudit_log_t * log)
+const apol_vector_t *log_get_messages(const seaudit_log_t * log)
 {
 	return log->messages;
 }
 
-apol_vector_t *log_get_malformed_messages(seaudit_log_t * log)
+const apol_vector_t *log_get_malformed_messages(const seaudit_log_t * log)
 {
 	return log->malformed_msgs;
 }
 
 static void seaudit_handle_default_callback(void *arg __attribute__ ((unused)),
-					    seaudit_log_t * log __attribute__ ((unused)),
+					    const seaudit_log_t * log __attribute__ ((unused)),
 					    int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
@@ -178,7 +178,7 @@ static void seaudit_handle_default_callback(void *arg __attribute__ ((unused)),
 	fprintf(stderr, "\n");
 }
 
-void seaudit_handle_msg(seaudit_log_t * log, int level, const char *fmt, ...)
+void seaudit_handle_msg(const seaudit_log_t * log, int level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

@@ -579,6 +579,15 @@ char *apol_mls_level_render(const apol_policy_t * p, const apol_mls_level_t * le
 
 int apol_mls_level_convert(const apol_policy_t * p, apol_mls_level_t * level)
 {
+	const char *tmp, *cat_name;
+	char **tokens = NULL, *next = NULL;
+	size_t num_tokens = 1, i;
+	qpol_iterator_t *iter = NULL;
+	const qpol_level_t *sens = NULL;
+	const qpol_cat_t *cat1 = NULL, *cat2 = NULL, *tmp_cat = NULL;
+	uint32_t val1 = 0, val2 = 0, tmp_val = 0;
+	unsigned char tmp_isalias = 0;
+
 	int error = 0;
 	if (p == NULL || level == NULL || level->literal_cats == NULL) {
 		error = EINVAL;
@@ -595,15 +604,6 @@ int apol_mls_level_convert(const apol_policy_t * p, apol_mls_level_t * level)
 		}
 		return 0;
 	}
-
-	const char *tmp, *cat_name;
-	char **tokens = NULL, *next = NULL;
-	size_t num_tokens = 1, i;
-	qpol_iterator_t *iter = NULL;
-	const qpol_level_t *sens = NULL;
-	const qpol_cat_t *cat1 = NULL, *cat2 = NULL, *tmp_cat = NULL;
-	uint32_t val1 = 0, val2 = 0, tmp_val = 0;
-	unsigned char tmp_isalias = 0;
 
 	for (tmp = level->literal_cats; *tmp; tmp++) {
 		if ((next = strchr(tmp, ','))) {

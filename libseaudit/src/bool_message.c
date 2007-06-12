@@ -53,7 +53,7 @@ seaudit_bool_message_t *bool_message_create(void)
 	return boolm;
 }
 
-int bool_change_append(seaudit_log_t * log, seaudit_bool_message_t * boolm, char *name, int value)
+int bool_change_append(seaudit_log_t * log, seaudit_bool_message_t * boolm, const char *name, int value)
 {
 	char *s = strdup(name);
 	seaudit_bool_message_change_t *bc = NULL;
@@ -85,7 +85,7 @@ void bool_message_free(seaudit_bool_message_t * boolm)
 	}
 }
 
-char *bool_message_to_string(seaudit_message_t * msg, const char *date)
+char *bool_message_to_string(const seaudit_message_t * msg, const char *date)
 {
 	seaudit_bool_message_t *boolm = msg->data.boolm;
 	const char *host = msg->host;
@@ -109,7 +109,7 @@ char *bool_message_to_string(seaudit_message_t * msg, const char *date)
 	return s;
 }
 
-char *bool_message_to_string_html(seaudit_message_t * msg, const char *date)
+char *bool_message_to_string_html(const seaudit_message_t * msg, const char *date)
 {
 	seaudit_bool_message_t *boolm = msg->data.boolm;
 	const char *host = msg->host;
@@ -136,7 +136,7 @@ char *bool_message_to_string_html(seaudit_message_t * msg, const char *date)
 	return s;
 }
 
-char *bool_message_to_misc_string(seaudit_bool_message_t * boolm)
+char *bool_message_to_misc_string(const seaudit_bool_message_t * boolm)
 {
 	char *s = NULL;
 	size_t len = 0, i;

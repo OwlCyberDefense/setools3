@@ -361,8 +361,8 @@ static void type_map_dump(poldiff_t * diff)
 #ifdef SETOOLS_DEBUG
 	size_t i, j;
 	apol_vector_t *v;
-	qpol_type_t *t;
-	char *name;
+	const qpol_type_t *t;
+	const char *name;
 	printf("# type map debug dump (qpol_type_t -> pseudo-type):\norig:\n");
 	for (i = 0; i < diff->type_map->num_orig_types; i++) {
 		printf("%3d:%5d", i, diff->type_map->orig_to_pseudo[i]);

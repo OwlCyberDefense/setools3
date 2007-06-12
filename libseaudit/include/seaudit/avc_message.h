@@ -54,7 +54,7 @@ extern "C"
  * @return One of SEAUDIT_AVC_DENIED or SEAUDIT_AVC_GRANTED, or
  * SEAUDIT_AVC_UNKNOWN upon error or if unknown.
  */
-	extern seaudit_avc_message_type_e seaudit_avc_message_get_message_type(seaudit_avc_message_t * avc);
+	extern seaudit_avc_message_type_e seaudit_avc_message_get_message_type(const seaudit_avc_message_t * avc);
 
 /**
  * Return the avc message's timestamp, measured in nanoseconds.
@@ -63,7 +63,7 @@ extern "C"
  *
  * @return Timestamp, in nanoseconds, or 0 upon error or if unknown.
  */
-	extern long seaudit_avc_message_get_timestamp_nano(seaudit_avc_message_t * avc);
+	extern long seaudit_avc_message_get_timestamp_nano(const seaudit_avc_message_t * avc);
 
 /**
  * Return the source context's user of an avc message.
@@ -73,7 +73,7 @@ extern "C"
  * @return Source user, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_source_user(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_source_user(const seaudit_avc_message_t * avc);
 
 /**
  * Return the source context's role of an avc message.
@@ -83,7 +83,7 @@ extern "C"
  * @return Source role, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_source_role(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_source_role(const seaudit_avc_message_t * avc);
 
 /**
  * Return the source context's target of an avc message.
@@ -93,7 +93,7 @@ extern "C"
  * @return Source target, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_source_type(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_source_type(const seaudit_avc_message_t * avc);
 
 /**
  * Return the target context's user of an avc message.
@@ -103,7 +103,7 @@ extern "C"
  * @return Target user, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_target_user(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_target_user(const seaudit_avc_message_t * avc);
 
 /**
  * Return the target context's role of an avc message.
@@ -113,7 +113,7 @@ extern "C"
  * @return Target role, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_target_role(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_target_role(const seaudit_avc_message_t * avc);
 
 /**
  * Return the target context's target of an avc message.
@@ -123,7 +123,7 @@ extern "C"
  * @return Target type, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_target_type(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_target_type(const seaudit_avc_message_t * avc);
 
 /**
  * Return the object class from an avc message.
@@ -133,7 +133,7 @@ extern "C"
  * @return Object class, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_object_class(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_object_class(const seaudit_avc_message_t * avc);
 
 /**
  * Return a vector of permissions (type char *) from an avc message.
@@ -143,7 +143,7 @@ extern "C"
  * @return Vector of permission strings, or NULL upon error or if
  * unknown.  Do not modify the vector in any way.
  */
-	extern apol_vector_t *seaudit_avc_message_get_perm(seaudit_avc_message_t * avc);
+	extern const apol_vector_t *seaudit_avc_message_get_perm(const seaudit_avc_message_t * avc);
 
 /**
  * Return the executable and path from an avc message.
@@ -153,7 +153,7 @@ extern "C"
  * @return Executable string, or NULL upon error or if unknown.  Do
  * not free() this string.
  */
-	extern char *seaudit_avc_message_get_exe(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_exe(const seaudit_avc_message_t * avc);
 
 /**
  * Return the command from an avc message.
@@ -163,7 +163,7 @@ extern "C"
  * @return Command, or NULL upon error or if unknown.  Do not free()
  * this string.
  */
-	extern char *seaudit_avc_message_get_comm(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_comm(const seaudit_avc_message_t * avc);
 
 /**
  * Return the name from an avc message.
@@ -173,7 +173,7 @@ extern "C"
  * @return Name, or NULL upon error or if unknown.  Do not free() this
  * string.
  */
-	extern char *seaudit_avc_message_get_name(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_name(const seaudit_avc_message_t * avc);
 
 /**
  * Return the process ID from an avc message.
@@ -182,7 +182,7 @@ extern "C"
  *
  * @return Process's PID, or 0 upon error or if unknown.
  */
-	extern unsigned int seaudit_avc_message_get_pid(seaudit_avc_message_t * avc);
+	extern unsigned int seaudit_avc_message_get_pid(const seaudit_avc_message_t * avc);
 
 /**
  * Return the inode from an avc message.
@@ -191,7 +191,7 @@ extern "C"
  *
  * @return Process's PID, or 0 upon error or if unknown.
  */
-	extern unsigned long seaudit_avc_message_get_inode(seaudit_avc_message_t * avc);
+	extern unsigned long seaudit_avc_message_get_inode(const seaudit_avc_message_t * avc);
 
 /**
  * Return the path of the object from an avc message.
@@ -201,7 +201,7 @@ extern "C"
  * @return Object's path, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_path(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_path(const seaudit_avc_message_t * avc);
 
 /**
  * Return the device for the object from an avc message.
@@ -211,7 +211,7 @@ extern "C"
  * @return Object's device, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_dev(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_dev(const seaudit_avc_message_t * avc);
 
 /**
  * Return the network interface for the object from an avc message.
@@ -221,7 +221,7 @@ extern "C"
  * @return Network interface, or NULL upon error or if unknown.  Do
  * not free() this string.
  */
-	extern char *seaudit_avc_message_get_netif(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_netif(const seaudit_avc_message_t * avc);
 
 /**
  * Return the local address from an avc message.
@@ -231,7 +231,7 @@ extern "C"
  * @return Local address, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_laddr(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_laddr(const seaudit_avc_message_t * avc);
 
 /**
  * Return the local port from an avc message.
@@ -240,7 +240,7 @@ extern "C"
  *
  * @return Local port, or 0 upon error or if unknown.
  */
-	extern int seaudit_avc_message_get_lport(seaudit_avc_message_t * avc);
+	extern int seaudit_avc_message_get_lport(const seaudit_avc_message_t * avc);
 
 /**
  * Return the foreign address from an avc message.
@@ -250,7 +250,7 @@ extern "C"
  * @return Foreign address, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_faddr(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_faddr(const seaudit_avc_message_t * avc);
 
 /**
  * Return the foreign port from an avc message.
@@ -259,7 +259,7 @@ extern "C"
  *
  * @return Foreign port, or 0 upon error or if unknown.
  */
-	extern int seaudit_avc_message_get_fport(seaudit_avc_message_t * avc);
+	extern int seaudit_avc_message_get_fport(const seaudit_avc_message_t * avc);
 
 /**
  * Return the source address from an avc message.
@@ -269,7 +269,7 @@ extern "C"
  * @return Source address, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern char *seaudit_avc_message_get_saddr(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_saddr(const seaudit_avc_message_t * avc);
 
 /**
  * Return the source port from an avc message.
@@ -278,7 +278,7 @@ extern "C"
  *
  * @return Source port, or 0 upon error or if unknown.
  */
-	extern int seaudit_avc_message_get_sport(seaudit_avc_message_t * avc);
+	extern int seaudit_avc_message_get_sport(const seaudit_avc_message_t * avc);
 
 /**
  * Return the destination address from an avc message.
@@ -288,7 +288,7 @@ extern "C"
  * @return Destination address, or NULL upon error or if unknown.  Do
  * not free() this string.
  */
-	extern char *seaudit_avc_message_get_daddr(seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_daddr(const seaudit_avc_message_t * avc);
 
 /**
  * Return the destination port from an avc message.
@@ -297,7 +297,7 @@ extern "C"
  *
  * @return Destination port, or 0 upon error or if unknown.
  */
-	extern int seaudit_avc_message_get_dport(seaudit_avc_message_t * avc);
+	extern int seaudit_avc_message_get_dport(const seaudit_avc_message_t * avc);
 
 /**
  * Return the IPC key from an avc message.
@@ -306,7 +306,7 @@ extern "C"
  *
  * @return Key, or -1 upon error or if unknown.
  */
-	extern int seaudit_avc_message_get_key(seaudit_avc_message_t * avc);
+	extern int seaudit_avc_message_get_key(const seaudit_avc_message_t * avc);
 
 /**
  * Return the process capability from an avc message.
@@ -315,7 +315,7 @@ extern "C"
  *
  * @return Capability, or -1 upon error or if unknown.
  */
-	extern int seaudit_avc_message_get_cap(seaudit_avc_message_t * avc);
+	extern int seaudit_avc_message_get_cap(const seaudit_avc_message_t * avc);
 
 #ifdef  __cplusplus
 }

@@ -77,7 +77,7 @@ extern "C"
  *
  * @return 0 on successful write, < 0 on error.
  */
-	extern int seaudit_report_write(seaudit_log_t * log, seaudit_report_t * report, const char *out_file);
+	extern int seaudit_report_write(const seaudit_log_t * log, const seaudit_report_t * report, const char *out_file);
 
 /**
  * Set the output format of the report.  The default format is plain
@@ -89,7 +89,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_report_set_format(seaudit_log_t * log, seaudit_report_t * report, seaudit_report_format_e format);
+	extern int seaudit_report_set_format(const seaudit_log_t * log, seaudit_report_t * report, seaudit_report_format_e format);
 
 /**
  * Set the report to use a particular report configuration file.
@@ -102,7 +102,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_report_set_configuration(seaudit_log_t * log, seaudit_report_t * report, const char *file);
+	extern int seaudit_report_set_configuration(const seaudit_log_t * log, seaudit_report_t * report, const char *file);
 
 /**
  * Set the report to use a particular HTML stylesheet file.  Note that
@@ -117,7 +117,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_report_set_stylesheet(seaudit_log_t * log, seaudit_report_t * report, const char *file,
+	extern int seaudit_report_set_stylesheet(const seaudit_log_t * log, seaudit_report_t * report, const char *file,
 						 const int use_stylesheet);
 
 /**
@@ -131,7 +131,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_report_set_malformed(seaudit_log_t * log, seaudit_report_t * report, const int do_malformed);
+	extern int seaudit_report_set_malformed(const seaudit_log_t * log, seaudit_report_t * report, const int do_malformed);
 
 #ifdef  __cplusplus
 }

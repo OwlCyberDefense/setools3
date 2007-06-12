@@ -387,7 +387,7 @@ static void message_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter 
 	}
 	case DATE_FIELD:
 	{
-		struct tm *tm = seaudit_message_get_time(m);
+		const struct tm *tm = seaudit_message_get_time(m);
 		char date[256];
 		/* check to see if we have been given a valid year, if
 		 * so display, otherwise no year displayed */
@@ -460,7 +460,7 @@ static void message_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter 
 	}
 	case PERM_FIELD:
 	{
-		apol_vector_t *perms = seaudit_avc_message_get_perm(avc);
+		const apol_vector_t *perms = seaudit_avc_message_get_perm(avc);
 		char *perm = NULL;
 		size_t i, len = 0;
 		for (i = 0; perms != NULL && i < apol_vector_get_size(perms); i++) {

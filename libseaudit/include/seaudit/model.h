@@ -108,7 +108,7 @@ extern "C"
  *
  * @see seaudit_model_create_from_file()
  */
-	extern int seaudit_model_save_to_file(seaudit_model_t * model, const char *filename);
+	extern int seaudit_model_save_to_file(const seaudit_model_t * model, const char *filename);
 
 /**
  * Get the name of this model.
@@ -118,7 +118,7 @@ extern "C"
  * @return Name of the model, or NULL upon error.  Do not modify this
  * string.
  */
-	extern char *seaudit_model_get_name(seaudit_model_t * model);
+	extern const char *seaudit_model_get_name(const seaudit_model_t * model);
 
 /**
  * Set the name of this model, overwriting any previous name.
@@ -167,7 +167,7 @@ extern "C"
  * this vector.  (It is safe to manipulate the elements within the
  * vector.)
  */
-	extern apol_vector_t *seaudit_model_get_filters(seaudit_model_t * model);
+	extern const apol_vector_t *seaudit_model_get_filters(const seaudit_model_t * model);
 
 /**
  * Remove a filter from a model.  The given parameter must match one
@@ -201,7 +201,7 @@ extern "C"
  *
  * @return One of SEAUDIT_FILTER_MATCH_ALL or SEAUDIT_FILTER_MATCH_ANY.
  */
-	extern seaudit_filter_match_e seaudit_model_get_filter_match(seaudit_model_t * model);
+	extern seaudit_filter_match_e seaudit_model_get_filter_match(const seaudit_model_t * model);
 
 /**
  * Set a model to either show (default behavior) or hide messages
@@ -223,7 +223,7 @@ extern "C"
  * @return One of SEAUDIT_FILTER_VISIBLE_SHOW or
  * SEAUDIT_FILTER_VISIBLE_HIDE.
  */
-	extern seaudit_filter_visible_e seaudit_model_get_filter_visible(seaudit_model_t * model);
+	extern seaudit_filter_visible_e seaudit_model_get_filter_visible(const seaudit_model_t * model);
 
 /**
  * Append a sort criterion to a model.  The next time the model's
@@ -263,7 +263,7 @@ extern "C"
  * @return 0 if the model is unchanged, non-zero if it may have
  * changed.
  */
-	extern int seaudit_model_is_changed(seaudit_model_t * model);
+	extern int seaudit_model_is_changed(const seaudit_model_t * model);
 
 /**
  * Return a sorted list of messages associated with this model.  This
@@ -277,7 +277,7 @@ extern "C"
  * and pre-sorted, or NULL upon error.  The caller is responsible for
  * calling apol_vector_destroy() upon this value.
  */
-	extern apol_vector_t *seaudit_model_get_messages(seaudit_log_t * log, seaudit_model_t * model);
+	extern apol_vector_t *seaudit_model_get_messages(const seaudit_log_t * log, seaudit_model_t * model);
 
 /**
  * Return a sorted list of malformed messages associated with this
@@ -292,7 +292,7 @@ extern "C"
  * Treat the contents of the vector as const char *.  The caller is
  * responsible for calling apol_vector_destroy() upon this value.
  */
-	extern apol_vector_t *seaudit_model_get_malformed_messages(seaudit_log_t * log, seaudit_model_t * model);
+	extern apol_vector_t *seaudit_model_get_malformed_messages(const seaudit_log_t * log, seaudit_model_t * model);
 
 /**
  * Return the number of avc allow messages currently within the model.
@@ -304,7 +304,7 @@ extern "C"
  *
  * @return Number of allow messages in the model.  This could be zero.
  */
-	extern size_t seaudit_model_get_num_allows(seaudit_log_t * log, seaudit_model_t * model);
+	extern size_t seaudit_model_get_num_allows(const seaudit_log_t * log, seaudit_model_t * model);
 
 /**
  * Return the number of avc deny messages currently within the model.
@@ -316,7 +316,7 @@ extern "C"
  *
  * @return Number of deny messages in the model.  This could be zero.
  */
-	extern size_t seaudit_model_get_num_denies(seaudit_log_t * log, seaudit_model_t * model);
+	extern size_t seaudit_model_get_num_denies(const seaudit_log_t * log, seaudit_model_t * model);
 
 /**
  * Return the number of boolean change messages currently within the
@@ -329,7 +329,7 @@ extern "C"
  * @return Number of boolean messages in the model.  This could be
  * zero.
  */
-	extern size_t seaudit_model_get_num_bools(seaudit_log_t * log, seaudit_model_t * model);
+	extern size_t seaudit_model_get_num_bools(const seaudit_log_t * log, seaudit_model_t * model);
 
 /**
  * Return the number of load messages currently within the model.
@@ -341,7 +341,7 @@ extern "C"
  *
  * @return Number of load messages in the model.  This could be zero.
  */
-	extern size_t seaudit_model_get_num_loads(seaudit_log_t * log, seaudit_model_t * model);
+	extern size_t seaudit_model_get_num_loads(const seaudit_log_t * log, seaudit_model_t * model);
 
 #ifdef  __cplusplus
 }

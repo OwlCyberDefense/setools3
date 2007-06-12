@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-seaudit_avc_message_type_e seaudit_avc_message_get_message_type(seaudit_avc_message_t * avc)
+seaudit_avc_message_type_e seaudit_avc_message_get_message_type(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -39,7 +39,7 @@ seaudit_avc_message_type_e seaudit_avc_message_get_message_type(seaudit_avc_mess
 	return avc->msg;
 }
 
-long seaudit_avc_message_get_timestamp_nano(seaudit_avc_message_t * avc)
+long seaudit_avc_message_get_timestamp_nano(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -48,7 +48,7 @@ long seaudit_avc_message_get_timestamp_nano(seaudit_avc_message_t * avc)
 	return avc->tm_stmp_sec;
 }
 
-char *seaudit_avc_message_get_source_user(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_source_user(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -57,7 +57,7 @@ char *seaudit_avc_message_get_source_user(seaudit_avc_message_t * avc)
 	return avc->suser;
 }
 
-char *seaudit_avc_message_get_source_role(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_source_role(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -66,7 +66,7 @@ char *seaudit_avc_message_get_source_role(seaudit_avc_message_t * avc)
 	return avc->srole;
 }
 
-char *seaudit_avc_message_get_source_type(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_source_type(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -75,7 +75,7 @@ char *seaudit_avc_message_get_source_type(seaudit_avc_message_t * avc)
 	return avc->stype;
 }
 
-char *seaudit_avc_message_get_target_user(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_target_user(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -84,7 +84,7 @@ char *seaudit_avc_message_get_target_user(seaudit_avc_message_t * avc)
 	return avc->tuser;
 }
 
-char *seaudit_avc_message_get_target_role(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_target_role(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -93,7 +93,7 @@ char *seaudit_avc_message_get_target_role(seaudit_avc_message_t * avc)
 	return avc->trole;
 }
 
-char *seaudit_avc_message_get_target_type(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_target_type(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -102,7 +102,7 @@ char *seaudit_avc_message_get_target_type(seaudit_avc_message_t * avc)
 	return avc->ttype;
 }
 
-char *seaudit_avc_message_get_object_class(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_object_class(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -111,7 +111,7 @@ char *seaudit_avc_message_get_object_class(seaudit_avc_message_t * avc)
 	return avc->tclass;
 }
 
-apol_vector_t *seaudit_avc_message_get_perm(seaudit_avc_message_t * avc)
+const apol_vector_t *seaudit_avc_message_get_perm(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -120,7 +120,7 @@ apol_vector_t *seaudit_avc_message_get_perm(seaudit_avc_message_t * avc)
 	return avc->perms;
 }
 
-char *seaudit_avc_message_get_exe(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_exe(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -129,7 +129,7 @@ char *seaudit_avc_message_get_exe(seaudit_avc_message_t * avc)
 	return avc->exe;
 }
 
-char *seaudit_avc_message_get_comm(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_comm(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -138,7 +138,7 @@ char *seaudit_avc_message_get_comm(seaudit_avc_message_t * avc)
 	return avc->comm;
 }
 
-char *seaudit_avc_message_get_name(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_name(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -147,7 +147,7 @@ char *seaudit_avc_message_get_name(seaudit_avc_message_t * avc)
 	return avc->name;
 }
 
-unsigned int seaudit_avc_message_get_pid(seaudit_avc_message_t * avc)
+unsigned int seaudit_avc_message_get_pid(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -159,7 +159,7 @@ unsigned int seaudit_avc_message_get_pid(seaudit_avc_message_t * avc)
 	return avc->pid;
 }
 
-unsigned long seaudit_avc_message_get_inode(seaudit_avc_message_t * avc)
+unsigned long seaudit_avc_message_get_inode(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -171,7 +171,7 @@ unsigned long seaudit_avc_message_get_inode(seaudit_avc_message_t * avc)
 	return avc->inode;
 }
 
-char *seaudit_avc_message_get_path(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_path(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -180,7 +180,7 @@ char *seaudit_avc_message_get_path(seaudit_avc_message_t * avc)
 	return avc->path;
 }
 
-char *seaudit_avc_message_get_dev(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_dev(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -189,7 +189,7 @@ char *seaudit_avc_message_get_dev(seaudit_avc_message_t * avc)
 	return avc->dev;
 }
 
-char *seaudit_avc_message_get_netif(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_netif(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -198,7 +198,7 @@ char *seaudit_avc_message_get_netif(seaudit_avc_message_t * avc)
 	return avc->netif;
 }
 
-char *seaudit_avc_message_get_laddr(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_laddr(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -207,7 +207,7 @@ char *seaudit_avc_message_get_laddr(seaudit_avc_message_t * avc)
 	return avc->laddr;
 }
 
-int seaudit_avc_message_get_lport(seaudit_avc_message_t * avc)
+int seaudit_avc_message_get_lport(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -216,7 +216,7 @@ int seaudit_avc_message_get_lport(seaudit_avc_message_t * avc)
 	return avc->lport;
 }
 
-char *seaudit_avc_message_get_faddr(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_faddr(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -225,7 +225,7 @@ char *seaudit_avc_message_get_faddr(seaudit_avc_message_t * avc)
 	return avc->faddr;
 }
 
-int seaudit_avc_message_get_fport(seaudit_avc_message_t * avc)
+int seaudit_avc_message_get_fport(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -234,7 +234,7 @@ int seaudit_avc_message_get_fport(seaudit_avc_message_t * avc)
 	return avc->fport;
 }
 
-char *seaudit_avc_message_get_saddr(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_saddr(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -243,7 +243,7 @@ char *seaudit_avc_message_get_saddr(seaudit_avc_message_t * avc)
 	return avc->saddr;
 }
 
-int seaudit_avc_message_get_sport(seaudit_avc_message_t * avc)
+int seaudit_avc_message_get_sport(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -252,7 +252,7 @@ int seaudit_avc_message_get_sport(seaudit_avc_message_t * avc)
 	return avc->source;
 }
 
-char *seaudit_avc_message_get_daddr(seaudit_avc_message_t * avc)
+const char *seaudit_avc_message_get_daddr(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -261,7 +261,7 @@ char *seaudit_avc_message_get_daddr(seaudit_avc_message_t * avc)
 	return avc->daddr;
 }
 
-int seaudit_avc_message_get_dport(seaudit_avc_message_t * avc)
+int seaudit_avc_message_get_dport(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -270,7 +270,7 @@ int seaudit_avc_message_get_dport(seaudit_avc_message_t * avc)
 	return avc->dest;
 }
 
-int seaudit_avc_message_get_key(seaudit_avc_message_t * avc)
+int seaudit_avc_message_get_key(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -282,7 +282,7 @@ int seaudit_avc_message_get_key(seaudit_avc_message_t * avc)
 	return avc->key;
 }
 
-int seaudit_avc_message_get_cap(seaudit_avc_message_t * avc)
+int seaudit_avc_message_get_cap(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {
 		errno = EINVAL;
@@ -333,7 +333,7 @@ void avc_message_free(seaudit_avc_message_t * avc)
 /**
  * Build the misc string sans timestamp and serial number.
  */
-static char *avc_message_get_misc_string(seaudit_avc_message_t * avc)
+static char *avc_message_get_misc_string(const seaudit_avc_message_t * avc)
 {
 	char *s = NULL;
 	size_t len = 0;
@@ -385,7 +385,7 @@ static char *avc_message_get_misc_string(seaudit_avc_message_t * avc)
 	return s;
 }
 
-char *avc_message_to_string(seaudit_message_t * msg, const char *date)
+char *avc_message_to_string(const seaudit_message_t * msg, const char *date)
 {
 	seaudit_avc_message_t *avc = msg->data.avc;
 	const char *host = msg->host;
@@ -458,7 +458,7 @@ char *avc_message_to_string(seaudit_message_t * msg, const char *date)
 	return s;
 }
 
-char *avc_message_to_string_html(seaudit_message_t * msg, const char *date)
+char *avc_message_to_string_html(const seaudit_message_t * msg, const char *date)
 {
 	seaudit_avc_message_t *avc = msg->data.avc;
 	const char *host = msg->host;
@@ -542,7 +542,7 @@ char *avc_message_to_string_html(seaudit_message_t * msg, const char *date)
 	return s;
 }
 
-char *avc_message_to_misc_string(seaudit_avc_message_t * avc)
+char *avc_message_to_misc_string(const seaudit_avc_message_t * avc)
 {
 	char *s = avc_message_get_misc_string(avc);
 	size_t len;

@@ -60,7 +60,7 @@ extern "C"
 		POLSEARCH_TEST_COMMON, /*!< inherited common */
 		POLSEARCH_TEST_PERMISSIONS,	/*!< assigned permissions */
 		POLSEARCH_TEST_CATEGORIES,	/*!< assigned categories */
-		POLSEARCH_TEST_STATE,  /*!< boolean default state */
+		POLSEARCH_TEST_STATE   /*!< boolean default state */
 	} polsearch_test_cond_e;
 
 	/**

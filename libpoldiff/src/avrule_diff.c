@@ -102,18 +102,18 @@ typedef struct pseudo_avrule
 
 /******************** public avrule functions ********************/
 
-static void poldiff_avrule_get_stats(const poldiff_t * diff, size_t stats[5], unsigned int index)
+static void poldiff_avrule_get_stats(const poldiff_t * diff, size_t stats[5], unsigned int idx)
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return;
 	}
-	stats[0] = diff->avrule_diffs[index]->num_added;
-	stats[1] = diff->avrule_diffs[index]->num_removed;
-	stats[2] = diff->avrule_diffs[index]->num_modified;
-	stats[3] = diff->avrule_diffs[index]->num_added_type;
-	stats[4] = diff->avrule_diffs[index]->num_removed_type;
+	stats[0] = diff->avrule_diffs[idx]->num_added;
+	stats[1] = diff->avrule_diffs[idx]->num_removed;
+	stats[2] = diff->avrule_diffs[idx]->num_modified;
+	stats[3] = diff->avrule_diffs[idx]->num_added_type;
+	stats[4] = diff->avrule_diffs[idx]->num_removed_type;
 }
 
 void poldiff_avrule_get_stats_allow(const poldiff_t * diff, size_t stats[5])
@@ -260,17 +260,17 @@ static int poldiff_avrule_cmp(const void *x, const void *y, void *data __attribu
 	return b->branch - a->branch;
 }
 
-static const apol_vector_t *poldiff_get_avrule_vector(const poldiff_t * diff, unsigned int index)
+static const apol_vector_t *poldiff_get_avrule_vector(const poldiff_t * diff, unsigned int idx)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
-	if (diff->avrule_diffs[index]->diffs_sorted == 0) {
-		apol_vector_sort(diff->avrule_diffs[index]->diffs, poldiff_avrule_cmp, NULL);
-		diff->avrule_diffs[index]->diffs_sorted = 1;
+	if (diff->avrule_diffs[idx]->diffs_sorted == 0) {
+		apol_vector_sort(diff->avrule_diffs[idx]->diffs, poldiff_avrule_cmp, NULL);
+		diff->avrule_diffs[idx]->diffs_sorted = 1;
 	}
-	return diff->avrule_diffs[index]->diffs;
+	return diff->avrule_diffs[idx]->diffs;
 }
 
 const apol_vector_t *poldiff_get_avrule_vector_allow(const poldiff_t * diff)
@@ -539,13 +539,13 @@ void avrule_destroy(poldiff_avrule_summary_t ** rs)
 	}
 }
 
-static int avrule_reset(poldiff_t * diff, unsigned int index)
+static int avrule_reset(poldiff_t * diff, unsigned int idx)
 {
 	int error = 0;
 
-	avrule_destroy(&diff->avrule_diffs[index]);
-	diff->avrule_diffs[index] = avrule_create();
-	if (diff->avrule_diffs[index] == NULL) {
+	avrule_destroy(&diff->avrule_diffs[idx]);
+	diff->avrule_diffs[idx] = avrule_create();
+	if (diff->avrule_diffs[idx] == NULL) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		errno = error;
@@ -1155,7 +1155,7 @@ static poldiff_avrule_t *make_avdiff(poldiff_t * diff, poldiff_form_e form, pseu
 	return pa;
 }
 
-static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item, unsigned int index)
+static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item, unsigned int idx)
 {
 	pseudo_avrule_t *rule = (pseudo_avrule_t *) item;
 	poldiff_avrule_t *pa = NULL;
@@ -1262,23 +1262,23 @@ static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 		}
 	}
 
-	if (apol_vector_append(diff->avrule_diffs[index]->diffs, pa) < 0) {
+	if (apol_vector_append(diff->avrule_diffs[idx]->diffs, pa) < 0) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-		diff->avrule_diffs[index]->num_added++;
+		diff->avrule_diffs[idx]->num_added++;
 		break;
 	case POLDIFF_FORM_ADD_TYPE:
-		diff->avrule_diffs[index]->num_added_type++;
+		diff->avrule_diffs[idx]->num_added_type++;
 		break;
 	case POLDIFF_FORM_REMOVED:
-		diff->avrule_diffs[index]->num_removed++;
+		diff->avrule_diffs[idx]->num_removed++;
 		break;
 	case POLDIFF_FORM_REMOVE_TYPE:
-		diff->avrule_diffs[index]->num_removed_type++;
+		diff->avrule_diffs[idx]->num_removed_type++;
 		break;
 	default:
 		error = EBADRQC;       /* should never get here */
@@ -1286,7 +1286,7 @@ static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 		assert(0);
 		goto cleanup;
 	}
-	diff->avrule_diffs[index]->diffs_sorted = 0;
+	diff->avrule_diffs[idx]->diffs_sorted = 0;
 	retval = 0;
       cleanup:
 	if (retval < 0) {
@@ -1313,7 +1313,7 @@ int avrule_new_diff_auditallow(poldiff_t * diff, poldiff_form_e form, const void
 	return avrule_new_diff(diff, form, item, POLDIFF_AUDITALLOW_OFFSET);
 }
 
-static int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsigned int index)
+static int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsigned int idx)
 {
 	pseudo_avrule_t *r1 = (pseudo_avrule_t *) x;
 	pseudo_avrule_t *r2 = (pseudo_avrule_t *) y;
@@ -1425,13 +1425,13 @@ static int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsi
 			}
 			memcpy(pa->mod_rules, r2->rules, r2->num_rules * sizeof(qpol_avrule_t *));
 		}
-		if (apol_vector_append(diff->avrule_diffs[index]->diffs, pa) < 0) {
+		if (apol_vector_append(diff->avrule_diffs[idx]->diffs, pa) < 0) {
 			error = errno;
 			ERR(diff, "%s", strerror(error));
 			goto cleanup;
 		}
-		diff->avrule_diffs[index]->num_modified++;
-		diff->avrule_diffs[index]->diffs_sorted = 0;
+		diff->avrule_diffs[idx]->num_modified++;
+		diff->avrule_diffs[idx]->diffs_sorted = 0;
 	}
 	retval = 0;
       cleanup:
@@ -1462,7 +1462,7 @@ int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y)
 	return avrule_deep_diff(diff, x, y, POLDIFF_AUDITALLOW_OFFSET);
 }
 
-int avrule_enable_line_numbers(poldiff_t * diff, unsigned int index)
+int avrule_enable_line_numbers(poldiff_t * diff, unsigned int idx)
 {
 	const apol_vector_t *av = NULL;
 	poldiff_avrule_t *avrule = NULL;
@@ -1472,7 +1472,7 @@ int avrule_enable_line_numbers(poldiff_t * diff, unsigned int index)
 	int error = 0;
 	unsigned long lineno = 0;
 
-	av = poldiff_get_avrule_vector(diff, index);
+	av = poldiff_get_avrule_vector(diff, idx);
 
 	for (i = 0; i < apol_vector_get_size(av); i++) {
 		avrule = apol_vector_get_element(av, i);

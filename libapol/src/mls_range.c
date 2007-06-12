@@ -498,16 +498,16 @@ apol_vector_t *apol_mls_range_get_levels(const apol_policy_t * p, const apol_mls
 
 		const apol_vector_t *high_cats = apol_mls_level_get_cats(high_level);
 		for (size_t i = 0; i < apol_vector_get_size(high_cats); i++) {
-			char *name = apol_vector_get_element(high_cats, i);
+			char *cat_name = apol_vector_get_element(high_cats, i);
 
 			size_t j;
 			/* do not add categories that are not members of
 			   the level */
-			if (apol_vector_get_index(catv, name, mls_level_name_to_cat_comp, q, &j) < 0) {
+			if (apol_vector_get_index(catv, cat_name, mls_level_name_to_cat_comp, q, &j) < 0) {
 				/* this category is not legal under the given policy */
 				continue;
 			}
-			if (apol_mls_level_append_cats(p, ml, name) < 0) {
+			if (apol_mls_level_append_cats(p, ml, cat_name) < 0) {
 				error = errno;
 				apol_mls_level_destroy(&ml);
 				ERR(p, "%s", strerror(error));

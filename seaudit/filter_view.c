@@ -223,7 +223,7 @@ static void filter_view_context_items_to_entries(struct filter_view *fv)
 
 static void filter_view_init_context(struct filter_view *fv)
 {
-	apol_vector_t *v;
+	const apol_vector_t *v;
 	v = seaudit_filter_get_source_user(fv->filter);
 	if (v != NULL && (fv->suser.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
@@ -267,9 +267,9 @@ static void filter_view_init_context(struct filter_view *fv)
  * is NULL then clear the entry's contents; otherwise set the entry to
  * the returned string.
  */
-static void filter_view_init_entry(struct filter_view *fv, char *(*accessor) (seaudit_filter_t *), GtkEntry * entry)
+static void filter_view_init_entry(struct filter_view *fv, const char *(*accessor) (const seaudit_filter_t *), GtkEntry * entry)
 {
-	char *s = accessor(fv->filter);
+	const char *s = accessor(fv->filter);
 	if (s == NULL) {
 		s = "";
 	}
@@ -305,7 +305,8 @@ static void filter_view_init_other(struct filter_view *fv)
 
 static void filter_view_init_date(struct filter_view *fv)
 {
-	struct tm *start, *end, values[2];
+	const struct tm *start, *end;
+	struct tm values[2];
 	int has_value[2] = { 0, 0 };
 	seaudit_filter_date_match_e match;
 	size_t i;
@@ -345,8 +346,8 @@ static void filter_view_init_date(struct filter_view *fv)
  */
 static void filter_view_init_dialog(struct filter_view *fv)
 {
-	char *name = seaudit_filter_get_name(fv->filter);
-	char *desc = seaudit_filter_get_description(fv->filter);;
+	const char *name = seaudit_filter_get_name(fv->filter);
+	const char *desc = seaudit_filter_get_description(fv->filter);;
 	if (name == NULL) {
 		name = "Untitled";
 	}

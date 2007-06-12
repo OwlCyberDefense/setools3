@@ -62,7 +62,7 @@ extern "C"
 		POLSEARCH_OP_AS_RANGE, /*!< has as range */
 		POLSEARCH_OP_AS_USER,  /*!< has as user */
 		POLSEARCH_OP_AS_ROLE,  /*!< has as role */
-		POLSEARCH_OP_AS_TYPE,  /*!< has as type */
+		POLSEARCH_OP_AS_TYPE   /*!< has as type */
 	} polsearch_op_e;
 
 	/** Value to indicate the type of the parameter value of a criterion */
@@ -74,7 +74,7 @@ extern "C"
 		POLSEARCH_PARAM_TYPE_RULE_TYPE,	/*!< parameter is a rule type code (int) */
 		POLSEARCH_PARAM_TYPE_BOOL,	/*!< parameter is a boolean value (bool) */
 		POLSEARCH_PARAM_TYPE_LEVEL,	/*!< parameter is an apol_mls_level_t * */
-		POLSEARCH_PARAM_TYPE_RANGE,	/*!< parameter is an apol_mls_range_t * */
+		POLSEARCH_PARAM_TYPE_RANGE	/*!< parameter is an apol_mls_range_t * */
 	} polsearch_param_type_e;
 
 #ifdef __cplusplus

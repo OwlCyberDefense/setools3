@@ -237,7 +237,7 @@ int seaudit_filter_set_match(seaudit_filter_t * filter, seaudit_filter_match_e m
 	return 0;
 }
 
-seaudit_filter_match_e seaudit_filter_get_match(seaudit_filter_t * filter)
+seaudit_filter_match_e seaudit_filter_get_match(const seaudit_filter_t * filter)
 {
 	return filter->match;
 }
@@ -259,7 +259,7 @@ int seaudit_filter_set_name(seaudit_filter_t * filter, const char *name)
 	return 0;
 }
 
-char *seaudit_filter_get_name(seaudit_filter_t * filter)
+const char *seaudit_filter_get_name(const seaudit_filter_t * filter)
 {
 	return filter->name;
 }
@@ -281,7 +281,7 @@ int seaudit_filter_set_description(seaudit_filter_t * filter, const char *desc)
 	return 0;
 }
 
-char *seaudit_filter_get_description(seaudit_filter_t * filter)
+const char *seaudit_filter_get_description(const seaudit_filter_t * filter)
 {
 	return filter->desc;
 }
@@ -291,7 +291,7 @@ char *seaudit_filter_get_description(seaudit_filter_t * filter)
  * and its strings.  Dupe the vector before destroying the existing
  * one, in case v is the same as tgt.
  */
-static int filter_set_vector(seaudit_filter_t * filter, apol_vector_t ** tgt, apol_vector_t * v)
+static int filter_set_vector(seaudit_filter_t * filter, apol_vector_t ** tgt, const apol_vector_t * v)
 {
 	apol_vector_t *new_v = NULL;
 	if (v != NULL) {
@@ -328,7 +328,7 @@ static int filter_set_string(seaudit_filter_t * filter, char **dest, const char 
 	return 0;
 }
 
-int seaudit_filter_set_source_user(seaudit_filter_t * filter, apol_vector_t * v)
+int seaudit_filter_set_source_user(seaudit_filter_t * filter, const apol_vector_t * v)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -337,7 +337,7 @@ int seaudit_filter_set_source_user(seaudit_filter_t * filter, apol_vector_t * v)
 	return filter_set_vector(filter, &filter->src_users, v);
 }
 
-apol_vector_t *seaudit_filter_get_source_user(seaudit_filter_t * filter)
+const apol_vector_t *seaudit_filter_get_source_user(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -346,7 +346,7 @@ apol_vector_t *seaudit_filter_get_source_user(seaudit_filter_t * filter)
 	return filter->src_users;
 }
 
-int seaudit_filter_set_source_role(seaudit_filter_t * filter, apol_vector_t * v)
+int seaudit_filter_set_source_role(seaudit_filter_t * filter, const apol_vector_t * v)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -355,7 +355,7 @@ int seaudit_filter_set_source_role(seaudit_filter_t * filter, apol_vector_t * v)
 	return filter_set_vector(filter, &filter->src_roles, v);
 }
 
-apol_vector_t *seaudit_filter_get_source_role(seaudit_filter_t * filter)
+const apol_vector_t *seaudit_filter_get_source_role(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -364,7 +364,7 @@ apol_vector_t *seaudit_filter_get_source_role(seaudit_filter_t * filter)
 	return filter->src_roles;
 }
 
-int seaudit_filter_set_source_type(seaudit_filter_t * filter, apol_vector_t * v)
+int seaudit_filter_set_source_type(seaudit_filter_t * filter, const apol_vector_t * v)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -373,7 +373,7 @@ int seaudit_filter_set_source_type(seaudit_filter_t * filter, apol_vector_t * v)
 	return filter_set_vector(filter, &filter->src_types, v);
 }
 
-apol_vector_t *seaudit_filter_get_source_type(seaudit_filter_t * filter)
+const apol_vector_t *seaudit_filter_get_source_type(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -382,7 +382,7 @@ apol_vector_t *seaudit_filter_get_source_type(seaudit_filter_t * filter)
 	return filter->src_types;
 }
 
-int seaudit_filter_set_target_user(seaudit_filter_t * filter, apol_vector_t * v)
+int seaudit_filter_set_target_user(seaudit_filter_t * filter, const apol_vector_t * v)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -391,7 +391,7 @@ int seaudit_filter_set_target_user(seaudit_filter_t * filter, apol_vector_t * v)
 	return filter_set_vector(filter, &filter->tgt_users, v);
 }
 
-apol_vector_t *seaudit_filter_get_target_user(seaudit_filter_t * filter)
+const apol_vector_t *seaudit_filter_get_target_user(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -400,7 +400,7 @@ apol_vector_t *seaudit_filter_get_target_user(seaudit_filter_t * filter)
 	return filter->tgt_users;
 }
 
-int seaudit_filter_set_target_role(seaudit_filter_t * filter, apol_vector_t * v)
+int seaudit_filter_set_target_role(seaudit_filter_t * filter, const apol_vector_t * v)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -409,7 +409,7 @@ int seaudit_filter_set_target_role(seaudit_filter_t * filter, apol_vector_t * v)
 	return filter_set_vector(filter, &filter->tgt_roles, v);
 }
 
-apol_vector_t *seaudit_filter_get_target_role(seaudit_filter_t * filter)
+const apol_vector_t *seaudit_filter_get_target_role(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -418,7 +418,7 @@ apol_vector_t *seaudit_filter_get_target_role(seaudit_filter_t * filter)
 	return filter->tgt_roles;
 }
 
-int seaudit_filter_set_target_type(seaudit_filter_t * filter, apol_vector_t * v)
+int seaudit_filter_set_target_type(seaudit_filter_t * filter, const apol_vector_t * v)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -427,7 +427,7 @@ int seaudit_filter_set_target_type(seaudit_filter_t * filter, apol_vector_t * v)
 	return filter_set_vector(filter, &filter->tgt_types, v);
 }
 
-apol_vector_t *seaudit_filter_get_target_type(seaudit_filter_t * filter)
+const apol_vector_t *seaudit_filter_get_target_type(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -436,7 +436,7 @@ apol_vector_t *seaudit_filter_get_target_type(seaudit_filter_t * filter)
 	return filter->tgt_types;
 }
 
-int seaudit_filter_set_target_class(seaudit_filter_t * filter, apol_vector_t * v)
+int seaudit_filter_set_target_class(seaudit_filter_t * filter, const apol_vector_t * v)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -445,7 +445,7 @@ int seaudit_filter_set_target_class(seaudit_filter_t * filter, apol_vector_t * v
 	return filter_set_vector(filter, &filter->tgt_classes, v);
 }
 
-apol_vector_t *seaudit_filter_get_target_class(seaudit_filter_t * filter)
+const apol_vector_t *seaudit_filter_get_target_class(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -463,7 +463,7 @@ int seaudit_filter_set_executable(seaudit_filter_t * filter, const char *exe)
 	return filter_set_string(filter, &filter->exe, exe);
 }
 
-char *seaudit_filter_get_executable(seaudit_filter_t * filter)
+const char *seaudit_filter_get_executable(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -481,7 +481,7 @@ int seaudit_filter_set_host(seaudit_filter_t * filter, const char *host)
 	return filter_set_string(filter, &filter->host, host);
 }
 
-char *seaudit_filter_get_host(seaudit_filter_t * filter)
+const char *seaudit_filter_get_host(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -499,7 +499,7 @@ int seaudit_filter_set_path(seaudit_filter_t * filter, const char *path)
 	return filter_set_string(filter, &filter->path, path);
 }
 
-char *seaudit_filter_get_path(seaudit_filter_t * filter)
+const char *seaudit_filter_get_path(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -517,7 +517,7 @@ int seaudit_filter_set_command(seaudit_filter_t * filter, const char *command)
 	return filter_set_string(filter, &filter->comm, command);
 }
 
-char *seaudit_filter_get_command(seaudit_filter_t * filter)
+const char *seaudit_filter_get_command(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -535,7 +535,7 @@ int seaudit_filter_set_ipaddress(seaudit_filter_t * filter, const char *ipaddr)
 	return filter_set_string(filter, &filter->ipaddr, ipaddr);
 }
 
-char *seaudit_filter_get_ipaddress(seaudit_filter_t * filter)
+const char *seaudit_filter_get_ipaddress(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -561,7 +561,7 @@ int seaudit_filter_set_port(seaudit_filter_t * filter, const int port)
 	return 0;
 }
 
-int seaudit_filter_get_port(seaudit_filter_t * filter)
+int seaudit_filter_get_port(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -579,7 +579,7 @@ int seaudit_filter_set_netif(seaudit_filter_t * filter, const char *netif)
 	return filter_set_string(filter, &filter->netif, netif);
 }
 
-char *seaudit_filter_get_netif(seaudit_filter_t * filter)
+const char *seaudit_filter_get_netif(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -601,7 +601,7 @@ int seaudit_filter_set_message_type(seaudit_filter_t * filter, const seaudit_avc
 	return 0;
 }
 
-seaudit_avc_message_type_e seaudit_filter_get_message_type(seaudit_filter_t * filter)
+seaudit_avc_message_type_e seaudit_filter_get_message_type(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
@@ -656,7 +656,8 @@ int seaudit_filter_set_date(seaudit_filter_t * filter, const struct tm *start, c
 	return 0;
 }
 
-void seaudit_filter_get_date(seaudit_filter_t * filter, struct tm **start, struct tm **end, seaudit_filter_date_match_e * match)
+void seaudit_filter_get_date(const seaudit_filter_t * filter, const struct tm **start, const struct tm **end,
+			     seaudit_filter_date_match_e * match)
 {
 	if (start != NULL) {
 		*start = NULL;
@@ -1271,7 +1272,7 @@ static const struct filter_criteria_t filter_criteria[] = {
 	{"date_time", filter_date_support, filter_date_accept, filter_date_read, filter_date_print}
 };
 
-int seaudit_filter_save_to_file(seaudit_filter_t * filter, const char *filename)
+int seaudit_filter_save_to_file(const seaudit_filter_t * filter, const char *filename)
 {
 	FILE *file;
 	const char *XML_VER = "<?xml version=\"1.0\"?>\n";
@@ -1298,7 +1299,7 @@ void filter_set_model(seaudit_filter_t * filter, seaudit_model_t * model)
 	filter->model = model;
 }
 
-int filter_is_accepted(seaudit_filter_t * filter, const seaudit_message_t * msg)
+int filter_is_accepted(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
 	int tried_test = 0, acceptval;
 	size_t i;
@@ -1472,7 +1473,7 @@ int filter_parse_xml(struct filter_parse_state *state, const char *filename)
 	return 0;
 }
 
-void filter_append_to_file(seaudit_filter_t * filter, FILE * file, int tabs)
+void filter_append_to_file(const seaudit_filter_t * filter, FILE * file, int tabs)
 {
 	xmlChar *escaped;
 	xmlChar *str_xml;

@@ -38,7 +38,7 @@ extern "C"
 #include <apol/vector.h>
 
 	typedef struct seaudit_log seaudit_log_t;
-	typedef void (*seaudit_handle_fn_t) (void *arg, seaudit_log_t * log, int level, const char *fmt, va_list va_args);
+	typedef void (*seaudit_handle_fn_t) (void *arg, const seaudit_log_t * log, int level, const char *fmt, va_list va_args);
 
 /**
  * Define the types of logs that this library can parse.
@@ -85,7 +85,7 @@ extern "C"
  * @return Vector of sorted users, or NULL upon error.  The caller
  * must call apol_vector_destroy() upon the return value.
  */
-	apol_vector_t *seaudit_log_get_users(seaudit_log_t * log);
+	apol_vector_t *seaudit_log_get_users(const seaudit_log_t * log);
 
 /**
  * Return a vector of strings corresponding to all roles found within
@@ -96,7 +96,7 @@ extern "C"
  * @return Vector of sorted roles, or NULL upon error.  The caller
  * must call apol_vector_destroy() upon the return value.
  */
-	apol_vector_t *seaudit_log_get_roles(seaudit_log_t * log);
+	apol_vector_t *seaudit_log_get_roles(const seaudit_log_t * log);
 
 /**
  * Return a vector of strings corresponding to all types found within
@@ -107,7 +107,7 @@ extern "C"
  * @return Vector of sorted types, or NULL upon error.  The caller
  * must call apol_vector_destroy() upon the return value.
  */
-	apol_vector_t *seaudit_log_get_types(seaudit_log_t * log);
+	apol_vector_t *seaudit_log_get_types(const seaudit_log_t * log);
 
 /**
  * Return a vector of strings corresponding to all object classes
@@ -119,7 +119,7 @@ extern "C"
  * @return Vector of sorted classes, or NULL upon error.  The caller
  * must call apol_vector_destroy() upon the return value.
  */
-	apol_vector_t *seaudit_log_get_classes(seaudit_log_t * log);
+	apol_vector_t *seaudit_log_get_classes(const seaudit_log_t * log);
 
 #ifdef  __cplusplus
 }

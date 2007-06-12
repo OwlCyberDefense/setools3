@@ -31,7 +31,7 @@
 #include <string.h>
 #include <time.h>
 
-void *seaudit_message_get_data(seaudit_message_t * msg, seaudit_message_type_e * type)
+void *seaudit_message_get_data(const seaudit_message_t * msg, seaudit_message_type_e * type)
 {
 	if (type != NULL) {
 		*type = SEAUDIT_MESSAGE_TYPE_INVALID;
@@ -53,7 +53,7 @@ void *seaudit_message_get_data(seaudit_message_t * msg, seaudit_message_type_e *
 	}
 }
 
-struct tm *seaudit_message_get_time(seaudit_message_t * msg)
+const struct tm *seaudit_message_get_time(const seaudit_message_t * msg)
 {
 	if (!msg) {
 		errno = EINVAL;
@@ -62,7 +62,7 @@ struct tm *seaudit_message_get_time(seaudit_message_t * msg)
 	return msg->date_stamp;
 }
 
-char *seaudit_message_get_host(seaudit_message_t * msg)
+const char *seaudit_message_get_host(const seaudit_message_t * msg)
 {
 	if (!msg) {
 		errno = EINVAL;
@@ -73,7 +73,7 @@ char *seaudit_message_get_host(seaudit_message_t * msg)
 
 #define DATE_STR_SIZE 256
 
-char *seaudit_message_to_string(seaudit_message_t * msg)
+char *seaudit_message_to_string(const seaudit_message_t * msg)
 {
 	char date[DATE_STR_SIZE];
 	if (msg == NULL) {
@@ -94,7 +94,7 @@ char *seaudit_message_to_string(seaudit_message_t * msg)
 	}
 }
 
-char *seaudit_message_to_string_html(seaudit_message_t * msg)
+char *seaudit_message_to_string_html(const seaudit_message_t * msg)
 {
 	char date[DATE_STR_SIZE];
 	if (msg == NULL) {
@@ -115,7 +115,7 @@ char *seaudit_message_to_string_html(seaudit_message_t * msg)
 	}
 }
 
-char *seaudit_message_to_misc_string(seaudit_message_t * msg)
+char *seaudit_message_to_misc_string(const seaudit_message_t * msg)
 {
 	if (msg == NULL) {
 		errno = EINVAL;

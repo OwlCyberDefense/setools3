@@ -757,8 +757,8 @@ void toplevel_update_status_bar(toplevel_t * top)
 		message_view_t *view = toplevel_get_current_view(top);
 		size_t num_messages = seaudit_get_num_log_messages(top->s);
 		size_t num_view_messages;
-		struct tm *first = seaudit_get_log_first(top->s);
-		struct tm *last = seaudit_get_log_last(top->s);
+		const struct tm *first = seaudit_get_log_first(top->s);
+		const struct tm *last = seaudit_get_log_last(top->s);
 		assert(view != NULL);
 		num_view_messages = message_view_get_num_log_messages(view);
 		char *s, t1[256], t2[256];
@@ -792,7 +792,7 @@ void toplevel_update_tabs(toplevel_t * top)
 		GtkWidget *label = g_object_get_data(G_OBJECT(tab), "label");
 		message_view_t *v = g_object_get_data(G_OBJECT(tab), "view-object");
 		seaudit_model_t *model = message_view_get_model(v);
-		char *name = seaudit_model_get_name(model);
+		const char *name = seaudit_model_get_name(model);
 		gtk_label_set_text(GTK_LABEL(label), name);
 		i--;
 	}

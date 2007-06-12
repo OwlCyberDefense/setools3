@@ -50,7 +50,7 @@ struct seaudit
 	FILE *file;
 	char *log_path;
 	size_t num_log_messages;
-	struct tm *first, *last;
+	const struct tm *first, *last;
 	toplevel_t *top;
 };
 
@@ -199,12 +199,12 @@ size_t seaudit_get_num_log_messages(seaudit_t * s)
 	return s->num_log_messages;
 }
 
-struct tm *seaudit_get_log_first(seaudit_t * s)
+const struct tm *seaudit_get_log_first(seaudit_t * s)
 {
 	return s->first;
 }
 
-struct tm *seaudit_get_log_last(seaudit_t * s)
+const struct tm *seaudit_get_log_last(seaudit_t * s)
 {
 	return s->last;
 }

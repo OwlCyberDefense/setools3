@@ -44,6 +44,8 @@
 SWIGEXPORT seaudit_handle_fn_t seaudit_swig_message_callback = NULL;
 SWIGEXPORT void * seaudit_swig_message_callback_arg = NULL;
 
+/* forward declaration */
+extern char* strdup(const char*s);
 %}
 
 #ifdef SWIGJAVA
@@ -736,22 +738,22 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return;
 	};
 	const struct tm *get_start_date() {
-		struct tm *s;
-		struct tm *e;
+		const struct tm *s;
+		const struct tm *e;
 		seaudit_filter_date_match_e m;
 		seaudit_filter_get_date(self, &s, &e, &m);
 		return s;
 	};
 	const struct tm *get_end_date() {
-		struct tm *s;
-		struct tm *e;
+		const struct tm *s;
+		const struct tm *e;
 		seaudit_filter_date_match_e m;
 		seaudit_filter_get_date(self, &s, &e, &m);
 		return e;
 	};
 	seaudit_filter_date_match_e get_date_match() {
-		struct tm *s;
-		struct tm *e;
+		const struct tm *s;
+		const struct tm *e;
 		seaudit_filter_date_match_e m;
 		seaudit_filter_get_date(self, &s, &e, &m);
 		return m;

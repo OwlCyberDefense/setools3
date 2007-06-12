@@ -518,7 +518,7 @@ void policy_view_find_terules(policy_view_t * pv, seaudit_message_t * message)
 {
 	seaudit_message_type_e type = SEAUDIT_MESSAGE_TYPE_INVALID;
 	void *data = NULL;
-	char *stype = "", *ttype = "", *obj_class = "";
+	const char *stype = "", *ttype = "", *obj_class = "";
 	size_t i;
 	assert(pv->type_list != NULL);
 	assert(pv->class_list != NULL);

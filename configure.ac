@@ -154,7 +154,7 @@ AC_ARG_ENABLE(warnall,
               enable_warnall="$enableval")
 if test "x${enable_warnall}" = xyes; then
     WARNCFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic -Wuninitialized -fno-strict-aliasing -std=c99"
-    WARNCXXFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic -Wuninitialized -Wabi -fno-strict-aliasing"
+    WARNCXXFLAGS=" -O1 -Wall -Wshadow -Wundef -pedantic -Wuninitialized -Wabi -fno-strict-aliasing -Wno-variadic-macros"
     WARNJFLAGS=" -verbose"
     WARNLDFLAGS=""
 else

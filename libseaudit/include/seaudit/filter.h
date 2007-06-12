@@ -130,7 +130,7 @@ extern "C"
  *
  * @see seaudit_filter_create_from_file()
  */
-	extern int seaudit_filter_save_to_file(seaudit_filter_t * filter, const char *filename);
+	extern int seaudit_filter_save_to_file(const seaudit_filter_t * filter, const char *filename);
 
 /**
  * Set a filter to accept a message if all criteria are met (default
@@ -150,7 +150,7 @@ extern "C"
  *
  * @return One of SEAUDIT_FILTER_MATCH_ALL or SEAUDIT_FILTER_MATCH_ANY.
  */
-	extern seaudit_filter_match_e seaudit_filter_get_match(seaudit_filter_t * filter);
+	extern seaudit_filter_match_e seaudit_filter_get_match(const seaudit_filter_t * filter);
 
 /**
  * Set the name of this filter, overwriting any previous name.
@@ -171,7 +171,7 @@ extern "C"
  * @return Name of the filter, or NULL if no name has been set.  Do
  * not free() or otherwise modify this string.
  */
-	extern char *seaudit_filter_get_name(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_name(const seaudit_filter_t * filter);
 
 /**
  * Set the description of this filter, overwriting any previous
@@ -194,7 +194,7 @@ extern "C"
  * @return Description of the filter, or NULL if no description has
  * been set.  Do not free() or otherwise modify this string.
  */
-	extern char *seaudit_filter_get_description(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_description(const seaudit_filter_t * filter);
 
 /**
  * Set the list of source users.  A message is accepted if its source
@@ -206,7 +206,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_source_user(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_source_user(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of source users for a filter.  This will be
@@ -216,7 +216,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_source_user(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_source_user(const seaudit_filter_t * filter);
 
 /**
  * Set the list of source roles.  A message is accepted if its source
@@ -228,7 +228,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_source_role(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_source_role(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of source roles for a filter.  This will be
@@ -238,7 +238,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_source_role(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_source_role(const seaudit_filter_t * filter);
 
 /**
  * Set the list of source types.  A message is accepted if its source
@@ -250,7 +250,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_source_type(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_source_type(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of source types for a filter.  This will be
@@ -260,7 +260,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_source_type(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_source_type(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target users.  A message is accepted if its target
@@ -272,7 +272,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_target_user(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_target_user(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of target users for a filter.  This will be
@@ -282,7 +282,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_target_user(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_target_user(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target roles.  A message is accepted if its target
@@ -294,7 +294,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_target_role(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_target_role(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of target roles for a filter.  This will be
@@ -304,7 +304,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_target_role(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_target_role(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target types.  A message is accepted if its target
@@ -316,7 +316,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_target_type(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_target_type(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of target types for a filter.  This will be
@@ -326,7 +326,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_target_type(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_target_type(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target object classes.  A message is accepted if
@@ -338,7 +338,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_target_class(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_target_class(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of target object classes for a filter.
@@ -349,7 +349,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_target_class(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_target_class(const seaudit_filter_t * filter);
 
 /**
  * Set the executable criterion, as a glob expression.  A message is
@@ -372,7 +372,7 @@ extern "C"
  *
  * @return Glob expression for executable, or NULL if none set.
  */
-	extern char *seaudit_filter_get_executable(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_executable(const seaudit_filter_t * filter);
 
 /**
  * Set the host criterion, as a glob expression.  A message is
@@ -393,7 +393,7 @@ extern "C"
  *
  * @return Glob expression for host, or NULL if none set.
  */
-	extern char *seaudit_filter_get_host(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_host(const seaudit_filter_t * filter);
 
 /**
  * Set the path criterion, as a glob expression.  A message is
@@ -414,7 +414,7 @@ extern "C"
  *
  * @return Glob expression for path, or NULL if none set.
  */
-	extern char *seaudit_filter_get_path(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_path(const seaudit_filter_t * filter);
 
 /**
  * Set the command criterion, as a glob expression.  A message is
@@ -436,7 +436,7 @@ extern "C"
  *
  * @return Glob expression for command, or NULL if none set.
  */
-	extern char *seaudit_filter_get_command(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_command(const seaudit_filter_t * filter);
 
 /**
  * Set the IP address criterion, as a glob expression.  A message is
@@ -460,7 +460,7 @@ extern "C"
  *
  * @return Glob expression for address, or NULL if none set.
  */
-	extern char *seaudit_filter_get_ipaddress(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_ipaddress(const seaudit_filter_t * filter);
 
 /**
  * Set the port criterion.  A message is accepted if any of its ports
@@ -481,7 +481,7 @@ extern "C"
  *
  * @return Current port criterion, or 0 if none set.
  */
-	extern int seaudit_filter_get_port(seaudit_filter_t * filter);
+	extern int seaudit_filter_get_port(const seaudit_filter_t * filter);
 
 /**
  * Set the network interface criterion.  A message is accepted if its
@@ -504,7 +504,7 @@ extern "C"
  *
  * @return String for netif, or NULL if none set.
  */
-	extern char *seaudit_filter_get_netif(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_netif(const seaudit_filter_t * filter);
 
 /**
  * Set the type of AVC criterion.  A message is accepted if it matches
@@ -528,7 +528,7 @@ extern "C"
  * @return Type of AVC message to filter, or SEAUDIT_AVC_UNKNOWN if
  * none set.
  */
-	extern seaudit_avc_message_type_e seaudit_filter_get_message_type(seaudit_filter_t * filter);
+	extern seaudit_avc_message_type_e seaudit_filter_get_message_type(const seaudit_filter_t * filter);
 
 /**
  * Set the date/time criterion.  A message is accepted if its
@@ -562,7 +562,7 @@ extern "C"
  * structure are invalid.
  * @param date_match Pointer to location to set date matching option.
  */
-	extern void seaudit_filter_get_date(seaudit_filter_t * filter, struct tm **start, struct tm **end,
+	extern void seaudit_filter_get_date(const seaudit_filter_t * filter, const struct tm **start, const struct tm **end,
 					    seaudit_filter_date_match_e * match);
 
 #ifdef  __cplusplus

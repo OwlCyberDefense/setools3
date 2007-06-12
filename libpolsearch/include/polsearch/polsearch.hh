@@ -68,7 +68,7 @@ extern "C"
 		POLSEARCH_ELEMENT_FC_ENTRY,	/*!< sefs_entry_t */
 		POLSEARCH_ELEMENT_MLS_RANGE,	/*!< apol_mls_range_t */
 		POLSEARCH_ELEMENT_PERMISSION,	/*!< char * */
-		POLSEARCH_ELEMENT_BOOL_STATE,	/*!< bool */
+		POLSEARCH_ELEMENT_BOOL_STATE	/*!< bool */
 	} polsearch_element_e;
 
 #ifdef __cplusplus

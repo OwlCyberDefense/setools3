@@ -36,6 +36,9 @@
 #include <apol/policy.h>
 #include <apol/policy-path.h>
 #include <apol/util.h>
+
+/* forward declaration */
+extern char *strdup(const char *s);
 %}
 
 /* implement a custom non thread-safe error handler */
