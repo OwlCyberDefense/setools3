@@ -57,8 +57,6 @@
 SWIGEXPORT qpol_callback_fn_t qpol_swig_message_callback = NULL;
 SWIGEXPORT void * qpol_swig_message_callback_arg = NULL;
 
-/* forward declaration */
-extern char* strdup(const char*s);
 %}
 
 #ifdef SWIGJAVA

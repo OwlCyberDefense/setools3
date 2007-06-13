@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLSEARCH_TEST_H
-#define POLSEARCH_TEST_H
+#ifndef POLSEARCH_TEST_HH
+#define POLSEARCH_TEST_HH
 
 #include "polsearch.hh"
 #include "criterion.hh"
@@ -38,37 +38,6 @@ extern "C"
 
 #include <apol/vector.h>
 #include <apol/policy.h>
-
-	/** Value to indicate the test condition */
-	typedef enum polsearch_test_cond
-	{
-		POLSEARCH_TEST_NONE = 0,	/*!< only used for error conditions */
-		POLSEARCH_TEST_NAME,   /*!< primary name of the symbol */
-		POLSEARCH_TEST_ALIAS,  /*!< alias(es) of the symbol */
-		POLSEARCH_TEST_ATTRIBUTES,	/*!< assigned attributes */
-		POLSEARCH_TEST_ROLES,  /*!< assigned roles (or assigned to roles) */
-		POLSEARCH_TEST_AVRULE, /*!< there is an av rule */
-		POLSEARCH_TEST_TERULE, /*!< there is a type rule */
-		POLSEARCH_TEST_ROLEALLOW,	/*!< there is a role allow rule */
-		POLSEARCH_TEST_ROLETRANS,	/*!< there is a role_transition rule */
-		POLSEARCH_TEST_RANGETRANS,	/*!< there is a range_transition rule */
-		POLSEARCH_TEST_FCENTRY,	/*!< there is a file_contexts entry */
-		POLSEARCH_TEST_TYPES,  /*!< assigned types */
-		POLSEARCH_TEST_USERS,  /*!< assigned to users */
-		POLSEARCH_TEST_DEFAULT_LEVEL,	/*!< its default level */
-		POLSEARCH_TEST_RANGE,  /*!< assigned range */
-		POLSEARCH_TEST_COMMON, /*!< inherited common */
-		POLSEARCH_TEST_PERMISSIONS,	/*!< assigned permissions */
-		POLSEARCH_TEST_CATEGORIES,	/*!< assigned categories */
-		POLSEARCH_TEST_STATE   /*!< boolean default state */
-	} polsearch_test_cond_e;
-
-	/**
-	 * Get a string representing a test condition.
-	 * @param test The test condition for which to get the string representation.
-	 * @return A string representing the test, or NULL on error.
-	 */
-	extern const char *polsearch_test_cond_to_string(polsearch_test_cond_e test);
 
 #ifdef __cplusplus
 }
@@ -317,7 +286,7 @@ extern "C"
 	 * Run the test.
 	 * @see polsearch_test::run()
 	 */
-	extern apol_vector_t *polsearch_test_run(const polsearch_test_t * pt, const apol_policy_t * p, const sefs_fclist * fclist,
+	extern apol_vector_t *polsearch_test_run(const polsearch_test_t * pt, const apol_policy_t * p, const sefs_fclist_t * fclist,
 						 apol_vector_t * Xcandidates);
 	/**
 	 * Get the correct type of parameter to use for a criterion of a
@@ -396,4 +365,4 @@ extern "C"
 }
 #endif
 
-#endif				       /* POLSEARCH_TEST_H */
+#endif				       /* POLSEARCH_TEST_HH */

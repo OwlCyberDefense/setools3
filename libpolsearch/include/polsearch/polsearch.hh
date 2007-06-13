@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLSEARCH_H
-#define POLSEARCH_H
+#ifndef POLSEARCH_HH
+#define POLSEARCH_HH
 
 #ifdef __cplusplus
 extern "C"
@@ -71,6 +71,70 @@ extern "C"
 		POLSEARCH_ELEMENT_BOOL_STATE	/*!< bool */
 	} polsearch_element_e;
 
+	/** Value to indicate the test condition */
+	typedef enum polsearch_test_cond
+	{
+		POLSEARCH_TEST_NONE = 0,	/*!< only used for error conditions */
+		POLSEARCH_TEST_NAME,   /*!< primary name of the symbol */
+		POLSEARCH_TEST_ALIAS,  /*!< alias(es) of the symbol */
+		POLSEARCH_TEST_ATTRIBUTES,	/*!< assigned attributes */
+		POLSEARCH_TEST_ROLES,  /*!< assigned roles (or assigned to roles) */
+		POLSEARCH_TEST_AVRULE, /*!< there is an av rule */
+		POLSEARCH_TEST_TERULE, /*!< there is a type rule */
+		POLSEARCH_TEST_ROLEALLOW,	/*!< there is a role allow rule */
+		POLSEARCH_TEST_ROLETRANS,	/*!< there is a role_transition rule */
+		POLSEARCH_TEST_RANGETRANS,	/*!< there is a range_transition rule */
+		POLSEARCH_TEST_FCENTRY,	/*!< there is a file_contexts entry */
+		POLSEARCH_TEST_TYPES,  /*!< assigned types */
+		POLSEARCH_TEST_USERS,  /*!< assigned to users */
+		POLSEARCH_TEST_DEFAULT_LEVEL,	/*!< its default level */
+		POLSEARCH_TEST_RANGE,  /*!< assigned range */
+		POLSEARCH_TEST_COMMON, /*!< inherited common */
+		POLSEARCH_TEST_PERMISSIONS,	/*!< assigned permissions */
+		POLSEARCH_TEST_CATEGORIES,	/*!< assigned categories */
+		POLSEARCH_TEST_STATE   /*!< boolean default state */
+	} polsearch_test_cond_e;
+
+	/** Value to indicate the comparison operator for a parameter */
+	typedef enum polsearch_op
+	{
+		POLSEARCH_OP_NONE = 0, /*!< only used for error conditions */
+		POLSEARCH_OP_IS,       /*!< symbol (or state) is */
+		POLSEARCH_OP_MATCH_REGEX,	/*!< symbol name (or alias name) matches regular expression */
+		POLSEARCH_OP_RULE_TYPE,	/*!< is rule type */
+		POLSEARCH_OP_INCLUDE,  /*!< set includes */
+		POLSEARCH_OP_AS_SOURCE,	/*!< has as rule source */
+		POLSEARCH_OP_AS_TARGET,	/*!< has as rule target */
+		POLSEARCH_OP_AS_CLASS, /*!< has as rule class */
+		POLSEARCH_OP_AS_PERM,  /*!< has as rule permission */
+		POLSEARCH_OP_AS_DEFAULT,	/*!< has as rule default */
+		POLSEARCH_OP_AS_SRC_TGT,	/*!< has as rule source or target */
+		POLSEARCH_OP_AS_SRC_TGT_DFLT,	/*!< has as rule source, target, or default */
+		POLSEARCH_OP_AS_SRC_DFLT,	/*!< has as rule source or default */
+		POLSEARCH_OP_IN_COND,  /*!< is in a conditional with boolean */
+		POLSEARCH_OP_AS_LEVEL_EXACT, /*!< user level exact comparison */
+		POLSEARCH_OP_AS_LEVEL_DOM, /*!< user level dominates parameter */
+		POLSEARCH_OP_AS_LEVEL_DOMBY, /*!< user level dominated by parameter */
+		POLSEARCH_OP_AS_RANGE_EXACT, /*!< has exactly range */
+		POLSEARCH_OP_AS_RANGE_SUPER, /*!< has range that is a superset of parameter */
+		POLSEARCH_OP_AS_RANGE_SUB, /*!< has that is a subset of parameter range */
+		POLSEARCH_OP_AS_USER,  /*!< has as user */
+		POLSEARCH_OP_AS_ROLE,  /*!< has as role */
+		POLSEARCH_OP_AS_TYPE   /*!< has as type */
+	} polsearch_op_e;
+
+	/** Value to indicate the type of the parameter value of a criterion */
+	typedef enum polsearch_param_type
+	{
+		POLSEARCH_PARAM_TYPE_NONE = 0,	/*!< only used for error conditions */
+		POLSEARCH_PARAM_TYPE_REGEX,	/*!< parameter is a string (char *) representing a regular expression */
+		POLSEARCH_PARAM_TYPE_STR_LIST,	/*!< parameter is a string list (polsearch_string_list)*/
+		POLSEARCH_PARAM_TYPE_RULE_TYPE,	/*!< parameter is a rule type code (uint32_t) */
+		POLSEARCH_PARAM_TYPE_BOOL,	/*!< parameter is a boolean value (bool) */
+		POLSEARCH_PARAM_TYPE_LEVEL,	/*!< parameter is an apol_mls_level_t * */
+		POLSEARCH_PARAM_TYPE_RANGE	/*!< parameter is an apol_mls_range_t * */
+	} polsearch_param_type_e;
+
 #ifdef __cplusplus
 }
 
@@ -82,6 +146,8 @@ extern "C"
 #include "symbol_query.hh"
 #include "util.h"
 
+#include <stdint.h>
+
 #endif
 
-#endif				       /* POLSEARCH_H */
+#endif				       /* POLSEARCH_HH */

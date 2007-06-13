@@ -61,8 +61,6 @@
 SWIGEXPORT apol_callback_fn_t apol_swig_message_callback = NULL;
 SWIGEXPORT void * apol_swig_message_callback_arg = NULL;
 
-/* forward declaration */
-extern char* strdup(const char*s);
 %}
 
 #ifdef SWIGJAVA

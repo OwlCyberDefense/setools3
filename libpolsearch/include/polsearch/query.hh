@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLSEARCH_QUERY_H
-#define POLSEARCH_QUERY_H
+#ifndef POLSEARCH_QUERY_HH
+#define POLSEARCH_QUERY_HH
 
 #include "polsearch.hh"
 #include "test.hh"
@@ -158,4 +158,4 @@ extern "C"
 }
 #endif
 
-#endif				       /* POLSEARCH_QUERY_H */
+#endif				       /* POLSEARCH_QUERY_HH */

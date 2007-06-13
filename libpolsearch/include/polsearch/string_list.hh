@@ -23,8 +23,10 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLSEARCH_STRING_LIST_H
-#define POLSEARCH_STRING_LIST_H
+#ifndef POLSEARCH_STRING_LIST_HH
+#define POLSEARCH_STRING_LIST_HH
+
+#include <polsearch/polsearch.hh>
 
 #ifdef __cplusplus
 extern "C"
@@ -48,9 +50,12 @@ class polsearch_string_list
 	/**
 	 * Create a string list from a string.
 	 * @param str String representing the identifiers and logic operators.
-	 * @param Xvalid If \a true, The special identifier "X" may be used to
+	 * @param Xvalid If \a true, The special identifier \a X may be used to
 	 * represent that the current query candidates should be considered for
 	 * the field for which the identifiers are used.
+	 * @exception std::runtime_error Could not parse \a str or
+	 * invalid use of the special identifier \a X.
+	 * @see polsearch_is_X_valid()
 	 */
 	polsearch_string_list(const char *str, bool Xvalid = true) throw(std::runtime_error);
 	/**
@@ -88,6 +93,8 @@ class polsearch_string_list
 
 extern "C"
 {
+#else
+#include <stdbool.h>
 #endif
 
 //we do not want to wrap two copies of everything so have SWIG ignore the compatibility section.
@@ -104,8 +111,19 @@ extern "C"
 
 #endif				       /* SWIG */
 
+//do wrap the following top level functions
+
+	/**
+	 * Determine if the special identifier \a X is valid for a given element
+	 * and comparison operator.
+	 * @param elem_type The type of element queried.
+	 * @param opr The comparison operator used by the criterion.
+	 * @return If \a X is valid, return \a true, otherwise, return \a false.
+	 */
+	extern bool polsearch_is_X_valid(polsearch_element_e elem_type, polsearch_op_e opr);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif				       /* POLSEARCH_STRING_LIST_H */
+#endif				       /* POLSEARCH_STRING_LIST_HH */

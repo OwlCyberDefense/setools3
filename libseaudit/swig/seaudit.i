@@ -44,8 +44,6 @@
 SWIGEXPORT seaudit_handle_fn_t seaudit_swig_message_callback = NULL;
 SWIGEXPORT void * seaudit_swig_message_callback_arg = NULL;
 
-/* forward declaration */
-extern char* strdup(const char*s);
 %}
 
 #ifdef SWIGJAVA

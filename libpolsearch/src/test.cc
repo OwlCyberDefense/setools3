@@ -42,330 +42,14 @@ using std::string;
 using std::bad_alloc;
 using std::invalid_argument;
 
-const char *polsearch_test_cond_to_string(polsearch_test_cond_e test)
-{
-	switch (test)
-	{
-	case POLSEARCH_TEST_NAME:
-	{
-		return "its name";
-	}
-	case POLSEARCH_TEST_ALIAS:
-	{
-		return "it has an alias";
-	}
-	case POLSEARCH_TEST_ATTRIBUTES:
-	{
-		return "its assigned attributes";
-	}
-	case POLSEARCH_TEST_ROLES:
-	{
-		return "its assigned roles";
-	}
-	case POLSEARCH_TEST_AVRULE:
-	{
-		return "there is an av tule";
-	}
-	case POLSEARCH_TEST_TERULE:
-	{
-		return "there is a type rule";
-	}
-	case POLSEARCH_TEST_ROLEALLOW:
-	{
-		return "there is a role allow rule";
-	}
-	case POLSEARCH_TEST_ROLETRANS:
-	{
-		return "there is a role_transition rule";
-	}
-	case POLSEARCH_TEST_RANGETRANS:
-	{
-		return "there is a range_transition rule";
-	}
-	case POLSEARCH_TEST_FCENTRY:
-	{
-		return "there is a file_context entry";
-	}
-	case POLSEARCH_TEST_TYPES:
-	{
-		return "its assigned types";
-	}
-	case POLSEARCH_TEST_USERS:
-	{
-		return "it is assigned to users";
-	}
-	case POLSEARCH_TEST_DEFAULT_LEVEL:
-	{
-		return "its default level";
-	}
-	case POLSEARCH_TEST_RANGE:
-	{
-		return "its assigned range";
-	}
-	case POLSEARCH_TEST_COMMON:
-	{
-		return "its inherited common";
-	}
-	case POLSEARCH_TEST_PERMISSIONS:
-	{
-		return "its assigned permissions";
-	}
-	case POLSEARCH_TEST_CATEGORIES:
-	{
-		return "its assigned categories";
-	}
-	case POLSEARCH_TEST_STATE:
-	{
-		return "its default state";
-	}
-	case POLSEARCH_TEST_NONE:
-	default:
-	{
-		return "";
-	}
-	}
-}
-
 // polsearch test
-
-/**
- * Test if a test condition is valid for a particular element type.
- * @param elem_type The element type.
- * @param test_cond The test condition.
- * @return If test condition \a test_cond is valid for \a elem_type,
- * return \a true, otherwise, return \a false.
- */
-static bool validate_elem_cond_combo(polsearch_element_e elem_type, polsearch_test_cond_e cond)
-{
-	switch (cond)
-	{
-	case POLSEARCH_TEST_NAME:
-	{
-		if (elem_type <= POLSEARCH_ELEMENT_BOOL)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ALIAS:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_TYPE || elem_type == POLSEARCH_ELEMENT_LEVEL ||
-		    elem_type == POLSEARCH_ELEMENT_CATEGORY)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ATTRIBUTES:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_TYPE)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ROLES:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_TYPE || elem_type == POLSEARCH_ELEMENT_USER)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_AVRULE:
-	case POLSEARCH_TEST_TERULE:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_TYPE || elem_type == POLSEARCH_ELEMENT_ATTRIBUTE ||
-		    elem_type == POLSEARCH_ELEMENT_CLASS)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ROLEALLOW:
-	case POLSEARCH_TEST_USERS:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_ROLE)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ROLETRANS:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_ROLE || elem_type == POLSEARCH_ELEMENT_TYPE ||
-		    elem_type == POLSEARCH_ELEMENT_ATTRIBUTE)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_RANGETRANS:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_TYPE || elem_type == POLSEARCH_ELEMENT_ATTRIBUTE ||
-		    elem_type == POLSEARCH_ELEMENT_CLASS || elem_type == POLSEARCH_ELEMENT_LEVEL ||
-		    elem_type == POLSEARCH_ELEMENT_CATEGORY)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_FCENTRY:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_TYPE || elem_type == POLSEARCH_ELEMENT_ROLE ||
-		    elem_type == POLSEARCH_ELEMENT_CLASS || elem_type == POLSEARCH_ELEMENT_LEVEL ||
-		    elem_type == POLSEARCH_ELEMENT_CATEGORY)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_TYPES:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_ROLE || elem_type == POLSEARCH_ELEMENT_ATTRIBUTE)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_DEFAULT_LEVEL:
-	case POLSEARCH_TEST_RANGE:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_USER)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_COMMON:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_CLASS)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_PERMISSIONS:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_CLASS || elem_type == POLSEARCH_ELEMENT_COMMON)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_CATEGORIES:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_LEVEL)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_STATE:
-	{
-		if (elem_type == POLSEARCH_ELEMENT_BOOL)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_NONE:
-	default:
-	{
-		return false;
-	}
-	}
-	return false;
-}
-
-/**
- * Test if a comparison operator is valid for a particular test condition and
- * type of element.
- * @param elem_type The type of element.
- * @param cond The test condition.
- * @param opr The comparison operator.
- * @return If operator \a opr is valid for \a cond and \a elem, return \a true,
- * otherwise, return \a false.
- */
-static bool validate_elem_cond_op_combo(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr)
-{
-	// First, validate that the condition makes sense for this element.
-	if (!validate_elem_cond_combo(elem_type, cond))
-		return false;
-
-	switch (cond)
-	{
-	case POLSEARCH_TEST_NAME:
-	{
-		if (opr == POLSEARCH_OP_IS || opr == POLSEARCH_OP_MATCH_REGEX)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ALIAS:
-	{
-		if (opr == POLSEARCH_OP_MATCH_REGEX)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ATTRIBUTES:
-	case POLSEARCH_TEST_ROLES:
-	case POLSEARCH_TEST_TYPES:
-	case POLSEARCH_TEST_USERS:
-	case POLSEARCH_TEST_COMMON:
-	case POLSEARCH_TEST_PERMISSIONS:
-	case POLSEARCH_TEST_CATEGORIES:
-	{
-		if (opr == POLSEARCH_OP_INCLUDE)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_AVRULE:
-	{
-		if (opr == POLSEARCH_OP_RULE_TYPE || opr == POLSEARCH_OP_AS_SOURCE ||
-		    opr == POLSEARCH_OP_AS_TARGET || opr == POLSEARCH_OP_AS_CLASS ||
-		    opr == POLSEARCH_OP_AS_SRC_TGT || opr == POLSEARCH_OP_IN_COND || opr == POLSEARCH_OP_AS_PERM)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_TERULE:
-	{
-		if (opr == POLSEARCH_OP_RULE_TYPE || opr == POLSEARCH_OP_AS_SOURCE ||
-		    opr == POLSEARCH_OP_AS_TARGET || opr == POLSEARCH_OP_AS_CLASS ||
-		    opr == POLSEARCH_OP_AS_SRC_TGT || opr == POLSEARCH_OP_IN_COND ||
-		    opr == POLSEARCH_OP_AS_DEFAULT || opr == POLSEARCH_OP_AS_SRC_DFLT || opr == POLSEARCH_OP_AS_SRC_TGT_DFLT)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ROLEALLOW:
-	{
-		if (opr == POLSEARCH_OP_AS_SOURCE || opr == POLSEARCH_OP_AS_TARGET || opr == POLSEARCH_OP_AS_SRC_TGT)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_ROLETRANS:
-	{
-		if (opr == POLSEARCH_OP_AS_SOURCE || opr == POLSEARCH_OP_AS_TARGET ||
-		    opr == POLSEARCH_OP_AS_DEFAULT || opr == POLSEARCH_OP_AS_SRC_DFLT)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_RANGETRANS:
-	{
-		if (opr == POLSEARCH_OP_AS_RANGE || opr == POLSEARCH_OP_AS_SOURCE ||
-		    opr == POLSEARCH_OP_AS_TARGET || opr == POLSEARCH_OP_AS_CLASS || opr == POLSEARCH_OP_AS_SRC_TGT)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_FCENTRY:
-	{
-		if (opr == POLSEARCH_OP_AS_USER || opr == POLSEARCH_OP_AS_ROLE ||
-		    opr == POLSEARCH_OP_AS_TYPE || opr == POLSEARCH_OP_AS_RANGE || opr == POLSEARCH_OP_AS_CLASS)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_DEFAULT_LEVEL:
-	{
-		if (opr == POLSEARCH_OP_AS_LEVEL)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_RANGE:
-	{
-		if (opr == POLSEARCH_OP_AS_RANGE)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_STATE:
-	{
-		if (opr == POLSEARCH_OP_IS)
-			return true;
-		break;
-	}
-	case POLSEARCH_TEST_NONE:
-	default:
-	{
-		return false;
-	}
-	}
-	return false;
-}
 
 polsearch_test::polsearch_test(polsearch_element_e elem_type, polsearch_test_cond_e cond) throw(std::bad_alloc,
 												std::invalid_argument)
 {
 	try
 	{
-		if (!validate_elem_cond_combo(elem_type, cond))
+		if (!polsearch_validate_test_condition(elem_type, cond))
 		{
 			string str = "Invalid test: \"";
 			str += polsearch_test_cond_to_string(cond);
@@ -423,7 +107,7 @@ apol_vector_t *polsearch_test::getValidOps() const throw(std::bad_alloc)
 		if (!result_v)
 			throw bad_alloc();
 		for (int op = POLSEARCH_OP_IS; op <= POLSEARCH_OP_AS_TYPE; op++)
-			if (validate_elem_cond_op_combo(this->_element_type, this->_test_cond, static_cast < polsearch_op_e > (op)))
+			if (polsearch_validate_operator(this->_element_type, this->_test_cond, static_cast < polsearch_op_e > (op)))
 				if (apol_vector_append(result_v, reinterpret_cast < void *>(op)))
 					throw bad_alloc();
 	}
@@ -436,7 +120,7 @@ apol_vector_t *polsearch_test::getValidOps() const throw(std::bad_alloc)
 
 polsearch_param_type_e polsearch_test::getParamType(polsearch_op_e opr) const
 {
-	if (!validate_elem_cond_op_combo(this->_element_type, this->_test_cond, opr))
+	if (!polsearch_validate_operator(this->_element_type, this->_test_cond, opr))
 		return POLSEARCH_PARAM_TYPE_NONE;
 	switch (opr)
 	{
@@ -471,11 +155,15 @@ polsearch_param_type_e polsearch_test::getParamType(polsearch_op_e opr) const
 	{
 		return POLSEARCH_PARAM_TYPE_RULE_TYPE;
 	}
-	case POLSEARCH_OP_AS_LEVEL:
+	case POLSEARCH_OP_AS_LEVEL_EXACT:
+	case POLSEARCH_OP_AS_LEVEL_DOM:
+	case POLSEARCH_OP_AS_LEVEL_DOMBY:
 	{
 		return POLSEARCH_PARAM_TYPE_LEVEL;
 	}
-	case POLSEARCH_OP_AS_RANGE:
+	case POLSEARCH_OP_AS_RANGE_EXACT:
+	case POLSEARCH_OP_AS_RANGE_SUPER:
+	case POLSEARCH_OP_AS_RANGE_SUB:
 	{
 		return POLSEARCH_PARAM_TYPE_RANGE;
 	}
