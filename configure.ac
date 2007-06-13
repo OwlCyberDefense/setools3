@@ -35,7 +35,7 @@ libsefs_pyswig_soname=_sefs.so.4
 libsefs_jswig_soname=libjsefs.so.4
 libsefs_tswig_soname=libtsefs.so.4
 
-libseaudit_version=4.1
+libseaudit_version=4.2
 libseaudit_soname=libseaudit.so.4
 libseaudit_pyswig_soname=_seaudit.so.4
 libseaudit_jswig_soname=libjseaudit.so.4

@@ -77,6 +77,17 @@ extern "C"
 	extern void seaudit_log_destroy(seaudit_log_t ** log);
 
 /**
+ * Remove all messages from the log.  The next time the model(s) that
+ * are watching this log are accessed, they will be refreshed.  Note
+ * that any existing pointers to messages within this log will become
+ * invalid.  (This function does not actually delete the log file from
+ * disk; it just removes them from memory.)
+ *
+ * @param log Log to clear.
+ */
+	extern void seaudit_log_clear(seaudit_log_t * log);
+
+/**
  * Return a vector of strings corresponding to all users found within
  * the log file.  The vector will be sorted alphabetically.
  *

@@ -820,7 +820,7 @@ static int avc_parse(seaudit_log_t * log, apol_vector_t * tokens)
 		/* for now, only let avc messages set their object
 		 * manager */
 		if ((t = strrchr(token, ':')) == NULL) {
-			WARN(log, "%s", "Expeceted to find an object manager here.");
+			WARN(log, "%s", "Expected to find an object manager here.");
 			has_warnings = 1;
 			/* Hold the position */
 		} else {

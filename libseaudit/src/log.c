@@ -85,6 +85,41 @@ void seaudit_log_destroy(seaudit_log_t ** log)
 	*log = NULL;
 }
 
+void seaudit_log_clear(seaudit_log_t * log)
+{
+	if (log == NULL) {
+		errno = EINVAL;
+		return;
+	}
+	apol_vector_destroy(&log->messages);
+	apol_vector_destroy(&log->malformed_msgs);
+	apol_bst_destroy(&log->types);
+	apol_bst_destroy(&log->classes);
+	apol_bst_destroy(&log->roles);
+	apol_bst_destroy(&log->users);
+	apol_bst_destroy(&log->perms);
+	apol_bst_destroy(&log->hosts);
+	apol_bst_destroy(&log->bools);
+	apol_bst_destroy(&log->managers);
+	if ((log->messages = apol_vector_create(message_free)) == NULL ||
+	    (log->malformed_msgs = apol_vector_create(free)) == NULL ||
+	    (log->types = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->classes = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->roles = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->users = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->perms = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->hosts = apol_bst_create(apol_str_strcmp, free)) == NULL
+	    || (log->bools = apol_bst_create(apol_str_strcmp, free)) == NULL
+	    || (log->managers = apol_bst_create(apol_str_strcmp, free)) == NULL) {
+		/* hopefully will never get here... */
+		return;
+	}
+	for (size_t i = 0; i < apol_vector_get_size(log->models); i++) {
+		seaudit_model_t *m = apol_vector_get_element(log->models, i);
+		model_notify_log_changed(m, log);
+	}
+}
+
 apol_vector_t *seaudit_log_get_users(const seaudit_log_t * log)
 {
 	if (log == NULL) {

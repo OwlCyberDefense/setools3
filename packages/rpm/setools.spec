@@ -19,7 +19,7 @@ Requires: setools-libs = %{version} setools-gui = %{version} setools-console = %
 %define libapol_ver 4.1
 %define libpoldiff_ver 1.2
 %define libsefs_ver 4.0
-%define libseaudit_ver 4.1
+%define libseaudit_ver 4.2
 
 %description
 SETools is a collection of graphical tools, command-line tools, and

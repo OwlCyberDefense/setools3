@@ -266,6 +266,9 @@ typedef struct seaudit_log {} seaudit_log_t;
 	~seaudit_log_t() {
 		seaudit_log_destroy(&self);
 	};
+	void clear () {
+		seaudit_log_clear(self);
+	};
 	%newobject get_users();
 	apol_vector_t *get_users() {
 		apol_vector_t *v;
