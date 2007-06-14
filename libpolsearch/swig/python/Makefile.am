@@ -6,9 +6,9 @@ wrappedpy_DATA = polsearch.py
 wrappedpydir = $(pkgpythondir)
 
 dist_noinst_DATA = $(srcdir)/../polsearch.i
-BUILT_SOURCES = polsearch_wrap.c
+BUILT_SOURCES = polsearch_wrap.cc
 
-AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -I$(top_builddir) -fpic \
 	-I$(top_srcdir)/libpolsearch/include
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
@@ -19,13 +19,13 @@ DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libpolsearch/src/libpolsearch.so
 
 $(BUILT_SOURCES): $(dist_noinst_DATA)
-	$(SWIG) $(SWIG_PYTHON_OPT) -o $@ \
+	$(SWIG) -c++ $(SWIG_PYTHON_OPT) -o $@ \
 	-I$(top_srcdir)/libpolsearch/include -I$(top_srcdir)/libsefs/include \
 	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig -I$(top_srcdir)/libsefs/swig $<
 
 $(wrappedso_DATA): $(BUILT_SOURCES)
-	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_PYTHON_CPPFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
+	$(CXX) -shared -o $@ $^ $(AM_CXXFLAGS) $(CXXFLAGS) $(SWIG_PYTHON_CPPFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ _polsearch.so
 

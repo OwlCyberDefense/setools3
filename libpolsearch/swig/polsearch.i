@@ -25,7 +25,7 @@
 %module polsearch
 
 %{
-#include <polsearch/util.h>
+#include "../../include/polsearch/util.h"
 %}
 
 const char *libpolsearch_get_version (void);

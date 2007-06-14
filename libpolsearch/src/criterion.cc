@@ -38,10 +38,12 @@
 #include <assert.h>
 #include <stdexcept>
 #include <typeinfo>
+#include <string>
 
 using std::invalid_argument;
 using std::bad_alloc;
 using std::type_info;
+using std::string;
 
 // base criterion
 polsearch_base_criterion::polsearch_base_criterion(polsearch_op_e opr, bool neg) throw(std::invalid_argument)
@@ -229,7 +231,7 @@ apol_vector_t *polsearch_criterion<T>::check(const apol_policy_t * p, const sefs
  */
 static polsearch_param_type_e get_param_type(const type_info& param_type_info)
 {
-	if (typeid(char*) == param_type_info)
+	if (typeid(string) == param_type_info)
 		return POLSEARCH_PARAM_TYPE_REGEX;
 	if (typeid(polsearch_string_list) == param_type_info)
 		return POLSEARCH_PARAM_TYPE_STR_LIST;
@@ -257,58 +259,6 @@ void polsearch_criterion<T>::_detect_param_type() throw(std::invalid_argument)
 		throw x;
 	}
 	_param_type = p;
-}
-
-// internal functions
-
-void free_criterion(void *pc)
-{
-	if (!pc)
-		return;
-
-	polsearch_base_criterion *crit = static_cast<polsearch_base_criterion *>(pc);
-
-	polsearch_param_type_e param_type = crit->paramType();
-	switch (param_type)
-	{
-		case POLSEARCH_PARAM_TYPE_REGEX:
-		{
-			delete dynamic_cast< polsearch_criterion<char*>* >(crit);
-		}
-		case POLSEARCH_PARAM_TYPE_STR_LIST:
-		{
-			delete dynamic_cast< polsearch_criterion<polsearch_string_list>* >(crit);
-		}
-		case POLSEARCH_PARAM_TYPE_RULE_TYPE:
-		{
-			delete dynamic_cast< polsearch_criterion<uint32_t>* >(crit);
-		}
-		case POLSEARCH_PARAM_TYPE_BOOL:
-		{
-			delete dynamic_cast< polsearch_criterion<bool>* >(crit);
-		}
-		case POLSEARCH_PARAM_TYPE_LEVEL:
-		{
-			delete dynamic_cast< polsearch_criterion<apol_mls_level_t*>* >(crit);
-		}
-		case POLSEARCH_PARAM_TYPE_RANGE:
-		{
-			delete dynamic_cast< polsearch_criterion<apol_mls_range_t*>* >(crit);
-		}
-		case POLSEARCH_PARAM_TYPE_NONE:
-		default:
-		{
-			/* should not get here */
-			assert(0);
-			return;
-		}
-	}
-}
-
-void *dup_criterion(const void *pc, void *x __attribute__ ((unused)))
-{
-	//TODO check which kind and return it.
-	return NULL;
 }
 
 
@@ -355,6 +305,12 @@ polsearch_criterion<apol_mls_level_t*>::polsearch_criterion(const polsearch_crit
 	}
 }
 
+template<>
+polsearch_criterion<apol_mls_level_t*>::~polsearch_criterion()
+{
+	apol_mls_level_destroy(&_param);
+}
+
 typedef apol_mls_range_t* apol_mls_range_tp; //makes gcc happy
 template<>
 polsearch_criterion<apol_mls_range_t*>::polsearch_criterion(polsearch_op_e opr, bool neg, const apol_mls_range_tp& parameter) throw(std::bad_alloc, std::invalid_argument)
@@ -396,15 +352,66 @@ polsearch_criterion<apol_mls_range_t*>::polsearch_criterion(const polsearch_crit
 	}
 }
 
+template<>
+polsearch_criterion<apol_mls_range_t*>::~polsearch_criterion()
+{
+	apol_mls_range_destroy(&_param);
+}
+
+// internal functions
+
+void free_criterion(void *pc)
+{
+	if (!pc)
+		return;
+
+	polsearch_base_criterion *crit = static_cast<polsearch_base_criterion *>(pc);
+
+	polsearch_param_type_e param_type = crit->paramType();
+	switch (param_type)
+	{
+		case POLSEARCH_PARAM_TYPE_REGEX:
+		{
+			delete dynamic_cast< polsearch_criterion<string>* >(crit);
+		}
+		case POLSEARCH_PARAM_TYPE_STR_LIST:
+		{
+			delete dynamic_cast< polsearch_criterion<polsearch_string_list>* >(crit);
+		}
+		case POLSEARCH_PARAM_TYPE_RULE_TYPE:
+		{
+			delete dynamic_cast< polsearch_criterion<uint32_t>* >(crit);
+		}
+		case POLSEARCH_PARAM_TYPE_BOOL:
+		{
+			delete dynamic_cast< polsearch_criterion<bool>* >(crit);
+		}
+		case POLSEARCH_PARAM_TYPE_LEVEL:
+		{
+			delete dynamic_cast< polsearch_criterion<apol_mls_level_t*>* >(crit);
+		}
+		case POLSEARCH_PARAM_TYPE_RANGE:
+		{
+			delete dynamic_cast< polsearch_criterion<apol_mls_range_t*>* >(crit);
+		}
+		case POLSEARCH_PARAM_TYPE_NONE:
+		default:
+		{
+			/* should not get here */
+			assert(0);
+			return;
+		}
+	}
+}
+
+void *dup_criterion(const void *pc, void *x __attribute__ ((unused)))
+{
+	//TODO check which kind and return it.
+	return NULL;
+}
+
 // C compatibility
 
-//TODO remove me: example of use
-void foo(void)
-{
-	polsearch_criterion<int> x;
-	apol_mls_level_t* l = NULL;
-	polsearch_criterion<apol_mls_level_t*>* p = new polsearch_criterion<apol_mls_level_t*>(POLSEARCH_OP_IS, true, l);
-}
 
 
 #endif /* POLSEARCH_CRITERION_CC */

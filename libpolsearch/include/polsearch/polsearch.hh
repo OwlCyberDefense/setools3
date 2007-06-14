@@ -127,7 +127,7 @@ extern "C"
 	typedef enum polsearch_param_type
 	{
 		POLSEARCH_PARAM_TYPE_NONE = 0,	/*!< only used for error conditions */
-		POLSEARCH_PARAM_TYPE_REGEX,	/*!< parameter is a string (char *) representing a regular expression */
+		POLSEARCH_PARAM_TYPE_REGEX,	/*!< parameter is a string (std::string) representing a regular expression */
 		POLSEARCH_PARAM_TYPE_STR_LIST,	/*!< parameter is a string list (polsearch_string_list)*/
 		POLSEARCH_PARAM_TYPE_RULE_TYPE,	/*!< parameter is a rule type code (uint32_t) */
 		POLSEARCH_PARAM_TYPE_BOOL,	/*!< parameter is a boolean value (bool) */

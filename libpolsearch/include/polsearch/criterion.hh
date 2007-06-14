@@ -49,7 +49,8 @@ extern "C"
 /**
  * A single criterion to be checked when running a test. This is the base
  * criterion with no parameter and by itself is not valid for use in a test;
- * use one of the specific criteria instead.
+ * use one of the specific criteria instead. This class also serves as a
+ * uniform base type for vectors of criteria with different parameter types.
  */
 class polsearch_base_criterion
 {

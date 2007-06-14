@@ -12,5 +12,5 @@ qpol-Extension-Name: com.tresys.setools.qpol
 qpol-Implementation-Version: @libqpol_version@
 apol-Extension-Name: com.tresys.setools.apol
 apol-Implementation-Version: @libapol_version@
-apol-Extension-Name: com.tresys.setools.sefs
-apol-Implementation-Version: @libsefs_version@
+sefs-Extension-Name: com.tresys.setools.sefs
+sefs-Implementation-Version: @libsefs_version@

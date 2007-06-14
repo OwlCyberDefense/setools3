@@ -10,13 +10,12 @@ wrappedjar_DATA = polsearch.jar
 wrappedjardir = $(libdir)/setools
 
 dist_noinst_DATA = $(srcdir)/../polsearch.i
-BUILT_SOURCES = polsearch_wrap.c \
+BUILT_SOURCES = polsearch_wrap.cc \
 	polsearch.java \
 	polsearchJNI.java
 
-AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
-	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \
-	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libpolsearch/include \
+AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -I$(top_builddir) -fpic \
 	-I$(top_srcdir)/libpolsearch/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@ \
 	-classpath $(top_builddir)/libqpol/swig/java/qpol.jar:$(top_builddir)/libapol/swig/java/apol.jar:$(top_builddir)/libsefs/swig/java/sefs.jar
@@ -28,15 +27,15 @@ DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libpolsearch/src/polsearch.so
 
 $(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA)
-	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ \
+	$(SWIG) -c++ $(SWIG_JAVA_OPT) -package $(package_name) -o $@ \
 	-I$(top_srcdir)/libpolsearch/include -I$(top_srcdir)/libsefs/include \
 	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<
 
 $(wordlist 2,$(words $(BUILT_SOURCES)), $(BUILT_SOURCES)): $(firstword $(BUILT_SOURCES))
 
-$(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
-	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_JAVA_CFLAGS) -DSWIGJAVA=1 $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
+$(wrappedso_DATA): $(filter %.cc, $(BUILT_SOURCES))
+	$(CXX) -shared -o $@ $^ $(AM_CXXFLAGS) $(CXXFLAGS) $(SWIG_JAVA_CFLAGS) -DSWIGJAVA=1 $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ $(short_name)
 
