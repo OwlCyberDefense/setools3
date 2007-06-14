@@ -6,7 +6,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2005-2007 Tresys Technology, LLC
+ * Copyright (C) 2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -112,12 +112,12 @@ extern "C"
 		POLSEARCH_OP_AS_SRC_TGT_DFLT,	/*!< has as rule source, target, or default */
 		POLSEARCH_OP_AS_SRC_DFLT,	/*!< has as rule source or default */
 		POLSEARCH_OP_IN_COND,  /*!< is in a conditional with boolean */
-		POLSEARCH_OP_AS_LEVEL_EXACT, /*!< user level exact comparison */
-		POLSEARCH_OP_AS_LEVEL_DOM, /*!< user level dominates parameter */
-		POLSEARCH_OP_AS_LEVEL_DOMBY, /*!< user level dominated by parameter */
-		POLSEARCH_OP_AS_RANGE_EXACT, /*!< has exactly range */
-		POLSEARCH_OP_AS_RANGE_SUPER, /*!< has range that is a superset of parameter */
-		POLSEARCH_OP_AS_RANGE_SUB, /*!< has that is a subset of parameter range */
+		POLSEARCH_OP_AS_LEVEL_EXACT,	/*!< user level exact comparison */
+		POLSEARCH_OP_AS_LEVEL_DOM,	/*!< user level dominates parameter */
+		POLSEARCH_OP_AS_LEVEL_DOMBY,	/*!< user level dominated by parameter */
+		POLSEARCH_OP_AS_RANGE_EXACT,	/*!< has exactly range */
+		POLSEARCH_OP_AS_RANGE_SUPER,	/*!< has range that is a superset of parameter */
+		POLSEARCH_OP_AS_RANGE_SUB,	/*!< has that is a subset of parameter range */
 		POLSEARCH_OP_AS_USER,  /*!< has as user */
 		POLSEARCH_OP_AS_ROLE,  /*!< has as role */
 		POLSEARCH_OP_AS_TYPE   /*!< has as type */
@@ -128,7 +128,7 @@ extern "C"
 	{
 		POLSEARCH_PARAM_TYPE_NONE = 0,	/*!< only used for error conditions */
 		POLSEARCH_PARAM_TYPE_REGEX,	/*!< parameter is a string (std::string) representing a regular expression */
-		POLSEARCH_PARAM_TYPE_STR_LIST,	/*!< parameter is a string list (polsearch_string_list)*/
+		POLSEARCH_PARAM_TYPE_STR_LIST,	/*!< parameter is a string list (polsearch_string_list) */
 		POLSEARCH_PARAM_TYPE_RULE_TYPE,	/*!< parameter is a rule type code (uint32_t) */
 		POLSEARCH_PARAM_TYPE_BOOL,	/*!< parameter is a boolean value (bool) */
 		POLSEARCH_PARAM_TYPE_LEVEL,	/*!< parameter is an apol_mls_level_t * */

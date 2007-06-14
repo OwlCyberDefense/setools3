@@ -6,7 +6,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2005-2007 Tresys Technology, LLC
+ * Copyright (C) 2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -53,16 +53,18 @@ class polsearch_string_list
 	 * @param Xvalid If \a true, The special identifier \a X may be used to
 	 * represent that the current query candidates should be considered for
 	 * the field for which the identifiers are used.
+	 * @exception std::bad_alloc Could not allocate space for internal data.
 	 * @exception std::runtime_error Could not parse \a str or
 	 * invalid use of the special identifier \a X.
 	 * @see polsearch_is_X_valid()
 	 */
-	polsearch_string_list(const char *str, bool Xvalid = true) throw(std::runtime_error);
+	polsearch_string_list(const char *str, bool Xvalid = true) throw(std::runtime_error, std::bad_alloc);
 	/**
 	 * Copy a string list.
 	 * @param sl The string list to copy.
+	 * @exception std::bad_alloc Could not copy internal vectors.
 	 */
-	 polsearch_string_list(const polsearch_string_list & sl);
+	 polsearch_string_list(const polsearch_string_list & sl) throw(std::bad_alloc);
 	//! Destructor.
 	~polsearch_string_list();
 

@@ -134,7 +134,8 @@ extern "C"
 	 * @return If parameter type \a param_type is valid for \a cond,
 	 * \a elem_type, and \a opr, return \a true, otherwise, return \a false.
 	 */
-	extern bool polsearch_validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr, polsearch_param_type_e param_type);
+	extern bool polsearch_validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr,
+						      polsearch_param_type_e param_type);
 
 #ifdef __cplusplus
 }
