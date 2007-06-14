@@ -35,23 +35,20 @@
 
 /******************** public functions below ********************/
 
-sefs_entry::sefs_entry(const sefs_entry * e) throw(std::bad_alloc)
+sefs_entry::sefs_entry(const sefs_entry * e)
 {
-	if ((_paths = apol_vector_create_from_vector(e->_paths, NULL, NULL, NULL)) == NULL)
-	{
-		throw std::bad_alloc();
-	}
 	_fclist = e->_fclist;
 	_context = e->_context;
 	_inode = e->_inode;
 	_dev = e->_dev;
 	_objectClass = e->_objectClass;
+	_path = e->_path;
 	_origin = e->_origin;
 }
 
 sefs_entry::~sefs_entry()
 {
-	apol_vector_destroy(&_paths);
+	// do nothing
 }
 
 const apol_context_t *sefs_entry::context() const
@@ -64,7 +61,7 @@ ino64_t sefs_entry::inode() const
 	return _inode;
 }
 
-dev_t sefs_entry::dev() const
+const char *sefs_entry::dev() const
 {
 	return _dev;
 }
@@ -74,9 +71,9 @@ uint32_t sefs_entry::objectClass() const
 	return _objectClass;
 }
 
-const apol_vector_t *sefs_entry::paths() const
+const char *sefs_entry::path() const
 {
-	return _paths;
+	return _path;
 }
 
 const char *sefs_entry::origin() const
@@ -121,51 +118,26 @@ char *sefs_entry::toString() const throw(std::bad_alloc)
 	}
 
 	char *s = NULL;
-	size_t len = 0;
-	for (size_t i = 0; i < apol_vector_get_size(_paths); i++)
+	if (asprintf(&s, "%s\t%s\t%s", _path, class_str, _context->context_str) < 0)
 	{
-		char *path = static_cast < char *>(apol_vector_get_element(_paths, i));
-		if (apol_str_appendf(&s, &len, "%s\t%s\t%s", path, class_str, _context->context_str) < 0)
-		{
-			_fclist->SEFS_ERR("%s", strerror(errno));
-			free(s);
-			throw std::bad_alloc();
-		}
+		_fclist->SEFS_ERR("%s", strerror(errno));
+		throw std::bad_alloc();
 	}
 	return s;
 }
 
 /******************** private functions below ********************/
 
-sefs_entry::sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node * context, uint32_t objectClass, const char *path,
-		       const char *origin)throw(std::bad_alloc)
+sefs_entry::sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node * context, uint32_t objectClass,
+		       const char *new_path, const char *origin)
 {
 	_fclist = fclist;
 	_context = context;
 	_objectClass = objectClass;
-	_paths = NULL;
 	_inode = 0;
-	_dev = 0;
+	_dev = NULL;
+	_path = new_path;
 	_origin = origin;
-	try
-	{
-		if ((_paths = apol_vector_create_with_capacity(1, NULL)) == NULL)
-		{
-			_fclist->SEFS_ERR("%s", strerror(errno));
-			throw std::bad_alloc();
-		}
-		// share the path pointer, so thus cast away the const
-		if (apol_vector_append(_paths, const_cast < char *>(path)) < 0)
-		{
-			_fclist->SEFS_ERR("%s", strerror(errno));
-			throw std::bad_alloc();
-		}
-	}
-	catch(...)
-	{
-		apol_vector_destroy(&_paths);
-		throw;
-	}
 }
 
 /******************** C functions below ********************/
@@ -190,7 +162,7 @@ ino64_t sefs_entry_get_inode(const sefs_entry_t * ent)
 	return ent->inode();
 }
 
-dev_t sefs_entry_get_dev(const sefs_entry_t * ent)
+const char *sefs_entry_get_dev(const sefs_entry_t * ent)
 {
 	if (ent == NULL)
 	{
@@ -210,14 +182,14 @@ uint32_t sefs_entry_get_object_class(const sefs_entry_t * ent)
 	return ent->objectClass();
 }
 
-const apol_vector_t *sefs_entry_get_paths(const sefs_entry_t * ent)
+const char *sefs_entry_get_path(const sefs_entry_t * ent)
 {
 	if (ent == NULL)
 	{
 		errno = EINVAL;
 		return NULL;
 	}
-	return ent->paths();
+	return ent->path();
 }
 
 const char *sefs_entry_get_origin(const sefs_entry_t * ent)

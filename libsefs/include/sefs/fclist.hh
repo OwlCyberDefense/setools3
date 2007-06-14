@@ -197,6 +197,7 @@ class sefs_fclist
 	sefs_fclist_type_e fclist_type;
 	apol_policy_t *policy;
 	struct apol_bst *user_tree, *role_tree, *type_tree, *range_tree, *path_tree;
+	struct apol_bst *dev_tree;
 	struct apol_bst *context_tree;
 
 	/**

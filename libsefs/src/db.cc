@@ -335,6 +335,7 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 		char hostname[64];
 		gethostname(hostname, sizeof(hostname));
 		hostname[63] = '\0';
+		_ctime = time(NULL);
 		char datetime[32];
 		ctime_r(&_ctime, datetime);
 
@@ -365,8 +366,6 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 		sqlite3_close(_db);
 		throw;
 	}
-	// FIX ME: record time
-	_ctime = time(NULL);
 }
 
 sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *varg) throw(std::invalid_argument,
@@ -547,6 +546,22 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			where_added = true;
 		}
 
+		if (q.range != NULL)
+		{
+			// FIX ME
+		}
+
+		if (query->_objclass != 0)
+		{
+			if (apol_str_appendf(&select_stmt, &len,
+					     "%s (inodes.obj_class = %d)", (where_added ? " AND" : " WHERE"), query->_objclass) < 0)
+			{
+				SEFS_ERR("%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			where_added = true;
+		}
+
 		if (q.path != NULL)
 		{
 			if (sqlite3_create_function(_db, "path_compare", 1, SQLITE_UTF8, &q, db_path_compare, NULL, NULL) !=
@@ -557,6 +572,28 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			}
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (path_compare(paths.path))", (where_added ? " AND" : " WHERE")) < 0)
+			{
+				SEFS_ERR("%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			where_added = true;
+		}
+
+		if (query->_inode != 0)
+		{
+			if (apol_str_appendf(&select_stmt, &len,
+					     "%s (inodes.ino = %lld)", (where_added ? " AND" : " WHERE"), query->_inode) < 0)
+			{
+				SEFS_ERR("%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			where_added = true;
+		}
+
+		if (query->_dev != 0)
+		{
+			if (apol_str_appendf(&select_stmt, &len,
+					     "%s (inodes.dev = %lld)", (where_added ? " AND" : " WHERE"), query->_dev) < 0)
 			{
 				SEFS_ERR("%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
@@ -762,9 +799,6 @@ bool sefs_db::isDB(const char *filename)
 
 void sefs_db::upgradeToDB2() throw(std::runtime_error)
 {
-	// FIX ME: dupe the database rather than modify the
-	// on-disk one?
-
 	char *errmsg;
 
 	// Add a role field for each inode entry within the database;
@@ -777,18 +811,13 @@ void sefs_db::upgradeToDB2() throw(std::runtime_error)
 	char datetime[32];
 	ctime_r(&_ctime, datetime);
 	char *alter_stmt = NULL;
-	if (asprintf(&alter_stmt,
-		     "BEGIN TRANSACTION;"
-		     "CREATE TABLE roles (role_id INTEGER PRIMARY KEY, role_name varchar (24));"
-		     "ALTER TABLE inodes ADD COLUMN role int DEFAULT 0;"
-		     "INSERT INTO roles (role_id, role_name) VALUES (0, 'object_r');"
-		     "UPDATE inodes SET obj_class = 11 WHERE obj_class = 16;"
-		     "UPDATE inodes SET obj_class = 10 WHERE obj_class = 8;"
-		     "UPDATE inodes SET obj_class = 7 WHERE obj_class = 2;"
-		     "UPDATE inodes SET obj_class = 13 WHERE obj_class = 64;"
-		     "UPDATE inodes SET obj_class = 6 WHERE obj_class = 1;"
-		     "UPDATE inodes SET obj_class = 9 WHERE obj_class = 4;"
-		     "UPDATE inodes SET obj_class = 12 WHERE obj_class = 32;"
+	if (asprintf(&alter_stmt, "BEGIN TRANSACTION;" "CREATE TABLE roles (role_id INTEGER PRIMARY KEY, role_name varchar (24));" "ALTER TABLE inodes ADD COLUMN role int DEFAULT 0;" "INSERT INTO roles (role_id, role_name) VALUES (0, 'object_r');" "UPDATE inodes SET obj_class = 11 WHERE obj_class = 16;"	// block file
+		     "UPDATE inodes SET obj_class = 10 WHERE obj_class = 8;"	// char file
+		     "UPDATE inodes SET obj_class = 7 WHERE obj_class = 2;"	// dir
+		     "UPDATE inodes SET obj_class = 13 WHERE obj_class = 64;"	// fifo file
+		     "UPDATE inodes SET obj_class = 6 WHERE obj_class = 1;"	// normal file
+		     "UPDATE inodes SET obj_class = 9 WHERE obj_class = 4;"	// link file
+		     "UPDATE inodes SET obj_class = 12 WHERE obj_class = 32;"	// sock file
 		     "UPDATE info SET value = '%s' WHERE key = 'datetime';" "END TRANSACTION;", datetime) < 0)
 	{
 		SEFS_ERR("%s", errmsg);
@@ -825,7 +854,7 @@ sefs_entry *sefs_db::getEntry(const struct sefs_context_node *context, uint32_t 
 	}
 	sefs_entry *e = new sefs_entry(this, context, objectClass, s);
 	e->_inode = inode;
-	e->_dev = dev;
+	// e->_dev = dev; FIX ME
 	return e;
 }
 

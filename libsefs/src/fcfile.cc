@@ -244,30 +244,25 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 				else
 				{
 					path_matched = false;
-					for (size_t j = 0; j < apol_vector_get_size(e->_paths); j++)
-					{
-						const char *path =
-							static_cast < const char *>(apol_vector_get_element(e->_paths, j));
-						size_t len = strlen(path);
-						char anchored_path[len + 3];
-						anchored_path[0] = '^';
-						memcpy(anchored_path + 1, path, len);
-						anchored_path[len + 1] = '$';
-						anchored_path[len + 2] = '\0';
-						regex_t regex;
+					size_t len = strlen(e->_path);
+					char anchored_path[len + 3];
+					anchored_path[0] = '^';
+					memcpy(anchored_path + 1, e->_path, len);
+					anchored_path[len + 1] = '$';
+					anchored_path[len + 2] = '\0';
+					regex_t regex;
 
-						if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
-						{
-							SEFS_ERR("%s", strerror(errno));
-							throw std::runtime_error(strerror(errno));
-						}
-						bool compval = query_str_compare(query->_path, anchored_path, &regex, true);
-						regfree(&regex);
-						if (compval)
-						{
-							path_matched = true;
-							break;
-						}
+					if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
+					{
+						SEFS_ERR("%s", strerror(errno));
+						throw std::runtime_error(strerror(errno));
+					}
+					bool compval = query_str_compare(query->_path, anchored_path, &regex, true);
+					regfree(&regex);
+					if (compval)
+					{
+						path_matched = true;
+						break;
 					}
 				}
 				if (!path_matched)

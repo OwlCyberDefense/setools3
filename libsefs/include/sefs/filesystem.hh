@@ -50,7 +50,7 @@ class sefs_filesystem:public sefs_fclist
 
 	friend struct sefs_context_node *filesystem_get_context(sefs_filesystem *, security_context_t) throw(std::bad_alloc);
 	friend sefs_entry *filesystem_get_entry(sefs_filesystem *, const struct sefs_context_node *, uint32_t,
-						const char *) throw(std::bad_alloc);
+						const char *, ino64_t, const char *) throw(std::bad_alloc);
 	friend bool filesystem_is_query_match(sefs_filesystem *, const sefs_query *, const char *, const struct stat64 *,
 					      apol_vector_t *, apol_mls_range_t *) throw(std::runtime_error);
 
@@ -117,9 +117,11 @@ class sefs_filesystem:public sefs_fclist
 	const char *root() const;
 
       private:
-	 bool isQueryMatch(const sefs_query * query, const char *path, const struct stat64 *sb, apol_vector_t * type_list,
-			   apol_mls_range_t * range) throw(std::runtime_error);
-	sefs_entry *getEntry(const struct sefs_context_node *context, uint32_t objectClass, const char *path) throw(std::bad_alloc);
+	 apol_vector_t * buildDevMap(void) throw(std::runtime_error);
+	bool isQueryMatch(const sefs_query * query, const char *path, const struct stat64 *sb, apol_vector_t * type_list,
+			  apol_mls_range_t * range) throw(std::runtime_error);
+	sefs_entry *getEntry(const struct sefs_context_node *context, uint32_t objectClass, const char *path, ino64_t ino,
+			     const char *dev_name) throw(std::bad_alloc);
 	char *_root;
 	bool _rw, _mls;
 	apol_vector_t *_mounts;

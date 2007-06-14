@@ -128,6 +128,7 @@ sefs_fclist::~sefs_fclist()
 	apol_bst_destroy(&type_tree);
 	apol_bst_destroy(&range_tree);
 	apol_bst_destroy(&path_tree);
+	apol_bst_destroy(&dev_tree);
 	apol_bst_destroy(&context_tree);
 }
 
@@ -204,6 +205,8 @@ sefs_fclist::sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, v
 	_varg = varg;
 	policy = NULL;
 	user_tree = role_tree = type_tree = range_tree = path_tree = NULL;
+	dev_tree = NULL;
+	context_tree = NULL;
 	try
 	{
 		if ((user_tree = apol_bst_create(apol_str_strcmp, free)) == NULL)
@@ -226,6 +229,10 @@ sefs_fclist::sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, v
 		{
 			throw std::bad_alloc();
 		}
+		if ((dev_tree = apol_bst_create(apol_str_strcmp, free)) == NULL)
+		{
+			throw std::bad_alloc();
+		}
 		if ((context_tree = apol_bst_create(fclist_sefs_context_node_comp, fclist_sefs_context_node_free)) == NULL)
 		{
 			throw std::bad_alloc();
@@ -238,6 +245,7 @@ sefs_fclist::sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, v
 		apol_bst_destroy(&type_tree);
 		apol_bst_destroy(&range_tree);
 		apol_bst_destroy(&path_tree);
+		apol_bst_destroy(&dev_tree);
 		apol_bst_destroy(&context_tree);
 		throw;
 	}

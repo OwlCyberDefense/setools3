@@ -216,6 +216,7 @@ struct filesystem_ftw_struct
 {
 	sefs_filesystem *fs;
 	sefs_query *query;
+	apol_vector_t *dev_map;	       //< vector of filesystem_dev entries
 	apol_vector_t *type_list;
 	apol_mls_range_t *range;
 	sefs_fclist_map_fn_t fn;
@@ -232,9 +233,9 @@ inline struct sefs_context_node *filesystem_get_context(sefs_filesystem * fs, se
 }
 
 inline sefs_entry *filesystem_get_entry(sefs_filesystem * fs, const struct sefs_context_node * node, uint32_t objClass,
-					const char *path)throw(std::bad_alloc)
+					const char *path, ino64_t ino, const char *dev_name)throw(std::bad_alloc)
 {
-	return fs->getEntry(node, objClass, path);
+	return fs->getEntry(node, objClass, path, ino, dev_name);
 }
 
 inline bool filesystem_is_query_match(sefs_filesystem * fs, const sefs_query * query, const char *path,
@@ -278,6 +279,27 @@ static uint32_t filesystem_stat_to_objclass(const struct stat64 *sb)
 	return 0;
 }
 
+struct filesystem_dev
+{
+	dev_t dev;
+	char *dev_name;		       //< pointer into the dev_tree
+};
+
+static int filesystem_dev_cmp(const void *a, const void *b __attribute__ ((unused)), void *arg)
+{
+	const struct filesystem_dev *d1 = static_cast < const struct filesystem_dev *>(a);
+	dev_t *d2 = static_cast < dev_t * >(arg);
+	if (d1->dev < *d2)
+	{
+		return -1;
+	}
+	else if (d1->dev > *d2)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, int typeflag
 				  __attribute__ ((unused)), struct FTW *ftwbuf __attribute__ ((unused)), void *data)
 {
@@ -313,10 +335,17 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	freecon(scon);
 
 	uint32_t objClass = filesystem_stat_to_objclass(sb);
+	size_t i;
+	void *dev_num = const_cast < void *>(static_cast < const void *>(&(sb->st_dev)));
+	int rc = apol_vector_get_index(s->dev_map, NULL, filesystem_dev_cmp, dev_num, &i);
+	assert(rc == 0);
+	struct filesystem_dev *d = static_cast < struct filesystem_dev *>(apol_vector_get_element(s->dev_map, i));
+	const char *dev_name = d->dev_name;
+
 	sefs_entry *entry = NULL;
 	try
 	{
-		entry = filesystem_get_entry(s->fs, node, objClass, fpath);
+		entry = filesystem_get_entry(s->fs, node, objClass, fpath, sb->st_ino, dev_name);
 	}
 	catch(...)
 	{
@@ -338,10 +367,12 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 int sefs_filesystem::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error)
 {
 	struct filesystem_ftw_struct s;
+	s.dev_map = NULL;
 	s.type_list = NULL;
 	s.range = NULL;
 	try
 	{
+		s.dev_map = buildDevMap();
 		if (query != NULL)
 		{
 			query->compile();
@@ -366,6 +397,7 @@ int sefs_filesystem::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, vo
 	}
 	catch(...)
 	{
+		apol_vector_destroy(&s.dev_map);
 		apol_vector_destroy(&s.type_list);
 		apol_mls_range_destroy(&s.range);
 		throw;
@@ -378,6 +410,7 @@ int sefs_filesystem::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, vo
 	s.retval = 0;
 
 	int retval = new_nftw64(_root, filesystem_ftw_handler, 1024, 0, &s);
+	apol_vector_destroy(&s.dev_map);
 	apol_vector_destroy(&s.type_list);
 	apol_mls_range_destroy(&s.range);
 	if (retval != 0 && !s.aborted)
@@ -400,6 +433,97 @@ const char *sefs_filesystem::root() const
 }
 
 /******************** private functions below ********************/
+
+static void filesystem_dev_free(void *elem)
+{
+	if (elem != NULL)
+	{
+		struct filesystem_dev *d = static_cast < struct filesystem_dev *>(elem);
+		// don't free the device name pointer, because it's pointing
+		// into the dev_tree BST
+		free(d);
+	}
+}
+
+/**
+ * For each entry in /etc/mtab, record the device number and the name
+ * of the mounted file system.  This provides the mapping between a
+ * device number and its source device.
+ *
+ * @return Vector of filesystem_dev entries.  The caller must call
+ * apol_vector_destroy() upon the vector afterwards.
+ * @exception If error allocating space, unable to open /etc/mtab, or
+ * unable to parse mtab file.
+ */
+apol_vector_t *sefs_filesystem::buildDevMap(void) throw(std::runtime_error)
+{
+	apol_vector_t *dev_map;
+	if ((dev_map = apol_vector_create(filesystem_dev_free)) == NULL)
+	{
+		SEFS_ERR("%s", strerror(errno));
+		throw std::runtime_error(strerror(errno));
+	}
+	FILE *f = NULL;
+	try
+	{
+		if ((f = fopen("/etc/mtab", "r")) == NULL)
+		{
+			SEFS_ERR("%s", strerror(errno));
+			throw std::runtime_error(strerror(errno));
+		}
+		char buf[256];
+		struct mntent mntbuf;
+		while (getmntent_r(f, &mntbuf, buf, 256) != NULL)
+		{
+			struct stat sb;
+			if (stat(mntbuf.mnt_dir, &sb) == -1)
+			{
+				SEFS_ERR("%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			else
+			{
+				struct filesystem_dev *d = static_cast < struct filesystem_dev *>(calloc(1, sizeof(*d)));
+				if (d == NULL)
+				{
+					SEFS_ERR("%s", strerror(errno));
+					throw std::runtime_error(strerror(errno));
+				}
+				if (apol_vector_append(dev_map, d) < 0)
+				{
+					SEFS_ERR("%s", strerror(errno));
+					filesystem_dev_free(d);
+					throw std::runtime_error(strerror(errno));
+				}
+				d->dev = sb.st_dev;
+				char *mnt_fsname = strdup(mntbuf.mnt_fsname);
+				if (mnt_fsname == NULL)
+				{
+					SEFS_ERR("%s", strerror(errno));
+					throw std::runtime_error(strerror(errno));
+				}
+				if (apol_bst_insert_and_get(dev_tree, (void **)&mnt_fsname, NULL) < 0)
+				{
+					SEFS_ERR("%s", strerror(errno));
+					free(mnt_fsname);
+					throw std::runtime_error(strerror(errno));
+				}
+				d->dev_name = mnt_fsname;
+			}
+		}
+	}
+	catch(...)
+	{
+		apol_vector_destroy(&dev_map);
+		if (f != NULL)
+		{
+			fclose(f);
+		}
+		throw;
+	}
+	fclose(f);
+	return dev_map;
+}
 
 bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, const struct stat64 * sb, apol_vector_t * type_list,
 				   apol_mls_range_t * range)throw(std::runtime_error)
@@ -504,7 +628,7 @@ bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, c
 }
 
 sefs_entry *sefs_filesystem::getEntry(const struct sefs_context_node * context, uint32_t objectClass,
-				      const char *path)throw(std::bad_alloc)
+				      const char *path, ino64_t ino, const char *dev_name)throw(std::bad_alloc)
 {
 	char *s = strdup(path);
 	if (s == NULL)
@@ -518,8 +642,10 @@ sefs_entry *sefs_filesystem::getEntry(const struct sefs_context_node * context, 
 		free(s);
 		throw std::bad_alloc();
 	}
-	// FIX ME: add inode & dev information
-	return new sefs_entry(this, context, objectClass, s);
+	sefs_entry *e = new sefs_entry(this, context, objectClass, s);
+	e->_inode = ino;
+	e->_dev = dev_name;
+	return e;
 }
 
 /******************** C functions below ********************/

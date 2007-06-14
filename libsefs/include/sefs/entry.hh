@@ -56,7 +56,7 @@ class sefs_entry
 	/**
 	 * Perform a deep copy of an entry object.
 	 */
-	 sefs_entry(const sefs_entry * e) throw(std::bad_alloc);
+	 sefs_entry(const sefs_entry * e);
 
 	~sefs_entry();
 
@@ -70,16 +70,21 @@ class sefs_entry
 	/**
 	 * Get the inode number associated with a sefs entry.
 	 * @return Inode number associated with the entry or 0 on
-	 * error.
+	 * error.  Entries originating from a file_contexts object
+	 * will have no inode and thus return 0.
 	 */
 	ino64_t inode() const;
 
 	/**
-	 * Get the device number associated with a sefs entry.
-	 * @return Device number associated with the entry or 0 on
-	 * error.
+	 * Get the device name associated with a sefs entry.  For
+	 * example, if /dev/sda5 is mounted as /home, the device name
+	 * for entry "/home/gburdell" will be "/dev/sda5".
+	 * @return Device number associated with the entry or NULL on
+	 * error.  Do not free() this value.  Entries originating from
+	 * a file_contexts object will have no device name and thus
+	 * return NULL.
 	 */
-	dev_t dev() const;
+	const char *dev() const;
 
 	/**
 	 * Get the object class associated with a sefs entry.  The
@@ -95,15 +100,12 @@ class sefs_entry
 	uint32_t objectClass() const;
 
 	/**
-	 * Get the list of paths associated with a sefs entry.
-	 * @return Vector of path strings (char *) representing the
-	 * paths for the entry or NULL on error.  The caller <b>should
-	 * not</b> destroy or otherwise modify the vector or the
-	 * strings within it.  If the entry came from a file_contexts
-	 * object the paths will be regular expressions rather than
-	 * literal paths.
+	 * Get the paths associated with a sefs entry.
+	 * @return Path for the entry.If the entry came from a
+	 * file_contexts object the paths will be a regular expression
+	 * rather than literal paths.  Do not free() this pointer.
 	 */
-	const apol_vector_t *paths() const;
+	const char *path() const;
 
 	/**
 	 * Get the file from which a sefs entry originated.
@@ -139,19 +141,17 @@ class sefs_entry
 	 * entry originated.  The entry will share this pointer.
 	 * @exception std::bad_alloc Out of memory.
 	 */
-	 sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node *context, uint32_t objectClass, const char *path,
-		    const char *origin = NULL) throw(std::bad_alloc);
+	 sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node *context, uint32_t objectClass, const char *new_path,
+		    const char *origin = NULL);
 
 	// note that entry does not own any of these pointers; they
 	// are shallow copies into the fclist's BST
 	class sefs_fclist *_fclist;
 	const struct sefs_context_node *_context;
 	ino64_t _inode;
-	dev_t _dev;
+	const char *_dev;
 	uint32_t _objectClass;
-	const char *_origin;
-
-	apol_vector_t *_paths;
+	const char *_path, *_origin;
 };
 
 extern "C"
@@ -180,7 +180,7 @@ extern "C"
  * Get the device number associated with a sefs entry.
  * @see sefs_entry::dev()
  */
-	extern dev_t sefs_entry_get_dev(const sefs_entry_t * ent);
+	extern const char *sefs_entry_get_dev(const sefs_entry_t * ent);
 
 /**
  * Get the object class associated with a sefs entry.
@@ -189,10 +189,10 @@ extern "C"
 	extern uint32_t sefs_entry_get_object_class(const sefs_entry_t * ent);
 
 /**
- * Get the list of paths associated with a sefs entry.
- * @see sefs_entry::paths()
+ * Get the path associated with a sefs entry.
+ * @see sefs_entry::path()
  */
-	extern const apol_vector_t *sefs_entry_get_paths(const sefs_entry_t * ent);
+	extern const char *sefs_entry_get_path(const sefs_entry_t * ent);
 
 /**
  * Get the file from which a sefs entry originated.
