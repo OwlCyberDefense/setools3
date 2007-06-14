@@ -178,7 +178,9 @@ static void filter_view_init_widgets(struct filter_view *fv, GtkWindow * parent)
 	filter_view_init_widgets_date(fv);
 
 	fv->description_buffer = gtk_text_buffer_new(NULL);
+#ifdef GTK_2_8
 	g_object_ref_sink(fv->description_buffer);
+#endif
 	description_view = GTK_TEXT_VIEW(glade_xml_get_widget(fv->xml, "FilterViewDescView"));
 	assert(description_view != NULL);
 	gtk_text_view_set_buffer(description_view, fv->description_buffer);

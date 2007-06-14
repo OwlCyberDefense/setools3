@@ -150,11 +150,11 @@ static void policy_view_on_find_terules_click(GtkButton * button __attribute__ (
 	apol_avrule_query_t *query = apol_avrule_query_create();
 	apol_avrule_query_set_regex(policy, query, 1);
 	struct find_terules_datum run;
-	char *s;
+	const char *s;
 	gboolean only_direct;
 	apol_avrule_query_set_rules(policy, query, QPOL_RULE_ALLOW);
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pv->stype_check))) {
-		s = gtk_combo_box_get_active_text(GTK_COMBO_BOX(pv->stype_combo));
+		s = util_combo_box_get_active_text(GTK_COMBO_BOX(pv->stype_combo));
 		only_direct = gtk_toggle_button_get_active(pv->stype_direct);
 		if (strcmp(s, "") == 0) {
 			toplevel_ERR(pv->top, "No source type was selected.");
@@ -164,7 +164,7 @@ static void policy_view_on_find_terules_click(GtkButton * button __attribute__ (
 		apol_avrule_query_set_source_component(policy, query, APOL_QUERY_SYMBOL_IS_TYPE);
 	}
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pv->ttype_check))) {
-		s = gtk_combo_box_get_active_text(GTK_COMBO_BOX(pv->ttype_combo));
+		s = util_combo_box_get_active_text(GTK_COMBO_BOX(pv->ttype_combo));
 		only_direct = gtk_toggle_button_get_active(pv->ttype_direct);
 		if (strcmp(s, "") == 0) {
 			toplevel_ERR(pv->top, "No target type was selected.");
@@ -174,7 +174,7 @@ static void policy_view_on_find_terules_click(GtkButton * button __attribute__ (
 		apol_avrule_query_set_source_component(policy, query, APOL_QUERY_SYMBOL_IS_TYPE);
 	}
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(pv->class_check))) {
-		s = gtk_combo_box_get_active_text(GTK_COMBO_BOX(pv->class_combo));
+		s = util_combo_box_get_active_text(GTK_COMBO_BOX(pv->class_combo));
 		if (strcmp(s, "") == 0) {
 			toplevel_ERR(pv->top, "No object class was selected.");
 			return;
@@ -486,7 +486,12 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 		apol_vector_sort(pv->type_list, apol_str_strcmp, NULL);
 		for (i = 0; i < apol_vector_get_size(pv->type_list); i++) {
 			s = apol_vector_get_element(pv->type_list, i);
+#ifdef GTK_2_8
 			gtk_list_store_insert_with_values(pv->type_model, &iter, i, 0, s, -1);
+#else
+			gtk_list_store_insert(pv->type_model, &iter, i);
+			gtk_list_store_set(pv->type_model, &iter, 0, s, -1);
+#endif
 		}
 		apol_class_get_by_query(policy, NULL, &v);
 		for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -498,7 +503,12 @@ static void policy_view_populate_combo_boxes(policy_view_t * pv)
 		apol_vector_sort(pv->class_list, apol_str_strcmp, NULL);
 		for (i = 0; i < apol_vector_get_size(pv->class_list); i++) {
 			s = apol_vector_get_element(pv->class_list, i);
+#ifdef GTK_2_8
 			gtk_list_store_insert_with_values(pv->class_model, &iter, i, 0, s, -1);
+#else
+			gtk_list_store_insert(pv->class_model, &iter, i);
+			gtk_list_store_set(pv->class_model, &iter, 0, s, -1);
+#endif
 		}
 	}
 }

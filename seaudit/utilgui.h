@@ -95,4 +95,12 @@ char *util_save_file(GtkWindow * parent, const char *title, const char *init_pat
  */
 char *util_policy_path_to_string(const apol_policy_path_t * path);
 
+/**
+ * Get the active text from a GtkComboBox.
+ *
+ * Whereas GTK 2.6 has gtk_combo_box_get_active_text(), GTK 2.4
+ * (another supported platform) does not.
+ */
+const gchar *util_combo_box_get_active_text(GtkComboBox * w);
+
 #endif

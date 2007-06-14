@@ -1,3 +1,8 @@
+2007-06-14  J. Tang  <jtang@tresys.com>
+
+	* SETools can now compile against GTK+ 2.4.  Nonetheless, GTK+ 2.8
+	is still the recommended toolkit.
+
 2007-06-13  J. Tang  <jtang@tresys.com>
 
 	* libseaudit/src/log.c (seaudit_log_clear): Added ability to clear

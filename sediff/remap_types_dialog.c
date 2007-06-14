@@ -27,6 +27,7 @@
 #include <config.h>
 
 #include "remap_types_dialog.h"
+#include "utilgui.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -71,8 +72,8 @@ static gboolean show_only_unmapped = TRUE;
  */
 static void remap_types_highlight_entries(struct remap_types *rt)
 {
-	gchar *orig_text = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
-	gchar *mod_text = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
+	const gchar *orig_text = util_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
+	const gchar *mod_text = util_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
 	int num_orig_matches = 0, num_mod_matches = 0;
 	gboolean iter_valid;
 	GtkTreeIter iter;
@@ -257,8 +258,8 @@ static void remap_types_on_add_click(GtkButton * button __attribute__ ((unused))
 	struct remap_types *rt = (struct remap_types *)user_data;
 	apol_vector_t *orig = NULL, *mod = NULL;
 	apol_vector_t *old_orig = NULL, *old_mod = NULL;
-	gchar *orig_type = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
-	gchar *mod_type = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
+	const gchar *orig_type = util_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
+	const gchar *mod_type = util_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
 
 	if ((orig = apol_str_split(orig_type, " ")) == NULL || (mod = apol_str_split(mod_type, " ")) == NULL) {
 		toplevel_ERR(rt->top, "%s", strerror(errno));

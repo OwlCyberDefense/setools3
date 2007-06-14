@@ -671,10 +671,24 @@ void toplevel_on_help_activate(gpointer user_data, GtkMenuItem * widget __attrib
 void toplevel_on_about_sediffx_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+#ifdef GTK_2_8
 	gtk_show_about_dialog(top->w,
 			      "comments", "Policy Semantic Difference Tool for Security Enhanced Linux",
 			      "copyright", COPYRIGHT_INFO,
 			      "name", "sediffx", "version", VERSION, "website", "http://oss.tresys.com/projects/setools", NULL);
+#else
+	GtkWidget *w = gtk_message_dialog_new(top->w,
+					      GTK_DIALOG_DESTROY_WITH_PARENT,
+					      GTK_MESSAGE_INFO,
+					      GTK_BUTTONS_CLOSE,
+					      "%s %s\n%s\n%s\n%s",
+					      "sediffx", VERSION,
+					      "Policy Semantic Difference Tool for Security Enhanced Linux",
+					      COPYRIGHT_INFO,
+					      "http://oss.tresys.com/projects/setools");
+	gtk_dialog_run(GTK_DIALOG(w));
+	gtk_widget_destroy(w);
+#endif
 }
 
 void toplevel_on_open_policies_button_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event

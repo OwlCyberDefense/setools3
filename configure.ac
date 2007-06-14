@@ -340,7 +340,9 @@ EOF
             ;;
     esac
     if test ${copy_bwidget} = yes; then
-        echo "puts \$tcl_library" > ./conftest.tcl
+        changequote(<<<,>>>)dnl
+        echo 'puts [file join $tcl_library BWidget1.8]' > ./conftest.tcl
+        changequote([,])dnl
         BWIDGET_DESTDIR=`${TCLSH_PROG} ./conftest.tcl`
         AC_SUBST(BWIDGET_DESTDIR)
     fi
@@ -585,10 +587,12 @@ SEFS_LIB_FLAG+=" ${SQLITE3_LIBS}"
 if test "x${build_gui}" = xyes; then
 
   AC_MSG_CHECKING([for GTK])
-  pkg-config --exists 'gtk+-2.0 >= 2.8'
+  pkg-config --atleast-version=2.4 gtk+-2.0
   if test $? -ne 0; then
-     AC_MSG_ERROR([setools requires GTK+ 2.8 or greater])
+     AC_MSG_ERROR([setools requires GTK+ 2.4 or greater])
   fi
+  pkg-config --atleast-version=2.8 gtk+-2.0
+  gtk_version_2_8=$?
   GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
   GTK_LIBS=`pkg-config --libs gtk+-2.0`
   AC_MSG_RESULT([yes])
@@ -701,6 +705,10 @@ if test ${use_shared} == "yes"; then
    AC_DEFINE(LINK_SHARED, 1, [link programs using shared libraries])
 else
    AC_DEFINE(LINK_SHARED, 0, [link programs using shared libraries])
+fi
+
+if test ${gtk_version_2_8} -eq 0 ; then
+   AC_DEFINE(GTK_2_8, 1, [GTK+ is version 2.8+])
 fi
 
 # For older version of BWidget, overcome bug in NoteBook::bindtabs and
