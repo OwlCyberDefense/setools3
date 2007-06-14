@@ -41,15 +41,15 @@
 #include <time.h>
 #include <unistd.h>
 
+#define DB_MAX_VERSION "2"
+
 #define DB_SCHEMA_NONMLS \
 	"CREATE TABLE users (user_id INTEGER PRIMARY KEY, user_name varchar (24));" \
 	"CREATE TABLE roles (role_id INTEGER PRIMARY KEY, role_name varchar (24));" \
 	"CREATE TABLE types (type_id INTEGER PRIMARY KEY, type_name varchar (48));" \
-	"CREATE TABLE paths (inode int, path varchar (128) PRIMARY KEY);" \
-	"CREATE TABLE inodes (inode_id INTEGER PRIMARY KEY, dev int, ino int(64), user int, role int, type int, range int, obj_class int, symlink_target varchar (128));" \
-	"CREATE TABLE info (key varchar, value varchar);" \
-	"CREATE INDEX inodes_index ON inodes (ino,dev);" \
-	"CREATE INDEX paths_index ON paths (inode);"
+	"INSERT INTO devs (dev_id, dev_name) VALUES (0, '<<unknown>>');" \
+	"CREATE TABLE paths (path varchar (128) PRIMARY KEY, ino int(64), dev int, user int, role int, type int, range int, obj_class int, symlink_target varchar (128));" \
+	"CREATE TABLE info (key varchar, value varchar);"
 
 #define DB_SCHEMA_MLS DB_SCHEMA_NONMLS \
 	"CREATE TABLE mls (mls_id INTEGER PRIMARY KEY, mls_range varchar (64));"
@@ -63,7 +63,7 @@ inline struct sefs_context_node *db_get_context(sefs_db * db, const char *user, 
 }
 
 inline sefs_entry *db_get_entry(sefs_db * db, const struct sefs_context_node * node, uint32_t objClass,
-				const char *path, ino64_t inode, dev_t dev)throw(std::bad_alloc)
+				const char *path, ino64_t inode, const char *dev)throw(std::bad_alloc)
 {
 	return db->getEntry(node, objClass, path, inode, dev);
 }
@@ -184,29 +184,26 @@ static void db_path_compare(sqlite3_context * context, int argc __attribute__ ((
 static int db_query_callback(void *arg, int argc, char *argv[], char *column_names[] __attribute__ ((unused)))
 {
 	struct db_query_arg *q = static_cast < struct db_query_arg *>(arg);
-	char *user = argv[0];
-	char *role = argv[1];
-	char *type = argv[2];
-	char *range, *path, *objclass_str;
-	ino64_t ino;
-	dev_t dev;
+	assert(argc == (q->db_is_mls ? 9 : 8));
+	char *path = argv[0];
+	ino64_t ino = static_cast < ino64_t > (strtoul(argv[1], NULL, 10));
+	char *dev = argv[2];
+	char *user = argv[3];
+	char *role = argv[4];
+	char *type = argv[5];
+	char *range, *objclass_str, *link_target;
+
 	if (q->db_is_mls)
 	{
-		range = argv[3];
-		path = argv[4];
-		objclass_str = argv[5];
-		assert(argc == 8);
-		ino = static_cast < ino64_t > (strtoul(argv[6], NULL, 10));
-		dev = static_cast < dev_t > (strtoul(argv[7], NULL, 10));
+		range = argv[6];
+		objclass_str = argv[7];
+		link_target = argv[8];
 	}
 	else
 	{
 		range = NULL;
-		path = argv[3];
-		objclass_str = argv[4];
-		assert(argc == 7);
-		ino = static_cast < ino64_t > (strtoul(argv[5], NULL, 10));
-		dev = static_cast < dev_t > (strtoul(argv[6], NULL, 10));
+		objclass_str = argv[6];
+		link_target = argv[7];
 	}
 	struct sefs_context_node *node = NULL;
 	try
@@ -331,7 +328,7 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 		}
 
 		// store metadata about the database
-		const char *dbversion = "2";
+		const char *dbversion = DB_MAX_VERSION;
 		char hostname[64];
 		gethostname(hostname, sizeof(hostname));
 		hostname[63] = '\0';
@@ -395,7 +392,7 @@ sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *va
 
 	char *errmsg = NULL;
 
-	const char *select_stmt = "SELECT * FROM info WHERE key = 'dbversion' AND value >= 2";
+	const char *select_stmt = "SELECT * FROM info WHERE key = 'dbversion' AND value >= " DB_MAX_VERSION;
 	bool answer = false;
 	if (sqlite3_exec(_db, select_stmt, db_row_exist_callback, &answer, &errmsg) != SQLITE_OK)
 	{
@@ -469,7 +466,9 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 	{
 		bool where_added = false;
 
-		if (apol_str_append(&select_stmt, &len, "SELECT users.user_name, roles.role_name, types.type_name") < 0)
+		if (apol_str_append
+		    (&select_stmt, &len,
+		     "SELECT paths.path, paths.ino, devs.dev_name, users.user_name, roles.role_name, types.type_name") < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
@@ -480,18 +479,13 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			throw std::runtime_error(strerror(errno));
 		}
 		if (apol_str_append(&select_stmt, &len,
-				    ", paths.path, inodes.obj_class, inodes.ino, inodes.dev FROM users, roles, types") < 0)
+				    ", paths.obj_class, paths.symlink_target FROM paths, devs, users, roles, types") < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		if (q.db_is_mls && apol_str_append(&select_stmt, &len, ", mls") < 0)
 		{
-			throw std::runtime_error(strerror(errno));
-		}
-		if (apol_str_append(&select_stmt, &len, ", paths, inodes ") < 0)
-		{
-			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 
@@ -554,7 +548,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		if (query->_objclass != 0)
 		{
 			if (apol_str_appendf(&select_stmt, &len,
-					     "%s (inodes.obj_class = %d)", (where_added ? " AND" : " WHERE"), query->_objclass) < 0)
+					     "%s (paths.obj_class = %d)", (where_added ? " AND" : " WHERE"), query->_objclass) < 0)
 			{
 				SEFS_ERR("%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
@@ -582,7 +576,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		if (query->_inode != 0)
 		{
 			if (apol_str_appendf(&select_stmt, &len,
-					     "%s (inodes.ino = %lld)", (where_added ? " AND" : " WHERE"), query->_inode) < 0)
+					     "%s (paths.ino = %lld)", (where_added ? " AND" : " WHERE"), query->_inode) < 0)
 			{
 				SEFS_ERR("%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
@@ -592,8 +586,9 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 
 		if (query->_dev != 0)
 		{
+			// FIX ME
 			if (apol_str_appendf(&select_stmt, &len,
-					     "%s (inodes.dev = %lld)", (where_added ? " AND" : " WHERE"), query->_dev) < 0)
+					     "%s (dev_compare(devs.dev_name)", (where_added ? " AND" : " WHERE")) < 0)
 			{
 				SEFS_ERR("%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
@@ -602,7 +597,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		}
 
 		if (apol_str_appendf(&select_stmt, &len,
-				     "%s (inodes.user = users.user_id AND inodes.role = roles.role_id AND inodes.type = types.type_id",
+				     "%s (paths.user = users.user_id AND paths.role = roles.role_id AND paths.type = types.type_id",
 				     (where_added ? " AND" : "WHERE")) < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
@@ -613,7 +608,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
-		if (apol_str_append(&select_stmt, &len, " AND inodes.inode_id = paths.inode) ORDER BY paths.path ASC") < 0)
+		if (apol_str_append(&select_stmt, &len, " AND paths.dev = devs.dev_id) ORDER BY paths.path ASC") < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
@@ -797,6 +792,72 @@ bool sefs_db::isDB(const char *filename)
 
 /******************** private functions below ********************/
 
+/**
+ * Callback invoked while upgrading a libsefs database version 1 to
+ * version 2.  Merge the inodes and paths table into one, remap the
+ * object class value, and explicitly set the role and dev fields to
+ * zero.
+ */
+static int db_upgrade_reinsert(void *arg, int argc, char *argv[], char *column_names[])
+{
+	struct sqlite3 *db = static_cast < struct sqlite3 *>(arg);
+	bool mls = (argc == 7);
+	assert(argc >= 6 && argc <= 7);
+	uint32_t obj_class = static_cast < uint32_t > (atoi(argv[(mls ? 5 : 4)]));
+
+	switch (obj_class)
+	{
+	case 16:
+		obj_class = QPOL_CLASS_BLK_FILE;
+		break;
+	case 8:
+		obj_class = QPOL_CLASS_CHR_FILE;
+		break;
+	case 2:
+		obj_class = QPOL_CLASS_DIR;
+		break;
+	case 64:
+		obj_class = QPOL_CLASS_FIFO_FILE;
+		break;
+	case 1:
+		obj_class = QPOL_CLASS_FILE;
+		break;
+	case 4:
+		obj_class = QPOL_CLASS_LNK_FILE;
+		break;
+	case 32:
+		obj_class = QPOL_CLASS_SOCK_FILE;
+		break;
+	}
+
+	char *insert_stmt = NULL;
+	if (mls)
+	{
+		if (asprintf(&insert_stmt,
+			     "INSERT INTO new_paths (path, ino, dev, user, role, type, range, obj_class, symlink_target) VALUES ('%s', %s, 0, %s, 0, %s, %s, %u, '%s')",
+			     argv[0], argv[1], argv[2], argv[3], argv[4], obj_class, argv[6]) < 0)
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		if (asprintf(&insert_stmt,
+			     "INSERT INTO new_paths (path, ino, dev, user, role, type, range, obj_class, symlink_target) VALUES ('%s', %s, 0, %s, 0, %s, 0, %u, '%s')",
+			     argv[0], argv[1], argv[2], argv[3], obj_class, argv[5]) < 0)
+		{
+			return -1;
+		}
+	}
+	if (sqlite3_exec(db, insert_stmt, NULL, NULL, NULL) != SQLITE_OK)
+	{
+		free(insert_stmt);
+		return -1;
+	}
+	free(insert_stmt);
+	return 0;
+}
+
 void sefs_db::upgradeToDB2() throw(std::runtime_error)
 {
 	char *errmsg;
@@ -811,21 +872,42 @@ void sefs_db::upgradeToDB2() throw(std::runtime_error)
 	char datetime[32];
 	ctime_r(&_ctime, datetime);
 	char *alter_stmt = NULL;
-	if (asprintf(&alter_stmt, "BEGIN TRANSACTION;" "CREATE TABLE roles (role_id INTEGER PRIMARY KEY, role_name varchar (24));" "ALTER TABLE inodes ADD COLUMN role int DEFAULT 0;" "INSERT INTO roles (role_id, role_name) VALUES (0, 'object_r');" "UPDATE inodes SET obj_class = 11 WHERE obj_class = 16;"	// block file
-		     "UPDATE inodes SET obj_class = 10 WHERE obj_class = 8;"	// char file
-		     "UPDATE inodes SET obj_class = 7 WHERE obj_class = 2;"	// dir
-		     "UPDATE inodes SET obj_class = 13 WHERE obj_class = 64;"	// fifo file
-		     "UPDATE inodes SET obj_class = 6 WHERE obj_class = 1;"	// normal file
-		     "UPDATE inodes SET obj_class = 9 WHERE obj_class = 4;"	// link file
-		     "UPDATE inodes SET obj_class = 12 WHERE obj_class = 32;"	// sock file
-		     "UPDATE info SET value = '%s' WHERE key = 'datetime';" "END TRANSACTION;", datetime) < 0)
+	if (asprintf(&alter_stmt, "BEGIN TRANSACTION;" "CREATE TABLE roles (role_id INTEGER PRIMARY KEY, role_name varchar (24));"	// add a roles table
+		     "INSERT INTO roles (role_id, role_name) VALUES (0, 'object_r');"	// assume that all previous contexts had as their role 'object_r'
+		     "CREATE TABLE devs (dev_id INTEGER PRIMARY KEY, dev_name varchar (32));"	// add a table that maps between device names and some numeric ID
+		     "INSERT INTO devs (dev_id, dev_name) VALUES (0, '<<unknown>>');"	// device names were not stored in old DB
+		     "CREATE TABLE new_paths (path varchar (128) PRIMARY KEY, ino int(64), dev int, user int, role int, type int, range int, obj_class int, symlink_target varchar (128));"	// create new paths table
+		     "SELECT paths.path, inodes.ino, inodes.user, inodes.type, %sinodes.obj_class, inodes.symlink_target FROM paths, inodes WHERE (inodes.inode_id = paths.inode)",	// rebuild new paths table from older tables
+		     isMLS()? "inodes.range, " : "") < 0)
 	{
 		SEFS_ERR("%s", errmsg);
 		sqlite3_free(errmsg);
 		sqlite3_close(_db);
 		throw std::runtime_error(strerror(errno));
 	}
+	if (sqlite3_exec(_db, alter_stmt, db_upgrade_reinsert, _db, &errmsg) != SQLITE_OK)
+	{
+		SEFS_ERR("%s", errmsg);
+		free(alter_stmt);
+		sqlite3_free(errmsg);
+		sqlite3_close(_db);
+		throw std::runtime_error(strerror(errno));
+	}
 
+	free(alter_stmt);
+	alter_stmt = NULL;
+
+	if (asprintf(&alter_stmt, "DROP TABLE inodes; DROP TABLE paths;"	// drop the old tables
+		     "ALTER TABLE new_paths RENAME TO paths;"	// move ver 2 paths table as main table
+		     "UPDATE info SET value = '%s' WHERE key = 'datetime';"
+		     "UPDATE info SET value = '%s' WHERE key = 'dbversion';"
+		     "END TRANSACTION;" "VACUUM", datetime, DB_MAX_VERSION) < 0)
+	{
+		SEFS_ERR("%s", errmsg);
+		sqlite3_free(errmsg);
+		sqlite3_close(_db);
+		throw std::runtime_error(strerror(errno));
+	}
 	if (sqlite3_exec(_db, alter_stmt, NULL, NULL, &errmsg) != SQLITE_OK)
 	{
 		SEFS_ERR("%s", errmsg);
@@ -838,7 +920,7 @@ void sefs_db::upgradeToDB2() throw(std::runtime_error)
 }
 
 sefs_entry *sefs_db::getEntry(const struct sefs_context_node *context, uint32_t objectClass, const char *path, ino64_t inode,
-			      dev_t dev) throw(std::bad_alloc)
+			      const char *dev) throw(std::bad_alloc)
 {
 	char *s = strdup(path);
 	if (s == NULL)
@@ -854,7 +936,15 @@ sefs_entry *sefs_db::getEntry(const struct sefs_context_node *context, uint32_t 
 	}
 	sefs_entry *e = new sefs_entry(this, context, objectClass, s);
 	e->_inode = inode;
-	// e->_dev = dev; FIX ME
+
+	s = NULL;
+	if ((s = strdup(dev)) == NULL || apol_bst_insert_and_get(dev_tree, (void **)&s, NULL) < 0)
+	{
+		SEFS_ERR("%s", strerror(errno));
+		free(s);
+		throw std::bad_alloc();
+	}
+	e->_dev = dev;
 	return e;
 }
 

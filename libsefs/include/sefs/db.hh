@@ -52,7 +52,7 @@ class sefs_db:public sefs_fclist
 	friend struct sefs_context_node *db_get_context(sefs_db *, const char *, const char *, const char *,
 							const char *) throw(std::bad_alloc);
 	friend sefs_entry *db_get_entry(sefs_db *, const struct sefs_context_node *, uint32_t, const char *, ino64_t,
-					dev_t) throw(std::bad_alloc);
+					const char *) throw(std::bad_alloc);
 
       public:
 
@@ -90,7 +90,8 @@ class sefs_db:public sefs_fclist
 
 	/**
 	 * Perform a sefs query on this database object, and then
-	 * invoke a callback upon each matching entry.
+	 * invoke a callback upon each matching entry.  Entries will
+	 * be returned in alphabetical order by path.
 	 * @param query Query object containing search parameters.  If
 	 * NULL, invoke the callback on all entries.
 	 * @param fn Function to invoke upon matching entries.  This
@@ -148,8 +149,9 @@ class sefs_db:public sefs_fclist
 	 * Upgrade an existing version 1 database to version 2.
 	 */
 	void upgradeToDB2() throw(std::runtime_error);
+
 	sefs_entry *getEntry(const struct sefs_context_node *context, uint32_t objectClass, const char *path, ino64_t inode,
-			     dev_t dev) throw(std::bad_alloc);
+			     const char *dev) throw(std::bad_alloc);
 	struct sqlite3 *_db;
 	time_t _ctime;
 };
