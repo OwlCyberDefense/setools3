@@ -39,8 +39,6 @@ extern "C"
 
 #include <sefs/fclist.hh>
 
-#include <stdexcept>
-
 	/** Value to indicate the overall matching behavior of the query */
 	typedef enum polsearch_match
 	{
@@ -50,6 +48,8 @@ extern "C"
 	} polsearch_match_e;
 
 }
+
+#include <stdexcept>
 
 /**
  * Abstract query class for multiple test queries for policy elements.
@@ -62,8 +62,9 @@ class polsearch_query
 	 * @param m Set the matching behavior of the query, must be
 	 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
 	 * @exception std::bad_alloc Error allocating internal data fields.
+	 * @exception std::invalid_argument Invalid matching behavior requested.
 	 */
-	polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL) throw(std::bad_alloc);
+	polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL) throw(std::bad_alloc, std::invalid_argument);
 	/**
 	 * Base class copy constructor
 	 * @param pq The query to copy.
@@ -82,6 +83,7 @@ class polsearch_query
 	 * Set the matching behavior of the query.
 	 * @param m One of POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY to set.
 	 * @return The behavior set.
+	 * @exception std::invalid_argument Invalid matching behavior requested.
 	 */
 	polsearch_match_e match(polsearch_match_e m) throw(std::invalid_argument);
 	/**
@@ -108,8 +110,10 @@ class polsearch_query
 	 * @return A vector of results (polsearch_result), or NULL on
 	 * error. The caller is responsible for calling apol_vector_destroy()
 	 * on the returned vector.
+	 * @exception std::bad_alloc Could not allocate the vector.
 	 */
-	virtual apol_vector_t *run(const apol_policy_t * policy, const sefs_fclist_t * fclist = NULL) const = 0;
+	virtual apol_vector_t *run(const apol_policy_t * policy, const sefs_fclist_t * fclist = NULL) const throw(std::bad_alloc) =
+		0;
 
       protected:
 	 polsearch_match_e _match;     /*!< The matching behavior used for determining if an element matches with multiple tests. */

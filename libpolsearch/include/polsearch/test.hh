@@ -88,20 +88,20 @@ class polsearch_test
 	polsearch_param_type_e getParamType(polsearch_op_e opr) const;
 	/**
 	 * Get the vector of criteria checked by this test.
-	 * @return The vector of criteria. The caller is free to modify this
-	 * vector but should not destroy it.
+	 * @return The vector of criteria (polsearch_base_criterion*). The
+	 * caller is free to modify this vector but should not destroy it.
 	 */
 	apol_vector_t *criteria();
 	/**
 	 * Get the element type tested by a test.
 	 * @return The type of element tested.
 	 */
-	polsearch_element_e element_type() const;
+	polsearch_element_e elementType() const;
 	/**
 	 * Get the condition for which a test checks.
 	 * @return The condition tested.
 	 */
-	polsearch_test_cond_e test_cond() const;
+	polsearch_test_cond_e testCond() const;
 	/**
 	 * Run the test. This finds all elements of the specified type that
 	 * meet all criteria for the test.
@@ -134,9 +134,12 @@ class polsearch_result
 	 * Create a result entry.
 	 * @param elem_type Type of element found.
 	 * @param elem Pointer to the element; the element is not owned by the result entry.
+	 * @param p The policy associated with \a elem.
+	 * @param fclist The file_contexts list associated with \a elem.
 	 * @exception std::bad_alloc Could not allocate space for proof vector.
 	 */
-	polsearch_result(polsearch_element_e elem_type, const void *elem) throw(std::bad_alloc);
+	polsearch_result(polsearch_element_e elem_type, const void *elem, const apol_policy_t * p, const sefs_fclist * fclist =
+			 NULL) throw(std::bad_alloc);
 	/**
 	 * Copy a result entry.
 	 * @param psr The result to copy.
@@ -166,11 +169,22 @@ class polsearch_result
 	 * the returned vector.
 	 */
 	apol_vector_t *proof();
+	/**
+	 * Return a string representing the result (but not all of its proof entries).
+	 * @return A newly allocated string representing the result. The caller is
+	 * responsible for calling <b>free()</b> on the string returned.
+	 * @exception std::bad_alloc Could not allocate space for string representation.
+	 * @see polsearch_proof::toString() to get the string representation of each
+	 * proof entry.
+	 */
+	char *toString() const throw(std::bad_alloc);
 
       private:
 	 polsearch_element_e _element_type;	/*!< The type of element. */
 	const void *_element;	       /*!< The element matched. This object is not owned by the result. */
 	apol_vector_t *_proof;	       /*!< List of proof that \a _element matched the query. */
+	const apol_policy_t *_policy;  /*!< The policy associated with \a _element. */
+	const sefs_fclist *_fclist;    /*!< The fclist associated with \a _element. */
 };
 
 /**
@@ -188,8 +202,11 @@ class polsearch_proof
 	 * @param test The test condition proved by this entry.
 	 * @param elem_type The type of element used as proof.
 	 * @param elem The element that proves the test.
+	 * @param p The policy associated with \a elem.
+	 * @param fclist The file_contexts list associated with \a elem.
 	 */
-	polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem);
+	polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, const apol_policy_t * p,
+			const sefs_fclist * fclist = NULL);
 	/**
 	 * Copy a proof.
 	 * @param pp The proof to copy.
@@ -200,14 +217,11 @@ class polsearch_proof
 
 	/**
 	 * Return a string representing the proof.
-	 * @param p The policy from which to get any relevant symbol names.
-	 * @param fclist The file_contexts list from which to get any relevant
-	 * file_context entries.
 	 * @return A newly allocated string representing the proof. The caller is
 	 * responsible for calling <b>free()</b> on the string returned.
 	 * @exception std::bad_alloc Could not allocate space for string representation.
 	 */
-	char *toString(const apol_policy_t * p, const sefs_fclist_t * fclist) const throw(std::bad_alloc);
+	char *toString() const throw(std::bad_alloc);
 	/**
 	 * Get the type of element stored in the proof.
 	 * @return The type of element stored in the proof.
@@ -228,6 +242,8 @@ class polsearch_proof
 	 polsearch_test_cond_e _test_cond;	/*!< Test condition matched by the element */
 	polsearch_element_e _element_type;	/*!< The type of element to display as proof (may not be same type as tested element). */
 	const void *_element;	       /*!< The element to display as proof. (This memory is not owned by the proof, but rather by the policy or fclist from which it came.) */
+	const apol_policy_t *_policy;  /*!< The policy associated with \a _element. */
+	const sefs_fclist_t *_fclist;  /*!< The fclist associated with \a _element. */
 };
 
 extern "C"
@@ -299,12 +315,13 @@ extern "C"
 	 * Create a result entry.
 	 * @see polsearch_result::polsearch_result(polsearch_element_e, const void *)
 	 */
-	extern polsearch_result_t *polsearch_result_create(polsearch_element_e sym_type, const void *sym);
+	extern polsearch_result_t *polsearch_result_create(polsearch_element_e sym_type, const void *sym, const apol_policy_t * p,
+							   const sefs_fclist_t * fclist);
 	/**
 	 * Copy a result entry.
 	 * @see polsearch_result::polsearch_result(const polsearch_result&)
 	 */
-	extern polsearch_result_t *polsearch_result_create_from_result(polsearch_result_t * pr);
+	extern polsearch_result_t *polsearch_result_create_from_result(const polsearch_result_t * pr);
 	/**
 	 * Deallocate all memory associated with a result entry and set it to NULL.
 	 * @param pr Reference pointer to the result entry to destroy.
@@ -315,12 +332,12 @@ extern "C"
 	 * Get the element type.
 	 * @see polsearch_result::elementType()
 	 */
-	extern polsearch_symbol_e polsearch_result_get_element_type(polsearch_result_t * pr);
+	extern polsearch_element_e polsearch_result_get_element_type(const polsearch_result_t * pr);
 	/**
 	 * Get the element.
 	 * @see polsearch_result::element()
 	 */
-	extern const void *polsearch_result_get_element(polsearch_result_t * pr);
+	extern const void *polsearch_result_get_element(const polsearch_result_t * pr);
 	/**
 	 * Get the proof vector.
 	 * @see polsearch_result::proof()
@@ -328,15 +345,22 @@ extern "C"
 	extern apol_vector_t *polsearch_result_get_proof(polsearch_result_t * pr);
 
 	/**
+	 * Get a string representing a result entry.
+	 * @see polsearch_result::toString()
+	 */
+	extern char *polsearch_result_to_string(polsearch_result_t * pr);
+
+	/**
 	 * Create a proof entry.
 	 * @see polsearch_proof::polsearch_proof(polsearch_test_cond_e, polsearch_element_e, void *)
 	 */
-	extern polsearch_proof_t *polsearch_proof_create(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem);
+	extern polsearch_proof_t *polsearch_proof_create(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem,
+							 const apol_policy_t * p, const sefs_fclist_t * fclist);
 	/**
 	 * Copy a proof entry.
 	 * @see polsearch_proof::polsearch_proof(const polsearch_proof&)
 	 */
-	extern polsearch_proof_t *polsearch_proof_create_from_proof(polsearch_proof_t * pp);
+	extern polsearch_proof_t *polsearch_proof_create_from_proof(const polsearch_proof_t * pp);
 	/**
 	 * Deallocate all memory associated with a proof entry and set it to NULL.
 	 * @param pp Reference pointer to the proof entry to destroy.
@@ -347,17 +371,22 @@ extern "C"
 	 * Get the type of element.
 	 * @see polsearch_proof::elementType()
 	 */
-	extern polsearch_element_e polsearch_proof_get_element_type(polsearch_proof_t * pp);
+	extern polsearch_element_e polsearch_proof_get_element_type(const polsearch_proof_t * pp);
 	/**
 	 * Get the element.
 	 * @see polsearch_proof::element()
 	 */
-	extern const void polsearch_proof_get_element(polsearch_proof_t * pp);
+	extern const void *polsearch_proof_get_element(const polsearch_proof_t * pp);
+	/**
+	 * Get the test condition
+	 * @see polsearch_proof::testCond()
+	 */
+	extern polsearch_test_cond_e polsearch_proof_get_test_cond(const polsearch_proof_t * pp);
 	/**
 	 * Get a string representing the proof entry.
 	 * @see polsearch_proof::toString()
 	 */
-	extern char *polsearch_proof_to_string(polsearch_proof_t * pp);
+	extern char *polsearch_proof_to_string(const polsearch_proof_t * pp);
 
 #endif				       /* SWIG */
 

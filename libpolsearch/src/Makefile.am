@@ -14,6 +14,7 @@ libpolsearch_a_SOURCES = \
 	polsearch.cc \
 	query.cc \
 	string_list.cc \
+	symbol_query.cc \
 	test.cc \
 	test_internal.hh \
 	util.c

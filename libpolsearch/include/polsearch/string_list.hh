@@ -58,7 +58,7 @@ class polsearch_string_list
 	 * invalid use of the special identifier \a X.
 	 * @see polsearch_is_X_valid()
 	 */
-	polsearch_string_list(const char *str, bool Xvalid = true) throw(std::runtime_error, std::bad_alloc);
+	polsearch_string_list(const char *str = NULL, bool Xvalid = true) throw(std::runtime_error, std::bad_alloc);
 	/**
 	 * Copy a string list.
 	 * @param sl The string list to copy.

@@ -122,16 +122,15 @@ template < class T > class polsearch_criterion:public polsearch_base_criterion
       public:
 	/**
 	 * Create a new criterion.
-	 * @param opr The comparison operator to use.
-	 * @param neg If \a true, invert the logic result of the operator.
 	 * @param parameter The second parameter to \a opr. This object will
 	 * be duplicated by this call.
+	 * @param opr The comparison operator to use.
+	 * @param neg If \a true, invert the logic result of the operator.
 	 * @exception std::bad_alloc Could not copy \a parameter.
 	 * @exception std::invalid_argument The type of \a parameter is not
 	 * compatible with \a opr, or invalid operator requested.
 	 */
-	polsearch_criterion(polsearch_op_e opr = POLSEARCH_OP_NONE, bool neg = false, const T & parameter =
-			    0) throw(std::bad_alloc, std::invalid_argument);
+	polsearch_criterion(const T & parameter, polsearch_op_e opr, bool neg = false) throw(std::bad_alloc, std::invalid_argument);
 	/**
 	 * Copy a criterion.
 	 * @param pc Criterion to copy.
@@ -151,7 +150,7 @@ template < class T > class polsearch_criterion:public polsearch_base_criterion
 	 * @return The parameter set.
 	 * @exception std::bad_alloc Could not copy \a parameter.
 	 */
-	const T & parm(const T & parameter) throw(std::bad_alloc);
+	const T & param(const T & parameter) throw(std::bad_alloc);
 	/**
 	 * Check all candidates to find those meet this criterion.
 	 * @param p The policy containing the elements to check.
@@ -197,8 +196,8 @@ extern "C"
 	 * object.
 	 * @see polsearch_criterion<T>::polsearch_criterion(polsearch_op_e, bool, const T&)
 	 */
-	extern polsearch_criterion_t *polsearch_criterion_crate(polsearch_op_e opr, bool neg, polsearch_param_type_e param_type,
-								const void *parameter);
+	extern polsearch_criterion_t *polsearch_criterion_create(polsearch_op_e opr, bool neg, polsearch_param_type_e param_type,
+								 const void *parameter);
 	/**
 	 * Copy a criterion.
 	 * @param pc The criterion to copy.
@@ -207,7 +206,7 @@ extern "C"
 	 * the returned object.
 	 * @see polsearch_criterion<T>::polsearch_criterion(const polsearch_criterion<T>&)
 	 */
-	extern polsearch_criterion_t *polsearch_criterion_crete_from_criterion(const polsearch_criterion_t * pc);
+	extern polsearch_criterion_t *polsearch_criterion_create_from_criterion(const polsearch_criterion_t * pc);
 	/**
 	 * Deallocate all memory associated with a criterion and set it to NULL.
 	 * This function does nothing if \a pc is already NULL.

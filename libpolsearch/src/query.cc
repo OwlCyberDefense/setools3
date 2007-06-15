@@ -39,7 +39,7 @@
 #include <errno.h>
 #include <stdexcept>
 
-polsearch_query::polsearch_query(polsearch_match_e m) throw(std::bad_alloc)
+polsearch_query::polsearch_query(polsearch_match_e m) throw(std::bad_alloc, std::invalid_argument)
 {
 	_match = m;
 	try

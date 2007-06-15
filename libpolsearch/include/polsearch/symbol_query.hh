@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * Routines to perform complex queries on a selinux policy.
+ * Routines to perform complex queries for symbols in a selinux policy.
  *
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
@@ -57,16 +57,21 @@ class polsearch_symbol_query:public polsearch_query
 	/**
 	 * Create a new symbol query.
 	 * @param symbol_type The type of symbol to match; must be one of
-	 * POLSEARCH_SYMBOL_* from above.
+	 * POLSEARCH_SYMBOL_*.
 	 * @param m Set the matching behavior of the query, must be
 	 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
+	 * @exception std::bad_alloc Error allocating internal data fields.
+	 * @exception std::invalid_argument Invalid symbol type or
+	 * matching behavior requested.
 	 */
-	polsearch_symbol_query(polsearch_symbol_e sym_type, polsearch_match_e m = POLSEARCH_MATCH_ALL);
+	polsearch_symbol_query(polsearch_symbol_e sym_type, polsearch_match_e m =
+			       POLSEARCH_MATCH_ALL) throw(std::bad_alloc, std::invalid_argument);
 	/**
 	 * Copy a symbol query.
 	 * @param sq The query to copy.
+	 * @exception std::bad_alloc Error allocating internal data fields.
 	 */
-	polsearch_symbol_query(const polsearch_symbol_query & sq);
+	polsearch_symbol_query(const polsearch_symbol_query & sq) throw(std::bad_alloc);
 	//! Destructor.
 	~polsearch_symbol_query();
 
@@ -75,6 +80,29 @@ class polsearch_symbol_query:public polsearch_query
 	 * @return The type of symbol matched.
 	 */
 	polsearch_symbol_e symbolType() const;
+
+	/**
+	 * Get a list of the valid types of tests to perform for the symbol
+	 * type specified by the query.
+	 * @return A vector (of type polsearch_test_cond_e) containing all valid
+	 * tests for the specified symbol type. The caller is responsible for
+	 * calling apol_vector_destroy() on the returned vector.
+	 * @exception std::bad_alloc Could not allocate the vector.
+	 */
+	apol_vector_t *getValidTests() const throw(std::bad_alloc);
+
+	/**
+	 * Run the query.
+	 * @param policy The policy containing the elements to match.
+	 * @param fclist A file_contexts list to optionally use for tests that
+	 * match file_context entries. It is an error to not provide \a fclist
+	 * if a test matches file_context entries.
+	 * @return A vector of results (polsearch_result), or NULL on
+	 * error. The caller is responsible for calling apol_vector_destroy()
+	 * on the returned vector.
+	 * @exception std::bad_alloc Could not allocate the vector.
+	 */
+	apol_vector_t *run(const apol_policy_t * policy, const sefs_fclist_t * fclist = NULL) const throw(std::bad_alloc);
 
       private:
 	 polsearch_symbol_e _symbol_type;	/*!< The type of symbol matched by the query. */

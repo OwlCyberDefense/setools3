@@ -57,7 +57,7 @@ extern "C"
 	 * @param pr Pointer to a polsearch_result object to copy.
 	 * @param x Unused parameter
 	 */
-	void *dub_result(const void *pr, void *x __attribute__ ((unused)));
+	void *dup_result(const void *pr, void *x __attribute__ ((unused)));
 
 	/**
 	 * Free callback for polsearch_proof objects in apol vectors.

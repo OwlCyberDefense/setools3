@@ -173,7 +173,7 @@ static bool validate_opr_elem(polsearch_op_e opr, polsearch_param_type_e param_t
 	return false;
 }
 
-template < class T > polsearch_criterion < T >::polsearch_criterion(polsearch_op_e opr, bool neg, const T & parameter)throw(std::bad_alloc, std::invalid_argument):polsearch_base_criterion(opr,
+template < class T > polsearch_criterion < T >::polsearch_criterion(const T & parameter, polsearch_op_e opr, bool neg)throw(std::bad_alloc, std::invalid_argument):polsearch_base_criterion(opr,
 			 neg)
 {
 	try
@@ -204,7 +204,7 @@ template < class T > const T & polsearch_criterion < T >::param() const
 	return _param;
 }
 
-template < class T > const T & polsearch_criterion < T >::parm(const T & parameter) throw(std::bad_alloc)
+template < class T > const T & polsearch_criterion < T >::param(const T & parameter) throw(std::bad_alloc)
 {
 	return (_param = parameter);
 }
@@ -260,10 +260,10 @@ template < class T > void polsearch_criterion < T >::_detect_param_type() throw(
 
 typedef apol_mls_level_t *apol_mls_level_tp;	//makes gcc happy
 template <>
-	polsearch_criterion < apol_mls_level_t * >::polsearch_criterion(polsearch_op_e opr, bool neg,
-									const apol_mls_level_tp & parameter) throw(std::bad_alloc,
-														   std::
-														   invalid_argument):polsearch_base_criterion
+	polsearch_criterion < apol_mls_level_t * >::polsearch_criterion(const apol_mls_level_tp & parameter, polsearch_op_e opr,
+									bool neg) throw(std::bad_alloc,
+											std::
+											invalid_argument):polsearch_base_criterion
 	(opr, neg)
 {
 	try
@@ -314,7 +314,7 @@ template <> polsearch_criterion < apol_mls_level_t * >::~polsearch_criterion()
 
 template <>
 	const apol_mls_level_tp & polsearch_criterion <
-	apol_mls_level_t * >::parm(const apol_mls_level_tp & parameter) throw(std::bad_alloc)
+	apol_mls_level_t * >::param(const apol_mls_level_tp & parameter) throw(std::bad_alloc)
 {
 	try
 	{
@@ -330,10 +330,10 @@ template <>
 
 typedef apol_mls_range_t *apol_mls_range_tp;	//makes gcc happy
 template <>
-	polsearch_criterion < apol_mls_range_t * >::polsearch_criterion(polsearch_op_e opr, bool neg,
-									const apol_mls_range_tp & parameter) throw(std::bad_alloc,
-														   std::
-														   invalid_argument):polsearch_base_criterion
+	polsearch_criterion < apol_mls_range_t * >::polsearch_criterion(const apol_mls_range_tp & parameter, polsearch_op_e opr,
+									bool neg) throw(std::bad_alloc,
+											std::
+											invalid_argument):polsearch_base_criterion
 	(opr, neg)
 {
 	try
@@ -384,7 +384,7 @@ template <> polsearch_criterion < apol_mls_range_t * >::~polsearch_criterion()
 
 template <>
 	const apol_mls_range_tp & polsearch_criterion <
-	apol_mls_range_t * >::parm(const apol_mls_range_tp & parameter) throw(std::bad_alloc)
+	apol_mls_range_t * >::param(const apol_mls_range_tp & parameter) throw(std::bad_alloc)
 {
 	try
 	{
@@ -446,31 +446,155 @@ void free_criterion(void *pc)
 
 void *dup_criterion(const void *pc, void *x __attribute__ ((unused)))
 {
-	//TODO check which kind and return it.
-	return NULL;
+	if (!pc)
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+
+	const polsearch_base_criterion *crit = static_cast < const polsearch_base_criterion * >(pc);
+	try
+	{
+		switch (crit->paramType())
+		{
+		case POLSEARCH_PARAM_TYPE_REGEX:
+		{
+			polsearch_criterion < string > *prc =
+				new polsearch_criterion < string > (*dynamic_cast < const polsearch_criterion < string > *>(crit));
+			if (!prc)
+				throw bad_alloc();
+			return static_cast < void *>(prc);
+		}
+		case POLSEARCH_PARAM_TYPE_STR_LIST:
+		{
+			polsearch_criterion < polsearch_string_list > *pslc =
+				new polsearch_criterion < polsearch_string_list > (*dynamic_cast < const polsearch_criterion <
+										   polsearch_string_list > *>(crit));
+			if (!pslc)
+				throw bad_alloc();
+			return static_cast < void *>(pslc);
+		}
+		case POLSEARCH_PARAM_TYPE_RULE_TYPE:
+		{
+			polsearch_criterion < uint32_t > *prtc =
+				new polsearch_criterion < uint32_t > (*dynamic_cast < const polsearch_criterion < uint32_t >
+								      *>(crit));
+			if (!prtc)
+				throw bad_alloc();
+			return static_cast < void *>(prtc);
+		}
+		case POLSEARCH_PARAM_TYPE_BOOL:
+		{
+			polsearch_criterion < bool > *pbc =
+				new polsearch_criterion < bool > (*dynamic_cast < const polsearch_criterion < bool > *>(crit));
+			if (!pbc)
+				throw bad_alloc();
+			return static_cast < void *>(pbc);
+		}
+		case POLSEARCH_PARAM_TYPE_LEVEL:
+		{
+			polsearch_criterion < apol_mls_level_t * >*plc =
+				new polsearch_criterion < apol_mls_level_t * >(*dynamic_cast < const polsearch_criterion <
+									       apol_mls_level_t * >*>(crit));
+			if (!plc)
+				throw bad_alloc();
+			return static_cast < void *>(plc);
+		}
+		case POLSEARCH_PARAM_TYPE_RANGE:
+		{
+			polsearch_criterion < apol_mls_range_t * >*prc =
+				new polsearch_criterion < apol_mls_range_t * >(*dynamic_cast < const polsearch_criterion <
+									       apol_mls_range_t * >*>(crit));
+			if (!prc)
+				throw bad_alloc();
+			return static_cast < void *>(prc);
+		}
+		case POLSEARCH_PARAM_TYPE_NONE:
+		default:
+		{
+			errno = ENOTSUP;
+			return NULL;
+		}
+		}
+	}
+	catch(bad_alloc x)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
 }
 
 // C compatibility
 
-	/**
-	 * Allocate and initialize a new polsearch criterion.
-	 * @param opr The comparison operator to use.
-	 * @param neg If \a true, inver the logic result of the operator.
-	 * @param param_type Type of parameter to use.
-	 * @param parameter The parameter to set as the second argument to \a opr.
-	 * @return A newly allocated criterion, or NULL on error; the caller is
-	 * responsible for calling polsearch_criterion_destroy() on the returned
-	 * object.
-	 * @see polsearch_criterion<T>::polsearch_criterion(polsearch_op_e, bool, const T&)
-	 */
-polsearch_criterion_t *polsearch_criterion_crate(polsearch_op_e opr, bool neg, polsearch_param_type_e param_type,
-						 const void *parameter)
+polsearch_criterion_t *polsearch_criterion_create(polsearch_op_e opr, bool neg, polsearch_param_type_e param_type,
+						  const void *parameter)
 {
-	//TODO
-	return NULL;
+	if (opr == POLSEARCH_OP_NONE || param_type == POLSEARCH_PARAM_TYPE_NONE)
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+
+	try
+	{
+		switch (param_type)
+		{
+		case POLSEARCH_PARAM_TYPE_REGEX:
+		{
+			string s(static_cast < const char *>(parameter));
+			return dynamic_cast < polsearch_base_criterion * >(new polsearch_criterion < string > (s, opr, neg));
+		}
+		case POLSEARCH_PARAM_TYPE_STR_LIST:
+		{
+			return dynamic_cast < polsearch_base_criterion * >(new polsearch_criterion < polsearch_string_list >
+									   (*static_cast <
+									    const polsearch_string_list * >(parameter), opr, neg));
+		}
+		case POLSEARCH_PARAM_TYPE_RULE_TYPE:
+		{
+			return dynamic_cast < polsearch_base_criterion * >(new polsearch_criterion < uint32_t >
+									   (reinterpret_cast < uint32_t > (parameter), opr, neg));
+		}
+		case POLSEARCH_PARAM_TYPE_BOOL:
+		{
+			return dynamic_cast < polsearch_base_criterion * >(new polsearch_criterion < bool >
+									   ((parameter != 0), opr, neg));
+		}
+		case POLSEARCH_PARAM_TYPE_LEVEL:
+		{
+			//const_cast here because const apol_mls_level_t* cannot be directly converted to const apol_mls_level_t*&
+			apol_mls_level_t *lvl = static_cast < apol_mls_level_t * >(const_cast < void *>(parameter));
+			return dynamic_cast < polsearch_base_criterion * >(new polsearch_criterion <
+									   apol_mls_level_t * >(lvl, opr, neg));
+		}
+		case POLSEARCH_PARAM_TYPE_RANGE:
+		{
+			//const_cast here because const apol_mls_level_t* cannot be directly converted to const apol_mls_level_t*&
+			apol_mls_range_t *rng = static_cast < apol_mls_range_t * >(const_cast < void *>(parameter));
+			return dynamic_cast < polsearch_base_criterion * >(new polsearch_criterion <
+									   apol_mls_range_t * >(rng, opr, neg));
+		}
+		case POLSEARCH_PARAM_TYPE_NONE:
+		default:
+		{
+			errno = ENOTSUP;
+			return NULL;
+		}
+		}
+	}
+	catch(bad_alloc x)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+	catch(invalid_argument x)
+	{
+		errno = EINVAL;
+		return NULL;
+	}
 }
 
-polsearch_criterion_t *polsearch_criterion_crete_from_criterion(const polsearch_criterion_t * pc)
+polsearch_criterion_t *polsearch_criterion_create_from_criterion(const polsearch_criterion_t * pc)
 {
 	return static_cast < polsearch_criterion_t * >(dup_criterion(pc, NULL));
 }
@@ -590,7 +714,7 @@ const void *polsearch_criterion_set_param(polsearch_criterion_t * pc, polsearch_
 	//explicitly reset errno here as NULL might be a valid return.
 	errno = 0;
 
-	if (!pc)
+	if (!pc || pc->paramType() != param_type)
 	{
 		errno = EINVAL;
 		return NULL;
@@ -604,27 +728,27 @@ const void *polsearch_criterion_set_param(polsearch_criterion_t * pc, polsearch_
 		{
 			polsearch_criterion < string > *prc = dynamic_cast < polsearch_criterion < string > *>(pc);
 			string str(static_cast < const char *>(parameter));
-			return static_cast < const void *>(prc->parm(str).c_str());
+			return static_cast < const void *>(prc->param(str).c_str());
 		}
 		case POLSEARCH_PARAM_TYPE_STR_LIST:
 		{
 			polsearch_criterion < polsearch_string_list > *pslc =
 				dynamic_cast < polsearch_criterion < polsearch_string_list > *>(pc);
 			const polsearch_string_list sl(*static_cast < const polsearch_string_list * >(parameter));
-			return static_cast < const void *>(&(pslc->parm(sl)));
+			return static_cast < const void *>(&(pslc->param(sl)));
 		}
 		case POLSEARCH_PARAM_TYPE_RULE_TYPE:
 		{
 			polsearch_criterion < uint32_t > *prtc = dynamic_cast < polsearch_criterion < uint32_t > *>(pc);
 			const uint32_t rt = reinterpret_cast < const uint32_t > (parameter);
-			return reinterpret_cast < const void *>(prtc->parm(rt));
+			return reinterpret_cast < const void *>(prtc->param(rt));
 		}
 		case POLSEARCH_PARAM_TYPE_BOOL:
 		{
 			polsearch_criterion < bool > *pbc = dynamic_cast < polsearch_criterion < bool > *>(pc);
 			//do this in place of casts
 			const bool b = (parameter != 0);
-			return reinterpret_cast < const void *>(pbc->parm(b));
+			return reinterpret_cast < const void *>(pbc->param(b));
 		}
 		case POLSEARCH_PARAM_TYPE_LEVEL:
 		{
@@ -632,7 +756,7 @@ const void *polsearch_criterion_set_param(polsearch_criterion_t * pc, polsearch_
 				dynamic_cast < polsearch_criterion < apol_mls_level_t * >*>(pc);
 			//const_cast here because const apol_mls_level_t* cannot be directly converted to const apol_mls_level_t*&
 			apol_mls_level_t *lvl = static_cast < apol_mls_level_t * >(const_cast < void *>(parameter));
-			return static_cast < const void *>(plc->parm(lvl));
+			return static_cast < const void *>(plc->param(lvl));
 		}
 		case POLSEARCH_PARAM_TYPE_RANGE:
 		{
@@ -640,7 +764,7 @@ const void *polsearch_criterion_set_param(polsearch_criterion_t * pc, polsearch_
 				dynamic_cast < polsearch_criterion < apol_mls_range_t * >*>(pc);
 			//const_cast here because const apol_mls_range_t* cannot be directly converted to const apol_mls_range_t*&
 			apol_mls_range_t *rng = static_cast < apol_mls_range_t * >(const_cast < void *>(parameter));
-			return static_cast < const void *>(prc->parm(rng));
+			return static_cast < const void *>(prc->param(rng));
 		}
 		case POLSEARCH_PARAM_TYPE_NONE:
 		default:
