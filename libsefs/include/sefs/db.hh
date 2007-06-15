@@ -25,13 +25,14 @@
 #ifndef SEFS_DB_H
 #define SEFS_DB_H
 
-#include "fclist.hh"
+#include <sefs/fclist.hh>
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 #include <time.h>
+#include <apol/bst.h>
 #include <apol/vector.h>
 
 #ifdef __cplusplus
@@ -47,13 +48,17 @@ class sefs_filesystem;
  */
 class sefs_db:public sefs_fclist
 {
+#ifndef SWIG_FRIENDS
 	// private functions -- do not call these directly from
 	// outside of the library
+	friend int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), const sefs_entry * entry, void *arg);
 	friend struct sefs_context_node *db_get_context(sefs_db *, const char *, const char *, const char *,
 							const char *) throw(std::bad_alloc);
 	friend sefs_entry *db_get_entry(sefs_db *, const struct sefs_context_node *, uint32_t, const char *, ino64_t,
 					const char *) throw(std::bad_alloc);
-
+	friend void db_err(sefs_db *, const char *, const char *);
+#endif
+    
       public:
 
 	/**
@@ -150,6 +155,7 @@ class sefs_db:public sefs_fclist
 	 */
 	void upgradeToDB2() throw(std::runtime_error);
 
+	const struct sefs_context_node *getContextNode(const sefs_entry * entry);
 	sefs_entry *getEntry(const struct sefs_context_node *context, uint32_t objectClass, const char *path, ino64_t inode,
 			     const char *dev) throw(std::bad_alloc);
 	struct sqlite3 *_db;

@@ -173,7 +173,7 @@ sefs_filesystem::sefs_filesystem(const char *root, sefs_callback_fn_t msg_callba
 		security_context_t scon;
 		if (filesystem_lgetfilecon(root, &scon) < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR("Could not read SELinux file context for %s.", root);
 			throw std::runtime_error(strerror(errno));
 		}
 		context_t con;
@@ -238,11 +238,16 @@ inline sefs_entry *filesystem_get_entry(sefs_filesystem * fs, const struct sefs_
 	return fs->getEntry(node, objClass, path, ino, dev_name);
 }
 
-inline bool filesystem_is_query_match(sefs_filesystem * fs, const sefs_query * query, const char *path,
+inline bool filesystem_is_query_match(sefs_filesystem * fs, const sefs_query * query, const char *path, const char *dev,
 				      const struct stat64 * sb, apol_vector_t * type_list,
 				      apol_mls_range_t * range)throw(std::runtime_error)
 {
-	return fs->isQueryMatch(query, path, sb, type_list, range);
+	return fs->isQueryMatch(query, path, dev, sb, type_list, range);
+}
+
+inline void filesystem_err(sefs_filesystem * fs, const char *fmt, const char *arg)
+{
+	fs->SEFS_ERR(fmt, arg);
 }
 
 static uint32_t filesystem_stat_to_objclass(const struct stat64 *sb)
@@ -305,9 +310,16 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 {
 	struct filesystem_ftw_struct *s = static_cast < struct filesystem_ftw_struct *>(data);
 
+	size_t i;
+	void *dev_num = const_cast < void *>(static_cast < const void *>(&(sb->st_dev)));
+	int rc = apol_vector_get_index(s->dev_map, NULL, filesystem_dev_cmp, dev_num, &i);
+	assert(rc == 0);
+	struct filesystem_dev *d = static_cast < struct filesystem_dev *>(apol_vector_get_element(s->dev_map, i));
+	const char *dev = d->dev_name;
+
 	try
 	{
-		if (!filesystem_is_query_match(s->fs, s->query, fpath, sb, s->type_list, s->range))
+		if (!filesystem_is_query_match(s->fs, s->query, fpath, dev, sb, s->type_list, s->range))
 		{
 			return 0;
 		}
@@ -320,6 +332,7 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	security_context_t scon;
 	if (filesystem_lgetfilecon(fpath, &scon) < 0)
 	{
+		filesystem_err(s->fs, "Could not read SELinux file context for %s.", fpath);
 		return -1;
 	}
 	struct sefs_context_node *node = NULL;
@@ -335,17 +348,11 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	freecon(scon);
 
 	uint32_t objClass = filesystem_stat_to_objclass(sb);
-	size_t i;
-	void *dev_num = const_cast < void *>(static_cast < const void *>(&(sb->st_dev)));
-	int rc = apol_vector_get_index(s->dev_map, NULL, filesystem_dev_cmp, dev_num, &i);
-	assert(rc == 0);
-	struct filesystem_dev *d = static_cast < struct filesystem_dev *>(apol_vector_get_element(s->dev_map, i));
-	const char *dev_name = d->dev_name;
 
 	sefs_entry *entry = NULL;
 	try
 	{
-		entry = filesystem_get_entry(s->fs, node, objClass, fpath, sb->st_ino, dev_name);
+		entry = filesystem_get_entry(s->fs, node, objClass, fpath, sb->st_ino, dev);
 	}
 	catch(...)
 	{
@@ -445,6 +452,23 @@ static void filesystem_dev_free(void *elem)
 	}
 }
 
+const char *sefs_filesystem::getDevName(const dev_t dev) throw(std::runtime_error)
+{
+	apol_vector_t *dev_map = buildDevMap();
+	size_t i;
+	void *devp = const_cast < dev_t * >(&dev);
+	int rc = apol_vector_get_index(dev_map, NULL, filesystem_dev_cmp, devp, &i);
+	if (rc < 0)
+	{
+		apol_vector_destroy(&dev_map);
+		return NULL;
+	}
+	struct filesystem_dev *d = static_cast < struct filesystem_dev *>(apol_vector_get_element(dev_map, i));
+	const char *dev_name = d->dev_name;	// this is pointing into this->_dev_tree
+	apol_vector_destroy(&dev_map);
+	return dev_name;
+}
+
 /**
  * For each entry in /etc/mtab, record the device number and the name
  * of the mounted file system.  This provides the mapping between a
@@ -455,7 +479,7 @@ static void filesystem_dev_free(void *elem)
  * @exception If error allocating space, unable to open /etc/mtab, or
  * unable to parse mtab file.
  */
-apol_vector_t *sefs_filesystem::buildDevMap(void) throw(std::runtime_error)
+apol_vector_t *sefs_filesystem::buildDevMap(void)throw(std::runtime_error)
 {
 	apol_vector_t *dev_map;
 	if ((dev_map = apol_vector_create(filesystem_dev_free)) == NULL)
@@ -525,8 +549,8 @@ apol_vector_t *sefs_filesystem::buildDevMap(void) throw(std::runtime_error)
 	return dev_map;
 }
 
-bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, const struct stat64 * sb, apol_vector_t * type_list,
-				   apol_mls_range_t * range)throw(std::runtime_error)
+bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, const char *dev, const struct stat64 * sb,
+				   apol_vector_t * type_list, apol_mls_range_t * range)throw(std::runtime_error)
 {
 	if (query == NULL)
 	{
@@ -619,7 +643,7 @@ bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, c
 		return false;
 	}
 
-	if (query->_dev != 0 && query->_dev != sb->st_dev)
+	if (!query_str_compare(dev, query->_dev, query->_redev, query->_regex))
 	{
 		return false;
 	}
@@ -673,4 +697,23 @@ const char *sefs_filesystem_get_root(const sefs_filesystem_t * fs)
 		return NULL;
 	}
 	return fs->root();
+}
+
+extern const char *sefs_filesystem_get_dev_name(sefs_filesystem_t * fs, const dev_t dev)
+{
+	if (fs == NULL)
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+	const char *dev_name = NULL;
+	try
+	{
+		dev_name = fs->getDevName(dev);
+	}
+	catch(...)
+	{
+		return NULL;
+	}
+	return dev_name;
 }

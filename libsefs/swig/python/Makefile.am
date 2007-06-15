@@ -6,11 +6,11 @@ wrappedpy_DATA = sefs.py
 wrappedpydir = $(pkgpythondir)
 
 dist_noinst_DATA = $(srcdir)/../sefs.i
-BUILT_SOURCES = sefs_wrap.c
+BUILT_SOURCES = sefs_wrap.cc
 
-AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ -I$(top_builddir) -fpic \
-	-I$(top_srcdir)/libsefs/include -D__attribute__\(x\)=''
+	-I$(top_srcdir)/libsefs/include
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @SEFS_LIB_FLAG@ @XML_LIBS@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
@@ -18,12 +18,12 @@ DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libsefs/src/libsefs.so
 
 $(BUILT_SOURCES): $(dist_noinst_DATA)
-	$(SWIG) $(SWIG_PYTHON_OPT) -o $@ \
+	$(SWIG) -c++ $(SWIG_PYTHON_OPT) -o $@ \
 	-I$(top_srcdir)/libsefs/include -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<
 
 $(wrappedso_DATA): $(BUILT_SOURCES)
-	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_PYTHON_CPPFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
+	$(CXX) -shared -o $@ $^ $(AM_CXXFLAGS) $(CXXFLAGS) $(SWIG_PYTHON_CPPFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ _sefs.so
 

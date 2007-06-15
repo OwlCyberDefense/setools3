@@ -10,35 +10,44 @@ wrappedjar_DATA = sefs.jar
 wrappedjardir = $(libdir)/setools
 
 dist_noinst_DATA = $(srcdir)/../sefs.i
-BUILT_SOURCES = sefs_wrap.c \
-	sefs.java \
+BUILT_SOURCES = sefs_wrap.cc \
 	sefsConstants.java \
+	sefs_db.java \
+	sefs_entry.java \
+	sefs_fcfile.java \
+	sefs_fclist.java \
+	sefs_fclist_type_e.java \
+	sefs_filesystem.java \
+	sefs.java \
 	sefsJNI.java \
-	sefs_fc_entry_t.java \
-	sefs_filesystem_db_t.java \
-	sefs_security_con_t.java \
+	sefs_query.java \
+	SWIGTYPE_p_dev_t.java \
+	SWIGTYPE_p_f_p_sefs_fclist_p_q_const__sefs_entry_p_void__int.java \
+	SWIGTYPE_p_f_p_void_p_q_const__sefs_fclist_int_p_q_const__char_va_list__void.java \
+	SWIGTYPE_p_ino64_t.java \
+	SWIGTYPE_p_time_t.java \
 	SWIGTYPE_p_void.java
 
-AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ -I$(top_builddir) -fpic \
 	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libsefs/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@ \
 	-classpath $(top_builddir)/libqpol/swig/java/qpol.jar:$(top_builddir)/libapol/swig/java/apol.jar
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
-	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @SEFS_LIB_FLAG@ @XML_LIBS@
+	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @SEFS_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libsefs/src/sefs.so
 
 $(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA)
-	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ \
+	$(SWIG) -c++ $(SWIG_JAVA_OPT) -package $(package_name) -o $@ \
 	-I$(top_srcdir)/libsefs/include -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<
 
 $(wordlist 2,$(words $(BUILT_SOURCES)), $(BUILT_SOURCES)): $(firstword $(BUILT_SOURCES))
 
 $(wrappedso_DATA): $(filter %.c, $(BUILT_SOURCES))
-	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_JAVA_CFLAGS) -DSWIGJAVA=1 $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
+	$(CXX) -shared -o $@ $^ $(AM_CXXFLAGS) $(CXXFLAGS) $(SWIG_JAVA_CFLAGS) -DSWIGJAVA=1 $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
 	$(LN_S) -f $@ $(wrappedso_SONAME)
 	$(LN_S) -f $@ $(short_name)
 

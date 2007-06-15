@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 		}
 		query->type(type, indirect);
 	}
-	catch(std::bad_alloc)
+	catch(bad_alloc)
 	{
 		delete query;
 		exit(-1);

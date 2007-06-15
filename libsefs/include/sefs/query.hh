@@ -173,11 +173,15 @@ class sefs_query
 
 	/**
 	 * Set a sefs query to match only entries with a given device
-	 * number.
+	 * name.
 	 * @param dev Limit query to only entries with this device
-	 * number, or 0 to clear this field.
+	 * number, or NULL to clear this string.  The string will be
+	 * duplicated.
+	 * @exception std::bad_alloc Out of memory.
+	 * @see sefs_filesystem::getDevName() to convert between dev_t
+	 * and a name.
 	 */
-	void dev(dev_t dev);
+	void dev(const char *dev) throw(std::bad_alloc);
 
 	/**
 	 * Set a sefs query to use regular expression matching for
@@ -196,14 +200,13 @@ class sefs_query
 	 */
 	void compile() throw(std::bad_alloc);
 
-	char *_user, *_role, *_type, *_range, *_path;
+	char *_user, *_role, *_type, *_range, *_path, *_dev;
 	uint32_t _objclass;
 	bool _indirect, _regex, _recursive;
 	int _rangeMatch;
 	ino64_t _inode;
-	dev_t _dev;
 	bool _recompiled;
-	regex_t *_reuser, *_rerole, *_retype, *_rerange, *_repath;
+	regex_t *_reuser, *_rerole, *_retype, *_rerange, *_repath, *_redev;
 };
 
 extern "C"
@@ -292,10 +295,9 @@ extern "C"
 
 /**
  * Set a sefs query to match only entries with a given device number.
- * @return Always 0.
  * @see sefs_query::dev()
  */
-	extern int sefs_query_set_dev(sefs_query_t * query, dev_t dev);
+	extern int sefs_query_set_dev(sefs_query_t * query, const char *dev);
 
 /**
  * Set a sefs query to use regular expression matching for string

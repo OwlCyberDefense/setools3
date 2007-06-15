@@ -1,14 +1,13 @@
 # various setools command line tools
 
-bin_PROGRAMS = seinfo sesearch findcon
+bin_PROGRAMS = seinfo sesearch findcon indexcon
 
 #if WANT_LIBSEFS
 #bin_PROGRAMS += indexcon replcon
 #endif
 
-# These are for indexcon so it's usable on machines without libapol
-STATICAPOL = ../libapol/src/libapol.a
-STATICSEFS = ../libsefs/libsefs.a
+# These are for indexcon so that it is usable on machines without setools
+STATICLIBS = ../libsefs/src/libsefs.a ../libapol/src/libapol.a ../libqpol/src/libqpol.a -lsqlite3
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@
@@ -23,10 +22,9 @@ seinfo_SOURCES = seinfo.c
 
 sesearch_SOURCES = sesearch.c
 
-#indexcon_SOURCES = indexcon.c
-#indexcon_CFLAGS = $(AM_CFLAGS) @SEFS_CFLAGS@
-#indexcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
-#indexcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
+indexcon_SOURCES = indexcon.cc
+indexcon_LDADD = @SELINUX_LIB_FLAG@ $(STATICLIBS)
+indexcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
 
 findcon_SOURCES = findcon.cc
 findcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)

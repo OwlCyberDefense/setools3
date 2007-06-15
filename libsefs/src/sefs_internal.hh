@@ -88,9 +88,9 @@ bool query_str_compare(const char *target, const char *str, const regex_t * rege
 // object, build a cache of nodes to save space
 struct sefs_context_node
 {
-	apol_context_t *context;
-	const char *user, *role, *type, *range;
-	char *context_str;
+	apol_context_t *context;       // each node owns its apol context
+	const char *user, *role, *type, *range;	// these are pointers into fclists's BSTs
+	char *context_str;	       // each node owns the string
 };
 
 #endif

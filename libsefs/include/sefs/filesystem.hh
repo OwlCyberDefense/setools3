@@ -45,14 +45,16 @@ extern "C"
  */
 class sefs_filesystem:public sefs_fclist
 {
+#ifndef SWIG_FRIENDS
 	// private functions -- do not call these directly from
 	// outside of the library
-
 	friend struct sefs_context_node *filesystem_get_context(sefs_filesystem *, security_context_t) throw(std::bad_alloc);
 	friend sefs_entry *filesystem_get_entry(sefs_filesystem *, const struct sefs_context_node *, uint32_t,
 						const char *, ino64_t, const char *) throw(std::bad_alloc);
-	friend bool filesystem_is_query_match(sefs_filesystem *, const sefs_query *, const char *, const struct stat64 *,
-					      apol_vector_t *, apol_mls_range_t *) throw(std::runtime_error);
+	friend bool filesystem_is_query_match(sefs_filesystem *, const sefs_query *, const char *, const char *,
+					      const struct stat64 *, apol_vector_t *, apol_mls_range_t *) throw(std::runtime_error);
+	friend void filesystem_err(sefs_filesystem *, const char *, const char *);
+#endif
 
       public:
 
@@ -116,10 +118,20 @@ class sefs_filesystem:public sefs_fclist
 	 */
 	const char *root() const;
 
+	/**
+	 * Look up the given device number on the currently running
+	 * system, and convert it to its device name.
+	 * @param dev Device number to look up.
+	 * @return Name of the device, or NULL if the device number
+	 * was not found.  Do not free() this pointer.
+	 * @exception std::runtime_error Error while querying system.
+	 */
+	const char *getDevName(const dev_t dev) throw(std::runtime_error);
+
       private:
 	 apol_vector_t * buildDevMap(void) throw(std::runtime_error);
-	bool isQueryMatch(const sefs_query * query, const char *path, const struct stat64 *sb, apol_vector_t * type_list,
-			  apol_mls_range_t * range) throw(std::runtime_error);
+	bool isQueryMatch(const sefs_query * query, const char *path, const char *dev, const struct stat64 *sb,
+			  apol_vector_t * type_list, apol_mls_range_t * range) throw(std::runtime_error);
 	sefs_entry *getEntry(const struct sefs_context_node *context, uint32_t objectClass, const char *path, ino64_t ino,
 			     const char *dev_name) throw(std::bad_alloc);
 	char *_root;
@@ -149,6 +161,13 @@ extern "C"
  * @see sefs_filesystem::root()
  */
 	extern const char *sefs_filesystem_get_root(const sefs_filesystem_t * fs);
+
+/**
+ * Look up the given device number on the currently running
+ * system, and convert it to its device name.
+ * @see sefs_filesystem::ged_dev_name()
+ */
+	extern const char *sefs_filesystem_get_dev_name(sefs_filesystem_t * fs, const dev_t dev);
 
 #endif				       /* SWIG */
 

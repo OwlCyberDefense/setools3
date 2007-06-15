@@ -47,7 +47,7 @@
 	"CREATE TABLE users (user_id INTEGER PRIMARY KEY, user_name varchar (24));" \
 	"CREATE TABLE roles (role_id INTEGER PRIMARY KEY, role_name varchar (24));" \
 	"CREATE TABLE types (type_id INTEGER PRIMARY KEY, type_name varchar (48));" \
-	"INSERT INTO devs (dev_id, dev_name) VALUES (0, '<<unknown>>');" \
+	"CREATE TABLE devs (dev_id INTEGER PRIMARY KEY, dev_name varchar (32));" \
 	"CREATE TABLE paths (path varchar (128) PRIMARY KEY, ino int(64), dev int, user int, role int, type int, range int, obj_class int, symlink_target varchar (128));" \
 	"CREATE TABLE info (key varchar, value varchar);"
 
@@ -68,6 +68,11 @@ inline sefs_entry *db_get_entry(sefs_db * db, const struct sefs_context_node * n
 	return db->getEntry(node, objClass, path, inode, dev);
 }
 
+inline void db_err(sefs_db * db, const char *fmt, const char *arg)
+{
+	db->SEFS_ERR(fmt, arg);
+}
+
 /******************** sqlite3 callback functions ********************/
 
 struct db_callback_arg
@@ -80,9 +85,9 @@ struct db_callback_arg
 struct db_query_arg
 {
 	sefs_db *db;
-	char *user, *role, *type, *range, *path;
+	char *user, *role, *type, *range, *path, *dev;
 	bool regex, db_is_mls;
-	regex_t *reuser, *rerole, *retype, *rerange, *repath;
+	regex_t *reuser, *rerole, *retype, *rerange, *repath, *redev;
 	sefs_fclist_map_fn_t fn;
 	void *data;
 	bool aborted;
@@ -175,6 +180,19 @@ static void db_path_compare(sqlite3_context * context, int argc __attribute__ ((
 	assert(sqlite3_value_type(argv[0]) == SQLITE_TEXT);
 	const char *text = reinterpret_cast < const char *>(sqlite3_value_text(argv[0]));
 	bool retval = query_str_compare(text, q->path, q->repath, q->regex);
+	sqlite3_result_int(context, (retval ? 1 : 0));
+}
+
+/**
+ * Callback invoked when selecting a device name (for a sefs_query).
+ */
+static void db_dev_compare(sqlite3_context * context, int argc __attribute__ ((unused)), sqlite3_value ** argv)
+{
+	void *arg = sqlite3_user_data(context);
+	struct db_query_arg *q = static_cast < struct db_query_arg *>(arg);
+	assert(sqlite3_value_type(argv[0]) == SQLITE_TEXT);
+	const char *text = reinterpret_cast < const char *>(sqlite3_value_text(argv[0]));
+	bool retval = query_str_compare(text, q->dev, q->redev, q->regex);
 	sqlite3_result_int(context, (retval ? 1 : 0));
 }
 
@@ -279,14 +297,165 @@ static int db_count_callback(void *arg, int argc __attribute__ ((unused)), char 
 	return 0;
 }
 
-/******************** public functions below ********************/
+/******************** convert from a filesystem to a db ********************/
 
-static int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), const sefs_entry * entry, void *arg)
+struct strindex
 {
-	struct sqlite3 *db = static_cast < struct sqlite3 *>(arg);
-	// FIX ME: for each entry, add its information into DB
+	const char *str;
+	int id;
+};
+
+static int db_strindex_comp(const void *a, const void *b, void *arg __attribute__ ((unused)))
+{
+	const struct strindex *n1 = static_cast < const struct strindex *>(a);
+	const struct strindex *n2 = static_cast < const struct strindex *>(b);
+	return strcmp(n1->str, n2->str);
+}
+
+class db_convert
+{
+      public:
+	db_convert(sefs_db * db, struct sqlite3 * &target_db)throw(std::runtime_error)
+	{
+		_db = db;
+		_target_db = target_db;
+		_user = _role = _type = _range = _dev = NULL;
+		_user_id = _role_id = _type_id = _range_id = _dev_id = 0;
+		_errmsg = NULL;
+		try
+		{
+			if ((_user = apol_bst_create(db_strindex_comp, free)) == NULL)
+			{
+				db_err(_db, "%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			if ((_role = apol_bst_create(db_strindex_comp, free)) == NULL)
+			{
+				db_err(_db, "%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			if ((_type = apol_bst_create(db_strindex_comp, free)) == NULL)
+			{
+				db_err(_db, "%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			if ((_range = apol_bst_create(db_strindex_comp, free)) == NULL)
+			{
+				db_err(_db, "%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			if ((_dev = apol_bst_create(db_strindex_comp, free)) == NULL)
+			{
+				db_err(_db, "%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+		}
+		catch(...)
+		{
+			apol_bst_destroy(&_user);
+			apol_bst_destroy(&_role);
+			apol_bst_destroy(&_type);
+			apol_bst_destroy(&_range);
+			apol_bst_destroy(&_dev);
+			throw;
+		}
+	}
+	~db_convert()
+	{
+		apol_bst_destroy(&_user);
+		apol_bst_destroy(&_role);
+		apol_bst_destroy(&_type);
+		apol_bst_destroy(&_range);
+		apol_bst_destroy(&_dev);
+		sqlite3_free(_errmsg);
+	}
+	int getID(const char *sym, apol_bst_t * tree, int &id, const char *sym_name) throw(std::bad_alloc)
+	{
+		struct strindex st = { sym, -1 }, *result;
+		if (apol_bst_get_element(tree, &st, NULL, (void **)&result) == 0)
+		{
+			return result->id;
+		}
+		if ((result = static_cast < struct strindex * >(malloc(sizeof(*result)))) == NULL)
+		{
+			db_err(_db, "%s", strerror(errno));
+			throw std::bad_alloc();
+		}
+		result->str = sym;
+		result->id = id++;
+		if (apol_bst_insert(tree, result, NULL) < 0)
+		{
+			db_err(_db, "%s", strerror(errno));
+			free(result);
+			throw std::bad_alloc();
+		}
+		char *insert_stmt = NULL;
+		if (asprintf(&insert_stmt, "INSERT INTO %ss VALUES (%d, '%s')", sym_name, result->id, result->str) < 0)
+		{
+			db_err(_db, "%s", strerror(errno));
+			throw std::bad_alloc();
+		}
+		if (sqlite3_exec(_target_db, insert_stmt, NULL, NULL, &_errmsg) != SQLITE_OK)
+		{
+			db_err(_db, "%s", _errmsg);
+			free(insert_stmt);
+			throw std::runtime_error(_errmsg);
+		}
+		free(insert_stmt);
+		return result->id;
+	}
+	apol_bst_t *_user, *_role, *_type, *_range, *_dev;
+	int _user_id, _role_id, _type_id, _range_id, _dev_id;
+	char *_errmsg;
+	sefs_db *_db;
+	struct sqlite3 *_target_db;
+};
+
+int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), const sefs_entry * entry, void *arg)
+{
+	db_convert *dbc = static_cast < db_convert * >(arg);
+
+	const struct sefs_context_node *context = dbc->_db->getContextNode(entry);
+	try
+	{
+
+		// add the user, role, type, range, and dev into the
+		// target_db if needed
+		int user_id = dbc->getID(context->user, dbc->_user, dbc->_user_id, "user");
+		int role_id = dbc->getID(context->role, dbc->_role, dbc->_role_id, "role");
+		int type_id = dbc->getID(context->type, dbc->_type, dbc->_type_id, "type");
+		int range_id = dbc->getID(context->range, dbc->_range, dbc->_range_id, "range");
+		int dev_id = dbc->getID(entry->dev(), dbc->_dev, dbc->_dev_id, "dev");
+		const char *path = entry->path();
+		const ino64_t inode = entry->inode();
+		const uint32_t objclass = entry->objectClass();
+		// FIX ME: find link target
+		const char *link_target = "";
+
+		char *insert_stmt = NULL;
+		if (asprintf
+		    (&insert_stmt, "INSERT INTO paths VALUES ('%s', %lld, %d, %d, %d, %d, %d, %u, '%s')", path, inode, dev_id,
+		     user_id, role_id, type_id, range_id, objclass, link_target) < 0)
+		{
+			db_err(dbc->_db, "%s", strerror(errno));
+			throw std::bad_alloc();
+		}
+		if (sqlite3_exec(dbc->_target_db, insert_stmt, NULL, NULL, &dbc->_errmsg) != SQLITE_OK)
+		{
+			db_err(dbc->_db, "%s", dbc->_errmsg);
+			free(insert_stmt);
+			throw std::runtime_error(dbc->_errmsg);
+		}
+		free(insert_stmt);
+	}
+	catch(...)
+	{
+		return -1;
+	}
 	return 0;
 }
+
+/******************** public functions below ********************/
 
 sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *varg)throw(std::invalid_argument, std::runtime_error):sefs_fclist
 	(SEFS_FCLIST_TYPE_DB, msg_callback,
@@ -322,9 +491,11 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 			SEFS_ERR("%s", errmsg);
 			throw std::runtime_error(errmsg);
 		}
-		if (fs->runQueryMap(NULL, db_create_from_filesystem, _db) < 0)
+
+		db_convert dbc(this, _db);
+		if (fs->runQueryMap(NULL, db_create_from_filesystem, &dbc) < 0)
 		{
-			throw std::runtime_error(sqlite3_errmsg(_db));
+			throw std::runtime_error(strerror(errno));
 		}
 
 		// store metadata about the database
@@ -446,12 +617,14 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		q.type = query->_type;
 		q.range = query->_range;
 		q.path = query->_path;
+		q.dev = query->_dev;
 		q.regex = query->_regex;
 		q.reuser = query->_reuser;
 		q.rerole = query->_rerole;
 		q.retype = query->_retype;
 		q.rerange = query->_rerange;
 		q.repath = query->_repath;
+		q.redev = query->_redev;
 	}
 	q.db_is_mls = isMLS();
 	q.fn = fn;
@@ -586,7 +759,12 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 
 		if (query->_dev != 0)
 		{
-			// FIX ME
+			if (sqlite3_create_function(_db, "dev_compare", 1, SQLITE_UTF8, &q, db_dev_compare, NULL, NULL) !=
+			    SQLITE_OK)
+			{
+				SEFS_ERR("%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (dev_compare(devs.dev_name)", (where_added ? " AND" : " WHERE")) < 0)
 			{
@@ -791,6 +969,11 @@ bool sefs_db::isDB(const char *filename)
 }
 
 /******************** private functions below ********************/
+
+const struct sefs_context_node *sefs_db::getContextNode(const sefs_entry * entry)
+{
+	return entry->_context;
+}
 
 /**
  * Callback invoked while upgrading a libsefs database version 1 to

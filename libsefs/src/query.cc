@@ -38,13 +38,12 @@
 sefs_query::sefs_query()
 {
 	_user = _role = _type = _range = NULL;
-	_path = NULL;
+	_path = _dev = NULL;
 	_objclass = QPOL_CLASS_ALL;
 	_indirect = _regex = _recursive = false;
 	_inode = 0;
-	_dev = 0;
 	_recompiled = false;
-	_reuser = _rerole = _retype = _rerange = _repath = NULL;
+	_reuser = _rerole = _retype = _rerange = _repath = _redev = NULL;
 }
 
 sefs_query::~sefs_query()
@@ -53,6 +52,8 @@ sefs_query::~sefs_query()
 	free(_role);
 	free(_type);
 	free(_range);
+	free(_path);
+	free(_dev);
 	if (_recompiled)
 	{
 		regfree(_reuser);
@@ -65,6 +66,8 @@ sefs_query::~sefs_query()
 		free(_rerange);
 		regfree(_repath);
 		free(_repath);
+		regfree(_redev);
+		free(_redev);
 	}
 }
 
@@ -167,9 +170,17 @@ void sefs_query::inode(ino64_t inode)
 	_inode = inode;
 }
 
-void sefs_query::dev(dev_t dev)
+void sefs_query::dev(const char *dev) throw(std::bad_alloc)
 {
-	_dev = dev;
+	if (dev != _dev)
+	{
+		free(_dev);
+		_dev = NULL;
+		if (dev != NULL && (_dev = strdup(dev)) == NULL)
+		{
+			throw std::bad_alloc();
+		}
+	}
 }
 
 void sefs_query::regex(bool regex)
@@ -188,6 +199,7 @@ void sefs_query::compile() throw(std::bad_alloc)
 		regfree(_retype);
 		regfree(_rerange);
 		regfree(_repath);
+		regfree(_redev);
 	}
 	else
 	{
@@ -208,6 +220,10 @@ void sefs_query::compile() throw(std::bad_alloc)
 			throw std::bad_alloc();
 		}
 		if ((_repath = static_cast < regex_t * >(malloc(sizeof(*_repath)))) == NULL)
+		{
+			throw std::bad_alloc();
+		}
+		if ((_redev = static_cast < regex_t * >(malloc(sizeof(*_redev)))) == NULL)
 		{
 			throw std::bad_alloc();
 		}
@@ -234,6 +250,11 @@ void sefs_query::compile() throw(std::bad_alloc)
 	}
 	s = (_path == NULL ? "" : _path);
 	if (regcomp(_repath, s, REG_EXTENDED | REG_NOSUB))
+	{
+		throw std::bad_alloc();
+	}
+	s = (_dev == NULL ? "" : _dev);
+	if (regcomp(_redev, s, REG_EXTENDED | REG_NOSUB))
 	{
 		throw std::bad_alloc();
 	}
@@ -372,14 +393,21 @@ int sefs_query_set_inode(sefs_query_t * query, ino64_t inode)
 	return 0;
 }
 
-int sefs_query_set_dev(sefs_query_t * query, dev_t dev)
+int sefs_query_set_dev(sefs_query_t * query, const char *dev)
 {
 	if (query == NULL)
 	{
 		errno = EINVAL;
 		return -1;
 	}
-	query->dev(dev);
+	try
+	{
+		query->dev(dev);
+	}
+	catch(...)
+	{
+		return -1;
+	}
 	return 0;
 }
 

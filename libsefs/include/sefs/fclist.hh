@@ -27,7 +27,7 @@
 #ifndef SEFS_FCLIST_H
 #define SEFS_FCLIST_H
 
-#include "query.hh"
+#include <sefs/query.hh>
 
 #ifdef __cplusplus
 extern "C"
