@@ -11,6 +11,7 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libpolsearch_a_SOURCES = \
 	criterion.cc \
+	criterion_internal.hh \
 	polsearch.cc \
 	query.cc \
 	string_list.cc \
