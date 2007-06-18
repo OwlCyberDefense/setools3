@@ -302,7 +302,7 @@ bool sefs_fcfile::isMLS() const
 int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid_argument, std::runtime_error)
 {
 	FILE *fc_file = NULL;
-	char *line = NULL, *name_dup;
+	char *line = NULL, *name_dup = NULL;
 	size_t line_len = 0;
 	size_t last_entry = apol_vector_get_size(_entries);
 	int retval, error = 0;

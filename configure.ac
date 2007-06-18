@@ -584,6 +584,7 @@ AC_SUBST(SQLITE3_LIBS)
 SEAUDIT_LIB_FLAG+=" ${XML_LIBS}"
 SEFS_LIB_FLAG+=" ${SQLITE3_LIBS}"
 
+gtk_version_2_8=1
 if test "x${build_gui}" = xyes; then
 
   AC_MSG_CHECKING([for GTK])

@@ -369,7 +369,7 @@ class db_convert
 		apol_bst_destroy(&_dev);
 		sqlite3_free(_errmsg);
 	}
-	int getID(const char *sym, apol_bst_t * tree, int &id, const char *sym_name) throw(std::bad_alloc)
+	int getID(const char *sym, apol_bst_t * tree, int &id, const char *table) throw(std::bad_alloc)
 	{
 		struct strindex st = { sym, -1 }, *result;
 		if (apol_bst_get_element(tree, &st, NULL, (void **)&result) == 0)
@@ -390,7 +390,7 @@ class db_convert
 			throw std::bad_alloc();
 		}
 		char *insert_stmt = NULL;
-		if (asprintf(&insert_stmt, "INSERT INTO %ss VALUES (%d, '%s')", sym_name, result->id, result->str) < 0)
+		if (asprintf(&insert_stmt, "INSERT INTO %s VALUES (%d, '%s')", table, result->id, result->str) < 0)
 		{
 			db_err(_db, "%s", strerror(errno));
 			throw std::bad_alloc();
@@ -406,6 +406,7 @@ class db_convert
 	}
 	apol_bst_t *_user, *_role, *_type, *_range, *_dev;
 	int _user_id, _role_id, _type_id, _range_id, _dev_id;
+	bool _isMLS;
 	char *_errmsg;
 	sefs_db *_db;
 	struct sqlite3 *_target_db;
@@ -421,11 +422,14 @@ int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), con
 
 		// add the user, role, type, range, and dev into the
 		// target_db if needed
-		int user_id = dbc->getID(context->user, dbc->_user, dbc->_user_id, "user");
-		int role_id = dbc->getID(context->role, dbc->_role, dbc->_role_id, "role");
-		int type_id = dbc->getID(context->type, dbc->_type, dbc->_type_id, "type");
-		int range_id = dbc->getID(context->range, dbc->_range, dbc->_range_id, "range");
-		int dev_id = dbc->getID(entry->dev(), dbc->_dev, dbc->_dev_id, "dev");
+		int user_id = dbc->getID(context->user, dbc->_user, dbc->_user_id, "users");
+		int role_id = dbc->getID(context->role, dbc->_role, dbc->_role_id, "roles");
+		int type_id = dbc->getID(context->type, dbc->_type, dbc->_type_id, "types");
+		int range_id = 0;
+		if (dbc->_isMLS) {
+			range_id = dbc->getID(context->range, dbc->_range, dbc->_range_id, "mls");
+		}
+		int dev_id = dbc->getID(entry->dev(), dbc->_dev, dbc->_dev_id, "devs");
 		const char *path = entry->path();
 		const ino64_t inode = entry->inode();
 		const uint32_t objclass = entry->objectClass();
@@ -493,6 +497,7 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 		}
 
 		db_convert dbc(this, _db);
+		dbc._isMLS = fs->isMLS();
 		if (fs->runQueryMap(NULL, db_create_from_filesystem, &dbc) < 0)
 		{
 			throw std::runtime_error(strerror(errno));
@@ -509,9 +514,9 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 
 		char *info_insert = NULL;
 		if (asprintf(&info_insert,
-			     "INSERT INTO diskdb.info (key,value) VALUES ('dbversion','%s');"
-			     "INSERT INTO diskdb.info (key,value) VALUES ('hostname','%s');"
-			     "INSERT INTO diskdb.info (key,value) VALUES ('datetime','%s');", dbversion, hostname, datetime) < 0)
+			     "INSERT INTO info (key,value) VALUES ('dbversion','%s');"
+			     "INSERT INTO info (key,value) VALUES ('hostname','%s');"
+			     "INSERT INTO info (key,value) VALUES ('datetime','%s');", dbversion, hostname, datetime) < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
@@ -776,12 +781,12 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 
 		if (apol_str_appendf(&select_stmt, &len,
 				     "%s (paths.user = users.user_id AND paths.role = roles.role_id AND paths.type = types.type_id",
-				     (where_added ? " AND" : "WHERE")) < 0)
+				     (where_added ? " AND" : " WHERE")) < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
-		if (q.db_is_mls && apol_str_appendf(&select_stmt, &len, " AND inodes.range = mls.mls_id") < 0)
+		if (q.db_is_mls && apol_str_appendf(&select_stmt, &len, " AND paths.range = mls.mls_id") < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
@@ -866,19 +871,13 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 		}
 		sqlite3_close(diskdb.db);
 
-		// copy contents from in-memory db to the one on disk
-		if (sqlite3_exec(_db, "BEGIN TRANSACTION", NULL, NULL, &(diskdb.errmsg)) != SQLITE_OK)
-		{
-			SEFS_ERR("%s", diskdb.errmsg);
-			throw std::runtime_error(diskdb.errmsg);
-		}
-		in_transaction = true;
 		char *attach = NULL;
 		if (asprintf(&attach, "ATTACH '%s' AS diskdb", filename) < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
+		diskdb.db = _db;
 		diskdb.source_db = "";
 		diskdb.target_db = "diskdb.";
 		int rc = sqlite3_exec(_db, attach, NULL, NULL, &diskdb.errmsg);
@@ -888,6 +887,14 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 			SEFS_ERR("%s", diskdb.errmsg);
 			throw std::runtime_error(diskdb.errmsg);
 		}
+
+		// copy contents from in-memory db to the one on disk
+		if (sqlite3_exec(_db, "BEGIN TRANSACTION", NULL, NULL, &(diskdb.errmsg)) != SQLITE_OK)
+		{
+			SEFS_ERR("%s", diskdb.errmsg);
+			throw std::runtime_error(diskdb.errmsg);
+		}
+		in_transaction = true;
 		if (sqlite3_exec(_db, "SELECT name FROM sqlite_master WHERE type ='table'", db_copy_table, &diskdb, &diskdb.errmsg)
 		    != SQLITE_OK)
 		{
