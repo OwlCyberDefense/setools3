@@ -17,7 +17,7 @@ libapol_pyswig_soname=_apol.so.4
 libapol_jswig_soname=libjapol.so.4
 libapol_tswig_soname=libtapol.so.4
 
-libpoldiff_version=1.2
+libpoldiff_version=1.3
 libpoldiff_soname=libpoldiff.so.1
 libpoldiff_pyswig_soname=_poldiff.so.1
 libpoldiff_jswig_soname=libjpoldiff.so.1

@@ -55,7 +55,7 @@ extern "C"
 
 /**
  *  Get the vector of av rule differences from the av rule difference
- *  summary.
+ *  summary for just allow rules.
  *
  *  @param diff The policy difference structure associated with the av
  *  rule difference summary.
@@ -65,8 +65,44 @@ extern "C"
  *  If the call fails, errno will be set.
  */
 	extern const apol_vector_t *poldiff_get_avrule_vector_allow(const poldiff_t * diff);
+
+/**
+ *  Get the vector of av rule differences from the av rule difference
+ *  summary for just neverallow rules.
+ *
+ *  @param diff The policy difference structure associated with the av
+ *  rule difference summary.
+ *
+ *  @return A vector of elements of type poldiff_avrule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
 	extern const apol_vector_t *poldiff_get_avrule_vector_neverallow(const poldiff_t * diff);
+
+/**
+ *  Get the vector of av rule differences from the av rule difference
+ *  summary for just dontaudit rules.
+ *
+ *  @param diff The policy difference structure associated with the av
+ *  rule difference summary.
+ *
+ *  @return A vector of elements of type poldiff_avrule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
 	extern const apol_vector_t *poldiff_get_avrule_vector_dontaudit(const poldiff_t * diff);
+
+/**
+ *  Get the vector of av rule differences from the av rule difference
+ *  summary for just auditallow rules.
+ *
+ *  @param diff The policy difference structure associated with the av
+ *  rule difference summary.
+ *
+ *  @return A vector of elements of type poldiff_avrule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
 	extern const apol_vector_t *poldiff_get_avrule_vector_auditallow(const poldiff_t * diff);
 
 /**
@@ -160,7 +196,7 @@ extern "C"
  *
  *  @return A vector of permissions strings (type char *) that both
  *  policies have.  If no permissions are common to both policies then
- *  the sizof of the returned vector will be 0.  The caller must not
+ *  the size of of the returned vector will be 0.  The caller must not
  *  destroy this vector.
  */
 	extern const apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule);

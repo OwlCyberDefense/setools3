@@ -99,26 +99,47 @@ extern "C"
 	extern poldiff_form_e poldiff_role_allow_get_form(const void *role_allow);
 
 /**
- *  Get a vector of roles added to the role allow rule.
+ *  Get a vector of roles unmodified by the role allow rule.  The
+ *  vector will be non-empty only if the form is
+ *  POLDIFF_FORM_MODIFIED.
  *
- *  @param role_allow The role allow diff from which to get the types vector.
+ *  @param role_allow The role allow diff from which to get the roles
+ *  vector.
+ *
+ *  @return A vector of role names (type char *) that are in both
+ *  policies.  If no roles are common to both policies then the size
+ *  of the returned vector will be 0.  The caller must not destroy
+ *  this vector.  The caller must not destroy this vector.
+ */
+	extern const apol_vector_t *poldiff_role_allow_get_unmodified_roles(const poldiff_role_allow_t * role_allow);
+
+/**
+ *  Get a vector of roles added to the role allow rule.  If the role
+ *  allow was added by the modified policy then this vector will hold
+ *  all of the roles.
+ *
+ *  @param role_allow The role allow diff from which to get the roles
+ *  vector.
  *
  *  @return A vector of role names (type char *) that are allowed to
  *  the role in the modified policy.  If no roles were added the size
  *  of the returned vector will be 0.  The caller must not destroy
- *  this vector.  On error, errno will be set.
+ *  this vector.
  */
 	extern const apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t * role_allow);
 
 /**
- *  Get a vector of roles removed from the role allow rule.
+ *  Get a vector of roles removed from the role allow rule.  If the
+ *  role allow was removed by the modified policy then this vector
+ *  will hold all of the roles.
  *
- *  @param role_allow The role allow diff from which to get the types vector.
+ *  @param role_allow The role allow diff from which to get the roles
+ *  vector.
  *
  *  @return A vector of role names (type char *) that are allowed to
  *  the role in the original policy.  If no roles were removed the
  *  size of the returned vector will be 0.  The caller must not
- *  destroy this vector.  On error, errno will be set.
+ *  destroy this vector.
  */
 	extern const apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t * role_allow);
 

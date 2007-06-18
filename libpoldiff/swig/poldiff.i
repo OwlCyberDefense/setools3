@@ -826,6 +826,9 @@ typedef struct poldiff_role_allow {} poldiff_role_allow_t;
 	poldiff_form_e get_form() {
 		return poldiff_role_allow_get_form(self);
 	};
+	const apol_string_vector_t *get_unmodified_roles() {
+		return (apol_string_vector_t*)poldiff_role_allow_get_unmodified_roles(self);
+	};
 	const apol_string_vector_t *get_added_roles() {
 		return (apol_string_vector_t*)poldiff_role_allow_get_added_roles(self);
 	};

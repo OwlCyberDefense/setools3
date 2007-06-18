@@ -89,15 +89,13 @@ void poldiff_role_allow_get_stats(const poldiff_t * diff, size_t stats[5])
 char *poldiff_role_allow_to_string(const poldiff_t * diff, const void *role_allow)
 {
 	const poldiff_role_allow_t *ra = role_allow;
-	size_t num_added, num_removed, len = 0, i;
+	size_t len = 0, i;
 	char *s = NULL, *role;
 	if (diff == NULL || role_allow == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}
-	num_added = apol_vector_get_size(ra->added_roles);
-	num_removed = apol_vector_get_size(ra->removed_roles);
 	switch (ra->form) {
 	case POLDIFF_FORM_ADDED:
 	{
@@ -105,8 +103,8 @@ char *poldiff_role_allow_to_string(const poldiff_t * diff, const void *role_allo
 			s = NULL;
 			break;
 		}
-		for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
-			role = apol_vector_get_element(ra->orig_roles, i);
+		for (i = 0; i < apol_vector_get_size(ra->added_roles); i++) {
+			role = apol_vector_get_element(ra->added_roles, i);
 			if (apol_str_appendf(&s, &len, "%s ", role) < 0) {
 				goto err;
 			}
@@ -121,8 +119,8 @@ char *poldiff_role_allow_to_string(const poldiff_t * diff, const void *role_allo
 		if (apol_str_appendf(&s, &len, "- allow %s { ", ra->source_role) < 0) {
 			break;
 		}
-		for (i = 0; i < apol_vector_get_size(ra->orig_roles); i++) {
-			role = apol_vector_get_element(ra->orig_roles, i);
+		for (i = 0; i < apol_vector_get_size(ra->removed_roles); i++) {
+			role = apol_vector_get_element(ra->removed_roles, i);
 			if (apol_str_appendf(&s, &len, "%s ", role) < 0) {
 				goto err;
 			}
@@ -202,6 +200,15 @@ poldiff_form_e poldiff_role_allow_get_form(const void *role_allow)
 		return POLDIFF_FORM_NONE;
 	}
 	return ((const poldiff_role_allow_t *)role_allow)->form;
+}
+
+const apol_vector_t *poldiff_role_allow_get_unmodified_roles(const poldiff_role_allow_t * role_allow)
+{
+	if (role_allow == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return role_allow->orig_roles;
 }
 
 const apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t * role_allow)
@@ -428,7 +435,19 @@ int role_allow_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 	if (pra == NULL) {
 		return -1;
 	}
-	apol_vector_cat(pra->orig_roles, ra->target_roles);
+	int rt;
+	if (form == POLDIFF_FORM_ADDED) {
+		rt = apol_vector_cat(pra->added_roles, ra->target_roles);
+	} else {
+		rt = apol_vector_cat(pra->removed_roles, ra->target_roles);
+	}
+	if (rt < 0) {
+		error = errno;
+		ERR(diff, "%s", strerror(error));
+		role_allow_free(pra);
+		errno = error;
+		return -1;
+	}
 	if (apol_vector_append(diff->role_allow_diffs->diffs, pra) < 0) {
 		error = errno;
 		ERR(diff, "%s", strerror(error));

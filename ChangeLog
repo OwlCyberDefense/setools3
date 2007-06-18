@@ -1,3 +1,11 @@
+2007-06-18  J. Tang  <jtang@tresys.com>
+
+	* libpoldiff/include/poldiff/rbac_diff.h: Added
+	poldiff_role_allow_get_unmodified_roles().  The return values
+	poldiff_role_allow_get_added_roles() and
+	poldiff_role_allow_get_removed_roles() have been changed for forms
+	POLDIFF_FORM_ADDED and POLDIFF_FORM_REMOVED.
+
 2007-06-14  J. Tang  <jtang@tresys.com>
 
 	* SETools can now compile against GTK+ 2.4.  Nonetheless, GTK+ 2.8
@@ -16,17 +24,17 @@
 
 2007-06-11  M. Goldman  <mgoldman@tresys.com>
 	* Updated swig interface to properly expose av and te rule
-	  vector accessor functions.
+	  vector accessor functions for libpoldiff.
 
 2007-06-08  J. Mowery  <jmowery@tresys.com>
 
-	* Fixed an error in libpoldiff where 
+	* Fixed an error in libpoldiff where
 	  poldiff_terule_get_modified_default() was returning the
 	  original default; it now correctly returns the modified
 	  default type.
 
 2007-06-08  M. Goldman <mgoldman@tresys.com>
-	
+
 	* updated sediffx diffs so that the subrules for avrules and
 	  terules are broken out into allow, neverallow, auditallow,
 	  dontaudit type_member, type_change, and type_transition rules
@@ -75,7 +83,7 @@
 	correctly reset when intermixing calls between
 	apol_types_relation_analysis_do() and
 	apol_domain_trans_analysis_do().
-	
+
 2007-05-22  J. Tang  <jtang@tresys.com>
 
 	* Added infoflow defines to apol.i.  Added apol_file_find_path()

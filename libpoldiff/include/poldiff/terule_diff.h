@@ -54,7 +54,7 @@ extern "C"
 
 /**
  *  Get the vector of te rule differences from the te rule difference
- *  summary.
+ *  summary for just type_member rules.
  *
  *  @param diff The policy difference structure associated with the te
  *  rule difference summary.
@@ -64,7 +64,31 @@ extern "C"
  *  If the call fails, errno will be set.
  */
 	extern const apol_vector_t *poldiff_get_terule_vector_member(const poldiff_t * diff);
+
+/**
+ *  Get the vector of te rule differences from the te rule difference
+ *  summary for just type_change rules.
+ *
+ *  @param diff The policy difference structure associated with the te
+ *  rule difference summary.
+ *
+ *  @return A vector of elements of type poldiff_terule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
 	extern const apol_vector_t *poldiff_get_terule_vector_change(const poldiff_t * diff);
+
+/**
+ *  Get the vector of te rule differences from the te rule difference
+ *  summary for just type_transition rules.
+ *
+ *  @param diff The policy difference structure associated with the te
+ *  rule difference summary.
+ *
+ *  @return A vector of elements of type poldiff_terule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
 	extern const apol_vector_t *poldiff_get_terule_vector_trans(const poldiff_t * diff);
 
 /**

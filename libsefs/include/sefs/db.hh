@@ -58,7 +58,7 @@ class sefs_db:public sefs_fclist
 					const char *) throw(std::bad_alloc);
 	friend void db_err(sefs_db *, const char *, const char *);
 #endif
-    
+
       public:
 
 	/**
