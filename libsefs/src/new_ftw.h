@@ -175,5 +175,9 @@ extern int new_nftw64(__const char *__dir, __new_nftw64_func_t __func,
 # endif
 #endif
 
+/* Compile new_nftw() to always have LFS enabled. */
+extern int __REDIRECT(new_nftw, (__const char *__dir, __new_nftw_func_t __func,
+				 int __descriptors, int __flag, void *__data), new_nftw64) __nonnull((1, 2));
+
 __END_DECLS
 #endif				       /* ftw.h */
