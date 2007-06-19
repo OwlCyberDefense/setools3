@@ -13,6 +13,7 @@ libpolsearch_a_SOURCES = \
 	criterion.cc \
 	criterion_internal.hh \
 	polsearch.cc \
+	polsearch_internal.hh \
 	query.cc \
 	string_list.cc \
 	symbol_query.cc \

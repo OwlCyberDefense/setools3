@@ -97,29 +97,78 @@ apol_vector_t *polsearch_symbol_query::getValidTests() const throw(std::bad_allo
  */
 static apol_vector_t *get_all_symbols(const apol_policy_t * p, polsearch_symbol_e sym_type) throw(std::bad_alloc)
 {
+	apol_vector_t *v = NULL;
 	switch (sym_type)
 	{
-		//TODO
+	case POLSEARCH_SYMBOL_TYPE:
+	{
+		apol_type_query_t *q = apol_type_query_create();
+		apol_type_get_by_query(p, q, &v);
+		apol_type_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_ATTRIBUTE:
+	{
+		apol_attr_query_t *q = apol_attr_query_create();
+		apol_attr_get_by_query(p, q, &v);
+		apol_attr_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_ROLE:
+	{
+		apol_role_query_t *q = apol_role_query_create();
+		apol_role_get_by_query(p, q, &v);
+		apol_role_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_USER:
+	{
+		apol_user_query_t *q = apol_user_query_create();
+		apol_user_get_by_query(p, q, &v);
+		apol_user_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_CLASS:
+	{
+		apol_class_query_t *q = apol_class_query_create();
+		apol_class_get_by_query(p, q, &v);
+		apol_class_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_COMMON:
+	{
+		apol_common_query_t *q = apol_common_query_create();
+		apol_common_get_by_query(p, q, &v);
+		apol_common_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_CATEGORY:
+	{
+		apol_cat_query_t *q = apol_cat_query_create();
+		apol_cat_get_by_query(p, q, &v);
+		apol_cat_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_LEVEL:
+	{
+		apol_level_query_t *q = apol_level_query_create();
+		apol_level_get_by_query(p, q, &v);
+		apol_level_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_BOOL:
+	{
+		apol_bool_query_t *q = apol_bool_query_create();
+		apol_bool_get_by_query(p, q, &v);
+		apol_bool_query_destroy(&q);
+		return v;
+	}
+	case POLSEARCH_SYMBOL_NONE:
 	default:
 	{
 		return NULL;
 	}
 	}
-}
-
-/**
- * Merge the results from a single test into the master list of results.
- * Result and proof entries will be duplicated as needed such that it is
- * save to call apol_vector_destroy() on \a cur_results after calling this
- * function.
- * @param master_results The master list of results from all tests run.
- * @param cur_results The list of results from the most recent test run.
- * @exception std::bad_alloc Could not allocate space to duplicate entries.
- */
-static void merge_results(apol_vector_t * master_results, apol_vector_t * cur_results) throw(std::bad_alloc)
-{
-	//TODO
-	return;
 }
 
 apol_vector_t *polsearch_symbol_query::run(const apol_policy_t * policy,
@@ -138,11 +187,17 @@ apol_vector_t *polsearch_symbol_query::run(const apol_policy_t * policy,
 	{
 		polsearch_test *cur = static_cast < polsearch_test * >(apol_vector_get_element(_tests, i));
 		cur_results = cur->run(policy, fclist, Xcandidates);
-		merge_results(master_results, cur_results);
+		merge_results(policy, master_results, cur_results);
 		apol_vector_destroy(&cur_results);
 	}
 
-	//sort results ? TODO
+	//sort results
+	apol_vector_sort(master_results, result_cmp, const_cast < void *>(static_cast < const void *>(policy)));
+	for (size_t i; i < apol_vector_get_size(master_results); i++)
+	{
+		polsearch_result *tmp = static_cast < polsearch_result * >(apol_vector_get_element(master_results, i));
+		apol_vector_sort(tmp->proof(), proof_cmp, const_cast < void *>(static_cast < const void *>(policy)));
+	}
 	return master_results;
 }
 
