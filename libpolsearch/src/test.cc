@@ -343,9 +343,8 @@ void merge_results(const apol_policy_t * policy, apol_vector_t * master_results,
 	size_t i, j, master_orig_size = apol_vector_get_size(master_results);
 	for (i = 0, j = 0; i < master_orig_size && j < apol_vector_get_size(cur_results);)
 	{
-		int cmp =
-			result_cmp(apol_vector_get_element(master_results, i), apol_vector_get_element(cur_results, j),
-				   const_cast < void *>(static_cast < const void *>(policy)));
+		int cmp = result_cmp(apol_vector_get_element(master_results, i), apol_vector_get_element(cur_results, j),
+				     const_cast < void *>(static_cast < const void *>(policy)));
 		if (cmp < 0)
 		{
 			// entry in master but not current; move on
@@ -423,9 +422,8 @@ void merge_proof(const apol_policy_t * policy, apol_vector_t * master_proof, apo
 
 	for (i = 0, j = 0; i < master_orig_size && j < apol_vector_get_size(cur_proof);)
 	{
-		int cmp =
-			proof_cmp(apol_vector_get_element(master_proof, i), apol_vector_get_element(cur_proof, j),
-				  const_cast < void *>(static_cast < const void *>(policy)));
+		int cmp = proof_cmp(apol_vector_get_element(master_proof, i), apol_vector_get_element(cur_proof, j),
+				    const_cast < void *>(static_cast < const void *>(policy)));
 		if (cmp < 0)
 		{
 			// entry in master not current; move on

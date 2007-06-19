@@ -2,7 +2,7 @@
 Name=SELinux Policy Difference
 GenericName=SELinux Policy Difference tool
 Comment=Compare two policy files.
-Exec=/usr/bin/sediffx
+Exec=@bindir@/sediffx
 Type=Application
 Terminal=false
 Encoding=UTF-8

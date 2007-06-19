@@ -76,6 +76,11 @@ class sefs_query;
 #define SEFS_MAP_FUNC_DEFINED
 typedef int (*sefs_fclist_map_fn_t) (sefs_fclist *, const sefs_entry *, void *);
 
+/**
+ * An abstract class the represents a list of file contexts.  Contexts
+ * may be read from a filesystem, inferred from a file_contexts file,
+ * or read from a database.
+ */
 class sefs_fclist
 {
 	friend class sefs_entry;

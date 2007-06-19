@@ -1078,7 +1078,7 @@ proc ApolTop::main {} {
 
     set icon_file [file join [tcl_config_get_install_dir] apol.gif]
     if {![catch {image create photo -file $icon_file} icon]} {
-        wm iconphoto . -default $icon
+        catch {wm iconphoto . -default $icon}
     }
     variable apol_icon $icon
 

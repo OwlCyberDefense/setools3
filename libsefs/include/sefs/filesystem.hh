@@ -75,8 +75,8 @@ class sefs_filesystem:public sefs_fclist
 	 * /etc/mtab.
 	 */
 	 sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
-											      std::invalid_argument,
-											      std::runtime_error);
+												  std::invalid_argument,
+												  std::runtime_error);
 
 	~sefs_filesystem();
 

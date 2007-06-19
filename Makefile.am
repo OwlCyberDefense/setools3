@@ -1,10 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = dist-bzip2
 
-if COPY_BWIDGET
-  MAYBE_BWIDGET = packages
-endif
-
 if BUILD_APOL
   MAYBE_APOL = apol
 endif
@@ -14,7 +10,7 @@ if BUILD_GUI
 endif
 # sediffx is also built conditionally, from sediffx/Makefile.am
 
-SUBDIRS = libqpol libapol libsefs libpoldiff libpolsearch libseaudit secmds sechecker sediff man $(MAYBE_APOL) $(MAYBE_GUI) $(MAYBE_BWIDGET)
+SUBDIRS = libqpol libapol libsefs libpoldiff libpolsearch libseaudit secmds sechecker sediff man packages $(MAYBE_APOL) $(MAYBE_GUI)
 
 #old indent opts
 #INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc

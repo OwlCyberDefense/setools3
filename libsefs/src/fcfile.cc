@@ -245,7 +245,8 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 				{
 					path_matched = false;
 					char *anchored_path = NULL;
-					if (asprintf(&anchored_path, "^%s$", e->_path) < 0) {
+					if (asprintf(&anchored_path, "^%s$", e->_path) < 0)
+					{
 						SEFS_ERR("%s", strerror(errno));
 						throw std::runtime_error(strerror(errno));
 					}

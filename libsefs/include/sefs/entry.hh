@@ -142,8 +142,8 @@ class sefs_entry
 	 * this entry originated.  The entry will share this pointer.
 	 * @exception std::bad_alloc Out of memory.
 	 */
-	 sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node *new_context, uint32_t new_objectClass, const char *new_path,
-		    const char *new_origin = NULL);
+	 sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node *new_context, uint32_t new_objectClass,
+		    const char *new_path, const char *new_origin = NULL);
 
 	// note that entry does not own any of these pointers; they
 	// are shallow copies into the fclist's BST
