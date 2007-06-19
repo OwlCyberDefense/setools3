@@ -42,31 +42,17 @@
 polsearch_query::polsearch_query(polsearch_match_e m) throw(std::bad_alloc, std::invalid_argument)
 {
 	_match = m;
-	try
-	{
-		_tests = apol_vector_create(free_test);
-		if (!_tests)
-			throw std::bad_alloc();
-	}
-	catch(std::bad_alloc x)
-	{
-		throw x;
-	}
+	_tests = apol_vector_create(free_test);
+	if (!_tests)
+		throw std::bad_alloc();
 }
 
 polsearch_query::polsearch_query(const polsearch_query & pq) throw(std::bad_alloc)
 {
 	_match = pq._match;
-	try
-	{
-		_tests = apol_vector_create_from_vector(pq._tests, dup_test, NULL, free_test);
-		if (!_tests)
-			throw std::bad_alloc();
-	}
-	catch(std::bad_alloc x)
-	{
-		throw x;
-	}
+	_tests = apol_vector_create_from_vector(pq._tests, dup_test, NULL, free_test);
+	if (!_tests)
+		throw std::bad_alloc();
 }
 
 polsearch_query::~polsearch_query()
@@ -81,15 +67,9 @@ polsearch_match_e polsearch_query::match() const
 
 polsearch_match_e polsearch_query::match(polsearch_match_e m) throw(std::invalid_argument)
 {
-	try
-	{
-		if (m != POLSEARCH_MATCH_ALL && m != POLSEARCH_MATCH_ANY)
-			throw std::invalid_argument("Invalid matching method requested.");
-	}
-	catch(std::invalid_argument x)
-	{
-		throw x;
-	}
+	if (m != POLSEARCH_MATCH_ALL && m != POLSEARCH_MATCH_ANY)
+		throw std::invalid_argument("Invalid matching method requested.");
+
 	return (this->_match = m);
 }
 
@@ -135,5 +115,6 @@ apol_vector_t *polsearch_query_get_tests(polsearch_query_t * sq)
 		errno = EINVAL;
 		return NULL;
 	}
+
 	return sq->tests();
 }

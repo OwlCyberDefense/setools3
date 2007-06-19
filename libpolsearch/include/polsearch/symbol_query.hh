@@ -122,7 +122,7 @@ extern "C"
 	 * Create a symbol query.
 	 * @see polsearch_symbol_query::polsearch_symbol_query(polsearch_symbol_e, polsearch_match_e)
 	 */
-	extern polsearch_symbol_query_t *polsearch_symbol_query_create(polsearch_symbol_e symbol_type, polsearch_match_e m);
+	extern polsearch_symbol_query_t *polsearch_symbol_query_create(polsearch_symbol_e sym_type, polsearch_match_e m);
 	/**
 	 * Copy a symbol query.
 	 * @see polsearch_symbol_query::polsearch_symbol_query(const polsearch_symbol_query&)

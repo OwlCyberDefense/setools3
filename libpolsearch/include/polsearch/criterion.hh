@@ -187,17 +187,17 @@ extern "C"
 
 	/**
 	 * Allocate and initialize a new polsearch criterion.
+	 * @param parameter The parameter to set as the second argument to \a opr.
+	 * @param param_type Type of parameter to use.
 	 * @param opr The comparison operator to use.
 	 * @param neg If \a true, inver the logic result of the operator.
-	 * @param param_type Type of parameter to use.
-	 * @param parameter The parameter to set as the second argument to \a opr.
 	 * @return A newly allocated criterion, or NULL on error; the caller is
 	 * responsible for calling polsearch_criterion_destroy() on the returned
 	 * object.
 	 * @see polsearch_criterion<T>::polsearch_criterion(polsearch_op_e, bool, const T&)
 	 */
-	extern polsearch_criterion_t *polsearch_criterion_create(polsearch_op_e opr, bool neg, polsearch_param_type_e param_type,
-								 const void *parameter);
+	extern polsearch_criterion_t *polsearch_criterion_create(const void *parameter, polsearch_param_type_e param_type,
+								 polsearch_op_e opr, bool neg);
 	/**
 	 * Copy a criterion.
 	 * @param pc The criterion to copy.

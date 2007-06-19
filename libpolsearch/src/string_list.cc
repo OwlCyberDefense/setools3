@@ -35,39 +35,21 @@ using std::runtime_error;
 
 polsearch_string_list::polsearch_string_list(const char *str, bool Xvalid) throw(std::runtime_error, std::bad_alloc)
 {
-	try
-	{
-		//TODO correct free callback here
-		_tokens = apol_vector_create(NULL);
-		_ids = apol_vector_create(NULL);
-		if (!_tokens || !_ids)
-			throw bad_alloc();
-		//TODO parse string here
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
-	catch(runtime_error y)
-	{
-		throw y;
-	}
+	//TODO correct free callback here
+	_tokens = apol_vector_create(NULL);
+	_ids = apol_vector_create(NULL);
+	if (!_tokens || !_ids)
+		throw bad_alloc();
+	//TODO parse string here
 }
 
 polsearch_string_list::polsearch_string_list(const polsearch_string_list & sl) throw(std::bad_alloc)
 {
-	try
-	{
-		//TODO correct free and dup callbacks here
-		_tokens = apol_vector_create_from_vector(sl._tokens, NULL, NULL, NULL);
-		_ids = apol_vector_create_from_vector(sl._ids, NULL, NULL, NULL);
-		if (!_tokens || !_ids)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	//TODO correct free and dup callbacks here
+	_tokens = apol_vector_create_from_vector(sl._tokens, NULL, NULL, NULL);
+	_ids = apol_vector_create_from_vector(sl._ids, NULL, NULL, NULL);
+	if (!_tokens || !_ids)
+		throw bad_alloc();
 }
 
 polsearch_string_list::~polsearch_string_list()

@@ -60,6 +60,17 @@ extern "C"
 	void *dup_result(const void *pr, void *x __attribute__ ((unused)));
 
 	/**
+	 * Comparison callback for polsearch_result objects in apol vectors
+	 * suitable for passing to sort.
+	 * @param a A result entry.
+	 * @param b A result entry.
+	 * @param data Policy from which to get symbol names.
+	 * @return Less than, equal to, or grater than 0 if \a a should appear
+	 * before \a b, be merged with \a b, or appear after \a b in the results.
+	 */
+	int result_cmp(const void *a, const void *b, void *data);
+
+	/**
 	 * Free callback for polsearch_proof objects in apol vectors.
 	 * @param pp Pointer to a polsearch_proof object to destroy.
 	 */

@@ -49,15 +49,9 @@ using std::string;
 // base criterion
 polsearch_base_criterion::polsearch_base_criterion(polsearch_op_e opr, bool neg) throw(std::invalid_argument)
 {
-	try
-	{
-		if (opr == POLSEARCH_OP_NONE || opr > POLSEARCH_OP_AS_TYPE)
-			throw invalid_argument("Invalid operator requested");
-	}
-	catch(invalid_argument x)
-	{
-		throw x;
-	}
+	if (opr == POLSEARCH_OP_NONE || opr > POLSEARCH_OP_AS_TYPE)
+		throw invalid_argument("Invalid operator requested");
+
 	_op = opr;
 	_negated = neg;
 	_param_type = POLSEARCH_PARAM_TYPE_NONE;
@@ -176,14 +170,8 @@ static bool validate_opr_elem(polsearch_op_e opr, polsearch_param_type_e param_t
 template < class T > polsearch_criterion < T >::polsearch_criterion(const T & parameter, polsearch_op_e opr, bool neg)throw(std::bad_alloc, std::invalid_argument):polsearch_base_criterion(opr,
 			 neg)
 {
-	try
-	{
-		_detect_param_type();
-	}
-	catch(invalid_argument x)
-	{
-		throw x;
-	}
+	_detect_param_type();
+
 	_param = parameter;
 }
 
@@ -245,14 +233,8 @@ static polsearch_param_type_e get_param_type(const type_info & param_type_info)
 template < class T > void polsearch_criterion < T >::_detect_param_type() throw(std::invalid_argument)
 {
 	polsearch_param_type_e p;
-	try
-	{
-		validate_opr_elem(_op, (p = get_param_type(typeid(T))));
-	}
-	catch(invalid_argument x)
-	{
-		throw x;
-	}
+	validate_opr_elem(_op, (p = get_param_type(typeid(T))));
+
 	_param_type = p;
 }
 
@@ -266,24 +248,11 @@ template <>
 											invalid_argument):polsearch_base_criterion
 	(opr, neg)
 {
-	try
-	{
-		_detect_param_type();
-	}
-	catch(invalid_argument x)
-	{
-		throw x;
-	}
-	try
-	{
-		_param = apol_mls_level_create_from_mls_level(parameter);
-		if (!_param)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_detect_param_type();
+	_param = apol_mls_level_create_from_mls_level(parameter);
+	if (!_param)
+		throw bad_alloc();
+
 }
 
 template <>
@@ -295,16 +264,9 @@ template <>
 															     negated
 															     ())
 {
-	try
-	{
-		_param = apol_mls_level_create_from_mls_level(pc._param);
-		if (!_param)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_param = apol_mls_level_create_from_mls_level(pc._param);
+	if (!_param)
+		throw bad_alloc();
 }
 
 template <> polsearch_criterion < apol_mls_level_t * >::~polsearch_criterion()
@@ -316,16 +278,9 @@ template <>
 	const apol_mls_level_tp & polsearch_criterion <
 	apol_mls_level_t * >::param(const apol_mls_level_tp & parameter) throw(std::bad_alloc)
 {
-	try
-	{
-		_param = apol_mls_level_create_from_mls_level(parameter);
-		if (!_param)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_param = apol_mls_level_create_from_mls_level(parameter);
+	if (!_param)
+		throw bad_alloc();
 }
 
 typedef apol_mls_range_t *apol_mls_range_tp;	//makes gcc happy
@@ -336,24 +291,10 @@ template <>
 											invalid_argument):polsearch_base_criterion
 	(opr, neg)
 {
-	try
-	{
-		_detect_param_type();
-	}
-	catch(invalid_argument x)
-	{
-		throw x;
-	}
-	try
-	{
-		_param = apol_mls_range_create_from_mls_range(parameter);
-		if (!_param)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_detect_param_type();
+	_param = apol_mls_range_create_from_mls_range(parameter);
+	if (!_param)
+		throw bad_alloc();
 }
 
 template <>
@@ -365,16 +306,9 @@ template <>
 															     negated
 															     ())
 {
-	try
-	{
-		_param = apol_mls_range_create_from_mls_range(pc._param);
-		if (!_param)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_param = apol_mls_range_create_from_mls_range(pc._param);
+	if (!_param)
+		throw bad_alloc();
 }
 
 template <> polsearch_criterion < apol_mls_range_t * >::~polsearch_criterion()
@@ -386,16 +320,9 @@ template <>
 	const apol_mls_range_tp & polsearch_criterion <
 	apol_mls_range_t * >::param(const apol_mls_range_tp & parameter) throw(std::bad_alloc)
 {
-	try
-	{
-		_param = apol_mls_range_create_from_mls_range(parameter);
-		if (!_param)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_param = apol_mls_range_create_from_mls_range(parameter);
+	if (!_param)
+		throw bad_alloc();
 }
 
 // internal functions
@@ -526,8 +453,8 @@ void *dup_criterion(const void *pc, void *x __attribute__ ((unused)))
 
 // C compatibility
 
-polsearch_criterion_t *polsearch_criterion_create(polsearch_op_e opr, bool neg, polsearch_param_type_e param_type,
-						  const void *parameter)
+polsearch_criterion_t *polsearch_criterion_create(const void *parameter, polsearch_param_type_e param_type, polsearch_op_e opr,
+						  bool neg)
 {
 	if (opr == POLSEARCH_OP_NONE || param_type == POLSEARCH_PARAM_TYPE_NONE)
 	{
@@ -553,7 +480,8 @@ polsearch_criterion_t *polsearch_criterion_create(polsearch_op_e opr, bool neg, 
 		case POLSEARCH_PARAM_TYPE_RULE_TYPE:
 		{
 			return dynamic_cast < polsearch_base_criterion * >(new polsearch_criterion < uint32_t >
-									   (reinterpret_cast < uint32_t > (parameter), opr, neg));
+									   (static_cast < uint32_t >
+									    (reinterpret_cast < size_t > (parameter)), opr, neg));
 		}
 		case POLSEARCH_PARAM_TYPE_BOOL:
 		{
@@ -740,7 +668,7 @@ const void *polsearch_criterion_set_param(polsearch_criterion_t * pc, polsearch_
 		case POLSEARCH_PARAM_TYPE_RULE_TYPE:
 		{
 			polsearch_criterion < uint32_t > *prtc = dynamic_cast < polsearch_criterion < uint32_t > *>(pc);
-			const uint32_t rt = reinterpret_cast < const uint32_t > (parameter);
+			const uint32_t rt = static_cast < const uint32_t > (reinterpret_cast < const size_t > (parameter));
 			return reinterpret_cast < const void *>(prtc->param(rt));
 		}
 		case POLSEARCH_PARAM_TYPE_BOOL:

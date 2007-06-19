@@ -426,7 +426,8 @@ int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), con
 		int role_id = dbc->getID(context->role, dbc->_role, dbc->_role_id, "roles");
 		int type_id = dbc->getID(context->type, dbc->_type, dbc->_type_id, "types");
 		int range_id = 0;
-		if (dbc->_isMLS) {
+		if (dbc->_isMLS)
+		{
 			range_id = dbc->getID(context->range, dbc->_range, dbc->_range_id, "mls");
 		}
 		int dev_id = dbc->getID(entry->dev(), dbc->_dev, dbc->_dev_id, "devs");

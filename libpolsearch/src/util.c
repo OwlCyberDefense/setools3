@@ -40,7 +40,7 @@ const char *libpolsearch_get_version(void)
 	return LIBPOLSEARCH_VERSION_STRING;
 }
 
-const char *libpolsearch_symbol_get_name(const void *symbol, polsearch_symbol_e sym_type, const apol_policy_t * p)
+const char *polsearch_symbol_get_name(const void *symbol, polsearch_symbol_e sym_type, const apol_policy_t * p)
 {
 	if (!p) {
 		errno = EINVAL;
@@ -112,6 +112,10 @@ const char *polsearch_symbol_type_to_string(polsearch_symbol_e sym_type)
 
 polsearch_symbol_e polsearch_string_to_symbol_type(const char *str)
 {
+	if (!str) {
+		errno = EINVAL;
+		return POLSEARCH_SYMBOL_NONE;
+	}
 	if (!strcmp(str, "type"))
 		return POLSEARCH_SYMBOL_TYPE;
 	if (!strcmp(str, "attribute"))
@@ -188,6 +192,11 @@ const char *polsearch_element_type_to_string(polsearch_element_e elem_type)
 
 polsearch_element_e polsearch_string_to_element_type(const char *str)
 {
+	if (!str) {
+		errno = EINVAL;
+		return POLSEARCH_ELEMENT_NONE;
+	}
+
 	polsearch_symbol_e sym;
 	if ((sym = polsearch_string_to_symbol_type(str)))
 		return sym;

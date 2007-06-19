@@ -54,7 +54,7 @@ extern "C"
 	 * @param p The policy conaining \a symbol.
 	 * @return The name of the symbol, or NULL on error.
 	 */
-	extern const char *libpolsearch_symbol_get_name(const void *symbol, polsearch_symbol_e sym_type, const apol_policy_t * p);
+	extern const char *polsearch_symbol_get_name(const void *symbol, polsearch_symbol_e sym_type, const apol_policy_t * p);
 
 	/**
 	 * Get a string representing a symbol type.

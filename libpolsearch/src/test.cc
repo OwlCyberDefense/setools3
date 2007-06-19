@@ -31,13 +31,17 @@
 
 #include <apol/vector.h>
 #include <apol/policy.h>
+#include <apol/mls_range.h>
+#include <apol/mls_level.h>
 
 #include <sefs/fclist.hh>
+#include <sefs/entry.hh>
 
 #include <errno.h>
 #include <stdexcept>
 #include <cstring>
 #include <stdlib.h>
+#include <assert.h>
 
 using std::string;
 using std::bad_alloc;
@@ -48,50 +52,29 @@ using std::invalid_argument;
 polsearch_test::polsearch_test(polsearch_element_e elem_type, polsearch_test_cond_e cond) throw(std::bad_alloc,
 												std::invalid_argument)
 {
-	try
+	if (!polsearch_validate_test_condition(elem_type, cond))
 	{
-		if (!polsearch_validate_test_condition(elem_type, cond))
-		{
-			string str = "Invalid test: \"";
-			str += polsearch_test_cond_to_string(cond);
-			str += "\" for element: \"";
-			str += polsearch_element_type_to_string(elem_type);
-			str += "\".";
-			throw invalid_argument(str);
-		}
-	}
-	catch(invalid_argument x)
-	{
-		throw x;
+		string str = "Invalid test: \"";
+		str += polsearch_test_cond_to_string(cond);
+		str += "\" for element: \"";
+		str += polsearch_element_type_to_string(elem_type);
+		str += "\".";
+		throw invalid_argument(str);
 	}
 	_element_type = elem_type;
 	_test_cond = cond;
-	try
-	{
-		_criteria = apol_vector_create(free_criterion);
-		if (!_criteria)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_criteria = apol_vector_create(free_criterion);
+	if (!_criteria)
+		throw bad_alloc();
 }
 
 polsearch_test::polsearch_test(const polsearch_test & pt) throw(std::bad_alloc)
 {
 	_element_type = pt._element_type;
 	_test_cond = pt._test_cond;
-	try
-	{
-		_criteria = apol_vector_create_from_vector(pt._criteria, dup_criterion, NULL, free_criterion);
-		if (!_criteria)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_criteria = apol_vector_create_from_vector(pt._criteria, dup_criterion, NULL, free_criterion);
+	if (!_criteria)
+		throw bad_alloc();
 }
 
 polsearch_test::~polsearch_test()
@@ -102,20 +85,13 @@ polsearch_test::~polsearch_test()
 apol_vector_t *polsearch_test::getValidOps() const throw(std::bad_alloc)
 {
 	apol_vector_t *result_v = NULL;
-	try
-	{
-		result_v = apol_vector_create(NULL);
-		if (!result_v)
-			throw bad_alloc();
-		for (int op = POLSEARCH_OP_IS; op <= POLSEARCH_OP_AS_TYPE; op++)
-			if (polsearch_validate_operator(this->_element_type, this->_test_cond, static_cast < polsearch_op_e > (op)))
-				if (apol_vector_append(result_v, reinterpret_cast < void *>(op)))
-					throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	result_v = apol_vector_create(NULL);
+	if (!result_v)
+		throw bad_alloc();
+	for (int op = POLSEARCH_OP_IS; op <= POLSEARCH_OP_AS_TYPE; op++)
+		if (polsearch_validate_operator(this->_element_type, this->_test_cond, static_cast < polsearch_op_e > (op)))
+			if (apol_vector_append(result_v, reinterpret_cast < void *>(op)))
+				throw bad_alloc();
 	return result_v;
 }
 
@@ -207,16 +183,9 @@ polsearch_result::polsearch_result(polsearch_element_e elem_type, const void *el
 	_element = elem;
 	_policy = p;
 	_fclist = fclist;
-	try
-	{
-		_proof = apol_vector_create(free_proof);
-		if (!_proof)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_proof = apol_vector_create(free_proof);
+	if (!_proof)
+		throw bad_alloc();
 }
 
 polsearch_result::polsearch_result(const polsearch_result & psr) throw(std::bad_alloc)
@@ -225,16 +194,9 @@ polsearch_result::polsearch_result(const polsearch_result & psr) throw(std::bad_
 	_element = psr._element;
 	_policy = psr._policy;
 	_fclist = psr._fclist;
-	try
-	{
-		_proof = apol_vector_create_from_vector(psr._proof, dup_proof, NULL, free_proof);
-		if (!_proof)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	_proof = apol_vector_create_from_vector(psr._proof, dup_proof, NULL, free_proof);
+	if (!_proof)
+		throw bad_alloc();
 }
 
 polsearch_result::~polsearch_result()
@@ -260,16 +222,9 @@ apol_vector_t *polsearch_result::proof()
 char *polsearch_result::toString() const throw(std::bad_alloc)
 {
 	char *tmp = NULL;
-	try
-	{
-		tmp = polsearch_element_to_string(_element, _element_type, _policy, _fclist);
-		if (!tmp)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	tmp = polsearch_element_to_string(_element, _element_type, _policy, _fclist);
+	if (!tmp)
+		throw bad_alloc();
 	return tmp;
 }
 
@@ -302,23 +257,16 @@ polsearch_proof::~polsearch_proof()
 char *polsearch_proof::toString() const throw(std::bad_alloc)
 {
 	char *tmp = NULL;
-	try
-	{
-		string str("");
-		str += polsearch_test_cond_to_string(_test_cond);
-		str += " ";
-		str += (tmp = polsearch_element_to_string(_element, _element_type, _policy, _fclist));
-		if (!tmp)
-			throw bad_alloc();
-		free(tmp);
-		tmp = strdup(str.c_str());
-		if (!tmp)
-			throw bad_alloc();
-	}
-	catch(bad_alloc x)
-	{
-		throw x;
-	}
+	string str("");
+	str += polsearch_test_cond_to_string(_test_cond);
+	str += " ";
+	str += (tmp = polsearch_element_to_string(_element, _element_type, _policy, _fclist));
+	if (!tmp)
+		throw bad_alloc();
+	free(tmp);
+	tmp = strdup(str.c_str());
+	if (!tmp)
+		throw bad_alloc();
 	return tmp;
 }
 
@@ -372,6 +320,265 @@ void *dup_result(const void *pr, void *x __attribute__ ((unused)))
 	{
 		errno = ENOMEM;
 		return NULL;
+	}
+}
+
+int result_cmp(const void *a, const void *b, void *data)
+{
+	const polsearch_result *left = static_cast < const polsearch_result * >(a);
+	const polsearch_result *right = static_cast < const polsearch_result * >(b);
+	apol_policy_t *policy = static_cast < apol_policy_t * >(data);
+	const qpol_policy_t *q = apol_policy_get_qpol(policy);
+
+	// comparison makes no sense if results are not same element type
+	assert(left->elementType() == right->elementType());
+	switch (left->elementType())
+	{
+	case POLSEARCH_ELEMENT_TYPE:
+	case POLSEARCH_ELEMENT_ATTRIBUTE:
+	case POLSEARCH_ELEMENT_ROLE:
+	case POLSEARCH_ELEMENT_USER:
+	case POLSEARCH_ELEMENT_CLASS:
+	case POLSEARCH_ELEMENT_COMMON:
+	case POLSEARCH_ELEMENT_CATEGORY:
+	case POLSEARCH_ELEMENT_LEVEL:
+	case POLSEARCH_ELEMENT_BOOL:
+	{
+		return strcmp(polsearch_symbol_get_name
+			      (left->element(), static_cast < polsearch_symbol_e > (left->elementType()), policy),
+			      polsearch_symbol_get_name(right->element(), static_cast < polsearch_symbol_e > (right->elementType()),
+							policy));
+	}
+	case POLSEARCH_ELEMENT_STRING:
+	case POLSEARCH_ELEMENT_PERMISSION:
+	{
+		return strcmp(static_cast < const char *>(left->element()), static_cast < const char *>(right->element()));
+	}
+	case POLSEARCH_ELEMENT_AVRULE:
+	{
+		const qpol_avrule_t *lrule = static_cast < const qpol_avrule_t * >(left->element());
+		const qpol_avrule_t *rrule = static_cast < const qpol_avrule_t * >(right->element());
+		int retv = 0;
+		// compare rule type
+		uint32_t lt;
+		qpol_avrule_get_rule_type(q, lrule, &lt);
+		uint32_t rt;
+		qpol_avrule_get_rule_type(q, rrule, &rt);
+		if ((retv = lt - rt))
+			return retv;
+		// compare source name
+		const qpol_type_t *ltype;
+		qpol_avrule_get_source_type(q, lrule, &ltype);
+		const qpol_type_t *rtype;
+		qpol_avrule_get_source_type(q, rrule, &rtype);
+		const char *lname;
+		qpol_type_get_name(q, ltype, &lname);
+		const char *rname;
+		qpol_type_get_name(q, rtype, &rname);
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare target name
+		qpol_avrule_get_target_type(q, lrule, &ltype);
+		qpol_avrule_get_target_type(q, rrule, &rtype);
+		qpol_type_get_name(q, ltype, &lname);
+		qpol_type_get_name(q, rtype, &rname);
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare class name
+		const qpol_class_t *lclass;
+		qpol_avrule_get_object_class(q, lrule, &lclass);
+		const qpol_class_t *rclass;
+		qpol_avrule_get_object_class(q, rrule, &rclass);
+		qpol_class_get_name(q, lclass, &lname);
+		qpol_class_get_name(q, rclass, &rname);
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare conditional (pointer comparison only)
+		const qpol_cond_t *lcond;
+		qpol_avrule_get_cond(q, lrule, &lcond);
+		const qpol_cond_t *rcond;
+		qpol_avrule_get_cond(q, rrule, &rcond);
+		if ((retv = reinterpret_cast < const ssize_t > (lcond) - reinterpret_cast < const ssize_t > (rcond)))
+			return retv;
+		// semantic rules with same key; should be the same rule.
+		return 0;
+	}
+	case POLSEARCH_ELEMENT_TERULE:
+	{
+		const qpol_terule_t *lrule = static_cast < const qpol_terule_t * >(left->element());
+		const qpol_terule_t *rrule = static_cast < const qpol_terule_t * >(right->element());
+		int retv = 0;
+		// compare rule type
+		uint32_t lt;
+		qpol_terule_get_rule_type(q, lrule, &lt);
+		uint32_t rt;
+		qpol_terule_get_rule_type(q, rrule, &rt);
+		if ((retv = lt - rt))
+			return retv;
+		// compare source name
+		const qpol_type_t *ltype;
+		qpol_terule_get_source_type(q, lrule, &ltype);
+		const qpol_type_t *rtype;
+		qpol_terule_get_source_type(q, rrule, &rtype);
+		const char *lname;
+		qpol_type_get_name(q, ltype, &lname);
+		const char *rname;
+		qpol_type_get_name(q, rtype, &rname);
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare target name
+		qpol_terule_get_target_type(q, lrule, &ltype);
+		qpol_terule_get_target_type(q, rrule, &rtype);
+		qpol_type_get_name(q, ltype, &lname);
+		qpol_type_get_name(q, rtype, &rname);
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare class name
+		const qpol_class_t *lclass;
+		qpol_terule_get_object_class(q, lrule, &lclass);
+		const qpol_class_t *rclass;
+		qpol_terule_get_object_class(q, rrule, &rclass);
+		qpol_class_get_name(q, lclass, &lname);
+		qpol_class_get_name(q, rclass, &rname);
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare conditional (pointer comparison only)
+		const qpol_cond_t *lcond;
+		qpol_terule_get_cond(q, lrule, &lcond);
+		const qpol_cond_t *rcond;
+		qpol_terule_get_cond(q, rrule, &rcond);
+		if ((retv = reinterpret_cast < const ssize_t > (lcond) - reinterpret_cast < const ssize_t > (rcond)))
+			return retv;
+		// semantic rules with same key; should be the same rule.
+		return 0;
+	}
+	case POLSEARCH_ELEMENT_ROLE_ALLOW:
+	{
+		const qpol_role_allow_t *lrule = static_cast < const qpol_role_allow_t * >(left->element());
+		const qpol_role_allow_t *rrule = static_cast < const qpol_role_allow_t * >(right->element());
+		// compare source role
+		const qpol_role_t *lrole;
+		qpol_role_allow_get_source_role(q, lrule, &lrole);
+		const qpol_role_t *rrole;
+		qpol_role_allow_get_source_role(q, rrule, &rrole);
+		const char *lname;
+		qpol_role_get_name(q, lrole, &lname);
+		const char *rname;
+		qpol_role_get_name(q, rrole, &rname);
+		int retv;
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// conpare target
+		qpol_role_allow_get_target_role(q, lrule, &lrole);
+		qpol_role_allow_get_target_role(q, rrule, &rrole);
+		qpol_role_get_name(q, lrole, &lname);
+		qpol_role_get_name(q, rrole, &rname);
+		return strcmp(lname, rname);
+	}
+	case POLSEARCH_ELEMENT_ROLE_TRANS:
+	{
+		const qpol_role_trans_t *lrule = static_cast < const qpol_role_trans_t * >(left->element());
+		const qpol_role_trans_t *rrule = static_cast < const qpol_role_trans_t * >(right->element());
+		// compare source role
+		const qpol_role_t *lrole;
+		qpol_role_trans_get_source_role(q, lrule, &lrole);
+		const qpol_role_t *rrole;
+		qpol_role_trans_get_source_role(q, rrule, &rrole);
+		const char *lname;
+		qpol_role_get_name(q, lrole, &lname);
+		const char *rname;
+		qpol_role_get_name(q, rrole, &rname);
+		int retv;
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// conpare target type
+		const qpol_type_t *ltype;
+		qpol_role_trans_get_target_type(q, lrule, &ltype);
+		const qpol_type_t *rtype;
+		qpol_role_trans_get_target_type(q, rrule, &rtype);
+		qpol_type_get_name(q, ltype, &lname);
+		qpol_type_get_name(q, rtype, &rname);
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare default role
+		qpol_role_trans_get_default_role(q, lrule, &lrole);
+		qpol_role_trans_get_default_role(q, rrule, &rrole);
+		qpol_role_get_name(q, lrole, &lname);
+		qpol_role_get_name(q, rrole, &rname);
+		return strcmp(lname, rname);
+	}
+	case POLSEARCH_ELEMENT_RANGE_TRANS:
+	{
+		const qpol_range_trans_t *lrule = static_cast < const qpol_range_trans_t * >(left->element());
+		const qpol_range_trans_t *rrule = static_cast < const qpol_range_trans_t * >(right->element());
+		// compare source type
+		const qpol_type_t *ltype;
+		qpol_range_trans_get_source_type(q, lrule, &ltype);
+		const qpol_type_t *rtype;
+		qpol_range_trans_get_source_type(q, rrule, &rtype);
+		const char *lname;
+		qpol_type_get_name(q, ltype, &lname);
+		const char *rname;
+		qpol_type_get_name(q, rtype, &rname);
+		int retv;
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare target type
+		qpol_range_trans_get_target_type(q, lrule, &ltype);
+		qpol_range_trans_get_target_type(q, rrule, &rtype);
+		qpol_type_get_name(q, ltype, &lname);
+		qpol_type_get_name(q, rtype, &rname);
+		if ((retv = strcmp(lname, rname)))
+			return retv;
+		// compare object class
+		const qpol_class_t *lclass;
+		qpol_range_trans_get_target_class(q, lrule, &lclass);
+		const qpol_class_t *rclass;
+		qpol_range_trans_get_target_class(q, rrule, &rclass);
+		qpol_class_get_name(q, lclass, &lname);
+		qpol_class_get_name(q, rclass, &rname);
+		return strcmp(lname, rname);
+	}
+	case POLSEARCH_ELEMENT_FC_ENTRY:
+	{
+		const sefs_entry *le = static_cast < const sefs_entry * >(left->element());
+		const sefs_entry *re = static_cast < const sefs_entry * >(right->element());
+		char *ls = le->toString();
+		char *rs = re->toString();
+		int ret = strcmp(ls, rs);
+		free(ls);
+		free(rs);
+		return ret;
+	}
+	case POLSEARCH_ELEMENT_MLS_RANGE:
+	{
+		const apol_mls_range_t *lr = static_cast < const apol_mls_range_t * >(left->element());
+		const apol_mls_range_t *rr = static_cast < const apol_mls_range_t * >(right->element());
+
+		if (apol_mls_range_compare(policy, lr, rr, APOL_QUERY_EXACT) > 0)
+			return 0;
+		if (apol_mls_range_compare(policy, lr, rr, APOL_QUERY_SUB) > 0)
+			return 1;
+		if (apol_mls_range_compare(policy, lr, rr, APOL_QUERY_SUPER) > 0)
+			return -1;
+		// no clear dominance; fallback on sensitivity name of low level
+		return strcmp(apol_mls_level_get_sens(apol_mls_range_get_low(lr)),
+			      apol_mls_level_get_sens(apol_mls_range_get_low(rr)));
+	}
+	case POLSEARCH_ELEMENT_BOOL_STATE:
+	{
+		if (left->element() == right->element())
+			return 0;
+		else if (left->element())
+			return 1;
+		else
+			return -1;
+	}
+	case POLSEARCH_ELEMENT_NONE:
+	default:
+	{
+		return 0;	       // not comparable, don't sort
+	}
 	}
 }
 
