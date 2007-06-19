@@ -35,10 +35,6 @@ findcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
 #replcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
 #replcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
 
-#searchcon_SOURCES = searchcon.c
-#searchcon_CFLAGS = $(AM_CFLAGS) @SEFS_CFLAGS@
-#searchcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
-#searchcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)
 

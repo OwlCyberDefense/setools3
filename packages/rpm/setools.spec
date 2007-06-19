@@ -258,6 +258,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{pkgpyexecdir}/_seaudit.so.%{libseaudit_ver}
 %{pkgpyexecdir}/_seaudit.so.4
 %attr(755,root,root) %{pkgpyexecdir}/_seaudit.so
+%{pkgpythondir}/sefs.py
+%{pkgpythondir}/sefs.pyc
+%{pkgpythondir}/sefs.pyo
+%{pkgpyexecdir}/_sefs.so.%{libseaudit_ver}
+%{pkgpyexecdir}/_sefs.so.4
+%attr(755,root,root) %{pkgpyexecdir}/_seaudit.so
 
 %files libs-java
 %defattr(-,root,root)
@@ -273,10 +279,14 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libjseaudit.so.%{libseaudit_ver}
 %{_libdir}/libjseaudit.so.4
 %{_libdir}/libjseaudit.so
+%{_libdir}/libjsefs.so.%{libsefs_ver}
+%{_libdir}/libjsefs.so.4
+%{_libdir}/libjsefs.so
 %{javalibdir}/qpol.jar
 %{javalibdir}/apol.jar
 %{javalibdir}/poldiff.jar
 %{javalibdir}/seaudit.jar
+%{javalibdir}/sefs.jar
 
 %files libs-tcl
 %defattr(-,root,root)
@@ -288,6 +298,8 @@ rm -rf ${RPM_BUILD_ROOT}
 %{tcllibdir}/poldiff/pkgIndex.tcl
 %{tcllibdir}/seaudit/libtseaudit.so.%{libseaudit_ver}
 %{tcllibdir}/seaudit/pkgIndex.tcl
+%{tcllibdir}/sefs/libtsefs.so.%{libsefs_ver}
+%{tcllibdir}/sefs/pkgIndex.tcl
 
 %files devel
 %defattr(-,root,root)
@@ -296,6 +308,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libpoldiff.a
 %{_libdir}/libsefs.a
 %{_libdir}/libseaudit.a
+%{_libdir}/libsefs.a
 %{_includedir}/qpol/avrule_query.h
 %{_includedir}/qpol/bool_query.h
 %{_includedir}/qpol/class_perm_query.h
@@ -380,6 +393,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/seaudit/report.h
 %{_includedir}/seaudit/sort.h
 %{_includedir}/seaudit/util.h
+%{_includedir}/sefs/db.hh
+%{_includedir}/sefs/entry.hh
+%{_includedir}/sefs/fcfile.hh
+%{_includedir}/sefs/fclist.hh
+%{_includedir}/sefs/filesystem.hh
+%{_includedir}/sefs/query.hh
 
 %files console
 %defattr(-,root,root)
@@ -388,7 +407,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/indexcon
 %{_bindir}/findcon
 %{_bindir}/replcon
-%{_bindir}/searchcon
 %{_bindir}/sechecker
 %{_bindir}/sediff
 %{_bindir}/seaudit-report
@@ -401,7 +419,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_mandir}/man1/findcon.1.gz
 %{_mandir}/man1/indexcon.1.gz
 %{_mandir}/man1/replcon.1.gz
-%{_mandir}/man1/searchcon.1.gz
 %{_mandir}/man1/sechecker.1.gz
 %{_mandir}/man1/sediff.1.gz
 %{_mandir}/man1/seinfo.1.gz

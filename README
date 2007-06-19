@@ -41,11 +41,11 @@ and libraries:
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
+  libsefs       open and search SELinux file contexts
   seaudit       audit log analysis tools: seaudit and seaudit-report
   sechecker     SELinux policy checking tool
   secmds        command line tools: seinfo, sesearch, findcon,
-                replcon, indexcon, and searchcon
+                replcon, and indexcon.
   sediff        semantic policy difference tools: sediff and sediffx
 
 Each of these components is in a subdirectory under the top-level
@@ -155,7 +155,7 @@ You can customize your SETools build using the flags given to
 
   --disable-gui
       Build only the command-line tools: seinfo, sesearch, findcon,
-      indexcon, replcon, searchcon, sechecker, and sediff.
+      indexcon, replcon, sechecker, and sediff.
 
   --disable-bwidget-check
       Assume that BWidget 1.8 is installed on the system.  The
@@ -329,23 +329,17 @@ secmds subdirectory; the rest are in their own directories.
       SELinux policy.
 
   findcon:
-      A tool to search the system's filesystem for files matching a
-      certain search string.  The search string can specify complete
-      security contexts, partial contexts, and shell globbing-style
-      wildcards.
+      A tool to search files with a matching SELinux file context.
+      The tool can search a filesystem directly, a file_contexts file,
+      or a database as created by indexcon.
 
   replcon:
       A tool to search the filesystem, replacing a matched file's
       context with a different one.
 
   indexcon:
-      A tool to create a SQLite3 database that indexes the security
-      contexts of a SELinux filesystem.
-
-  searchcon:
-      A tool to query a database created by indexcon for specific
-      pathnames and/or for pathnames whose label contains a
-      particular type name and/or user name.
+      A tool to create a database that indexes the security contexts
+      of a SELinux filesystem.
 
   sechecker:
       A tool for performing modular checks on an SELinux policy.
@@ -402,10 +396,10 @@ maintain compatibility beginning with SETools version 3.0.
       them.  Its main users are sediff and sediffx.
 
   libsefs:
-      Create a snapshot of SELinux filesystem security contexts and
-      stores them into a SQLite3 database.  Routines exist to create
-      and execute SQL queries into the database.  This library also
-      has functions to parse the system's default file_contexts.
+      Create a represention of file contexts, by reading contexts
+      directly from a filesystem, from a file_contexts file, or from a
+      specially formatted database.  Queries can then be created and
+      executed against those file contexts
 
 These libraries have SWIG wrappers that are built if
 --enable-swig-java, --enable-swig-python, and/or --enable-swig-tcl are

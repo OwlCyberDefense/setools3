@@ -1,3 +1,33 @@
+SETools 3.1:
+
+SETools:
+
+  * SETools now has an external dependency upon libsqlite3 >= 3.2.  The
+    supplied configure script will enforce this dependency.
+
+libsefs:
+
+  * Rewrite of library to have proper namespaces and much more usable
+    object-oriented design.
+
+  * SWIG wrappers generated for this library if the appropriate
+    configure flags are set.
+
+findcon, searchcon:
+
+  * Merge searchcon's functionality into findcon.  The searchcon tool
+    has been removed from SETools.
+
+indexcon:
+
+  * Updated to use new libsefs design.
+
+apol:
+
+  * Updated to use new libsefs design.
+
+==================================================
+
 SETools 3.2:
 
 libapol, libqpol, libesaudit, libpoldiff:

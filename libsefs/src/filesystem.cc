@@ -69,6 +69,12 @@ static int filesystem_lgetfilecon(const char *path, security_context_t * context
  * or not and if it has the "bind" option.  Note that if \a dir itself
  * is a mount, it will not be reported; a subdirectory might.
  *
+ * Note that the returned vector in never actually used by this
+ * library.  This function existed in previous versions of libsefs,
+ * but was never documented why it existed.  Rather than eliminate
+ * this function, it is retained (but effectively unused), in case a
+ * future revision of libsefs necessitates finding bind mounts.
+ *
  * @param dir Directory to begin search.
  *
  * @return An allocated vector containing pathnames (type char *) to
@@ -618,7 +624,7 @@ bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, c
 			throw std::runtime_error(strerror(errno));
 		}
 		int ret;
-		ret = apol_mls_range_compare(policy, context_range, range, query->_rangeMatch);
+		ret = apol_mls_range_compare(policy, range, context_range, query->_rangeMatch);
 		apol_mls_range_destroy(&context_range);
 		if (ret <= 0)
 		{

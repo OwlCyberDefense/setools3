@@ -40,6 +40,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #define DB_MAX_VERSION "2"
 
@@ -88,8 +90,12 @@ struct db_query_arg
 	char *user, *role, *type, *range, *path, *dev;
 	bool regex, db_is_mls;
 	regex_t *reuser, *rerole, *retype, *rerange, *repath, *redev;
+	int rangeMatch;
 	sefs_fclist_map_fn_t fn;
 	void *data;
+	apol_vector_t *type_list;
+	apol_mls_range_t *apol_range;
+	apol_policy_t *policy;
 	bool aborted;
 	int retval;
 };
@@ -166,7 +172,43 @@ static void db_type_compare(sqlite3_context * context, int argc __attribute__ ((
 	struct db_query_arg *q = static_cast < struct db_query_arg *>(arg);
 	assert(sqlite3_value_type(argv[0]) == SQLITE_TEXT);
 	const char *text = reinterpret_cast < const char *>(sqlite3_value_text(argv[0]));
-	bool retval = query_str_compare(text, q->type, q->retype, q->regex);
+	bool retval;
+	if (q->type_list == NULL)
+	{
+		retval = query_str_compare(text, q->type, q->retype, q->regex);
+	}
+	else
+	{
+		assert(q->policy != NULL);
+		size_t index;
+		retval = (apol_vector_get_index(q->type_list, text, apol_str_strcmp, NULL, &index) >= 0);
+	}
+	sqlite3_result_int(context, (retval ? 1 : 0));
+}
+
+/**
+ * Callback invoked when selecting a range (for a sefs_query).
+ */
+static void db_range_compare(sqlite3_context * context, int argc __attribute__ ((unused)), sqlite3_value ** argv)
+{
+	void *arg = sqlite3_user_data(context);
+	struct db_query_arg *q = static_cast < struct db_query_arg *>(arg);
+	assert(sqlite3_value_type(argv[0]) == SQLITE_TEXT);
+	const char *text = reinterpret_cast < const char *>(sqlite3_value_text(argv[0]));
+	bool retval;
+	if (q->apol_range == NULL)
+	{
+		retval = query_str_compare(text, q->range, q->rerange, q->regex);
+	}
+	else
+	{
+		assert(q->policy != NULL);
+		apol_mls_range_t *db_range = apol_mls_range_create_from_string(q->policy, text);
+		int ret;
+		ret = apol_mls_range_compare(q->policy, q->apol_range, db_range, q->rangeMatch);
+		apol_mls_range_destroy(&db_range);
+		retval = (ret > 0);
+	}
 	sqlite3_result_int(context, (retval ? 1 : 0));
 }
 
@@ -434,8 +476,23 @@ int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), con
 		const char *path = entry->path();
 		const ino64_t inode = entry->inode();
 		const uint32_t objclass = entry->objectClass();
-		// FIX ME: find link target
-		const char *link_target = "";
+		char link_target[128] = "";
+		// determine the link target as necessary
+		struct stat64 sb;
+		if (stat64(path, &sb) == -1)
+		{
+			db_err(dbc->_db, "%s", strerror(errno));
+			throw std::bad_alloc();
+		}
+		if (S_ISLNK(sb.st_mode))
+		{
+			if (readlink(path, link_target, 128) == 0)
+			{
+				db_err(dbc->_db, "%s", strerror(errno));
+				throw std::bad_alloc();
+			}
+			link_target[127] = '\0';
+		}
 
 		char *insert_stmt = NULL;
 		if (asprintf
@@ -481,7 +538,6 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 			SEFS_ERR("%s", sqlite3_errmsg(_db));
 			throw std::runtime_error(sqlite3_errmsg(_db));
 		}
-		// FIX ME: enable PRAGMA auto_vacuum = 1
 		int rc;
 		if (fs->isMLS())
 		{
@@ -617,7 +673,30 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 	if (query != NULL)
 	{
 		query->compile();
-		// FIX ME: build candidate types list and stuff upon policy
+		if (policy != NULL)
+		{
+			if (query->_type != NULL)
+			{
+				q.type_list =
+					query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,
+								    query->_indirect);
+				if (q.type_list == NULL)
+				{
+					SEFS_ERR("%s", strerror(errno));
+					throw std::runtime_error(strerror(errno));
+				}
+			}
+			if (query->_range != NULL)
+			{
+				q.apol_range = apol_mls_range_create_from_string(policy, query->_range);
+				if (q.apol_range == NULL)
+				{
+					apol_vector_destroy(&q.type_list);
+					SEFS_ERR("%s", strerror(errno));
+					throw std::runtime_error(strerror(errno));
+				}
+			}
+		}
 		q.user = query->_user;
 		q.role = query->_role;
 		q.type = query->_type;
@@ -631,6 +710,8 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		q.rerange = query->_rerange;
 		q.repath = query->_repath;
 		q.redev = query->_redev;
+		q.rangeMatch = query->_rangeMatch;
+		q.policy = this->policy;
 	}
 	q.db_is_mls = isMLS();
 	q.fn = fn;
@@ -721,7 +802,19 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 
 		if (q.range != NULL)
 		{
-			// FIX ME
+			if (sqlite3_create_function(_db, "range_compare", 1, SQLITE_UTF8, &q, db_range_compare, NULL, NULL) !=
+			    SQLITE_OK)
+			{
+				SEFS_ERR("%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			if (apol_str_appendf(&select_stmt, &len,
+					     "%s (range_compare(mls.mls_range_name))", (where_added ? " AND" : " WHERE")) < 0)
+			{
+				SEFS_ERR("%s", strerror(errno));
+				throw std::runtime_error(strerror(errno));
+			}
+			where_added = true;
 		}
 
 		if (query->_objclass != 0)
@@ -807,11 +900,15 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 	}
 	catch(...)
 	{
+		apol_vector_destroy(&q.type_list);
+		apol_mls_range_destroy(&q.apol_range);
 		free(select_stmt);
 		sqlite3_free(errmsg);
 		throw;
 	}
 
+	apol_vector_destroy(&q.type_list);
+	apol_mls_range_destroy(&q.apol_range);
 	free(select_stmt);
 	sqlite3_free(errmsg);
 	return q.retval;
@@ -1201,599 +1298,3 @@ bool sefs_db_is_db(const char *filename)
 {
 	return sefs_db::isDB(filename);
 }
-
-#if 0
-
-typedef struct inode_key
-{
-	ino_t inode;
-	dev_t dev;
-} inode_key_t;
-
-struct sefs_typeinfo;
-
-typedef struct sefs_context
-{
-	char *user, *role;
-	struct sefs_typeinfo *type;
-	char *range;
-} sefs_context_t;
-
-typedef struct sefs_fileinfo
-{
-	inode_key_t key;
-	uint32_t num_links;
-	sefs_context_t context;
-	char **path_names;
-	char *symlink_target;
-/* this uses defines from above */
-	uint32_t obj_class;
-} sefs_fileinfo_t;
-
-typedef struct sefs_typeinfo
-{
-	char *name;
-	uint32_t num_inodes;
-	uint32_t *index_list;
-} sefs_typeinfo_t;
-
-/* Management and creation functions */
-static int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd);
-static void destroy_fsdata(sefs_filesystem_data_t * fsd);
-static int sefs_get_class_int(const char *class);
-
-/**
- * Allocate the SQL select statement for a given search keys query.
- * Write the generated statement to the reference pointer stmt; the
- * caller is responsible for free()ing it afterwards.  Note that if
- * the database is not MLS, then MLS related fields within search_keys
- * are ignored.
- *
- * @param stmt Reference to where to store generated SQL statement.
- * @param search_keys Criteria for search.
- * @param objects Array of object class indices for search.
- * @param db_is_mls Flag to indicate if database has MLS components.
- *
- * @return 0 on success, < 0 on error.
- */
-static int sefs_stmt_populate(char **stmt, sefs_search_keys_t * search_keys, int *objects, int db_is_mls)
-{
-	int idx, where_added = 0;
-	size_t stmt_size = 0;
-	*stmt = NULL;
-
-	/* first put the starting statement */
-	if (db_is_mls)
-	{
-		APPEND("%s", STMTSTART_MLS);
-	}
-	else
-	{
-		APPEND("%s", STMTSTART_NONMLS);
-	}
-
-	/* now we go through the search keys populating the statement */
-	/* type,user,path,object_class */
-	if (search_keys->type && search_keys->num_type > 0)
-	{
-		if (!where_added)
-		{
-			APPEND(" where (");
-			where_added = 1;
-		}
-		else
-		{
-			APPEND(" (");
-		}
-		for (idx = 0; idx < search_keys->num_type; idx++)
-		{
-			if (idx > 0)
-			{
-				APPEND(" OR");
-			}
-			if (search_keys->do_type_regEx)
-				APPEND(" sefs_types_compare(types.type_name,\"%s\")", search_keys->type[idx]);
-			else
-				APPEND(" types.type_name = \"%s\"", search_keys->type[idx]);
-		}
-	}
-
-	if (search_keys->user && search_keys->num_user > 0)
-	{
-		if (!where_added)
-		{
-			APPEND(" where (");
-			where_added = 1;
-		}
-		else
-		{
-			APPEND(") AND (");
-		}
-		for (idx = 0; idx < search_keys->num_user; idx++)
-		{
-			if (idx > 0)
-			{
-				APPEND(" OR");
-			}
-			if (search_keys->do_user_regEx)
-				APPEND(" sefs_users_compare(users.user_name,\"%s\")", search_keys->user[idx]);
-			else
-				APPEND(" users.user_name = \"%s\"", search_keys->user[idx]);
-		}
-	}
-
-	if (search_keys->path && search_keys->num_path > 0)
-	{
-		if (!where_added)
-		{
-			APPEND(" where (");
-			where_added = 1;
-		}
-		else
-		{
-			APPEND(") AND (");
-		}
-		for (idx = 0; idx < search_keys->num_path; idx++)
-		{
-			if (idx > 0)
-			{
-				APPEND(" OR");
-			}
-			if (search_keys->do_path_regEx)
-				APPEND(" sefs_paths_compare(paths.path,\"%s\")", search_keys->path[idx]);
-			else
-				APPEND(" paths.path LIKE \"%s%%\"", search_keys->path[idx]);
-		}
-	}
-
-	if (search_keys->object_class && search_keys->num_object_class > 0)
-	{
-		if (!where_added)
-		{
-			APPEND(" where (");
-			where_added = 1;
-		}
-		else
-		{
-			APPEND(") AND (");
-		}
-		for (idx = 0; idx < search_keys->num_object_class; idx++)
-		{
-			if (idx > 0)
-			{
-				APPEND(" OR");
-			}
-			APPEND(" inodes.obj_class = %d", objects[idx]);
-		}
-	}
-
-	if (search_keys->range && search_keys->num_range > 0)
-	{
-		if (!where_added)
-		{
-			APPEND(" where (");
-			where_added = 1;
-		}
-		else
-		{
-			APPEND(") AND (");
-		}
-		for (idx = 0; idx < search_keys->num_range; idx++)
-		{
-			if (idx > 0)
-			{
-				APPEND(" OR");
-			}
-			if (search_keys->do_range_regEx)
-				APPEND(" sefs_range_compare(mls.mls_range,\"%s\")", search_keys->range[idx]);
-			else
-				APPEND(" mls.mls_range = \"%s\"", search_keys->range[idx]);
-		}
-	}
-
-	if (where_added)
-	{
-		APPEND(") AND");
-	}
-	else
-	{
-		APPEND(" where");
-	}
-	if (db_is_mls)
-	{
-		APPEND(" %s %s", STMTEND_MLS, SORTSTMT);
-	}
-	else
-	{
-		APPEND(" %s %s", STMTEND_NONMLS, SORTSTMT);
-	}
-	return 0;
-}
-
-struct search_types_arg
-{
-	char **list;
-	int count;
-};
-
-/* compare a range value with a precompiled regular expression */
-static void sefs_range_compare(sqlite3_context * context, int argc, sqlite3_value ** argv)
-{
-	int retVal = 0;
-	const char *text;
-	regmatch_t pm;
-
-	/* make sure we got the arguments */
-	assert(argc == 2);
-
-	/* make sure we got the right kind of argument */
-	if (sqlite3_value_type(argv[0]) == SQLITE_TEXT)
-	{
-		text = (const char *)sqlite3_value_text(argv[0]);
-		if (regexec(&range_re, text, 1, &pm, 0) == 0)
-			retVal = 1;
-	}
-	sqlite3_result_int(context, retVal);
-}
-
-int sefs_filesystem_db_search(sefs_filesystem_db_t * fsd, sefs_search_keys_t * search_keys)
-{
-
-	char *stmt = NULL;
-	int *object_class = NULL;
-	int types_regcomp = 0, users_regcomp = 0, paths_regcomp = 0, range_regcomp = 0;
-	int db_is_mls = 0;
-	int rc, i, ret_val = -1;
-	char *errmsg = NULL;
-	size_t errmsg_sz;
-
-	db = (sqlite3 *) (*fsd->dbh);
-	sefs_search_keys = search_keys;
-
-	/* reset the return data */
-	/* here put in our search key destructor if not null */
-	sefs_search_keys->search_ret = NULL;
-
-	if (!db)
-	{
-		fprintf(stderr, "unable to read db\n");
-		goto cleanup;
-	}
-	if ((db_is_mls = sefs_filesystem_db_is_mls(fsd)) < 0)
-	{
-		goto cleanup;
-	}
-
-	/* malloc out and set up our object classes as ints */
-	if (search_keys->num_object_class > 0)
-	{
-		object_class = (int *)malloc(sizeof(int) * search_keys->num_object_class);
-		if (object_class == NULL)
-		{
-			fprintf(stderr, "Out of memory.");
-			goto cleanup;
-		}
-		for (i = 0; i < search_keys->num_object_class; i++)
-		{
-			object_class[i] = sefs_get_class_int(search_keys->object_class[i]);
-		}
-	}
-
-	/* are we searching using regexp? */
-	if (search_keys->num_type > 0 && search_keys->do_type_regEx)
-	{
-		/* create our comparison functions */
-		sqlite3_create_function(db, "sefs_types_compare", 2, SQLITE_UTF8, NULL, &sefs_types_compare, NULL, NULL);
-		rc = regcomp(&types_re, search_keys->type[0], REG_NOSUB | REG_EXTENDED);
-		if (rc != 0)
-		{
-			errmsg_sz = regerror(rc, &types_re, NULL, 0);
-			if ((errmsg = (char *)malloc(errmsg_sz)) == NULL)
-			{
-				fprintf(stderr, "Out of memory.");
-				goto cleanup;
-			}
-			regerror(rc, &types_re, errmsg, errmsg_sz);
-			fprintf(stderr, "%s", errmsg);
-			goto cleanup;
-		}
-		else
-		{
-			types_regcomp = 1;
-		}
-	}
-	if (search_keys->num_user > 0 && search_keys->do_user_regEx)
-	{
-		sqlite3_create_function(db, "sefs_users_compare", 2, SQLITE_UTF8, NULL, &sefs_users_compare, NULL, NULL);
-		rc = regcomp(&users_re, search_keys->user[0], REG_NOSUB | REG_EXTENDED);
-		if (rc != 0)
-		{
-			errmsg_sz = regerror(rc, &users_re, NULL, 0);
-			if ((errmsg = (char *)malloc(errmsg_sz)) == NULL)
-			{
-				fprintf(stderr, "Out of memory.");
-				goto cleanup;
-			}
-			regerror(rc, &users_re, errmsg, errmsg_sz);
-			fprintf(stderr, "%s", errmsg);
-			goto cleanup;
-		}
-		else
-		{
-			users_regcomp = 1;
-		}
-	}
-	if (search_keys->num_path > 0 && search_keys->do_path_regEx)
-	{
-		sqlite3_create_function(db, "sefs_paths_compare", 2, SQLITE_UTF8, NULL, &sefs_paths_compare, NULL, NULL);
-		rc = regcomp(&paths_re, search_keys->path[0], REG_NOSUB | REG_EXTENDED);
-		if (rc != 0)
-		{
-			errmsg_sz = regerror(rc, &paths_re, NULL, 0);
-			if ((errmsg = (char *)malloc(errmsg_sz)) == NULL)
-			{
-				fprintf(stderr, "Out of memory.");
-				goto cleanup;
-			}
-			regerror(rc, &paths_re, errmsg, errmsg_sz);
-			fprintf(stderr, "%s", errmsg);
-			goto cleanup;
-		}
-		else
-		{
-			paths_regcomp = 1;
-		}
-	}
-	if (db_is_mls && search_keys->num_range > 0 && search_keys->do_range_regEx)
-	{
-		sqlite3_create_function(db, "sefs_range_compare", 2, SQLITE_UTF8, NULL, &sefs_range_compare, NULL, NULL);
-		rc = regcomp(&range_re, search_keys->range[0], REG_NOSUB | REG_EXTENDED);
-		if (rc != 0)
-		{
-			errmsg_sz = regerror(rc, &range_re, NULL, 0);
-			if ((errmsg = (char *)malloc(errmsg_sz)) == NULL)
-			{
-				fprintf(stderr, "Out of memory.");
-				goto cleanup;
-			}
-			regerror(rc, &range_re, errmsg, errmsg_sz);
-			fprintf(stderr, "%s", errmsg);
-			goto cleanup;
-		}
-		else
-		{
-			range_regcomp = 1;
-		}
-	}
-	if (sefs_stmt_populate(&stmt, search_keys, object_class, db_is_mls))
-	{
-		goto cleanup;
-	}
-	rc = sqlite3_exec(db, stmt, sefs_search_callback, &db_is_mls, &errmsg);
-	if (rc != SQLITE_OK)
-	{
-		fprintf(stderr, "SQL error: %s\n", errmsg);
-		sqlite3_free(errmsg);
-		errmsg = NULL;
-		ret_val = -1;
-	}
-	else
-		ret_val = 0;
-
-      cleanup:
-	/* here we deallocate anything that might need to be */
-	free(stmt);
-	free(errmsg);
-	free(object_class);
-	if (types_regcomp)
-		regfree(&types_re);
-	if (users_regcomp)
-		regfree(&users_re);
-	if (paths_regcomp)
-		regfree(&paths_re);
-	if (range_regcomp)
-		regfree(&range_re);
-	return ret_val;
-}
-
-struct sefs_sql_data
-{
-	char *stmt;
-	char **errmsg;
-	int id;
-	struct sqlite3 *sqldb;
-};
-
-static int INSERT_TYPES(const sefs_typeinfo_t * t, struct sefs_sql_data *d)
-{
-	int rc = 0;
-
-	sprintf(d->stmt, "insert into types (type_name,type_id) values " "(\"%s\",%zu);", t->name, (size_t) t);
-	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
-	d->id++;
-	/* sqlite returns 0 for success and positive for
-	 * failure.  returning -rc  will make this fit the
-	 * desired behavior. */
-	return -rc;
-}
-
-static int INSERT_USERS(const char *user, struct sefs_sql_data *d)
-{
-	int rc = 0;
-	sprintf(d->stmt, "insert into users (user_name,user_id) values " "(\"%s\",%zu);", user, (size_t) user);
-
-	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
-	d->id++;
-
-	return -rc;
-}
-
-static int INSERT_RANGE(const char *range, struct sefs_sql_data *d)
-{
-	int rc = 0;
-	sprintf(d->stmt, "insert into mls (mls_range,mls_id) values " "(\"%s\",%zu);", range, (size_t) range);
-	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
-	d->id++;
-
-	return -rc;
-}
-
-static int INSERT_FILE(const sefs_fileinfo_t * pinfo, struct sefs_sql_data *d)
-{
-	int rc = 0;
-	int j = 0;
-	char *new_stmt = NULL;
-
-	if (pinfo->obj_class == SEFS_LNK_FILE && pinfo->symlink_target)
-	{
-		sprintf(d->stmt, "insert into inodes (inode_id,user,type,range,obj_class,symlink_target,dev,ino"
-			") values (%zu,%zu,%zu,%zu,%zu,'%s',%lu,%lu);",
-			d->id,
-			(size_t) pinfo->context.user, (size_t) pinfo->context.type, (size_t) pinfo->context.range, pinfo->obj_class,
-			/* dev_t is an alias for (unsigned long) */
-			pinfo->symlink_target, /*(dev_t) */ (unsigned long)(pinfo->key.dev), (ino_t) (pinfo->key.inode));
-	}
-	else
-	{
-		sprintf(d->stmt, "insert into inodes (inode_id,user,type,range,obj_class,symlink_target,dev,ino"
-			") values (%zu,%zu,%zu,%zu,%zu,'',%lu,%lu);",
-			d->id, (size_t) pinfo->context.user, (size_t) pinfo->context.type, (size_t) pinfo->context.range,
-			/* dev_t is an alias for (unsigned long) */
-			pinfo->obj_class, /*(dev_t) */ (unsigned long)(pinfo->key.dev), (ino_t) (pinfo->key.inode));
-	}
-	rc = sqlite3_exec(d->sqldb, d->stmt, NULL, 0, d->errmsg);
-	if (rc != SQLITE_OK)
-		return -rc;
-
-	/* NOTE: the following block of code does not correctly return the
-	 * invalid sql statement.  It is, however, how things were done
-	 * before I started mucking about with this.  It should probably get
-	 * fixed at some point in case any of those statemnts fail.
-	 *
-	 * NOTE: it will correctly return the SQL error message.
-	 */
-	for (j = 0; j < pinfo->num_links; j++)
-	{
-		new_stmt = sqlite3_mprintf("insert into paths (inode,path) values (%d,'%q')", d->id, (char *)pinfo->path_names[j]);
-		rc = sqlite3_exec(d->sqldb, new_stmt, NULL, 0, d->errmsg);
-		sqlite3_free(new_stmt);
-		if (rc != SQLITE_OK)
-			return -rc;
-	}
-
-	d->id++;
-	return -rc;
-}
-
-int sefs_filesystem_db_save(sefs_filesystem_db_t * fsd, const char *filename)
-{
-	int rc = 0;
-	FILE *fp = NULL;
-	struct sqlite3 *sqldb = NULL;
-	char stmt[100000];
-	char *errmsg = NULL;
-	char hostname[100];
-	time_t mytime;
-	struct sefs_sql_data ssd;
-
-	sefs_filesystem_data_t *fsdh = (sefs_filesystem_data_t *) (fsd->fsdh);
-
-	/* we should have an fsdh by now */
-	assert(fsdh != NULL);
-
-	fp = fopen(filename, "w");
-	if (!fp)
-	{
-		fprintf(stderr, "Error opening save file %s\n", filename);
-		return -1;
-	}
-	fclose(fp);
-
-	/* now open up the file sqldb */
-	rc = sqlite3_open(filename, &sqldb);
-	if (rc)
-	{
-		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(sqldb));
-		sqlite3_close(sqldb);
-		return -1;
-	}
-
-	/* apply our schema to it, based upon if any of the files had
-	 * a MLS range associated with them */
-	if (fsdh->fs_had_range)
-	{
-		rc = sqlite3_exec(sqldb, DB_SCHEMA_MLS, NULL, 0, &errmsg);
-	}
-	else
-	{
-		rc = sqlite3_exec(sqldb, DB_SCHEMA_NONMLS, NULL, 0, &errmsg);
-	}
-	if (rc != SQLITE_OK)
-	{
-		fprintf(stderr, "SQL error while creating database(%d): %s\n", rc, errmsg);
-		sqlite3_free(errmsg);
-		sqlite3_close(sqldb);
-		return -1;
-	}
-
-	/* now we basically just go through the old data struct moving */
-	/* the data to the places it should be for our sqlite3 sqldb */
-	sprintf(stmt, "BEGIN TRANSACTION");
-	rc = sqlite3_exec(sqldb, stmt, NULL, 0, &errmsg);
-	if (rc != SQLITE_OK)
-		goto bad;
-
-/******************************************************************
- * replace the following groups with apol_bst_inorder_map() calls
- ******************************************************************/
-
-	/* setup state for map functions */
-	ssd.stmt = stmt;	       /* buffer for sql statement */
-	ssd.errmsg = &errmsg;	       /* location to store the error message */
-	ssd.sqldb = sqldb;	       /* database */
-
-	ssd.id = 0;		       /* ids begin at 0 */
-	rc = apol_bst_inorder_map(fsdh->type_tree, (int (*)(const void *, void *))INSERT_TYPES, &ssd);
-	if (rc != SQLITE_OK)
-		goto bad;
-
-	ssd.id = 0;
-	rc = apol_bst_inorder_map(fsdh->user_tree, (int (*)(const void *, void *))INSERT_USERS, &ssd);
-	if (rc != SQLITE_OK)
-		goto bad;
-
-	if (fsdh->fs_had_range)
-	{
-		ssd.id = 0;
-		rc = apol_bst_inorder_map(fsdh->range_tree, (int (*)(const void *, void *))INSERT_RANGE, &ssd);
-		if (rc != SQLITE_OK)
-			goto bad;
-	}
-
-	ssd.id = 0;
-	rc = apol_bst_inorder_map(fsdh->file_tree, (int (*)(const void *, void *))INSERT_FILE, &ssd);
-	if (rc != SQLITE_OK)
-		goto bad;
-
-	sprintf(stmt, "END TRANSACTION");
-	rc = sqlite3_exec(sqldb, stmt, NULL, 0, &errmsg);
-	if (rc != SQLITE_OK)
-		goto bad;
-	gethostname(hostname, 50);
-	time(&mytime);
-	sprintf(stmt, "insert into info (key,value) values ('dbversion', 2);"
-		"insert into info (key,value) values ('hostname','%s');"
-		"insert into info (key,value) values ('datetime','%s');", hostname, ctime(&mytime));
-	rc = sqlite3_exec(sqldb, stmt, NULL, 0, &errmsg);
-	if (rc != SQLITE_OK)
-		goto bad;
-
-	return 0;
-
-      bad:
-	fprintf(stderr, "SQL error\n\tStmt was :%s\nError was:\t%s\n", stmt, errmsg);
-	sqlite3_free(errmsg);
-	return -1;
-}
-
-#endif

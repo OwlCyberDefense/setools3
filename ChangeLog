@@ -1,3 +1,18 @@
+2007-06-19  J. Tang  <jtang@tresys.com>
+
+	* Updated indexcon(1) to use new libsefs.
+
+	* Merged searchcon(1) functionality into findcon(1); man pages
+	updated.  searchcon(1) has been removed from SETools.
+
+	* libsefs.so.4 is now wrapped by SWIG, for Python, Java, and
+	Tcl.
+
+	* Rewrite of libsefs to meet coding standards.  libsefs.so.4 is an
+	object-oriented library that abstracts away filesystems,
+	file_contexts files, and databases into a unified object that can
+	be queried easily.
+
 2007-06-18  J. Tang  <jtang@tresys.com>
 
 	* libpoldiff/include/poldiff/rbac_diff.h: Added
