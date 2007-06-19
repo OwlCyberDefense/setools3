@@ -191,16 +191,16 @@ apol_policy_t *sefs_fclist::associatePolicy() const
 	return policy;
 }
 
-sefs_fclist_type_e sefs_fclist::type() const
+sefs_fclist_type_e sefs_fclist::fclist_type() const
 {
-	return fclist_type;
+	return _fclist_type;
 }
 
 /******************** protected functions below ********************/
 
 sefs_fclist::sefs_fclist(sefs_fclist_type_e type, sefs_callback_fn_t callback, void *varg)throw(std::bad_alloc)
 {
-	fclist_type = type;
+	_fclist_type = type;
 	_callback = callback;
 	_varg = varg;
 	policy = NULL;
@@ -375,10 +375,10 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 			return static_cast < struct sefs_context_node *>(v);
 		}
 
-		apol_mls_range_t *range = NULL;
+		apol_mls_range_t *apol_range = NULL;
 		if (m != NULL)
 		{
-			if ((range = apol_mls_range_create_from_literal(m)) == NULL)
+			if ((apol_range = apol_mls_range_create_from_literal(m)) == NULL)
 			{
 				SEFS_ERR("%s", strerror(errno));
 				throw std::bad_alloc();
@@ -388,13 +388,15 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 		if ((context = apol_context_create()) == NULL)
 		{
 			SEFS_ERR("%s", strerror(errno));
+			apol_mls_range_destroy(&apol_range);
 			throw std::runtime_error(strerror(errno));
 		}
 		if (apol_context_set_user(NULL, context, u) < 0 ||
 		    apol_context_set_role(NULL, context, r) < 0 || apol_context_set_type(NULL, context, t) < 0 ||
-		    apol_context_set_range(NULL, context, range) < 0)
+		    apol_context_set_range(NULL, context, apol_range) < 0)
 		{
 			SEFS_ERR("%s", strerror(errno));
+			apol_mls_range_destroy(&apol_range);
 			throw std::runtime_error(strerror(errno));
 		}
 
@@ -518,13 +520,13 @@ void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy
 	}
 }
 
-sefs_fclist_type_e sefs_fclist_get_type(const sefs_fclist_t * fclist)
+sefs_fclist_type_e sefs_fclist_get_fclist_type(const sefs_fclist_t * fclist)
 {
 	if (fclist == NULL)
 	{
 		return SEFS_FCLIST_TYPE_NONE;
 	}
-	return fclist->type();
+	return fclist->fclist_type();
 }
 
 /******************** private static functions below ********************/

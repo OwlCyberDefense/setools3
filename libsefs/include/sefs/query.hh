@@ -109,7 +109,7 @@ class sefs_query
 	/**
 	 * Set a sefs query to match only entries with contexts with a
 	 * range of \a range.
-	 * @param range Limit query to only contexts matching this
+	 * @param name Limit query to only contexts matching this
 	 * string representing the MLS range, or NULL to clear this
 	 * field.  The string will be duplicated.
 	 * @param match If non-zero and the fclist queried has access
@@ -125,7 +125,7 @@ class sefs_query
 	 * @see sefs_fclist::associatePolicy() to associate a policy
 	 * with a fclist.
 	 */
-	void range(const char *range, int match) throw(std::bad_alloc);
+	void range(const char *name, int match) throw(std::bad_alloc);
 
 	/**
 	 * Set a sefs query to match only entries with object class \a
@@ -156,40 +156,40 @@ class sefs_query
 	 * \a path is a substring.  (If sefs_query::regex() is set to
 	 * true, \a path is instead treated as a regular expression.)
 	 *
-	 * @param path Limit query to only entries containing this
+	 * @param str Limit query to only entries containing this
 	 * path, or NULL to clear this field.  The string will be
 	 * duplicated.
 	 * @exception std::bad_alloc Out of memory.
 	 */
-	void path(const char *path) throw(std::bad_alloc);
+	void path(const char *str) throw(std::bad_alloc);
 
 	/**
 	 * Set a sefs query to match only entries with a given inode
 	 * number.
-	 * @param inode Limit query to only entries with this inode
+	 * @param ino Limit query to only entries with this inode
 	 * number, or 0 to clear this field.
 	 */
-	void inode(ino64_t inode);
+	void inode(ino64_t ino);
 
 	/**
 	 * Set a sefs query to match only entries with a given device
 	 * name.
-	 * @param dev Limit query to only entries with this device
-	 * number, or NULL to clear this string.  The string will be
+	 * @param str Limit query to only entries with this device
+	 * name, or NULL to clear this string.  The string will be
 	 * duplicated.
 	 * @exception std::bad_alloc Out of memory.
 	 * @see sefs_filesystem::getDevName() to convert between dev_t
 	 * and a name.
 	 */
-	void dev(const char *dev) throw(std::bad_alloc);
+	void dev(const char *str) throw(std::bad_alloc);
 
 	/**
 	 * Set a sefs query to use regular expression matching for
 	 * string fields.
-	 * @param regex If true then use regular expression matching;
+	 * @param r If true then use regular expression matching;
 	 * otherwise use only exact string matching.
 	 */
-	void regex(bool regex);
+	void regex(bool r);
 
       private:
 	/**

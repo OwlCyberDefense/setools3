@@ -107,7 +107,7 @@ enum
 				          subtree, instead just continue with its next
 				          sibling. */
 # define FTW_SKIP_SUBTREE FTW_SKIP_SUBTREE
-	FTW_SKIP_SIBLINGS = 3,	       /* Continue with FTW_DP callback for current directory
+	FTW_SKIP_SIBLINGS = 3	       /* Continue with FTW_DP callback for current directory
 				          (if FTW_DEPTH) and then its siblings.  */
 # define FTW_SKIP_SIBLINGS FTW_SKIP_SIBLINGS
 };

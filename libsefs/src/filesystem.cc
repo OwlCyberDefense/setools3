@@ -151,11 +151,11 @@ static apol_vector_t *filesystem_find_mount_points(const char *dir) throw(std::b
 
 /******************** public functions below ********************/
 
-sefs_filesystem::sefs_filesystem(const char *root, sefs_callback_fn_t msg_callback, void *varg)throw(std::bad_alloc, std::invalid_argument, std::runtime_error):sefs_fclist(SEFS_FCLIST_TYPE_FILESYSTEM,
+sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_callback, void *varg)throw(std::bad_alloc, std::invalid_argument, std::runtime_error):sefs_fclist(SEFS_FCLIST_TYPE_FILESYSTEM,
 	    msg_callback,
 	    varg)
 {
-	if (root == NULL)
+	if (new_root == NULL)
 	{
 		SEFS_ERR("%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -168,7 +168,7 @@ sefs_filesystem::sefs_filesystem(const char *root, sefs_callback_fn_t msg_callba
 	{
 		// check that root exists and is readable
 		struct stat64 sb;
-		if (stat64(root, &sb) != 0 && !S_ISDIR(sb.st_mode))
+		if (stat64(new_root, &sb) != 0 && !S_ISDIR(sb.st_mode))
 		{
 			SEFS_ERR("%s", strerror(EINVAL));
 			errno = EINVAL;
@@ -177,9 +177,9 @@ sefs_filesystem::sefs_filesystem(const char *root, sefs_callback_fn_t msg_callba
 
 		// determine if filesystem is MLS or not
 		security_context_t scon;
-		if (filesystem_lgetfilecon(root, &scon) < 0)
+		if (filesystem_lgetfilecon(new_root, &scon) < 0)
 		{
-			SEFS_ERR("Could not read SELinux file context for %s.", root);
+			SEFS_ERR("Could not read SELinux file context for %s.", new_root);
 			throw std::runtime_error(strerror(errno));
 		}
 		context_t con;
@@ -197,12 +197,12 @@ sefs_filesystem::sefs_filesystem(const char *root, sefs_callback_fn_t msg_callba
 		}
 		context_free(con);
 
-		if ((_root = strdup(root)) == NULL)
+		if ((_root = strdup(new_root)) == NULL)
 		{
 			SEFS_ERR("%s", strerror(errno));
 			throw std::bad_alloc();
 		}
-		_mounts = filesystem_find_mount_points(root);
+		_mounts = filesystem_find_mount_points(new_root);
 	}
 	catch(...)
 	{

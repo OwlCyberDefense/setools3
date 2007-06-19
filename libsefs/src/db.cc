@@ -496,7 +496,7 @@ int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), con
 
 		char *insert_stmt = NULL;
 		if (asprintf
-		    (&insert_stmt, "INSERT INTO paths VALUES ('%s', %lld, %d, %d, %d, %d, %d, %u, '%s')", path, inode, dev_id,
+		    (&insert_stmt, "INSERT INTO paths VALUES ('%s', %lu, %d, %d, %d, %d, %d, %u, '%s')", path, inode, dev_id,
 		     user_id, role_id, type_id, range_id, objclass, link_target) < 0)
 		{
 			db_err(dbc->_db, "%s", strerror(errno));
@@ -848,7 +848,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		if (query->_inode != 0)
 		{
 			if (apol_str_appendf(&select_stmt, &len,
-					     "%s (paths.ino = %lld)", (where_added ? " AND" : " WHERE"), query->_inode) < 0)
+					     "%s (paths.ino = %lu)", (where_added ? " AND" : " WHERE"), query->_inode) < 0)
 			{
 				SEFS_ERR("%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));

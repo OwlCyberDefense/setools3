@@ -114,15 +114,15 @@ void sefs_query::type(const char *name, bool indirect) throw(std::bad_alloc)
 	}
 }
 
-void sefs_query::range(const char *range, int match) throw(std::bad_alloc)
+void sefs_query::range(const char *name, int match) throw(std::bad_alloc)
 {
-	if (range != _range)
+	if (name != _range)
 	{
 		free(_range);
 		_range = NULL;
-		if (range != NULL)
+		if (name != NULL)
 		{
-			if ((_range = strdup(range)) == NULL)
+			if ((_range = strdup(name)) == NULL)
 			{
 				throw std::bad_alloc();
 			}
@@ -152,40 +152,40 @@ void sefs_query::objectClass(const char *name)
 	}
 }
 
-void sefs_query::path(const char *path) throw(std::bad_alloc)
+void sefs_query::path(const char *str) throw(std::bad_alloc)
 {
-	if (path != _path)
+	if (str != _path)
 	{
 		free(_path);
 		_path = NULL;
-		if (path != NULL && (_path = strdup(path)) == NULL)
+		if (str != NULL && (_path = strdup(str)) == NULL)
 		{
 			throw std::bad_alloc();
 		}
 	}
 }
 
-void sefs_query::inode(ino64_t inode)
+void sefs_query::inode(ino64_t ino)
 {
-	_inode = inode;
+	_inode = ino;
 }
 
-void sefs_query::dev(const char *dev) throw(std::bad_alloc)
+void sefs_query::dev(const char *str) throw(std::bad_alloc)
 {
-	if (dev != _dev)
+	if (str != _dev)
 	{
 		free(_dev);
 		_dev = NULL;
-		if (dev != NULL && (_dev = strdup(dev)) == NULL)
+		if (str != NULL && (_dev = strdup(str)) == NULL)
 		{
 			throw std::bad_alloc();
 		}
 	}
 }
 
-void sefs_query::regex(bool regex)
+void sefs_query::regex(bool r)
 {
-	_regex = regex;
+	_regex = r;
 }
 
 /******************** private functions below ********************/

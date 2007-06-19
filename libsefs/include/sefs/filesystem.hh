@@ -62,8 +62,8 @@ class sefs_filesystem:public sefs_fclist
 	 * Allocate and return a new sefs filesystem structure
 	 * representing the filesystem rooted at directory \a root.
 	 * <b>Be aware that the constructor is not thread-safe.</b>
-	 * @param root Directory to use as the root of the filesystem.
-	 * This object represents this directory and all
+	 * @param new_root Directory to use as the root of the
+	 * filesystem.  This object represents this directory and all
 	 * subdirectories, including other mounted filesystems.
 	 * @param msg_callback Callback to invoke as errors/warnings
 	 * are generated.  If NULL, write messages to standard error.
@@ -74,7 +74,7 @@ class sefs_filesystem:public sefs_fclist
 	 * @exception runtime_error Could not open root directory or
 	 * /etc/mtab.
 	 */
-	 sefs_filesystem(const char *root, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
+	 sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_callback, void *varg) throw(std::bad_alloc,
 											      std::invalid_argument,
 											      std::runtime_error);
 

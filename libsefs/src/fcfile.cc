@@ -244,19 +244,21 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 				else
 				{
 					path_matched = false;
-					size_t len = strlen(e->_path);
-					char anchored_path[len + 3];
-					anchored_path[0] = '^';
-					memcpy(anchored_path + 1, e->_path, len);
-					anchored_path[len + 1] = '$';
-					anchored_path[len + 2] = '\0';
-					regex_t regex;
-
-					if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
-					{
+					char *anchored_path = NULL;
+					if (asprintf(&anchored_path, "^%s$", e->_path) < 0) {
 						SEFS_ERR("%s", strerror(errno));
 						throw std::runtime_error(strerror(errno));
 					}
+
+					regex_t regex;
+					if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
+					{
+						free(anchored_path);
+						SEFS_ERR("%s", strerror(errno));
+						throw std::runtime_error(strerror(errno));
+					}
+					free(anchored_path);
+
 					bool compval = query_str_compare(query->_path, anchored_path, &regex, true);
 					regfree(&regex);
 					if (compval)

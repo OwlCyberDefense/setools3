@@ -128,16 +128,16 @@ char *sefs_entry::toString() const throw(std::bad_alloc)
 
 /******************** private functions below ********************/
 
-sefs_entry::sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node * context, uint32_t objectClass,
-		       const char *new_path, const char *origin)
+sefs_entry::sefs_entry(class sefs_fclist * fclist, const struct sefs_context_node * new_context, uint32_t new_objectClass,
+		       const char *new_path, const char *new_origin)
 {
 	_fclist = fclist;
-	_context = context;
-	_objectClass = objectClass;
+	_context = new_context;
+	_objectClass = new_objectClass;
 	_inode = 0;
 	_dev = NULL;
 	_path = new_path;
-	_origin = origin;
+	_origin = new_origin;
 }
 
 /******************** C functions below ********************/

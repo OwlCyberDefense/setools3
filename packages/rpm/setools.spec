@@ -18,8 +18,9 @@ Requires: setools-libs = %{version} setools-gui = %{version} setools-console = %
 %define libqpol_ver 1.3
 %define libapol_ver 4.1
 %define libpoldiff_ver 1.3
-%define libsefs_ver 4.0
+%define libpolsearch_ver 1.0
 %define libseaudit_ver 4.2
+%define libsefs_ver 4.0
 
 %description
 SETools is a collection of graphical tools, command-line tools, and
@@ -33,7 +34,7 @@ License: LGPL
 Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 sqlite >= 3.2.0 libxml2
-Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libsefs = %{libsefs_ver} libseaudit = %{libseaudit_ver}
+Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libpolsearch = %{libpolsearch_ver} libseaudit = %{libseaudit_ver} libsefs = %{libsefs_ver} 
 BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
 BuildRequires: sqlite-devel >= 3.2.0 libxml2-devel
@@ -49,16 +50,19 @@ This package includes the following run-time libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
+  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
+  libsefs       SELinux file contexts library
 
 %package libs-python
 License: LGPL
 Summary: Python bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = %{version} python2 >= 2.3
-Provides: libqpol-python = %{libqpol_ver} libapol-python = %{libapol_ver} libpoldiff-python = %{libpoldiff_ver} libseaudit-python = %{libseaudit_ver}
+Provides: libqpol-python = %{libqpol_ver} libapol-python = %{libapol_ver}
+Provides: libpoldiff-python = %{libpoldiff_ver} libpolsearch-python = %{libpolsearch_ver}
+Provides: libseaudit-python = %{libseaudit_ver} libsefs-python = %{libsefs_ver}
 BuildRequires: python2-devel >= 2.3 swig >= 1.3.28
 
 %description libs-python
@@ -69,16 +73,19 @@ This package includes Python bindings for the following libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
+  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
+  libsefs       SELinux file contexts library
 
 %package libs-java
 License: LGPL
 Summary: Java bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = %{version} java >= 1.2
-Provides: libqpol-java = %{libqpol_ver} libapol-java = %{libapol_ver} libpoldiff-java = %{libpoldiff_ver} libseaudit-java = %{libseaudit_ver}
+Provides: libqpol-java = %{libqpol_ver} libapol-java = %{libapol_ver}
+Provides: libpoldiff-java = %{libpoldiff_ver} libpolsearch-java = %{libpolsearch_ver}
+Provides: libseaudit-java = %{libseaudit_ver} libsefs-java = %{libsefs_ver}
 BuildRequires: java-devel >= 1.2 swig >= 1.3.28
 
 %description libs-java
@@ -89,16 +96,19 @@ This package includes Java bindings for the following libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
+  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
+  libsefs       SELinux file contexts library
 
 %package libs-tcl
 License: LGPL
 Summary: Tcl bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = %{version} tcl >= 8.4.9
-Provides: libqpol-tcl = %{libqpol_ver} libapol-tcl = %{libapol_ver} libpoldiff-tcl = %{libpoldiff_ver} libseaudit-tcl = %{libseaudit_ver}
+Provides: libqpol-tcl = %{libqpol_ver} libapol-tcl = %{libapol_ver}
+Provides: libpoldiff-tcl = %{libpoldiff_ver} libpolsearch-tcl = %{libpolsearch_ver}
+Provides: libseaudit-tcl = %{libseaudit_ver} libsefs-tcl = %{libsefs_ver}
 BuildRequires: tcl-devel >= 8.4.9 swig >= 1.3.28
 
 %description libs-tcl
@@ -109,16 +119,17 @@ This package includes Tcl bindings for the following libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
+  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
+  libsefs       SELinux file contexts library
 
 %package devel
 License: LGPL
 Summary: Policy analysis development files for SELinux
 Group: Development/Libraries
 Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27   setools-libs = %{version}
-BuildRequires: sqlite3-devel >= 3.2.0 libxml2-devel
+BuildRequires: sqlite-devel >= 3.2.0 libxml2-devel
 
 %description devel
 SETools is a collection of graphical tools, command-line tools, and
@@ -129,15 +140,16 @@ libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
+  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
+  libsefs       SELinux file contexts library
 
 %package console
 AutoReqProv: no
 Summary: Policy analysis command-line tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.1 libseaudit >= 4.0
+Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.3 libsefs >= 3.1 libseaudit >= 4.0 libsefs >= 4.0
 Requires: libselinux >= 1.30
 
 %description console
@@ -156,8 +168,9 @@ This package includes the following console tools:
 AutoReqProv: no
 Summary: Policy analysis graphical tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.2 libsefs >= 3.0 libseaudit >= 4.1
+Requires: libqpol >= 1.2 libapol >= 4.1 libpoldiff >= 1.3 libseaudit >= 4.1
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
+Requires: libapol-tcl >= 4.1 libsefs-tcl >= 4.0
 Requires: glib2 gtk2 >= 2.4 libxml2 libglade2
 BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
 
@@ -219,6 +232,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libpoldiff.so.%{libpoldiff_ver}
 %{_libdir}/libpoldiff.so.1
 %{_libdir}/libpoldiff.so
+%{_libdir}/libpolsearch.so.%{libpolsearch_ver}
+%{_libdir}/libpolsearch.so.1
+%{_libdir}/libpolsearch.so
 %{_libdir}/libsefs.so.%{libsefs_ver}
 %{_libdir}/libsefs.so.4
 %{_libdir}/libsefs.so
@@ -252,6 +268,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{pkgpyexecdir}/_poldiff.so.%{libpoldiff_ver}
 %{pkgpyexecdir}/_poldiff.so.1
 %attr(755,root,root) %{pkgpyexecdir}/_poldiff.so
+%{pkgpythondir}/polsearch.py
+%{pkgpythondir}/polsearch.pyc
+%{pkgpythondir}/polsearch.pyo
+%{pkgpyexecdir}/_polsearch.so.%{libpolsearch_ver}
+%{pkgpyexecdir}/_polsearch.so.1
+%attr(755,root,root) %{pkgpyexecdir}/_polsearch.so
 %{pkgpythondir}/seaudit.py
 %{pkgpythondir}/seaudit.pyc
 %{pkgpythondir}/seaudit.pyo
@@ -261,9 +283,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %{pkgpythondir}/sefs.py
 %{pkgpythondir}/sefs.pyc
 %{pkgpythondir}/sefs.pyo
-%{pkgpyexecdir}/_sefs.so.%{libseaudit_ver}
+%{pkgpyexecdir}/_sefs.so.%{libsefs_ver}
 %{pkgpyexecdir}/_sefs.so.4
-%attr(755,root,root) %{pkgpyexecdir}/_seaudit.so
+%attr(755,root,root) %{pkgpyexecdir}/_sefs.so
 
 %files libs-java
 %defattr(-,root,root)
@@ -276,6 +298,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libjpoldiff.so.%{libpoldiff_ver}
 %{_libdir}/libjpoldiff.so.1
 %{_libdir}/libjpoldiff.so
+%{_libdir}/libjpolsearch.so.%{libpolsearch_ver}
+%{_libdir}/libjpolsearch.so.1
+%{_libdir}/libjpolsearch.so
 %{_libdir}/libjseaudit.so.%{libseaudit_ver}
 %{_libdir}/libjseaudit.so.4
 %{_libdir}/libjseaudit.so
@@ -285,6 +310,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{javalibdir}/qpol.jar
 %{javalibdir}/apol.jar
 %{javalibdir}/poldiff.jar
+%{javalibdir}/polsearch.jar
 %{javalibdir}/seaudit.jar
 %{javalibdir}/sefs.jar
 
@@ -296,6 +322,8 @@ rm -rf ${RPM_BUILD_ROOT}
 %{tcllibdir}/apol/pkgIndex.tcl
 %{tcllibdir}/poldiff/libtpoldiff.so.%{libpoldiff_ver}
 %{tcllibdir}/poldiff/pkgIndex.tcl
+%{tcllibdir}/polsearch/libtpolsearch.so.%{libpolsearch_ver}
+%{tcllibdir}/polsearch/pkgIndex.tcl
 %{tcllibdir}/seaudit/libtseaudit.so.%{libseaudit_ver}
 %{tcllibdir}/seaudit/pkgIndex.tcl
 %{tcllibdir}/sefs/libtsefs.so.%{libsefs_ver}
@@ -306,7 +334,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libqpol.a
 %{_libdir}/libapol.a
 %{_libdir}/libpoldiff.a
-%{_libdir}/libsefs.a
+%{_libdir}/libpolsearch.a
 %{_libdir}/libseaudit.a
 %{_libdir}/libsefs.a
 %{_includedir}/qpol/avrule_query.h
@@ -345,7 +373,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/apol/fscon-query.h
 %{_includedir}/apol/infoflow-analysis.h
 %{_includedir}/apol/isid-query.h
+%{_includedir}/apol/mls_level.h
 %{_includedir}/apol/mls-query.h
+%{_includedir}/apol/mls_range.h
 %{_includedir}/apol/netcon-query.h
 %{_includedir}/apol/perm-map.h
 %{_includedir}/apol/policy.h
@@ -378,10 +408,13 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/poldiff/type_diff.h
 %{_includedir}/poldiff/type_map.h
 %{_includedir}/poldiff/util.h
-%{_includedir}/sefs/file_contexts.h
-%{_includedir}/sefs/fsdata.h
-%{_includedir}/sefs/fshash.h
-%{_includedir}/sefs/util.h
+%{_includedir}/polsearch/criterion.hh
+%{_includedir}/polsearch/polsearch.hh
+%{_includedir}/polsearch/query.hh
+%{_includedir}/polsearch/string_list.hh
+%{_includedir}/polsearch/symbol_query.hh
+%{_includedir}/polsearch/test.hh
+%{_includedir}/polsearch/util.h
 %{_includedir}/seaudit/avc_message.h
 %{_includedir}/seaudit/bool_message.h
 %{_includedir}/seaudit/filter.h
@@ -399,6 +432,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/sefs/fclist.hh
 %{_includedir}/sefs/filesystem.hh
 %{_includedir}/sefs/query.hh
+%{_includedir}/sefs/util.h
 
 %files console
 %defattr(-,root,root)
@@ -406,7 +440,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/sesearch
 %{_bindir}/indexcon
 %{_bindir}/findcon
-%{_bindir}/replcon
+#%{_bindir}/replcon
 %{_bindir}/sechecker
 %{_bindir}/sediff
 %{_bindir}/seaudit-report
