@@ -74,6 +74,10 @@ class sefs_entry;
 class sefs_query;
 
 #define SEFS_MAP_FUNC_DEFINED
+
+/**
+ * Function invoked upon each matching file context entry during a query.
+ */
 typedef int (*sefs_fclist_map_fn_t) (sefs_fclist *, const sefs_entry *, void *);
 
 /**
@@ -103,6 +107,10 @@ class sefs_fclist
 	 * mapping.  Be aware that the entry may go out of scope upon
 	 * conclusion of runQueryMap(), so \a fn will need to clone
 	 * the entry if it needs it later.
+	 * <p>
+	 * <b>This function must not throw any exceptions.</b> Doing
+	 * so will most likely corrupt fclist's internal state.
+	 * Instead, return a negative value to abort processing.
 	 * @param data Arbitrary pointer to be passed into \fn as a
 	 * third parameter.
 	 * @return Last value returned by fn() (i.e., >= on success, <

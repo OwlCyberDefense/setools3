@@ -174,7 +174,7 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
 
     pack $left_f $mlsbox -side left -expand 1 -fill both
 
-    $dialog add -text "Ok" -command [list Apol_Context_Dialog::_okay $dialog]
+    $dialog add -text "OK" -command [list Apol_Context_Dialog::_okay $dialog]
     $dialog add -text "Cancel"
 }
 

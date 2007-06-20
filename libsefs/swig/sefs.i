@@ -36,6 +36,14 @@
 
 %import apol.i
 
+#ifdef SWIGPYTHON
+
+%typemap(out) time_t {
+	$result = PyInt_FromLong((long) $1);
+}
+
+#endif  // end of python specific code
+
 #ifdef SWIGJAVA
 
 /* handle size_t correctly in java as architecture independent */
@@ -60,6 +68,9 @@ import com.tresys.setools.apol.*;
 import com.tresys.setools.qpol.*;
 import com.tresys.setools.apol.*;
 %}
+
+%apply long { time_t }
+
 #else
 /* not in java so handle size_t as architecture dependent */
 #ifdef SWIGWORDSIZE64
@@ -67,9 +78,11 @@ typedef uint64_t size_t;
 #else
 typedef uint32_t size_t;
 #endif
-#endif
+
+#endif  // end of Java specific code
 
 #ifdef SWIGTCL
+
 /* implement a custom non thread-safe error handler */
 %{
 static char *message = NULL;
@@ -97,7 +110,12 @@ SWIGEXPORT int Tsefs_Init(Tcl_Interp *interp) {
 }
 %}
 
-#endif
+%typemap(out) time_t {
+	Tcl_SetObjResult(interp, Tcl_NewLongObj((long) $1));
+}
+
+#endif  // end of Tcl specific code
+
 
 %nodefaultctor;
 

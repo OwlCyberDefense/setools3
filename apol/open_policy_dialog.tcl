@@ -138,7 +138,7 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     trace add variable Apol_Open_Policy_Dialog::vars(path_type) write \
         [list Apol_Open_Policy_Dialog::togglePathType \
              [list $mlabel $vlabel $plabel] $dis_bg]
-    $dialog add -text "Ok" -command Apol_Open_Policy_Dialog::tryOpenPolicy \
+    $dialog add -text "OK" -command Apol_Open_Policy_Dialog::tryOpenPolicy \
         -state disabled
     $dialog add -text "Cancel"
 }

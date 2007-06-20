@@ -81,7 +81,7 @@ proc Apol_Range_Dialog::_create_dialog {parent} {
     grid columnconfigure $f 0 -weight 1 -uniform 1 -pad 4
     grid columnconfigure $f 1 -weight 1 -uniform 1 -pad 4
 
-    $dialog add -text "Ok" -command [list Apol_Range_Dialog::_okay $dialog]
+    $dialog add -text "OK" -command [list Apol_Range_Dialog::_okay $dialog]
     $dialog add -text "Cancel"
 }
 

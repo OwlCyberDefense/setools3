@@ -194,7 +194,7 @@ proc Apol_Perms_Map::_createEditDialog {} {
     # delay setting the labels' text until [_refresh_edit_dialog], to
     # see if anything is unmapped
 
-    $dialog add -text "Ok" -command Apol_Perms_Map::_okay
+    $dialog add -text "OK" -command Apol_Perms_Map::_okay
     $dialog add -text "Apply" -command Apol_Perms_Map::_apply
     $dialog add -text "Cancel" -command Apol_Perms_Map::_cancel
 

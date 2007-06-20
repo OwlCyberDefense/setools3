@@ -36,7 +36,8 @@
 #include <apol/policy.h>
 #include <apol/policy-path.h>
 #include <apol/util.h>
-
+#include <sefs/db.hh>
+#include <sefs/filesystem.hh>
 %}
 
 /* implement a custom non thread-safe error handler */
@@ -54,7 +55,8 @@ extern void apol_tcl_clear_info_string(void);
 extern int apol_tcl_get_info_level(void);
 extern char *apol_tcl_get_info_string(void);
 extern void apol_tcl_set_info_string(apol_policy_t *p, const char *s);
-extern apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t *ppath, Tcl_Interp *interp);
+extern void apol_tcl_route_apol_to_string(void *arg, const apol_policy_t * p, int level, const char *fmt, va_list ap);
+extern void apol_tcl_route_sefs_to_string(void *arg, const sefs_fclist * s, int level, const char *fmt, va_list ap);
 extern int msg_level;
 extern char *message;
 
@@ -83,18 +85,30 @@ static char *tcl_get_error(void)
  * needed so that the callback can properly update apol's progress
  * dialog without deadlocking itself.
  */
-%newobject wrap_apol_tcl_open_policy;
+%newobject apol_tcl_open_policy;
 %typemap (in) (const apol_policy_path_t *ppath, Tcl_Interp *interp) {
-  int res = SWIG_ConvertPtr($input,SWIG_as_voidptrptr(&$1), $1_descriptor, 0);
+  int res = SWIG_ConvertPtr($input, SWIG_as_voidptrptr(&$1), $1_descriptor, 0);
   if (res) {
     SWIG_exception_fail(SWIG_ArgError(res), "in method '" "apol_tcl_open_policy" "', argument " "1"" of type '" "apol_policy_path_t const *""'"); 
   }
   $2 = interp;
 };
-%rename(apol_tcl_open_policy) wrap_apol_tcl_open_policy;
 %inline %{
-	apol_policy_t *wrap_apol_tcl_open_policy(const apol_policy_path_t *ppath, Tcl_Interp *interp) {
-		apol_policy_t *p = apol_tcl_open_policy(ppath, interp);
+	/**
+	 * Open a policy file, either source or binary, on disk.  Note
+	 * that this will not load neverallows; apol must rebuild
+	 * neverallows (and call qpol_policy_build_syn_rule_table())
+	 * when it needs to.  If the file was opened successfully then
+	 * allocate and return an apol_policy_t object.  Otherwise
+	 * throw an error and return a string that describes the
+	 * error.
+	 *
+	 * @param ppath apol_policy_path object representing policy to
+	 * open.
+	 */
+	apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t *ppath, Tcl_Interp *interp) {
+		apol_policy_t *p = apol_policy_create_from_policy_path(ppath, QPOL_POLICY_OPTION_NO_NEVERALLOWS,
+								       apol_tcl_route_apol_to_string, interp);
 		if (p == NULL) {
 			SWIG_exception(SWIG_RuntimeError, "Could not open policy");
 		}
@@ -103,9 +117,9 @@ static char *tcl_get_error(void)
 	}
 
 	static int avrule_sort(const void *a, const void *b, void *arg) {
-		const qpol_avrule_t *r1 = a;
-		const qpol_avrule_t *r2 = b;
-		apol_policy_t *p = arg;
+		const qpol_avrule_t *r1 = static_cast<const qpol_avrule_t *>(a);
+		const qpol_avrule_t *r2 = static_cast<const qpol_avrule_t *>(b);
+		apol_policy_t *p = static_cast<apol_policy_t *>(arg);
 		qpol_policy_t *q = apol_policy_get_qpol(p);
 
 		uint32_t rule_type1, rule_type2;
@@ -172,9 +186,9 @@ static char *tcl_get_error(void)
 	}
 
 	static int terule_sort(const void *a, const void *b, void *arg) {
-		const qpol_terule_t *r1 = a;
-		const qpol_terule_t *r2 = b;
-		apol_policy_t *p = arg;
+		const qpol_terule_t *r1 = static_cast<const qpol_terule_t *>(a);
+		const qpol_terule_t *r2 = static_cast<const qpol_terule_t *>(b);
+		apol_policy_t *p = static_cast<apol_policy_t *>(arg);
 		qpol_policy_t *q = apol_policy_get_qpol(p);
 
 		uint32_t rule_type1, rule_type2;
@@ -275,6 +289,58 @@ extern char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *ru
 void apol_tcl_avrule_sort(apol_policy_t *policy, apol_vector_t *v);
 void apol_tcl_terule_sort(apol_policy_t *policy, apol_vector_t *v);
 unsigned int apol_tcl_get_policy_version(apol_policy_t *policy);
+
+%{
+	/**
+	 * Open a sefs database from file.
+	 *
+	 * @param filename Database's filename.
+	 */
+	sefs_db *apol_tcl_open_database(const char * filename, Tcl_Interp * interp)
+	{
+		try {
+			return new sefs_db(filename, apol_tcl_route_sefs_to_string, interp);
+		}
+		catch (...) {
+			return NULL;
+		}
+	}
+
+	/**
+	 * Construct an in-memory database from part of a filesystem.
+	 *
+	 * @param filename Starting root directory.
+	 */
+	sefs_db *apol_tcl_open_database_from_dir(const char * filename, Tcl_Interp * interp)
+	{
+		sefs_filesystem *fs = NULL;
+		sefs_db *db = NULL;
+		try {
+			fs = new sefs_filesystem(filename, apol_tcl_route_sefs_to_string, interp);
+			db = new sefs_db(fs, apol_tcl_route_sefs_to_string, interp);
+		}
+		catch (...) {
+			delete fs;
+			delete db;
+			return NULL;
+		}
+		delete fs;
+		return db;
+	}
+%}
+/* Major hackery here to pass in the Tcl interpreter object as
+ * sefs_db's callback argument.  This is needed so that the callback
+ * can properly update apol's progress dialog without deadlocking
+ * itself.
+ */
+%typemap (in) (const char * filename, Tcl_Interp *interp) {
+  $1 = Tcl_GetString($input);
+  $2 = interp;
+};
+sefs_db *apol_tcl_open_database(const char * filename, Tcl_Interp * interp);
+sefs_db *apol_tcl_open_database_from_dir(const char * filename, Tcl_Interp * interp);
+%newobject apol_tcl_open_database;
+%newobject apol_tcl_open_database_from_dir;
 
 // disable the exception handler, otherwise it will delete the error
 // message when this function gets called
