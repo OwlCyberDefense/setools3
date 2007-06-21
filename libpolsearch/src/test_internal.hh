@@ -71,17 +71,21 @@ extern "C"
 	int result_cmp(const void *a, const void *b, void *data);
 
 	/**
-	* Merge the results from a single test into the master list of results.
-	* Result and proof entries will be duplicated as needed such that it is
-	* save to call apol_vector_destroy() on \a cur_results after calling this
-	* function.
-	* @param policy The policy from which the elements in the results come.
-	* @param master_results The master list of results from all tests run.
-	* @param cur_results The list of results from the most recent test run.
-	* @exception std::bad_alloc Could not allocate space to duplicate entries.
-	*/
+	 * Merge the results from a single test into the master list of results.
+	 * Result and proof entries will be duplicated or destroyed as needed such
+	 * that it is safe to call apol_vector_destroy() on \a cur_results after
+	 * calling this function.
+	 * @param policy The policy from which the elements in the results come.
+	 * @param master_results The master list of results from all tests run.
+	 * @param cur_results The list of results from the most recent test run.
+	 * @param m The matching method used for multiple tests.
+	 * If POLSEARCH_MATCH_ALL, entries must appear in both vectors to be reported;
+	 * if POLSEARCH_MATCH_ANY, new entries from \a cur_results will be added to
+	 * \a master_results.
+	 * @exception std::bad_alloc Could not allocate space to duplicate entries.
+	 */
 	void merge_results(const apol_policy_t * policy, apol_vector_t * master_results,
-			   apol_vector_t * cur_results) throw(std::bad_alloc);
+			   apol_vector_t * cur_results, polsearch_match_e m) throw(std::bad_alloc);
 
 	/**
 	 * Free callback for polsearch_proof objects in apol vectors.
@@ -108,15 +112,15 @@ extern "C"
 	int proof_cmp(const void *a, const void *b, void *data);
 
 	/**
-	* Merge the proof from a single result into the master list of proof.
-	* Proof entries will be duplicated as needed such that it is
-	* save to call apol_vector_destroy() on \a cur_proof after calling this
-	* function.
-	* @param policy The policy from which the elements in the results come.
-	* @param master_proof The master list of proof from all tests run.
-	* @param cur_proof The list of proof from the most recent test run.
-	* @exception std::bad_alloc Could not allocate space to duplicate entries.
-	*/
+	 * Merge the proof from a single result into the master list of proof.
+	 * Proof entries will be duplicated as needed such that it is
+	 * save to call apol_vector_destroy() on \a cur_proof after calling this
+	 * function.
+	 * @param policy The policy from which the elements in the results come.
+	 * @param master_proof The master list of proof from all tests run.
+	 * @param cur_proof The list of proof from the most recent test run.
+	 * @exception std::bad_alloc Could not allocate space to duplicate entries.
+	 */
 	void merge_proof(const apol_policy_t * policy, apol_vector_t * master_proof,
 			 apol_vector_t * cur_proof) throw(std::bad_alloc);
 

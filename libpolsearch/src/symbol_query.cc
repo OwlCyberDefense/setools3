@@ -43,6 +43,7 @@
 
 using std::bad_alloc;
 using std::invalid_argument;
+using std::runtime_error;
 using std::string;
 
 polsearch_symbol_query::polsearch_symbol_query(polsearch_symbol_e sym_type, polsearch_match_e m) throw(std::bad_alloc, std::invalid_argument):polsearch_query
@@ -98,69 +99,106 @@ apol_vector_t *polsearch_symbol_query::getValidTests() const throw(std::bad_allo
 static apol_vector_t *get_all_symbols(const apol_policy_t * p, polsearch_symbol_e sym_type) throw(std::bad_alloc)
 {
 	apol_vector_t *v = NULL;
+	int retv = 0;
 	switch (sym_type)
 	{
 	case POLSEARCH_SYMBOL_TYPE:
 	{
 		apol_type_query_t *q = apol_type_query_create();
-		apol_type_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_type_get_by_query(p, q, &v);
 		apol_type_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_ATTRIBUTE:
 	{
 		apol_attr_query_t *q = apol_attr_query_create();
-		apol_attr_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_attr_get_by_query(p, q, &v);
 		apol_attr_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_ROLE:
 	{
 		apol_role_query_t *q = apol_role_query_create();
-		apol_role_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_role_get_by_query(p, q, &v);
 		apol_role_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_USER:
 	{
 		apol_user_query_t *q = apol_user_query_create();
-		apol_user_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_user_get_by_query(p, q, &v);
 		apol_user_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_CLASS:
 	{
 		apol_class_query_t *q = apol_class_query_create();
-		apol_class_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_class_get_by_query(p, q, &v);
 		apol_class_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_COMMON:
 	{
 		apol_common_query_t *q = apol_common_query_create();
-		apol_common_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_common_get_by_query(p, q, &v);
 		apol_common_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_CATEGORY:
 	{
 		apol_cat_query_t *q = apol_cat_query_create();
-		apol_cat_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_cat_get_by_query(p, q, &v);
 		apol_cat_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_LEVEL:
 	{
 		apol_level_query_t *q = apol_level_query_create();
-		apol_level_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_level_get_by_query(p, q, &v);
 		apol_level_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_BOOL:
 	{
 		apol_bool_query_t *q = apol_bool_query_create();
-		apol_bool_get_by_query(p, q, &v);
+		if (!q)
+			throw bad_alloc();
+		retv = apol_bool_get_by_query(p, q, &v);
 		apol_bool_query_destroy(&q);
+		if (retv)
+			throw bad_alloc();
 		return v;
 	}
 	case POLSEARCH_SYMBOL_NONE:
@@ -172,7 +210,7 @@ static apol_vector_t *get_all_symbols(const apol_policy_t * p, polsearch_symbol_
 }
 
 apol_vector_t *polsearch_symbol_query::run(const apol_policy_t * policy,
-					   const sefs_fclist_t * fclist) const throw(std::bad_alloc)
+					   sefs_fclist_t * fclist) const throw(std::bad_alloc, std::runtime_error)
 {
 	apol_vector_t *master_results = apol_vector_create(free_result);
 	if (!master_results)
@@ -182,18 +220,31 @@ apol_vector_t *polsearch_symbol_query::run(const apol_policy_t * policy,
 	if (!Xcandidates)
 		throw bad_alloc();
 
-	apol_vector_t *cur_results = NULL;
-	for (size_t i; i < apol_vector_get_size(_tests) && apol_vector_get_size(Xcandidates); i++)
+	for (size_t i = 0; i < apol_vector_get_size(_tests); i++)
 	{
 		polsearch_test *cur = static_cast < polsearch_test * >(apol_vector_get_element(_tests, i));
-		cur_results = cur->run(policy, fclist, Xcandidates);
-		merge_results(policy, master_results, cur_results);
+		if (!polsearch_validate_test_condition(static_cast < polsearch_element_e > (_symbol_type), cur->testCond()) ||
+		    static_cast < polsearch_element_e > (_symbol_type) != cur->elementType())
+			throw runtime_error("Invalid test provided");
+	}
+
+	apol_vector_t *cur_results = NULL;
+	for (size_t i = 0; i < apol_vector_get_size(_tests) && apol_vector_get_size(Xcandidates); i++)
+	{
+		polsearch_test *cur = static_cast < polsearch_test * >(apol_vector_get_element(_tests, i));
+		cur_results = cur->run(policy, fclist, Xcandidates, (_match == POLSEARCH_MATCH_ALL));
+		merge_results(policy, master_results, cur_results, _match);
 		apol_vector_destroy(&cur_results);
+		// matching all tests but no results remain; stop checking and return empty vector
+		if (!apol_vector_get_size(master_results) && _match == POLSEARCH_MATCH_ALL)
+		{
+			return master_results;
+		}
 	}
 
 	//sort results
 	apol_vector_sort(master_results, result_cmp, const_cast < void *>(static_cast < const void *>(policy)));
-	for (size_t i; i < apol_vector_get_size(master_results); i++)
+	for (size_t i = 0; i < apol_vector_get_size(master_results); i++)
 	{
 		polsearch_result *tmp = static_cast < polsearch_result * >(apol_vector_get_element(master_results, i));
 		apol_vector_sort(tmp->proof(), proof_cmp, const_cast < void *>(static_cast < const void *>(policy)));
@@ -266,8 +317,7 @@ polsearch_symbol_e polsearch_symbol_query_get_symbol_type(const polsearch_symbol
 	return sq->symbolType();
 }
 
-apol_vector_t *polsearch_symbol_query_run(const polsearch_symbol_query_t * sq, const apol_policy_t * p,
-					  const sefs_fclist_t * fclist)
+apol_vector_t *polsearch_symbol_query_run(const polsearch_symbol_query_t * sq, const apol_policy_t * p, sefs_fclist_t * fclist)
 {
 	if (!sq)
 	{

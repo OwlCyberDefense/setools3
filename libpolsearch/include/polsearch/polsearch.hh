@@ -31,6 +31,14 @@ extern "C"
 {
 #endif
 
+	/** Value to indicate the overall matching behavior of the query */
+	typedef enum polsearch_match
+	{
+		POLSEARCH_MATCH_ERROR = -1,	/*!< Error condition. */
+		POLSEARCH_MATCH_ALL = 0,	/*!< Returned symbols must match all tests. */
+		POLSEARCH_MATCH_ANY    /*!< Returned symbols must match at least one test. */
+	} polsearch_match_e;
+
 	/** Values to indicate the type of symbol for which to search */
 	typedef enum polsearch_symbol
 	{

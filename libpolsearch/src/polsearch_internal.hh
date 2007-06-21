@@ -46,6 +46,17 @@ extern "C"
 
 #ifdef __cplusplus
 }
+
+#include <stdexcept>
+
+	/**
+	 * Copy an arbirtary element.
+	 * @param elem_type The type of element.
+	 * @param elem The element to copy.
+	 * @return A newly allocated copy of \a elem.
+	 */
+void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_alloc);
+
 #endif
 
 #endif				       /* POLSEARCH_INTERNAL_HH */

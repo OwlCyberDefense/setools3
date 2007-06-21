@@ -319,7 +319,7 @@ static int db_ctime_callback(void *arg, int argc __attribute__ ((unused)), char 
 	// argv has the result of a call to ctime_r(); convert the string
 	// back to a time_t value
 	struct tm t;
-        memset(&t, 0, sizeof(t));
+	memset(&t, 0, sizeof(t));
 	if (strptime(argv[0], "%a %b %d %T %Y", &t) == NULL)
 	{
 		return -1;

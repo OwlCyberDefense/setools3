@@ -227,7 +227,7 @@ polsearch_element_e polsearch_string_to_element_type(const char *str)
 }
 
 char *polsearch_element_to_string(const void *elem, polsearch_element_e elem_type, const apol_policy_t * p,
-				  const sefs_fclist_t * fclist __attribute__ ((unused)))
+				  sefs_fclist_t * fclist __attribute__ ((unused)))
 {
 	const char *tmp = NULL;
 

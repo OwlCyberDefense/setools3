@@ -39,14 +39,6 @@ extern "C"
 
 #include <sefs/fclist.hh>
 
-	/** Value to indicate the overall matching behavior of the query */
-	typedef enum polsearch_match
-	{
-		POLSEARCH_MATCH_ERROR = -1,	/*!< Error condition. */
-		POLSEARCH_MATCH_ALL = 0,	/*!< Returned symbols must match all tests. */
-		POLSEARCH_MATCH_ANY    /*!< Returned symbols must match at least one test. */
-	} polsearch_match_e;
-
 }
 
 #include <stdexcept>
@@ -111,9 +103,10 @@ class polsearch_query
 	 * error. The caller is responsible for calling apol_vector_destroy()
 	 * on the returned vector.
 	 * @exception std::bad_alloc Could not allocate the vector.
+	 * @exception std::runtime_error Error running tests.
 	 */
-	virtual apol_vector_t *run(const apol_policy_t * policy, const sefs_fclist_t * fclist = NULL) const throw(std::bad_alloc) =
-		0;
+	virtual apol_vector_t *run(const apol_policy_t * policy, sefs_fclist_t * fclist =
+				   NULL) const throw(std::bad_alloc, std::runtime_error) = 0;
 
       protected:
 	 polsearch_match_e _match;     /*!< The matching behavior used for determining if an element matches with multiple tests. */

@@ -95,7 +95,7 @@ extern "C"
 	 * calling free() on the returned string.
 	 */
 	extern char *polsearch_element_to_string(const void *elem, polsearch_element_e elem_type, const apol_policy_t * p,
-						 const sefs_fclist_t * fclist);
+						 sefs_fclist_t * fclist);
 
 	/**
 	 * Get a string representing a test condition.

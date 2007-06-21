@@ -111,7 +111,7 @@ class sefs_fclist
 	 * <b>This function must not throw any exceptions.</b> Doing
 	 * so will most likely corrupt fclist's internal state.
 	 * Instead, return a negative value to abort processing.
-	 * @param data Arbitrary pointer to be passed into \fn as a
+	 * @param data Arbitrary pointer to be passed into \a fn as a
 	 * third parameter.
 	 * @return Last value returned by fn() (i.e., >= on success, <
 	 * 0 on failure).  If the fclist has no entries then return 0.

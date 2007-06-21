@@ -101,8 +101,10 @@ class polsearch_symbol_query:public polsearch_query
 	 * error. The caller is responsible for calling apol_vector_destroy()
 	 * on the returned vector.
 	 * @exception std::bad_alloc Could not allocate the vector.
+	 * @exception std::runtime_error Error running tests.
 	 */
-	apol_vector_t *run(const apol_policy_t * policy, const sefs_fclist_t * fclist = NULL) const throw(std::bad_alloc);
+	apol_vector_t *run(const apol_policy_t * policy, sefs_fclist_t * fclist =
+			   NULL) const throw(std::bad_alloc, std::runtime_error);
 
       private:
 	 polsearch_symbol_e _symbol_type;	/*!< The type of symbol matched by the query. */
@@ -154,7 +156,7 @@ extern "C"
 	 * @see polsearch_symbol_query::run(apol_policy_t*, sefs_fclist_t*)
 	 */
 	extern apol_vector_t *polsearch_symbol_query_run(const polsearch_symbol_query_t * sq, const apol_policy_t * p,
-							 const sefs_fclist_t * fclist);
+							 sefs_fclist_t * fclist);
 	/**
 	 * Get a list of the valid types of tests to perform for the symol
 	 * type specified by the query.

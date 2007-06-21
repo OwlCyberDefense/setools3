@@ -39,6 +39,12 @@ extern "C"
 #include <apol/vector.h>
 #include <apol/policy.h>
 
+	/**
+	 * Free callback for proof elements.
+	 * @param elem The element to free.
+	 */
+	typedef void (*polsearch_proof_element_free_fn) (void *elem);
+
 #ifdef __cplusplus
 }
 
@@ -109,14 +115,17 @@ class polsearch_test
 	 * @param fclist The file_contexts list to use for conditions that
 	 * check for file_context entries. (Optional)
 	 * @param Xcandidates The list of currenly valid candidates for the test.
-	 * The contents will be pruned to only matched candidates. <b>Must be non-null.</b>
+	 * <b>Must be non-null.</b>
+	 * @param prune If true, the contents of \a Xcandidates will be pruned to
+	 * only matched candidates.
 	 * @return A vector of results for the test. The size of the
 	 * returned vector may be zero, indicating that none of the candidates
 	 * satisfied all criteria for the test.
 	 * @exception std::bad_alloc Could not allocate space for return vector.
+	 * @exception std::runtime_error Error running test.
 	 */
-	apol_vector_t *run(const apol_policy_t * p, const sefs_fclist * fclist,
-			   apol_vector_t * Xcandidates) const throw(std::bad_alloc);
+	apol_vector_t *run(const apol_policy_t * p, sefs_fclist * fclist,
+			   apol_vector_t * Xcandidates, bool prune) const throw(std::bad_alloc, std::runtime_error);
 
       private:
 	 apol_vector_t * _criteria;    /*!< The list of criteria. */
@@ -138,7 +147,7 @@ class polsearch_result
 	 * @param fclist The file_contexts list associated with \a elem.
 	 * @exception std::bad_alloc Could not allocate space for proof vector.
 	 */
-	polsearch_result(polsearch_element_e elem_type, const void *elem, const apol_policy_t * p, const sefs_fclist * fclist =
+	polsearch_result(polsearch_element_e elem_type, const void *elem, const apol_policy_t * p, sefs_fclist * fclist =
 			 NULL) throw(std::bad_alloc);
 	/**
 	 * Copy a result entry.
@@ -184,7 +193,7 @@ class polsearch_result
 	const void *_element;	       /*!< The element matched. This object is not owned by the result. */
 	apol_vector_t *_proof;	       /*!< List of proof that \a _element matched the query. */
 	const apol_policy_t *_policy;  /*!< The policy associated with \a _element. */
-	const sefs_fclist *_fclist;    /*!< The fclist associated with \a _element. */
+	sefs_fclist *_fclist;	       /*!< The fclist associated with \a _element. */
 };
 
 /**
@@ -204,9 +213,11 @@ class polsearch_proof
 	 * @param elem The element that proves the test.
 	 * @param p The policy associated with \a elem.
 	 * @param fclist The file_contexts list associated with \a elem.
+	 * @param free_fn Callback to be envoked if \a elem should be freed.
+	 * If NULL, do not free \a elem when this proof is destroyed.
 	 */
 	polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, const apol_policy_t * p,
-			const sefs_fclist * fclist = NULL);
+			sefs_fclist * fclist = NULL, polsearch_proof_element_free_fn free_fn = NULL);
 	/**
 	 * Copy a proof.
 	 * @param pp The proof to copy.
@@ -241,9 +252,10 @@ class polsearch_proof
       private:
 	 polsearch_test_cond_e _test_cond;	/*!< Test condition matched by the element */
 	polsearch_element_e _element_type;	/*!< The type of element to display as proof (may not be same type as tested element). */
-	const void *_element;	       /*!< The element to display as proof. (This memory is not owned by the proof, but rather by the policy or fclist from which it came.) */
+	void *_element;		       /*!< The element to display as proof. */
 	const apol_policy_t *_policy;  /*!< The policy associated with \a _element. */
-	const sefs_fclist_t *_fclist;  /*!< The fclist associated with \a _element. */
+	sefs_fclist_t *_fclist;	       /*!< The fclist associated with \a _element. */
+	polsearch_proof_element_free_fn _free_fn;	/*!< Function to be called to free \a _element if needed. */
 };
 
 extern "C"
@@ -302,8 +314,8 @@ extern "C"
 	 * Run the test.
 	 * @see polsearch_test::run()
 	 */
-	extern apol_vector_t *polsearch_test_run(const polsearch_test_t * pt, const apol_policy_t * p, const sefs_fclist_t * fclist,
-						 apol_vector_t * Xcandidates);
+	extern apol_vector_t *polsearch_test_run(const polsearch_test_t * pt, const apol_policy_t * p, sefs_fclist_t * fclist,
+						 apol_vector_t * Xcandidates, bool prune);
 	/**
 	 * Get the correct type of parameter to use for a criterion of a
 	 * given comparison operator.
@@ -316,7 +328,7 @@ extern "C"
 	 * @see polsearch_result::polsearch_result(polsearch_element_e, const void *)
 	 */
 	extern polsearch_result_t *polsearch_result_create(polsearch_element_e sym_type, const void *sym, const apol_policy_t * p,
-							   const sefs_fclist_t * fclist);
+							   sefs_fclist_t * fclist);
 	/**
 	 * Copy a result entry.
 	 * @see polsearch_result::polsearch_result(const polsearch_result&)
@@ -355,7 +367,7 @@ extern "C"
 	 * @see polsearch_proof::polsearch_proof(polsearch_test_cond_e, polsearch_element_e, void *)
 	 */
 	extern polsearch_proof_t *polsearch_proof_create(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem,
-							 const apol_policy_t * p, const sefs_fclist_t * fclist);
+							 const apol_policy_t * p, sefs_fclist_t * fclist);
 	/**
 	 * Copy a proof entry.
 	 * @see polsearch_proof::polsearch_proof(const polsearch_proof&)

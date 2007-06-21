@@ -27,7 +27,13 @@
 #include "polsearch_internal.hh"
 
 #include <apol/policy.h>
+#include <apol/mls_range.h>
 #include <sefs/entry.hh>
+
+#include <stdexcept>
+#include <string.h>
+
+using std::bad_alloc;
 
 // internal functions
 
@@ -280,6 +286,53 @@ int element_compare(polsearch_element_e elem_type, const void *left, const void 
 	default:
 	{
 		return 0;	       // not comparable, don't sort
+	}
+	}
+}
+
+void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_alloc)
+{
+	switch (elem_type)
+	{
+	case POLSEARCH_ELEMENT_FC_ENTRY:
+	{
+		return new sefs_entry(static_cast < sefs_entry * >(elem));
+	}
+	case POLSEARCH_ELEMENT_MLS_RANGE:
+	{
+		apol_mls_range_t *rng = apol_mls_range_create_from_mls_range(static_cast < apol_mls_range_t * >(elem));
+		if (!rng)
+			throw bad_alloc();
+		return rng;
+	}
+	case POLSEARCH_ELEMENT_STRING:
+	case POLSEARCH_ELEMENT_PERMISSION:
+	{
+		char *tmp = strdup(static_cast < char *>(elem));
+		if (!tmp)
+			throw bad_alloc();
+		return tmp;
+	}
+	case POLSEARCH_ELEMENT_BOOL_STATE:
+	case POLSEARCH_ELEMENT_TYPE:
+	case POLSEARCH_ELEMENT_ATTRIBUTE:
+	case POLSEARCH_ELEMENT_ROLE:
+	case POLSEARCH_ELEMENT_USER:
+	case POLSEARCH_ELEMENT_CLASS:
+	case POLSEARCH_ELEMENT_COMMON:
+	case POLSEARCH_ELEMENT_CATEGORY:
+	case POLSEARCH_ELEMENT_LEVEL:
+	case POLSEARCH_ELEMENT_BOOL:
+	case POLSEARCH_ELEMENT_AVRULE:
+	case POLSEARCH_ELEMENT_TERULE:
+	case POLSEARCH_ELEMENT_ROLE_ALLOW:
+	case POLSEARCH_ELEMENT_ROLE_TRANS:
+	case POLSEARCH_ELEMENT_RANGE_TRANS:
+	case POLSEARCH_ELEMENT_NONE:
+	default:
+	{
+		//these don't get copied
+		return elem;
 	}
 	}
 }

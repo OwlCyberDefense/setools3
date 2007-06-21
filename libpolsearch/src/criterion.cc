@@ -198,8 +198,9 @@ template < class T > const T & polsearch_criterion < T >::param(const T & parame
 }
 
 template < class T >
-	void polsearch_criterion < T >::check(const apol_policy_t * p, const sefs_fclist_t * fclist,
-					      apol_vector_t * test_candidates, const apol_vector_t * Xcandidtates) const
+	void polsearch_criterion < T >::check(const apol_policy_t * p, sefs_fclist_t * fclist,
+					      apol_vector_t * test_candidates, polsearch_element_e candidate_type,
+					      const apol_vector_t * Xcandidtates) const throw(std::runtime_error)
 {
 	//TODO
 	return;
@@ -580,13 +581,14 @@ polsearch_param_type_e polsearch_criterion_get_param_type(const polsearch_criter
 	return pc->paramType();
 }
 
-void polsearch_criterion_check(const polsearch_criterion_t * pc, const apol_policy_t * p, const sefs_fclist_t * fclist,
-			       apol_vector_t * test_candidates, const apol_vector_t * Xcandidtates)
+void polsearch_criterion_check(const polsearch_criterion_t * pc, const apol_policy_t * p, sefs_fclist_t * fclist,
+			       apol_vector_t * test_candidates, polsearch_element_e candidate_type,
+			       const apol_vector_t * Xcandidtates)
 {
 	if (!pc)
 		return;
 
-	pc->check(p, fclist, test_candidates, Xcandidtates);
+	pc->check(p, fclist, test_candidates, candidate_type, Xcandidtates);
 }
 
 const void *polsearch_criterion_get_param(const polsearch_criterion_t * pc)

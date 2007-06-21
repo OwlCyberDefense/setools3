@@ -100,11 +100,14 @@ class polsearch_base_criterion
 	 * @param test_candidates Vector of items to check. This vector will be
 	 * pruned to only those candidates satisfying this criterion.
 	 * <b>Must be non-null.</b>
+	 * @param candidate_type Type of element in \a test_candidates.
 	 * @param Xcandidtates Current list of possible candidates for the symbol X.
 	 * <b>Must be non-null. Must not be the same vector as \a test_candidates. </b>
+	 * @exception std::runtime_error Could not perform check.
 	 */
-	virtual void check(const apol_policy_t * p, const sefs_fclist_t * fclist,
-			   apol_vector_t * test_candidates, const apol_vector_t * Xcandidtates) const = 0;
+	virtual void check(const apol_policy_t * p, sefs_fclist_t * fclist,
+			   apol_vector_t * test_candidates, polsearch_element_e candidate_type,
+			   const apol_vector_t * Xcandidtates) const throw(std::runtime_error) = 0;
 
       protected:
 	 polsearch_op_e _op;	       /*!< The comparison operator. */
@@ -158,11 +161,14 @@ template < class T > class polsearch_criterion:public polsearch_base_criterion
 	 * @param test_candidates Vector of items to check. This vector will be
 	 * pruned to only those candidates satisfying this criterion.
 	 * <b>Must be non-null.</b>
+	 * @param candidate_type Type of element in \a test_candidates.
 	 * @param Xcandidtates Current list of possible candidates for the symbol X.
 	 * <b>Must be non-null. Must not be the same vector as \a test_candidates. </b>
+	 * @exception std::runtime_error Could not perform check.
 	 */
-	void check(const apol_policy_t * p, const sefs_fclist_t * fclist,
-		   apol_vector_t * test_candidates, const apol_vector_t * Xcandidtates) const;
+	void check(const apol_policy_t * p, sefs_fclist_t * fclist,
+		   apol_vector_t * test_candidates, polsearch_element_e candidate_type,
+		   const apol_vector_t * Xcandidtates) const throw(std::runtime_error);
       private:
 	T _param;		       /*!< Parameter to check for this criterion. */
 	/**
@@ -253,13 +259,14 @@ extern "C"
 	 * @param test_candidates Vector of items to check. This vector will be
 	 * pruned to only those candidates satisfying this criterion.
 	 * <b>Must be non-null.</b>
+	 * @param candidate_type Type of elements in \a test_candidates.
 	 * @param Xcandidtates Current list of possible candidates for the symbol X.
 	 * <b>Must be non-null. Must not be the same vector as \a test_candidates. </b>
-	 * @see polsearch_criterion<T>::check(const apol_policy_t*, const sefs_fclist_t*, apol_vector_t*, const apol_vector_t*)
+	 * @see polsearch_criterion<T>::check(const apol_policy_t*, sefs_fclist_t*, apol_vector_t*, const apol_vector_t*)
 	 */
 	extern void polsearch_criterion_check(const polsearch_criterion_t * pc, const apol_policy_t * p,
-					      const sefs_fclist_t * fclist, apol_vector_t * test_candidates,
-					      const apol_vector_t * Xcandidtates);
+					      sefs_fclist_t * fclist, apol_vector_t * test_candidates,
+					      polsearch_element_e candidate_type, const apol_vector_t * Xcandidtates);
 	/**
 	 * Get the parameter used by a criterion's comparison operator.
 	 * <b>This function resets errno.</b>
