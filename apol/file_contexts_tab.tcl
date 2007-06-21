@@ -18,15 +18,17 @@ namespace eval Apol_File_Contexts {
     variable widgets
 
     variable info_button_text \
-        "This tab allows the user to create and load a file context index.
+        "This tab allows the user to create and open a file context index.
 The file context index is an on-disk database which contains the
 labeling information for an entire filesystem.  Once an index has been
 created it can then be queried by user, type, MLS range (if it
 contains MLS information), object class, and/or path.\n
 
-The results of the context query show a list of the matching files
-ordered by path.  The first field is the full context followed by the
-object class of the file and lastly the path."
+The result of the context query is a list of matching files, ordered
+by path.  The first field is the path to the match.  Next is the full
+SELinux context, assuming that 'Show SELinux file context' is enabled.
+If 'Show object class' is enabled, then the final field is the type of
+file that matched; this will be one of 'file', 'dir', and so forth."
 }
 
 proc Apol_File_Contexts::create {tab_name nb} {
@@ -45,13 +47,13 @@ proc Apol_File_Contexts::create {tab_name nb} {
     # File Context Index frame
     set status_frame [$status getframe]
     set status_buttons [ButtonBox $status_frame.bb -homogeneous 1 -padx 2]
-    $status_buttons add -text "Create and Load" -command {Apol_File_Contexts::_create_dialog}
-    $status_buttons add -text "Load" -command {Apol_File_Contexts::_load_database}
+    $status_buttons add -text "Create and Open" -command {Apol_File_Contexts::_create_dialog}
+    $status_buttons add -text "Open" -command {Apol_File_Contexts::_open_database}
     pack $status_buttons -side left -anchor nw -padx 2 -pady 4
 
     set status_text [frame $status_frame.t]
     pack $status_text -side left -anchor nw -padx 6 -pady 4
-    label $status_text.l -text "Loaded Index:"
+    label $status_text.l -text "Opened Index:"
     set status1 [label $status_text.t -textvariable Apol_File_Contexts::opts(statusText)]
     set status2 [label $status_text.t2 -textvariable Apol_File_Contexts::opts(statusText2) -fg red]
     trace add variable Apol_File_Contexts::opts(indexFilename) write \
@@ -152,8 +154,8 @@ proc Apol_File_Contexts::open {ppath} {
     # FIX ME: set the policy if db is loaded
 }
 
-proc Apol_File_Contexts::close { } {
-    # FIX ME: unsed policy if db is loaded
+proc Apol_File_Contexts::close {} {
+    _close_database
 }
 
 proc Apol_File_Contexts::getTextWidget {} {
@@ -162,7 +164,11 @@ proc Apol_File_Contexts::getTextWidget {} {
 }
 
 proc Apol_File_Contexts::is_db_loaded {} {
-    return $Apol_File_Contexts::opts(db_loaded)
+    variable opts
+    if {$opts(db) != {}} {
+        return 1
+    }
+    return 0
 }
 
 proc Apol_File_Contexts::get_fc_files_for_ta {which ta} {
@@ -192,12 +198,11 @@ proc Apol_File_Contexts::_initializeVars {} {
         useObjclass 0   objclass {}
         useRange 0      range {}
         usePath 0       path {}
-        fc_is_mls 1
 
         useRegexp 0  showContext 1  showObjclass 1
+        db {}
+        fc_is_mls 1
         indexFilename {}
-        db_loaded 0
-        
     }
 }
 
@@ -205,7 +210,164 @@ proc Apol_File_Contexts::_show_info {} {
     Apol_Widget::showPopupParagraph "File Contexts Information" $Apol_File_Contexts::info_button_text
 }
 
-proc Apol_File_Contexts::_search_ {} {
+proc Apol_File_Contexts::_changeStatusLabel {label1 label2 name1 name2 opt} {
+    variable opts
+    if {$opts(db) == {}} {
+        set opts(statusText) "No Index File Opened"
+        $label1 configure -fg red
+        set opts(statusText2) {}
+    } else {
+        set opts(statusText) $opts(indexFilename)
+        $label1 configure -fg black
+        if {$opts(fc_is_mls)} {
+            set opts(statusText2) "Database contexts include MLS ranges."
+            $label2 configure -fg black
+        } else {
+            set opts(statusText2) "Database contexts do not include MLS ranges."
+            $label2 configure -fg red
+        }
+    }
+}
+
+proc Apol_File_Contexts::_toggleEnable {entry name1 name2 op} {
+    variable opts
+    if {$opts($name2)} {
+        $entry configure -state normal -bg white
+    } else {
+        $entry configure -state disabled -bg $ApolTop::default_bg_color
+    }
+}
+
+proc Apol_File_Contexts::_toggleRange {cb entry name1 name2 op} {
+    variable opts
+    if {$opts(fc_is_mls)} {
+        $cb configure -state normal
+        if {$opts(useRange)} {
+            $entry configure -state normal -bg white
+        }
+    } else {
+        $cb configure -state disabled
+        $entry configure -state disabled -bg $ApolTop::default_bg_color
+    }
+}
+
+proc Apol_File_Contexts::_create_dialog {} {
+    variable opts
+
+    set opts(new_filename) $opts(indexFilename)
+    set opts(new_rootdir) "/"
+    
+    set d [Dialog .filecontexts_create -title "Create Index File" \
+               -default 0 -cancel 1 -modal local -parent . -separator 1]
+    $d add -text "OK" -command [list Apol_File_Contexts::_create_database $d] \
+        -state disabled
+    $d add -text "Cancel"
+
+    set f [$d getframe]
+    set file_l [label $f.file_l -justify left -anchor w -text "Save index to:"]
+    set file_entry [entry $f.file_e -width 30 -bg white -takefocus 1\
+                        -textvariable Apol_File_Contexts::opts(new_filename) \
+                        -validate key \
+                        -vcmd [list Apol_File_Contexts::_validateEntryKey %P $d new_rootdir]]
+    focus $file_entry
+    set file_browse [button $f.file_b -text "Browse" -width 8 -takefocus 1 \
+                         -command [list Apol_File_Contexts::_browse_save]]
+
+    set root_l [label $f.root_l -justify left -anchor w -text "Directory to index:"]
+    set root_entry [entry $f.root_e -width 30 -bg white -takefocus 1 \
+                        -textvariable Apol_File_Contexts::opts(new_rootdir) \
+                        -validate key \
+                        -vcmd [list Apol_File_Contexts::_validateEntryKey %P $d new_filename]]
+    set root_browse [button $f.root_b -text "Browse" -width 8 -takefocus 1 \
+                         -command [list Apol_File_Contexts::_browse_root]]
+
+    grid $file_l $file_entry $file_browse -padx 4 -pady 2 -sticky ew
+    grid $root_l $root_entry $root_browse -padx 4 -pady 2 -sticky ew
+    grid columnconfigure $f 0 -weight 0
+    grid columnconfigure $f 1 -weight 1
+    grid columnconfigure $f 2 -weight 0
+
+    $d draw
+    destroy $d
+}
+
+proc Apol_File_Contexts::_browse_save {} {
+    variable opts
+    set f [tk_getSaveFile -initialfile $opts(new_filename) \
+           -parent .filecontexts_create -title "Save Index"]
+    if {$f != {}} {
+        set opts(new_filename) $f
+    }
+}
+
+proc Apol_File_Contexts::_browse_root {} {
+    variable opts
+    set f [tk_chooseDirectory -initialdir $opts(new_rootdir) \
+               -parent .filecontexts_create -title "Directory to Index"]
+    if {$f != {}} {
+        set opts(new_rootdir) $f
+    }
+}
+
+proc Apol_File_Contexts::_validateEntryKey {newvalue dialog othervar} {
+    variable opts
+    if {$newvalue == {} || $opts($othervar) == {}} {
+        $dialog itemconfigure 0 -state disabled
+    } else {
+        $dialog itemconfigure 0 -state normal
+    }
+    return 1
+}
+
+proc Apol_File_Contexts::_create_database {dialog} {
+    variable opts
+
+    if {[catch {Apol_Progress_Dialog::wait "Create Database" "Scanning $opts(new_rootdir)" \
+                    {
+                        set db [apol_tcl_open_database_from_dir $opts(new_rootdir)]
+                        $db save $opts(new_filename)
+                        set $db
+                    } \
+                } db]} {
+        tk_messageBox -icon error -type ok -title "Create Database" \
+            -message [apol_tcl_get_info_string]
+        return
+    }
+    if {$opts(db) != {}} {
+        delete_sefs_fclist $opts(db)
+    }
+    _initializeVars
+    set opts(db) $db
+    set opts(fc_is_mls) [$db isMLS]
+    set opts(indexFilename) $opts(new_filename)
+    $dialog enddialog {}
+}
+
+proc Apol_File_Contexts::_open_database {} {
+    variable opts
+
+    set f [tk_getOpenFile -initialfile $opts(indexFilename) -parent . \
+               -title "Open Database"]
+    if {$f == {}} {
+        return
+    }
+    if {[catch {Apol_Progress_Dialog::wait "Open Database" "Opening $f" \
+                    {apol_tcl_open_database $f} \
+                } db]} {
+        tk_messageBox -icon error -type ok -title "Open Database" \
+            -message [apol_tcl_get_info_string]
+        return
+    }
+    if {$opts(db) != {}} {
+        delete_sefs_fclist $opts(db)
+    }
+    _initializeVars
+    set opts(db) $db
+    set opts(fc_is_mls) [$db isMLS]
+    set opts(indexFilename) $f
+}
+
+proc Apol_File_Contexts::_search {} {
     variable opts
     variable widgets
 
@@ -280,188 +442,12 @@ proc Apol_File_Contexts::_search_ {} {
     }
 }
 
-proc Apol_File_Contexts::_changeStatusLabel {label1 label2 name1 name2 opt} {
+proc Apol_File_Contexts::_close_database {} {
     variable opts
-    if {$opts(indexFilename) == {}} {
-        set opts(statusText) "No Index File Loaded"
-        $label1 configure -fg red
-        set opts(statusText2) {}
-    } else {
-        set opts(statusText) $opts(indexFilename)
-        $label1 configure -fg black
-        if {$opts(fc_is_mls)} {
-            set opts(statusText2) "Database contexts include MLS ranges."
-            $label2 configure -fg black
-        } else {
-            set opts(statusText2) "Database contexts do not include MLS ranges."
-            $label2 configure -fg red
-        }
-    }
-}
-
-proc Apol_File_Contexts::_toggleEnable {entry name1 name2 op} {
-    variable opts
-    if {$opts($name2)} {
-        $entry configure -state normal -bg white
-    } else {
-        $entry configure -state disabled -bg $ApolTop::default_bg_color
-    }
-}
-
-proc Apol_File_Contexts::_toggleRange {cb entry name1 name2 op} {
-    variable opts
-    if {$opts(fc_is_mls)} {
-        $cb configure -state normal
-        if {$opts(useRange)} {
-            $entry configure -state normal -bg white
-            $regex configure -state normal
-        }
-    } else {
-        $cb configure -state disabled
-        $entry configure -state disabled -bg $ApolTop::default_bg_color
-        $regex configure -state disabled
-    }
-}
-
-proc Apol_File_Contexts::_create_dialog {} {
-    variable opts
-
-    set opts(new_filename) $opts(indexFilename)
-    set opts(rootdir) "/"
-    
-    set d [Dialog .filecontexts_create -title "Create Index File" \
-               -default 0 -cancel 1 -modal local -parent . -separator 1]
-
-    set f [$d getframe]
-    set file_l [label $f.file_l -justify left -anchor w -text "Save index to:"]
-    set file_entry [entry $f.file_e -width 30 -textvariable Apol_File_Contexts::opts(new_filename) -bg white]
-    set file_browse [button $f.file_b -text "Browse" -width 8 \
-                         -command [list Apol_File_Contexts::_browse_save]]
-
-    set root_l [label $f.root_l -justify left -anchor w -text "Directory to index:"]
-    set root_entry [entry $f.root_e -width 30 -textvariable Apol_File_Contexts::opts(rootdir) -bg white]
-    set root_browse [button $f.root_b -text "Browse" -width 8 \
-                         -command [list Apol_File_Contexts::_browse_root]]
-
-    grid $file_l $file_entry $file_browse -padx 4 -pady 2 -sticky ew
-    grid $root_l $root_entry $root_browse -padx 4 -pady 2 -sticky ew
-    grid columnconfigure $f 0 -weight 0
-    grid columnconfigure $f 1 -weight 1
-    grid columnconfigure $f 2 -weight 0
-
-    $d add -text "OK" \
-        -command [list Apol_File_Contexts::_create_database]
-    $d add -text "Cancel"
-
-    $d draw
-    destroy $d
-}
-
-proc Apol_File_Contexts::_browse_save {} {
-    variable opts
-    set f [tk_getSaveFile -initialfile $opts(new_filename) \
-           -parent .filecontexts_create -title "Save Index"]
-    if {$f != {}} {
-        set opts(new_filename) $f
-    }
-}
-
-proc Apol_File_Contexts::_browse_root {} {
-    variable opts
-    set f [tk_chooseDirectory -initialdir $opts(rootdir) \
-               -parent .filecontexts_create -title "Directory to Index"]
-    if {$f != {}} {
-        set opts(rootdir) $f
-    }
-}
-
-proc Apol_File_Contexts::_create_database {} {
-    variable opts
-    
-    set rt [catch {apol_Create_FC_Index_File $fname $dir_str} err]
-    if {$rt != 0} {
-        return -code error "Error while creating the index file: $err"
-    }
-    set rt [catch {apol_Load_FC_Index_File $fname} err]
-    if {$rt != 0} {
-        return -code error \
-            "The index file was created successfully, however, there was an error while loading: $err"
-    }
-    Apol_File_Contexts::initialize
-    set opts(fc_is_mls) [apol_FC_Is_MLS]
-    set opts(indexFilename) $fname
-    set opts(db_loaded) 1
-    Apol_File_Contexts::populate_combo_boxes
-}
-
-proc Apol_File_Contexts::create_fc_db {dlg} {
-    variable entry_dir
-    variable entry_fn
-    variable opts
-
-    set fname [$entry_fn get]
-    set dir_str [$entry_dir get]
-    if {$fname == {} || $dir_str == {}} {
-        tk_messageBox -icon error -type ok -title "Error" \
-            -message "Both a filename and starting directory are needed."
-        raise $dlg
-        return
-    }
-
-    set opts(progressMsg) "Creating index file.. .This may take a while."
-    set opts(progressVal) -1
-    set progress_dlg [ProgressDlg .apol_fc_progress -parent . \
-                          -textvariable Apol_File_Contexts::opts(progressMsg) \
-                          -variable Apol_File_Contexts::opts(progressVal) \
-                          -maximum 3 -width 45]
-    ApolTop::setBusyCursor
-    update idletasks
-    set rt [catch {Apol_File_Contexts::create_and_load_fc_db $fname $dir_str} err]
-    ApolTop::resetBusyCursor
-    destroy $progress_dlg
-    if {$rt != 0} {
-        tk_messageBox -icon error -type ok -title "Error" \
-            -message "$err\nSee stderr for more information."
-        raise $dlg
-        return
-    }
-    $dlg enddialog 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_File_Contexts::load_fc_db
-#	returns 1 if loaded successfully, otherwise, unsucessful or user canceled
-# ------------------------------------------------------------------------------
-proc Apol_File_Contexts::load_fc_db { } {
-    variable opts
-
-    set db_file [tk_getOpenFile -title "Select Index File to Load..." -parent $ApolTop::mainframe]
-    if {$db_file != ""} {
-        set rt [catch {apol_Load_FC_Index_File $db_file} err]
-        if {$rt != 0} {
-            tk_messageBox -icon error -type ok -title "Error" -message \
-                "Error loading file context database: $err\nSee stderr for more information."
-            return -1
-        }
-        Apol_File_Contexts::initialize
-        set opts(fc_is_mls) [apol_FC_Is_MLS]
-        set opts(indexFilename) $db_file
-        set opts(db_loaded) 1
-        Apol_File_Contexts::populate_combo_boxes
-        return 1
-    }
-    return 0
-}
-
-proc Apol_File_Contexts::close_fc_db { } {
     variable widgets
-    variable opts
-    set rt [catch {apol_Close_FC_Index_DB} err]
-    if {$rt != 0} {
-        tk_messageBox -icon error -type ok -title "Error" \
-            -message "Error closing file context database: $err.\n"
-        return
+    if {$opts(db) != {}} {
+        delete_sefs_fclist $opts(db)
     }
+    _initializeVars
     Apol_Widget::clearSearchResults $widgets(results)
-    set opts(db_loaded) 0
 }

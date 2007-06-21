@@ -25,7 +25,6 @@ BUILT_SOURCES = sefs_wrap.cc \
 	SWIGTYPE_p_f_p_sefs_fclist_p_q_const__sefs_entry_p_void__int.java \
 	SWIGTYPE_p_f_p_void_p_q_const__sefs_fclist_int_p_q_const__char_va_list__void.java \
 	SWIGTYPE_p_ino64_t.java \
-	SWIGTYPE_p_time_t.java \
 	SWIGTYPE_p_void.java
 
 AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \

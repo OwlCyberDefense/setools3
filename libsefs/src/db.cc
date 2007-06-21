@@ -319,6 +319,7 @@ static int db_ctime_callback(void *arg, int argc __attribute__ ((unused)), char 
 	// argv has the result of a call to ctime_r(); convert the string
 	// back to a time_t value
 	struct tm t;
+        memset(&t, 0, sizeof(t));
 	if (strptime(argv[0], "%a %b %d %T %Y", &t) == NULL)
 	{
 		return -1;
@@ -531,6 +532,7 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 		throw std::invalid_argument(strerror(EINVAL));
 	}
 
+	SEFS_INFO("Reading contexts from filesystem %s.", fs->root());
 	char *errmsg = NULL;
 	try
 	{
@@ -637,6 +639,7 @@ sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *va
 	}
 	if (!answer)
 	{
+		SEFS_INFO("Upgrading database %s.", filename);
 		SEFS_WARN("%s is a pre-libsefs-4.0 database and will be upgraded.", filename);
 		upgradeToDB2();
 	}
