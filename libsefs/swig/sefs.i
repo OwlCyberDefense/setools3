@@ -133,3 +133,10 @@ SWIGEXPORT int Tsefs_Init(Tcl_Interp *interp) {
 
 const char *libsefs_get_version (void);
 char *sefs_default_file_contexts_get_path(void);
+
+%extend sefs_entry {
+	// needed to convert from the results of runQuery() to the entry
+	sefs_entry(void *v) {
+		return static_cast<sefs_entry *>(v);
+	}
+}

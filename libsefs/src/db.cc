@@ -671,7 +671,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 	// because the query members are private, and thus not accessible
 	// from a C callback
 	struct db_query_arg q;
-	memset(&q, sizeof(q), 0);
+	memset(&q, 0, sizeof(q));
 
 	q.db = this;
 	if (query != NULL)
@@ -715,8 +715,8 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		q.repath = query->_repath;
 		q.redev = query->_redev;
 		q.rangeMatch = query->_rangeMatch;
-		q.policy = this->policy;
 	}
+	q.policy = this->policy;
 	q.db_is_mls = isMLS();
 	q.fn = fn;
 	q.data = data;

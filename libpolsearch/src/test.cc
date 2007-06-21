@@ -693,10 +693,9 @@ apol_vector_t *polsearch_test::run(const apol_policy_t * p, sefs_fclist * fclist
 					new polsearch_result(_element_type, apol_vector_get_element(Xcandidates, j), p, fclist);
 				for (size_t i = 0; i < apol_vector_get_size(test_candidates); i++)
 				{
-					polsearch_proof *proof =
-						new polsearch_proof(_test_cond, candidate_type,
-								    apol_vector_get_element(test_candidates, i),
-								    p, fclist);
+					polsearch_proof *proof = new polsearch_proof(_test_cond, candidate_type,
+										     apol_vector_get_element(test_candidates, i),
+										     p, fclist);
 					if (apol_vector_append(cur->proof(), static_cast < void *>(proof)))
 						throw bad_alloc();
 				}

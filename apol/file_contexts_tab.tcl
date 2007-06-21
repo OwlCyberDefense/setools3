@@ -25,10 +25,11 @@ created it can then be queried by user, type, MLS range (if it
 contains MLS information), object class, and/or path.\n
 
 The result of the context query is a list of matching files, ordered
-by path.  The first field is the path to the match.  Next is the full
-SELinux context, assuming that 'Show SELinux file context' is enabled.
-If 'Show object class' is enabled, then the final field is the type of
-file that matched; this will be one of 'file', 'dir', and so forth."
+by path.  The first field is the full SELinux context, assuming that
+'Show SELinux file context' is enabled.  If 'Show object class' is
+enabled, then the next field is the type of file that matched; this
+will be one of 'file', 'dir', and so forth.  The remaining field is
+the full path to the file."
 }
 
 proc Apol_File_Contexts::create {tab_name nb} {
@@ -68,17 +69,18 @@ proc Apol_File_Contexts::create {tab_name nb} {
     set options_frame [$options getframe]
     set show_frame [frame $options_frame.show]
     set user_frame [frame $options_frame.user]
+    set role_frame [frame $options_frame.role]
     set type_frame [frame $options_frame.type]
     set range_frame [frame $options_frame.range]
     set objclass_frame [frame $options_frame.objclass]
     set path_frame [frame $options_frame.path]
-    grid $show_frame $user_frame $type_frame $range_frame $objclass_frame $path_frame \
+    grid $show_frame $user_frame $role_frame $type_frame $range_frame $objclass_frame $path_frame \
         -padx 2 -sticky news
-    foreach idx {1 2 3 4} {
+    foreach idx {1 2 3 4 5} {
         grid columnconfigure $options_frame $idx -uniform 1 -weight 0
     }
     grid columnconfigure $options_frame 0 -weight 0 -pad 8
-    grid columnconfigure $options_frame 5 -weight 0
+    grid columnconfigure $options_frame 6 -weight 0
 
     set use_regexp [checkbutton $show_frame.regexp \
                            -variable Apol_File_Contexts::opts(useRegexp) \
@@ -99,6 +101,15 @@ proc Apol_File_Contexts::create {tab_name nb} {
         [list Apol_File_Contexts::_toggleEnable $widgets(user)]
     pack $user_frame.enable -side top -anchor nw
     pack $widgets(user) -side top -anchor nw -padx 4 -expand 0 -fill x
+
+    checkbutton $role_frame.enable -text "Role" \
+        -variable Apol_File_Contexts::opts(useRole)
+    set widgets(role) [entry $role_frame.e -width 12 \
+                           -textvariable Apol_File_Contexts::opts(role)]
+    trace add variable Apol_File_Contexts::opts(useRole) write \
+        [list Apol_File_Contexts::_toggleEnable $widgets(role)]
+    pack $role_frame.enable -side top -anchor nw
+    pack $widgets(role) -side top -anchor nw -padx 4 -expand 0 -fill x
 
     checkbutton $type_frame.enable -text "Type" \
         -variable Apol_File_Contexts::opts(useType)
@@ -141,8 +152,8 @@ proc Apol_File_Contexts::create {tab_name nb} {
     set bb [ButtonBox $options_frame.bb -orient vertical -homogeneous 1 -pady 2]
     $bb add -text OK -width 6 -command {Apol_File_Contexts::_search}
     $bb add -text Info -width 6 -command {Apol_File_Contexts::_show_info}
-    grid $bb -row 0 -column 6 -padx 5 -pady 5 -sticky ne
-    grid columnconfigure $options_frame 6 -weight 1
+    grid $bb -row 0 -column 7 -padx 5 -pady 5 -sticky ne
+    grid columnconfigure $options_frame 7 -weight 1
 
     set widgets(results) [Apol_Widget::makeSearchResults [$results getframe].results]
     pack $widgets(results) -expand yes -fill both
@@ -194,6 +205,7 @@ proc Apol_File_Contexts::_initializeVars {} {
 
     array set opts {
         useUser 0       user {}
+        useRole 0       role {}
         useType 0       type {}
         useObjclass 0   objclass {}
         useRange 0      range {}
@@ -371,17 +383,29 @@ proc Apol_File_Contexts::_search {} {
     variable opts
     variable widgets
 
+    if {$opts(db) == {}} {
+        tk_messageBox -icon error -type ok -title "File Contexts" -message "No database opened."
+        return
+    }
     Apol_Widget::clearSearchResults $widgets(results)
     if {$opts(useUser)} {
-        if {[set user [list $opts(user)]] == {{}}} {
+        if {[set user $opts(user)] == {}} {
             tk_messageBox -icon error -type ok -title "File Contexts" -message "No user selected."
             return
         }
     } else {
         set user {}
     }
+    if {$opts(useRole)} {
+        if {[set role $opts(role)] == {}} {
+            tk_messageBox -icon error -type ok -title "File Contexts" -message "No user selected."
+            return
+        }
+    } else {
+        set role {}
+    }
     if {$opts(useType)} {
-        if {[set type [list $opts(type)]] == {{}}} {
+        if {[set type $opts(type)] == {}} {
             tk_messageBox -icon error -type ok -title "File Contexts" -message "No type selected."
             return
         }
@@ -389,7 +413,7 @@ proc Apol_File_Contexts::_search {} {
         set type {}
     }
     if {$opts(fc_is_mls) && $opts(useRange)} {
-        if {[set range [list $opts(range)]] == {{}}} {
+        if {[set range $opts(range)] == {}} {
             tk_messageBox -icon error -type ok -title "File Contexts" -message "No MLS range selected."
             return
         }
@@ -397,7 +421,7 @@ proc Apol_File_Contexts::_search {} {
         set range {}
     }
     if {$opts(useObjclass)} {
-        if {[set objclass [list $opts(objclass)]] == {{}}} {
+        if {[set objclass $opts(objclass)] == {}} {
             tk_messageBox -icon error -type ok -title "File Contexts" -message "No object class selected."
             return
         }
@@ -405,7 +429,7 @@ proc Apol_File_Contexts::_search {} {
         set objclass {}
     }
     if {$opts(usePath)} {
-        if {[set path [list $opts(path)]] == {{}}} {
+        if {[set path $opts(path)] == {}} {
             tk_messageBox -icon error -type ok -title "File Contexts" -message "No path selected."
             return
         }
@@ -413,33 +437,41 @@ proc Apol_File_Contexts::_search {} {
         set path {}
     }
 
-    ApolTop::setBusyCursor
-    set rt [catch {apol_Search_FC_Index_DB \
-                       $user $type $objclass $range $path \
-                       $opts(useUserRegex) $opts(useTypeRegex) \
-                       $opts(useRangeRegex) $opts(usePathRegex)} results]
-    ApolTop::resetBusyCursor
-    if {$rt != 0} {
-        tk_messageBox -icon error -type ok -title "Error" -message $results
-        return
-    }
+    set q [new_sefs_query]
+    $q user $user
+    $q role $role
+    $q type $type 1
+    $q objectClass $objclass
+    $q path $path
+    $q regex $opts(useRegexp)
 
-    if {$results == {}} {
-        Apol_Widget::appendSearchResultText $widgets(results) "Search returned no results."
-    } else {
-        set text "FILES FOUND ([llength $results]):\n\n"
-        foreach fscon $results {
-            foreach {ctxt class path} $fscon {break}
-            if {$opts(showContext)} {
-                append text [format "%-46s" $ctxt]
-            }
-            if {$opts(showObjclass)} {
-                append text [format "  %-14s" $class]
-            }
-            append text "  $path\n"
-	}
-        Apol_Widget::appendSearchResultText $widgets(results) $text
+    if {[catch {Apol_Progress_Dialog::wait "File Contexts" "Searching database" \
+                    {
+                        set v [$opts(db) runQuery $q]
+                        if {[$v get_size] == 0} {
+                            Apol_Widget::appendSearchResultText $widgets(results) "Search returned no results."
+                        } else {
+                            Apol_Widget::appendSearchResultText $widgets(results) "FILES FOUND ([$v get_size]):\n\n"
+                            for {set i 0} {$i < [$v get_size]} {incr i} {
+                                set text {}
+                                set e [new_sefs_entry [$v get_element $i]]
+                                if {$opts(showContext)} {
+                                    set context [[$e context] render NULL]
+                                    append text [format "%-40s" $context]
+                                }
+                                if {$opts(showObjclass)} {
+                                    set class [apol_objclass_to_str [$e objectClass]]
+                                    append text [format "%-12s" $class]
+                                }
+                                append text "[$e path]\n"
+                                Apol_Widget::appendSearchResultText $widgets(results) $text
+                            }
+                        }
+                        $v -delete
+                    }} err]} {
+        tk_messageBox -icon error -type ok -title "File Contexts" -message $err
     }
+    delete_sefs_query $q
 }
 
 proc Apol_File_Contexts::_close_database {} {
