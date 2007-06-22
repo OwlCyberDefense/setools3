@@ -63,6 +63,29 @@ extern "C"
 		SEFS_FCLIST_TYPE_DB    /*!< get_data returns sefs_db_t, a representation of a database of file system contexts */
 	} sefs_fclist_type_e;
 
+/**
+ * Invoke a sefs_fclist_t's callback for an error, passing it a format
+ * string and arguments.
+ */
+#define SEFS_ERR(fclist, format, ...) sefs_fclist_handleMsg(fclist, SEFS_MSG_ERR, format, __VA_ARGS__)
+
+/**
+ * Invoke a sefs_fclist_t's callback for a warning, passing it a
+ * format string and arguments.
+ */
+#define SEFS_WARN(fclist, format, ...) sefs_fclist_handleMsg(fclist, SEFS_MSG_WARN, format, __VA_ARGS__)
+
+/**
+ * Invoke a sefs_fclist's callback for an informational message,
+ * passing it a format string and arguments.
+ */
+#define SEFS_INFO(fclist, format, ...) sefs_fclist_handleMsg(fclist, SEFS_MSG_INFO, format, __VA_ARGS__)
+
+	extern void sefs_fclist_handleMsg(const struct sefs_fclist *fclist, int level, const char *fmt, ...);
+
+	__attribute__ ((format(printf, 3, 4))) void sefs_fclist_handleMsg(const struct sefs_fclist *fclist, int level,
+									  const char *fmt, ...);
+
 #ifdef __cplusplus
 }
 
@@ -79,7 +102,6 @@ class sefs_query;
  * Function invoked upon each matching file context entry during a query.
  */
 typedef int (*sefs_fclist_map_fn_t) (sefs_fclist *, const sefs_entry *, void *);
-
 /**
  * An abstract class the represents a list of file contexts.  Contexts
  * may be read from a filesystem, inferred from a file_contexts file,
@@ -87,7 +109,10 @@ typedef int (*sefs_fclist_map_fn_t) (sefs_fclist *, const sefs_entry *, void *);
  */
 class sefs_fclist
 {
+#ifndef SWIG_FRIENDS
+	friend void sefs_fclist_handleMsg(const sefs_fclist * fclist, int level, const char *fmt, ...);
 	friend class sefs_entry;
+#endif
 
       public:
 	 virtual ~sefs_fclist();
@@ -212,6 +237,8 @@ class sefs_fclist
 	struct apol_bst *dev_tree;
 	struct apol_bst *context_tree;
 
+      private:
+
 	/**
 	 * Write a message to the callback stored within a fclist
 	 * error handler.  If the msg_callback field is empty, then
@@ -220,11 +247,9 @@ class sefs_fclist
 	 * @param fmt Format string to print, using syntax of
 	 * printf(3).
 	 */
-	__attribute__ ((format(printf, 3, 4))) void handleMsg(int level, const char *fmt, ...) const;
+	void handleMsg(int level, const char *fmt, va_list va_args) const;
 
-      private:
-
-	 sefs_callback_fn_t _callback;
+	sefs_callback_fn_t _callback;
 	void *_varg;
 	sefs_fclist_type_e _fclist_type;
 };

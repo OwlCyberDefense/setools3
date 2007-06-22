@@ -56,12 +56,12 @@ sefs_fcfile::sefs_fcfile(sefs_callback_fn_t msg_callback, void *varg) throw(std:
 	{
 		if ((_files = apol_vector_create(free)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 	}
@@ -84,17 +84,17 @@ sefs_fcfile::sefs_fcfile(const char *file, sefs_callback_fn_t msg_callback, void
 	{
 		if ((_files = apol_vector_create_with_capacity(1, free)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if (appendFile(file) < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error("Could not construct fcfile with the given file.");
 		}
 	}
@@ -118,23 +118,23 @@ sefs_fcfile::sefs_fcfile(const apol_vector_t * files, sefs_callback_fn_t msg_cal
 	{
 		if (files == NULL)
 		{
-			SEFS_ERR("%s", strerror(EINVAL));
+			SEFS_ERR(this, "%s", strerror(EINVAL));
 			errno = EINVAL;
 			throw std::invalid_argument(strerror(EINVAL));
 		}
 		if ((_files = apol_vector_create_with_capacity(apol_vector_get_size(files), free)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if ((_entries = apol_vector_create(fcfile_entry_free)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if (appendFileList(files) != apol_vector_get_size(files))
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error("Could not construct fcfile with the given vector.");
 		}
 	}
@@ -169,13 +169,13 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 				     query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,
 								 query->_indirect)) == NULL)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 				if (query->_range != NULL &&
 				    (range = apol_mls_range_create_from_string(policy, query->_range)) == NULL)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 			}
@@ -247,7 +247,7 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 					char *anchored_path = NULL;
 					if (asprintf(&anchored_path, "^%s$", e->_path) < 0)
 					{
-						SEFS_ERR("%s", strerror(errno));
+						SEFS_ERR(this, "%s", strerror(errno));
 						throw std::runtime_error(strerror(errno));
 					}
 
@@ -255,7 +255,7 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 					if (regcomp(&regex, anchored_path, REG_EXTENDED | REG_NOSUB) != 0)
 					{
 						free(anchored_path);
-						SEFS_ERR("%s", strerror(errno));
+						SEFS_ERR(this, "%s", strerror(errno));
 						throw std::runtime_error(strerror(errno));
 					}
 					free(anchored_path);
@@ -319,33 +319,33 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 		if (file == NULL)
 		{
 			errno = EINVAL;
-			SEFS_ERR("%s", strerror(EINVAL));
+			SEFS_ERR(this, "%s", strerror(EINVAL));
 			throw std::invalid_argument(strerror(EINVAL));
 		}
 
 		fc_file = fopen(file, "r");
 		if (!fc_file)
 		{
-			SEFS_ERR("Unable to open file %s", file);
+			SEFS_ERR(this, "Unable to open file %s", file);
 			throw std::runtime_error(strerror(error));
 		}
 
 		if ((name_dup = strdup(file)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(error));
+			SEFS_ERR(this, "%s", strerror(error));
 			throw std::bad_alloc();
 		}
 
 		if (regcomp(&line_regex, "^([^[:blank:]]+)[[:blank:]]+(-.[[:blank:]]+)?([^-].+)$", REG_EXTENDED) != 0)
 		{
-			SEFS_ERR("%s", strerror(error));
+			SEFS_ERR(this, "%s", strerror(error));
 			throw std::bad_alloc();
 		}
 		is_line_compiled = true;
 
 		if (regcomp(&context_regex, "^([^:]+):([^:]+):([^:]+):?(.*)$", REG_EXTENDED) != 0)
 		{
-			SEFS_ERR("%s", strerror(error));
+			SEFS_ERR(this, "%s", strerror(error));
 			throw std::bad_alloc();
 		}
 		is_context_compiled = true;
@@ -360,7 +360,7 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 				}
 				else
 				{
-					SEFS_ERR("%s", strerror(error));
+					SEFS_ERR(this, "%s", strerror(error));
 					throw std::bad_alloc();
 				}
 			}
@@ -369,7 +369,7 @@ int sefs_fcfile::appendFile(const char *file) throw(std::bad_alloc, std::invalid
 
 		if (apol_vector_append(_files, name_dup) < 0)
 		{
-			SEFS_ERR("%s", strerror(error));
+			SEFS_ERR(this, "%s", strerror(error));
 			throw std::bad_alloc();
 		}
 		name_dup = NULL;
@@ -413,7 +413,7 @@ size_t sefs_fcfile::appendFileList(const apol_vector_t * files)throw(std::bad_al
 	size_t i;
 	if (files == NULL)
 	{
-		SEFS_ERR("%s", strerror(EINVAL));
+		SEFS_ERR(this, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		throw new std::invalid_argument(strerror(EINVAL));
 	}
@@ -445,7 +445,7 @@ void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * lin
 	if (s == NULL)
 	{
 		error = errno;
-		SEFS_ERR("%s", strerror(error));
+		SEFS_ERR(this, "%s", strerror(error));
 		throw std::bad_alloc();
 	}
 
@@ -464,7 +464,7 @@ void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * lin
 		if (regexec(line_regex, s, nmatch, pmatch, 0) != 0)
 		{
 			error = EIO;
-			SEFS_ERR("fcfile line is not legal:\n%s", s);
+			SEFS_ERR(this, "fcfile line is not legal:\n%s", s);
 			throw std::runtime_error(strerror(error));
 		}
 
@@ -472,13 +472,13 @@ void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * lin
 		s[pmatch[1].rm_eo] = '\0';
 		if ((path = strdup(s)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(error));
 		}
 		if (apol_bst_insert_and_get(path_tree, (void **)&path, NULL) < 0)
 		{
 			free(path);
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(error));
 		}
 
@@ -510,7 +510,7 @@ void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * lin
 				break;
 			default:
 				error = EIO;
-				SEFS_ERR("%s", "Invalid file context object class.");
+				SEFS_ERR(this, "%s", "Invalid file context object class.");
 				throw std::runtime_error(strerror(error));
 			}
 		}
@@ -533,7 +533,7 @@ void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * lin
 			if (regexec(context_regex, context_str, nmatch, pmatch, 0) != 0)
 			{
 				error = EIO;
-				SEFS_ERR("fcfile context is not legal:\n%s", context_str);
+				SEFS_ERR(this, "fcfile context is not legal:\n%s", context_str);
 				throw std::runtime_error(strerror(error));
 			}
 
@@ -560,7 +560,7 @@ void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * lin
 			if (_mls_set && !_mls)
 			{
 				error = EIO;
-				SEFS_ERR("fcfile context is MLS, but fcfile is not:\n%s", context_str);
+				SEFS_ERR(this, "fcfile context is MLS, but fcfile is not:\n%s", context_str);
 				throw std::runtime_error(strerror(error));
 			}
 			_mls = true;
@@ -571,7 +571,7 @@ void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * lin
 			if (_mls_set && !_mls && strcmp(context_str, "<<none>>") != 0)
 			{
 				error = EIO;
-				SEFS_ERR("fcfile context is not MLS, but fcfile is:\n%s", context_str);
+				SEFS_ERR(this, "fcfile context is not MLS, but fcfile is:\n%s", context_str);
 				throw std::runtime_error(strerror(error));
 			}
 			_mls = true;
@@ -584,7 +584,7 @@ void sefs_fcfile::parse_line(const char *origin, const char *line, regex_t * lin
 		{
 			error = errno;
 			delete entry;
-			SEFS_ERR("%s", strerror(error));
+			SEFS_ERR(this, "%s", strerror(error));
 			throw std::bad_alloc();
 		}
 	}
@@ -650,6 +650,7 @@ int sefs_fcfile_append_file(sefs_fcfile_t * fcfile, const char *file)
 {
 	if (fcfile == NULL)
 	{
+		SEFS_ERR(fcfile, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -668,6 +669,7 @@ size_t sefs_fcfile_append_file_list(sefs_fcfile_t * fcfile, const apol_vector_t 
 {
 	if (fcfile == NULL)
 	{
+		SEFS_ERR(fcfile, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return 0;
 	}
@@ -678,6 +680,7 @@ const apol_vector_t *sefs_fcfile_get_file_list(const sefs_fcfile_t * fcfile)
 {
 	if (fcfile == NULL)
 	{
+		SEFS_ERR(fcfile, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}

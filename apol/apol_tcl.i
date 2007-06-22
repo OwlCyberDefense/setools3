@@ -25,6 +25,7 @@
  */
 
 %module apol_tcl
+%import sefs.i
 %import apol.i
 %import qpol.i
 
@@ -38,6 +39,7 @@
 #include <apol/util.h>
 #include <sefs/db.hh>
 #include <sefs/filesystem.hh>
+#include <sefs/fcfile.hh>
 %}
 
 /* implement a custom non thread-safe error handler */
@@ -327,7 +329,43 @@ unsigned int apol_tcl_get_policy_version(apol_policy_t *policy);
 		delete fs;
 		return db;
 	}
+
+	struct apol_tcl_query_data {
+	    Tcl_Interp *interp;
+	    size_t matches;
+	};
+
+	static int apol_tcl_query_callback(sefs_fclist *fclist, const sefs_entry *entry, void *arg) {
+	    struct apol_tcl_query_data *a = static_cast<struct apol_tcl_query_data *>(arg);
+	    Tcl_Interp *interp = a->interp;
+	    Tcl_Obj *cmd[2];
+	    cmd[0] = Tcl_NewStringObj("Apol_File_Contexts::_search_callback", -1);
+	    cmd[1] = SWIG_NewInstanceObj(SWIG_as_voidptr(entry), SWIGTYPE_p_sefs_entry, 0);
+	    Tcl_EvalObjv(interp, 2, cmd, 0);
+	    int retval = static_cast<int>(++(a->matches));
+	    if (retval % 1000 == 0) {
+		SEFS_INFO(fclist, "Found %d results", retval);
+	    }
+	    return retval;
+	}
+
+	int apol_tcl_query_database(sefs_fclist *fclist, sefs_query *query, Tcl_Interp * interp)
+	{
+	    struct apol_tcl_query_data a = {interp, 0};
+	    return fclist->runQueryMap(query, apol_tcl_query_callback, &a);
+	}
+
+	/**
+	 * Include this function to force the generated SWIG wrapper
+	 * to also include the code to convert from a Tcl object to a
+	 * sefs_entry pointer; that code is used by
+	 * apol_tcl_query_callback().
+	 */
+	void apol_tcl_entry_do_nothing(sefs_entry *e) {
+	}
 %}
+
+
 /* Major hackery here to pass in the Tcl interpreter object as
  * sefs_db's callback argument.  This is needed so that the callback
  * can properly update apol's progress dialog without deadlocking
@@ -337,10 +375,22 @@ unsigned int apol_tcl_get_policy_version(apol_policy_t *policy);
   $1 = Tcl_GetString($input);
   $2 = interp;
 };
+/* More hackery to have a callback function for running queries
+ * against a sefs_db.
+ */
+%typemap (in) (sefs_query * query, Tcl_Interp *interp) {
+  int res = SWIG_ConvertPtr($input, SWIG_as_voidptrptr(&$1), $1_descriptor, 0);
+  if (res) {
+    SWIG_exception_fail(SWIG_ArgError(res), "in method '" "apol_tcl_query_database" "', argument " "1"" of type '" "sefs_query *""'"); 
+  }
+  $2 = interp;
+};
 sefs_db *apol_tcl_open_database(const char * filename, Tcl_Interp * interp);
 sefs_db *apol_tcl_open_database_from_dir(const char * filename, Tcl_Interp * interp);
 %newobject apol_tcl_open_database;
 %newobject apol_tcl_open_database_from_dir;
+int apol_tcl_query_database(sefs_fclist *fclist, sefs_query *query, Tcl_Interp * interp);
+void apol_tcl_entry_do_nothing(sefs_entry *e);
 
 // disable the exception handler, otherwise it will delete the error
 // message when this function gets called

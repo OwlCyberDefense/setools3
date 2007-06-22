@@ -120,7 +120,7 @@ char *sefs_entry::toString() const throw(std::bad_alloc)
 	char *s = NULL;
 	if (asprintf(&s, "%s\t%s\t%s", _path, class_str, _context->context_str) < 0)
 	{
-		_fclist->SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(_fclist, "%s", strerror(errno));
 		throw std::bad_alloc();
 	}
 	return s;

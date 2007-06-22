@@ -56,7 +56,6 @@ class sefs_db:public sefs_fclist
 							const char *) throw(std::bad_alloc);
 	friend sefs_entry *db_get_entry(sefs_db *, const struct sefs_context_node *, uint32_t, const char *, ino64_t,
 					const char *) throw(std::bad_alloc);
-	friend void db_err(sefs_db *, const char *, const char *);
 #endif
 
       public:

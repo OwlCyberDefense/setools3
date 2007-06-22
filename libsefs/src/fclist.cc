@@ -278,58 +278,43 @@ static void sefs_handle_default_callback(void *arg __attribute__ ((unused)),
 	fprintf(stderr, "\n");
 }
 
-void sefs_fclist::handleMsg(int level, const char *fmt, ...) const
-{
-	va_list ap;
-	va_start(ap, fmt);
-	if (_callback == NULL)
-	{
-		sefs_handle_default_callback(NULL, this, level, fmt, ap);
-	}
-	else
-	{
-		_callback(_varg, this, level, fmt, ap);
-	}
-	va_end(ap);
-}
-
 struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *role, const char *type,
 						  const char *range) throw(std::bad_alloc)
 {
 	char *u = NULL, *r = NULL, *t = NULL, *m = NULL;
 	if ((u = strdup(user)) == NULL)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 	if (apol_bst_insert_and_get(user_tree, (void **)&u, NULL) < 0)
 	{
 		free(u);
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 
 	if ((r = strdup(role)) == NULL)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 	if (apol_bst_insert_and_get(role_tree, (void **)&r, NULL) < 0)
 	{
 		free(r);
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 
 	if ((t = strdup(type)) == NULL)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 	if (apol_bst_insert_and_get(type_tree, (void **)&t, NULL) < 0)
 	{
 		free(t);
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 
@@ -341,13 +326,13 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 	{
 		if ((m = strdup(range)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		if (apol_bst_insert_and_get(range_tree, (void **)&m, NULL) < 0)
 		{
 			free(m);
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 	}
@@ -358,7 +343,7 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 	{
 		if ((node = static_cast < struct sefs_context_node * >(calloc(1, sizeof(*node)))) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 
@@ -380,14 +365,14 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 		{
 			if ((apol_range = apol_mls_range_create_from_literal(m)) == NULL)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::bad_alloc();
 			}
 		}
 
 		if ((context = apol_context_create()) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			apol_mls_range_destroy(&apol_range);
 			throw std::runtime_error(strerror(errno));
 		}
@@ -395,7 +380,7 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 		    apol_context_set_role(NULL, context, r) < 0 || apol_context_set_type(NULL, context, t) < 0 ||
 		    apol_context_set_range(NULL, context, apol_range) < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			apol_mls_range_destroy(&apol_range);
 			throw std::runtime_error(strerror(errno));
 		}
@@ -405,13 +390,13 @@ struct sefs_context_node *sefs_fclist::getContext(const char *user, const char *
 
 		if (fclist_sefs_node_make_string(node) < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 
 		if (apol_bst_insert(context_tree, node, NULL) != 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 	}
@@ -450,7 +435,36 @@ struct sefs_context_node *sefs_fclist::getContext(const security_context_t scon)
 	return node;
 }
 
+/******************** private functions below ********************/
+
+void sefs_fclist::handleMsg(int level, const char *fmt, va_list va_args) const
+{
+	if (_callback == NULL)
+	{
+		sefs_handle_default_callback(NULL, this, level, fmt, va_args);
+	}
+	else
+	{
+		_callback(_varg, this, level, fmt, va_args);
+	}
+}
+
 /******************** C functions below ********************/
+
+void sefs_fclist_handleMsg(const struct sefs_fclist *fclist, int level, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	if (fclist == NULL)
+	{
+		sefs_handle_default_callback(NULL, NULL, level, fmt, ap);
+	}
+	else
+	{
+		fclist->handleMsg(level, fmt, ap);
+	}
+	va_end(ap);
+}
 
 void sefs_fclist_destroy(sefs_fclist_t ** fclist)
 {
@@ -465,6 +479,7 @@ int sefs_fclist_run_query_map(sefs_fclist_t * fclist, sefs_query_t * query, sefs
 {
 	if (fclist == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -484,6 +499,7 @@ apol_vector_t *sefs_fclist_run_query(sefs_fclist_t * fclist, sefs_query_t * quer
 {
 	if (fclist == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}
@@ -503,6 +519,7 @@ bool sefs_fclist_get_is_mls(const sefs_fclist_t * fclist)
 {
 	if (fclist == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		return false;
 	}
 	return fclist->isMLS();
@@ -512,6 +529,7 @@ void sefs_fclist_associate_policy(sefs_fclist_t * fclist, apol_policy_t * policy
 {
 	if (fclist == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 	}
 	else
@@ -524,6 +542,7 @@ sefs_fclist_type_e sefs_fclist_get_fclist_type(const sefs_fclist_t * fclist)
 {
 	if (fclist == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		return SEFS_FCLIST_TYPE_NONE;
 	}
 	return fclist->fclist_type();

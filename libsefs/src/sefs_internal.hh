@@ -30,24 +30,6 @@
 #include <regex.h>
 
 /**
- * Invoke a sefs_fclist_t's callback for an error, passing it a format
- * string and arguments.
- */
-#define SEFS_ERR(format, ...) handleMsg(SEFS_MSG_ERR, format, __VA_ARGS__)
-
-/**
- * Invoke a sefs_fclist_t's callback for a warning, passing it a
- * format string and arguments.
- */
-#define SEFS_WARN(format, ...) handleMsg(SEFS_MSG_WARN, format, __VA_ARGS__)
-
-/**
- * Invoke a sefs_fclist's callback for an informational message,
- * passing it a format string and arguments.
- */
-#define SEFS_INFO(format, ...) handleMsg(SEFS_MSG_INFO, format, __VA_ARGS__)
-
-/**
  * Given a policy containing types, generate and return a vector of
  * names (char *) that match the given criteria.
  *

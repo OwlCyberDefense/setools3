@@ -70,11 +70,6 @@ inline sefs_entry *db_get_entry(sefs_db * db, const struct sefs_context_node * n
 	return db->getEntry(node, objClass, path, inode, dev);
 }
 
-inline void db_err(sefs_db * db, const char *fmt, const char *arg)
-{
-	db->SEFS_ERR(fmt, arg);
-}
-
 /******************** sqlite3 callback functions ********************/
 
 struct db_callback_arg
@@ -369,27 +364,27 @@ class db_convert
 		{
 			if ((_user = apol_bst_create(db_strindex_comp, free)) == NULL)
 			{
-				db_err(_db, "%s", strerror(errno));
+				SEFS_ERR(_db, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if ((_role = apol_bst_create(db_strindex_comp, free)) == NULL)
 			{
-				db_err(_db, "%s", strerror(errno));
+				SEFS_ERR(_db, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if ((_type = apol_bst_create(db_strindex_comp, free)) == NULL)
 			{
-				db_err(_db, "%s", strerror(errno));
+				SEFS_ERR(_db, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if ((_range = apol_bst_create(db_strindex_comp, free)) == NULL)
 			{
-				db_err(_db, "%s", strerror(errno));
+				SEFS_ERR(_db, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if ((_dev = apol_bst_create(db_strindex_comp, free)) == NULL)
 			{
-				db_err(_db, "%s", strerror(errno));
+				SEFS_ERR(_db, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 		}
@@ -421,26 +416,26 @@ class db_convert
 		}
 		if ((result = static_cast < struct strindex * >(malloc(sizeof(*result)))) == NULL)
 		{
-			db_err(_db, "%s", strerror(errno));
+			SEFS_ERR(_db, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		result->str = sym;
 		result->id = id++;
 		if (apol_bst_insert(tree, result, NULL) < 0)
 		{
-			db_err(_db, "%s", strerror(errno));
+			SEFS_ERR(_db, "%s", strerror(errno));
 			free(result);
 			throw std::bad_alloc();
 		}
 		char *insert_stmt = NULL;
 		if (asprintf(&insert_stmt, "INSERT INTO %s VALUES (%d, '%s')", table, result->id, result->str) < 0)
 		{
-			db_err(_db, "%s", strerror(errno));
+			SEFS_ERR(_db, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if (sqlite3_exec(_target_db, insert_stmt, NULL, NULL, &_errmsg) != SQLITE_OK)
 		{
-			db_err(_db, "%s", _errmsg);
+			SEFS_ERR(_db, "%s", _errmsg);
 			free(insert_stmt);
 			throw std::runtime_error(_errmsg);
 		}
@@ -482,14 +477,14 @@ int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), con
 		struct stat64 sb;
 		if (stat64(path, &sb) == -1)
 		{
-			db_err(dbc->_db, "%s", strerror(errno));
+			SEFS_ERR(dbc->_db, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if (S_ISLNK(sb.st_mode))
 		{
 			if (readlink(path, link_target, 128) == 0)
 			{
-				db_err(dbc->_db, "%s", strerror(errno));
+				SEFS_ERR(dbc->_db, "%s", strerror(errno));
 				throw std::bad_alloc();
 			}
 			link_target[127] = '\0';
@@ -501,12 +496,12 @@ int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), con
 		     static_cast < long unsigned int >(inode), dev_id, user_id, role_id, type_id, range_id, objclass,
 		     link_target) < 0)
 		{
-			db_err(dbc->_db, "%s", strerror(errno));
+			SEFS_ERR(dbc->_db, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		if (sqlite3_exec(dbc->_target_db, insert_stmt, NULL, NULL, &dbc->_errmsg) != SQLITE_OK)
 		{
-			db_err(dbc->_db, "%s", dbc->_errmsg);
+			SEFS_ERR(dbc->_db, "%s", dbc->_errmsg);
 			free(insert_stmt);
 			throw std::runtime_error(dbc->_errmsg);
 		}
@@ -528,17 +523,17 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 	if (fs == NULL)
 	{
 		errno = EINVAL;
-		SEFS_ERR("%s", strerror(EINVAL));
+		SEFS_ERR(this, "%s", strerror(EINVAL));
 		throw std::invalid_argument(strerror(EINVAL));
 	}
 
-	SEFS_INFO("Reading contexts from filesystem %s.", fs->root());
+	SEFS_INFO(this, "Reading contexts from filesystem %s.", fs->root());
 	char *errmsg = NULL;
 	try
 	{
 		if (sqlite3_open(":memory:", &_db) != SQLITE_OK)
 		{
-			SEFS_ERR("%s", sqlite3_errmsg(_db));
+			SEFS_ERR(this, "%s", sqlite3_errmsg(_db));
 			throw std::runtime_error(sqlite3_errmsg(_db));
 		}
 		int rc;
@@ -552,7 +547,7 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 		}
 		if (rc != SQLITE_OK)
 		{
-			SEFS_ERR("%s", errmsg);
+			SEFS_ERR(this, "%s", errmsg);
 			throw std::runtime_error(errmsg);
 		}
 
@@ -578,14 +573,14 @@ sefs_db::sefs_db(sefs_filesystem * fs, sefs_callback_fn_t msg_callback, void *va
 			     "INSERT INTO info (key,value) VALUES ('hostname','%s');"
 			     "INSERT INTO info (key,value) VALUES ('datetime','%s');", dbversion, hostname, datetime) < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		rc = sqlite3_exec(_db, info_insert, NULL, NULL, &errmsg);
 		free(info_insert);
 		if (rc != SQLITE_OK)
 		{
-			SEFS_ERR("%s", errmsg);
+			SEFS_ERR(this, "%s", errmsg);
 			throw std::runtime_error(errmsg);
 		}
 
@@ -609,19 +604,19 @@ sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *va
 	if (filename == NULL)
 	{
 		errno = EINVAL;
-		SEFS_ERR("%s", strerror(EINVAL));
+		SEFS_ERR(this, "%s", strerror(EINVAL));
 		throw std::invalid_argument(strerror(EINVAL));
 	}
 
 	if (!sefs_db::isDB(filename))
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 
 	if (sqlite3_open(filename, &_db) != SQLITE_OK)
 	{
-		SEFS_ERR("%s", sqlite3_errmsg(_db));
+		SEFS_ERR(this, "%s", sqlite3_errmsg(_db));
 		sqlite3_close(_db);
 		throw std::runtime_error(strerror(errno));
 	}
@@ -632,15 +627,15 @@ sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *va
 	bool answer = false;
 	if (sqlite3_exec(_db, select_stmt, db_row_exist_callback, &answer, &errmsg) != SQLITE_OK)
 	{
-		SEFS_ERR("%s", errmsg);
+		SEFS_ERR(this, "%s", errmsg);
 		sqlite3_free(errmsg);
 		sqlite3_close(_db);
 		throw std::runtime_error(strerror(errno));
 	}
 	if (!answer)
 	{
-		SEFS_INFO("Upgrading database %s.", filename);
-		SEFS_WARN("%s is a pre-libsefs-4.0 database and will be upgraded.", filename);
+		SEFS_INFO(this, "Upgrading database %s.", filename);
+		SEFS_WARN(this, "%s is a pre-libsefs-4.0 database and will be upgraded.", filename);
 		upgradeToDB2();
 	}
 
@@ -649,7 +644,7 @@ sefs_db::sefs_db(const char *filename, sefs_callback_fn_t msg_callback, void *va
 	const char *ctime_stmt = "SELECT value FROM info WHERE key='datetime'";
 	if (sqlite3_exec(_db, ctime_stmt, db_ctime_callback, &_ctime, &errmsg) != SQLITE_OK)
 	{
-		SEFS_ERR("%s", errmsg);
+		SEFS_ERR(this, "%s", errmsg);
 		sqlite3_free(errmsg);
 		sqlite3_close(_db);
 		throw std::runtime_error(strerror(errno));
@@ -686,7 +681,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 								    query->_indirect);
 				if (q.type_list == NULL)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 			}
@@ -696,7 +691,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 				if (q.apol_range == NULL)
 				{
 					apol_vector_destroy(&q.type_list);
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 			}
@@ -734,18 +729,18 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		    (&select_stmt, &len,
 		     "SELECT paths.path, paths.ino, devs.dev_name, users.user_name, roles.role_name, types.type_name") < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		if (q.db_is_mls && apol_str_append(&select_stmt, &len, ", mls.mls_range") < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		if (apol_str_append(&select_stmt, &len,
 				    ", paths.obj_class, paths.symlink_target FROM paths, devs, users, roles, types") < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		if (q.db_is_mls && apol_str_append(&select_stmt, &len, ", mls") < 0)
@@ -758,13 +753,13 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			if (sqlite3_create_function(_db, "user_compare", 1, SQLITE_UTF8, &q, db_user_compare, NULL, NULL) !=
 			    SQLITE_OK)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (user_compare(users.user_name))", (where_added ? " AND" : " WHERE")) < 0)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			where_added = true;
@@ -775,13 +770,13 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			if (sqlite3_create_function(_db, "role_compare", 1, SQLITE_UTF8, &q, db_role_compare, NULL, NULL) !=
 			    SQLITE_OK)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (role_compare(roles.role_name))", (where_added ? " AND" : " WHERE")) < 0)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			where_added = true;
@@ -792,13 +787,13 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			if (sqlite3_create_function(_db, "type_compare", 1, SQLITE_UTF8, &q, db_type_compare, NULL, NULL) !=
 			    SQLITE_OK)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (type_compare(types.type_name))", (where_added ? " AND" : " WHERE")) < 0)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			where_added = true;
@@ -809,13 +804,13 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			if (sqlite3_create_function(_db, "range_compare", 1, SQLITE_UTF8, &q, db_range_compare, NULL, NULL) !=
 			    SQLITE_OK)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (range_compare(mls.mls_range_name))", (where_added ? " AND" : " WHERE")) < 0)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			where_added = true;
@@ -826,7 +821,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (paths.obj_class = %d)", (where_added ? " AND" : " WHERE"), query->_objclass) < 0)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			where_added = true;
@@ -837,13 +832,13 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			if (sqlite3_create_function(_db, "path_compare", 1, SQLITE_UTF8, &q, db_path_compare, NULL, NULL) !=
 			    SQLITE_OK)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (path_compare(paths.path))", (where_added ? " AND" : " WHERE")) < 0)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			where_added = true;
@@ -855,7 +850,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 					     "%s (paths.ino = %lu)", (where_added ? " AND" : " WHERE"),
 					     static_cast < long unsigned int >(query->_inode)) < 0)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			where_added = true;
@@ -866,13 +861,13 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			if (sqlite3_create_function(_db, "dev_compare", 1, SQLITE_UTF8, &q, db_dev_compare, NULL, NULL) !=
 			    SQLITE_OK)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			if (apol_str_appendf(&select_stmt, &len,
 					     "%s (dev_compare(devs.dev_name)", (where_added ? " AND" : " WHERE")) < 0)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			where_added = true;
@@ -882,24 +877,24 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 				     "%s (paths.user = users.user_id AND paths.role = roles.role_id AND paths.type = types.type_id",
 				     (where_added ? " AND" : " WHERE")) < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		if (q.db_is_mls && apol_str_appendf(&select_stmt, &len, " AND paths.range = mls.mls_id") < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		if (apol_str_append(&select_stmt, &len, " AND paths.dev = devs.dev_id) ORDER BY paths.path ASC") < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 
 		int rc = sqlite3_exec(_db, select_stmt, db_query_callback, &q, &errmsg);
 		if (rc != SQLITE_OK && (rc != SQLITE_ABORT || !q.aborted))
 		{
-			SEFS_ERR("%s", errmsg);
+			SEFS_ERR(this, "%s", errmsg);
 			throw std::runtime_error(errmsg);
 		}
 	}
@@ -928,7 +923,7 @@ bool sefs_db::isMLS() const
 	rc = sqlite3_exec(_db, select_stmt, db_row_exist_callback, &answer, &errmsg);
 	if (rc != SQLITE_OK)
 	{
-		SEFS_ERR("%s", errmsg);
+		SEFS_ERR(this, "%s", errmsg);
 		sqlite3_free(errmsg);
 		answer = false;
 	}
@@ -954,7 +949,7 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 		// remove the file if it already exists
 		if ((fp = fopen(filename, "w")) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		fclose(fp);
@@ -963,13 +958,13 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 		// copy database schema from in-memory db to the one on disk
 		if (sqlite3_open(filename, &(diskdb.db)) != SQLITE_OK)
 		{
-			SEFS_ERR("%s", sqlite3_errmsg(diskdb.db));
+			SEFS_ERR(this, "%s", sqlite3_errmsg(diskdb.db));
 			throw std::runtime_error(sqlite3_errmsg(diskdb.db));
 		}
 		if (sqlite3_exec(_db, "SELECT sql FROM sqlite_master WHERE sql NOT NULL", db_copy_schema, &diskdb, &diskdb.errmsg)
 		    != SQLITE_OK)
 		{
-			SEFS_ERR("%s", diskdb.errmsg);
+			SEFS_ERR(this, "%s", diskdb.errmsg);
 			throw std::runtime_error(diskdb.errmsg);
 		}
 		sqlite3_close(diskdb.db);
@@ -977,7 +972,7 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 		char *attach = NULL;
 		if (asprintf(&attach, "ATTACH '%s' AS diskdb", filename) < 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		diskdb.db = _db;
@@ -987,21 +982,21 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 		free(attach);
 		if (rc != SQLITE_OK)
 		{
-			SEFS_ERR("%s", diskdb.errmsg);
+			SEFS_ERR(this, "%s", diskdb.errmsg);
 			throw std::runtime_error(diskdb.errmsg);
 		}
 
 		// copy contents from in-memory db to the one on disk
 		if (sqlite3_exec(_db, "BEGIN TRANSACTION", NULL, NULL, &(diskdb.errmsg)) != SQLITE_OK)
 		{
-			SEFS_ERR("%s", diskdb.errmsg);
+			SEFS_ERR(this, "%s", diskdb.errmsg);
 			throw std::runtime_error(diskdb.errmsg);
 		}
 		in_transaction = true;
 		if (sqlite3_exec(_db, "SELECT name FROM sqlite_master WHERE type ='table'", db_copy_table, &diskdb, &diskdb.errmsg)
 		    != SQLITE_OK)
 		{
-			SEFS_ERR("%s", diskdb.errmsg);
+			SEFS_ERR(this, "%s", diskdb.errmsg);
 			throw std::runtime_error(diskdb.errmsg);
 		}
 
@@ -1009,7 +1004,7 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 
 		if (sqlite3_exec(_db, "END TRANSACTION", NULL, 0, &(diskdb.errmsg)) != SQLITE_OK)
 		{
-			SEFS_ERR("%s", diskdb.errmsg);
+			SEFS_ERR(this, "%s", diskdb.errmsg);
 			throw std::runtime_error(diskdb.errmsg);
 		}
 		in_transaction = false;
@@ -1173,14 +1168,14 @@ void sefs_db::upgradeToDB2() throw(std::runtime_error)
 		     "SELECT paths.path, inodes.ino, inodes.user, inodes.type, %sinodes.obj_class, inodes.symlink_target FROM paths, inodes WHERE (inodes.inode_id = paths.inode)",	// rebuild new paths table from older tables
 		     isMLS()? "inodes.range, " : "") < 0)
 	{
-		SEFS_ERR("%s", errmsg);
+		SEFS_ERR(this, "%s", errmsg);
 		sqlite3_free(errmsg);
 		sqlite3_close(_db);
 		throw std::runtime_error(strerror(errno));
 	}
 	if (sqlite3_exec(_db, alter_stmt, db_upgrade_reinsert, _db, &errmsg) != SQLITE_OK)
 	{
-		SEFS_ERR("%s", errmsg);
+		SEFS_ERR(this, "%s", errmsg);
 		free(alter_stmt);
 		sqlite3_free(errmsg);
 		sqlite3_close(_db);
@@ -1196,14 +1191,14 @@ void sefs_db::upgradeToDB2() throw(std::runtime_error)
 		     "UPDATE info SET value = '%s' WHERE key = 'dbversion';"
 		     "END TRANSACTION;" "VACUUM", datetime, DB_MAX_VERSION) < 0)
 	{
-		SEFS_ERR("%s", errmsg);
+		SEFS_ERR(this, "%s", errmsg);
 		sqlite3_free(errmsg);
 		sqlite3_close(_db);
 		throw std::runtime_error(strerror(errno));
 	}
 	if (sqlite3_exec(_db, alter_stmt, NULL, NULL, &errmsg) != SQLITE_OK)
 	{
-		SEFS_ERR("%s", errmsg);
+		SEFS_ERR(this, "%s", errmsg);
 		free(alter_stmt);
 		sqlite3_free(errmsg);
 		sqlite3_close(_db);
@@ -1218,12 +1213,12 @@ sefs_entry *sefs_db::getEntry(const struct sefs_context_node *context, uint32_t 
 	char *s = strdup(path);
 	if (s == NULL)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::bad_alloc();
 	}
 	if (apol_bst_insert_and_get(path_tree, (void **)&s, NULL) < 0)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		free(s);
 		throw std::bad_alloc();
 	}
@@ -1233,7 +1228,7 @@ sefs_entry *sefs_db::getEntry(const struct sefs_context_node *context, uint32_t 
 	s = NULL;
 	if ((s = strdup(dev)) == NULL || apol_bst_insert_and_get(dev_tree, (void **)&s, NULL) < 0)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		free(s);
 		throw std::bad_alloc();
 	}
@@ -1275,6 +1270,7 @@ int sefs_db_save(sefs_db_t * db, const char *filename)
 {
 	if (db == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -1293,6 +1289,7 @@ time_t sefs_db_get_ctime(sefs_db_t * db)
 {
 	if (db == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return static_cast < time_t > (-1);
 	}

@@ -43,7 +43,10 @@ class sefs_fclist;
 struct sefs_context_node;
 
 /**
- * This class represents an individual entry within a list an fcfile object.
+ * This class represents an individual entry within a list an fcfile
+ * object.  Note that the entry's contents (even upon a
+ * copy-constructed version of the entry) are always tied to its
+ * fclist, so do not access entries whose fclist has been destroyed.
  */
 class sefs_entry
 {

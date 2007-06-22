@@ -157,7 +157,7 @@ sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_ca
 {
 	if (new_root == NULL)
 	{
-		SEFS_ERR("%s", strerror(EINVAL));
+		SEFS_ERR(this, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		throw std::invalid_argument(strerror(EINVAL));
 	}
@@ -170,7 +170,7 @@ sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_ca
 		struct stat64 sb;
 		if (stat64(new_root, &sb) != 0 && !S_ISDIR(sb.st_mode))
 		{
-			SEFS_ERR("%s", strerror(EINVAL));
+			SEFS_ERR(this, "%s", strerror(EINVAL));
 			errno = EINVAL;
 			throw std::invalid_argument(strerror(EINVAL));
 		}
@@ -179,13 +179,13 @@ sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_ca
 		security_context_t scon;
 		if (filesystem_lgetfilecon(new_root, &scon) < 0)
 		{
-			SEFS_ERR("Could not read SELinux file context for %s.", new_root);
+			SEFS_ERR(this, "Could not read SELinux file context for %s.", new_root);
 			throw std::runtime_error(strerror(errno));
 		}
 		context_t con;
 		if ((con = context_new(scon)) == 0)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			freecon(scon);
 			throw std::runtime_error(strerror(errno));
 		}
@@ -199,7 +199,7 @@ sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_ca
 
 		if ((_root = strdup(new_root)) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
 		_mounts = filesystem_find_mount_points(new_root);
@@ -249,11 +249,6 @@ inline bool filesystem_is_query_match(sefs_filesystem * fs, const sefs_query * q
 				      apol_mls_range_t * range)throw(std::runtime_error)
 {
 	return fs->isQueryMatch(query, path, dev, sb, type_list, range);
-}
-
-inline void filesystem_err(sefs_filesystem * fs, const char *fmt, const char *arg)
-{
-	fs->SEFS_ERR(fmt, arg);
 }
 
 static uint32_t filesystem_stat_to_objclass(const struct stat64 *sb)
@@ -338,7 +333,7 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	security_context_t scon;
 	if (filesystem_lgetfilecon(fpath, &scon) < 0)
 	{
-		filesystem_err(s->fs, "Could not read SELinux file context for %s.", fpath);
+		SEFS_ERR(s->fs, "Could not read SELinux file context for %s.", fpath);
 		return -1;
 	}
 	struct sefs_context_node *node = NULL;
@@ -396,13 +391,13 @@ int sefs_filesystem::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, vo
 				     query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,
 								 query->_indirect)) == NULL)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 				if (query->_range != NULL &&
 				    (s.range = apol_mls_range_create_from_string(policy, query->_range)) == NULL)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 			}
@@ -490,7 +485,7 @@ apol_vector_t *sefs_filesystem::buildDevMap(void)throw(std::runtime_error)
 	apol_vector_t *dev_map;
 	if ((dev_map = apol_vector_create(filesystem_dev_free)) == NULL)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 	FILE *f = NULL;
@@ -498,7 +493,7 @@ apol_vector_t *sefs_filesystem::buildDevMap(void)throw(std::runtime_error)
 	{
 		if ((f = fopen("/etc/mtab", "r")) == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::runtime_error(strerror(errno));
 		}
 		char buf[256];
@@ -508,7 +503,7 @@ apol_vector_t *sefs_filesystem::buildDevMap(void)throw(std::runtime_error)
 			struct stat sb;
 			if (stat(mntbuf.mnt_dir, &sb) == -1)
 			{
-				SEFS_ERR("%s", strerror(errno));
+				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
 			}
 			else
@@ -516,12 +511,12 @@ apol_vector_t *sefs_filesystem::buildDevMap(void)throw(std::runtime_error)
 				struct filesystem_dev *d = static_cast < struct filesystem_dev *>(calloc(1, sizeof(*d)));
 				if (d == NULL)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 				if (apol_vector_append(dev_map, d) < 0)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					filesystem_dev_free(d);
 					throw std::runtime_error(strerror(errno));
 				}
@@ -529,12 +524,12 @@ apol_vector_t *sefs_filesystem::buildDevMap(void)throw(std::runtime_error)
 				char *mnt_fsname = strdup(mntbuf.mnt_fsname);
 				if (mnt_fsname == NULL)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
 				if (apol_bst_insert_and_get(dev_tree, (void **)&mnt_fsname, NULL) < 0)
 				{
-					SEFS_ERR("%s", strerror(errno));
+					SEFS_ERR(this, "%s", strerror(errno));
 					free(mnt_fsname);
 					throw std::runtime_error(strerror(errno));
 				}
@@ -565,13 +560,13 @@ bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, c
 	security_context_t scon;
 	if (filesystem_lgetfilecon(path, &scon) < 0)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::runtime_error(strerror(errno));
 	}
 	context_t con;
 	if ((con = context_new(scon)) == 0)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		freecon(scon);
 		throw std::runtime_error(strerror(errno));
 	}
@@ -619,7 +614,7 @@ bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, c
 		apol_mls_range_t *context_range = apol_mls_range_create_from_string(policy, context_range_get(con));
 		if (context_range == NULL)
 		{
-			SEFS_ERR("%s", strerror(errno));
+			SEFS_ERR(this, "%s", strerror(errno));
 			context_free(con);
 			throw std::runtime_error(strerror(errno));
 		}
@@ -663,12 +658,12 @@ sefs_entry *sefs_filesystem::getEntry(const struct sefs_context_node * context, 
 	char *s = strdup(path);
 	if (s == NULL)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		throw std::bad_alloc();
 	}
 	if (apol_bst_insert_and_get(path_tree, (void **)&s, NULL) < 0)
 	{
-		SEFS_ERR("%s", strerror(errno));
+		SEFS_ERR(this, "%s", strerror(errno));
 		free(s);
 		throw std::bad_alloc();
 	}
@@ -699,6 +694,7 @@ const char *sefs_filesystem_get_root(const sefs_filesystem_t * fs)
 {
 	if (fs == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}
@@ -709,6 +705,7 @@ extern const char *sefs_filesystem_get_dev_name(sefs_filesystem_t * fs, const de
 {
 	if (fs == NULL)
 	{
+		SEFS_ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}

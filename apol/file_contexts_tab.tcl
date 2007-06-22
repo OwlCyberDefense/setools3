@@ -268,7 +268,7 @@ proc Apol_File_Contexts::_create_dialog {} {
 
     set opts(new_filename) $opts(indexFilename)
     set opts(new_rootdir) "/"
-    
+
     set d [Dialog .filecontexts_create -title "Create Index File" \
                -default 0 -cancel 1 -modal local -parent . -separator 1]
     $d add -text "OK" -command [list Apol_File_Contexts::_create_database $d] \
@@ -447,31 +447,32 @@ proc Apol_File_Contexts::_search {} {
 
     if {[catch {Apol_Progress_Dialog::wait "File Contexts" "Searching database" \
                     {
-                        set v [$opts(db) runQuery $q]
-                        if {[$v get_size] == 0} {
+                        set num_results [apol_tcl_query_database $opts(db) $q]
+                        if {$num_results == 0} {
                             Apol_Widget::appendSearchResultText $widgets(results) "Search returned no results."
                         } else {
-                            Apol_Widget::appendSearchResultText $widgets(results) "FILES FOUND ([$v get_size]):\n\n"
-                            for {set i 0} {$i < [$v get_size]} {incr i} {
-                                set text {}
-                                set e [new_sefs_entry [$v get_element $i]]
-                                if {$opts(showContext)} {
-                                    set context [[$e context] render NULL]
-                                    append text [format "%-40s" $context]
-                                }
-                                if {$opts(showObjclass)} {
-                                    set class [apol_objclass_to_str [$e objectClass]]
-                                    append text [format "%-12s" $class]
-                                }
-                                append text "[$e path]\n"
-                                Apol_Widget::appendSearchResultText $widgets(results) $text
-                            }
+                            Apol_Widget::appendSearchResultHeader $widgets(results) "FILES FOUND ($num_results):\n\n"
                         }
-                        $v -delete
                     }} err]} {
         tk_messageBox -icon error -type ok -title "File Contexts" -message $err
     }
     delete_sefs_query $q
+}
+
+proc Apol_File_Contexts::_search_callback {entry} {
+    variable opts
+    variable widgets
+    set text {}
+    if {$opts(showContext)} {
+        set context [[$entry context] render NULL]
+        append text [format "%-40s" $context]
+    }
+    if {$opts(showObjclass)} {
+        set class [apol_objclass_to_str [$entry objectClass]]
+        append text [format "%-12s" $class]
+    }
+    append text "[$entry path]\n"
+    Apol_Widget::appendSearchResultText $widgets(results) $text
 }
 
 proc Apol_File_Contexts::_close_database {} {

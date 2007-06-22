@@ -53,7 +53,6 @@ class sefs_filesystem:public sefs_fclist
 						const char *, ino64_t, const char *) throw(std::bad_alloc);
 	friend bool filesystem_is_query_match(sefs_filesystem *, const sefs_query *, const char *, const char *,
 					      const struct stat64 *, apol_vector_t *, apol_mls_range_t *) throw(std::runtime_error);
-	friend void filesystem_err(sefs_filesystem *, const char *, const char *);
 #endif
 
       public:
