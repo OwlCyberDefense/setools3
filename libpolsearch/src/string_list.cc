@@ -63,11 +63,10 @@ const apol_vector_t *polsearch_string_list::ids() const
 	return _ids;
 }
 
-apol_vector_t *polsearch_string_list::match(const apol_vector_t * test_ids,
-					    const apol_vector_t * Xcandidates) const throw(std::bad_alloc)
+bool polsearch_string_list::match(const apol_vector_t * test_ids, const apol_vector_t * Xcandidates) const
 {
 	//TODO
-	return NULL;
+	return false;
 }
 
 char *polsearch_string_list::toString() const

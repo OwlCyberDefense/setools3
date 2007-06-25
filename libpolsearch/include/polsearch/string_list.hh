@@ -74,14 +74,15 @@ class polsearch_string_list
 	 */
 	const apol_vector_t *ids() const;
 	/**
-	 * Find all matching identifiers in a list that match the string list.
+	 * Determine if there are matching identifiers in a list that match
+	 * the string list.
 	 * @param test_ids A vector of identifiers (char *) to match literally.
 	 * @param Xcandidates A vector of identifiers (char *) to consider matches
 	 * to the special identifier "X".
-	 * @return A vector of identifiers (char *) that matched from either set.
-	 * @exception std::bad_alloc Could not create the vector of matching identifiers.
+	 * @return If at least one of the elments of \a test_ids matches the list
+	 * expression, return \a true; reurn \a false otherwise.
 	 */
-	apol_vector_t *match(const apol_vector_t * test_ids, const apol_vector_t * Xcandidates) const throw(std::bad_alloc);
+	bool match(const apol_vector_t * test_ids, const apol_vector_t * Xcandidates) const;
 	/**
 	 * Return a string representing the list.
 	 * @return A string representing the list.

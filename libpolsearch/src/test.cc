@@ -210,7 +210,7 @@ static int fcentry_callback(sefs_fclist * fclist, const sefs_entry * entry, void
 			return -1;
 		try
 		{
-			crit->check(datum->policy, fclist, test_candidates, POLSEARCH_ELEMENT_FC_ENTRY, datum->Xnames);
+			crit->check(datum->policy, test_candidates, POLSEARCH_ELEMENT_FC_ENTRY, datum->Xnames);
 			if (apol_vector_get_size(test_candidates))
 			{
 				sefs_entry *entry_copy = new sefs_entry(entry);
@@ -674,16 +674,18 @@ apol_vector_t *polsearch_test::run(const apol_policy_t * p, sefs_fclist * fclist
 		}
 		else
 		{
-			//TODO get test candidates
-			apol_vector_t *test_candidates;
+			// get test candidates
 			polsearch_element_e candidate_type;
+			apol_vector_t *test_candidates =
+				get_candidates(_test_cond, _element_type, apol_vector_get_element(Xcandidates, j), p,
+					       &candidate_type);
 
 			// check each criterion to prune the test candidates
 			for (size_t i = 0; i < apol_vector_get_size(_criteria); i++)
 			{
 				polsearch_base_criterion *crit =
 					static_cast < polsearch_base_criterion * >(apol_vector_get_element(_criteria, i));
-				crit->check(p, fclist, test_candidates, candidate_type, Xnames);
+				crit->check(p, test_candidates, candidate_type, Xnames);
 			}
 
 			// if there are remaining candidates, create a result entry and a proof entry for each candidate.

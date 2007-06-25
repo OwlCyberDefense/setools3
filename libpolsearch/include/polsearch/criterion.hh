@@ -96,7 +96,6 @@ class polsearch_base_criterion
 	/**
 	 * Check all candidates to find those meet this criterion.
 	 * @param p The policy containing the elements to check.
-	 * @param fclist The file_contexts list to use.
 	 * @param test_candidates Vector of items to check. This vector will be
 	 * pruned to only those candidates satisfying this criterion.
 	 * <b>Must be non-null.</b>
@@ -104,10 +103,10 @@ class polsearch_base_criterion
 	 * @param Xcandidtates Current list of possible candidates for the symbol X.
 	 * <b>Must be non-null. Must not be the same vector as \a test_candidates. </b>
 	 * @exception std::runtime_error Could not perform check.
+	 * @exception std::bad_alloc Could not allocate enough space to perform check.
 	 */
-	virtual void check(const apol_policy_t * p, sefs_fclist_t * fclist,
-			   apol_vector_t * test_candidates, polsearch_element_e candidate_type,
-			   const apol_vector_t * Xcandidtates) const throw(std::runtime_error) = 0;
+	virtual void check(const apol_policy_t * p, apol_vector_t * test_candidates, polsearch_element_e candidate_type,
+			   const apol_vector_t * Xcandidtates) const throw(std::runtime_error, std::bad_alloc) = 0;
 
       protected:
 	 polsearch_op_e _op;	       /*!< The comparison operator. */
@@ -157,7 +156,6 @@ template < class T > class polsearch_criterion:public polsearch_base_criterion
 	/**
 	 * Check all candidates to find those meet this criterion.
 	 * @param p The policy containing the elements to check.
-	 * @param fclist The file_contexts list to use.
 	 * @param test_candidates Vector of items to check. This vector will be
 	 * pruned to only those candidates satisfying this criterion.
 	 * <b>Must be non-null.</b>
@@ -165,10 +163,10 @@ template < class T > class polsearch_criterion:public polsearch_base_criterion
 	 * @param Xcandidtates Current list of possible candidates for the symbol X.
 	 * <b>Must be non-null. Must not be the same vector as \a test_candidates. </b>
 	 * @exception std::runtime_error Could not perform check.
+	 * @exception std::bad_alloc Could not allocate enough space to perform check.
 	 */
-	void check(const apol_policy_t * p, sefs_fclist_t * fclist,
-		   apol_vector_t * test_candidates, polsearch_element_e candidate_type,
-		   const apol_vector_t * Xcandidtates) const throw(std::runtime_error);
+	void check(const apol_policy_t * p, apol_vector_t * test_candidates, polsearch_element_e candidate_type,
+		   const apol_vector_t * Xcandidtates) const throw(std::runtime_error, std::bad_alloc);
       private:
 	T _param;		       /*!< Parameter to check for this criterion. */
 	/**
@@ -255,7 +253,6 @@ extern "C"
 	 * Check all candidates to find those meet a criterion.
 	 * @param pc The criterion to check.
 	 * @param p The policy containing the elements to check.
-	 * @param fclist The file_contexts list to use.
 	 * @param test_candidates Vector of items to check. This vector will be
 	 * pruned to only those candidates satisfying this criterion.
 	 * <b>Must be non-null.</b>
@@ -265,8 +262,8 @@ extern "C"
 	 * @see polsearch_criterion<T>::check(const apol_policy_t*, sefs_fclist_t*, apol_vector_t*, const apol_vector_t*)
 	 */
 	extern void polsearch_criterion_check(const polsearch_criterion_t * pc, const apol_policy_t * p,
-					      sefs_fclist_t * fclist, apol_vector_t * test_candidates,
-					      polsearch_element_e candidate_type, const apol_vector_t * Xcandidtates);
+					      apol_vector_t * test_candidates, polsearch_element_e candidate_type,
+					      const apol_vector_t * Xcandidtates);
 	/**
 	 * Get the parameter used by a criterion's comparison operator.
 	 * <b>This function resets errno.</b>
