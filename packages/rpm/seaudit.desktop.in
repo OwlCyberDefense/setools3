@@ -7,6 +7,6 @@ Exec=@bindir@/seaudit
 Type=Application
 Terminal=false
 Encoding=UTF-8
-Categories=Application;SystemSetup;X-Red-Hat-Base;
+Categories=Application;System;Utilities;X-Red-Hat-Base;
 X-Desktop-File-Install-Version=0.2
 StartupNotify=true

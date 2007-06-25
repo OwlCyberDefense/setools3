@@ -200,20 +200,21 @@ make %{?_smp_mflags}
 %install
 rm -rf ${RPM_BUILD_ROOT}
 make DESTDIR=${RPM_BUILD_ROOT} install
+mkdir -p ${RPM_BUILD_ROOT}/usr/share/applications
 mkdir -p ${RPM_BUILD_ROOT}/usr/share/pixmaps
 install -d -m 755 ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d
 install -m 644 packages/rpm/seaudit.pam ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d/seaudit
 install -d -m 755 ${RPM_BUILD_ROOT}%{_sysconfdir}/security/console.apps
 install -m 644 packages/rpm/seaudit.console ${RPM_BUILD_ROOT}%{_sysconfdir}/security/console.apps/seaudit
 install -d -m 755 ${RPM_BUILD_ROOT}%{_datadir}/applications
-install -m 664 packages/rpm/apol.desktop ${RPM_BUILD_ROOT}%{_datadir}/applications/apol.desktop
-install -m 664 packages/rpm/seaudit.desktop ${RPM_BUILD_ROOT}%{_datadir}/applications/seaudit.desktop
-install -m 664 packages/rpm/sediffx.desktop ${RPM_BUILD_ROOT}%{_datadir}/applications/sediffx.desktop
+install -m 664 packages/rpm/apol.desktop ${RPM_BUILD_ROOT}/usr/share/applications/apol.desktop
+install -m 664 packages/rpm/seaudit.desktop ${RPM_BUILD_ROOT}/usr/share/applications/seaudit.desktop
+install -m 664 packages/rpm/sediffx.desktop ${RPM_BUILD_ROOT}/usr/share/applications/sediffx.desktop
 install -m 664 apol/apol.png ${RPM_BUILD_ROOT}/usr/share/pixmaps/apol.png
 install -m 664 seaudit/seaudit.png ${RPM_BUILD_ROOT}/usr/share/pixmaps/seaudit.png
 install -m 664 sediff/sediffx.png ${RPM_BUILD_ROOT}/usr/share/pixmaps/sediffx.png
 cd $RPM_BUILD_ROOT/%{_bindir}/
-ln -sf consolehelper seaudit
+ln -sf /usr/bin/consolehelper seaudit
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}
@@ -440,7 +441,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/sesearch
 %{_bindir}/indexcon
 %{_bindir}/findcon
-#%{_bindir}/replcon
+%{_bindir}/replcon
 %{_bindir}/sechecker
 %{_bindir}/sediff
 %{_bindir}/seaudit-report
@@ -496,9 +497,9 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %config(noreplace) %{_sysconfdir}/pam.d/seaudit
 %config(noreplace) %{_sysconfdir}/security/console.apps/seaudit
-%{_datadir}/applications/apol.desktop
-%{_datadir}/applications/seaudit.desktop
-%{_datadir}/applications/sediffx.desktop
+%attr(0644,root,root) /usr/share/applications/apol.desktop
+%attr(0644,root,root) /usr/share/applications/seaudit.desktop
+%attr(0644,root,root) /usr/share/applications/sediffx.desktop
 %attr(0644,root,root) /usr/share/pixmaps/apol.png
 %attr(0644,root,root) /usr/share/pixmaps/seaudit.png
 %attr(0644,root,root) /usr/share/pixmaps/sediffx.png
