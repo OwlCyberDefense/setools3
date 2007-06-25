@@ -11,8 +11,27 @@ wrappedjardir = $(libdir)/setools
 
 dist_noinst_DATA = $(srcdir)/../polsearch.i
 BUILT_SOURCES = polsearch_wrap.cc \
+	polsearch_base_criterion.java \
+	polsearch_bool_criterion.java \
+	polsearch_element_e.java \
 	polsearch.java \
-	polsearchJNI.java
+	polsearchJNI.java \
+	polsearch_level_criterion.java \
+	polsearch_match_e.java \
+	polsearch_op_e.java \
+	polsearch_param_type_e.java \
+	polsearch_proof.java \
+	polsearch_query.java \
+	polsearch_range_criterion.java \
+	polsearch_regex_criterion.java \
+	polsearch_result.java \
+	polsearch_rule_type_criterion.java \
+	polsearch_symbol_e.java \
+	polsearch_symbol_query.java \
+	polsearch_test_cond_e.java \
+	polsearch_test.java \
+	SWIGTYPE_p_f_p_void__void.java \
+	SWIGTYPE_p_void.java
 
 AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ -I$(top_builddir) -fpic \
@@ -30,7 +49,8 @@ $(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA)
 	$(SWIG) -c++ $(SWIG_JAVA_OPT) -package $(package_name) -o $@ \
 	-I$(top_srcdir)/libpolsearch/include -I$(top_srcdir)/libsefs/include \
 	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
-	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<
+	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig \
+	-I$(top_srcdir)/libsefs/swig $<
 
 $(wordlist 2,$(words $(BUILT_SOURCES)), $(BUILT_SOURCES)): $(firstword $(BUILT_SOURCES))
 

@@ -23,7 +23,7 @@ $(BUILT_SOURCES): $(dist_noinst_DATA)
 	$(SWIG) -c++ $(SWIG_TCL_OPT) -pkgversion @libpolsearch_version@ -o $@ \
 	-I$(top_srcdir)/libpolsearch/include -I$(top_srcdir)/libsefs/include \
 	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libapol/swig \
-	-I$(top_srcdir)/libqpol/swig $<
+	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libsefs/swig $<
 
 $(wrappedso_DATA): $(BUILT_SOURCES)
 	$(CXX) -shared -o $@ $^ $(AM_CXXFLAGS) $(CXXFLAGS) $(SWIG_TCL_CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)

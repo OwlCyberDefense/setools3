@@ -105,7 +105,7 @@ class polsearch_query
 	 * @exception std::bad_alloc Could not allocate the vector.
 	 * @exception std::runtime_error Error running tests.
 	 */
-	virtual apol_vector_t *run(const apol_policy_t * policy, sefs_fclist_t * fclist =
+	virtual apol_vector_t *run(const apol_policy_t * policy, sefs_fclist * fclist =
 				   NULL) const throw(std::bad_alloc, std::runtime_error) = 0;
 
       protected:

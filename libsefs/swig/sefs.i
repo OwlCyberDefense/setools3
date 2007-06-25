@@ -71,6 +71,8 @@ import com.tresys.setools.apol.*;
 
 %apply long { time_t }
 
+%javaconst(1);
+
 #else
 /* not in java so handle size_t as architecture dependent */
 #ifdef SWIGWORDSIZE64

@@ -103,7 +103,7 @@ class polsearch_symbol_query:public polsearch_query
 	 * @exception std::bad_alloc Could not allocate the vector.
 	 * @exception std::runtime_error Error running tests.
 	 */
-	apol_vector_t *run(const apol_policy_t * policy, sefs_fclist_t * fclist =
+	apol_vector_t *run(const apol_policy_t * policy, sefs_fclist * fclist =
 			   NULL) const throw(std::bad_alloc, std::runtime_error);
 
       private:
