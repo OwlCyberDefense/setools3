@@ -3,57 +3,90 @@
 replcon \- SELinux file context replacement tool
 .SH SYNOPSIS
 .B replcon
-[OPTIONS] -c OLD NEW FILENAMES
+NEW_CONTEXT DIR [OPTIONS] [EXPRESSION]
 .SH DESCRIPTION
 .PP
 .B replcon
 allows the user to find and replace file contexts.
-Replacements can be restricted by object class.
+Replacements can be filtered by object class as described below.
+.SH REQUIRED ARGUMENTS
+.IP NEW_CONTEXT
+The replacement context as expressed as a partial context, described
+below.
+.IP DIR
+Initial directory to begin searching.  The tool will recurse into any
+subdirectories, so be sure there are no circular mounts within it.
+.SH EXPRESSION
+.P
+The following options allow the user to specify which files to find.
+A file must meet all specified criteria for its context to be
+replaced.  If no expression is provided, all files' contexts are
+replaced.
+.IP "-t TYPE, --type=TYPE"
+Search for files with a context containing the type TYPE.
+.IP "-u USER, --user=USER"
+Search for files with a context containing the user USER.
+.IP "-r ROLE, --role=ROLE"
+Search for files with a context containing the role ROLE.
+.IP "-m RANGE, --mls-range=RANGE"
+Search for files with a context with the MLS range of RANGE.  Note
+that
+.B replcon
+ignores the SELinux translation library, if present.  In addition,
+this flag is ignored if
+.B DIR
+has no MLS information.
+.IP "--context=CONTEXT"
+Search for files matching this partial context.  This flag overrides
+-t, -u, -r, and -m.
+.IP "-p PATH, --path=PATH"
+Search for files which include PATH.
+.IP "-c CLASS, --class=CLASS"
+Search only files of object class CLASS.
 .SH OPTIONS
-.IP "-c, --context=OLD NEW"
-Search for files with context OLD and replace their context with NEW.
-A context is specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
-If the system supports MLS, additional MLS range can be added to the end as follows: user_u:object_r:type_t:s0.
-If a field is not specified, the query will always match that field.
-If the system supports MLS and the translation library is enabled, matching is done using translated contexts.
-To match raw contexts, use the --raw option.
-The special string "unlabeled" can also be specified to match files with no label.
-.IP "--raw"
-Match raw contexts, ignoring the translation library if present.
-.IP "-o, --object=OBJECT"
-Only replace the context for files of object class OBJECT.
-.IP "-r, --recursive"
-Recurse through directories.
-.IP "-s, --stdin"
-Read FILENAMES from standard input.
-.IP "-q, --quiet"
-Suppress progress output.
 .IP "-v, --verbose"
-Display context info.
+Display context info during replacement.
 .IP "-h, --help"
 Print help information and exit.
 .IP "-V, --version"
 Print version information and exit.
-.SH INFORMATION
-Valid object classes are
+.SH PARTIAL CONTEXT
+The
+.B --context
+flag and
+.B NEW_CONTEXT
+argument specify a partial context, which is a a colon separated list
+of user, role, and type.  If the system supports MLS, the context may
+have a fourth field that gives the range.  With
+.B --context
+if a field is not specified or is the literal asterisk, then the query
+will always match the field.  With
+.B NEW_CONTEXT
+if a field is not specified or is the literal asterisk, then that
+portion of the context will not be modified.
+.SH OBJECT CLASSES
+Valid object class strings are
 .PP
-file,
+block,
+char,
 dir,
-lnk_file,
-chr_file,
-blk_file,
-sock_file,
-fifo_file
+fifo,
+file,
+link, or
+sock.
 .SH EXAMPLES
 .TP
-.B replcon -c : ::type_t .
-Replace every context in the current directory with type_t.
+.B replcon ::type_t: .
+Replace every context's type in the current directory with type_t.
+The user and role portion remain unchanged.
 .TP
-.B replcon -c user_u: :role_r .
-Replace every context with user user_u in the current directory with role role_r.
+.B replcon -u user_u *:role_r:* .
+Replace every context's role with user user_u in the current directory
+with role_r.  The user and type portion remain unchanged.
 .TP
-.B replcon -c ::type_t:s0  :::s0:c0 .
-Replace every context with type type_t and MLS range s0 in the current directory with MLS range s0:c0.
+.B replcon --context ::type_t:s0 :::s0:c0 /tmp
+Replace every context with type type_t and MLS range s0 in /tmp
+with MLS range s0:c0.
 .SH AUTHOR
 This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
@@ -61,4 +94,4 @@ Copyright(C) 2003-2007 Tresys Technology, LLC
 .SH BUGS
 Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
-findcon(1), indexcon(1), searchcon(1)
+findcon(1), indexcon(1)

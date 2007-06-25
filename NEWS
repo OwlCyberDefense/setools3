@@ -18,7 +18,7 @@ findcon, searchcon:
   * Merge searchcon's functionality into findcon.  The searchcon tool
     has been removed from SETools.
 
-indexcon:
+indexcon, replcon:
 
   * Updated to use new libsefs design.
 

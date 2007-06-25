@@ -18,7 +18,7 @@ file context lists.
 If
 .B FCLIST
 is a name of a directory then begin the search at that directory and
-recurse within it.
+recurse within it.  Be sure there are no circular mounts within it.
 .IP file_contexts
 If
 .B FCLIST
@@ -33,7 +33,7 @@ is the name of a database as created by a previous run of
 or
 .B apol
 then open the database and execute queries into it.
-.SH EXPRESSIONS
+.SH EXPRESSION
 .P
 The following options allow the user to specify which files to print.
 A file must meet all specified criteria.
@@ -47,11 +47,14 @@ Search for files with a context containing the role ROLE.
 .IP "-m RANGE, --mls-range=RANGE"
 Search for files with a context with the MLS range of RANGE.  Note
 that
-.B indexcon
+.B findcon
 ignores the SELinux translation library, if present.  In addition,
 this flag is ignored if the
 .B FCLIST
 has no MLS information.
+.IP "--context=CONTEXT"
+Search for files matching this partial context.  This flag overrides
+-t, -u, -r, and -m.
 .IP "-p PATH, --path=PATH"
 Search for files which include PATH.
 .IP "-c CLASS, --class=CLASS"
@@ -65,7 +68,14 @@ This option does not affect the --class flag.
 Print help information and exit.
 .IP "-V, --version"
 Print version information and exit.
-.SH INFORMATION
+.SH PARTIAL CONTEXT
+The
+.B --context
+flag specifies a partial context, which is a a colon separated list of
+user, role, and type.  If the system supports MLS, the context may
+have a fourth field that gives the range.  If a field is not specified
+or is the literal asterisk, then the query will always match the field.
+.SH OBJECT CLASSES
 Valid object class strings are
 .PP
 block,
@@ -88,6 +98,12 @@ all subdirectories.
 .B findcon -u system_u -t bin_t file_contexts
 Find entries user system_u and type bin_t within a file_contexts file,
 assuming that file_contexts is a file contexts file.
+.TP
+.B findcon --context=system_u::bin_t file_contexts
+This is equivalent to the previous example.
+.TP
+.B findcon --context=system_u:*:bin_t:* file_contexts
+This is also equivalent to the above example.
 .SH AUTHOR
 This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT

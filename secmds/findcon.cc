@@ -35,14 +35,19 @@
 using namespace std;
 
 #include <errno.h>
-#include <iostream>
 #include <getopt.h>
+#include <iostream>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
+
+enum OPTIONS
+{
+	OPTION_CONTEXT = 256
+};
 
 static struct option const longopts[] = {
 	{"class", required_argument, NULL, 'c'},
@@ -52,6 +57,7 @@ static struct option const longopts[] = {
 	{"mls-range", required_argument, NULL, 'm'},
 	{"path", required_argument, NULL, 'p'},
 	{"regex", no_argument, NULL, 'R'},
+	{"context", required_argument, NULL, OPTION_CONTEXT},
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'V'},
 	{NULL, 0, NULL, 0}
@@ -77,12 +83,13 @@ static void usage(const char *program_name, bool brief)
 	cout << "  -u USER,  --user=USER          find contexts with user USER" << endl;
 	cout << "  -r ROLE,  --role=ROLE          find contexts with role ROLE" << endl;
 	cout << "  -m RANGE, --mls-range=RANGE    find contexts with MLS range RANGE" << endl;
+	cout << "  --context=CONTEXT              partial or full context to find" << endl;
+	cout << "                                 (overrides expression options above)" << endl;
 	cout << "  -p PATH,  --path=PATH          find files in PATH" << endl;
 	cout << "  -c CLASS, --class=CLASS        find files of object class CLASS" << endl;
 	cout << endl;
 
 	cout << "OPTIONS:" << endl;
-	cout << "  -d, --direct                   do not search for type's attributes" << endl;
 	cout << "  -R, --regex                    enable regular expressions" << endl;
 	cout << "  -h, --help                     print this help text and exit" << endl;
 	cout << "  -V, --version                  print version information and exit" << endl;
@@ -91,13 +98,20 @@ static void usage(const char *program_name, bool brief)
 	cout << "then the search will return nothing." << endl;
 }
 
+static int print_entry(sefs_fclist * fclist, const sefs_entry * e, void *arg __attribute__ ((unused)))
+{
+	char *str = e->toString();
+	cout << str << endl;
+	free(str);
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int optc;
 	sefs_query *query = new sefs_query();
 
-	char *type = NULL;
-	bool indirect = true;
+	apol_context_t *context = NULL;
 	try
 	{
 		while ((optc = getopt_long(argc, argv, "t:u:r:m:p:c:RhV", longopts, NULL)) != -1)
@@ -105,25 +119,41 @@ int main(int argc, char *argv[])
 			switch (optc)
 			{
 			case 't':
-				type = optarg;
+				if (context == NULL)
+				{
+					query->type(optarg, false);
+				}
 				break;
 			case 'u':
-				query->user(optarg);
+				if (context == NULL)
+				{
+					query->user(optarg);
+				}
 				break;
 			case 'r':
-				query->role(optarg);
+				if (context == NULL)
+				{
+					query->role(optarg);
+				}
 				break;
 			case 'm':
-				query->range(optarg, APOL_QUERY_EXACT);
+				if (context == NULL)
+				{
+					query->range(optarg, APOL_QUERY_EXACT);
+				}
+				break;
+			case OPTION_CONTEXT:
+				if ((context = apol_context_create_from_literal(optarg)) == NULL)
+				{
+					cerr << "Could not create a context." << endl;
+					throw runtime_error(strerror(errno));
+				}
 				break;
 			case 'p':
 				query->path(optarg);
 				break;
 			case 'c':
 				query->objectClass(optarg);
-				break;
-			case 'd':
-				indirect = false;
 				break;
 			case 'R':
 				query->regex(true);
@@ -139,13 +169,32 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 		}
-		query->type(type, indirect);
+		if (context != NULL)
+		{
+			query->user(apol_context_get_user(context));
+			query->role(apol_context_get_role(context));
+			query->type(apol_context_get_type(context), false);
+			if (apol_context_get_range(context) != NULL)
+			{
+				char *r = apol_mls_range_render(NULL, apol_context_get_range(context));
+				query->range(r, APOL_QUERY_EXACT);
+				free(r);
+			}
+			else
+			{
+				query->range(NULL, APOL_QUERY_EXACT);
+			}
+		}
 	}
-	catch(bad_alloc)
+	catch(...)
 	{
+		cerr << strerror(errno) << endl;
+		apol_context_destroy(&context);
 		delete query;
 		exit(-1);
 	}
+	apol_context_destroy(&context);
+
 	if (optind + 1 != argc)
 	{
 		usage(argv[0], 1);
@@ -163,7 +212,6 @@ int main(int argc, char *argv[])
 	}
 
 	sefs_fclist *fclist = NULL;
-	apol_vector_t *results = NULL;
 	try
 	{
 		if (S_ISDIR(sb.st_mode))
@@ -179,25 +227,19 @@ int main(int argc, char *argv[])
 			fclist = new sefs_fcfile(argv[optind], NULL, NULL);
 		}
 
-		results = fclist->runQuery(query);
-		for (size_t i = 0; i < apol_vector_get_size(results); i++)
+		if (fclist->runQueryMap(query, print_entry, NULL) < 0)
 		{
-			const sefs_entry *e = static_cast < sefs_entry * >(apol_vector_get_element(results, i));
-			char *str = e->toString();
-			cout << str << endl;
-			free(str);
+			throw runtime_error(strerror(errno));
 		}
 	}
 	catch(...)
 	{
 		delete query;
 		delete fclist;
-		apol_vector_destroy(&results);
 		exit(-1);
 	}
 
 	delete query;
 	delete fclist;
-	apol_vector_destroy(&results);
 	return 0;
 }

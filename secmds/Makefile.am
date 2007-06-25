@@ -1,10 +1,6 @@
 # various setools command line tools
 
-bin_PROGRAMS = seinfo sesearch findcon indexcon
-
-#if WANT_LIBSEFS
-#bin_PROGRAMS += indexcon replcon
-#endif
+bin_PROGRAMS = seinfo sesearch findcon replcon indexcon
 
 # These are for indexcon so that it is usable on machines without setools
 STATICLIBS = ../libsefs/src/libsefs.a ../libapol/src/libapol.a ../libqpol/src/libqpol.a -lsqlite3
@@ -30,10 +26,9 @@ findcon_SOURCES = findcon.cc
 findcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
 findcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
 
-#replcon_SOURCES = replcon.c
-#replcon_CFLAGS = $(AM_CFLAGS) @SEFS_CFLAGS@
-#replcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
-#replcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
+replcon_SOURCES = replcon.cc
+replcon_LDADD = @SEFS_LIB_FLAG@ $(LDADD)
+replcon_DEPENDENCIES = $(DEPENDENCIES) $(top_builddir)/libsefs/src/libsefs.so
 
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)

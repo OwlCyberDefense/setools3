@@ -24,7 +24,9 @@
 
 #include "policy-query-internal.h"
 
+#include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -79,6 +81,70 @@ apol_context_t *apol_context_create_from_qpol_context(const apol_policy_t * p, c
       err:
 	apol_mls_range_destroy(&apol_range);
 	apol_context_destroy(&c);
+	return NULL;
+}
+
+apol_context_t *apol_context_create_from_literal(const char *context_string)
+{
+	apol_context_t *c = NULL;
+	bool is_context_compiled = false;
+	regex_t context_regex;
+	const size_t nmatch = 5;
+	regmatch_t pmatch[nmatch];
+
+	if ((c = apol_context_create()) == NULL) {
+		goto err;
+	}
+
+	if (regcomp(&context_regex, "^([^:]*):([^:]*):([^:]*):?(.*)$", REG_EXTENDED) != 0) {
+		goto err;
+	}
+	is_context_compiled = true;
+
+	if (regexec(&context_regex, context_string, nmatch, pmatch, 0) != 0) {
+		errno = EIO;
+		goto err;
+	}
+
+	const char *s;
+	size_t len;
+
+	assert(pmatch[1].rm_so == 0);
+	s = context_string + pmatch[1].rm_so;
+	len = pmatch[1].rm_eo - pmatch[1].rm_so;	// no +1 to avoid copying colon
+	if (*s != '*' && (c->user = strndup(s, len)) == NULL) {
+		goto err;
+	}
+
+	assert(pmatch[2].rm_so != -1);
+	s = context_string + pmatch[2].rm_so;
+	len = pmatch[2].rm_eo - pmatch[2].rm_so;	// no +1 to avoid copying colon
+	if (*s != '*' && (c->role = strndup(s, len)) == NULL) {
+		goto err;
+	}
+
+	assert(pmatch[3].rm_so != -1);
+	s = context_string + pmatch[3].rm_so;
+	len = pmatch[3].rm_eo - pmatch[3].rm_so;	// no +1 to avoid copying colon
+	if (*s != '*' && (c->type = strndup(s, len)) == NULL) {
+		goto err;
+	}
+
+	if (pmatch[4].rm_so != -1) {
+		s = context_string + pmatch[4].rm_so;
+		if (*s != '*' && (c->range = apol_mls_range_create_from_literal(s)) == NULL) {
+			goto err;
+		}
+	}
+
+	regfree(&context_regex);
+	return c;
+
+      err:
+	apol_context_destroy(&c);
+	if (is_context_compiled) {
+		regfree(&context_regex);
+	}
 	return NULL;
 }
 

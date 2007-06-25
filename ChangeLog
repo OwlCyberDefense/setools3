@@ -1,3 +1,7 @@
+2007-06-25  J. Tang  <jtang@tresys.com>
+
+	* Updated replcon(1) to use new libsefs.
+
 2007-06-19  J. Tang  <jtang@tresys.com>
 
 	* Updated indexcon(1) to use new libsefs.

@@ -59,6 +59,24 @@ extern "C"
 	extern apol_context_t *apol_context_create_from_qpol_context(const apol_policy_t * p, const qpol_context_t * context);
 
 /**
+ * Take a literal context string that may be missing components (e.g.,
+ * <b>user_u::type_t:s0:c0.c127</b>), fill in a newly allocated
+ * apol_context_t, and return it.  If there is a MLS range component
+ * to the context, it will <b>not</b> expanded.  The caller must call
+ * apol_context_destroy() upon the return value afterwards.
+ *
+ * Because this function creates a context without the benefit of a
+ * policy, its range is incomplete.  Call apol_context_convert() to
+ * complete it.
+ *
+ * @param context_string Pointer to a string representing a (possibly
+ * incomplete) context, or NULL upon error.
+ *
+ * @return An initialized context structure, or NULL upon error.
+ */
+	extern apol_context_t *apol_context_create_from_literal(const char *context_string);
+
+/**
  * Deallocate all memory associated with a context structure and then
  * set it to NULL.  This function does nothing if the context is
  * already NULL.
