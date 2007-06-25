@@ -62,6 +62,8 @@ static int filesystem_lgetfilecon(const char *path, security_context_t * context
 	}
 }
 
+#if 0
+
 /**
  * Given a directory, find all bounded mounted filesystems within that
  * directory (or subdirectory within.)  This function consults the
@@ -149,6 +151,8 @@ static apol_vector_t *filesystem_find_mount_points(const char *dir) throw(std::b
 	return v;
 }
 
+#endif
+
 /******************** public functions below ********************/
 
 sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_callback, void *varg)throw(std::bad_alloc, std::invalid_argument, std::runtime_error):sefs_fclist(SEFS_FCLIST_TYPE_FILESYSTEM,
@@ -163,7 +167,6 @@ sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_ca
 	}
 	_root = NULL;
 	_mls = false;
-	_mounts = NULL;
 	try
 	{
 		// check that root exists and is readable
@@ -202,12 +205,10 @@ sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_ca
 			SEFS_ERR(this, "%s", strerror(errno));
 			throw std::bad_alloc();
 		}
-		_mounts = filesystem_find_mount_points(new_root);
 	}
 	catch(...)
 	{
 		free(_root);
-		apol_vector_destroy(&_mounts);
 		throw;
 	}
 }
@@ -215,7 +216,6 @@ sefs_filesystem::sefs_filesystem(const char *new_root, sefs_callback_fn_t msg_ca
 sefs_filesystem::~sefs_filesystem()
 {
 	free(_root);
-	apol_vector_destroy(&_mounts);
 }
 
 struct filesystem_ftw_struct

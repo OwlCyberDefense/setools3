@@ -26,6 +26,7 @@
 #define SEFS_DB_H
 
 #include <sefs/fclist.hh>
+#include <sefs/filesystem.hh>
 
 #ifdef __cplusplus
 extern "C"
@@ -39,8 +40,6 @@ extern "C"
 }
 
 #include <stdexcept>
-
-class sefs_filesystem;
 
 /**
  * This class represents a database that maps files to their SELinux

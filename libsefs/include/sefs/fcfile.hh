@@ -25,6 +25,8 @@
 #ifndef SEFS_FCFILE_H
 #define SEFS_FCFILE_H
 
+#include <sefs/fclist.hh>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -37,7 +39,6 @@ extern "C"
 #ifdef __cplusplus
 }
 
-#include <sefs/fclist.hh>
 #include <stdexcept>
 
 /**

@@ -27,6 +27,7 @@
 #ifndef SEFS_FCLIST_H
 #define SEFS_FCLIST_H
 
+#include <sefs/entry.hh>
 #include <sefs/query.hh>
 
 #ifdef __cplusplus
@@ -93,8 +94,6 @@ extern "C"
 
 struct apol_bst;
 struct context_node;
-class sefs_entry;
-class sefs_query;
 
 #define SEFS_MAP_FUNC_DEFINED
 

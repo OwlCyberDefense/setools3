@@ -25,12 +25,12 @@
 #ifndef SEFS_FILESYSTEM_H
 #define SEFS_FILESYSTEM_H
 
+#include <sefs/fclist.hh>
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-#include <sefs/fclist.hh>
 
 #include <apol/vector.h>
 
@@ -41,7 +41,10 @@ extern "C"
 
 /**
  * This class represents the SELinux file contexts on a local on-disk
- * filesystem.
+ * filesystem.  Be aware that the object will recurse beginning from
+ * the root directory, so if there are circular mounts (e.g., via
+ * something mounted with the 'bind' option) then queries against the
+ * filesystem will never terminate.
  */
 class sefs_filesystem:public sefs_fclist
 {
@@ -135,7 +138,6 @@ class sefs_filesystem:public sefs_fclist
 			     const char *dev_name) throw(std::bad_alloc);
 	char *_root;
 	bool _rw, _mls;
-	apol_vector_t *_mounts;
 };
 
 extern "C"
