@@ -112,27 +112,28 @@ apol_context_t *apol_context_create_from_literal(const char *context_string)
 	assert(pmatch[1].rm_so == 0);
 	s = context_string + pmatch[1].rm_so;
 	len = pmatch[1].rm_eo - pmatch[1].rm_so;	// no +1 to avoid copying colon
-	if (*s != '*' && (c->user = strndup(s, len)) == NULL) {
+	if (len != 0 && *s != '*' && (c->user = strndup(s, len)) == NULL) {
 		goto err;
 	}
 
 	assert(pmatch[2].rm_so != -1);
 	s = context_string + pmatch[2].rm_so;
 	len = pmatch[2].rm_eo - pmatch[2].rm_so;	// no +1 to avoid copying colon
-	if (*s != '*' && (c->role = strndup(s, len)) == NULL) {
+	if (len != 0 && *s != '*' && (c->role = strndup(s, len)) == NULL) {
 		goto err;
 	}
 
 	assert(pmatch[3].rm_so != -1);
 	s = context_string + pmatch[3].rm_so;
 	len = pmatch[3].rm_eo - pmatch[3].rm_so;	// no +1 to avoid copying colon
-	if (*s != '*' && (c->type = strndup(s, len)) == NULL) {
+	if (len != 0 && *s != '*' && (c->type = strndup(s, len)) == NULL) {
 		goto err;
 	}
 
 	if (pmatch[4].rm_so != -1) {
 		s = context_string + pmatch[4].rm_so;
-		if (*s != '*' && (c->range = apol_mls_range_create_from_literal(s)) == NULL) {
+		len = pmatch[4].rm_eo - pmatch[4].rm_so;
+		if (len != 0 && *s != '*' && (c->range = apol_mls_range_create_from_literal(s)) == NULL) {
 			goto err;
 		}
 	}

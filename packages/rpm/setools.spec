@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.3
-Release: pre0
+Release: pre1
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -170,9 +170,9 @@ Summary: Policy analysis graphical tools for SELinux
 Group: System Environment/Base
 Requires: libqpol >= 1.2 libapol >= 4.1 libpoldiff >= 1.3 libseaudit >= 4.1
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
-Requires: libapol-tcl >= 4.1 libsefs-tcl >= 4.0
-Requires: glib2 gtk2 >= 2.4 libxml2 libglade2
-BuildRequires: gtk2-devel >= 2.4 libglade2-devel libxml2-devel
+Requires: setools-libs-tcl >= 3.3
+Requires: glib2 gtk2 >= 2.8 libxml2 libglade2
+BuildRequires: gtk2-devel >= 2.8 libglade2-devel libxml2-devel
 
 %description gui
 SETools is a collection of graphical tools, command-line tools, and

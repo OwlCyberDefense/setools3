@@ -9,4 +9,4 @@ Terminal=false
 Encoding=UTF-8
 Categories=Application;System;Utility;X-Red-Hat-Base;
 X-Desktop-File-Install-Version=0.2
-StartupNotify=true
+StartupNotify=false
