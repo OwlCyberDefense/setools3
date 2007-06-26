@@ -253,7 +253,7 @@ static apol_vector_t *get_all_names(polsearch_element_e elem_type, const void *e
 	if (elem_type == POLSEARCH_ELEMENT_TYPE)
 	{
 		qpol_type_get_alias_iter(q, static_cast < const qpol_type_t * >(element), &iter);
-		if (!iter || (names = apol_vector_create_from_iter(iter, NULL)))
+		if (!iter || !(names = apol_vector_create_from_iter(iter, NULL)))
 		{
 			qpol_iterator_destroy(&iter);
 			throw bad_alloc();
@@ -262,7 +262,7 @@ static apol_vector_t *get_all_names(polsearch_element_e elem_type, const void *e
 	else if (elem_type == POLSEARCH_ELEMENT_CATEGORY)
 	{
 		qpol_cat_get_alias_iter(q, static_cast < const qpol_cat_t * >(element), &iter);
-		if (!iter || (names = apol_vector_create_from_iter(iter, NULL)))
+		if (!iter || !(names = apol_vector_create_from_iter(iter, NULL)))
 		{
 			qpol_iterator_destroy(&iter);
 			throw bad_alloc();
@@ -271,7 +271,7 @@ static apol_vector_t *get_all_names(polsearch_element_e elem_type, const void *e
 	else if (elem_type == POLSEARCH_ELEMENT_LEVEL)
 	{
 		qpol_level_get_alias_iter(q, static_cast < const qpol_level_t * >(element), &iter);
-		if (!iter || (names = apol_vector_create_from_iter(iter, NULL)))
+		if (!iter || !(names = apol_vector_create_from_iter(iter, NULL)))
 		{
 			qpol_iterator_destroy(&iter);
 			throw bad_alloc();

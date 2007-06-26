@@ -320,6 +320,7 @@ template <>
 	_param = apol_mls_level_create_from_mls_level(parameter);
 	if (!_param)
 		throw bad_alloc();
+	return _param;
 }
 
 typedef apol_mls_range_t *apol_mls_range_tp;	//makes gcc happy
@@ -362,6 +363,7 @@ template <>
 	_param = apol_mls_range_create_from_mls_range(parameter);
 	if (!_param)
 		throw bad_alloc();
+	return _param;
 }
 
 // internal functions
@@ -911,7 +913,7 @@ template <> static bool compare(const apol_policy_t * p, const void *candidate, 
 		}
 	}
 
-	unsigned int apol_opr;
+	unsigned int apol_opr = 0;
 	if (opr == POLSEARCH_OP_AS_RANGE_EXACT)
 		apol_opr = APOL_QUERY_EXACT;
 	else if (opr == POLSEARCH_OP_AS_RANGE_SUB)
