@@ -1026,7 +1026,7 @@ void sefs_db::save(const char *filename) throw(std::invalid_argument, std::runti
 		sqlite3_free(diskdb.errmsg);
 		throw;
 	}
-	sqlite3_close(diskdb.db);
+	//      sqlite3_close(diskdb.db);  don't close the database -- it's pointing to this->_db
 	sqlite3_free(diskdb.errmsg);
 }
 

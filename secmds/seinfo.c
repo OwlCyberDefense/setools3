@@ -265,10 +265,15 @@ static int print_stats(FILE * fp, const apol_policy_t * policydb)
 	if (qpol_iterator_get_size(iter, &n_allows))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	if (qpol_policy_get_avrule_iter(q, QPOL_RULE_NEVERALLOW, &iter))
-		goto cleanup;
-	if (qpol_iterator_get_size(iter, &n_neverallows))
-		goto cleanup;
+	if (qpol_policy_has_capability(q, QPOL_CAP_NEVERALLOW)) {
+		if (qpol_policy_get_avrule_iter(q, QPOL_RULE_NEVERALLOW, &iter))
+			goto cleanup;
+		if (qpol_iterator_get_size(iter, &n_neverallows))
+			goto cleanup;
+	}
+	else {
+		n_neverallows = 0;
+	}
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Allow:         %7zd    Neverallow:    %7zd\n", n_allows, n_neverallows);
 

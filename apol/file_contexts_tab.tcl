@@ -338,7 +338,7 @@ proc Apol_File_Contexts::_create_database {dialog} {
                     {
                         set db [apol_tcl_open_database_from_dir $opts(new_rootdir)]
                         $db save $opts(new_filename)
-                        set $db
+                        set db
                     } \
                 } db]} {
         tk_messageBox -icon error -type ok -title "Create Database" \
