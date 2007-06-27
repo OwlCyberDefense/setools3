@@ -26,6 +26,12 @@ apol:
 
   * Updated to use new libsefs design.
 
+sediff, sediffx:
+
+  * Instead of differentiating "AV rules" or "TE rules", user now
+    specifies which particular rule to compare (allow, dontaudit,
+    type_transition, etc.).
+
 ==================================================
 
 SETools 3.2:

@@ -56,7 +56,7 @@ extern "C"
  * @param path Policy path object specifying which policy file or
  * files to load.
  * @param options Bitfield specifying options for the returned policy.
- * Valid options are QPOL_POLICY_OPTION_* from qpol.h.
+ * Valid options are QPOL_POLICY_OPTION_* from <qpol/policy.h>.
  * @param msg_callback Callback to invoke as errors/warnings are
  * generated.  If NULL, then write messages to standard error.
  * @param varg Value to be passed as the first parameter to the

@@ -46,12 +46,20 @@ Find differences in types authorized for roles.
 Find differences in roles authorized for users.
 .IP "-b, --bool"
 Find differences in the default values of booleans.
-.IP "-A, --avrule"
-Find differences in access vector rules.
-These rules are allow, neverallow, auditallow, and dontaudit rules.
-.IP "-T, --terules"
-Find differences in type enforcement rules.
-These rules are type_transition, type_member, and type_change rules.
+.IP "-A, --allow"
+Find differences in allow rules.
+.IP "--auditallow"
+Find differences in auditallow rules.
+.IP "--dontaudit"
+Find differences in dontaudit rules.
+.IP "--neverallow"
+Find differences in neverallow rules.
+.IP "--type_trans"
+Find differences in type_transition rules.
+.IP "--type_member"
+Find differences in type_member rules.
+.IP "--type_change"
+Find differences in type_change rules.
 .IP "--role_trans"
 Find differences in role_transition rules.
 This includes differences in the default role.

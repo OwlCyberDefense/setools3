@@ -39,6 +39,8 @@
 enum opt_values
 {
 	DIFF_LEVEL = 256, DIFF_CATEGORY,
+	DIFF_AUDITALLOW, DIFF_DONTAUDIT, DIFF_NEVERALLOW,
+	DIFF_TYPE_TRANS, DIFF_TYPE_MEMBER, DIFF_TYPE_CHANGE,
 	DIFF_ROLE_TRANS, DIFF_ROLE_ALLOW, DIFF_RANGE_TRANS,
 	OPT_STATS
 };
@@ -53,6 +55,13 @@ static struct option const longopts[] = {
 	{"role", no_argument, NULL, 'r'},
 	{"user", no_argument, NULL, 'u'},
 	{"bool", no_argument, NULL, 'b'},
+	{"allow", no_argument, NULL, 'A'},
+	{"auditallow", no_argument, NULL, DIFF_AUDITALLOW},
+	{"dontaudit", no_argument, NULL, DIFF_DONTAUDIT},
+	{"neverallow", no_argument, NULL, DIFF_NEVERALLOW},
+	{"type_trans", no_argument, NULL, DIFF_TYPE_TRANS},
+	{"type_member", no_argument, NULL, DIFF_TYPE_MEMBER},
+	{"type_change", no_argument, NULL, DIFF_TYPE_CHANGE},
 	{"role_trans", no_argument, NULL, DIFF_ROLE_TRANS},
 	{"role_allow", no_argument, NULL, DIFF_ROLE_ALLOW},
 	{"range_trans", no_argument, NULL, DIFF_RANGE_TRANS},
@@ -80,11 +89,13 @@ static void usage(const char *prog_name, int brief)
 	printf("  -r, --role         role definitions\n");
 	printf("  -u, --user         user definitions\n");
 	printf("  -b, --bool         boolean definitions and default values\n");
-	printf("  -A                 allow rules\n"
-	       "  -N                 never-allow rules\n"
-	       "  -D                 don't-audit rules\n" "  -L                 audit-allow rules\n");
-	printf("  -M                 type_memeber rules\n"
-	       "  -C                 type_change rules\n" "  -R                 type_trans rules\n");
+	printf("  -A, --allow        allow rules\n");
+	printf("  --auditallow       auditallow rules\n");
+	printf("  --dontaudit        dontaudit rules\n");
+	printf("  --neverallow       neverallow rules\n");
+	printf("  --type_trans       type_transition rules\n");
+	printf("  --type_member      type_member rules\n");
+	printf("  --type_change      type_change rules\n");
 	printf("  --role_trans       role_transition rules\n");
 	printf("  --role_allow       role allow rules\n");
 	printf("  --range_trans      range_transition rules\n");
@@ -441,22 +452,22 @@ int main(int argc, char **argv)
 		case 'A':
 			flags |= POLDIFF_DIFF_AVALLOW;
 			break;
-		case 'N':
+		case DIFF_NEVERALLOW:
 			flags |= POLDIFF_DIFF_AVNEVERALLOW;
 			break;
-		case 'D':
+		case DIFF_DONTAUDIT:
 			flags |= POLDIFF_DIFF_AVDONTAUDIT;
 			break;
-		case 'L':
+		case DIFF_AUDITALLOW:
 			flags |= POLDIFF_DIFF_AVAUDITALLOW;
 			break;
-		case 'M':
+		case DIFF_TYPE_MEMBER:
 			flags |= POLDIFF_DIFF_TEMEMBER;
 			break;
-		case 'C':
+		case DIFF_TYPE_CHANGE:
 			flags |= POLDIFF_DIFF_TECHANGE;
 			break;
-		case 'R':
+		case DIFF_TYPE_TRANS:
 			flags |= POLDIFF_DIFF_TETRANS;
 			break;
 		case DIFF_ROLE_ALLOW:
@@ -565,16 +576,19 @@ int main(int argc, char **argv)
 	}
 	apol_vector_destroy(&mod_module_paths);
 
-	orig_policy =
-		apol_policy_create_from_policy_path(orig_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : QPOL_POLICY_OPTION_NO_RULES),
-						    NULL, NULL);
+	int policy_opt = 0;
+	if (!(flags & POLDIFF_DIFF_AVNEVERALLOW)) {
+		policy_opt |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
+	}
+	if (!(flags & POLDIFF_DIFF_RULES)) {
+		policy_opt |= QPOL_POLICY_OPTION_NO_RULES;
+	}
+	orig_policy = apol_policy_create_from_policy_path(orig_pol_path, policy_opt, NULL, NULL);
 	if (!orig_policy) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
 	}
-	mod_policy =
-		apol_policy_create_from_policy_path(mod_pol_path, ((flags & POLDIFF_DIFF_RULES) ? 0 : QPOL_POLICY_OPTION_NO_RULES),
-						    NULL, NULL);
+	mod_policy = apol_policy_create_from_policy_path(mod_pol_path, policy_opt, NULL, NULL);
 	if (!mod_policy) {
 		ERR(NULL, "%s", strerror(errno));
 		goto err;
