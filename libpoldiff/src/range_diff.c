@@ -68,6 +68,33 @@ const apol_mls_range_t *poldiff_range_get_modified_range(const poldiff_range_t *
 	return range->mod_range;
 }
 
+apol_vector_t *poldiff_range_get_min_added_cats(const poldiff_range_t * range)
+{
+	if (range == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->min_added_cats;
+}
+
+apol_vector_t *poldiff_range_get_min_removed_cats(const poldiff_range_t * range)
+{
+	if (range == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->min_removed_cats;
+}
+
+apol_vector_t *poldiff_range_get_min_unmodified_cats(const poldiff_range_t * range)
+{
+	if (range == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->min_unmodified_cats;
+}
+
 char *poldiff_range_to_string_brief(const poldiff_t * diff, const poldiff_range_t * range)
 {
 	char *r1 = NULL, *r2 = NULL;

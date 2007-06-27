@@ -88,6 +88,40 @@ extern "C"
  */
 	extern const apol_mls_range_t *poldiff_range_get_modified_range(const poldiff_range_t * range);
 
+/**
+ *  Get the vector of categories added to the minimum set from a range
+ *  diffence object.
+ *
+ *  @param range Range object to query.
+ *
+ *  @return A vector of elements of type string, or NULL on
+ *  error.  The caller should <b>not</b> modify the returned vector.
+ */
+
+	extern apol_vector_t *poldiff_range_get_min_added_cats(const poldiff_range_t * range);
+
+/**
+ *  Get the vector of categories removed from the minimum set from a
+ *  range diffence object.
+ *
+ *  @param range Range object to query.
+ *
+ *  @return A vector of elements of type string, or NULL on
+ *  error.  The caller should <b>not</b> modify the returned vector.
+ */
+	extern apol_vector_t *poldiff_range_get_min_removed_cats(const poldiff_range_t * range);
+
+/**
+ *  Get the vector of unmodified categories of the minimum set from a
+ *  range diffence object.
+ *
+ *  @param range Range object to query.
+ *
+ *  @return A vector of elements of type string, or NULL on
+ *  error.  The caller should <b>not</b> modify the returned vector.
+ */
+	extern apol_vector_t *poldiff_range_get_min_unmodified_cats(const poldiff_range_t * range);
+
 #ifdef	__cplusplus
 }
 #endif

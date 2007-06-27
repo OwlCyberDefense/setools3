@@ -1,5 +1,7 @@
 2007-06-25  J. Tang  <jtang@tresys.com>
 
+	* Updated apol(1) to use new libsefs
+
 	* Updated replcon(1) to use new libsefs.
 
 2007-06-19  J. Tang  <jtang@tresys.com>

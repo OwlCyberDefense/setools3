@@ -522,7 +522,7 @@ int role_allow_deep_diff(poldiff_t * diff, const void *x, const void *y)
 				goto cleanup;
 			}
 		}
-		if ((role1 = strdup(role1)) == NULL || apol_vector_append(pra->removed_roles, role1) < 0) {
+		if (apol_vector_append(pra->removed_roles, role1) < 0) {
 			error = errno;
 			free(role1);
 			ERR(diff, "%s", strerror(error));
@@ -537,7 +537,7 @@ int role_allow_deep_diff(poldiff_t * diff, const void *x, const void *y)
 				goto cleanup;
 			}
 		}
-		if ((role2 = strdup(role2)) == NULL || apol_vector_append(pra->added_roles, role2) < 0) {
+		if (apol_vector_append(pra->added_roles, role2) < 0) {
 			error = errno;
 			free(role2);
 			ERR(diff, "%s", strerror(error));
