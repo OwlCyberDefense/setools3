@@ -25,20 +25,20 @@
 %module polsearch
 
 %{
-#include <polsearch/criterion.hh>
+/*#include <polsearch/criterion.hh>
 #include <polsearch/polsearch.hh>
 #include <polsearch/query.hh>
 //#include <polsearch/string_list.hh>   TODO
 #include <polsearch/symbol_query.hh>
-#include <polsearch/test.hh>
-#include <polsearch/util.h>
+#include <polsearch/test.hh>          */
+#include <polsearch/util.hh>            /*
 
 #include <sefs/fclist.hh>
 #include <sefs/fcfile.hh>
 #include <sefs/filesystem.hh>
 #include <sefs/db.hh>
 #include <sefs/entry.hh>
-
+  */
 #include <string>
 %}
 
@@ -128,6 +128,9 @@ SWIGEXPORT int Tsefs_Init(Tcl_Interp *interp) {
 
 #define __attribute__(x)
 
+const char *libpolsearch_get_version (void);
+
+#if 0 //TODO put stuff back
 %include <polsearch/criterion.hh>
 #ifndef SWIGJAVA
 %include <polsearch/polsearch.hh>
@@ -136,7 +139,6 @@ SWIGEXPORT int Tsefs_Init(Tcl_Interp *interp) {
 %include <polsearch/symbol_query.hh>
 %include <polsearch/test.hh>
 
-const char *libpolsearch_get_version (void);
 
 %template(polsearch_regex_criterion) polsearch_criterion<std::string>;
 //%template(polsearch_string_list_criterion) polsearch_criterion<polsearch_string_list>; TODO
@@ -380,3 +382,5 @@ const char *libpolsearch_get_version (void);
 	} polsearch_param_type_e;
 
 #endif
+
+#endif //TODO end of if 0

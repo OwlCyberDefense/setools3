@@ -11,11 +11,11 @@ wrappedjardir = $(libdir)/setools
 
 dist_noinst_DATA = $(srcdir)/../polsearch.i
 BUILT_SOURCES = polsearch_wrap.cc \
+	polsearch.java \
+	polsearchJNI.java 
 	polsearch_base_criterion.java \
 	polsearch_bool_criterion.java \
 	polsearch_element_e.java \
-	polsearch.java \
-	polsearchJNI.java \
 	polsearch_level_criterion.java \
 	polsearch_match_e.java \
 	polsearch_op_e.java \

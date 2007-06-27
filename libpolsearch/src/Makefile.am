@@ -3,13 +3,12 @@ lib_LIBRARIES = libpolsearch.a
 polsearchso_DATA = libpolsearch.so.@libpolsearch_version@
 polsearchsodir = $(libdir)
 
-AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ \
-	@SEFS_CFLAGS@ @APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(srcdir)/../include -fpic
 AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ \
 	@SEFS_CFLAGS@ @APOL_CFLAGS@ @QPOL_CFLAGS@ -I$(srcdir)/../include -fpic
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libpolsearch_a_SOURCES = \
+	util.cc
 	criterion.cc \
 	criterion_internal.hh \
 	polsearch.cc \
@@ -18,15 +17,13 @@ libpolsearch_a_SOURCES = \
 	string_list.cc \
 	symbol_query.cc \
 	test.cc \
-	test_internal.hh \
-	util.c
+	test_internal.hh 
 
 libpolsearch_a_DEPENDENCIES = \
 	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libsefs/src/libsefs.so
 
-libpolsearch_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libpolsearch_a_SOURCES)))
-libpolsearch_so_OBJS += $(patsubst %.cc,%.o,$(filter %.cc,$(libpolsearch_a_SOURCES)))
+libpolsearch_so_OBJS = $(patsubst %.cc,%.o,$(filter %.cc,$(libpolsearch_a_SOURCES)))
 LIBPOLSEARCH_SONAME = @libpolsearch_soname@
 
 dist_noinst_DATA = libpolsearch.map
