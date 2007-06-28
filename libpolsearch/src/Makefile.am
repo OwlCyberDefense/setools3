@@ -8,16 +8,17 @@ AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ \
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libpolsearch_a_SOURCES = \
-	util.cc
 	criterion.cc \
-	criterion_internal.hh \
+	parameter.cc \
 	polsearch.cc \
 	polsearch_internal.hh \
 	query.cc \
+	test.cc \
+	util.cc
+	criterion_internal.hh \
 	string_list.cc \
 	symbol_query.cc \
-	test.cc \
-	test_internal.hh 
+	test_internal.hh
 
 libpolsearch_a_DEPENDENCIES = \
 	$(top_builddir)/libapol/src/libapol.so \
