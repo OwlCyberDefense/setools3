@@ -374,6 +374,7 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 		return NULL;
 	}
 
+	diff->policy_opts = QPOL_POLICY_OPTION_NO_RULES | QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 	return diff;
 }
 
@@ -521,6 +522,27 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 		return -1;
 	}
 
+	int policy_opts = diff->policy_opts;
+	if (flags & POLDIFF_DIFF_RULES) {
+		policy_opts &= ~(QPOL_POLICY_OPTION_NO_RULES);
+	}
+	if (flags & POLDIFF_DIFF_AVNEVERALLOW) {
+		policy_opts &= ~(QPOL_POLICY_OPTION_NO_NEVERALLOWS);
+	}
+	if (policy_opts != diff->policy_opts) {
+		INFO(diff, "%s", "Loading rules from original policy.");
+		if (qpol_policy_rebuild(diff->orig_qpol, policy_opts)) {
+			return -1;
+		}
+		INFO(diff, "%s", "Loading rules from modified policy.");
+		if (qpol_policy_rebuild(diff->mod_qpol, policy_opts)) {
+			return -1;
+		}
+		// force flushing of existing pointers into policies
+		diff->remapped = 1;
+		diff->policy_opts = policy_opts;
+	}
+
 	num_items = sizeof(item_records) / sizeof(poldiff_item_record_t);
 	if (diff->remapped) {
 		for (i = 0; i < num_items; i++) {
@@ -534,6 +556,7 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 		diff->remapped = 0;
 	}
 
+	INFO(diff, "%s", "Building type map.");
 	if (type_map_build(diff)) {
 		return -1;
 	}

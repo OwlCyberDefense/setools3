@@ -255,7 +255,10 @@ static gpointer toplevel_open_policy_runner(gpointer data)
 		}
 		progress_update(run->top->progress, "Opening %s", title);
 		free(title);
-		run->policies[i] = apol_policy_create_from_policy_path(path, 0, progress_apol_handle_func, run->top->progress);
+		run->policies[i] =
+			apol_policy_create_from_policy_path(path, QPOL_POLICY_OPTION_NO_RULES, progress_apol_handle_func,
+							    run->top->progress);
+		// poldiff_run() will rebuild the policies as needed
 		if (run->policies[i] == NULL) {
 			run->result = -1;
 			progress_abort(run->top->progress, NULL);

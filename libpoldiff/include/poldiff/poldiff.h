@@ -251,7 +251,11 @@ extern "C"
 /**
  *  Allocate and initialize a new policy difference structure.  This
  *  function takes ownership of the supplied policies and will handle
- *  their destruction upon poldiff_destroy().
+ *  their destruction upon poldiff_destroy().  The poldiff object will
+ *  be responsible for rebuilding the policy (such as if neverallows
+ *  are requested).  It is still safe to access elements within the
+ *  policies, but avoid making changes to the policy while the poldiff
+ *  object still exists.
  *  @param orig_policy The original policy.
  *  @param mod_policy The new (modified) policy.
  *  @param fn Function to be called by the error handler.  If NULL
@@ -315,11 +319,11 @@ extern "C"
 
 /**
  *  Enable line numbers for all rule differences.  If not called, line
- *  numbers will not be available when displaying differences. This
+ *  numbers will not be available when displaying differences.  This
  *  function is safe to call multiple times and will have no effect
  *  after the first time.  It also has no effect if one policy (or
- *  both of them) does not support line numbers.  Be aware that if
- *  line numbers will need to be re-enabled each time poldiff_run() is
+ *  both of them) does not support line numbers.  Be aware that line
+ *  numbers will need to be re-enabled each time poldiff_run() is
  *  called.
  *
  *  @param diff The policy difference structure.

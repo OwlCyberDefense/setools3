@@ -38,4 +38,4 @@ extern "C"
 
 }
 
-#endif /* POLSEARCH_UTIL_HH */
+#endif				       /* POLSEARCH_UTIL_HH */

@@ -132,7 +132,7 @@ static void usage(const char *program_name, bool brief)
 	cout << "        Replace files that contain user_u with role role_r." << endl;
 	cout << "    replcon --context ::type_t:so :::s0:c0 /tmp" << endl;
 	cout << "        Replace files with type type_t and level s0 in /tmp with MLS" << endl;
-        cout << "        range s0:c0." << endl;
+	cout << "        range s0:c0." << endl;
 }
 
 static int replace_entry(sefs_fclist * fclist, const sefs_entry * e, void *arg)

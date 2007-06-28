@@ -270,8 +270,7 @@ static int print_stats(FILE * fp, const apol_policy_t * policydb)
 			goto cleanup;
 		if (qpol_iterator_get_size(iter, &n_neverallows))
 			goto cleanup;
-	}
-	else {
+	} else {
 		n_neverallows = 0;
 	}
 	qpol_iterator_destroy(&iter);

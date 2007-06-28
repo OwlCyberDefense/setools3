@@ -113,6 +113,8 @@ extern "C"
 		struct poldiff_user_summary *user_diffs;
 		/* and so forth if we want ocon_diffs */
 		type_map_t *type_map;
+		/** most recently used flags to open the two policies */
+		int policy_opts;
 		/** set if type mapping was changed since last run */
 		int remapped;
 	};

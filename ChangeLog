@@ -1,3 +1,8 @@
+2007-06-28  J. Tang  <jtang@tresys.com>
+
+	* Updated apol and sediffx to delay loading neverallow rules
+	unless the user requested analyzing them.
+
 2007-06-25  J. Tang  <jtang@tresys.com>
 
 	* Updated apol(1) to use new libsefs
