@@ -1,7 +1,13 @@
 TESTS = libpoldiff-tests
 check_PROGRAMS = libpoldiff-tests
 
-libpoldiff_tests_SOURCES = nomls-tests.c mls-tests.c rules-tests.c components-tests.c libpoldiff-tests.c
+libpoldiff_tests_SOURCES = \
+	components-tests.c components-tests.h \
+	libpoldiff-tests.c libpoldiff-tests.h \
+	mls-tests.c mls-tests.h \
+	nomls-tests.c nomls-tests.h \
+	policy-defs.h \
+	rules-tests.c rules-tests.h
 
 POLICY_ROOT = /home/paul/testing-policies/setools-3.2/sediff
 

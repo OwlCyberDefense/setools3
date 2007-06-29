@@ -447,6 +447,9 @@ static char *get_rule_modification_str(const apol_vector_t * unmodified, const a
 	case POLDIFF_FORM_REMOVED:
 		perm_remove_char = "";
 		break;
+	case POLDIFF_FORM_MODIFIED:
+		// do nothing
+		break;
 	default:
 		// should never get here
 		assert(0);
