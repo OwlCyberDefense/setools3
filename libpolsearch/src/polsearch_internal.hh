@@ -28,20 +28,21 @@
 
 #include <polsearch/polsearch.hh>
 
+#include <apol/policy.h>
+
 #include <stdexcept>
+#include <vector>
+#include <string>
 
 /**
  * Determine the type of element for test candidates when running
- * \a test_cond for elements of type \a elem_type.
- * @param elem_type The type of element queried.
+ * \a test_cond.
  * @param test_cond The test condition.
  * @return The type of element examined to check if the test's
  * criteria are met.
- * @exception std::invalid_argument The given test is not valid for
- * the given element.
+ * @exception std::invalid_argument The given test is not valid.
  */
-polsearch_element_e determine_candidate_type(polsearch_element_e elem_type,
-					     polsearch_test_cond_e test_cond) throw(std::invalid_argument);
+polsearch_element_e determine_candidate_type(polsearch_test_cond_e test_cond) throw(std::invalid_argument);
 
 /**
  * Determine if a test condition is valid for a particular element type.
@@ -75,5 +76,23 @@ bool validate_operator(polsearch_element_e elem_type, polsearch_test_cond_e cond
  */
 bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr,
 			     polsearch_param_type_e param_type);
+
+/**
+ * Get the name of a policy symbol.
+ * @param symbol The symbol.
+ * @param sym_type The type of symbol.
+ * @param policy The policy from which \a symbol comes.
+ * @return The name of the symbol or NULL on error.
+ */
+const char *symbol_get_name(const void *symbol, polsearch_element_e sym_type, const apol_policy_t * policy);
+
+/**
+ * Make a vector of strings from an apol vector.
+ * @param rhs The apol vector to convert.
+ * @return A new vector initialized to the values is \a rhs.
+ * @pre The apol vector contains items of type (char*).
+ * @post There are no memory ownership constraints on the strings in the created vector.
+ */
+std::vector < std::string > mkvector(const apol_vector_t * rhs);
 
 #endif				       /* POLSEARCH_INTERNAL_HH */

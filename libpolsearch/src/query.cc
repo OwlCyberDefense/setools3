@@ -35,3 +35,37 @@
 #include <stdexcept>
 #include <vector>
 #include <string>
+
+using std::invalid_argument;
+
+polsearch_query::polsearch_query(polsearch_match_e m) throw(std::invalid_argument)
+{
+	if (m != POLSEARCH_MATCH_ALL && m != POLSEARCH_MATCH_ANY)
+		throw invalid_argument("Invalid matching behavior requested.");
+
+	_match = m;
+}
+
+polsearch_query::polsearch_query(const polsearch_query & rhs)
+{
+	_match = rhs._match;
+	_tests = rhs._tests;
+}
+
+polsearch_query::~polsearch_query()
+{
+	// no-op
+}
+
+polsearch_match_e polsearch_query::match() const
+{
+	return _match;
+}
+
+polsearch_match_e polsearch_query::match(polsearch_match_e m) throw(std::invalid_argument)
+{
+	if (m != POLSEARCH_MATCH_ALL && m != POLSEARCH_MATCH_ANY)
+		throw invalid_argument("Invalid matching behavior requested.");
+
+	return _match = m;
+}

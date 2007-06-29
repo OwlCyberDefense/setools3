@@ -28,7 +28,7 @@
 #include <stdexcept>
 
 #include <stdint.h>
-#include <assert.h>
+#include <cassert>
 
 #include <polsearch/parameter.hh>
 

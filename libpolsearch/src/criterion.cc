@@ -38,7 +38,7 @@
 #include <stdexcept>
 
 #include <stdint.h>
-#include <assert.h>
+#include <cassert>
 
 using std::runtime_error;
 using std::invalid_argument;
@@ -61,11 +61,15 @@ polsearch_criterion::polsearch_criterion(const polsearch_criterion & rhs)
 	_op = rhs._op;
 	_negated = rhs._negated;
 	_test = rhs._test;
+	if (rhs._param)
+		_param = NULL;	       //TODO copy safely
+	else
+		_param = NULL;
 }
 
 polsearch_criterion::~polsearch_criterion()
 {
-	// no-op
+	delete _param;
 }
 
 polsearch_op_e polsearch_criterion::op() const
@@ -126,7 +130,7 @@ std::vector < polsearch_param_type_e > polsearch_criterion::getValidParamTypes()
 
 std::string polsearch_criterion::toString() const
 {
-	//TODO
+	//TODO crit to string
 	return "";
 }
 
@@ -160,12 +164,12 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 }
 
 void polsearch_criterion::check(const apol_policy_t * policy, std::vector < const void *>&test_candidates,
-				const std::vector < std::string > &Xnames) throw(std::runtime_error, std::bad_alloc)
+				const std::vector < std::string > &Xnames) const throw(std::runtime_error, std::bad_alloc)
 {
 	if (!_test)
 		throw runtime_error("Cannot check criteria until associated with a test.");
 
-	polsearch_element_e candidate_type = determine_candidate_type(_test->elementType(), _test->testCond());
+	polsearch_element_e candidate_type = determine_candidate_type(_test->testCond());
 	for (size_t i = 0; i < test_candidates.size(); i++)
 	{
 		bool match = false;

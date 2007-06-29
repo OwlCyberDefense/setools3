@@ -45,41 +45,41 @@
 class polsearch_test
 {
       public:
-		/**
-		 * Copy a test.
-		 * @param rhs The test to copy.
-		 */
+	/**
+	 * Copy a test.
+	 * @param rhs The test to copy.
+	 */
 	polsearch_test(const polsearch_test & rhs);
 	//! Destructor.
 	~polsearch_test();
 
-		/**
-		 * Get the element type tested by the test.
-		 * @return The element type tested.
-		 */
+	/**
+	 * Get the element type tested by the test.
+	 * @return The element type tested.
+	 */
 	polsearch_element_e elementType() const;
-		/**
-		 * Get the condition tested.
-		 * @return The condition tested.
-		 */
+	/**
+	 * Get the condition tested.
+	 * @return The condition tested.
+	 */
 	polsearch_test_cond_e testCond() const;
-		/**
-		 * Set the condition tested.
-		 * @param test_cond The condition to set.
-		 * @return The condition set.
-		 * @exception std::invalid_argument The given condition is not valid
-		 * for the element type tested.
-		 */
+	/**
+	 * Set the condition tested.
+	 * @param test_cond The condition to set.
+	 * @return The condition set.
+	 * @exception std::invalid_argument The given condition is not valid
+	 * for the element type tested.
+	 */
 	polsearch_test_cond_e testCond(polsearch_test_cond_e test_cond) throw(std::invalid_argument);
 
-		/**
-		 * Add a criterion to check for the given condition.
-		 * @param opr The comparison operator to use.
-		 * @param neg If \a true, invert the logic result of \a opr.
-		 * @exception std::invalid_argument The given criterion is not valid for
-		 * the element tested and/or the current condition. The criterion will not
-		 * be changed if it cannot successfully be added to the test.
-		 */
+	/**
+	 * Add a criterion to check for the given condition.
+	 * @param opr The comparison operator to use.
+	 * @param neg If \a true, invert the logic result of \a opr.
+	 * @exception std::invalid_argument The given criterion is not valid for
+	 * the element tested and/or the current condition. The criterion will not
+	 * be changed if it cannot successfully be added to the test.
+	 */
 	 polsearch_criterion & addCriterion(polsearch_op_e opr, bool neg = false) throw(std::invalid_argument);
 
 	 std::vector < polsearch_result * >run(apol_policy_t * policy, sefs_fclist * fclist,
@@ -87,13 +87,13 @@ class polsearch_test
 
 	friend polsearch_test & polsearch_query::addTest(polsearch_test_cond_e);
       protected:
-		/**
-		 * Create a test.
-		 * @param query The query with which the test should be associated.
-		 * @param test_cond The condition to test.
-		 * @exception std::invalid_argument Test condition is not valid for
-		 * the given element type.
-		 */
+	/**
+	 * Create a test.
+	 * @param query The query with which the test should be associated.
+	 * @param test_cond The condition to test.
+	 * @exception std::invalid_argument Test condition is not valid for
+	 * the given element type.
+	 */
 	 polsearch_test(polsearch_query * query, polsearch_test_cond_e test_cond) throw(std::invalid_argument);
 
       private:

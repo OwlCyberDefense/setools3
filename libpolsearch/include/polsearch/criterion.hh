@@ -129,7 +129,7 @@ class polsearch_criterion
 		 * @exception std::bad_alloc Out of memory.
 		 */
 	void check(const apol_policy_t * policy, std::vector < const void *>&test_candidates,
-		   const std::vector < std::string > &Xnames) throw(std::runtime_error, std::bad_alloc);
+		   const std::vector < std::string > &Xnames) const throw(std::runtime_error, std::bad_alloc);
 
 	friend polsearch_criterion & polsearch_test::addCriterion(polsearch_op_e opr, bool neg);
       protected:

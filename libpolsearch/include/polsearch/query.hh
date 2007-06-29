@@ -51,9 +51,9 @@ class polsearch_query
 	polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL) throw(std::invalid_argument);
 	/**
 	 * Base class copy constructor
-	 * @param pq The query to copy.
+	 * @param rhs The query to copy.
 	 */
-	polsearch_query(const polsearch_query & pq);
+	polsearch_query(const polsearch_query & rhs);
 	//! Destructor.
 	 virtual ~polsearch_query();
 
@@ -76,7 +76,14 @@ class polsearch_query
 	 */
 	virtual std::vector < polsearch_test_cond_e > getValidTests() const = 0;
 
-	virtual polsearch_test & addTest(polsearch_test_cond_e test_cond) throw(std::invalid_argument);
+	/**
+	 * Add a test to the query.
+	 * @param test_cond The condition to be tested.
+	 * @return A reference to the newly created and added test.
+	 * @exception std::invalid_argument Given condition is not valid for
+	 * the element type queried.
+	 */
+	virtual polsearch_test & addTest(polsearch_test_cond_e test_cond) throw(std::invalid_argument) = 0;
 
 	/**
 	 * Run the query.
@@ -91,14 +98,23 @@ class polsearch_query
 	virtual std::vector < polsearch_result * >run(const apol_policy_t * policy, sefs_fclist * fclist =
 						      NULL) const throw(std::runtime_error) = 0;
 
+	/**
+	 * Get a string repersenting the query.
+	 * @return A string representing the query.
+	 */
 	virtual std::string toString() const = 0;
 
+	/**
+	 * Get the type of element queried.
+	 * @return The type of element queried.
+	 */
 	virtual polsearch_element_e elementType() const = 0;
 
       protected:
-	 polsearch_match_e _match;     /*!< The matching behavior used for determining if an element matches with multiple tests. */
 	 std::vector < polsearch_test > _tests;	/*!< The set of tests used by the query to determine which elements match. */
 
+      private:
+	 polsearch_match_e _match;     /*!< The matching behavior used for determining if an element matches with multiple tests. */
 };
 
 #endif				       /* POLSEARCH_QUERY_HH */

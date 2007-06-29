@@ -26,17 +26,102 @@
 #include <polsearch/polsearch.hh>
 #include "polsearch_internal.hh"
 
+#include <apol/policy-query.h>
+
 #include <stdexcept>
+#include <vector>
+#include <string>
+#include <cerrno>
+#include <cassert>
 
 using std::invalid_argument;
+using std::vector;
+using std::string;
 
 // internal functions
 
-polsearch_element_e determine_candidate_type(polsearch_element_e elem_type,
-					     polsearch_test_cond_e test_cond) throw(std::invalid_argument)
+polsearch_element_e determine_candidate_type(polsearch_test_cond_e test_cond) throw(std::invalid_argument)
 {
-	//TODO
-	return POLSEARCH_ELEMENT_NONE;
+	switch (test_cond)
+	{
+	case POLSEARCH_TEST_NAME:
+	case POLSEARCH_TEST_ALIAS:
+	{
+		return POLSEARCH_ELEMENT_STRING;
+	}
+	case POLSEARCH_TEST_ATTRIBUTES:
+	{
+		return POLSEARCH_ELEMENT_ATTRIBUTE;
+	}
+	case POLSEARCH_TEST_ROLES:
+	{
+		return POLSEARCH_ELEMENT_ROLE;
+	}
+	case POLSEARCH_TEST_AVRULE:
+	{
+		return POLSEARCH_ELEMENT_AVRULE;
+	}
+	case POLSEARCH_TEST_TERULE:
+	{
+		return POLSEARCH_ELEMENT_TERULE;
+	}
+	case POLSEARCH_TEST_ROLEALLOW:
+	{
+		return POLSEARCH_ELEMENT_ROLE_ALLOW;
+	}
+	case POLSEARCH_TEST_ROLETRANS:
+	{
+		return POLSEARCH_ELEMENT_ROLE_TRANS;
+	}
+	case POLSEARCH_TEST_RANGETRANS:
+	{
+		return POLSEARCH_ELEMENT_RANGE_TRANS;
+	}
+	case POLSEARCH_TEST_TYPES:
+	{
+		return POLSEARCH_ELEMENT_TYPE;
+	}
+	case POLSEARCH_TEST_USERS:
+	{
+		return POLSEARCH_ELEMENT_USER;
+	}
+	case POLSEARCH_TEST_DEFAULT_LEVEL:
+	{
+		return POLSEARCH_ELEMENT_LEVEL;
+	}
+	case POLSEARCH_TEST_RANGE:
+	{
+		return POLSEARCH_ELEMENT_MLS_RANGE;
+	}
+	case POLSEARCH_TEST_COMMON:
+	{
+		return POLSEARCH_ELEMENT_COMMON;
+	}
+	case POLSEARCH_TEST_PERMISSIONS:
+	{
+		return POLSEARCH_ELEMENT_PERMISSION;
+	}
+	case POLSEARCH_TEST_CATEGORIES:
+	{
+		return POLSEARCH_ELEMENT_CATEGORY;
+	}
+	case POLSEARCH_TEST_STATE:
+	{
+		return POLSEARCH_ELEMENT_BOOL_STATE;
+	}
+	case POLSEARCH_TEST_FCENTRY:
+	{
+		return POLSEARCH_ELEMENT_FC_ENTRY;
+	}
+	case POLSEARCH_TEST_NONE:
+	default:
+	{
+		// should not be possible to get here
+		assert(0);
+		throw invalid_argument("reached impossible state");
+		return POLSEARCH_ELEMENT_NONE;
+	}
+	}
 }
 
 bool validate_test_condition(polsearch_element_e elem_type, polsearch_test_cond_e cond)
@@ -327,4 +412,76 @@ bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_
 	}
 
 	return false;
+}
+
+const char *symbol_get_name(const void *symbol, polsearch_element_e sym_type, const apol_policy_t * policy)
+{
+	if (!policy)
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+	qpol_policy_t *qp = apol_policy_get_qpol(policy);
+	const char *name = NULL;
+	switch (sym_type)
+	{
+	case POLSEARCH_ELEMENT_TYPE:
+	case POLSEARCH_ELEMENT_ATTRIBUTE:
+	{
+		qpol_type_get_name(qp, static_cast < const qpol_type_t * >(symbol), &name);
+		break;
+	}
+	case POLSEARCH_ELEMENT_ROLE:
+	{
+		qpol_role_get_name(qp, static_cast < const qpol_role_t * >(symbol), &name);
+		break;
+	}
+	case POLSEARCH_ELEMENT_USER:
+	{
+		qpol_user_get_name(qp, static_cast < const qpol_user_t * >(symbol), &name);
+		break;
+	}
+	case POLSEARCH_ELEMENT_CLASS:
+	{
+		qpol_class_get_name(qp, static_cast < const qpol_class_t * >(symbol), &name);
+		break;
+	}
+	case POLSEARCH_ELEMENT_COMMON:
+	{
+		qpol_common_get_name(qp, static_cast < const qpol_common_t * >(symbol), &name);
+		break;
+	}
+	case POLSEARCH_ELEMENT_CATEGORY:
+	{
+		qpol_cat_get_name(qp, static_cast < const qpol_cat_t * >(symbol), &name);
+		break;
+	}
+	case POLSEARCH_ELEMENT_LEVEL:
+	{
+		qpol_level_get_name(qp, static_cast < const qpol_level_t * >(symbol), &name);
+		break;
+	}
+	case POLSEARCH_ELEMENT_BOOL:
+	{
+		qpol_bool_get_name(qp, static_cast < const qpol_bool_t * >(symbol), &name);
+		break;
+	}
+	case POLSEARCH_ELEMENT_NONE:
+	default:
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+	}
+	return name;
+}
+
+std::vector < std::string > mkvector(const apol_vector_t * rhs)
+{
+	vector < string > v;
+	for (size_t i = 0; i < apol_vector_get_size(rhs); i++)
+	{
+		v.push_back(string(static_cast < char *>(apol_vector_get_element(rhs, i))));
+	}
+	return v;
 }
