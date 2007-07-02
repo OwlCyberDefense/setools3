@@ -87,60 +87,6 @@ polsearch_criterion & polsearch_test::addCriterion(polsearch_op_e opr, bool neg)
 }
 
 /**
- * Get all valid names for a policy element.
- * @param element The element.
- * @param elem_type The type of element.
- * @param policy The policy from which \a element comes.
- * @return A vector of all valid names for the element. This vector may be
- * empty if \a element is of a type which cannot be identified by a name.
- * @exception std::bad_alloc Out of memory.
- */
-static vector < string > get_all_names(const void *element, polsearch_element_e elem_type,
-				       const apol_policy_t * policy) throw(std::bad_alloc)
-{
-	vector < string > ret_v;
-	qpol_iterator_t *iter = NULL;
-	const qpol_policy_t *qp = apol_policy_get_qpol(policy);
-
-	const char *primary = symbol_get_name(element, elem_type, policy);
-
-	if (primary)
-		ret_v.push_back(string(primary));
-
-	if (elem_type == POLSEARCH_ELEMENT_TYPE)
-	{
-		qpol_type_get_alias_iter(qp, static_cast < const qpol_type_t * >(element), &iter);
-		if (!iter)
-			throw bad_alloc();
-	}
-	else if (elem_type == POLSEARCH_ELEMENT_CATEGORY)
-	{
-		qpol_cat_get_alias_iter(qp, static_cast < const qpol_cat_t * >(element), &iter);
-		if (!iter)
-			throw bad_alloc();
-	}
-	else if (elem_type == POLSEARCH_ELEMENT_LEVEL)
-	{
-		qpol_level_get_alias_iter(qp, static_cast < const qpol_level_t * >(element), &iter);
-		if (!iter)
-			throw bad_alloc();
-	}
-
-	if (iter)
-	{
-		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter))
-		{
-			void *name;
-			qpol_iterator_get_item(iter, &name);
-			ret_v.push_back(string(static_cast < const char *>(name)));
-		}
-	}
-	qpol_iterator_destroy(&iter);
-
-	return ret_v;
-}
-
-/**
  * Get all candidates for a given test.
  * @param policy The policy being tested.
  * @param element The current element being tested.
@@ -259,11 +205,12 @@ static vector < const void *>get_candidates(const apol_policy_t * policy, const 
 		qpol_iterator_destroy(&iter);
 		break;
 	}
-	case POLSEARCH_ELEMENT_LEVEL:
+	case POLSEARCH_ELEMENT_MLS_LEVEL:
 	{
 		const qpol_mls_level_t *lvl = NULL;
 		qpol_user_get_dfltlevel(qp, static_cast < const qpol_user_t * >(element), &lvl);
-		ret_v.push_back(static_cast < const void *>(lvl));
+		const apol_mls_level_t *alvl = apol_mls_level_create_from_qpol_mls_level(policy, lvl);
+		ret_v.push_back(static_cast < const void *>(alvl));
 		break;
 	}
 	case POLSEARCH_ELEMENT_STRING:

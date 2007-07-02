@@ -35,6 +35,7 @@
 #include <cassert>
 
 using std::invalid_argument;
+using std::bad_alloc;
 using std::vector;
 using std::string;
 
@@ -87,7 +88,7 @@ polsearch_element_e determine_candidate_type(polsearch_test_cond_e test_cond) th
 	}
 	case POLSEARCH_TEST_DEFAULT_LEVEL:
 	{
-		return POLSEARCH_ELEMENT_LEVEL;
+		return POLSEARCH_ELEMENT_MLS_LEVEL;
 	}
 	case POLSEARCH_TEST_RANGE:
 	{
@@ -474,6 +475,51 @@ const char *symbol_get_name(const void *symbol, polsearch_element_e sym_type, co
 	}
 	}
 	return name;
+}
+
+vector < string > get_all_names(const void *element, polsearch_element_e elem_type,
+				const apol_policy_t * policy)throw(std::bad_alloc)
+{
+	vector < string > ret_v;
+	qpol_iterator_t *iter = NULL;
+	const qpol_policy_t *qp = apol_policy_get_qpol(policy);
+
+	const char *primary = symbol_get_name(element, elem_type, policy);
+
+	if (primary)
+		ret_v.push_back(string(primary));
+
+	if (elem_type == POLSEARCH_ELEMENT_TYPE)
+	{
+		qpol_type_get_alias_iter(qp, static_cast < const qpol_type_t * >(element), &iter);
+		if (!iter)
+			throw bad_alloc();
+	}
+	else if (elem_type == POLSEARCH_ELEMENT_CATEGORY)
+	{
+		qpol_cat_get_alias_iter(qp, static_cast < const qpol_cat_t * >(element), &iter);
+		if (!iter)
+			throw bad_alloc();
+	}
+	else if (elem_type == POLSEARCH_ELEMENT_LEVEL)
+	{
+		qpol_level_get_alias_iter(qp, static_cast < const qpol_level_t * >(element), &iter);
+		if (!iter)
+			throw bad_alloc();
+	}
+
+	if (iter)
+	{
+		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter))
+		{
+			void *name;
+			qpol_iterator_get_item(iter, &name);
+			ret_v.push_back(string(static_cast < const char *>(name)));
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+	return ret_v;
 }
 
 std::vector < std::string > mkvector(const apol_vector_t * rhs)

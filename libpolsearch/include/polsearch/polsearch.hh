@@ -54,6 +54,7 @@ typedef enum polsearch_element
 	POLSEARCH_ELEMENT_ROLE_TRANS,  /*!< qpol_role_trans_t */
 	POLSEARCH_ELEMENT_RANGE_TRANS, /*!< qpol_range_trans_t */
 	POLSEARCH_ELEMENT_FC_ENTRY,    /*!< sefs_entry_t */
+	POLSEARCH_ELEMENT_MLS_LEVEL,   /*!< apol_mls_level_t */
 	POLSEARCH_ELEMENT_MLS_RANGE,   /*!< apol_mls_range_t */
 	POLSEARCH_ELEMENT_PERMISSION,  /*!< char * */
 	POLSEARCH_ELEMENT_BOOL_STATE   /*!< bool */

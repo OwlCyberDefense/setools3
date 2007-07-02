@@ -131,7 +131,7 @@ class polsearch_parameter
 	 * Get a string representing the parameter.
 	 * @return A string representing the parameter.
 	 */
-	virtual std::string toString() = 0;
+	virtual std::string toString() const = 0;
 };
 
 #endif				       /* POLSEARCH_PARAMETER_HH */

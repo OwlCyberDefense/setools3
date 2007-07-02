@@ -87,6 +87,18 @@ bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_
 const char *symbol_get_name(const void *symbol, polsearch_element_e sym_type, const apol_policy_t * policy);
 
 /**
+ * Get all valid names for a policy element.
+ * @param element The element.
+ * @param elem_type The type of element.
+ * @param policy The policy from which \a element comes.
+ * @return A vector of all valid names for the element. This vector may be
+ * empty if \a element is of a type which cannot be identified by a name.
+ * @exception std::bad_alloc Out of memory.
+ */
+std::vector < std::string > get_all_names(const void *element, polsearch_element_e elem_type,
+					  const apol_policy_t * policy) throw(std::bad_alloc);
+
+/**
  * Make a vector of strings from an apol vector.
  * @param rhs The apol vector to convert.
  * @return A new vector initialized to the values is \a rhs.
