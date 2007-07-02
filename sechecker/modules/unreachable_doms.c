@@ -35,8 +35,8 @@
 #include <assert.h>
 
 static bool parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy);
-static bool in_isid_ctx(char *type_name, apol_policy_t * policy);
-static bool in_def_ctx(char *type_name, unreachable_doms_data_t * datum);
+static bool in_isid_ctx(const char *type_name, apol_policy_t * policy);
+static bool in_def_ctx(const char *type_name, unreachable_doms_data_t * datum);
 /* for some reason we have to define this here to remove compile warnings */
 extern ssize_t getline(char **lineptr, size_t * n, FILE * stream);
 
@@ -243,14 +243,14 @@ typedef enum dom_need
  *  @param tgt_roles The second set of roles.
  *  @return 1 if a common user can be found 0 other wise.
  */
-static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles, apol_vector_t * tgt_roles, qpol_role_t ** which_sr,
-			      qpol_role_t ** which_tr, qpol_user_t ** which_u)
+static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles, apol_vector_t * tgt_roles, const qpol_role_t ** which_sr,
+			      const qpol_role_t ** which_tr, const qpol_user_t ** which_u)
 {
 	int retv = 0;
 	apol_user_query_t *uq;
-	char *name = NULL;
-	qpol_role_t *role = NULL;
-	qpol_user_t *user = NULL;
+	const char *name = NULL;
+	const qpol_role_t *role = NULL;
+	const qpol_user_t *user = NULL;
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *user_v = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
@@ -326,18 +326,19 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	apol_vector_t *role_trans_vector = NULL, *role_allow_vector = NULL;
 	apol_domain_trans_analysis_t *dta = NULL;
 	apol_domain_trans_result_t *dtr = NULL;
-	char *tmp_name = NULL, *cur_dom_name = NULL, *tmp2 = NULL, *tmp3 = NULL;
-	qpol_type_t *cur_dom = NULL, *ep_type = NULL, *start_type = NULL;
-	qpol_type_t *last_type = NULL;
-	qpol_role_t *last_role = NULL, *src_role = NULL, *dflt_role = NULL;
-	qpol_role_t *last_dflt = NULL;
-	qpol_user_t *last_user = NULL;
+	const char *tmp_name = NULL, *cur_dom_name = NULL;
+	const char *tmp2 = NULL, *tmp3 = NULL;
+	const qpol_type_t *cur_dom = NULL, *ep_type = NULL, *start_type = NULL;
+	const qpol_type_t *last_type = NULL;
+	const qpol_role_t *last_role = NULL, *src_role = NULL, *dflt_role = NULL;
+	const qpol_role_t *last_dflt = NULL;
+	const qpol_user_t *last_user = NULL;
 	dom_need_e need = KEEP_SEARCHING;
 	apol_role_query_t *role_q = NULL;
 	apol_user_query_t *user_q = NULL;
 	apol_role_trans_query_t *rtq = NULL;
 	apol_role_allow_query_t *raq = NULL;
-	qpol_role_trans_t *role_trans = NULL;
+	const qpol_role_trans_t *role_trans = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 
 	if (!mod || !policy) {
@@ -783,9 +784,9 @@ int unreachable_doms_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k, l, num_items;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -1018,7 +1019,7 @@ static bool parse_default_contexts(const char *ctx_file_path, apol_vector_t * ct
 }
 
 /* Returns true if type_idx is in datum->ctx_list */
-static bool in_def_ctx(char *type_name, unreachable_doms_data_t * datum)
+static bool in_def_ctx(const char *type_name, unreachable_doms_data_t * datum)
 {
 	size_t i;
 	if (apol_vector_get_index(datum->ctx_vector, type_name, apol_str_strcmp, NULL, &i) < 0) {
@@ -1028,16 +1029,16 @@ static bool in_def_ctx(char *type_name, unreachable_doms_data_t * datum)
 }
 
 /* Returns true if type is a type assigned to an isid */
-static bool in_isid_ctx(char *type_name, apol_policy_t * policy)
+static bool in_isid_ctx(const char *type_name, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	qpol_policy_get_isid_iter(q, &iter);
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		qpol_isid_t *isid;
-		qpol_context_t *ocon;
-		qpol_type_t *context_type;
-		char *context_type_name;
+		const qpol_isid_t *isid;
+		const qpol_context_t *ocon;
+		const qpol_type_t *context_type;
+		const char *context_type_name;
 
 		qpol_iterator_get_item(iter, (void **)&isid);
 		qpol_isid_get_context(q, isid, &ocon);

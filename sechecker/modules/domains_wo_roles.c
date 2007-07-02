@@ -238,7 +238,7 @@ int domains_wo_roles_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 	for (i = 0; i < apol_vector_get_size(domain_vector); i++) {
 		qpol_type_t *domain;
-		char *domain_name;
+		const char *domain_name;
 
 		item = apol_vector_get_element(domain_vector, i);
 		domain = item->item;
@@ -316,7 +316,7 @@ int domains_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

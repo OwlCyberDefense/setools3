@@ -185,7 +185,7 @@ int find_file_types_init(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			apol_attr_query_set_attr(policy, attr_query, opt->value);
 			apol_attr_get_by_query(policy, attr_query, &attr_vector);
 			for (j = 0; j < apol_vector_get_size(attr_vector); j++) {
-				char *file_attrib;
+				const char *file_attrib;
 				attr = apol_vector_get_element(attr_vector, j);
 				qpol_type_get_name(q, attr, &file_attrib);
 				if (apol_vector_append(datum->file_type_attribs, (void *)file_attrib) < 0) {
@@ -207,7 +207,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	sechk_result_t *res = NULL;
-	char *type_name = NULL;
+	const char *type_name = NULL;
 	apol_avrule_query_t *avrule_query = NULL;
 	apol_terule_query_t *terule_query = NULL;
 	apol_vector_t *avrule_vector = NULL;
@@ -278,7 +278,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
 		qpol_iterator_t *file_attr_iter;
 
-		qpol_type_t *type = apol_vector_get_element(type_vector, i);
+		const qpol_type_t *type = apol_vector_get_element(type_vector, i);
 		qpol_type_get_name(q, type, &type_name);
 
 		if (qpol_type_get_attr_iter(q, type, &file_attr_iter) < 0) {
@@ -288,14 +288,14 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 
 		for (; !qpol_iterator_end(file_attr_iter); qpol_iterator_next(file_attr_iter)) {
-			char *attr_name;
-			qpol_type_t *attr;
+			const char *attr_name;
+			const qpol_type_t *attr;
 			size_t nfta;
 
 			qpol_iterator_get_item(file_attr_iter, (void **)&attr);
 			qpol_type_get_name(q, attr, &attr_name);
 			for (nfta = 0; nfta < apol_vector_get_size(datum->file_type_attribs); nfta++) {
-				char *file_type_attrib;
+				const char *file_type_attrib;
 
 				file_type_attrib = apol_vector_get_element(datum->file_type_attribs, nfta);
 				if (!strcmp(attr_name, file_type_attrib)) {
@@ -306,7 +306,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 						goto find_file_types_run_fail;
 					}
 					proof->type = SECHK_ITEM_ATTRIB;
-					proof->elem = attr;
+					proof->elem = (void*)attr;
 					asprintf(&proof->text, "has attribute %s", attr_name);
 					if (!item) {
 						item = sechk_item_new(NULL);
@@ -393,9 +393,9 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		apol_terule_query_set_default(policy, terule_query, type_name);
 		apol_terule_get_by_query(policy, terule_query, &terule_vector);
 		for (x = 0; x < apol_vector_get_size(terule_vector); x++) {
-			qpol_terule_t *terule;
-			qpol_class_t *objclass;
-			char *class_name;
+			const qpol_terule_t *terule;
+			const qpol_class_t *objclass;
+			const char *class_name;
 
 			terule = apol_vector_get_element(terule_vector, x);
 			qpol_terule_get_object_class(q, terule, &objclass);
@@ -408,7 +408,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 					goto find_file_types_run_fail;
 				}
 				proof->type = SECHK_ITEM_TERULE;
-				proof->elem = terule;
+				proof->elem = (void*)terule;
 				proof->text = apol_terule_render(policy, terule);
 				if (!item) {
 					item = sechk_item_new(NULL);
@@ -557,7 +557,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 		/* insert any results for this type */
 		if (item) {
-			item->item = type;
+			item->item = (void*)type;
 			if (apol_vector_append(res->items, (void *)item) < 0) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));
@@ -602,9 +602,9 @@ int find_file_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, l = 0, num_items = 0;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

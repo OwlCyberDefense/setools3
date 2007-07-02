@@ -205,8 +205,8 @@ int roles_wo_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	}
 
 	for (i = 0; i < apol_vector_get_size(role_vector); i++) {
-		qpol_role_t *role;
-		char *role_name;
+		const qpol_role_t *role;
+		const char *role_name;
 		int at_end;
 
 		role = apol_vector_get_element(role_vector, i);
@@ -278,8 +278,8 @@ int roles_wo_types_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	size_t i = 0, j = 0, num_items;
-	qpol_role_t *role;
-	char *role_name;
+	const qpol_role_t *role;
+	const char *role_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

@@ -243,7 +243,7 @@ typedef struct net_state
 
 typedef struct name_perm
 {
-	char *name;		       /* will be from policy do not free */
+	const char *name;		       /* will be from policy do not free */
 	uint32_t perms;
 } name_perm_t;
 
@@ -283,7 +283,7 @@ static int name_perm_comp(const void *a, const void *b, void *arg __attribute__ 
 	return strcmp(x->name, y->name);
 }
 
-static name_perm_t *name_perm_create(char *name)
+static name_perm_t *name_perm_create(const char *name)
 {
 	name_perm_t *np = NULL;
 
@@ -311,7 +311,7 @@ static int name_perm_vector_has_incomplete_perms(apol_vector_t * v, uint32_t mas
 	return 0;
 }
 
-static void name_perm_vector_add_perm(apol_vector_t * v, char *name, uint32_t perm)
+static void name_perm_vector_add_perm(apol_vector_t * v, const char *name, uint32_t perm)
 {
 	name_perm_t *np = NULL;
 	size_t i = 0;
@@ -1306,9 +1306,10 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	int error = 0;
 	apol_avrule_query_t *avrule_query = NULL;
 	apol_vector_t *avrule_vector = NULL, *net_domain_vector = NULL;
-	qpol_type_t *net_domain = NULL, *tmp_type = NULL;
-	char *net_domain_name = NULL, *perm_name = NULL, *tgt_name = NULL;
-	qpol_avrule_t *rule = NULL;
+	const qpol_type_t *net_domain = NULL, *tmp_type = NULL;
+	const char *net_domain_name = NULL, *tgt_name = NULL;
+	char *perm_name = NULL;
+	const qpol_avrule_t *rule = NULL;
 	qpol_iterator_t *iter = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	net_state_t *state = NULL;
@@ -1605,7 +1606,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 				ERR(policy, "%s", strerror(error));
 				goto inc_net_access_run_fail;
 			}
-			item->item = net_domain;
+			item->item = (void*)net_domain;
 			item->test_result = 1;
 			item->proof = apol_vector_create(sechk_proof_free);
 			if (!item->proof) {
@@ -1645,7 +1646,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 					ERR(policy, "%s", strerror(error));
 					goto inc_net_access_run_fail;
 				}
-				item->item = net_domain;
+				item->item = (void*)net_domain;
 				item->test_result = 1;
 				item->proof = apol_vector_create(sechk_proof_free);
 				if (!item->proof) {
@@ -1686,7 +1687,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 					ERR(policy, "%s", strerror(error));
 					goto inc_net_access_run_fail;
 				}
-				item->item = net_domain;
+				item->item = (void*)net_domain;
 				item->test_result = 1;
 				item->proof = apol_vector_create(sechk_proof_free);
 				if (!item->proof) {
@@ -1720,7 +1721,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 				ERR(policy, "%s", strerror(error));
 				goto inc_net_access_run_fail;
 			}
-			item->item = net_domain;
+			item->item = (void*)net_domain;
 			item->test_result = 1;
 			item->proof = apol_vector_create(sechk_proof_free);
 			if (!item->proof) {
@@ -1783,9 +1784,9 @@ int inc_net_access_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, l = 0, num_items;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

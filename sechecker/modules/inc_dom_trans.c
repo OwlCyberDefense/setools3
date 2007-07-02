@@ -190,9 +190,9 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 	apol_role_trans_query_t *role_trans_query = NULL;
 	char *buff = NULL;
 	int buff_sz, error = 0;
-	qpol_type_t *domain = NULL;
+	const qpol_type_t *domain = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *domain_name = NULL;
+	const char *domain_name = NULL;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -284,12 +284,12 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 
 		for (j = 0; j < apol_vector_get_size(domain_trans_vector); j++) {
 			apol_domain_trans_result_t *dtr = NULL;
-			qpol_type_t *start;
-			qpol_type_t *ep;
-			qpol_type_t *end;
-			char *start_name;
-			char *end_name;
-			char *ep_name;
+			const qpol_type_t *start;
+			const qpol_type_t *ep;
+			const qpol_type_t *end;
+			const char *start_name;
+			const char *end_name;
+			const char *ep_name;
 			int result;
 			bool ok;
 
@@ -315,8 +315,8 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 			if (!result) {
 				apol_role_get_by_query(policy, NULL, &role_vector);
 				for (k = 0; (k < apol_vector_get_size(role_vector)) && !ok; k++) {
-					qpol_role_t *role;
-					char *role_name;
+					const qpol_role_t *role;
+					const char *role_name;
 
 					role = apol_vector_get_element(role_vector, k);
 					qpol_role_get_name(q, role, &role_name);
@@ -334,11 +334,11 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
 					apol_role_trans_get_by_query(policy, role_trans_query, &rbac_vector);
 					for (k = 0; (k < apol_vector_get_size(rbac_vector)) && !ok; k++) {
-						qpol_role_trans_t *role_trans;
-						qpol_role_t *source_role;
-						qpol_role_t *default_role;
-						char *source_role_name;
-						char *default_role_name;
+						const qpol_role_trans_t *role_trans;
+						const qpol_role_t *source_role;
+						const qpol_role_t *default_role;
+						const char *source_role_name;
+						const char *default_role_name;
 
 						role_trans = apol_vector_get_element(rbac_vector, k);
 						qpol_role_trans_get_source_role(q, role_trans, &source_role);
@@ -603,10 +603,10 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		 */
 		printf("\n");
 		for (i = 0; i < num_items; i++) {
-			qpol_type_t *start;
-			qpol_type_t *end;
-			qpol_type_t *ep;
-			char *start_name, *end_name, *ep_name;
+			const qpol_type_t *start;
+			const qpol_type_t *end;
+			const qpol_type_t *ep;
+			const char *start_name, *end_name, *ep_name;
 			apol_domain_trans_result_t *dtr;
 
 			item = apol_vector_get_element(mod->result->items, i);
@@ -637,10 +637,10 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
 		for (i = 0; i < num_items; i++) {
-			qpol_type_t *start;
-			qpol_type_t *end;
-			qpol_type_t *ep;
-			char *start_name, *end_name, *ep_name;
+			const qpol_type_t *start;
+			const qpol_type_t *end;
+			const qpol_type_t *ep;
+			const char *start_name, *end_name, *ep_name;
 			apol_domain_trans_result_t *dtr;
 
 			item = apol_vector_get_element(mod->result->items, i);

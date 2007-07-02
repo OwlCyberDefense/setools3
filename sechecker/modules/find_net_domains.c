@@ -271,20 +271,20 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	apol_avrule_query_set_rules(policy, avrule_query, QPOL_RULE_ALLOW);
 	apol_avrule_get_by_query(policy, avrule_query, &avrule_vector);
 	for (k = 0; k < apol_vector_get_size(avrule_vector); k++) {
-		qpol_avrule_t *avrule;
-		qpol_class_t *class;
-		char *class_name;
+		const qpol_avrule_t *avrule;
+		const qpol_class_t *class;
+		const char *class_name;
 
 		avrule = apol_vector_get_element(avrule_vector, k);
 		qpol_avrule_get_object_class(q, avrule, &class);
 		qpol_class_get_name(q, class, &class_name);
 		for (i = 0; i < apol_vector_get_size(datum->net_objs); i++) {
-			char *net_obj_name;
+			const char *net_obj_name;
 
 			net_obj_name = apol_vector_get_element(datum->net_objs, i);
 			if (!strcmp(class_name, net_obj_name)) {
-				qpol_type_t *source;
-				char *source_name;
+				const qpol_type_t *source;
+				const char *source_name;
 
 				qpol_avrule_get_source_type(q, avrule, &source);
 				qpol_type_get_name(q, source, &source_name);
@@ -296,7 +296,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 					goto find_net_domains_run_fail;
 				}
 				proof->type = SECHK_ITEM_AVRULE;
-				proof->elem = avrule;
+				proof->elem = (void*)avrule;
 				proof->text = apol_avrule_render(policy, avrule);
 				if (!proof->text) {
 					error = errno;
@@ -307,8 +307,8 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 
 				for (j = 0; j < apol_vector_get_size(res->items); j++) {
 					sechk_item_t *res_item = NULL;
-					qpol_type_t *res_type;
-					char *res_type_name;
+					const qpol_type_t *res_type;
+					const char *res_type_name;
 
 					res_item = apol_vector_get_element(res->items, j);
 					res_type = res_item->item;
@@ -379,9 +379,9 @@ int find_net_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, l = 0, num_items;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

@@ -225,14 +225,15 @@ int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	}
 
 	/* search initial SIDs */
-	qpol_isid_t *isid = NULL;
+	const qpol_isid_t *isid = NULL;
 	buff = NULL;
 	qpol_policy_get_isid_by_name(q, "port", &isid);
 	if (isid) {
-		qpol_context_t *context;
+		const qpol_context_t *context;
 		apol_context_t *a_context;
-		qpol_type_t *context_type;
-		char *context_type_name, *tmp;
+		const qpol_type_t *context_type;
+		const char *context_type_name;
+		char *tmp;
 
 		proof = NULL;
 		qpol_isid_get_context(q, isid, &context);
@@ -267,14 +268,14 @@ int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 
 		proof->type = SECHK_ITEM_ISID;
-		proof->elem = isid;
+		proof->elem = (void*)isid;
 		proof->text = buff;
 
 		/* Have we encountered this type before?  If so, use that type. */
 		for (j = 0; j < apol_vector_get_size(res->items); j++) {
 			sechk_item_t *res_item = NULL;
-			qpol_type_t *res_type;
-			char *res_type_name;
+			const qpol_type_t *res_type;
+			const char *res_type_name;
 
 			res_item = apol_vector_get_element(res->items, j);
 			res_type = res_item->item;
@@ -320,10 +321,10 @@ int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	}
 
 	for (i = 0; i < apol_vector_get_size(portcon_vector); i++) {
-		char *portcon_name = NULL;
-		qpol_portcon_t *portcon = NULL;
-		qpol_context_t *portcon_context = NULL;
-		qpol_type_t *portcon_type = NULL;
+		const char *portcon_name = NULL;
+		const qpol_portcon_t *portcon = NULL;
+		const qpol_context_t *portcon_context = NULL;
+		const qpol_type_t *portcon_type = NULL;
 
 		portcon = apol_vector_get_element(portcon_vector, i);
 		qpol_portcon_get_context(q, portcon, &portcon_context);
@@ -337,15 +338,15 @@ int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			goto find_port_types_run_fail;
 		}
 		proof->type = SECHK_ITEM_PORTCON;
-		proof->elem = portcon;
+		proof->elem = (void*)portcon;
 		proof->text = apol_portcon_render(policy, portcon);
 		item = NULL;
 
 		/* Have we encountered this type before?  If so, use that type. */
 		for (j = 0; j < apol_vector_get_size(res->items); j++) {
 			sechk_item_t *res_item = NULL;
-			qpol_type_t *res_type;
-			char *res_type_name;
+			const qpol_type_t *res_type;
+			const char *res_type_name;
 
 			res_item = apol_vector_get_element(res->items, j);
 			res_type = res_item->item;
@@ -408,9 +409,9 @@ int find_port_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, num_items = 0;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

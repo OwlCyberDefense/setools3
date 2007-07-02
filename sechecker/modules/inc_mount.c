@@ -234,10 +234,10 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 	apol_avrule_get_by_query(policy, mounton_avrule_query, &mounton_vector);
 
 	for (i = 0; i < apol_vector_get_size(mount_vector); i++) {
-		qpol_avrule_t *mount_rule;
-		qpol_type_t *mount_source;
-		qpol_type_t *mount_target;
-		char *mount_source_name, *mount_target_name;
+		const qpol_avrule_t *mount_rule;
+		const qpol_type_t *mount_source;
+		const qpol_type_t *mount_target;
+		const char *mount_source_name, *mount_target_name;
 
 		both = false;
 		add_proof = true;
@@ -248,10 +248,10 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 		qpol_type_get_name(q, mount_target, &mount_target_name);
 
 		for (j = 0; j < apol_vector_get_size(mounton_vector); j++) {
-			qpol_avrule_t *mounton_rule;
-			qpol_type_t *mounton_source;
-			qpol_type_t *mounton_target;
-			char *mounton_source_name, *mounton_target_name;
+			const qpol_avrule_t *mounton_rule;
+			const qpol_type_t *mounton_source;
+			const qpol_type_t *mounton_target;
+			const char *mounton_source_name, *mounton_target_name;
 
 			mounton_rule = apol_vector_get_element(mounton_vector, j);
 			qpol_avrule_get_source_type(q, mounton_rule, &mounton_source);
@@ -271,7 +271,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 				goto inc_mount_run_fail;
 			}
 			proof->type = SECHK_ITEM_AVRULE;
-			proof->elem = mount_rule;
+			proof->elem = (void*)mount_rule;
 			tmp = apol_avrule_render(policy, mount_rule);
 			asprintf(&proof->text, "Have Rule:\n\t\t%s\n\tMissing:\n\t\tallow %s %s : dir mounton ;\n",
 				 tmp, mount_source_name, mount_target_name);
@@ -283,8 +283,8 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 			}
 			for (j = 0; j < apol_vector_get_size(res->items); j++) {
 				sechk_item_t *res_item;
-				qpol_type_t *res_type;
-				char *res_type_name;
+				const qpol_type_t *res_type;
+				const char *res_type_name;
 
 				res_item = apol_vector_get_element(res->items, j);
 				res_type = res_item->item;
@@ -328,10 +328,10 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 	}
 
 	for (i = 0; i < apol_vector_get_size(mounton_vector); i++) {
-		qpol_avrule_t *mounton_rule;
-		qpol_type_t *mounton_source;
-		qpol_type_t *mounton_target;
-		char *mounton_source_name, *mounton_target_name;
+		const qpol_avrule_t *mounton_rule;
+		const qpol_type_t *mounton_source;
+		const qpol_type_t *mounton_target;
+		const char *mounton_source_name, *mounton_target_name;
 
 		both = false;
 		add_proof = true;
@@ -342,10 +342,10 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 		qpol_type_get_name(q, mounton_target, &mounton_target_name);
 
 		for (j = 0; j < apol_vector_get_size(mount_vector); j++) {
-			qpol_avrule_t *mount_rule;
-			qpol_type_t *mount_source;
-			qpol_type_t *mount_target;
-			char *mount_source_name, *mount_target_name;
+			const qpol_avrule_t *mount_rule;
+			const qpol_type_t *mount_source;
+			const qpol_type_t *mount_target;
+			const char *mount_source_name, *mount_target_name;
 
 			mount_rule = apol_vector_get_element(mount_vector, j);
 			qpol_avrule_get_source_type(q, mount_rule, &mount_source);
@@ -364,15 +364,15 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 				goto inc_mount_run_fail;
 			}
 			proof->type = SECHK_ITEM_AVRULE;
-			proof->elem = mounton_rule;
+			proof->elem = (void*)mounton_rule;
 			tmp = apol_avrule_render(policy, mounton_rule);
 			asprintf(&proof->text, "Have Rule:\n\t\t%s\n\tMissing:\n\t\tallow %s %s : filesystem mount ;\n",
 				 tmp, mounton_source_name, mounton_target_name);
 			free(tmp);
 			for (j = 0; j < apol_vector_get_size(res->items); j++) {
 				sechk_item_t *res_item;
-				qpol_type_t *res_type;
-				char *res_type_name;
+				const qpol_type_t *res_type;
+				const char *res_type_name;
 
 				res_item = apol_vector_get_element(res->items, j);
 				res_type = res_item->item;
@@ -446,9 +446,9 @@ int inc_mount_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __at
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k, l, num_items;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", strerror(EINVAL));

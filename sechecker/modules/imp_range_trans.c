@@ -179,16 +179,16 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	apol_vector_t *range_trans_vector = NULL, *role_vector = NULL, *tmp_v = NULL;
 	apol_vector_t *user_vector = NULL, *users_w_roles = NULL, *users_w_range = NULL;
 	apol_vector_t *rule_vector = NULL;
-	qpol_range_trans_t *rule;
-	qpol_type_t *source = NULL;
-	qpol_type_t *target = NULL;
-	qpol_role_t *role = NULL;
-	char *source_name = NULL, *target_name = NULL, *role_name = NULL;
+	const qpol_range_trans_t *rule;
+	const qpol_type_t *source = NULL;
+	const qpol_type_t *target = NULL;
+	const qpol_role_t *role = NULL;
+	const char *source_name = NULL, *target_name = NULL, *role_name = NULL;
 	apol_role_query_t *role_query = NULL;
 	apol_user_query_t *user_query = NULL;
 	apol_avrule_query_t *avrule_query = NULL;
 	apol_mls_range_t *range;
-	qpol_mls_range_t *qpol_range;
+	const qpol_mls_range_t *qpol_range;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
 
@@ -306,7 +306,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 				error = ENOMEM;
 				goto imp_range_trans_run_fail;
 			}
-			item->item = rule;
+			item->item = (void*)rule;
 			item->test_result = 1;
 			if (!item->proof) {
 				if (!(item->proof = apol_vector_create(sechk_proof_free))) {
@@ -346,7 +346,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 					error = ENOMEM;
 					goto imp_range_trans_run_fail;
 				}
-				item->item = rule;
+				item->item = (void*)rule;
 				item->test_result = 1;
 			}
 			if (!item->proof) {
@@ -394,7 +394,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 					error = ENOMEM;
 					goto imp_range_trans_run_fail;
 				}
-				item->item = rule;
+				item->item = (void*)rule;
 				item->test_result = 1;
 			}
 			if (!item->proof) {

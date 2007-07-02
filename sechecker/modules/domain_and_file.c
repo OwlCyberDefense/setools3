@@ -232,7 +232,7 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
 		sechk_item_t *type_item;
 		qpol_type_t *type;
-		char *type_name;
+		const char *type_name;
 
 		type_item = apol_vector_get_element(type_vector, i);
 		type = type_item->item;
@@ -240,7 +240,7 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		for (j = 0; j < apol_vector_get_size(domain_vector); j++) {
 			sechk_item_t *domain_item;
 			qpol_type_t *domain;
-			char *domain_name;
+			const char *domain_name;
 
 			domain_item = apol_vector_get_element(domain_vector, j);
 			domain = domain_item->item;
@@ -335,7 +335,7 @@ int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
