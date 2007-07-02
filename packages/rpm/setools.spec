@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.3
-Release: pre1
+Release: pre2
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -18,7 +18,6 @@ Requires: setools-libs = %{version} setools-gui = %{version} setools-console = %
 %define libqpol_ver 1.3
 %define libapol_ver 4.1
 %define libpoldiff_ver 1.3
-%define libpolsearch_ver 1.0
 %define libseaudit_ver 4.2
 %define libsefs_ver 4.0
 
@@ -34,7 +33,7 @@ License: LGPL
 Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 sqlite >= 3.2.0 libxml2
-Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libpolsearch = %{libpolsearch_ver} libseaudit = %{libseaudit_ver} libsefs = %{libsefs_ver} 
+Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libseaudit = %{libseaudit_ver} libsefs = %{libsefs_ver} 
 BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
 BuildRequires: sqlite-devel >= 3.2.0 libxml2-devel
@@ -50,7 +49,6 @@ This package includes the following run-time libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
-  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux file contexts library
@@ -61,7 +59,7 @@ Summary: Python bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = %{version} python2 >= 2.3
 Provides: libqpol-python = %{libqpol_ver} libapol-python = %{libapol_ver}
-Provides: libpoldiff-python = %{libpoldiff_ver} libpolsearch-python = %{libpolsearch_ver}
+Provides: libpoldiff-python = %{libpoldiff_ver}
 Provides: libseaudit-python = %{libseaudit_ver} libsefs-python = %{libsefs_ver}
 BuildRequires: python2-devel >= 2.3 swig >= 1.3.28
 
@@ -73,7 +71,6 @@ This package includes Python bindings for the following libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
-  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux file contexts library
@@ -84,7 +81,7 @@ Summary: Java bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = %{version} java >= 1.2
 Provides: libqpol-java = %{libqpol_ver} libapol-java = %{libapol_ver}
-Provides: libpoldiff-java = %{libpoldiff_ver} libpolsearch-java = %{libpolsearch_ver}
+Provides: libpoldiff-java = %{libpoldiff_ver}
 Provides: libseaudit-java = %{libseaudit_ver} libsefs-java = %{libsefs_ver}
 BuildRequires: java-devel >= 1.2 swig >= 1.3.28
 
@@ -96,7 +93,6 @@ This package includes Java bindings for the following libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
-  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux file contexts library
@@ -107,7 +103,7 @@ Summary: Tcl bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = %{version} tcl >= 8.4.9
 Provides: libqpol-tcl = %{libqpol_ver} libapol-tcl = %{libapol_ver}
-Provides: libpoldiff-tcl = %{libpoldiff_ver} libpolsearch-tcl = %{libpolsearch_ver}
+Provides: libpoldiff-tcl = %{libpoldiff_ver}
 Provides: libseaudit-tcl = %{libseaudit_ver} libsefs-tcl = %{libsefs_ver}
 BuildRequires: tcl-devel >= 8.4.9 swig >= 1.3.28
 
@@ -119,7 +115,6 @@ This package includes Tcl bindings for the following libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
-  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux file contexts library
@@ -140,7 +135,6 @@ libraries:
 
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
-  libpolsearch  search for policy symbols satisfying a list of criteria
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
   libsefs       SELinux file contexts library
@@ -233,9 +227,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libpoldiff.so.%{libpoldiff_ver}
 %{_libdir}/libpoldiff.so.1
 %{_libdir}/libpoldiff.so
-%{_libdir}/libpolsearch.so.%{libpolsearch_ver}
-%{_libdir}/libpolsearch.so.1
-%{_libdir}/libpolsearch.so
 %{_libdir}/libsefs.so.%{libsefs_ver}
 %{_libdir}/libsefs.so.4
 %{_libdir}/libsefs.so
@@ -269,12 +260,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{pkgpyexecdir}/_poldiff.so.%{libpoldiff_ver}
 %{pkgpyexecdir}/_poldiff.so.1
 %attr(755,root,root) %{pkgpyexecdir}/_poldiff.so
-%{pkgpythondir}/polsearch.py
-%{pkgpythondir}/polsearch.pyc
-%{pkgpythondir}/polsearch.pyo
-%{pkgpyexecdir}/_polsearch.so.%{libpolsearch_ver}
-%{pkgpyexecdir}/_polsearch.so.1
-%attr(755,root,root) %{pkgpyexecdir}/_polsearch.so
 %{pkgpythondir}/seaudit.py
 %{pkgpythondir}/seaudit.pyc
 %{pkgpythondir}/seaudit.pyo
@@ -299,9 +284,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libjpoldiff.so.%{libpoldiff_ver}
 %{_libdir}/libjpoldiff.so.1
 %{_libdir}/libjpoldiff.so
-%{_libdir}/libjpolsearch.so.%{libpolsearch_ver}
-%{_libdir}/libjpolsearch.so.1
-%{_libdir}/libjpolsearch.so
 %{_libdir}/libjseaudit.so.%{libseaudit_ver}
 %{_libdir}/libjseaudit.so.4
 %{_libdir}/libjseaudit.so
@@ -311,7 +293,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{javalibdir}/qpol.jar
 %{javalibdir}/apol.jar
 %{javalibdir}/poldiff.jar
-%{javalibdir}/polsearch.jar
 %{javalibdir}/seaudit.jar
 %{javalibdir}/sefs.jar
 
@@ -323,8 +304,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{tcllibdir}/apol/pkgIndex.tcl
 %{tcllibdir}/poldiff/libtpoldiff.so.%{libpoldiff_ver}
 %{tcllibdir}/poldiff/pkgIndex.tcl
-%{tcllibdir}/polsearch/libtpolsearch.so.%{libpolsearch_ver}
-%{tcllibdir}/polsearch/pkgIndex.tcl
 %{tcllibdir}/seaudit/libtseaudit.so.%{libseaudit_ver}
 %{tcllibdir}/seaudit/pkgIndex.tcl
 %{tcllibdir}/sefs/libtsefs.so.%{libsefs_ver}
@@ -335,7 +314,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libqpol.a
 %{_libdir}/libapol.a
 %{_libdir}/libpoldiff.a
-%{_libdir}/libpolsearch.a
 %{_libdir}/libseaudit.a
 %{_libdir}/libsefs.a
 %{_includedir}/qpol/avrule_query.h
@@ -409,13 +387,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/poldiff/type_diff.h
 %{_includedir}/poldiff/type_map.h
 %{_includedir}/poldiff/util.h
-%{_includedir}/polsearch/criterion.hh
-%{_includedir}/polsearch/polsearch.hh
-%{_includedir}/polsearch/query.hh
-%{_includedir}/polsearch/string_list.hh
-%{_includedir}/polsearch/symbol_query.hh
-%{_includedir}/polsearch/test.hh
-%{_includedir}/polsearch/util.h
 %{_includedir}/seaudit/avc_message.h
 %{_includedir}/seaudit/bool_message.h
 %{_includedir}/seaudit/filter.h

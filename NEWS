@@ -27,11 +27,16 @@ apol:
   * Updated to use new libsefs design.
 
   * Modified to use the SWIG Tcl interface rather than a custom C
-    library.
+    library.  apol is now a combination of a Tcl script (simply called
+    'apol') and associated packages that are required at runtime.
 
   * Neverallow rules are only loaded and expanded when the user
     performs a search for them.  This will dramatically speed up
     initial policy load time.
+
+awish:
+
+  * awish is no longer needed and thus has been removed from SETools.
 
 sediff, sediffx:
 
