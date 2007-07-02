@@ -26,11 +26,22 @@ apol:
 
   * Updated to use new libsefs design.
 
+  * Modified to use the SWIG Tcl interface rather than a custom C
+    library.
+
+  * Neverallow rules are only loaded and expanded when the user
+    performs a search for them.  This will dramatically speed up
+    initial policy load time.
+
 sediff, sediffx:
 
   * Instead of differentiating "AV rules" or "TE rules", user now
     specifies which particular rule to compare (allow, dontaudit,
     type_transition, etc.).
+
+  * Neverallow rules are only loaded and expanded when the user
+    performs a diff upon them.  This will dramatically speed up
+    initial policy load time.
 
 ==================================================
 
