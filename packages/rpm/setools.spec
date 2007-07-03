@@ -316,6 +316,11 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libpoldiff.a
 %{_libdir}/libseaudit.a
 %{_libdir}/libsefs.a
+%{_libdir}/pkgconfig/libqpol.pc
+%{_libdir}/pkgconfig/libapol.pc
+%{_libdir}/pkgconfig/libpoldiff.pc
+%{_libdir}/pkgconfig/libseaudit.pc
+%{_libdir}/pkgconfig/libsefs.pc
 %{_includedir}/qpol/avrule_query.h
 %{_includedir}/qpol/bool_query.h
 %{_includedir}/qpol/class_perm_query.h

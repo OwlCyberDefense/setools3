@@ -272,7 +272,7 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 	num_bools = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec);
 
-	contents = g_strdup_printf("\nNumber of Users: %d\n" "\nNumber of Booleans: %d\n", num_users, num_bools);
+	contents = g_strdup_printf("\nNumber of Users: %zd\n" "\nNumber of Booleans: %zd\n", num_users, num_bools);
 	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 }

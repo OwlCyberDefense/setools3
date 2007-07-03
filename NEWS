@@ -5,6 +5,8 @@ SETools:
   * SETools now has an external dependency upon libsqlite3 >= 3.2.  The
     supplied configure script will enforce this dependency.
 
+  * pkg-config scripts are installed with the SETools libraries.
+
 libsefs:
 
   * Rewrite of library to have proper namespaces and much more usable

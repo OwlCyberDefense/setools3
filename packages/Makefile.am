@@ -10,6 +10,11 @@ else
   copy_bwidget = no
 endif
 
+pkgconfig_DATA = libqpol.pc libapol.pc libpoldiff.pc libseaudit.pc libsefs.pc
+pkgconfigdir = @libdir@/pkgconfig
+
+BUILT_SOURCES = $(pkgconfig_DATA)
+
 install-data-local:
 	if test $(copy_bwidget) = "yes"; then \
 		tar jxf BWidget-1.8.0.tar.bz2; \
@@ -18,6 +23,9 @@ install-data-local:
 		find . -type d -exec $(mkdir_p) "$(bwidget_destdir)/{}" \; ; \
 		find . -type f -exec $(INSTALL_DATA) '{}' $(bwidget_destdir)/'{}' \; ; \
 	fi
+
+%.pc: %.pc.in Makefile
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)
 
 uninstall-local:
 	if test $(copy_bwidget) = "yes"; then \

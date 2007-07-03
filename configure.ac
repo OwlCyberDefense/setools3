@@ -56,7 +56,6 @@ AC_PROG_LEX
 AC_PROG_YACC
 AC_PROG_INSTALL
 AC_HEADER_STDBOOL
-AC_CHECK_SIZEOF(char *)
 AC_C_BIGENDIAN
 AC_CHECK_FUNCS(rand_r)
 AC_SYS_LARGEFILE
@@ -674,7 +673,7 @@ AC_DEFINE_UNQUOTED(LIBQPOL_VERSION_STRING, "${libqpol_version}", [libqpol versio
 AC_DEFINE_UNQUOTED(LIBPOLDIFF_VERSION_STRING, "${libpoldiff_version}", [libpoldiff version])
 AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
-AC_DEFINE(SQLITE_PTR_SZ, SIZEOF_CHAR_P, [size of a pointer, as used by SQLite3])
+
 if test ${sepol_new_defines} != "yes" ; then
    AC_DEFINE(SEPOL_ENOMEM, HASHTAB_OVERFLOW, [remap of libsepol 1.x.x define to 2.x.x])
    AC_DEFINE(SEPOL_EEXIST, HASHTAB_PRESENT, [remap of libsepol 1.x.x define to 2.x.x])
@@ -751,7 +750,8 @@ AC_CONFIG_FILES([Makefile VERSION \
                  seaudit/Makefile \
                  sediff/Makefile \
                  man/Makefile \
-                 packages/Makefile packages/rpm/Makefile])
+                 packages/Makefile packages/rpm/Makefile \
+                 packages/libqpol.pc packages/libapol.pc packages/libpoldiff.pc packages/libseaudit.pc packages/libsefs.pc])
 
 AC_OUTPUT
 
