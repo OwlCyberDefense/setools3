@@ -284,7 +284,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 						goto find_domains_run_fail;
 					}
 					proof->type = SECHK_ITEM_ATTRIB;
-					proof->elem = (void*)attr;
+					proof->elem = (void *)attr;
 					asprintf(&proof->text, "%s has attribute %s", type_name, attr_name);
 					if (!proof->text) {
 						error = errno;
@@ -449,7 +449,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 				goto find_domains_run_fail;
 			}
 			proof->type = SECHK_ITEM_ROLE;
-			proof->elem = (void*)role;
+			proof->elem = (void *)role;
 			asprintf(&proof->text, "role %s types %s;", role_name, type_name);
 			if (!item) {
 				item = sechk_item_new(NULL);

@@ -296,7 +296,7 @@ int find_net_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 					goto find_net_domains_run_fail;
 				}
 				proof->type = SECHK_ITEM_AVRULE;
-				proof->elem = (void*)avrule;
+				proof->elem = (void *)avrule;
 				proof->text = apol_avrule_render(policy, avrule);
 				if (!proof->text) {
 					error = errno;

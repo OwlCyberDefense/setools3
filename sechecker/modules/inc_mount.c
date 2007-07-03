@@ -271,7 +271,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 				goto inc_mount_run_fail;
 			}
 			proof->type = SECHK_ITEM_AVRULE;
-			proof->elem = (void*)mount_rule;
+			proof->elem = (void *)mount_rule;
 			tmp = apol_avrule_render(policy, mount_rule);
 			asprintf(&proof->text, "Have Rule:\n\t\t%s\n\tMissing:\n\t\tallow %s %s : dir mounton ;\n",
 				 tmp, mount_source_name, mount_target_name);
@@ -364,7 +364,7 @@ int inc_mount_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attr
 				goto inc_mount_run_fail;
 			}
 			proof->type = SECHK_ITEM_AVRULE;
-			proof->elem = (void*)mounton_rule;
+			proof->elem = (void *)mounton_rule;
 			tmp = apol_avrule_render(policy, mounton_rule);
 			asprintf(&proof->text, "Have Rule:\n\t\t%s\n\tMissing:\n\t\tallow %s %s : filesystem mount ;\n",
 				 tmp, mounton_source_name, mounton_target_name);

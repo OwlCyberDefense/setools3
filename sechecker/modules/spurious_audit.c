@@ -358,7 +358,7 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 							ERR(policy, "%s", strerror(error));
 							goto spurious_audit_run_fail;
 						}
-						item->item = (void*)rule1;	/* item is the dontaudit rule */
+						item->item = (void *)rule1;	/* item is the dontaudit rule */
 					}
 					if (!item->proof) {
 						item->proof = apol_vector_create(sechk_proof_free);
@@ -506,7 +506,7 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 					goto spurious_audit_run_fail;
 				}
 			}
-			item->item = (void*)rule1;
+			item->item = (void *)rule1;
 			if (!item->proof) {
 				item->proof = apol_vector_create(sechk_proof_free);
 				if (!item->proof) {
@@ -599,7 +599,7 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 					goto spurious_audit_run_fail;
 				}
 			}
-			item->item = (void*)rule1;
+			item->item = (void *)rule1;
 			/* proof is the lack of Allow rule */
 			proof = sechk_proof_new(NULL);
 			if (!proof) {

@@ -243,8 +243,8 @@ typedef enum dom_need
  *  @param tgt_roles The second set of roles.
  *  @return 1 if a common user can be found 0 other wise.
  */
-static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles, apol_vector_t * tgt_roles, const qpol_role_t ** which_sr,
-			      const qpol_role_t ** which_tr, const qpol_user_t ** which_u)
+static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles, apol_vector_t * tgt_roles,
+			      const qpol_role_t ** which_sr, const qpol_role_t ** which_tr, const qpol_user_t ** which_u)
 {
 	int retv = 0;
 	apol_user_query_t *uq;

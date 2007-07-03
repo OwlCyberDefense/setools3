@@ -40,7 +40,7 @@ extern "C"
 #include <apol/vector.h>
 #include <apol/util.h>
 
-	//#include <sefs/file_contexts.h>
+#include <sefs/fcfile.hh>
 #include <libxml/xmlstring.h>
 
 /* These should be defined from the make environment */
@@ -110,41 +110,41 @@ extern "C"
 /** item and proof element types to denote casting of the void pointer */
 	typedef enum sechk_item_type
 	{
-		SECHK_ITEM_CLASS,      /* qpol_class_t */
-		SECHK_ITEM_COMMON,     /* qpol_common_t */
-		SECHK_ITEM_PERM,       /* char * representing the permission name */
-		SECHK_ITEM_CONSTR,     /* qpol_constraint_t */
-		SECHK_ITEM_VTRANS,     /* qpol_validatetrans_t */
-		SECHK_ITEM_QLEVEL,     /* qpol_level_t */
-		SECHK_ITEM_CAT,	       /* qpol_cat_t */
-		SECHK_ITEM_QMLSLEVEL,  /* qpol_mls_level_t */
-		SECHK_ITEM_QMLSRANGE,  /* qpol_mls_range_t */
-		SECHK_ITEM_AMLSLEVEL,  /* apol_mls_level_t */
-		SECHK_ITEM_AMLSRANGE,  /* apol_mls_range_t */
-		SECHK_ITEM_TYPE,       /* qpol_type_t */
-		SECHK_ITEM_ATTRIB,     /* qpol_type_t but is an atribute not a type */
-		SECHK_ITEM_ROLE,       /* qpol_role_t */
-		SECHK_ITEM_USER,       /* qpol_user_t */
-		SECHK_ITEM_COND,       /* qpol_cond_t */
-		SECHK_ITEM_AVRULE,     /* qpol_avrule_t */
-		SECHK_ITEM_TERULE,     /* qpol_terule_t */
-		SECHK_ITEM_RALLOW,     /* qpol_role_allow_t */
-		SECHK_ITEM_RTRAMS,     /* qpol_role_trans_t */
-		SECHK_ITEM_RANGETRANS, /* qpol_range_trans_t */
-		SECHK_ITEM_BOOL,       /* qpol_bool_t */
-		SECHK_ITEM_FSUSE,      /* qpol_fs_use_t */
-		SECHK_ITEM_GENFSCON,   /* qpol_genfscon_t */
-		SECHK_ITEM_ISID,       /* qpol_isid_t */
-		SECHK_ITEM_NETIFCON,   /* qpol_netifcon_t */
-		SECHK_ITEM_NODECON,    /* qpol_nodecon_t */
-		SECHK_ITEM_PORTCON,    /* qpol_portcon_t */
-		SECHK_ITEM_CONTEXT,    /* qpol_context_t */
+		SECHK_ITEM_CLASS,      /*!< qpol_class_t */
+		SECHK_ITEM_COMMON,     /*!< qpol_common_t */
+		SECHK_ITEM_PERM,       /*!< char * representing the permission name */
+		SECHK_ITEM_CONSTR,     /*!< qpol_constraint_t */
+		SECHK_ITEM_VTRANS,     /*!< qpol_validatetrans_t */
+		SECHK_ITEM_QLEVEL,     /*!< qpol_level_t */
+		SECHK_ITEM_CAT,	       /*!< qpol_cat_t */
+		SECHK_ITEM_QMLSLEVEL,  /*!< qpol_mls_level_t */
+		SECHK_ITEM_QMLSRANGE,  /*!< qpol_mls_range_t */
+		SECHK_ITEM_AMLSLEVEL,  /*!< apol_mls_level_t */
+		SECHK_ITEM_AMLSRANGE,  /*!< apol_mls_range_t */
+		SECHK_ITEM_TYPE,       /*!< qpol_type_t */
+		SECHK_ITEM_ATTRIB,     /*!< qpol_type_t but is an atribute not a type */
+		SECHK_ITEM_ROLE,       /*!< qpol_role_t */
+		SECHK_ITEM_USER,       /*!< qpol_user_t */
+		SECHK_ITEM_COND,       /*!< qpol_cond_t */
+		SECHK_ITEM_AVRULE,     /*!< qpol_avrule_t */
+		SECHK_ITEM_TERULE,     /*!< qpol_terule_t */
+		SECHK_ITEM_RALLOW,     /*!< qpol_role_allow_t */
+		SECHK_ITEM_RTRAMS,     /*!< qpol_role_trans_t */
+		SECHK_ITEM_RANGETRANS, /*!< qpol_range_trans_t */
+		SECHK_ITEM_BOOL,       /*!< qpol_bool_t */
+		SECHK_ITEM_FSUSE,      /*!< qpol_fs_use_t */
+		SECHK_ITEM_GENFSCON,   /*!< qpol_genfscon_t */
+		SECHK_ITEM_ISID,       /*!< qpol_isid_t */
+		SECHK_ITEM_NETIFCON,   /*!< qpol_netifcon_t */
+		SECHK_ITEM_NODECON,    /*!< qpol_nodecon_t */
+		SECHK_ITEM_PORTCON,    /*!< qpol_portcon_t */
+		SECHK_ITEM_CONTEXT,    /*!< qpol_context_t */
 		/* add more here as needed */
-		SECHK_ITEM_FCENT,      /* sefs_fc_entry_t */
-		SECHK_ITEM_STR,	       /* char* generic string */
-		SECHK_ITEM_DTR,	       /* apol_domain_trans_result_t */
-		SECHK_ITEM_OTHER,      /* void* data is something else (module specific) */
-		SECHK_ITEM_NONE	       /* there is no proof element only text */
+		SECHK_ITEM_FCENT,      /*!< sefs_entry_t */
+		SECHK_ITEM_STR,	       /*!< char* generic string */
+		SECHK_ITEM_DTR,	       /*!< apol_domain_trans_result_t */
+		SECHK_ITEM_OTHER,      /*!< void* data is something else (module specific) */
+		SECHK_ITEM_NONE	       /*!< there is no proof element only text */
 	} sechk_item_type_e;
 
 /** Module results proof element: This represents a single reason for the
@@ -208,12 +208,12 @@ extern "C"
 		apol_vector_t *modules;
 	/** The policy to analyze when running modules */
 		apol_policy_t *policy;
-	/** Vector of file contexts data (of type sefs_fc_entry_t).
-	 *  (Only available with libsefs support) */
+	/** Vector of file contexts data (of type sefs_entry_t). */
 		apol_vector_t *fc_entries;
-	/** File name of the file_contexts file loaded.
-	 *  (Only available with libsefs support) */
+	/** File name of the file_contexts file loaded. */
 		char *fc_path;
+	/** The file_contexts file object. */
+		sefs_fclist_t *fc_file;
 	/** The default output format for the report */
 		unsigned char outputformat;
 	/** The path for the selinux configuration file */
@@ -572,7 +572,6 @@ extern "C"
 
 /**
  *  Load the file contexts file the library will use during analysis.
- *  (Only available with libsefs support)
  *
  *  @param fcfilelocation Path of the file contexts file to load, or
  *  NULL to search for system default file contexts.

@@ -265,7 +265,7 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 
 		proof->type = SECHK_ITEM_ISID;
-		proof->elem = (void*)isid;
+		proof->elem = (void *)isid;
 		proof->text = buff;
 
 		item->item = (void *)context_type;

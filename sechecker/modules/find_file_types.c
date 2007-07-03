@@ -26,6 +26,8 @@
 
 #include "find_file_types.h"
 
+#include <qpol/genfscon_query.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -306,7 +308,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 						goto find_file_types_run_fail;
 					}
 					proof->type = SECHK_ITEM_ATTRIB;
-					proof->elem = (void*)attr;
+					proof->elem = (void *)attr;
 					asprintf(&proof->text, "has attribute %s", attr_name);
 					if (!item) {
 						item = sechk_item_new(NULL);
@@ -408,7 +410,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 					goto find_file_types_run_fail;
 				}
 				proof->type = SECHK_ITEM_TERULE;
-				proof->elem = (void*)terule;
+				proof->elem = (void *)terule;
 				proof->text = apol_terule_render(policy, terule);
 				if (!item) {
 					item = sechk_item_new(NULL);
@@ -441,85 +443,15 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		if (fc_entry_vector) {
 			buff = NULL;
 			for (j = 0; j < num_fc_entries; j++) {
-#if 0				       /* FIX ME */
-				sefs_fc_entry_t *fc_entry;
-				char *fc_type_name = NULL;
+				sefs_entry_t *fc_entry;
+				const char *fc_type_name = NULL;
 				fc_entry = apol_vector_get_element(fc_entry_vector, j);
-				if (!fc_entry->context)
+				const apol_context_t *context = sefs_entry_get_context(fc_entry);
+				if (!context)
 					continue;
-				if (fc_entry->context->type)
-					fc_type_name = fc_entry->context->type;
-				if (fc_entry->context && !strcmp(type_name, fc_type_name)) {
-					buff_sz = 1;
-					buff_sz += strlen(fc_entry->path);
-					switch (fc_entry->filetype) {
-					case SEFS_FILETYPE_DIR:	/* Directory */
-					case SEFS_FILETYPE_CHR:	/* Character device */
-					case SEFS_FILETYPE_BLK:	/* Block device */
-					case SEFS_FILETYPE_REG:	/* Regular file */
-					case SEFS_FILETYPE_FIFO:	/* FIFO */
-					case SEFS_FILETYPE_LNK:	/* Symbolic link */
-					case SEFS_FILETYPE_SOCK:	/* Socket */
-						buff_sz += 4;
-						break;
-					case SEFS_FILETYPE_ANY:	/* any type */
-						buff_sz += 2;
-						break;
-					case SEFS_FILETYPE_NONE:	/* none */
-					default:
-						ERR(policy, "%s", "Invalid file type");
-						goto find_file_types_run_fail;
-						break;
-					}
-					if (apol_vector_get_size(mod->parent_lib->fc_entries) > 0) {
-						buff_sz += (strlen(fc_entry->context->user) + 1);
-						buff_sz += (strlen(fc_entry->context->role) + 1);
-						buff_sz += strlen(fc_entry->context->type);
-					} else {
-						buff_sz += strlen("<<none>>");
-					}
-					buff = (char *)calloc(buff_sz, sizeof(char));
-					strcat(buff, fc_entry->path);
-					switch (fc_entry->filetype) {
-					case SEFS_FILETYPE_DIR:	/* Directory */
-						strcat(buff, "\t-d\t");
-						break;
-					case SEFS_FILETYPE_CHR:	/* Character device */
-						strcat(buff, "\t-c\t");
-						break;
-					case SEFS_FILETYPE_BLK:	/* Block device */
-						strcat(buff, "\t-b\t");
-						break;
-					case SEFS_FILETYPE_REG:	/* Regular file */
-						strcat(buff, "\t--\t");
-						break;
-					case SEFS_FILETYPE_FIFO:	/* FIFO */
-						strcat(buff, "\t-p\t");
-						break;
-					case SEFS_FILETYPE_LNK:	/* Symbolic link */
-						strcat(buff, "\t-l\t");
-						break;
-					case SEFS_FILETYPE_SOCK:	/* Socket */
-						strcat(buff, "\t-s\t");
-						break;
-					case SEFS_FILETYPE_ANY:	/* any type */
-						strcat(buff, "\t\t");
-						break;
-					case SEFS_FILETYPE_NONE:	/* none */
-					default:
-						ERR(policy, "%s", "Invalid file type");
-						goto find_file_types_run_fail;
-						break;
-					}
-					if (fc_entry->context) {
-						strcat(buff, fc_entry->context->user);
-						strcat(buff, ":");
-						strcat(buff, fc_entry->context->role);
-						strcat(buff, ":");
-						strcat(buff, fc_entry->context->type);
-					} else {
-						strcat(buff, "<<none>>");
-					}
+				fc_type_name = apol_context_get_type(context);
+				if (!strcmp(type_name, fc_type_name)) {
+					buff = sefs_entry_to_string(fc_entry);
 					proof = sechk_proof_new(NULL);
 					if (!proof) {
 						error = errno;
@@ -552,12 +484,11 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 						goto find_file_types_run_fail;
 					}
 				}
-#endif
 			}
 		}
 		/* insert any results for this type */
 		if (item) {
-			item->item = (void*)type;
+			item->item = (void *)type;
 			if (apol_vector_append(res->items, (void *)item) < 0) {
 				error = errno;
 				ERR(policy, "%s", strerror(ENOMEM));

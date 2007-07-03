@@ -243,7 +243,7 @@ typedef struct net_state
 
 typedef struct name_perm
 {
-	const char *name;		       /* will be from policy do not free */
+	const char *name;	       /* will be from policy do not free */
 	uint32_t perms;
 } name_perm_t;
 
@@ -1606,7 +1606,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 				ERR(policy, "%s", strerror(error));
 				goto inc_net_access_run_fail;
 			}
-			item->item = (void*)net_domain;
+			item->item = (void *)net_domain;
 			item->test_result = 1;
 			item->proof = apol_vector_create(sechk_proof_free);
 			if (!item->proof) {
@@ -1646,7 +1646,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 					ERR(policy, "%s", strerror(error));
 					goto inc_net_access_run_fail;
 				}
-				item->item = (void*)net_domain;
+				item->item = (void *)net_domain;
 				item->test_result = 1;
 				item->proof = apol_vector_create(sechk_proof_free);
 				if (!item->proof) {
@@ -1687,7 +1687,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 					ERR(policy, "%s", strerror(error));
 					goto inc_net_access_run_fail;
 				}
-				item->item = (void*)net_domain;
+				item->item = (void *)net_domain;
 				item->test_result = 1;
 				item->proof = apol_vector_create(sechk_proof_free);
 				if (!item->proof) {
@@ -1721,7 +1721,7 @@ int inc_net_access_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 				ERR(policy, "%s", strerror(error));
 				goto inc_net_access_run_fail;
 			}
-			item->item = (void*)net_domain;
+			item->item = (void *)net_domain;
 			item->test_result = 1;
 			item->proof = apol_vector_create(sechk_proof_free);
 			if (!item->proof) {

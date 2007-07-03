@@ -268,7 +268,7 @@ int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 
 		proof->type = SECHK_ITEM_ISID;
-		proof->elem = (void*)isid;
+		proof->elem = (void *)isid;
 		proof->text = buff;
 
 		/* Have we encountered this type before?  If so, use that type. */
@@ -338,7 +338,7 @@ int find_port_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 			goto find_port_types_run_fail;
 		}
 		proof->type = SECHK_ITEM_PORTCON;
-		proof->elem = (void*)portcon;
+		proof->elem = (void *)portcon;
 		proof->text = apol_portcon_render(policy, portcon);
 		item = NULL;
 

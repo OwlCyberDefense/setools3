@@ -39,6 +39,8 @@
 #include <apol/vector.h>
 
 #include <sefs/util.h>
+#include <sefs/fcfile.hh>
+#include <sefs/query.hh>
 
 #ifdef LIBSELINUX
 #include <selinux/selinux.h>
@@ -217,6 +219,7 @@ void sechk_lib_destroy(sechk_lib_t ** lib)
 	apol_policy_destroy(&((*lib)->policy));
 	apol_vector_destroy(&((*lib)->fc_entries));
 	free((*lib)->fc_path);
+	sefs_fclist_destroy(&((*lib)->fc_file));
 	free((*lib)->selinux_config_path);
 	apol_policy_path_destroy(&((*lib)->policy_path));
 	free(*lib);
@@ -424,6 +427,8 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 {
 	int retv = -1, error = 0;
 	char *default_fc_path = NULL;
+	sefs_fclist_t *fcfile = NULL;
+	sefs_query_t *q = NULL;
 
 	/* if no policy we can't parse the fc file */
 	if (!lib || !lib->policy) {
@@ -446,11 +451,10 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 			errno = ENOSYS;
 			return 0;      /* not fatal error until a module requires this to exist */
 		}
-		/* FIX ME!
-		 * retv = sefs_fc_entry_parse_file_contexts(lib->policy, default_fc_path, &(lib->fc_entries));
-		 */
-		retv = -1;
-		if (retv) {
+		fcfile = sefs_fcfile_create_from_file(default_fc_path, NULL, NULL);
+		q = sefs_query_create();
+		lib->fc_entries = sefs_fclist_run_query(fcfile, q);
+		if (!(lib->fc_entries)) {
 			error = errno;
 			WARN(lib->policy, "Unable to process file_contexts file %s.", default_fc_path);
 			free(default_fc_path);
@@ -458,24 +462,26 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 			return -1;
 		} else {
 			lib->fc_path = default_fc_path;
+			lib->fc_file = fcfile;
 		}
 		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
 			fprintf(stderr, "Using file contexts: %s\n", lib->fc_path);
 		}
 	} else {
-		/* FIX ME!
-		 * retv = sefs_fc_entry_parse_file_contexts(lib->policy, fcfilelocation, &(lib->fc_entries));
-		 */
-		retv = -1;
-		if (retv) {
+		fcfile = sefs_fcfile_create_from_file(fcfilelocation, NULL, NULL);
+		q = sefs_query_create();
+		lib->fc_entries = sefs_fclist_run_query(fcfile, q);
+		if (!(lib->fc_entries)) {
 			error = errno;
 			WARN(lib->policy, "Unable to process file_contexts file %s.", fcfilelocation);
 			errno = error;
 			return -1;
 		} else {
 			lib->fc_path = strdup(fcfilelocation);
+			lib->fc_file = fcfile;
 		}
 	}
+	sefs_query_destroy(&q);
 
 	return 0;
 }

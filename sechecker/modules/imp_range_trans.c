@@ -306,7 +306,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 				error = ENOMEM;
 				goto imp_range_trans_run_fail;
 			}
-			item->item = (void*)rule;
+			item->item = (void *)rule;
 			item->test_result = 1;
 			if (!item->proof) {
 				if (!(item->proof = apol_vector_create(sechk_proof_free))) {
@@ -346,7 +346,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 					error = ENOMEM;
 					goto imp_range_trans_run_fail;
 				}
-				item->item = (void*)rule;
+				item->item = (void *)rule;
 				item->test_result = 1;
 			}
 			if (!item->proof) {
@@ -394,7 +394,7 @@ int imp_range_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 					error = ENOMEM;
 					goto imp_range_trans_run_fail;
 				}
-				item->item = (void*)rule;
+				item->item = (void *)rule;
 				item->test_result = 1;
 			}
 			if (!item->proof) {
