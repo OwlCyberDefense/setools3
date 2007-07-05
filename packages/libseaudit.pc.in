@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libseaudit
+Description: SETools audit messages library
+Version: @libseaudit_version@
+Requires: libapol >= 4.0
+Conflicts:
+Libs: -L${libdir} -lseaudit
+Cflags: -I${includedir}/seaudit
