@@ -693,7 +693,9 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 			error = EIO;
 			goto err;
 		}
+		/* By definition, binary policy cannot have neverallow rules and all other rules are always loaded. */
 		(*policy)->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
+		(*policy)->options &= ~(QPOL_POLICY_OPTION_NO_RULES);
 		if (policy_extend(*policy)) {
 			error = errno;
 			goto err;
