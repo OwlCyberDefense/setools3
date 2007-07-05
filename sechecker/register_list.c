@@ -63,6 +63,7 @@ static sechk_profile_name_reg_t sechk_profile_register_list[] = {
 	{"analysis", "analysis-checks.sechecker", "common analysis checks"},
 	{"development", "devel-checks.sechecker", "common development checks"},
 	{"all", "all-checks.sechecker", "all available checks"},
+	{"all-no-mls", "all-checks-no-mls.sechecker", "all available checks not requiring MLS"},
 	/* TODO: add more profiles */
 
 	{NULL, NULL, NULL}

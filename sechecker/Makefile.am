@@ -7,6 +7,7 @@ dist_setools_DATA = \
 profilesdir = @profile_install_dir@
 dist_profiles_DATA = \
 	profiles/all-checks.sechecker \
+	profiles/all-checks-no-mls.sechecker \
 	profiles/analysis-checks.sechecker \
 	profiles/devel-checks.sechecker \
 	profiles/sechecker.dtd
