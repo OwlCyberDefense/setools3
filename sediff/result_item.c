@@ -240,6 +240,8 @@ static void result_item_level_policy_changed(result_item_t * item, apol_policy_t
 	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
 	if (!qpol_policy_has_capability(oq, QPOL_CAP_MLS) && !qpol_policy_has_capability(mq, QPOL_CAP_MLS)) {
 		item->supported = 0;
+	} else {
+		item->supported = 1;
 	}
 }
 
@@ -352,6 +354,8 @@ static void result_item_attribute_policy_changed(result_item_t * item, apol_poli
 	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
 	if (!qpol_policy_has_capability(oq, QPOL_CAP_ATTRIB_NAMES) || !qpol_policy_has_capability(mq, QPOL_CAP_ATTRIB_NAMES)) {
 		item->supported = 0;
+	} else {
+		item->supported = 1;
 	}
 }
 
@@ -521,6 +525,8 @@ static void result_item_boolean_policy_changed(result_item_t * item, apol_policy
 	qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
 	if (!qpol_policy_has_capability(oq, QPOL_CAP_CONDITIONALS) && !qpol_policy_has_capability(mq, QPOL_CAP_CONDITIONALS)) {
 		item->supported = 0;
+	} else {
+		item->supported = 1;
 	}
 }
 
@@ -657,6 +663,7 @@ result_item_t *result_item_create_range_trans(GtkTextTagTable * table)
 	item->get_string = poldiff_range_trans_to_string;
 	item->get_forms = result_item_role_trans_get_forms;	/* [sic] */
 	item->get_buffer = result_item_range_trans_get_buffer;
+	item->policy_changed = result_item_level_policy_changed;	/* [sic] */
 	return item;
 }
 
@@ -899,6 +906,44 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 	g_string_free(string, TRUE);
 }
 
+/**
+ * Only support neverallows if either policy (can) has them.
+ */
+static void result_item_avrule_policy_changed(result_item_t * item, apol_policy_t * orig_pol, apol_policy_t * mod_pol)
+{
+	item->supported = 1;
+	if (item->bit_pos == POLDIFF_DIFF_AVNEVERALLOW) {
+		qpol_policy_t *oq = apol_policy_get_qpol(orig_pol);
+		qpol_policy_t *mq = apol_policy_get_qpol(mod_pol);
+		int orig_type = -1, mod_type = -1;
+		// don't use capability to check if neverallows are
+		// supported, because policies are always loaded
+		// without them.  libpoldiff could then reload the
+		// policies with neverallow, in which case the would
+		// become capable (but item->supported still claims to
+		// be 0)
+		qpol_policy_get_type(oq, &orig_type);
+		qpol_policy_get_type(mq, &mod_type);
+		if (orig_type == QPOL_POLICY_KERNEL_BINARY && mod_type == QPOL_POLICY_KERNEL_BINARY) {
+			item->supported = 0;
+		}
+	}
+}
+
+/**
+ * Print an appropriate error message if neverallows are not supported.
+ */
+static GtkTextBuffer *result_item_avrule_get_buffer(result_item_t * item, poldiff_form_e form)
+{
+	if (!result_item_is_supported(item)) {
+		gtk_text_buffer_set_text(single_buffer,
+					 "Neverallow diffs are not supported because both policies are kernel binaries.", -1);
+		return single_buffer;
+	} else {
+		return result_item_multi_get_buffer(item, form);
+	}
+}
+
 static result_item_t *result_item_create_from_flag(GtkTextTagTable * table, uint32_t flag)
 {
 	result_item_t *item = result_item_multi_create(table);
@@ -911,7 +956,9 @@ static result_item_t *result_item_create_from_flag(GtkTextTagTable * table, uint
 	item->get_vector = poldiff_get_results_fn(rec);
 	item->get_form = poldiff_get_form_fn(rec);
 	item->get_string = poldiff_get_to_string_fn(rec);
+	item->get_buffer = result_item_avrule_get_buffer;
 	item->data.multi.print_diff = result_item_avrule_print_diff;
+	item->policy_changed = result_item_avrule_policy_changed;
 	return item;
 }
 

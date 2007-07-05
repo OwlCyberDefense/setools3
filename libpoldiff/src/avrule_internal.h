@@ -63,10 +63,6 @@ extern "C"
 	int avrule_reset_dontaudit(poldiff_t * diff);
 	int avrule_reset_auditallow(poldiff_t * diff);
 
-	apol_vector_t *avrule_get_allow(poldiff_t * diff, const apol_policy_t * policy);
-	apol_vector_t *avrule_get_neverallow(poldiff_t * diff, const apol_policy_t * policy);
-	apol_vector_t *avrule_get_auditallow(poldiff_t * diff, const apol_policy_t * policy);
-	apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, const apol_policy_t * policy);
 /**
  * Get a vector of all avrules from the given policy, sorted.  This
  * function will remap source and target types to their pseudo-type
@@ -74,6 +70,7 @@ extern "C"
  *
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
+ * @param flags Kind of rule to get, one of QPOL_RULE_ALLOW, etc.
  *
  * @return A newly allocated vector of all av rules (of type
  * pseudo_avrule_t).  The caller is responsible for calling
@@ -81,6 +78,11 @@ extern "C"
  * errno.
  */
 	apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, unsigned int flags);
+
+	apol_vector_t *avrule_get_allow(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *avrule_get_neverallow(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *avrule_get_auditallow(poldiff_t * diff, const apol_policy_t * policy);
+	apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Compare two pseudo_avrule_t objects, determining if they have the

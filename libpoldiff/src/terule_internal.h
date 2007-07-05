@@ -69,17 +69,18 @@ extern "C"
  *
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
+ * @param flags Kind of rule to get, one of QPOL_RULE_TYPE_TRANS, etc.
  *
  * @return A newly allocated vector of all te rules (of type
  * pseudo_terule_t).  The caller is responsible for calling
  * apol_vector_destroy() afterwards.  On error, return NULL and set
  * errno.
  */
+	apol_vector_t *terule_get_items(poldiff_t * diff, const apol_policy_t * policy, unsigned int flags);
 
 	apol_vector_t *terule_get_items_trans(poldiff_t * diff, const apol_policy_t * policy);
 	apol_vector_t *terule_get_items_change(poldiff_t * diff, const apol_policy_t * policy);
 	apol_vector_t *terule_get_items_member(poldiff_t * diff, const apol_policy_t * policy);
-	apol_vector_t *terule_get_items(poldiff_t * diff, const apol_policy_t * policy, unsigned int flags);
 
 /**
  * Compare two pseudo_terule_t objects, determining if they have the

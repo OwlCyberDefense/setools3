@@ -58,7 +58,7 @@ static const struct component comps[] = {
 	{NULL, 0}
 };
 
-static uint32_t prev_selection = POLDIFF_DIFF_ALL;
+static uint32_t prev_selection = POLDIFF_DIFF_ALL & ~POLDIFF_DIFF_AVNEVERALLOW;
 
 static void select_diff_on_select_all_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {

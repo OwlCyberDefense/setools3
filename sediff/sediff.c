@@ -80,7 +80,8 @@ static void usage(const char *prog_name, int brief)
 		return;
 	}
 	printf("Semantically differentiate two policies.  By default, all supported\n");
-	printf("policy elements are examined.  The following options are available:\n\n");
+	printf("policy elements sans neverallows are examined.  The following options\n");
+	printf("are available:\n\n");
 	printf("  -c, --class        object class and common permission definitions\n");
 	printf("  --level            MLS level definitions\n");
 	printf("  --category         MLS category definitions\n");
@@ -498,7 +499,7 @@ int main(int argc, char **argv)
 	}
 
 	if (!flags) {
-		flags = POLDIFF_DIFF_ALL;
+		flags = POLDIFF_DIFF_ALL & ~POLDIFF_DIFF_AVNEVERALLOW;
 		default_all = 1;
 	}
 

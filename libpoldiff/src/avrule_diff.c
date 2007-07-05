@@ -1026,6 +1026,17 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, 
 	const qpol_avrule_t *rule;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int retval = -1, error = 0;
+
+	/* special case:  if getting neverallow rules if the policy
+	   does not support it, then return an empty vector */
+	if (flag == QPOL_RULE_NEVERALLOW && !qpol_policy_has_capability(q, QPOL_CAP_NEVERALLOW)) {
+		v = apol_vector_create_with_capacity(1, avrule_free_item);
+		if (v == NULL) {
+			ERR(diff, "%s", strerror(error));
+		}
+		return v;
+	}
+
 	if (poldiff_build_bsts(diff) < 0) {
 		error = errno;
 		goto cleanup;
@@ -1060,8 +1071,8 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, 
 		goto cleanup;
 	}
 	if (qpol_policy_get_avrule_iter(q, flag, &iter) < 0) {
+
 		error = errno;
-		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
 	qpol_iterator_get_size(iter, &num_rules);
