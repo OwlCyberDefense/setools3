@@ -960,6 +960,9 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return v;
 	};
+	void hide_message(seaudit_message_t *message) {
+		seaudit_model_hide_message(self, message);
+	};
 	size_t get_num_allows(seaudit_log_t *slog) {
 		return seaudit_model_get_num_allows(slog, self);
 	};

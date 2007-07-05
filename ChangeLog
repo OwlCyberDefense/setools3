@@ -1,3 +1,12 @@
+2007-07-05  J. Tang  <jtang@tresys.com>
+
+	* seaudit now has a button to clear all messages from a view.
+	This is useful when doing log monitoring, to show only new
+	messages.
+
+	* Added seaudit_model_hide_message(), to suppress display of
+	certain messages within a model.
+
 2007-06-28  J. Tang  <jtang@tresys.com>
 
 	* Updated apol and sediffx to delay loading neverallow rules

@@ -295,6 +295,18 @@ extern "C"
 	extern apol_vector_t *seaudit_model_get_malformed_messages(const seaudit_log_t * log, seaudit_model_t * model);
 
 /**
+ * Hide a message from a model such that the next time
+ * seaudit_model_get_messages() is called, the given message will not
+ * be returned within the vector.
+ *
+ * @param model Model containing message to hide.
+ * @param message Message to be marked hidden.  If NULL, then do
+ * nothing.  It is safe to make duplicate calls to this function with
+ * the same message.
+ */
+	extern void seaudit_model_hide_message(seaudit_model_t * model, const seaudit_message_t * message);
+
+/**
  * Return the number of avc allow messages currently within the model.
  * This will cause the model to recalculate, as necessary, all
  * messages according to its filters.

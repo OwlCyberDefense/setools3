@@ -2234,6 +2234,17 @@
 		      <signal name="activate" handler="toplevel_on_monitor_log_activate" object="TopLevel" last_modification_time="Wed, 22 Nov 2006 16:35:09 GMT"/>
 		    </widget>
 		  </child>
+
+		  <child>
+		    <widget class="GtkMenuItem" id="ClearView">
+		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
+		      <property name="tooltip" translatable="yes">Clear all messages from the current view</property>
+		      <property name="label" translatable="yes">C_lear View</property>
+		      <property name="use_underline">True</property>
+		      <signal name="activate" handler="toplevel_on_clear_view_activate" object="TopLevel" last_modification_time="Wed, 22 Nov 2006 16:30:21 GMT"/>
+		    </widget>
+		  </child>
 		</widget>
 	      </child>
 	    </widget>
@@ -2319,13 +2330,14 @@
 	    <widget class="GtkButton" id="FindTERulesButton">
 	      <property name="visible">True</property>
 	      <property name="sensitive">False</property>
-	      <property name="tooltip" translatable="yes">Find TE Rules in the loaded policy</property>
+	      <property name="tooltip" translatable="yes">Find TE rules in the loaded policy</property>
+	      <property name="can_focus">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="toplevel_on_find_terules_click" object="TopLevel" last_modification_time="Mon, 27 Nov 2006 15:48:56 GMT"/>
 
 	      <child>
-		<widget class="GtkAlignment" id="alignment1">
+		<widget class="GtkAlignment" id="alignment54">
 		  <property name="visible">True</property>
 		  <property name="xalign">0.5</property>
 		  <property name="yalign">0.5</property>
@@ -2337,13 +2349,13 @@
 		  <property name="right_padding">0</property>
 
 		  <child>
-		    <widget class="GtkHBox" id="hbox2">
+		    <widget class="GtkHBox" id="hbox69">
 		      <property name="visible">True</property>
 		      <property name="homogeneous">False</property>
 		      <property name="spacing">2</property>
 
 		      <child>
-			<widget class="GtkImage" id="image28">
+			<widget class="GtkImage" id="image1488">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-find</property>
 			  <property name="icon_size">4</property>
@@ -2360,7 +2372,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkLabel" id="label1">
+			<widget class="GtkLabel" id="label207">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">Find TE Rules</property>
 			  <property name="use_underline">True</property>
@@ -2376,9 +2388,6 @@
 			  <property name="width_chars">-1</property>
 			  <property name="single_line_mode">False</property>
 			  <property name="angle">0</property>
-			  <accessibility>
-			    <atkproperty name="AtkObject::accessible_name" translatable="yes">Find TE Rules</atkproperty>
-			  </accessibility>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -2409,7 +2418,7 @@
 	      <signal name="clicked" handler="toplevel_on_modify_view_click" object="TopLevel" last_modification_time="Mon, 27 Nov 2006 15:48:51 GMT"/>
 
 	      <child>
-		<widget class="GtkAlignment" id="alignment5">
+		<widget class="GtkAlignment" id="alignment55">
 		  <property name="visible">True</property>
 		  <property name="xalign">0.5</property>
 		  <property name="yalign">0.5</property>
@@ -2421,13 +2430,13 @@
 		  <property name="right_padding">0</property>
 
 		  <child>
-		    <widget class="GtkHBox" id="hbox7">
+		    <widget class="GtkHBox" id="hbox70">
 		      <property name="visible">True</property>
 		      <property name="homogeneous">False</property>
 		      <property name="spacing">2</property>
 
 		      <child>
-			<widget class="GtkImage" id="image457">
+			<widget class="GtkImage" id="image1489">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-convert</property>
 			  <property name="icon_size">4</property>
@@ -2444,7 +2453,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkLabel" id="label3">
+			<widget class="GtkLabel" id="label208">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">Modify View</property>
 			  <property name="use_underline">True</property>
@@ -2460,9 +2469,6 @@
 			  <property name="width_chars">-1</property>
 			  <property name="single_line_mode">False</property>
 			  <property name="angle">0</property>
-			  <accessibility>
-			    <atkproperty name="AtkObject::accessible_name" translatable="yes">Modify View</atkproperty>
-			  </accessibility>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -2493,7 +2499,7 @@
 	      <signal name="clicked" handler="toplevel_on_monitor_log_click" object="TopLevel" last_modification_time="Mon, 27 Nov 2006 15:48:44 GMT"/>
 
 	      <child>
-		<widget class="GtkAlignment" id="alignment4">
+		<widget class="GtkAlignment" id="alignment56">
 		  <property name="visible">True</property>
 		  <property name="xalign">0.5</property>
 		  <property name="yalign">0.5</property>
@@ -2505,13 +2511,13 @@
 		  <property name="right_padding">0</property>
 
 		  <child>
-		    <widget class="GtkHBox" id="hbox6">
+		    <widget class="GtkHBox" id="hbox71">
 		      <property name="visible">True</property>
 		      <property name="homogeneous">False</property>
 		      <property name="spacing">2</property>
 
 		      <child>
-			<widget class="GtkImage" id="RealTimeImage">
+			<widget class="GtkImage" id="image1490">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-refresh</property>
 			  <property name="icon_size">4</property>
@@ -2528,7 +2534,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkLabel" id="RealTimeLabel">
+			<widget class="GtkLabel" id="label209">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">Monitor Log</property>
 			  <property name="use_underline">True</property>
@@ -2544,9 +2550,87 @@
 			  <property name="width_chars">-1</property>
 			  <property name="single_line_mode">False</property>
 			  <property name="angle">0</property>
-			  <accessibility>
-			    <atkproperty name="AtkObject::accessible_name" translatable="yes">Monitor Log</atkproperty>
-			  </accessibility>
+			</widget>
+			<packing>
+			  <property name="padding">0</property>
+			  <property name="expand">False</property>
+			  <property name="fill">False</property>
+			</packing>
+		      </child>
+		    </widget>
+		  </child>
+		</widget>
+	      </child>
+	    </widget>
+	    <packing>
+	      <property name="padding">0</property>
+	      <property name="expand">False</property>
+	      <property name="fill">False</property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkButton" id="ClearViewButton">
+	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
+	      <property name="tooltip" translatable="yes">Clear messages in the current view</property>
+	      <property name="can_focus">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
+	      <signal name="clicked" handler="toplevel_on_clear_view_click" object="TopLevel" last_modification_time="Thu, 05 Jul 2007 21:07:02 GMT"/>
+
+	      <child>
+		<widget class="GtkAlignment" id="alignment57">
+		  <property name="visible">True</property>
+		  <property name="xalign">0.5</property>
+		  <property name="yalign">0.5</property>
+		  <property name="xscale">0</property>
+		  <property name="yscale">0</property>
+		  <property name="top_padding">0</property>
+		  <property name="bottom_padding">0</property>
+		  <property name="left_padding">0</property>
+		  <property name="right_padding">0</property>
+
+		  <child>
+		    <widget class="GtkHBox" id="hbox72">
+		      <property name="visible">True</property>
+		      <property name="homogeneous">False</property>
+		      <property name="spacing">2</property>
+
+		      <child>
+			<widget class="GtkImage" id="image1491">
+			  <property name="visible">True</property>
+			  <property name="stock">gtk-clear</property>
+			  <property name="icon_size">4</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+			<packing>
+			  <property name="padding">0</property>
+			  <property name="expand">False</property>
+			  <property name="fill">False</property>
+			</packing>
+		      </child>
+
+		      <child>
+			<widget class="GtkLabel" id="label210">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">Clear View</property>
+			  <property name="use_underline">True</property>
+			  <property name="use_markup">False</property>
+			  <property name="justify">GTK_JUSTIFY_LEFT</property>
+			  <property name="wrap">False</property>
+			  <property name="selectable">False</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+			  <property name="width_chars">-1</property>
+			  <property name="single_line_mode">False</property>
+			  <property name="angle">0</property>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>

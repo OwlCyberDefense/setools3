@@ -311,7 +311,8 @@ static void toplevel_enable_log_items(toplevel_t * top, gboolean sens)
 	static const char *items[] = {
 		"NewView", "OpenView", "SaveView", "SaveViewAs", "ModifyView",
 		"ExportAll", "ExportSelected", "ViewMessage",
-		"CreateReport", "MonitorLog", "ModifyViewButton", "MonitorLogButton",
+		"CreateReport", "MonitorLog", "ClearView",
+		"ModifyViewButton", "MonitorLogButton", "ClearViewButton",
 		NULL
 	};
 	size_t i;
@@ -1056,6 +1057,14 @@ void toplevel_on_monitor_log_activate(gpointer user_data, GtkMenuItem * widget)
 	toplevel_monitor_log(top);
 }
 
+void toplevel_on_clear_view_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	message_view_t *view = toplevel_get_current_view(top);
+	assert(view != NULL);
+	message_view_clear(view);
+}
+
 void toplevel_on_help_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
@@ -1147,4 +1156,13 @@ void toplevel_on_monitor_log_click(gpointer user_data, GtkWidget * widget __attr
 	assert(w != NULL);
 	old_state = gtk_check_menu_item_get_active(w);
 	gtk_check_menu_item_set_active(w, !old_state);
+}
+
+void toplevel_on_clear_view_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
+				  __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	message_view_t *view = toplevel_get_current_view(top);
+	assert(view != NULL);
+	message_view_clear(view);
 }

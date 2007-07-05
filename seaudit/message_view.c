@@ -712,7 +712,7 @@ static void cb_view_message(GtkWidget * window, int response, _msg_user_data_t *
 /**
  * Show all messages within the messages vector (type GtkTreeIter)
  *
- * callback function cb_view_message takes ownership of messages and 
+ * callback function cb_view_message takes ownership of messages and
  * state.
  */
 static void message_view_messages_vector(message_view_t * view, apol_vector_t * messages)
@@ -1089,6 +1089,16 @@ void message_view_modify(message_view_t * view)
 	if (modify_view_run(view->top, view)) {
 		toplevel_update_status_bar(view->top);
 	}
+}
+
+void message_view_clear(message_view_t * view)
+{
+	size_t i;
+	for (i = 0; i < apol_vector_get_size(view->store->messages); i++) {
+		seaudit_message_t *m = apol_vector_get_element(view->store->messages, i);
+		seaudit_model_hide_message(view->model, m);
+	}
+	message_view_update_rows(view);
 }
 
 /**

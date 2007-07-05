@@ -24,6 +24,7 @@
 
 #include "seaudit_internal.h"
 
+#include <apol/bst.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +44,8 @@ struct seaudit_model
 	/** vector of char * pointers; these point into malformed
 	 * messages from the watched logs (only valid if dirty == 0) */
 	apol_vector_t *malformed_messages;
+	/** list of messages to hide */
+	apol_bst_t *hidden_messages;
 	/** vector of seaudit_filter_t */
 	apol_vector_t *filters;
 	/** if more than one filter is being applied, then accept
@@ -255,6 +258,7 @@ static int model_refresh(const seaudit_log_t * log, seaudit_model_t * model)
 	seaudit_log_t *l;
 	const apol_vector_t *v;
 	seaudit_message_t *message;
+	void *result;
 	int error, filter_match;
 
 	if (!model->dirty) {
@@ -273,6 +277,9 @@ static int model_refresh(const seaudit_log_t * log, seaudit_model_t * model)
 		v = log_get_messages(l);
 		for (j = 0; j < apol_vector_get_size(v); j++) {
 			message = apol_vector_get_element(v, j);
+			if (apol_bst_get_element(model->hidden_messages, message, NULL, &result) == 0) {
+				continue;
+			}
 			filter_match = model_filter_message(model, message);
 			if (((filter_match && model->visible == SEAUDIT_FILTER_VISIBLE_SHOW) ||
 			     (!filter_match && model->visible == SEAUDIT_FILTER_VISIBLE_HIDE)) &&
@@ -336,6 +343,7 @@ seaudit_model_t *seaudit_model_create(const char *name, seaudit_log_t * log)
 	}
 	if ((m->name = strdup(name)) == NULL ||
 	    (m->logs = apol_vector_create_with_capacity(1, NULL)) == NULL ||
+	    (m->hidden_messages = apol_bst_create(NULL, NULL)) == NULL ||
 	    (m->filters = apol_vector_create_with_capacity(1, filter_free)) == NULL ||
 	    (m->sorts = apol_vector_create_with_capacity(1, sort_free)) == NULL) {
 		error = errno;
@@ -487,6 +495,7 @@ void seaudit_model_destroy(seaudit_model_t ** model)
 	apol_vector_destroy(&(*model)->sorts);
 	apol_vector_destroy(&(*model)->messages);
 	apol_vector_destroy(&(*model)->malformed_messages);
+	apol_bst_destroy(&(*model)->hidden_messages);
 	free(*model);
 	*model = NULL;
 }
@@ -703,6 +712,20 @@ apol_vector_t *seaudit_model_get_malformed_messages(const seaudit_log_t * log, s
 		return NULL;
 	}
 	return apol_vector_create_from_vector(model->malformed_messages, NULL, NULL, NULL);
+}
+
+void seaudit_model_hide_message(seaudit_model_t * model, const seaudit_message_t * message)
+{
+	if (model == NULL) {
+		errno = EINVAL;
+		return;
+	}
+	if (message == NULL) {
+		return;
+	}
+	if (apol_bst_insert(model->hidden_messages, (seaudit_message_t *) message, NULL) == 0) {
+		model->dirty = 1;
+	}
 }
 
 size_t seaudit_model_get_num_allows(const seaudit_log_t * log, seaudit_model_t * model)
