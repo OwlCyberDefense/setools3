@@ -268,44 +268,44 @@ typedef struct seaudit_log {} seaudit_log_t;
 		seaudit_log_clear(self);
 	};
 	%newobject get_users();
-	apol_vector_t *get_users() {
+	apol_string_vector_t *get_users() {
 		apol_vector_t *v;
 		v = seaudit_log_get_users(self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
-		return v;
+		return (apol_string_vector_t*)v;
 	};
 	%newobject get_roles();
-	apol_vector_t *get_roles() {
+	apol_string_vector_t *get_roles() {
 		apol_vector_t *v;
 		v = seaudit_log_get_roles(self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
-		return v;
+		return (apol_string_vector_t*)v;
 	};
 	%newobject get_types();
-	apol_vector_t *get_types() {
+	apol_string_vector_t *get_types() {
 		apol_vector_t *v;
 		v = seaudit_log_get_types(self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
-		return v;
+		return (apol_string_vector_t*)v;
 	};
 	%newobject get_classes();
-	apol_vector_t *get_classes() {
+	apol_string_vector_t *get_classes() {
 		apol_vector_t *v;
 		v = seaudit_log_get_classes(self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
-		return v;
+		return (apol_string_vector_t*)v;
 	};
 };
 
@@ -334,6 +334,9 @@ typedef struct seaudit_message {} seaudit_message_t;
 	void *get_data() {
 		seaudit_message_type_e te;
 		return seaudit_message_get_data(self, &te);
+	};
+	const char *get_host() {
+		return seaudit_message_get_host(self);
 	};
 	const tm_t *get_time() {
 		return seaudit_message_get_time(self);
@@ -437,8 +440,8 @@ typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 	const char *get_object_class() {
 		return seaudit_avc_message_get_object_class(self);
 	};
-	const apol_vector_t *get_perm() {
-		return seaudit_avc_message_get_perm(self);
+	const apol_string_vector_t *get_perm() {
+		return (apol_string_vector_t*)seaudit_avc_message_get_perm(self);
 	};
 	const char *get_exe() {
 		return seaudit_avc_message_get_exe(self);
