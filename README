@@ -45,7 +45,7 @@ and libraries:
   seaudit       audit log analysis tools: seaudit and seaudit-report
   sechecker     SELinux policy checking tool
   secmds        command line tools: seinfo, sesearch, findcon,
-                replcon, and indexcon.
+                replcon, and indexcon
   sediff        semantic policy difference tools: sediff and sediffx
 
 Each of these components is in a subdirectory under the top-level

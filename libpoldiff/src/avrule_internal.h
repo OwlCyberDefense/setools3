@@ -138,10 +138,12 @@ extern "C"
  * Iterate through all AV rule differences, filling in their line numbers.
  *
  * @param diff Diff structure containing avrule differences.
+ * @param idx Which AV rule to get, one of POLDIFF_ALLOW_OFFSET,
+ * POLDIFF_NEVERALLOW_OFFSET, etc.
  *
  * @return 0 on success, < 0 on errno.
  */
-	int avrule_enable_line_numbers(poldiff_t * diff, unsigned int index);
+	int avrule_enable_line_numbers(poldiff_t * diff, unsigned int idx);
 
 #ifdef	__cplusplus
 }

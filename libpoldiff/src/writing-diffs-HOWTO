@@ -1,5 +1,5 @@
 Writing New Diff Modules for libpoldiff HOWTO
-April 1, 2007
+August 1, 2007
 
 
 0. Introduction
@@ -226,7 +226,7 @@ changes to libpoldiff/src/poldiff.c:
 
   * To enforce that all diff modules have the requisite public and
     protected functions, one must fulfill the requirements as given by
-    a poldiff_item_record, as defined on line 38.  The first four
+    a poldiff_item_record, as defined on line 40.  The first four
     callbacks are satisfied by the first four public functions, the
     remainder are met by protected functions.  Thus add a new record
     to the item_records[] array like so:

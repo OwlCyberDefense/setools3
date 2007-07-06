@@ -134,10 +134,12 @@ extern "C"
  * Iterate through all TE rule differences, filling in their line numbers.
  *
  * @param diff Diff structure containing avrule differences.
+ * @param idx Which TE rule to get, one of POLDIFF_MEMBER_OFFSET,
+ * POLDIFF_CHANGE_OFFSET, or POLDIFF_TRANS_OFFSET.
  *
  * @return 0 on success, < 0 on errno.
  */
-	int terule_enable_line_numbers(poldiff_t * diff, unsigned int index);
+	int terule_enable_line_numbers(poldiff_t * diff, unsigned int idx);
 
 #ifdef	__cplusplus
 }
