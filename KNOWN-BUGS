@@ -20,12 +20,12 @@ SETOOLS
    version.
 
 APOL
-   
+
 1. Double clicking on listbox items may not display popup windows in
    certain window managers.  Instead the user can right-click on the
    item in order to display popup windows.  This is due to Tk's event
    buffer and is not fixable.  (Ref: http://tinyurl.com/ltmuh)
-   
+
 2. Apol will correctly load policies with aliases, but the alias names
    will be lost (the root type name is used instead).  Therefore,
    aliases are not displayed and queries should not use them as
@@ -48,11 +48,20 @@ SEAUDIT
 2. Audit messages that span multiple lines are not parsed correctly.
    This will be addressed in a future revision of SETools.
 
+LIBPOLDIFF-SWIG-JAVA
+
+1. There is currently an issue with SWIG Java bindings that prevents
+   disowning an object, and there is an issue in libsepol that prevents the
+   duplication of a policy. Pending the availability of one of these features,
+   it will not be possible to safely use libpoldiff in Java. Future revisions
+   to the policy representation are expected to permit the duplication of
+   policies.
+
 TESTING INFORMATION
 
 Operating Systems:
   Fedora Core 5, 6, and 7, both i386 and x86_64 architectures
-  
+
 SELinux monolithic policy versions:
   12, 15, 16, 17, 18
   19, 20, and 21 (both with and without MLS support)

@@ -437,9 +437,11 @@ typedef struct poldiff {} poldiff_t;
 /* attribute diff */
 typedef struct poldiff_attrib {} poldiff_attrib_t;
 %extend poldiff_attrib_t {
-	poldiff_attrib_t(void *x) {
-		return (poldiff_attrib_t*)x;
-	};
+   poldiff_attrib_t () {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_attrib_t objects");
+   fail:
+      return NULL;
+   }
 	~poldiff_attrib_t() {
 		/* no op */
 		return;
@@ -467,13 +469,20 @@ typedef struct poldiff_attrib {} poldiff_attrib_t;
 		return (apol_string_vector_t*)poldiff_attrib_get_removed_types(self);
 	};
 };
+%inline %{
+	poldiff_attrib_t *poldiff_attrib_from_void(void *x) {
+		return (poldiff_attrib_t*)x;
+	};
+%}
 
 /* av rule diff */
 typedef struct poldiff_avrule {} poldiff_avrule_t;
 %extend poldiff_avrule_t {
-	poldiff_avrule_t(void *x) {
-		return (poldiff_avrule_t*)x;
-	};
+   poldiff_avrule_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_avrule_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_avrule_t() {
 		/* no op */
 		return;
@@ -560,13 +569,20 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 		return v;
 	};
 };
+%inline %{
+	poldiff_avrule_t *poldiff_avrule_from_void(void *x) {
+		return (poldiff_avrule_t*)x;
+	};
+%}
 
 /* boolean diff */
 typedef struct poldiff_bool {} poldiff_bool_t;
 %extend poldiff_bool_t {
-	poldiff_bool_t(void *x) {
-		return (poldiff_bool_t*)x;
-	};
+	poldiff_bool_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_bool_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_bool_t() {
 		/* no op */
 		return;
@@ -588,13 +604,20 @@ typedef struct poldiff_bool {} poldiff_bool_t;
 		return poldiff_bool_get_form(self);
 	};
 };
+%inline %{
+	poldiff_bool_t *poldiff_bool_from_void(void *x) {
+		return (poldiff_bool_t*)x;
+	};
+%}
 
 /* category diff */
 typedef struct poldiff_cat {} poldiff_cat_t;
 %extend poldiff_cat_t {
-	poldiff_cat_t(void *x) {
-		return (poldiff_cat_t*)x;
-	};
+	poldiff_cat_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_cat_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_cat_t() {
 		/* no op */
 		return;
@@ -616,13 +639,20 @@ typedef struct poldiff_cat {} poldiff_cat_t;
 		return poldiff_cat_get_form(self);
 	};
 };
+%inline %{
+	poldiff_cat_t *poldiff_cat_from_void(void *x) {
+		return (poldiff_cat_t*)x;
+	};
+%}
 
 /* class diff */
 typedef struct poldiff_class {} poldiff_class_t;
 %extend poldiff_class_t {
-	poldiff_class_t(void *x) {
-		return (poldiff_class_t*)x;
-	};
+	poldiff_class_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_class_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_class_t() {
 		/* no op */
 		return;
@@ -650,13 +680,20 @@ typedef struct poldiff_class {} poldiff_class_t;
 		return (apol_string_vector_t*)poldiff_class_get_removed_perms(self);
 	};
 };
+%inline %{
+	poldiff_class_t *poldiff_class_from_void(void *x) {
+		return (poldiff_class_t*)x;
+	};
+%}
 
 /* common diff */
 typedef struct poldiff_common {} poldiff_common_t;
 %extend poldiff_common_t {
-	poldiff_common_t(void *x) {
-		return (poldiff_common_t*)x;
-	};
+	poldiff_common_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_common_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_common_t() {
 		/* no op */
 		return;
@@ -684,13 +721,20 @@ typedef struct poldiff_common {} poldiff_common_t;
 		return (apol_string_vector_t*)poldiff_common_get_removed_perms(self);
 	};
 };
+%inline %{
+	poldiff_common_t *poldiff_common_from_void(void *x) {
+		return (poldiff_common_t*)x;
+	};
+%}
 
 /* level diff */
 typedef struct poldiff_level {} poldiff_level_t;
 %extend poldiff_level_t {
-	poldiff_level_t(void *x) {
-		return (poldiff_level_t*)x;
-	};
+	poldiff_level_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_level_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_level_t() {
 		/* no op */
 		return;
@@ -731,13 +775,20 @@ typedef struct poldiff_level {} poldiff_level_t;
 		return (apol_string_vector_t*)poldiff_level_get_removed_cats(self);
 	};
 };
+%inline %{
+	poldiff_level_t *poldiff_level_from_void(void *x) {
+		return (poldiff_level_t*)x;
+	};
+%}
 
 /* range diff */
 typedef struct poldiff_range {} poldiff_range_t;
 %extend poldiff_range_t {
-	poldiff_range_t(void *x) {
-		return (poldiff_range_t*)x;
-	};
+	poldiff_range_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_range_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_range_t() {
 		/* no op */
 		return;
@@ -762,13 +813,20 @@ typedef struct poldiff_range {} poldiff_range_t;
 		return poldiff_range_get_modified_range(self);
 	};
 };
+%inline %{
+	poldiff_range_t *poldiff_range_from_void(void *x) {
+		return (poldiff_range_t*)x;
+	};
+%}
 
 /* range_transition rule diff */
 typedef struct poldiff_range_trans {} poldiff_range_trans_t;
 %extend poldiff_range_trans_t {
-	poldiff_range_trans_t(void *x) {
-		return (poldiff_range_trans_t *)x;
-	};
+	poldiff_range_trans_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_range_trans_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_range_trans_t() {
 		/* no op */
 		return;
@@ -799,13 +857,20 @@ typedef struct poldiff_range_trans {} poldiff_range_trans_t;
 		return poldiff_range_trans_get_range(self);
 	};
 };
+%inline %{
+	poldiff_range_trans_t *poldiff_range_trans_from_void(void *x) {
+		return (poldiff_range_trans_t *)x;
+	};
+%}
 
 /* role allow rule diff */
 typedef struct poldiff_role_allow {} poldiff_role_allow_t;
 %extend poldiff_role_allow_t {
-	poldiff_role_allow_t(void *x) {
-		return (poldiff_role_allow_t *)x;
-	};
+	poldiff_role_allow_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_role_allow_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_role_allow_t() {
 		/* no op */
 		return;
@@ -836,13 +901,20 @@ typedef struct poldiff_role_allow {} poldiff_role_allow_t;
 		return (apol_string_vector_t*)poldiff_role_allow_get_removed_roles(self);
 	};
 };
+%inline %{
+	poldiff_role_allow_t *poldiff_role_allow_from_void(void *x) {
+		return (poldiff_role_allow_t *)x;
+	};
+%}
 
 /* role_transition rule diff */
 typedef struct poldiff_role_trans {} poldiff_role_trans_t;
 %extend poldiff_role_trans_t {
-	poldiff_role_trans_t(void *x) {
-		return (poldiff_role_trans_t *)x;
-	};
+	poldiff_role_trans_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_role_trans_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_role_trans_t() {
 		/* no op */
 		return;
@@ -873,13 +945,20 @@ typedef struct poldiff_role_trans {} poldiff_role_trans_t;
 		return poldiff_role_trans_get_modified_default(self);
 	};
 };
+%inline %{
+	poldiff_role_trans_t *poldiff_role_trans_from_void(void *x) {
+		return (poldiff_role_trans_t *)x;
+	};
+%}
 
 /* role diff */
 typedef struct poldiff_role {} poldiff_role_t;
 %extend poldiff_role_t {
-	poldiff_role_t(void *x) {
-		return (poldiff_role_t*)x;
-	};
+	poldiff_role_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_role_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_role_t() {
 		/* no op */
 		return;
@@ -907,13 +986,20 @@ typedef struct poldiff_role {} poldiff_role_t;
 		return (apol_string_vector_t*)poldiff_role_get_removed_types(self);
 	};
 };
+%inline %{
+	poldiff_role_t *poldiff_role_from_void(void *x) {
+		return (poldiff_role_t*)x;
+	};
+%}
 
 /* te rule diff */
 typedef struct poldiff_terule {} poldiff_terule_t;
 %extend poldiff_terule_t {
-	poldiff_terule_t(void *x) {
-		return (poldiff_terule_t*)x;
-	};
+	poldiff_terule_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_terule_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_terule_t() {
 		/* no op */
 		return;
@@ -977,13 +1063,20 @@ typedef struct poldiff_terule {} poldiff_terule_t;
 		return poldiff_terule_get_mod_line_numbers(self);
 	};
 };
+%inline %{
+	poldiff_terule_t *poldiff_terule_from_void(void *x) {
+		return (poldiff_terule_t*)x;
+	};
+%}
 
 /* type diff */
 typedef struct poldiff_type {} poldiff_type_t;
 %extend poldiff_type_t {
-	poldiff_type_t(void *x) {
-		return (poldiff_type_t*)x;
-	};
+	poldiff_type_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_type_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_type_t() {
 		/* no op */
 		return;
@@ -1011,13 +1104,20 @@ typedef struct poldiff_type {} poldiff_type_t;
 		return (apol_string_vector_t*)poldiff_type_get_removed_attribs(self);
 	};
 };
+%inline %{
+	poldiff_type_t *poldiff_type_from_void(void *x) {
+		return (poldiff_type_t*)x;
+	};
+%}
 
 /* user diff */
 typedef struct poldiff_user {} poldiff_user_t;
 %extend poldiff_user_t {
-	poldiff_user_t(void *x) {
-		return (poldiff_user_t*)x;
-	};
+	poldiff_user_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_user_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_user_t() {
 		/* no op */
 		return;
@@ -1057,13 +1157,20 @@ typedef struct poldiff_user {} poldiff_user_t;
 		return poldiff_user_get_range(self);
 	};
 };
+%inline %{
+	poldiff_user_t *poldiff_user_from_void(void *x) {
+		return (poldiff_user_t*)x;
+	};
+%}
 
 /* type remap */
 typedef struct poldiff_type_remap_entry {} poldiff_type_remap_entry_t;
 %extend poldiff_type_remap_entry_t {
-	poldiff_type_remap_entry_t(void *x) {
-		return (poldiff_type_remap_entry_t*)x;
-	};
+	poldiff_type_remap_entry_t() {
+      SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_type_remap_entry_t objects");
+   fail:
+      return NULL;
+ 	}
 	~poldiff_type_remap_entry_t() {
 		/* no op */
 		return;
@@ -1098,4 +1205,9 @@ typedef struct poldiff_type_remap_entry {} poldiff_type_remap_entry_t;
 		poldiff_type_remap_entry_set_enabled(self, enable);
 	};
 };
+%inline %{
+	poldiff_type_remap_entry_t *poldiff_type_remap_entry_from_void(void *x) {
+		return (poldiff_type_remap_entry_t*)x;
+	};
+%}
 

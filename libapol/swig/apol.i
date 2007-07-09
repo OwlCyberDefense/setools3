@@ -888,9 +888,6 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return aml;
 	};
-	apol_mls_level_t(void *x) {
-		return (apol_mls_level_t*)x;
-	};
 	~apol_mls_level_t() {
 		apol_mls_level_destroy(&self);
 	};
@@ -956,6 +953,11 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 int apol_mls_level_compare(apol_policy_t * p, const apol_mls_level_t * level1, const apol_mls_level_t * level2);
 int apol_mls_sens_compare(apol_policy_t * p, const char *sens1, const char *sens2);
 int apol_mls_cats_compare(apol_policy_t * p, const char *cat1, const char *cat2);
+%inline %{
+	apol_mls_level_t *apol_mls_level_from_void(void *x) {
+		return (apol_mls_level_t*)x;
+	};
+%}
 
 /* apol mls range */
 #ifdef SWIGPYTHON
@@ -1012,9 +1014,6 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 		}
 	fail:
 		return amr;
-	};
-	apol_mls_range_t(void *x) {
-		return (apol_mls_range_t*)x;
 	};
 	~apol_mls_range_t() {
 		apol_mls_range_destroy(&self);
@@ -1086,6 +1085,11 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 };
 int apol_mls_range_compare(apol_policy_t * p, const apol_mls_range_t * target, const apol_mls_range_t * search, unsigned int range_compare_type);
 int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * range, const apol_mls_range_t * subrange);
+%inline %{
+	apol_mls_range_t *apol_mls_range_from_void(void *x) {
+		return (apol_mls_range_t*)x;
+	};
+%}
 
 /* apol level query */
 typedef struct apol_level_query {} apol_level_query_t;
@@ -2207,9 +2211,6 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 };
 typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
 %extend apol_domain_trans_result_t {
-	apol_domain_trans_result_t(void *x) {
-		return (apol_domain_trans_result_t*)x;
-	};
 	apol_domain_trans_result_t(apol_domain_trans_result_t *in) {
 		apol_domain_trans_result_t *dtr;
 		dtr = apol_domain_trans_result_create_from_domain_trans_result(in);
@@ -2260,6 +2261,11 @@ typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
 #define APOL_DOMAIN_TRANS_RULE_TYPE_TRANS       0x10
 #define APOL_DOMAIN_TRANS_RULE_SETEXEC          0x20
 int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * start_dom, qpol_type_t * ep_type,	qpol_type_t * end_dom);
+%inline %{
+	apol_domain_trans_result_t *apol_domain_trans_result_from_void(void *x) {
+		return (apol_domain_trans_result_t*)x;
+	};
+%}
 
 /* apol infoflow analysis */
 #define APOL_INFOFLOW_MODE_DIRECT  0x01
@@ -2421,8 +2427,10 @@ typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
 };
 typedef struct apol_infoflow_result {} apol_infoflow_result_t;
 %extend apol_infoflow_result_t {
-	apol_infoflow_result_t(void *x) {
-		return (apol_infoflow_result_t*)x;
+	apol_infoflow_result_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_result_t objects");
+	fail:
+		return NULL;
 	};
 	~apol_infoflow_result_t() {
 		/* no op - vector will destroy */
@@ -2444,10 +2452,17 @@ typedef struct apol_infoflow_result {} apol_infoflow_result_t;
 		return apol_infoflow_result_get_steps(self);
 	};
 };
+%inline %{
+	apol_infoflow_result_t *apol_infoflow_result_from_void(void *x) {
+		return (apol_infoflow_result_t*)x;
+	};
+%}
 typedef struct apol_infoflow_step {} apol_infoflow_step_t;
 %extend apol_infoflow_step_t {
-	apol_infoflow_step_t(void *x) {
-		return (apol_infoflow_step_t*)x;
+	apol_infoflow_step_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_step_t objects");
+	fail:
+		return NULL;
 	};
 	~apol_infoflow_step_t() {
 		/* no op */
@@ -2466,6 +2481,11 @@ typedef struct apol_infoflow_step {} apol_infoflow_step_t;
 		return apol_infoflow_step_get_rules(self);
 	};
 };
+%inline %{
+	apol_infoflow_step_t *apol_infoflow_step_from_void(void *x) {
+		return (apol_infoflow_step_t*)x;
+	};
+%}
 
 /* apol relabel analysis */
 #define APOL_RELABEL_DIR_TO      0x01
