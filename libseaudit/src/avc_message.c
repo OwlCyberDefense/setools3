@@ -198,6 +198,15 @@ const char *seaudit_avc_message_get_netif(const seaudit_avc_message_t * avc)
 	return avc->netif;
 }
 
+int seaudit_avc_message_get_port(const seaudit_avc_message_t * avc)
+{
+	if (avc == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return avc->port;
+}
+
 const char *seaudit_avc_message_get_laddr(const seaudit_avc_message_t * avc)
 {
 	if (avc == NULL) {

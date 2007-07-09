@@ -224,6 +224,15 @@ extern "C"
 	extern const char *seaudit_avc_message_get_netif(const seaudit_avc_message_t * avc);
 
 /**
+ * Return the port number from an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Port, or 0 upon error or if unknown.
+ */
+	extern int seaudit_avc_message_get_port(const seaudit_avc_message_t * avc);
+
+/**
  * Return the local address from an avc message.
  *
  * @param avc AVC message to check.

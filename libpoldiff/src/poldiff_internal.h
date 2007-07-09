@@ -189,7 +189,6 @@ extern "C"
  */
 	typedef int (*poldiff_reset_fn_t) (poldiff_t * diff);
 
-
 /******************** error handling code below ********************/
 
 #define POLDIFF_MSG_ERR  1

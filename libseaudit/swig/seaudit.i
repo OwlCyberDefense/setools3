@@ -467,6 +467,9 @@ typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 	const char *get_netif() {
 		return seaudit_avc_message_get_netif(self);
 	};
+	int get_port() {
+		return seaudit_avc_message_get_port(self);
+	};
 	const char *get_laddr() {
 		return seaudit_avc_message_get_laddr(self);
 	};
@@ -774,46 +777,76 @@ typedef struct seaudit_sort {} seaudit_sort_t;
 	fail:
 		return NULL;
 	};
-	~seaudit_sort_t() {
+	seaudit_sort_t(seaudit_sort_t *in) {
+		seaudit_sort_t *ss = seaudit_sort_create_from_sort(in);
+		if (!ss) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return ss;
+	};
+        ~seaudit_sort_t() {
 		seaudit_sort_destroy(&self);
 	};
 };
 %newobject seaudit_sort_by_message_type();
-seaudit_sort_t *seaudit_sort_by_message_type(int direction);
+seaudit_sort_t *seaudit_sort_by_message_type(const int direction);
 %newobject seaudit_sort_by_date();
-seaudit_sort_t *seaudit_sort_by_date(int direction);
+seaudit_sort_t *seaudit_sort_by_date(const int direction);
 %newobject seaudit_sort_by_host();
-seaudit_sort_t *seaudit_sort_by_host(int direction);
+seaudit_sort_t *seaudit_sort_by_host(const int direction);
 %newobject seaudit_sort_by_permission();
-seaudit_sort_t *seaudit_sort_by_permission(int direction);
+seaudit_sort_t *seaudit_sort_by_permission(const int direction);
 %newobject seaudit_sort_by_source_user();
-seaudit_sort_t *seaudit_sort_by_source_user(int direction);
+seaudit_sort_t *seaudit_sort_by_source_user(const int direction);
 %newobject seaudit_sort_by_source_role();
-seaudit_sort_t *seaudit_sort_by_source_role(int direction);
+seaudit_sort_t *seaudit_sort_by_source_role(const int direction);
 %newobject seaudit_sort_by_source_type();
-seaudit_sort_t *seaudit_sort_by_source_type(int direction);
+seaudit_sort_t *seaudit_sort_by_source_type(const int direction);
 %newobject seaudit_sort_by_target_user();
-seaudit_sort_t *seaudit_sort_by_target_user(int direction);
+seaudit_sort_t *seaudit_sort_by_target_user(const int direction);
 %newobject seaudit_sort_by_target_role();
-seaudit_sort_t *seaudit_sort_by_target_role(int direction);
+seaudit_sort_t *seaudit_sort_by_target_role(const int direction);
 %newobject seaudit_sort_by_target_type();
-seaudit_sort_t *seaudit_sort_by_target_type(int direction);
+seaudit_sort_t *seaudit_sort_by_target_type(const int direction);
 %newobject seaudit_sort_by_object_class();
-seaudit_sort_t *seaudit_sort_by_object_class(int direction);
+seaudit_sort_t *seaudit_sort_by_object_class(const int direction);
 %newobject seaudit_sort_by_executable();
-seaudit_sort_t *seaudit_sort_by_executable(int direction);
+seaudit_sort_t *seaudit_sort_by_executable(const int direction);
 %newobject seaudit_sort_by_command();
-seaudit_sort_t *seaudit_sort_by_command(int direction);
+seaudit_sort_t *seaudit_sort_by_command(const int direction);
 %newobject seaudit_sort_by_name();
-seaudit_sort_t *seaudit_sort_by_name(int direction);
+seaudit_sort_t *seaudit_sort_by_name(const int direction);
 %newobject seaudit_sort_by_path();
-seaudit_sort_t *seaudit_sort_by_path(int direction);
+seaudit_sort_t *seaudit_sort_by_path(const int direction);
 %newobject seaudit_sort_by_device();
-seaudit_sort_t *seaudit_sort_by_device(int direction);
+seaudit_sort_t *seaudit_sort_by_device(const int direction);
 %newobject seaudit_sort_by_inode();
-seaudit_sort_t *seaudit_sort_by_inode(int direction);
+seaudit_sort_t *seaudit_sort_by_inode(const int direction);
 %newobject seaudit_sort_by_pid();
-seaudit_sort_t *seaudit_sort_by_pid(int direction);
+seaudit_sort_t *seaudit_sort_by_pid(const int direction);
+%newobject seaudit_sort_by_port();
+extern seaudit_sort_t *seaudit_sort_by_port(const int direction);
+%newobject seaudit_sort_by_laddr();
+extern seaudit_sort_t *seaudit_sort_by_laddr(const int direction);
+%newobject seaudit_sort_by_lport();
+extern seaudit_sort_t *seaudit_sort_by_lport(const int direction);
+%newobject seaudit_sort_by_faddr();
+extern seaudit_sort_t *seaudit_sort_by_faddr(const int direction);
+%newobject seaudit_sort_by_fport();
+extern seaudit_sort_t *seaudit_sort_by_fport(const int direction);
+%newobject seaudit_sort_by_saddr();
+extern seaudit_sort_t *seaudit_sort_by_saddr(const int direction);
+%newobject seaudit_sort_by_sport();
+extern seaudit_sort_t *seaudit_sort_by_sport(const int direction);
+%newobject seaudit_sort_by_daddr();
+extern seaudit_sort_t *seaudit_sort_by_daddr(const int direction);
+%newobject seaudit_sort_by_dport();
+extern seaudit_sort_t *seaudit_sort_by_dport(const int direction);
+%newobject seaudit_sort_by_key();
+extern seaudit_sort_t *seaudit_sort_by_key(const int direction);
+%newobject seaudit_sort_by_cap();
+extern seaudit_sort_t *seaudit_sort_by_cap(const int direction);
 
 /* seaudit model */
 #ifdef SWIGPYTHON
