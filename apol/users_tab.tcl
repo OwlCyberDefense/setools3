@@ -283,7 +283,7 @@ proc Apol_Users::_renderUser {user_name show_all} {
     set i [$qpol_user_datum get_role_iter $::ApolTop::qpolicy]
     set roles {}
     while {![$i end]} {
-        set qpol_role_datum [new_qpol_role_t [$i get_item]]
+        set qpol_role_datum [qpol_role_from_void [$i get_item]]
         lappend roles [$qpol_role_datum get_name $::ApolTop::qpolicy]
         $i next
     }

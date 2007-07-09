@@ -173,7 +173,7 @@ proc Apol_Roles::_renderRole {role_name show_all} {
     set i [$qpol_role_datum get_type_iter $::ApolTop::qpolicy]
     set types {}
     while {![$i end]} {
-        set qpol_type_datum [new_qpol_type_t [$i get_item]]
+        set qpol_type_datum [qpol_type_from_void [$i get_item]]
         lappend types [$qpol_type_datum get_name $::ApolTop::qpolicy]
         $i next
     }

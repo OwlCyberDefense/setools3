@@ -67,7 +67,7 @@ proc attr_vector_to_list {v} {
 proc avrule_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_avrule_t [$v get_element $i]]
+        set q [qpol_avrule_from_void [$v get_element $i]]
         lappend list $q
     }
     return $list
@@ -76,7 +76,7 @@ proc avrule_vector_to_list {v} {
 proc bool_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_bool_t [$v get_element $i]]
+        set q [qpol_bool_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -85,7 +85,7 @@ proc bool_vector_to_list {v} {
 proc cat_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_cat_t [$v get_element $i]]
+        set q [qpol_cat_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -94,7 +94,7 @@ proc cat_vector_to_list {v} {
 proc class_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_class_t [$v get_element $i]]
+        set q [qpol_class_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -103,7 +103,7 @@ proc class_vector_to_list {v} {
 proc common_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_common_t [$v get_element $i]]
+        set q [qpol_common_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -114,7 +114,7 @@ proc common_vector_to_list {v} {
 proc cond_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_cond_t [$v get_element $i]]
+        set q [qpol_cond_from_void [$v get_element $i]]
         lappend list $q
     }
     return $list
@@ -123,7 +123,7 @@ proc cond_vector_to_list {v} {
 proc domain_trans_result_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set a [new_apol_domain_trans_result_t [$v get_element $i]]
+        set a [apol_domain_trans_result_from_void [$v get_element $i]]
         lappend list $a
     }
     return $list
@@ -134,7 +134,7 @@ proc domain_trans_result_vector_to_list {v} {
 proc fs_use_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_fs_use_t [$v get_element $i]]
+        set q [qpol_fs_use_from_void [$v get_element $i]]
         lappend list $q
     }
     return $list
@@ -145,7 +145,7 @@ proc fs_use_vector_to_list {v} {
 proc genfscon_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_genfscon_t [$v get_element $i]]
+        set q [qpol_genfscon_from_void [$v get_element $i]]
         lappend list $q
     }
     return $list
@@ -154,7 +154,7 @@ proc genfscon_vector_to_list {v} {
 proc infoflow_result_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set a [new_apol_infoflow_result_t [$v get_element $i]]
+        set a [apol_infoflow_result_from_void [$v get_element $i]]
         lappend list $a
     }
     return $list
@@ -163,7 +163,7 @@ proc infoflow_result_vector_to_list {v} {
 proc isid_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_isid_t [$v get_element $i]]
+        set q [qpol_isid_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -172,7 +172,7 @@ proc isid_vector_to_list {v} {
 proc level_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_level_t [$v get_element $i]]
+        set q [qpol_level_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -181,7 +181,7 @@ proc level_vector_to_list {v} {
 proc netifcon_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_netifcon_t [$v get_element $i]]
+        set q [qpol_netifcon_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -192,7 +192,7 @@ proc netifcon_vector_to_list {v} {
 proc nodecon_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_nodecon_t [$v get_element $i]]
+        set q [qpol_nodecon_from_void [$v get_element $i]]
         lappend list $q
     }
     return $list
@@ -202,7 +202,7 @@ proc nodecon_vector_to_list {v} {
 proc portcon_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        lappend list [new_qpol_portcon_t [$v get_element $i]]
+        lappend list [qpol_portcon_from_void [$v get_element $i]]
     }
     return $list
 }
@@ -212,7 +212,7 @@ proc portcon_vector_to_list {v} {
 proc range_trans_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        lappend list [new_qpol_range_trans_t [$v get_element $i]]
+        lappend list [qpol_range_trans_from_void [$v get_element $i]]
     }
     return $list
 }
@@ -220,7 +220,7 @@ proc range_trans_vector_to_list {v} {
 proc relabel_result_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        lappend list [new_apol_relabel_result_t [$v get_element $i]]
+        lappend list [apol_relabel_result_from_void [$v get_element $i]]
     }
     return $list
 }
@@ -228,7 +228,7 @@ proc relabel_result_vector_to_list {v} {
 proc relabel_result_pair_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        lappend list [new_apol_relabel_result_pair_t [$v get_element $i]]
+        lappend list [apol_relabel_result_pair_from_void [$v get_element $i]]
     }
     return $list
 }
@@ -238,7 +238,7 @@ proc relabel_result_pair_vector_to_list {v} {
 proc role_allow_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        lappend list [new_qpol_role_allow_t [$v get_element $i]]
+        lappend list [qpol_role_allow_from_void [$v get_element $i]]
     }
     return $list
 }
@@ -248,7 +248,7 @@ proc role_allow_vector_to_list {v} {
 proc role_trans_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        lappend list [new_qpol_role_trans_t [$v get_element $i]]
+        lappend list [qpol_role_trans_from_void [$v get_element $i]]
     }
     return $list
 }
@@ -256,7 +256,7 @@ proc role_trans_vector_to_list {v} {
 proc role_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_role_t [$v get_element $i]]
+        set q [qpol_role_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -265,7 +265,7 @@ proc role_vector_to_list {v} {
 proc terule_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_terule_t [$v get_element $i]]
+        set q [qpol_terule_from_void [$v get_element $i]]
         lappend list $q
     }
     return $list
@@ -274,7 +274,7 @@ proc terule_vector_to_list {v} {
 proc type_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_type_t [$v get_element $i]]
+        set q [qpol_type_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list
@@ -283,7 +283,7 @@ proc type_vector_to_list {v} {
 proc user_vector_to_list {v} {
     set list {}
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        set q [new_qpol_user_t [$v get_element $i]]
+        set q [qpol_user_from_void [$v get_element $i]]
         lappend list [$q get_name $::ApolTop::qpolicy]
     }
     return $list

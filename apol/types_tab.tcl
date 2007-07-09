@@ -332,7 +332,7 @@ proc Apol_Types::_renderType {type_name show_attribs show_aliases} {
     $i -delete
     set i [$qpol_type_datum get_attr_iter $::ApolTop::qpolicy]
     foreach a [iter_to_list $i] {
-        set a [new_qpol_type_t $a]
+        set a [qpol_type_from_void $a]
         lappend attribs [$a get_name $::ApolTop::qpolicy]
     }
     $i -delete
@@ -362,7 +362,7 @@ proc Apol_Types::_renderAttrib {attrib_name show_types show_attribs} {
         set types {}
         set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
         foreach t [iter_to_list $i] {
-            set t [new_qpol_type_t $t]
+            set t [qpol_type_from_void $t]
             lappend types [$t get_name $::ApolTop::qpolicy]
         }
         $i -delete
@@ -378,7 +378,7 @@ proc Apol_Types::_renderAttrib {attrib_name show_types show_attribs} {
                 set this_attribs {}
                 set i [$t get_attr_iter $::ApolTop::qpolicy]
                 foreach a [iter_to_list $i] {
-                    set a [new_qpol_type_t $a]
+                    set a [qpol_type_from_void $a]
                     lappend this_attribs [$a get_name $::ApolTop::qpolicy]
                 }
                 $i -delete

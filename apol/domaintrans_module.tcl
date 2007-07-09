@@ -428,7 +428,7 @@ proc Apol_Analysis_domaintrans::_filterTypeLists {attrib lb} {
         set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attrib]
         set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
         while {![$i end]} {
-            set t [new_qpol_type_t [$i get_item]]
+            set t [qpol_type_from_void [$i get_item]]
             lappend vals(targets:inc_displayed) [$t get_name $::ApolTop::qpolicy]
             $i next
         }
@@ -911,7 +911,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
         "\n" subtitle
     set v [list_to_vector $proctrans]
     apol_tcl_avrule_sort $::ApolTop::policy $v
-    Apol_Widget::appendSearchResultRules $res 6 $v new_qpol_avrule_t
+    Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
     $v -delete
     if {[llength $setexec] > 0} {
         $res.tb insert end "\n" {} \
@@ -920,7 +920,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
             "\n" subtitle
         set v [list_to_vector $setexec]
         apol_tcl_avrule_sort $::ApolTop::policy $v
-        Apol_Widget::appendSearchResultRules $res 6 $v new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
         $v -delete
     }
 
@@ -935,7 +935,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
             "\n" subtitle
         set v [list_to_vector $entrypoint]
         apol_tcl_avrule_sort $::ApolTop::policy $v
-        Apol_Widget::appendSearchResultRules $res 12 $v new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
         $v -delete
         $res.tb insert end "\n" {} \
             "            " {} \
@@ -944,7 +944,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
             "\n" subtitle
         set v [list_to_vector $execute]
         apol_tcl_avrule_sort $::ApolTop::policy $v
-        Apol_Widget::appendSearchResultRules $res 12 $v new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
         $v -delete
         if {[llength $type_trans] > 0} {
             $res.tb insert end "\n" {} \
@@ -966,7 +966,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
             "\n" subtitle
         set v [list_to_vector $access_list]
         apol_tcl_avrule_sort $::ApolTop::policy $v
-        Apol_Widget::appendSearchResultRules $res 6 $v new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
         $v -delete
     }
 }

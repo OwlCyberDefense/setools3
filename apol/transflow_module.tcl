@@ -564,10 +564,10 @@ proc Apol_Analysis_transflow::_filterTypeLists {attrib} {
     if {$attrib != {}} {
         set typesList {}
         if {[Apol_Types::isAttributeInPolicy $attrib]} {
-            set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attrib]
+            set qpol_type_datum [qpol_type_from_void $::ApolTop::qpolicy $attrib]
             set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
             foreach t [iter_to_list $i] {
-                set t [new_qpol_type_t $t]
+                set t [qpol_type_from_void $t]
                 lappend typesList [$t get_name $::ApolTop::qpolicy]
             }
             $i -delete
@@ -856,12 +856,12 @@ proc Apol_Analysis_transflow::_createResultsNodes {tree parent_node results do_e
             if {$flow_dir == $::APOL_INFOFLOW_IN} {
                 # flip the steps around
                 for {set i [expr {[$step_v get_size] - 1}]} {$i >= 0} {incr i -1} {
-                    set r [new_apol_infoflow_step_t [$step_v get_element $i]]
+                    set r [apol_infoflow_step_from_void [$step_v get_element $i]]
                     lappend p [_infoflow_step_to_list $r]
                 }
             } else {
                 for {set i 0} {$i < [$step_v get_size]} {incr i} {
-                    set r [new_apol_infoflow_step_t [$step_v get_element $i]]
+                    set r [apol_infoflow_step_from_void [$step_v get_element $i]]
                     lappend p [_infoflow_step_to_list $r]
                 }
             }
@@ -932,7 +932,7 @@ proc Apol_Analysis_transflow::_renderPath {res path_num path} {
         set rules [lindex $steps 3]
         set v [new_apol_vector_t]
         $v append [lindex $rules 0]
-        Apol_Widget::appendSearchResultRules $res 6 $v new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
         $v -delete
 
         set v [new_apol_vector_t]
@@ -940,7 +940,7 @@ proc Apol_Analysis_transflow::_renderPath {res path_num path} {
             $v append $r
         }
         apol_tcl_avrule_sort $::ApolTop::policy $v
-        Apol_Widget::appendSearchResultRules $res 10 $v new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $res 10 $v qpol_avrule_from_void
         $v -delete
     }
 }
@@ -1119,12 +1119,12 @@ proc Apol_Analysis_transflow::_doFindMore {res tree node} {
         if {$flow_dir == $::APOL_INFOFLOW_IN} {
             # flip the steps around
             for {set i [expr {[$steps_v get_size] - 1}]} {$i >= 0} {incr i -1} {
-                set s [new_apol_infoflow_step_t [$steps_v get_element $i]]
+                set s [apol_infoflow_step_from_void [$steps_v get_element $i]]
                 lappend sorted_path [_infoflow_step_to_list $s]
             }
         } else {
             for {set i 0} {$i < [$steps_v get_size]} {incr i} {
-                set s [new_apol_infoflow_step_t [$steps_v get_element $i]]
+                set s [apol_infoflow_step_from_void [$steps_v get_element $i]]
                 lappend sorted_path [_infoflow_step_to_list $s]
             }
         }

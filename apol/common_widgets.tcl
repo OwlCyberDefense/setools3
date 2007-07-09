@@ -260,7 +260,7 @@ proc Apol_Widget::resetLevelSelectorToPolicy {path} {
         set level_data {}
         set i [$::ApolTop::qpolicy get_level_iter]
         while {![$i end]} {
-            set qpol_level_datum [new_qpol_level_t [$i get_item]]
+            set qpol_level_datum [qpol_level_from_void [$i get_item]]
             if {![$qpol_level_datum get_isalias $::ApolTop::qpolicy]} {
                 set level_name [$qpol_level_datum get_name $::ApolTop::qpolicy]
                 set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
@@ -602,7 +602,7 @@ proc Apol_Widget::_filter_type_combobox {path attribvalue} {
             set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attribvalue]
             set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
             foreach t [iter_to_list $i] {
-                set t [new_qpol_type_t $t]
+                set t [qpol_type_from_void $t]
                 lappend typesList [$t get_name $::ApolTop::qpolicy]
             }
             $i -delete
@@ -632,7 +632,7 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
         set qpol_level_datum [new_qpol_level_t $::ApolTop::qpolicy $sens]
         set i [$qpol_level_datum get_cat_iter $::ApolTop::qpolicy]
         while {![$i end]} {
-            set qpol_cat_datum [new_qpol_cat_t [$i get_item]]
+            set qpol_cat_datum [qpol_cat_from_vector [$i get_item]]
             lappend vars($path:cats) [$qpol_cat_datum get_name $::ApolTop::qpolicy]
             $i next
         }

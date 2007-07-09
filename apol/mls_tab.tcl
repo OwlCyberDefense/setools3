@@ -223,7 +223,7 @@ proc Apol_MLS::_renderCats {cat_name show_sens} {
         $q -delete
         set sens_list {}
         for {set i 0} {$i < [$v get_size]} {incr i} {
-            set qpol_level_datum [new_qpol_level_t [$v get_element $i]]
+            set qpol_level_datum [qpol_level_from_void [$v get_element $i]]
             set level_name [$qpol_level_datum get_name $::ApolTop::qpolicy]
             set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
             lappend sens_list [list $level_name $level_value]
@@ -268,7 +268,7 @@ proc Apol_MLS::_search {} {
 
         set level_data {}
         for {set i 0} {$i < [$v get_size]} {incr i} {
-            set qpol_level_datum [new_qpol_level_t [$v get_element $i]]
+            set qpol_level_datum [qpol_level_from_void [$v get_element $i]]
             set level_name [$qpol_level_datum get_name $::ApolTop::qpolicy]
             set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
             lappend level_data [list $level_name $level_value]
@@ -297,7 +297,7 @@ proc Apol_MLS::_search {} {
 
         set cats_data {}
         for {set i 0} {$i < [$v get_size]} {incr i} {
-            set qpol_cat_datum [new_qpol_cat_t [$v get_element $i]]
+            set qpol_cat_datum [qpol_cat_from_void [$v get_element $i]]
             set cat_name [$qpol_cat_datum get_name $::ApolTop::qpolicy]
             set cat_value [$qpol_cat_datum get_value $::ApolTop::qpolicy]
             lappend cats_data [list $cat_name $cat_value]

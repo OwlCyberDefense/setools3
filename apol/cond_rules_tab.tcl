@@ -226,14 +226,14 @@ proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
     Apol_Widget::appendSearchResultText $widgets(results) "$text\nTRUE list:\n"
     if {![ApolTop::is_capable "syntactic rules"]} {
         apol_tcl_avrule_sort $::ApolTop::policy $av_true_vector
-        Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_true_vector new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_true_vector qpol_avrule_from_void
         apol_tcl_terule_sort $::ApolTop::policy $te_true_vector
-        Apol_Widget::appendSearchResultRules $widgets(results) 4 $te_true_vector new_qpol_terule_t
+        Apol_Widget::appendSearchResultRules $widgets(results) 4 $te_true_vector qpol_terule_from_void
     } else {
         set syn_avrules [apol_avrule_list_to_syn_avrules $::ApolTop::policy $av_true_vector NULL]
-        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_avrules new_qpol_syn_avrule_t
+        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_avrules qpol_syn_avrule_from_void
         set syn_terules [apol_terule_list_to_syn_terules $::ApolTop::policy $te_true_vector]
-        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_terules new_qpol_syn_terule_t
+        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_terules qpol_syn_terule_from_void
         $syn_avrules -delete
         $syn_terules -delete
     }
@@ -241,14 +241,14 @@ proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
     Apol_Widget::appendSearchResultText $widgets(results) "\nFALSE list:\n"
     if {![ApolTop::is_capable "syntactic rules"]} {
         apol_tcl_avrule_sort $::ApolTop::policy $av_false_vector
-        Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_false_vector new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $widgets(results) 4 $av_false_vector qpol_avrule_from_void
         apol_tcl_terule_sort $::ApolTop::policy $te_false_vector
-        Apol_Widget::appendSearchResultRules $widgets(results) 4 $te_false_vector new_qpol_terule_t
+        Apol_Widget::appendSearchResultRules $widgets(results) 4 $te_false_vector qpol_terule_from_void
     } else {
         set syn_avrules [apol_avrule_list_to_syn_avrules $::ApolTop::policy $av_false_vector NULL]
-        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_avrules new_qpol_syn_avrule_t
+        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_avrules qpol_syn_avrule_from_void
         set syn_terules [apol_terule_list_to_syn_terules $::ApolTop::policy $te_false_vector]
-        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_terules new_qpol_syn_terule_t
+        Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_terules qpol_syn_terule_from_void
         $syn_avrules -delete
         $syn_terules -delete
     }

@@ -496,7 +496,7 @@ proc Apol_Analysis_directflow::_createResultsNodes {tree parent_node results do_
             set target [[[lindex $info_list 0] get_end_type] get_name $::ApolTop::qpolicy]
         }
         set flow_dir [$r get_dir]
-        set step0 [new_apol_infoflow_step_t [[$r get_steps] get_element 0]]
+        set step0 [apol_infoflow_step_from_void [[$r get_steps] get_element 0]]
         set rules [$step0 get_rules]
 
         lappend all_targets $target
@@ -570,7 +570,7 @@ proc Apol_Analysis_directflow::_renderResultsDirectFlow {res tree node data} {
             $v append $r
         }
         apol_tcl_avrule_sort $::ApolTop::policy $v
-        Apol_Widget::appendSearchResultRules $res 12 $v new_qpol_avrule_t
+        Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
         $v -delete
     }
 }

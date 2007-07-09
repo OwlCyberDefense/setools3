@@ -195,7 +195,7 @@ proc Apol_Class_Perms::getClassesForPerm {perm_name} {
     set classes_list {}
     set i [$::ApolTop::qpolicy get_class_iter $perm_name]
     while {![$i end]} {
-        set qpol_class_datum [new_qpol_class_t [$i get_item]]
+        set qpol_class_datum [qpol_class_from_void [$i get_item]]
         lappend classes_list [$qpol_class_datum get_name $::ApolTop::qpolicy]
         $i next
     }
@@ -203,7 +203,7 @@ proc Apol_Class_Perms::getClassesForPerm {perm_name} {
     set indirect_classes_list {}
     set i [$::ApolTop::qpolicy get_common_iter $perm_name]
     while {![$i end]} {
-        set qpol_common_datum [new_qpol_common_t [$i get_item]]
+        set qpol_common_datum [qpol_common_from_void [$i get_item]]
         set q [new_apol_class_query_t]
         $q set_common $::ApolTop::policy [$qpol_common_datum get_name $::ApolTop::qpolicy]
         set v [$q run $::ApolTop::policy]
@@ -401,7 +401,7 @@ proc Apol_Class_Perms::_renderCommon {common_name show_perms show_classes} {
         set i [$::ApolTop::qpolicy get_class_iter]
         set classes_list {}
         while {![$i end]} {
-            set qpol_class_t [new_qpol_class_t [$i get_item]]
+            set qpol_class_t [qpol_class_from_void [$i get_item]]
             set q [$qpol_class_t get_common $::ApolTop::qpolicy]
             if {$q != "NULL" && [$q get_name $::ApolTop::qpolicy] == $common_name} {
                 lappend classes_list [$qpol_class_t get_name $::ApolTop::qpolicy]
@@ -440,7 +440,7 @@ proc Apol_Class_Perms::_renderPerm {perm_name show_classes show_commons} {
         set commons_list {}
         set i [$::ApolTop::qpolicy get_common_iter $perm_name]
         while {![$i end]} {
-            set qpol_common_datum [new_qpol_common_t [$i get_item]]
+            set qpol_common_datum [qpol_common_from_void [$i get_item]]
             lappend commons_list [$qpol_common_datum get_name $::ApolTop::qpolicy]
             $i next
         }
