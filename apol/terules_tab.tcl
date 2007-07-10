@@ -943,6 +943,10 @@ proc Apol_TE::_search_terules {whichButton} {
     if {$vals(rs:avrule_neverallow)} {
         ApolTop::loadNeverAllows
     }
+    if {![ApolTop::is_capable "neverallow"]} {
+        set avrule_selection [expr {$avrule_selection & (~$::QPOL_RULE_NEVERALLOW)}]
+        $avq set_rules $::ApolTop::policy $avrule_selection
+    }
 
     Apol_Progress_Dialog::wait "TE Rules" "Searching rules" \
         {
