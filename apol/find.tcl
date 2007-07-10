@@ -110,10 +110,15 @@ proc Apol_Find::_do_find {} {
     }
 
     $w tag remove sel 0.0 end
-    set pos [eval $w search -count count $opts -- [list $search_string] $start_pos]
+
+    variable dialog
+    if {[catch {eval $w search -count count $opts -- [list $search_string] $start_pos} pos]} {
+        tk_messageBox -parent $dialog -icon warning -type ok -title "Find" -message \
+                 "Invalid regular expression."
+        return
+    }
 
     if {$pos == {}} {
-        variable dialog
         tk_messageBox -parent $dialog -icon warning -type ok -title "Find" -message \
                  "String not found."
     } else {
