@@ -319,8 +319,10 @@ typedef enum seaudit_message_type
 } seaudit_message_type_e;
 typedef struct seaudit_message {} seaudit_message_t;
 %extend seaudit_message_t {
-	seaudit_message_t(void *x) {
-		return (seaudit_message_t*)x;
+	seaudit_message_t() {
+		SWIG_exception(SWIG_RuntimeError, "Canot directly create seaudit_message_t objects");
+	fail:
+		return NULL;
 	};
 	~seaudit_message_t() {
 		/* no op */
@@ -372,30 +374,49 @@ typedef struct seaudit_message {} seaudit_message_t;
 		return str;
 	};
 };
+%inline %{
+	seaudit_message_t *seaudit_message_from_void(void *x) {
+		return (seaudit_message_t*)x;
+	};
+%}
 
 /* seaudit load message */
 typedef struct seaudit_load_message {} seaudit_load_message_t;
 %extend seaudit_load_message_t {
-	seaudit_load_message_t(void *msg) {
-		return (seaudit_load_message_t*)msg;
+	seaudit_load_message_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_load_message_t objects");
+	fail:
+		return NULL;
 	};
 	~seaudit_load_message_t() {
 		/* no op */
 		return;
 	};
 };
+%inline %{
+	seaudit_load_message_t *seaudit_load_message_from_void(void *msg) {
+		return (seaudit_load_message_t*)msg;
+	};
+%}
 
 /* seaudit bool message */
 typedef struct seaudit_bool_message {} seaudit_bool_message_t;
 %extend seaudit_bool_message_t {
 	seaudit_bool_message_t(void *msg) {
-		return (seaudit_bool_message_t*)msg;
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_bool_message_t objects");
+	fail:
+		return NULL;
 	};
 	~seaudit_bool_message_t() {
 		/* no op */
 		return;
 	};
 };
+%inline %{
+	seaudit_bool_message_t *seaudit_bool_message_from_void(void *msg) {
+		return (seaudit_bool_message_t*)msg;
+	};
+%}
 
 /* seaudit avc message */
 typedef enum seaudit_avc_message_type
@@ -406,8 +427,10 @@ typedef enum seaudit_avc_message_type
 } seaudit_avc_message_type_e;
 typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 %extend seaudit_avc_message_t {
-	seaudit_avc_message_t(void *msg) {
-		return (seaudit_avc_message_t*)msg;
+	seaudit_avc_message_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_avc_message_t objects");
+	fail:
+		return NULL;
 	};
 	~seaudit_avc_message_t() {
 		/* no op */
@@ -501,6 +524,11 @@ typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 		return seaudit_avc_message_get_cap(self);
 	};
 };
+%inline %{
+	seaudit_avc_message_t *seaudit_avc_message_from_void(void *msg) {
+		return (seaudit_avc_message_t*)msg;
+	};
+%}
 
 /* Java does not permit parsing directly from a file; parsing may only
    be done through a memory buffer. */
@@ -543,9 +571,6 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		}
 	fail:
 		return sf;
-	};
-	seaudit_filter_t(void *x) {
-		return (seaudit_filter_t*)x;
 	};
 	~seaudit_filter_t() {
 		seaudit_filter_destroy(&self);
@@ -768,6 +793,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 };
 %newobject seaudit_filter_create_from_file();
 apol_vector_t *seaudit_filter_create_from_file(const char *filename);
+%inline %{
+	seaudit_filter_t *seaudit_filter_from_void(void *x) {
+		return (seaudit_filter_t*)x;
+	};
+%}
 
 /* seaudit sort */
 typedef struct seaudit_sort {} seaudit_sort_t;
@@ -921,9 +951,17 @@ typedef struct seaudit_model {} seaudit_model_t;
 		return;
 	};
 	void append_filter(seaudit_filter_t *filter) {
+#ifdef SWIGJAVA /* duplicate so the garbage collector does not double free */
+		seaudit_filter_t *tmp = seaudit_filter_create_from_filter(filter);
+		if (seaudit_model_append_filter(self, tmp)) {
+			seaudit_filter_destroy(&tmp);
+			SWIG_exception(SWIG_RuntimeError, "Could not append filter to model");
+		}
+#else
 		if (seaudit_model_append_filter(self, filter)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append filter to model");
 		}
+#endif
 	fail:
 		return;
 	};
@@ -959,9 +997,17 @@ typedef struct seaudit_model {} seaudit_model_t;
 		return seaudit_model_get_filter_visible(self);
 	};
 	void append_sort(seaudit_sort_t *ssort) {
+#ifdef SWIGJAVA
+		seaudit_sort_t *tmp = seaudit_sort_create_from_sort(ssort);
+		if (seaudit_model_append_sort(self, tmp)) {
+			seaudit_sort_destroy(&tmp);
+			SWIG_exception(SWIG_RuntimeError, "Could not append sort to model");
+		}
+#else
 		if (seaudit_model_append_sort(self, ssort)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append sort to model");
 		}
+#endif
 	fail:
 		return;
 	};
