@@ -70,49 +70,6 @@ extern "C"
 		POLDIFF_FORM_REMOVE_TYPE
 	} poldiff_form_e;
 
-/**
- *  Callback function signature for getting an array of statistics for the
- *  number of differences of each form for a given item.
- *  @param diff The policy difference structure from which to get the stats.
- *  @param stats Array into which to write the numbers (array must be
- *  pre-allocated). The order of the values written to the array is as follows:
- *  number of items of form POLDIFF_FORM_ADDED, number of POLDIFF_FORM_REMOVED,
- *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
- *  number of POLDIFF_FORM_REMOVE_TYPE.
- */
-	typedef void (*poldiff_get_item_stats_fn_t) (const poldiff_t * diff, size_t stats[5]);
-
-/**
- *  Callback function signature for getting a vector of all result
- *  items that were created during a call to poldiff_do_item_diff().
- *  @param diff Policy diff structure containing results.
- *  @return A vector of result items, which the caller may not modify
- *  or destroy.  Upon error, return NULL and set errno.
- */
-	typedef const apol_vector_t *(*poldiff_get_result_items_fn_t) (const poldiff_t * diff);
-
-/**
- *  Callback function signature for getting the form of difference for
- *  a result item.
- *  @param diff The policy difference structure associated with the item.
- *  @param item The item from which to get the form.
- *  @return One of the POLDIFF_FORM_* enumeration.
- */
-	typedef poldiff_form_e(*poldiff_item_get_form_fn_t) (const void *item);
-
-/**
- *  Callback function signature for obtaining a newly allocated string
- *  representation of a difference item.
- *  @param diff The policy difference structure associated with the item.
- *  @param item The item from which to generate the string.
- *  @return Expected return value from this function is a newly allocated
- *  string representation of the item or NULL on error; if the call fails,
- *  it is expected to set errno.
- */
-	typedef char *(*poldiff_item_to_string_fn_t) (const poldiff_t * diff, const void *item);
-
-	typedef struct poldiff_item_record poldiff_item_record_t;
-
 	typedef void (*poldiff_handle_fn_t) (void *arg, const poldiff_t * diff, int level, const char *fmt, va_list va_args);
 
 #include <poldiff/attrib_diff.h>
@@ -168,15 +125,6 @@ extern "C"
 #define POLDIFF_DIFF_OCONS 0
 #define POLDIFF_DIFF_REMAPPED (POLDIFF_DIFF_TYPES|POLDIFF_DIFF_ATTRIBS|POLDIFF_DIFF_AVRULES|POLDIFF_DIFF_TERULES|POLDIFF_DIFF_ROLES|POLDIFF_DIFF_ROLE_TRANS|POLDIFF_DIFF_RANGE_TRANS|POLDIFF_DIFF_OCONS)
 #define POLDIFF_DIFF_ALL (POLDIFF_DIFF_SYMBOLS|POLDIFF_DIFF_RULES|POLDIFF_DIFF_MLS|POLDIFF_DIFF_OCONS)
-
-/**
- * Get the poldiff_item_record_t for a particular policy component.
- *
- * Takes a flag as defined above (IE POLDIFF_DIFF_AVALLOW) and
- * returns the poldiff_item_record_t associated with it or NULL
- * if not found.
- */
-	extern const poldiff_item_record_t *poldiff_get_item_record(uint32_t which);
 
 /**
  *  Allocate and initialize a new policy difference structure.  This
@@ -262,12 +210,6 @@ extern "C"
  *  errno will be set and the difference structure should be destroyed.
  */
 	extern int poldiff_enable_line_numbers(poldiff_t * diff);
-
-	extern poldiff_item_get_form_fn_t poldiff_get_form_fn(const poldiff_item_record_t * diff);
-	extern poldiff_item_to_string_fn_t poldiff_get_to_string_fn(const poldiff_item_record_t * diff);
-	extern poldiff_get_item_stats_fn_t poldiff_get_stats_fn(const poldiff_item_record_t * diff);
-	extern poldiff_get_result_items_fn_t poldiff_get_results_fn(const poldiff_item_record_t * diff);
-	extern const char *poldiff_item_get_label(const poldiff_item_record_t * diff);
 
 #ifdef	__cplusplus
 }

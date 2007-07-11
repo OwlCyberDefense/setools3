@@ -1,3 +1,8 @@
+2007-07-11  M. Goldman  <mgoldman@tresys.com>
+
+	* Split functions relating to item records out into their own
+	  file.  Added documentation for same.
+
 2007-07-09  J. Tang  <jtang@tresys.com>
 
 	* Added additional sort constructors to libseaudit.

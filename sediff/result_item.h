@@ -30,6 +30,7 @@ typedef struct result_item result_item_t;
 
 #include <gtk/gtk.h>
 #include <poldiff/poldiff.h>
+#include <poldiff/item_record.h>
 
 /* constructors for various result items */
 

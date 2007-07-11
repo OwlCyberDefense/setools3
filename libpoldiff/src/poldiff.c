@@ -25,6 +25,7 @@
 #include <config.h>
 
 #include "poldiff_internal.h"
+#include "poldiff/item_record.h"
 
 #include <apol/util.h>
 #include <qpol/policy_extend.h>

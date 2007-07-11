@@ -25,6 +25,7 @@
 #include <config.h>
 
 #include <poldiff/poldiff.h>
+#include <poldiff/item_record.h>
 #include <apol/policy.h>
 #include <apol/vector.h>
 #include <stdio.h>
