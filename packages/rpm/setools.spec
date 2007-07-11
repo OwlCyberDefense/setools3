@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.3
-Release: pre3
+Release: pre4
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -32,7 +32,7 @@ SETools.
 License: LGPL
 Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
-Requires: libselinux >= 1.30 libsepol >= 1.12.27 sqlite >= 3.2.0 libxml2
+Requires: libselinux >= 1.30 libsepol >= 1.12.27 sqlite >= 3.2.0 libxml2 libstdc++.so.6
 Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libseaudit = %{libseaudit_ver} libsefs = %{libsefs_ver} 
 BuildRequires: flex, bison, pkgconfig
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
@@ -422,6 +422,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_bindir}/sediff
 %{_bindir}/seaudit-report
 %{setoolsdir}/sechecker-profiles/all-checks.sechecker
+%{setoolsdir}/sechecker-profiles/all-checks-no-mls.sechecker
 %{setoolsdir}/sechecker-profiles/analysis-checks.sechecker
 %{setoolsdir}/sechecker-profiles/devel-checks.sechecker
 %{setoolsdir}/sechecker-profiles/sechecker.dtd

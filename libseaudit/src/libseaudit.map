@@ -1,6 +1,31 @@
 VERS_4.1{
 	global:
-		seaudit_*;
+		seaudit_avc_message_*;
+		seaudit_filter_*;
+		seaudit_handle_msg;
+		seaudit_log_*;
+		seaudit_message_*;
+		seaudit_model_*;
+		seaudit_report_*;
+		seaudit_sort_*;
 		libseaudit_get_version;
 	local: *;
 };
+VERS_4.2{
+	global:
+		seaudit_avc_message_get_port;
+		seaudit_log_clear;
+		seaudit_model_hide_message;
+		seaudit_sort_by_cap;
+		seaudit_sort_by_daddr;
+		seaudit_sort_by_dport;
+		seaudit_sort_by_faddr;
+		seaudit_sort_by_fport;
+		seaudit_sort_by_key;
+		seaudit_sort_by_laddr;
+		seaudit_sort_by_lport;
+		seaudit_sort_by_port;
+		seaudit_sort_by_saddr;
+		seaudit_sort_by_sport;
+		seaudit_sort_create_from_sort;
+} VERS_4.1;
