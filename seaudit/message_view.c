@@ -615,8 +615,9 @@ typedef struct _msg_user_data
 {
 	message_view_t *view;
 	apol_vector_t *messages;
-    GtkDialog *dialog;
+	GtkDialog *dialog;
 	GtkTextBuffer *buffer;
+	gint handle_id;
 } _msg_user_data_t;
 
 static void message_view_dialog_change(GtkTreeModel * tree_model,
@@ -628,7 +629,7 @@ static void message_view_dialog_change(GtkTreeModel * tree_model,
 	 * shot, nothing should be able to bring the next and previous
 	 * buttons back from the dead if the view ever changes.
 	 */
-	g_signal_handlers_disconnect_by_func(tree_model, message_view_dialog_change, user_data);
+	g_signal_handler_disconnect(tree_model, d->handle_id);
 	d->view = NULL;
 	gtk_dialog_set_response_sensitive(d->dialog, LBACK, FALSE);
 	gtk_dialog_set_response_sensitive(d->dialog, LFORWARD, FALSE);
@@ -660,7 +661,7 @@ static void message_view_dialog_response(GtkDialog * dialog, gint response, gpoi
 	case GTK_RESPONSE_CLOSE:
 		apol_vector_destroy(&d->messages);
 		if (d->view != NULL) {
-			g_signal_handlers_disconnect_by_func(d->view->store, message_view_dialog_change, dialog);
+			g_signal_handler_disconnect(d->view->store, d->handle_id);
 		}
 		free(d);
 		gtk_widget_destroy(GTK_WIDGET(dialog));
@@ -753,7 +754,7 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
         state->dialog = GTK_DIALOG(window);
 	state->buffer = buffer;
 	g_signal_connect(window, "response", G_CALLBACK(message_view_dialog_response), state);
-	g_signal_connect(view->store, "row-changed", G_CALLBACK(message_view_dialog_change), state);
+	state->handle_id = g_signal_connect(view->store, "row-changed", G_CALLBACK(message_view_dialog_change), state);
 	message_view_dialog_response(GTK_DIALOG(window), LNOOP, state);
 
 	gtk_widget_show_all(GTK_WIDGET(window));

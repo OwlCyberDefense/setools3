@@ -30,6 +30,14 @@ VERS_4.2{
 		seaudit_fliter_set_faddr;
 		seaudit_filter_get_fport;
 		seaudit_filter_set_fport;
+		seaudit_filter_get_saddr;
+		seaudit_fliter_set_saddr;
+		seaudit_filter_get_sport;
+		seaudit_filter_set_sport;
+		seaudit_filter_get_daddr;
+		seaudit_fliter_set_daddr;
+		seaudit_filter_get_dport;
+		seaudit_filter_set_dport;
 		seaudit_log_clear;
 		seaudit_model_hide_message;
 		seaudit_sort_by_cap;

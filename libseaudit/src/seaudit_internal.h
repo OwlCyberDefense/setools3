@@ -474,6 +474,18 @@ void model_notify_filter_changed(seaudit_model_t * model, seaudit_filter_t * fil
 
 /*************** filter functions (defined in filter.c) ***************/
 
+/**
+ * Link a model to a filter.  Whenever the filter changes, it should
+ * call model_notify_filter_changed(); that way the model will
+ * recalculate itself.
+ *
+ * @param filter Filter to be watched.
+ * @param model Model that is watching.
+ */
+void filter_set_model(seaudit_filter_t * filter, seaudit_model_t * model);
+
+/********** more filter functions (defined in filter-internal.c) **********/
+
 typedef int (filter_read_func) (seaudit_filter_t * filter, const xmlChar * ch);
 
 struct filter_parse_state
@@ -491,7 +503,7 @@ struct filter_parse_state
 
     /****
         The following are to be considered private data and may only
-        be used by filter.c.
+        be used by filter-internal.c.
     ****/
     /** the most recently read string that was not part of a tag */
 	xmlChar *cur_string;
@@ -501,16 +513,6 @@ struct filter_parse_state
     /** pointer to a filter parsing function, set by <criteria> tag */
 	filter_read_func *cur_filter_read;
 };
-
-/**
- * Link a model to a filter.  Whenever the filter changes, it should
- * call model_notify_filter_changed(); that way the model will
- * recalculate itself.
- *
- * @param filter Filter to be watched.
- * @param model Model that is watching.
- */
-void filter_set_model(seaudit_filter_t * filter, seaudit_model_t * model);
 
 /**
  * Given a filter and a message, return non-zero if the msg is

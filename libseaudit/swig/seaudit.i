@@ -786,6 +786,38 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	int get_fport() {
 		return seaudit_filter_get_fport(self);
 	};
+	void set_saddr(char *name) {
+		if (seaudit_filter_set_saddr(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set source address for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_saddr() {
+		return seaudit_filter_get_saddr(self);
+	};
+	void set_sport(int port) {
+		seaudit_filter_set_sport(self, port);
+	};
+	int get_sport() {
+		return seaudit_filter_get_sport(self);
+	};
+	void set_daddr(char *name) {
+		if (seaudit_filter_set_daddr(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set destination address for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_daddr() {
+		return seaudit_filter_get_daddr(self);
+	};
+	void set_dport(int port) {
+		seaudit_filter_set_dport(self, port);
+	};
+	int get_dport() {
+		return seaudit_filter_get_dport(self);
+	};
 	void set_netif(char *name) {
 		if (seaudit_filter_set_netif(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set network interface for filter");
