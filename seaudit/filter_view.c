@@ -281,11 +281,11 @@ static void filter_view_init_entry(struct filter_view *fv, const char *(*accesso
 static void filter_view_init_other(struct filter_view *fv)
 {
 	char s[32];
-	filter_view_init_entry(fv, seaudit_filter_get_ipaddress, fv->ipaddr_entry);
-	if (seaudit_filter_get_port(fv->filter) <= 0) {
+	filter_view_init_entry(fv, seaudit_filter_get_anyaddr, fv->ipaddr_entry);
+	if (seaudit_filter_get_anyport(fv->filter) <= 0) {
 		s[0] = '\0';
 	} else {
-		snprintf(s, 32, "%d", seaudit_filter_get_port(fv->filter));
+		snprintf(s, 32, "%d", seaudit_filter_get_anyport(fv->filter));
 	}
 	gtk_entry_set_text(fv->port_entry, s);
 	filter_view_init_entry(fv, seaudit_filter_get_netif, fv->netif_entry);
@@ -406,12 +406,12 @@ static void filter_view_apply_other(struct filter_view *fv)
 	int port = 0;
 	seaudit_avc_message_type_e message_type;
 
-	filter_view_apply_entry(fv, fv->ipaddr_entry, seaudit_filter_set_ipaddress);
+	filter_view_apply_entry(fv, fv->ipaddr_entry, seaudit_filter_set_anyaddr);
 	s = gtk_entry_get_text(fv->port_entry);
 	if (strcmp(s, "") != 0) {
 		port = atoi(s);
 	}
-	if (seaudit_filter_set_port(fv->filter, port) < 0) {
+	if (seaudit_filter_set_anyport(fv->filter, port) < 0) {
 		toplevel_ERR(fv->top, "Error setting filter: %s", strerror(errno));
 		return;
 	}

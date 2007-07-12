@@ -352,6 +352,30 @@ extern "C"
 	extern const apol_vector_t *seaudit_filter_get_target_class(const seaudit_filter_t * filter);
 
 /**
+ * Set the permission criterion, as a glob expression.  A message is
+ * accepted if at least one of its AVC permissions match the
+ * criterion.
+ *
+ * @param filter Filter to modify.
+ * @param perm Glob expression for permission.  This function will
+ * duplicate the string.  If this is NULL then clear the existing
+ * permission.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_permission(seaudit_filter_t * filter, const char *perm);
+
+/**
+ * Return the current permission for a filter.  Treat this string as
+ * const.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Glob expression for permission, or NULL if none set.
+ */
+	extern const char *seaudit_filter_get_permission(const seaudit_filter_t * filter);
+
+/**
  * Set the executable criterion, as a glob expression.  A message is
  * accepted if its executable matches this expression.
  *
@@ -417,6 +441,27 @@ extern "C"
 	extern const char *seaudit_filter_get_path(const seaudit_filter_t * filter);
 
 /**
+ * Set the inode criterion.  A message is accepted if its inode
+ * exactly matches this inode value.
+ *
+ * @param filter Filter to modify.
+ * @param inode inode value to match.  If this is 0 then clear the
+ * existing inode.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_inode(seaudit_filter_t * filter, unsigned long inode);
+
+/**
+ * Return the current inode for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current inode value, or 0 if none set.
+ */
+	extern unsigned long seaudit_filter_get_inode(const seaudit_filter_t * filter);
+
+/**
  * Set the command criterion, as a glob expression.  A message is
  * accepted if its command matches this expression.
  *
@@ -450,7 +495,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_ipaddress(seaudit_filter_t * filter, const char *ipaddr);
+	extern int seaudit_filter_set_anyaddr(seaudit_filter_t * filter, const char *ipaddr);
 
 /**
  * Return the current IP address for a filter.  Treat this string as
@@ -460,7 +505,7 @@ extern "C"
  *
  * @return Glob expression for address, or NULL if none set.
  */
-	extern const char *seaudit_filter_get_ipaddress(const seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_anyaddr(const seaudit_filter_t * filter);
 
 /**
  * Set the port criterion.  A message is accepted if any of its ports
@@ -472,7 +517,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_port(seaudit_filter_t * filter, const int port);
+	extern int seaudit_filter_set_anyport(seaudit_filter_t * filter, const int port);
 
 /**
  * Return the current port for a filter.
@@ -481,7 +526,109 @@ extern "C"
  *
  * @return Current port criterion, or 0 if none set.
  */
-	extern int seaudit_filter_get_port(const seaudit_filter_t * filter);
+	extern int seaudit_filter_get_anyport(const seaudit_filter_t * filter);
+
+/**
+ * Set the local address criterion, as a glob expression.  A message
+ * is accepted if any of its local address (laddr) matches this
+ * expression.  Note that if seaudit_filter_set_anyaddr() is also
+ * set, then the message must match both ipaddress and laddr for it to
+ * be accepted (assuming that the match is set to
+ * SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param laddr Glob expression for local address.  This function will
+ * duplicate the string.  If this is NULL then clear the existing
+ * address.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_laddr(seaudit_filter_t * filter, const char *laddr);
+
+/**
+ * Return the current local address for a filter.  Treat this string
+ * as const.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Glob expression for address, or NULL if none set.
+ */
+	extern const char *seaudit_filter_get_laddr(const seaudit_filter_t * filter);
+
+/**
+ * Set the local port criterion.  A message is accepted if any of its
+ * local port (lport) matches this port.  Note that if
+ * seaudit_filter_set_anyport() is also set, then the message must
+ * match both anyport and lport for it to be accepted (assuming that
+ * the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param lport Local port criterion.  If this is zero or negative
+ * then clear the existing port.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_lport(seaudit_filter_t * filter, const int lport);
+
+/**
+ * Return the current local port for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current port criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_lport(const seaudit_filter_t * filter);
+
+/**
+ * Set the foreign address criterion, as a glob expression.  A message
+ * is accepted if any of its foreign address (faddr) matches this
+ * expression.  Note that if seaudit_filter_set_anyaddr() is also set,
+ * then the message must match both ipaddress and faddr for it to be
+ * accepted (assuming that the match is set to
+ * SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param faddr Glob expression for foreign address.  This function
+ * will duplicate the string.  If this is NULL then clear the existing
+ * address.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_faddr(seaudit_filter_t * filter, const char *faddr);
+
+/**
+ * Return the current forign address for a filter.  Treat this string
+ * as const.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Glob expression for address, or NULL if none set.
+ */
+	extern const char *seaudit_filter_get_faddr(const seaudit_filter_t * filter);
+
+/**
+ * Set the foreign port criterion.  A message is accepted if any of
+ * its foreign port (fport) matches this port.  Note that if
+ * seaudit_filter_set_anyport() is also set, then the message must
+ * match both anyport and fport for it to be accepted (assuming that
+ * the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param fport Foreign port criterion.  If this is zero or negative
+ * then clear the existing port.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_fport(seaudit_filter_t * filter, const int fport);
+
+/**
+ * Return the current foreign port for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current port criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_fport(const seaudit_filter_t * filter);
 
 /**
  * Set the network interface criterion.  A message is accepted if its

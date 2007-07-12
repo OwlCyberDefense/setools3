@@ -1,3 +1,10 @@
+2007-07-12  J. Tang  <jtang@tresys.com>
+
+	* seaudit_filter_set_ipaddress() is renamed to
+	seaudit_filter_set_anyaddr().  seaudit_filter_set_port() is now
+	seaudit_filter_set_anyport().  Similar changes occurred to the
+	respective accessors.
+
 2007-07-11  M. Goldman  <mgoldman@tresys.com>
 
 	* Split functions relating to item records out into their own

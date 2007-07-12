@@ -682,6 +682,16 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	const apol_string_vector_t *get_target_class() {
 		return (apol_string_vector_t*)seaudit_filter_get_target_class(self);
 	};
+	void set_permission(char *name) {
+		if (seaudit_filter_set_permission(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set permission for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_permission() {
+		return seaudit_filter_get_permission(self);
+	};
 	void set_executable(char *name) {
 		if (seaudit_filter_set_executable(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set executable for filter");
@@ -719,28 +729,62 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
+	void set_inode(long inode) {
+		seaudit_filter_set_inode(self, (long) inode);
+	};
+	long get_inode() {
+		return (long) seaudit_filter_get_inode(self);
+	};
 	const char *get_command() {
 		return seaudit_filter_get_command(self);
 	};
-	void set_ipaddress(char *name) {
-		if (seaudit_filter_set_ipaddress(self, name)) {
+	void set_anyaddr(char *name) {
+		if (seaudit_filter_set_anyaddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set ip address for filter");
 		}
 	fail:
 		return;
 	};
-	const char *get_ipaddress() {
-		return seaudit_filter_get_ipaddress(self);
+	const char *get_anyaddr() {
+		return seaudit_filter_get_anyaddr(self);
 	};
-	void set_port(int port) {
-		if (seaudit_filter_set_port(self, port)) {
-			SWIG_exception(SWIG_RuntimeError, "Could not set port for filter");
+	void set_anyport(int port) {
+		seaudit_filter_set_anyport(self, port);
+	};
+	int get_anyport() {
+		return seaudit_filter_get_anyport(self);
+	};
+	void set_laddr(char *name) {
+		if (seaudit_filter_set_laddr(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set local address for filter");
 		}
 	fail:
 		return;
 	};
-	int get_port() {
-		return seaudit_filter_get_port(self);
+	const char *get_laddr() {
+		return seaudit_filter_get_laddr(self);
+	};
+	void set_lport(int port) {
+		seaudit_filter_set_lport(self, port);
+	};
+	int get_lport() {
+		return seaudit_filter_get_lport(self);
+	};
+	void set_faddr(char *name) {
+		if (seaudit_filter_set_faddr(self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set foreign address for filter");
+		}
+	fail:
+		return;
+	};
+	const char *get_faddr() {
+		return seaudit_filter_get_faddr(self);
+	};
+	void set_fport(int port) {
+		seaudit_filter_set_fport(self, port);
+	};
+	int get_fport() {
+		return seaudit_filter_get_fport(self);
 	};
 	void set_netif(char *name) {
 		if (seaudit_filter_set_netif(self, name)) {

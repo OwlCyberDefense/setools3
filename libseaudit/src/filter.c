@@ -65,18 +65,30 @@ struct seaudit_filter
 	apol_vector_t *tgt_types;
 	/** vector of strings, for target object classes */
 	apol_vector_t *tgt_classes;
+	/** criteria for permissions, glob expression */
+	char *perm;
 	/** criteria for executable, glob expression */
 	char *exe;
 	/** criteria for host, glob expression */
 	char *host;
 	/** criteria for path, glob expression */
 	char *path;
-	/** criteria for command, glob expression */
+    /** inode criterion, as a literal value */
+	unsigned long inode;
+	/** criterion for command, glob expression */
 	char *comm;
-	/** criteria for IP address, glob expression */
-	char *ipaddr;
-	/** criteria for port, exact match */
-	int port;
+	/** criterion for IP address, glob expression */
+	char *anyaddr;
+    /** criterion for local address, glob expression */
+	char *laddr;
+    /** criterion for foreign address, glob expression */
+	char *faddr;
+	/** criterion for any of the ports, exact match */
+	int anyport;
+    /** criterion for local port, exact match */
+	int lport;
+    /** criterion for foreign port, exact match */
+	int fport;
 	/** criteria for netif, exact match */
 	char *netif;
 	/** criteria for AVC message type */
@@ -132,17 +144,26 @@ seaudit_filter_t *seaudit_filter_create_from_filter(const seaudit_filter_t * fil
 		error = errno;
 		goto cleanup;
 	}
-	if ((filter->exe != NULL && (f->exe = strdup(filter->exe)) == NULL) ||
+	if ((filter->perm != NULL && (f->perm = strdup(filter->perm)) == NULL) ||
+	    (filter->exe != NULL && (f->exe = strdup(filter->exe)) == NULL) ||
 	    (filter->host != NULL && (f->host = strdup(filter->host)) == NULL) ||
 	    (filter->path != NULL && (f->path = strdup(filter->path)) == NULL) ||
 	    (filter->comm != NULL && (f->comm = strdup(filter->comm)) == NULL) ||
-	    (filter->ipaddr != NULL && (f->ipaddr = strdup(filter->ipaddr)) == NULL) ||
+	    (filter->anyaddr != NULL && (f->anyaddr = strdup(filter->anyaddr)) == NULL) ||
 	    (filter->netif != NULL && (f->netif = strdup(filter->netif)) == NULL)) {
 		error = errno;
 		goto cleanup;
 	}
+	if ((filter->laddr != NULL && (f->laddr = strdup(filter->laddr)) == NULL) ||
+	    (filter->faddr != NULL && (f->faddr = strdup(filter->faddr)) == NULL)) {
+		error = errno;
+		goto cleanup;
+	}
 	f->match = filter->match;
-	f->port = filter->port;
+	f->inode = filter->inode;
+	f->anyport = filter->anyport;
+	f->lport = filter->lport;
+	f->fport = filter->fport;
 	f->avc_msg_type = filter->avc_msg_type;
 	if (filter->start != NULL) {
 		if ((f->start = calloc(1, sizeof(*f->start))) == NULL) {
@@ -211,11 +232,14 @@ void seaudit_filter_destroy(seaudit_filter_t ** filter)
 		apol_vector_destroy(&(*filter)->tgt_roles);
 		apol_vector_destroy(&(*filter)->tgt_types);
 		apol_vector_destroy(&(*filter)->tgt_classes);
+		free((*filter)->perm);
 		free((*filter)->exe);
 		free((*filter)->host);
 		free((*filter)->path);
 		free((*filter)->comm);
-		free((*filter)->ipaddr);
+		free((*filter)->anyaddr);
+		free((*filter)->laddr);
+		free((*filter)->faddr);
 		free((*filter)->netif);
 		free((*filter)->start);
 		free((*filter)->end);
@@ -327,6 +351,34 @@ static int filter_set_string(seaudit_filter_t * filter, char **dest, const char 
 	}
 	return 0;
 }
+
+static int filter_set_ulong(seaudit_filter_t * filter, unsigned long *dest, const ulong src)
+{
+	if (src != *dest) {
+		*dest = src;
+		if (filter->model != NULL) {
+			model_notify_filter_changed(filter->model, filter);
+		}
+	}
+	return 0;
+}
+
+static int filter_set_int(seaudit_filter_t * filter, int *dest, const int src)
+{
+	int s = src;
+	if (src <= 0) {
+		s = 0;
+	}
+	if (s != *dest) {
+		*dest = s;
+		if (filter->model != NULL) {
+			model_notify_filter_changed(filter->model, filter);
+		}
+	}
+	return 0;
+}
+
+/******************** public accessors / modifiers ********************/
 
 int seaudit_filter_set_source_user(seaudit_filter_t * filter, const apol_vector_t * v)
 {
@@ -454,6 +506,24 @@ const apol_vector_t *seaudit_filter_get_target_class(const seaudit_filter_t * fi
 	return filter->tgt_classes;
 }
 
+int seaudit_filter_set_permission(seaudit_filter_t * filter, const char *perm)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_string(filter, &filter->perm, perm);
+}
+
+const char *seaudit_filter_get_permission(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return filter->perm;
+}
+
 int seaudit_filter_set_executable(seaudit_filter_t * filter, const char *exe)
 {
 	if (filter == NULL) {
@@ -508,6 +578,25 @@ const char *seaudit_filter_get_path(const seaudit_filter_t * filter)
 	return filter->path;
 }
 
+int seaudit_filter_set_inode(seaudit_filter_t * filter, unsigned long inode)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_ulong(filter, &filter->inode, inode);
+	return 0;
+}
+
+unsigned long seaudit_filter_get_inode(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter->inode;
+}
+
 int seaudit_filter_set_command(seaudit_filter_t * filter, const char *command)
 {
 	if (filter == NULL) {
@@ -526,48 +615,125 @@ const char *seaudit_filter_get_command(const seaudit_filter_t * filter)
 	return filter->comm;
 }
 
-int seaudit_filter_set_ipaddress(seaudit_filter_t * filter, const char *ipaddr)
+int seaudit_filter_set_anyaddr(seaudit_filter_t * filter, const char *ipaddr)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	return filter_set_string(filter, &filter->ipaddr, ipaddr);
+	return filter_set_string(filter, &filter->anyaddr, ipaddr);
 }
 
-const char *seaudit_filter_get_ipaddress(const seaudit_filter_t * filter)
+const char *seaudit_filter_get_anyaddr(const seaudit_filter_t * filter)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
-	return filter->ipaddr;
+	return filter->anyaddr;
 }
 
-int seaudit_filter_set_port(seaudit_filter_t * filter, const int port)
-{
-	if (filter == NULL) {
-		errno = EINVAL;
-		return -1;
-	}
-	if (port <= 0) {
-		filter->port = 0;
-	} else {
-		filter->port = port;
-	}
-	if (filter->model != NULL) {
-		model_notify_filter_changed(filter->model, filter);
-	}
-	return 0;
-}
-
-int seaudit_filter_get_port(const seaudit_filter_t * filter)
+int seaudit_filter_set_anyport(seaudit_filter_t * filter, const int port)
 {
 	if (filter == NULL) {
 		errno = EINVAL;
 		return 0;
 	}
-	return filter->port;
+	return filter_set_int(filter, &filter->anyport, port);
+}
+
+int seaudit_filter_get_anyport(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter->anyport;
+}
+
+#if LINK_SHARED == 1
+__asm__(".symver seaudit_filter_set_anyaddr,seaudit_filter_set_anyaddr@@VERS_4.2");
+__asm__(".symver seaudit_filter_set_anyaddr,seaudit_filter_set_ipaddress@VERS_4.1");
+__asm__(".symver seaudit_filter_get_anyaddr,seaudit_filter_get_anyaddr@@VERS_4.2");
+__asm__(".symver seaudit_filter_get_anyaddr,seaudit_filter_get_ipaddress@VERS_4.1");
+__asm__(".symver seaudit_filter_set_anyport,seaudit_filter_set_anyport@@VERS_4.2");
+__asm__(".symver seaudit_filter_set_anyport,seaudit_filter_set_port@VERS_4.1");
+__asm__(".symver seaudit_filter_set_port,seaudit_filter_set_port@@VERS_4.2");
+__asm__(".symver seaudit_filter_get_anyport,seaudit_filter_get_anyport@@VERS_4.2");
+__asm__(".symver seaudit_filter_get_anyport,seaudit_filter_get_port@VERS_4.1");
+__asm__(".symver seaudit_filter_get_port,seaudit_filter_get_port@@VERS_4.2");
+#endif
+
+int seaudit_filter_set_laddr(seaudit_filter_t * filter, const char *laddr)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_string(filter, &filter->laddr, laddr);
+}
+
+const char *seaudit_filter_get_laddr(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return filter->laddr;
+}
+
+int seaudit_filter_set_lport(seaudit_filter_t * filter, const int lport)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter_set_int(filter, &filter->lport, lport);
+}
+
+int seaudit_filter_get_lport(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter->lport;
+}
+
+int seaudit_filter_set_faddr(seaudit_filter_t * filter, const char *faddr)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_string(filter, &filter->faddr, faddr);
+}
+
+const char *seaudit_filter_get_faddr(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return filter->faddr;
+}
+
+int seaudit_filter_set_fport(seaudit_filter_t * filter, const int fport)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter_set_int(filter, &filter->fport, fport);
+}
+
+int seaudit_filter_get_fport(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter->fport;
 }
 
 int seaudit_filter_set_netif(seaudit_filter_t * filter, const char *netif)
@@ -679,6 +845,8 @@ void seaudit_filter_get_date(const seaudit_filter_t * filter, const struct tm **
 
 /*************** filter criteria below (all are private) ***************/
 
+/******************** support functions ********************/
+
 static int filter_string_vector_read(apol_vector_t ** v, const xmlChar * ch)
 {
 	char *s;
@@ -700,6 +868,36 @@ static int filter_string_read(char **dest, const xmlChar * ch)
 		return -1;
 	}
 	return 0;
+}
+
+static int filter_ulong_read(unsigned long *dest, const xmlChar * ch)
+{
+	char *s, *endptr;
+	int retval = -1;
+	if ((s = xmlURIUnescapeString((const char *)ch, 0, NULL)) == NULL) {
+		return -1;
+	}
+	*dest = strtoul(s, &endptr, 10);
+	if (*s != '\0' && *endptr == '\0') {
+		retval = 0;
+	}
+	free(s);
+	return retval;
+}
+
+static int filter_int_read(int *dest, const xmlChar * ch)
+{
+	char *s, *endptr;
+	int retval = -1;
+	if ((s = xmlURIUnescapeString((const char *)ch, 0, NULL)) == NULL) {
+		return -1;
+	}
+	*dest = (int)(strtoul(s, &endptr, 10));
+	if (*s != '\0' && *endptr == '\0') {
+		retval = 0;
+	}
+	free(s);
+	return retval;
 }
 
 static void filter_string_vector_print(const char *criteria_name, apol_vector_t * v, FILE * f, int tabs)
@@ -749,6 +947,38 @@ static void filter_string_print(const char *criteria_name, const char *s, FILE *
 	free(escaped);
 	free(t);
 }
+
+static void filter_ulong_print(const char *criteria_name, const unsigned long val, FILE * f, int tabs)
+{
+	int i;
+	for (i = 0; i < tabs; i++)
+		fprintf(f, "\t");
+	fprintf(f, "<criteria type=\"%s\">\n", criteria_name);
+	for (i = 0; i < tabs + 1; i++) {
+		fprintf(f, "\t");
+	}
+	fprintf(f, "<item>%lu</item>\n", val);
+	for (i = 0; i < tabs; i++)
+		fprintf(f, "\t");
+	fprintf(f, "</criteria>\n");
+}
+
+static void filter_int_print(const char *criteria_name, const int val, FILE * f, int tabs)
+{
+	int i;
+	for (i = 0; i < tabs; i++)
+		fprintf(f, "\t");
+	fprintf(f, "<criteria type=\"%s\">\n", criteria_name);
+	for (i = 0; i < tabs + 1; i++) {
+		fprintf(f, "\t");
+	}
+	fprintf(f, "<item>%d</item>\n", val);
+	for (i = 0; i < tabs; i++)
+		fprintf(f, "\t");
+	fprintf(f, "</criteria>\n");
+}
+
+/******************** filter protected functions ********************/
 
 static int filter_src_user_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
@@ -897,6 +1127,34 @@ static void filter_tgt_class_print(const seaudit_filter_t * filter, const char *
 	filter_string_vector_print(name, filter->tgt_classes, f, tabs);
 }
 
+static int filter_perm_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->perm != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->perms != NULL &&
+		apol_vector_get_size(msg->data.avc->perms) >= 1;
+}
+
+static int filter_perm_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	size_t i;
+	for (i = 0; i < apol_vector_get_size(msg->data.avc->perms); i++) {
+		const char *p = apol_vector_get_element(msg->data.avc->perms, i);
+		if (fnmatch(filter->perm, p, 0) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int filter_perm_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_string_read(&filter->perm, ch);
+}
+
+static void filter_perm_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_string_print(name, filter->perm, f, tabs);
+}
+
 static int filter_exe_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
 	return filter->exe != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->exe != NULL;
@@ -957,6 +1215,26 @@ static void filter_path_print(const seaudit_filter_t * filter, const char *name,
 	filter_string_print(name, filter->path, f, tabs);
 }
 
+static int filter_inode_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->inode != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->is_inode;
+}
+
+static int filter_inode_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->inode == msg->data.avc->inode;
+}
+
+static int filter_inode_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_ulong_read(&filter->inode, ch);
+}
+
+static void filter_inode_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_ulong_print(name, filter->inode, f, tabs);
+}
+
 static int filter_comm_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
 	return filter->comm != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->comm != NULL;
@@ -977,92 +1255,154 @@ static void filter_comm_print(const seaudit_filter_t * filter, const char *name,
 	filter_string_print(name, filter->comm, f, tabs);
 }
 
-static int filter_ipaddr_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+static int filter_anyaddr_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
-	return filter->ipaddr != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && (msg->data.avc->saddr != NULL
-										   || msg->data.avc->daddr != NULL
-										   || msg->data.avc->faddr != NULL
-										   || msg->data.avc->laddr != NULL);
+	return filter->anyaddr != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && (msg->data.avc->saddr != NULL
+										    || msg->data.avc->daddr != NULL
+										    || msg->data.avc->faddr != NULL
+										    || msg->data.avc->laddr != NULL);
 }
 
-static int filter_ipaddr_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+static int filter_anyaddr_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
-	if (msg->data.avc->saddr && fnmatch(filter->ipaddr, msg->data.avc->saddr, 0) == 0)
+	if (msg->data.avc->saddr && fnmatch(filter->anyaddr, msg->data.avc->saddr, 0) == 0)
 		return 1;
-	if (msg->data.avc->daddr && fnmatch(filter->ipaddr, msg->data.avc->daddr, 0) == 0)
+	if (msg->data.avc->daddr && fnmatch(filter->anyaddr, msg->data.avc->daddr, 0) == 0)
 		return 1;
-	if (msg->data.avc->faddr && fnmatch(filter->ipaddr, msg->data.avc->faddr, 0) == 0)
+	if (msg->data.avc->faddr && fnmatch(filter->anyaddr, msg->data.avc->faddr, 0) == 0)
 		return 1;
-	if (msg->data.avc->laddr && fnmatch(filter->ipaddr, msg->data.avc->laddr, 0) == 0)
+	if (msg->data.avc->laddr && fnmatch(filter->anyaddr, msg->data.avc->laddr, 0) == 0)
 		return 1;
 	return 0;
 }
 
-static int filter_ipaddr_read(seaudit_filter_t * filter, const xmlChar * ch)
+static int filter_anyaddr_read(seaudit_filter_t * filter, const xmlChar * ch)
 {
-	return filter_string_read(&filter->ipaddr, ch);
+	return filter_string_read(&filter->anyaddr, ch);
 }
 
-static void filter_ipaddr_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+static void filter_anyaddr_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
 {
-	filter_string_print(name, filter->ipaddr, f, tabs);
+	filter_string_print(name, filter->anyaddr, f, tabs);
 }
 
-static int filter_port_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+static int filter_anyport_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
-	return filter->port != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && (msg->data.avc->port != 0 || msg->data.avc->source != 0
-									      || msg->data.avc->dest != 0
-									      || msg->data.avc->fport != 0
-									      || msg->data.avc->lport != 0);
+	return filter->anyport != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && (msg->data.avc->port != 0 ||
+										 msg->data.avc->source != 0 ||
+										 msg->data.avc->dest != 0 ||
+										 msg->data.avc->fport != 0 ||
+										 msg->data.avc->lport != 0);
 }
 
-static int filter_port_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+static int filter_anyport_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
-	if (msg->data.avc->port != 0 && filter->port == msg->data.avc->port) {
+	if (msg->data.avc->port != 0 && filter->anyport == msg->data.avc->port) {
 		return 1;
 	}
-	if (msg->data.avc->source != 0 && filter->port == msg->data.avc->source) {
+	if (msg->data.avc->source != 0 && filter->anyport == msg->data.avc->source) {
 		return 1;
 	}
-	if (msg->data.avc->dest != 0 && filter->port == msg->data.avc->dest) {
+	if (msg->data.avc->dest != 0 && filter->anyport == msg->data.avc->dest) {
 		return 1;
 	}
-	if (msg->data.avc->fport != 0 && filter->port == msg->data.avc->fport) {
+	if (msg->data.avc->fport != 0 && filter->anyport == msg->data.avc->fport) {
 		return 1;
 	}
-	if (msg->data.avc->lport != 0 && filter->port == msg->data.avc->lport) {
+	if (msg->data.avc->lport != 0 && filter->anyport == msg->data.avc->lport) {
 		return 1;
 	}
 	return 0;
 }
 
-static int filter_port_read(seaudit_filter_t * filter, const xmlChar * ch)
+static int filter_anyport_read(seaudit_filter_t * filter, const xmlChar * ch)
 {
-	char *s;
-	if ((s = xmlURIUnescapeString((const char *)ch, 0, NULL)) == NULL) {
-		return -1;
-	}
-	filter->port = atoi(s);
-	free(s);
-	return 0;
+	return filter_int_read(&filter->anyport, ch);
 }
 
-static void filter_port_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+static void filter_anyport_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
 {
-	int i;
-	if (filter->port == 0) {
-		return;
-	}
-	for (i = 0; i < tabs; i++)
-		fprintf(f, "\t");
-	fprintf(f, "<criteria type=\"%s\">\n", name);
-	for (i = 0; i < tabs + 1; i++) {
-		fprintf(f, "\t");
-	}
-	fprintf(f, "<item>%d</item>\n", filter->port);
-	for (i = 0; i < tabs; i++)
-		fprintf(f, "\t");
-	fprintf(f, "</criteria>\n");
+	filter_int_print(name, filter->anyport, f, tabs);
+}
+
+static int filter_laddr_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->laddr != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->laddr != NULL;
+}
+
+static int filter_laddr_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return fnmatch(filter->laddr, msg->data.avc->laddr, 0) == 0;
+}
+
+static int filter_laddr_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_string_read(&filter->laddr, ch);
+}
+
+static void filter_laddr_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_string_print(name, filter->laddr, f, tabs);
+}
+
+static int filter_lport_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->lport != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->lport != 0;
+}
+
+static int filter_lport_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->lport == msg->data.avc->lport;
+}
+
+static int filter_lport_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_int_read(&filter->lport, ch);
+}
+
+static void filter_lport_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_int_print(name, filter->lport, f, tabs);
+}
+
+static int filter_faddr_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->faddr != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->faddr != NULL;
+}
+
+static int filter_faddr_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return fnmatch(filter->faddr, msg->data.avc->faddr, 0) == 0;
+}
+
+static int filter_faddr_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_string_read(&filter->faddr, ch);
+}
+
+static void filter_faddr_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_string_print(name, filter->faddr, f, tabs);
+}
+
+static int filter_fport_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->fport != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->fport != 0;
+}
+
+static int filter_fport_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->fport == msg->data.avc->fport;
+}
+
+static int filter_fport_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_int_read(&filter->fport, ch);
+}
+
+static void filter_fport_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_int_print(name, filter->fport, f, tabs);
 }
 
 static int filter_netif_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
@@ -1261,12 +1601,18 @@ static const struct filter_criteria_t filter_criteria[] = {
 	{"tgt_role", filter_tgt_role_support, filter_tgt_role_accept, filter_tgt_role_read, filter_tgt_role_print},
 	{"tgt_type", filter_tgt_type_support, filter_tgt_type_accept, filter_tgt_type_read, filter_tgt_type_print},
 	{"obj_class", filter_tgt_class_support, filter_tgt_class_accept, filter_tgt_class_read, filter_tgt_class_print},
+	{"perm", filter_perm_support, filter_perm_accept, filter_perm_read, filter_perm_print},
 	{"exe", filter_exe_support, filter_exe_accept, filter_exe_read, filter_exe_print},
 	{"host", filter_host_support, filter_host_accept, filter_host_read, filter_host_print},
 	{"path", filter_path_support, filter_path_accept, filter_path_read, filter_path_print},
+	{"inode", filter_inode_support, filter_inode_accept, filter_inode_read, filter_inode_print},
 	{"comm", filter_comm_support, filter_comm_accept, filter_comm_read, filter_comm_print},
-	{"ipaddr", filter_ipaddr_support, filter_ipaddr_accept, filter_ipaddr_read, filter_ipaddr_print},
-	{"port", filter_port_support, filter_port_accept, filter_port_read, filter_port_print},
+	{"ipaddr", filter_anyaddr_support, filter_anyaddr_accept, filter_anyaddr_read, filter_anyaddr_print},
+	{"port", filter_anyport_support, filter_anyport_accept, filter_anyport_read, filter_anyport_print},
+	{"laddr", filter_laddr_support, filter_laddr_accept, filter_laddr_read, filter_laddr_print},
+	{"lport", filter_lport_support, filter_lport_accept, filter_lport_read, filter_lport_print},
+	{"faddr", filter_faddr_support, filter_faddr_accept, filter_faddr_read, filter_faddr_print},
+	{"fport", filter_fport_support, filter_fport_accept, filter_fport_read, filter_fport_print},
 	{"netif", filter_netif_support, filter_netif_accept, filter_netif_read, filter_netif_print},
 	{"msg", filter_avc_msg_type_support, filter_avc_msg_type_accept, filter_avc_msg_type_read, filter_avc_msg_type_print},
 	{"date_time", filter_date_support, filter_date_accept, filter_date_read, filter_date_print}

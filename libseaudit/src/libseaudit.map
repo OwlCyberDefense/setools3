@@ -14,6 +14,22 @@ VERS_4.1{
 VERS_4.2{
 	global:
 		seaudit_avc_message_get_port;
+		seaudit_filter_get_anyaddr;
+		seaudit_filter_set_anyaddr;
+		seaudit_filter_get_anyport;
+		seaudit_filter_set_anyport;
+		seaudit_filter_get_permission;
+		seaudit_filter_set_permission;
+		seaudit_filter_get_inode;
+		seaudit_filter_set_inode;
+		seaudit_filter_get_laddr;
+		seaudit_fliter_set_laddr;
+		seaudit_filter_get_lport;
+		seaudit_filter_set_lport;
+		seaudit_filter_get_faddr;
+		seaudit_fliter_set_faddr;
+		seaudit_filter_get_fport;
+		seaudit_filter_set_fport;
 		seaudit_log_clear;
 		seaudit_model_hide_message;
 		seaudit_sort_by_cap;
