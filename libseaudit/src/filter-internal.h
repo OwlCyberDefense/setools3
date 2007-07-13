@@ -80,9 +80,15 @@ struct seaudit_filter
 	int sport;
 	/** criterion for destination port, exact match */
 	int dport;
-	/** criteria for netif, exact match */
+	/** criterion for just plain port, exact match */
+	int port;
+	/** criterion for netif, exact match */
 	char *netif;
-	/** criteria for AVC message type */
+	/** criterion for IPC key, exact match */
+	int key;
+	/** criterion for capability, exact match */
+	int cap;
+	/** criterion for AVC message type */
 	seaudit_avc_message_type_e avc_msg_type;
 	struct tm *start, *end;
 	seaudit_filter_date_match_e date_match;

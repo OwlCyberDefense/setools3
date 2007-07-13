@@ -38,6 +38,12 @@ VERS_4.2{
 		seaudit_fliter_set_daddr;
 		seaudit_filter_get_dport;
 		seaudit_filter_set_dport;
+		seaudit_filter_get_port;
+		seaudit_filter_set_port;
+		seaudit_filter_get_key;
+		seaudit_filter_set_key;
+		seaudit_filter_get_cap;
+		seaudit_filter_set_cap;
 		seaudit_log_clear;
 		seaudit_model_hide_message;
 		seaudit_sort_by_cap;

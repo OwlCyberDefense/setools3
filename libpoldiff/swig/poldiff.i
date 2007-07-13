@@ -96,7 +96,14 @@ import com.tresys.setools.apol.*;
 %}
 %pragma(java) jniclasscode=%{
 	static {
-		System.loadLibrary("jpoldiff");
+		try
+		{
+			libpoldiff_get_version ();
+		}
+		catch (UnsatisfiedLinkError ule)
+		{
+			System.loadLibrary("jpoldiff");
+		}
 	}
 %}
 %pragma(java) moduleimports=%{

@@ -113,6 +113,9 @@ seaudit_filter_t *seaudit_filter_create_from_filter(const seaudit_filter_t * fil
 	f->fport = filter->fport;
 	f->sport = filter->sport;
 	f->dport = filter->dport;
+	f->port = filter->port;
+	f->key = filter->key;
+	f->cap = filter->cap;
 	f->avc_msg_type = filter->avc_msg_type;
 	if (filter->start != NULL) {
 		if ((f->start = calloc(1, sizeof(*f->start))) == NULL) {
@@ -602,17 +605,31 @@ int seaudit_filter_get_anyport(const seaudit_filter_t * filter)
 	return filter->anyport;
 }
 
+int filter_set_ipaddress_vers_4_1(seaudit_filter_t * filter, const char *ipaddr)
+{
+	return seaudit_filter_set_anyaddr(filter, ipaddr);
+}
+
+const char *filter_get_ipaddress_vers_4_1(const seaudit_filter_t * filter)
+{
+	return seaudit_filter_get_anyaddr(filter);
+}
+
+int filter_set_port_vers_4_1(seaudit_filter_t * filter, const int port)
+{
+	return seaudit_filter_set_anyport(filter, port);
+}
+
+int filter_get_port_vers_4_1(const seaudit_filter_t * filter)
+{
+	return seaudit_filter_get_anyport(filter);
+}
+
 #if LINK_SHARED == 1
-__asm__(".symver seaudit_filter_set_anyaddr,seaudit_filter_set_anyaddr@@VERS_4.2");
-__asm__(".symver seaudit_filter_set_anyaddr,seaudit_filter_set_ipaddress@VERS_4.1");
-__asm__(".symver seaudit_filter_get_anyaddr,seaudit_filter_get_anyaddr@@VERS_4.2");
-__asm__(".symver seaudit_filter_get_anyaddr,seaudit_filter_get_ipaddress@VERS_4.1");
-__asm__(".symver seaudit_filter_set_anyport,seaudit_filter_set_anyport@@VERS_4.2");
-__asm__(".symver seaudit_filter_set_anyport,seaudit_filter_set_port@VERS_4.1");
-__asm__(".symver seaudit_filter_set_port,seaudit_filter_set_port@@VERS_4.2");
-__asm__(".symver seaudit_filter_get_anyport,seaudit_filter_get_anyport@@VERS_4.2");
-__asm__(".symver seaudit_filter_get_anyport,seaudit_filter_get_port@VERS_4.1");
-__asm__(".symver seaudit_filter_get_port,seaudit_filter_get_port@@VERS_4.2");
+__asm__(".symver filter_set_ipaddress_vers_4_1,seaudit_filter_set_ipaddress@VERS_4.1");
+__asm__(".symver filter_get_ipaddress_vers_4_1,seaudit_filter_get_ipaddress@VERS_4.1");
+__asm__(".symver filter_set_port_vers_4_1,seaudit_filter_set_port@VERS_4.1");
+__asm__(".symver filter_get_port_vers_4_1,seaudit_filter_get_port@VERS_4.1");
 #endif
 
 int seaudit_filter_set_laddr(seaudit_filter_t * filter, const char *laddr)
@@ -757,6 +774,65 @@ int seaudit_filter_get_dport(const seaudit_filter_t * filter)
 		return 0;
 	}
 	return filter->dport;
+}
+
+int filter_set_port_vers_4_2(seaudit_filter_t * filter, const int port)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter_set_int(filter, &filter->port, port);
+}
+
+int filter_get_port_vers_4_2(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter->port;
+}
+
+#if LINK_SHARED == 1
+__asm__(".symver filter_set_port_vers_4_2,seaudit_filter_set_port@@VERS_4.2");
+__asm__(".symver filter_get_port_vers_4_2,seaudit_filter_get_port@@VERS_4.2");
+#endif
+
+int seaudit_filter_set_key(seaudit_filter_t * filter, const int key)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter_set_int(filter, &filter->key, key);
+}
+
+int seaudit_filter_get_key(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter->key;
+}
+
+int seaudit_filter_set_cap(seaudit_filter_t * filter, const int cap)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter_set_int(filter, &filter->cap, cap);
+}
+
+int seaudit_filter_get_cap(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter->cap;
 }
 
 int seaudit_filter_set_netif(seaudit_filter_t * filter, const char *netif)

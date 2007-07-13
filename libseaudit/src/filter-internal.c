@@ -450,7 +450,8 @@ static int filter_anyaddr_support(const seaudit_filter_t * filter, const seaudit
 	return filter->anyaddr != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && (msg->data.avc->saddr != NULL
 										    || msg->data.avc->daddr != NULL
 										    || msg->data.avc->faddr != NULL
-										    || msg->data.avc->laddr != NULL);
+										    || msg->data.avc->laddr != NULL
+										    || msg->data.avc->ipaddr != NULL);
 }
 
 static int filter_anyaddr_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
@@ -462,6 +463,8 @@ static int filter_anyaddr_accept(const seaudit_filter_t * filter, const seaudit_
 	if (msg->data.avc->faddr && fnmatch(filter->anyaddr, msg->data.avc->faddr, 0) == 0)
 		return 1;
 	if (msg->data.avc->laddr && fnmatch(filter->anyaddr, msg->data.avc->laddr, 0) == 0)
+		return 1;
+	if (msg->data.avc->ipaddr && fnmatch(filter->anyaddr, msg->data.avc->ipaddr, 0) == 0)
 		return 1;
 	return 0;
 }
@@ -675,6 +678,26 @@ static void filter_dport_print(const seaudit_filter_t * filter, const char *name
 	filter_int_print(name, filter->dport, f, tabs);
 }
 
+static int filter_port_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->port != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->port != 0;
+}
+
+static int filter_port_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->port == msg->data.avc->port;
+}
+
+static int filter_port_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_int_read(&filter->port, ch);
+}
+
+static void filter_port_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_int_print(name, filter->port, f, tabs);
+}
+
 static int filter_netif_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
 	return filter->netif != NULL && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->netif != NULL;
@@ -693,6 +716,46 @@ static int filter_netif_read(seaudit_filter_t * filter, const xmlChar * ch)
 static void filter_netif_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
 {
 	filter_string_print(name, filter->netif, f, tabs);
+}
+
+static int filter_key_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->key != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->is_key;
+}
+
+static int filter_key_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->key == msg->data.avc->key;
+}
+
+static int filter_key_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_int_read(&filter->key, ch);
+}
+
+static void filter_key_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_int_print(name, filter->key, f, tabs);
+}
+
+static int filter_cap_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->cap != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->is_capability;
+}
+
+static int filter_cap_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->key == msg->data.avc->capability;
+}
+
+static int filter_cap_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_int_read(&filter->cap, ch);
+}
+
+static void filter_cap_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_int_print(name, filter->cap, f, tabs);
 }
 
 static int filter_avc_msg_type_support(const seaudit_filter_t * filter, const seaudit_message_t * msg __attribute__ ((unused)))
@@ -887,7 +950,10 @@ static const struct filter_criteria_t filter_criteria[] = {
 	{"sport", filter_sport_support, filter_sport_accept, filter_sport_read, filter_sport_print},
 	{"daddr", filter_daddr_support, filter_daddr_accept, filter_daddr_read, filter_daddr_print},
 	{"dport", filter_dport_support, filter_dport_accept, filter_dport_read, filter_dport_print},
+	{"port", filter_port_support, filter_port_accept, filter_port_read, filter_port_print},
 	{"netif", filter_netif_support, filter_netif_accept, filter_netif_read, filter_netif_print},
+	{"key", filter_key_support, filter_key_accept, filter_key_read, filter_key_print},
+	{"cap", filter_cap_support, filter_cap_accept, filter_cap_read, filter_cap_print},
 	{"msg", filter_avc_msg_type_support, filter_avc_msg_type_accept, filter_avc_msg_type_read, filter_avc_msg_type_print},
 	{"date_time", filter_date_support, filter_date_accept, filter_date_read, filter_date_print}
 };

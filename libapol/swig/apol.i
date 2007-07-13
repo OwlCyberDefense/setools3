@@ -103,7 +103,14 @@ SWIGEXPORT void * apol_swig_message_callback_arg = NULL;
 %pragma(java) jniclassimports=%{import com.tresys.setools.qpol.*;%}
 %pragma(java) jniclasscode=%{
 	static {
-		System.loadLibrary("japol");
+		try
+		{
+			libapol_get_version();
+		}
+		catch (UnsatisfiedLinkError ule)
+		{
+			System.loadLibrary("japol");
+		}
 	}
 %}
 %pragma(java) moduleimports=%{import com.tresys.setools.qpol.*;%}

@@ -485,8 +485,8 @@ extern "C"
 
 /**
  * Set the IP address criterion, as a glob expression.  A message is
- * accepted if any of its IP addresses (saddr, daddr, faddr, or laddr)
- * matches this expression.
+ * accepted if any of its IP addresses (ipaddr, saddr, daddr, faddr,
+ * or laddr) matches this expression.
  *
  * @param filter Filter to modify.
  * @param ipaddr Glob expression for IP address.  This function will
@@ -730,6 +730,30 @@ extern "C"
 	extern int seaudit_filter_get_dport(const seaudit_filter_t * filter);
 
 /**
+ * Set the port criterion.  A message is accepted if its port matches
+ * this port value exactly.  Note that if seaudit_filter_set_anyport()
+ * is also set, then the message must match both anyport and port for
+ * it to be accepted (assuming that the match is set to
+ * SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param port Port criterion.  If this is zero or negative then clear
+ * the existing port.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_port(seaudit_filter_t * filter, const int port);
+
+/**
+ * Return the current port for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current port criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_port(const seaudit_filter_t * filter);
+
+/**
  * Set the network interface criterion.  A message is accepted if its
  * interface matches exactly with this string.
  *
@@ -751,6 +775,48 @@ extern "C"
  * @return String for netif, or NULL if none set.
  */
 	extern const char *seaudit_filter_get_netif(const seaudit_filter_t * filter);
+
+/**
+ * Set the key criterion.  A message is accepted if its IPC key
+ * matches exactly with this value.
+ *
+ * @param filter Filter to modify.
+ * @param key Key criterion.  If this is zero or negative then clear
+ * the existing key.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_key(seaudit_filter_t * filter, const int key);
+
+/**
+ * Return the current key for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current key criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_key(const seaudit_filter_t * filter);
+
+/**
+ * Set the capability criterion.  A message is accepted if its
+ * capability matches exactly with this value.
+ *
+ * @param filter Filter to modify.
+ * @param cap Capability criterion.  If this is zero or negative then
+ * clear the existing capability.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_cap(seaudit_filter_t * filter, const int cap);
+
+/**
+ * Return the current capability for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current capability criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_cap(const seaudit_filter_t * filter);
 
 /**
  * Set the type of AVC criterion.  A message is accepted if it matches

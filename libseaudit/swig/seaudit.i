@@ -92,7 +92,14 @@ import com.tresys.setools.apol.*;
 %}
 %pragma(java) jniclasscode=%{
 	static {
-		System.loadLibrary("jseaudit");
+		try
+		{
+			libseaudit_get_version ();
+		}
+		catch (UnsatisfiedLinkError ule)
+		{
+			System.loadLibrary("jseaudit");
+		}
 	}
 %}
 %pragma(java) moduleimports=%{
@@ -818,6 +825,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	int get_dport() {
 		return seaudit_filter_get_dport(self);
 	};
+	void set_port(int port) {
+		seaudit_filter_set_port(self, port);
+	};
+	int get_port() {
+		return seaudit_filter_get_port(self);
+	};
 	void set_netif(char *name) {
 		if (seaudit_filter_set_netif(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set network interface for filter");
@@ -834,6 +847,18 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		}
 	fail:
 		return;
+	};
+	void set_key(int key) {
+		seaudit_filter_set_key(self, key);
+	};
+	int get_key() {
+		return seaudit_filter_get_key(self);
+	};
+	void set_cap(int cap) {
+		seaudit_filter_set_cap(self, cap);
+	};
+	int get_cap() {
+		return seaudit_filter_get_cap(self);
 	};
 	seaudit_message_type_e get_message_type() {
 		return seaudit_filter_get_message_type(self);

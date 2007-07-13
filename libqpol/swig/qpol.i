@@ -95,7 +95,14 @@ SWIGEXPORT void * qpol_swig_message_callback_arg = NULL;
 %}
 %pragma(java) jniclasscode=%{
 	static {
-		System.loadLibrary("jqpol");
+		try
+		{
+			libqpol_get_version();
+		}
+		catch (UnsatisfiedLinkError ule)
+		{
+			System.loadLibrary("jqpol");
+		}	
 	}
 %}
 

@@ -65,7 +65,14 @@ import com.tresys.setools.apol.*;
 %}
 %pragma(java) jniclasscode=%{
 	static {
-		System.loadLibrary("jsefs");
+		try
+		{
+			libsefs_get_version ();
+		}
+		catch (UnsatisfiedLinkError ule)
+		{
+			System.loadLibrary("jsefs");
+		}
 	}
 %}
 %pragma(java) moduleimports=%{
