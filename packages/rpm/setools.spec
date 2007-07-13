@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.3
-Release: pre4
+Release: pre5
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -382,6 +382,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_includedir}/poldiff/bool_diff.h
 %{_includedir}/poldiff/cat_diff.h
 %{_includedir}/poldiff/class_diff.h
+%{_includedir}/poldiff/item_record.h
 %{_includedir}/poldiff/level_diff.h
 %{_includedir}/poldiff/range_diff.h
 %{_includedir}/poldiff/range_trans_diff.h
