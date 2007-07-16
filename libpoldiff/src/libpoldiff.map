@@ -13,7 +13,7 @@ VERS_1.2{
 		poldiff_class_*;
 		poldiff_common_*;
 		poldiff_level_*;
-                poldiff_range_*;
+		poldiff_range_*;
 		poldiff_range_trans_*;
 		poldiff_role_*;	     
 		poldiff_role_allow_*;	   
@@ -21,8 +21,13 @@ VERS_1.2{
 		poldiff_terule_*;
 		poldiff_type_*;
 		poldiff_user_*;
-		poldiff_item_get_label;
 		libpoldiff_get_version;
 		poldiff_enable_line_numbers;
+	local: *;
+};
+
+VERS_1.3{
+	global:
+		poldiff_component_*;
 	local: *;
 };

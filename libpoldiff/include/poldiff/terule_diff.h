@@ -49,7 +49,33 @@ extern "C"
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
 	extern void poldiff_terule_get_stats_member(const poldiff_t * diff, size_t stats[5]);
+
+/**
+ *  Get an array of statistics for the number of differences of each
+ *  form for te rules.
+ *
+ *  @param diff The policy difference structure from which to get the
+ *  stats.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated).  The order of the values written to the array is
+ *  as follows:  number of items of form POLDIFF_FORM_ADDED, number of
+ *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
+ *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
+ */
 	extern void poldiff_terule_get_stats_change(const poldiff_t * diff, size_t stats[5]);
+
+/**
+ *  Get an array of statistics for the number of differences of each
+ *  form for te rules.
+ *
+ *  @param diff The policy difference structure from which to get the
+ *  stats.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated).  The order of the values written to the array is
+ *  as follows:  number of items of form POLDIFF_FORM_ADDED, number of
+ *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
+ *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
+ */
 	extern void poldiff_terule_get_stats_trans(const poldiff_t * diff, size_t stats[5]);
 
 /**

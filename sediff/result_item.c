@@ -950,12 +950,12 @@ static result_item_t *result_item_create_from_flag(GtkTextTagTable * table, uint
 	if (item == NULL) {
 		return item;
 	}
-	const poldiff_item_record_t *rec = poldiff_get_item_record(flag);
-	item->label = poldiff_item_get_label(rec);
+	const poldiff_item_record_t *rec = poldiff_get_component_record(flag);
+	item->label = poldiff_component_get_label(rec);
 	item->bit_pos = flag;
-	item->get_vector = poldiff_get_results_fn(rec);
-	item->get_form = poldiff_get_form_fn(rec);
-	item->get_string = poldiff_get_to_string_fn(rec);
+	item->get_vector = poldiff_component_get_results_fn(rec);
+	item->get_form = poldiff_component_get_form_fn(rec);
+	item->get_string = poldiff_component_get_to_string_fn(rec);
 	item->get_buffer = result_item_avrule_get_buffer;
 	item->data.multi.print_diff = result_item_avrule_print_diff;
 	item->policy_changed = result_item_avrule_policy_changed;
@@ -1106,12 +1106,12 @@ static result_item_t *result_item_create_terules_from_flag(GtkTextTagTable * tab
 	if (item == NULL) {
 		return item;
 	}
-	const poldiff_item_record_t *rec = poldiff_get_item_record(flag);
-	item->label = poldiff_item_get_label(rec);
+	const poldiff_item_record_t *rec = poldiff_get_component_record(flag);
+	item->label = poldiff_component_get_label(rec);
 	item->bit_pos = flag;
-	item->get_vector = poldiff_get_results_fn(rec);
-	item->get_form = poldiff_get_form_fn(rec);
-	item->get_string = poldiff_get_to_string_fn(rec);
+	item->get_vector = poldiff_component_get_results_fn(rec);
+	item->get_form = poldiff_component_get_form_fn(rec);
+	item->get_string = poldiff_component_get_to_string_fn(rec);
 	item->data.multi.print_diff = result_item_terule_print_diff;
 	return item;
 }

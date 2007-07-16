@@ -25,7 +25,7 @@
 #include <config.h>
 
 #include "poldiff_internal.h"
-#include <poldiff/item_record.h>
+#include <poldiff/component_record.h>
 
 #include <apol/util.h>
 #include <qpol/policy_extend.h>
@@ -303,7 +303,7 @@ static const poldiff_item_record_t item_records[] = {
 	 },
 };
 
-const poldiff_item_record_t *poldiff_get_item_record(uint32_t which)
+const poldiff_item_record_t *poldiff_get_component_record(uint32_t which)
 {
 	size_t i = 0;
 	size_t num_items;
@@ -768,35 +768,35 @@ void poldiff_handle_msg(const poldiff_t * p, int level, const char *fmt, ...)
 	va_end(ap);
 }
 
-poldiff_item_get_form_fn_t poldiff_get_form_fn(const poldiff_item_record_t * diff)
+poldiff_item_get_form_fn_t poldiff_component_get_form_fn(const poldiff_item_record_t * diff)
 {
 	if (!diff)
 		return NULL;
 	return diff->get_form;
 }
 
-poldiff_item_to_string_fn_t poldiff_get_to_string_fn(const poldiff_item_record_t * diff)
+poldiff_item_to_string_fn_t poldiff_component_get_to_string_fn(const poldiff_item_record_t * diff)
 {
 	if (!diff)
 		return NULL;
 	return diff->to_string;
 }
 
-poldiff_get_item_stats_fn_t poldiff_get_stats_fn(const poldiff_item_record_t * diff)
+poldiff_get_item_stats_fn_t poldiff_component_get_stats_fn(const poldiff_item_record_t * diff)
 {
 	if (!diff)
 		return NULL;
 	return diff->get_stats;
 }
 
-poldiff_get_result_items_fn_t poldiff_get_results_fn(const poldiff_item_record_t * diff)
+poldiff_get_result_items_fn_t poldiff_component_get_results_fn(const poldiff_item_record_t * diff)
 {
 	if (!diff)
 		return NULL;
 	return diff->get_results;
 }
 
-const char *poldiff_item_get_label(const poldiff_item_record_t * diff)
+const char *poldiff_component_get_label(const poldiff_item_record_t * diff)
 {
 	if (!diff)
 		return NULL;

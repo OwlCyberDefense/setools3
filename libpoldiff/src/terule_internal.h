@@ -52,18 +52,34 @@ extern "C"
 	void terule_destroy(poldiff_terule_summary_t ** rs);
 
 /**
- * Reset the state of all TE rule differences.
+ * Reset the state of TE rule differences.
  * @param diff The policy difference structure containing the differences
  * to reset.
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
 	int terule_reset_change(poldiff_t * diff);
+
+/**
+ * Reset the state of TE rule differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
 	int terule_reset_member(poldiff_t * diff);
+
+/**
+ * Reset the state of TE rule differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
 	int terule_reset_trans(poldiff_t * diff);
 
 /**
- * Get a vector of all terules from the given policy, sorted.  This
+ * Get a vector of terules from the given policy, sorted.  This
  * function will remap source and target types to their pseudo-type
  * value equivalents.
  *
@@ -78,8 +94,52 @@ extern "C"
  */
 	apol_vector_t *terule_get_items(poldiff_t * diff, const apol_policy_t * policy, unsigned int flags);
 
+/**
+ * Get a vector of terules from the given policy, sorted.  This
+ * function will remap source and target types to their pseudo-type
+ * value equivalents.
+ *
+ * @param diff Policy diff error handler.
+ * @param policy The policy from which to get the items.
+ * @param flags Kind of rule to get, one of QPOL_RULE_TYPE_TRANS, etc.
+ *
+ * @return A newly allocated vector of all te rules (of type
+ * pseudo_terule_t).  The caller is responsible for calling
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
+ */
 	apol_vector_t *terule_get_items_trans(poldiff_t * diff, const apol_policy_t * policy);
+
+/**
+ * Get a vector of terules from the given policy, sorted.  This
+ * function will remap source and target types to their pseudo-type
+ * value equivalents.
+ *
+ * @param diff Policy diff error handler.
+ * @param policy The policy from which to get the items.
+ * @param flags Kind of rule to get, one of QPOL_RULE_TYPE_TRANS, etc.
+ *
+ * @return A newly allocated vector of all te rules (of type
+ * pseudo_terule_t).  The caller is responsible for calling
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
+ */
 	apol_vector_t *terule_get_items_change(poldiff_t * diff, const apol_policy_t * policy);
+
+/**
+ * Get a vector of terules from the given policy, sorted.  This
+ * function will remap source and target types to their pseudo-type
+ * value equivalents.
+ *
+ * @param diff Policy diff error handler.
+ * @param policy The policy from which to get the items.
+ * @param flags Kind of rule to get, one of QPOL_RULE_TYPE_TRANS, etc.
+ *
+ * @return A newly allocated vector of all te rules (of type
+ * pseudo_terule_t).  The caller is responsible for calling
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
+ */
 	apol_vector_t *terule_get_items_member(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
@@ -109,7 +169,31 @@ extern "C"
  * and leave the policy difference structure unchanged.
  */
 	int terule_new_diff_member(poldiff_t * diff, poldiff_form_e form, const void *item);
+
+/**
+ * Create, initialize, and insert a new semantic difference entry for
+ * a pseudo-te rule.
+ *
+ * @param diff The policy difference structure to which to add the entry.
+ * @param form The form of the difference.
+ * @param item Item for which the entry is being created.
+ *
+ * @return 0 on success and < 0 on error; if the call fails, set errno
+ * and leave the policy difference structure unchanged.
+ */
 	int terule_new_diff_change(poldiff_t * diff, poldiff_form_e form, const void *item);
+
+/**
+ * Create, initialize, and insert a new semantic difference entry for
+ * a pseudo-te rule.
+ *
+ * @param diff The policy difference structure to which to add the entry.
+ * @param form The form of the difference.
+ * @param item Item for which the entry is being created.
+ *
+ * @return 0 on success and < 0 on error; if the call fails, set errno
+ * and leave the policy difference structure unchanged.
+ */
 	int terule_new_diff_trans(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
@@ -127,7 +211,37 @@ extern "C"
  * and leave the policy difference structure unchanged.
  */
 	int terule_deep_diff_member(poldiff_t * diff, const void *x, const void *y);
+
+/**
+ * Compute the semantic difference of two pseudo-te rules for which
+ * the compare callback returns 0.  If a difference is found then
+ * allocate, initialize, and insert a new semantic difference entry
+ * for that pseudo-te rule.
+ *
+ * @param diff The policy difference structure associated with both
+ * pseudo-te rules and to which to add an entry if needed.
+ * @param x The pseudo-te rule from the original policy.
+ * @param y The pseudo-te rule from the modified policy.
+ *
+ * @return 0 on success and < 0 on error; if the call fails, set errno
+ * and leave the policy difference structure unchanged.
+ */
 	int terule_deep_diff_change(poldiff_t * diff, const void *x, const void *y);
+
+/**
+ * Compute the semantic difference of two pseudo-te rules for which
+ * the compare callback returns 0.  If a difference is found then
+ * allocate, initialize, and insert a new semantic difference entry
+ * for that pseudo-te rule.
+ *
+ * @param diff The policy difference structure associated with both
+ * pseudo-te rules and to which to add an entry if needed.
+ * @param x The pseudo-te rule from the original policy.
+ * @param y The pseudo-te rule from the modified policy.
+ *
+ * @return 0 on success and < 0 on error; if the call fails, set errno
+ * and leave the policy difference structure unchanged.
+ */
 	int terule_deep_diff_trans(poldiff_t * diff, const void *x, const void *y);
 
 /**
