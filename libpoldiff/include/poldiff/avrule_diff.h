@@ -38,7 +38,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for av rules.
+ *  form for all AV rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -52,7 +52,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for av rules.
+ *  form for AV neverallow rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -66,7 +66,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for av rules.
+ *  form for AV dontaudit rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -80,7 +80,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for av rules.
+ *  form for AV auditallow rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -146,7 +146,7 @@ extern "C"
 
 /**
  *  Obtain a newly allocated string representation of a difference in
- *  an av rule.
+ *  any av rule.
  *
  *  @param diff The policy difference structure associated with the av
  *  rule.
@@ -159,7 +159,7 @@ extern "C"
 	extern char *poldiff_avrule_to_string(const poldiff_t * diff, const void *avrule);
 
 /**
- *  Get the form of difference from an av rule diff.
+ *  Get the form of difference from any av rule diff.
  *
  *  @param avrule The av rule from which to get the difference form.
  *

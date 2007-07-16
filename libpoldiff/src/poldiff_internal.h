@@ -33,6 +33,20 @@ extern "C"
 #include <poldiff/poldiff.h>
 #include <apol/bst.h>
 
+	typedef enum
+	{
+		AVRULE_OFFSET_ALLOW, AVRULE_OFFSET_NEVERALLOW,
+		AVRULE_OFFSET_DONTAUDIT, AVRULE_OFFSET_AUDITALLOW,
+		AVRULE_OFFSET_MAX
+	} avrule_offset_e;
+
+	typedef enum
+	{
+		TERULE_OFFSET_MEMBER, TERULE_OFFSET_CHANGE,
+		TERULE_OFFSET_TRANS,
+		TERULE_OFFSET_MAX
+	} terule_offset_e;
+
 #include "attrib_internal.h"
 #include "avrule_internal.h"
 #include "bool_internal.h"
@@ -66,15 +80,6 @@ extern "C"
 	struct poldiff_user_summary;
 /* and so forth for ocon_summary structs */
 
-#define POLDIFF_ALLOW_OFFSET       0
-#define POLDIFF_NEVERALLOW_OFFSET  1
-#define POLDIFF_DONTAUDIT_OFFSET   2
-#define POLDIFF_AUDITALLOW_OFFSET  3
-
-#define POLDIFF_MEMBER_OFFSET      0
-#define POLDIFF_CHANGE_OFFSET      1
-#define POLDIFF_TRANS_OFFSET       2
-
 	struct poldiff
 	{
 		/** the "original" policy */
@@ -98,7 +103,7 @@ extern "C"
 		/** set of POLDIF_DIFF_* bits for diffs run */
 		uint32_t diff_status;
 		struct poldiff_attrib_summary *attrib_diffs;
-		struct poldiff_avrule_summary *avrule_diffs[4];
+		struct poldiff_avrule_summary *avrule_diffs[AVRULE_OFFSET_MAX];
 		struct poldiff_bool_summary *bool_diffs;
 		struct poldiff_cat_summary *cat_diffs;
 		struct poldiff_class_summary *class_diffs;
@@ -108,7 +113,7 @@ extern "C"
 		struct poldiff_role_summary *role_diffs;
 		struct poldiff_role_allow_summary *role_allow_diffs;
 		struct poldiff_role_trans_summary *role_trans_diffs;
-		struct poldiff_terule_summary *terule_diffs[3];
+		struct poldiff_terule_summary *terule_diffs[TERULE_OFFSET_MAX];
 		struct poldiff_type_summary *type_diffs;
 		struct poldiff_user_summary *user_diffs;
 		/* and so forth if we want ocon_diffs */

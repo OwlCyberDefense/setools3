@@ -38,7 +38,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for te rules.
+ *  form for all TE rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -52,7 +52,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for te rules.
+ *  form for TE type_change rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -66,7 +66,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for te rules.
+ *  form for TE type_transition rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.

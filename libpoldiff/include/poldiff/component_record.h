@@ -1,18 +1,17 @@
 /**
  *  @file
- *  This file contains:
- *    typedefs to aid declaring function pointers for callbacks extracted
+ *    Typedefs to aid declaring function pointers for callbacks extracted
  *    from component records.
  *
- *    functions to extract the callbacks for component records.  This
- *    implements a form of polymorphism so that we can operate on
- *    component records and not care about the library dependent
- *    implementation.
+ *    This file also declares functions to extract the callbacks for
+ *    component records.  This implements a form of polymorphism so
+ *    that one can operate on component records and not care about the
+ *    library dependent implementation.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006-2007 Tresys Technology, LLC
+ *  Copyright (C) 2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -78,92 +77,79 @@ extern "C"
  */
 	typedef char *(*poldiff_item_to_string_fn_t) (const poldiff_t * diff, const void *item);
 
-	typedef struct poldiff_item_record poldiff_item_record_t;
+	typedef struct poldiff_component_record poldiff_component_record_t;
 
 /**
- * Get the poldiff_item_record_t for a particular policy component.
+ * Get the poldiff_component_record_t for a particular policy
+ * component.  Consult this record for function pointers, so as to
+ * achieve a limited form of polymorphism.
  *
- * @param which flag (as defined in poldiff.h) indicating which component
- * 		       to look up.
- * @return value that is used as a key in a "polymorphic object" system.
- *               Functions exist to extract things such as the items in
- *               the component, a to string function, etc.
- *
- * Takes a flag as defined in poldiff.h (eg. POLDIFF_DIFF_AVALLOW) and
- * returns the poldiff_item_record_t associated with it or null
- * if not found.
+ * @param which Flag (as defined in <poldiff/poldiff.h>) indicating
+ * which component to look up.
+ * @return A poldiff_component_record_t associated with the component
+ * or NULL if not found.
  */
-	extern const poldiff_item_record_t *poldiff_get_component_record(uint32_t which);
+	extern const poldiff_component_record_t *poldiff_get_component_record(uint32_t which);
 
 /**
- * Get the function that will return the form from a poldiff_item_record_t
- * poldiff_item_record_t comes from the poldiff_get_item_record() function
- * which maps from a flag indicating which record you want to the key for
- * that record.
+ * Get the function that will return the form from a
+ * poldiff_component_record_t.
  *
- * @param diff the (opaque) pointer to the component to extract named the
- *             virtual function from.
+ * @param comp Pointer to the component to extract the named virtual
+ * function.
  *
- * @return get_form function pointer relating to the passed in record key
- *         returns null if diff==null
+ * @return Function pointer relating to the passed in record key, or
+ * NULL upon error.
  */
-	extern poldiff_item_get_form_fn_t poldiff_component_get_form_fn(const poldiff_item_record_t * diff);
+	extern poldiff_item_get_form_fn_t poldiff_component_record_get_form_fn(const poldiff_component_record_t * comp);
 
 /**
- * Get the function that will return the to_string from a poldiff_item_record_t
- * poldiff_item_record_t comes from the poldiff_get_item_record() function
- * which maps from a flag indicating which record you want to the key for
- * that record.
+ * Get the function that will return the to_string from a
+ * poldiff_component_record_t.
  *
- * @param diff the (opaque) pointer to the component to extract named the
- *             virtual function from.
+ * @param diff Pointer to the component to extract the named virtual
+ * function.
  *
- * @return to_string function pointer relating to the passed in record key
- *         returns null if diff==null
+ * @return Function pointer relating to the passed in record key, or
+ * NULL upon error.
  */
-	extern poldiff_item_to_string_fn_t poldiff_component_get_to_string_fn(const poldiff_item_record_t * diff);
+	extern poldiff_item_to_string_fn_t poldiff_component_record_get_to_string_fn(const poldiff_component_record_t * diff);
 
 /**
- * Get the function that will return the item_stats from a poldiff_item_record_t
- * poldiff_item_record_t comes from the poldiff_get_item_record() function
- * which maps from a flag indicating which record you want to the key for
- * that record.
+ * Get the function that will return the item_stats from a
+ * poldiff_component_record_t.
  *
- * @param diff the (opaque) pointer to the component to extract named the
- *             virtual function from.
+ * @param diff Pointer to the component to extract the named virtual
+ * function.
  *
- * @return item_stats function pointer relating to the passed in record key
- *         returns null if diff==null
+ * @return Function pointer relating to the passed in record key, or
+ * NULL upon error.
  */
-	extern poldiff_get_item_stats_fn_t poldiff_component_get_stats_fn(const poldiff_item_record_t * diff);
+	extern poldiff_get_item_stats_fn_t poldiff_component_record_get_stats_fn(const poldiff_component_record_t * diff);
 
 /**
- * Get the function that will return the results from a poldiff_item_record_t
- * poldiff_item_record_t comes from the poldiff_get_item_record() function
- * which maps from a flag indicating which record you want to the key for
- * that record.
+ * Get the function that will return the results from a
+ * poldiff_component_record_t.
  *
- * @param diff the (opaque) pointer to the component to extract named the
- *             virtual function from.
+ * @param diff Pointer to the component to extract the named virtual
+ * function.
  *
- * @return get_results function pointer relating to the passed in record key
- *         returns null if diff==null
+ * @return Function pointer relating to the passed in record key, or
+ * NULL upon error.
  */
-	extern poldiff_get_result_items_fn_t poldiff_component_get_results_fn(const poldiff_item_record_t * diff);
+	extern poldiff_get_result_items_fn_t poldiff_component_record_get_results_fn(const poldiff_component_record_t * diff);
 
 /**
- * Get the function that will return the label from a poldiff_item_record_t
- * poldiff_item_record_t comes from the poldiff_get_item_record() function
- * which maps from a flag indicating which record you want to the key for
- * that record.
+ * Get the function that will return the label from a
+ * poldiff_component_record_t.  This label describes the policy
+ * component (e.g., "attribute" or "AVrule dontaudit").
  *
- * @param diff the (opaque) pointer to the component to extract named the
- *             virtual function from.
+ * @param diff Pointer to the component to extract named the label.
  *
- * @return get_label function pointer relating to the passed in record key
- *         returns null if diff==null
+ * @return Label describing the policy component record.  Do not
+ * modify this string.
  */
-	extern const char *poldiff_component_get_label(const poldiff_item_record_t * diff);
+	extern const char *poldiff_component_record_get_label(const poldiff_component_record_t * diff);
 
 #ifdef	__cplusplus
 }

@@ -36,9 +36,9 @@
 /**
  * All policy items (object classes, types, rules, etc.) must
  * implement at least these functions.  Next, a record should be
- * appended to the array 'item_records' below.
+ * appended to the array 'component_records' below.
  */
-struct poldiff_item_record
+struct poldiff_component_record
 {
 	const char *item_name;
 	uint32_t flag_bit;
@@ -53,7 +53,7 @@ struct poldiff_item_record
 	poldiff_deep_diff_fn_t deep_diff;
 };
 
-static const poldiff_item_record_t item_records[] = {
+static const poldiff_component_record_t component_records[] = {
 	{
 	 "attribute",
 	 POLDIFF_DIFF_ATTRIBS,
@@ -75,7 +75,7 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
 	 avrule_reset_allow,
-	 avrule_get_allow,
+	 avrule_get_items_allow,
 	 avrule_comp,
 	 avrule_new_diff_allow,
 	 avrule_deep_diff_allow,
@@ -88,7 +88,7 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
 	 avrule_reset_neverallow,
-	 avrule_get_neverallow,
+	 avrule_get_items_neverallow,
 	 avrule_comp,
 	 avrule_new_diff_neverallow,
 	 avrule_deep_diff_neverallow,
@@ -101,7 +101,7 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
 	 avrule_reset_auditallow,
-	 avrule_get_auditallow,
+	 avrule_get_items_auditallow,
 	 avrule_comp,
 	 avrule_new_diff_auditallow,
 	 avrule_deep_diff_auditallow,
@@ -114,7 +114,7 @@ static const poldiff_item_record_t item_records[] = {
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
 	 avrule_reset_dontaudit,
-	 avrule_get_dontaudit,
+	 avrule_get_items_dontaudit,
 	 avrule_comp,
 	 avrule_new_diff_dontaudit,
 	 avrule_deep_diff_dontaudit,
@@ -303,15 +303,15 @@ static const poldiff_item_record_t item_records[] = {
 	 },
 };
 
-const poldiff_item_record_t *poldiff_get_component_record(uint32_t which)
+const poldiff_component_record_t *poldiff_get_component_record(uint32_t which)
 {
 	size_t i = 0;
 	size_t num_items;
 
-	num_items = sizeof(item_records) / sizeof(poldiff_item_record_t);
+	num_items = sizeof(component_records) / sizeof(poldiff_component_record_t);
 	for (i = 0; i < num_items; i++) {
-		if (item_records[i].flag_bit == which)
-			return &item_records[i];
+		if (component_records[i].flag_bit == which)
+			return &component_records[i];
 	}
 	return NULL;
 }
@@ -352,10 +352,10 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	}
 
 	if ((diff->attrib_diffs = attrib_summary_create()) == NULL ||
-	    (diff->avrule_diffs[0] = avrule_create()) == NULL ||
-	    (diff->avrule_diffs[1] = avrule_create()) == NULL ||
-	    (diff->avrule_diffs[2] = avrule_create()) == NULL ||
-	    (diff->avrule_diffs[3] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_ALLOW] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_NEVERALLOW] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_DONTAUDIT] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_AUDITALLOW] = avrule_create()) == NULL ||
 	    (diff->bool_diffs = bool_create()) == NULL ||
 	    (diff->cat_diffs = cat_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
@@ -365,9 +365,9 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->role_trans_diffs = role_trans_create()) == NULL ||
-	    (diff->terule_diffs[0] = terule_create()) == NULL ||
-	    (diff->terule_diffs[1] = terule_create()) == NULL ||
-	    (diff->terule_diffs[2] = terule_create()) == NULL ||
+	    (diff->terule_diffs[TERULE_OFFSET_MEMBER] = terule_create()) == NULL ||
+	    (diff->terule_diffs[TERULE_OFFSET_CHANGE] = terule_create()) == NULL ||
+	    (diff->terule_diffs[TERULE_OFFSET_TRANS] = terule_create()) == NULL ||
 	    (diff->type_diffs = type_summary_create()) == NULL || (diff->user_diffs = user_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
@@ -391,10 +391,10 @@ void poldiff_destroy(poldiff_t ** diff)
 
 	type_map_destroy(&(*diff)->type_map);
 	attrib_summary_destroy(&(*diff)->attrib_diffs);
-	avrule_destroy(&(*diff)->avrule_diffs[0]);
-	avrule_destroy(&(*diff)->avrule_diffs[1]);
-	avrule_destroy(&(*diff)->avrule_diffs[2]);
-	avrule_destroy(&(*diff)->avrule_diffs[3]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_ALLOW]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_NEVERALLOW]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_DONTAUDIT]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_AUDITALLOW]);
 	bool_destroy(&(*diff)->bool_diffs);
 	cat_destroy(&(*diff)->cat_diffs);
 	class_destroy(&(*diff)->class_diffs);
@@ -405,9 +405,9 @@ void poldiff_destroy(poldiff_t ** diff)
 	role_allow_destroy(&(*diff)->role_allow_diffs);
 	role_trans_destroy(&(*diff)->role_trans_diffs);
 	user_destroy(&(*diff)->user_diffs);
-	terule_destroy(&(*diff)->terule_diffs[0]);
-	terule_destroy(&(*diff)->terule_diffs[1]);
-	terule_destroy(&(*diff)->terule_diffs[2]);
+	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_MEMBER]);
+	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_CHANGE]);
+	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_TRANS]);
 	type_summary_destroy(&(*diff)->type_diffs);
 	free(*diff);
 	*diff = NULL;
@@ -421,62 +421,62 @@ void poldiff_destroy(poldiff_t ** diff)
  *
  * @param diff The policy difference structure containing the policies
  * to compare and to populate with the item differences.
- * @param item_record Item record containg callbacks to perform each
+ * @param component_record Item record containg callbacks to perform each
  * step of the computation for a particular kind of item.
  *
  * @return 0 on success and < 0 on error; if the call fails; errno
  * will be set and the only defined operation on the policy difference
  * structure will be poldiff_destroy().
  */
-static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_item_record_t * item_record)
+static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_component_record_t * component_record)
 {
 	apol_vector_t *p1_v = NULL, *p2_v = NULL;
 	int error = 0, retv;
 	size_t x = 0, y = 0;
 	void *item_x = NULL, *item_y = NULL;
 
-	if (!diff || !item_record) {
+	if (!diff || !component_record) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
-	diff->diff_status &= (~item_record->flag_bit);
+	diff->diff_status &= (~component_record->flag_bit);
 
-	INFO(diff, "Getting %s items from original policy.", item_record->item_name);
-	p1_v = item_record->get_items(diff, diff->orig_pol);
+	INFO(diff, "Getting %s items from original policy.", component_record->item_name);
+	p1_v = component_record->get_items(diff, diff->orig_pol);
 	if (!p1_v) {
 		error = errno;
 		goto err;
 	}
 
-	INFO(diff, "Getting %s items from modified policy.", item_record->item_name);
-	p2_v = item_record->get_items(diff, diff->mod_pol);
+	INFO(diff, "Getting %s items from modified policy.", component_record->item_name);
+	p2_v = component_record->get_items(diff, diff->mod_pol);
 	if (!p2_v) {
 		error = errno;
 		goto err;
 	}
 
-	INFO(diff, "Finding differences in %s.", item_record->item_name);
+	INFO(diff, "Finding differences in %s.", component_record->item_name);
 	for (x = 0, y = 0; x < apol_vector_get_size(p1_v);) {
 		if (y >= apol_vector_get_size(p2_v))
 			break;
 		item_x = apol_vector_get_element(p1_v, x);
 		item_y = apol_vector_get_element(p2_v, y);
-		retv = item_record->comp(item_x, item_y, diff);
+		retv = component_record->comp(item_x, item_y, diff);
 		if (retv < 0) {
-			if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
+			if (component_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
 				error = errno;
 				goto err;
 			}
 			x++;
 		} else if (retv > 0) {
-			if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
+			if (component_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
 				error = errno;
 				goto err;
 			}
 			y++;
 		} else {
-			if (item_record->deep_diff(diff, item_x, item_y)) {
+			if (component_record->deep_diff(diff, item_x, item_y)) {
 				error = errno;
 				goto err;
 			}
@@ -486,14 +486,14 @@ static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_item_record_t * 
 	}
 	for (; x < apol_vector_get_size(p1_v); x++) {
 		item_x = apol_vector_get_element(p1_v, x);
-		if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
+		if (component_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
 			error = errno;
 			goto err;
 		}
 	}
 	for (; y < apol_vector_get_size(p2_v); y++) {
 		item_y = apol_vector_get_element(p2_v, y);
-		if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
+		if (component_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
 			error = errno;
 			goto err;
 		}
@@ -501,7 +501,7 @@ static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_item_record_t * 
 
 	apol_vector_destroy(&p1_v);
 	apol_vector_destroy(&p2_v);
-	diff->diff_status |= item_record->flag_bit;
+	diff->diff_status |= component_record->flag_bit;
 	return 0;
       err:
 	apol_vector_destroy(&p1_v);
@@ -544,12 +544,12 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 		diff->policy_opts = policy_opts;
 	}
 
-	num_items = sizeof(item_records) / sizeof(poldiff_item_record_t);
+	num_items = sizeof(component_records) / sizeof(poldiff_component_record_t);
 	if (diff->remapped) {
 		for (i = 0; i < num_items; i++) {
-			if (item_records[i].flag_bit & POLDIFF_DIFF_REMAPPED) {
-				INFO(diff, "Resetting %s diff.", item_records[i].item_name);
-				if (item_records[i].reset(diff))
+			if (component_records[i].flag_bit & POLDIFF_DIFF_REMAPPED) {
+				INFO(diff, "Resetting %s diff.", component_records[i].item_name);
+				if (component_records[i].reset(diff))
 					return -1;
 			}
 		}
@@ -565,9 +565,9 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 	diff->line_numbers_enabled = 0;
 	for (i = 0; i < num_items; i++) {
 		/* item requested but not yet run */
-		if ((flags & item_records[i].flag_bit) && !(item_records[i].flag_bit & diff->diff_status)) {
-			INFO(diff, "Running %s diff.", item_records[i].item_name);
-			if (poldiff_do_item_diff(diff, &(item_records[i]))) {
+		if ((flags & component_records[i].flag_bit) && !(component_records[i].flag_bit & diff->diff_status)) {
+			INFO(diff, "Running %s diff.", component_records[i].item_name);
+			if (poldiff_do_item_diff(diff, &(component_records[i]))) {
 				return -1;
 			}
 		}
@@ -604,10 +604,10 @@ int poldiff_get_stats(const poldiff_t * diff, uint32_t flags, size_t stats[5])
 
 	stats[0] = stats[1] = stats[2] = stats[3] = stats[4] = 0;
 
-	num_items = sizeof(item_records) / sizeof(poldiff_item_record_t);
+	num_items = sizeof(component_records) / sizeof(poldiff_component_record_t);
 	for (i = 0; i < num_items; i++) {
-		if (flags & item_records[i].flag_bit) {
-			item_records[i].get_stats(diff, tmp_stats);
+		if (flags & component_records[i].flag_bit) {
+			component_records[i].get_stats(diff, tmp_stats);
 			for (j = 0; j < 5; j++)
 				stats[j] += tmp_stats[j];
 		}
@@ -628,25 +628,25 @@ int poldiff_enable_line_numbers(poldiff_t * diff)
 			return -1;
 		if (qpol_policy_build_syn_rule_table(diff->mod_qpol))
 			return -1;
-		if ((retval = avrule_enable_line_numbers(diff, POLDIFF_ALLOW_OFFSET)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_ALLOW)) < 0) {
 			return retval;
 		}
-		if ((retval = avrule_enable_line_numbers(diff, POLDIFF_NEVERALLOW_OFFSET)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_NEVERALLOW)) < 0) {
 			return retval;
 		}
-		if ((retval = avrule_enable_line_numbers(diff, POLDIFF_DONTAUDIT_OFFSET)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_DONTAUDIT)) < 0) {
 			return retval;
 		}
-		if ((retval = avrule_enable_line_numbers(diff, POLDIFF_AUDITALLOW_OFFSET)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_AUDITALLOW)) < 0) {
 			return retval;
 		}
-		if ((retval = terule_enable_line_numbers(diff, POLDIFF_MEMBER_OFFSET)) < 0) {
+		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_MEMBER)) < 0) {
 			return retval;
 		}
-		if ((retval = terule_enable_line_numbers(diff, POLDIFF_CHANGE_OFFSET)) < 0) {
+		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_CHANGE)) < 0) {
 			return retval;
 		}
-		if ((retval = terule_enable_line_numbers(diff, POLDIFF_TRANS_OFFSET)) < 0) {
+		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_TRANS)) < 0) {
 			return retval;
 		}
 		diff->line_numbers_enabled = 1;
@@ -768,37 +768,47 @@ void poldiff_handle_msg(const poldiff_t * p, int level, const char *fmt, ...)
 	va_end(ap);
 }
 
-poldiff_item_get_form_fn_t poldiff_component_get_form_fn(const poldiff_item_record_t * diff)
+poldiff_item_get_form_fn_t poldiff_component_record_get_form_fn(const poldiff_component_record_t * diff)
 {
-	if (!diff)
+	if (!diff) {
+		errno = EINVAL;
 		return NULL;
+	}
 	return diff->get_form;
 }
 
-poldiff_item_to_string_fn_t poldiff_component_get_to_string_fn(const poldiff_item_record_t * diff)
+poldiff_item_to_string_fn_t poldiff_component_record_get_to_string_fn(const poldiff_component_record_t * diff)
 {
-	if (!diff)
+	if (!diff) {
+		errno = EINVAL;
 		return NULL;
+	}
 	return diff->to_string;
 }
 
-poldiff_get_item_stats_fn_t poldiff_component_get_stats_fn(const poldiff_item_record_t * diff)
+poldiff_get_item_stats_fn_t poldiff_component_record_get_stats_fn(const poldiff_component_record_t * diff)
 {
-	if (!diff)
+	if (!diff) {
+		errno = EINVAL;
 		return NULL;
+	}
 	return diff->get_stats;
 }
 
-poldiff_get_result_items_fn_t poldiff_component_get_results_fn(const poldiff_item_record_t * diff)
+poldiff_get_result_items_fn_t poldiff_component_record_get_results_fn(const poldiff_component_record_t * diff)
 {
-	if (!diff)
+	if (!diff) {
+		errno = EINVAL;
 		return NULL;
+	}
 	return diff->get_results;
 }
 
-const char *poldiff_component_get_label(const poldiff_item_record_t * diff)
+const char *poldiff_component_record_get_label(const poldiff_component_record_t * diff)
 {
-	if (!diff)
+	if (!diff) {
+		errno = EINVAL;
 		return NULL;
+	}
 	return diff->item_name;
 }

@@ -102,7 +102,21 @@ typedef struct pseudo_avrule
 
 /******************** public avrule functions ********************/
 
-static void poldiff_avrule_get_stats(const poldiff_t * diff, size_t stats[5], unsigned int idx)
+/**
+ *  Get an array of statistics for the number of differences of each
+ *  form for av rules.
+ *
+ *  @param diff The policy difference structure from which to get the
+ *  stats.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated).  The order of the values written to the array is
+ *  as follows:  number of items of form POLDIFF_FORM_ADDED, number of
+ *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
+ *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
+ *  @param idx Index into the avrule differences specifying which
+ *  avrule type to get, one of AVRULE_OFFSET_ALLOW, etc.
+ */
+static void poldiff_avrule_get_stats(const poldiff_t * diff, size_t stats[5], avrule_offset_e idx)
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -118,22 +132,22 @@ static void poldiff_avrule_get_stats(const poldiff_t * diff, size_t stats[5], un
 
 void poldiff_avrule_get_stats_allow(const poldiff_t * diff, size_t stats[5])
 {
-	poldiff_avrule_get_stats(diff, stats, POLDIFF_ALLOW_OFFSET);
+	poldiff_avrule_get_stats(diff, stats, AVRULE_OFFSET_ALLOW);
 }
 
 void poldiff_avrule_get_stats_neverallow(const poldiff_t * diff, size_t stats[5])
 {
-	poldiff_avrule_get_stats(diff, stats, POLDIFF_NEVERALLOW_OFFSET);
+	poldiff_avrule_get_stats(diff, stats, AVRULE_OFFSET_NEVERALLOW);
 }
 
 void poldiff_avrule_get_stats_dontaudit(const poldiff_t * diff, size_t stats[5])
 {
-	poldiff_avrule_get_stats(diff, stats, POLDIFF_DONTAUDIT_OFFSET);
+	poldiff_avrule_get_stats(diff, stats, AVRULE_OFFSET_DONTAUDIT);
 }
 
 void poldiff_avrule_get_stats_auditallow(const poldiff_t * diff, size_t stats[5])
 {
-	poldiff_avrule_get_stats(diff, stats, POLDIFF_AUDITALLOW_OFFSET);
+	poldiff_avrule_get_stats(diff, stats, AVRULE_OFFSET_NEVERALLOW);
 }
 
 char *poldiff_avrule_to_string(const poldiff_t * diff, const void *avrule)
@@ -260,7 +274,20 @@ static int poldiff_avrule_cmp(const void *x, const void *y, void *data __attribu
 	return b->branch - a->branch;
 }
 
-static const apol_vector_t *poldiff_get_avrule_vector(const poldiff_t * diff, unsigned int idx)
+/**
+ *  Get the vector of av rule differences from the av rule difference
+ *  summary.
+ *
+ *  @param diff The policy difference structure associated with the av
+ *  rule difference summary.
+ *  @param idx Index into the avrule differences specifying which
+ *  avrule type to get, one of AVRULE_OFFSET_ALLOW, etc.
+ *
+ *  @return A vector of elements of type poldiff_avrule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
+static const apol_vector_t *poldiff_get_avrule_vector(const poldiff_t * diff, avrule_offset_e idx)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
@@ -275,22 +302,22 @@ static const apol_vector_t *poldiff_get_avrule_vector(const poldiff_t * diff, un
 
 const apol_vector_t *poldiff_get_avrule_vector_allow(const poldiff_t * diff)
 {
-	return poldiff_get_avrule_vector(diff, POLDIFF_ALLOW_OFFSET);
+	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_ALLOW);
 }
 
 const apol_vector_t *poldiff_get_avrule_vector_neverallow(const poldiff_t * diff)
 {
-	return poldiff_get_avrule_vector(diff, POLDIFF_NEVERALLOW_OFFSET);
+	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_NEVERALLOW);
 }
 
 const apol_vector_t *poldiff_get_avrule_vector_dontaudit(const poldiff_t * diff)
 {
-	return poldiff_get_avrule_vector(diff, POLDIFF_DONTAUDIT_OFFSET);
+	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_DONTAUDIT);
 }
 
 const apol_vector_t *poldiff_get_avrule_vector_auditallow(const poldiff_t * diff)
 {
-	return poldiff_get_avrule_vector(diff, POLDIFF_AUDITALLOW_OFFSET);
+	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_AUDITALLOW);
 }
 
 poldiff_form_e poldiff_avrule_get_form(const void *avrule)
@@ -539,7 +566,16 @@ void avrule_destroy(poldiff_avrule_summary_t ** rs)
 	}
 }
 
-static int avrule_reset(poldiff_t * diff, unsigned int idx)
+/**
+ * Reset the state of an AV rule differences.
+ * @param diff The policy difference structure containing the differences
+ * to reset.
+ * @param idx Index into the avrule diffs array indicating which rule
+ * type to reset, one of AVRULE_OFFSET_ALLOW, etc.
+ * @return 0 on success and < 0 on error; if the call fails,
+ * errno will be set and the user should call poldiff_destroy() on diff.
+ */
+static int avrule_reset(poldiff_t * diff, avrule_offset_e idx)
 {
 	int error = 0;
 
@@ -557,22 +593,22 @@ static int avrule_reset(poldiff_t * diff, unsigned int idx)
 
 int avrule_reset_allow(poldiff_t * diff)
 {
-	return avrule_reset(diff, POLDIFF_ALLOW_OFFSET);
+	return avrule_reset(diff, AVRULE_OFFSET_ALLOW);
 }
 
 int avrule_reset_neverallow(poldiff_t * diff)
 {
-	return avrule_reset(diff, POLDIFF_NEVERALLOW_OFFSET);
+	return avrule_reset(diff, AVRULE_OFFSET_NEVERALLOW);
 }
 
 int avrule_reset_dontaudit(poldiff_t * diff)
 {
-	return avrule_reset(diff, POLDIFF_DONTAUDIT_OFFSET);
+	return avrule_reset(diff, AVRULE_OFFSET_DONTAUDIT);
 }
 
 int avrule_reset_auditallow(poldiff_t * diff)
 {
-	return avrule_reset(diff, POLDIFF_AUDITALLOW_OFFSET);
+	return avrule_reset(diff, AVRULE_OFFSET_AUDITALLOW);
 }
 
 static void avrule_free_item(void *item)
@@ -996,27 +1032,21 @@ static int avrule_expand(poldiff_t * diff, const apol_policy_t * p, const qpol_a
 	return retval;
 }
 
-apol_vector_t *avrule_get_allow(poldiff_t * diff, const apol_policy_t * policy)
-{
-	return avrule_get_items(diff, policy, QPOL_RULE_ALLOW);
-}
-
-apol_vector_t *avrule_get_neverallow(poldiff_t * diff, const apol_policy_t * policy)
-{
-	return avrule_get_items(diff, policy, QPOL_RULE_NEVERALLOW);
-}
-
-apol_vector_t *avrule_get_auditallow(poldiff_t * diff, const apol_policy_t * policy)
-{
-	return avrule_get_items(diff, policy, QPOL_RULE_AUDITALLOW);
-}
-
-apol_vector_t *avrule_get_dontaudit(poldiff_t * diff, const apol_policy_t * policy)
-{
-	return avrule_get_items(diff, policy, QPOL_RULE_DONTAUDIT);
-}
-
-apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, const unsigned int flag)
+/**
+ * Get a vector of avrules from the given policy, sorted.  This
+ * function will remap source and target types to their pseudo-type
+ * value equivalents.
+ *
+ * @param diff Policy diff error handler.
+ * @param policy The policy from which to get the items.
+ * @param which Kind of rule to get, one of QPOL_RULE_ALLOW, etc.
+ *
+ * @return A newly allocated vector of all av rules (of type
+ * pseudo_avrule_t).  The caller is responsible for calling
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
+ */
+static apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, const unsigned int which)
 {
 	apol_vector_t *bools = NULL, *bool_states = NULL;
 	size_t i, num_rules, j;
@@ -1029,7 +1059,7 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, 
 
 	/* special case:  if getting neverallow rules if the policy
 	   does not support it, then return an empty vector */
-	if (flag == QPOL_RULE_NEVERALLOW && !qpol_policy_has_capability(q, QPOL_CAP_NEVERALLOW)) {
+	if (which == QPOL_RULE_NEVERALLOW && !qpol_policy_has_capability(q, QPOL_CAP_NEVERALLOW)) {
 		v = apol_vector_create_with_capacity(1, avrule_free_item);
 		if (v == NULL) {
 			ERR(diff, "%s", strerror(error));
@@ -1070,7 +1100,7 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, 
 		ERR(diff, "%s", strerror(error));
 		goto cleanup;
 	}
-	if (qpol_policy_get_avrule_iter(q, flag, &iter) < 0) {
+	if (qpol_policy_get_avrule_iter(q, which, &iter) < 0) {
 
 		error = errno;
 		goto cleanup;
@@ -1110,6 +1140,26 @@ apol_vector_t *avrule_get_items(poldiff_t * diff, const apol_policy_t * policy, 
 		return NULL;
 	}
 	return v;
+}
+
+apol_vector_t *avrule_get_items_allow(poldiff_t * diff, const apol_policy_t * policy)
+{
+	return avrule_get_items(diff, policy, QPOL_RULE_ALLOW);
+}
+
+apol_vector_t *avrule_get_items_neverallow(poldiff_t * diff, const apol_policy_t * policy)
+{
+	return avrule_get_items(diff, policy, QPOL_RULE_NEVERALLOW);
+}
+
+apol_vector_t *avrule_get_items_auditallow(poldiff_t * diff, const apol_policy_t * policy)
+{
+	return avrule_get_items(diff, policy, QPOL_RULE_AUDITALLOW);
+}
+
+apol_vector_t *avrule_get_items_dontaudit(poldiff_t * diff, const apol_policy_t * policy)
+{
+	return avrule_get_items(diff, policy, QPOL_RULE_DONTAUDIT);
 }
 
 int avrule_comp(const void *x, const void *y, const poldiff_t * diff __attribute__ ((unused)))
@@ -1166,7 +1216,20 @@ static poldiff_avrule_t *make_avdiff(poldiff_t * diff, poldiff_form_e form, pseu
 	return pa;
 }
 
-static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item, unsigned int idx)
+/**
+ * Create, initialize, and insert a new semantic difference entry for
+ * a pseudo-av rule.
+ *
+ * @param diff The policy difference structure to which to add the entry.
+ * @param form The form of the difference.
+ * @param item Item for which the entry is being created.
+ * @param idx Index into the avrule differences specifying into which
+ * to place the constructed pseudo-av rule.
+ *
+ * @return 0 on success and < 0 on error; if the call fails, set errno
+ * and leave the policy difference structure unchanged.
+ */
+static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item, avrule_offset_e idx)
 {
 	pseudo_avrule_t *rule = (pseudo_avrule_t *) item;
 	poldiff_avrule_t *pa = NULL;
@@ -1309,22 +1372,38 @@ static int avrule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 
 int avrule_new_diff_allow(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	return avrule_new_diff(diff, form, item, POLDIFF_ALLOW_OFFSET);
+	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_ALLOW);
 }
 int avrule_new_diff_neverallow(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	return avrule_new_diff(diff, form, item, POLDIFF_NEVERALLOW_OFFSET);
+	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_NEVERALLOW);
 }
 int avrule_new_diff_dontaudit(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	return avrule_new_diff(diff, form, item, POLDIFF_DONTAUDIT_OFFSET);
+	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_DONTAUDIT);
 }
 int avrule_new_diff_auditallow(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	return avrule_new_diff(diff, form, item, POLDIFF_AUDITALLOW_OFFSET);
+	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_AUDITALLOW);
 }
 
-static int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsigned int idx)
+/**
+ * Compute the semantic difference of two pseudo-av rules for which
+ * the compare callback returns 0.  If a difference is found then
+ * allocate, initialize, and insert a new semantic difference entry
+ * for that pseudo-av rule.
+ *
+ * @param diff The policy difference structure associated with both
+ * pseudo-av rules and to which to add an entry if needed.
+ * @param x The pseudo-av rule from the original policy.
+ * @param y The pseudo-av rule from the modified policy.
+ * @param idx Index into the avrule differences specifying into which
+ * to place the constructed pseudo-av rule.
+ *
+ * @return 0 on success and < 0 on error; if the call fails, set errno
+ * and leave the policy difference structure unchanged.
+ */
+static int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y, avrule_offset_e idx)
 {
 	pseudo_avrule_t *r1 = (pseudo_avrule_t *) x;
 	pseudo_avrule_t *r2 = (pseudo_avrule_t *) y;
@@ -1458,22 +1537,22 @@ static int avrule_deep_diff(poldiff_t * diff, const void *x, const void *y, unsi
 
 int avrule_deep_diff_allow(poldiff_t * diff, const void *x, const void *y)
 {
-	return avrule_deep_diff(diff, x, y, POLDIFF_ALLOW_OFFSET);
+	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_ALLOW);
 }
 int avrule_deep_diff_neverallow(poldiff_t * diff, const void *x, const void *y)
 {
-	return avrule_deep_diff(diff, x, y, POLDIFF_NEVERALLOW_OFFSET);
+	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_NEVERALLOW);
 }
 int avrule_deep_diff_dontaudit(poldiff_t * diff, const void *x, const void *y)
 {
-	return avrule_deep_diff(diff, x, y, POLDIFF_DONTAUDIT_OFFSET);
+	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_DONTAUDIT);
 }
 int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y)
 {
-	return avrule_deep_diff(diff, x, y, POLDIFF_AUDITALLOW_OFFSET);
+	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_AUDITALLOW);
 }
 
-int avrule_enable_line_numbers(poldiff_t * diff, unsigned int idx)
+int avrule_enable_line_numbers(poldiff_t * diff, avrule_offset_e idx)
 {
 	const apol_vector_t *av = NULL;
 	poldiff_avrule_t *avrule = NULL;

@@ -28,6 +28,6 @@ VERS_1.2{
 
 VERS_1.3{
 	global:
-		poldiff_component_*;
+		poldiff_component_record_*;
 	local: *;
 };
