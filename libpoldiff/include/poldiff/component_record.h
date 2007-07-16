@@ -1,15 +1,16 @@
 /**
  *  @file
- *    Typedefs to aid declaring function pointers for callbacks extracted
- *    from component records.
+ *  Typedefs to aid declaring function pointers for callbacks
+ *  extracted from component records.
  *
- *    This file also declares functions to extract the callbacks for
- *    component records.  This implements a form of polymorphism so
- *    that one can operate on component records and not care about the
- *    library dependent implementation.
+ *  This file also declares functions to extract the callbacks for
+ *  component records.  This implements a form of polymorphism so that
+ *  one can operate on component records and not care about the
+ *  library dependent implementation.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Mark Goldman mgoldman@tresys.com
  *
  *  Copyright (C) 2007 Tresys Technology, LLC
  *
