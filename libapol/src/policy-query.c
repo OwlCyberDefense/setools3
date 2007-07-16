@@ -276,7 +276,7 @@ static int apol_query_append_type(const apol_policy_t * p, apol_vector_t * v, co
 {
 	unsigned char isalias;
 	const qpol_type_t *real_type = type;
-	if (qpol_type_get_isattr(p->p, type, &isalias) < 0) {
+	if (qpol_type_get_isalias(p->p, type, &isalias) < 0) {
 		return -1;
 	}
 	if (isalias) {

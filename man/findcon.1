@@ -85,6 +85,11 @@ fifo,
 file,
 link, or
 sock.
+.SH NOTE
+The findcon utility always operates on "raw" SELinux file contexts.
+If the system has an installed translation library (i.e., libsetrans),
+those translations are ignored in favor of reading the original
+contexts from the filesystem (if FCFILE is a directory).
 .SH EXAMPLES
 .TP
 .B findcon .

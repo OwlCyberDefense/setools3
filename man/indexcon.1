@@ -21,6 +21,11 @@ Start scanning at directory DIR, and recurse through its subdirectories.
 Print help information and exit.
 .IP "-V, --version"
 Print version information and exit.
+.SH NOTE
+The indexcon utility always operates on "raw" SELinux file contexts.
+If the system has an installed translation library (i.e., libsetrans),
+those translations are ignored in favor of reading the original
+contexts from the filesystem.
 .SH AUTHOR
 This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT

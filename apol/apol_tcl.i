@@ -352,7 +352,11 @@ unsigned int apol_tcl_get_policy_version(apol_policy_t *policy);
 	int apol_tcl_query_database(sefs_fclist *fclist, sefs_query *query, Tcl_Interp * interp)
 	{
 	    struct apol_tcl_query_data a = {interp, 0};
-	    return fclist->runQueryMap(query, apol_tcl_query_callback, &a);
+	    int retval = fclist->runQueryMap(query, apol_tcl_query_callback, &a);
+	    if (retval >= 0) {
+		tcl_clear_error();
+	    }
+	    return retval;
 	}
 
 	/**

@@ -162,7 +162,10 @@ proc Apol_File_Contexts::create {tab_name nb} {
 }
 
 proc Apol_File_Contexts::open {ppath} {
-    # FIX ME: set the policy if db is loaded
+    if {[is_db_loaded]} {
+        variable opts
+        $opts(db) associatePolicy $::ApolTop::policy
+    }
 }
 
 proc Apol_File_Contexts::close {} {
@@ -352,6 +355,9 @@ proc Apol_File_Contexts::_create_database {dialog} {
     set opts(db) $db
     set opts(fc_is_mls) [$db isMLS]
     set opts(indexFilename) $opts(new_filename)
+    if {[ApolTop::is_policy_open]} {
+        $opts(db) associatePolicy $::ApolTop::policy
+    }
     $dialog enddialog {}
 }
 
@@ -377,6 +383,9 @@ proc Apol_File_Contexts::_open_database {} {
     set opts(db) $db
     set opts(fc_is_mls) [$db isMLS]
     set opts(indexFilename) $f
+    if {[ApolTop::is_policy_open]} {
+        $opts(db) associatePolicy $::ApolTop::policy
+    }
 }
 
 proc Apol_File_Contexts::_search {} {

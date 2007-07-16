@@ -74,6 +74,11 @@ fifo,
 file,
 link, or
 sock.
+.SH NOTE
+The replcon utility always operates on "raw" SELinux file contexts.
+If the system has an installed translation library (i.e., libsetrans),
+those translations are ignored in favor of reading the original
+contexts from the filesystem.
 .SH EXAMPLES
 .TP
 .B replcon ::type_t: .
