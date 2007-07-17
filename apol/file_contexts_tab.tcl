@@ -186,18 +186,23 @@ proc Apol_File_Contexts::is_db_loaded {} {
 }
 
 proc Apol_File_Contexts::get_fc_files_for_ta {which ta} {
-    # FIX ME
+    set q [new_sefs_query]
     if {$which == "type"} {
-        set types_list $ta
+        $q type $ta 0
     } else {
-        set types_list [lindex [apol_GetAttribs $ta] 0 1]
+        $q type $ta 1
     }
-    set results [apol_Search_FC_Index_DB {} $types_list {} {} {} 0 0 0 0]
-    set return_list {}
-    foreach fscon $results {
-        lappend return_list $fscon
+    variable opts
+    if {[catch {Apol_Progress_Dialog::wait "File Contexts" "Searching database for $ta" \
+                    {
+                        $opts(db) runQuery $q
+                    }} results]} {
+        tk_messageBox -icon error -type ok -title "File Contexts" -message $results
+        delete_sefs_query $q
+        return {}
     }
-    return $return_list
+    delete_sefs_query $q
+    return $results
 }
 
 #### private functions below ####
@@ -450,6 +455,7 @@ proc Apol_File_Contexts::_search {} {
     $q user $user
     $q role $role
     $q type $type 1
+    $q range $range 0
     $q objectClass $objclass
     $q path $path
     $q regex $opts(useRegexp)

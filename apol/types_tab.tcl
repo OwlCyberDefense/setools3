@@ -197,16 +197,18 @@ proc Apol_Types::_toggleCheckbuttons {w name1 name2 op} {
 }
 
 proc Apol_Types::_popupTypeInfo {which ta} {
-    set info_fc ""
-    set index_file_loaded 0
+    if {[Apol_File_Contexts::is_db_loaded]} {
+        set entry_vector [Apol_File_Contexts::get_fc_files_for_ta $which $ta]
+        set index_file_loaded 1
+    } else {
+        set entry_vector {}
+        set index_file_loaded 0
+    }
+
     if {$which == "type"} {
         set info_ta [_renderType $ta 1 1]
     } else {
         set info_ta [_renderAttrib $ta 1 0]
-    }
-    if {[Apol_File_Contexts::is_db_loaded]} {
-        set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]
-        set index_file_loaded 1
     }
 
     set w .ta_infobox
@@ -240,28 +242,28 @@ proc Apol_Types::_popupTypeInfo {which ta} {
         pack $l -anchor nw
     }
     set sw [ScrolledWindow [$notebook getframe fc_info_tab].sw -scrollbar both -auto both]
-    set text [text [$sw getframe].text -wrap none -font {helvetica 10} -bg white]
-    $sw setwidget $text
+    set fc_text [text [$sw getframe].text -wrap none -font {helvetica 10} -bg white]
+    $sw setwidget $fc_text
     pack $sw -expand 1 -fill both
 
     $notebook raise [$notebook page 0]
 
     if {$index_file_loaded} {
-        if {$info_fc != ""} {
-            set num 0
-            foreach item $info_fc {
-                foreach {ctxt class path} $item {}
-                $f_fc insert end "$ctxt\t     $class\t     $path\n"
-                incr num
+        if {$entry_vector != {}} {
+            set num [$entry_vector get_size]
+            $fc_text insert 1.0 "Number of files: $num\n\n"
+            for {set i 0} {$i < $num} {incr i} {
+                set entry [sefs_entry_from_void [$entry_vector get_element $i]]
+                $fc_text insert end "[$entry toString]\n"
             }
-            $text insert 1.0 "Number of files: $num\n\n"
+            $entry_vector -delete
         } else {
-            $text insert end "No files found."
+            $fc_text insert end "No files found."
         }
     } else {
-        $text insert 0.0 "No index file is loaded.  Load an index file through the File Context tab."
+        $fc_text insert 0.0 "No index file is loaded.  Load an index file through the File Context tab."
     }
-    $text configure -state disabled
+    $fc_text configure -state disabled
 
     $w draw {} 0 400x400
 }
