@@ -861,22 +861,22 @@ proc Apol_TE::_search_terules {whichButton} {
     variable tabs
 
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No current policy file is opened."
         return
     }
 
     # check search options
     if {$enabled(ta:use_source) && $vals(ta:use_source) && $vals(ta:source_sym) == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No source type/attribute was selected."
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No source type/attribute was selected."
         return
     }
     if {$enabled(ta:use_target) && $vals(ta:use_target) && $vals(ta:target_sym) == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No target type/attribute was selected."
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No target type/attribute was selected."
         return
     }
     if {$enabled(ta:use_default) && $vals(ta:use_default) && $vals(ta:default_sym) == {}} {
 
-        tk_messageBox -icon error -type ok -title "Error" -message "No default type selected."
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No default type selected."
         return
     }
 
@@ -889,7 +889,7 @@ proc Apol_TE::_search_terules {whichButton} {
         set terule_selection [expr {$terule_selection | $value}]
     }
     if {$avrule_selection == 0 && $terule_selection == 0} {
-            tk_messageBox -icon error -type ok -title "Error" -message "At least one rule must be selected."
+            tk_messageBox -icon error -type ok -title "TE Rule Search" -message "At least one rule must be selected."
             return
     }
 
@@ -926,7 +926,7 @@ proc Apol_TE::_search_terules {whichButton} {
         foreach p $vals(cp:perms_selected) {
             $avq append_perm $::ApolTop::policy $p
         }
-        $avq set_all_perms $::ApolTop::policy 1
+        $avq set_all_perms $::ApolTop::policy $vals(cp:perms_matchall)
     }
 
     $avq set_rules $::ApolTop::policy $avrule_selection
