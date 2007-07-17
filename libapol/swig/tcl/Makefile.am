@@ -17,7 +17,7 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so
 
-$(BUILT_SOURCES): $(dist_noinst_DATA)
+$(BUILT_SOURCES): $(dist_noinst_DATA) $(DEPENDENCIES)
 	$(SWIG) $(SWIG_TCL_OPT) -pkgversion @libapol_version@ -o $@ -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/swig $<
 
 $(wrappedso_DATA): $(BUILT_SOURCES)

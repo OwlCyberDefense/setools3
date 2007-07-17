@@ -75,7 +75,7 @@ AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@SEFS_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@
 
-apol_tcl_wrap.cc: apol_tcl.i
+apol_tcl_wrap.cc: apol_tcl.i $(DEPENDENCIES)
 	$(SWIG) -c++ $(SWIG_TCL_OPT) -pkgversion @libapol_version@ -o $@ \
 	-I$(top_srcdir)/libsefs/include -I$(top_srcdir)/libsefs/swig \
 	-I$(top_srcdir)/libapol/include -I$(top_srcdir)/libapol/swig \

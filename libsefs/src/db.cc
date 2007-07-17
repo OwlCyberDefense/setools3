@@ -685,7 +685,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 					throw std::runtime_error(strerror(errno));
 				}
 			}
-			if (query->_range != NULL)
+			if (query->_range != NULL && query->_rangeMatch != 0)
 			{
 				q.apol_range = apol_mls_range_create_from_string(policy, query->_range);
 				if (q.apol_range == NULL)
@@ -799,7 +799,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 			where_added = true;
 		}
 
-		if (q.range != NULL)
+		if (q.db_is_mls && q.range != NULL)
 		{
 			if (sqlite3_create_function(_db, "range_compare", 1, SQLITE_UTF8, &q, db_range_compare, NULL, NULL) !=
 			    SQLITE_OK)

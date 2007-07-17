@@ -18,7 +18,7 @@ DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libseaudit/src/libseaudit.so
 
-$(BUILT_SOURCES): $(dist_noinst_DATA)
+$(BUILT_SOURCES): $(dist_noinst_DATA) $(DEPENDENCIES)
 	$(SWIG) $(SWIG_TCL_OPT) -pkgversion @libseaudit_version@ -o $@ -I$(top_srcdir)/libseaudit/include -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libapol/swig -I$(top_srcdir)/libqpol/swig $<
 
 $(wrappedso_DATA): $(BUILT_SOURCES)

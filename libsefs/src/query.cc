@@ -77,7 +77,7 @@ void sefs_query::user(const char *name) throw(std::bad_alloc)
 	{
 		free(_user);
 		_user = NULL;
-		if (name != NULL && (_user = strdup(name)) == NULL)
+		if (name != NULL && *name != '\0' && (_user = strdup(name)) == NULL)
 		{
 			throw std::bad_alloc();
 		}
@@ -90,7 +90,7 @@ void sefs_query::role(const char *name) throw(std::bad_alloc)
 	{
 		free(_role);
 		_role = NULL;
-		if (name != NULL && (_role = strdup(name)) == NULL)
+		if (name != NULL && *name != '\0' && (_role = strdup(name)) == NULL)
 		{
 			throw std::bad_alloc();
 		}
@@ -103,7 +103,7 @@ void sefs_query::type(const char *name, bool indirect) throw(std::bad_alloc)
 	{
 		free(_type);
 		_type = NULL;
-		if (name != NULL)
+		if (name != NULL && *name != '\0')
 		{
 			if ((_type = strdup(name)) == NULL)
 			{
@@ -120,7 +120,7 @@ void sefs_query::range(const char *name, int match) throw(std::bad_alloc)
 	{
 		free(_range);
 		_range = NULL;
-		if (name != NULL)
+		if (name != NULL && *name != '\0')
 		{
 			if ((_range = strdup(name)) == NULL)
 			{
@@ -138,7 +138,7 @@ void sefs_query::objectClass(uint32_t objclass)
 
 void sefs_query::objectClass(const char *name)
 {
-	if (name == NULL || strcmp(name, "any") == 0)
+	if (name == NULL || *name == '\0' || strcmp(name, "any") == 0)
 	{
 		_objclass = QPOL_CLASS_ALL;
 	}
@@ -158,7 +158,7 @@ void sefs_query::path(const char *str) throw(std::bad_alloc)
 	{
 		free(_path);
 		_path = NULL;
-		if (str != NULL && (_path = strdup(str)) == NULL)
+		if (str != NULL && *str != '\0' && (_path = strdup(str)) == NULL)
 		{
 			throw std::bad_alloc();
 		}
@@ -176,7 +176,7 @@ void sefs_query::dev(const char *str) throw(std::bad_alloc)
 	{
 		free(_dev);
 		_dev = NULL;
-		if (str != NULL && (_dev = strdup(str)) == NULL)
+		if (str != NULL && *str != '\0' && (_dev = strdup(str)) == NULL)
 		{
 			throw std::bad_alloc();
 		}

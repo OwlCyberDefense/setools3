@@ -484,9 +484,9 @@ proc Apol_File_Contexts::_search_callback {entry} {
     }
     if {$opts(showObjclass)} {
         set class [apol_objclass_to_str [$entry objectClass]]
-        append text [format "%-12s" $class]
+        append text [format " %-12s" $class]
     }
-    append text "[$entry path]\n"
+    append text " [$entry path]\n"
     Apol_Widget::appendSearchResultText $widgets(results) $text
 }
 

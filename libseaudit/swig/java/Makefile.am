@@ -41,9 +41,9 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @SEAUDIT_LIB_FLAG@ @XML_LIBS@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so \
-	$(top_builddir)/libseaudit/src/seaudit.so
+	$(top_builddir)/libseaudit/src/libseaudit.so
 
-$(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA)
+$(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA) $(DEPENDENCIES)
 	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ \
 	-I$(top_srcdir)/libseaudit/include -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<
