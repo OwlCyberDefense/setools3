@@ -694,7 +694,7 @@ apol_vector_t *query_create_candidate_type(apol_policy_t * policy, const char *s
 			unsigned char isattr, isalias;
 			for (size_t i = 0; i < orig_vector_size; i++)
 			{
-				type_name = static_cast < char * >(apol_vector_get_element(list, i));
+				type_name = static_cast < char *>(apol_vector_get_element(list, i));
 				qpol_policy_get_type_by_name(q, type_name, &type);
 				assert(type != NULL);
 				if (qpol_type_get_isalias(q, type, &isalias) < 0 || qpol_type_get_isattr(q, type, &isattr) < 0)

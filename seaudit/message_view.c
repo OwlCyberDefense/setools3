@@ -751,7 +751,7 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
 	state->view = view;
 	state->messages = messages;
-        state->dialog = GTK_DIALOG(window);
+	state->dialog = GTK_DIALOG(window);
 	state->buffer = buffer;
 	g_signal_connect(window, "response", G_CALLBACK(message_view_dialog_response), state);
 	state->handle_id = g_signal_connect(view->store, "row-changed", G_CALLBACK(message_view_dialog_change), state);

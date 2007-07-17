@@ -636,7 +636,8 @@ proc Apol_Analysis_domaintrans::_analyze {} {
         $q append_access_type $::ApolTop::policy $o
     }
     foreach {cp_pair} $vals(search:classperm_pairs) {
-        $q append_class_perm $::ApolTop::policy [lindex $cp_pair 0] [lindex $cp_pair 1]
+        $q append_class $::ApolTop::policy [lindex $cp_pair 0]
+        $q append_perm $::ApolTop::policy [lindex $cp_pair 1]
     }
     apol_tcl_set_info_string $::ApolTop::policy "Building domain transition table..."
     $::ApolTop::policy build_domain_trans_table
@@ -954,7 +955,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
                 "\n" subtitle
             set v [list_to_vector $type_trans]
             apol_tcl_terule_sort $::ApolTop::policy $v
-            Apol_Widget::appendSearchResultRules $res 12 $v new_qpol_terule_t
+            Apol_Widget::appendSearchResultRules $res 12 $v qpol_terule_from_void
             $v -delete
         }
     }

@@ -2199,16 +2199,23 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 	fail:
 		return;
 	};
-	void append_class_perm(apol_policy_t *p, char *class_name, char *perm_name) {
-		if (apol_domain_trans_analysis_append_class_perm(p, self, class_name, perm_name)) {
-			SWIG_exception(SWIG_RuntimeError, "Could not append access class and permission for domain transition analysis");
+	void append_class(apol_policy_t *p, char *class_name) {
+		if (apol_domain_trans_analysis_append_class(p, self, class_name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append access class for domain transition analysis");
 		}
 	fail:
 		return;
 	};
+	void append_perm(apol_policy_t *p, char *perm_name) {
+		if (apol_domain_trans_analysis_append_perm(p, self, perm_name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append access permission for domain transition analysis");
+		}
+	fail:
+			return;
+	};
 	%newobject run();
 	apol_vector_t *run(apol_policy_t *p) {
-		apol_vector_t *v;
+		apol_vector_t *v = NULL;
 		if (apol_domain_trans_analysis_do(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run domain transition analysis");
 		}
