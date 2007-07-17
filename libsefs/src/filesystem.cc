@@ -314,10 +314,16 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	size_t i;
 	void *dev_num = const_cast < void *>(static_cast < const void *>(&(sb->st_dev)));
 	int rc = apol_vector_get_index(s->dev_map, NULL, filesystem_dev_cmp, dev_num, &i);
-	assert(rc == 0);
-	struct filesystem_dev *d = static_cast < struct filesystem_dev *>(apol_vector_get_element(s->dev_map, i));
-	const char *dev = d->dev_name;
-
+	const char *dev = "<unknown>";
+	if (rc == 0) {
+		// if the device number was discovered in buildDevMap
+		// then store the device name within the entry
+		struct filesystem_dev *d = static_cast < struct filesystem_dev *>(apol_vector_get_element(s->dev_map, i));
+		dev = d->dev_name;
+	}
+	else {
+		SEFS_WARN(s->fs, "Unknown device for %s.", fpath);
+	}
 	try
 	{
 		if (!filesystem_is_query_match(s->fs, s->query, fpath, dev, sb, s->type_list, s->range))
@@ -503,8 +509,10 @@ apol_vector_t *sefs_filesystem::buildDevMap(void)throw(std::runtime_error)
 			struct stat sb;
 			if (stat(mntbuf.mnt_dir, &sb) == -1)
 			{
-				SEFS_ERR(this, "%s", strerror(errno));
-				throw std::runtime_error(strerror(errno));
+				// could not open this device, so skip
+				// it (and hope it won't be examined
+				// during runQuery())
+				continue;
 			}
 			else
 			{

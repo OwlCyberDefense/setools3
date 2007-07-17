@@ -808,7 +808,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 				throw std::runtime_error(strerror(errno));
 			}
 			if (apol_str_appendf(&select_stmt, &len,
-					     "%s (range_compare(mls.mls_range_name))", (where_added ? " AND" : " WHERE")) < 0)
+					     "%s (range_compare(mls.mls_range))", (where_added ? " AND" : " WHERE")) < 0)
 			{
 				SEFS_ERR(this, "%s", strerror(errno));
 				throw std::runtime_error(strerror(errno));
