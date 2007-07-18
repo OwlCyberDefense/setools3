@@ -565,7 +565,13 @@ static int pseudo_terule_comp(const pseudo_terule_t * rule1, const pseudo_terule
 		} else {
 			bool_val = ~rule2->bool_val;
 		}
-		return rule1->bool_val - bool_val;
+		if (rule1->bool_val < bool_val) {
+			return -1;
+		}
+		else if (rule1->bool_val > bool_val) {
+			return 1;
+		}
+		return 0;
 	}
 }
 
@@ -598,7 +604,7 @@ static int terule_build_cond(const poldiff_t * diff, const apol_policy_t * p, co
 	qpol_iterator_t *iter = NULL;
 	qpol_cond_expr_node_t *node;
 	uint32_t expr_type, truthiness;
-	qpol_bool_t *bools[5], *qbool;
+	qpol_bool_t *bools[5] = {NULL, NULL, NULL, NULL, NULL}, *qbool;
 	size_t i, j;
 	size_t num_bools = 0;
 	const char *bool_name, *pseudo_bool, *t;
@@ -656,7 +662,7 @@ static int terule_build_cond(const poldiff_t * diff, const apol_policy_t * p, co
 				key->bools[j - 1] = t;
 				qbool = bools[j];
 				bools[j] = bools[j - 1];
-				bools[j - 1] = bools[j];
+				bools[j - 1] = qbool;
 			}
 		}
 	}
@@ -665,7 +671,8 @@ static int terule_build_cond(const poldiff_t * diff, const apol_policy_t * p, co
 	key->bool_val = 0;
 	for (i = 0; i < 32; i++) {
 		for (j = 0; j < num_bools; j++) {
-			if (qpol_bool_set_state_no_eval(q, bools[j], ((i & (1 << j)) ? 1 : 0)) < 0) {
+			int state = ((i & (1 << j)) ? 1 : 0);
+			if (qpol_bool_set_state_no_eval(q, bools[j], state) < 0) {
 				error = errno;
 				goto cleanup;
 			}

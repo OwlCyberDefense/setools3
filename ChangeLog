@@ -1,3 +1,9 @@
+2007-07-18  J. Tang  <jtang@tresys.com>
+
+	* Fixed error in libpoldiff where if an AV or a TE rule was within
+	a conditional that had multiple boolean variables, the diff
+	algorithm would generate an incorrect STC key for that rule.
+
 2007-07-13  J. Tang  <jtang@tresys.com>
 
 	* Java SWIG libraries now check if the libraries needs to be
