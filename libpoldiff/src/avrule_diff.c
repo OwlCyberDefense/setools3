@@ -683,8 +683,7 @@ static int pseudo_avrule_comp(const pseudo_avrule_t * rule1, const pseudo_avrule
 		}
 		if (rule1->bool_val < bool_val) {
 			return -1;
-		}
-		else if (rule1->bool_val > bool_val) {
+		} else if (rule1->bool_val > bool_val) {
 			return 1;
 		}
 		return 0;
@@ -713,7 +712,7 @@ static int avrule_build_cond(poldiff_t * diff, const apol_policy_t * p, const qp
 	qpol_iterator_t *iter = NULL;
 	qpol_cond_expr_node_t *node;
 	uint32_t expr_type, truthiness;
-	qpol_bool_t *bools[5] = {NULL, NULL, NULL, NULL, NULL}, *qbool;
+	qpol_bool_t *bools[5] = { NULL, NULL, NULL, NULL, NULL }, *qbool;
 	size_t i, j;
 	size_t num_bools = 0;
 	const char *bool_name;

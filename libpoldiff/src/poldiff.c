@@ -524,7 +524,7 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 	}
 
 	int policy_opts = diff->policy_opts;
-	if (flags & POLDIFF_DIFF_RULES) {
+	if (flags & (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES)) {
 		policy_opts &= ~(QPOL_POLICY_OPTION_NO_RULES);
 	}
 	if (flags & POLDIFF_DIFF_AVNEVERALLOW) {

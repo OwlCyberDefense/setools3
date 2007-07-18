@@ -875,9 +875,6 @@ static void result_item_avrule_print_diff(result_item_t * item, GtkTextBuffer * 
 	apol_vector_destroy(&item->data.multi.items[form_reverse_map[form]]);
 	item->data.multi.items[form_reverse_map[form]] = rules;
 	gtk_text_buffer_get_end_iter(tb, &iter);
-	if (apol_vector_get_size(rules) > 0) {
-		poldiff_enable_line_numbers(item->diff);
-	}
 	for (i = 0; i < apol_vector_get_size(rules); i++) {
 		elem = apol_vector_get_element(rules, i);
 		if ((s = poldiff_avrule_to_string(item->diff, elem)) == NULL) {
@@ -919,7 +916,7 @@ static void result_item_avrule_policy_changed(result_item_t * item, apol_policy_
 		// don't use capability to check if neverallows are
 		// supported, because policies are always loaded
 		// without them.  libpoldiff could then reload the
-		// policies with neverallow, in which case the would
+		// policies with neverallow, in which case they would
 		// become capable (but item->supported still claims to
 		// be 0)
 		qpol_policy_get_type(oq, &orig_type);
@@ -1067,9 +1064,6 @@ static void result_item_terule_print_diff(result_item_t * item, GtkTextBuffer * 
 	char *mod_prefix;
 
 	gtk_text_buffer_get_end_iter(tb, &iter);
-	if (apol_vector_get_size(rules) > 0) {
-		poldiff_enable_line_numbers(item->diff);
-	}
 	for (i = 0; i < apol_vector_get_size(rules); i++) {
 		elem = apol_vector_get_element(rules, i);
 		if ((s = poldiff_terule_to_string(item->diff, elem)) == NULL) {

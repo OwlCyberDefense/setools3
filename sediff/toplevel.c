@@ -325,6 +325,9 @@ static gpointer toplevel_run_diff_runner(gpointer data)
 	}
 	run->result = poldiff_run(diff, run->run_flags);
 	sediffx_set_poldiff_run_flags(run->top->s, run->run_flags);
+	if (run->run_flags & (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES)) {
+		poldiff_enable_line_numbers(diff);
+	}
 	if (run->result < 0) {
 		progress_abort(run->top->progress, NULL);
 	} else {

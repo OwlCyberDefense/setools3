@@ -454,7 +454,7 @@ proc Apol_File_Contexts::_search {} {
     set q [new_sefs_query]
     $q user $user
     $q role $role
-    $q type $type 1
+    $q type $type 0
     $q range $range 0
     $q objectClass $objclass
     $q path $path

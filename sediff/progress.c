@@ -102,14 +102,16 @@ int progress_wait(progress_t * progress)
 	GTimeVal wait_time = { 0, 50000 };
 	g_mutex_lock(progress->mutex);
 	while (!progress->done) {
-		g_cond_timed_wait(progress->cond, progress->mutex, &wait_time);
 		if (progress->s != NULL) {
 			gtk_label_set_text(GTK_LABEL(progress->label2), progress->s);
 			free(progress->s);
 			progress->s = NULL;
 		}
-		while (gtk_events_pending())
-			gtk_main_iteration();
+		// only process one event -- the policy source could
+		// still be loading, and this dialog should not block
+		// until the entire source has been read
+		gtk_main_iteration_do(FALSE);
+		g_cond_timed_wait(progress->cond, progress->mutex, &wait_time);
 	}
 	g_mutex_unlock(progress->mutex);
 	if (progress->done < 0) {

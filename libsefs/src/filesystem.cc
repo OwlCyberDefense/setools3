@@ -315,13 +315,15 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	void *dev_num = const_cast < void *>(static_cast < const void *>(&(sb->st_dev)));
 	int rc = apol_vector_get_index(s->dev_map, NULL, filesystem_dev_cmp, dev_num, &i);
 	const char *dev = "<unknown>";
-	if (rc == 0) {
+	if (rc == 0)
+	{
 		// if the device number was discovered in buildDevMap
 		// then store the device name within the entry
 		struct filesystem_dev *d = static_cast < struct filesystem_dev *>(apol_vector_get_element(s->dev_map, i));
 		dev = d->dev_name;
 	}
-	else {
+	else
+	{
 		SEFS_WARN(s->fs, "Unknown device for %s.", fpath);
 	}
 	try
@@ -593,11 +595,13 @@ bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, c
 
 	bool str_matched = false, pol_matched = false;
 	str_matched = query_str_compare(context_type_get(con), query->_type, query->_retype, query->_regex);
-	if (type_list != NULL && !str_matched) {
+	if (type_list != NULL && !str_matched)
+	{
 		size_t index;
 		pol_matched = (apol_vector_get_index(type_list, context_type_get(con), apol_str_strcmp, NULL, &index) < 0);
 	}
-	if (!str_matched && !pol_matched) {
+	if (!str_matched && !pol_matched)
+	{
 		context_free(con);
 		return false;
 	}

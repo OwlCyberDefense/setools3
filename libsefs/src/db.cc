@@ -173,7 +173,8 @@ static void db_type_compare(sqlite3_context * context, int argc __attribute__ ((
 		assert(q->policy != NULL);
 		size_t index;
 		retval = (apol_vector_get_index(q->type_list, text, apol_str_strcmp, NULL, &index) >= 0);
-		if (retval) {
+		if (retval)
+		{
 			sqlite3_result_int(context, 1);
 			return;
 		}

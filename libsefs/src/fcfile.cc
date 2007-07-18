@@ -198,11 +198,15 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 
 				bool str_matched = false, pol_matched = false;
 				str_matched = query_str_compare(context->type, query->_type, query->_retype, query->_regex);
-				if (type_list != NULL && !str_matched) {
+				if (type_list != NULL && !str_matched)
+				{
 					size_t index;
-					pol_matched = (apol_vector_get_index(type_list, context->type, apol_str_strcmp, NULL, &index) < 0);
+					pol_matched =
+						(apol_vector_get_index(type_list, context->type, apol_str_strcmp, NULL, &index) <
+						 0);
 				}
-				if (!str_matched && !pol_matched) {
+				if (!str_matched && !pol_matched)
+				{
 					continue;
 				}
 
