@@ -168,16 +168,17 @@ static void db_type_compare(sqlite3_context * context, int argc __attribute__ ((
 	assert(sqlite3_value_type(argv[0]) == SQLITE_TEXT);
 	const char *text = reinterpret_cast < const char *>(sqlite3_value_text(argv[0]));
 	bool retval;
-	if (q->type_list == NULL)
-	{
-		retval = query_str_compare(text, q->type, q->retype, q->regex);
-	}
-	else
+	if (q->type_list != NULL)
 	{
 		assert(q->policy != NULL);
 		size_t index;
 		retval = (apol_vector_get_index(q->type_list, text, apol_str_strcmp, NULL, &index) >= 0);
+		if (retval) {
+			sqlite3_result_int(context, 1);
+			return;
+		}
 	}
+	retval = query_str_compare(text, q->type, q->retype, q->regex);
 	sqlite3_result_int(context, (retval ? 1 : 0));
 }
 
@@ -674,7 +675,7 @@ int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data
 		query->compile();
 		if (policy != NULL)
 		{
-			if (query->_type != NULL)
+			if (query->_type != NULL && query->_indirect)
 			{
 				q.type_list =
 					query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,

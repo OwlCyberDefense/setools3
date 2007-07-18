@@ -164,7 +164,7 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 			query->compile();
 			if (policy != NULL)
 			{
-				if (query->_type != NULL &&
+				if (query->_type != NULL && query->_indirect &&
 				    (type_list =
 				     query_create_candidate_type(policy, query->_type, query->_retype, query->_regex,
 								 query->_indirect)) == NULL)
@@ -172,7 +172,7 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 					SEFS_ERR(this, "%s", strerror(errno));
 					throw std::runtime_error(strerror(errno));
 				}
-				if (query->_range != NULL &&
+				if (query->_range != NULL && query->_rangeMatch != 0 &&
 				    (range = apol_mls_range_create_from_string(policy, query->_range)) == NULL)
 				{
 					SEFS_ERR(this, "%s", strerror(errno));
@@ -195,20 +195,15 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 				{
 					continue;
 				}
-				if (type_list == NULL)
-				{
-					if (!query_str_compare(context->type, query->_type, query->_retype, query->_regex))
-					{
-						continue;
-					}
-				}
-				else
-				{
+
+				bool str_matched = false, pol_matched = false;
+				str_matched = query_str_compare(context->type, query->_type, query->_retype, query->_regex);
+				if (type_list != NULL && !str_matched) {
 					size_t index;
-					if (apol_vector_get_index(type_list, context->type, apol_str_strcmp, NULL, &index) < 0)
-					{
-						continue;
-					}
+					pol_matched = (apol_vector_get_index(type_list, context->type, apol_str_strcmp, NULL, &index) < 0);
+				}
+				if (!str_matched && !pol_matched) {
+					continue;
 				}
 
 				if (range == NULL)
