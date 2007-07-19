@@ -1,3 +1,10 @@
+2007-07-19  J. Tang  <jtang@tresys.com>
+
+	* Added many optimizations to qpol_policy_build_syn_rule_table()
+	and associated functions.  With some code rewrites, a doubling of
+	the syntactic rule hash table size, and an improved hashing
+	function, it is at least three times faster to build the table.
+
 2007-07-18  J. Tang  <jtang@tresys.com>
 
 	* Fixed error in libpoldiff where if an AV or a TE rule was within

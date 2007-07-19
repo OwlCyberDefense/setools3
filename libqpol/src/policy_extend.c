@@ -43,15 +43,18 @@
 #include "iterator_internal.h"
 #include "syn_rule_internal.h"
 
-#define QPOL_SYN_RULE_TABLE_BITS 15
+#ifdef SETOOLS_DEBUG
+#include <math.h>
+#endif
+
+#define QPOL_SYN_RULE_TABLE_BITS 16
 #define QPOL_SYN_RULE_TABLE_SIZE (1 << QPOL_SYN_RULE_TABLE_BITS)
 #define QPOL_SYN_RULE_TABLE_MASK (QPOL_SYN_RULE_TABLE_SIZE - 1)
 
 #define QPOL_SYN_RULE_TABLE_HASH(rule_key) \
-((rule_key->class_val + \
- (rule_key->target_val << 2) +\
- (rule_key->source_val << 9)) & \
- QPOL_SYN_RULE_TABLE_MASK)
+(((((rule_key->source_val & 0xff) << 8) | (rule_key->target_val & 0xff)) ^ \
+ (rule_key->class_val & 0xf) ^ \
+ ((int) rule_key->cond & 0xfff0)) & QPOL_SYN_RULE_TABLE_MASK)
 
 typedef struct qpol_syn_rule_key
 {
@@ -70,7 +73,7 @@ typedef struct qpol_syn_rule_list
 
 typedef struct qpol_syn_rule_node
 {
-	qpol_syn_rule_key_t *key;
+	qpol_syn_rule_key_t key;
 	qpol_syn_rule_list_t *rules;
 	struct qpol_syn_rule_node *next;
 } qpol_syn_rule_node_t;
@@ -482,7 +485,6 @@ static void qpol_syn_rule_node_destroy(qpol_syn_rule_node_t ** node)
 	for (cur = *node; cur; cur = next) {
 		next = cur->next;
 		qpol_syn_rule_list_destroy(&cur->rules);
-		free(cur->key);
 		free(cur);
 	}
 }
@@ -517,14 +519,12 @@ static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(const qpol_syn
 {
 	qpol_syn_rule_node_t *node = NULL;
 
-	if (!table || !key)
-		return NULL;
-
 	for (node = table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)]; node; node = node->next) {
-		if (node->key->rule_type & key->rule_type &&
-		    node->key->source_val == key->source_val &&
-		    node->key->target_val == key->target_val &&
-		    node->key->class_val == key->class_val && node->key->cond == key->cond)
+		if ((node->key.rule_type & key->rule_type) &&
+		    (node->key.source_val == key->source_val) &&
+		    (node->key.target_val == key->target_val) &&
+		    (node->key.class_val == key->class_val) &&
+		    (node->key.cond == key->cond))
 			return node;
 	}
 
@@ -549,12 +549,10 @@ static int qpol_syn_rule_table_insert_entry(qpol_policy_t * policy,
 	int error = 0;
 	qpol_syn_rule_node_t *table_node = NULL;
 	qpol_syn_rule_list_t *list_entry = NULL;
-	qpol_syn_rule_key_t *tmp_key = NULL;
 
-	if (!(list_entry = calloc(1, sizeof(qpol_syn_rule_list_t)))) {
+	if (!(list_entry = malloc(sizeof(qpol_syn_rule_list_t)))) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
-		free(key);
 		return -1;
 	}
 	list_entry->rule = rule;
@@ -564,24 +562,18 @@ static int qpol_syn_rule_table_insert_entry(qpol_policy_t * policy,
 		list_entry->next = table_node->rules;
 		table_node->rules = list_entry;
 	} else {
-		if (!(table_node = calloc(1, sizeof(qpol_syn_rule_node_t)))) {
+		list_entry->next = NULL;
+		if (!(table_node = malloc(sizeof(qpol_syn_rule_node_t)))) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			free(list_entry);
 			return -1;
 		}
-		if (!(tmp_key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
-			error = errno;
-			ERR(policy, "%s", strerror(error));
-			qpol_syn_rule_node_destroy(&table_node);
-			errno = error;
-			return -1;
-		}
-		*tmp_key = *key;       /* shallow copy */
-		table_node->key = tmp_key;
+		table_node->key = *key;
 		table_node->rules = list_entry;
-		table_node->next = table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)];
-		table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)] = table_node;
+		size_t hash = QPOL_SYN_RULE_TABLE_HASH(key);
+		table_node->next = table->buckets[hash];
+		table->buckets[hash] = table_node;
 	}
 	return 0;
 }
@@ -609,7 +601,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_policy_t * policy, qpol_
 	unsigned int i, j;
 	class_perm_node_t *class_node = NULL;
 
-	if (!(new_rule = calloc(1, sizeof(struct qpol_syn_rule)))) {
+	if (!(new_rule = malloc(sizeof(struct qpol_syn_rule)))) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -793,6 +785,45 @@ int qpol_policy_build_syn_rule_table(qpol_policy_t * policy)
 			}
 		}
 	}
+
+#ifdef SETOOLS_DEBUG
+	/*
+	 * Debugging code to measure the how well the syntactic rules
+	 * are being hashed.  Calculate the min, max, and std
+	 * deviation.
+	 */
+	size_t bucket;
+	float o2 = 0.0f;
+	long total_entries = 0;
+	for (bucket = 0; bucket < QPOL_SYN_RULE_TABLE_SIZE; bucket++) {
+		qpol_syn_rule_node_t *n = policy->ext->syn_rule_table->buckets[bucket];
+		while (n != NULL) {
+			total_entries++;
+			n = n->next;
+		}
+	}
+	float expected_value = total_entries * 1.0f / QPOL_SYN_RULE_TABLE_SIZE;
+	size_t min_items = total_entries;
+	size_t max_items = 0;
+	for (bucket = 0; bucket < QPOL_SYN_RULE_TABLE_SIZE; bucket++) {
+		size_t num_items = 0;
+		qpol_syn_rule_node_t *n = policy->ext->syn_rule_table->buckets[bucket];
+		while (n != NULL) {
+			num_items++;
+			n = n->next;
+		}
+		if (num_items > max_items) {
+			max_items = num_items;
+		}
+		if (num_items < min_items) {
+			min_items = num_items;
+		}
+		o2 += (num_items - expected_value) * (num_items - expected_value);
+	}
+	float stddev = sqrtf(o2 / QPOL_SYN_RULE_TABLE_SIZE);
+	fprintf(stderr, "libqpol synrule table:  total entries %lu, expected %g\n", total_entries, expected_value);
+	fprintf(stderr, "                        min %zd, max %zd, stddev %g\n", min_items, max_items, stddev);
+#endif
 
 	return 0;
 

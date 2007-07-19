@@ -77,7 +77,7 @@ if test "x${enable_debug}" = xyes; then
     DEBUGCFLAGS="-g3 -gdwarf-2 -O0 -Wall -DSETOOLS_DEBUG=1 -fno-strict-aliasing"
     DEBUGCXXFLAGS="-g3 -gdwarf-2 -O0 -Wall -DSETOOLS_DEBUG=1 -fno-strict-aliasing"
     DEBUGJFLAGS="-g"
-    DEBUGLDFLAGS="-g"
+    DEBUGLDFLAGS="-g -lm"
     QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so -Wl,-rpath=$(top_builddir)/libqpol/src'
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
     SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=$(top_builddir)/libsefs/src'
