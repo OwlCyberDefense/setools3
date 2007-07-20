@@ -462,6 +462,26 @@ extern "C"
 	extern unsigned long seaudit_filter_get_inode(const seaudit_filter_t * filter);
 
 /**
+ * Set the pid criterion.  A message is accepted if its pid value
+ * exactly matches this pid value.
+ *
+ * @param filter Filter to modify.
+ * @param pid value to match.  If this is 0 then clear the existing pid.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_pid(seaudit_filter_t * filter, unsigned int pid);
+
+/**
+ * Return the current pid for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current pid value, or 0 if none set.
+ */
+	extern unsigned int seaudit_filter_get_pid(const seaudit_filter_t * filter);
+
+/**
  * Set the command criterion, as a glob expression.  A message is
  * accepted if its command matches this expression.
  *

@@ -58,6 +58,8 @@ struct seaudit_filter
 	char *path;
 	/** inode criterion, as a literal value */
 	unsigned long inode;
+	/** pid criterion, as a literal value */
+	unsigned int pid;
 	/** criterion for command, glob expression */
 	char *comm;
 	/** criterion for IP address, glob expression */

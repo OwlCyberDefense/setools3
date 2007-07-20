@@ -22,6 +22,8 @@ VERS_4.2{
 		seaudit_filter_set_permission;
 		seaudit_filter_get_inode;
 		seaudit_filter_set_inode;
+		seaudit_filter_get_pid;
+		seaudit_filter_set_pid;
 		seaudit_filter_get_laddr;
 		seaudit_fliter_set_laddr;
 		seaudit_filter_get_lport;

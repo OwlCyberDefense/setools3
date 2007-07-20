@@ -75,6 +75,21 @@ static int filter_ulong_read(unsigned long *dest, const xmlChar * ch)
 	return retval;
 }
 
+static unsigned int filter_uint_read(unsigned int *dest, const xmlChar * ch)
+{
+	char *s, *endptr;
+	int retval = -1;
+	if ((s = xmlURIUnescapeString((const char *)ch, 0, NULL)) == NULL) {
+		return -1;
+	}
+	*dest = (unsigned int)(strtoul(s, &endptr, 10));
+	if (*s != '\0' && *endptr == '\0') {
+		retval = 0;
+	}
+	free(s);
+	return retval;
+}
+
 static int filter_int_read(int *dest, const xmlChar * ch)
 {
 	char *s, *endptr;
@@ -82,7 +97,7 @@ static int filter_int_read(int *dest, const xmlChar * ch)
 	if ((s = xmlURIUnescapeString((const char *)ch, 0, NULL)) == NULL) {
 		return -1;
 	}
-	*dest = (int)(strtoul(s, &endptr, 10));
+	*dest = (int)(strtol(s, &endptr, 10));
 	if (*s != '\0' && *endptr == '\0') {
 		retval = 0;
 	}
@@ -148,6 +163,21 @@ static void filter_ulong_print(const char *criteria_name, const unsigned long va
 		fprintf(f, "\t");
 	}
 	fprintf(f, "<item>%lu</item>\n", val);
+	for (i = 0; i < tabs; i++)
+		fprintf(f, "\t");
+	fprintf(f, "</criteria>\n");
+}
+
+static void filter_uint_print(const char *criteria_name, const unsigned int val, FILE * f, int tabs)
+{
+	int i;
+	for (i = 0; i < tabs; i++)
+		fprintf(f, "\t");
+	fprintf(f, "<criteria type=\"%s\">\n", criteria_name);
+	for (i = 0; i < tabs + 1; i++) {
+		fprintf(f, "\t");
+	}
+	fprintf(f, "<item>%u</item>\n", val);
 	for (i = 0; i < tabs; i++)
 		fprintf(f, "\t");
 	fprintf(f, "</criteria>\n");
@@ -423,6 +453,26 @@ static int filter_inode_read(seaudit_filter_t * filter, const xmlChar * ch)
 static void filter_inode_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
 {
 	filter_ulong_print(name, filter->inode, f, tabs);
+}
+
+static int filter_pid_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->pid != 0 && msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->is_pid;
+}
+
+static int filter_pid_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	return filter->pid == msg->data.avc->pid;
+}
+
+static int filter_pid_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_uint_read(&filter->pid, ch);
+}
+
+static void filter_pid_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_uint_print(name, filter->pid, f, tabs);
 }
 
 static int filter_comm_support(const seaudit_filter_t * filter, const seaudit_message_t * msg)
@@ -939,6 +989,7 @@ static const struct filter_criteria_t filter_criteria[] = {
 	{"host", filter_host_support, filter_host_accept, filter_host_read, filter_host_print},
 	{"path", filter_path_support, filter_path_accept, filter_path_read, filter_path_print},
 	{"inode", filter_inode_support, filter_inode_accept, filter_inode_read, filter_inode_print},
+	{"pid", filter_pid_support, filter_pid_accept, filter_pid_read, filter_pid_print},
 	{"comm", filter_comm_support, filter_comm_accept, filter_comm_read, filter_comm_print},
 	{"ipaddr", filter_anyaddr_support, filter_anyaddr_accept, filter_anyaddr_read, filter_anyaddr_print},
 	{"port", filter_anyport_support, filter_anyport_accept, filter_anyport_read, filter_anyport_print},

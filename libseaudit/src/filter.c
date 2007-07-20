@@ -108,6 +108,7 @@ seaudit_filter_t *seaudit_filter_create_from_filter(const seaudit_filter_t * fil
 	}
 	f->match = filter->match;
 	f->inode = filter->inode;
+	f->pid = filter->pid;
 	f->anyport = filter->anyport;
 	f->lport = filter->lport;
 	f->fport = filter->fport;
@@ -307,6 +308,17 @@ static int filter_set_string(seaudit_filter_t * filter, char **dest, const char 
 }
 
 static int filter_set_ulong(seaudit_filter_t * filter, unsigned long *dest, const ulong src)
+{
+	if (src != *dest) {
+		*dest = src;
+		if (filter->model != NULL) {
+			model_notify_filter_changed(filter->model, filter);
+		}
+	}
+	return 0;
+}
+
+static int filter_set_uint(seaudit_filter_t * filter, unsigned int *dest, const ulong src)
 {
 	if (src != *dest) {
 		*dest = src;
@@ -549,6 +561,25 @@ unsigned long seaudit_filter_get_inode(const seaudit_filter_t * filter)
 		return 0;
 	}
 	return filter->inode;
+}
+
+int seaudit_filter_set_pid(seaudit_filter_t * filter, unsigned int pid)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_uint(filter, &filter->pid, pid);
+	return 0;
+}
+
+unsigned int seaudit_filter_get_pid(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	return filter->pid;
 }
 
 int seaudit_filter_set_command(seaudit_filter_t * filter, const char *command)

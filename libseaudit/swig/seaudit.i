@@ -742,6 +742,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	long get_inode() {
 		return (long) seaudit_filter_get_inode(self);
 	};
+	void set_pid(long pid) {
+		seaudit_filter_set_pid(self, (unsigned int) pid);
+	};
+	long get_pid() {
+		return (long) seaudit_filter_get_pid(self);
+	};
 	const char *get_command() {
 		return seaudit_filter_get_command(self);
 	};

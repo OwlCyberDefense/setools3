@@ -1,3 +1,7 @@
+2007-07-20  J. Tang  <jtang@tresys.com>
+
+	* Added seaudit_filter for PID.
+
 2007-07-19  J. Tang  <jtang@tresys.com>
 
 	* Added many optimizations to qpol_policy_build_syn_rule_table()
