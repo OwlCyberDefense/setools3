@@ -925,6 +925,7 @@ static void result_item_avrule_policy_changed(result_item_t * item, apol_policy_
 			item->supported = 0;
 		}
 	}
+	result_item_multi_policy_changed(item, orig_pol, mod_pol);
 }
 
 /**
@@ -1249,7 +1250,7 @@ void result_item_inline_link_event(result_item_t * item, toplevel_t * top, GtkWi
 				   poldiff_form_e form, int line_num, const char *s)
 {
 	/* for now, inline links only work for avrule items */
-	assert(item->bit_pos == POLDIFF_DIFF_AVRULES);
+	assert(item->bit_pos | POLDIFF_DIFF_AVRULES);
 	const char *perm;
 	poldiff_form_e perm_form = form;
 	if (*s == '+' || *s == '-' || *s == '*') {
