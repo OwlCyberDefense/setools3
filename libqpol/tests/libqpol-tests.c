@@ -1,9 +1,10 @@
 /**
  *  @file
  *
- *  Header file defining location of test policies.
+ *  CUnit testing framework for libqpol.
  *
- *  @author Paul Rosenfeld prosenfeld@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
  *
  *  Copyright (C) 2007 Tresys Technology, LLC
  *
@@ -22,23 +23,20 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLICY_DEFS
-#define POLICY_DEFS
-
 #include <config.h>
 
-#define POLICY_ROOT TEST_POLICIES "/setools-3.2/sediff"
+#include <CUnit/Basic.h>
+#include <CUnit/TestDB.h>
 
-#define COMPONENTS_ORIG_POLICY (POLICY_ROOT "/testing-component-orig.conf")
-#define COMPONENTS_MOD_POLICY (POLICY_ROOT "/testing-component-mod.conf")
+#include <apol/util.h>
+#include <apol/vector.h>
+#include <stdio.h>
+#include <errno.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define RULES_ORIG_POLICY (POLICY_ROOT "/testing-rules-orig.conf")
-#define RULES_MOD_POLICY (POLICY_ROOT "/testing-rules-mod.conf")
-
-#define MLS_ORIG_POLICY (POLICY_ROOT "/testing-mls-orig.conf")
-#define MLS_MOD_POLICY (POLICY_ROOT "/testing-mls-mod.conf")
-
-#define NOMLS_ORIG_POLICY (POLICY_ROOT "/testing-mls-orig.conf")
-#define NOMLS_MOD_POLICY (POLICY_ROOT "/testing-mls-mod-nomls.conf")
-
-#endif
+int main(void)
+{
+    return 0;
+}

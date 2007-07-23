@@ -216,6 +216,10 @@ You can customize your SETools build using the flags given to
       instead of inferring its location based upon the return value
       of selinux_policy_root().
 
+  --with-test-policies=PATH
+      Use the policies in PATH as input to the SETools tests; these
+      tests are invoked upon `make check'.
+
 Of course, `configure' accepts other usual flags such as --prefix.
 
 

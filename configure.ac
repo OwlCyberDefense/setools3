@@ -538,6 +538,12 @@ if test ${use_selinux} = "yes"; then
    fi
 fi
 
+AC_ARG_WITH(test-policies,
+            AC_HELP_STRING([--with-test-policies],
+                           [directory containing test policies (developer only flag)]),
+            test_policies="$withval",
+            test_policies=".")
+
 AC_CACHE_SAVE
 
 dnl check for pkg-config
@@ -621,6 +627,13 @@ if test "x${build_gui}" = xyes; then
   AC_SUBST(GTHREAD_LIBS)
 fi
 
+have_cunit="no"
+AC_CHECK_LIB(cunit, CU_initialize_registry, have_cunit="yes", AC_MSG_WARN([CUnit not found; `make check' will fail.]))
+if test ${have_cunit} = "yes"; then
+  CUNIT_LIB_FLAG="-lcunit"
+  AC_SUBST(CUNIT_LIB_FLAG)
+fi
+
 dnl set up variables here
 if test ${use_selinux} = "yes"; then
    AC_DEFINE(LIBSELINUX, 1, [enable libselinux-specific code])
@@ -673,6 +686,7 @@ AC_DEFINE_UNQUOTED(LIBQPOL_VERSION_STRING, "${libqpol_version}", [libqpol versio
 AC_DEFINE_UNQUOTED(LIBPOLDIFF_VERSION_STRING, "${libpoldiff_version}", [libpoldiff version])
 AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
+AC_DEFINE_UNQUOTED(TEST_POLICIES, "${test_policies}", [location of testing policies])
 
 if test ${sepol_new_defines} != "yes" ; then
    AC_DEFINE(SEPOL_ENOMEM, HASHTAB_OVERFLOW, [remap of libsepol 1.x.x define to 2.x.x])
@@ -734,11 +748,11 @@ EOF
 ]], [bwidget_ver=$bwidget_ver; enable_debug=$enable_debug; version=$VERSION])
 
 AC_CONFIG_FILES([Makefile VERSION \
-                 libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
+                 libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile libqpol/tests/Makefile \
                  libqpol/swig/Makefile libqpol/swig/python/Makefile libqpol/swig/java/Makefile libqpol/swig/java/MANIFEST.MF libqpol/swig/tcl/Makefile \
                  libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
                  libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile libapol/swig/java/MANIFEST.MF libapol/swig/tcl/Makefile \
-                 libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/tests/Makefile libpoldiff/include/poldiff/Makefile \
+                 libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile libpoldiff/tests/Makefile \
                  libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF libpoldiff/swig/tcl/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
                  libsefs/swig/Makefile libsefs/swig/python/Makefile libsefs/swig/java/Makefile libsefs/swig/tcl/Makefile libsefs/swig/java/MANIFEST.MF \

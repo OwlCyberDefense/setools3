@@ -1,13 +1,8 @@
-TESTS = libpoldiff-tests
-check_PROGRAMS = libpoldiff-tests
+TESTS = libqpol-tests
+check_PROGRAMS = libqpol-tests
 
-libpoldiff_tests_SOURCES = \
-	components-tests.c components-tests.h \
-	libpoldiff-tests.c libpoldiff-tests.h \
-	mls-tests.c mls-tests.h \
-	nomls-tests.c nomls-tests.h \
-	policy-defs.h \
-	rules-tests.c rules-tests.h
+libqpol_tests_SOURCES = \
+	libqpol-tests.c
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @POLDIFF_CFLAGS@

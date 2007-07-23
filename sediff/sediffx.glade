@@ -213,7 +213,7 @@
 		    <widget class="GtkMenuItem" id="sort menu item">
 		      <property name="visible">True</property>
 		      <property name="sensitive">False</property>
-		      <property name="label" translatable="yes">Sort TE Rules</property>
+		      <property name="label" translatable="yes">Sort Rules</property>
 		      <property name="use_underline">True</property>
 
 		      <child>
