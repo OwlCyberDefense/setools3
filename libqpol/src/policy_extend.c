@@ -523,8 +523,7 @@ static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(const qpol_syn
 		if ((node->key.rule_type & key->rule_type) &&
 		    (node->key.source_val == key->source_val) &&
 		    (node->key.target_val == key->target_val) &&
-		    (node->key.class_val == key->class_val) &&
-		    (node->key.cond == key->cond))
+		    (node->key.class_val == key->class_val) && (node->key.cond == key->cond))
 			return node;
 	}
 

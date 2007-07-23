@@ -1,7 +1,7 @@
 /**
  *  @file
  *
- *  CUnit testing framework for libqpol.
+ *  Declarations for libqpol capabilities tests.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -23,28 +23,13 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <config.h>
+#ifndef CAPABILITES_TESTS_H
+#define CAPABILITES_TESTS_H
 
 #include <CUnit/CUnit.h>
-#include <CUnit/Basic.h>
 
-#include "capabilities-tests.h"
+extern CU_TestInfo capabilities_tests[];
+extern int capabilities_init();
+extern int capabilities_cleanup();
 
-int main(void)
-{
-	if (CU_initialize_registry() != CUE_SUCCESS) {
-		return CU_get_error();
-	}
-
-	CU_SuiteInfo suites[] = {
-		{"Capabilities", NULL, NULL, capabilities_tests}
-		,
-		CU_SUITE_INFO_NULL
-	};
-
-	CU_register_suites(suites);
-	CU_basic_set_mode(CU_BRM_VERBOSE);
-	CU_ErrorCode results = CU_basic_run_tests();
-	CU_cleanup_registry();
-	return results;
-}
+#endif

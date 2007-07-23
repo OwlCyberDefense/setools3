@@ -2,6 +2,7 @@ TESTS = libqpol-tests
 check_PROGRAMS = libqpol-tests
 
 libqpol_tests_SOURCES = \
+	capabilities-tests.c capabilities-tests.h \
 	libqpol-tests.c
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
