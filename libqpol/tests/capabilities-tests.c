@@ -27,8 +27,6 @@
 #include <config.h>
 
 #include <CUnit/CUnit.h>
-#include <apol/policy.h>
-#include <apol/policy-path.h>
 #include <qpol/policy.h>
 
 #include <stdbool.h>
@@ -38,7 +36,8 @@
 struct capability_answer
 {
 	const char *policy_name;
-	const char *version_string;
+	int policy_type;
+	unsigned int policy_version;
 	bool has_attributes;
 	bool has_syn_rules;
 	bool has_line_numbers;
@@ -50,22 +49,16 @@ struct capability_answer
 
 static void capability_test(const struct capability_answer *ca)
 {
-	apol_policy_path_t *ppath = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, ca->policy_name, NULL);
-	CU_ASSERT_PTR_NOT_NULL_FATAL(ppath);
+	qpol_policy_t *q = NULL;
+	int policy_type = qpol_policy_open_from_file(ca->policy_name, &q, NULL, NULL, QPOL_POLICY_OPTION_NO_NEVERALLOWS);
+	CU_ASSERT_FATAL(policy_type >= 0);
+	CU_ASSERT_EQUAL(policy_type, ca->policy_type);
 
-	apol_policy_t *p = apol_policy_create_from_policy_path(ppath, QPOL_POLICY_OPTION_NO_NEVERALLOWS, NULL, NULL);
-	CU_ASSERT_PTR_NOT_NULL_FATAL(p);
-
-	apol_policy_path_destroy(&ppath);
-
-	char *ver_str = apol_policy_get_version_type_mls_str(p);
-	CU_ASSERT_PTR_NOT_NULL_FATAL(ver_str);
-
-	CU_ASSERT_STRING_EQUAL(ver_str, ca->version_string);
-	free(ver_str);
-
-	const qpol_policy_t *q = apol_policy_get_qpol(p);
-	CU_ASSERT_PTR_NOT_NULL_FATAL(q);
+	unsigned policy_version;
+	int retval;
+	retval = qpol_policy_get_policy_version(q, &policy_version);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT_EQUAL(policy_version, ca->policy_version);
 
 	bool cap;
 
@@ -90,14 +83,15 @@ static void capability_test(const struct capability_answer *ca)
 	cap = (bool) qpol_policy_has_capability(q, QPOL_CAP_MODULES);
 	CU_ASSERT_EQUAL(cap, ca->has_modules);
 
-	apol_policy_destroy(&p);
+	qpol_policy_destroy(&q);
 }
 
 static void capability_v12_source()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-12.conf",
-		"v.12 (source, non-mls)",
+		QPOL_POLICY_KERNEL_SOURCE,	// policy type
+		12U,		       // policy version
 		true,		       // has attributes
 		true,		       // has syntactic rules
 		true,		       // has line numbers
@@ -113,7 +107,8 @@ static void capability_v15_source()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-15.conf",
-		"v.15 (source, non-mls)",
+		QPOL_POLICY_KERNEL_SOURCE,	// policy type
+		15U,		       // policy version
 		true,		       // has attributes
 		true,		       // has syntactic rules
 		true,		       // has line numbers
@@ -129,7 +124,8 @@ static void capability_v15_binary()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.15",
-		"v.15 (binary, non-mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		15U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -145,7 +141,8 @@ static void capability_v16_source()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-16.conf",
-		"v.16 (source, non-mls)",
+		QPOL_POLICY_KERNEL_SOURCE,	// policy type
+		16U,		       // policy version
 		true,		       // has attributes
 		true,		       // has syntactic rules
 		true,		       // has line numbers
@@ -161,7 +158,8 @@ static void capability_v16_binary()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.16",
-		"v.16 (binary, non-mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		16U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -177,7 +175,8 @@ static void capability_v17_source()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-17.conf",
-		"v.17 (source, non-mls)",
+		QPOL_POLICY_KERNEL_SOURCE,	// policy type
+		17U,		       // policy version
 		true,		       // has attributes
 		true,		       // has syntactic rules
 		true,		       // has line numbers
@@ -193,7 +192,8 @@ static void capability_v17_binary()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.17",
-		"v.17 (binary, non-mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		17U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -209,7 +209,8 @@ static void capability_v18_source()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-18.conf",
-		"v.18 (source, non-mls)",
+		QPOL_POLICY_KERNEL_SOURCE,	// policy type
+		18U,		       // policy version
 		true,		       // has attributes
 		true,		       // has syntactic rules
 		true,		       // has line numbers
@@ -225,7 +226,8 @@ static void capability_v18_binary()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.18",
-		"v.18 (binary, non-mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		18U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -241,7 +243,8 @@ static void capability_v19_binary()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.19",
-		"v.19 (binary, non-mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		19U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -257,7 +260,8 @@ static void capability_v19_binary_mls()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls.19",
-		"v.19 (binary, mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		19U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -273,7 +277,8 @@ static void capability_v20_binary()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.20",
-		"v.20 (binary, non-mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		20U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -289,7 +294,8 @@ static void capability_v20_binary_mls()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls.20",
-		"v.20 (binary, mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		20U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -305,7 +311,8 @@ static void capability_v21_source()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls-21.conf",
-		"v.21 (source, mls)",
+		QPOL_POLICY_KERNEL_SOURCE,	// policy type
+		21U,		       // policy version
 		true,		       // has attributes
 		true,		       // has syntactic rules
 		true,		       // has line numbers
@@ -321,7 +328,8 @@ static void capability_v21_binary()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls.21",
-		"v.21 (binary, mls)",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		21U,		       // policy version
 		false,		       // has attributes
 		false,		       // has syntactic rules
 		false,		       // has line numbers
@@ -337,7 +345,8 @@ static void capability_modv6_base_binary()
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/base-6.pp",
-		"v.6 (modular, mls)",
+		QPOL_POLICY_MODULE_BINARY,	// policy type
+		6U,		       // policy version
 		true,		       // has attributes
 		true,		       // has syntactic rules
 		false,		       // has line numbers
@@ -369,12 +378,12 @@ CU_TestInfo capabilities_tests[] = {
 	CU_TEST_INFO_NULL
 };
 
-int capabalities_init()
+int capabilities_init()
 {
-	return 1;
+	return 0;
 }
 
-int capabalities_cleanup()
+int capabilities_cleanup()
 {
-	return 1;
+	return 0;
 }

@@ -357,7 +357,8 @@ int main()
 
 	CU_register_suites(suites);
 	CU_basic_set_mode(CU_BRM_VERBOSE);
-	CU_ErrorCode results = CU_basic_run_tests();
+	CU_basic_run_tests();
+	unsigned int num_failures = CU_get_number_of_failure_records();
 	CU_cleanup_registry();
-	return results;
+	return (int)num_failures;
 }

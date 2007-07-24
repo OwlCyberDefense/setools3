@@ -31,6 +31,7 @@ extern "C"
 {
 #endif
 
+#include "mls_range.h"
 #include "policy.h"
 #include "vector.h"
 #include <qpol/policy.h>
@@ -46,8 +47,8 @@ extern "C"
  * NULL then return all range transitions.
  * @param v Reference to a vector of qpol_range_trans_t.  The vector
  * will be allocated by this function.  The caller must call
- * apol_vector_destroy() afterwards.  This will be set to NULL upon no
- * results or upon error.
+ * apol_vector_destroy() afterwards.  This will be set to NULL upon
+ * error.
  *
  * @return 0 on success (including none found), negative on error.
  */
