@@ -407,7 +407,7 @@ extern "C"
  *  valid transition requires a process transition, an entrypoint, and an
  *  execute rule. If the policy is version 15 or later it also requires either
  *  a setexec rule or a type_transition rule.  The value
- *  APOL_DOMAIN_TRANS_RULE_EXEC_NO_TRANS is not used by this function.
+ *  APOL_DOMAIN_TRANS_RULE_EXEC_NO_TRANS is not returned by this function.
  *
  *  @param policy The policy containing the domain transition table to
  *  consult. Must be non-NULL.
