@@ -130,7 +130,7 @@ proc Apol_Analysis_domaintrans::updateAnalysis {f} {
     if {[set rt [_checkParams]] != {}} {
         return $rt
     }
-    set_results [_analyze]
+    set results [_analyze]
     _clearResultsDisplay $f
     _renderResults $f $results
     $results -delete
@@ -656,14 +656,16 @@ proc Apol_Analysis_domaintrans::_analyzeMore {tree node analysis_args} {
     foreach {dir orig_type object_types classperm_pairs regexp} $analysis_args {break}
     set q [new_apol_domain_trans_analysis_t]
     $q set_direction $::ApolTop::policy $dir
-    $q set_start_type $::ApolTop::policy $orig_type
+    $q set_start_type $::ApolTop::policy $new_start
     $q set_result_regex $::ApolTop::policy $regexp
     foreach o $object_types {
         $q append_access_type $::ApolTop::policy $o
     }
     foreach {cp_pair} $classperm_pairs {
-        $q append_class_perm $::ApolTop::policy [lindex $cp_pair 0] [lindex $cp_pair 1]
+        $q append_class $::ApolTop::policy [lindex $cp_pair 0]
+        $q append_perm $::ApolTop::policy [lindex $cp_pair 1]
     }
+    $::ApolTop::policy reset_domain_trans_table
     set v [$q run $::ApolTop::policy]
     $q -delete
     return $v
