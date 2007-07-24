@@ -220,13 +220,13 @@ proc Apol_Analysis_directflow::_reinitializeVals {} {
     array set vals {
         type {}  type:attrib {}
 
-        classes:all_classes {}
         classes:enable 0
         classes:selected {}
 
         regexp:enable 0
         regexp {}
     }
+    set vals(classes:all_classes) [Apol_Class_Perms::getClasses]
 }
 
 proc Apol_Analysis_directflow::_reinitializeWidgets {} {

@@ -277,7 +277,7 @@ proc Apol_Analysis_transflow::_reinitializeVals {} {
     }
     array unset vals perms:*
     foreach class [Apol_Class_Perms::getClasses] {
-        foreach perm [apol_GetAllPermsForClass $class] {
+        foreach perm [Apol_Class_Perms::getPermsForClass $class] {
             set vals(perms:$class:$perm) 1
         }
     }

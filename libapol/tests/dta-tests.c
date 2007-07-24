@@ -27,9 +27,10 @@
 #include <config.h>
 
 #include <CUnit/CUnit.h>
+#include <apol/avrule-query.h>
+#include <apol/domain-trans-analysis.h>
 #include <apol/policy.h>
 #include <apol/policy-path.h>
-#include <apol/domain-trans-analysis.h>
 
 #define POLICY TEST_POLICIES "/setools-3.3/apol/dta_test.policy.conf"
 
@@ -37,6 +38,7 @@ static apol_policy_t *p = NULL;
 
 static void dta_forward(void)
 {
+	apol_policy_reset_domain_trans_table(p);
 	apol_domain_trans_analysis_t *d = apol_domain_trans_analysis_create();
 	CU_ASSERT_PTR_NOT_NULL_FATAL(d);
 	int retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
@@ -46,6 +48,7 @@ static void dta_forward(void)
 
 	apol_vector_t *v = NULL;
 	retval = apol_domain_trans_analysis_do(p, d, &v);
+	apol_domain_trans_analysis_destroy(&d);
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	CU_ASSERT_PTR_NOT_NULL(v);
 
@@ -82,8 +85,137 @@ static void dta_forward(void)
 	apol_vector_destroy(&v);
 }
 
+static void dta_forward_access(void)
+{
+	apol_policy_reset_domain_trans_table(p);
+	apol_domain_trans_analysis_t *d = apol_domain_trans_analysis_create();
+	CU_ASSERT_PTR_NOT_NULL_FATAL(d);
+	int retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_set_start_type(p, d, "tuna_t");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_append_access_type(p, d, "boat_t");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_append_access_type(p, d, "sand_t");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_append_access_type(p, d, "wave_t");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_append_class(p, d, "file");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_append_perm(p, d, "write");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
+	apol_vector_t *v = NULL;
+	retval = apol_domain_trans_analysis_do(p, d, &v);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT(v != NULL && apol_vector_get_size(v) > 0);
+
+	qpol_policy_t *q = apol_policy_get_qpol(p);
+	size_t i;
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		const apol_domain_trans_result_t *dtr = (const apol_domain_trans_result_t *)apol_vector_get_element(v, i);
+
+		const qpol_type_t *qt = apol_domain_trans_result_get_start_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		const char *name;
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT_STRING_EQUAL(name, "tuna_t");
+
+		qt = apol_domain_trans_result_get_end_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT_STRING_EQUAL(name, "boat_t");
+
+		const apol_vector_t *rules_v = apol_domain_trans_result_get_access_rules(dtr);
+		CU_ASSERT_FATAL(rules_v != NULL && apol_vector_get_size(rules_v) > 0);
+		size_t j;
+		for (j = 0; j < apol_vector_get_size(rules_v); j++) {
+			const qpol_avrule_t *qa = (const qpol_avrule_t *)apol_vector_get_element(rules_v, j);
+			char *render = apol_avrule_render(p, qa);
+			CU_ASSERT_PTR_NOT_NULL_FATAL(render);
+			CU_ASSERT_STRING_EQUAL(render, "allow boat_t wave_t : file { write getattr execute } ;");
+			free(render);
+		}
+	}
+
+	apol_vector_destroy(&v);
+
+	retval = apol_domain_trans_analysis_set_start_type(p, d, "boat_t");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
+	retval = apol_domain_trans_analysis_do(p, d, &v);
+	apol_domain_trans_analysis_destroy(&d);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT(v != NULL && apol_vector_get_size(v) > 0);
+
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		const apol_domain_trans_result_t *dtr = (const apol_domain_trans_result_t *)apol_vector_get_element(v, i);
+
+		const qpol_type_t *qt = apol_domain_trans_result_get_start_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		const char *name;
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT_STRING_EQUAL(name, "boat_t");
+
+		qt = apol_domain_trans_result_get_end_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT(strcmp(name, "sand_t") == 0 || strcmp(name, "dock_t") == 0);
+	}
+	apol_vector_destroy(&v);
+}
+
+static void dta_reverse(void)
+{
+	apol_policy_reset_domain_trans_table(p);
+	apol_domain_trans_analysis_t *d = apol_domain_trans_analysis_create();
+	CU_ASSERT_PTR_NOT_NULL_FATAL(d);
+	int retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_set_start_type(p, d, "sand_t");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
+	apol_vector_t *v = NULL;
+	retval = apol_domain_trans_analysis_do(p, d, &v);
+	apol_domain_trans_analysis_destroy(&d);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT(v != NULL && apol_vector_get_size(v) > 0);
+
+	qpol_policy_t *q = apol_policy_get_qpol(p);
+	size_t i;
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		const apol_domain_trans_result_t *dtr = (const apol_domain_trans_result_t *)apol_vector_get_element(v, i);
+
+		const qpol_type_t *qt = apol_domain_trans_result_get_end_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		const char *name;
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT_STRING_EQUAL(name, "sand_t");
+
+		qt = apol_domain_trans_result_get_start_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT(strcmp(name, "boat_t") == 0 || strcmp(name, "grouper_t") == 0 || strcmp(name, "shark_t") == 0 ||
+			  strcmp(name, "tuna_t") == 0);
+	}
+
+	apol_vector_destroy(&v);
+}
+
 CU_TestInfo dta_tests[] = {
 	{"dta forward", dta_forward}
+	,
+	{"dta forward + access", dta_forward_access}
+	,
+	{"dta reverse", dta_reverse}
 	,
 	CU_TEST_INFO_NULL
 };

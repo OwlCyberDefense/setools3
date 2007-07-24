@@ -39,8 +39,10 @@ static void policy_21_range_trans_all(void)
 {
 	apol_range_trans_query_t *rt = apol_range_trans_query_create();
 	CU_ASSERT_PTR_NOT_NULL_FATAL(rt);
+
 	apol_vector_t *v = NULL;
 	int retval = apol_range_trans_get_by_query(p, rt, &v);
+	apol_range_trans_query_destroy(&rt);
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	CU_ASSERT(v != NULL && apol_vector_get_size(v) == 17);
 	apol_vector_destroy(&v);
@@ -53,8 +55,10 @@ static void policy_21_range_trans_process(void)
 	int retval;
 	retval = apol_range_trans_query_append_class(p, rt, "process");
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
 	apol_vector_t *v = NULL;
 	retval = apol_range_trans_get_by_query(p, rt, &v);
+	apol_range_trans_query_destroy(&rt);
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	CU_ASSERT(v != NULL && apol_vector_get_size(v) == 10);
 	size_t i;
@@ -79,8 +83,10 @@ static void policy_21_range_trans_lnk_file(void)
 	int retval;
 	retval = apol_range_trans_query_append_class(p, rt, "lnk_file");
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
 	apol_vector_t *v = NULL;
 	retval = apol_range_trans_get_by_query(p, rt, &v);
+	apol_range_trans_query_destroy(&rt);
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	CU_ASSERT(v != NULL && apol_vector_get_size(v) == 2);
 	size_t i;
@@ -107,8 +113,10 @@ static void policy_21_range_trans_either(void)
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	retval = apol_range_trans_query_append_class(p, rt, "lnk_file");
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
 	apol_vector_t *v = NULL;
 	retval = apol_range_trans_get_by_query(p, rt, &v);
+	apol_range_trans_query_destroy(&rt);
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	CU_ASSERT(v != NULL && apol_vector_get_size(v) == 12);
 	size_t i;
@@ -133,8 +141,10 @@ static void policy_21_range_trans_socket(void)
 	int retval;
 	retval = apol_range_trans_query_append_class(p, rt, "socket");
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
 	apol_vector_t *v = NULL;
 	retval = apol_range_trans_get_by_query(p, rt, &v);
+	apol_range_trans_query_destroy(&rt);
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	CU_ASSERT(v != NULL && apol_vector_get_size(v) == 0);
 	apol_vector_destroy(&v);
