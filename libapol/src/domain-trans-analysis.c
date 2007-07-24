@@ -514,6 +514,11 @@ apol_domain_trans_result_t *domain_trans_result_create()
 int apol_policy_build_domain_trans_table(apol_policy_t * policy)
 {
 	int error = 0;
+	apol_avrule_query_t *avq = NULL;
+	apol_terule_query_t *teq = NULL;
+	apol_vector_t *avrules = NULL;
+	apol_vector_t *terules = NULL;
+
 	if (!policy) {
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -530,7 +535,7 @@ int apol_policy_build_domain_trans_table(apol_policy_t * policy)
 		goto err;
 	}
 
-	apol_avrule_query_t *avq = apol_avrule_query_create();
+	avq = apol_avrule_query_create();
 	apol_avrule_query_set_rules(policy, avq, QPOL_RULE_ALLOW);
 	apol_avrule_query_append_class(policy, avq, "file");
 	apol_avrule_query_append_class(policy, avq, "process");
@@ -538,7 +543,6 @@ int apol_policy_build_domain_trans_table(apol_policy_t * policy)
 	apol_avrule_query_append_perm(policy, avq, "entrypoint");
 	apol_avrule_query_append_perm(policy, avq, "transition");
 	apol_avrule_query_append_perm(policy, avq, "setexec");
-	apol_vector_t *avrules = NULL;
 	if (apol_avrule_get_by_query(policy, avq, &avrules)) {
 		error = errno;
 		goto err;
@@ -552,10 +556,9 @@ int apol_policy_build_domain_trans_table(apol_policy_t * policy)
 	}
 	apol_vector_destroy(&avrules);
 
-	apol_terule_query_t *teq = apol_terule_query_create();
+	teq = apol_terule_query_create();
 	apol_terule_query_set_rules(policy, teq, QPOL_RULE_TYPE_TRANS);
 	apol_terule_query_append_class(policy, teq, "process");
-	apol_vector_t *terules = NULL;
 	if (apol_terule_get_by_query(policy, teq, &terules)) {
 		error = errno;
 		goto err;
