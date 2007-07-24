@@ -217,7 +217,7 @@ int find_file_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	size_t i, j, x;
 	char *buff = NULL;
-	int buff_sz, error = 0;
+	int error = 0;
 
 	/* NEW */
 	size_t num_fc_entries = 0;

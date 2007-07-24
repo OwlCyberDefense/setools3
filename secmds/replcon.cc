@@ -299,9 +299,9 @@ int main(int argc, char *argv[])
 				query->type(apol_context_get_type(context), false);
 				if (apol_context_get_range(context) != NULL)
 				{
-					char *r = apol_mls_range_render(NULL, apol_context_get_range(context));
-					query->range(r, APOL_QUERY_EXACT);
-					free(r);
+					char *rng = apol_mls_range_render(NULL, apol_context_get_range(context));
+					query->range(rng, APOL_QUERY_EXACT);
+					free(rng);
 				}
 				else
 				{

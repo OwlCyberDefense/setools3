@@ -1166,8 +1166,7 @@ static int domain_trans_table_get_all_forward_trans(apol_policy_t * policy, apol
 						apol_vector_destroy(&potential_ep_types);
 						goto err;
 					}
-					apol_vector_t *eprules =
-						find_avrules_in_node((void *)end_node, APOL_DOMAIN_TRANS_RULE_ENTRYPOINT,
+					eprules = find_avrules_in_node((void *)end_node, APOL_DOMAIN_TRANS_RULE_ENTRYPOINT,
 								     tmpl_result->ep_type);
 					for (size_t k = 0; k < apol_vector_get_size(eprules); k++) {
 						avrule_node_t *ep_ent = apol_vector_get_element(eprules, k);
@@ -1347,8 +1346,7 @@ static int domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol
 		for (size_t i = 0; i < apol_vector_get_size(potential_ep_types); i++) {
 			tmpl_result->ep_type = apol_vector_get_element(potential_ep_types, i);
 			//get all ep rules for ths end (may be multiple due to attributes)
-			apol_vector_t *eprules =
-				find_avrules_in_node((void *)end_node, APOL_DOMAIN_TRANS_RULE_ENTRYPOINT, tmpl_result->ep_type);
+			eprules = find_avrules_in_node((void *)end_node, APOL_DOMAIN_TRANS_RULE_ENTRYPOINT, tmpl_result->ep_type);
 			apol_vector_destroy(&tmpl_result->ep_rules);
 			tmpl_result->ep_rules = apol_vector_create(NULL);
 			for (size_t j = 0; j < apol_vector_get_size(eprules); j++) {

@@ -425,7 +425,7 @@ int sechk_lib_load_policy(apol_policy_path_t * policy_mods, sechk_lib_t * lib)
 
 int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t * lib)
 {
-	int retv = -1, error = 0;
+	int error = 0;
 	char *default_fc_path = NULL;
 	sefs_fclist_t *fcfile = NULL;
 	sefs_query_t *q = NULL;

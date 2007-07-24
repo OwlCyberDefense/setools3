@@ -175,7 +175,6 @@ int unreachable_doms_register(sechk_lib_t * lib)
 int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unreachable_doms_data_t *datum = NULL;
-	bool retv;
 	const char *ctx_file_path = NULL;
 
 	if (!mod || !policy) {

@@ -427,7 +427,7 @@ static seaudit_filter_t *report_enforce_toggle_filter_create(const seaudit_log_t
 {
 	seaudit_filter_t *filter = NULL;
 	apol_vector_t *type_v = NULL, *class_v;
-	int retval = -1, error;
+	int retval = -1, error = 0;
 	char *tgt_type = "security_t";
 	char *obj_class = "security";
 
@@ -909,7 +909,7 @@ static int report_process_xmlNode(const seaudit_log_t * log, const seaudit_repor
 				  FILE * outfile)
 {
 	xmlChar *name = NULL, *id_attr = NULL, *title_attr = NULL;
-	int retval = -1, error;
+	int retval = -1, error = 0;
 
 	if ((name = xmlTextReaderName(reader)) == NULL) {
 		error = errno;
