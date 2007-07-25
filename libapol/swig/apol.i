@@ -2567,8 +2567,10 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 };
 typedef struct apol_relabel_result {} apol_relabel_result_t;
 %extend apol_relabel_result_t {
-	apol_relabel_result_t(void *x) {
-		return (apol_relabel_result_t*)x;
+	apol_relabel_result_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_relabel_result_t objects");
+	fail:
+		return NULL;
 	};
 	~apol_relabel_result_t() {
 		/* no op - vector will destroy */
@@ -2587,10 +2589,17 @@ typedef struct apol_relabel_result {} apol_relabel_result_t;
 		return apol_relabel_result_get_result_type(self);
 	};
 };
+%inline %{
+	apol_relabel_result_t *apol_relabel_result_from_void(void *x) {
+		return (apol_relabel_result_t*)x;
+	};
+%}
 typedef struct apol_relabel_result_pair {} apol_relabel_result_pair_t;
 %extend apol_relabel_result_pair_t {
-	apol_relabel_result_pair_t(void *x) {
-		return (apol_relabel_result_pair_t*)x;
+	apol_relabel_result_pair_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_relabel_result_pair_t objects");
+	fail:
+		return NULL;
 	};
 	~apol_relabel_result_pair_t() {
 		/* no op - owned and free()'d by apol_relabel_result_t */
@@ -2606,6 +2615,11 @@ typedef struct apol_relabel_result_pair {} apol_relabel_result_pair_t;
 		return apol_relabel_result_pair_get_intermediate_type(self);
 	};
 };
+%inline %{
+	apol_relabel_result_pair_t *apol_relabel_result_pair_from_void(void *x) {
+		return (apol_relabel_result_pair_t*)x;
+	};
+%}
 
 /* apol type relation analysis */
 #define APOL_TYPES_RELATION_COMMON_ATTRIBS 0x0001
