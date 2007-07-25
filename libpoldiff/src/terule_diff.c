@@ -631,7 +631,7 @@ static int terule_build_cond(const poldiff_t * diff, const apol_policy_t * p, co
 			}
 		}
 		if (i >= num_bools) {
-			assert(num_bools < 4);
+			assert(i < 5);
 			bools[i] = qbool;
 			num_bools++;
 		}

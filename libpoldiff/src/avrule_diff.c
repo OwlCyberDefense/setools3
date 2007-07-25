@@ -741,7 +741,7 @@ static int avrule_build_cond(poldiff_t * diff, const apol_policy_t * p, const qp
 			}
 		}
 		if (i >= num_bools) {
-			assert(num_bools < 4);
+			assert(i < 5);
 			bools[i] = qbool;
 			num_bools++;
 		}
