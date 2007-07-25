@@ -1615,6 +1615,8 @@ static int domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol
 
 int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_analysis_t * dta, apol_vector_t ** results)
 {
+	apol_vector_t *local_results = NULL;
+	apol_avrule_query_t *accessq = NULL;
 	int error = 0;
 	if (!policy || !dta || !results) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -1660,7 +1662,7 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 		goto err;
 	}
 
-	apol_vector_t *local_results = apol_vector_create(domain_trans_result_free);
+	local_results = apol_vector_create(domain_trans_result_free);
 	/* get all transitions for the requested direction */
 	if (dta->direction == APOL_DOMAIN_TRANS_DIRECTION_REVERSE) {
 		if (domain_trans_table_get_all_reverse_trans(policy, dta, local_results, start_type)) {
@@ -1711,7 +1713,6 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 	}
 
 	/* finally do access filtering */
-	apol_avrule_query_t *accessq = NULL;
 	if (dta->direction == APOL_DOMAIN_TRANS_DIRECTION_FORWARD && num_atypes && num_aclasses && num_aprems) {
 		accessq = apol_avrule_query_create();
 		apol_avrule_query_set_rules(policy, accessq, QPOL_RULE_ALLOW);
@@ -1755,6 +1756,7 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 				i++;
 			} else {
 				apol_vector_remove(local_results, i);
+				domain_trans_result_free(res);
 			}
 			apol_vector_destroy(&tmp_access);
 		}

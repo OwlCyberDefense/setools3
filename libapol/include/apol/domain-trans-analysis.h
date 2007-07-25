@@ -160,7 +160,7 @@ extern "C"
  *  analysis.</b> If more than one type is appended to the query, the
  *  resulting type must have access to at least one of the appended
  *  types. Pass a NULL to clear all previously appended types. <b>If
- *  acces types are appened, the caller must also call
+ *  access types are appended, the caller must also call
  *  apol_domain_trans_analysis_append_class() at least once with
  *  a valid class and apol_domain_trans_analysis_append_perm() at
  *  least once with a valid permission.</b>

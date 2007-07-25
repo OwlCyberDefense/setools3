@@ -1,3 +1,13 @@
+2007-07-24  J. Tang  <jtang@tresys.com>
+
+	* Added framework for CUnit tests for libapol.
+
+2007-07-23  J. Tang  <jtang@tresys.com>
+
+	* Added framework for CUnit tests for libpoldiff and libqpol.
+	configure now has the option --with-test-policies to specify where
+	the test policies reside.
+
 2007-07-20  J. Tang  <jtang@tresys.com>
 
 	* Added seaudit_filter for PID.
